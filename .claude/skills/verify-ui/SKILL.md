@@ -42,9 +42,9 @@ npm run verify:ui -- <label> --view exams --url http://localhost:<port>
 | Flag | Default | Notes |
 |------|---------|-------|
 | `--widths` | `320,390,430` | The phone set. Add the tablet set for anything the iPad renders — see below. |
-| `--view` | current | Seeded into IndexedDB (`meta.reis_current_view`), then reloaded. |
+| `--view` | current | Seeded into IndexedDB (`meta.reis_current_view`), then reloaded — and, when the **phone** shell mounts, also applied to its own `mobileTab`, which that key does not reach. Phone views are `calendar`, `exams`, `subjects`, `map`, `profile`; a desktop-only view (`settings`, `studyPlan`, `erasmus`, `timeline-demo`) at a phone width **fails the run** rather than rendering the Calendar. |
 | `--theme` | dark | `dark` \| `light`. Seeds `meta.reis_theme`, mapped to the theme names the store accepts. |
-| `--click` | — | Text to click after load, e.g. opening a drawer or driving a flow into its error state. |
+| `--click` | — | Text to click after load, e.g. opening a drawer or driving a flow into its error state. **Repeatable** — pass it several times for a multi-step path, and the steps run in order. |
 | `--onboarding` | off | Keep the desktop welcome modal. Off by default: it blocks the whole page. |
 | `--wait` | 600 | ms to settle after navigation. |
 
@@ -77,6 +77,11 @@ To measure the narrow *desktop* tree instead, append `?mobile=0` to `--url`.
 Output always lands in `.verify/` (gitignored), **wiped at the start of every
 run**, with every path printed absolute. Exit code is 1 when there are errors.
 Copy anything you want to keep out of `.verify/` before the next run.
+
+Each width's header line names the width, the **shell and the screen** that
+actually mounted (`[phone · map-screen]`), and the absolute path of the frame.
+Read the screen: a report is only about the screen in that bracket, and a run
+that reached the wrong one is clean about nothing.
 
 - **`overflow` / `overflow-element`** — errors. The page scrolls sideways, or a
   named element sticks out past the viewport.

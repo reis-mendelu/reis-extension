@@ -27,6 +27,7 @@ import {
   type ProbeResult,
 } from './lib/uiFindings';
 import { probeSource } from './lib/uiProbe';
+import { mobileTabForView, isDesktopOnlyView, phoneViewNames } from './lib/mobileTabForView';
 
 const DEFAULT_WIDTHS = [320, 390, 430];
 const DEFAULT_URL = 'http://localhost:3000';
@@ -241,6 +242,75 @@ async function seedStoreState(page: Page, json: string): Promise<void> {
 }
 
 /**
+ * Point the PHONE shell at the view `--view` named.
+ *
+ * `--view` is seeded into `meta.reis_current_view`, which only the desktop tree
+ * reads (`useAppLogic`). The phone keeps its tab in `mobileTab` on
+ * `createMobileUiSlice`, hard-initialised to `'calendar'` and hydrated from
+ * nothing — so IndexedDB seeding cannot reach it, and every phone-width run
+ * with `--view map`, `--view exams` or `--view subjects` photographed the
+ * Calendar and reported it clean. A finding-free report about a screen nobody
+ * asked for is the exact failure this script exists to prevent.
+ *
+ * Applied through the app's OWN `setMobileTab` action rather than a raw
+ * setState, so the tab change here behaves identically to a student's tap
+ * (it clears the sheet stack too) and cannot drift from it.
+ *
+ * Which shell mounted is asked of the DOM, not guessed from the width: the
+ * `?mobile=1` the iPad set uses pins the phone tree at 834px and up, and
+ * `?mobile=0` pins the desktop tree below 768.
+ */
+async function applyViewToShell(page: Page, view: string): Promise<void> {
+  // Authoritative, and never silent: if neither shell mounts, the run has
+  // nothing to measure and should say so here rather than at screenshot time.
+  try {
+    await page.waitForSelector('[data-testid="mobile-app"], [data-testid="desktop-app"]', {
+      timeout: 15000,
+    });
+  } catch {
+    throw new Error(
+      `--view ${view}: no app shell mounted within 15s, so the view could not be applied. ` +
+        'The page is blank or still booting — check the dev server and --url.'
+    );
+  }
+  const isPhone = (await page.locator('[data-testid="mobile-app"]').count()) > 0;
+  // The desktop tree reads the seeded meta key and needs nothing further.
+  if (!isPhone) return;
+
+  const tab = mobileTabForView(view);
+  if (!tab) {
+    throw new Error(
+      isDesktopOnlyView(view)
+        ? `--view ${view}: the phone shell has no tab for that view — it is a desktop-only screen. ` +
+          `Run it against the desktop tree (append ?mobile=0 to --url), or name a phone view: ${phoneViewNames()}. ` +
+          'Refusing to continue — it would have rendered the Calendar and reported it clean.'
+        : `--view ${view}: not a view this app has. Phone views are: ${phoneViewNames()}.`
+    );
+  }
+
+  const ok = await page.evaluate((t) => {
+    const w = window as unknown as {
+      __reisStore?: { getState: () => { setMobileTab?: (tab: string) => void } };
+    };
+    const setMobileTab = w.__reisStore?.getState().setMobileTab;
+    if (!setMobileTab) return false;
+    setMobileTab(t);
+    return true;
+  }, tab);
+  if (!ok) {
+    throw new Error(
+      `--view ${view}: the phone shell's tab could not be set — window.__reisStore is not present. ` +
+        'It is published by dev/storeHandle.ts, gated on isHarnessEnabled — confirm the page is ' +
+        'npm run dev:web (or a variant) and not some other server. Refusing to continue: the run ' +
+        'would have measured the Calendar instead.'
+    );
+  }
+  // The tab swap mounts a different screen; let it paint before anything
+  // clicks into it.
+  await page.waitForTimeout(250);
+}
+
+/**
  * Click (or, on a touch context, tap) a step of a `--click` path. Visible text
  * first, then accessible name: icon-only controls (the phone shell's initials
  * avatar, a bare chevron) carry their meaning in `aria-label`, and a text-only
@@ -318,7 +388,7 @@ async function run(): Promise<number> {
   const browser = await chromium.launch();
   const report: Record<
     string,
-    { shot: string; findings: Finding[]; shell: string; height: number }
+    { shot: string; findings: Finding[]; shell: string; screens: string[]; height: number }
   > = {};
   let errorCount = 0;
 
@@ -357,6 +427,9 @@ async function run(): Promise<number> {
       // `--theme light` a no-op that looked like it had worked.
       if (opts.theme) seed['reis_theme'] = opts.theme === 'light' ? 'mendelu' : 'mendelu-dark';
       await seedMeta(page, seed);
+      // The seeded key only steers the DESKTOP tree — the phone shell needs to
+      // be told separately. See applyViewToShell.
+      if (opts.view) await applyViewToShell(page, opts.view);
 
       // Settle BEFORE the first click, not only after the last one. seedMeta
       // reloads the page, so without this a --click races the app's boot and
@@ -385,6 +458,16 @@ async function run(): Promise<number> {
         (await page.locator('[data-testid="mobile-app"]').count()) > 0
       );
       if (opts.expectShell) assertShell(opts.expectShell, shell, width);
+      // Which SCREEN mounted, not only which shell. `--view` landing on the
+      // wrong screen was invisible for as long as this line named the shell
+      // alone — the report read "[phone] no findings" about the Calendar while
+      // the run had asked for the map. Every phone screen carries a
+      // `*-screen` testid; the desktop tree has none, and prints just a shell.
+      const screens = await page
+        .locator('[data-testid$="-screen"]')
+        .evaluateAll((els) =>
+          els.map((e) => (e as HTMLElement).dataset['testid'] ?? '').filter(Boolean)
+        );
 
       const shot = resolve(OUT_DIR, `${opts.label}-${width}.png`);
       await page.screenshot({ path: shot, fullPage: false });
@@ -392,9 +475,10 @@ async function run(): Promise<number> {
       const probe = (await page.evaluate(probeSource)) as ProbeResult;
       const findings = analyzeProbe(probe);
       errorCount += findings.filter((f) => f.severity === 'error').length;
-      report[String(width)] = { shot, findings, shell, height: opts.height };
+      report[String(width)] = { shot, findings, shell, screens, height: opts.height };
 
-      console.log(`\n\x1b[1m${width}x${opts.height}\x1b[0m  [${shell}]  ${shot}`);
+      const where = screens.length > 0 ? `${shell} · ${screens.join('+')}` : shell;
+      console.log(`\n\x1b[1m${width}x${opts.height}\x1b[0m  [${where}]  ${shot}`);
       if (consoleErrors.length) {
         console.log(`  \x1b[31mconsole:\x1b[0m ${consoleErrors.length} error(s)`);
         for (const e of consoleErrors.slice(0, 3)) console.log(`    ${e.slice(0, 160)}`);
