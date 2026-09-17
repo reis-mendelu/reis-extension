@@ -52,13 +52,7 @@ const plan = {
  */
 describe('EnrolledNowSection header', () => {
   const render_ = () =>
-    render(
-      <EnrolledNowSection
-        plan={plan}
-        onOpenSubject={vi.fn()}
-        onSearchSubject={vi.fn()}
-      />
-    );
+    render(<EnrolledNowSection plan={plan} onOpenSubject={vi.fn()} onSearchSubject={vi.fn()} />);
 
   it('shows no error-toned counter over the enrolled subjects', () => {
     const { container } = render_();

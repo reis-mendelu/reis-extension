@@ -39,7 +39,7 @@ describe('eventHelpers', () => {
     const now = new Date('2026-01-05T12:00:00'); // a Monday
     const sections = weekSections(
       [ev('a', '2026-01-07'), ev('b', '2026-01-13'), ev('c', '2026-01-20')],
-      now,
+      now
     );
     expect(sections.map((s) => s.key)).toEqual(['thisWeek', 'nextWeek']);
     expect(sections[0].events.map((e) => e.id)).toEqual(['a']);

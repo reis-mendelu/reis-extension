@@ -44,8 +44,7 @@ export function EventRsvp({ eventId, accent }: { eventId: string; accent: string
       <div className="flex items-center gap-2 text-sm text-base-content/70">
         <Users size={16} className="flex-shrink-0 text-base-content/45" />
         <span>
-          <span className="font-bold text-base-content">{answeredTotal}</span>{' '}
-          {t('map.interested')}
+          <span className="font-bold text-base-content">{answeredTotal}</span> {t('map.interested')}
         </span>
       </div>
 
