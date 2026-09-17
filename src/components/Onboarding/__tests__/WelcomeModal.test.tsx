@@ -31,6 +31,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllGlobals();
   cleanup();
   vi.clearAllMocks();
 });
@@ -43,12 +44,16 @@ describe('WelcomeModal', () => {
   });
 
   // The whole point of the change: one click, no device picker. The drawer
-  // opens on the machine reIS is running on.
+  // opens on the machine reIS is running on — stubbed rather than inherited,
+  // because the answer is read off the user agent and CI runs on Linux, where
+  // an un-stubbed version of this test asserts whatever the runner happens to
+  // be.
   it('hands off to the drawer with this machine already picked', async () => {
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)' });
     await show();
     fireEvent.click(screen.getByRole('button', { name: /Set up eduroam/i }));
     expect(useAppStore.getState().isEduroamOpen).toBe(true);
-    expect(useAppStore.getState().eduroamInitialTarget).toMatch(/^(mac|windows)$/);
+    expect(useAppStore.getState().eduroamInitialTarget).toBe('mac');
   });
 
   // reIS ships manuals for two desktops. A Linux student must land on the
@@ -59,7 +64,6 @@ describe('WelcomeModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /Set up eduroam/i }));
     expect(useAppStore.getState().isEduroamOpen).toBe(true);
     expect(useAppStore.getState().eduroamInitialTarget).toBeNull();
-    vi.unstubAllGlobals();
   });
 
   it('dismisses once, whichever way it is left', async () => {

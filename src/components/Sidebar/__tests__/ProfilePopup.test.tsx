@@ -18,15 +18,21 @@ vi.mock('../../../hooks/useSpolkySettings', () => ({
 beforeEach(() => {
   useAppStore.setState({ language: 'en', isEduroamOpen: false, eduroamInitialTarget: null });
 });
-afterEach(cleanup);
+afterEach(() => {
+  vi.unstubAllGlobals();
+  cleanup();
+});
 
 describe('ProfilePopup — eduroam', () => {
   it('is where eduroam lives now, and opening it closes the popup', () => {
+    // Stubbed, not inherited: the target is read off the user agent, and CI
+    // runs on Linux — where the honest answer is the picker, not a device.
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)' });
     const onClose = vi.fn();
     render(<ProfilePopup isOpen onClose={onClose} />);
     fireEvent.click(screen.getByRole('button', { name: /eduroam/i }));
     expect(useAppStore.getState().isEduroamOpen).toBe(true);
-    expect(useAppStore.getState().eduroamInitialTarget).toMatch(/^(mac|windows)$/);
+    expect(useAppStore.getState().eduroamInitialTarget).toBe('mac');
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -36,6 +42,5 @@ describe('ProfilePopup — eduroam', () => {
     fireEvent.click(screen.getByRole('button', { name: /eduroam/i }));
     expect(useAppStore.getState().isEduroamOpen).toBe(true);
     expect(useAppStore.getState().eduroamInitialTarget).toBeNull();
-    vi.unstubAllGlobals();
   });
 });
