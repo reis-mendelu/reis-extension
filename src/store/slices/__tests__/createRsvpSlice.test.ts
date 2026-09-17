@@ -757,10 +757,18 @@ describe('createRsvpSlice — failure handling', () => {
         },
       ]);
 
-      // No stored answers at all — an unread disk, not "answered nothing".
-      await state.loadRsvps([]);
+      // A real read failure, with a real event id. Raised in review: the first
+      // version of this called `loadRsvps([])`, which returns before it ever
+      // touches IndexedDB — so it asserted the early return and proved nothing
+      // about the guard it is named after.
+      const { IndexedDBService } = await import('../../../services/storage');
+      vi.mocked(IndexedDBService.get).mockRejectedValueOnce(new Error('IDB unavailable'));
+
+      await state.loadRsvps(['e1']);
       await new Promise((r) => setTimeout(r, 0));
 
+      // An unread disk is an empty plan, not "answered nothing" — reconciling
+      // against it would delete a block for an event still being attended.
       expect(added).toEqual([]);
       expect(removeCalendarCustomEvent).not.toHaveBeenCalled();
     });
