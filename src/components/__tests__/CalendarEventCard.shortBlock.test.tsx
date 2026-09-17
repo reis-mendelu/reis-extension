@@ -8,7 +8,7 @@ vi.mock('../../hooks/ui/useCourseName', () => ({ useCourseName: (_c?: string, n?
 
 import { CalendarEventCard } from '../CalendarEventCard';
 
-const lesson = (renderedMinutes: number): LessonWithRow =>
+const lesson = (renderedMinutes: number, extra: Partial<LessonWithRow> = {}): LessonWithRow =>
   ({
     id: 'l1',
     date: '20260918',
@@ -21,6 +21,7 @@ const lesson = (renderedMinutes: number): LessonWithRow =>
     row: 0,
     maxColumns: 1,
     renderedMinutes,
+    ...extra,
   }) as unknown as LessonWithRow;
 
 /**
@@ -39,7 +40,8 @@ describe('CalendarEventCard in a short block', () => {
   it('drops to one line with the time, and no room', () => {
     render(<CalendarEventCard lesson={lesson(60)} />);
 
-    expect(screen.getByText('Cvičení')).toBeInTheDocument();
+    // getAllBy: the quick-hide menu repeats the course name in its own header.
+    expect(screen.getAllByText('Cvičení').length).toBeGreaterThan(0);
     expect(screen.getByText('14:00 - 14:50')).toBeInTheDocument();
     // The room is the part that goes: the tooltip and the subject drawer both
     // still carry it, and something has to give at 41 pixels.
@@ -54,5 +56,18 @@ describe('CalendarEventCard in a short block', () => {
     expect(screen.getAllByText('Cvičení').length).toBeGreaterThan(0);
     expect(screen.getByText('Q01')).toBeInTheDocument();
     expect(screen.getByText('14:00 - 14:50')).toBeInTheDocument();
+  });
+
+  /**
+   * Raised in review: the first version of this gated the quick-hide menu on
+   * the same flag, so a 60-to-89-minute lesson — exactly the common case, since
+   * a block is only that short when something follows it — lost the only UI
+   * that calls `hideEvent` or `hideCourse`. Shortening a card must not take a
+   * feature away from it.
+   */
+  it('keeps the quick-hide menu, which is the only way to hide a lesson', () => {
+    render(<CalendarEventCard lesson={lesson(60)} />);
+
+    expect(screen.getByRole('button', { name: 'Skrýt tuto hodinu' })).toBeInTheDocument();
   });
 });

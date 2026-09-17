@@ -185,7 +185,7 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
         </div>
       )}
       {/* Quick Hide Action (custom event actions disabled until feature ships) */}
-      {!lesson.isCustom && !lesson.isExam && !isCompact && fitsTwoLines && (
+      {!lesson.isCustom && !lesson.isExam && !isCompact && (
         <div
           className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-20"
           onClick={(e) => e.stopPropagation()}
@@ -237,7 +237,15 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
             because something has to, and it is the part the tooltip and the
             subject drawer both still carry. */}
         {!fitsTwoLines ? (
-          <div className="flex min-w-0 items-baseline justify-between gap-2">
+          <div
+            className={`flex min-w-0 items-baseline justify-between gap-2 ${
+              // Same inset the two-line title takes, and for the same reason:
+              // the quick-hide button sits at top-right and would otherwise
+              // land on the time. It appears on hover, so without this the
+              // time would vanish under a thumb at the moment it is read.
+              !lesson.isCustom && !lesson.isExam && !isCompact ? 'pr-8' : ''
+            }`}
+          >
             <span className="truncate font-semibold text-content-primary">{courseTitle}</span>
             <span className="flex-shrink-0 whitespace-nowrap text-xs text-content-secondary">
               {isCompact ? lesson.startTime : `${lesson.startTime} - ${lesson.endTime}`}
