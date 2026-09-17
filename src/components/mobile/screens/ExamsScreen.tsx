@@ -15,6 +15,7 @@ import {
   type OpenExam,
 } from '../../../utils/mobile/examRows';
 import { splitByWeek, formatWhenRow } from '../../../utils/mobile/examWhen';
+import { splitByRegistrationOpen } from '../../../utils/mobile/examOpening';
 import { pluralSuffix } from '../../../utils/plural';
 import { getSectionState } from '../../ExamPanel/utils';
 import { ScreenHeader } from './calendar/ScreenHeader';
@@ -22,6 +23,7 @@ import { ExamGroup } from './exams/ExamGroup';
 import { ExamRowCard } from './exams/ExamRowCard';
 import { TermRow } from './exams/TermRow';
 import { NextUpStrip } from './exams/NextUpStrip';
+import { NotYetOpenCard } from './exams/NotYetOpenCard';
 import { ConfirmSheet } from '../sheets/ConfirmSheet';
 
 function ExamsSkeleton() {
@@ -99,6 +101,13 @@ export function ExamsScreen() {
   const { thisWeek, later } = useMemo(
     () => splitByWeek(registered, (r) => r.date, now),
     [registered, now]
+  );
+  // "Otevřené termíny 2" has to mean two things that can be booked. A section
+  // whose registration opens in December is not one of them — see
+  // utils/mobile/examOpening.
+  const { notYetOpen, open: bookable } = useMemo(
+    () => splitByRegistrationOpen(open, now),
+    [open, now]
   );
 
   // No "Zkouškové" label: it sat directly above a title reading "Zkoušky" and
@@ -251,9 +260,28 @@ export function ExamsScreen() {
                 {later.map(registeredCard)}
               </ExamGroup>
             )}
-            {open.length > 0 && (
-              <ExamGroup title={t('mobile.exams.groupOpen')} count={open.length}>
-                {open.map(openCard)}
+            {/* Above the bookable ones: a term that has not opened is the
+                thing a student is waiting on, and burying it under the list
+                they have already decided about hides the date they came for. */}
+            {notYetOpen.length > 0 && (
+              <ExamGroup title={t('mobile.exams.groupNotYetOpen')} count={notYetOpen.length}>
+                {notYetOpen.map(({ row, earliest }) => (
+                  <NotYetOpenCard
+                    key={row.section.id}
+                    row={row}
+                    earliest={earliest}
+                    locale={locale}
+                    expanded={expandedId === row.section.id}
+                    onToggle={() => toggle(row.section.id)}
+                    isProcessing={processingSectionId === row.section.id}
+                    onRegister={handleRegisterRequest}
+                  />
+                ))}
+              </ExamGroup>
+            )}
+            {bookable.length > 0 && (
+              <ExamGroup title={t('mobile.exams.groupOpen')} count={bookable.length}>
+                {bookable.map(openCard)}
               </ExamGroup>
             )}
           </div>

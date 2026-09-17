@@ -9,6 +9,16 @@ export interface ExamRowCardProps {
   /** Right column, first line: the date for a registered exam, the free-slot
    *  count for an open one. Carries the accent colour. */
   primaryMeta: string;
+  /**
+   * Whether that first line is something the student can act on.
+   *
+   * The success green means "this is yours" or "this is bookable". A section
+   * whose registration has not opened is neither, and painting its opening date
+   * the same green made the one group nobody can do anything with the loudest
+   * thing in the list. Defaults to the accent, so every existing caller is
+   * unchanged.
+   */
+  primaryTone?: 'accent' | 'muted';
   /** Right column, second line: room, or how many terms are on offer. */
   secondaryMeta: string;
   expanded: boolean;
@@ -30,6 +40,7 @@ export function ExamRowCard({
   title,
   subtitle,
   primaryMeta,
+  primaryTone = 'accent',
   secondaryMeta,
   expanded,
   onToggle,
@@ -49,7 +60,13 @@ export function ExamRowCard({
           <span className="truncate text-2sm text-base-content/60">{subtitle}</span>
         </span>
         <span className="flex flex-shrink-0 flex-col items-end gap-0.5">
-          <span className="whitespace-nowrap text-2sm font-bold text-success">{primaryMeta}</span>
+          <span
+            className={`whitespace-nowrap text-2sm font-bold ${
+              primaryTone === 'muted' ? 'text-base-content/70' : 'text-success'
+            }`}
+          >
+            {primaryMeta}
+          </span>
           <span className="whitespace-nowrap text-2sm text-base-content/60">{secondaryMeta}</span>
         </span>
         {expanded ? (

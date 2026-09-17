@@ -34,7 +34,11 @@
               "time": "08:00",
               "room": "Q01",
               "teacher": "doc. Ing. Jan Novák, Ph.D.",
-              "capacity": { "occupied": 40, "total": 40, "raw": "40/40" },
+              "capacity": {
+                "occupied": 40,
+                "total": 40,
+                "raw": "40/40"
+              },
               "full": true,
               "attemptTypes": ["regular"],
               "sectionForm": "písemná",
@@ -47,7 +51,11 @@
               "time": "09:00",
               "room": "Q01",
               "teacher": "doc. Ing. Jan Novák, Ph.D.",
-              "capacity": { "occupied": 31, "total": 40, "raw": "31/40" },
+              "capacity": {
+                "occupied": 31,
+                "total": 40,
+                "raw": "31/40"
+              },
               "full": false,
               "attemptTypes": ["regular"],
               "canRegisterNow": true,
@@ -62,7 +70,11 @@
               "time": "10:00",
               "room": "Q02",
               "teacher": "Ing. Petra Dvořáková, Ph.D.",
-              "capacity": { "occupied": 4, "total": 35, "raw": "4/35" },
+              "capacity": {
+                "occupied": 4,
+                "total": 35,
+                "raw": "4/35"
+              },
               "attemptTypes": ["retake1"],
               "canRegisterNow": true,
               "sectionForm": "písemná a ústní",
@@ -101,7 +113,11 @@
               "time": "13:00",
               "room": "Z4",
               "teacher": "Mgr. Tomáš Svoboda",
-              "capacity": { "occupied": 22, "total": 24, "raw": "22/24" },
+              "capacity": {
+                "occupied": 22,
+                "total": 24,
+                "raw": "22/24"
+              },
               "attemptTypes": ["regular"]
             }
           ]
@@ -120,7 +136,11 @@
               "time": "11:30",
               "room": "Z4",
               "teacher": "Mgr. Tomáš Svoboda",
-              "capacity": { "occupied": 18, "total": 24, "raw": "18/24" },
+              "capacity": {
+                "occupied": 18,
+                "total": 24,
+                "raw": "18/24"
+              },
               "attemptTypes": ["regular"],
               "canRegisterNow": true,
               "deregDayOffset": 3,
@@ -134,7 +154,11 @@
               "time": "14:00",
               "room": "Z5",
               "teacher": "Ing. Petra Dvořáková, Ph.D.",
-              "capacity": { "occupied": 24, "total": 24, "raw": "24/24" },
+              "capacity": {
+                "occupied": 24,
+                "total": 24,
+                "raw": "24/24"
+              },
               "full": true,
               "attemptTypes": ["regular"],
               "sectionForm": "e-test"
@@ -145,7 +169,11 @@
               "time": "09:00",
               "room": "Z4",
               "teacher": "Mgr. Tomáš Svoboda",
-              "capacity": { "occupied": 1, "total": 24, "raw": "1/24" },
+              "capacity": {
+                "occupied": 1,
+                "total": 24,
+                "raw": "1/24"
+              },
               "attemptTypes": ["retake1", "retake2"],
               "canRegisterNow": true
             }
@@ -175,7 +203,11 @@
               "time": "08:30",
               "room": "A11",
               "teacher": "prof. Ing. Marie Černá, CSc.",
-              "capacity": { "occupied": 12, "total": 30, "raw": "12/30" },
+              "capacity": {
+                "occupied": 12,
+                "total": 30,
+                "raw": "12/30"
+              },
               "attemptTypes": ["regular"],
               "canRegisterNow": true,
               "regStartDayOffset": -14,
@@ -189,7 +221,11 @@
               "time": "08:30",
               "room": "A11",
               "teacher": "prof. Ing. Marie Černá, CSc.",
-              "capacity": { "occupied": 0, "total": 30, "raw": "0/30" },
+              "capacity": {
+                "occupied": 0,
+                "total": 30,
+                "raw": "0/30"
+              },
               "attemptTypes": ["retake1"],
               "regStartDayOffset": 10
             }
@@ -219,7 +255,11 @@
               "time": "15:00",
               "room": "B33",
               "teacher": "Ing. Lukáš Horák, Ph.D.",
-              "capacity": { "occupied": 27, "total": 28, "raw": "27/28" },
+              "capacity": {
+                "occupied": 27,
+                "total": 28,
+                "raw": "27/28"
+              },
               "attemptTypes": ["regular"],
               "canRegisterNow": true,
               "deregDayOffset": 0,
@@ -231,7 +271,11 @@
               "time": "15:00",
               "room": "B33",
               "teacher": "Ing. Lukáš Horák, Ph.D.",
-              "capacity": { "occupied": 9, "total": 28, "raw": "9/28" },
+              "capacity": {
+                "occupied": 9,
+                "total": 28,
+                "raw": "9/28"
+              },
               "attemptTypes": ["regular", "retake1"],
               "canRegisterNow": true
             }
@@ -261,9 +305,67 @@
               "time": "10:00",
               "room": "N1052",
               "teacher": "Mgr. Eva Pokorná",
-              "capacity": { "occupied": 15, "total": 20, "raw": "15/20" },
+              "capacity": {
+                "occupied": 15,
+                "total": 20,
+                "raw": "15/20"
+              },
               "attemptTypes": ["regular"],
               "canRegisterNow": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": 1,
+      "id": "fx-ekm",
+      "code": "EBC-EKM",
+      "name": "Ekonometrie 1",
+      "nameCs": "Ekonometrie 1",
+      "nameEn": "Econometrics 1",
+      "sections": [
+        {
+          "id": "fx-ekm-pt1",
+          "name": "Průběžný test 1",
+          "nameCs": "Průběžný test 1",
+          "nameEn": "Mid-term test 1",
+          "type": "Zápočet",
+          "status": "open",
+          "terms": [
+            {
+              "id": "fx-ekm-pt1-t1",
+              "dayOffset": 24,
+              "time": "10:25",
+              "room": "Studovna PEF (ČP)",
+              "teacher": "Ing. Luboš Střelec, Ph.D.",
+              "capacity": {
+                "occupied": 0,
+                "total": 66,
+                "raw": "0/66"
+              },
+              "full": false,
+              "canRegisterNow": false,
+              "regStartDayOffset": 12,
+              "attemptTypes": ["regular"],
+              "sectionForm": "e-test"
+            },
+            {
+              "id": "fx-ekm-pt1-t2",
+              "dayOffset": 24,
+              "time": "11:00",
+              "room": "Studovna PEF (ČP)",
+              "teacher": "Ing. Luboš Střelec, Ph.D.",
+              "capacity": {
+                "occupied": 0,
+                "total": 74,
+                "raw": "0/74"
+              },
+              "full": false,
+              "canRegisterNow": false,
+              "regStartDayOffset": 12,
+              "attemptTypes": ["regular"],
+              "sectionForm": "e-test"
             }
           ]
         }

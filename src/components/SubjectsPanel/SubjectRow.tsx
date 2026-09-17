@@ -260,7 +260,14 @@ export function SubjectRow({
         {typeEl}
         {failRate != null && !subject.isFulfilled && !badge && (
           <span
-            className={`group/fail flex items-center justify-center h-5 px-1.5 rounded text-[10px] font-medium tracking-wide shrink-0 cursor-pointer transition-colors ${failRateTone(
+            title={`${t('subjects.failRateLabel')} ${failRate} %`}
+            aria-label={`${t('subjects.failRateLabel')} ${failRate} %`}
+            // Hugs its number rather than sitting in a fixed-width box. `w-10`
+            // was tried, to line the pills up into a column, and a one-digit
+            // rate then floated in a pill with an empty half: "there's a large
+            // left padding for some reason". The rows are ragged anyway — the
+            // pill follows a flexible name — so the width bought nothing.
+            className={`group/fail flex items-center justify-center h-5 rounded text-[10px] font-medium tabular-nums tracking-wide shrink-0 cursor-pointer transition-colors px-1.5 ${failRateTone(
               failRate
             )} ${failRateToneHover(failRate)}`}
             onClick={(e) => {
@@ -269,11 +276,14 @@ export function SubjectRow({
               else onSearchSubject(displayName);
             }}
           >
-            {/* Always shown, never hover-revealed. The label used to be
-              max-w-0/opacity-0 until :hover, which on a touch screen means
-              never — the iPad showed a bare colour-coded number with nothing
-              to say it was a failure rate. */}
-            <span className="mr-1 whitespace-nowrap">{t('subjects.failRateLabel')}</span>
+            {/* The number alone. The words "prům. neúspěšnost" used to sit in
+              here on every unfulfilled row and were most of the row's width at
+              320px — they live in FailRateLegend now, once per list.
+              Not a return to the hover-only label this replaced: that one was
+              `max-w-0 opacity-0` until :hover, so a touch screen could never
+              see it at all and the legend would not have existed either. The
+              title/aria-label are an extra for a mouse and a screen reader,
+              never the only way to learn what the number is. */}
             {failRate}%
           </span>
         )}

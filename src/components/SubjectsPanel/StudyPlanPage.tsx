@@ -5,6 +5,7 @@ import { useStudyPlan } from '@/hooks/useStudyPlan';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { SemesterSection } from './SemesterSection';
+import { FailRateLegend } from './FailRateLegend';
 import { SubjectsPanelSkeleton } from './SubjectsPanelSkeleton';
 import { HardestUpcomingCard } from './HardestUpcomingCard';
 import { ZameraniComparisonCard } from './ZameraniComparisonCard';
@@ -135,6 +136,9 @@ export function StudyPlanPage({
             />
           </div>
         )}
+        {/* Once, above the whole plan, because the rows below dropped the
+            words to keep the number — see FailRateLegend. */}
+        <FailRateLegend />
         {plan.blocks.map((block, bi) => {
           const hasSubjects = block.groups
             .flatMap((g) => g.subjects)

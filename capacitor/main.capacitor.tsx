@@ -1,7 +1,8 @@
 // MUST be first: installs the Capacitor host before anything reads it.
 import './installCapacitorPlatform';
 
-import { createRoot } from 'react-dom/client';
+import { createRoot, type Root } from 'react-dom/client';
+import type { ReactNode } from 'react';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { App as CapApp } from '@capacitor/app';
 // Static on purpose, unlike the `@/entrypoints/main/main` import below: that
@@ -37,6 +38,7 @@ import { setDemoErrorHandler } from '@/utils/reportError';
 import { handleDemoError } from '@/mobile/demoToast';
 import { useAppStore } from '@/store/useAppStore';
 import { LoginGate } from '@/components/mobile/LoginGate';
+import { BootErrorScreen } from '@/components/mobile/BootErrorScreen';
 
 /**
  * Android's hardware back unwinds the sheet stack, then the tab, before
@@ -172,17 +174,66 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   });
 }
 
-/** The sign-in gate, rendered without a session and without the app behind it. */
 /**
- * The last-resort message.
+ * The pre-app React root: the sign-in gate, or the boot-failure screen.
+ *
+ * Tracked in a module variable because BOTH of them can be on screen when the
+ * other needs to render — the gate's own sign-in can fail, and a failure screen
+ * can be replaced by a retry — and mounting a second root over a live one is
+ * how you get two trees fighting over `#root`. Cleared (not just unmounted)
+ * before `startApp`, whose own entry module mounts the real app here.
+ */
+let preAppRoot: Root | null = null;
+
+function renderPreApp(node: ReactNode): void {
+  preAppRoot?.unmount();
+  preAppRoot = createRoot(document.getElementById('root')!);
+  preAppRoot.render(node);
+}
+
+function unmountPreApp(): void {
+  preAppRoot?.unmount();
+  preAppRoot = null;
+}
+
+/**
+ * The last-resort screen.
  *
  * Shared by boot() and by the gate's own handlers rather than written twice:
  * once the gate has unmounted there is no React tree left, so a rejection with
  * no handler leaves a blank screen — which is the failure this whole screen
  * exists to remove.
+ *
+ * It used to write `reIS failed to start: ${String(e)}` straight into #root and
+ * stop there: untranslated, unstyled, and with nothing to tap. A student
+ * photographed one and had to kill the app. `BootErrorScreen` says the same
+ * thing with a retry and the demo attached — see the note there.
+ *
+ * The raw assignment survives as the fallback FOR THIS FUNCTION ONLY: if React
+ * itself is what failed to start, rendering a React screen about it would leave
+ * the blank page this replaced.
  */
 function showFatalError(e: unknown): void {
-  document.getElementById('root')!.textContent = `reIS failed to start: ${String(e)}`;
+  try {
+    renderPreApp(
+      <BootErrorScreen
+        detail={String(e)}
+        // A full reload re-runs boot() from the top, which is the only honest
+        // retry: whatever failed may have been the token read, the session
+        // probe or the login itself, and each of them is upstream of here.
+        onRetry={() => window.location.reload()}
+        onDemo={() => {
+          void (async () => {
+            await useAppStore.getState().enterDemo();
+            unmountPreApp();
+            await startApp({ demo: true });
+          })().catch(showFatalError);
+        }}
+      />
+    );
+  } catch {
+    document.getElementById('root')!.textContent = `reIS failed to start: ${String(e)}`;
+  }
 }
 
 // Exported for startApp.test.ts to verify the pre-render theme fix directly,
@@ -199,13 +250,12 @@ export async function showLoginGate(): Promise<void> {
   // frame in DaisyUI's unthemed default before the real theme lands.
   await useAppStore.getState().loadTheme();
 
-  const root = createRoot(document.getElementById('root')!);
-  root.render(
+  renderPreApp(
     <LoginGate
       onSignIn={() => {
         void (async () => {
           await ensureSession(await buildInAppLoginDeps());
-          root.unmount();
+          unmountPreApp();
           await startApp({ demo: false });
         })().catch((e: unknown) => {
           // The same judgement boot() makes below, and for the same reason:
@@ -221,7 +271,7 @@ export async function showLoginGate(): Promise<void> {
         });
       }}
       onDemoStarted={() => {
-        root.unmount();
+        unmountPreApp();
         void startApp({ demo: true }).catch(showFatalError);
       }}
     />

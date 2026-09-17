@@ -1,15 +1,7 @@
 import { useTranslation } from '@/hooks/useTranslation';
 import { useUserParams } from '@/hooks/useUserParams';
 import type { StudyPlan, StudyStats } from '@/types/studyPlan';
-import {
-  AlertTriangle,
-  CheckCircle2,
-  ShieldAlert,
-  Layers,
-  ClipboardList,
-  Star,
-  type LucideIcon,
-} from 'lucide-react';
+import { GraduationCap, Layers, ClipboardList, Star, type LucideIcon } from 'lucide-react';
 import { Fragment } from 'react';
 
 export interface ZameraniProgress {
@@ -28,66 +20,22 @@ interface SubjectsPanelHeaderProps {
   enrolledCredits?: number;
 }
 
-type ProgressionLevel = 'safe' | 'warning' | 'danger';
-
-function getProgressionInfo(stats: StudyStats): {
-  level: ProgressionLevel;
-  threshold: number;
-  earned: number;
-  deficit: number;
-  enrolledEnough: boolean;
-} {
-  if (stats.totalEarnedCredits >= 150)
-    return { level: 'safe', threshold: 0, earned: 0, deficit: 0, enrolledEnough: true };
-
-  const isFirstSemester = stats.previousSemester === null;
-  const threshold = isFirstSemester ? 12 : 40;
-  const earned = isFirstSemester
-    ? stats.currentSemester.earnedCredits
-    : stats.creditsLastTwoPeriods;
-  const deficit = Math.max(0, threshold - earned);
-  const available = stats.currentSemester.enrolledCredits;
-  const enrolledEnough = available >= deficit;
-
-  if (deficit <= 0) return { level: 'safe', threshold, earned, deficit: 0, enrolledEnough: true };
-  if (enrolledEnough) {
-    const level = deficit > available * 0.7 ? 'warning' : 'safe';
-    return { level, threshold, earned, deficit, enrolledEnough };
-  }
-  return { level: 'danger', threshold, earned, deficit, enrolledEnough };
-}
-
-// The tint, the border, the bar and the icon carry the state; the sentence is
-// set in ink. `text-success` on `bg-success/8` measured 2.13:1 in the light
-// theme — the line telling a student their progression is fine was the least
-// readable line on the screen. The /8 fills were also invisible against the
-// card (1.039:1), so each is /15 now.
-const levelConfig = {
-  safe: {
-    bg: 'bg-success/12',
-    border: 'border-success/20',
-    text: 'text-[var(--tone-success)]',
-    icon: 'text-success',
-    bar: 'bg-success',
-    Icon: CheckCircle2,
-  },
-  warning: {
-    bg: 'bg-warning/12',
-    border: 'border-warning/20',
-    text: 'text-[var(--tone-warning)]',
-    icon: 'text-warning',
-    bar: 'bg-warning',
-    Icon: AlertTriangle,
-  },
-  danger: {
-    bg: 'bg-error/12',
-    border: 'border-error/20',
-    text: 'text-[var(--tone-error)]',
-    icon: 'text-error',
-    bar: 'bg-error',
-    Icon: ShieldAlert,
-  },
-};
+/**
+ * No progression verdict here any more, and no threshold.
+ *
+ * This card used to judge a student against 12 credits in a first semester and
+ * 40 over the last two, hardcoded, and paint itself green, amber or red on the
+ * answer. Those are PEF's numbers: "kámoš ze zahradnické fakulty má minimum 15
+ * kreditů, lidi z PEF mají minimum 12". IS's own pruchod_studiem.pl publishes
+ * the COUNTS and never the minimum (see api/studyStats — every field there is a
+ * "Počet…"), so there is no per-faculty source to read one from, and a green
+ * "Studium v pořádku" shown to a student who is actually a credit short is the
+ * worst kind of wrong: confident, and about the thing that ends a degree.
+ *
+ * So the card reports and stops judging. Credits earned, credits enrolled,
+ * progress against the plan's own requirement — all of them IS's numbers — and
+ * the student takes their faculty's rule from their faculty.
+ */
 
 /**
  * Build an IS Mendelu student-section URL, degrading to the studium-less form
@@ -169,13 +117,10 @@ export function SubjectsPanelHeader({
 
   const pct =
     creditsRequired > 0 ? Math.min(100, Math.round((creditsAcquired / creditsRequired) * 100)) : 0;
-  const progressionInfo = studyStats ? getProgressionInfo(studyStats) : null;
+  const lastTwoPeriods = studyStats?.creditsLastTwoPeriods ?? null;
   const hasDetailLine =
-    (studyStats && progressionInfo && progressionInfo.threshold > 0) ||
+    (lastTwoPeriods != null && lastTwoPeriods > 0) ||
     (enrolledCredits != null && enrolledCredits > 0);
-  const level = progressionInfo?.level ?? 'safe';
-  const cfg = levelConfig[level];
-  const Icon = cfg.Icon;
 
   return (
     <div className="px-4 py-2.5 border-b border-base-300 shrink-0">
@@ -203,16 +148,10 @@ export function SubjectsPanelHeader({
         />
       </div>
 
-      <div className={`rounded-lg border px-3.5 py-2 ${cfg.bg} ${cfg.border}`}>
+      <div className="rounded-lg border border-base-300 bg-base-200/60 px-3.5 py-2">
         <div className="flex items-center gap-2 mb-1.5">
-          <Icon className={`w-4 h-4 ${cfg.icon} shrink-0`} />
-          <span className={`text-sm font-semibold ${cfg.text}`}>
-            {level === 'safe'
-              ? t('subjects.progressionSafe')
-              : level === 'warning'
-                ? t('subjects.progressionWarning')
-                : t('subjects.progressionDanger')}
-          </span>
+          <GraduationCap className="w-4 h-4 text-primary shrink-0" />
+          <span className="text-sm font-semibold">{t('subjects.creditsTitle')}</span>
           <span className="ml-auto text-xs text-base-content/70 font-medium">
             {creditsAcquired} / {creditsRequired}
             <span className="hidden md:inline"> {t('subjects.credits')}</span>
@@ -222,7 +161,7 @@ export function SubjectsPanelHeader({
         {/* Progress bar */}
         <div className="w-full h-1.5 bg-base-content/10 rounded-full overflow-hidden mb-1.5">
           <div
-            className={`h-full rounded-full transition-all duration-500 ${cfg.bar}`}
+            className="h-full rounded-full bg-primary transition-all duration-500"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -240,20 +179,11 @@ export function SubjectsPanelHeader({
                   {t('subjects.zameraniProgress', { touched: zameraniTouched, min: zameraniMin })}
                 </span>
               </span>
-            ) : studyStats && progressionInfo && progressionInfo.threshold > 0 ? (
+            ) : lastTwoPeriods != null && lastTwoPeriods > 0 ? (
+              // The count, with no denominator: IS publishes how many credits
+              // the last two periods earned and not how many they had to.
               <span>
-                {progressionInfo.threshold === 12
-                  ? `${progressionInfo.earned}/${progressionInfo.threshold}`
-                  : `${t('subjects.creditsLastTwo')}: ${progressionInfo.earned}/${progressionInfo.threshold}`}
-                {progressionInfo.deficit > 0 && (
-                  <span className={cfg.text}>
-                    {' '}
-                    · {t('subjects.needMore', { n: progressionInfo.deficit })}
-                  </span>
-                )}
-                {!progressionInfo.enrolledEnough && progressionInfo.deficit > 0 && (
-                  <span className="text-error"> · {t('subjects.notEnoughEnrolled')}</span>
-                )}
+                {t('subjects.creditsLastTwo')}: {lastTwoPeriods}
               </span>
             ) : null}
             <span className="flex items-center gap-2 ml-auto">

@@ -194,6 +194,7 @@ export function CalendarScreen() {
         holiday={holiday}
         outsideTeaching={outsideTeaching}
         teachingStartsOn={teachingStartsOn}
+        onSelectDay={setMobileSelectedDay}
       />
     </>
   );

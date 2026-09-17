@@ -464,16 +464,12 @@
     "wholePlan": "Celý plán",
     "subjectCount": "předmětů",
     "creditsLastTwo": "Posl. 2 semestry",
-    "creditsLastTwoNeeded": "potřeba 40",
-    "progressionSafe": "Postup OK",
-    "progressionWarning": "Pozor na postup!",
-    "progressionDanger": "Hrozí nesplnění!",
+    "creditsTitle": "Kredity",
     "repeatWarning": "2. zápis",
     "gpa": "Průměr",
     "enrolledCreditsLabel": "kr. zapsáno",
     "failRateLabel": "prům. neúspěšnost",
-    "needMore": "potřeba ještě {n}",
-    "notEnoughEnrolled": "málo zapsáno",
+    "failRateLegend": "% = prům. neúspěšnost předmětu",
     "zamerani": "zaměření",
     "zameraniMembers": "Obsahuje předměty",
     "registrationsShort": "Zápisy",
@@ -506,8 +502,8 @@
       "weightedInfo": "Vážený průměr zohledňuje počet kreditů jednotlivých předmětů."
     },
     "grade": {
-      "credited": "započteno",
-      "completed": "zakončeno",
+      "credited": "ZAP",
+      "completed": "ZAK",
       "attempt": "{n}. pokus"
     },
     "comparison": {
@@ -1041,6 +1037,8 @@
       "groupThisWeek": "Přihlášené · tento týden",
       "groupLater": "Přihlášené · později",
       "groupOpen": "Otevřené termíny",
+      "groupNotYetOpen": "Ještě neotevřené",
+      "opensAt": "otevírá se {when}",
       "registeredCountOne": "{count} přihlášený",
       "registeredCountFew": "{count} přihlášené",
       "registeredCountOther": "{count} přihlášených",
@@ -1157,6 +1155,11 @@
   "session": {
     "expired": "Přihlášení do IS vypršelo.",
     "signIn": "Přihlásit se"
+  },
+  "boot": {
+    "failedTitle": "reIS se nepodařilo spustit",
+    "failedBody": "Zkuste to prosím znovu. Pokud se to opakuje, prohlédněte si zatím ukázku.",
+    "retry": "Zkusit znovu"
   },
   "demo": {
     "gateTitle": "Přihlaste se do IS",

@@ -3,6 +3,7 @@ import { BookOpen, CheckCircle2, ChevronDown } from 'lucide-react';
 import type { StudyPlan, SubjectStatus } from '@/types/studyPlan';
 import { useTranslation } from '@/hooks/useTranslation';
 import { SubjectRow } from './SubjectRow';
+import { FailRateLegend } from './FailRateLegend';
 import { isZameraniCode, isThisSemester } from './utils';
 
 interface Props {
@@ -125,6 +126,11 @@ export function EnrolledNowSection({
       </div>
 
       <div className="px-2 py-1.5">
+        {/* The rows below show the fail rate as a bare number; this names it
+            once for the section — see FailRateLegend. */}
+        <div className="px-1 pb-1">
+          <FailRateLegend />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-0.5">
           {inProgress.map(({ subject, semLabel }) => (
             <SubjectSlot key={subject.code} subject={subject} semLabel={semLabel} {...slotProps} />
