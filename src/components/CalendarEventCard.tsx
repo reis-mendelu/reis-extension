@@ -14,7 +14,7 @@ import { useAppStore } from '../store/useAppStore';
 import { useTranslation } from '../hooks/useTranslation';
 import { useTimeline } from '../hooks/useTimeline';
 import { useHintStatus } from '../hooks/ui/useHintStatus';
-import { renderedBlockMinutes } from './WeeklyCalendar/utils';
+import { renderedBlockMinutes, MIN_VISUAL_BLOCK_MINUTES } from './WeeklyCalendar/utils';
 import { toast } from 'sonner';
 
 interface CalendarEventCardProps {
@@ -57,16 +57,23 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
   const hideCourse = useAppStore((s) => s.hideCourse);
   const timeline = useTimeline(lesson.courseCode || '');
 
-  // Gate on the space the block actually occupies, not its literal length. Exam
-  // lengths are real now (see services/sync/examDurations.ts), so a 10-minute
-  // oral exam would otherwise fail this check and render with no subject or
-  // room at all — the grid floors short blocks, so the room is there to use.
+  // How much room the grid actually gave this block. `renderedMinutes` is the
+  // number it laid the block out with — legibility floor and next-block cap
+  // included — so recomputing it here without the cap would promise the card
+  // space the column has not given it.
+  const occupies = lesson.renderedMinutes ?? renderedBlockMinutes(lesson.startTime, lesson.endTime);
+
+  // Two stacked lines need about 56px: 20 for the title, 20 for the room-and-time
+  // row, 16 of padding. The grid is fourteen hours tall, so on a normal desktop
+  // window 60 minutes is about 41px — and the old gate at `>= 60` drew the second
+  // line anyway and let `overflow-hidden` cut it in half. That was visible on any
+  // 60-to-89-minute lesson before this, and became the common case once short
+  // blocks started being capped at the next one.
   //
-  // `renderedMinutes` is the number the grid laid the block out with, floor and
-  // next-block cap included. Recomputing it here without the cap would promise
-  // the card room the column has not given it.
-  const isLongEnough =
-    (lesson.renderedMinutes ?? renderedBlockMinutes(lesson.startTime, lesson.endTime)) >= 60;
+  // MIN_VISUAL_BLOCK_MINUTES is the right line because it IS the floor: anything
+  // the grid floored is at least this tall, and anything shorter got there by
+  // being capped, which means something starts right underneath it.
+  const fitsTwoLines = occupies >= MIN_VISUAL_BLOCK_MINUTES;
 
   const handleHideOccurrence = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -178,7 +185,7 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
         </div>
       )}
       {/* Quick Hide Action (custom event actions disabled until feature ships) */}
-      {!lesson.isCustom && !lesson.isExam && !isCompact && (
+      {!lesson.isCustom && !lesson.isExam && !isCompact && fitsTwoLines && (
         <div
           className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-20"
           onClick={(e) => e.stopPropagation()}
@@ -224,23 +231,37 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
         </div>
       )}
       <div className="p-2 h-full flex flex-col text-sm overflow-hidden font-inter">
-        {/* Course title - always visible. Fixed near-black (content-primary)
+        {/* One line, for a block with room for one. The time joins the title
+            rather than being dropped: "Cvičení" alone on a row between two other
+            blocks says less than the thing it is sitting next to. The room goes,
+            because something has to, and it is the part the tooltip and the
+            subject drawer both still carry. */}
+        {!fitsTwoLines ? (
+          <div className="flex min-w-0 items-baseline justify-between gap-2">
+            <span className="truncate font-semibold text-content-primary">{courseTitle}</span>
+            <span className="flex-shrink-0 whitespace-nowrap text-xs text-content-secondary">
+              {isCompact ? lesson.startTime : `${lesson.startTime} - ${lesson.endTime}`}
+            </span>
+          </div>
+        ) : (
+          /* Course title - always visible. Fixed near-black (content-primary)
                     rather than the colored type token, so the title reads black on the
-                    light green/blue/red card tints regardless of theme. */}
-        <div
-          className={`font-semibold text-content-primary flex-shrink-0 truncate ${!lesson.isExam && !isCompact ? 'pr-8' : ''}`}
-        >
-          {courseTitle}
-        </div>
+                    light green/blue/red card tints regardless of theme. */
+          <div
+            className={`font-semibold text-content-primary flex-shrink-0 truncate ${!lesson.isExam && !isCompact ? 'pr-8' : ''}`}
+          >
+            {courseTitle}
+          </div>
+        )}
         {/* Additional course info - only for longer events */}
-        {isLongEnough && lesson.isExam && !isCompact && (
+        {fitsTwoLines && lesson.isExam && !isCompact && (
           <div className="text-exam-text font-medium text-xs flex-shrink-0 truncate">
             {courseName.split(' - ')[0]}
           </div>
         )}
 
         {/* Bottom row - Location and Time, pushed to bottom */}
-        {isLongEnough && (
+        {fitsTwoLines && (
           <div className="text-content-secondary text-sm mt-auto flex-shrink-0 flex items-center justify-between gap-2">
             {room && !isCompact && (
               <div className="flex items-center gap-1 min-w-0 flex-1">
