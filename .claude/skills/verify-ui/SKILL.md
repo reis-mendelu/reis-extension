@@ -45,7 +45,7 @@ npm run verify:ui -- <label> --view exams --url http://localhost:<port>
 | `--view` | current | Seeded into IndexedDB (`meta.reis_current_view`), then reloaded. |
 | `--theme` | dark | `dark` \| `light`. Seeds `meta.reis_theme`, mapped to the theme names the store accepts. |
 | `--click` | — | Text to click after load, e.g. opening a drawer or driving a flow into its error state. |
-| `--onboarding` | off | Keep the desktop welcome modal. Off by default: it blocks the whole page. |
+| `--onboarding` | off | Force the desktop welcome modal by seeding `welcome_dismissed: false`. Off by default (it blocks the whole page) — and it has to seed rather than skip the key, because any earlier run in the same profile already wrote `true`, so a flag that only skipped it photographed the page behind a modal that never appeared. |
 | `--wait` | 600 | ms to settle after navigation. |
 
 ### Widths

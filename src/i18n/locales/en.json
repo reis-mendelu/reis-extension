@@ -448,7 +448,10 @@
   "onboarding": {
     "welcome": "Welcome to reIS!",
     "description": "Enhanced version of IS MENDELU.\nBuilt by students, for students.",
-    "getStarted": "Let's go"
+    "getStarted": "Let's go",
+    "wifiTitle": "Campus Wi-Fi, first thing",
+    "wifiBody": "We'll set eduroam up from your IS certificate — step by step, on this computer.",
+    "notNow": "Not now"
   },
   "subjects": {
     "title": "My Subjects",
@@ -610,12 +613,25 @@
             "shot": "The download button"
           },
           {
-            "text": "Double-click the downloaded file — it opens in geteduroam",
-            "shot": "The file in Downloads opening geteduroam"
+            "text": "Open geteduroam, click ··· and choose Load .eap-config file…",
+            "shot": "The ··· menu with Load .eap-config file…"
           },
           {
-            "text": "Enter the certificate password",
-            "shot": "geteduroam password prompt"
+            "text": "In the file picker, find the downloaded eduroam-reis.eap-config and open it",
+            "shot": "The downloaded eduroam-reis.eap-config file"
+          },
+          {
+            "text": "Check that the profile says MENDELU eduroam (reIS), then click Next",
+            "shot": "The MENDELU eduroam (reIS) profile screen"
+          },
+          {
+            "text": "Click Install next to the MENDELU certificate — Next stays greyed out until you do",
+            "shot": "Installing the MENDELU certificate"
+          },
+          {
+            "text": "Enter the certificate password and click Connect",
+            "shot": "The certificate password field",
+            "warn": "geteduroam then says it could not connect because the network is out of range. That is fine — eduroam is set up, and you'll connect on campus."
           }
         ],
         "done": {

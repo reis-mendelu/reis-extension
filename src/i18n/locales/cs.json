@@ -448,7 +448,10 @@
   "onboarding": {
     "welcome": "Vítej v reISu!",
     "description": "Vylepšená verze IS MENDELU.\nVytvořeno studenty pro studenty.",
-    "getStarted": "Jdeme na to"
+    "getStarted": "Jdeme na to",
+    "wifiTitle": "Školní Wi-Fi hned na začátek",
+    "wifiBody": "eduroam nastavíme z tvého certifikátu v IS — projdeme tě tím krok za krokem na tomhle počítači.",
+    "notNow": "Teď ne"
   },
   "subjects": {
     "title": "Moje předměty",
@@ -610,12 +613,25 @@
             "shot": "Tlačítko Stáhnout eduroam profil"
           },
           {
-            "text": "Dvojklik na stažený soubor — otevře se v geteduroam",
-            "shot": "Soubor ve Stažených se otevírá v geteduroam"
+            "text": "Otevři geteduroam, klikni na ··· a vyber Load .eap-config file…",
+            "shot": "Nabídka ··· s položkou Load .eap-config file…"
           },
           {
-            "text": "Zadej heslo certifikátu",
-            "shot": "Výzva geteduroam na heslo"
+            "text": "Ve výběru souboru najdi stažený eduroam-reis.eap-config a otevři ho",
+            "shot": "Stažený soubor eduroam-reis.eap-config"
+          },
+          {
+            "text": "Zkontroluj, že je vybraný profil MENDELU eduroam (reIS), a klikni na Next",
+            "shot": "Obrazovka s profilem MENDELU eduroam (reIS)"
+          },
+          {
+            "text": "U certifikátu MENDELU klikni na Install — dokud ho nenainstaluješ, zůstane Next šedivý",
+            "shot": "Instalace certifikátu MENDELU"
+          },
+          {
+            "text": "Zadej heslo certifikátu a klikni na Connect",
+            "shot": "Pole na heslo certifikátu",
+            "warn": "geteduroam pak napíše, že se nepodařilo připojit, protože síť není v dosahu. To nic neznamená — eduroam je nastavený a na fakultě se připojíš."
           }
         ],
         "done": {

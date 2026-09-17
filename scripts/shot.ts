@@ -350,7 +350,11 @@ async function run(): Promise<number> {
       await page.goto(opts.url, { waitUntil: 'load' });
       // Dismiss onboarding by default — otherwise every run screenshots the
       // welcome modal and measures the blurred page behind it.
-      const seed: Record<string, unknown> = opts.onboarding ? {} : { welcome_dismissed: true };
+      // `--onboarding` SEEDS false rather than leaving the key alone: the flag
+      // is worthless otherwise, because an earlier run in the same profile has
+      // already written `true` and the modal simply never appears. The run
+      // then measures the page behind a modal it claims to be photographing.
+      const seed: Record<string, unknown> = { welcome_dismissed: !opts.onboarding };
       if (opts.view) seed['reis_current_view'] = opts.view;
       // `createThemeSlice` accepts exactly two values and silently falls back
       // to the dark default for anything else, so seeding the raw flag made

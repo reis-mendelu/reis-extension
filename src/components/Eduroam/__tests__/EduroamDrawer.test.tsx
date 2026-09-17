@@ -5,7 +5,12 @@ import { useAppStore } from '../../../store/useAppStore';
 
 afterEach(() => {
   cleanup();
-  useAppStore.setState({ isEduroamOpen: false, isTouch: false, isNarrow: false });
+  useAppStore.setState({
+    isEduroamOpen: false,
+    isTouch: false,
+    isNarrow: false,
+    eduroamInitialTarget: null,
+  });
 });
 
 function open() {
@@ -32,6 +37,17 @@ describe('EduroamDrawer', () => {
     open();
     render(<EduroamDrawer />);
     fireEvent.click(screen.getByRole('button', { name: /Windows/i }));
+    expect(screen.getByText('Set up eduroam')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Pick another device/i }));
+    expect(screen.queryByText('Set up eduroam')).toBeNull();
+  });
+
+  // The welcome modal already knows the machine, so the drawer must not ask
+  // again — and "pick another device" must still work afterwards.
+  it('opens straight on the device the welcome modal picked', () => {
+    useAppStore.setState({ isTouch: false, isNarrow: false, language: 'en' });
+    useAppStore.getState().openEduroamFor('windows');
+    render(<EduroamDrawer />);
     expect(screen.getByText('Set up eduroam')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Pick another device/i }));
     expect(screen.queryByText('Set up eduroam')).toBeNull();

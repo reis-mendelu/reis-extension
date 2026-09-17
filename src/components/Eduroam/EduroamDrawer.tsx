@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Wifi, AlertTriangle, X } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
@@ -12,9 +12,27 @@ export function EduroamDrawer() {
   const { t } = useTranslation();
   const isOpen = useAppStore((s) => s.isEduroamOpen);
   const setOpen = useAppStore((s) => s.setIsEduroamOpen);
+  const initialTarget = useAppStore((s) => s.eduroamInitialTarget);
   const { status, password, error, run, reset, selectTarget, openProfilesSettings } =
     useEduroamSetup();
   const [selected, setSelected] = useState<DesktopEduroamTarget | null>(null);
+
+  // Opened from the welcome modal, the device is already known — the machine
+  // reIS is running on — so the drawer skips its own step 1. Once per open:
+  // "pick another device" clears `selected`, and re-selecting it here would
+  // make that button do nothing.
+  const applied = useRef<DesktopEduroamTarget | null>(null);
+  useEffect(() => {
+    if (!isOpen) {
+      applied.current = null;
+      return;
+    }
+    if (initialTarget && applied.current !== initialTarget) {
+      applied.current = initialTarget;
+      setSelected(initialTarget);
+      selectTarget(initialTarget);
+    }
+  }, [isOpen, initialTarget, selectTarget]);
 
   const close = () => {
     setOpen(false);
@@ -39,7 +57,7 @@ export function EduroamDrawer() {
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-base truncate">{t('eduroam.title')}</h3>
-          <p className="text-xs text-base-content/50 truncate">{t('eduroam.subtitle')}</p>
+          <p className="text-xs text-base-content/70 truncate">{t('eduroam.subtitle')}</p>
         </div>
         <button onClick={close} aria-label="Close" className="btn btn-ghost btn-xs btn-circle">
           <X size={16} />
