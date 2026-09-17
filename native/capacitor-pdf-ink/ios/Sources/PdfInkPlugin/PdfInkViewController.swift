@@ -58,6 +58,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         image: UIImage(systemName: "plus.rectangle.portrait"), style: .plain, target: self,
         action: #selector(addPageTapped))
     /// Whether the reader has put its bar away so the page can have the screen.
+    /// Whether the reader has put its bar away so the page can have the screen.
     private var chromeHidden = false
     /// Drops the navigation bar and leaves the page and the tool picker.
     ///
@@ -67,25 +68,10 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     private lazy var focusItem = UIBarButtonItem(
         image: UIImage(systemName: "arrow.up.left.and.arrow.down.right"), style: .plain,
         target: self, action: #selector(focusTapped))
-    /// The way back, floating over the page.
-    ///
-    /// It cannot live in the bar, because the bar is what went away, and it
-    /// cannot be a tap on the page: PencilKit takes every touch there as ink,
-    /// which is the whole point of the mode. So it is a small button in the
-    /// corner the bar's own trailing items were in, translucent enough to read
-    /// over a white page and over a dark one.
-    private(set) lazy var restoreChromeButton: UIButton = {
-        var config = UIButton.Configuration.plain()
-        config.image = UIImage(systemName: "arrow.down.right.and.arrow.up.left")
-        config.background.backgroundColor = .tertiarySystemFill
-        config.background.cornerRadius = 18
-        config.contentInsets = NSDirectionalEdgeInsets(top: 9, leading: 9, bottom: 9, trailing: 9)
-        let button = UIButton(configuration: config)
-        button.addTarget(self, action: #selector(restoreChromeTapped), for: .touchUpInside)
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.isHidden = true
-        return button
-    }()
+    /// The way back, floating over the page. Built in `+Focus`.
+    private(set) lazy var restoreChromeButton: UIButton = Self.makeRestoreChromeButton(
+        target: self, action: #selector(restoreChromeTapped))
+
     private lazy var shareItem = UIBarButtonItem(
         barButtonSystemItem: .action, target: self, action: #selector(shareTapped))
     /// Reads "12/42" and opens the page grid. A lecture deck is unusable without
