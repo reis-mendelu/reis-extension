@@ -3,6 +3,7 @@ import { fetchEventRsvps, setEventRsvp, type RsvpStatus } from '../../api/eventR
 import { IndexedDBService } from '../../services/storage';
 import { planReminders } from '../../services/eventReminders/plan';
 import { syncReminders } from '../../services/eventReminders/sync';
+import { diffEventBlocks, isRsvpBlock, planEventBlocks } from '../../services/eventCalendar/plan';
 import { translate } from '../../i18n/translate';
 import { logError } from '../../utils/reportError';
 
@@ -155,6 +156,41 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
     void syncReminders(planReminders(get().mapEvents, get().rsvp, Date.now(), lead));
   };
 
+  /**
+   * Re-derive the student's calendar blocks from the current answers, after any
+   * change to them.
+   *
+   * Deliberately the same shape as `refreshReminders` above, called from the
+   * same settled points, for the same reason: an RSVP can be superseded,
+   * refused and rolled back, so a block added imperatively when the button is
+   * tapped would outlive an answer the server never accepted. Recomputing the
+   * whole set is what makes withdrawing an RSVP delete its block — the block
+   * simply stops being in the plan.
+   *
+   * Only rows whose id this feature owns are considered (`isRsvpBlock`), so a
+   * student's hand-made calendar events are never reconciled away.
+   *
+   * Serialised: every step is a read-modify-write of `customEvents`, and two
+   * reconciles interleaving would let the slower one write back a list it had
+   * already gone stale on. Detached and swallowing its own errors, because a
+   * calendar block is a courtesy and must not be able to fail an RSVP.
+   */
+  let calendarQueue: Promise<void> = Promise.resolve();
+  const refreshCalendarBlocks = () => {
+    calendarQueue = calendarQueue.then(async () => {
+      try {
+        const desired = planEventBlocks(get().mapEvents, get().rsvp);
+        const existing = get().customEvents.filter((e) => isRsvpBlock(e.id));
+        const { add, update, remove } = diffEventBlocks(existing, desired);
+        for (const id of remove) await get().removeCalendarCustomEvent(id);
+        for (const block of update) await get().updateCalendarCustomEvent(block.id, block);
+        for (const block of add) await get().addCalendarCustomEvent(block);
+      } catch (err) {
+        logError('RsvpSlice.refreshCalendarBlocks', err);
+      }
+    });
+  };
+
   return {
     rsvp: {},
     rsvpCounts: {},
@@ -254,7 +290,10 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       // Reconciling from a failed load means an empty plan, and syncReminders
       // cancels everything not in the plan, silently wiping reminders for
       // events still attended. An unread `stored` is exactly that empty plan.
-      if (ok && stored) refreshReminders();
+      if (ok && stored) {
+        refreshReminders();
+        refreshCalendarBlocks();
+      }
     },
 
     setRsvp: async (eventId, status) => {
@@ -324,6 +363,7 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       if (ok) {
         persistAnswers();
         refreshReminders();
+        refreshCalendarBlocks();
         return;
       }
       // Roll back ONLY this event, and to the last answer the SERVER accepted —
@@ -365,9 +405,10 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       // answer in IndexedDB, where the next launch reads it back as real and
       // schedules a reminder for an event the student never signed up to.
       persistAnswers();
-      // The rollback is a change to the answers too: a reminder must never
-      // outlive an RSVP that did not actually land.
+      // The rollback is a change to the answers too: neither a reminder nor a
+      // calendar block may outlive an RSVP that did not actually land.
       refreshReminders();
+      refreshCalendarBlocks();
     },
   };
 };
