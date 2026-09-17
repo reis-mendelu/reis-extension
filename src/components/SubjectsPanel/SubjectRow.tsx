@@ -10,7 +10,8 @@ import { gradeBadge } from '@/utils/gradeLookup';
 import { useAppStore } from '@/store/useAppStore';
 import { isZameraniCode } from './utils';
 import { resolvePredmetId } from './resolvePredmetId';
-import { failRateTone, failRateToneHover } from './failRateTone';
+import { failRateTone } from './failRateTone';
+import { FailRatePill } from './FailRatePill';
 
 interface SubjectRowProps {
   subject: SubjectStatus;
@@ -259,33 +260,13 @@ export function SubjectRow({
         {badgeEl}
         {typeEl}
         {failRate != null && !subject.isFulfilled && !badge && (
-          <span
-            title={`${t('subjects.failRateLabel')} ${failRate} %`}
-            aria-label={`${t('subjects.failRateLabel')} ${failRate} %`}
-            // Hugs its number rather than sitting in a fixed-width box. `w-10`
-            // was tried, to line the pills up into a column, and a one-digit
-            // rate then floated in a pill with an empty half: "there's a large
-            // left padding for some reason". The rows are ragged anyway — the
-            // pill follows a flexible name — so the width bought nothing.
-            className={`group/fail flex items-center justify-center h-5 rounded text-[10px] font-medium tabular-nums tracking-wide shrink-0 cursor-pointer transition-colors px-1.5 ${failRateTone(
-              failRate
-            )} ${failRateToneHover(failRate)}`}
-            onClick={(e) => {
-              e.stopPropagation();
+          <FailRatePill
+            rate={failRate}
+            onOpen={() => {
               if (hasId) onOpenSubject(subject.code, subject.name, resolvedId, undefined, 'stats');
               else onSearchSubject(displayName);
             }}
-          >
-            {/* The number alone. The words "prům. neúspěšnost" used to sit in
-              here on every unfulfilled row and were most of the row's width at
-              320px — they live in FailRateLegend now, once per list.
-              Not a return to the hover-only label this replaced: that one was
-              `max-w-0 opacity-0` until :hover, so a touch screen could never
-              see it at all and the legend would not have existed either. The
-              title/aria-label are an extra for a mouse and a screen reader,
-              never the only way to learn what the number is. */}
-            {failRate}%
-          </span>
+          />
         )}
         {zameraniTag && (
           <span className="text-[9px] font-mono tracking-widest text-[var(--tone-primary)] bg-primary/8 px-1.5 py-0.5 rounded shrink-0">
