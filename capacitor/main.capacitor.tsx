@@ -195,13 +195,43 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
 let preAppRoot: Root | null = null;
 let preAppHost: HTMLElement | null = null;
 
+/**
+ * The bare-DOM last resort: the old behaviour, kept for when React is the thing
+ * that is broken.
+ *
+ * Untranslated and unstyled on purpose. It runs only where the alternative is a
+ * blank page, and `String(e)` is the one piece of information a student can
+ * read back to us — reIS transmits nothing about a failure.
+ */
+function showRawFatalText(e: unknown): void {
+  const container = document.getElementById('root');
+  if (!container) return;
+  // Takes `preAppHost` with it. Nothing is unmounted here: this can run from
+  // inside React's own error handling, and re-entering it to tear a root down
+  // is how a recovery path becomes the next crash. A React root left rendering
+  // into a detached node is harmless; a blank screen is not.
+  container.textContent = `reIS failed to start: ${String(e)}`;
+  preAppRoot = null;
+  preAppHost = null;
+}
+
 function renderPreApp(node: ReactNode): void {
   unmountPreApp();
   const container = document.getElementById('root')!;
   container.replaceChildren();
   preAppHost = document.createElement('div');
   container.appendChild(preAppHost);
-  preAppRoot = createRoot(preAppHost);
+  preAppRoot = createRoot(preAppHost, {
+    /**
+     * `render()` schedules; it does not throw. So a component that fails —
+     * `BootErrorScreen` itself, or the `useTranslation` under it reading a
+     * store that is part of why boot failed — lands nowhere near the
+     * `try/catch` around the call, and the screen whose entire job is to stop
+     * a blank page would leave one. React 19's root callback is the boundary
+     * that actually covers it. Raised in review on this PR.
+     */
+    onUncaughtError: (error) => showRawFatalText(error),
+  });
   preAppRoot.render(node);
 }
 
@@ -236,9 +266,10 @@ let appMounted = false;
  * photographed one and had to kill the app. `BootErrorScreen` says the same
  * thing with a retry and the demo attached — see the note there.
  *
- * The raw assignment survives as the fallback FOR THIS FUNCTION ONLY: if React
- * itself is what failed to start, rendering a React screen about it would leave
- * the blank page this replaced.
+ * `showRawFatalText` survives as the fallback beneath it: if React itself is
+ * what failed, rendering a React screen about it would leave the blank page
+ * this replaced. Two routes reach it — a throw from setting the root up, and
+ * `onUncaughtError` for a component that fails while rendering.
  */
 function showFatalError(e: unknown): void {
   try {
@@ -267,7 +298,10 @@ function showFatalError(e: unknown): void {
       />
     );
   } catch {
-    document.getElementById('root')!.textContent = `reIS failed to start: ${String(e)}`;
+    // Setting the root up failed — a missing container, or React refusing to
+    // create a root at all. Render-time failures take the `onUncaughtError`
+    // route above instead; both end here.
+    showRawFatalText(e);
   }
 }
 
