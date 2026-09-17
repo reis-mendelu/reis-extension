@@ -48,6 +48,12 @@ const plan = {
 
 const failRates = { MATLAB: 9, SITE: 28, WEB: 11, EKONOMIKA: 25, NORATE: null };
 
+/** Today, so the passed row falls inside whatever semester the clock is in. */
+const fulfilledThisSemester = (() => {
+  const d = new Date();
+  return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
+})();
+
 const codesInOrder = () =>
   screen.getAllByText(/^(MATLAB|SITE|WEB|NORATE|EKONOMIKA)$/).map((el) => el.textContent);
 
@@ -74,9 +80,7 @@ describe('EnrolledNowSection ordering', () => {
 
   it('ranks a subject with no rate below one measured at 0 %', () => {
     // The distinction that matters: a missing rate is "not enough data"
-    // (computeFailRate returns null under ten results), not a measured zero. It
-    // must not outrank a subject IS actually has numbers for, however easy that
-    // subject turned out to be.
+    // (computeFailRate returns null under ten results), not a measured zero.
     render(
       <EnrolledNowSection
         plan={plan}
@@ -93,5 +97,53 @@ describe('EnrolledNowSection ordering', () => {
   it('falls back to the plan order when nothing has a rate', () => {
     render(<EnrolledNowSection plan={plan} onOpenSubject={() => {}} onSearchSubject={() => {}} />);
     expect(codesInOrder()).toEqual(['MATLAB', 'SITE', 'WEB', 'NORATE', 'EKONOMIKA']);
+  });
+
+  it('keeps the subjects already passed in the same list, at the end', () => {
+    // They used to be a second group behind a collapsed "N splněno" divider.
+    // One list now — the tick and the date on a fulfilled row are what say it
+    // is done.
+    const withPassed = {
+      ...plan,
+      blocks: [
+        {
+          ...plan.blocks[0],
+          groups: [
+            {
+              ...plan.blocks[0]!.groups[0],
+              subjects: [
+                {
+                  ...subject('DONE'),
+                  isEnrolled: false,
+                  isFulfilled: true,
+                  enrollmentCount: 1,
+                  // Inside the current semester, which is what puts it in this
+                  // section at all — see isThisSemester.
+                  fulfillmentDate: fulfilledThisSemester,
+                },
+                subject('SITE'),
+                subject('MATLAB'),
+              ],
+            },
+          ],
+        },
+      ],
+    } as unknown as StudyPlan;
+
+    render(
+      <EnrolledNowSection
+        plan={withPassed}
+        failRates={{ SITE: 28, MATLAB: 9, DONE: 40 }}
+        onOpenSubject={() => {}}
+        onSearchSubject={() => {}}
+      />
+    );
+    // DONE carries the highest rate of the three and still sorts last: a passed
+    // subject is history, and its rate is not even drawn.
+    expect(screen.getAllByText(/^(SITE|MATLAB|DONE)$/).map((el) => el.textContent)).toEqual([
+      'SITE',
+      'MATLAB',
+      'DONE',
+    ]);
   });
 });
