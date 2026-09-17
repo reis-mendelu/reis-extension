@@ -489,6 +489,15 @@ export interface MobileUiSlice {
    * app, never flash the welcome at a returning student); false = show it.
    */
   welcomeSeen: boolean | null;
+  /**
+   * An IS link is on its way to the in-app browser.
+   *
+   * The browser itself cannot appear any sooner — the plugin rejects the call
+   * that would present it early (see openExternal) — so this is what answers
+   * the tap in the meantime.
+   */
+  externalOpening: boolean;
+  setExternalOpening: (opening: boolean) => void;
   hydrateWelcome: (o: { demo: boolean }) => Promise<void>;
   dismissWelcome: () => Promise<void>;
 

@@ -41,6 +41,31 @@ enum InkPages {
         inserts.filter { $0 != at }.map { $0 > at ? $0 - 1 : $0 }.sorted()
     }
 
+    /**
+     * The box the reader lays its canvases out in: PDFView's default
+     * `displayBox`, which `PdfInkViewController` never overrides. The export
+     * bakes this box and the page grid thumbnails it, so a page ADDED beside
+     * one has to be measured in it too.
+     */
+    static let displayBox = PDFDisplayBox.cropBox
+
+    /**
+     * The page as the reader SHOWS it — the display box, turned on its side
+     * when the page is rotated a quarter turn.
+     *
+     * The size an added page must match. It used to be taken from `.mediaBox`
+     * and without regard to rotation, which is the same number for an ordinary
+     * PDF and a different page entirely for the two kinds IS is full of: a scan
+     * whose crop is inset from its media box got a blank bigger than its
+     * neighbours, and a landscape page got a portrait one.
+     */
+    static func displayedSize(of page: PDFPage?) -> CGSize {
+        guard let page else { return CGSize(width: 612, height: 792) }
+        let bounds = page.bounds(for: displayBox)
+        let turned = page.rotation % 180 != 0
+        return turned ? CGSize(width: bounds.height, height: bounds.width) : bounds.size
+    }
+
     static func blank(size: CGSize) -> PDFPage { BlankPage(size: size) }
 
     /**
@@ -54,10 +79,8 @@ enum InkPages {
     static func apply(inserts: [Int], to document: PDFDocument) {
         for index in inserts.sorted() {
             let at = min(max(index, 0), document.pageCount)
-            let size =
-                document.page(at: max(at - 1, 0))?.bounds(for: .mediaBox).size
-                ?? CGSize(width: 612, height: 792)
-            document.insert(blank(size: size), at: at)
+            document.insert(
+                blank(size: displayedSize(of: document.page(at: max(at - 1, 0)))), at: at)
         }
     }
 }

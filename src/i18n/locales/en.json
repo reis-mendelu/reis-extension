@@ -914,7 +914,11 @@
     "openInGoogleMaps": "Google Maps",
     "rememberChoice": "Don't ask again",
     "mapApp": "Maps",
-    "mapAppAsk": "Always ask"
+    "mapAppAsk": "Always ask",
+    "audienceLabel": "WHO SEES IT",
+    "audienceEveryone": "Everyone",
+    "audienceHint": "Seen by students who follow {society}.",
+    "audienceHintGeneric": "Seen only by students who follow this society."
   },
   "admin": {
     "email": "Email",
@@ -981,7 +985,12 @@
       "unknown": "not set",
       "loadFailed": "Could not load statistics."
     },
-    "loginName": "login"
+    "loginName": "login",
+    "audience": {
+      "faculty": "Only {faculty} students",
+      "erasmus": "Erasmus students only",
+      "followers": "Followers only"
+    }
   },
   "mobile": {
     "header": {
@@ -1141,7 +1150,8 @@
       "page": "Page",
       "noMatches": "Nothing found",
       "removePage": "Remove page"
-    }
+    },
+    "openingLink": "Opening…"
   },
   "session": {
     "expired": "Your IS session has expired.",

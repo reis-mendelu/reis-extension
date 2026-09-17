@@ -914,7 +914,11 @@
     "openInGoogleMaps": "Google Maps",
     "rememberChoice": "Příště se neptat",
     "mapApp": "Mapy",
-    "mapAppAsk": "Vždy se zeptat"
+    "mapAppAsk": "Vždy se zeptat",
+    "audienceLabel": "KDO TO UVIDÍ",
+    "audienceEveryone": "Všichni",
+    "audienceHint": "Uvidí studenti, kteří odebírají {society}.",
+    "audienceHintGeneric": "Uvidí jen studenti, kteří tento spolek odebírají."
   },
   "admin": {
     "email": "E-mail",
@@ -981,7 +985,12 @@
       "unknown": "neuvedeno",
       "loadFailed": "Statistiky se nepodařilo načíst."
     },
-    "loginName": "login"
+    "loginName": "login",
+    "audience": {
+      "faculty": "Jen studenti {faculty}",
+      "erasmus": "Jen erasmáci",
+      "followers": "Jen naši"
+    }
   },
   "mobile": {
     "header": {
@@ -1141,7 +1150,8 @@
       "page": "Strana",
       "noMatches": "Nic nenalezeno",
       "removePage": "Odstranit stránku"
-    }
+    },
+    "openingLink": "Otevírám…"
   },
   "session": {
     "expired": "Přihlášení do IS vypršelo.",

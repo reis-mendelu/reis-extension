@@ -24,6 +24,7 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
   preferredMapApp: null,
   devPhoneOverride: null,
   welcomeSeen: null,
+  externalOpening: false,
 
   // Read once at boot, before the root renders (capacitor/main.capacitor.tsx).
   // Same key as the desktop WelcomeModal: a device that dismissed it there has
@@ -52,6 +53,8 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
     if (tab === 'calendar') void get().refreshRecentPdfs();
   },
   setMobileSelectedDay: (iso) => set({ mobileSelectedDayIso: iso }),
+
+  setExternalOpening: (opening) => set({ externalOpening: opening }),
 
   // A push onto a sheet of the SAME kind swaps in place instead of stacking.
   // Tapping a second classmate while the first one's card is open is a lateral

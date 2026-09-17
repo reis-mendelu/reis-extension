@@ -21,6 +21,7 @@ interface SubjectFileDrawerContentProps {
   toggleSelect: (id: string, e: React.SyntheticEvent) => void;
   openFile: (link: string) => void;
   onViewPdf?: (link: string, meta: PdfRowMeta) => void;
+  openingLink?: string | null;
   onDownloadSingle?: (link: string) => void;
   resolvedCourseId: string;
   syllabusResult: { syllabus: SyllabusRequirements | null; isLoading: boolean };
@@ -44,6 +45,7 @@ export function SubjectFileDrawerContent({
   toggleSelect,
   openFile,
   onViewPdf,
+  openingLink,
   onDownloadSingle,
   resolvedCourseId,
   syllabusResult,
@@ -67,6 +69,7 @@ export function SubjectFileDrawerContent({
       toggleSelect={toggleSelect}
       openFile={openFile}
       onViewPdf={onViewPdf}
+      openingLink={openingLink}
       onDownloadSingle={onDownloadSingle}
       resolvedCourseId={resolvedCourseId}
       syllabusResult={syllabusResult}

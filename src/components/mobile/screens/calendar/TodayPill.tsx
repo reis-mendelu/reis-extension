@@ -16,18 +16,31 @@ import { toIso } from '../../../../utils/mobile/weekDays';
  * reason. `bottom-[84px]` clears BottomNav (18px inset + its ~54px height +
  * a gap) and the pill is 44px, the hit-target floor every other control here
  * keeps; the scrollers under it pad `pb-36` so the last row is never under
- * the pill. `null` is "today" in the store, so the day re-derives itself at
- * midnight rather than pinning a date. Ink on the surface, not the lime:
- * text-primary on a light surface measured 1.89:1.
+ * the pill. Ink on the surface, not the lime: text-primary on a light surface
+ * measured 1.89:1.
+ *
+ * `null` clears the choice and the screen falls back to `defaultIso`, which is
+ * today for most of the year — so clearing is preferred, and the day then
+ * re-derives itself at midnight instead of pinning a date. Before term the
+ * default is the first teaching day, and clearing would land right back where
+ * the pill is offering to leave; there it pins today's date explicitly. Without
+ * that branch this is a control that visibly does nothing.
  */
-export function TodayPill({ selectedIso }: { selectedIso: string }) {
+export function TodayPill({
+  selectedIso,
+  defaultIso,
+}: {
+  selectedIso: string;
+  defaultIso: string;
+}) {
   const { t } = useTranslation();
   const setMobileSelectedDay = useAppStore((s) => s.setMobileSelectedDay);
-  if (selectedIso === toIso(new Date())) return null;
+  const todayIso = toIso(new Date());
+  if (selectedIso === todayIso) return null;
   return (
     <button
       type="button"
-      onClick={() => setMobileSelectedDay(null)}
+      onClick={() => setMobileSelectedDay(defaultIso === todayIso ? null : todayIso)}
       className="absolute bottom-[84px] left-1/2 z-30 flex min-h-11 -translate-x-1/2 items-center whitespace-nowrap rounded-full border border-base-300 bg-base-100 px-4 text-sm font-semibold text-base-content shadow-drawer"
     >
       {t('common.today')}

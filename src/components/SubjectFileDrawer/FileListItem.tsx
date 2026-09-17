@@ -34,6 +34,8 @@ export interface FileListItemProps {
   onDownloadSingle?: (link: string) => void;
   onToggleNote: () => void;
   onCloseNote: () => void;
+  /** This row's file is being fetched right now. */
+  isOpening?: boolean;
 }
 
 export function FileListItem({
@@ -55,12 +57,14 @@ export function FileListItem({
   onDownloadSingle,
   onToggleNote,
   onCloseNote,
+  isOpening = false,
 }: FileListItemProps) {
   const { t } = useTranslation();
 
   // Click and Enter/Space must do the same thing, so the decision lives once.
   const activate = (e: React.SyntheticEvent & { ctrlKey?: boolean; metaKey?: boolean }) => {
     if (ignoreClickRef.current) return;
+    if (isOpening) return;
     if (e.ctrlKey || e.metaKey) {
       onToggleSelect(subFile.link, e);
     } else if (onViewPdf && opensInReader(subFile)) {
@@ -81,6 +85,8 @@ export function FileListItem({
           }
         }}
         tabIndex={0}
+        data-testid={`file-row-${subFile.link}`}
+        aria-busy={isOpening || undefined}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -126,6 +132,15 @@ export function FileListItem({
         </div>
 
         <div className="flex items-center gap-1">
+          {/* The whole point of this row's existence per the report: "there's no
+              loading so it seems the button is not working". It sits with the
+              row's other controls so nothing reflows when it appears. */}
+          {isOpening && (
+            <span
+              data-testid="file-row-spinner"
+              className="loading loading-spinner loading-xs text-primary"
+            />
+          )}
           {NOTES_ENABLED && (
             <button
               onClick={(e) => {
@@ -152,6 +167,11 @@ export function FileListItem({
           )}
           {isPdfFile(subFile) && onViewPdf && (
             <button
+              // Both `onViewPdf` implementations already refuse a second call
+              // while the first is in flight, so this is about the affordance,
+              // not the fetch: the row is showing a spinner and this button
+              // should not still look like it is offering to do something.
+              disabled={isOpening}
               onClick={(e) => {
                 e.stopPropagation();
                 onViewPdf(subFile.link, { name: displayName, date });

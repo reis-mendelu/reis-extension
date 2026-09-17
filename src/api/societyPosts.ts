@@ -18,6 +18,10 @@ export interface PostInput {
   location?: string | null;
   url?: string | null;
   visibleFrom?: string | null;
+  /** Show only to students who follow this society. Defaults to false —
+   *  everyone — so an event published without thinking about it reaches the
+   *  whole map, exactly as every event did before the column existed. */
+  subscribersOnly?: boolean;
 }
 
 export interface SpolkyEventRow {
@@ -37,6 +41,7 @@ export interface SpolkyEventRow {
   url: string | null;
   created_by: string | null;
   visible_from: string | null;
+  subscribers_only: boolean;
 }
 
 // Pure camelCase → snake_case mapping, unit-testable without the network.
@@ -57,6 +62,7 @@ export function toRow(input: PostInput, associationId: string, createdBy: string
     location: input.location ?? null,
     url: input.url ?? null,
     visible_from: input.visibleFrom ?? null,
+    subscribers_only: input.subscribersOnly ?? false,
   };
 }
 
