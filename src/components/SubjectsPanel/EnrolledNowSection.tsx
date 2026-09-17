@@ -92,6 +92,27 @@ export function EnrolledNowSection({
     }
   }
 
+  /**
+   * Hardest first, not plan order.
+   *
+   * The rates were already on every row; this is what turns the list into a
+   * ranking — "can we sort these subjects according to their success rates?".
+   * The subject most likely to cost a student their semester now leads instead
+   * of sitting wherever the study plan happened to put it.
+   *
+   * A MISSING rate sorts last rather than as a zero. `computeFailRate` returns
+   * null under ten results, so absence means "not enough data", and ranking
+   * that as the easiest subject on the screen would be a claim the data does
+   * not support. Ties keep the plan's own order, which `sort` gives us for free
+   * — it is stable, and the plan's order is the only other meaningful one here.
+   *
+   * Only the in-progress list. The passed rows are history: `SubjectRow` hides
+   * the pill on a fulfilled subject, so sorting them by an invisible number
+   * would shuffle a list for no visible reason.
+   */
+  const rank = (s: SubjectStatus) => failRates?.[s.code] ?? -1;
+  inProgress.sort((a, b) => rank(b.subject) - rank(a.subject));
+
   if (inProgress.length === 0 && passed.length === 0) return null;
 
   // Same rule as the study plan's: the caption goes only where the column it
