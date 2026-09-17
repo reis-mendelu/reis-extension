@@ -17,7 +17,11 @@ const now = new Date(2026, 10, 1); // 1 Nov 2026
 describe('splitting the open exams by whether registration has started', () => {
   it('moves a section whose registration opens later out of the open group', () => {
     const rows = [
-      { section: section('a', [term({ canRegisterNow: false, registrationStart: '01.12.2026 08:00' })]) },
+      {
+        section: section('a', [
+          term({ canRegisterNow: false, registrationStart: '01.12.2026 08:00' }),
+        ]),
+      },
     ];
     const { notYetOpen, open } = splitByRegistrationOpen(rows, now);
     expect(open).toHaveLength(0);
@@ -43,8 +47,16 @@ describe('splitting the open exams by whether registration has started', () => {
 
   it('orders the not-yet-open by which opens first', () => {
     const rows = [
-      { section: section('late', [term({ canRegisterNow: false, registrationStart: '20.12.2026 08:00' })]) },
-      { section: section('soon', [term({ canRegisterNow: false, registrationStart: '02.12.2026 08:00' })]) },
+      {
+        section: section('late', [
+          term({ canRegisterNow: false, registrationStart: '20.12.2026 08:00' }),
+        ]),
+      },
+      {
+        section: section('soon', [
+          term({ canRegisterNow: false, registrationStart: '02.12.2026 08:00' }),
+        ]),
+      },
     ];
     const { notYetOpen } = splitByRegistrationOpen(rows, now);
     expect(notYetOpen.map((r) => r.row.section.id)).toEqual(['soon', 'late']);
