@@ -51,6 +51,17 @@ describe('WelcomeModal', () => {
     expect(useAppStore.getState().eduroamInitialTarget).toMatch(/^(mac|windows)$/);
   });
 
+  // reIS ships manuals for two desktops. A Linux student must land on the
+  // picker, not on the geteduroam wizard for a machine they are not using.
+  it('falls back to the device picker on a desktop it has no manual for', async () => {
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (X11; Linux x86_64)' });
+    await show();
+    fireEvent.click(screen.getByRole('button', { name: /Set up eduroam/i }));
+    expect(useAppStore.getState().isEduroamOpen).toBe(true);
+    expect(useAppStore.getState().eduroamInitialTarget).toBeNull();
+    vi.unstubAllGlobals();
+  });
+
   it('dismisses once, whichever way it is left', async () => {
     await show();
     fireEvent.click(screen.getByRole('button', { name: /Not now/i }));

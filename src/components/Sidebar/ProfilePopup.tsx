@@ -10,7 +10,7 @@ import { useUserParams } from '../../hooks/useUserParams';
 import { User, Mail, Hash } from 'lucide-react';
 import { logout } from '../../api/proxyClient';
 import { HiddenItemsSection } from './Profile/HiddenItemsSection';
-import { isMac } from '../../hooks/data/useEduroamSetup';
+import { desktopEduroamTarget } from '../../utils/desktopEduroamTarget';
 
 export function ProfilePopup({
   isOpen,
@@ -28,6 +28,7 @@ export function ProfilePopup({
   const language = useAppStore((state) => state.language);
   const setLanguage = useAppStore((state) => state.setLanguage);
   const openEduroamFor = useAppStore((state) => state.openEduroamFor);
+  const setIsEduroamOpen = useAppStore((state) => state.setIsEduroamOpen);
   const { params } = useUserParams();
 
   if (!isOpen) return null;
@@ -108,7 +109,11 @@ export function ProfilePopup({
               drawer opens on the machine reIS is running on. */}
           <button
             onClick={() => {
-              openEduroamFor(isMac ? 'mac' : 'windows');
+              // Same three-answer resolve as the welcome modal: null keeps the
+              // drawer's device picker for a desktop reIS has no manual for.
+              const target = desktopEduroamTarget();
+              if (target) openEduroamFor(target);
+              else setIsEduroamOpen(true);
               onClose?.();
             }}
             className="w-full flex items-center justify-between gap-3 px-1 py-2 hover:bg-base-200 rounded-lg transition-colors"

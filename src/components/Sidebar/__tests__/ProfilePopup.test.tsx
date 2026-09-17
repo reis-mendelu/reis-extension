@@ -29,4 +29,13 @@ describe('ProfilePopup — eduroam', () => {
     expect(useAppStore.getState().eduroamInitialTarget).toMatch(/^(mac|windows)$/);
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('keeps the picker for a desktop reIS has no manual for', () => {
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (X11; Linux x86_64)' });
+    render(<ProfilePopup isOpen />);
+    fireEvent.click(screen.getByRole('button', { name: /eduroam/i }));
+    expect(useAppStore.getState().isEduroamOpen).toBe(true);
+    expect(useAppStore.getState().eduroamInitialTarget).toBeNull();
+    vi.unstubAllGlobals();
+  });
 });

@@ -5,7 +5,7 @@ import { ReisLogo } from '../ReisLogo';
 import { IndexedDBService } from '../../services/storage';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
-import { isMac } from '../../hooks/data/useEduroamSetup';
+import { desktopEduroamTarget } from '../../utils/desktopEduroamTarget';
 import { logError } from '../../utils/reportError';
 
 /**
@@ -18,8 +18,9 @@ import { logError } from '../../utils/reportError';
  * dismissed it meets it again), same shape: a line, one button, one exit.
  *
  * Two honest differences from the phone. The device is resolved here rather
- * than asked — reIS is running on the machine being set up, so `isMac` is the
- * answer and the drawer's picker is skipped. And the button starts the setup
+ * than asked — reIS is running on the machine being set up — so the drawer's
+ * picker is skipped on the two desktops it has manuals for, and kept on the
+ * ones it does not. And the button starts the setup
  * instead of finishing it: there is no native path in a browser, so Windows
  * still means the geteduroam wizard and a Mac still means installing a
  * profile. The steps stay in `EduroamDrawer`, which this hands off to — the
@@ -30,6 +31,7 @@ export function WelcomeModal() {
   const { t, language } = useTranslation();
   const setLanguage = useAppStore((state) => state.setLanguage);
   const openEduroamFor = useAppStore((state) => state.openEduroamFor);
+  const setIsEduroamOpen = useAppStore((state) => state.setIsEduroamOpen);
 
   useEffect(() => {
     async function checkWelcome() {
@@ -55,7 +57,12 @@ export function WelcomeModal() {
 
   const startEduroam = () => {
     dismiss();
-    openEduroamFor(isMac ? 'mac' : 'windows');
+    // Null is a Linux or ChromeOS desktop, which reIS has no manual for: open
+    // the drawer on its own device picker rather than handing that student the
+    // geteduroam wizard for a machine they are not sitting at.
+    const target = desktopEduroamTarget();
+    if (target) openEduroamFor(target);
+    else setIsEduroamOpen(true);
   };
 
   return (
