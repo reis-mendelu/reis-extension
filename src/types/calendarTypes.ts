@@ -88,6 +88,8 @@ export interface ScheduleData {
 export interface LessonWithRow extends BlockLesson {
     row: number;
     maxColumns: number;
+    /** Grid minutes the block occupies — its real length, floored for legibility and stopped at the next block. */
+    renderedMinutes: number;
 }
 
 export interface OrganizedLessons {

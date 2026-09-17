@@ -163,13 +163,17 @@ describe('organizeLessons and the visual block floor', () => {
   const block = (id: string, startTime: string, endTime: string): BlockLesson =>
     ({ id, date: '20260601', startTime, endTime }) as BlockLesson;
 
-  it('gives a short exam and the lesson under its floored height separate lanes', () => {
+  // The floor no longer solves this by splitting lanes. It stops at the next
+  // block's start instead, so the exam is drawn 12:00-12:30 — shorter than the
+  // 90-minute floor would like, but it covers nothing and keeps the full width.
+  it('keeps a short exam and the lesson after it in one lane, uncovered', () => {
     const { lessons, totalRows } = organizeLessons([
       block('exam', '12:00', '12:10'),
       block('lesson', '12:30', '14:00'),
     ]);
-    expect(totalRows).toBe(2);
-    expect(lessons[0]!.row).not.toBe(lessons[1]!.row);
+    expect(totalRows).toBe(1);
+    expect(lessons[0]!.row).toBe(lessons[1]!.row);
+    expect(lessons[0]!.renderedMinutes).toBe(30);
   });
 
   it('still shares a lane once the later block clears the floored height', () => {
@@ -219,5 +223,60 @@ describe('the floor near the end of the grid', () => {
   it('leaves top + height inside the grid for a late short block', () => {
     const { top, height } = getEventStyle('20:30', '20:40');
     expect(parseFloat(top) + parseFloat(height)).toBeCloseTo(100, 5);
+  });
+});
+
+/**
+ * The reported bug: "fix překryv hodin když začíná 14:00-14:50 a 15:00-18:50,
+ * ale nechápu, proč to tam je".
+ *
+ * Nothing overlaps in real time — 14:50 is before 15:00. The 90-minute
+ * legibility floor was what overlapped them: it drew the 50-minute lesson down
+ * to 15:30, lane assignment read that as a clash, and the two lessons were
+ * squeezed into half-width columns side by side. Hence "I don't understand why
+ * it's there" — it was not in the data.
+ *
+ * The floor now stops at whatever comes next, so it can never invent a clash.
+ */
+describe('the visual floor never reaches into the next block', () => {
+  const block = (id: string, startTime: string, endTime: string): BlockLesson =>
+    ({ id, date: '20260601', startTime, endTime }) as BlockLesson;
+
+  it('leaves 14:00-14:50 and 15:00-18:50 in a single full-width lane', () => {
+    const { lessons, totalRows } = organizeLessons([
+      block('a', '14:00', '14:50'),
+      block('b', '15:00', '18:50'),
+    ]);
+    expect(totalRows).toBe(1);
+    expect(lessons[0]!.row).toBe(lessons[1]!.row);
+    // What the student actually saw: the day column divides by maxColumns, so
+    // 2 was the half-width pair. 1 is the full-width card, one above the other.
+    expect(lessons.map((l) => l.maxColumns)).toEqual([1, 1]);
+  });
+
+  it('caps the floored height at the next block’s start', () => {
+    expect(renderedBlockMinutes('14:00', '14:50', '15:00')).toBe(60);
+  });
+
+  it('still floors a short block when nothing follows it', () => {
+    expect(renderedBlockMinutes('14:00', '14:50')).toBe(90);
+  });
+
+  it('never shrinks a block below its real length, so a true clash still shows', () => {
+    expect(renderedBlockMinutes('14:00', '16:00', '14:30')).toBe(120);
+    const { totalRows } = organizeLessons([
+      block('a', '14:00', '16:00'),
+      block('b', '14:30', '15:30'),
+    ]);
+    expect(totalRows).toBe(2);
+  });
+
+  it('publishes the space each block occupies, so lanes and heights cannot drift', () => {
+    const { lessons } = organizeLessons([
+      block('a', '14:00', '14:50'),
+      block('b', '15:00', '18:50'),
+    ]);
+    expect(lessons[0]!.renderedMinutes).toBe(60);
+    expect(lessons[1]!.renderedMinutes).toBe(230);
   });
 });

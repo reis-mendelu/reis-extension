@@ -61,7 +61,12 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
   // lengths are real now (see services/sync/examDurations.ts), so a 10-minute
   // oral exam would otherwise fail this check and render with no subject or
   // room at all — the grid floors short blocks, so the room is there to use.
-  const isLongEnough = renderedBlockMinutes(lesson.startTime, lesson.endTime) >= 60;
+  //
+  // `renderedMinutes` is the number the grid laid the block out with, floor and
+  // next-block cap included. Recomputing it here without the cap would promise
+  // the card room the column has not given it.
+  const isLongEnough =
+    (lesson.renderedMinutes ?? renderedBlockMinutes(lesson.startTime, lesson.endTime)) >= 60;
 
   const handleHideOccurrence = (e: React.MouseEvent) => {
     e.stopPropagation();
