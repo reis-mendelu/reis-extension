@@ -46,6 +46,16 @@ describe('EduroamTutorial', () => {
     expect(screen.getByText('On campus, connect to eduroam')).toBeTruthy();
   });
 
+  // The message geteduroam ends on reads as failure at home; the step answers
+  // it. Mac has no equivalent screen, so no warning there.
+  it('warns windows about the out-of-range message, and only windows', () => {
+    useAppStore.setState({ language: 'en' });
+    const { rerender } = render(<EduroamTutorial target="windows" {...base} />);
+    expect(screen.getByText(/out of range/i)).toBeTruthy();
+    rerender(<EduroamTutorial target="mac" {...base} />);
+    expect(screen.queryByText(/out of range/i)).toBeNull();
+  });
+
   it('calls onOpenSettings from the mac open-settings step', () => {
     useAppStore.setState({ language: 'en' });
     const onOpenSettings = vi.fn();

@@ -34,7 +34,18 @@ export const EDUROAM_MANUAL: Record<DesktopEduroamTarget, DeviceManual> = {
   },
   windows: {
     doOnceUrl: 'https://www.geteduroam.app/',
-    steps: [{ action: 'download' }, {}, { password: true }],
+    // The geteduroam wizard, screen by screen. Double-clicking the
+    // .eap-config does not open it — Windows has no association for the
+    // extension — so the file is loaded from the app's ··· menu, and the
+    // certificate must be installed before Next is even enabled.
+    steps: [
+      { action: 'download' },
+      { img: '/eduroam/windows/1.webp' },
+      { img: '/eduroam/windows/2.webp' },
+      { img: '/eduroam/windows/3.webp' },
+      { img: '/eduroam/windows/4.webp' },
+      { password: true, img: '/eduroam/windows/5.webp' },
+    ],
   },
 };
 

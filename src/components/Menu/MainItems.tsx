@@ -6,7 +6,6 @@ import {
   ClipboardList,
   PenTool,
   User,
-  Wifi,
   Map,
   FileText,
 } from 'lucide-react';
@@ -37,12 +36,6 @@ export const mainItems = (
         id: 'dokumenty',
         label: t('sidebar.documents'),
         icon: <FileText className="w-4 h-4" />,
-        isFeature: true,
-      },
-      {
-        id: 'eduroam',
-        label: t('sidebar.eduroam'),
-        icon: <Wifi className="w-4 h-4" />,
         isFeature: true,
       },
       {

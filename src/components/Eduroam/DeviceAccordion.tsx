@@ -49,12 +49,16 @@ export function DeviceAccordion(props: DeviceAccordionProps) {
               </span>
               <span className="flex-1">
                 <span className="block font-bold text-lg">{t(labelKey)}</span>
-                <span className="block text-sm text-base-content/50 mt-0.5">
+                <span className="block text-sm text-base-content/70 mt-0.5">
                   {t(`eduroam.manual.${id}.hint`)}
                 </span>
               </span>
+              {/* Raw `text-primary` is the theme's green at full strength and
+                  measures under AA on the light theme's base-100; the tonal
+                  token is the same green mixed toward black there and left
+                  alone in dark. Muted is /70 for the same reason. */}
               <span
-                className={`flex items-center justify-center w-6 h-6 shrink-0 ${isSel ? 'text-primary' : 'text-base-content/40'}`}
+                className={`flex items-center justify-center w-6 h-6 shrink-0 ${isSel ? 'text-[var(--btn-tonal-primary)]' : 'text-base-content/70'}`}
               >
                 {isSel ? <Check className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
               </span>

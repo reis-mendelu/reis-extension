@@ -32,7 +32,6 @@ export function NavItem({
   onOpenSubject,
 }: NavItemProps) {
   const [isSearchOpen, setIsSearchOpen] = useState<IsSearchTarget>(null);
-  const setIsEduroamOpen = useAppStore((s) => s.setIsEduroamOpen);
   const setIsDocumentsOpen = useAppStore((s) => s.setIsDocumentsOpen);
 
   return (
@@ -126,9 +125,6 @@ export function NavItem({
                         } else if (child.isSubject && child.courseCode) {
                           e.preventDefault();
                           onOpenSubject?.(child.courseCode, child.label, child.subjectId);
-                        } else if (child.id === 'eduroam') {
-                          e.preventDefault();
-                          setIsEduroamOpen(true);
                         } else if (child.id === 'dokumenty') {
                           e.preventDefault();
                           setIsDocumentsOpen(true);

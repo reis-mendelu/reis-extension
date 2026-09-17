@@ -190,7 +190,11 @@ export interface SuccessRateSlice {
 
 export interface EduroamSlice {
   isEduroamOpen: boolean;
+  /** Device the drawer opens on, skipping its picker. Null = let them pick. */
+  eduroamInitialTarget: 'mac' | 'windows' | null;
   setIsEduroamOpen: (open: boolean) => void;
+  /** Opens the drawer straight on one device — the welcome modal's hand-off. */
+  openEduroamFor: (target: 'mac' | 'windows') => void;
 }
 
 export interface DocumentsSlice {

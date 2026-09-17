@@ -45,7 +45,7 @@ npm run verify:ui -- <label> --view exams --url http://localhost:<port>
 | `--view` | current | Seeded into IndexedDB (`meta.reis_current_view`), then reloaded. |
 | `--theme` | dark | `dark` \| `light`. Seeds `meta.reis_theme`, mapped to the theme names the store accepts. |
 | `--click` | — | Text to click after load, e.g. opening a drawer or driving a flow into its error state. |
-| `--onboarding` | off | Keep the desktop welcome modal. Off by default: it blocks the whole page. |
+| `--onboarding` | off | Force the desktop welcome modal by seeding `welcome_dismissed: false`. Off by default (it blocks the whole page) — and it has to seed rather than skip the key, because any earlier run in the same profile already wrote `true`, so a flag that only skipped it photographed the page behind a modal that never appeared. **Needs a desktop viewport** — see below. |
 | `--wait` | 600 | ms to settle after navigation. |
 
 ### Widths
@@ -71,6 +71,19 @@ npm run verify:ui -- <label>-tablet --widths 834,1024,1194 --url http://localhos
   renders the desktop tree, which is not what an iPad shows.
 
 To measure the narrow *desktop* tree instead, append `?mobile=0` to `--url`.
+
+**`--onboarding` is a desktop run.** `WelcomeModal` belongs to the desktop tree;
+at the default phone widths the phone shell renders `WelcomeScreen` instead and
+the flag measures nothing:
+
+```bash
+npm run verify:ui -- welcome --onboarding --widths 1024,1440 --url http://localhost:<port>/?mobile=0 --expect-shell desktop
+```
+
+The run waits for the modal itself (`[data-testid="welcome-modal"]`), which
+appears 800ms after mount — longer than the default `--wait`. If it never
+appears the run says so and continues, rather than reporting a clean screen the
+modal was absent from.
 
 ## Reading the output
 

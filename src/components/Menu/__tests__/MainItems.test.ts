@@ -3,16 +3,26 @@ import { mainItems } from '../MainItems';
 
 const t = (key: string) => key;
 
+describe('mainItems — eduroam', () => {
+  // eduroam moved to the profile popup: it is a setting for this machine, not
+  // a link into the student agenda.
+  it('is no longer under Student', () => {
+    const items = mainItems('143752', '812', t, 'cz');
+    const isItem = items.find((i) => i.id === 'is')!;
+    expect(isItem.children!.some((c) => c.id === 'eduroam')).toBe(false);
+  });
+});
+
 describe('mainItems — Tisk dokumentů entry', () => {
   it('is the first entry in the "is" item\'s children', () => {
     const items = mainItems('143752', '812', t, 'cz');
-    const isItem = items.find(i => i.id === 'is')!;
+    const isItem = items.find((i) => i.id === 'is')!;
     expect(isItem.children![0].id).toBe('dokumenty');
   });
 
   it('uses the sidebar.documents i18n key and has no href (opens the drawer)', () => {
     const items = mainItems('143752', '812', t, 'cz');
-    const row = items.find(i => i.id === 'is')!.children!.find(c => c.id === 'dokumenty')!;
+    const row = items.find((i) => i.id === 'is')!.children!.find((c) => c.id === 'dokumenty')!;
     expect(row.label).toBe('sidebar.documents');
     expect(row.href).toBeUndefined();
   });
