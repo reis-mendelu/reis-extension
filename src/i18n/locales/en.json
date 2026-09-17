@@ -464,16 +464,12 @@
     "wholePlan": "Entire plan",
     "subjectCount": "subjects",
     "creditsLastTwo": "Last 2 semesters",
-    "creditsLastTwoNeeded": "need 40",
-    "progressionSafe": "On track",
-    "progressionWarning": "Watch your progress!",
-    "progressionDanger": "At risk!",
+    "creditsTitle": "Credits",
     "repeatWarning": "2nd enrollment",
     "gpa": "GPA",
     "enrolledCreditsLabel": "cr. enrolled",
     "failRateLabel": "avg. fail rate",
-    "needMore": "need {n} more",
-    "notEnoughEnrolled": "not enough enrolled",
+    "failRateLegend": "% = course's avg. fail rate",
     "zamerani": "specialization",
     "zameraniMembers": "Includes courses",
     "registrationsShort": "Registrations",
@@ -506,8 +502,8 @@
       "weightedInfo": "Weighted by the credits of each course."
     },
     "grade": {
-      "credited": "credited",
-      "completed": "completed",
+      "credited": "ZAP",
+      "completed": "ZAK",
       "attempt": "attempt {n}"
     },
     "comparison": {
@@ -1041,6 +1037,8 @@
       "groupThisWeek": "Registered · this week",
       "groupLater": "Registered · later",
       "groupOpen": "Open slots",
+      "groupNotYetOpen": "Not open yet",
+      "opensAt": "opens {when}",
       "registeredCountOne": "{count} registered",
       "registeredCountFew": "{count} registered",
       "registeredCountOther": "{count} registered",
@@ -1157,6 +1155,11 @@
   "session": {
     "expired": "Your IS session has expired.",
     "signIn": "Sign in"
+  },
+  "boot": {
+    "failedTitle": "reIS couldn't start",
+    "failedBody": "Please try again.",
+    "retry": "Try again"
   },
   "demo": {
     "gateTitle": "Sign in to IS",

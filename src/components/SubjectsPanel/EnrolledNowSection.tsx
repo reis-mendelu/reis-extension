@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { BookOpen, CheckCircle2, ChevronDown } from 'lucide-react';
+import { BookOpen, CheckCircle2 } from 'lucide-react';
 import type { StudyPlan, SubjectStatus } from '@/types/studyPlan';
 import { useTranslation } from '@/hooks/useTranslation';
 import { SubjectRow } from './SubjectRow';
+import { FailRateLegend } from './FailRateLegend';
+import { orderHardestFirst } from './orderHardestFirst';
 import { isZameraniCode, isThisSemester } from './utils';
 
 interface Props {
@@ -64,10 +65,6 @@ export function EnrolledNowSection({
   onSearchSubject,
 }: Props) {
   const { t } = useTranslation();
-  // Passed subjects are non-actionable (already done), so they stay collapsed by
-  // default — the count lives in the header, so no progress signal is lost. Auto-expand
-  // when nothing is in progress, so the section is never empty at semester's end.
-  const [showPassed, setShowPassed] = useState(false);
 
   const inProgress: { subject: SubjectStatus; semLabel: string | null }[] = [];
   const passed: { subject: SubjectStatus; semLabel: string | null }[] = [];
@@ -91,7 +88,35 @@ export function EnrolledNowSection({
     }
   }
 
+  /**
+   * ONE list, hardest first, with the subjects already passed at the end.
+   *
+   * The passed rows used to be a second group behind a collapsed "N splněno"
+   * divider. They belong to the same semester and answer the same question, and
+   * a fulfilled row already carries a tick and a date — the group was drawing a
+   * distinction the rows make on their own.
+   *
+   * The ordering rule is shared with the phone's semester card; see
+   * `orderHardestFirst`, which owns the reasoning about missing rates and
+   * finished subjects.
+   */
+  const rows = orderHardestFirst(
+    [...inProgress, ...passed],
+    ({ subject }) => failRates?.[subject.code],
+    ({ subject }) => subject.isFulfilled
+  );
+
   if (inProgress.length === 0 && passed.length === 0) return null;
+
+  // Same rule as the study plan's: the caption goes only where the column it
+  // names actually appears. Every row here is visible, so this is simply "does
+  // any of them carry a rate" — SubjectRow additionally hides the pill behind a
+  // grade badge, which costs a spurious line on a section where every enrolled
+  // subject is already graded, and that is the narrow case worth living with
+  // rather than lifting a per-row hook up here.
+  const anyFailRate = rows.some(
+    ({ subject }) => !subject.isFulfilled && failRates?.[subject.code] != null
+  );
 
   const slotProps = {
     failRates,
@@ -111,9 +136,10 @@ export function EnrolledNowSection({
         {/* No counter for the subjects in progress. It was a red ⊗ and a
             number — the error tone, over every subject the student was
             currently taking, none of which had gone wrong. The count is also
-            the length of the list directly underneath. The passed count stays:
-            those rows are collapsed by default, so it is the only place that
-            progress shows. */}
+            the length of the list directly underneath. The passed count stays
+            now that those rows sit in the list rather than behind a collapse:
+            it is the section's progress at a glance, which reading down for
+            ticks is not. */}
         <span className="ml-auto flex items-center gap-3">
           {passed.length > 0 && (
             <span className="flex items-center gap-1.5 text-xs text-base-content/70 font-mono font-normal">
@@ -125,43 +151,18 @@ export function EnrolledNowSection({
       </div>
 
       <div className="px-2 py-1.5">
+        {/* The rows below show the fail rate as a bare number; this names it
+            once for the section — see FailRateLegend. */}
+        {anyFailRate && (
+          <div className="px-1 pb-1">
+            <FailRateLegend />
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-0.5">
-          {inProgress.map(({ subject, semLabel }) => (
+          {rows.map(({ subject, semLabel }) => (
             <SubjectSlot key={subject.code} subject={subject} semLabel={semLabel} {...slotProps} />
           ))}
         </div>
-
-        {passed.length > 0 && (
-          <>
-            {inProgress.length > 0 && (
-              <button
-                onClick={() => setShowPassed((v) => !v)}
-                className="w-full flex items-center gap-2 px-3 mt-2 mb-1 group"
-              >
-                <div className="h-px flex-1 bg-success/15" />
-                <span className="flex items-center gap-1 text-[9px] text-success/40 group-hover:text-success/70 uppercase tracking-wider font-medium transition-colors">
-                  {passed.length} {t('subjects.fulfilled')}
-                  <ChevronDown
-                    className={`w-3 h-3 transition-transform duration-200 ${showPassed ? 'rotate-180' : ''}`}
-                  />
-                </span>
-                <div className="h-px flex-1 bg-success/15" />
-              </button>
-            )}
-            {(inProgress.length === 0 || showPassed) && (
-              <div className="opacity-60 grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
-                {passed.map(({ subject, semLabel }) => (
-                  <SubjectSlot
-                    key={subject.code}
-                    subject={subject}
-                    semLabel={semLabel}
-                    {...slotProps}
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        )}
       </div>
     </div>
   );

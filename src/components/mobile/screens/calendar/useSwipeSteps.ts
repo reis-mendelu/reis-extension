@@ -8,19 +8,25 @@ import {
 import { releaseVelocity, DRAG_SLOP_PX, type DragSample } from '../../primitives/sheetDrag';
 import { weekSwipeSteps, isHorizontal } from './weekSwipe';
 
-export interface WeekSwipeConfig {
-  /** The strip being swiped. Pointer capture and the touch claim scope to it. */
-  stripRef: RefObject<HTMLElement | null>;
-  /** Live travel, so the strip can follow the finger. */
+export interface SwipeStepsConfig {
+  /** The element being swiped. Pointer capture and the touch claim scope to it. */
+  elementRef: RefObject<HTMLElement | null>;
+  /** Live travel, so the element can follow the finger. */
   onMove: (dx: number) => void;
-  /** Move this many weeks (-1, 0 or +1) and settle. */
+  /** Move this many steps (-1, 0 or +1) and settle. The unit is the caller's. */
   onEnd: (steps: -1 | 0 | 1) => void;
   /** The browser took the gesture. Put the strip back. */
   onCancel: () => void;
 }
 
 /**
- * Swiping the day strip to change week.
+ * A horizontal swipe that resolves to one step back, one forward, or none.
+ *
+ * WHAT a step means belongs to the caller: the day strip moves a week per
+ * swipe, and the agenda under it moves a day. The distance, the velocity and
+ * the reversal guard are the same in both, which is why they are one hook —
+ * two copies of `weekSwipeSteps` tuned separately is how a calendar ends up
+ * with two gestures that disagree about how hard you have to push.
  *
  * A sibling to `useSheetDrag` rather than an axis parameter on it. The sheet
  * hook reports one number, `dy`, and every one of its callers is a
@@ -30,15 +36,15 @@ export interface WeekSwipeConfig {
  * sharing: the windowed `releaseVelocity`, the slop, and the reversal rule,
  * all imported.
  *
- * The one thing this has that the sheets do not is AXIS ARBITRATION. A sheet
- * owns every downward drag that starts on it; the strip sits directly above a
- * scrolling agenda, so it has to decide, mid-gesture, whether a finger is
- * changing week or scrolling the day. `isHorizontal` decides once — at the
+ * The one thing this has that the sheets do not is AXIS ARBITRATION, and it is
+ * what makes the hook safe to put ON the scrolling agenda as well as above it.
+ * A sheet owns every downward drag that starts on it; here the same finger may
+ * be changing the day or scrolling it. `isHorizontal` decides once — at the
  * first movement past the slop — and the answer holds for the rest of the
  * gesture. Re-deciding every frame meant a swipe that drifted downward at the
  * end handed the tail of itself back to the page.
  */
-export function useWeekSwipe({ stripRef, onMove, onEnd, onCancel }: WeekSwipeConfig) {
+export function useSwipeSteps({ elementRef, onMove, onEnd, onCancel }: SwipeStepsConfig) {
   /**
    * The gesture in progress, including WHICH pointer owns it.
    *
@@ -89,7 +95,7 @@ export function useWeekSwipe({ stripRef, onMove, onEnd, onCancel }: WeekSwipeCon
       }
       // Claimed only now, and only for a gesture we are keeping — capturing on
       // pointerdown would steal the taps too.
-      stripRef.current?.setPointerCapture?.(e.pointerId);
+      elementRef.current?.setPointerCapture?.(e.pointerId);
     }
 
     dragged.current = true;
@@ -111,8 +117,8 @@ export function useWeekSwipe({ stripRef, onMove, onEnd, onCancel }: WeekSwipeCon
     // the pure rules were right all along and never saw a real number.
     const released = wasOurs ? [...samples.current, { pos: e.clientX, t: e.timeStamp }] : [];
     reset();
-    if (stripRef.current?.hasPointerCapture?.(e.pointerId))
-      stripRef.current?.releasePointerCapture?.(e.pointerId);
+    if (elementRef.current?.hasPointerCapture?.(e.pointerId))
+      elementRef.current?.releasePointerCapture?.(e.pointerId);
     if (!from || !wasOurs) return onEnd(0);
     onEnd(weekSwipeSteps(e.clientX - from.x, releaseVelocity(released)));
   };
@@ -120,8 +126,8 @@ export function useWeekSwipe({ stripRef, onMove, onEnd, onCancel }: WeekSwipeCon
   const onPointerCancel = (e: ReactPointerEvent<HTMLElement>) => {
     if (start.current && start.current.id !== e.pointerId) return;
     reset();
-    if (stripRef.current?.hasPointerCapture?.(e.pointerId))
-      stripRef.current?.releasePointerCapture?.(e.pointerId);
+    if (elementRef.current?.hasPointerCapture?.(e.pointerId))
+      elementRef.current?.releasePointerCapture?.(e.pointerId);
     dragged.current = false;
     onCancel();
   };
@@ -147,7 +153,7 @@ export function useWeekSwipe({ stripRef, onMove, onEnd, onCancel }: WeekSwipeCon
    * only once the arbitration above has said the gesture is ours.
    */
   useEffect(() => {
-    const strip = stripRef.current;
+    const strip = elementRef.current;
     if (!strip) return;
     const onTouchMove = (e: TouchEvent) => {
       if (owned.current !== true) return;
@@ -155,7 +161,7 @@ export function useWeekSwipe({ stripRef, onMove, onEnd, onCancel }: WeekSwipeCon
     };
     strip.addEventListener('touchmove', onTouchMove, { passive: false });
     return () => strip.removeEventListener('touchmove', onTouchMove);
-  }, [stripRef]);
+  }, [elementRef]);
 
   return {
     handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onClickCapture },

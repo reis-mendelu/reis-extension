@@ -1,12 +1,11 @@
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
-import { Calendar, Users } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
 import { ScreenError } from '../primitives/ScreenError';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useExams } from '../../../hooks/data/useExams';
-import { useExamClassmates } from '../../../hooks/data/useExamClassmates';
 import { useExamActions } from '../../ExamPanel/useExamActions';
 import {
   buildRegisteredExams,
@@ -14,14 +13,15 @@ import {
   type RegisteredExam,
   type OpenExam,
 } from '../../../utils/mobile/examRows';
-import { splitByWeek, formatWhenRow } from '../../../utils/mobile/examWhen';
+import { splitByWeek } from '../../../utils/mobile/examWhen';
+import { splitByRegistrationOpen } from '../../../utils/mobile/examOpening';
 import { pluralSuffix } from '../../../utils/plural';
-import { getSectionState } from '../../ExamPanel/utils';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { ExamGroup } from './exams/ExamGroup';
-import { ExamRowCard } from './exams/ExamRowCard';
-import { TermRow } from './exams/TermRow';
 import { NextUpStrip } from './exams/NextUpStrip';
+import { NotYetOpenCard } from './exams/NotYetOpenCard';
+import { RegisteredCard } from './exams/RegisteredCard';
+import { OpenCard } from './exams/OpenCard';
 import { ConfirmSheet } from '../sheets/ConfirmSheet';
 
 function ExamsSkeleton() {
@@ -35,31 +35,6 @@ function ExamsSkeleton() {
       rows={['h-20', 'h-20', 'h-20']}
       underHeader
     />
-  );
-}
-
-/** The classmate line inside an expanded registered card. Kept as its own
- *  component so `useExamClassmates` only fetches for the card actually open. */
-function ClassmateLine({
-  termId,
-  t,
-  language,
-}: {
-  termId?: string;
-  t: (k: string, p?: Record<string, string | number>) => string;
-  language: string;
-}) {
-  const { classmates } = useExamClassmates(termId);
-  if (classmates === null) return null;
-  return (
-    <span className="flex items-center gap-1.5 text-sm text-base-content/70">
-      <Users size={14} className="flex-shrink-0" />
-      {classmates.length > 0
-        ? t(`mobile.exams.mates${pluralSuffix(language, classmates.length)}`, {
-            count: classmates.length,
-          })
-        : t('mobile.exams.matesNone')}
-    </span>
   );
 }
 
@@ -100,6 +75,13 @@ export function ExamsScreen() {
     () => splitByWeek(registered, (r) => r.date, now),
     [registered, now]
   );
+  // "Otevřené termíny 2" has to mean two things that can be booked. A section
+  // whose registration opens in December is not one of them — see
+  // utils/mobile/examOpening.
+  const { notYetOpen, open: bookable } = useMemo(
+    () => splitByRegistrationOpen(open, now),
+    [open, now]
+  );
 
   // No "Zkouškové" label: it sat directly above a title reading "Zkoušky" and
   // told the student nothing the title had not already said. The semester it
@@ -110,68 +92,29 @@ export function ExamsScreen() {
   const toggle = (id: string) => setExpandedId((cur) => (cur === id ? null : id));
 
   const registeredCard = (row: RegisteredExam) => (
-    <ExamRowCard
+    <RegisteredCard
       key={row.section.id}
-      title={row.sectionName}
-      subtitle={row.subjectName}
-      primaryMeta={formatWhenRow(row.date, row.term.time, locale)}
-      secondaryMeta={row.term.room ?? ''}
+      row={row}
+      locale={locale}
       expanded={expandedId === row.section.id}
       onToggle={() => toggle(row.section.id)}
-    >
-      <ClassmateLine termId={row.term.id} t={t} language={language} />
-      <button
-        type="button"
-        onClick={() => handleUnregisterRequest(row.section)}
-        disabled={processingSectionId === row.section.id}
-        className="min-h-11 w-full rounded-lg border border-error/35 text-sm font-bold text-error disabled:opacity-50"
-      >
-        {processingSectionId === row.section.id ? (
-          <span className="loading loading-spinner loading-xs" />
-        ) : (
-          t('mobile.exams.unregister')
-        )}
-      </button>
-      {row.section.terms.map((term) => (
-        <TermRow
-          key={term.id}
-          term={term}
-          section={row.section}
-          isProcessing={processingSectionId === row.section.id}
-          onRegister={handleRegisterRequest}
-        />
-      ))}
-    </ExamRowCard>
+      isProcessing={processingSectionId === row.section.id}
+      onUnregister={handleUnregisterRequest}
+      onRegister={handleRegisterRequest}
+    />
   );
 
-  const openCard = (row: OpenExam) => {
-    const state = getSectionState(row.section, now);
-    const openCount = state.type === 'open' ? state.openCount : 0;
-    return (
-      <ExamRowCard
-        key={row.section.id}
-        title={row.sectionName}
-        subtitle={row.subjectName}
-        primaryMeta={openCount > 0 ? `${openCount} ${t('exams.available')}` : ''}
-        secondaryMeta={t(
-          `mobile.exams.termCount${pluralSuffix(language, row.section.terms.length)}`,
-          { count: row.section.terms.length }
-        )}
-        expanded={expandedId === row.section.id}
-        onToggle={() => toggle(row.section.id)}
-      >
-        {row.section.terms.map((term) => (
-          <TermRow
-            key={term.id}
-            term={term}
-            section={row.section}
-            isProcessing={processingSectionId === row.section.id}
-            onRegister={handleRegisterRequest}
-          />
-        ))}
-      </ExamRowCard>
-    );
-  };
+  const openCard = (row: OpenExam) => (
+    <OpenCard
+      key={row.section.id}
+      row={row}
+      now={now}
+      expanded={expandedId === row.section.id}
+      onToggle={() => toggle(row.section.id)}
+      isProcessing={processingSectionId === row.section.id}
+      onRegister={handleRegisterRequest}
+    />
+  );
 
   // Two different questions, and only one of them is `handshakeDone`. That
   // flag flips on the first status message, which the sync posts as it STARTS,
@@ -251,9 +194,28 @@ export function ExamsScreen() {
                 {later.map(registeredCard)}
               </ExamGroup>
             )}
-            {open.length > 0 && (
-              <ExamGroup title={t('mobile.exams.groupOpen')} count={open.length}>
-                {open.map(openCard)}
+            {/* Above the bookable ones: a term that has not opened is the
+                thing a student is waiting on, and burying it under the list
+                they have already decided about hides the date they came for. */}
+            {notYetOpen.length > 0 && (
+              <ExamGroup title={t('mobile.exams.groupNotYetOpen')} count={notYetOpen.length}>
+                {notYetOpen.map(({ row, earliest }) => (
+                  <NotYetOpenCard
+                    key={row.section.id}
+                    row={row}
+                    earliest={earliest}
+                    locale={locale}
+                    expanded={expandedId === row.section.id}
+                    onToggle={() => toggle(row.section.id)}
+                    isProcessing={processingSectionId === row.section.id}
+                    onRegister={handleRegisterRequest}
+                  />
+                ))}
+              </ExamGroup>
+            )}
+            {bookable.length > 0 && (
+              <ExamGroup title={t('mobile.exams.groupOpen')} count={bookable.length}>
+                {bookable.map(openCard)}
               </ExamGroup>
             )}
           </div>

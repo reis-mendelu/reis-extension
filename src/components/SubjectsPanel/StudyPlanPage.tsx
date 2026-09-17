@@ -5,6 +5,7 @@ import { useStudyPlan } from '@/hooks/useStudyPlan';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { SemesterSection } from './SemesterSection';
+import { FailRateLegend } from './FailRateLegend';
 import { SubjectsPanelSkeleton } from './SubjectsPanelSkeleton';
 import { HardestUpcomingCard } from './HardestUpcomingCard';
 import { ZameraniComparisonCard } from './ZameraniComparisonCard';
@@ -107,6 +108,19 @@ export function StudyPlanPage({
 
   const firstCurrentIdx = plan.blocks.findIndex((block) => getSemesterState(block) === 'current');
 
+  // A caption over a column that is not on screen explains nothing. The rates
+  // only render on unfulfilled subjects inside an OPEN semester, so the legend
+  // asks the same question rather than merely "does this plan have any rates" —
+  // with every section collapsed, which is how the page opens, the answer is no
+  // and the line stays away. Raised in review on this PR.
+  const anyVisibleFailRate = plan.blocks.some(
+    (block, bi) =>
+      openSemesters.has(bi) &&
+      block.groups.some((g) =>
+        g.subjects.some((sub) => !sub.isFulfilled && failRates[sub.code] != null)
+      )
+  );
+
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {header}
@@ -135,6 +149,9 @@ export function StudyPlanPage({
             />
           </div>
         )}
+        {/* Once, above the whole plan, because the rows below dropped the
+            words to keep the number — see FailRateLegend. */}
+        {anyVisibleFailRate && <FailRateLegend />}
         {plan.blocks.map((block, bi) => {
           const hasSubjects = block.groups
             .flatMap((g) => g.subjects)

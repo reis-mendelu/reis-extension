@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { useRef } from 'react';
-import { useWeekSwipe } from '../useWeekSwipe';
+import { useSwipeSteps } from '../useSwipeSteps';
 import * as rules from '../weekSwipe';
 
 /**
@@ -24,16 +24,16 @@ import * as rules from '../weekSwipe';
  * gesture's speed, so no DOM test can produce a reversal. What it can prove is
  * that a real measurement reaches the rule at all.
  */
-describe('useWeekSwipe — the release velocity reaches the rule', () => {
+describe('useSwipeSteps — the release velocity reaches the rule', () => {
   function Host() {
-    const stripRef = useRef<HTMLDivElement>(null);
-    const { handlers } = useWeekSwipe({
-      stripRef,
+    const elementRef = useRef<HTMLDivElement>(null);
+    const { handlers } = useSwipeSteps({
+      elementRef,
       onMove: () => {},
       onEnd: () => {},
       onCancel: () => {},
     });
-    return <div ref={stripRef} data-testid="strip" {...handlers} />;
+    return <div ref={elementRef} data-testid="strip" {...handlers} />;
   }
 
   beforeEach(() => vi.restoreAllMocks());
