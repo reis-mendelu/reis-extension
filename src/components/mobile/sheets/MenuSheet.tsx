@@ -19,10 +19,10 @@ export interface MenuSheetProps {
  * makes: a student eats at one menza, and scrolling past two they will not
  * visit to reach the one they will is the shape the popover already rejected.
  *
- * Content only — the fetch belongs to `MenuCard`, which is the thing that
- * decided there was a menu worth opening. A sheet that fetched on mount would
- * have a loading state that can never be reached, since it cannot be opened
- * unless the card already had the data.
+ * Content only — the fetch belongs to the store (`initializeStore` and the two
+ * language handlers in store/useAppStore.ts). A sheet that fetched on mount
+ * would have a loading state that can never be reached anyway, since it cannot
+ * be opened unless `MenuCard` already had the data.
  */
 export function MenuSheet({ dayIso, onClose }: MenuSheetProps) {
   const { t, language } = useTranslation();

@@ -15,7 +15,6 @@ function MenuPopoverContent({ dateKey }: { dateKey: string }) {
     const menu = useAppStore((s) => s.menu);
     const menuLoading = useAppStore((s) => s.menuLoading);
     const menuError = useAppStore((s) => s.menuError);
-    const fetchMenu = useAppStore((s) => s.fetchMenu);
 
     const [activeTab, setActiveTab] = useState(0);
 
@@ -28,11 +27,9 @@ function MenuPopoverContent({ dateKey }: { dateKey: string }) {
         }
     }, [dateKey]);
 
-    const language = useAppStore((s) => s.language);
-    useEffect(() => {
-        if (!menu && !menuLoading && !menuError) fetchMenu();
-    }, [menu, menuLoading, menuError, fetchMenu, language]);
-
+    // No fetch here. The store asks for the menu at boot and again on a
+    // language change (store/useAppStore.ts); the popover reads `menu`
+    // synchronously and renders the loading and error states the store sets.
     if (menuLoading) {
         return (
             <div className="flex items-center justify-center py-6">
@@ -125,15 +122,6 @@ export function WeeklyCalendarHeader({ weekDates, todayIndex, holidaysByDay }: W
     const { t } = useTranslation();
     const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
     const menu = useAppStore((s) => s.menu);
-    const fetchMenu = useAppStore((s) => s.fetchMenu);
-    const menuLoading = useAppStore((s) => s.menuLoading);
-    const menuError = useAppStore((s) => s.menuError);
-
-    const language = useAppStore((s) => s.language);
-    // Trigger fetch once on mount or when language changes
-    useEffect(() => {
-        if (!menu && !menuLoading && !menuError) fetchMenu();
-    }, [menu, menuLoading, menuError, fetchMenu, language]);
 
     // Which calendar day-column index (0-4) has menu data?
     // Build a set of "day.month" date keys that have menu data, e.g. "19.3"

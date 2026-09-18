@@ -122,7 +122,12 @@ export const initializeStore = async () => {
   s.fetchExams();
   s.fetchSubjects();
   s.loadTheme();
-  s.loadLanguage();
+  // The promise is kept, not discarded: the jídelníček below is scraped per
+  // language from two different SKM pages, so a request that beats the stored
+  // language into the store would fetch the Czech page for an English student
+  // — and then the store's own guard (`if (get().menu) return`) would block
+  // the correction forever.
+  const languageReady = s.loadLanguage();
   s.loadContext();
   const devSeed = devAdminSeed();
   if (devSeed) {
@@ -167,6 +172,13 @@ export const initializeStore = async () => {
     s2.refreshRecentPdfs();
     s2.hydrateBulletin();
     s2.loadMapEvents();
+    // The jídelníček. It used to be fetched from a useEffect in each of the
+    // three components that show it (the weekly header, its popover, the
+    // phone's MenuCard) — three triggers for one request, and an Iron Rule
+    // violation. App.tsx runs useAppLogic() above the phone/desktop branch, so
+    // this one call covers both trees. The store owns the request guard, so a
+    // menu already in hand is not re-fetched.
+    void languageReady.then(() => useAppStore.getState().fetchMenu());
     // Predictive prefetch — files for subjects scheduled today.
     // Guarded by 60s SWR + max 6 subjects in prefetchTodaySubjectsImpl.
     useAppStore.getState().prefetchTodaySubjects();
@@ -191,7 +203,11 @@ export const initializeStore = async () => {
     if (type === 'LANGUAGE_UPDATE') {
       st.loadLanguage().then(() => useAppStore.getState().loadMapEvents());
       st.fetchAllFiles();
+      // Clear THEN ask: clearing is what reopens the store's request guard,
+      // and the ask is what used to come from a component effect noticing the
+      // null. Nothing watches `menu` for that any more.
       useAppStore.setState({ menu: null });
+      void useAppStore.getState().fetchMenu();
       return;
     }
 
@@ -225,6 +241,7 @@ export const initializeStore = async () => {
     useAppStore.getState().fetchAllFiles();
     // Clear menu so it re-fetches with the new language
     useAppStore.setState({ menu: null });
+    void useAppStore.getState().fetchMenu();
   };
 
   // Cross-iframe files listener — when another window refreshes a subject's

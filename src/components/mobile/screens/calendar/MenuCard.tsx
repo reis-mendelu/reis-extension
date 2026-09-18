@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
@@ -27,25 +26,13 @@ import { pluralSuffix } from '../../../../utils/plural';
 export function MenuCard({ dayIso }: { dayIso: string }) {
   const { t, language } = useTranslation();
   const menu = useAppStore((s) => s.menu);
-  const menuLoading = useAppStore((s) => s.menuLoading);
-  const menuError = useAppStore((s) => s.menuError);
-  const fetchMenu = useAppStore((s) => s.fetchMenu);
   const pushSheet = useAppStore((s) => s.pushSheet);
 
-  /**
-   * The one fetch. `initializeStore` does not ask for the menu, so without this
-   * nothing ever would on the phone — and re-asking when the language changes
-   * matters because the menu is scraped per language from two different SKM
-   * pages, not translated in the client.
-   *
-   * Not a data-fetching effect in a component by preference; the store owns the
-   * fetch and this is the only surface that wants it, the same arrangement the
-   * desktop popover has always had.
-   */
-  useEffect(() => {
-    if (!menu && !menuLoading && !menuError) void fetchMenu();
-  }, [menu, menuLoading, menuError, fetchMenu, language]);
-
+  // No fetch here. `initializeStore` asks for the menu at boot — App.tsx runs
+  // useAppLogic() above the phone/desktop branch, so the phone is covered by
+  // the same call — and both language handlers ask again, which matters
+  // because the menu is scraped per language from two different SKM pages,
+  // not translated in the client. This card reads `menu` synchronously.
   const outlets = menuForDay(menu, new Date(`${dayIso}T00:00:00`));
   if (outlets.length === 0) return null;
 
