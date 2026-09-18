@@ -119,11 +119,13 @@ interface WeeklyCalendarHeaderProps {
     weekDates: DateInfo[];
     todayIndex: number;
     holidaysByDay: (string | null)[];
+    /** Columns to label — five, or six/seven when the weekend is taught. */
+    dayCount: number;
 }
 
-export function WeeklyCalendarHeader({ weekDates, todayIndex, holidaysByDay }: WeeklyCalendarHeaderProps) {
+export function WeeklyCalendarHeader({ weekDates, todayIndex, holidaysByDay, dayCount }: WeeklyCalendarHeaderProps) {
     const { t } = useTranslation();
-    const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+    const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
     const menu = useAppStore((s) => s.menu);
     const fetchMenu = useAppStore((s) => s.fetchMenu);
     const menuLoading = useAppStore((s) => s.menuLoading);
@@ -167,7 +169,7 @@ export function WeeklyCalendarHeader({ weekDates, todayIndex, holidaysByDay }: W
     return (
         <div className="relative z-20 flex border-b border-base-300 bg-base-100 flex-shrink-0 h-[48px]">
             <div className="w-12 border-r border-base-300 bg-base-200" />
-            {[0, 1, 2, 3, 4].map((index) => {
+            {Array.from({ length: dayCount }, (_, i) => i).map((index) => {
                 const dateInfo = weekDates[index];
                 const isToday = index === todayIndex;
                 const holiday = holidaysByDay[index];

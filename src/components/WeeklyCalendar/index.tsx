@@ -36,7 +36,8 @@ export function WeeklyCalendar({
     holidaysByDay,
     todayIndex,
     showSkeleton: dataLoading,
-    weekdayScheduleData,
+    visibleDayCount,
+    visibleScheduleData,
     isOutsideTeachingPeriod,
   } = useCalendarData(initialDate);
   const { t } = useTranslation();
@@ -201,6 +202,7 @@ export function WeeklyCalendar({
         weekDates={weekDates}
         todayIndex={todayIndex}
         holidaysByDay={holidaysByDay}
+        dayCount={visibleDayCount}
       />
       <div className="flex-1 overflow-hidden">
         <div className="flex h-full">
@@ -224,16 +226,16 @@ export function WeeklyCalendar({
               eventPosition={targetEventPosition || undefined}
               onDismiss={markSeen}
             />
-            <WeeklyCalendarGrid />
+            <WeeklyCalendarGrid dayCount={visibleDayCount} />
             <CurrentTimeIndicator todayIndex={todayIndex} />
-            {!showSkeleton && weekdayScheduleData.length === 0 && (
+            {!showSkeleton && visibleScheduleData.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                 <p className="text-base-content/40 text-sm font-medium">
                   {t(isOutsideTeachingPeriod ? 'calendar.outsideSemester' : 'calendar.emptyWeek')}
                 </p>
               </div>
             )}
-            {[0, 1, 2, 3, 4].map((i) => {
+            {Array.from({ length: visibleDayCount }, (_, i) => i).map((i) => {
               const wd = weekDates[i];
               const dayKey = wd
                 ? `${wd.year}${wd.month.padStart(2, '0')}${wd.day.padStart(2, '0')}`

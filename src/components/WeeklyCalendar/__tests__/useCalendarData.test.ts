@@ -155,6 +155,85 @@ describe('useCalendarData', () => {
     expect(result.current.lessonsByDay[5][0].courseName).toBe('Saturday Lesson');
   });
 
+  // Combined-study (dálkové) cohorts are taught on Saturdays. The desktop grid
+  // was a fixed Mon–Fri, so those lessons were grouped into `lessonsByDay[5]`
+  // and then never rendered — a dálkař saw a blank week with the "empty week"
+  // overlay painted over it. The grid now grows a column only when the weekend
+  // actually holds something, so the ordinary Mon–Fri week stays five columns.
+  describe('visibleDayCount', () => {
+    const lessonOn = (date: string, courseName: string) =>
+      ({ id: date, date, startTime: '12:00', endTime: '13:00', courseName }) as any;
+
+    const withSchedule = (lessons: unknown[]) =>
+      vi.mocked(useSchedule).mockReturnValue({
+        schedule: lessons as any,
+        isLoaded: true,
+        weekStart: null,
+        status: 'success',
+        isSyncing: false,
+      } as UseScheduleResult);
+
+    it('stays five for a week that holds nothing at the weekend', () => {
+      withSchedule([lessonOn('20260212', 'Thursday Lesson')]);
+      const { result } = renderHook(() => useCalendarData(mockInitialDate));
+      expect(result.current.visibleDayCount).toBe(5);
+    });
+
+    it('stays five when the week is empty', () => {
+      withSchedule([]);
+      const { result } = renderHook(() => useCalendarData(mockInitialDate));
+      expect(result.current.visibleDayCount).toBe(5);
+    });
+
+    it('grows to six for a Saturday lesson, and that lesson counts as content', () => {
+      withSchedule([lessonOn('20260214', 'Saturday Lesson')]);
+      const { result } = renderHook(() => useCalendarData(mockInitialDate));
+      expect(result.current.visibleDayCount).toBe(6);
+      // The negative control: with a fixed Mon–Fri slice this was 0, which is
+      // what painted "empty week" over a day that had a lesson in it.
+      expect(result.current.visibleScheduleData).toHaveLength(1);
+      expect(result.current.visibleScheduleData[0].courseName).toBe('Saturday Lesson');
+    });
+
+    it('grows to seven for a Sunday lesson, so no visible column is skipped', () => {
+      withSchedule([lessonOn('20260215', 'Sunday Lesson')]);
+      const { result } = renderHook(() => useCalendarData(mockInitialDate));
+      expect(result.current.visibleDayCount).toBe(7);
+    });
+
+    it('counts a weekend custom event too, not just lessons', () => {
+      withSchedule([]);
+      vi.mocked(useAppStore).mockImplementation((selector: any) =>
+        selector({
+          language: 'cz',
+          syncStatus: { handshakeDone: true, handshakeTimedOut: false, isSyncing: false },
+          customEvents: [
+            { id: 'c1', date: '20260214', startTime: '09:00', endTime: '10:00', title: 'Study jam' },
+          ],
+          hiddenItems: { events: [], courses: [] },
+          teachingWeekData: null,
+        })
+      );
+      const { result } = renderHook(() => useCalendarData(mockInitialDate));
+      expect(result.current.visibleDayCount).toBe(6);
+    });
+
+    it('does not grow a column for a hidden Saturday lesson', () => {
+      withSchedule([lessonOn('20260214', 'Saturday Lesson')]);
+      vi.mocked(useAppStore).mockImplementation((selector: any) =>
+        selector({
+          language: 'cz',
+          syncStatus: { handshakeDone: true, handshakeTimedOut: false, isSyncing: false },
+          customEvents: [],
+          hiddenItems: { events: [{ id: '20260214' }], courses: [] },
+          teachingWeekData: null,
+        })
+      );
+      const { result } = renderHook(() => useCalendarData(mockInitialDate));
+      expect(result.current.visibleDayCount).toBe(5);
+    });
+  });
+
   it('should update localization when language changes', () => {
     // Start with CZ
     vi.mocked(useAppStore).mockImplementation((selector: any) =>
