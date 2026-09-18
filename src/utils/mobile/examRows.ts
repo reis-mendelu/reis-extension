@@ -4,6 +4,7 @@ import type { ExamSubject, ExamSection, ExamTerm } from '../../types/exams';
  *  (no capacity, optional id), so it gets its own alias rather than a cast. */
 type RegisteredTerm = NonNullable<ExamSection['registeredTerm']>;
 import { parseCzechDateTime } from './examTimeline';
+import { isGroupSignupSection } from '../exams/isGroupSignup';
 
 export interface RegisteredExam {
   subject: ExamSubject;
@@ -43,6 +44,7 @@ export function buildRegisteredExams(exams: ExamSubject[], language: string): Re
   const rows: RegisteredExam[] = [];
   for (const subject of exams) {
     for (const section of subject.sections) {
+      if (isGroupSignupSection(section)) continue;
       if (section.status !== 'registered') continue;
       const term = section.registeredTerm;
       if (!term) continue;
@@ -61,11 +63,13 @@ export function buildRegisteredExams(exams: ExamSubject[], language: string): Re
   return rows.sort((a, b) => a.date.getTime() - b.date.getTime());
 }
 
-/** Everything not registered — the "open slots" group, in catalog order. */
+/** Everything not registered — the "open slots" group, in catalog order.
+ *  Seminar-group signup is not one of them; see `utils/exams/isGroupSignup`. */
 export function buildOpenExams(exams: ExamSubject[], language: string): OpenExam[] {
   const rows: OpenExam[] = [];
   for (const subject of exams) {
     for (const section of subject.sections) {
+      if (isGroupSignupSection(section)) continue;
       if (section.status === 'registered') continue;
       rows.push({
         subject,
