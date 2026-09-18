@@ -23,7 +23,12 @@ const MENU: OutletMenu[] = [
 
 function renderHeader() {
   return render(
-    <WeeklyCalendarHeader weekDates={WEEK} todayIndex={1} holidaysByDay={[null, null, null, null, null]} />
+    <WeeklyCalendarHeader
+      weekDates={WEEK}
+      todayIndex={1}
+      holidaysByDay={[null, null, null, null, null]}
+      dayCount={5}
+    />
   );
 }
 
