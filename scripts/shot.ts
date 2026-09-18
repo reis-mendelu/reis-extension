@@ -384,7 +384,14 @@ async function run(): Promise<number> {
       // fails on anything data-driven — the subject rows are painted from
       // IndexedDB, and every drawer run died with "no visible element" against
       // a screen that renders it perfectly a moment later.
-      if (opts.clicks.length > 0) await page.waitForTimeout(opts.wait);
+      //
+      // A --seed-store needs the same settle, and used not to get it when no
+      // --click was passed. That is worse than a failed run: the seed landed
+      // before the app's own sync had written its slice, sync then overwrote
+      // it, and the run screenshotted an UNSEEDED page and reported clean. It
+      // cost two green runs against a five-column calendar week that did not
+      // contain the seeded Saturday the run existed to photograph.
+      if (opts.clicks.length > 0 || opts.seedStore) await page.waitForTimeout(opts.wait);
       if (opts.seedStore) await seedStoreState(page, opts.seedStore);
 
       for (const click of opts.clicks) {
