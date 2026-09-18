@@ -208,7 +208,13 @@ describe('useCalendarData', () => {
           language: 'cz',
           syncStatus: { handshakeDone: true, handshakeTimedOut: false, isSyncing: false },
           customEvents: [
-            { id: 'c1', date: '20260214', startTime: '09:00', endTime: '10:00', title: 'Study jam' },
+            {
+              id: 'c1',
+              date: '20260214',
+              startTime: '09:00',
+              endTime: '10:00',
+              title: 'Study jam',
+            },
           ],
           hiddenItems: { events: [], courses: [] },
           teachingWeekData: null,
