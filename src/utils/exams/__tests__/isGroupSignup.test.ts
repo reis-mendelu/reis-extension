@@ -44,6 +44,23 @@ describe('telling a seminar-group signup apart from an exam term', () => {
   it('survives a section with no name at all', () => {
     expect(isGroupSignupSection(section({ name: '' }))).toBe(false);
   });
+
+  it('also covers a seminar variant of the same druh', () => {
+    expect(isGroupSignupSection(section({ name: 'Zápis na seminář' }))).toBe(true);
+  });
+
+  it('tolerates doubled whitespace in the druh cell', () => {
+    expect(isGroupSignupSection(section({ name: 'Zápis  na cvičení' }))).toBe(true);
+  });
+
+  // We have one observed druh string and no list of the rest, so the filter is
+  // built to under-match. A one-word druh starting with the same letters is
+  // left alone: an unrecognised signup is a visible row someone reports, while
+  // a wrongly eaten druh vanishes app-wide with nothing to notice.
+  it('leaves a one-word druh we have never seen alone', () => {
+    expect(isGroupSignupSection(section({ name: 'Zápis' }))).toBe(false);
+    expect(isGroupSignupSection(section({ name: 'Zápisový test' }))).toBe(false);
+  });
 });
 
 describe('stripping seminar-group signup out of synced exam data', () => {

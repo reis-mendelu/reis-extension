@@ -28,11 +28,16 @@ export function isGroupSignupSection(section: ExamSection): boolean {
   const normalized = czech
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();
-  // Prefix, not substring. "Zápočet" normalizes to "zapocet" and is a real
-  // gradeable thing a student must turn up for — it must survive this filter.
-  return normalized.startsWith('zapis');
+  // Anchored prefix, and the trailing space is deliberate. We have exactly one
+  // observed druh string and no catalogue of the rest, so the filter is written
+  // to under-match rather than over-match: a signup we fail to recognise is a
+  // visible row someone reports, while a druh we wrongly eat disappears from
+  // the whole app with no error. "Zápis na " covers the reported case and
+  // "Zápis na seminář" without reaching a one-word druh we have never seen.
+  return normalized.startsWith('zapis na ');
 }
 
 /**
