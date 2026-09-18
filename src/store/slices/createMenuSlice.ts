@@ -1,6 +1,20 @@
 import type { MenuSlice, AppSlice } from '../types';
 import { fetchMenu } from '../../api/menu';
 
+/**
+ * Which request is the newest. Module-scoped rather than store state because
+ * nothing renders it and nothing outside this file may reason about it — it
+ * exists only so a response can ask "am I still the one being waited for".
+ *
+ * It answers that question where `menuLanguage` cannot: two requests for the
+ * SAME language carry the same stamp, so a cz → en → cz cycle leaves an
+ * obsolete Czech request that a language-only check waves through. The stamp
+ * still owns the REQUEST guard, which is a different question — "is the menu
+ * in hand the right one" — and a counter must not be used for that, or two
+ * triggers for one language would stop collapsing into a single request.
+ */
+let latestRequest = 0;
+
 export const createMenuSlice: AppSlice<MenuSlice> = (set, get) => ({
   menu: null,
   menuLoading: false,
@@ -32,18 +46,23 @@ export const createMenuSlice: AppSlice<MenuSlice> = (set, get) => ({
     const lang = get().language;
     if (get().menuLanguage === lang && (get().menu || get().menuLoading)) return;
 
+    const request = ++latestRequest;
     set({ menuLoading: true, menuError: false, menuLanguage: lang });
     try {
       const data = await fetchMenu(lang);
-      // A language change while this was in flight started a newer request and
-      // re-stamped `menuLanguage`. This body is for the language the student
-      // has already left, so it is dropped — writing it would both show the
-      // wrong menu and, before the stamp existed, close the guard against the
-      // correction. The newer request owns `menuLoading` from here.
-      if (get().menuLanguage !== lang) return;
+      // Something started a newer request while this was in flight, so this
+      // body is for a question nobody is asking any more. Dropping it matters
+      // in both directions: committing it would show a menu the student has
+      // moved on from AND clear `menuLoading` out from under the request that
+      // is still pending. The newest request owns the flags from here.
+      if (request !== latestRequest) return;
       set({ menu: data, menuLoading: false });
     } catch {
-      if (get().menuLanguage !== lang) return;
+      // The same, and this is the half that bites hardest: a stale rejection
+      // used to raise `menuError` for a request that then succeeded, leaving
+      // good data behind an "unavailable" state, because the popover reads
+      // `menuError` before it reads `menu`.
+      if (request !== latestRequest) return;
       set({ menuLoading: false, menuError: true });
     }
   },

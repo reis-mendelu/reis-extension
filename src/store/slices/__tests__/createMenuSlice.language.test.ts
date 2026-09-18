@@ -93,3 +93,103 @@ describe('createMenuSlice — the menu is stamped with its language', () => {
     await first;
   });
 });
+
+/**
+ * Both PR reviewers found this one, independently, and they were right.
+ *
+ * The language stamp alone cannot order two requests for the SAME language.
+ * A student who switches cz → en → cz before the first request settles leaves
+ * an obsolete Czech request in flight whose stamp matches the newest Czech
+ * one, so it passes a language-only check and commits over a request that is
+ * still pending. A generation counter is what actually answers "is this the
+ * newest request", and the language stamp goes on doing what it is for:
+ * telling the REQUEST guard whether the menu in hand is the right one.
+ */
+describe('createMenuSlice — only the newest request may commit', () => {
+  beforeEach(() => {
+    vi.mocked(apiFetchMenu).mockReset();
+    useAppStore.setState({
+      menu: null,
+      menuLoading: false,
+      menuError: false,
+      menuLanguage: null,
+      language: 'cz',
+      demoMode: false,
+    } as never);
+  });
+
+  it('ignores an obsolete same-language response that resolves late', async () => {
+    let releaseStaleCz!: (v: OutletMenu[]) => void;
+    let releaseFreshCz!: (v: OutletMenu[]) => void;
+    const STALE: OutletMenu[] = [
+      { outlet: 'STALE', days: [{ date: '8. 9.', soup: 'Old', mainDishes: [] }] },
+    ];
+
+    vi.mocked(apiFetchMenu).mockReturnValueOnce(
+      new Promise((r) => {
+        releaseStaleCz = r;
+      })
+    );
+    const staleCz = useAppStore.getState().fetchMenu();
+
+    // cz → en → cz, all while the first Czech request is still out.
+    useAppStore.setState({ language: 'en' } as never);
+    vi.mocked(apiFetchMenu).mockReturnValueOnce(new Promise(() => {}));
+    void useAppStore.getState().fetchMenu();
+
+    useAppStore.setState({ language: 'cz' } as never);
+    vi.mocked(apiFetchMenu).mockReturnValueOnce(
+      new Promise((r) => {
+        releaseFreshCz = r;
+      })
+    );
+    const freshCz = useAppStore.getState().fetchMenu();
+
+    releaseStaleCz(STALE);
+    await staleCz;
+    // The newest request is still pending, so nothing may have landed yet.
+    expect(useAppStore.getState().menu).toBeNull();
+    expect(useAppStore.getState().menuLoading).toBe(true);
+
+    releaseFreshCz(CZ);
+    await freshCz;
+    expect(useAppStore.getState().menu).toEqual(CZ);
+    expect(useAppStore.getState().menuLoading).toBe(false);
+  });
+
+  // The nastier half: a stale REJECTION used to raise menuError for a request
+  // that then succeeded. `menu` was good and the popover still rendered
+  // "Menu není k dispozici", because it checks menuError first.
+  it('ignores an obsolete same-language rejection', async () => {
+    let failStaleCz!: (e: Error) => void;
+    let releaseFreshCz!: (v: OutletMenu[]) => void;
+
+    vi.mocked(apiFetchMenu).mockReturnValueOnce(
+      new Promise((_, reject) => {
+        failStaleCz = reject;
+      })
+    );
+    const staleCz = useAppStore.getState().fetchMenu();
+
+    useAppStore.setState({ language: 'en' } as never);
+    vi.mocked(apiFetchMenu).mockReturnValueOnce(new Promise(() => {}));
+    void useAppStore.getState().fetchMenu();
+
+    useAppStore.setState({ language: 'cz' } as never);
+    vi.mocked(apiFetchMenu).mockReturnValueOnce(
+      new Promise((r) => {
+        releaseFreshCz = r;
+      })
+    );
+    const freshCz = useAppStore.getState().fetchMenu();
+
+    failStaleCz(new Error('the request the student already left'));
+    await staleCz;
+    expect(useAppStore.getState().menuError).toBe(false);
+
+    releaseFreshCz(CZ);
+    await freshCz;
+    expect(useAppStore.getState().menu).toEqual(CZ);
+    expect(useAppStore.getState().menuError).toBe(false);
+  });
+});
