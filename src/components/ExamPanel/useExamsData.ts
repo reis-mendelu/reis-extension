@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import type { ExamSubject, ExamSection } from '../../types/exams';
+import { isGroupSignupSection } from '../../utils/exams/isGroupSignup';
 
 export function useExamsData() {
     const exams = useAppStore(s => s.exams.data);
@@ -13,6 +14,9 @@ export function useExamsData() {
         const res: { subject: ExamSubject; section: ExamSection }[] = [];
         exams.forEach((sub: ExamSubject) => {
             sub.sections.forEach((sec: ExamSection) => {
+                // Seminar-group signup rides in on the same IS table as exam
+                // terms but is not an exam — see utils/exams/isGroupSignup.
+                if (isGroupSignupSection(sec)) return;
                 if (sec.status !== 'registered') res.push({ subject: sub, section: sec });
             });
         });
