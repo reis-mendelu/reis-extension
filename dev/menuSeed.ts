@@ -1,6 +1,8 @@
 import canteenMenu from './fixtures/canteenMenu.json';
 import { rebaseMenuFixture } from './menuFixture';
 import { useAppStore } from '../src/store/useAppStore';
+import { IndexedDBService } from '../src/services/storage';
+import type { Language } from '../src/store/types';
 
 /**
  * Give the dev webapp a canteen menu.
@@ -19,12 +21,26 @@ import { useAppStore } from '../src/store/useAppStore';
  * Only when the store has none, so nothing here can overwrite a real fetch —
  * inside the extension this module does not exist at all.
  *
+ * Seeded WITH a `menuLanguage`, and that is load-bearing rather than tidy.
+ * `createMenuSlice` qualifies its request guard by language, so a menu carrying
+ * no stamp reads as "wrong language": the boot request fires anyway, fails for
+ * the want of a content script, and `menuError` then hides the very data this
+ * module just seeded. The stamp is read from the key `loadLanguage` reads, so
+ * the harness satisfies the guard whichever language is stored. The fixture is
+ * a Czech capture either way — this is a harness, and showing it beats an
+ * "unavailable" box in the English UI.
+ *
  * DEV-gated and in `dev/`, so it cannot reach the extension or the Capacitor
  * bundle.
  */
 if (import.meta.env.DEV) {
   const menu = rebaseMenuFixture(canteenMenu, new Date());
-  if (menu.length && !useAppStore.getState().menu) {
-    useAppStore.setState({ menu, menuLoading: false, menuError: false });
-  }
+  void (async () => {
+    if (!menu.length || useAppStore.getState().menu) return;
+    const stored = (await IndexedDBService.get('meta', 'reis_language').catch(() => undefined)) as
+      Language | undefined;
+    const menuLanguage: Language = stored === 'en' ? 'en' : 'cz';
+    if (useAppStore.getState().menu) return;
+    useAppStore.setState({ menu, menuLoading: false, menuError: false, menuLanguage });
+  })();
 }
