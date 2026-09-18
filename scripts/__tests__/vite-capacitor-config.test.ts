@@ -32,9 +32,7 @@ describe('vite.capacitor.config.ts', () => {
       return result;
     }
 
-    const names = flattenPlugins(config.plugins).map(
-      (p) => (p as { name?: string })?.name ?? ''
-    );
+    const names = flattenPlugins(config.plugins).map((p) => (p as { name?: string })?.name ?? '');
 
     expect(names).toContain('reis-strip-dev-real-data');
   });
