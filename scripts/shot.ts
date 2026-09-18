@@ -286,19 +286,38 @@ async function assertSeedSurvived(page: Page, json: string, when: string): Promi
  * the store's own answer to "has a sync run to completion since startup", so
  * poll that instead and the seed goes in after the thing that would clobber it.
  *
- * Bounded and non-fatal: fixture and mock modes legitimately never sync, and a
- * missing settle is not by itself a reason to fail a run — the post-seed
- * assertions are what actually catch a clobber.
+ * Two ways to be ready, and the second one matters as much as the first:
+ *
+ *  - a sync ran to completion (`firstSyncSettled`), or
+ *  - `handshakeTimedOut` — the app waited for a content script that never came,
+ *    so there is no sync source and nothing will ever arrive to clobber the seed.
+ *
+ * Without that second branch this burned the WHOLE timeout on every mock and
+ * fixture run: those modes never latch `firstSyncSettled`, and their top-level
+ * `isSyncing` stays true, so the wait could only ever expire. Measured at 15s
+ * per width — about 45s of pure waiting on a default three-width run — for a
+ * state the harness could have recognised immediately.
+ *
+ * Still bounded and non-fatal: a missing settle is not by itself a reason to
+ * fail a run, and the post-seed assertions are what actually catch a clobber.
  */
 async function waitForSyncSettled(page: Page, timeoutMs: number): Promise<void> {
   try {
     await page.waitForFunction(
       () => {
         const w = window as unknown as {
-          __reisStore?: { getState: () => { firstSyncSettled?: boolean; isSyncing?: boolean } };
+          __reisStore?: {
+            getState: () => {
+              firstSyncSettled?: boolean;
+              isSyncing?: boolean;
+              syncStatus?: { handshakeTimedOut?: boolean };
+            };
+          };
         };
         if (!w.__reisStore) return false;
         const s = w.__reisStore.getState();
+        // No sync source at all — waiting longer cannot change anything.
+        if (s.syncStatus?.handshakeTimedOut === true) return true;
         return s.firstSyncSettled === true && s.isSyncing !== true;
       },
       undefined,
@@ -306,8 +325,8 @@ async function waitForSyncSettled(page: Page, timeoutMs: number): Promise<void> 
     );
   } catch {
     console.warn(
-      `  note: the app did not report a settled sync within ${timeoutMs}ms — seeding anyway. ` +
-        'Expected under REIS_FIXTURE / mock mode; the seed assertions still guard the result.'
+      `  note: the app neither settled a sync nor reported a handshake timeout within ` +
+        `${timeoutMs}ms — seeding anyway. The seed assertions still guard the result.`
     );
   }
 }
