@@ -1182,3 +1182,92 @@ legal declaration had to be answered in the web form.
 One scare worth recording: at 0.6-scale the Version field renders as `6.1.0` in a JPEG
 screenshot. It is a compression artifact. The DOM value and a zoomed capture both read
 `5.1.0`. Check the value, not the screenshot.
+
+---
+
+## 14. Version 5.2.4 — build 50204, submitted 2026-09-16
+
+The first submission driven entirely through the App Store Connect REST API. No web
+UI, therefore none of §13's screenshot and panel hazards applied.
+
+### 14.1 iOS had fallen three versions behind, invisibly
+
+`appStoreVersions` held only 5.2.0, 5.1.1, 5.1.0 and 5.0.6 — all `READY_FOR_SALE`. So:
+
+- **5.2.1** build 50201 was uploaded 2026-09-09 and `VALID`, but **no version record was
+  ever created**, so it could never be submitted.
+- **5.2.2 and 5.2.3 were never cut for iOS at all**, while both shipped to the browser
+  stores.
+
+Nothing surfaces this. A tag exists, CI is green, and the extension ships — the App
+Store simply stays where it was. **Query `appStoreVersions` before writing release
+notes:** the iOS delta is routinely larger than the last tag's diff, and the release
+checklist requires "What's New" to describe what actually changed.
+
+### 14.2 What 5.2.4 carries for an Apple user
+
+Fifteen commits span `v5.2.0..v5.2.4`; four are user-visible on iOS/Mac. The campus-map
+fix (#329) is desktop-extension only, and #334/#335 are admin-console.
+
+| PR | change |
+|---|---|
+| #319 | a sheet takes the pointer only once the press becomes a drag — fixes dead buttons on Mac |
+| #320 | eduroam offers a profile macOS will actually install |
+| #326 | a reinstall signs you in to IS before offering eduroam |
+| #333 | the AF society is now USAF, with its own mark |
+
+### 14.3 "What's New" — filed copy (Czech, the only localization)
+
+```
+Opravili jsme reIS na Macu
+Tlačítka v panelech zase reagují a eduroam ti nabídne profil, který si macOS umí nainstalovat.
+
+Eduroam po přeinstalování
+Když reIS nainstaluješ znovu, nejdřív tě přihlásíme do ISu a teprve pak nabídneme eduroam.
+
+Spolek AF je teď USAF
+Má v reISu vlastní logo místo fakultní zkratky. Pokud ho máš mezi odebíranými spolky, zůstává ti.
+```
+
+The first paragraph is the wording agreed for 5.2.1 in that release's discussion, reused
+because that fix had never actually reached anyone.
+
+### 14.4 The API sequence
+
+Every mutation was read back before the next one. `relationships/build` returns `204`
+with no body, so the attached build **must** be re-fetched — this is the step that in
+§13.6 nearly shipped a stale binary under new release notes.
+
+```
+POST  /v1/appStoreVersions                       -> 201, id aa351aa6…, PREPARE_FOR_SUBMISSION
+GET   /v1/appStoreVersions/<id>/appStoreVersionLocalizations  -> one row, locale "cs"
+PATCH /v1/appStoreVersionLocalizations/<locId>   -> 200, whatsNew set
+PATCH /v1/appStoreVersions/<id>/relationships/build -> 204
+GET   /v1/appStoreVersions/<id>/build            -> 50204, VALID   (verification)
+POST  /v1/reviewSubmissions                      -> 201, READY_FOR_REVIEW
+POST  /v1/reviewSubmissionItems                  -> 201
+PATCH /v1/reviewSubmissions/<id> {submitted:true}-> 200, WAITING_FOR_REVIEW
+```
+
+Submitted 2026-09-16 10:33 UTC, `releaseType AFTER_APPROVAL`, no phased release.
+
+### 14.5 Checks made before submitting
+
+- Build 50204 archived and exported distribution-signed as
+  `Apple Distribution: Dominik Holek (RG38V3SV8X)`; upload delivery UUID
+  `f79605e5-c7e6-4258-a3bb-7ccd0044596d`.
+- **The reviewer's demo path still exists in this binary.** `Prohlédnout ukázku`,
+  `Try the demo` and `Ukázka` were all grepped out of
+  `ios/App/App/public/assets`, and the app was run on an iPhone 17 Pro simulator
+  against real IS data — it opened on the UIS page with the X in the top-right that
+  the review notes tell the reviewer to close.
+- Review detail inherited unchanged: `demoAccountRequired: false`, contact
+  `reis.mendelu@gmail.com`.
+- USAF verified rendering in the running app: the societies list read SUPEF, ESN
+  Mendelu, AU FRRMS, **USAF**, ZF Spolek, LDF Spolek — no "AF Spolek", no ICV.
+
+### 14.6 Metadata is still editable
+
+A version stays editable while `WAITING_FOR_REVIEW`; it locks at `IN_REVIEW`. A build
+can also still be swapped in that window — after `IN_REVIEW` that needs a rejection
+first.
