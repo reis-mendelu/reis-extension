@@ -75,6 +75,25 @@ describe('createMenuSlice — the store owns the request guard', () => {
     expect(apiFetchMenu).toHaveBeenCalledTimes(1);
   });
 
+  // `menuError` is deliberately outside the guard, and this is what that buys.
+  // The three component effects that used to trigger this read `menuError` from
+  // the STORE, not from component state, so `!menuError` in their condition
+  // survived every remount: once a fetch failed, nothing asked again for the
+  // life of the store — not a remount, and not a language switch. Now that the
+  // store's own language handler does the asking, a failed attempt recovers at
+  // the next switch. There is no interaction to hang a retry off instead: both
+  // MenuCard and the ChefHat render nothing at all when there is no menu.
+  it('retries after a failed attempt', async () => {
+    vi.mocked(apiFetchMenu).mockRejectedValueOnce(new Error('SKM down'));
+    await useAppStore.getState().fetchMenu();
+    expect(useAppStore.getState().menuError).toBe(true);
+    expect(useAppStore.getState().menu).toBeNull();
+
+    await useAppStore.getState().fetchMenu();
+    expect(apiFetchMenu).toHaveBeenCalledTimes(2);
+    expect(useAppStore.getState().menuError).toBe(false);
+  });
+
   // The language switch clears `menu` (useAppStore.ts), which is exactly what
   // reopens the guard — so the guard must not outlive the data it protects.
   it('fetches again once the language change has cleared the menu', async () => {

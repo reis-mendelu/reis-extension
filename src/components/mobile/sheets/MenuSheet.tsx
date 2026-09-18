@@ -30,8 +30,9 @@ export function MenuSheet({ dayIso, onClose }: MenuSheetProps) {
   const outlets = menuForDay(menu, new Date(`${dayIso}T00:00:00`));
   const [active, setActive] = useState(0);
 
-  // The sheet outlives the card's own guard: the 5-minute language switch or a
-  // refetch can empty the day while it is open.
+  // The sheet outlives the data it was opened on: a language switch clears
+  // `menu` and re-fetches (store/useAppStore.ts), which can empty the day while
+  // the sheet is still open.
   const safe = Math.min(active, Math.max(outlets.length - 1, 0));
   const current = outlets[safe];
 

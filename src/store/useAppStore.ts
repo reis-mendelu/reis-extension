@@ -178,6 +178,13 @@ export const initializeStore = async () => {
     // violation. App.tsx runs useAppLogic() above the phone/desktop branch, so
     // this one call covers both trees. The store owns the request guard, so a
     // menu already in hand is not re-fetched.
+    //
+    // No `.catch`, and that is load-bearing rather than an oversight:
+    // `loadLanguage` catches its own failure and falls back to the default, so
+    // this promise always resolves, and `fetchMenu` swallows a failed request
+    // into `menuError`. Neither half can reject. If either ever grows a throw,
+    // this needs a catch — an unhandled rejection at boot is how the whole
+    // tier-2 block stops running.
     void languageReady.then(() => useAppStore.getState().fetchMenu());
     // Predictive prefetch — files for subjects scheduled today.
     // Guarded by 60s SWR + max 6 subjects in prefetchTodaySubjectsImpl.
