@@ -1,7 +1,11 @@
 import { defineConfig, mergeConfig, type UserConfig } from 'vite';
 import { resolve } from 'path';
 import webDevConfig from './vite.web.config';
-import { stripDevRealDataPlugin } from './scripts/stripDevRealData.mjs';
+import {
+  DEV_REAL_DATA_FILENAME,
+  SNAPSHOT_FILENAMES,
+  stripDevRealDataPlugin,
+} from './scripts/stripDevRealData.mjs';
 
 // vite.web.config.ts points envDir at the repository root so the localhost
 // dev harness can load VITE_EXTENSION_SECRET out of the root .env. This
@@ -62,7 +66,14 @@ export default defineConfig(async (env) => {
   // needs. That means it also copies the gitignored real-data snapshot; this
   // plugin is what strips it back out, the equivalent of wxt.config.ts's
   // `build:publicAssets` hook for the extension build.
-  plugins.push(stripDevRealDataPlugin());
+  // `build:web:real` (and therefore `preview:real`) exists to SERVE the
+  // sanitised snapshot: the built app fetches /preview-data.json, and
+  // `check:app --real` refuses to run without it in dist-web/. So that one
+  // build keeps it and strips only the raw scrape. Every other web build —
+  // including the one deployed to a public URL — drops both.
+  const stripping =
+    process.env.VITE_PREVIEW_DATA === 'real' ? [DEV_REAL_DATA_FILENAME] : SNAPSHOT_FILENAMES;
+  plugins.push(stripDevRealDataPlugin(stripping));
 
   return mergeConfig(
     { ...base, plugins },
