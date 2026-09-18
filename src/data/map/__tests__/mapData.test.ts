@@ -5,6 +5,32 @@ import index from '../rooms-index.json';
 import remotePlaces from '../remotePlaces.json';
 import type { RemotePlace } from '../../../types/campusMap';
 
+/** Mean of a ring's vertices — good enough for a convex-ish building footprint. */
+function centroid(ring: number[][]): number[] {
+  let x = 0;
+  let y = 0;
+  for (const p of ring) {
+    x += p[0]!;
+    y += p[1]!;
+  }
+  return [x / ring.length, y / ring.length];
+}
+
+/** Ray casting, mirroring the selection the fetch script makes. */
+function pointInRing(point: number[], ring: number[][]): boolean {
+  const px = point[0]!;
+  const py = point[1]!;
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i]![0]!;
+    const yi = ring[i]![1]!;
+    const xj = ring[j]![0]!;
+    const yj = ring[j]![1]!;
+    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
 describe('bundled map data', () => {
   it('has 7 academic buildings each with a defaultFloorId', () => {
     expect(buildings.buildings).toHaveLength(7);
@@ -30,14 +56,53 @@ describe('bundled map data', () => {
     }
   });
 
+  /**
+   * Panská lícha is the one entry that is not MENDELU property — a private
+   * equestrian centre where combined-study practicals are held, added because
+   * the map serves students who have to get there, not a property register
+   * (student feedback, 2026-09-15). It must keep a drawable riding hall and the
+   * areal boundary behind it, and the picker section must not call it a MENDELU
+   * workplace. See docs/superpowers/specs/2026-07-05-mendelu-remote-places-map-design.md.
+   */
+  it('keeps Panská lícha drawable: riding-hall outline inside its areal boundary', () => {
+    const places = (remotePlaces as { places: RemotePlace[] }).places;
+    const licha = places.find((p) => p.id === -105);
+    expect(licha, 'Panská lícha (-105) is missing').toBeDefined();
+    expect(licha!.area, 'the areal boundary is what gives the hall context').toBeDefined();
+    // The hall itself, not the whole farmyard — a student needs a building.
+    const rings =
+      licha!.outline.type === 'MultiPolygon'
+        ? licha!.outline.coordinates.map((poly) => poly[0]!)
+        : [licha!.outline.coordinates[0]!];
+    expect(rings).toHaveLength(1);
+    expect(rings[0]!.length).toBeGreaterThanOrEqual(4);
+    // Brno-Obřany, ~4 km NE of the Černá Pole campus.
+    for (const [lon, lat] of rings[0]!) {
+      expect(lat).toBeGreaterThan(49.24);
+      expect(lat).toBeLessThan(49.25);
+      expect(lon).toBeGreaterThan(16.63);
+      expect(lon).toBeLessThan(16.64);
+    }
+
+    // The point of picking the ring that ENCLOSES the hall rather than the
+    // largest one: the relation has two outer rings and only one contains the
+    // building. A bbox check cannot tell those apart — both sit in Obřany — so
+    // assert containment directly, or the very failure `ringContaining` exists
+    // to prevent would sail through this test.
+    const ring = licha!.area!.coordinates[0]!;
+    expect(pointInRing(centroid(rings[0]!), ring)).toBe(true);
+    // And every corner of the hall, not just its middle.
+    for (const corner of rings[0]!) expect(pointInRing(corner, ring)).toBe(true);
+  });
+
   it('includes Q (buildingId 0) — truthiness gotcha guard', () => {
     expect(buildings.buildings.some((b) => b.id === 0 && b.name === 'Q')).toBe(true);
   });
 
-  it('remote places: 4 sites with unique ids, closed footprints in South Moravia, and a url', () => {
+  it('remote places: 5 sites with unique ids, closed footprints in South Moravia, and a url', () => {
     const places = (remotePlaces as { places: RemotePlace[] }).places;
-    expect(places).toHaveLength(4);
-    expect(new Set(places.map((p) => p.id)).size).toBe(4);
+    expect(places).toHaveLength(5);
+    expect(new Set(places.map((p) => p.id)).size).toBe(5);
     for (const p of places) {
       expect(p.id).toBeLessThan(0); // synthetic, never collides with real ids
       expect(p.name.length).toBeGreaterThan(0);

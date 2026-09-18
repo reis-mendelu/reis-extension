@@ -196,13 +196,35 @@ export function useCalendarData(initialDate: Date) {
     });
   }, [teachingWeekData, weekDates, isScheduleLoaded]);
 
-  // Desktop grid is intentionally Mon–Fri (5 cols). Expose a weekday-only
-  // view so a weekend customEvent can't fool the desktop empty-week check
-  // (and won't be invisibly dropped at the consumer either — the mobile
-  // DailyView still reads the full 7-day `lessonsByDay`).
-  const weekdayScheduleData = useMemo(
-    () => scheduleData.filter((l) => weekDateStrings.slice(0, 5).includes(l.date)),
-    [scheduleData, weekDateStrings]
+  /**
+   * How many columns the desktop grid draws: Mon–Fri, widened to take in a
+   * weekend day that actually holds something.
+   *
+   * MENDELU teaches combined-study (dálkové) cohorts on Saturdays. The grid was
+   * a fixed five, so those lessons were grouped into `lessonsByDay[5]` and then
+   * never rendered — a dálkař opened the week to a blank grid with the
+   * "empty week" overlay painted across it. Mirrors the phone's `weekDays()`,
+   * which had to solve the same thing for the day strip.
+   *
+   * Data-driven on purpose: no setting to find, and the ordinary Mon–Fri week
+   * stays five even columns, because an empty weekend never widens the grid.
+   *
+   * The count is contiguous rather than per-day (a lone Sunday lesson shows
+   * Saturday too) — the columns are laid out side by side, so skipping one
+   * would leave a hole in the week rather than a narrower week.
+   */
+  const visibleDayCount = useMemo(() => {
+    if (lessonsByDay[6].length > 0) return 7;
+    if (lessonsByDay[5].length > 0) return 6;
+    return 5;
+  }, [lessonsByDay]);
+
+  // Everything inside the visible columns, which is what the empty-week overlay
+  // has to judge. A weekend item can no longer fool that check by being counted
+  // but undrawn: whatever makes this non-empty has also widened the grid.
+  const visibleScheduleData = useMemo(
+    () => scheduleData.filter((l) => weekDateStrings.slice(0, visibleDayCount).includes(l.date)),
+    [scheduleData, weekDateStrings, visibleDayCount]
   );
 
   return {
@@ -214,7 +236,8 @@ export function useCalendarData(initialDate: Date) {
       (storedSchedule?.length ?? 0) === 0 &&
       (!isScheduleLoaded || (!handshakeDone && !handshakeTimedOut) || isSyncing),
     scheduleData,
-    weekdayScheduleData,
+    visibleDayCount,
+    visibleScheduleData,
     isOutsideTeachingPeriod,
     isScheduleLoaded,
     isExamsLoaded,

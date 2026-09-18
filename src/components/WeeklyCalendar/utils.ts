@@ -3,14 +3,6 @@ import type { BlockLesson, LessonWithRow, OrganizedLessons } from '../../types/c
 const GRID_START_HOUR = 7;
 const TOTAL_HOURS = 14; // 7:00 to 21:00
 
-export const DAYS = [
-  { index: 0, short: 'Po', full: 'Pondělí' },
-  { index: 1, short: 'Út', full: 'Úterý' },
-  { index: 2, short: 'St', full: 'Středa' },
-  { index: 3, short: 'Čt', full: 'Čtvrtek' },
-  { index: 4, short: 'Pá', full: 'Pátek' },
-];
-
 export const HOURS = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
 
 export function timeToPercent(time: string): number {
