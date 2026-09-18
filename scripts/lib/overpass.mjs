@@ -14,6 +14,9 @@ export const OVERPASS_ENDPOINTS = [
 export async function overpass(query, attempt = 0) {
   const endpoint = OVERPASS_ENDPOINTS[attempt % OVERPASS_ENDPOINTS.length];
   let res;
+  let body;
+  let status = 0;
+  let ok = false;
   try {
     const ac = new AbortController();
     const to = setTimeout(() => ac.abort(), 30000); // some mirrors hang — cap the wait
@@ -27,6 +30,14 @@ export async function overpass(query, attempt = 0) {
         },
         body: 'data=' + encodeURIComponent(query),
       });
+      // Read the BODY inside the timed block too. Clearing the timer once the
+      // headers land leaves the body read unbounded, and a mirror that stalls
+      // mid-stream then hangs the run forever — the exact failure the abort
+      // exists to prevent. Parsing here also routes a truncated or non-JSON
+      // response into the retry/rotate path below instead of throwing raw.
+      status = res.status;
+      ok = res.ok;
+      if (res.ok) body = await res.json();
     } finally {
       clearTimeout(to);
     }
@@ -39,12 +50,12 @@ export async function overpass(query, attempt = 0) {
   }
   // 429 (rate limit) and 5xx (overloaded/timeout) are transient — back off and
   // rotate to the next mirror.
-  if ((res.status === 429 || res.status >= 500) && attempt < 8) {
+  if ((status === 429 || status >= 500) && attempt < 8) {
     const wait = 3000 * (attempt + 1);
-    console.warn(`  HTTP ${res.status} from ${endpoint}, retrying in ${wait / 1000}s…`);
+    console.warn(`  HTTP ${status} from ${endpoint}, retrying in ${wait / 1000}s…`);
     await new Promise((r) => setTimeout(r, wait));
     return overpass(query, attempt + 1);
   }
-  if (!res.ok) throw new Error(`Overpass HTTP ${res.status}`);
-  return res.json();
+  if (!ok) throw new Error(`Overpass HTTP ${status}`);
+  return body;
 }

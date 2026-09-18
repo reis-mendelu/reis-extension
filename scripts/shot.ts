@@ -27,6 +27,7 @@ import {
   type ProbeResult,
 } from './lib/uiFindings';
 import { probeSource } from './lib/uiProbe';
+import { driftedSeedKeys } from './lib/seedGuard';
 
 const DEFAULT_WIDTHS = [320, 390, 430];
 const DEFAULT_URL = 'http://localhost:3000';
@@ -36,6 +37,8 @@ const OUT_DIR = resolve(process.cwd(), '.verify');
 // with a bookmarks bar. `h-screen overflow-hidden` clips rather than scrolls, so
 // height is a real variable there and --height exists to vary it.
 const DEFAULT_VIEWPORT_HEIGHT = 844;
+// How long to let the app's own sync finish before seeding over it.
+const SYNC_SETTLE_TIMEOUT_MS = 15_000;
 
 interface Options {
   label: string;
@@ -253,28 +256,58 @@ async function seedStoreState(page: Page, json: string): Promise<void> {
  * Compared with key order normalised, because a store that rebuilt an object
  * with identical content has not lost the seed.
  */
-async function assertSeedSurvived(page: Page, json: string): Promise<void> {
+async function assertSeedSurvived(page: Page, json: string, when: string): Promise<void> {
   const entries = JSON.parse(json) as Record<string, unknown>;
-  const drifted = await page.evaluate((kv) => {
-    const stable = (v: unknown): string =>
-      JSON.stringify(v, (_k, val) =>
-        val && typeof val === 'object' && !Array.isArray(val)
-          ? Object.fromEntries(Object.entries(val as object).sort(([a], [b]) => a.localeCompare(b)))
-          : val
-      );
+  const actual = await page.evaluate((keys) => {
     const w = window as unknown as { __reisStore?: { getState: () => Record<string, unknown> } };
-    if (!w.__reisStore) return ['<store handle vanished>'];
+    if (!w.__reisStore) return null;
     const state = w.__reisStore.getState();
-    return Object.keys(kv as object).filter(
-      (k) => stable(state[k]) !== stable((kv as Record<string, unknown>)[k])
-    );
-  }, entries);
+    return Object.fromEntries((keys as string[]).map((k) => [k, state[k]]));
+  }, Object.keys(entries));
 
+  if (actual === null) {
+    throw new Error(`--seed-store: the store handle vanished before ${when}.`);
+  }
+  const drifted = driftedSeedKeys(entries, actual as Record<string, unknown>);
   if (drifted.length > 0) {
     throw new Error(
-      `--seed-store: the app overwrote the seed before the screenshot (${drifted.join(', ')}). ` +
-        'The run would have measured an unseeded page. Raise --wait so the seed lands after the ' +
-        "app's own sync has settled."
+      `--seed-store: the app overwrote the seed before ${when} (${drifted.join(', ')}). ` +
+        'The run would have measured an unseeded page.'
+    );
+  }
+}
+
+/**
+ * Wait for the app's OWN sync to finish before seeding, rather than guessing
+ * with a delay.
+ *
+ * `--wait` is a fixed timeout, and no fixed timeout can prove sync is done — it
+ * can always land a moment later and overwrite the seed. `firstSyncSettled` is
+ * the store's own answer to "has a sync run to completion since startup", so
+ * poll that instead and the seed goes in after the thing that would clobber it.
+ *
+ * Bounded and non-fatal: fixture and mock modes legitimately never sync, and a
+ * missing settle is not by itself a reason to fail a run — the post-seed
+ * assertions are what actually catch a clobber.
+ */
+async function waitForSyncSettled(page: Page, timeoutMs: number): Promise<void> {
+  try {
+    await page.waitForFunction(
+      () => {
+        const w = window as unknown as {
+          __reisStore?: { getState: () => { firstSyncSettled?: boolean; isSyncing?: boolean } };
+        };
+        if (!w.__reisStore) return false;
+        const s = w.__reisStore.getState();
+        return s.firstSyncSettled === true && s.isSyncing !== true;
+      },
+      undefined,
+      { timeout: timeoutMs }
+    );
+  } catch {
+    console.warn(
+      `  note: the app did not report a settled sync within ${timeoutMs}ms — seeding anyway. ` +
+        'Expected under REIS_FIXTURE / mock mode; the seed assertions still guard the result.'
     );
   }
 }
@@ -431,7 +464,10 @@ async function run(): Promise<number> {
       // cost two green runs against a five-column calendar week that did not
       // contain the seeded Saturday the run existed to photograph.
       if (opts.clicks.length > 0 || opts.seedStore) await page.waitForTimeout(opts.wait);
-      if (opts.seedStore) await seedStoreState(page, opts.seedStore);
+      if (opts.seedStore) {
+        await waitForSyncSettled(page, SYNC_SETTLE_TIMEOUT_MS);
+        await seedStoreState(page, opts.seedStore);
+      }
 
       for (const click of opts.clicks) {
         await clickByTextOrLabel(page, click, hasTouch);
@@ -445,7 +481,7 @@ async function run(): Promise<number> {
         if (opts.seedStore) await seedStoreState(page, opts.seedStore);
       }
       await page.waitForTimeout(opts.wait);
-      if (opts.seedStore) await assertSeedSurvived(page, opts.seedStore);
+      if (opts.seedStore) await assertSeedSurvived(page, opts.seedStore, 'measurement');
 
       // Which shell actually mounted, before anything is measured or believed.
       const shell = describeShell(
@@ -456,6 +492,9 @@ async function run(): Promise<number> {
 
       const shot = resolve(OUT_DIR, `${opts.label}-${width}.png`);
       await page.screenshot({ path: shot, fullPage: false });
+      // Re-check AFTER the shot: a sync landing between the measurement check and
+      // the screenshot would otherwise still produce an unseeded image.
+      if (opts.seedStore) await assertSeedSurvived(page, opts.seedStore, 'the screenshot');
 
       const probe = (await page.evaluate(probeSource)) as ProbeResult;
       const findings = analyzeProbe(probe);
