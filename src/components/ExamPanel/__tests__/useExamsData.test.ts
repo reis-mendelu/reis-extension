@@ -5,7 +5,7 @@ import { useAppStore } from '../../../store/useAppStore';
 import type { ExamSubject, ExamSection } from '../../../types/exams';
 
 const section = (over: Partial<ExamSection>): ExamSection =>
-  ({ id: 's1', name: 'Zkouška', status: 'open', type: 'exam', terms: [] , ...over }) as ExamSection;
+  ({ id: 's1', name: 'Zkouška', status: 'open', type: 'exam', terms: [], ...over }) as ExamSection;
 
 const setExams = (sections: ExamSection[]) => {
   const subject = {
@@ -33,7 +33,10 @@ describe('the sections the desktop exam panel lists', () => {
   // through the exam-terms table, and the desktop panel passed it straight
   // through on the identical `status !== 'registered'` test.
   it('drops seminar-group signup', () => {
-    setExams([section({ id: 'a', name: 'Zápis na cvičení' }), section({ id: 'b', name: 'Zkouška' })]);
+    setExams([
+      section({ id: 'a', name: 'Zápis na cvičení' }),
+      section({ id: 'b', name: 'Zkouška' }),
+    ]);
     const { result } = renderHook(() => useExamsData());
     expect(result.current.sections.map((r) => r.section.name)).toEqual(['Zkouška']);
   });

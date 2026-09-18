@@ -4,10 +4,10 @@ import { logError } from '../../utils/reportError';
 import { syncService } from '../../services/sync/SyncService';
 import { loadAllExamClassmatesFromCache } from './exams/fetchAllExamClassmates';
 import {
-    fetchAndPersistExamClassmates,
-    persistLastExamClassmatesFetched,
-    EXAM_CLASSMATES_LAST_FETCHED_KEY,
-    type FetchExamClassmatesResult,
+  fetchAndPersistExamClassmates,
+  persistLastExamClassmatesFetched,
+  EXAM_CLASSMATES_LAST_FETCHED_KEY,
+  type FetchExamClassmatesResult,
 } from './exams/fetchExamClassmatesForTermin';
 import { stripGroupSignupSections } from '../../utils/exams/isGroupSignup';
 import { fetchTermNote } from '../../api/terminyInfo';
@@ -26,7 +26,7 @@ function acquireNoteFetchSlot(): Promise<void> {
     activeNoteFetches++;
     return Promise.resolve();
   }
-  return new Promise<void>(resolve => {
+  return new Promise<void>((resolve) => {
     noteFetchQueue.push(() => {
       activeNoteFetches++;
       resolve();
@@ -44,50 +44,50 @@ type SetState = Parameters<AppSlice<ExamSlice>>[0];
 type GetState = Parameters<AppSlice<ExamSlice>>[1];
 
 function applyFetchSuccess(
-    set: SetState,
-    get: GetState,
-    terminId: string,
-    result: FetchExamClassmatesResult,
+  set: SetState,
+  get: GetState,
+  terminId: string,
+  result: FetchExamClassmatesResult
 ): void {
-    const nextLast = { ...get().lastExamClassmatesFetchedAt, [terminId]: result.fetchedAt };
-    persistLastExamClassmatesFetched(nextLast);
-    set((state: AppState) => {
-        const nextErr = { ...state.examClassmatesError };
-        delete nextErr[terminId];
-        return {
-            examClassmates: { ...state.examClassmates, [terminId]: result.data },
-            examClassmatesLoading: { ...state.examClassmatesLoading, [terminId]: false },
-            lastExamClassmatesFetchedAt: nextLast,
-            examClassmatesError: nextErr,
-        };
-    });
+  const nextLast = { ...get().lastExamClassmatesFetchedAt, [terminId]: result.fetchedAt };
+  persistLastExamClassmatesFetched(nextLast);
+  set((state: AppState) => {
+    const nextErr = { ...state.examClassmatesError };
+    delete nextErr[terminId];
+    return {
+      examClassmates: { ...state.examClassmates, [terminId]: result.data },
+      examClassmatesLoading: { ...state.examClassmatesLoading, [terminId]: false },
+      lastExamClassmatesFetchedAt: nextLast,
+      examClassmatesError: nextErr,
+    };
+  });
 }
 
 function applyFetchError(
-    set: SetState,
-    terminId: string,
-    e: unknown,
-    { defaultEmpty }: { defaultEmpty: boolean } = { defaultEmpty: false },
+  set: SetState,
+  terminId: string,
+  e: unknown,
+  { defaultEmpty }: { defaultEmpty: boolean } = { defaultEmpty: false }
 ): void {
-    const msg = e instanceof Error ? e.message : String(e);
-    set((state: AppState) => ({
-        examClassmates: defaultEmpty
-            ? { ...state.examClassmates, [terminId]: state.examClassmates[terminId] ?? [] }
-            : state.examClassmates,
-        examClassmatesLoading: { ...state.examClassmatesLoading, [terminId]: false },
-        examClassmatesError: { ...state.examClassmatesError, [terminId]: msg },
-    }));
+  const msg = e instanceof Error ? e.message : String(e);
+  set((state: AppState) => ({
+    examClassmates: defaultEmpty
+      ? { ...state.examClassmates, [terminId]: state.examClassmates[terminId] ?? [] }
+      : state.examClassmates,
+    examClassmatesLoading: { ...state.examClassmatesLoading, [terminId]: false },
+    examClassmatesError: { ...state.examClassmatesError, [terminId]: msg },
+  }));
 }
 
 function clearLoadingAndError(set: SetState, terminId: string): void {
-    set((state: AppState) => {
-        const nextErr = { ...state.examClassmatesError };
-        delete nextErr[terminId];
-        return {
-            examClassmatesLoading: { ...state.examClassmatesLoading, [terminId]: false },
-            examClassmatesError: nextErr,
-        };
-    });
+  set((state: AppState) => {
+    const nextErr = { ...state.examClassmatesError };
+    delete nextErr[terminId];
+    return {
+      examClassmatesLoading: { ...state.examClassmatesLoading, [terminId]: false },
+      examClassmatesError: nextErr,
+    };
+  });
 }
 
 export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
@@ -277,9 +277,9 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
     // exam — drop it before anything in the app can treat it as one.
     data = stripGroupSignupSections(data);
     set((state) => ({
-        exams: { ...state.exams, data },
-        lastExamsFetchedAt: Date.now(),
-        examsRefreshing: false,
+      exams: { ...state.exams, data },
+      lastExamsFetchedAt: Date.now(),
+      examsRefreshing: false,
     }));
     IndexedDBService.set('exams', 'current', data).catch(() => {});
     IndexedDBService.set('meta', 'exams_modified', Date.now()).catch(() => {});

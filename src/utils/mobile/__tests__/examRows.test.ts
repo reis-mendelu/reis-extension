@@ -11,7 +11,14 @@ const term = (over: Partial<ExamTerm> = {}): ExamTerm => ({
 });
 
 const section = (over: Partial<ExamSection>): ExamSection =>
-  ({ id: 's1', name: 'Zkouška', status: 'open', type: 'exam', terms: [term()], ...over }) as ExamSection;
+  ({
+    id: 's1',
+    name: 'Zkouška',
+    status: 'open',
+    type: 'exam',
+    terms: [term()],
+    ...over,
+  }) as ExamSection;
 
 const subject = (sections: ExamSection[]): ExamSubject =>
   ({ version: 1, id: 'ALG', code: 'ALG', name: 'Algoritmizace', sections }) as ExamSubject;
@@ -27,7 +34,12 @@ describe('the rows the Zkoušky screen is built from', () => {
   // is simply not an exam and Zkoušky is not where it belongs.
   it('drops a seminar-group signup from the open group', () => {
     const rows = buildOpenExams(
-      [subject([section({ id: 'a', name: 'Zápis na cvičení' }), section({ id: 'b', name: 'Zkouška' })])],
+      [
+        subject([
+          section({ id: 'a', name: 'Zápis na cvičení' }),
+          section({ id: 'b', name: 'Zkouška' }),
+        ]),
+      ],
       'cz'
     );
     expect(rows.map((r) => r.sectionName)).toEqual(['Zkouška']);
@@ -37,7 +49,11 @@ describe('the rows the Zkoušky screen is built from', () => {
     const rows = buildOpenExams(
       [
         subject([
-          section({ name: 'Zápis na cvičení', nameCs: 'Zápis na cvičení', nameEn: 'Seminar signup' }),
+          section({
+            name: 'Zápis na cvičení',
+            nameCs: 'Zápis na cvičení',
+            nameEn: 'Seminar signup',
+          }),
         ]),
       ],
       'en'

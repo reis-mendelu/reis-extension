@@ -1,18 +1,16 @@
- 
- 
-import { parseExamData } from "../utils/parsers/exams";
-import type { ExamSubject } from "../types/exams";
-import { fetchWithAuth } from "./client";
-import { getUserParams } from "../utils/userParams";
-import { logError } from "../utils/reportError";
+import { parseExamData } from '../utils/parsers/exams';
+import type { ExamSubject } from '../types/exams';
+import { fetchWithAuth } from './client';
+import { getUserParams } from '../utils/userParams';
+import { logError } from '../utils/reportError';
 
 /**
  * Result of exam registration/unregistration.
  * Includes success status and optional error message for UI feedback.
  */
 export interface ExamActionResult {
-    success: boolean;
-    error?: string;
+  success: boolean;
+  error?: string;
 }
 
 /**
@@ -20,12 +18,12 @@ export interface ExamActionResult {
  * Removed hardcoded studium that only worked for one user.
  */
 async function getExamListUrl(lang: string = 'cz'): Promise<string> {
-    const isLang = lang;
-    const params = await getUserParams();
-    if (!params?.studium) {
-        return `https://is.mendelu.cz/auth/student/terminy_seznam.pl?lang=${isLang}`;
-    }
-    return `https://is.mendelu.cz/auth/student/terminy_seznam.pl?studium=${params.studium};lang=${isLang}`;
+  const isLang = lang;
+  const params = await getUserParams();
+  if (!params?.studium) {
+    return `https://is.mendelu.cz/auth/student/terminy_seznam.pl?lang=${isLang}`;
+  }
+  return `https://is.mendelu.cz/auth/student/terminy_seznam.pl?studium=${params.studium};lang=${isLang}`;
 }
 
 /**
@@ -33,16 +31,17 @@ async function getExamListUrl(lang: string = 'cz'): Promise<string> {
  * IS MENDELU shows the term in table_1 (registered) after success.
  */
 function verifyRegistrationSuccess(html: string, termId: string): boolean {
-    // After successful registration, the term should appear in registered table
-    // Check for the term ID in unregister links (confirms registration)
-    const hasUnregisterLink = html.includes(`termin=${termId}`) && html.includes('odhlasit_ihned=1');
-    
-    // Also check for common error patterns
-    const hasError = html.includes('Termín je již plný') || 
-                     html.includes('nelze přihlásit') ||
-                     html.includes('Chyba');
-    
-    return hasUnregisterLink && !hasError;
+  // After successful registration, the term should appear in registered table
+  // Check for the term ID in unregister links (confirms registration)
+  const hasUnregisterLink = html.includes(`termin=${termId}`) && html.includes('odhlasit_ihned=1');
+
+  // Also check for common error patterns
+  const hasError =
+    html.includes('Termín je již plný') ||
+    html.includes('nelze přihlásit') ||
+    html.includes('Chyba');
+
+  return hasUnregisterLink && !hasError;
 }
 
 /**
@@ -52,27 +51,27 @@ function verifyRegistrationSuccess(html: string, termId: string): boolean {
  * the unregister link for this term is absent.
  */
 function verifyUnregistrationSuccess(html: string, termId: string): boolean {
-    // Anchor both tokens to the SAME link: the exam-list page lists every term
-    // for every subject, so a bare html.includes('odhlasit_ihned=1') would match
-    // an unrelated still-registered exam, and a bare termin=${termId} collides
-    // with longer ids (555 vs 5550). Require termin=<id> (word-bounded) followed
-    // by odhlasit_ihned=1 within the same href (no quote/space breaking out).
-    const escaped = termId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const stillRegistered = new RegExp(`termin=${escaped}\\b[^"'\\s]*odhlasit_ihned=1`).test(html);
-    return !stillRegistered;
+  // Anchor both tokens to the SAME link: the exam-list page lists every term
+  // for every subject, so a bare html.includes('odhlasit_ihned=1') would match
+  // an unrelated still-registered exam, and a bare termin=${termId} collides
+  // with longer ids (555 vs 5550). Require termin=<id> (word-bounded) followed
+  // by odhlasit_ihned=1 within the same href (no quote/space breaking out).
+  const escaped = termId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const stillRegistered = new RegExp(`termin=${escaped}\\b[^"'\\s]*odhlasit_ihned=1`).test(html);
+  return !stillRegistered;
 }
 
 export async function fetchExamData(lang: string = 'cz'): Promise<ExamSubject[]> {
-    try {
-        const url = await getExamListUrl(lang);
-        const response = await fetchWithAuth(url);
-        const html = await response.text();
-        const data = parseExamData(html, lang);
-        return data;
-    } catch (error) {
-        logError('Api.fetchExamData', error, { lang });
-        return [];
-    }
+  try {
+    const url = await getExamListUrl(lang);
+    const response = await fetchWithAuth(url);
+    const html = await response.text();
+    const data = parseExamData(html, lang);
+    return data;
+  } catch (error) {
+    logError('Api.fetchExamData', error, { lang });
+    return [];
+  }
 }
 
 /**
@@ -80,98 +79,120 @@ export async function fetchExamData(lang: string = 'cz'): Promise<ExamSubject[]>
  * Enables instant language switching in the UI.
  */
 export async function fetchDualLanguageExams(): Promise<ExamSubject[]> {
-    try {
-        const [czData, enData] = await Promise.all([
-            fetchExamData('cz'),
-            fetchExamData('en')
-        ]);
-        const merged: ExamSubject[] = [...czData];
-
-        enData.forEach(enSubject => {
-            const czSubject = merged.find(s => s.code === enSubject.code);
-            if (czSubject) {
-                // Merge localized name
-                czSubject.nameEn = enSubject.nameEn;
-                
-                // Merge sections
-                enSubject.sections.forEach(enSection => {
-                    const czSection = czSubject.sections.find(s =>
-                        s.id === enSection.id ||
-                        s.name === enSection.name ||
-                        s.terms.some(t => enSection.terms.some(et =>
-                            (et.id && et.id === t.id) ||
-                            (t.date === et.date && t.time === et.time && t.teacher === et.teacher)
-                        )) ||
-                        (s.registeredTerm && enSection.registeredTerm && (
-                            (s.registeredTerm.id && s.registeredTerm.id === enSection.registeredTerm.id) ||
-                            (s.registeredTerm.date === enSection.registeredTerm.date && s.registeredTerm.time === enSection.registeredTerm.time)
-                        ))
-                    );
-                    
-                    if (czSection) {
-                        czSection.nameEn = enSection.nameEn;
-                        
-                        // Merge terms
-                        enSection.terms.forEach(enTerm => {
-                            const czTerm = czSection.terms.find(t => t.id === enTerm.id);
-                            if (czTerm) {
-                                czTerm.roomEn = enTerm.roomEn;
-                                czTerm.sectionFormEn = enTerm.sectionFormEn;
-                            }
-                        });
-
-                        // Merge registered term if it exists
-                        if (enSection.registeredTerm && czSection.registeredTerm) {
-                            czSection.registeredTerm.roomEn = enSection.registeredTerm.roomEn;
-                        }
-                    } else {
-                        // Section only exists in EN? (Unlikely but safe to add)
-                        czSubject.sections.push(enSection);
-                    }
-                });
-            } else {
-                merged.push(enSubject);
-            }
-        });
-
-        return merged;
-    } catch (error) {
-        logError('Api.fetchDualLanguageExams', error);
-        return fetchExamData('cz'); // Fallback to CZ
+  try {
+    const [czData, enData] = await Promise.all([fetchExamData('cz'), fetchExamData('en')]);
+    // Both calls hit the same page for the same account, so an empty CZ
+    // result beside a non-empty EN one is a failed CZ fetch, not a student
+    // with no terms — `fetchExamData` swallows failures into [].
+    //
+    // Reporting nothing beats reporting the English half. The merge would
+    // otherwise emit sections carrying `nameEn` and no `nameCs`, which is
+    // a fully English exam screen for a Czech student AND a hole in
+    // `isGroupSignupSection` (it matches the Czech druh, by design, so it
+    // would not recognise seminar signup here and the row would come
+    // back). `setExams` already keeps the currently-displayed exams when
+    // handed an empty list, so the student keeps the last good data.
+    if (czData.length === 0 && enData.length > 0) {
+      logError(
+        'Api.fetchDualLanguageExams',
+        new Error('CZ fetch returned nothing while EN succeeded'),
+        {
+          enSubjects: enData.length,
+        }
+      );
+      return [];
     }
+    const merged: ExamSubject[] = [...czData];
+
+    enData.forEach((enSubject) => {
+      const czSubject = merged.find((s) => s.code === enSubject.code);
+      if (czSubject) {
+        // Merge localized name
+        czSubject.nameEn = enSubject.nameEn;
+
+        // Merge sections
+        enSubject.sections.forEach((enSection) => {
+          const czSection = czSubject.sections.find(
+            (s) =>
+              s.id === enSection.id ||
+              s.name === enSection.name ||
+              s.terms.some((t) =>
+                enSection.terms.some(
+                  (et) =>
+                    (et.id && et.id === t.id) ||
+                    (t.date === et.date && t.time === et.time && t.teacher === et.teacher)
+                )
+              ) ||
+              (s.registeredTerm &&
+                enSection.registeredTerm &&
+                ((s.registeredTerm.id && s.registeredTerm.id === enSection.registeredTerm.id) ||
+                  (s.registeredTerm.date === enSection.registeredTerm.date &&
+                    s.registeredTerm.time === enSection.registeredTerm.time)))
+          );
+
+          if (czSection) {
+            czSection.nameEn = enSection.nameEn;
+
+            // Merge terms
+            enSection.terms.forEach((enTerm) => {
+              const czTerm = czSection.terms.find((t) => t.id === enTerm.id);
+              if (czTerm) {
+                czTerm.roomEn = enTerm.roomEn;
+                czTerm.sectionFormEn = enTerm.sectionFormEn;
+              }
+            });
+
+            // Merge registered term if it exists
+            if (enSection.registeredTerm && czSection.registeredTerm) {
+              czSection.registeredTerm.roomEn = enSection.registeredTerm.roomEn;
+            }
+          } else {
+            // Section only exists in EN? (Unlikely but safe to add)
+            czSubject.sections.push(enSection);
+          }
+        });
+      } else {
+        merged.push(enSubject);
+      }
+    });
+
+    return merged;
+  } catch (error) {
+    logError('Api.fetchDualLanguageExams', error);
+    return fetchExamData('cz'); // Fallback to CZ
+  }
 }
 
 export async function registerExam(termId: string): Promise<ExamActionResult> {
-    try {
-        const params = await getUserParams();
-        if (!params?.studium) {
-            return { success: false, error: 'Chybí údaje o studiu. Zkuste obnovit stránku.' };
-        }
-        
-        const url = `https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=${termId};studium=${params.studium};obdobi=${params.obdobi};prihlasit_ihned=1;lang=cz`;
-        const response = await fetchWithAuth(url);
-        const html = await response.text();
-        
-        // Verify the registration actually worked
-        if (verifyRegistrationSuccess(html, termId)) {
-            return { success: true };
-        }
-        
-        // Check for specific error messages
-        if (html.includes('Termín je již plný')) {
-            return { success: false, error: 'Termín je již plný.' };
-        }
-        if (html.includes('nelze přihlásit')) {
-            return { success: false, error: 'Na tento termín se nelze přihlásit.' };
-        }
-        
-        // Generic failure
-        return { success: false, error: 'Registrace se nepodařila ověřit. Zkontrolujte v IS.' };
-        
-    } catch (error) {
-        logError('Api.registerExam', error);
-        return { success: false, error: 'Chyba připojení. Zkuste to znovu.' };
+  try {
+    const params = await getUserParams();
+    if (!params?.studium) {
+      return { success: false, error: 'Chybí údaje o studiu. Zkuste obnovit stránku.' };
     }
+
+    const url = `https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=${termId};studium=${params.studium};obdobi=${params.obdobi};prihlasit_ihned=1;lang=cz`;
+    const response = await fetchWithAuth(url);
+    const html = await response.text();
+
+    // Verify the registration actually worked
+    if (verifyRegistrationSuccess(html, termId)) {
+      return { success: true };
+    }
+
+    // Check for specific error messages
+    if (html.includes('Termín je již plný')) {
+      return { success: false, error: 'Termín je již plný.' };
+    }
+    if (html.includes('nelze přihlásit')) {
+      return { success: false, error: 'Na tento termín se nelze přihlásit.' };
+    }
+
+    // Generic failure
+    return { success: false, error: 'Registrace se nepodařila ověřit. Zkontrolujte v IS.' };
+  } catch (error) {
+    logError('Api.registerExam', error);
+    return { success: false, error: 'Chyba připojení. Zkuste to znovu.' };
+  }
 }
 
 /**
@@ -184,37 +205,36 @@ export async function registerExam(termId: string): Promise<ExamActionResult> {
  * HTTP response. The follow-up exam refresh will pick up any state change.
  */
 export async function triggerWatchdog(watchdogUrl: string): Promise<ExamActionResult> {
-    try {
-        const response = await fetchWithAuth(watchdogUrl);
-        if (!response.ok) {
-            logError('Api.triggerWatchdog', new Error(`HTTP ${response.status}`), { watchdogUrl });
-            return { success: false, error: 'Aktivace hlídače se nepodařila.' };
-        }
-        return { success: true };
-    } catch (error) {
-        logError('Api.triggerWatchdog', error, { watchdogUrl });
-        return { success: false, error: 'Chyba připojení. Zkuste to znovu.' };
+  try {
+    const response = await fetchWithAuth(watchdogUrl);
+    if (!response.ok) {
+      logError('Api.triggerWatchdog', new Error(`HTTP ${response.status}`), { watchdogUrl });
+      return { success: false, error: 'Aktivace hlídače se nepodařila.' };
     }
+    return { success: true };
+  } catch (error) {
+    logError('Api.triggerWatchdog', error, { watchdogUrl });
+    return { success: false, error: 'Chyba připojení. Zkuste to znovu.' };
+  }
 }
 
 export async function unregisterExam(termId: string): Promise<ExamActionResult> {
-    try {
-        const params = await getUserParams();
-        if (!params?.studium) {
-            return { success: false, error: 'Chybí údaje o studiu. Zkuste obnovit stránku.' };
-        }
-        
-        const url = `https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=${termId};studium=${params.studium};obdobi=${params.obdobi};odhlasit_ihned=1;lang=cz`;
-        const response = await fetchWithAuth(url);
-        const html = await response.text();
-
-        if (verifyUnregistrationSuccess(html, termId)) {
-            return { success: true };
-        }
-        return { success: false, error: 'Odhlášení se nepodařilo ověřit. Zkontrolujte v IS.' };
-
-    } catch (error) {
-        logError('Api.unregisterExam', error);
-        return { success: false, error: 'Chyba připojení. Zkuste to znovu.' };
+  try {
+    const params = await getUserParams();
+    if (!params?.studium) {
+      return { success: false, error: 'Chybí údaje o studiu. Zkuste obnovit stránku.' };
     }
+
+    const url = `https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=${termId};studium=${params.studium};obdobi=${params.obdobi};odhlasit_ihned=1;lang=cz`;
+    const response = await fetchWithAuth(url);
+    const html = await response.text();
+
+    if (verifyUnregistrationSuccess(html, termId)) {
+      return { success: true };
+    }
+    return { success: false, error: 'Odhlášení se nepodařilo ověřit. Zkontrolujte v IS.' };
+  } catch (error) {
+    logError('Api.unregisterExam', error);
+    return { success: false, error: 'Chyba připojení. Zkuste to znovu.' };
+  }
 }

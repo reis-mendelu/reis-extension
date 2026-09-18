@@ -5,7 +5,10 @@ import { useMenuItems } from '../../../hooks/ui/useMenuItems';
 import type { ExamSubject } from '../../../types/exams';
 
 vi.mock('../../../services/storage', () => ({
-  IndexedDBService: { get: vi.fn().mockResolvedValue(null), set: vi.fn().mockResolvedValue(undefined) },
+  IndexedDBService: {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue(undefined),
+  },
 }));
 
 // useMenuItems pulls studium/obdobi through useUserParams, which otherwise
