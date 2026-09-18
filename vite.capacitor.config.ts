@@ -3,6 +3,7 @@ import { dirname, resolve } from 'path';
 import { createRequire } from 'module';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { stripDevRealDataPlugin } from './scripts/stripDevRealData.mjs';
 
 // Where npm actually installed the dependencies. Identical to `<root>/node_modules`
 // in a normal checkout; in a git worktree it points at the MAIN checkout instead.
@@ -21,7 +22,12 @@ export default defineConfig({
   // `capacitor/` — a directory with no .env — so the project-root .env was
   // never read and every VITE_* var came out undefined.
   envDir: __dirname,
-  plugins: [react(), tailwindcss()],
+  // `publicDir` below copies public/ verbatim, and `npx cap sync` then copies
+  // dist-capacitor/ into ios/App/App/public/ and the Android assets — so a
+  // local snapshot on the build machine ends up inside the store binary. The
+  // web build has stripped these since it started publishing to a public URL;
+  // this build never did.
+  plugins: [react(), tailwindcss(), stripDevRealDataPlugin()],
   // The app has no extension manifest to read a version out of, so telemetry
   // and the feedback form reported 0.0.0 / a hand-edited constant for every
   // report a phone ever sent. Injected here instead.

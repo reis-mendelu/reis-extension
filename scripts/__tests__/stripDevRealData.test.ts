@@ -2,7 +2,11 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { chmodSync, existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { DEV_REAL_DATA_FILENAME, stripDevRealDataFile } from '../stripDevRealData.mjs';
+import {
+  DEV_REAL_DATA_FILENAME,
+  SNAPSHOT_FILENAMES,
+  stripDevRealDataFile,
+} from '../stripDevRealData.mjs';
 
 describe('stripDevRealDataFile', () => {
   let dir: string;
@@ -49,5 +53,37 @@ describe('stripDevRealDataFile', () => {
     chmodSync(dir, 0o555);
 
     expect(() => stripDevRealDataFile(dir)).toThrow(/dev-real-data\.json/);
+  });
+});
+
+// `sanitise:snapshot` writes a SECOND snapshot next to the first —
+// public/preview-data.json, the sanitised record `npm run preview:real`
+// serves. The strip only ever knew about dev-real-data.json, so preview-data
+// rode into every production build that had one on disk.
+describe('preview-data.json, the other local snapshot', () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'reis-snapshot-strip-'));
+  });
+
+  afterEach(() => {
+    chmodSync(dir, 0o755);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('is listed as a snapshot that must never ship', () => {
+    expect(SNAPSHOT_FILENAMES).toContain('preview-data.json');
+    expect(SNAPSHOT_FILENAMES).toContain(DEV_REAL_DATA_FILENAME);
+  });
+
+  it('is deleted from the build output, not just dev-real-data.json', () => {
+    writeFileSync(join(dir, 'preview-data.json'), '{"schedule":[]}');
+    writeFileSync(join(dir, DEV_REAL_DATA_FILENAME), '{"schedule":[]}');
+
+    stripDevRealDataFile(dir);
+
+    expect(existsSync(join(dir, 'preview-data.json'))).toBe(false);
+    expect(existsSync(join(dir, DEV_REAL_DATA_FILENAME))).toBe(false);
   });
 });
