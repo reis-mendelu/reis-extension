@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, act } from '@testing-library/react';
 import { CurrentTimeIndicator } from '../CurrentTimeIndicator';
 
 /**
@@ -43,6 +43,23 @@ describe('CurrentTimeIndicator', () => {
     // happened to cover this, and it still has to.
     expect(leftOf(5, 6)).toBeNull();
     expect(leftOf(6, 6)).toBeNull();
+  });
+
+  // The cleanup was returned from inside the setTimeout callback, where React
+  // never sees it, so the once-a-minute interval outlived the component and kept
+  // calling setNow on an unmounted tree.
+  it('clears its minute interval when the calendar unmounts', () => {
+    vi.setSystemTime(at(10));
+    const { unmount } = render(<CurrentTimeIndicator todayIndex={0} dayCount={5} />);
+
+    // Cross the first minute boundary so the interval is actually created.
+    act(() => {
+      vi.advanceTimersByTime(61_000);
+    });
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+
+    unmount();
+    expect(vi.getTimerCount(), 'a timer survived unmount').toBe(0);
   });
 
   it('draws nothing outside grid hours or when today is not in this week', () => {

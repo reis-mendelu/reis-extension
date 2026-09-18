@@ -13,13 +13,20 @@ export function CurrentTimeIndicator({ todayIndex, dayCount }: CurrentTimeIndica
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
+    // The interval id has to live in the EFFECT's scope, not the timeout
+    // callback's: a cleanup returned from a setTimeout callback goes nowhere,
+    // so the minute tick used to outlive the component and setNow kept firing
+    // on an unmounted tree.
+    let interval: ReturnType<typeof setInterval> | undefined;
     const ms = (60 - new Date().getSeconds()) * 1000;
     const timeout = setTimeout(() => {
       setNow(new Date());
-      const interval = setInterval(() => setNow(new Date()), 60_000);
-      return () => clearInterval(interval);
+      interval = setInterval(() => setNow(new Date()), 60_000);
     }, ms);
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+      if (interval) clearInterval(interval);
+    };
   }, []);
 
   const hours = now.getHours();

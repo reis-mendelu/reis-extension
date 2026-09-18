@@ -16,12 +16,14 @@
 //    student actually walks into (the riding hall).
 
 import { readFileSync, writeFileSync } from 'node:fs';
-
-const OVERPASS_ENDPOINTS = [
-  'https://overpass-api.de/api/interpreter',
-  'https://overpass.kumi.systems/api/interpreter',
-  'https://overpass.private.coffee/api/interpreter',
-];
+import {
+  assembleOuterRings,
+  closeRing,
+  largestRing,
+  ringCentroid,
+  ringContaining,
+} from './lib/osmRings.mjs';
+import { overpass } from './lib/overpass.mjs';
 
 // Site shapes:
 //  - wayId          → one Polygon outline (a single areal / building)
@@ -81,50 +83,6 @@ const SITES = [
   },
 ];
 
-async function overpass(query, attempt = 0) {
-  const endpoint = OVERPASS_ENDPOINTS[attempt % OVERPASS_ENDPOINTS.length];
-  let res;
-  try {
-    const ac = new AbortController();
-    const to = setTimeout(() => ac.abort(), 30000); // some mirrors hang — cap the wait
-    try {
-      res = await fetch(endpoint, {
-        method: 'POST',
-        signal: ac.signal,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'User-Agent': 'reIS-mendelu-remote-places-fetch/1.0 (https://github.com/reis-mendelu)',
-        },
-        body: 'data=' + encodeURIComponent(query),
-      });
-    } finally {
-      clearTimeout(to);
-    }
-  } catch (e) {
-    if (attempt < 8) {
-      await new Promise((r) => setTimeout(r, 3000));
-      return overpass(query, attempt + 1);
-    }
-    throw e;
-  }
-  // 429 (rate limit) and 5xx (overloaded/timeout) are transient — back off and
-  // rotate to the next mirror.
-  if ((res.status === 429 || res.status >= 500) && attempt < 8) {
-    const wait = 3000 * (attempt + 1);
-    console.warn(`  HTTP ${res.status} from ${endpoint}, retrying in ${wait / 1000}s…`);
-    await new Promise((r) => setTimeout(r, wait));
-    return overpass(query, attempt + 1);
-  }
-  if (!res.ok) throw new Error(`Overpass HTTP ${res.status}`);
-  return res.json();
-}
-
-const closeRing = (ring) => {
-  if (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1])
-    ring.push(ring[0]);
-  return ring;
-};
-
 // A single way → one closed ring.
 async function fetchWay(wayId) {
   const json = await overpass(`[out:json][timeout:30];way(id:${wayId});out geom;`);
@@ -134,52 +92,20 @@ async function fetchWay(wayId) {
 }
 
 // A multipolygon relation → its outer rings, for an areal OSM maps as a relation
-// rather than a single closed way. Members come back as ways with geometry; only
-// the `outer` role bounds the site (an `inner` role would be a hole).
+// rather than a single closed way. Only the `outer` role bounds the site (an
+// `inner` role would be a hole). Members are frequently OPEN ways that have to
+// be walked end-to-end, so hand them to assembleOuterRings rather than closing
+// each one where it happens to stop.
 async function fetchRelationOuterRings(relationId) {
   const json = await overpass(`[out:json][timeout:30];rel(id:${relationId});out geom;`);
   const rel = (json.elements || []).find((e) => e.type === 'relation' && Array.isArray(e.members));
   if (!rel) return null;
-  const rings = rel.members
+  const ways = rel.members
     .filter((m) => m.type === 'way' && m.role === 'outer' && Array.isArray(m.geometry))
-    .map((m) => closeRing(m.geometry.map((g) => [g.lon, g.lat])));
+    .map((m) => m.geometry.map((g) => [g.lon, g.lat]));
+  const rings = assembleOuterRings(ways);
   return rings.length > 0 ? rings : null;
 }
-
-const ringCentroid = (ring) => {
-  let x = 0,
-    y = 0;
-  for (const [lon, lat] of ring) {
-    x += lon;
-    y += lat;
-  }
-  return [x / ring.length, y / ring.length];
-};
-
-// Ray casting — which outer ring encloses the drawn building.
-const pointInRing = ([px, py], ring) => {
-  let inside = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const [xi, yi] = ring[i];
-    const [xj, yj] = ring[j];
-    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside;
-  }
-  return inside;
-};
-
-const ringContaining = (rings, point) => rings.find((r) => pointInRing(point, r)) ?? null;
-
-// Shoelace area, used only to break a tie when no ring encloses the building.
-const ringArea = (ring) => {
-  let a = 0;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    a += (ring[j][0] + ring[i][0]) * (ring[j][1] - ring[i][1]);
-  }
-  return Math.abs(a / 2);
-};
-
-const largestRing = (rings) =>
-  rings.reduce((best, r) => (ringArea(r) > ringArea(best) ? r : best), rings[0]);
 
 // A grounds polygon → its boundary ring + every building ring inside it.
 async function fetchBuildingsInGrounds(groundsWayId) {

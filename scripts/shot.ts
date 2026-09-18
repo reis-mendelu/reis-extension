@@ -241,6 +241,45 @@ async function seedStoreState(page: Page, json: string): Promise<void> {
 }
 
 /**
+ * Fail loudly if the app overwrote the seed before we measured it.
+ *
+ * Waiting longer before seeding narrows the race but cannot close it: the app's
+ * own sync can land at any time, and a clobbered seed produces a run that
+ * measures an UNSEEDED page and reports clean — findings that are true and
+ * meaningless. That is the one failure a verification tool must never have, so
+ * the seeded keys are read back after the final settle and a drift is an error,
+ * not a warning.
+ *
+ * Compared with key order normalised, because a store that rebuilt an object
+ * with identical content has not lost the seed.
+ */
+async function assertSeedSurvived(page: Page, json: string): Promise<void> {
+  const entries = JSON.parse(json) as Record<string, unknown>;
+  const drifted = await page.evaluate((kv) => {
+    const stable = (v: unknown): string =>
+      JSON.stringify(v, (_k, val) =>
+        val && typeof val === 'object' && !Array.isArray(val)
+          ? Object.fromEntries(Object.entries(val as object).sort(([a], [b]) => a.localeCompare(b)))
+          : val
+      );
+    const w = window as unknown as { __reisStore?: { getState: () => Record<string, unknown> } };
+    if (!w.__reisStore) return ['<store handle vanished>'];
+    const state = w.__reisStore.getState();
+    return Object.keys(kv as object).filter(
+      (k) => stable(state[k]) !== stable((kv as Record<string, unknown>)[k])
+    );
+  }, entries);
+
+  if (drifted.length > 0) {
+    throw new Error(
+      `--seed-store: the app overwrote the seed before the screenshot (${drifted.join(', ')}). ` +
+        'The run would have measured an unseeded page. Raise --wait so the seed lands after the ' +
+        "app's own sync has settled."
+    );
+  }
+}
+
+/**
  * Click (or, on a touch context, tap) a step of a `--click` path. Visible text
  * first, then accessible name: icon-only controls (the phone shell's initials
  * avatar, a bare chevron) carry their meaning in `aria-label`, and a text-only
@@ -406,6 +445,7 @@ async function run(): Promise<number> {
         if (opts.seedStore) await seedStoreState(page, opts.seedStore);
       }
       await page.waitForTimeout(opts.wait);
+      if (opts.seedStore) await assertSeedSurvived(page, opts.seedStore);
 
       // Which shell actually mounted, before anything is measured or believed.
       const shell = describeShell(
