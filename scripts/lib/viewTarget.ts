@@ -56,13 +56,26 @@ export type ViewPlan =
  * that failure mode survives for months. A screenshot that cannot show the
  * requested view is worth less than no screenshot at all.
  *
- * `none` is deliberately permissive. Neither shell testid is present in the
- * admin console, which is a legitimate `verify:ui` target — failing it here
- * would break a working workflow to guard a screen it does not have.
+ * `none` is permissive for a DESKTOP view only. Neither shell testid is present
+ * in the admin console, a legitimate `verify:ui` target, so failing every `none`
+ * would break a working workflow to guard a screen it does not have. A phone tab
+ * is the opposite case: `none` there means an app that never booted, or one
+ * still blank when the wait expired, and the shot would come from whichever tab
+ * the app happened to start on — the original bug, wearing a timeout.
  */
 export function planView(view: string | undefined, shell: Shell): ViewPlan {
   if (!view) return { kind: 'seed-only', why: 'no --view was passed' };
 
+  if (shell === 'none' && isMobileTab(view)) {
+    return {
+      kind: 'impossible',
+      message:
+        `--view "${view}" is a phone tab, but no reIS shell ever mounted — the page is blank, ` +
+        'still booting, or is not the reIS app. The tab cannot be switched and nothing on screen ' +
+        'is the requested view, so this run would have photographed whatever the app started on ' +
+        'and reported it clean.',
+    };
+  }
   if (shell === 'none') {
     return {
       kind: 'seed-only',

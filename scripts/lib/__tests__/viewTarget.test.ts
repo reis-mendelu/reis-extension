@@ -52,8 +52,18 @@ describe('planView', () => {
     expect(planView('studyPlan', 'both').kind).toBe('seed-only');
   });
 
-  it('does not touch a target with no reIS shell (the admin console)', () => {
-    expect(planView('exams', 'none').kind).toBe('seed-only');
+  it('refuses a phone tab when no shell ever mounted', () => {
+    // The timeout-shaped version of the original bug: a blank or slow-booting
+    // app reads as `none`, and a permissive `none` would shoot whichever tab
+    // the app started on and call it the requested view.
+    for (const tab of MOBILE_TABS) {
+      expect(planView(tab, 'none').kind).toBe('impossible');
+    }
+  });
+
+  it('still lets a shell-less target through for a desktop view (the admin console)', () => {
+    expect(planView('settings', 'none').kind).toBe('seed-only');
+    expect(planView(undefined, 'none').kind).toBe('seed-only');
     expect(planView(undefined, 'phone').kind).toBe('seed-only');
   });
 });
