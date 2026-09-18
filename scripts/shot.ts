@@ -9,8 +9,11 @@
  * Conventions exist so results are comparable between runs and can't go stale:
  *   - widths are always 320 / 390 / 430 unless overridden
  *   - output always lands in .verify/ (gitignored), WIPED at the start of a run
- *   - the view is seeded into IndexedDB, never clicked — clicking a nav tab and
- *     screenshotting the result is how a hidden preview pane lies to you
+ *   - the view is never clicked — clicking a nav tab and screenshotting the
+ *     result is how a hidden preview pane lies to you. The desktop tree gets it
+ *     seeded into IndexedDB; the phone tree routes on `mobileTab` instead, so
+ *     there it is driven through the dev store handle and then PROVEN by the
+ *     screen's own testid (scripts/lib/viewTarget.ts)
  *   - every written path is printed absolute, so there is no "wrong out dir"
  *
  * Requires `npm run dev:web` to be serving on :3000.
@@ -25,9 +28,12 @@ import {
   describeShell,
   type Finding,
   type ProbeResult,
+  type Shell,
 } from './lib/uiFindings';
 import { probeSource } from './lib/uiProbe';
 import { driftedSeedKeys } from './lib/seedGuard';
+import { planView, type ViewPlan } from './lib/viewTarget';
+import type { MobileTab } from '../src/store/types';
 
 const DEFAULT_WIDTHS = [320, 390, 430];
 const DEFAULT_URL = 'http://localhost:3000';
@@ -436,6 +442,86 @@ async function clickByTextOrLabel(page: Page, text: string, hasTouch: boolean): 
   await page.touchscreen.tap(cx, cy);
 }
 
+/** Which shell actually mounted — asked of the DOM, never inferred from the
+ *  viewport width. The app's breakpoint is free to move; this reading is not. */
+async function readShell(page: Page): Promise<Shell> {
+  return describeShell(
+    (await page.locator('[data-testid="desktop-app"]').count()) > 0,
+    (await page.locator('[data-testid="mobile-app"]').count()) > 0
+  );
+}
+
+/**
+ * Work out what `--view` means here, once something has rendered.
+ *
+ * The wait is load-bearing: `load` fires before React paints, and a shell read
+ * an instant too early comes back `none` — which plans nothing and restores the
+ * exact silent no-op this is here to remove. Not fatal on its own, because a
+ * target with no reIS shell (the admin console) is legitimate; `planView`
+ * decides what that means.
+ */
+async function planRequestedView(page: Page, view: string | undefined): Promise<ViewPlan> {
+  if (!view) return planView(undefined, 'none');
+  await page
+    .waitForSelector('[data-testid="desktop-app"], [data-testid="mobile-app"]', { timeout: 15000 })
+    .catch(() => undefined);
+  return planView(view, await readShell(page));
+}
+
+/**
+ * Switch the phone shell's tab through the store handle the dev webapp
+ * publishes (`window.__reisStore`, dev/storeHandle.ts) — the same mechanism
+ * `scripts/check-app.ts` drives its own tab sweep with.
+ *
+ * A missing handle is an error, not a warning. Without it the run would fall
+ * back to whatever tab the app booted on — the calendar — and photograph that
+ * under the name of the view that was asked for, which is precisely the failure
+ * that hid here for months while every run reported success.
+ */
+async function applyMobileTab(page: Page, tab: MobileTab): Promise<void> {
+  await page
+    .waitForFunction(() => '__reisStore' in window, undefined, { timeout: 10000 })
+    .catch(() => undefined);
+  const ok = await page.evaluate((t) => {
+    const w = window as unknown as {
+      __reisStore?: { getState: () => { setMobileTab?: (v: string) => void } };
+    };
+    const setTab = w.__reisStore?.getState().setMobileTab;
+    if (typeof setTab !== 'function') return false;
+    setTab(t);
+    return true;
+  }, tab);
+  if (!ok) {
+    throw new Error(
+      `--view ${tab}: window.__reisStore is not present, so the phone tab cannot be switched. ` +
+        'It is published by dev/storeHandle.ts, gated on isHarnessEnabled — confirm the page is ' +
+        'npm run dev:web (or a variant). Refusing to continue: this run would have photographed ' +
+        'the calendar and labelled it "' +
+        tab +
+        '".'
+    );
+  }
+}
+
+/**
+ * Prove the requested screen is the one on screen, by its own testid.
+ *
+ * Reading `mobileTab` back out of the store would only prove the setter ran.
+ * `MobileApp` mounts exactly one `*-screen` element, so its presence is the
+ * claim that matters — and the claim the old seeding path could never have
+ * made, which is why nothing noticed it was photographing one screen five times.
+ */
+async function assertViewRendered(page: Page, plan: ViewPlan, width: number): Promise<void> {
+  if (plan.kind !== 'mobile-tab') return;
+  if ((await page.locator(`[data-testid="${plan.testId}"]`).count()) > 0) return;
+  throw new Error(
+    `--view ${plan.tab}: the tab was set at ${width}px but [data-testid="${plan.testId}"] never ` +
+      'rendered, so the screenshot does not show the screen that was asked for. ' +
+      'Either the screen failed to mount, or it no longer carries that testid ' +
+      '(see scripts/lib/viewTarget.ts).'
+  );
+}
+
 async function run(): Promise<number> {
   const opts = parseArgs(process.argv.slice(2));
 
@@ -508,6 +594,15 @@ async function run(): Promise<number> {
         });
       }
 
+      // Put the app on the requested screen BEFORE anything is clicked or
+      // measured. At a phone width this is the ONLY thing that does: the
+      // `reis_current_view` seeded above is read by the desktop tree's
+      // useAppLogic, and the phone tree routes on `mobileTab` from
+      // createMobileUiSlice, which that key never touches.
+      const plan = await planRequestedView(page, opts.view);
+      if (plan.kind === 'impossible') throw new Error(plan.message);
+      if (plan.kind === 'mobile-tab') await applyMobileTab(page, plan.tab);
+
       // Settle BEFORE the first click, not only after the last one. seedMeta
       // reloads the page, so without this a --click races the app's boot and
       // fails on anything data-driven — the subject rows are painted from
@@ -520,7 +615,12 @@ async function run(): Promise<number> {
       // it, and the run screenshotted an UNSEEDED page and reported clean. It
       // cost two green runs against a five-column calendar week that did not
       // contain the seeded Saturday the run existed to photograph.
-      if (opts.clicks.length > 0 || opts.seedStore) await page.waitForTimeout(opts.wait);
+      // A tab switch needs this settle as much as a click does: the screen has
+      // just remounted, and setMobileTab('calendar') fires refreshRecentPdfs()
+      // on its way out. A --click into a screen that has not painted yet fails
+      // on "no visible element" against a screen that renders fine a moment later.
+      if (opts.clicks.length > 0 || opts.seedStore || plan.kind === 'mobile-tab')
+        await page.waitForTimeout(opts.wait);
       if (opts.seedStore) {
         await waitForSyncSettled(page, SYNC_SETTLE_TIMEOUT_MS);
         await seedAndHold(page, opts.seedStore, SEED_SETTLE_MS);
@@ -541,11 +641,13 @@ async function run(): Promise<number> {
       if (opts.seedStore) await assertSeedSurvived(page, opts.seedStore, 'measurement');
 
       // Which shell actually mounted, before anything is measured or believed.
-      const shell = describeShell(
-        (await page.locator('[data-testid="desktop-app"]').count()) > 0,
-        (await page.locator('[data-testid="mobile-app"]').count()) > 0
-      );
+      const shell = await readShell(page);
       if (opts.expectShell) assertShell(opts.expectShell, shell, width);
+      // And which SCREEN — checked here rather than right after the switch, so
+      // it also covers a --click path that navigated away from it. The probe
+      // and the screenshot both happen within milliseconds of this line, and
+      // nothing in the app writes mobileTab on its own.
+      await assertViewRendered(page, plan, width);
 
       const shot = resolve(OUT_DIR, `${opts.label}-${width}.png`);
       await page.screenshot({ path: shot, fullPage: false });
