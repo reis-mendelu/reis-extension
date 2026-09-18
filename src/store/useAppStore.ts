@@ -241,14 +241,19 @@ export const initializeStore = async () => {
   // Cross-tab language listener — use loadLanguage() and re-fetch files for the new language
   const bcLang = new BroadcastChannel('reis_language_sync');
   bcLang.onmessage = () => {
-    useAppStore
-      .getState()
-      .loadLanguage()
-      .then(() => useAppStore.getState().loadMapEvents());
+    // Chained, where the LANGUAGE_UPDATE handler above is not, and the
+    // difference is real rather than stylistic: there, `setLanguage` has
+    // already written the new language into THIS tab's store synchronously
+    // before triggering. Here the writing tab was a different one, so this
+    // tab still holds the old language until `loadLanguage()` reads it back
+    // out of IDB — and a menu request fired before that resolves asks
+    // skm.mendelu.cz for the page the student just left.
+    const languageReady = useAppStore.getState().loadLanguage();
+    void languageReady.then(() => useAppStore.getState().loadMapEvents());
     useAppStore.getState().fetchAllFiles();
     // Clear menu so it re-fetches with the new language
     useAppStore.setState({ menu: null });
-    void useAppStore.getState().fetchMenu();
+    void languageReady.then(() => useAppStore.getState().fetchMenu());
   };
 
   // Cross-iframe files listener — when another window refreshes a subject's

@@ -324,6 +324,8 @@ export interface MenuSlice {
   menu: OutletMenu[] | null;
   menuLoading: boolean;
   menuError: boolean;
+  /** The language `menu` (or the request in flight) was fetched for. */
+  menuLanguage: Language | null;
   fetchMenu: () => Promise<void>;
 }
 
