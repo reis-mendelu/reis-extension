@@ -18,6 +18,9 @@ const CZ_ROW = `
 
 const EN_ROW = CZ_ROW.replace('Zápis na cvičení', 'Registration for seminar');
 
+const html = (body: string) =>
+  new Response(body, { status: 200, headers: { 'Content-Type': 'text/html' } });
+
 describe('a partial bilingual exam fetch', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -29,38 +32,71 @@ describe('a partial bilingual exam fetch', () => {
 
   /**
    * `fetchExamData` swallows a failure into `[]`, so a Czech fetch that dies
-   * while the English one succeeds used to produce an English-only dataset:
-   * sections with `nameEn` and no `nameCs`. Seminar-group signup then slipped
-   * past `isGroupSignupSection`, which matches the Czech druh, and the row and
-   * its menu badge came back.
+   * while the English one succeeds yields sections with `nameEn` and no
+   * `nameCs` — and `isGroupSignupSection` matches the Czech druh by design, so
+   * seminar signup would slip through.
    *
-   * Returning nothing is the honest answer — `setExams` already keeps the
-   * currently-displayed exams when handed an empty list, so the student sees
-   * the last good data rather than a silently all-English screen.
+   * The Czech half is worth one retry rather than a guess at IS's English
+   * wording. A transient blip is the overwhelmingly likely cause, and a retry
+   * turns the degraded case back into the normal one.
    */
-  it('reports nothing rather than an English-only dataset', async () => {
-    vi.mocked(client.fetchWithAuth).mockImplementation(async (url: string) =>
-      url.includes('lang=en')
-        ? new Response(EN_ROW, { status: 200, headers: { 'Content-Type': 'text/html' } })
-        : Promise.reject(new Error('IS is having a moment'))
-    );
-
-    await expect(fetchDualLanguageExams()).resolves.toEqual([]);
-  });
-
-  it('still merges normally when both languages come back', async () => {
-    vi.mocked(client.fetchWithAuth).mockImplementation(
-      async (url: string) =>
-        new Response(url.includes('lang=en') ? EN_ROW : CZ_ROW, {
-          status: 200,
-          headers: { 'Content-Type': 'text/html' },
-        })
-    );
+  it('retries the Czech half and merges normally when the retry succeeds', async () => {
+    let czCalls = 0;
+    vi.mocked(client.fetchWithAuth).mockImplementation(async (url: string) => {
+      if (url.includes('lang=en')) return html(EN_ROW);
+      czCalls++;
+      if (czCalls === 1) throw new Error('IS had a moment');
+      return html(CZ_ROW);
+    });
 
     const merged = await fetchDualLanguageExams();
-    expect(merged).toHaveLength(1);
+    expect(czCalls).toBe(2);
     const section = merged[0]!.sections[0]!;
     expect(section.nameCs).toBe('Zápis na cvičení');
     expect(section.nameEn).toBe('Registration for seminar');
+  });
+
+  /**
+   * When even the retry fails we hand back the English data rather than
+   * nothing. On a first load there is no cached Czech data to fall back on, so
+   * discarding here would leave the student with no exams and no way to
+   * register for a real one — a worse outcome than an unfiltered signup row
+   * they can ignore. The gap is logged and accepted, not hidden.
+   */
+  it('returns the English data rather than nothing when the retry also fails', async () => {
+    vi.mocked(client.fetchWithAuth).mockImplementation(async (url: string) => {
+      if (url.includes('lang=en')) return html(EN_ROW);
+      throw new Error('IS is down');
+    });
+
+    const merged = await fetchDualLanguageExams();
+    expect(merged).toHaveLength(1);
+    expect(merged[0]!.sections[0]!.nameEn).toBe('Registration for seminar');
+  });
+
+  it('does not retry when both languages come back first time', async () => {
+    let czCalls = 0;
+    vi.mocked(client.fetchWithAuth).mockImplementation(async (url: string) => {
+      if (url.includes('lang=en')) return html(EN_ROW);
+      czCalls++;
+      return html(CZ_ROW);
+    });
+
+    const merged = await fetchDualLanguageExams();
+    expect(czCalls).toBe(1);
+    const section = merged[0]!.sections[0]!;
+    expect(section.nameCs).toBe('Zápis na cvičení');
+    expect(section.nameEn).toBe('Registration for seminar');
+  });
+
+  it('does not retry when the student genuinely has no terms in either language', async () => {
+    let czCalls = 0;
+    vi.mocked(client.fetchWithAuth).mockImplementation(async (url: string) => {
+      if (!url.includes('lang=en')) czCalls++;
+      return html('<table id="table_2"><tbody></tbody></table>');
+    });
+
+    await expect(fetchDualLanguageExams()).resolves.toEqual([]);
+    expect(czCalls).toBe(1);
   });
 });

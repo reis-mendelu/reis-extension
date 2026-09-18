@@ -3,6 +3,7 @@ import type { ExamSubject } from '../types/exams';
 import { fetchWithAuth } from './client';
 import { getUserParams } from '../utils/userParams';
 import { logError } from '../utils/reportError';
+import { mergeDualLanguageExams } from './mergeDualLanguageExams';
 
 /**
  * Result of exam registration/unregistration.
@@ -80,83 +81,31 @@ export async function fetchExamData(lang: string = 'cz'): Promise<ExamSubject[]>
  */
 export async function fetchDualLanguageExams(): Promise<ExamSubject[]> {
   try {
-    const [czData, enData] = await Promise.all([fetchExamData('cz'), fetchExamData('en')]);
-    // Both calls hit the same page for the same account, so an empty CZ
-    // result beside a non-empty EN one is a failed CZ fetch, not a student
-    // with no terms — `fetchExamData` swallows failures into [].
+    const [first, enData] = await Promise.all([fetchExamData('cz'), fetchExamData('en')]);
+    let czData = first;
+    // Both calls hit the same page for the same account, so an empty CZ result
+    // beside a non-empty EN one means the CZ fetch failed — `fetchExamData`
+    // swallows failures into []. That matters beyond a language: sections
+    // would carry `nameEn` and no `nameCs`, and `isGroupSignupSection` matches
+    // the Czech druh by design, so seminar signup would slip back in.
     //
-    // Reporting nothing beats reporting the English half. The merge would
-    // otherwise emit sections carrying `nameEn` and no `nameCs`, which is
-    // a fully English exam screen for a Czech student AND a hole in
-    // `isGroupSignupSection` (it matches the Czech druh, by design, so it
-    // would not recognise seminar signup here and the row would come
-    // back). `setExams` already keeps the currently-displayed exams when
-    // handed an empty list, so the student keeps the last good data.
+    // A transient blip is the overwhelmingly likely cause, so buy the Czech
+    // half back with one retry rather than guessing IS's English wording.
     if (czData.length === 0 && enData.length > 0) {
-      logError(
-        'Api.fetchDualLanguageExams',
-        new Error('CZ fetch returned nothing while EN succeeded'),
-        {
-          enSubjects: enData.length,
-        }
-      );
-      return [];
-    }
-    const merged: ExamSubject[] = [...czData];
-
-    enData.forEach((enSubject) => {
-      const czSubject = merged.find((s) => s.code === enSubject.code);
-      if (czSubject) {
-        // Merge localized name
-        czSubject.nameEn = enSubject.nameEn;
-
-        // Merge sections
-        enSubject.sections.forEach((enSection) => {
-          const czSection = czSubject.sections.find(
-            (s) =>
-              s.id === enSection.id ||
-              s.name === enSection.name ||
-              s.terms.some((t) =>
-                enSection.terms.some(
-                  (et) =>
-                    (et.id && et.id === t.id) ||
-                    (t.date === et.date && t.time === et.time && t.teacher === et.teacher)
-                )
-              ) ||
-              (s.registeredTerm &&
-                enSection.registeredTerm &&
-                ((s.registeredTerm.id && s.registeredTerm.id === enSection.registeredTerm.id) ||
-                  (s.registeredTerm.date === enSection.registeredTerm.date &&
-                    s.registeredTerm.time === enSection.registeredTerm.time)))
-          );
-
-          if (czSection) {
-            czSection.nameEn = enSection.nameEn;
-
-            // Merge terms
-            enSection.terms.forEach((enTerm) => {
-              const czTerm = czSection.terms.find((t) => t.id === enTerm.id);
-              if (czTerm) {
-                czTerm.roomEn = enTerm.roomEn;
-                czTerm.sectionFormEn = enTerm.sectionFormEn;
-              }
-            });
-
-            // Merge registered term if it exists
-            if (enSection.registeredTerm && czSection.registeredTerm) {
-              czSection.registeredTerm.roomEn = enSection.registeredTerm.roomEn;
-            }
-          } else {
-            // Section only exists in EN? (Unlikely but safe to add)
-            czSubject.sections.push(enSection);
-          }
-        });
-      } else {
-        merged.push(enSubject);
+      czData = await fetchExamData('cz');
+      if (czData.length === 0) {
+        // Still nothing. Hand back the English data anyway: on a first load
+        // there is no cached Czech data to fall back on, so discarding here
+        // would leave the student with no exams and no way to register for a
+        // real one — worse than an unfiltered signup row they can ignore.
+        logError(
+          'Api.fetchDualLanguageExams',
+          new Error('CZ fetch failed twice; serving English-only exam data'),
+          { enSubjects: enData.length }
+        );
       }
-    });
-
-    return merged;
+    }
+    return mergeDualLanguageExams(czData, enData);
   } catch (error) {
     logError('Api.fetchDualLanguageExams', error);
     return fetchExamData('cz'); // Fallback to CZ
