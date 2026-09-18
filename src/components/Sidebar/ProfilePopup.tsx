@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Moon, MessageSquarePlus, Languages, LogOut } from 'lucide-react';
+import { Moon, MessageSquarePlus, Languages, LogOut, Wifi, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from '../../hooks/useTheme';
 import { useSpolkySettings } from '../../hooks/useSpolkySettings';
@@ -10,6 +10,7 @@ import { useUserParams } from '../../hooks/useUserParams';
 import { User, Mail, Hash } from 'lucide-react';
 import { logout } from '../../api/proxyClient';
 import { HiddenItemsSection } from './Profile/HiddenItemsSection';
+import { desktopEduroamTarget } from '../../utils/desktopEduroamTarget';
 
 export function ProfilePopup({
   isOpen,
@@ -26,6 +27,8 @@ export function ProfilePopup({
   const { t } = useTranslation();
   const language = useAppStore((state) => state.language);
   const setLanguage = useAppStore((state) => state.setLanguage);
+  const openEduroamFor = useAppStore((state) => state.openEduroamFor);
+  const setIsEduroamOpen = useAppStore((state) => state.setIsEduroamOpen);
   const { params } = useUserParams();
 
   if (!isOpen) return null;
@@ -99,6 +102,28 @@ export function ProfilePopup({
             />
           </label>
           <HiddenItemsSection />
+
+          {/* eduroam lives here rather than under Student: it configures THIS
+              machine, which is a setting, not a page of the study agenda.
+              Same hand-off as the welcome modal and the header button — the
+              drawer opens on the machine reIS is running on. */}
+          <button
+            onClick={() => {
+              // Same three-answer resolve as the welcome modal: null keeps the
+              // drawer's device picker for a desktop reIS has no manual for.
+              const target = desktopEduroamTarget();
+              if (target) openEduroamFor(target);
+              else setIsEduroamOpen(true);
+              onClose?.();
+            }}
+            className="w-full flex items-center justify-between gap-3 px-1 py-2 hover:bg-base-200 rounded-lg transition-colors"
+          >
+            <span className="flex items-center gap-2 flex-1">
+              <Wifi size={16} className="text-base-content/50" />
+              <span className="text-xs opacity-70">{t('sidebar.eduroam')}</span>
+            </span>
+            <ChevronRight size={14} className="text-base-content/50" />
+          </button>
         </div>
 
         {/* Services Section */}

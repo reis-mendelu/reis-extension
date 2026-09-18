@@ -18,6 +18,8 @@ const STRINGS: PdfInkStrings = {
   discard: 'd',
   openFailed: 'o',
   addPage: 'a',
+  focus: 'f',
+  exitFocus: 'x',
   export: 'e',
   exportFailed: 'ef',
   close: 'c',

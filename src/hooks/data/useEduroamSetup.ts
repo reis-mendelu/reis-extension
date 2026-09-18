@@ -83,7 +83,9 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
       const delivery = buildProfileDelivery();
       if (t === 'windows') {
         // Windows: same .eap-config as Android, but reIS runs on this PC, so we
-        // save it straight to disk. geteduroam (Windows) opens it on double-click.
+        // save it straight to disk. Windows has no association for the
+        // extension, so double-clicking does NOT open it — geteduroam loads it
+        // from its own ··· menu, which is what the manual's steps walk through.
         const eap = generateEapConfig({ rootCaDer, clientP12 });
         await deliverEduroamProfile(
           new Blob([eap], { type: 'application/eap-config' }),

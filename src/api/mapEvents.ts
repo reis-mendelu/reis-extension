@@ -18,6 +18,7 @@ interface SpolkyEventRow {
   coord_lat: number | null;
   location: string | null;
   url: string | null;
+  subscribers_only?: boolean | null;
 }
 
 // Pure row -> MapEvent mapping, kept separate from the network call so it's
@@ -41,6 +42,10 @@ export function toMapEvent(row: SpolkyEventRow): MapEvent {
     roomCode: row.room_code,
     venueKind: row.venue_kind as MapEvent['venueKind'],
     category: row.category as EventCategory,
+    // Null on a row written before the column existed, and on anything the
+    // select happens not to return: open, which is what those rows have always
+    // been. `visibleToStudent` is the only thing that reads this.
+    subscribersOnly: row.subscribers_only ?? false,
   };
 }
 

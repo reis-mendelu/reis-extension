@@ -2,6 +2,23 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('../../platform', () => ({ getPlatform: vi.fn(() => ({ kind: 'capacitor' })) }));
 vi.mock('../../utils/reportError', () => ({ logError: vi.fn() }));
+// openExternal raises a store flag so the app can show that a link is opening.
+// The real store drags its whole graph — and its dev-seed fetches, which tried
+// to reach localhost:3000 — into a test about link handling. Two edges are all
+// this file needs: the flag setter, and the demoMode push the real store does
+// through its own subscription (see errors/demoMode).
+const setExternalOpening = vi.hoisted(() => vi.fn());
+vi.mock('../../store/useAppStore', async () => {
+  const { setDemoModeFlag } = await import('../../errors/demoMode');
+  return {
+    useAppStore: {
+      getState: () => ({ setExternalOpening }),
+      setState: (patch: { demoMode?: boolean }) => {
+        if (patch.demoMode !== undefined) setDemoModeFlag(patch.demoMode);
+      },
+    },
+  };
+});
 
 import { logError } from '../../utils/reportError';
 import { getPlatform } from '../../platform';
@@ -207,6 +224,11 @@ describe('openExternal', () => {
 describe('openExternal — which browser', () => {
   const openWebView = vi.fn();
   const open = vi.fn();
+  // Same presentation wait as the block below; here it only has to not hang.
+  const addListener = vi.fn(async (event: string, fn: () => void) => {
+    if (event === 'browserPageLoaded') setTimeout(fn, 0);
+    return { remove: async () => {} };
+  });
 
   beforeEach(() => {
     setAppOrigin();
@@ -215,7 +237,7 @@ describe('openExternal — which browser', () => {
       kind: 'capacitor',
     } as unknown as ReturnType<typeof getPlatform>);
     vi.doMock('@capgo/capacitor-inappbrowser', () => ({
-      InAppBrowser: { openWebView, open },
+      InAppBrowser: { openWebView, open, addListener },
     }));
   });
 
@@ -258,6 +280,21 @@ describe('openExternal — the in-app browser needs the session on the request',
   const openWebView = vi.fn();
   const open = vi.fn();
   const setCookie = vi.fn();
+  /**
+   * openExternal now waits for the browser to be PRESENTED, which the plugin
+   * announces with 'browserPageLoaded'. By default this stub fires it on the
+   * next tick, so every test that only cares about the open call still
+   * completes; the one test about the flag's lifetime holds it back.
+   */
+  let autoPresent = true;
+  let firePageLoaded: () => void = () => {};
+  const addListener = vi.fn(async (event: string, fn: () => void) => {
+    if (event === 'browserPageLoaded') {
+      firePageLoaded = fn;
+      if (autoPresent) setTimeout(fn, 0);
+    }
+    return { remove: async () => {} };
+  });
 
   beforeEach(() => {
     setAppOrigin();
@@ -267,7 +304,7 @@ describe('openExternal — the in-app browser needs the session on the request',
       kind: 'capacitor',
     } as unknown as ReturnType<typeof getPlatform>);
     vi.doMock('@capgo/capacitor-inappbrowser', () => ({
-      InAppBrowser: { openWebView, open },
+      InAppBrowser: { openWebView, open, addListener },
     }));
     vi.doMock('@capacitor/core', () => ({ CapacitorCookies: { setCookie } }));
     vi.doMock('../../platform/tokenStore', () => ({
@@ -336,10 +373,25 @@ describe('openExternal — the in-app browser needs the session on the request',
   });
 
   /**
-   * capgo injects `preShowScript` only when `isPresentAfterPageLoad` is true
-   * (see its definitions). So the two are coupled: dropping the presentation
-   * flag would silently stop the cookie being set and bring the login screen
-   * back, with nothing failing anywhere.
+   * capgo injects `preShowScript` only when `isPresentAfterPageLoad` is true.
+   * So the two are coupled: dropping the presentation flag would stop the
+   * cookie being set and bring the login screen back.
+   *
+   * Do not flip this to buy a faster-feeling tap. The wait IS a real complaint
+   * — "while waiting for a vyveska item to open in IS there's no loading so it
+   * seems the button is not working" — and `false` looks like the fix, but both
+   * platforms VALIDATE the pair at the plugin entry point and reject the call
+   * outright: `InAppBrowserPlugin.swift:1343` and
+   * `CapgoInAppBrowserPlugin.java:1238`, both "preShowScript requires
+   * isPresentAfterPageLoad to be true". Tried on an iPad simulator 2026-09-16:
+   * the browser did not appear at all, which is a worse version of the bug.
+   *
+   * (The iOS WKWebViewController's own documentStart injection does not read
+   * the flag, which makes the pair look decoupled if that is the only file you
+   * read. The rejection happens a layer above it.)
+   *
+   * Feedback for that wait therefore has to come from the app side, not from
+   * presenting the browser earlier.
    */
   it('keeps the flag preShowScript depends on', async () => {
     const { openExternal } = await import('../openExternal');
@@ -348,6 +400,67 @@ describe('openExternal — the in-app browser needs the session on the request',
     expect(openWebView).toHaveBeenCalledWith(
       expect.objectContaining({ isPresentAfterPageLoad: true })
     );
+  });
+
+  /**
+   * The app says it is working, because the browser cannot say it any sooner.
+   *
+   * The in-app browser is withheld until a desktop IS page has loaded (see the
+   * flag above, which cannot be flipped), so for those seconds the only thing
+   * that can answer the tap is reIS itself.
+   */
+  /**
+   * The flag has to outlive `openWebView`, which is the whole difficulty.
+   *
+   * That call resolves as soon as the native side accepts it: in
+   * InAppBrowserPlugin.swift `call.resolve` runs at the end of the setup block,
+   * and with `isPresentAfterPageLoad` true the `presentView` beside it is
+   * SKIPPED — presentation happens later, when the page has loaded. So awaiting
+   * the call says nothing about whether the student can see anything yet, and
+   * clearing the flag on it put the spinner on screen for a few milliseconds,
+   * which is to say never. Reported: "I don't see any spinner".
+   */
+  it('keeps the flag up until the browser is actually on screen', async () => {
+    autoPresent = false;
+    openWebView.mockResolvedValue({ id: 'w1' });
+    const { openExternal } = await import('../openExternal');
+
+    const opening = openExternal('https://is.mendelu.cz/auth/vyveska/nove_prispevky.pl');
+    await vi.waitFor(() => expect(openWebView).toHaveBeenCalled());
+    // openWebView has already resolved here, and the flag must still be up.
+    expect(setExternalOpening).toHaveBeenLastCalledWith(true);
+
+    firePageLoaded();
+    await opening;
+    expect(setExternalOpening).toHaveBeenLastCalledWith(false);
+  });
+
+  it('subscribes before opening, so a page that loads at once is not missed', async () => {
+    openWebView.mockResolvedValue({ id: 'w1' });
+    const { openExternal } = await import('../openExternal');
+    void openExternal('https://is.mendelu.cz/auth/vyveska/nove_prispevky.pl');
+
+    await vi.waitFor(() => expect(openWebView).toHaveBeenCalled());
+    expect(addListener.mock.invocationCallOrder[0]).toBeLessThan(
+      openWebView.mock.invocationCallOrder[0]!
+    );
+  });
+
+  it('clears the flag on a link that never needed the session, which presents at once', async () => {
+    open.mockResolvedValue(undefined);
+    const { openExternal } = await import('../openExternal');
+    await openExternal('https://example.org/whatever');
+
+    expect(setExternalOpening).toHaveBeenLastCalledWith(false);
+  });
+
+  it('clears the flag when the browser fails to open, so nothing is left spinning', async () => {
+    openWebView.mockRejectedValue(new Error('plugin exploded'));
+    const { openExternal } = await import('../openExternal');
+
+    await openExternal('https://is.mendelu.cz/auth/vyveska/nove_prispevky.pl');
+
+    expect(setExternalOpening).toHaveBeenLastCalledWith(false);
   });
 
   // Capacitor's cookie API is what corrupted the token. Nothing may route it

@@ -190,7 +190,11 @@ export interface SuccessRateSlice {
 
 export interface EduroamSlice {
   isEduroamOpen: boolean;
+  /** Device the drawer opens on, skipping its picker. Null = let them pick. */
+  eduroamInitialTarget: 'mac' | 'windows' | null;
   setIsEduroamOpen: (open: boolean) => void;
+  /** Opens the drawer straight on one device — the welcome modal's hand-off. */
+  openEduroamFor: (target: 'mac' | 'windows') => void;
 }
 
 export interface DocumentsSlice {
@@ -320,6 +324,8 @@ export interface MenuSlice {
   menu: OutletMenu[] | null;
   menuLoading: boolean;
   menuError: boolean;
+  /** The language `menu` (or the request in flight) was fetched for. */
+  menuLanguage: Language | null;
   fetchMenu: () => Promise<void>;
 }
 
@@ -489,6 +495,15 @@ export interface MobileUiSlice {
    * app, never flash the welcome at a returning student); false = show it.
    */
   welcomeSeen: boolean | null;
+  /**
+   * An IS link is on its way to the in-app browser.
+   *
+   * The browser itself cannot appear any sooner — the plugin rejects the call
+   * that would present it early (see openExternal) — so this is what answers
+   * the tap in the meantime.
+   */
+  externalOpening: boolean;
+  setExternalOpening: (opening: boolean) => void;
   hydrateWelcome: (o: { demo: boolean }) => Promise<void>;
   dismissWelcome: () => Promise<void>;
 
@@ -539,10 +554,10 @@ export interface MapSlice {
   /** Create a real reservation for a room + 1-hour slot; on success, force-refetch availability so the panel reflects it. Always an explicit, confirmed user action. */
   /** Which tab the top-right panel shows. */
   mapPanelTab: 'places' | 'events';
-  /** Event scope: 'all' societies, or a specific societyId. */
-  eventFilter: string;
+  /** Whether the desktop map panel is collapsed to its tab bar, clearing the map behind it. */
+  mapPanelCollapsed: boolean;
   setMapPanelTab: (tab: 'places' | 'events') => void;
-  setEventFilter: (filter: string) => void;
+  toggleMapPanelCollapsed: () => void;
   loadMapEvents: () => Promise<void>;
   /** Refetch the public feed unconditionally (bypasses the load-once guard). Call after a society create/update/delete so the public map/"Akce" tab reflects the change without a full reload. */
   reloadMapEvents: () => Promise<void>;

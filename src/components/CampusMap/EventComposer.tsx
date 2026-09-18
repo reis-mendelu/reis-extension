@@ -10,6 +10,7 @@ import { MiniCalendar } from './MiniCalendar';
 import { ComposerRoomSearch } from './ComposerRoomSearch';
 import { ComposerPlaceSearch } from './ComposerPlaceSearch';
 import { ComposerTimeField } from './ComposerTimeField';
+import { ComposerAudienceField } from './ComposerAudienceField';
 import { roomCodeToName } from './mapHelpers';
 import roomsIndexJson from '../../data/map/rooms-index.json';
 import type { RoomIndexEntry } from '../../types/campusMap';
@@ -63,6 +64,10 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       : null
   );
   const [category, setCategory] = useState<EventCategory>(editing?.category ?? 'party');
+  // Everyone unless the society says otherwise: an event published without a
+  // thought for this reaches the whole map, exactly as every event did before
+  // the column existed.
+  const [subscribersOnly, setSubscribersOnly] = useState(editing?.subscribersOnly ?? false);
   // Display name for an off-campus venue (from the Photon place search). Null
   // when the point was dropped on the map by hand rather than searched.
   const [placeName, setPlaceName] = useState<string | null>(
@@ -147,6 +152,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       coordLat: coord[1],
       location: venue === 'campus' ? null : placeName,
       url: url.trim() || null,
+      subscribersOnly,
     };
     try {
       const res = editId
@@ -161,6 +167,12 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
             coord_lat: input.coordLat,
             location: input.location ?? null,
             url: input.url ?? null,
+            // Editable, so it has to be in the patch. Left out, an audience
+            // change saved cleanly and kept the old value in the database: the
+            // form reads `subscribers_only` back through `toMapEvent`, so the
+            // control showed the society its new choice while the map went on
+            // honouring the previous one.
+            subscribers_only: input.subscribersOnly ?? false,
           })
         : await createPost(input, associationId, email);
       if (res.error) {
@@ -290,6 +302,12 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
           {t('map.venueCampus')}
         </button>
       </div>
+
+      <ComposerAudienceField
+        societyId={associationId ?? ''}
+        value={subscribersOnly}
+        onChange={setSubscribersOnly}
+      />
 
       {venue === 'campus' ? (
         <ComposerRoomSearch

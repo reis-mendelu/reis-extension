@@ -5,10 +5,11 @@
 // that ASC rejects after the upload finishes, and a binary carrying error
 // telemetry the privacy policy says is not there.
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, readdirSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { isAbsolute, join, resolve } from 'node:path';
 import { parseSigningAuthority } from './iosRelease';
+import { SNAPSHOT_FILENAMES } from '../stripDevRealData.mjs';
 
 export interface IpaFacts {
   authority: string | null;
@@ -16,6 +17,8 @@ export interface IpaFacts {
   marketingVersion: string;
   /** Files inside the app bundle that still mention error telemetry. */
   telemetryHits: string[];
+  /** Local IS Mendelu snapshots that were copied into the bundle. */
+  snapshotHits: string[];
 }
 
 const run = (cmd: string, args: string[]): string =>
@@ -102,7 +105,28 @@ export function inspectIpa(ipaPath: string): IpaFacts {
     bundleVersion: plistValue('CFBundleVersion'),
     marketingVersion: plistValue('CFBundleShortVersionString'),
     telemetryHits: grepFiles(app, ['report_error', 'sendTelemetry']),
+    // `vite.capacitor.config.ts` copies public/ verbatim and `cap sync` puts
+    // the result in the bundle, so a build machine that had ever run
+    // `scrape:real` archived the builder's own schedule, grades and
+    // attendance. Signing, version and telemetry were all checked; this was
+    // the one thing nothing looked for. Matched by NAME, not content: the
+    // sanitised snapshot has no identifying strings left to grep for.
+    snapshotHits: snapshotsIn(join(app, 'public')),
   };
+}
+
+/**
+ * Snapshot files sitting in the bundle's public directory.
+ *
+ * Returns [] when there is no public/ at all rather than throwing: a bundle
+ * laid out differently is not this check's business, and a crash here would
+ * block an upload for the wrong reason.
+ */
+function snapshotsIn(publicDir: string): string[] {
+  if (!existsSync(publicDir)) return [];
+  return readdirSync(publicDir, { withFileTypes: true })
+    .filter((e) => e.isFile() && SNAPSHOT_FILENAMES.includes(e.name))
+    .map((e) => `public/${e.name}`);
 }
 
 /** Throw unless the ipa is the distribution-signed build we meant to upload. */
@@ -119,6 +143,11 @@ export function assertUploadable(facts: IpaFacts, expected: IpaFacts['bundleVers
   if (facts.telemetryHits.length > 0) {
     problems.push(
       `error telemetry is still in the bundle (${facts.telemetryHits.length} file(s)) — the privacy policy says nothing about a failure leaves the device`
+    );
+  }
+  if (facts.snapshotHits.length > 0) {
+    problems.push(
+      `a local IS Mendelu snapshot is in the bundle (${facts.snapshotHits.join(', ')}) — that is real academic data and must never reach the App Store`
     );
   }
   if (problems.length > 0) {

@@ -5,6 +5,7 @@ import { SubjectFileDrawer } from '../SubjectFileDrawer';
 import { useAppStore } from '../../store/useAppStore';
 import { HOURS } from './utils';
 import { useCalendarData } from './useCalendarData';
+import { findHintTarget } from './hintTarget';
 import { WeeklyCalendarHeader } from './WeeklyCalendarHeader';
 import { WeeklyCalendarGrid } from './WeeklyCalendarGrid';
 import { CurrentTimeIndicator } from './CurrentTimeIndicator';
@@ -36,7 +37,8 @@ export function WeeklyCalendar({
     holidaysByDay,
     todayIndex,
     showSkeleton: dataLoading,
-    weekdayScheduleData,
+    visibleDayCount,
+    visibleScheduleData,
     isOutsideTeachingPeriod,
   } = useCalendarData(initialDate);
   const { t } = useTranslation();
@@ -60,68 +62,13 @@ export function WeeklyCalendar({
   // Show skeletons if either data is loading (initial) or language is still being determined
   const showSkeleton = dataLoading || isLanguageLoading;
 
-  const targetEventPosition = useMemo(() => {
-    if (showSkeleton || isSeen) return null;
-
-    const now = new Date();
-    const currentHour = now.getHours() + now.getMinutes() / 60;
-    const columnWidth = 100 / 5;
-
-    let targetLesson: BlockLesson | null = null;
-    let targetDayIndex = -1;
-
-    // 1. Check for ongoing lesson today
-    if (todayIndex >= 0 && todayIndex < 5) {
-      const todayLessons = lessonsByDay[todayIndex] || [];
-      targetLesson =
-        todayLessons.find((l) => {
-          const [startH, startM] = l.startTime.split(':').map(Number);
-          const [endH, endM] = l.endTime.split(':').map(Number);
-          const start = startH + startM / 60;
-          const end = endH + endM / 60;
-          return currentHour >= start && currentHour <= end;
-        }) || null;
-
-      if (targetLesson) targetDayIndex = todayIndex;
-
-      // 2. If no ongoing, check for next lesson today
-      if (!targetLesson) {
-        targetLesson =
-          todayLessons
-            .filter((l) => {
-              const [h, m] = l.startTime.split(':').map(Number);
-              return h + m / 60 > currentHour;
-            })
-            .sort((a, b) => a.startTime.localeCompare(b.startTime))[0] || null;
-        if (targetLesson) targetDayIndex = todayIndex;
-      }
-    }
-
-    // 3. If still no lesson (or today is weekend/past work hours), find first lesson of the next active day
-    if (!targetLesson) {
-      for (let i = 0; i < 5; i++) {
-        // Adjust index to start from "tomorrow" if today is weekday
-        const checkIndex = todayIndex >= 0 && todayIndex < 5 ? (todayIndex + 1 + i) % 5 : i;
-        const dayLessons = lessonsByDay[checkIndex] || [];
-        if (dayLessons.length > 0) {
-          targetLesson = [...dayLessons].sort((a, b) => a.startTime.localeCompare(b.startTime))[0];
-          targetDayIndex = checkIndex;
-          break;
-        }
-      }
-    }
-
-    if (targetLesson && targetDayIndex !== -1) {
-      const [h, m] = targetLesson.startTime.split(':').map(Number);
-      return {
-        top: (((h - 7) * 60 + m) / (TOTAL_HOURS * 60)) * 100,
-        left: targetDayIndex * columnWidth,
-        width: columnWidth,
-      };
-    }
-
-    return null;
-  }, [lessonsByDay, todayIndex, showSkeleton, isSeen]);
+  const targetEventPosition = useMemo(
+    () =>
+      showSkeleton || isSeen
+        ? null
+        : findHintTarget(lessonsByDay, todayIndex, visibleDayCount, new Date()),
+    [lessonsByDay, todayIndex, visibleDayCount, showSkeleton, isSeen]
+  );
 
   const handleEventClick = (lesson: BlockLesson, anchor?: { x: number; y: number }) => {
     if (lesson.isCustom && lesson.customEventId) {
@@ -201,6 +148,7 @@ export function WeeklyCalendar({
         weekDates={weekDates}
         todayIndex={todayIndex}
         holidaysByDay={holidaysByDay}
+        dayCount={visibleDayCount}
       />
       <div className="flex-1 overflow-hidden">
         <div className="flex h-full">
@@ -224,16 +172,16 @@ export function WeeklyCalendar({
               eventPosition={targetEventPosition || undefined}
               onDismiss={markSeen}
             />
-            <WeeklyCalendarGrid />
-            <CurrentTimeIndicator todayIndex={todayIndex} />
-            {!showSkeleton && weekdayScheduleData.length === 0 && (
+            <WeeklyCalendarGrid dayCount={visibleDayCount} />
+            <CurrentTimeIndicator todayIndex={todayIndex} dayCount={visibleDayCount} />
+            {!showSkeleton && visibleScheduleData.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                 <p className="text-base-content/40 text-sm font-medium">
                   {t(isOutsideTeachingPeriod ? 'calendar.outsideSemester' : 'calendar.emptyWeek')}
                 </p>
               </div>
             )}
-            {[0, 1, 2, 3, 4].map((i) => {
+            {Array.from({ length: visibleDayCount }, (_, i) => i).map((i) => {
               const wd = weekDates[i];
               const dayKey = wd
                 ? `${wd.year}${wd.month.padStart(2, '0')}${wd.day.padStart(2, '0')}`

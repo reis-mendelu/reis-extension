@@ -3,6 +3,7 @@ import { useCourseGrade } from '../../../../hooks/data/useCourseGrade';
 import { gradeBadge } from '../../../../utils/gradeLookup';
 import { isRealCredits } from '../../../SubjectsPanel/utils';
 import { computeFailRate } from '../../../SubjectsPanel/computeFailRate';
+import { orderHardestFirst } from '../../../SubjectsPanel/orderHardestFirst';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useSchedule } from '../../../../hooks/data/useSchedule';
 import { semesterProgress } from '../../../../utils/mobile/semesterStart';
@@ -152,7 +153,25 @@ function SemesterRow({
  */
 export function SemesterCard({ enrolled, semester, onOpenSubject }: SemesterCardProps) {
   const { t, language } = useTranslation();
-  const subjects = enrolled.map((e) => e.subject);
+  const successRates = useAppStore((s) => s.successRates);
+  /**
+   * Hardest first, with the subjects already passed at the end — the same rule
+   * and the same shared function the desktop panel uses.
+   *
+   * Deliberately not a second implementation. `selectEnrolledNow` exists
+   * because these two clients answering the same question differently has been
+   * a reported bug before, and an order is part of that answer: a student
+   * comparing the phone to the browser would otherwise see the same subjects in
+   * two different sequences.
+   *
+   * `e.done` rather than `isFulfilled`: this list carries the subjects passed
+   * THIS semester, which is what that flag means here.
+   */
+  const subjects = orderHardestFirst(
+    enrolled,
+    (e) => computeFailRate(successRates[e.subject.code]),
+    (e) => e.done
+  ).map((e) => e.subject);
   const totalCredits = subjects.reduce(
     (sum, s) => sum + (isRealCredits(s.credits) ? s.credits : 0),
     0

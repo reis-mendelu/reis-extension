@@ -15,6 +15,7 @@ const good: IpaFacts = {
   bundleVersion: '50101.1',
   marketingVersion: '5.1.1',
   telemetryHits: [],
+  snapshotHits: [],
 };
 
 describe('assertUploadable', () => {
@@ -97,5 +98,25 @@ describe('assertSafePath', () => {
   it('refuses a relative path, which a tool could read as an option', () => {
     expect(() => assertSafePath('-rf')).toThrow(/relative path/);
     expect(() => assertSafePath('Payload/App.app')).toThrow(/relative path/);
+  });
+
+  // `vite.capacitor.config.ts` copied public/ verbatim and `cap sync` put the
+  // result in the bundle, so a build machine that had run `scrape:real`
+  // archived dev-real-data.json — which carries other students' names, photo
+  // URLs and study programmes. Signing, version and telemetry were all
+  // checked; this was the one thing nothing looked for.
+  it('rejects a build carrying a local IS Mendelu snapshot', () => {
+    const facts = { ...good, snapshotHits: ['public/dev-real-data.json'] };
+
+    expect(() => assertUploadable(facts, good.bundleVersion)).toThrow(/snapshot/i);
+  });
+
+  it('names every snapshot it found, so the fix is obvious from the error', () => {
+    const facts = {
+      ...good,
+      snapshotHits: ['public/dev-real-data.json', 'public/preview-data.json'],
+    };
+
+    expect(() => assertUploadable(facts, good.bundleVersion)).toThrow(/preview-data\.json/);
   });
 });

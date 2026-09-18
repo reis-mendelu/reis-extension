@@ -27,6 +27,7 @@ import {
   type ProbeResult,
 } from './lib/uiFindings';
 import { probeSource } from './lib/uiProbe';
+import { driftedSeedKeys } from './lib/seedGuard';
 
 const DEFAULT_WIDTHS = [320, 390, 430];
 const DEFAULT_URL = 'http://localhost:3000';
@@ -36,6 +37,10 @@ const OUT_DIR = resolve(process.cwd(), '.verify');
 // with a bookmarks bar. `h-screen overflow-hidden` clips rather than scrolls, so
 // height is a real variable there and --height exists to vary it.
 const DEFAULT_VIEWPORT_HEIGHT = 844;
+// How long to let the app's own sync finish before seeding over it.
+const SYNC_SETTLE_TIMEOUT_MS = 15_000;
+// How long to let a late writer show itself before accepting the seed.
+const SEED_SETTLE_MS = 500;
 
 interface Options {
   label: string;
@@ -241,6 +246,130 @@ async function seedStoreState(page: Page, json: string): Promise<void> {
 }
 
 /**
+ * Seed, and keep seeding until the value sticks.
+ *
+ * No readiness check can enumerate every writer: `handshakeTimedOut` is a plain
+ * 10s timer, and a dev snapshot that is still loading at ten seconds will land
+ * AFTER it. Treating that as a hard failure would reject a perfectly valid slow
+ * run — the tool would refuse to verify exactly the setup it exists to verify.
+ *
+ * So a late write is absorbed: re-seed and settle again. Only a store that keeps
+ * overwriting the seed across every attempt is a real problem, and that one does
+ * fail, because it means the page can never be put into the state under test.
+ */
+async function seedAndHold(page: Page, json: string, settleMs: number): Promise<void> {
+  const ATTEMPTS = 3;
+  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+    await seedStoreState(page, json);
+    await page.waitForTimeout(settleMs);
+    if ((await driftedAfterSeed(page, json)).length === 0) return;
+    if (attempt < ATTEMPTS) {
+      console.warn(
+        `  note: something wrote over the seed after it was applied (attempt ${attempt}/${ATTEMPTS}) — re-seeding.`
+      );
+    }
+  }
+  throw new Error(
+    '--seed-store: the app overwrote the seed on every attempt. Something is still writing to ' +
+      'the store, so the page cannot be held in the state under test.'
+  );
+}
+
+/** Which seeded keys no longer match the running app. */
+async function driftedAfterSeed(page: Page, json: string): Promise<string[]> {
+  const entries = JSON.parse(json) as Record<string, unknown>;
+  const actual = await page.evaluate((keys) => {
+    const w = window as unknown as { __reisStore?: { getState: () => Record<string, unknown> } };
+    if (!w.__reisStore) return null;
+    const state = w.__reisStore.getState();
+    return Object.fromEntries((keys as string[]).map((k) => [k, state[k]]));
+  }, Object.keys(entries));
+  if (actual === null) return ['<store handle vanished>'];
+  return driftedSeedKeys(entries, actual as Record<string, unknown>);
+}
+
+/**
+ * Fail loudly if the app overwrote the seed before we measured it.
+ *
+ * Waiting longer before seeding narrows the race but cannot close it: the app's
+ * own sync can land at any time, and a clobbered seed produces a run that
+ * measures an UNSEEDED page and reports clean — findings that are true and
+ * meaningless. That is the one failure a verification tool must never have, so
+ * the seeded keys are read back after the final settle and a drift is an error,
+ * not a warning.
+ *
+ * Compared with key order normalised, because a store that rebuilt an object
+ * with identical content has not lost the seed.
+ */
+async function assertSeedSurvived(page: Page, json: string, when: string): Promise<void> {
+  const drifted = await driftedAfterSeed(page, json);
+  if (drifted.length > 0) {
+    throw new Error(
+      `--seed-store: the app overwrote the seed before ${when} (${drifted.join(', ')}). ` +
+        'The run would have measured an unseeded page.'
+    );
+  }
+}
+
+/**
+ * Wait for the app's OWN sync to finish before seeding, rather than guessing
+ * with a delay.
+ *
+ * `--wait` is a fixed timeout, and no fixed timeout can prove sync is done — it
+ * can always land a moment later and overwrite the seed. `firstSyncSettled` is
+ * the store's own answer to "has a sync run to completion since startup", so
+ * poll that instead and the seed goes in after the thing that would clobber it.
+ *
+ * Two ways to be ready, and the second one matters as much as the first:
+ *
+ *  - a sync ran to completion (`firstSyncSettled`), or
+ *  - `handshakeTimedOut` — the app waited for a content script that never came.
+ *
+ * That second branch is a HINT, not a proof: it is a bare 10s timer fired at
+ * store creation (createSyncSlice), so a dev snapshot still loading at ten
+ * seconds trips it while a write is genuinely still coming. `seedAndHold` below
+ * is what makes that safe — a late write re-seeds rather than failing the run.
+ *
+ * Without that second branch this burned the WHOLE timeout on every mock and
+ * fixture run: those modes never latch `firstSyncSettled`, and their top-level
+ * `isSyncing` stays true, so the wait could only ever expire. Measured at 15s
+ * per width — about 45s of pure waiting on a default three-width run — for a
+ * state the harness could have recognised immediately.
+ *
+ * Still bounded and non-fatal: a missing settle is not by itself a reason to
+ * fail a run, and the post-seed assertions are what actually catch a clobber.
+ */
+async function waitForSyncSettled(page: Page, timeoutMs: number): Promise<void> {
+  try {
+    await page.waitForFunction(
+      () => {
+        const w = window as unknown as {
+          __reisStore?: {
+            getState: () => {
+              firstSyncSettled?: boolean;
+              isSyncing?: boolean;
+              syncStatus?: { handshakeTimedOut?: boolean };
+            };
+          };
+        };
+        if (!w.__reisStore) return false;
+        const s = w.__reisStore.getState();
+        // No sync source at all — waiting longer cannot change anything.
+        if (s.syncStatus?.handshakeTimedOut === true) return true;
+        return s.firstSyncSettled === true && s.isSyncing !== true;
+      },
+      undefined,
+      { timeout: timeoutMs }
+    );
+  } catch {
+    console.warn(
+      `  note: the app neither settled a sync nor reported a handshake timeout within ` +
+        `${timeoutMs}ms — seeding anyway. The seed assertions still guard the result.`
+    );
+  }
+}
+
+/**
  * Click (or, on a touch context, tap) a step of a `--click` path. Visible text
  * first, then accessible name: icon-only controls (the phone shell's initials
  * avatar, a bare chevron) carry their meaning in `aria-label`, and a text-only
@@ -350,7 +479,11 @@ async function run(): Promise<number> {
       await page.goto(opts.url, { waitUntil: 'load' });
       // Dismiss onboarding by default — otherwise every run screenshots the
       // welcome modal and measures the blurred page behind it.
-      const seed: Record<string, unknown> = opts.onboarding ? {} : { welcome_dismissed: true };
+      // `--onboarding` SEEDS false rather than leaving the key alone: the flag
+      // is worthless otherwise, because an earlier run in the same profile has
+      // already written `true` and the modal simply never appears. The run
+      // then measures the page behind a modal it claims to be photographing.
+      const seed: Record<string, unknown> = { welcome_dismissed: !opts.onboarding };
       if (opts.view) seed['reis_current_view'] = opts.view;
       // `createThemeSlice` accepts exactly two values and silently falls back
       // to the dark default for anything else, so seeding the raw flag made
@@ -358,13 +491,40 @@ async function run(): Promise<number> {
       if (opts.theme) seed['reis_theme'] = opts.theme === 'light' ? 'mendelu' : 'mendelu-dark';
       await seedMeta(page, seed);
 
+      // The modal appears 800ms after mount, which outlasts the default 600ms
+      // settle — an `--onboarding` run used to need a hand-tuned `--wait` and
+      // silently measured the uncovered page without one. Waiting for the
+      // element rather than for a number: it is also the only thing that
+      // proves the flag worked at all. A miss is not fatal — a desktop-only
+      // modal legitimately never appears at a phone width — so the run goes
+      // on and the screenshot says what happened.
+      if (opts.onboarding) {
+        await page.waitForSelector('[data-testid="welcome-modal"]', { timeout: 5000 }).catch(() => {
+          console.warn(
+            '  --onboarding: no welcome modal appeared. It is desktop-only — at the ' +
+              'default phone widths the phone shell renders WelcomeScreen instead. ' +
+              'Pass --widths 1024,1440 --url <url>?mobile=0 to measure it.'
+          );
+        });
+      }
+
       // Settle BEFORE the first click, not only after the last one. seedMeta
       // reloads the page, so without this a --click races the app's boot and
       // fails on anything data-driven — the subject rows are painted from
       // IndexedDB, and every drawer run died with "no visible element" against
       // a screen that renders it perfectly a moment later.
-      if (opts.clicks.length > 0) await page.waitForTimeout(opts.wait);
-      if (opts.seedStore) await seedStoreState(page, opts.seedStore);
+      //
+      // A --seed-store needs the same settle, and used not to get it when no
+      // --click was passed. That is worse than a failed run: the seed landed
+      // before the app's own sync had written its slice, sync then overwrote
+      // it, and the run screenshotted an UNSEEDED page and reported clean. It
+      // cost two green runs against a five-column calendar week that did not
+      // contain the seeded Saturday the run existed to photograph.
+      if (opts.clicks.length > 0 || opts.seedStore) await page.waitForTimeout(opts.wait);
+      if (opts.seedStore) {
+        await waitForSyncSettled(page, SYNC_SETTLE_TIMEOUT_MS);
+        await seedAndHold(page, opts.seedStore, SEED_SETTLE_MS);
+      }
 
       for (const click of opts.clicks) {
         await clickByTextOrLabel(page, click, hasTouch);
@@ -378,6 +538,7 @@ async function run(): Promise<number> {
         if (opts.seedStore) await seedStoreState(page, opts.seedStore);
       }
       await page.waitForTimeout(opts.wait);
+      if (opts.seedStore) await assertSeedSurvived(page, opts.seedStore, 'measurement');
 
       // Which shell actually mounted, before anything is measured or believed.
       const shell = describeShell(
@@ -388,6 +549,9 @@ async function run(): Promise<number> {
 
       const shot = resolve(OUT_DIR, `${opts.label}-${width}.png`);
       await page.screenshot({ path: shot, fullPage: false });
+      // Re-check AFTER the shot: a sync landing between the measurement check and
+      // the screenshot would otherwise still produce an unseeded image.
+      if (opts.seedStore) await assertSeedSurvived(page, opts.seedStore, 'the screenshot');
 
       const probe = (await page.evaluate(probeSource)) as ProbeResult;
       const findings = analyzeProbe(probe);

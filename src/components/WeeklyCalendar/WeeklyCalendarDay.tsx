@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo } from 'react';
 import { CalendarEventCard } from '../CalendarEventCard';
-import { organizeLessons, getEventStyle } from './utils';
+import { organizeLessons, styleFromMinutes } from './utils';
 import type { BlockLesson, DateInfo } from '../../types/calendarTypes';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -144,7 +144,7 @@ export function WeeklyCalendarDay({
       {!holiday &&
         !showSkeleton &&
         organizedLessons.map((lesson) => {
-          const style = getEventStyle(lesson.startTime, lesson.endTime);
+          const style = styleFromMinutes(lesson.startTime, lesson.renderedMinutes);
           const cols = lesson.maxColumns || 1;
 
           return (

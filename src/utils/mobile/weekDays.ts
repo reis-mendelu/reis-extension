@@ -41,10 +41,11 @@ export function shiftIso(iso: string, days: number): string {
 /**
  * Mon–Fri, plus any weekend day that actually holds a lesson.
  *
- * MENDELU teaches combined-study cohorts on Saturdays and the desktop grid
- * carries all seven days, so a fixed five made those lessons unreachable: the
- * agenda follows the selected day and no chip could select a Saturday. An empty
- * weekend never pads the strip, so the common week stays five even chips.
+ * MENDELU teaches combined-study cohorts on Saturdays, so a fixed five made
+ * those lessons unreachable: the agenda follows the selected day and no chip
+ * could select a Saturday. An empty weekend never pads the strip, so the common
+ * week stays five even chips. The desktop grid widens the same way, on the same
+ * rule — see `visibleDayCount` in `WeeklyCalendar/useCalendarData.ts`.
  */
 export function weekDays(selectedIso: string, lessonDates: ReadonlySet<string>): Date[] {
   const monday = mondayOf(selectedIso);

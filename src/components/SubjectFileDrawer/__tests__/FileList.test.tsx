@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createRef } from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FileList } from '../FileList';
 import type { FileGroup } from '../types';
@@ -119,5 +119,59 @@ describe('FileList', () => {
   it('shows it when selection is on — the desktop bulk-download path', () => {
     const { container } = renderList({ selectable: true });
     expect(container.querySelectorAll('input[type="checkbox"]')).toHaveLength(1);
+  });
+});
+
+/**
+ * Feedback while a tapped file is being fetched.
+ *
+ * "While waiting for a file to open there's no loading so it seems the button
+ * is not working." The fetch is a whole PDF over the IS session — seconds on
+ * campus wifi — and the row did not change in any way for the whole of it,
+ * because `usePdfPreview` computed `isPreviewLoading` and no caller ever read
+ * it. A second tap then queued a second open.
+ */
+describe('FileList: the row being opened', () => {
+  const OTHER = 'https://is.mendelu.cz/auth/dok_server/slozka.pl?download=99;id=1';
+  /** Two documents, so "this row and not that one" is actually testable. */
+  const twoDocs = groups([
+    {
+      file_name: 'Přednáška 09',
+      date: '12. 3. 2026',
+      files: [{ name: 'Přednáška 09', type: 'pdf', link: DOWNLOAD }],
+    },
+    {
+      file_name: 'Přednáška 10',
+      date: '19. 3. 2026',
+      files: [{ name: 'Přednáška 10', type: 'pdf', link: OTHER }],
+    },
+  ] as unknown as FileGroup['files']);
+
+  it('marks the row whose file is being fetched as busy', () => {
+    renderList({ groups: twoDocs, openingLink: DOWNLOAD });
+    const row = screen.getByTestId(`file-row-${DOWNLOAD}`);
+    expect(row).toHaveAttribute('aria-busy', 'true');
+    expect(within(row).getByTestId('file-row-spinner')).toBeInTheDocument();
+  });
+
+  it('leaves every other row alone', () => {
+    renderList({ groups: twoDocs, openingLink: DOWNLOAD });
+    const other = screen.getByTestId(`file-row-${OTHER}`);
+    expect(other).not.toHaveAttribute('aria-busy', 'true');
+    expect(within(other).queryByTestId('file-row-spinner')).not.toBeInTheDocument();
+  });
+
+  it('marks nothing busy when no file is being opened', () => {
+    renderList({ groups: twoDocs });
+    expect(screen.queryByTestId('file-row-spinner')).not.toBeInTheDocument();
+  });
+
+  it('ignores a second tap while the first is still fetching', async () => {
+    // The old row gave no sign it was working, so a student tapped again and
+    // queued a second open behind the first.
+    const onViewPdf = vi.fn();
+    renderList({ groups: twoDocs, openingLink: DOWNLOAD, onViewPdf });
+    await userEvent.click(screen.getByText('Přednáška 09'));
+    expect(onViewPdf).not.toHaveBeenCalled();
   });
 });

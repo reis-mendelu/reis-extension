@@ -47,6 +47,8 @@ export interface FileListProps {
   onOpenFile: (link: string) => void;
   onViewPdf?: (link: string, meta: PdfRowMeta) => void;
   onDownloadSingle?: (link: string) => void;
+  /** The file whose bytes are being fetched right now, so its row can say so. */
+  openingLink?: string | null;
   folderUrl?: string;
   lastVisitedAt?: number | null;
   /** Per-row selection checkboxes. Defaults to on for desktop, where

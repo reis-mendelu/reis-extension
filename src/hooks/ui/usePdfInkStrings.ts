@@ -26,6 +26,8 @@ export function usePdfInkStrings(): () => PdfInkStrings {
       page: t('mobile.pdfInk.page'),
       noMatches: t('mobile.pdfInk.noMatches'),
       removePage: t('mobile.pdfInk.removePage'),
+      focus: t('mobile.pdfInk.focus'),
+      exitFocus: t('mobile.pdfInk.exitFocus'),
       cancel: t('common.cancel'),
     }),
     [t]

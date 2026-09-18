@@ -58,7 +58,7 @@
     "portal": "Student Portal",
     "teacherList": "Teacher's Record List",
     "tests": "Tests",
-    "documents": "Study documents",
+    "documents": "Confirmation of study",
     "eIndex": "E-index",
     "practiceTests": "Practice Tests",
     "assignments": "Assignments / Dropbox",
@@ -448,7 +448,10 @@
   "onboarding": {
     "welcome": "Welcome to reIS!",
     "description": "Enhanced version of IS MENDELU.\nBuilt by students, for students.",
-    "getStarted": "Let's go"
+    "getStarted": "Let's go",
+    "wifiTitle": "Campus Wi-Fi, first thing",
+    "wifiBody": "We'll set eduroam up from your IS certificate — step by step, on this computer.",
+    "notNow": "Not now"
   },
   "subjects": {
     "title": "My Subjects",
@@ -464,16 +467,12 @@
     "wholePlan": "Entire plan",
     "subjectCount": "subjects",
     "creditsLastTwo": "Last 2 semesters",
-    "creditsLastTwoNeeded": "need 40",
-    "progressionSafe": "On track",
-    "progressionWarning": "Watch your progress!",
-    "progressionDanger": "At risk!",
+    "creditsTitle": "Credits",
     "repeatWarning": "2nd enrollment",
     "gpa": "GPA",
     "enrolledCreditsLabel": "cr. enrolled",
     "failRateLabel": "avg. fail rate",
-    "needMore": "need {n} more",
-    "notEnoughEnrolled": "not enough enrolled",
+    "failRateLegend": "% = course's avg. fail rate",
     "zamerani": "specialization",
     "zameraniMembers": "Includes courses",
     "registrationsShort": "Registrations",
@@ -506,8 +505,8 @@
       "weightedInfo": "Weighted by the credits of each course."
     },
     "grade": {
-      "credited": "credited",
-      "completed": "completed",
+      "credited": "ZAP",
+      "completed": "ZAK",
       "attempt": "attempt {n}"
     },
     "comparison": {
@@ -610,12 +609,25 @@
             "shot": "The download button"
           },
           {
-            "text": "Double-click the downloaded file — it opens in geteduroam",
-            "shot": "The file in Downloads opening geteduroam"
+            "text": "Open geteduroam, click ··· and choose Load .eap-config file…",
+            "shot": "The ··· menu with Load .eap-config file…"
           },
           {
-            "text": "Enter the certificate password",
-            "shot": "geteduroam password prompt"
+            "text": "In the file picker, find the downloaded eduroam-reis.eap-config and open it",
+            "shot": "The downloaded eduroam-reis.eap-config file"
+          },
+          {
+            "text": "Check that the profile says MENDELU eduroam (reIS), then click Next",
+            "shot": "The MENDELU eduroam (reIS) profile screen"
+          },
+          {
+            "text": "Click Install next to the MENDELU certificate — Next stays greyed out until you do",
+            "shot": "Installing the MENDELU certificate"
+          },
+          {
+            "text": "Enter the certificate password and click Connect",
+            "shot": "The certificate password field",
+            "warn": "geteduroam then says it could not connect because the network is out of range. That is fine — eduroam is set up, and you'll connect on campus."
           }
         ],
         "done": {
@@ -833,7 +845,7 @@
     "showOnMap": "Show on map",
     "places": "Places",
     "placesCampus": "Campus",
-    "placesOther": "Other sites",
+    "placesOther": "Other places",
     "jakDorms": "JAK dormitories",
     "mainCampus": "Main campus",
     "alsoHere": "Also here",
@@ -848,9 +860,7 @@
     "moreHere": "more here",
     "moreInfo": "More info",
     "hostedBy": "Hosted by",
-    "going": "going",
     "interested": "interested",
-    "rsvpGoing": "Going",
     "rsvpInterested": "Interested",
     "myEvents": "My events",
     "prevMonth": "Previous month",
@@ -914,7 +924,13 @@
     "openInGoogleMaps": "Google Maps",
     "rememberChoice": "Don't ask again",
     "mapApp": "Maps",
-    "mapAppAsk": "Always ask"
+    "mapAppAsk": "Always ask",
+    "audienceLabel": "WHO SEES IT",
+    "audienceEveryone": "Everyone",
+    "audienceHint": "Seen by students who follow {society}.",
+    "audienceHintGeneric": "Seen only by students who follow this society.",
+    "panelCollapse": "Collapse map panel",
+    "panelExpand": "Expand map panel"
   },
   "admin": {
     "email": "Email",
@@ -981,7 +997,12 @@
       "unknown": "not set",
       "loadFailed": "Could not load statistics."
     },
-    "loginName": "login"
+    "loginName": "login",
+    "audience": {
+      "faculty": "Only {faculty} students",
+      "erasmus": "Erasmus students only",
+      "followers": "Followers only"
+    }
   },
   "mobile": {
     "header": {
@@ -1032,6 +1053,8 @@
       "groupThisWeek": "Registered · this week",
       "groupLater": "Registered · later",
       "groupOpen": "Open slots",
+      "groupNotYetOpen": "Not open yet",
+      "opensAt": "opens {when}",
       "registeredCountOne": "{count} registered",
       "registeredCountFew": "{count} registered",
       "registeredCountOther": "{count} registered",
@@ -1106,7 +1129,6 @@
     "sheet": {
       "close": "Close",
       "cancel": "Not now",
-      "openInIsMendelu": "Open in IS MENDELU",
       "showOnMap": "Show on map",
       "personLoading": "Loading…",
       "personLoadError": "Couldn't load this person.",
@@ -1140,12 +1162,20 @@
       "search": "Search",
       "page": "Page",
       "noMatches": "Nothing found",
-      "removePage": "Remove page"
-    }
+      "removePage": "Remove page",
+      "focus": "Hide the toolbar",
+      "exitFocus": "Show the toolbar"
+    },
+    "openingLink": "Opening…"
   },
   "session": {
     "expired": "Your IS session has expired.",
     "signIn": "Sign in"
+  },
+  "boot": {
+    "failedTitle": "reIS couldn't start",
+    "failedBody": "Please try again.",
+    "retry": "Try again"
   },
   "demo": {
     "gateTitle": "Sign in to IS",

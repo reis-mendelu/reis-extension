@@ -2,6 +2,7 @@ import { getPlatform } from '../platform';
 import { UIS_AUTH_COOKIE, buildRestoreScript, isPlausibleToken } from '../platform/sessionToken';
 import { logError } from '../utils/reportError';
 import { DemoModeError, isDemoMode } from '../errors/demoMode';
+import { useAppStore } from '../store/useAppStore';
 
 /**
  * Opening external links without escaping to the system browser.
@@ -101,6 +102,59 @@ export function externalHrefFromClick(event: MouseEvent): string | null {
  * false generalisation appeared in `saveDeps.ts`; see the note there for the
  * modules that do pull Capacitor runtime into the extension's main chunk.
  */
+/**
+ * How long the scrim may stay up waiting for a page that never arrives.
+ *
+ * `pageLoadError` covers the ordinary failures, but a request that simply hangs
+ * fires nothing at all, and a scrim with no way out is worse than no scrim.
+ * After this the app stops claiming to be working and lets the student try
+ * again; the browser is still free to appear on its own afterwards.
+ */
+const PRESENT_TIMEOUT_MS = 20_000;
+
+/**
+ * Resolves when the WebView is actually on screen — which is NOT when
+ * `openWebView` resolves.
+ *
+ * That call resolves as soon as the native side accepts it: in
+ * `InAppBrowserPlugin.swift` `call.resolve` runs at the end of the setup block,
+ * and with `isPresentAfterPageLoad` true the `presentView` beside it is skipped
+ * — the browser is presented later, once the page has loaded. Awaiting the call
+ * therefore says nothing about whether the student can see anything yet, and
+ * the first version of the opening spinner cleared on it, so it was on screen
+ * for a few milliseconds: "I don't see any spinner".
+ *
+ * Subscribed BEFORE the open, or a page that loads immediately fires into a
+ * listener that does not exist yet.
+ */
+async function presentation(browser: {
+  addListener: (
+    event: string,
+    fn: () => void
+  ) => Promise<{ remove: () => Promise<void> } | undefined>;
+}): Promise<{ done: Promise<void> }> {
+  let settle = () => {};
+  const done = new Promise<void>((resolve) => {
+    settle = resolve;
+  });
+  const handles = await Promise.all([
+    // Any of these ends the wait: the page is up, it is not coming, or the
+    // student has already closed the browser. `closeEvent` is the one that
+    // matters if the other two ever stop firing — without it a silent failure
+    // would leave the scrim underneath the browser, and still there when it
+    // closes. The timeout below is the last resort, not the plan.
+    browser.addListener('browserPageLoaded', () => settle()).catch(() => undefined),
+    browser.addListener('pageLoadError', () => settle()).catch(() => undefined),
+    browser.addListener('closeEvent', () => settle()).catch(() => undefined),
+  ]);
+  const timer = setTimeout(settle, PRESENT_TIMEOUT_MS);
+  void done.then(() => {
+    clearTimeout(timer);
+    for (const handle of handles) void handle?.remove?.();
+  });
+  return { done };
+}
+
 export async function openExternal(url: string): Promise<void> {
   // Same guard as fetchWithAuth, first statement so no request can escape:
   // this is the other chokepoint a reviewer's tap could reach MENDELU's real
@@ -122,6 +176,13 @@ export async function openExternal(url: string): Promise<void> {
     return;
   }
 
+  // Raised around the WHOLE open, including the dynamic import and the token
+  // read, and lowered whether it succeeds or throws. The in-app browser is
+  // withheld until a desktop IS page has loaded end to end and the plugin
+  // refuses to present it any earlier, so without this the tap has no answer
+  // at all for those seconds: "there's no loading so it seems the button is
+  // not working". Read by ExternalLinkOverlay, which is what the student sees.
+  useAppStore.getState().setExternalOpening(true);
   try {
     const { InAppBrowser } = await import('@capgo/capacitor-inappbrowser');
 
@@ -175,6 +236,9 @@ export async function openExternal(url: string): Promise<void> {
     const { loadStoredToken } = await import('../platform/tokenStore');
     const token = isSecure ? await loadStoredToken().catch(() => '') : '';
 
+    // Registered first: the page can load before the open call even returns.
+    const shown = await presentation(InAppBrowser as unknown as Parameters<typeof presentation>[0]);
+
     await InAppBrowser.openWebView({
       url: target,
       // The host, not a fixed string: the student should be able to see where
@@ -213,12 +277,18 @@ export async function openExternal(url: string): Promise<void> {
           }
         : {}),
     });
+    // The open call is done; the BROWSER is not. Hold the flag until it is.
+    await shown.done;
   } catch (e) {
     // No toast: this runs from a document listener with no React context, so
     // there is no `t` to translate with. A plugin that fails to open is a
     // fault rather than a condition the student can act on, so telemetry is
-    // the right destination — but it does mean the tap looks inert.
+    // the right destination.
     logError('Mobile.openExternal', e);
+  } finally {
+    // In `finally`, not after the await: a throw must not leave the overlay up
+    // over an app that has stopped trying.
+    useAppStore.getState().setExternalOpening(false);
   }
 }
 

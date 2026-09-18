@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { getCzechHoliday } from '../../../../utils/holidays';
 import { toIso, toCompact, shiftIso, weekDays } from '../../../../utils/mobile/weekDays';
-import { useWeekSwipe } from './useWeekSwipe';
+import { useSwipeSteps } from './useSwipeSteps';
 
 export interface DayChipsProps {
   selectedIso: string;
@@ -40,7 +40,7 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
   const days = weekDays(selectedIso, lessonDates);
 
-  const stripRef = useRef<HTMLDivElement>(null);
+  const elementRef = useRef<HTMLDivElement>(null);
   /**
    * Written straight to the node, never through state.
    *
@@ -50,7 +50,7 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
    * left easing the very offset the finger was setting. Same rule here.
    */
   const setOffset = (px: number | null) => {
-    const strip = stripRef.current;
+    const strip = elementRef.current;
     if (!strip) return;
     if (px === null) {
       // removeProperty, not `= ''`: `transition` is a shorthand, and blanking a
@@ -68,8 +68,8 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
     strip.style.transform = `translateX(${px / 3}px)`;
   };
 
-  const { handlers } = useWeekSwipe({
-    stripRef,
+  const { handlers } = useSwipeSteps({
+    elementRef,
     onMove: setOffset,
     onEnd: (steps) => {
       setOffset(null);
@@ -105,7 +105,7 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
           that point can get it back. The strip has no scroller inside it, so
           there is nothing here for the declaration to take away. */}
       <div
-        ref={stripRef}
+        ref={elementRef}
         data-testid="day-strip"
         {...handlers}
         className="flex flex-1 touch-none gap-1.5 transition-transform duration-200 ease-out max-[359px]:gap-0.5"

@@ -32,5 +32,5 @@ export function MapPanelBody({ selectedEvent, flush = false }: MapPanelBodyProps
       </div>
     );
   }
-  return <MapEventsSection showFilter={false} />;
+  return <MapEventsSection />;
 }

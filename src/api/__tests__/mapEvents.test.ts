@@ -34,6 +34,9 @@ describe('toMapEvent', () => {
       roomCode: 'Q01',
       venueKind: 'campus',
       category: 'quiz',
+      // Absent on the row: a society that did not restrict the event, and
+      // every row written before the column existed.
+      subscribersOnly: false,
     });
   });
 
@@ -68,6 +71,9 @@ describe('toMapEvent', () => {
       roomCode: null,
       venueKind: 'offcampus',
       category: 'party',
+      // Absent on the row: a society that did not restrict the event, and
+      // every row written before the column existed.
+      subscribersOnly: false,
     });
   });
 

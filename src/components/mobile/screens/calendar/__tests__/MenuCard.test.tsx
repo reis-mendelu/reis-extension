@@ -60,15 +60,15 @@ describe('MenuCard', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  // The extension fetches once at boot and lives inside an iframe that is
-  // rebuilt on every IS page load. The Capacitor app does not: it stays resident
-  // for days, so a menu fetched on Monday is still Monday's on Thursday unless
-  // something asks again.
-  it('asks for the menu when it has none', () => {
+  // The Iron Rule: no useEffect for data fetching. `initializeStore` asks for
+  // the menu at boot — on the phone too, since App.tsx runs useAppLogic() above
+  // the shell branch — and both language handlers ask again. The card reads
+  // `menu` synchronously and renders whatever is there.
+  it('does not fetch: the store owns the request', () => {
     const fetchMenu = vi.fn();
     useAppStore.setState({ menu: null, menuLoading: false, menuError: false, fetchMenu } as never);
     render(<MenuCard dayIso={DAY} />);
-    expect(fetchMenu).toHaveBeenCalled();
+    expect(fetchMenu).not.toHaveBeenCalled();
   });
 });
 

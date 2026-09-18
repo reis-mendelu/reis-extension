@@ -174,6 +174,56 @@ five greenhouse-complex footprints (`outline`), and the 32-way footpath network
 map beats a full-but-wrong one. (OSM's only other real interior POIs are 2
 viewpoints + 1 firepit — available to add back if wanted.)
 
+## Revision 2026-09-18 (Panská lícha — a place that is not ours)
+
+Student feedback, 2026-09-15: *"jestli tam můžou být koleje, proč tam není
+panská lícha, kde se učí?"*
+
+**Added as `-105`, and it breaks the rule the other four follow.** Panská lícha
+is **not MENDELU property** — it is a private equestrian centre and hotel
+(Hotel Panská lícha, s.r.o., IČO 26927853, two private individuals per ARES).
+It is 4 km from Černá Pole, in Brno-Obřany.
+
+It is on the map anyway, and the reasoning is worth recording because it
+overrides the "MENDELU's own off-campus sites" framing this file started with:
+**the map serves students who have to physically get somewhere, not a property
+register.** A student does not care who holds the deed. reIS already maps things
+it does not own — every DPMB stop in `pois.json`. Withholding a venue someone is
+expected to show up at, on ownership grounds, serves nobody.
+
+Consequently `map.placesOther` was renamed from "Další pracoviště" / "Other
+sites" to **"Další místa" / "Other places"**: "pracoviště" claims a MENDELU
+workplace, which this is not.
+
+**Geometry.** OSM maps the areal as a **relation**, not a way, so neither
+existing branch fitted:
+
+- `area` ← relation **6147619** outer rings (`leisure=horse_riding`,
+  `landuse=farmyard`), drawn faintly behind — the context.
+- `outline` ← way **44748596** (`building=riding_hall`, `sport=equestrian`) —
+  the one building a student attending a practical actually walks into.
+
+`fetch-remote-places.mjs` gained an `areaRelationId` branch
+(`fetchRelationOuterRings`) for this. Deliberately **not** every building inside:
+the hotel, restaurant, stable, barns and four arenas are noise to someone
+looking for their lesson.
+
+**Evidence, stated honestly.** Ownership and geometry are verified (ARES,
+Overpass). That teaching happens there is **not** documented on any MENDELU
+source — not `mendelu.cz`, `af.mendelu.cz`, `uchhz.af.mendelu.cz`,
+`csa.mendelu.cz`, `ldf.mendelu.cz` or `slpkrtiny.cz`. The whole public IS room
+catalogue (13 areals) contains no Panská lícha and no Obřany, so **nothing
+taught there can carry an IS room code** — it will never resolve from a
+timetable room, only from this picker.
+
+What supports it: one student's report, plus a tight circumstantial fit — the
+Ústav chovu a šlechtění hospodářských zvířat teaches Jezdectví I/II, Chov koní
+and Výcvik sportovních koní, and runs an Oddělení chovu koní a agroturistiky; a
+riding hall 4 km from campus is where those practicals would run. The detail card
+shows name → address → `panskalicha.cz`, which claims no MENDELU affiliation.
+
+If this turns out to be wrong, deleting the `-105` entry is the whole revert.
+
 ## Out of scope
 
 - No routing/directions, no travel time, no distance display.

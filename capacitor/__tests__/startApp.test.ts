@@ -12,13 +12,16 @@ vi.mock('@capacitor/app', () => ({ App: { addListener: vi.fn(), exitApp: vi.fn()
 
 describe('startApp', () => {
   it('does not start the sync service in demo mode', async () => {
-    // main.capacitor's real boot path renders the actual app entrypoint
+    // The real boot path renders the actual app entrypoint
     // (@/entrypoints/main/main), which targets #root exactly like
     // capacitor/index.html does — unlike the DOM built by testing-library's
     // render(), nothing here provides that container.
     document.body.innerHTML = '<div id="root"></div>';
 
-    const { startApp } = await import('../main.capacitor');
+    // From its own module rather than through the entry: importing the entry
+    // also fires `void boot()`, a whole second boot sequence this test neither
+    // wants nor asserts on.
+    const { startApp } = await import('../startApp');
     // Inside act: startApp renders the real entrypoint, and React's scheduler
     // was still doing work after the test returned — vitest then tore the
     // environment down underneath it and reported an unhandled
@@ -57,7 +60,7 @@ describe('showLoginGate', () => {
     document.documentElement.removeAttribute('data-theme');
     useAppStore.setState({ language: 'cz' });
 
-    const { showLoginGate } = await import('../main.capacitor');
+    const { showLoginGate } = await import('../bootScreens');
     // Same treatment as the boot test above, and for the same reason: this
     // renders a real React root, and React's scheduler drains through
     // setImmediate, so the commit lands a macrotask after the test would

@@ -1,6 +1,7 @@
 import { defineConfig } from 'wxt';
 import path from 'path';
 import tailwindcss from '@tailwindcss/vite';
+import { SNAPSHOT_FILENAMES } from './scripts/stripDevRealData.mjs';
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
@@ -12,8 +13,13 @@ export default defineConfig({
     // fetch it, but is stripped from production output.
     'build:publicAssets'(wxt, files) {
       if (wxt.config.mode === 'production') {
-        const i = files.findIndex((f) => f.relativeDest === 'dev-real-data.json');
-        if (i !== -1) files.splice(i, 1);
+        // Both local snapshots, not just the first one: `sanitise:snapshot`
+        // writes preview-data.json into the same publication directory, and
+        // it used to ride straight into the zip.
+        for (const filename of SNAPSHOT_FILENAMES) {
+          const i = files.findIndex((f) => f.relativeDest === filename);
+          if (i !== -1) files.splice(i, 1);
+        }
       }
     },
     // Strip the MV3-only OSM tile-identity keys from the MV2 (Firefox) build.
@@ -50,7 +56,7 @@ export default defineConfig({
   },
   manifest: {
     name: 'reIS',
-    version: '5.2.4',
+    version: '5.2.5',
     description: 'Modernizovaný reIS rozšířený pro IS Mendelu',
     icons: {
       16: 'reIS_logo_16.png',

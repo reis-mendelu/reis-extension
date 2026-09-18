@@ -51,7 +51,6 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
   mapEvents: [],
   mapEventsLoaded: false,
   mapPanelTab: 'events',
-  eventFilter: 'all',
   societyMapEvents: [],
   placingEvent: false,
   draftCoord: null,
@@ -202,8 +201,9 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
     }
   },
 
+  mapPanelCollapsed: false,
   setMapPanelTab: (tab) => set({ mapPanelTab: tab }),
-  setEventFilter: (filter) => set({ eventFilter: filter }),
+  toggleMapPanelCollapsed: () => set((st) => ({ mapPanelCollapsed: !st.mapPanelCollapsed })),
 
   refreshSocietyMapEvents: () => {
     const rows = get().societyPosts;

@@ -10,7 +10,7 @@ import { isLessonHidden } from '../../../utils/hiddenLessons';
 import { getCzechHoliday } from '../../../utils/holidays';
 import { isOutsideTeaching } from '../../../utils/mobile/teachingPeriod';
 import { semesterStart } from '../../../utils/mobile/semesterStart';
-import { toIso } from '../../../utils/mobile/weekDays';
+import { defaultCalendarDay } from '../../../utils/mobile/landingDay';
 import { roomCodeFor } from '../../../utils/mobile/lessonActions';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { NowNextCard } from './calendar/NowNextCard';
@@ -61,11 +61,22 @@ export function CalendarScreen() {
   // the vývěska. Returning a bare skeleton or error in its place left a
   // student with no route to any of them for as long as a crawl took, which on
   // a first sign-in is minutes.
-  const selectedIso = mobileSelectedDayIso ?? toIso(new Date());
-  // Lifted above `chrome` so it is computed once for the strip below, in every
-  // state including the skeleton — with no schedule the set is simply empty,
-  // and the strip falls back to Mon–Fri.
+  // Today, except before term, when it is the first teaching day — see
+  // utils/mobile/landingDay. Resolved HERE rather than in the store so it
+  // re-derives every render: `null` stays "wherever the calendar opens", so the
+  // day still rolls over at midnight and still follows a late sync.
+  //
+  // Computed from the VISIBLE schedule, not the raw one. A student who hid the
+  // course that happens to start earliest would otherwise land on a day whose
+  // agenda is empty once the hidden lessons are taken out — the blank calendar
+  // this rule exists to prevent, arrived at by a different road.
+  //
+  // Lifted above `chrome` so the set is computed once for the strip below too,
+  // in every state including the skeleton — with no schedule it is simply
+  // empty, and the strip falls back to Mon–Fri.
   const visibleSchedule = schedule.filter((l) => !isLessonHidden(l, hiddenItems));
+  const defaultIso = defaultCalendarDay(visibleSchedule, teachingWeekData, new Date());
+  const selectedIso = mobileSelectedDayIso ?? defaultIso;
   const lessonDates = new Set(visibleSchedule.map((l) => l.date));
   const chrome = (
     <>
@@ -85,7 +96,7 @@ export function CalendarScreen() {
     <div data-testid="calendar-screen" className="relative flex flex-1 flex-col overflow-hidden">
       {chrome}
       {body}
-      <TodayPill selectedIso={selectedIso} />
+      <TodayPill selectedIso={selectedIso} defaultIso={defaultIso} />
     </div>
   );
 
@@ -183,6 +194,7 @@ export function CalendarScreen() {
         holiday={holiday}
         outsideTeaching={outsideTeaching}
         teachingStartsOn={teachingStartsOn}
+        onSelectDay={setMobileSelectedDay}
       />
     </>
   );

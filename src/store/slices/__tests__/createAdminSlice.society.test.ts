@@ -36,6 +36,7 @@ const row = (id: string, associationId: string) => ({
   url: null,
   created_by: null,
   visible_from: null,
+  subscribers_only: false,
 });
 
 vi.mock('../../../api/societyPosts', async (orig) => ({

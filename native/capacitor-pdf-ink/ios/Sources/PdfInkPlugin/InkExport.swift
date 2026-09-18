@@ -1,5 +1,6 @@
 import PDFKit
 import PencilKit
+import UIKit
 
 /**
  * Baking the ink into a PDF the student can hand to anyone.
@@ -14,8 +15,10 @@ import PencilKit
  */
 enum InkExport {
     /// The box PDFKit lays the reader's canvases out in, so the box the strokes
-    /// are positioned against. It has to be the same one on both sides here.
-    static let box = PDFDisplayBox.cropBox
+    /// are positioned against. It has to be the same one on both sides here —
+    /// which is why it is `InkPages`' to define, not this file's: an added page
+    /// is measured in it too.
+    static let box = InkPages.displayBox
     static let inkScale: CGFloat = 2
 
     static func flatten(_ document: PDFDocument, drawings: [Int: PKDrawing], to url: URL) throws {
@@ -38,21 +41,28 @@ enum InkExport {
                 cg.restoreGState()
 
                 guard let drawing = drawings[index], !drawing.strokes.isEmpty else { continue }
-                drawing.image(from: rect, scale: inkScale).draw(in: rect)
+                // Rendered as if the app were in light mode, for the same
+                // reason the reader pins every canvas to it: PencilKit adapts
+                // ink to the appearance, and a black pen renders WHITE in dark
+                // mode. `image(from:scale:)` reads UITraitCollection.current,
+                // so with the app dark the strokes baked white onto white paper
+                // and the export came out blank — "the ink is missing, or
+                // dimmed". The paper is white in every appearance, so the ink
+                // that goes on it is the light-mode ink, always.
+                // (`performAsCurrent` hands back Void, so the image comes out
+                // through a captured var rather than as the closure's value.)
+                var ink: UIImage?
+                UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
+                    ink = drawing.image(from: rect, scale: inkScale)
+                }
+                ink?.draw(in: rect)
             }
         }
     }
 
-    /// The page as the reader shows it: the display box, turned on its side when
-    /// the page is rotated a quarter turn.
+    /// The page as the reader shows it, as a rect at the origin.
     static func pageRect(_ page: PDFPage?) -> CGRect {
-        guard let page else { return CGRect(x: 0, y: 0, width: 612, height: 792) }
-        let bounds = page.bounds(for: box)
-        let turned = page.rotation % 180 != 0
-        return CGRect(
-            origin: .zero,
-            size: turned
-                ? CGSize(width: bounds.height, height: bounds.width) : bounds.size)
+        CGRect(origin: .zero, size: InkPages.displayedSize(of: page))
     }
 
     /**

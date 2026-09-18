@@ -7,15 +7,13 @@
  * NOTE: This component fills its parent container. Positioning is handled by the parent.
  */
 
-import { MapPin, EyeOff, Calendar, CalendarRange, Timer } from 'lucide-react';
+import { MapPin, Timer } from 'lucide-react';
 import type { LessonWithRow } from '../types/calendarTypes';
 import { useCourseName } from '../hooks/ui/useCourseName';
 import { useAppStore } from '../store/useAppStore';
-import { useTranslation } from '../hooks/useTranslation';
 import { useTimeline } from '../hooks/useTimeline';
-import { useHintStatus } from '../hooks/ui/useHintStatus';
-import { renderedBlockMinutes } from './WeeklyCalendar/utils';
-import { toast } from 'sonner';
+import { renderedBlockMinutes, MIN_VISUAL_BLOCK_MINUTES } from './WeeklyCalendar/utils';
+import { CalendarEventCardHideMenu } from './CalendarEventCardHideMenu';
 
 interface CalendarEventCardProps {
   lesson: LessonWithRow;
@@ -51,45 +49,25 @@ function getExamSectionName(courseName: string): string {
 }
 
 export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCardProps) {
-  const { t } = useTranslation();
-  const { isSeen, markSeen } = useHintStatus('calendar_hide_first_time');
-  const hideEvent = useAppStore((s) => s.hideEvent);
-  const hideCourse = useAppStore((s) => s.hideCourse);
   const timeline = useTimeline(lesson.courseCode || '');
 
-  // Gate on the space the block actually occupies, not its literal length. Exam
-  // lengths are real now (see services/sync/examDurations.ts), so a 10-minute
-  // oral exam would otherwise fail this check and render with no subject or
-  // room at all — the grid floors short blocks, so the room is there to use.
-  const isLongEnough = renderedBlockMinutes(lesson.startTime, lesson.endTime) >= 60;
+  // How much room the grid actually gave this block. `renderedMinutes` is the
+  // number it laid the block out with — legibility floor and next-block cap
+  // included — so recomputing it here without the cap would promise the card
+  // space the column has not given it.
+  const occupies = lesson.renderedMinutes ?? renderedBlockMinutes(lesson.startTime, lesson.endTime);
 
-  const handleHideOccurrence = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    hideEvent(lesson.id, lesson.courseCode, fullName, lesson.date);
-    showHint();
-  };
-
-  const handleHideType = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const type = lesson.isSeminar === 'true' ? 'seminar' : 'lecture';
-    hideCourse(lesson.courseCode, fullName, type);
-    showHint();
-  };
-
-  const handleHideAll = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    hideCourse(lesson.courseCode, fullName, 'all');
-    showHint();
-  };
-
-  const showHint = () => {
-    if (!isSeen) {
-      toast.info(t('calendar.hide.hint'), {
-        duration: 5000,
-      });
-      markSeen();
-    }
-  };
+  // Two stacked lines need about 56px: 20 for the title, 20 for the room-and-time
+  // row, 16 of padding. The grid is fourteen hours tall, so on a normal desktop
+  // window 60 minutes is about 41px — and the old gate at `>= 60` drew the second
+  // line anyway and let `overflow-hidden` cut it in half. That was visible on any
+  // 60-to-89-minute lesson before this, and became the common case once short
+  // blocks started being capped at the next one.
+  //
+  // MIN_VISUAL_BLOCK_MINUTES is the right line because it IS the floor: anything
+  // the grid floored is at least this tall, and anything shorter got there by
+  // being capped, which means something starts right underneath it.
+  const fitsTwoLines = occupies >= MIN_VISUAL_BLOCK_MINUTES;
 
   // Get localized names and apply nickname
   const fullName = getLocalizedCourseName(lesson, language);
@@ -172,70 +150,51 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
           <span>{timeline.short}</span>
         </div>
       )}
-      {/* Quick Hide Action (custom event actions disabled until feature ships) */}
+      {/* The only route to hideEvent/hideCourse, so it renders however little
+          room the block has — see CalendarEventCardHideMenu. */}
       {!lesson.isCustom && !lesson.isExam && !isCompact && (
-        <div
-          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-20"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="dropdown dropdown-end">
-            <div
-              tabIndex={0}
-              role="button"
-              className="btn btn-ghost btn-xs btn-circle bg-base-100/50 hover:bg-base-100 shadow-sm"
-            >
-              <EyeOff size={14} className="text-base-content/70" />
-            </div>
-            <ul
-              tabIndex={0}
-              className="dropdown-content z-[100] menu p-1 shadow-xl bg-base-100 border border-base-300 rounded-lg w-52 text-xs font-medium mt-1"
-            >
-              <li className="menu-title px-2 py-1 text-[10px] opacity-40 uppercase tracking-widest border-b border-base-200 mb-1 line-clamp-2 whitespace-normal leading-tight">
-                {baseName}
-              </li>
-              <li>
-                <button onClick={handleHideOccurrence} className="flex items-center gap-2 py-2">
-                  <Calendar size={14} />
-                  {t('calendar.hide.occurrence')}
-                </button>
-              </li>
-              <li>
-                <button onClick={handleHideType} className="flex items-center gap-2 py-2">
-                  <CalendarRange size={14} />
-                  {lesson.isSeminar === 'true'
-                    ? t('calendar.hide.seminars')
-                    : t('calendar.hide.lectures')}
-                </button>
-              </li>
-              <div className="h-px bg-base-300 my-1 opacity-50" />
-              <li>
-                <button onClick={handleHideAll} className="flex items-center gap-2 py-2 opacity-70">
-                  <EyeOff size={14} />
-                  {t('calendar.hide.allLessons')}
-                </button>
-              </li>
-            </ul>
-          </div>
-        </div>
+        <CalendarEventCardHideMenu lesson={lesson} fullName={fullName} baseName={baseName} />
       )}
       <div className="p-2 h-full flex flex-col text-sm overflow-hidden font-inter">
-        {/* Course title - always visible. Fixed near-black (content-primary)
+        {/* One line, for a block with room for one. The time joins the title
+            rather than being dropped: "Cvičení" alone on a row between two other
+            blocks says less than the thing it is sitting next to. The room goes,
+            because something has to, and it is the part the tooltip and the
+            subject drawer both still carry. */}
+        {!fitsTwoLines ? (
+          <div
+            className={`flex min-w-0 items-baseline justify-between gap-2 ${
+              // Same inset the two-line title takes, and for the same reason:
+              // the quick-hide button sits at top-right and would otherwise
+              // land on the time. It appears on hover, so without this the
+              // time would vanish under a thumb at the moment it is read.
+              !lesson.isCustom && !lesson.isExam && !isCompact ? 'pr-8' : ''
+            }`}
+          >
+            <span className="truncate font-semibold text-content-primary">{courseTitle}</span>
+            <span className="flex-shrink-0 whitespace-nowrap text-xs text-content-secondary">
+              {isCompact ? lesson.startTime : `${lesson.startTime} - ${lesson.endTime}`}
+            </span>
+          </div>
+        ) : (
+          /* Course title - always visible. Fixed near-black (content-primary)
                     rather than the colored type token, so the title reads black on the
-                    light green/blue/red card tints regardless of theme. */}
-        <div
-          className={`font-semibold text-content-primary flex-shrink-0 truncate ${!lesson.isExam && !isCompact ? 'pr-8' : ''}`}
-        >
-          {courseTitle}
-        </div>
+                    light green/blue/red card tints regardless of theme. */
+          <div
+            className={`font-semibold text-content-primary flex-shrink-0 truncate ${!lesson.isExam && !isCompact ? 'pr-8' : ''}`}
+          >
+            {courseTitle}
+          </div>
+        )}
         {/* Additional course info - only for longer events */}
-        {isLongEnough && lesson.isExam && !isCompact && (
+        {fitsTwoLines && lesson.isExam && !isCompact && (
           <div className="text-exam-text font-medium text-xs flex-shrink-0 truncate">
             {courseName.split(' - ')[0]}
           </div>
         )}
 
         {/* Bottom row - Location and Time, pushed to bottom */}
-        {isLongEnough && (
+        {fitsTwoLines && (
           <div className="text-content-secondary text-sm mt-auto flex-shrink-0 flex items-center justify-between gap-2">
             {room && !isCompact && (
               <div className="flex items-center gap-1 min-w-0 flex-1">

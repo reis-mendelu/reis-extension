@@ -10,7 +10,8 @@ import { gradeBadge } from '@/utils/gradeLookup';
 import { useAppStore } from '@/store/useAppStore';
 import { isZameraniCode } from './utils';
 import { resolvePredmetId } from './resolvePredmetId';
-import { failRateTone, failRateToneHover } from './failRateTone';
+import { failRateTone } from './failRateTone';
+import { FailRatePill } from './FailRatePill';
 
 interface SubjectRowProps {
   subject: SubjectStatus;
@@ -259,23 +260,13 @@ export function SubjectRow({
         {badgeEl}
         {typeEl}
         {failRate != null && !subject.isFulfilled && !badge && (
-          <span
-            className={`group/fail flex items-center justify-center h-5 px-1.5 rounded text-[10px] font-medium tracking-wide shrink-0 cursor-pointer transition-colors ${failRateTone(
-              failRate
-            )} ${failRateToneHover(failRate)}`}
-            onClick={(e) => {
-              e.stopPropagation();
+          <FailRatePill
+            rate={failRate}
+            onOpen={() => {
               if (hasId) onOpenSubject(subject.code, subject.name, resolvedId, undefined, 'stats');
               else onSearchSubject(displayName);
             }}
-          >
-            {/* Always shown, never hover-revealed. The label used to be
-              max-w-0/opacity-0 until :hover, which on a touch screen means
-              never — the iPad showed a bare colour-coded number with nothing
-              to say it was a failure rate. */}
-            <span className="mr-1 whitespace-nowrap">{t('subjects.failRateLabel')}</span>
-            {failRate}%
-          </span>
+          />
         )}
         {zameraniTag && (
           <span className="text-[9px] font-mono tracking-widest text-[var(--tone-primary)] bg-primary/8 px-1.5 py-0.5 rounded shrink-0">

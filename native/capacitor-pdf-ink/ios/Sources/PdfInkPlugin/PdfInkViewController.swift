@@ -57,6 +57,21 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     private lazy var addPageItem = UIBarButtonItem(
         image: UIImage(systemName: "plus.rectangle.portrait"), style: .plain, target: self,
         action: #selector(addPageTapped))
+    /// Whether the reader has put its bar away so the page can have the screen.
+    /// Whether the reader has put its bar away so the page can have the screen.
+    private var chromeHidden = false
+    /// Drops the navigation bar and leaves the page and the tool picker.
+    ///
+    /// The sidebar is already `.secondaryOnly` by default, so the bar is the
+    /// only chrome left over the page — and on an 11-inch iPad in landscape it
+    /// is a tenth of the height a student is drawing on.
+    private lazy var focusItem = UIBarButtonItem(
+        image: UIImage(systemName: "arrow.up.left.and.arrow.down.right"), style: .plain,
+        target: self, action: #selector(focusTapped))
+    /// The way back, floating over the page. Built in `+Focus`.
+    private(set) lazy var restoreChromeButton: UIButton = Self.makeRestoreChromeButton(
+        target: self, action: #selector(restoreChromeTapped))
+
     private lazy var shareItem = UIBarButtonItem(
         barButtonSystemItem: .action, target: self, action: #selector(shareTapped))
     /// Reads "12/42" and opens the page grid. A lecture deck is unusable without
@@ -119,6 +134,8 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         // Notes and GoodNotes both put "add a page" in the top bar of the page
         // itself; the sidebar toggle owns the other corner.
         addPageItem.accessibilityLabel = strings.addPage
+        focusItem.accessibilityLabel = strings.focus
+        restoreChromeButton.accessibilityLabel = strings.exitFocus
         shareItem.accessibilityLabel = strings.export
         pagesItem.accessibilityLabel = strings.pages
         searchItem.accessibilityLabel = strings.search
@@ -126,7 +143,9 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         setBarItems(enabled: false)
         // Right to left: Share on the edge, as Notes and Files put it, then the
         // two ways of getting somewhere in the file.
-        navigationItem.rightBarButtonItems = [shareItem, addPageItem, searchItem, pagesItem]
+        navigationItem.rightBarButtonItems = [
+            shareItem, addPageItem, focusItem, searchItem, pagesItem,
+        ]
         // The exit, as a group: see `exitItem`. Not `leftBarButtonItems`.
         navigationItem.leadingItemGroups = [
             UIBarButtonItemGroup(barButtonItems: [exitItem], representativeItem: nil)
@@ -154,6 +173,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         message.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(spinner)
         view.addSubview(message)
+        view.addSubview(restoreChromeButton)
 
         NSLayoutConstraint.activate([
             // Below the navigation bar, not under it. PDFView lays its pages out
@@ -171,6 +191,12 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
             message.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             message.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 32),
             message.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -32),
+            // Where the bar's trailing items were, so the button appears in the
+            // place the control it replaces just left.
+            restoreChromeButton.topAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
+            restoreChromeButton.trailingAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -12),
         ])
 
         toolPicker.showsDrawingPolicyControls = true
@@ -187,6 +213,13 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         pdfView.becomeFirstResponder()
+    }
+
+    /// The navigation controller outlives this screen's dismissal animation, so
+    /// a reader closed while focused would hand the next one a hidden bar.
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        setChromeHidden(false)
     }
 
     /**
@@ -338,7 +371,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         harvestCanvases()
         drawings = InkPages.shifted(drawings, insertingAt: at)
         insertedPages = InkPages.shifted(insertedPages, insertingAt: at)
-        document.insert(InkPages.blank(size: current.bounds(for: .mediaBox).size), at: at)
+        document.insert(InkPages.blank(size: InkPages.displayedSize(of: current)), at: at)
         reloadDocumentKeepingZoom()
         if let page = document.page(at: at) { pdfView.go(to: page) }
         updatePageItem()
@@ -346,6 +379,28 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         NSLog("PdfInk: blank page added at \(at)")
         persistNow()
         return true
+    }
+
+    // MARK: - Focus
+
+    @objc private func focusTapped() { setChromeHidden(true) }
+
+    @objc private func restoreChromeTapped() { setChromeHidden(false) }
+
+    /**
+     * Show or hide everything that is not the page.
+     *
+     * `becomeFirstResponder` again at the end: hiding the bar moves the
+     * responder around, and the tool picker is only visible for the first
+     * responder — losing it here would take the pens away at the exact moment
+     * the student asked for more room to use them.
+     */
+    func setChromeHidden(_ hidden: Bool) {
+        guard chromeHidden != hidden, isViewLoaded else { return }
+        chromeHidden = hidden
+        navigationController?.setNavigationBarHidden(hidden, animated: true)
+        restoreChromeButton.isHidden = !hidden
+        pdfView.becomeFirstResponder()
     }
 
     @objc private func addPageTapped() {
@@ -388,6 +443,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         shareItem.isEnabled = enabled
         pagesItem.isEnabled = enabled
         searchItem.isEnabled = enabled
+        focusItem.isEnabled = enabled
         // The counter is a pill around a number. With no file open there is no
         // number, and an empty pill reads as a button that lost its label.
         pagesItem.isHidden = !enabled

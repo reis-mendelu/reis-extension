@@ -1,6 +1,5 @@
 import { lazy, Suspense, useRef, useState } from 'react';
 import type { SyntheticEvent } from 'react';
-import { ExternalLink } from 'lucide-react';
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
 import { SubjectDrawerTabs } from './SubjectDrawerTabs';
@@ -52,7 +51,7 @@ export interface SubjectDrawerSheetProps {
  */
 export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) {
   const { courseCode, courseName, courseId } = sheet;
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const { getSubject } = useSubjects();
   // Mirrors desktop's useSubjectFileDrawerState: files/classmates/zaznamnik
   // need a subjectId (an enrolled subject) to fetch anything, so a subject
@@ -78,13 +77,11 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
   // The course keys the iPad reader's ink and PDF cache, and its PDFs fill the
   // reader's sidebar so a student can switch files without coming back here —
   // in the drawer's grouped order, so both lists read the same.
-  const { previewUrl, viewPdf, closePreview, openFile, downloadSingle } = usePdfPreview(
-    courseCode,
-    {
+  const { previewUrl, viewPdf, closePreview, openFile, downloadSingle, openingLink } =
+    usePdfPreview(courseCode, {
       title: courseName || courseCode,
       files: listSubjectPdfs(groupedFiles.flatMap((g) => g.files)),
-    }
-  );
+    });
   const { classmates } = useClassmates(courseCode);
   const pushSheet = useAppStore((s) => s.pushSheet);
   const { data: zaznamnikData } = useZaznamnik(courseCode);
@@ -107,12 +104,6 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
   const teacherLine = syllabusResult.syllabus?.courseInfo?.teachers
     ?.map((teacher) => teacher.name)
     .join(', ');
-
-  const openInIsHref = subjectInfo?.folderUrl
-    ? `${subjectInfo.folderUrl}${subjectInfo.folderUrl.includes('?') ? ';' : '?'}lang=${language}`
-    : resolvedCourseId
-      ? `https://is.mendelu.cz/auth/katalog/syllabus.pl?predmet=${resolvedCourseId};lang=${language}`
-      : null;
 
   const toggleSelect = (id: string, e: SyntheticEvent) => {
     e.stopPropagation();
@@ -157,6 +148,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
           toggleSelect={toggleSelect}
           openFile={openFile}
           onViewPdf={viewPdf}
+          openingLink={openingLink}
           onDownloadSingle={downloadSingle}
           resolvedCourseId={resolvedCourseId}
           syllabusResult={syllabusResult}
@@ -197,17 +189,6 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
             </Suspense>
           </div>
         </div>
-      )}
-      {openInIsHref && (
-        <a
-          href={openInIsHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex flex-shrink-0 items-center justify-center gap-1.5 border-t border-base-300 py-3 text-xs font-semibold text-base-content/60"
-        >
-          {t('mobile.sheet.openInIsMendelu')}
-          <ExternalLink size={13} />
-        </a>
       )}
     </Sheet>
   );

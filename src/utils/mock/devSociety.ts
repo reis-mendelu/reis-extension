@@ -37,6 +37,7 @@ function rowFrom(input: PostInput, associationId: string, createdBy: string): Sp
     url: input.url ?? null,
     created_by: createdBy,
     visible_from: input.visibleFrom ?? null,
+    subscribers_only: input.subscribersOnly ?? false,
   };
 }
 

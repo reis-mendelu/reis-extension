@@ -87,6 +87,10 @@ export interface MapEvent extends MendeluEvent {
   roomCode: string | null;
   venueKind: 'campus' | 'online' | 'offcampus';
   category: EventCategory;
+  /** Show only to students who follow this society. Noise control, not access
+   *  control — see utils/eventAudience. Absent on rows written before the
+   *  column existed, which are open to everyone. */
+  subscribersOnly?: boolean;
 }
 
 export const FACULTY_LABEL_TO_KEY: Record<string, FacultyKey> = {

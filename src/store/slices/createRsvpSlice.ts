@@ -1,5 +1,6 @@
 import type { AppSlice } from '../types';
 import { fetchEventRsvps, setEventRsvp, type RsvpStatus } from '../../api/eventRsvp';
+import { createRsvpBlockSync } from './rsvpBlockSync';
 import { IndexedDBService } from '../../services/storage';
 import { planReminders } from '../../services/eventReminders/plan';
 import { syncReminders } from '../../services/eventReminders/sync';
@@ -148,6 +149,9 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
    * Detached from its caller: a notification is a courtesy and must not be able
    * to fail an RSVP.
    */
+  // Serialised and self-contained — see `rsvpBlockSync`.
+  const refreshRsvpBlocks = createRsvpBlockSync(get);
+
   const refreshReminders = () => {
     // `translate` rather than useTranslation: this runs in the store, outside
     // any component, which is exactly what that helper exists for.
@@ -250,10 +254,16 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
           rsvp: hydrated,
         };
       });
-      // Only reconcile once the answers are actually known — from BOTH sides.
-      // Reconciling from a failed load means an empty plan, and syncReminders
-      // cancels everything not in the plan, silently wiping reminders for
-      // events still attended. An unread `stored` is exactly that empty plan.
+      // Both of these must not run from an UNREAD `stored`: that is an empty
+      // plan, and reconciling against it cancels every reminder and deletes
+      // every calendar block for events the student is still going to.
+      //
+      // They part company on `ok`, which says only whether the server's COUNTS
+      // arrived. The blocks are planned from the answers and the events, and
+      // neither is a count — so a load where the disk succeeded and the count
+      // request failed can still reconcile them, and gating it on `ok` left
+      // them stale until the next answer. Raised in review by CodeRabbit.
+      if (stored) refreshRsvpBlocks();
       if (ok && stored) refreshReminders();
     },
 
@@ -324,6 +334,7 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       if (ok) {
         persistAnswers();
         refreshReminders();
+        refreshRsvpBlocks();
         return;
       }
       // Roll back ONLY this event, and to the last answer the SERVER accepted —
@@ -368,6 +379,7 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       // The rollback is a change to the answers too: a reminder must never
       // outlive an RSVP that did not actually land.
       refreshReminders();
+      refreshRsvpBlocks();
     },
   };
 };

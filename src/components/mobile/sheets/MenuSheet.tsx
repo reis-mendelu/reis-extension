@@ -19,10 +19,10 @@ export interface MenuSheetProps {
  * makes: a student eats at one menza, and scrolling past two they will not
  * visit to reach the one they will is the shape the popover already rejected.
  *
- * Content only — the fetch belongs to `MenuCard`, which is the thing that
- * decided there was a menu worth opening. A sheet that fetched on mount would
- * have a loading state that can never be reached, since it cannot be opened
- * unless the card already had the data.
+ * Content only — the fetch belongs to the store (`initializeStore` and the two
+ * language handlers in store/useAppStore.ts). A sheet that fetched on mount
+ * would have a loading state that can never be reached anyway, since it cannot
+ * be opened unless `MenuCard` already had the data.
  */
 export function MenuSheet({ dayIso, onClose }: MenuSheetProps) {
   const { t, language } = useTranslation();
@@ -30,8 +30,9 @@ export function MenuSheet({ dayIso, onClose }: MenuSheetProps) {
   const outlets = menuForDay(menu, new Date(`${dayIso}T00:00:00`));
   const [active, setActive] = useState(0);
 
-  // The sheet outlives the card's own guard: the 5-minute language switch or a
-  // refetch can empty the day while it is open.
+  // The sheet outlives the data it was opened on: a language switch clears
+  // `menu` and re-fetches (store/useAppStore.ts), which can empty the day while
+  // the sheet is still open.
   const safe = Math.min(active, Math.max(outlets.length - 1, 0));
   const current = outlets[safe];
 
