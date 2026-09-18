@@ -28,12 +28,15 @@ export const SNAPSHOT_FILENAMES = [DEV_REAL_DATA_FILENAME, PREVIEW_DATA_FILENAME
  * bypasses the delete step fails loudly instead of quietly publishing it.
  *
  * @param {string} outDir absolute path to the build output directory
+ * @param {string[]} [filenames] which snapshots to remove. Defaults to all of
+ *   them; `build:web:real` passes a narrower list because the sanitised
+ *   snapshot is the payload that build exists to serve.
  * @throws {Error} if the file still exists after the removal attempt
  */
-export function stripDevRealDataFile(outDir) {
+export function stripDevRealDataFile(outDir, filenames = SNAPSHOT_FILENAMES) {
   const survivors = [];
 
-  for (const filename of SNAPSHOT_FILENAMES) {
+  for (const filename of filenames) {
     const target = join(outDir, filename);
 
     if (existsSync(target)) {
@@ -65,7 +68,7 @@ export function stripDevRealDataFile(outDir) {
  * into `outDir`, so the file is guaranteed to have already landed there if
  * it was going to.
  */
-export function stripDevRealDataPlugin() {
+export function stripDevRealDataPlugin(filenames = SNAPSHOT_FILENAMES) {
   let outDir;
   return {
     name: 'reis-strip-dev-real-data',
@@ -74,7 +77,7 @@ export function stripDevRealDataPlugin() {
       outDir = config.build.outDir;
     },
     closeBundle() {
-      stripDevRealDataFile(outDir);
+      stripDevRealDataFile(outDir, filenames);
     },
   };
 }

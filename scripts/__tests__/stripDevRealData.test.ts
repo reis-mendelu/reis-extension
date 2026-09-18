@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   DEV_REAL_DATA_FILENAME,
+  PREVIEW_DATA_FILENAME,
   SNAPSHOT_FILENAMES,
   stripDevRealDataFile,
 } from '../stripDevRealData.mjs';
@@ -85,5 +86,42 @@ describe('preview-data.json, the other local snapshot', () => {
 
     expect(existsSync(join(dir, 'preview-data.json'))).toBe(false);
     expect(existsSync(join(dir, DEV_REAL_DATA_FILENAME))).toBe(false);
+  });
+});
+
+// `build:web:real` / `preview:real` SERVE the sanitised snapshot: the built app
+// fetches /preview-data.json, and check:app --real refuses to run without it.
+// So the strip list is not one global truth — a distributable build removes
+// both files, the local real-data preview keeps the sanitised one.
+describe('the real-data web preview keeps the file it serves', () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'reis-real-preview-'));
+  });
+
+  afterEach(() => {
+    chmodSync(dir, 0o755);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('strips only what it is asked to strip', () => {
+    writeFileSync(join(dir, DEV_REAL_DATA_FILENAME), '{}');
+    writeFileSync(join(dir, PREVIEW_DATA_FILENAME), '{"schedule":[]}');
+
+    stripDevRealDataFile(dir, [DEV_REAL_DATA_FILENAME]);
+
+    expect(existsSync(join(dir, DEV_REAL_DATA_FILENAME))).toBe(false);
+    expect(existsSync(join(dir, PREVIEW_DATA_FILENAME))).toBe(true);
+  });
+
+  it('still defaults to stripping both, so a caller that says nothing is safe', () => {
+    writeFileSync(join(dir, DEV_REAL_DATA_FILENAME), '{}');
+    writeFileSync(join(dir, PREVIEW_DATA_FILENAME), '{}');
+
+    stripDevRealDataFile(dir);
+
+    expect(existsSync(join(dir, DEV_REAL_DATA_FILENAME))).toBe(false);
+    expect(existsSync(join(dir, PREVIEW_DATA_FILENAME))).toBe(false);
   });
 });
