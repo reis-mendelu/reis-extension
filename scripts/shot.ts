@@ -39,6 +39,8 @@ const OUT_DIR = resolve(process.cwd(), '.verify');
 const DEFAULT_VIEWPORT_HEIGHT = 844;
 // How long to let the app's own sync finish before seeding over it.
 const SYNC_SETTLE_TIMEOUT_MS = 15_000;
+// How long to let a late writer show itself before accepting the seed.
+const SEED_SETTLE_MS = 500;
 
 interface Options {
   label: string;
@@ -244,6 +246,49 @@ async function seedStoreState(page: Page, json: string): Promise<void> {
 }
 
 /**
+ * Seed, and keep seeding until the value sticks.
+ *
+ * No readiness check can enumerate every writer: `handshakeTimedOut` is a plain
+ * 10s timer, and a dev snapshot that is still loading at ten seconds will land
+ * AFTER it. Treating that as a hard failure would reject a perfectly valid slow
+ * run — the tool would refuse to verify exactly the setup it exists to verify.
+ *
+ * So a late write is absorbed: re-seed and settle again. Only a store that keeps
+ * overwriting the seed across every attempt is a real problem, and that one does
+ * fail, because it means the page can never be put into the state under test.
+ */
+async function seedAndHold(page: Page, json: string, settleMs: number): Promise<void> {
+  const ATTEMPTS = 3;
+  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+    await seedStoreState(page, json);
+    await page.waitForTimeout(settleMs);
+    if ((await driftedAfterSeed(page, json)).length === 0) return;
+    if (attempt < ATTEMPTS) {
+      console.warn(
+        `  note: something wrote over the seed after it was applied (attempt ${attempt}/${ATTEMPTS}) — re-seeding.`
+      );
+    }
+  }
+  throw new Error(
+    '--seed-store: the app overwrote the seed on every attempt. Something is still writing to ' +
+      'the store, so the page cannot be held in the state under test.'
+  );
+}
+
+/** Which seeded keys no longer match the running app. */
+async function driftedAfterSeed(page: Page, json: string): Promise<string[]> {
+  const entries = JSON.parse(json) as Record<string, unknown>;
+  const actual = await page.evaluate((keys) => {
+    const w = window as unknown as { __reisStore?: { getState: () => Record<string, unknown> } };
+    if (!w.__reisStore) return null;
+    const state = w.__reisStore.getState();
+    return Object.fromEntries((keys as string[]).map((k) => [k, state[k]]));
+  }, Object.keys(entries));
+  if (actual === null) return ['<store handle vanished>'];
+  return driftedSeedKeys(entries, actual as Record<string, unknown>);
+}
+
+/**
  * Fail loudly if the app overwrote the seed before we measured it.
  *
  * Waiting longer before seeding narrows the race but cannot close it: the app's
@@ -257,18 +302,7 @@ async function seedStoreState(page: Page, json: string): Promise<void> {
  * with identical content has not lost the seed.
  */
 async function assertSeedSurvived(page: Page, json: string, when: string): Promise<void> {
-  const entries = JSON.parse(json) as Record<string, unknown>;
-  const actual = await page.evaluate((keys) => {
-    const w = window as unknown as { __reisStore?: { getState: () => Record<string, unknown> } };
-    if (!w.__reisStore) return null;
-    const state = w.__reisStore.getState();
-    return Object.fromEntries((keys as string[]).map((k) => [k, state[k]]));
-  }, Object.keys(entries));
-
-  if (actual === null) {
-    throw new Error(`--seed-store: the store handle vanished before ${when}.`);
-  }
-  const drifted = driftedSeedKeys(entries, actual as Record<string, unknown>);
+  const drifted = await driftedAfterSeed(page, json);
   if (drifted.length > 0) {
     throw new Error(
       `--seed-store: the app overwrote the seed before ${when} (${drifted.join(', ')}). ` +
@@ -289,8 +323,12 @@ async function assertSeedSurvived(page: Page, json: string, when: string): Promi
  * Two ways to be ready, and the second one matters as much as the first:
  *
  *  - a sync ran to completion (`firstSyncSettled`), or
- *  - `handshakeTimedOut` — the app waited for a content script that never came,
- *    so there is no sync source and nothing will ever arrive to clobber the seed.
+ *  - `handshakeTimedOut` — the app waited for a content script that never came.
+ *
+ * That second branch is a HINT, not a proof: it is a bare 10s timer fired at
+ * store creation (createSyncSlice), so a dev snapshot still loading at ten
+ * seconds trips it while a write is genuinely still coming. `seedAndHold` below
+ * is what makes that safe — a late write re-seeds rather than failing the run.
  *
  * Without that second branch this burned the WHOLE timeout on every mock and
  * fixture run: those modes never latch `firstSyncSettled`, and their top-level
@@ -485,7 +523,7 @@ async function run(): Promise<number> {
       if (opts.clicks.length > 0 || opts.seedStore) await page.waitForTimeout(opts.wait);
       if (opts.seedStore) {
         await waitForSyncSettled(page, SYNC_SETTLE_TIMEOUT_MS);
-        await seedStoreState(page, opts.seedStore);
+        await seedAndHold(page, opts.seedStore, SEED_SETTLE_MS);
       }
 
       for (const click of opts.clicks) {
