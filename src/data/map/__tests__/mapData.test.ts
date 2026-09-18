@@ -30,14 +30,43 @@ describe('bundled map data', () => {
     }
   });
 
+  /**
+   * Panská lícha is the one entry that is not MENDELU property — a private
+   * equestrian centre where combined-study practicals are held, added because
+   * the map serves students who have to get there, not a property register
+   * (student feedback, 2026-09-15). It must keep a drawable riding hall and the
+   * areal boundary behind it, and the picker section must not call it a MENDELU
+   * workplace. See docs/superpowers/specs/2026-07-05-mendelu-remote-places-map-design.md.
+   */
+  it('keeps Panská lícha drawable: riding-hall outline inside its areal boundary', () => {
+    const places = (remotePlaces as { places: RemotePlace[] }).places;
+    const licha = places.find((p) => p.id === -105);
+    expect(licha, 'Panská lícha (-105) is missing').toBeDefined();
+    expect(licha!.area, 'the areal boundary is what gives the hall context').toBeDefined();
+    // The hall itself, not the whole farmyard — a student needs a building.
+    const rings =
+      licha!.outline.type === 'MultiPolygon'
+        ? licha!.outline.coordinates.map((poly) => poly[0]!)
+        : [licha!.outline.coordinates[0]!];
+    expect(rings).toHaveLength(1);
+    expect(rings[0]!.length).toBeGreaterThanOrEqual(4);
+    // Brno-Obřany, ~4 km NE of the Černá Pole campus.
+    for (const [lon, lat] of rings[0]!) {
+      expect(lat).toBeGreaterThan(49.24);
+      expect(lat).toBeLessThan(49.25);
+      expect(lon).toBeGreaterThan(16.63);
+      expect(lon).toBeLessThan(16.64);
+    }
+  });
+
   it('includes Q (buildingId 0) — truthiness gotcha guard', () => {
     expect(buildings.buildings.some((b) => b.id === 0 && b.name === 'Q')).toBe(true);
   });
 
-  it('remote places: 4 sites with unique ids, closed footprints in South Moravia, and a url', () => {
+  it('remote places: 5 sites with unique ids, closed footprints in South Moravia, and a url', () => {
     const places = (remotePlaces as { places: RemotePlace[] }).places;
-    expect(places).toHaveLength(4);
-    expect(new Set(places.map((p) => p.id)).size).toBe(4);
+    expect(places).toHaveLength(5);
+    expect(new Set(places.map((p) => p.id)).size).toBe(5);
     for (const p of places) {
       expect(p.id).toBeLessThan(0); // synthetic, never collides with real ids
       expect(p.name.length).toBeGreaterThan(0);
