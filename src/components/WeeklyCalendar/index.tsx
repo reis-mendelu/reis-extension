@@ -227,7 +227,7 @@ export function WeeklyCalendar({
               onDismiss={markSeen}
             />
             <WeeklyCalendarGrid dayCount={visibleDayCount} />
-            <CurrentTimeIndicator todayIndex={todayIndex} />
+            <CurrentTimeIndicator todayIndex={todayIndex} dayCount={visibleDayCount} />
             {!showSkeleton && visibleScheduleData.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                 <p className="text-base-content/40 text-sm font-medium">

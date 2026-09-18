@@ -3,9 +3,13 @@ import { timeToPercent } from './utils';
 
 interface CurrentTimeIndicatorProps {
     todayIndex: number;
+    /** Columns the grid is drawing — five, or six/seven when the weekend is
+     *  taught. The line is placed by column index, so it has to divide by the
+     *  same number the grid does or it lands in the wrong day. */
+    dayCount: number;
 }
 
-export function CurrentTimeIndicator({ todayIndex }: CurrentTimeIndicatorProps) {
+export function CurrentTimeIndicator({ todayIndex, dayCount }: CurrentTimeIndicatorProps) {
     const [now, setNow] = useState(new Date());
 
     useEffect(() => {
@@ -21,10 +25,12 @@ export function CurrentTimeIndicator({ todayIndex }: CurrentTimeIndicatorProps) 
     const hours = now.getHours();
     const minutes = now.getMinutes();
 
-    if (todayIndex < 0 || todayIndex > 4 || hours < 7 || hours >= 21) return null;
+    // `todayIndex` is computed across all seven weekDates, so on a weekend it can
+    // point past the last drawn column — bail rather than draw off the grid.
+    if (todayIndex < 0 || todayIndex >= dayCount || hours < 7 || hours >= 21) return null;
 
     const top = timeToPercent(`${hours}:${minutes}`);
-    const columnWidth = 100 / 5;
+    const columnWidth = 100 / dayCount;
     const left = todayIndex * columnWidth;
 
     return (
