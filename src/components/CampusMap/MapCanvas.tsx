@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAppStore } from '../../store/useAppStore';
@@ -24,6 +24,7 @@ import {
   REMOTE,
   REMOTE_IDS,
 } from './mapLayers';
+import { drawCampusPaths, highlightPath, type DrawnPath } from './pathLayers';
 import { setMapInstance } from './mapInstance';
 import { roomFocusView } from './focusBounds';
 import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
@@ -81,6 +82,23 @@ export function MapCanvas() {
   // Live room polygons keyed by placeId, with their unselected base style — lets
   // a plain map click re-highlight in place without a full redraw or camera move.
   const roomPolysRef = useRef<Map<number, { poly: L.Polygon; base: L.PathOptions }>>(new Map());
+  /**
+   * The campus walking route the student has tapped, and the polylines it was
+   * drawn as.
+   *
+   * Deliberately LOCAL state, not a `MapSelection` in the store. Tapping a path
+   * means "show me where this one goes" — it highlights end to end and names its
+   * two ends, and that is the whole interaction. Making it a store selection
+   * would force a case into DetailPanel, MapSidePanel, MapPanelBody, MapSheet
+   * and createMapSlice to answer a question nobody asked.
+   *
+   * The id is mirrored into a ref so the redraw effect can re-apply the
+   * highlight without taking the id as a dependency — as a dependency it would
+   * re-run the camera-owning effect on every tap.
+   */
+  const [selectedPathId, setSelectedPathId] = useState<number | null>(null);
+  const activePathIdRef = useRef<number | null>(null);
+  const pathsRef = useRef<Map<number, DrawnPath>>(new Map());
 
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const activeFloorId = useAppStore((s) => s.activeFloorId);
@@ -141,9 +159,21 @@ export function MapCanvas() {
     }
 
     if (activeBuildingId === null) {
+      // Paths first: the building outlines and the event pins belong on top of
+      // them. A selected route lifts itself back above with bringToFront.
+      pathsRef.current = drawCampusPaths(layer, (id) => {
+        // Picking a path IS a choice on the map, so it retires whatever place
+        // or room was chosen before it — which is also what keeps `activePathId`
+        // below from being suppressed by a stale selection.
+        select.clearMapSelection();
+        setSelectedPathId(id);
+      });
       for (const b of META.buildings) {
         L.polygon(ringToLatLng(b.outline.coordinates[0]), BUILDING_STYLE)
-          .on('click', () => select.setMapBuilding(b.id))
+          .on('click', () => {
+            setSelectedPathId(null);
+            select.setMapBuilding(b.id);
+          })
           .bindTooltip(b.name, {
             permanent: true,
             direction: 'center',
@@ -160,6 +190,9 @@ export function MapCanvas() {
           ? select.mapSelection.poi.id
           : null;
       drawRemotePlaces(layer, select, drilledRemoteId);
+      // Re-apply the highlight after a redraw (a new floor, a new search) so the
+      // route the student picked does not quietly go grey under them.
+      highlightPath(pathsRef.current, activePathIdRef.current);
       // Clicking the bare basemap (not a building outline or an event pin) clears
       // the current selection — same "click away to dismiss" as floor-view's exit.
       // Building outlines are Leaflet layers (their click doesn't reach the map);
@@ -167,6 +200,9 @@ export function MapCanvas() {
       const onOverviewClick = (e: L.LeafletMouseEvent) => {
         const t = e.originalEvent.target as HTMLElement | null;
         if (t?.closest('.leaflet-reisEvents-pane')) return;
+        // Tapping the bare basemap drops the highlighted route, exactly as it
+        // drops a selected place.
+        setSelectedPathId(null);
         const state = useAppStore.getState();
         if (state.placingEvent) {
           // click-to-place: capture [lng,lat]
@@ -266,6 +302,10 @@ export function MapCanvas() {
       keepViewRef.current = false;
       return;
     }
+
+    // Floor-view is indoors: the outdoor walkways are not drawn there. No
+    // selection to clear — `activePathId` is already null off the overview.
+    pathsRef.current = new Map();
 
     const fc = roomsByBuilding[activeBuildingId];
     const b = META.buildings.find((x) => x.id === activeBuildingId);
@@ -397,6 +437,27 @@ export function MapCanvas() {
       } else poly.setStyle(base);
     }
   }, [mapSelection]);
+
+  /**
+   * Which route is actually lit, DERIVED rather than stored a second time.
+   *
+   * A highlighted path only means anything on the campus overview with nothing
+   * else chosen: inside a building the walkways are not drawn, and choosing a
+   * place or an event answers a different question than "where does this path
+   * go". Deriving it is what keeps those three rules in one expression instead
+   * of in a scatter of effects that each clear the state behind the others.
+   */
+  const activePathId = activeBuildingId === null && !mapSelection ? selectedPathId : null;
+
+  // Lighting a route is a restyle, never a redraw — the heavy effect above owns
+  // the camera, and re-running it here would throw away the view the student is
+  // looking at. The ref is mirrored in the same place (and not during render,
+  // for the reason the rail's own ref documents) so a redraw from some other
+  // cause can put the highlight back afterwards.
+  useEffect(() => {
+    activePathIdRef.current = activePathId;
+    highlightPath(pathsRef.current, activePathId);
+  }, [activePathId]);
 
   return <div ref={ref} className="absolute inset-0" />;
 }

@@ -463,3 +463,23 @@ body,
 .reis-hide-building-labels .leaflet-tooltip.building-label {
   display: none;
 }
+
+/* The two ends of a tapped campus walking route ("Hlavní brána ↔ C"). Dark
+ * chip rather than the bare-text treatment the room and building labels use:
+ * this one appears on demand over a path that may be crossing anything, so it
+ * has to carry its own contrast instead of borrowing the basemap's. */
+.leaflet-tooltip.path-label {
+  background: #1e293b;
+  border: none;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  border-radius: 4px;
+  padding: 3px 7px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.leaflet-tooltip.path-label::before {
+  border-top-color: #1e293b;
+}
