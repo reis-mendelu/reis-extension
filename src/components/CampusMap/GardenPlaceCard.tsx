@@ -29,15 +29,18 @@ export function GardenPlaceCard({ place, flush = false }: GardenPlaceCardProps) 
 
   return (
     <div className={flush ? 'space-y-2' : 'space-y-2 rounded-lg border border-base-300 bg-base-100 p-4'}>
-      <div className="relative aspect-[5/3] w-full overflow-hidden rounded-box bg-base-200">
-        <img
-          src={`/garden/${place.id}.webp`}
-          alt=""
-          className={`absolute inset-0 h-full w-full scale-110 object-cover blur-sm transition-opacity duration-300 ${
-            loaded ? 'opacity-0' : 'opacity-100'
-          }`}
-        />
-        {place.photo && (
+      {/* No photograph chosen yet means NO photo block — an empty framed box is
+          the grey rectangle this design exists to avoid, and it costs 40% of the
+          card's height to say nothing. */}
+      {place.photo && (
+        <div className="relative aspect-[5/3] w-full overflow-hidden rounded-box bg-base-200">
+          <img
+            src={`/garden/${place.id}.webp`}
+            alt=""
+            className={`absolute inset-0 h-full w-full scale-110 object-cover blur-sm transition-opacity duration-300 ${
+              loaded ? 'opacity-0' : 'opacity-100'
+            }`}
+          />
           <img
             src={`${PHOTO_CDN}/${place.photo}`}
             alt={place.name[lang]}
@@ -46,8 +49,8 @@ export function GardenPlaceCard({ place, flush = false }: GardenPlaceCardProps) 
               loaded ? 'opacity-100' : 'opacity-0'
             }`}
           />
-        )}
-      </div>
+        </div>
+      )}
 
       <h3 className="font-bold text-base-content">{place.name[lang]}</h3>
 

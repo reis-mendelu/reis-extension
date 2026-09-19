@@ -31,11 +31,15 @@ describe('GardenPlaceCard', () => {
     expect(screen.getByText(/zdarma/)).toBeInTheDocument();
   });
 
-  it('shows the bundled thumb even with no full photo chosen yet', () => {
+  it('shows no photo block at all until a photograph is chosen', () => {
     const { container } = render(<GardenPlaceCard place={PLACE} />);
+    // An empty framed box is the grey rectangle this card exists to avoid.
+    expect(container.querySelector('img')).toBeNull();
+  });
+
+  it('paints the bundled thumb under the full photo, so the card is never empty', () => {
+    const { container } = render(<GardenPlaceCard place={{ ...PLACE, photo: 'rokle.8f3a1c.webp' }} />);
     expect(container.querySelector('img[src="/garden/rokle.webp"]')).not.toBeNull();
-    // and nothing is reaching for a photo that was never chosen
-    expect(container.querySelector('img[src^="https://"]')).toBeNull();
   });
 
   it('loads the full photo from the CDN when one is recorded', () => {
