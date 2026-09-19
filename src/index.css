@@ -491,3 +491,28 @@ body,
 .leaflet-tooltip.path-label::before {
   border-top-color: #1e293b;
 }
+
+/* The names of the places the campus walks run between — gates, the tram stop,
+ * the arboretum entrance. A quiet white pill, deliberately lighter than the
+ * lettered building labels it sits among: these name the things the map does
+ * not already name, they are not competing with the buildings. Hidden at the
+ * overview zoom by the same switch as the building letters, so zooming out
+ * still gives a clean campus. */
+.leaflet-tooltip.place-label {
+  background: rgb(255 255 255 / 0.92);
+  border: none;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.12);
+  border-radius: 7px;
+  padding: 1px 6px;
+  color: #334155;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.leaflet-tooltip.place-label::before {
+  display: none;
+}
+.reis-hide-building-labels .leaflet-tooltip.place-label {
+  display: none;
+}

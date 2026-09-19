@@ -62,6 +62,7 @@ out geom;`;
 // keeps a spot when two of them are the same doorway: building E outranks the
 // Akademická vinotéka inside it, so the route says "E".
 const RANK = { building: 0, gate: 1, cafeteria: 2, stop: 3 };
+const KIND_OF_RANK = ['building', 'gate', 'cafeteria', 'stop'];
 function places() {
   const out = [];
   const push = (name, lon, lat, rank) => out.push({ name, lon, lat, rank });
@@ -157,6 +158,12 @@ const routes = connectingRoutes(graph, anchors)
     coords: r.coords.map(([lon, lat]) => [round(lon), round(lat)]),
   }));
 
+// Where each place a route ends at actually sits, so the map can mark it
+// without re-deriving it from route endpoints. `kind` is what the UI needs to
+// decide whether to label it: a lettered building already names itself on the
+// map and must not get a second pill on top of its own letter.
+const rankByName = new Map();
+for (const p of PLACES) rankByName.set(p.name, Math.min(rankByName.get(p.name) ?? 9, p.rank));
 // Two views of the same thing. `network` is what gets DRAWN: every stretch of
 // path exactly once, so the map is one clean set of lines rather than 46
 // overlapping ones repainting each other. `routes` is what gets TAPPED: the
@@ -170,6 +177,20 @@ const network = networkStrokes(routes).map((stroke) =>
 // from the map while still being "on the network". If OSM shifts a node the run
 // fails rather than quietly shipping a campus with fewer ways across it.
 const reached = new Set(routes.flatMap((r) => [r.from, r.to]));
+
+const destinations = [...anchors.entries()]
+  .map(([k, name]) => {
+    const [lon, lat] = k.split(',').map(Number);
+    return {
+      name,
+      kind: KIND_OF_RANK[rankByName.get(name)] ?? 'other',
+      lon: round(lon),
+      lat: round(lat),
+    };
+  })
+  .filter((p) => reached.has(p.name))
+  .sort((a, b) => a.name.localeCompare(b.name));
+
 const missing = MUST_REACH.filter((n) => !reached.has(n));
 if (missing.length) {
   console.error(`No route reaches: ${missing.join(', ')}`);
@@ -179,7 +200,7 @@ if (missing.length) {
 
 writeFileSync(
   new URL('../src/data/map/campusPaths.json', import.meta.url),
-  JSON.stringify({ source: 'OpenStreetMap (ODbL)', network, routes }, null, 0) + '\n'
+  JSON.stringify({ source: 'OpenStreetMap (ODbL)', destinations, network, routes }, null, 0) + '\n'
 );
 console.log(
   `${ways.length} clipped ways → ${graph.nodes.size} nodes, ` +
@@ -187,5 +208,5 @@ console.log(
     `(${routes.reduce((a, r) => a + r.lengthM, 0)} m walked, overlapping) ` +
     `drawn as ${network.length} strokes over ${network.reduce((a, s) => a + s.length - 1, 0)} segments`
 );
-console.log(`places reached: ${[...reached].sort().join(', ')}`);
+console.log(`places reached: ${destinations.map((p) => `${p.name} (${p.kind})`).join(', ')}`);
 for (const r of routes) console.log(`  ${String(r.lengthM).padStart(4)} m  ${r.from} ↔ ${r.to}`);

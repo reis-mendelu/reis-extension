@@ -9,19 +9,25 @@ import {
 } from '../pathLayers';
 
 describe('pathLabel', () => {
-  it('names the two places the route runs between', () => {
-    expect(
-      pathLabel({
-        id: 1,
-        from: 'Hlavní brána',
-        to: 'C',
-        lengthM: 100,
-        coords: [
-          [16.614, 49.21],
-          [16.615, 49.21],
-        ],
-      })
-    ).toBe('Hlavní brána ↔ C');
+  const route = (lengthM: number) => ({
+    id: 1,
+    from: 'Hlavní brána',
+    to: 'C',
+    lengthM,
+    coords: [
+      [16.614, 49.21],
+      [16.615, 49.21],
+    ] as [number, number][],
+  });
+
+  it('leads with how long the walk takes, then where it runs', () => {
+    // Time first because the chip truncates: whatever leads survives a long
+    // pair of names, and the minutes are what a student is deciding on.
+    expect(pathLabel(route(436), 'cz')).toBe('5 min · Hlavní brána ↔ C');
+  });
+
+  it('speaks the student\u2019s language', () => {
+    expect(pathLabel(route(240), 'en')).toBe('3 min · Hlavní brána ↔ C');
   });
 });
 
@@ -39,14 +45,47 @@ describe('drawCampusPaths', () => {
     expect(CAMPUS_NETWORK.length).toBeLessThan(CAMPUS_PATHS.length);
   });
 
-  it('puts every casing under every line, not each casing under its own line', () => {
+  it('puts every halo under every trail, not each halo under its own trail', () => {
     const l = layer();
     drawCampusPaths(l, vi.fn());
     const weights = (l.getLayers() as L.Polyline[])
       .slice(0, CAMPUS_NETWORK.length * 2)
       .map((p) => p.options.weight);
     expect(new Set(weights.slice(0, CAMPUS_NETWORK.length))).toEqual(new Set([6]));
-    expect(new Set(weights.slice(CAMPUS_NETWORK.length))).toEqual(new Set([2.5]));
+    expect(new Set(weights.slice(CAMPUS_NETWORK.length))).toEqual(new Set([3]));
+  });
+
+  it('draws the network as a dotted TRAIL, not as another road', () => {
+    const l = layer();
+    drawCampusPaths(l, vi.fn());
+    const trails = (l.getLayers() as L.Polyline[]).slice(
+      CAMPUS_NETWORK.length,
+      CAMPUS_NETWORK.length * 2
+    );
+    for (const t of trails) {
+      expect(t.options.dashArray).toBeTruthy();
+      expect(t.options.lineCap).toBe('round');
+    }
+  });
+
+  it('keeps colour OUT of the always-on layer', () => {
+    // The reversal this encodes: brand green in the base network collided with
+    // the arboretum, with the primary-green UI, and worst of all with the
+    // selected route — the one thing that has to be findable. A neutral base is
+    // what lets the tapped route be the only saturated thing on the map.
+    const l = layer();
+    drawCampusPaths(l, vi.fn());
+    const trails = (l.getLayers() as L.Polyline[]).slice(
+      CAMPUS_NETWORK.length,
+      CAMPUS_NETWORK.length * 2
+    );
+    for (const t of trails) {
+      const c = t.options.color!;
+      expect(c).not.toBe('#79be15'); // MENDELU green — the brand, spoken for
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+      // near-neutral: no channel far from the others
+      expect(Math.max(r, g, b) - Math.min(r, g, b)).toBeLessThan(24);
+    }
   });
 
   it('gives every route a tap target', () => {
@@ -187,7 +226,7 @@ describe('the route label', () => {
     const id = [...layers.routes.keys()][0];
     highlightPath(layers, id);
     expect(layers.highlight.line.getTooltip()?.getContent()).toBe(
-      pathLabel(layers.routes.get(id)!)
+      pathLabel(layers.routes.get(id)!, 'cz')
     );
   });
 
@@ -197,7 +236,7 @@ describe('the route label', () => {
     for (const id of layers.routes.keys()) {
       highlightPath(layers, id);
       expect(layers.highlight.line.getTooltip()?.getContent()).toBe(
-        pathLabel(layers.routes.get(id)!)
+        pathLabel(layers.routes.get(id)!, 'cz')
       );
     }
   });
@@ -214,7 +253,7 @@ describe('route names fit a phone', () => {
   it('keeps every label short enough for a 320 px chip', () => {
     // "Pizzerie v budově O ↔ Vedlejší brána z ulice Lesnická" was 53 characters
     // and ran off the screen; the generator shortens the place names for this.
-    for (const p of CAMPUS_PATHS) expect(pathLabel(p).length).toBeLessThanOrEqual(34);
+    for (const p of CAMPUS_PATHS) expect(pathLabel(p, 'cz').length).toBeLessThanOrEqual(42);
   });
 });
 

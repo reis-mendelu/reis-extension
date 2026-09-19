@@ -1,9 +1,12 @@
 import L from 'leaflet';
 import campusPathsJson from '../../data/map/campusPaths.json';
 import { ringToLatLng } from './mapHelpers';
-import type { CampusPath } from '../../types/campusMap';
+import { translate } from '../../i18n/translate';
+import { walkMinutes } from '../../utils/walkTime';
+import type { CampusPath, CampusPlace } from '../../types/campusMap';
 
 const DATA = campusPathsJson as {
+  destinations: CampusPlace[];
   network: [number, number][][];
   routes: CampusPath[];
 };
@@ -11,32 +14,56 @@ const DATA = campusPathsJson as {
 export const CAMPUS_NETWORK = DATA.network;
 /** The place-to-place walks over it — the thing that gets tapped. */
 export const CAMPUS_PATHS = DATA.routes;
+/** Where each of those walks begins and ends. */
+export const CAMPUS_DESTINATIONS = DATA.destinations;
 
-// The walkways are drawn the way a road is drawn: a wide light casing under a
-// narrower darker line. One flat stroke over a grey basemap reads as a stray
-// boundary; the casing is what makes it read as something you walk on.
+// The network is drawn as a DOTTED trail on a white halo, not as a casing under
+// a solid line.
+//
+// A casing under a solid stroke is how a road is drawn, and drawn that way the
+// campus paths read as more streets and sink into the basemap, which is exactly
+// what they did. Round dots on a halo read as a thing you walk, which is the
+// convention every foot-navigation map uses.
+//
+// The colour is deliberately NOT the MENDELU green, and that was a reversal.
+// Green in the always-on layer looked better for about a day: it collides with
+// the arboretum polygon, with the primary-green UI around the map, and — worst —
+// with the SELECTED route, which is the one thing that has to jump out. Colour
+// is spent on the route you tapped; the network it sits on stays quiet. That
+// also matches how the layer earns its keep over time: the network stops telling
+// you anything once you know the campus, while the route you just asked for
+// never does.
 //
 // Fixed literals, like every other style on this map — the basemap is always
 // light whatever the app theme is (see the note above CATEGORY_STYLE).
-const CASING_STYLE: L.PathOptions = {
+const HALO_STYLE: L.PathOptions = {
   color: '#ffffff',
   weight: 6,
-  opacity: 0.95,
+  opacity: 0.9,
   lineCap: 'round',
   lineJoin: 'round',
   interactive: false,
 };
-const LINE_STYLE: L.PathOptions = {
-  color: '#94a3b8',
-  weight: 2.5,
+// `0.1 6` rather than `0 6`: a zero-length dash with a round cap is a dot in
+// every engine that matters, but 0 is the value renderers disagree about.
+const TRAIL_STYLE: L.PathOptions = {
+  color: '#a8a29e',
+  weight: 3,
   opacity: 1,
+  dashArray: '0.1 6',
   lineCap: 'round',
   lineJoin: 'round',
   interactive: false,
 };
-// Orange, the same "this is the one you picked" colour the selected room uses.
-const SELECTED_LINE_STYLE: L.PathOptions = { ...LINE_STYLE, color: '#ea580c', weight: 4 };
-const SELECTED_CASING_STYLE: L.PathOptions = { ...CASING_STYLE, weight: 9 };
+// Orange, the same "this is the one you picked" colour the selected room uses —
+// and the only saturated thing on the layer, so it is findable at a glance.
+const SELECTED_LINE_STYLE: L.PathOptions = {
+  ...TRAIL_STYLE,
+  color: '#ea580c',
+  weight: 4.2,
+  dashArray: '0.1 7',
+};
+const SELECTED_HALO_STYLE: L.PathOptions = { ...HALO_STYLE, weight: 8.5, opacity: 1 };
 // A 2.5 px line is not a tap target. An invisible fat polyline over it is:
 // ~44 px of slop at the finger, which is the whole reason a path can be tapped
 // at all. `bubblingMouseEvents: false` is load-bearing — without it the same tap
@@ -60,9 +87,16 @@ export interface CampusPathLayers {
   highlight: { casing: L.Polyline; line: L.Polyline };
 }
 
-/** "Hlavní brána ↔ C" — the two places this route runs between. */
-export function pathLabel(path: CampusPath): string {
-  return `${path.from} ↔ ${path.to}`;
+/**
+ * "5 min · Hlavní brána ↔ C" — how long the walk takes, then where it runs.
+ *
+ * Time first on purpose. The chip is capped and truncates with an ellipsis, so
+ * whatever leads survives a long pair of names — and the minutes are the part a
+ * student is actually deciding on.
+ */
+export function pathLabel(path: CampusPath, language: string): string {
+  const mins = translate(language, 'map.walkMinutes', { n: walkMinutes(path.lengthM) });
+  return `${mins} · ${path.from} ↔ ${path.to}`;
 }
 
 /**
@@ -80,11 +114,11 @@ export function drawCampusPaths(
 ): CampusPathLayers {
   // Two passes, not one per stroke: every casing has to be under every line, or
   // a stroke's own casing cuts a white notch across the one crossing it.
-  for (const stroke of CAMPUS_NETWORK) L.polyline(ringToLatLng(stroke), CASING_STYLE).addTo(layer);
-  for (const stroke of CAMPUS_NETWORK) L.polyline(ringToLatLng(stroke), LINE_STYLE).addTo(layer);
+  for (const stroke of CAMPUS_NETWORK) L.polyline(ringToLatLng(stroke), HALO_STYLE).addTo(layer);
+  for (const stroke of CAMPUS_NETWORK) L.polyline(ringToLatLng(stroke), TRAIL_STYLE).addTo(layer);
 
   const highlight = {
-    casing: L.polyline([], SELECTED_CASING_STYLE).addTo(layer),
+    casing: L.polyline([], SELECTED_HALO_STYLE).addTo(layer),
     line: L.polyline([], SELECTED_LINE_STYLE).addTo(layer),
   };
 
@@ -100,7 +134,11 @@ export function drawCampusPaths(
 }
 
 /** Lays one route over the network, end to end, and names where it runs. */
-export function highlightPath(layers: CampusPathLayers, selectedId: number | null): void {
+export function highlightPath(
+  layers: CampusPathLayers,
+  selectedId: number | null,
+  language = 'cz'
+): void {
   const { highlight } = layers;
   const path = selectedId === null ? undefined : layers.routes.get(selectedId);
   if (!path) {
@@ -121,6 +159,10 @@ export function highlightPath(layers: CampusPathLayers, selectedId: number | nul
   // the newly chosen "Zemědělská ↔ B".
   const mid = path.coords[Math.floor(path.coords.length / 2)];
   highlight.line
-    .bindTooltip(pathLabel(path), { permanent: true, direction: 'top', className: 'path-label' })
+    .bindTooltip(pathLabel(path, language), {
+      permanent: true,
+      direction: 'top',
+      className: 'path-label',
+    })
     .openTooltip([mid[1], mid[0]]);
 }

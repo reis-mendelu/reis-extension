@@ -25,6 +25,7 @@ import {
   REMOTE_IDS,
 } from './mapLayers';
 import { drawCampusPaths, highlightPath, type CampusPathLayers } from './pathLayers';
+import { drawCampusPlaces } from './placeLayers';
 import { setMapInstance } from './mapInstance';
 import { roomFocusView } from './focusBounds';
 import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
@@ -111,6 +112,11 @@ export function MapCanvas() {
   const draftCoord = useAppStore((s) => s.draftCoord);
   const focusTarget = useAppStore((s) => s.mapFocusTarget);
   const mapSelection = useAppStore((s) => s.mapSelection);
+  // The route chip says how long the walk takes, so it has to be written in the
+  // student's language. Read here rather than inside the Leaflet layer, which is
+  // not a component and has no hooks.
+  const language = useAppStore((s) => s.language);
+  const languageRef = useRef(language);
   // Same "latest ref" trick, same reason: moving the draft pin (picking a
   // different room) must not re-fly the camera. Only an explicit request does,
   // and that arrives as a change to draftFocusReq.
@@ -190,9 +196,13 @@ export function MapCanvas() {
           ? select.mapSelection.poi.id
           : null;
       drawRemotePlaces(layer, select, drilledRemoteId);
+      // The names of the gates, the tram stop and the arboretum entrance, drawn
+      // after the buildings so a pill is never buried under an outline.
+      drawCampusPlaces(layer);
       // Re-apply the highlight after a redraw (a new floor, a new search) so the
       // route the student picked does not quietly go grey under them.
-      if (pathsRef.current) highlightPath(pathsRef.current, activePathIdRef.current);
+      if (pathsRef.current)
+        highlightPath(pathsRef.current, activePathIdRef.current, languageRef.current);
       // Clicking the bare basemap (not a building outline or an event pin) clears
       // the current selection — same "click away to dismiss" as floor-view's exit.
       // Building outlines are Leaflet layers (their click doesn't reach the map);
@@ -456,8 +466,9 @@ export function MapCanvas() {
   // cause can put the highlight back afterwards.
   useEffect(() => {
     activePathIdRef.current = activePathId;
-    if (pathsRef.current) highlightPath(pathsRef.current, activePathId);
-  }, [activePathId]);
+    languageRef.current = language;
+    if (pathsRef.current) highlightPath(pathsRef.current, activePathId, language);
+  }, [activePathId, language]);
 
   return <div ref={ref} className="absolute inset-0" />;
 }
