@@ -1,23 +1,12 @@
 import L from 'leaflet';
 import { useAppStore } from '../../store/useAppStore';
 import landmarksJson from '../../data/map/landmarks.json';
-import remotePlacesJson from '../../data/map/remotePlaces.json';
-import {
-  ringToLatLng,
-  landmarkGroupLabels,
-  remotePlaceRings,
-  remotePlaceCenter,
-  BUILDING_STYLE,
-  GARDEN_STYLE,
-  PATH_STYLE,
-  POI_MARKER_STYLE,
-} from './mapHelpers';
-import { drawGardenBubbles, GARDEN_PLACE_ID, bubblesHidden } from './gardenBubbleLayer';
-import type { Landmark, RemotePlace, MapSelection } from '../../types/campusMap';
+import { ringToLatLng, landmarkGroupLabels } from './mapHelpers';
+import { REMOTE } from './remoteLayers';
+import { GARDEN_PLACE_ID, bubblesHidden } from './gardenBubbleLayer';
+import type { Landmark } from '../../types/campusMap';
 
 const LANDMARKS = (landmarksJson as { landmarks: Landmark[] }).landmarks;
-export const REMOTE = (remotePlacesJson as { places: RemotePlace[] }).places;
-export const REMOTE_IDS = new Set(REMOTE.map((p) => p.id));
 // FRRMS + Kolej Akademie are one building under two names → a combined "A / B"
 // tooltip. (Adjacent-but-separate places like Tauferovy/sports centre are NOT
 // merged — see landmarkGroupLabels.)
@@ -155,78 +144,3 @@ export function drawLandmarks(
   }
 }
 
-// The off-campus MENDELU sites drawn as their real OSM footprints, in the same
-// blue campus-building theme as landmarks. Sites with a grounds boundary (`area`,
-// the arboretum garden) DRILL IN like a campus faculty: collapsed they show only
-// the garden outline; clicking them reveals the inner map (footpaths + buildings
-// + labelled collections). `drilledId` is the currently-selected site's id.
-// Sites without an `area` (Lednice/Žabčice/Křtiny) are far off-screen, so they
-// always show their footprints. Any part of a site selects the whole site.
-/**
- * Which remote site is open, from the current selection.
- *
- * `gardenPlace` counts: selecting one of the botanical garden's places must NOT
- * fold the garden back into an outline — that would take the bubble you just
- * clicked off the map with it.
- */
-export function drilledRemoteId(selection: MapSelection | null): number | null {
-  if (selection?.kind === 'gardenPlace') return GARDEN_PLACE_ID;
-  if (selection?.kind === 'poi' && REMOTE_IDS.has(selection.poi.id)) return selection.poi.id;
-  return null;
-}
-
-export function drawRemotePlaces(
-  layer: L.LayerGroup,
-  select: ReturnType<typeof useAppStore.getState>,
-  drilledId: number | null
-) {
-  for (const p of REMOTE) {
-    const [clon, clat] = remotePlaceCenter(p);
-    const drilled = drilledId === p.id;
-    const collapsible = !!p.area;
-    // Collapsed garden: a click drills in (fly + reveal). Otherwise a click just
-    // selects the site in place (no camera move).
-    const select_ = () =>
-      select.selectMapPoi(
-        { id: p.id, name: p.name, type: p.address ?? '', url: p.url, phone: null, email: null },
-        [clon, clat]
-      );
-    const enter = () => select.focusRemotePlaceById(p.id);
-
-    if (p.area) {
-      L.polygon(ringToLatLng(p.area.coordinates[0]), GARDEN_STYLE)
-        .on('click', drilled ? select_ : enter)
-        .bindTooltip(p.shortName)
-        .addTo(layer);
-    }
-    // Inner detail only when drilled in (or for the always-shown far sites).
-    if (drilled || !collapsible) {
-      if (p.paths)
-        for (const path of p.paths) {
-          L.polyline(ringToLatLng(path), PATH_STYLE).addTo(layer);
-        }
-      for (const ring of remotePlaceRings(p.outline)) {
-        L.polygon(ringToLatLng(ring), BUILDING_STYLE)
-          .on('click', select_)
-          .bindTooltip(p.shortName)
-          .addTo(layer);
-      }
-      if (p.pois)
-        for (const poi of p.pois) {
-          L.circleMarker([poi.lat, poi.lon], POI_MARKER_STYLE)
-            .on('click', select_)
-            .bindTooltip(poi.name, { permanent: true, direction: 'right', className: 'room-label' })
-            .addTo(layer);
-        }
-      // The garden's own places, each carried by its photograph. Inside the
-      // drill-in branch, so the campus overview never becomes a gallery.
-      if (p.id === GARDEN_PLACE_ID) {
-        drawGardenBubbles(layer, {
-          lang: select.language,
-          touch: typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches,
-          onSelect: select.selectGardenPlace,
-        });
-      }
-    }
-  }
-}

@@ -16,15 +16,8 @@ import {
   BUILDING_STYLE,
   SIBLING_STYLE,
 } from './mapHelpers';
-import {
-  initLeafletMap,
-  flyAndReveal,
-  drawLandmarks,
-  drawRemotePlaces,
-  drilledRemoteId,
-  REMOTE,
-  REMOTE_IDS,
-} from './mapLayers';
+import { initLeafletMap, flyAndReveal, drawLandmarks } from './mapLayers';
+import { drawRemotePlaces, REMOTE, REMOTE_IDS } from './remoteLayers';
 import {
   drawCampusPaths,
   findWalk,
@@ -214,11 +207,7 @@ export function MapCanvas() {
         buildingPolysRef.current.set(b.name, poly);
       }
       drawLandmarks(layer, select, BUILDING_STYLE);
-      // A remote site is "drilled in" when it is the selected poi — then its inner
-      // map (paths / buildings / collections) is revealed instead of just the
-      // collapsed garden outline. Selecting one of the garden's own places keeps
-      // it open too; see drilledRemoteId.
-      drawRemotePlaces(layer, select, drilledRemoteId(select.mapSelection));
+      drawRemotePlaces(layer, select);
       // The ways in, drawn after the buildings so a gate is never buried under
       // an outline.
       entrancesRef.current = drawCampusEntrances(layer, (name) => {

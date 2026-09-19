@@ -29,6 +29,10 @@ const SHORT = {
   'Vedlejší brána z ulice Lesnická': 'Brána Lesnická',
   'Vjezd pro automobily u budovy Q': 'Vjezd u Q',
   'Vstup do Arboreta z areálu': 'Arboretum',
+  // The arboretum's far gate, out at Generála Píky. Named for where it puts
+  // you rather than for what it is: "Vstup do Arboreta od FRRMS" is 26
+  // characters and both arboretum gates would then start with the same word.
+  'Vstup do Arboreta od FRRMS': 'Brána u FRRMS',
 };
 const shortPoi = (name) => {
   const n = name.replace(/\.$/, '').trim();
