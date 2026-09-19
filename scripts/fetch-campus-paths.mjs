@@ -14,7 +14,13 @@
 // end.
 
 import { writeFileSync, readFileSync } from 'node:fs';
-import { buildGraph, clipToRegion, connectingRoutes, snapAnchors } from './lib/pathNetwork.mjs';
+import {
+  buildGraph,
+  clipToRegion,
+  connectingRoutes,
+  networkStrokes,
+  snapAnchors,
+} from './lib/pathNetwork.mjs';
 import { overpass } from './lib/overpass.mjs';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
@@ -74,7 +80,23 @@ const shortStop = (name) =>
     .replace(/^Zastávka\s+/i, '')
     .replace(/\s*\(směr[^)]*\)\s*$/i, '')
     .trim();
-const shortPoi = (name) => name.replace(/\.$/, '').trim();
+// A route's chip carries BOTH its ends, so a place's name has to survive being
+// half of "X ↔ Y" on a 320 px phone. The IS names do not:
+// "Pizzerie v budově O ↔ Vedlejší brána z ulice Lesnická" is 53 characters and
+// ran off the screen. These are the names a student would actually say.
+const SHORT = {
+  'Vedlejší brána z ulice Lesnická': 'Brána Lesnická',
+  'Vjezd pro automobily u budovy Q': 'Vjezd u Q',
+  'Vstup do Arboreta z areálu': 'Arboretum',
+  // The anchor is the doorway of building O, which is the thing you walk to;
+  // the pizzeria is what happens to be behind it.
+  'Pizzerie v budově O': 'Budova O',
+  'Akademická vinotéka': 'Vinotéka',
+};
+const shortPoi = (name) => {
+  const n = name.replace(/\.$/, '').trim();
+  return SHORT[n] ?? n;
+};
 const shortLandmark = (name) => name.replace(/\s*\(FRRMS\)\s*$/, '').trim();
 
 // Two places this close to each other are the same doorway under two names
@@ -113,15 +135,24 @@ const routes = connectingRoutes(graph, anchors)
     coords: r.coords.map(([lon, lat]) => [round(lon), round(lat)]),
   }));
 
+// Two views of the same thing. `network` is what gets DRAWN: every stretch of
+// path exactly once, so the map is one clean set of lines rather than 46
+// overlapping ones repainting each other. `routes` is what gets TAPPED: the
+// place-to-place walks, which necessarily overlap.
+const network = networkStrokes(routes).map((stroke) =>
+  stroke.map(([lon, lat]) => [round(lon), round(lat)])
+);
+
 writeFileSync(
   new URL('../src/data/map/campusPaths.json', import.meta.url),
-  JSON.stringify({ source: 'OpenStreetMap (ODbL)', routes }, null, 0) + '\n'
+  JSON.stringify({ source: 'OpenStreetMap (ODbL)', network, routes }, null, 0) + '\n'
 );
 const reached = new Set(routes.flatMap((r) => [r.from, r.to]));
 console.log(
   `${ways.length} clipped ways → ${graph.nodes.size} nodes, ` +
-    `${anchors.size} places on the network → ${routes.length} routes, ` +
-    `${routes.reduce((a, r) => a + r.lengthM, 0)} m total`
+    `${anchors.size} places on the network → ${routes.length} routes ` +
+    `(${routes.reduce((a, r) => a + r.lengthM, 0)} m walked, overlapping) ` +
+    `drawn as ${network.length} strokes over ${network.reduce((a, s) => a + s.length - 1, 0)} segments`
 );
 console.log(`places reached: ${[...reached].sort().join(', ')}`);
 for (const r of routes) console.log(`  ${String(r.lengthM).padStart(4)} m  ${r.from} ↔ ${r.to}`);

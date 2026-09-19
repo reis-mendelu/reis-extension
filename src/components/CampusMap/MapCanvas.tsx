@@ -24,7 +24,7 @@ import {
   REMOTE,
   REMOTE_IDS,
 } from './mapLayers';
-import { drawCampusPaths, highlightPath, type DrawnPath } from './pathLayers';
+import { drawCampusPaths, highlightPath, type CampusPathLayers } from './pathLayers';
 import { setMapInstance } from './mapInstance';
 import { roomFocusView } from './focusBounds';
 import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
@@ -98,7 +98,7 @@ export function MapCanvas() {
    */
   const [selectedPathId, setSelectedPathId] = useState<number | null>(null);
   const activePathIdRef = useRef<number | null>(null);
-  const pathsRef = useRef<Map<number, DrawnPath>>(new Map());
+  const pathsRef = useRef<CampusPathLayers | null>(null);
 
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const activeFloorId = useAppStore((s) => s.activeFloorId);
@@ -192,7 +192,7 @@ export function MapCanvas() {
       drawRemotePlaces(layer, select, drilledRemoteId);
       // Re-apply the highlight after a redraw (a new floor, a new search) so the
       // route the student picked does not quietly go grey under them.
-      highlightPath(pathsRef.current, activePathIdRef.current);
+      if (pathsRef.current) highlightPath(pathsRef.current, activePathIdRef.current);
       // Clicking the bare basemap (not a building outline or an event pin) clears
       // the current selection — same "click away to dismiss" as floor-view's exit.
       // Building outlines are Leaflet layers (their click doesn't reach the map);
@@ -305,7 +305,7 @@ export function MapCanvas() {
 
     // Floor-view is indoors: the outdoor walkways are not drawn there. No
     // selection to clear — `activePathId` is already null off the overview.
-    pathsRef.current = new Map();
+    pathsRef.current = null;
 
     const fc = roomsByBuilding[activeBuildingId];
     const b = META.buildings.find((x) => x.id === activeBuildingId);
@@ -456,7 +456,7 @@ export function MapCanvas() {
   // cause can put the highlight back afterwards.
   useEffect(() => {
     activePathIdRef.current = activePathId;
-    highlightPath(pathsRef.current, activePathId);
+    if (pathsRef.current) highlightPath(pathsRef.current, activePathId);
   }, [activePathId]);
 
   return <div ref={ref} className="absolute inset-0" />;

@@ -3,11 +3,18 @@ import campusPathsJson from '../../data/map/campusPaths.json';
 import { ringToLatLng } from './mapHelpers';
 import type { CampusPath } from '../../types/campusMap';
 
-export const CAMPUS_PATHS = (campusPathsJson as { routes: CampusPath[] }).routes;
+const DATA = campusPathsJson as {
+  network: [number, number][][];
+  routes: CampusPath[];
+};
+/** Every stretch of campus path exactly once — the thing that gets drawn. */
+export const CAMPUS_NETWORK = DATA.network;
+/** The place-to-place walks over it — the thing that gets tapped. */
+export const CAMPUS_PATHS = DATA.routes;
 
-// The walkways are drawn as a road is drawn: a wide light casing under a narrower
-// darker line. One flat stroke over a grey basemap reads as a stray boundary;
-// the casing is what makes it read as something you walk on.
+// The walkways are drawn the way a road is drawn: a wide light casing under a
+// narrower darker line. One flat stroke over a grey basemap reads as a stray
+// boundary; the casing is what makes it read as something you walk on.
 //
 // Fixed literals, like every other style on this map — the basemap is always
 // light whatever the app theme is (see the note above CATEGORY_STYLE).
@@ -30,7 +37,7 @@ const LINE_STYLE: L.PathOptions = {
 // Orange, the same "this is the one you picked" colour the selected room uses.
 const SELECTED_LINE_STYLE: L.PathOptions = { ...LINE_STYLE, color: '#ea580c', weight: 4 };
 const SELECTED_CASING_STYLE: L.PathOptions = { ...CASING_STYLE, weight: 9 };
-// A 2.5 px line is not a tap target. An invisible fat polyline on top of it is:
+// A 2.5 px line is not a tap target. An invisible fat polyline over it is:
 // ~44 px of slop at the finger, which is the whole reason a path can be tapped
 // at all. `bubblingMouseEvents: false` is load-bearing — without it the same tap
 // also reaches MapCanvas's overview handler, which clears the selection the tap
@@ -45,11 +52,12 @@ const HIT_STYLE: L.PathOptions = {
   bubblingMouseEvents: false,
 };
 
-export interface DrawnPath {
-  casing: L.Polyline;
-  line: L.Polyline;
-  hit: L.Polyline;
-  path: CampusPath;
+export interface CampusPathLayers {
+  /** Per route, the invisible line that answers a tap. */
+  hits: Map<number, L.Polyline>;
+  routes: Map<number, CampusPath>;
+  /** ONE reusable pair of polylines that becomes whichever route is chosen. */
+  highlight: { casing: L.Polyline; line: L.Polyline };
 }
 
 /** "Hlavní brána ↔ C" — the two places this route runs between. */
@@ -58,54 +66,61 @@ export function pathLabel(path: CampusPath): string {
 }
 
 /**
- * Draws every campus walking route into `layer` and returns them keyed by id so
- * the caller can restyle a selection without a redraw (a redraw moves the
- * camera; picking a path must not).
+ * Draws the campus walking network and lays the tap targets over it.
+ *
+ * The base layer comes from `network`, not from the routes. The routes overlap
+ * by design — that is what makes them connected — and drawing 46 overlapping
+ * casing+line pairs paints every shared stretch several times, so one route's
+ * white casing scribbles over the next route's line. Drawing the deduplicated
+ * network gives one clean set of lines, with every casing under every line.
  */
 export function drawCampusPaths(
   layer: L.LayerGroup,
   onSelect: (id: number) => void
-): Map<number, DrawnPath> {
-  const drawn = new Map<number, DrawnPath>();
+): CampusPathLayers {
+  // Two passes, not one per stroke: every casing has to be under every line, or
+  // a stroke's own casing cuts a white notch across the one crossing it.
+  for (const stroke of CAMPUS_NETWORK) L.polyline(ringToLatLng(stroke), CASING_STYLE).addTo(layer);
+  for (const stroke of CAMPUS_NETWORK) L.polyline(ringToLatLng(stroke), LINE_STYLE).addTo(layer);
+
+  const highlight = {
+    casing: L.polyline([], SELECTED_CASING_STYLE).addTo(layer),
+    line: L.polyline([], SELECTED_LINE_STYLE).addTo(layer),
+  };
+
+  const hits = new Map<number, L.Polyline>();
+  const routes = new Map<number, CampusPath>();
   for (const path of CAMPUS_PATHS) {
-    const latlngs = ringToLatLng(path.coords);
-    const casing = L.polyline(latlngs, CASING_STYLE).addTo(layer);
-    const line = L.polyline(latlngs, LINE_STYLE).addTo(layer);
-    const hit = L.polyline(latlngs, HIT_STYLE).addTo(layer);
+    const hit = L.polyline(ringToLatLng(path.coords), HIT_STYLE).addTo(layer);
     hit.on('click', () => onSelect(path.id));
-    drawn.set(path.id, { casing, line, hit, path });
+    hits.set(path.id, hit);
+    routes.set(path.id, path);
   }
-  return drawn;
+  return { hits, routes, highlight };
 }
 
-/** Highlights one route end to end and drops the rest back to plain. */
-export function highlightPath(drawn: Map<number, DrawnPath>, selectedId: number | null): void {
-  for (const [id, d] of drawn) {
-    const on = id === selectedId;
-    d.casing.setStyle(on ? SELECTED_CASING_STYLE : CASING_STYLE);
-    d.line.setStyle(on ? SELECTED_LINE_STYLE : LINE_STYLE);
-    if (on) {
-      // Above the other paths AND above the building outlines, so a route that
-      // runs along a wall is still traceable for its whole length.
-      d.casing.bringToFront();
-      d.line.bringToFront();
-      d.hit.bringToFront();
-      // Bound HERE rather than at draw time, and permanently.
-      //
-      // A hover-bound tooltip was the first attempt and it was wrong twice: on a
-      // phone there is no hover, and on desktop it left the previous route's
-      // chip on screen — a run through every path had "B ↔ C" still open while
-      // "Zemědělská ↔ B" was the selected route. Binding on select and
-      // unbinding everything else makes one label, always the right one,
-      // structurally impossible to get wrong.
-      const mid = d.path.coords[Math.floor(d.path.coords.length / 2)];
-      d.hit
-        .bindTooltip(pathLabel(d.path), {
-          permanent: true,
-          direction: 'top',
-          className: 'path-label',
-        })
-        .openTooltip([mid[1], mid[0]]);
-    } else d.hit.unbindTooltip();
+/** Lays one route over the network, end to end, and names where it runs. */
+export function highlightPath(layers: CampusPathLayers, selectedId: number | null): void {
+  const { highlight } = layers;
+  const path = selectedId === null ? undefined : layers.routes.get(selectedId);
+  if (!path) {
+    highlight.casing.setLatLngs([]);
+    highlight.line.setLatLngs([]);
+    highlight.line.unbindTooltip();
+    return;
   }
+  const latlngs = ringToLatLng(path.coords);
+  highlight.casing.setLatLngs(latlngs);
+  highlight.line.setLatLngs(latlngs);
+  // Above the network AND above the building outlines, so a route that runs
+  // along a wall stays traceable for its whole length.
+  highlight.casing.bringToFront();
+  highlight.line.bringToFront();
+  // One tooltip on one layer: there is no second object that could keep a stale
+  // label open, which is how the first version ended up showing "B ↔ C" beside
+  // the newly chosen "Zemědělská ↔ B".
+  const mid = path.coords[Math.floor(path.coords.length / 2)];
+  highlight.line
+    .bindTooltip(pathLabel(path), { permanent: true, direction: 'top', className: 'path-label' })
+    .openTooltip([mid[1], mid[0]]);
 }

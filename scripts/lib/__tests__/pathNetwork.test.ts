@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 // @ts-expect-error - plain .mjs build helper, no types
-import { buildGraph, snapAnchors, connectingRoutes, clipToRegion } from '../pathNetwork.mjs';
+import {
+  buildGraph,
+  snapAnchors,
+  connectingRoutes,
+  clipToRegion,
+  networkStrokes,
+} from '../pathNetwork.mjs';
 
 /** A west→east line through three vertices, chopped into two OSM ways. */
 const line = (lons: number[], lat = 49.21) => lons.map((lon) => [lon, lat] as [number, number]);
@@ -247,5 +253,83 @@ describe('clipToRegion', () => {
         0
       ) / 2;
     expect(total).toBeLessThan(500);
+  });
+});
+
+describe('networkStrokes', () => {
+  const line = (lons: number[], lat = 49.21) =>
+    lons.map((lon) => [lon, lat] as [number, number]);
+  const edgesOf = (strokes: [number, number][][]) => {
+    const out: string[] = [];
+    for (const s of strokes)
+      for (let i = 1; i < s.length; i++)
+        out.push(
+          [
+            `${s[i - 1][0].toFixed(7)},${s[i - 1][1].toFixed(7)}`,
+            `${s[i][0].toFixed(7)},${s[i][1].toFixed(7)}`,
+          ]
+            .sort()
+            .join('|')
+        );
+    return out;
+  };
+
+  it('draws a stretch shared by two routes ONCE', () => {
+    // The bug it exists for: 46 routes summed to 8.9 km over a 7 km network,
+    // so every shared stretch was painted twice and each route's white casing
+    // scribbled over the next route's line.
+    const routes = [
+      { coords: line([16.614, 16.615, 16.616]) },
+      { coords: line([16.614, 16.615, 16.617]) },
+    ];
+    const edges = edgesOf(networkStrokes(routes));
+    expect(new Set(edges).size).toBe(edges.length);
+    expect(edges).toHaveLength(3); // 614-615, 615-616, 615-617
+  });
+
+  it('covers every edge the routes use, and nothing else', () => {
+    const routes = [
+      { coords: line([16.614, 16.615]) },
+      { coords: line([16.616, 16.617]) },
+    ];
+    expect(edgesOf(networkStrokes(routes)).sort()).toEqual(
+      edgesOf(routes.map((r) => r.coords)).sort()
+    );
+  });
+
+  it('treats a stretch walked in the opposite direction as the same stretch', () => {
+    const routes = [
+      { coords: line([16.614, 16.615]) },
+      { coords: line([16.615, 16.614]) },
+    ];
+    expect(networkStrokes(routes)).toHaveLength(1);
+    expect(edgesOf(networkStrokes(routes))).toHaveLength(1);
+  });
+
+  it('joins what it can into long strokes rather than one per segment', () => {
+    const strokes = networkStrokes([{ coords: line([16.614, 16.615, 16.616, 16.617]) }]);
+    expect(strokes).toHaveLength(1);
+    expect(strokes[0]).toHaveLength(4);
+  });
+
+  it('emits continuous strokes', () => {
+    const strokes = networkStrokes([
+      { coords: line([16.614, 16.615, 16.616]) },
+      { coords: [[16.615, 49.21], [16.615, 49.2106]] as [number, number][] },
+    ]);
+    for (const s of strokes)
+      for (let i = 1; i < s.length; i++)
+        expect(s[i - 1][0] !== s[i][0] || s[i - 1][1] !== s[i][1]).toBe(true);
+  });
+
+  it('is deterministic — the committed JSON must not churn between runs', () => {
+    const routes = [
+      { coords: line([16.614, 16.615, 16.616]) },
+      { coords: [[16.615, 49.21], [16.615, 49.2106]] as [number, number][] },
+      { coords: line([16.616, 16.617]) },
+    ];
+    expect(JSON.stringify(networkStrokes(routes))).toBe(
+      JSON.stringify(networkStrokes([...routes].reverse()))
+    );
   });
 });

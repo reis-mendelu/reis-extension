@@ -1,6 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import L from 'leaflet';
-import { CAMPUS_PATHS, drawCampusPaths, highlightPath, pathLabel } from '../pathLayers';
+import {
+  CAMPUS_NETWORK,
+  CAMPUS_PATHS,
+  drawCampusPaths,
+  highlightPath,
+  pathLabel,
+} from '../pathLayers';
 
 describe('pathLabel', () => {
   it('names the two places the route runs between', () => {
@@ -22,72 +28,95 @@ describe('pathLabel', () => {
 describe('drawCampusPaths', () => {
   const layer = () => L.layerGroup();
 
-  it('draws every campus route, keyed by id', () => {
-    const drawn = drawCampusPaths(layer(), vi.fn());
-    expect(drawn.size).toBe(CAMPUS_PATHS.length);
-    expect(drawn.size).toBeGreaterThan(20);
-  });
-
-  it('draws each route as casing + line + an invisible hit line', () => {
+  it('draws the network ONCE — a casing pass, a line pass, and nothing repeated', () => {
+    // The bug it exists for: drawing a casing+line per ROUTE painted every
+    // shared stretch several times, and one route's white casing scribbled
+    // over the next route's line.
     const l = layer();
     drawCampusPaths(l, vi.fn());
-    expect(l.getLayers()).toHaveLength(CAMPUS_PATHS.length * 3);
+    const expected = CAMPUS_NETWORK.length * 2 + 2 + CAMPUS_PATHS.length;
+    expect(l.getLayers()).toHaveLength(expected);
+    expect(CAMPUS_NETWORK.length).toBeLessThan(CAMPUS_PATHS.length);
+  });
+
+  it('puts every casing under every line, not each casing under its own line', () => {
+    const l = layer();
+    drawCampusPaths(l, vi.fn());
+    const weights = (l.getLayers() as L.Polyline[])
+      .slice(0, CAMPUS_NETWORK.length * 2)
+      .map((p) => p.options.weight);
+    expect(new Set(weights.slice(0, CAMPUS_NETWORK.length))).toEqual(new Set([6]));
+    expect(new Set(weights.slice(CAMPUS_NETWORK.length))).toEqual(new Set([2.5]));
+  });
+
+  it('gives every route a tap target', () => {
+    const { hits, routes } = drawCampusPaths(layer(), vi.fn());
+    expect(hits.size).toBe(CAMPUS_PATHS.length);
+    expect(routes.size).toBe(CAMPUS_PATHS.length);
   });
 
   it('gives the hit line a finger-sized width — a 2.5px path is not tappable', () => {
-    const drawn = drawCampusPaths(layer(), vi.fn());
-    const { hit, line } = [...drawn.values()][0];
+    const { hits } = drawCampusPaths(layer(), vi.fn());
+    const hit = [...hits.values()][0];
     expect(hit.options.weight).toBeGreaterThanOrEqual(20);
     expect(hit.options.opacity).toBe(0);
-    expect(line.options.weight).toBeLessThan(hit.options.weight!);
   });
 
   it('stops the tap from also reaching the map, which would clear the selection it just made', () => {
-    const drawn = drawCampusPaths(layer(), vi.fn());
-    for (const { hit, casing, line } of drawn.values()) {
-      expect(hit.options.bubblingMouseEvents).toBe(false);
-      // Only the hit line answers a tap; the drawn ones must never swallow it.
-      expect(casing.options.interactive).toBe(false);
-      expect(line.options.interactive).toBe(false);
-    }
+    const { hits } = drawCampusPaths(layer(), vi.fn());
+    for (const hit of hits.values()) expect(hit.options.bubblingMouseEvents).toBe(false);
+  });
+
+  it('never lets a drawn line swallow a tap', () => {
+    const l = layer();
+    drawCampusPaths(l, vi.fn());
+    const drawn = (l.getLayers() as L.Polyline[]).slice(0, CAMPUS_NETWORK.length * 2);
+    for (const p of drawn) expect(p.options.interactive).toBe(false);
   });
 
   it('reports the tapped route to the caller', () => {
     const onSelect = vi.fn();
-    const drawn = drawCampusPaths(layer(), onSelect);
-    const [id, { hit }] = [...drawn.entries()][3];
+    const { hits } = drawCampusPaths(layer(), onSelect);
+    const [id, hit] = [...hits.entries()][3];
     hit.fire('click');
     expect(onSelect).toHaveBeenCalledWith(id);
   });
 });
 
 describe('highlightPath', () => {
-  it('marks the chosen route and leaves every other one plain', () => {
-    const drawn = drawCampusPaths(L.layerGroup(), vi.fn());
-    const ids = [...drawn.keys()];
-    highlightPath(drawn, ids[2]);
-    expect(drawn.get(ids[2])!.line.options.color).toBe('#ea580c');
-    for (const other of ids.filter((i) => i !== ids[2]))
-      expect(drawn.get(other)!.line.options.color).toBe('#94a3b8');
+  it('lays the chosen route over the network, whole', () => {
+    const layers = drawCampusPaths(L.layerGroup(), vi.fn());
+    const id = [...layers.routes.keys()][2];
+    highlightPath(layers, id);
+    const route = layers.routes.get(id)!;
+    expect((layers.highlight.line.getLatLngs() as L.LatLng[]).length).toBe(route.coords.length);
+    expect(layers.highlight.line.options.color).toBe('#ea580c');
   });
 
-  it('draws the chosen route thicker, so it can be traced end to end', () => {
-    const drawn = drawCampusPaths(L.layerGroup(), vi.fn());
-    const id = [...drawn.keys()][0];
-    const plain = drawn.get(id)!.line.options.weight!;
-    highlightPath(drawn, id);
-    expect(drawn.get(id)!.line.options.weight!).toBeGreaterThan(plain);
-    expect(drawn.get(id)!.casing.options.weight!).toBeGreaterThan(
-      drawn.get(id)!.line.options.weight!
+  it('keeps ONE highlight however many routes get tapped', () => {
+    const layers = drawCampusPaths(L.layerGroup(), vi.fn());
+    for (const id of layers.routes.keys()) {
+      highlightPath(layers, id);
+      const n = (layers.highlight.line.getLatLngs() as L.LatLng[]).length;
+      expect(n).toBe(layers.routes.get(id)!.coords.length);
+    }
+  });
+
+  it('draws the chosen route heavier than the network under it', () => {
+    const layers = drawCampusPaths(L.layerGroup(), vi.fn());
+    highlightPath(layers, [...layers.routes.keys()][0]);
+    expect(layers.highlight.line.options.weight!).toBeGreaterThan(2.5);
+    expect(layers.highlight.casing.options.weight!).toBeGreaterThan(
+      layers.highlight.line.options.weight!
     );
   });
 
   it('clears the highlight when nothing is selected', () => {
-    const drawn = drawCampusPaths(L.layerGroup(), vi.fn());
-    const id = [...drawn.keys()][0];
-    highlightPath(drawn, id);
-    highlightPath(drawn, null);
-    expect(drawn.get(id)!.line.options.color).toBe('#94a3b8');
+    const layers = drawCampusPaths(L.layerGroup(), vi.fn());
+    highlightPath(layers, [...layers.routes.keys()][0]);
+    highlightPath(layers, null);
+    expect(layers.highlight.line.getLatLngs()).toEqual([]);
+    expect(layers.highlight.casing.getLatLngs()).toEqual([]);
   });
 });
 
@@ -151,31 +180,70 @@ describe('the committed campus path data', () => {
 });
 
 describe('the route label', () => {
+  it('names the route that was tapped', () => {
+    const layers = drawCampusPaths(L.layerGroup(), vi.fn());
+    const id = [...layers.routes.keys()][0];
+    highlightPath(layers, id);
+    expect(layers.highlight.line.getTooltip()?.getContent()).toBe(
+      pathLabel(layers.routes.get(id)!)
+    );
+  });
+
   it('leaves exactly one on the map, however many routes get tapped', () => {
-    // The bug this exists for: hover-bound tooltips left the previously tapped
-    // route's chip open next to the newly selected one.
-    const drawn = drawCampusPaths(L.layerGroup(), vi.fn());
-    const ids = [...drawn.keys()];
-    for (const id of ids) {
-      highlightPath(drawn, id);
-      const open = [...drawn.values()].filter((d) => d.hit.getTooltip());
-      expect(open.length).toBeLessThanOrEqual(1);
-      if (open.length === 1) expect(open[0].path.id).toBe(id);
+    // One tooltip on one layer, so a stale label is not a thing that can exist.
+    const layers = drawCampusPaths(L.layerGroup(), vi.fn());
+    for (const id of layers.routes.keys()) {
+      highlightPath(layers, id);
+      expect(layers.highlight.line.getTooltip()?.getContent()).toBe(
+        pathLabel(layers.routes.get(id)!)
+      );
     }
   });
 
-  it('names the route that was tapped', () => {
-    const drawn = drawCampusPaths(L.layerGroup(), vi.fn());
-    const [first] = [...drawn.values()];
-    highlightPath(drawn, first.path.id);
-    expect(first.hit.getTooltip()?.getContent()).toBe(pathLabel(first.path));
+  it('takes the label away again when the route is dropped', () => {
+    const layers = drawCampusPaths(L.layerGroup(), vi.fn());
+    highlightPath(layers, [...layers.routes.keys()][0]);
+    highlightPath(layers, null);
+    expect(layers.highlight.line.getTooltip()).toBeFalsy();
+  });
+});
+
+describe('route names fit a phone', () => {
+  it('keeps every label short enough for a 320 px chip', () => {
+    // "Pizzerie v budově O ↔ Vedlejší brána z ulice Lesnická" was 53 characters
+    // and ran off the screen; the generator shortens the place names for this.
+    for (const p of CAMPUS_PATHS) expect(pathLabel(p).length).toBeLessThanOrEqual(34);
+  });
+});
+
+describe('the committed network', () => {
+  it('draws each stretch of path exactly once', () => {
+    const edges = CAMPUS_NETWORK.flatMap((s) =>
+      s.slice(1).map((c, i) => [`${s[i][0]},${s[i][1]}`, `${c[0]},${c[1]}`].sort().join('|'))
+    );
+    expect(new Set(edges).size).toBe(edges.length);
   });
 
-  it('takes the label away again when the route is dropped', () => {
-    const drawn = drawCampusPaths(L.layerGroup(), vi.fn());
-    const [first] = [...drawn.values()];
-    highlightPath(drawn, first.path.id);
-    highlightPath(drawn, null);
-    expect(first.hit.getTooltip()).toBeFalsy();
+  it('covers every stretch the routes run over', () => {
+    const drawn = new Set(
+      CAMPUS_NETWORK.flatMap((s) =>
+        s.slice(1).map((c, i) => [`${s[i][0]},${s[i][1]}`, `${c[0]},${c[1]}`].sort().join('|'))
+      )
+    );
+    for (const p of CAMPUS_PATHS)
+      for (let i = 1; i < p.coords.length; i++) {
+        const e = [
+          `${p.coords[i - 1][0]},${p.coords[i - 1][1]}`,
+          `${p.coords[i][0]},${p.coords[i][1]}`,
+        ]
+          .sort()
+          .join('|');
+        expect(drawn.has(e)).toBe(true);
+      }
+  });
+
+  it('is fewer, longer strokes than there are routes', () => {
+    for (const s of CAMPUS_NETWORK) expect(s.length).toBeGreaterThanOrEqual(2);
+    expect(CAMPUS_NETWORK.length).toBeLessThanOrEqual(25);
   });
 });

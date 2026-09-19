@@ -477,8 +477,16 @@ body,
   color: #ffffff;
   font-size: 11px;
   font-weight: 600;
-  white-space: nowrap;
   pointer-events: none;
+  /* Names are shortened in the generator so a chip fits at 320 px, and this is
+   * the guard for the day someone renames one. NOT `white-space: normal`: a
+   * Leaflet tooltip pane has no width, so an auto-width child wraps at nearly
+   * zero and "Budova O ↔ Brána Lesnická" came out as a four-line tower over the
+   * route it was labelling. One line, capped, truncated if it ever has to be. */
+  white-space: nowrap;
+  max-width: 15rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .leaflet-tooltip.path-label::before {
   border-top-color: #1e293b;
