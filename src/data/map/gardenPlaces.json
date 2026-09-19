@@ -41,6 +41,24 @@
       "lon": 16.612467,
       "lat": 49.215413,
       "photo": "rokle-full.jpg"
+    },
+    {
+      "id": "vodni-kaskada",
+      "name": {
+        "cz": "Vodní kaskáda",
+        "en": "The water cascade"
+      },
+      "lon": 16.6142,
+      "lat": 49.214055
+    },
+    {
+      "id": "lesik",
+      "name": {
+        "cz": "Lesík s cestičkami",
+        "en": "The little wood"
+      },
+      "lon": 16.616026,
+      "lat": 49.212844
     }
   ]
 }

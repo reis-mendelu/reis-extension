@@ -69,27 +69,28 @@ export function drawGardenBubbles(
       offset: [0, -size / 2],
       className: 'place-label',
     };
-    // A place is a BUBBLE exactly when it has a photograph. Without one there is
-    // nothing to put in the circle, and an empty ring on the map reads as a
-    // picture that failed to load — so it stays a plain dot until its photo is
-    // chosen, opening the same card either way.
-    const marker = place.photo
-      ? L.marker([place.lat, place.lon], {
-          title: place.name[opts.lang],
-          icon: L.divIcon({
-            className: 'garden-bubble',
-            // The circle is an INNER element on purpose. Leaflet writes
-            // `transform: translate3d(...)` inline on the icon element itself to
-            // position it, and an inline transform beats a stylesheet rule — so
-            // a `:hover { transform: scale(2) }` on the icon is silently ignored
-            // (verified in the browser: the bubble never grew). Scaling a child
-            // Leaflet does not touch is what actually works.
-            html: `<span class="garden-bubble-circle"><img src="/garden/${place.id}.jpg" alt="" /></span>`,
-            iconSize: [size, size],
-            iconAnchor: [size / 2, size / 2],
-          }),
-        })
-      : L.circleMarker([place.lat, place.lon], POI_MARKER_STYLE);
+    // A place is a BUBBLE exactly when it has a photograph, and draws NOTHING
+    // without one. It used to fall back to a plain dot; a dot with no picture
+    // behind it is a pin promising something the tap cannot deliver. The
+    // coordinate still lives in gardenPlaces.json, so the day its photo arrives
+    // it becomes a bubble by adding one field — nothing has to be surveyed
+    // again.
+    if (!place.photo) continue;
+    const marker = L.marker([place.lat, place.lon], {
+      title: place.name[opts.lang],
+      icon: L.divIcon({
+        className: 'garden-bubble',
+        // The circle is an INNER element on purpose. Leaflet writes
+        // `transform: translate3d(...)` inline on the icon element itself to
+        // position it, and an inline transform beats a stylesheet rule — so a
+        // `:hover { transform: scale(2) }` on the icon is silently ignored
+        // (verified in the browser: the bubble never grew). Scaling a child
+        // Leaflet does not touch is what actually works.
+        html: `<span class="garden-bubble-circle"><img src="/garden/${place.id}.jpg" alt="" /></span>`,
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size / 2],
+      }),
+    });
     marker
       .on('click', () => opts.onSelect(place))
       .bindTooltip(place.name[opts.lang], tooltip)

@@ -4,6 +4,38 @@ Date: 2026-09-19
 Status: approved, ready for an implementation plan
 Canvas of the approved option: https://claude.ai/artifact/1QiMY7b574o2pXLo9vHH5h
 
+
+> **Superseded in part, 2026-09-20.** What shipped differs from this spec on
+> four points, each decided while building and verified in the browser:
+>
+> 1. **The card is the photograph and nothing else.** No name, no section, no
+>    `why` line, no opening hours. A caption under a picture is the part nobody
+>    reads; the name survives as the marker tooltip and the image's alt text.
+>    Pressing the photo maximizes it full-screen (portalled to `<body>`, because
+>    the map screen's `isolate` traps z-index).
+> 2. **Both image sizes are bundled**, not fetched from jsDelivr. At four places
+>    that is ~930 KB and buys offline-in-the-garden with no cache, no
+>    `DB_VERSION` bump and no content hash. **Revisit past a dozen places** —
+>    the CDN reasoning below becomes right again.
+> 3. **There is no drill-in gate**, because `test` removed drill-in entirely
+>    (the garden is scenery you walk through). The only gate is zoom, and the
+>    threshold is viewport-relative: `map.getBoundsZoom(gardenBounds, false,
+>    L.point(50, 50))`, matching the padding at `MapCanvas.tsx:289`. Two fixed
+>    floors shipped-and-failed first — 17 hid the bubbles the instant the garden
+>    opened, then 16 did the same on a 375px phone.
+> 4. **`number`, `section` and `why` are optional**, and a place without a photo
+>    draws *nothing* rather than a dot. The best places — the ponds, the little
+>    wood — are not on the official plan at all.
+>
+> Coordinates came from georeferencing a hand-annotated screenshot of this same
+> basemap against the garden polygon's extremes, not from the official plan
+> image, which never resolved. Every point is inside the garden and 7–19 m from
+> a mapped footpath.
+>
+> **Also corrected:** this spec says "There is no lake." That was wrong — it
+> concluded from OSM's silence. The garden has ponds (*jezírka*), and they are
+> one of the four places that shipped.
+
 ## The idea
 
 The MENDELU botanical garden and arboretum is 11 hectares of places students

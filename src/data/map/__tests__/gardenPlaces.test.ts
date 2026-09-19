@@ -52,9 +52,9 @@ describe('gardenPlaces.json', () => {
     }
   });
 
-  it('is a bubble only when it actually has a photograph', () => {
-    // Every place in THIS file carries one; a place without is a plain dot in
-    // remotePlaces.pois instead.
-    for (const p of PLACES) expect(p.photo, `${p.id} has no photo`).toBeDefined();
+  it('keeps a surveyed place even before its photograph arrives', () => {
+    // A place without `photo` draws nothing at all — but its coordinate stays
+    // here, so adding the photo later is one field, not another survey.
+    expect(PLACES.some((p) => p.photo === undefined)).toBe(true);
   });
 });

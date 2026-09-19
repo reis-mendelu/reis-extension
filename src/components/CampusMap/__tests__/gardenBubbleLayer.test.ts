@@ -18,11 +18,12 @@ const PHOTOGRAPHED: GardenPlace[] = [
 ];
 
 describe('drawGardenBubbles', () => {
-  it('adds one marker per garden place', () => {
+  it('adds one marker per photographed garden place', () => {
     const layer = L.layerGroup();
+    const withPhoto = GARDEN_PLACES.filter((p) => p.photo).length;
     const n = drawGardenBubbles(layer, { lang: 'cz', touch: false, onSelect: () => {} });
-    expect(n).toBe(GARDEN_PLACES.length);
-    expect(layer.getLayers()).toHaveLength(GARDEN_PLACES.length);
+    expect(n).toBe(withPhoto);
+    expect(layer.getLayers()).toHaveLength(withPhoto);
   });
 
   it('hands the clicked place to onSelect', () => {
@@ -33,19 +34,15 @@ describe('drawGardenBubbles', () => {
     expect(onSelect).toHaveBeenCalledWith(GARDEN_PLACES[0]);
   });
 
-  it('draws a plain dot, not an empty ring, for a place with no photograph yet', () => {
+  it('draws nothing at all for a place whose photograph has not arrived yet', () => {
     const layer = L.layerGroup();
-    const noPhoto = { ...PHOTOGRAPHED[0]!, id: 'terasy', photo: undefined };
+    const noPhoto = { ...PHOTOGRAPHED[0]!, id: 'vodni-kaskada', photo: undefined };
     drawGardenBubbles(layer, { lang: 'cz', touch: false, onSelect: () => {} }, [
       PHOTOGRAPHED[0]!,
       noPhoto,
     ]);
-    const bubbles = layer
-      .getLayers()
-      .filter((l) => l instanceof L.Marker && !(l instanceof L.CircleMarker));
-    const dots = layer.getLayers().filter((l) => l instanceof L.CircleMarker);
-    expect(bubbles).toHaveLength(1);
-    expect(dots).toHaveLength(1);
+    // A pin with no picture behind it promises something the tap cannot give.
+    expect(layer.getLayers()).toHaveLength(1);
   });
 
   it('rests bigger on a touch device, where there is no hover to grow it', () => {
