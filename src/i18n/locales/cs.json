@@ -931,7 +931,13 @@
     "audienceHintGeneric": "Uvidí jen studenti, kteří tento spolek odebírají.",
     "panelCollapse": "Sbalit panel mapy",
     "panelExpand": "Rozbalit panel mapy",
-    "walkMinutes": "{n} min"
+    "walkMinutes": "{n} min",
+    "gardenHours": "Po–Pá 7:00–15:00 · zdarma s průkazem MENDELU",
+    "gardenSection1": "Okolí správní budovy",
+    "gardenSection2": "Jižní svahy",
+    "gardenSection3": "Centrální část",
+    "gardenSection4": "Staré arboretum",
+    "gardenSection5": "Botanický systém"
   },
   "admin": {
     "email": "E-mail",

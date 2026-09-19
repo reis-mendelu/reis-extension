@@ -931,7 +931,13 @@
     "audienceHintGeneric": "Seen only by students who follow this society.",
     "panelCollapse": "Collapse map panel",
     "panelExpand": "Expand map panel",
-    "walkMinutes": "{n} min"
+    "walkMinutes": "{n} min",
+    "gardenHours": "Mon–Fri 7:00–15:00 · free with a MENDELU card",
+    "gardenSection1": "Around the administration building",
+    "gardenSection2": "Southern slopes",
+    "gardenSection3": "Central part",
+    "gardenSection4": "Old arboretum",
+    "gardenSection5": "Botanical system"
   },
   "admin": {
     "email": "Email",
