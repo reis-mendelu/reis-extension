@@ -1,64 +1,44 @@
 import { describe, it, expect, vi } from 'vitest';
 import L from 'leaflet';
 import {
+  CAMPUS_ENTRANCES,
   CAMPUS_NETWORK,
-  CAMPUS_PATHS,
+  CAMPUS_WALKS,
+  WALKS_BY_ENTRANCE,
   drawCampusPaths,
-  highlightPath,
-  pathLabel,
+  findWalk,
+  showWalk,
+  walkLabel,
 } from '../pathLayers';
+import { drawCampusEntrances, markActiveEntrance } from '../entranceLayers';
+import { drawBuildingChooser } from '../buildingChooser';
 
-describe('pathLabel', () => {
-  const route = (lengthM: number) => ({
-    id: 1,
-    from: 'Hlavní brána',
-    to: 'C',
-    lengthM,
-    coords: [
-      [16.614, 49.21],
-      [16.615, 49.21],
-    ] as [number, number][],
-  });
+const BUILDINGS = ['A', 'B', 'C', 'E', 'M', 'Q', 'X'];
 
-  it('leads with how long the walk takes, then where it runs', () => {
-    // Time first because the chip truncates: whatever leads survives a long
-    // pair of names, and the minutes are what a student is deciding on.
-    expect(pathLabel(route(436), 'cz')).toBe('5 min · Hlavní brána ↔ C');
-  });
-
-  it('speaks the student\u2019s language', () => {
-    expect(pathLabel(route(240), 'en')).toBe('3 min · Hlavní brána ↔ C');
+describe('walkLabel', () => {
+  it('says how long the walk takes, and nothing else', () => {
+    // It sits at the END of the walk, on a building that already draws its own
+    // letter, so repeating the destination would be saying it twice.
+    expect(
+      walkLabel({ id: 1, from: 'Hlavní brána', to: 'Q', lengthM: 320, coords: [] }, 'cz')
+    ).toBe('4 min');
   });
 });
 
 describe('drawCampusPaths', () => {
-  const layer = () => L.layerGroup();
-
-  it('draws the network ONCE — a casing pass, a line pass, and nothing repeated', () => {
-    // The bug it exists for: drawing a casing+line per ROUTE painted every
-    // shared stretch several times, and one route's white casing scribbled
-    // over the next route's line.
-    const l = layer();
-    drawCampusPaths(l, vi.fn());
-    const expected = CAMPUS_NETWORK.length * 2 + 2 + CAMPUS_PATHS.length;
-    expect(l.getLayers()).toHaveLength(expected);
-    expect(CAMPUS_NETWORK.length).toBeLessThan(CAMPUS_PATHS.length);
-  });
-
-  it('puts every halo under every trail, not each halo under its own trail', () => {
-    const l = layer();
-    drawCampusPaths(l, vi.fn());
-    const weights = (l.getLayers() as L.Polyline[])
-      .slice(0, CAMPUS_NETWORK.length * 2)
-      .map((p) => p.options.weight);
-    expect(new Set(weights.slice(0, CAMPUS_NETWORK.length))).toEqual(new Set([6]));
-    expect(new Set(weights.slice(CAMPUS_NETWORK.length))).toEqual(new Set([3]));
+  it('draws the network once, and nothing else until a gate is chosen', () => {
+    const layer = L.layerGroup();
+    const layers = drawCampusPaths(layer);
+    // halo pass + line pass + the two fan polylines + the chip group
+    expect(layer.getLayers()).toHaveLength(CAMPUS_NETWORK.length * 2 + 3);
+    expect(layers.fanLine.getLatLngs()).toEqual([]);
+    expect(layers.chips.getLayers()).toHaveLength(0);
   });
 
   it('draws the network as a dotted TRAIL, not as another road', () => {
-    const l = layer();
-    drawCampusPaths(l, vi.fn());
-    const trails = (l.getLayers() as L.Polyline[]).slice(
+    const layer = L.layerGroup();
+    drawCampusPaths(layer);
+    const trails = (layer.getLayers() as L.Polyline[]).slice(
       CAMPUS_NETWORK.length,
       CAMPUS_NETWORK.length * 2
     );
@@ -70,221 +50,204 @@ describe('drawCampusPaths', () => {
 
   it('keeps colour OUT of the always-on layer', () => {
     // The reversal this encodes: brand green in the base network collided with
-    // the arboretum, with the primary-green UI, and worst of all with the
-    // selected route — the one thing that has to be findable. A neutral base is
-    // what lets the tapped route be the only saturated thing on the map.
-    const l = layer();
-    drawCampusPaths(l, vi.fn());
-    const trails = (l.getLayers() as L.Polyline[]).slice(
+    // the arboretum, with the primary-green UI, and worst of all with the walks
+    // themselves — the thing that has to be findable.
+    const layer = L.layerGroup();
+    drawCampusPaths(layer);
+    const trails = (layer.getLayers() as L.Polyline[]).slice(
       CAMPUS_NETWORK.length,
       CAMPUS_NETWORK.length * 2
     );
     for (const t of trails) {
       const c = t.options.color!;
-      expect(c).not.toBe('#79be15'); // MENDELU green — the brand, spoken for
+      expect(c).not.toBe('#79be15');
       const [r, g, b] = [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
-      // near-neutral: no channel far from the others
       expect(Math.max(r, g, b) - Math.min(r, g, b)).toBeLessThan(24);
     }
   });
+});
 
-  it('gives every route a tap target', () => {
-    const { hits, routes } = drawCampusPaths(layer(), vi.fn());
-    expect(hits.size).toBe(CAMPUS_PATHS.length);
-    expect(routes.size).toBe(CAMPUS_PATHS.length);
+describe('findWalk', () => {
+  it('finds the one walk from this gate to this building', () => {
+    const w = findWalk('Hlavní brána', 'Q');
+    expect(w?.from).toBe('Hlavní brána');
+    expect(w?.to).toBe('Q');
   });
 
-  it('gives the hit line a finger-sized width — a 2.5px path is not tappable', () => {
-    const { hits } = drawCampusPaths(layer(), vi.fn());
-    const hit = [...hits.values()][0];
-    expect(hit.options.weight).toBeGreaterThanOrEqual(20);
-    expect(hit.options.opacity).toBe(0);
+  it('answers nothing until both halves of the question are asked', () => {
+    expect(findWalk('Hlavní brána', null)).toBeUndefined();
+    expect(findWalk(null, 'Q')).toBeUndefined();
+    expect(findWalk(null, null)).toBeUndefined();
   });
 
-  it('stops the tap from also reaching the map, which would clear the selection it just made', () => {
-    const { hits } = drawCampusPaths(layer(), vi.fn());
-    for (const hit of hits.values()) expect(hit.options.bubblingMouseEvents).toBe(false);
+  it('shrugs off a gate or a building it does not know', () => {
+    expect(findWalk('Brána, která neexistuje', 'Q')).toBeUndefined();
+    expect(findWalk('Hlavní brána', 'Ž')).toBeUndefined();
+  });
+});
+
+describe('showWalk', () => {
+  const setup = () => drawCampusPaths(L.layerGroup());
+
+  it('draws ONE walk, not a fan of them', () => {
+    // Seven walks at once meant seven times on the map and a campus to read.
+    const layers = setup();
+    showWalk(layers, findWalk('Hlavní brána', 'Q'), 'cz');
+    const line = layers.fanLine.getLatLngs() as L.LatLng[];
+    expect(line.length).toBe(findWalk('Hlavní brána', 'Q')!.coords.length);
+    expect(layers.chips.getLayers()).toHaveLength(1);
   });
 
-  it('never lets a drawn line swallow a tap', () => {
-    const l = layer();
-    drawCampusPaths(l, vi.fn());
-    const drawn = (l.getLayers() as L.Polyline[]).slice(0, CAMPUS_NETWORK.length * 2);
-    for (const p of drawn) expect(p.options.interactive).toBe(false);
+  it('puts the time at the building end, where you are going', () => {
+    const layers = setup();
+    const walk = findWalk('Zemědělská', 'C')!;
+    showWalk(layers, walk, 'cz');
+    const chip = layers.chips.getLayers()[0] as L.Tooltip;
+    const end = walk.coords.at(-1)!;
+    expect(chip.getLatLng()!.lat).toBeCloseTo(end[1], 9);
+    expect(chip.getLatLng()!.lng).toBeCloseTo(end[0], 9);
+    expect(String(chip.getContent())).toMatch(/^\d+ min$/);
   });
 
-  it('reports the tapped route to the caller', () => {
+  it('swaps cleanly from one walk to another — no leftovers', () => {
+    const layers = setup();
+    showWalk(layers, findWalk('Hlavní brána', 'Q'), 'cz');
+    showWalk(layers, findWalk('Brána Lesnická', 'C'), 'cz');
+    expect(layers.chips.getLayers()).toHaveLength(1);
+    expect((layers.fanLine.getLatLngs() as L.LatLng[]).length).toBe(
+      findWalk('Brána Lesnická', 'C')!.coords.length
+    );
+  });
+
+  it('clears everything when the question is unanswered', () => {
+    const layers = setup();
+    showWalk(layers, findWalk('Hlavní brána', 'Q'), 'cz');
+    showWalk(layers, undefined, 'cz');
+    expect(layers.fanLine.getLatLngs()).toEqual([]);
+    expect(layers.fanHalo.getLatLngs()).toEqual([]);
+    expect(layers.chips.getLayers()).toHaveLength(0);
+  });
+});
+
+describe('drawCampusEntrances', () => {
+  it('marks every way onto the campus, and nothing in the middle of it', () => {
+    const marks = drawCampusEntrances(L.layerGroup(), vi.fn());
+    expect(marks.size).toBe(CAMPUS_ENTRANCES.length);
+    expect([...marks.keys()]).toContain('Hlavní brána');
+    // "Budova O" sat in the middle of the campus and answered nothing.
+    expect([...marks.keys()]).not.toContain('Budova O');
+    for (const letter of BUILDINGS) expect([...marks.keys()]).not.toContain(letter);
+  });
+
+  it('keeps the gate name for hover, not permanently on the map', () => {
+    const marks = drawCampusEntrances(L.layerGroup(), vi.fn());
+    for (const dot of marks.values()) {
+      expect(dot.getTooltip()).toBeTruthy();
+      expect(dot.getTooltip()!.options.permanent).toBeFalsy();
+    }
+  });
+
+  it('reports the tapped gate', () => {
     const onSelect = vi.fn();
-    const { hits } = drawCampusPaths(layer(), onSelect);
-    const [id, hit] = [...hits.entries()][3];
-    hit.fire('click');
-    expect(onSelect).toHaveBeenCalledWith(id);
+    const marks = drawCampusEntrances(L.layerGroup(), onSelect);
+    marks.get('Hlavní brána')!.fire('click');
+    expect(onSelect).toHaveBeenCalledWith('Hlavní brána');
+  });
+
+  it('does not let the tap fall through to the map, which would clear it again', () => {
+    const marks = drawCampusEntrances(L.layerGroup(), vi.fn());
+    for (const dot of marks.values()) expect(dot.options.bubblingMouseEvents).toBe(false);
+  });
+
+  it('shows which gate the walks are coming from', () => {
+    const marks = drawCampusEntrances(L.layerGroup(), vi.fn());
+    markActiveEntrance(marks, 'Hlavní brána');
+    expect(marks.get('Hlavní brána')!.options.color).toBe('#ea580c');
+    for (const [name, dot] of marks)
+      if (name !== 'Hlavní brána') expect(dot.options.color).toBe('#78716c');
+    markActiveEntrance(marks, null);
+    for (const dot of marks.values()) expect(dot.options.color).toBe('#78716c');
   });
 });
 
-describe('highlightPath', () => {
-  it('lays the chosen route over the network, whole', () => {
-    const layers = drawCampusPaths(L.layerGroup(), vi.fn());
-    const id = [...layers.routes.keys()][2];
-    highlightPath(layers, id);
-    const route = layers.routes.get(id)!;
-    expect((layers.highlight.line.getLatLngs() as L.LatLng[]).length).toBe(route.coords.length);
-    expect(layers.highlight.line.options.color).toBe('#ea580c');
-  });
-
-  it('keeps ONE highlight however many routes get tapped', () => {
-    const layers = drawCampusPaths(L.layerGroup(), vi.fn());
-    for (const id of layers.routes.keys()) {
-      highlightPath(layers, id);
-      const n = (layers.highlight.line.getLatLngs() as L.LatLng[]).length;
-      expect(n).toBe(layers.routes.get(id)!.coords.length);
+describe('the committed walks', () => {
+  it('runs every walk from an entrance to a lettered building', () => {
+    const gates = new Set(CAMPUS_ENTRANCES.map((e) => e.name));
+    for (const w of CAMPUS_WALKS) {
+      expect(gates.has(w.from)).toBe(true);
+      expect(BUILDINGS).toContain(w.to);
+      expect(w.coords.length).toBeGreaterThanOrEqual(2);
     }
   });
 
-  it('draws the chosen route heavier than the network under it', () => {
-    const layers = drawCampusPaths(L.layerGroup(), vi.fn());
-    highlightPath(layers, [...layers.routes.keys()][0]);
-    expect(layers.highlight.line.options.weight!).toBeGreaterThan(2.5);
-    expect(layers.highlight.casing.options.weight!).toBeGreaterThan(
-      layers.highlight.line.options.weight!
-    );
-  });
-
-  it('clears the highlight when nothing is selected', () => {
-    const layers = drawCampusPaths(L.layerGroup(), vi.fn());
-    highlightPath(layers, [...layers.routes.keys()][0]);
-    highlightPath(layers, null);
-    expect(layers.highlight.line.getLatLngs()).toEqual([]);
-    expect(layers.highlight.casing.getLatLngs()).toEqual([]);
-  });
-});
-
-describe('the committed campus path data', () => {
-  it('gives every route a unique id and a drawable line', () => {
-    expect(new Set(CAMPUS_PATHS.map((p) => p.id)).size).toBe(CAMPUS_PATHS.length);
-    for (const p of CAMPUS_PATHS) expect(p.coords.length).toBeGreaterThanOrEqual(2);
-  });
-
-  it('keeps every route on the Brno campus and off the rest of the city', () => {
-    // campus bounds (buildings.json) plus the generator's 50 m margin, which is
-    // what keeps the layer from trailing off down Zemědělská into Černá Pole.
-    // + the 1e-6 the generator rounds coordinates to, which can nudge a point
-    // clipped exactly onto the boundary a tenth of a metre past it.
-    const eps = 1e-6;
-    const dLat = 50 / 110540 + eps;
-    const dLon = 50 / (111320 * Math.cos((49.21 * Math.PI) / 180)) + eps;
-    for (const p of CAMPUS_PATHS)
-      for (const [lon, lat] of p.coords) {
-        expect(lat).toBeGreaterThanOrEqual(49.209106 - dLat);
-        expect(lat).toBeLessThanOrEqual(49.212072 + dLat);
-        expect(lon).toBeGreaterThanOrEqual(16.613191 - dLon);
-        expect(lon).toBeLessThanOrEqual(16.619034 + dLon);
-      }
-  });
-
-  it('draws no stub too short to be worth a tap', () => {
-    for (const p of CAMPUS_PATHS) expect(p.lengthM).toBeGreaterThanOrEqual(25);
-  });
-
-  it('runs every route between two named places, never into open ground', () => {
-    for (const p of CAMPUS_PATHS) {
-      expect(p.from).toBeTruthy();
-      expect(p.to).toBeTruthy();
-      expect(p.from).not.toBe(p.to);
+  it('gets you from every gate to every building', () => {
+    // The promise the fan makes. If a gate cannot reach a building the map
+    // quietly stops answering the question someone walked up with.
+    for (const gate of CAMPUS_ENTRANCES) {
+      const reached = (WALKS_BY_ENTRANCE.get(gate.name) ?? []).map((w) => w.to).sort();
+      expect(reached).toEqual([...BUILDINGS].sort());
     }
   });
 
-  it('CONNECTS the routes — every place is walkable from every other one', () => {
-    // The whole point of building this from a graph rather than by chaining
-    // ways. Routes are not isolated pieces: `to` of one is `from` of others, so
-    // you can get from any place on the campus to any other by following them.
-    // If this splits into two groups, the network has broken in half.
-    const nbrs = new Map<string, string[]>();
-    const link = (a: string, b: string) => nbrs.set(a, [...(nbrs.get(a) ?? []), b]);
-    for (const p of CAMPUS_PATHS) {
-      link(p.from, p.to);
-      link(p.to, p.from);
-    }
-    expect(nbrs.size).toBeGreaterThanOrEqual(12);
-    const seen = new Set([[...nbrs.keys()].sort()[0]]);
-    for (const place of seen) for (const n of nbrs.get(place)!) seen.add(n);
-    expect([...seen].sort()).toEqual([...nbrs.keys()].sort());
-  });
-
-  it('reaches the lettered buildings and the gates a student arrives through', () => {
-    const places = new Set(CAMPUS_PATHS.flatMap((p) => [p.from, p.to]));
-    // The generator refuses to write a file that misses any of these, so this
-    // is the shipped half of that guard.
-    for (const letter of ['A', 'B', 'C', 'E', 'M', 'Q', 'X']) expect(places).toContain(letter);
-    expect(places).toContain('Hlavní brána');
-  });
-});
-
-describe('the route label', () => {
-  it('names the route that was tapped', () => {
-    const layers = drawCampusPaths(L.layerGroup(), vi.fn());
-    const id = [...layers.routes.keys()][0];
-    highlightPath(layers, id);
-    expect(layers.highlight.line.getTooltip()?.getContent()).toBe(
-      pathLabel(layers.routes.get(id)!, 'cz')
-    );
-  });
-
-  it('leaves exactly one on the map, however many routes get tapped', () => {
-    // One tooltip on one layer, so a stale label is not a thing that can exist.
-    const layers = drawCampusPaths(L.layerGroup(), vi.fn());
-    for (const id of layers.routes.keys()) {
-      highlightPath(layers, id);
-      expect(layers.highlight.line.getTooltip()?.getContent()).toBe(
-        pathLabel(layers.routes.get(id)!, 'cz')
-      );
+  it('keeps every walk plausible for a campus 400 m across', () => {
+    for (const w of CAMPUS_WALKS) {
+      expect(w.lengthM).toBeGreaterThanOrEqual(25);
+      expect(w.lengthM).toBeLessThan(900);
     }
   });
 
-  it('takes the label away again when the route is dropped', () => {
-    const layers = drawCampusPaths(L.layerGroup(), vi.fn());
-    highlightPath(layers, [...layers.routes.keys()][0]);
-    highlightPath(layers, null);
-    expect(layers.highlight.line.getTooltip()).toBeFalsy();
+  it('marks six ways in', () => {
+    expect(CAMPUS_ENTRANCES).toHaveLength(6);
+    for (const e of CAMPUS_ENTRANCES) expect(['gate', 'stop']).toContain(e.kind);
   });
-});
 
-describe('route names fit a phone', () => {
-  it('keeps every label short enough for a 320 px chip', () => {
-    // "Pizzerie v budově O ↔ Vedlejší brána z ulice Lesnická" was 53 characters
-    // and ran off the screen; the generator shortens the place names for this.
-    for (const p of CAMPUS_PATHS) expect(pathLabel(p, 'cz').length).toBeLessThanOrEqual(42);
-  });
-});
-
-describe('the committed network', () => {
-  it('draws each stretch of path exactly once', () => {
+  it('draws every stretch of the network exactly once', () => {
     const edges = CAMPUS_NETWORK.flatMap((s) =>
       s.slice(1).map((c, i) => [`${s[i][0]},${s[i][1]}`, `${c[0]},${c[1]}`].sort().join('|'))
     );
     expect(new Set(edges).size).toBe(edges.length);
   });
 
-  it('covers every stretch the routes run over', () => {
+  it('covers every stretch the walks run over', () => {
     const drawn = new Set(
       CAMPUS_NETWORK.flatMap((s) =>
         s.slice(1).map((c, i) => [`${s[i][0]},${s[i][1]}`, `${c[0]},${c[1]}`].sort().join('|'))
       )
     );
-    for (const p of CAMPUS_PATHS)
-      for (let i = 1; i < p.coords.length; i++) {
-        const e = [
-          `${p.coords[i - 1][0]},${p.coords[i - 1][1]}`,
-          `${p.coords[i][0]},${p.coords[i][1]}`,
-        ]
-          .sort()
-          .join('|');
-        expect(drawn.has(e)).toBe(true);
-      }
+    for (const w of CAMPUS_WALKS)
+      for (let i = 1; i < w.coords.length; i++)
+        expect(
+          drawn.has(
+            [`${w.coords[i - 1][0]},${w.coords[i - 1][1]}`, `${w.coords[i][0]},${w.coords[i][1]}`]
+              .sort()
+              .join('|')
+          )
+        ).toBe(true);
+  });
+});
+
+describe('drawBuildingChooser', () => {
+  it('offers every building, so the second question can always be answered', () => {
+    const marks = drawBuildingChooser(L.layerGroup(), vi.fn(), null);
+    expect([...marks.keys()].sort()).toEqual([...BUILDINGS].sort());
   });
 
-  it('is fewer, longer strokes than there are routes', () => {
-    for (const s of CAMPUS_NETWORK) expect(s.length).toBeGreaterThanOrEqual(2);
-    expect(CAMPUS_NETWORK.length).toBeLessThanOrEqual(25);
+  it('reports the building that was picked', () => {
+    const onPick = vi.fn();
+    const marks = drawBuildingChooser(L.layerGroup(), onPick, null);
+    marks.get('Q')!.fire('click', { originalEvent: new MouseEvent('click') });
+    expect(onPick).toHaveBeenCalledWith('Q');
+  });
+
+  it('shows which one is currently picked', () => {
+    const marks = drawBuildingChooser(L.layerGroup(), vi.fn(), 'M');
+    const html = (name: string) => (marks.get(name)!.options.icon as L.DivIcon).options.html;
+    expect(String(html('M'))).toContain('reis-pick-on');
+    expect(String(html('Q'))).not.toContain('reis-pick-on');
+  });
+
+  it('sits above the walk it draws, so the thing you tap is never underneath it', () => {
+    const marks = drawBuildingChooser(L.layerGroup(), vi.fn(), null);
+    for (const m of marks.values()) expect(m.options.zIndexOffset).toBeGreaterThan(0);
   });
 });

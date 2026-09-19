@@ -21,6 +21,7 @@ import {
   networkStrokes,
   snapAnchors,
   unplacedPlaces,
+  walksFrom,
 } from './lib/pathNetwork.mjs';
 import { overpass } from './lib/overpass.mjs';
 
@@ -74,8 +75,10 @@ function places() {
     const [lon, lat] = f.geometry.coordinates;
     // The gatehouse is the main gate under another name — as a second anchor
     // 8 m away it only splits that route in two.
+    // Cafeterias are deliberately NOT anchors. "Budova O" sat in the middle of
+    // the campus and answered nothing: you do not arrive there, and a walk that
+    // ends at it is not a walk anyone plans.
     if (type === 'gate') push(shortPoi(name), lon, lat, RANK.gate);
-    else if (type === 'cafeteria') push(shortPoi(name), lon, lat, RANK.cafeteria);
     else if (type === 'transportation_stop') push(shortStop(name), lon, lat, RANK.stop);
   }
   return out;
@@ -147,9 +150,16 @@ const MUST_REACH = ['A', 'B', 'C', 'E', 'M', 'Q', 'X', 'Hlavní brána'];
 const offNetwork = unplacedPlaces(graph, PLACES, 35, { minSeparationM: MIN_M });
 if (offNetwork.length) console.log(`not on the network: ${offNetwork.join(', ')}`);
 
-const routes = connectingRoutes(graph, anchors)
+// An ENTRANCE is where you arrive on foot: a gate, or the tram stop you get off
+// at. A walk starts at one of those and ends at a lettered building — those are
+// the two ends of the only question a campus map is really asked.
+const isBuilding = (name) => BUILDINGS.buildings.some((b) => b.name === name);
+const entranceNodes = new Map([...anchors].filter(([, n]) => !isBuilding(n)));
+const buildingNodes = new Map([...anchors].filter(([, n]) => isBuilding(n)));
+
+const routes = walksFrom(graph, entranceNodes, buildingNodes)
   .filter((r) => r.lengthM >= MIN_M)
-  .sort((a, b) => b.lengthM - a.lengthM || a.from.localeCompare(b.from))
+  .sort((a, b) => a.from.localeCompare(b.from) || a.to.localeCompare(b.to))
   .map((r, i) => ({
     id: i + 1,
     from: r.from,
@@ -178,7 +188,10 @@ const network = networkStrokes(routes).map((stroke) =>
 // fails rather than quietly shipping a campus with fewer ways across it.
 const reached = new Set(routes.flatMap((r) => [r.from, r.to]));
 
-const destinations = [...anchors.entries()]
+// Only the entrances are shipped as points. The buildings already draw their
+// own letters, and the cafeteria in the middle of the campus was answering
+// nothing at all.
+const entrances = [...entranceNodes.entries()]
   .map(([k, name]) => {
     const [lon, lat] = k.split(',').map(Number);
     return {
@@ -200,13 +213,15 @@ if (missing.length) {
 
 writeFileSync(
   new URL('../src/data/map/campusPaths.json', import.meta.url),
-  JSON.stringify({ source: 'OpenStreetMap (ODbL)', destinations, network, routes }, null, 0) + '\n'
+  JSON.stringify({ source: 'OpenStreetMap (ODbL)', entrances, network, routes }, null, 0) + '\n'
 );
 console.log(
   `${ways.length} clipped ways → ${graph.nodes.size} nodes, ` +
-    `${anchors.size} places on the network → ${routes.length} routes ` +
-    `(${routes.reduce((a, r) => a + r.lengthM, 0)} m walked, overlapping) ` +
+    `${entrances.length} entrances × ${buildingNodes.size} buildings → ${routes.length} walks ` +
     `drawn as ${network.length} strokes over ${network.reduce((a, s) => a + s.length - 1, 0)} segments`
 );
-console.log(`places reached: ${destinations.map((p) => `${p.name} (${p.kind})`).join(', ')}`);
-for (const r of routes) console.log(`  ${String(r.lengthM).padStart(4)} m  ${r.from} ↔ ${r.to}`);
+console.log(`entrances: ${entrances.map((p) => `${p.name} (${p.kind})`).join(', ')}`);
+for (const r of routes)
+  console.log(
+    `  ${String(Math.max(1, Math.round(r.lengthM / 80))).padStart(2)} min  ${r.from} → ${r.to}`
+  );

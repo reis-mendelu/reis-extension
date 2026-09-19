@@ -6,6 +6,7 @@ import {
   connectingRoutes,
   clipToRegion,
   networkStrokes,
+  walksFrom,
 } from '../pathNetwork.mjs';
 
 /** A west→east line through three vertices, chopped into two OSM ways. */
@@ -434,5 +435,80 @@ describe('snapAnchors keeps anchors apart', () => {
       { minSeparationM: 25 }
     );
     expect([...anchors.values()].sort()).toEqual(['M', 'Q']);
+  });
+});
+
+describe('walksFrom', () => {
+  const line = (lons: number[], lat = 49.21) => lons.map((lon) => [lon, lat] as [number, number]);
+
+  it('walks from a gate all the way to a building, THROUGH whatever is between', () => {
+    // The change this encodes: a walk is a journey someone makes, so it does
+    // not stop at the first named thing it passes. "How long from the gate to
+    // Q" is the question; "how long is this bit of path" is not.
+    const g = buildGraph([{ coords: line([16.614, 16.615, 16.616]) }]);
+    const gates = snapAnchors(g, [{ name: 'Hlavní brána', lon: 16.614, lat: 49.21 }], 35);
+    const halls = snapAnchors(
+      g,
+      [
+        { name: 'X', lon: 16.615, lat: 49.21 },
+        { name: 'Q', lon: 16.616, lat: 49.21 },
+      ],
+      35
+    );
+    const walks = walksFrom(g, gates, halls);
+    expect(walks.map((w) => `${w.from}>${w.to}`).sort()).toEqual([
+      'Hlavní brána>Q',
+      'Hlavní brána>X',
+    ]);
+    const toQ = walks.find((w) => w.to === 'Q')!;
+    expect(toQ.coords).toHaveLength(3); // ran straight past X, not stopped at it
+    expect(toQ.lengthM).toBeGreaterThan(140);
+  });
+
+  it('gives every gate its own set of walks', () => {
+    const g = buildGraph([{ coords: line([16.614, 16.615, 16.616]) }]);
+    const gates = snapAnchors(
+      g,
+      [
+        { name: 'Brána A', lon: 16.614, lat: 49.21 },
+        { name: 'Brána B', lon: 16.616, lat: 49.21 },
+      ],
+      35
+    );
+    const halls = snapAnchors(g, [{ name: 'X', lon: 16.615, lat: 49.21 }], 35);
+    expect(
+      walksFrom(g, gates, halls)
+        .map((w) => w.from)
+        .sort()
+    ).toEqual(['Brána A', 'Brána B']);
+  });
+
+  it('says nothing about a building the network cannot reach', () => {
+    const g = buildGraph([{ coords: line([16.614, 16.615]) }, { coords: line([16.617, 16.618]) }]);
+    const gates = snapAnchors(g, [{ name: 'Brána', lon: 16.614, lat: 49.21 }], 35);
+    const halls = snapAnchors(g, [{ name: 'Z', lon: 16.618, lat: 49.21 }], 35);
+    expect(walksFrom(g, gates, halls)).toHaveLength(0);
+  });
+
+  it('never walks a gate to itself', () => {
+    const g = buildGraph([{ coords: line([16.614, 16.615]) }]);
+    const both = snapAnchors(g, [{ name: 'Brána', lon: 16.614, lat: 49.21 }], 35);
+    expect(walksFrom(g, both, both)).toHaveLength(0);
+  });
+
+  it('is deterministic', () => {
+    const g = buildGraph([{ coords: line([16.614, 16.615, 16.616]) }]);
+    const gates = snapAnchors(g, [{ name: 'Brána', lon: 16.614, lat: 49.21 }], 35);
+    const halls = snapAnchors(
+      g,
+      [
+        { name: 'X', lon: 16.615, lat: 49.21 },
+        { name: 'Q', lon: 16.616, lat: 49.21 },
+      ],
+      35
+    );
+    expect(JSON.stringify(walksFrom(g, gates, halls))).toBe(
+      JSON.stringify(walksFrom(g, gates, halls))
+    );
   });
 });

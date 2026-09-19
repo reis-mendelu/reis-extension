@@ -116,12 +116,13 @@ export interface RemotePlace {
 // anyone would tap. It is the shortest walk along the paths OSM has MAPPED,
 // which is not the same as the shortest walk on the ground wherever OSM is
 // incomplete.
-// A place a campus route starts or ends at. `kind` is what the map needs to
-// decide whether to LABEL it: a lettered building already draws its own letter,
-// so a second pill on top of it is noise, not information.
-export interface CampusPlace {
+// A way ONTO the campus: one of the gates, or the tram stop you get off at.
+// These are the only points the map marks. Buildings already draw their own
+// letters, and a point in the middle of the campus (the cafeteria in building
+// O) answered nothing — you do not arrive there.
+export interface CampusEntrance {
   name: string;
-  kind: 'building' | 'gate' | 'cafeteria' | 'stop' | 'other';
+  kind: 'gate' | 'stop' | 'other';
   lon: number;
   lat: number;
 }

@@ -492,12 +492,10 @@ body,
   border-top-color: #1e293b;
 }
 
-/* The names of the places the campus walks run between — gates, the tram stop,
- * the arboretum entrance. A quiet white pill, deliberately lighter than the
- * lettered building labels it sits among: these name the things the map does
- * not already name, they are not competing with the buildings. Hidden at the
- * overview zoom by the same switch as the building letters, so zooming out
- * still gives a clean campus. */
+/* A gate's name, shown on hover only — six labels ringing the campus all the
+ * time is a wall of text around a map whose dots already say "you can get in
+ * here". On a phone there is no hover, so the tap that reveals the name is the
+ * same tap that draws the walks. */
 .leaflet-tooltip.place-label {
   background: rgb(255 255 255 / 0.92);
   border: none;
@@ -513,6 +511,44 @@ body,
 .leaflet-tooltip.place-label::before {
   display: none;
 }
-.reis-hide-building-labels .leaflet-tooltip.place-label {
-  display: none;
+/* The "4 min" at the end of each walk. Orange like the walk it belongs to, so a
+ * fan of times reads as one answer to one question rather than as loose labels
+ * scattered over the campus. */
+.leaflet-tooltip.walk-chip {
+  background: #ea580c;
+  border: none;
+  box-shadow: 0 1px 3px rgb(124 45 18 / 0.35);
+  border-radius: 9px;
+  padding: 2px 7px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.leaflet-tooltip.walk-chip::before {
+  border-top-color: #ea580c;
+}
+
+/* The building pills shown after a gate is tapped — "now pick where you are
+ * going". Sits on the building's own letter, so what you tap is what you are
+ * looking at. */
+.reis-pick {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 2px solid #ea580c;
+  color: #9a3412;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 1px 4px rgb(124 45 18 / 0.3);
+  cursor: pointer;
+}
+.reis-pick-on {
+  background: #ea580c;
+  color: #ffffff;
 }

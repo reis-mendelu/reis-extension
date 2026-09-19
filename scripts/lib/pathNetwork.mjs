@@ -325,3 +325,53 @@ export function networkStrokes(routes) {
     }
   return strokes;
 }
+
+/**
+ * The walk from each entrance to each building.
+ *
+ * This replaced a "neighbouring places" set, where a route stopped at the first
+ * named thing it passed. That answered "how long is this bit of path", which is
+ * not a question anyone asks. The question is "I have come in at this gate, how
+ * long to my building" — so a walk runs the whole way and passes straight
+ * through whatever is in between.
+ *
+ * Plain Dijkstra, nothing absorbing: origins fan out to every target they can
+ * reach. A target the network cannot reach from an origin simply gets no walk
+ * rather than an invented one.
+ *
+ * @param {Map<string,string>} origins  node key → entrance name
+ * @param {Map<string,string>} targets  node key → building name
+ * @returns {{from:string,to:string,lengthM:number,coords:[number,number][]}[]}
+ */
+export function walksFrom(graph, origins, targets) {
+  const walks = [];
+  for (const start of [...origins.keys()].sort()) {
+    const dist = new Map([[start, 0]]);
+    const prev = new Map();
+    const done = new Set();
+    for (;;) {
+      let u = null;
+      for (const [k, d] of dist) if (!done.has(k) && (u === null || d < dist.get(u) - 1e-9)) u = k;
+      if (u === null) break;
+      done.add(u);
+      for (const [v, w] of graph.adj.get(u)) {
+        if (done.has(v)) continue;
+        const nd = dist.get(u) + w;
+        if (nd < (dist.get(v) ?? Infinity)) {
+          dist.set(v, nd);
+          prev.set(v, u);
+        }
+      }
+    }
+    for (const end of [...targets.keys()].sort()) {
+      if (end === start || !dist.has(end)) continue;
+      const from = origins.get(start);
+      const to = targets.get(end);
+      if (from === to) continue;
+      const coords = [];
+      for (let k = end; k !== undefined; k = prev.get(k)) coords.unshift(graph.nodes.get(k));
+      walks.push({ from, to, lengthM: Math.round(dist.get(end)), coords });
+    }
+  }
+  return walks;
+}
