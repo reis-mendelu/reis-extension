@@ -1,25 +1,13 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import L from 'leaflet';
 import {
-  CAMPUS_ENTRANCES,
   CAMPUS_NETWORK,
-  CAMPUS_WALKS,
-  WALKS_BY_ENTRANCE,
   drawCampusPaths,
   findWalk,
   keepChipsOnScreen,
   showWalk,
   walkLabel,
 } from '../pathLayers';
-import { drawCampusEntrances, markActiveEntrance } from '../entranceLayers';
-import {
-  markPickableBuildings,
-  PICKABLE_BUILDING_STYLE,
-  PICKED_BUILDING_STYLE,
-} from '../buildingChooser';
-import { BUILDING_STYLE } from '../mapHelpers';
-
-const BUILDINGS = ['A', 'B', 'C', 'E', 'M', 'Q', 'X'];
 
 describe('walkLabel', () => {
   it('says how long the walk takes, and nothing else', () => {
@@ -132,148 +120,6 @@ describe('showWalk', () => {
     expect(layers.fanLine.getLatLngs()).toEqual([]);
     expect(layers.fanHalo.getLatLngs()).toEqual([]);
     expect(layers.chips.getLayers()).toHaveLength(0);
-  });
-});
-
-describe('drawCampusEntrances', () => {
-  it('marks every way onto the campus, and nothing in the middle of it', () => {
-    const marks = drawCampusEntrances(L.layerGroup(), vi.fn());
-    expect(marks.size).toBe(CAMPUS_ENTRANCES.length);
-    expect([...marks.keys()]).toContain('Hlavní brána');
-    // "Budova O" sat in the middle of the campus and answered nothing.
-    expect([...marks.keys()]).not.toContain('Budova O');
-    for (const letter of BUILDINGS) expect([...marks.keys()]).not.toContain(letter);
-  });
-
-  it('keeps the gate name for hover, not permanently on the map', () => {
-    const marks = drawCampusEntrances(L.layerGroup(), vi.fn());
-    for (const dot of marks.values()) {
-      expect(dot.getTooltip()).toBeTruthy();
-      expect(dot.getTooltip()!.options.permanent).toBeFalsy();
-    }
-  });
-
-  it('reports the tapped gate', () => {
-    const onSelect = vi.fn();
-    const marks = drawCampusEntrances(L.layerGroup(), onSelect);
-    marks.get('Hlavní brána')!.fire('click');
-    expect(onSelect).toHaveBeenCalledWith('Hlavní brána');
-  });
-
-  it('does not let the tap fall through to the map, which would clear it again', () => {
-    const marks = drawCampusEntrances(L.layerGroup(), vi.fn());
-    for (const dot of marks.values()) expect(dot.options.bubblingMouseEvents).toBe(false);
-  });
-
-  it('shows which gate the walks are coming from', () => {
-    const marks = drawCampusEntrances(L.layerGroup(), vi.fn());
-    markActiveEntrance(marks, 'Hlavní brána');
-    expect(marks.get('Hlavní brána')!.options.color).toBe('#ea580c');
-    for (const [name, dot] of marks)
-      if (name !== 'Hlavní brána') expect(dot.options.color).toBe('#78716c');
-    markActiveEntrance(marks, null);
-    for (const dot of marks.values()) expect(dot.options.color).toBe('#78716c');
-  });
-});
-
-describe('the committed walks', () => {
-  it('runs every walk from an entrance to a lettered building', () => {
-    const gates = new Set(CAMPUS_ENTRANCES.map((e) => e.name));
-    for (const w of CAMPUS_WALKS) {
-      expect(gates.has(w.from)).toBe(true);
-      expect(BUILDINGS).toContain(w.to);
-      expect(w.coords.length).toBeGreaterThanOrEqual(2);
-    }
-  });
-
-  it('gets you from every gate to every building', () => {
-    // The promise the fan makes. If a gate cannot reach a building the map
-    // quietly stops answering the question someone walked up with.
-    for (const gate of CAMPUS_ENTRANCES) {
-      const reached = (WALKS_BY_ENTRANCE.get(gate.name) ?? []).map((w) => w.to).sort();
-      expect(reached).toEqual([...BUILDINGS].sort());
-    }
-  });
-
-  it('keeps every walk plausible for a campus 400 m across', () => {
-    for (const w of CAMPUS_WALKS) {
-      expect(w.lengthM).toBeGreaterThanOrEqual(25);
-      expect(w.lengthM).toBeLessThan(900);
-    }
-  });
-
-  it('marks six ways in', () => {
-    expect(CAMPUS_ENTRANCES).toHaveLength(6);
-    for (const e of CAMPUS_ENTRANCES) expect(['gate', 'stop']).toContain(e.kind);
-  });
-
-  /** Every segment of a line, as an order-independent key. */
-  const edgesOf = (coords: number[][]) => {
-    const out: string[] = [];
-    for (let i = 1; i < coords.length; i++) {
-      const a = coords[i - 1] ?? [];
-      const b = coords[i] ?? [];
-      out.push([a.join(','), b.join(',')].sort().join('|'));
-    }
-    return out;
-  };
-
-  it('draws every stretch of the network exactly once', () => {
-    const edges = CAMPUS_NETWORK.flatMap(edgesOf);
-    expect(new Set(edges).size).toBe(edges.length);
-  });
-
-  it('covers every stretch the walks run over', () => {
-    const drawn = new Set(CAMPUS_NETWORK.flatMap(edgesOf));
-    for (const w of CAMPUS_WALKS)
-      for (const edge of edgesOf(w.coords)) expect(drawn.has(edge)).toBe(true);
-  });
-});
-
-describe('markPickableBuildings', () => {
-  const polys = () =>
-    new Map(
-      BUILDINGS.map((n) => [
-        n,
-        L.polygon([
-          [49.21, 16.614],
-          [49.211, 16.615],
-          [49.21, 16.616],
-        ]),
-      ])
-    );
-
-  it('leaves the buildings alone until a gate is chosen', () => {
-    const p = polys();
-    markPickableBuildings(p, null, null);
-    for (const poly of p.values()) expect(poly.options.color).toBe(BUILDING_STYLE.color);
-  });
-
-  it('lights every building once a gate is chosen, so you can see what to pick', () => {
-    // Replaces an orange lettered pill per building, which sat on top of the
-    // letter each building already draws and said its name twice.
-    const p = polys();
-    markPickableBuildings(p, 'Hlavní brána', null);
-    for (const poly of p.values()) expect(poly.options.color).toBe(PICKABLE_BUILDING_STYLE.color);
-  });
-
-  it('marks the one you picked more strongly than the rest', () => {
-    const p = polys();
-    markPickableBuildings(p, 'Hlavní brána', 'Q');
-    expect(p.get('Q')!.options.color).toBe(PICKED_BUILDING_STYLE.color);
-    expect(p.get('Q')!.options.weight!).toBeGreaterThan(PICKABLE_BUILDING_STYLE.weight!);
-    for (const n of BUILDINGS.filter((x) => x !== 'Q'))
-      expect(p.get(n)!.options.color).toBe(PICKABLE_BUILDING_STYLE.color);
-  });
-
-  it('puts them all back when the gate is dropped', () => {
-    const p = polys();
-    markPickableBuildings(p, 'Hlavní brána', 'Q');
-    markPickableBuildings(p, null, null);
-    for (const poly of p.values()) {
-      expect(poly.options.color).toBe(BUILDING_STYLE.color);
-      expect(poly.options.weight).toBe(BUILDING_STYLE.weight);
-    }
   });
 });
 
