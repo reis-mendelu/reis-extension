@@ -11,16 +11,14 @@
       "photo": "skleniky-full.jpg"
     },
     {
-      "id": "transeje",
+      "id": "mustek-minotaur",
       "name": {
-        "cz": "Tranšeje",
-        "en": "The trenches"
+        "cz": "Můstek a minotaurus",
+        "en": "The bridge and the minotaur"
       },
       "lon": 16.613126,
       "lat": 49.215709,
-      "photo": "transeje-full.jpg",
-      "number": "1.3",
-      "section": 1
+      "photo": "mustek-minotaur-full.jpg"
     },
     {
       "id": "jezirka",
