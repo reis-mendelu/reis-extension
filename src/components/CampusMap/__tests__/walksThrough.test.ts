@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { REMOTE, walksThrough } from '../mapLayers';
+import { REMOTE, walksThrough } from '../remoteLayers';
 
 const byName = (n: string) => REMOTE.find((p) => p.shortName.includes(n))!;
 

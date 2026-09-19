@@ -16,14 +16,8 @@ import {
   BUILDING_STYLE,
   SIBLING_STYLE,
 } from './mapHelpers';
-import {
-  initLeafletMap,
-  flyAndReveal,
-  drawLandmarks,
-  drawRemotePlaces,
-  REMOTE,
-  REMOTE_IDS,
-} from './mapLayers';
+import { initLeafletMap, flyAndReveal, drawLandmarks } from './mapLayers';
+import { drawRemotePlaces, REMOTE, REMOTE_IDS } from './remoteLayers';
 import {
   drawCampusPaths,
   findWalk,
