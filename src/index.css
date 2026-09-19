@@ -530,25 +530,3 @@ body,
   border-top-color: #ea580c;
 }
 
-/* The building pills shown after a gate is tapped — "now pick where you are
- * going". Sits on the building's own letter, so what you tap is what you are
- * looking at. */
-.reis-pick {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 999px;
-  background: #ffffff;
-  border: 2px solid #ea580c;
-  color: #9a3412;
-  font-size: 12px;
-  font-weight: 800;
-  line-height: 1;
-  box-shadow: 0 1px 4px rgb(124 45 18 / 0.3);
-  cursor: pointer;
-}
-.reis-pick-on {
-  background: #ea580c;
-  color: #ffffff;
-}

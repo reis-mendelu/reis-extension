@@ -11,7 +11,12 @@ import {
   walkLabel,
 } from '../pathLayers';
 import { drawCampusEntrances, markActiveEntrance } from '../entranceLayers';
-import { drawBuildingChooser } from '../buildingChooser';
+import {
+  markPickableBuildings,
+  PICKABLE_BUILDING_STYLE,
+  PICKED_BUILDING_STYLE,
+} from '../buildingChooser';
+import { BUILDING_STYLE } from '../mapHelpers';
 
 const BUILDINGS = ['A', 'B', 'C', 'E', 'M', 'Q', 'X'];
 
@@ -226,28 +231,49 @@ describe('the committed walks', () => {
   });
 });
 
-describe('drawBuildingChooser', () => {
-  it('offers every building, so the second question can always be answered', () => {
-    const marks = drawBuildingChooser(L.layerGroup(), vi.fn(), null);
-    expect([...marks.keys()].sort()).toEqual([...BUILDINGS].sort());
+describe('markPickableBuildings', () => {
+  const polys = () =>
+    new Map(
+      BUILDINGS.map((n) => [
+        n,
+        L.polygon([
+          [49.21, 16.614],
+          [49.211, 16.615],
+          [49.21, 16.616],
+        ]),
+      ])
+    );
+
+  it('leaves the buildings alone until a gate is chosen', () => {
+    const p = polys();
+    markPickableBuildings(p, null, null);
+    for (const poly of p.values()) expect(poly.options.color).toBe(BUILDING_STYLE.color);
   });
 
-  it('reports the building that was picked', () => {
-    const onPick = vi.fn();
-    const marks = drawBuildingChooser(L.layerGroup(), onPick, null);
-    marks.get('Q')!.fire('click', { originalEvent: new MouseEvent('click') });
-    expect(onPick).toHaveBeenCalledWith('Q');
+  it('lights every building once a gate is chosen, so you can see what to pick', () => {
+    // Replaces an orange lettered pill per building, which sat on top of the
+    // letter each building already draws and said its name twice.
+    const p = polys();
+    markPickableBuildings(p, 'Hlavní brána', null);
+    for (const poly of p.values()) expect(poly.options.color).toBe(PICKABLE_BUILDING_STYLE.color);
   });
 
-  it('shows which one is currently picked', () => {
-    const marks = drawBuildingChooser(L.layerGroup(), vi.fn(), 'M');
-    const html = (name: string) => (marks.get(name)!.options.icon as L.DivIcon).options.html;
-    expect(String(html('M'))).toContain('reis-pick-on');
-    expect(String(html('Q'))).not.toContain('reis-pick-on');
+  it('marks the one you picked more strongly than the rest', () => {
+    const p = polys();
+    markPickableBuildings(p, 'Hlavní brána', 'Q');
+    expect(p.get('Q')!.options.color).toBe(PICKED_BUILDING_STYLE.color);
+    expect(p.get('Q')!.options.weight!).toBeGreaterThan(PICKABLE_BUILDING_STYLE.weight!);
+    for (const n of BUILDINGS.filter((x) => x !== 'Q'))
+      expect(p.get(n)!.options.color).toBe(PICKABLE_BUILDING_STYLE.color);
   });
 
-  it('sits above the walk it draws, so the thing you tap is never underneath it', () => {
-    const marks = drawBuildingChooser(L.layerGroup(), vi.fn(), null);
-    for (const m of marks.values()) expect(m.options.zIndexOffset).toBeGreaterThan(0);
+  it('puts them all back when the gate is dropped', () => {
+    const p = polys();
+    markPickableBuildings(p, 'Hlavní brána', 'Q');
+    markPickableBuildings(p, null, null);
+    for (const poly of p.values()) {
+      expect(poly.options.color).toBe(BUILDING_STYLE.color);
+      expect(poly.options.weight).toBe(BUILDING_STYLE.weight);
+    }
   });
 });

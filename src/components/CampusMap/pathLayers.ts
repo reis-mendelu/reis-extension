@@ -137,7 +137,10 @@ export function showWalk(
   fanLine.bringToFront();
 
   const end = walk.coords.at(-1)!;
-  L.tooltip({ permanent: true, direction: 'top', className: 'walk-chip', offset: [0, -14] })
+  // Above the building, not on it: the chip sat over the letter the building
+  // draws in its own centre, hiding the name of the place it is telling you
+  // about.
+  L.tooltip({ permanent: true, direction: 'top', className: 'walk-chip', offset: [0, -30] })
     .setLatLng([end[1], end[0]])
     .setContent(walkLabel(walk, language))
     .addTo(chips);

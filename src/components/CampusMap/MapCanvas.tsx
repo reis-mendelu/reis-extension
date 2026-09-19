@@ -26,7 +26,7 @@ import {
 } from './mapLayers';
 import { drawCampusPaths, findWalk, showWalk, type CampusWalkLayers } from './pathLayers';
 import { drawCampusEntrances, markActiveEntrance } from './entranceLayers';
-import { drawBuildingChooser } from './buildingChooser';
+import { markPickableBuildings } from './buildingChooser';
 import { setMapInstance } from './mapInstance';
 import { roomFocusView } from './focusBounds';
 import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
@@ -107,8 +107,9 @@ export function MapCanvas() {
   const activeBuildingRef = useRef<string | null>(null);
   const pathsRef = useRef<CampusWalkLayers | null>(null);
   const entrancesRef = useRef<Map<string, L.CircleMarker>>(new Map());
-  /** The layer the "pick your building" pills live in, cleared on every change. */
-  const chooserRef = useRef<L.LayerGroup>(L.layerGroup());
+  /** The campus building outlines, kept so they can be lit as pick targets
+   *  without a redraw (a redraw moves the camera). */
+  const buildingPolysRef = useRef<Map<string, L.Polygon>>(new Map());
 
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const activeFloorId = useAppStore((s) => s.activeFloorId);
@@ -177,9 +178,19 @@ export function MapCanvas() {
       // Paths first: the building outlines and the event pins belong on top of
       // them. A selected route lifts itself back above with bringToFront.
       pathsRef.current = drawCampusPaths(layer);
+      buildingPolysRef.current = new Map();
       for (const b of META.buildings) {
-        L.polygon(ringToLatLng(b.outline.coordinates[0]), BUILDING_STYLE)
+        const poly = L.polygon(ringToLatLng(b.outline.coordinates[0]), BUILDING_STYLE)
           .on('click', () => {
+            // While a gate is chosen the buildings ARE the question — tapping
+            // one answers "where are you going" instead of opening its floor
+            // plan. Read from the ref so the handler sees the live step without
+            // being rebound (rebinding means a redraw, and a redraw moves the
+            // camera).
+            if (activeEntranceRef.current) {
+              setSelectedBuilding((cur) => (cur === b.name ? null : b.name));
+              return;
+            }
             setSelectedEntrance(null);
             setSelectedBuilding(null);
             select.setMapBuilding(b.id);
@@ -190,6 +201,7 @@ export function MapCanvas() {
             className: 'building-label',
           })
           .addTo(layer);
+        buildingPolysRef.current.set(b.name, poly);
       }
       drawLandmarks(layer, select, BUILDING_STYLE);
       // A remote site is "drilled in" when it is the selected poi — then its inner
@@ -212,7 +224,6 @@ export function MapCanvas() {
         // the building you picked from the last one.
         setSelectedBuilding(null);
       });
-      chooserRef.current.addTo(layer);
       // Re-apply after a redraw (a new search, a new focus) so the walk the
       // student asked for does not quietly vanish under them.
       if (pathsRef.current)
@@ -223,6 +234,11 @@ export function MapCanvas() {
           map
         );
       markActiveEntrance(entrancesRef.current, activeEntranceRef.current);
+      markPickableBuildings(
+        buildingPolysRef.current,
+        activeEntranceRef.current,
+        activeBuildingRef.current
+      );
       // Clicking the bare basemap (not a building outline or an event pin) clears
       // the current selection — same "click away to dismiss" as floor-view's exit.
       // Building outlines are Leaflet layers (their click doesn't reach the map);
@@ -230,10 +246,13 @@ export function MapCanvas() {
       const onOverviewClick = (e: L.LeafletMouseEvent) => {
         const t = e.originalEvent.target as HTMLElement | null;
         if (t?.closest('.leaflet-reisEvents-pane')) return;
-        // Tapping the bare basemap drops the walk, exactly as it drops a
-        // selected place.
-        setSelectedEntrance(null);
-        setSelectedBuilding(null);
+        // Tapping the bare basemap steps BACK one, rather than throwing the
+        // whole thing away. The buildings are thin L-shapes and easy to miss;
+        // when a near-miss also lost the gate you had picked, every fumbled tap
+        // cost both answers. Picked a building → drop just that; otherwise drop
+        // the gate.
+        if (activeBuildingRef.current !== null) setSelectedBuilding(null);
+        else setSelectedEntrance(null);
         const state = useAppStore.getState();
         if (state.placingEvent) {
           // click-to-place: capture [lng,lat]
@@ -338,7 +357,7 @@ export function MapCanvas() {
     // selection to clear — the walks are already suppressed off the overview.
     pathsRef.current = null;
     entrancesRef.current = new Map();
-    chooserRef.current.clearLayers();
+    buildingPolysRef.current = new Map();
 
     const fc = roomsByBuilding[activeBuildingId];
     const b = META.buildings.find((x) => x.id === activeBuildingId);
@@ -500,12 +519,9 @@ export function MapCanvas() {
         mapRef.current ?? undefined
       );
     markActiveEntrance(entrancesRef.current, activeEntrance);
-
     // The second question is only asked once the first is answered: no gate,
-    // no pills.
-    chooserRef.current.clearLayers();
-    if (activeEntrance)
-      drawBuildingChooser(chooserRef.current, (name) => setSelectedBuilding(name), activeBuilding);
+    // no lit buildings.
+    markPickableBuildings(buildingPolysRef.current, activeEntrance, activeBuilding);
   }, [activeEntrance, activeBuilding, language]);
 
   return <div ref={ref} className="absolute inset-0" />;
