@@ -106,6 +106,39 @@ export interface RemotePlace {
   pois?: { name: string; lon: number; lat: number }[];
 }
 
+// A place INSIDE the botanical garden that is worth walking to — one of the
+// twelve carried by its own photograph, as opposed to the nineteen that stay
+// plain dots in `RemotePlace.pois`. Hand-authored in
+// `src/data/map/gardenPlaces.json`; no script generates or touches it.
+//
+// The curation line is "somewhere you would send a friend to sit", which is
+// what `why` has to earn — not a description of the plants.
+export interface GardenPlace {
+  /** Stable slug, and the stem of the bundled thumb: `public/garden/<id>.webp`. */
+  id: string;
+  /** The garden's own published numbering, e.g. "2.6" for Rokle. */
+  number: string;
+  /** 1 Okolí správní budovy … 5 Botanický systém — the first half of `number`. */
+  section: 1 | 2 | 3 | 4 | 5;
+  name: { cz: string; en: string };
+  /** ONE line: the reason to walk there. */
+  why: { cz: string; en: string };
+  lon: number;
+  lat: number;
+  /**
+   * The FULL photo's filename on the CDN, content-hashed
+   * (`rokle.8f3a1c.webp`) because jsDelivr caches `@main` mutably and a
+   * replaced photo at the same path would not propagate.
+   *
+   * Optional on purpose: coordinates are one pass and land first, photographs
+   * are picked on their own schedule. A place without one renders as a dot.
+   */
+  photo?: string;
+  /** Author + licence; rendered under the photo only when set. */
+  credit?: string;
+}
+
+
 // One walk across the Brno campus: the route from one campus place to the next
 // one you reach, built at build time from the OSM way network
 // (scripts/fetch-campus-paths.mjs). Routes connect — `to` of one is `from` of

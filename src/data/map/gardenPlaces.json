@@ -1,0 +1,28 @@
+{
+  "places": [
+    {
+      "id": "spravni-budova",
+      "number": "1.1",
+      "section": 1,
+      "name": { "cz": "Správní budova a učebny", "en": "Administration and classrooms" },
+      "why": {
+        "cz": "Vchod do zahrady a místo, kde se platí — nebo neplatí, s průkazem MENDELU.",
+        "en": "The way in, and where you pay — or don't, with a MENDELU card."
+      },
+      "lon": 16.614536,
+      "lat": 49.215447
+    },
+    {
+      "id": "skleniky",
+      "number": "1.2",
+      "section": 1,
+      "name": { "cz": "Skleníky", "en": "Greenhouses" },
+      "why": {
+        "cz": "Čtyři skleníky orchidejí — jedna z největších sbírek v Evropě. V zimě nejteplejší místo v Brně.",
+        "en": "Four greenhouses of orchids, among the largest collections in Europe. The warmest place in Brno in winter."
+      },
+      "lon": 16.61432,
+      "lat": 49.215612
+    }
+  ]
+}
