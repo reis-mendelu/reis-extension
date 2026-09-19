@@ -66,8 +66,8 @@ describe('drawCampusPaths', () => {
     for (const t of trails) {
       const c = t.options.color!;
       expect(c).not.toBe('#79be15');
-      const [r, g, b] = [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
-      expect(Math.max(r, g, b) - Math.min(r, g, b)).toBeLessThan(24);
+      const rgb = [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+      expect(Math.max(...rgb) - Math.min(...rgb)).toBeLessThan(24);
     }
   });
 });
@@ -108,9 +108,9 @@ describe('showWalk', () => {
     const walk = findWalk('Zemědělská', 'C')!;
     showWalk(layers, walk, 'cz');
     const chip = layers.chips.getLayers()[0] as L.Tooltip;
-    const end = walk.coords.at(-1)!;
-    expect(chip.getLatLng()!.lat).toBeCloseTo(end[1], 9);
-    expect(chip.getLatLng()!.lng).toBeCloseTo(end[0], 9);
+    const [lon, lat] = walk.coords.at(-1) as [number, number];
+    expect(chip.getLatLng()!.lat).toBeCloseTo(lat, 9);
+    expect(chip.getLatLng()!.lng).toBeCloseTo(lon, 9);
     expect(String(chip.getContent())).toMatch(/^\d+ min$/);
   });
 
@@ -206,28 +206,26 @@ describe('the committed walks', () => {
     for (const e of CAMPUS_ENTRANCES) expect(['gate', 'stop']).toContain(e.kind);
   });
 
+  /** Every segment of a line, as an order-independent key. */
+  const edgesOf = (coords: number[][]) => {
+    const out: string[] = [];
+    for (let i = 1; i < coords.length; i++) {
+      const a = coords[i - 1] ?? [];
+      const b = coords[i] ?? [];
+      out.push([a.join(','), b.join(',')].sort().join('|'));
+    }
+    return out;
+  };
+
   it('draws every stretch of the network exactly once', () => {
-    const edges = CAMPUS_NETWORK.flatMap((s) =>
-      s.slice(1).map((c, i) => [`${s[i][0]},${s[i][1]}`, `${c[0]},${c[1]}`].sort().join('|'))
-    );
+    const edges = CAMPUS_NETWORK.flatMap(edgesOf);
     expect(new Set(edges).size).toBe(edges.length);
   });
 
   it('covers every stretch the walks run over', () => {
-    const drawn = new Set(
-      CAMPUS_NETWORK.flatMap((s) =>
-        s.slice(1).map((c, i) => [`${s[i][0]},${s[i][1]}`, `${c[0]},${c[1]}`].sort().join('|'))
-      )
-    );
+    const drawn = new Set(CAMPUS_NETWORK.flatMap(edgesOf));
     for (const w of CAMPUS_WALKS)
-      for (let i = 1; i < w.coords.length; i++)
-        expect(
-          drawn.has(
-            [`${w.coords[i - 1][0]},${w.coords[i - 1][1]}`, `${w.coords[i][0]},${w.coords[i][1]}`]
-              .sort()
-              .join('|')
-          )
-        ).toBe(true);
+      for (const edge of edgesOf(w.coords)) expect(drawn.has(edge)).toBe(true);
   });
 });
 

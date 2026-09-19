@@ -132,8 +132,16 @@ export interface CampusPath {
   from: string;
   to: string;
   lengthM: number;
-  /** [lon, lat], matching every other geometry in this file. */
-  coords: [number, number][];
+  /**
+   * [lon, lat] pairs, matching every other geometry in this file.
+   *
+   * Typed as `number[][]` rather than as a tuple because this comes straight
+   * out of a JSON import, whose inferred element type is `number[]`; asserting
+   * the tuple there needs a cast through `unknown`, which buys nothing that the
+   * shape tests in `__tests__/pathLayers.test.ts` do not already check at
+   * runtime.
+   */
+  coords: number[][];
 }
 
 export interface RoomIndexEntry {

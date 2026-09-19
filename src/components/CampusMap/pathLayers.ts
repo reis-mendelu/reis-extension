@@ -8,11 +8,11 @@ import type { CampusEntrance, CampusPath } from '../../types/campusMap';
 
 const DATA = campusPathsJson as {
   entrances: CampusEntrance[];
-  network: [number, number][][];
+  network: number[][][];
   routes: CampusPath[];
 };
 /** Every stretch of campus path exactly once — the thing that gets drawn. */
-export const CAMPUS_NETWORK = DATA.network;
+export const CAMPUS_NETWORK: number[][][] = DATA.network;
 /** Every walk from an entrance to a building. */
 export const CAMPUS_WALKS = DATA.routes;
 /** The ways onto the campus — the only points the map marks. */
@@ -136,12 +136,15 @@ export function showWalk(
   fanHalo.bringToFront();
   fanLine.bringToFront();
 
-  const end = walk.coords.at(-1)!;
+  // Taken from the already-converted latlngs rather than re-swapping the raw
+  // [lon, lat] by index — one place to get the order wrong instead of two.
+  const end = line.at(-1);
+  if (!end) return;
   // Above the building, not on it: the chip sat over the letter the building
   // draws in its own centre, hiding the name of the place it is telling you
   // about.
   L.tooltip({ permanent: true, direction: 'top', className: 'walk-chip', offset: [0, -30] })
-    .setLatLng([end[1], end[0]])
+    .setLatLng(end)
     .setContent(walkLabel(walk, language))
     .addTo(chips);
   if (map) keepChipsOnScreen(chips, map);
