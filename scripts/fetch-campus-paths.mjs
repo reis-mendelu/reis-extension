@@ -1,19 +1,20 @@
-// Dev-only, run on demand: sources the walking-path network of the Brno campus
-// from OpenStreetMap (Overpass) and writes src/data/map/campusPaths.json. NOT
-// part of the shipped bundle — the JSON output is committed instead, exactly
-// like fetch-landmarks / fetch-remote-places.
+// Dev-only, run on demand: sources the walking network of the Brno campus from
+// OpenStreetMap (Overpass) and writes src/data/map/campusPaths.json. NOT part of
+// the shipped bundle — the JSON output is committed instead, exactly like
+// fetch-landmarks / fetch-remote-places.
 //
 // Usage: node scripts/fetch-campus-paths.mjs
 //
-// Why this script exists at all: OSM stores the campus footpaths as ~100 ways
-// with a median length of 33 m and exactly ONE name between them. Drawn raw
-// that is an anonymous mesh. mergeRoutes (scripts/lib/pathRoutes.mjs, unit
-// tested) re-assembles it into continuous walks, and each walk is named after
-// the campus place at either end — a description of the line that is drawn, not
-// a routing claim.
+// What comes out is ROUTES BETWEEN PLACES, not path fragments. OSM stores the
+// campus as ~100 ways with a median length of 33 m and one name between them,
+// so the ways are loaded into a graph and a route is the walk from one campus
+// place to the next one you reach (scripts/lib/pathNetwork.mjs, unit tested).
+// Every route therefore starts and ends somewhere a student would name, and
+// walking from any place to any other is a matter of following routes end to
+// end.
 
 import { writeFileSync, readFileSync } from 'node:fs';
-import { clipToRegion, mergeRoutes, routeLengthM, labelRoute } from './lib/pathRoutes.mjs';
+import { buildGraph, clipToRegion, connectingRoutes, snapAnchors } from './lib/pathNetwork.mjs';
 import { overpass } from './lib/overpass.mjs';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
@@ -22,9 +23,8 @@ const LANDMARKS = read('../src/data/map/landmarks.json').landmarks;
 const POIS = read('../src/data/map/pois.json').features;
 
 // The campus, plus enough margin to keep the gates and the Zemědělská pavement
-// that students actually arrive on. 120 m reaches the Lesnická side gate (44 m
-// past the north edge) and stops well short of the arboretum, which has its own
-// footpath network in remotePlaces.json.
+// that students actually arrive on. It stops well short of the arboretum, which
+// has its own footpath network in remotePlaces.json.
 const MARGIN_M = 50;
 const [[s, w], [n, e]] = BUILDINGS.campus.bounds;
 const dLat = MARGIN_M / 110540;
@@ -48,8 +48,9 @@ const QUERY = `[out:json][timeout:90];
 );
 out geom;`;
 
-/** Places a route end can be named after, each as {name, lon, lat}. A polygon
- *  contributes one entry PER VERTEX so "near the place" means near its wall. */
+// Places a route is allowed to start or end at. A polygon contributes one entry
+// PER VERTEX so "near the place" means near its wall rather than its centre;
+// snapAnchors collapses each name back to a single node.
 function places() {
   const out = [];
   const push = (name, lon, lat) => out.push({ name, lon, lat });
@@ -59,8 +60,9 @@ function places() {
   for (const f of POIS) {
     const { type, name } = f.properties;
     const [lon, lat] = f.geometry.coordinates;
-    if (type === 'gate' || type === 'gatehouse' || type === 'cafeteria')
-      push(shortPoi(name), lon, lat);
+    // The gatehouse is the main gate under another name — as a second anchor
+    // 8 m away it only splits that route in two.
+    if (type === 'gate' || type === 'cafeteria') push(shortPoi(name), lon, lat);
     else if (type === 'transportation_stop') push(shortStop(name), lon, lat);
   }
   return out;
@@ -72,19 +74,12 @@ const shortStop = (name) =>
     .replace(/^Zastávka\s+/i, '')
     .replace(/\s*\(směr[^)]*\)\s*$/i, '')
     .trim();
-const shortPoi = (name) =>
-  name
-    .replace(/^Vrátnice areálu.*$/i, 'Vrátnice')
-    .replace(/\.$/, '')
-    .trim();
+const shortPoi = (name) => name.replace(/\.$/, '').trim();
 const shortLandmark = (name) => name.replace(/\s*\(FRRMS\)\s*$/, '').trim();
 
-// A route this short with nothing recognisable at either end is a connector
-// stub between two other paths — real, but nothing a student would ever tap.
-const MIN_UNNAMED_M = 45;
-// And below this nothing is worth drawing at all, named or not: a 5 m driveway
-// apron picks up the label "B ↔ Zemědělská" and then sits on the map as a tap
-// target that tells you what you could already see.
+// Two places this close to each other are the same doorway under two names
+// (a gate and the drive through it). The route between them is a line nobody
+// needs to be shown.
 const MIN_M = 25;
 
 const round = (v) => Number(v.toFixed(6)); // ~0.1 m; keeps the committed JSON small
@@ -92,28 +87,24 @@ const round = (v) => Number(v.toFixed(6)); // ~0.1 m; keeps the committed JSON s
 const data = await overpass(QUERY);
 const ways = data.elements
   .filter((el) => el.type === 'way' && Array.isArray(el.geometry))
-  .map((el) => ({ id: el.id, geometry: el.geometry, tags: el.tags ?? {} }))
   // Private service yards behind the buildings are drawn in OSM but a student
   // cannot walk them.
-  .filter((way) => way.tags.access !== 'private' && way.tags.foot !== 'no')
+  .filter((el) => (el.tags ?? {}).access !== 'private' && (el.tags ?? {}).foot !== 'no')
   .sort((a, b) => a.id - b.id) // deterministic input → deterministic JSON
   // `out geom` hands back each way in FULL, so a pavement that merely grazes the
-  // campus arrives with kilometres of street attached. Clip first, merge second.
+  // campus arrives with kilometres of street attached. Clip before graphing.
   .flatMap((way) =>
     clipToRegion(
       way.geometry.map((p) => [p.lon, p.lat]),
       REGION
-    ).map((coords, i) => ({ id: way.id * 10 + i, coords }))
+    ).map((coords) => ({ coords }))
   );
 
-const PLACES = places();
-const routes = mergeRoutes(ways)
-  .map((r) => {
-    const { from, to } = labelRoute(r, PLACES, 35);
-    return { from, to, lengthM: Math.round(routeLengthM(r)), coords: r.coords, wayIds: r.wayIds };
-  })
-  .filter((r) => r.lengthM >= MIN_M && (r.from || r.to || r.lengthM >= MIN_UNNAMED_M))
-  .sort((a, b) => b.lengthM - a.lengthM)
+const graph = buildGraph(ways);
+const anchors = snapAnchors(graph, places(), 35);
+const routes = connectingRoutes(graph, anchors)
+  .filter((r) => r.lengthM >= MIN_M)
+  .sort((a, b) => b.lengthM - a.lengthM || a.from.localeCompare(b.from))
   .map((r, i) => ({
     id: i + 1,
     from: r.from,
@@ -122,14 +113,15 @@ const routes = mergeRoutes(ways)
     coords: r.coords.map(([lon, lat]) => [round(lon), round(lat)]),
   }));
 
-const named = routes.filter((r) => r.from && r.to).length;
 writeFileSync(
   new URL('../src/data/map/campusPaths.json', import.meta.url),
   JSON.stringify({ source: 'OpenStreetMap (ODbL)', routes }, null, 0) + '\n'
 );
+const reached = new Set(routes.flatMap((r) => [r.from, r.to]));
 console.log(
-  `${ways.length} OSM ways → ${routes.length} routes (${named} named at both ends), ` +
+  `${ways.length} clipped ways → ${graph.nodes.size} nodes, ` +
+    `${anchors.size} places on the network → ${routes.length} routes, ` +
     `${routes.reduce((a, r) => a + r.lengthM, 0)} m total`
 );
-for (const r of routes.slice(0, 20))
-  console.log(`  ${String(r.lengthM).padStart(4)} m  ${r.from ?? '—'} ↔ ${r.to ?? '—'}`);
+console.log(`places reached: ${[...reached].sort().join(', ')}`);
+for (const r of routes) console.log(`  ${String(r.lengthM).padStart(4)} m  ${r.from} ↔ ${r.to}`);

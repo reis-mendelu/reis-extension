@@ -52,12 +52,9 @@ export interface DrawnPath {
   path: CampusPath;
 }
 
-/** "Hlavní brána ↔ C", or just the one end that is named, or null for a path
- *  that begins and ends in open ground — those still highlight when tapped,
- *  they just have nothing truthful to be called. */
-export function pathLabel(path: CampusPath): string | null {
-  if (path.from && path.to) return `${path.from} ↔ ${path.to}`;
-  return path.from ?? path.to ?? null;
+/** "Hlavní brána ↔ C" — the two places this route runs between. */
+export function pathLabel(path: CampusPath): string {
+  return `${path.from} ↔ ${path.to}`;
 }
 
 /**
@@ -75,8 +72,6 @@ export function drawCampusPaths(
     const casing = L.polyline(latlngs, CASING_STYLE).addTo(layer);
     const line = L.polyline(latlngs, LINE_STYLE).addTo(layer);
     const hit = L.polyline(latlngs, HIT_STYLE).addTo(layer);
-    const label = pathLabel(path);
-    if (label) hit.bindTooltip(label, { direction: 'top', className: 'path-label', sticky: true });
     hit.on('click', () => onSelect(path.id));
     drawn.set(path.id, { casing, line, hit, path });
   }
@@ -95,8 +90,22 @@ export function highlightPath(drawn: Map<number, DrawnPath>, selectedId: number 
       d.casing.bringToFront();
       d.line.bringToFront();
       d.hit.bringToFront();
+      // Bound HERE rather than at draw time, and permanently.
+      //
+      // A hover-bound tooltip was the first attempt and it was wrong twice: on a
+      // phone there is no hover, and on desktop it left the previous route's
+      // chip on screen — a run through every path had "B ↔ C" still open while
+      // "Zemědělská ↔ B" was the selected route. Binding on select and
+      // unbinding everything else makes one label, always the right one,
+      // structurally impossible to get wrong.
       const mid = d.path.coords[Math.floor(d.path.coords.length / 2)];
-      if (pathLabel(d.path)) d.hit.openTooltip([mid[1], mid[0]]);
-    } else d.hit.closeTooltip();
+      d.hit
+        .bindTooltip(pathLabel(d.path), {
+          permanent: true,
+          direction: 'top',
+          className: 'path-label',
+        })
+        .openTooltip([mid[1], mid[0]]);
+    } else d.hit.unbindTooltip();
   }
 }

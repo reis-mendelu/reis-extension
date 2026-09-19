@@ -3,28 +3,19 @@ import L from 'leaflet';
 import { CAMPUS_PATHS, drawCampusPaths, highlightPath, pathLabel } from '../pathLayers';
 
 describe('pathLabel', () => {
-  const path = (from: string | null, to: string | null) => ({
-    id: 1,
-    from,
-    to,
-    lengthM: 100,
-    coords: [
-      [16.614, 49.21],
-      [16.615, 49.21],
-    ] as [number, number][],
-  });
-
-  it('names both ends of a route that has them', () => {
-    expect(pathLabel(path('Hlavní brána', 'C'))).toBe('Hlavní brána ↔ C');
-  });
-
-  it('falls back to the single end that is named', () => {
-    expect(pathLabel(path(null, 'Lesnická'))).toBe('Lesnická');
-    expect(pathLabel(path('X', null))).toBe('X');
-  });
-
-  it('gives no label to a route that ends in open ground at both ends', () => {
-    expect(pathLabel(path(null, null))).toBeNull();
+  it('names the two places the route runs between', () => {
+    expect(
+      pathLabel({
+        id: 1,
+        from: 'Hlavní brána',
+        to: 'C',
+        lengthM: 100,
+        coords: [
+          [16.614, 49.21],
+          [16.615, 49.21],
+        ],
+      })
+    ).toBe('Hlavní brána ↔ C');
   });
 });
 
@@ -127,12 +118,64 @@ describe('the committed campus path data', () => {
     for (const p of CAMPUS_PATHS) expect(p.lengthM).toBeGreaterThanOrEqual(25);
   });
 
-  it('names both ends of the routes that carry the campus', () => {
-    // The point of the merge step: without it the network is ~100 anonymous
-    // 33 m ways. If this drops, the generator has stopped joining things up.
-    const named = CAMPUS_PATHS.filter((p) => p.from && p.to);
-    expect(named.length).toBeGreaterThanOrEqual(15);
-    const labels = named.map(pathLabel);
-    expect(labels).toContain('Brána u budovy Q ↔ Hlavní brána');
+  it('runs every route between two named places, never into open ground', () => {
+    for (const p of CAMPUS_PATHS) {
+      expect(p.from).toBeTruthy();
+      expect(p.to).toBeTruthy();
+      expect(p.from).not.toBe(p.to);
+    }
+  });
+
+  it('CONNECTS the routes — every place is walkable from every other one', () => {
+    // The whole point of building this from a graph rather than by chaining
+    // ways. Routes are not isolated pieces: `to` of one is `from` of others, so
+    // you can get from any place on the campus to any other by following them.
+    // If this splits into two groups, the network has broken in half.
+    const nbrs = new Map<string, string[]>();
+    const link = (a: string, b: string) => nbrs.set(a, [...(nbrs.get(a) ?? []), b]);
+    for (const p of CAMPUS_PATHS) {
+      link(p.from, p.to);
+      link(p.to, p.from);
+    }
+    expect(nbrs.size).toBeGreaterThanOrEqual(12);
+    const seen = new Set([[...nbrs.keys()].sort()[0]]);
+    for (const place of seen) for (const n of nbrs.get(place)!) seen.add(n);
+    expect([...seen].sort()).toEqual([...nbrs.keys()].sort());
+  });
+
+  it('reaches the lettered buildings and the gates a student arrives through', () => {
+    const places = new Set(CAMPUS_PATHS.flatMap((p) => [p.from, p.to]));
+    for (const letter of ['A', 'B', 'C', 'M', 'Q', 'X']) expect(places).toContain(letter);
+    expect(places).toContain('Hlavní brána');
+  });
+});
+
+describe('the route label', () => {
+  it('leaves exactly one on the map, however many routes get tapped', () => {
+    // The bug this exists for: hover-bound tooltips left the previously tapped
+    // route's chip open next to the newly selected one.
+    const drawn = drawCampusPaths(L.layerGroup(), vi.fn());
+    const ids = [...drawn.keys()];
+    for (const id of ids) {
+      highlightPath(drawn, id);
+      const open = [...drawn.values()].filter((d) => d.hit.getTooltip());
+      expect(open.length).toBeLessThanOrEqual(1);
+      if (open.length === 1) expect(open[0].path.id).toBe(id);
+    }
+  });
+
+  it('names the route that was tapped', () => {
+    const drawn = drawCampusPaths(L.layerGroup(), vi.fn());
+    const [first] = [...drawn.values()];
+    highlightPath(drawn, first.path.id);
+    expect(first.hit.getTooltip()?.getContent()).toBe(pathLabel(first.path));
+  });
+
+  it('takes the label away again when the route is dropped', () => {
+    const drawn = drawCampusPaths(L.layerGroup(), vi.fn());
+    const [first] = [...drawn.values()];
+    highlightPath(drawn, first.path.id);
+    highlightPath(drawn, null);
+    expect(first.hit.getTooltip()).toBeFalsy();
   });
 });

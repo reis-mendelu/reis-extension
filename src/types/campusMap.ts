@@ -106,15 +106,20 @@ export interface RemotePlace {
   pois?: { name: string; lon: number; lat: number }[];
 }
 
-// One continuous walk across the Brno campus, re-assembled at build time from
-// the OSM ways that make it up (scripts/fetch-campus-paths.mjs). `from`/`to`
-// name the campus place at each END OF THE DRAWN LINE — they say where this
-// path runs, not that it is the way to get from one to the other. Either is
-// null when that end stops in open ground.
+// One walk across the Brno campus: the route from one campus place to the next
+// one you reach, built at build time from the OSM way network
+// (scripts/fetch-campus-paths.mjs). Routes connect — `to` of one is `from` of
+// others — so following them end to end gets you anywhere on campus.
+//
+// `from`/`to` are never null: a route that does not run between two named
+// places is not emitted, because a line ending in open ground is not something
+// anyone would tap. It is the shortest walk along the paths OSM has MAPPED,
+// which is not the same as the shortest walk on the ground wherever OSM is
+// incomplete.
 export interface CampusPath {
   id: number;
-  from: string | null;
-  to: string | null;
+  from: string;
+  to: string;
   lengthM: number;
   /** [lon, lat], matching every other geometry in this file. */
   coords: [number, number][];
