@@ -1,7 +1,6 @@
 import L from 'leaflet';
 import gardenPlacesJson from '../../data/map/gardenPlaces.json';
 import type { GardenPlace } from '../../types/campusMap';
-import type { Language } from '../../store/types';
 import { POI_MARKER_STYLE } from './mapHelpers';
 
 /** The botanical garden's id in remotePlaces.json — the only site with bubbles. */
@@ -39,7 +38,6 @@ const SIZE_MOUSE = 28;
 const SIZE_TOUCH = 44;
 
 export interface GardenBubbleOptions {
-  lang: Language;
   /** True on a coarse pointer: no hover exists, so the middle state does not. */
   touch: boolean;
   onSelect: (place: GardenPlace) => void;
@@ -64,11 +62,6 @@ export function drawGardenBubbles(
   const size = opts.touch ? SIZE_TOUCH : SIZE_MOUSE;
   let drawn = 0;
   for (const place of places) {
-    const tooltip: L.TooltipOptions = {
-      direction: 'top',
-      offset: [0, -size / 2],
-      className: 'place-label',
-    };
     // A place is a BUBBLE exactly when it has a photograph, and draws NOTHING
     // without one. It used to fall back to a plain dot; a dot with no picture
     // behind it is a pin promising something the tap cannot deliver. The
@@ -77,7 +70,6 @@ export function drawGardenBubbles(
     // again.
     if (!place.photo) continue;
     const marker = L.marker([place.lat, place.lon], {
-      title: place.name[opts.lang],
       icon: L.divIcon({
         className: 'garden-bubble',
         // The circle is an INNER element on purpose. Leaflet writes
@@ -91,10 +83,10 @@ export function drawGardenBubbles(
         iconAnchor: [size / 2, size / 2],
       }),
     });
-    marker
-      .on('click', () => opts.onSelect(place))
-      .bindTooltip(place.name[opts.lang], tooltip)
-      .addTo(layer);
+    // No tooltip and no title: a bubble carries no words at all. You recognise
+    // the place by seeing it, which is the whole idea — the name survives only
+    // as the opened photo's alt text, for a screen reader.
+    marker.on('click', () => opts.onSelect(place)).addTo(layer);
     drawn++;
   }
   return drawn;

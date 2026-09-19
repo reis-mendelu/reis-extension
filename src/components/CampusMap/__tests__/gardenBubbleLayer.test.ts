@@ -21,7 +21,7 @@ describe('drawGardenBubbles', () => {
   it('adds one marker per photographed garden place', () => {
     const layer = L.layerGroup();
     const withPhoto = GARDEN_PLACES.filter((p) => p.photo).length;
-    const n = drawGardenBubbles(layer, { lang: 'cz', touch: false, onSelect: () => {} });
+    const n = drawGardenBubbles(layer, { touch: false, onSelect: () => {} });
     expect(n).toBe(withPhoto);
     expect(layer.getLayers()).toHaveLength(withPhoto);
   });
@@ -37,7 +37,7 @@ describe('drawGardenBubbles', () => {
   it('draws nothing at all for a place whose photograph has not arrived yet', () => {
     const layer = L.layerGroup();
     const noPhoto = { ...PHOTOGRAPHED[0]!, id: 'vodni-kaskada', photo: undefined };
-    drawGardenBubbles(layer, { lang: 'cz', touch: false, onSelect: () => {} }, [
+    drawGardenBubbles(layer, { touch: false, onSelect: () => {} }, [
       PHOTOGRAPHED[0]!,
       noPhoto,
     ]);
@@ -48,20 +48,21 @@ describe('drawGardenBubbles', () => {
   it('rests bigger on a touch device, where there is no hover to grow it', () => {
     const mouse = L.layerGroup();
     const touch = L.layerGroup();
-    drawGardenBubbles(mouse, { lang: 'cz', touch: false, onSelect: () => {} }, PHOTOGRAPHED);
-    drawGardenBubbles(touch, { lang: 'cz', touch: true, onSelect: () => {} }, PHOTOGRAPHED);
+    drawGardenBubbles(mouse, { touch: false, onSelect: () => {} }, PHOTOGRAPHED);
+    drawGardenBubbles(touch, { touch: true, onSelect: () => {} }, PHOTOGRAPHED);
     const size = (g: L.LayerGroup) =>
       ((g.getLayers()[0] as L.Marker).options.icon as L.DivIcon).options.iconSize as L.PointTuple;
     expect(size(touch)[0]).toBeGreaterThan(size(mouse)[0]);
     expect(size(touch)[0]).toBeGreaterThanOrEqual(44);
   });
 
-  it('labels each bubble in the chosen language', () => {
-    const cz = L.layerGroup();
-    drawGardenBubbles(cz, { lang: 'cz', touch: false, onSelect: () => {} });
-    expect((cz.getLayers()[0] as L.Marker).getTooltip()!.getContent()).toBe(
-      GARDEN_PLACES[0]!.name.cz
-    );
+  it('puts no words on the map at all — no tooltip, no title', () => {
+    const layer = L.layerGroup();
+    drawGardenBubbles(layer, { touch: false, onSelect: () => {} }, PHOTOGRAPHED);
+    const marker = layer.getLayers()[0] as L.Marker;
+    expect(marker.getTooltip()).toBeUndefined();
+    // Leaflet defaults `title` to '' rather than leaving it unset.
+    expect(marker.options.title).toBeFalsy();
   });
 });
 
