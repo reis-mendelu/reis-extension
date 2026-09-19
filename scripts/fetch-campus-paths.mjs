@@ -14,15 +14,10 @@
 // end.
 
 import { writeFileSync, readFileSync } from 'node:fs';
-import {
-  buildGraph,
-  clipToRegion,
-  connectingRoutes,
-  networkStrokes,
-  snapAnchors,
-  unplacedPlaces,
-  walksFrom,
-} from './lib/pathNetwork.mjs';
+import { buildGraph, snapAnchors, unplacedPlaces } from './lib/pathGraph.mjs';
+import { networkStrokes, walksFrom } from './lib/pathWalks.mjs';
+import { clipToRegion } from './lib/osmClip.mjs';
+import { campusPlaces, KIND_OF_RANK } from './lib/campusPlaces.mjs';
 import { overpass } from './lib/overpass.mjs';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
@@ -56,59 +51,6 @@ const QUERY = `[out:json][timeout:90];
 );
 out geom;`;
 
-// Places a route is allowed to start or end at. A polygon contributes one entry
-// PER VERTEX so "near the place" means near its wall rather than its centre;
-// snapAnchors collapses each name back to a single node.
-// `rank` is how much a person navigates BY the place, and it settles which name
-// keeps a spot when two of them are the same doorway: building E outranks the
-// Akademická vinotéka inside it, so the route says "E".
-const RANK = { building: 0, gate: 1, cafeteria: 2, stop: 3 };
-const KIND_OF_RANK = ['building', 'gate', 'cafeteria', 'stop'];
-function places() {
-  const out = [];
-  const push = (name, lon, lat, rank) => out.push({ name, lon, lat, rank });
-  const ring = (name, coords, rank) => coords.forEach(([lon, lat]) => push(name, lon, lat, rank));
-  for (const b of BUILDINGS.buildings) ring(b.name, b.outline.coordinates[0], RANK.building);
-  for (const l of LANDMARKS) ring(shortLandmark(l.name), l.outline.coordinates[0], RANK.building);
-  for (const f of POIS) {
-    const { type, name } = f.properties;
-    const [lon, lat] = f.geometry.coordinates;
-    // The gatehouse is the main gate under another name — as a second anchor
-    // 8 m away it only splits that route in two.
-    // Cafeterias are deliberately NOT anchors. "Budova O" sat in the middle of
-    // the campus and answered nothing: you do not arrive there, and a walk that
-    // ends at it is not a walk anyone plans.
-    if (type === 'gate') push(shortPoi(name), lon, lat, RANK.gate);
-    else if (type === 'transportation_stop') push(shortStop(name), lon, lat, RANK.stop);
-  }
-  return out;
-}
-// "Zastávka Zemědělská (směr Halasovo náměstí)" is a timetable row, not a label
-// on a map — which direction the tram leaves in tells a pedestrian nothing.
-const shortStop = (name) =>
-  name
-    .replace(/^Zastávka\s+/i, '')
-    .replace(/\s*\(směr[^)]*\)\s*$/i, '')
-    .trim();
-// A route's chip carries BOTH its ends, so a place's name has to survive being
-// half of "X ↔ Y" on a 320 px phone. The IS names do not:
-// "Pizzerie v budově O ↔ Vedlejší brána z ulice Lesnická" is 53 characters and
-// ran off the screen. These are the names a student would actually say.
-const SHORT = {
-  'Vedlejší brána z ulice Lesnická': 'Brána Lesnická',
-  'Vjezd pro automobily u budovy Q': 'Vjezd u Q',
-  'Vstup do Arboreta z areálu': 'Arboretum',
-  // The anchor is the doorway of building O, which is the thing you walk to;
-  // the pizzeria is what happens to be behind it.
-  'Pizzerie v budově O': 'Budova O',
-  'Akademická vinotéka': 'Vinotéka',
-};
-const shortPoi = (name) => {
-  const n = name.replace(/\.$/, '').trim();
-  return SHORT[n] ?? n;
-};
-const shortLandmark = (name) => name.replace(/\s*\(FRRMS\)\s*$/, '').trim();
-
 // Two places this close to each other are the same doorway under two names (a
 // gate and the drive through it, a building and the café in it). Used twice:
 // as the minimum gap between anchors, and as the length below which a route is
@@ -134,7 +76,7 @@ const ways = data.elements
   );
 
 const graph = buildGraph(ways);
-const PLACES = places();
+const PLACES = campusPlaces(BUILDINGS, LANDMARKS, POIS);
 const anchors = snapAnchors(graph, PLACES, 35, { minSeparationM: MIN_M });
 
 // The lettered buildings and the gate everyone walks through are what the layer
@@ -142,7 +84,10 @@ const anchors = snapAnchors(graph, PLACES, 35, { minSeparationM: MIN_M });
 // wins a contested one, a place can quietly stop being on the network and the
 // map just... has fewer routes. That is the kind of thing nobody notices for a
 // semester, so the run fails instead.
-const MUST_REACH = ['A', 'B', 'C', 'E', 'M', 'Q', 'X', 'Hlavní brána'];
+// Every gate must reach every building. Checking that each NAME merely appears
+// somewhere was not the promise the map makes: if OSM shifts and one gate loses
+// one building while both stay connected to everything else, a student standing
+// at that gate is shown nothing and the old check passed happily.
 
 // Not an error — these are genuinely off-campus (Menza koleje is 955 m away,
 // Tauferovy 1.7 km) — but worth printing so a place that SHOULD be on the
@@ -204,10 +149,16 @@ const entrances = [...entranceNodes.entries()]
   .filter((p) => reached.has(p.name))
   .sort((a, b) => a.name.localeCompare(b.name));
 
-const missing = MUST_REACH.filter((n) => !reached.has(n));
+const gateNames = [...new Set([...entranceNodes.values()])].sort();
+const hallNames = [...new Set([...buildingNodes.values()])].sort();
+const have = new Set(routes.map((r) => `${r.from}→${r.to}`));
+const missing = gateNames.flatMap((g) =>
+  hallNames.filter((h) => !have.has(`${g}→${h}`)).map((h) => `${g} → ${h}`)
+);
 if (missing.length) {
-  console.error(`No route reaches: ${missing.join(', ')}`);
-  console.error('The campus path network would ship without them. Refusing to write.');
+  console.error(`The network does not connect ${missing.length} gate/building pair(s):`);
+  for (const m of missing) console.error(`   ${m}`);
+  console.error('A student standing at that gate would be shown nothing. Refusing to write.');
   process.exit(1);
 }
 

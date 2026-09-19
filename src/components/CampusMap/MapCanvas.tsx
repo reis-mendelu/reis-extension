@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAppStore } from '../../store/useAppStore';
@@ -85,24 +85,20 @@ export function MapCanvas() {
   // a plain map click re-highlight in place without a full redraw or camera move.
   const roomPolysRef = useRef<Map<number, { poly: L.Polygon; base: L.PathOptions }>>(new Map());
   /**
-   * The gate the student came in by — the first half of the question.
+   * The two halves of "how do I get to my building", held in the store beside
+   * the map's other selections.
    *
-   * A walk is two questions, and they are asked one at a time: tap a gate, then
-   * pick a building. Answering both at once by lighting every walk from the
-   * gate put seven times on the map and made the student read the whole campus
-   * to find their own.
+   * A walk is two questions asked one at a time: tap a gate, then pick a
+   * building. Answering both at once by lighting every walk from the gate put
+   * seven times on the map and made the student read the whole campus to find
+   * their own.
    *
-   * Deliberately LOCAL state, not a `MapSelection` in the store: making it one
-   * would force a case into DetailPanel, MapSidePanel, MapPanelBody, MapSheet
-   * and createMapSlice to answer a question nobody asked.
-   *
-   * Mirrored into a ref so the redraw effect can re-apply it without taking it
-   * as a dependency — as a dependency it would re-run the camera-owning effect
-   * on every tap.
+   * Mirrored into refs so the redraw effect can re-apply them without taking
+   * them as dependencies — as dependencies they would re-run the camera-owning
+   * effect on every tap.
    */
-  const [selectedEntrance, setSelectedEntrance] = useState<string | null>(null);
-  /** The building picked in the second step. Null while the question is open. */
-  const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
+  const selectedEntrance = useAppStore((s) => s.mapWalkEntrance);
+  const selectedBuilding = useAppStore((s) => s.mapWalkBuilding);
   const activeEntranceRef = useRef<string | null>(null);
   const activeBuildingRef = useRef<string | null>(null);
   const pathsRef = useRef<CampusWalkLayers | null>(null);
@@ -188,11 +184,9 @@ export function MapCanvas() {
             // being rebound (rebinding means a redraw, and a redraw moves the
             // camera).
             if (activeEntranceRef.current) {
-              setSelectedBuilding((cur) => (cur === b.name ? null : b.name));
+              select.selectWalkBuilding(b.name);
               return;
             }
-            setSelectedEntrance(null);
-            setSelectedBuilding(null);
             select.setMapBuilding(b.id);
           })
           .bindTooltip(b.name, {
@@ -219,10 +213,7 @@ export function MapCanvas() {
         // or room was chosen before it — which is also what keeps the walk
         // below from being suppressed by a stale selection.
         select.clearMapSelection();
-        setSelectedEntrance((cur) => (cur === name ? null : name));
-        // A new gate reopens the second question rather than silently keeping
-        // the building you picked from the last one.
-        setSelectedBuilding(null);
+        select.selectWalkEntrance(name);
       });
       // Re-apply after a redraw (a new search, a new focus) so the walk the
       // student asked for does not quietly vanish under them.
@@ -246,14 +237,11 @@ export function MapCanvas() {
       const onOverviewClick = (e: L.LeafletMouseEvent) => {
         const t = e.originalEvent.target as HTMLElement | null;
         if (t?.closest('.leaflet-reisEvents-pane')) return;
-        // Tapping the bare basemap steps BACK one, rather than throwing the
-        // whole thing away. The buildings are thin L-shapes and easy to miss;
-        // when a near-miss also lost the gate you had picked, every fumbled tap
-        // cost both answers. Picked a building → drop just that; otherwise drop
-        // the gate.
-        if (activeBuildingRef.current !== null) setSelectedBuilding(null);
-        else setSelectedEntrance(null);
         const state = useAppStore.getState();
+        // Tapping the bare basemap steps BACK one, rather than throwing the
+        // whole thing away — the buildings are thin L-shapes and easy to miss,
+        // and a near-miss that also lost the gate cost both answers.
+        state.clearWalkStep();
         if (state.placingEvent) {
           // click-to-place: capture [lng,lat]
           state.placeDraftCoord([e.latlng.lng, e.latlng.lat]);
