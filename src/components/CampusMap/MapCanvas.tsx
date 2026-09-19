@@ -24,7 +24,13 @@ import {
   REMOTE,
   REMOTE_IDS,
 } from './mapLayers';
-import { drawCampusPaths, findWalk, showWalk, type CampusWalkLayers } from './pathLayers';
+import {
+  drawCampusPaths,
+  findWalk,
+  keepChipsOnScreen,
+  showWalk,
+  type CampusWalkLayers,
+} from './pathLayers';
 import { drawCampusEntrances, markActiveEntrance } from './entranceLayers';
 import { markPickableBuildings } from './buildingChooser';
 import { setMapInstance } from './mapInstance';
@@ -142,7 +148,16 @@ export function MapCanvas() {
     layerRef.current.addTo(map);
     mapRef.current = map;
     setMapInstance(map);
+    // The walk's time chip is anchored to its building, so panning or zooming
+    // that building towards the edge carries the chip off it. Placing it once
+    // was not enough; re-clamp whenever the camera settles or the frame
+    // changes size. Registered here, where the map's lifetime is owned.
+    const reclamp = () => {
+      if (pathsRef.current) keepChipsOnScreen(pathsRef.current.chips, map);
+    };
+    map.on('moveend zoomend resize', reclamp);
     return () => {
+      map.off('moveend zoomend resize', reclamp);
       setMapInstance(null);
       map.remove();
       mapRef.current = null;

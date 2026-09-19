@@ -63,3 +63,33 @@ export function campusPlaces(buildings, landmarks, pois) {
   }
   return out;
 }
+
+/**
+ * Splits the anchored places into the two ends of a walk.
+ *
+ * Gated on RANK, not on membership of buildings.json, and that distinction is
+ * load-bearing. Landmarks (the dorms, FRRMS, the sports centre) are pushed with
+ * RANK.building so that they beat a café for a contested node — but they are
+ * not lettered campus buildings, so "not a building" was letting them fall
+ * through into the ENTRANCES, where they would have shipped with
+ * `kind: 'building'` and broken the rule the map relies on (a building draws
+ * its own letter and must never also get a pill). Every landmark is off-network
+ * today, so this was latent until OSM mapped a path within 35 m of one.
+ *
+ * A place that is neither a gate, a stop, nor a lettered building is simply not
+ * an end of any walk.
+ *
+ * @param {Map<string,string>} anchors node key → place name
+ * @param {Map<string,number>} rankByName
+ * @param {Set<string>} buildingNames the lettered buildings the map draws
+ */
+export function splitAnchors(anchors, rankByName, buildingNames) {
+  const entranceNodes = new Map();
+  const buildingNodes = new Map();
+  for (const [node, name] of anchors) {
+    const rank = rankByName.get(name);
+    if (buildingNames.has(name)) buildingNodes.set(node, name);
+    else if (rank === RANK.gate || rank === RANK.stop) entranceNodes.set(node, name);
+  }
+  return { entranceNodes, buildingNodes };
+}

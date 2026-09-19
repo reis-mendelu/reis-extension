@@ -7,6 +7,7 @@ import {
   WALKS_BY_ENTRANCE,
   drawCampusPaths,
   findWalk,
+  keepChipsOnScreen,
   showWalk,
   walkLabel,
 } from '../pathLayers';
@@ -273,5 +274,31 @@ describe('markPickableBuildings', () => {
       expect(poly.options.color).toBe(BUILDING_STYLE.color);
       expect(poly.options.weight).toBe(BUILDING_STYLE.weight);
     }
+  });
+});
+
+describe('keepChipsOnScreen', () => {
+  it('does nothing, safely, when no walk is showing', () => {
+    const layers = drawCampusPaths(L.layerGroup());
+    const map = { getContainer: () => document.createElement('div') } as unknown as L.Map;
+    expect(() => keepChipsOnScreen(layers.chips, map)).not.toThrow();
+  });
+
+  it('does not accumulate a shift when run again and again', () => {
+    // It runs on every camera settle now, so an implementation that measured
+    // the already-shifted box would walk the label further off on every pan.
+    const layers = drawCampusPaths(L.layerGroup());
+    showWalk(layers, findWalk('Hlavní brána', 'Q'), 'cz');
+    const container = document.createElement('div');
+    Object.defineProperty(container, 'clientWidth', { value: 320 });
+    const map = { getContainer: () => container } as unknown as L.Map;
+
+    const shifts: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      keepChipsOnScreen(layers.chips, map);
+      const el = (layers.chips.getLayers()[0] as L.Tooltip).getElement();
+      shifts.push(el?.style.marginLeft ?? '');
+    }
+    expect(new Set(shifts).size).toBe(1);
   });
 });

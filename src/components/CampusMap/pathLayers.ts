@@ -156,8 +156,12 @@ export function showWalk(
  * Leaflet anchors a tooltip on its point and does not care whether the result
  * is still inside the container, and a building at the edge of the frame puts
  * its time label over the side. Measured here, decided by `tooltipShift`.
+ *
+ * Exported because placing the chip once is not enough: the student can pan,
+ * zoom or rotate the phone afterwards and carry the building it is attached to
+ * off the edge. MapCanvas re-runs this on every camera settle and on resize.
  */
-function keepChipsOnScreen(chips: L.LayerGroup, map: L.Map): void {
+export function keepChipsOnScreen(chips: L.LayerGroup, map: L.Map): void {
   const width = map.getContainer().clientWidth;
   for (const t of chips.getLayers()) {
     const el = (t as L.Tooltip).getElement();

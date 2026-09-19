@@ -17,7 +17,7 @@ import { writeFileSync, readFileSync } from 'node:fs';
 import { buildGraph, snapAnchors, unplacedPlaces } from './lib/pathGraph.mjs';
 import { networkStrokes, walksFrom } from './lib/pathWalks.mjs';
 import { clipToRegion } from './lib/osmClip.mjs';
-import { campusPlaces, KIND_OF_RANK } from './lib/campusPlaces.mjs';
+import { campusPlaces, splitAnchors, KIND_OF_RANK } from './lib/campusPlaces.mjs';
 import { overpass } from './lib/overpass.mjs';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
@@ -98,9 +98,13 @@ if (offNetwork.length) console.log(`not on the network: ${offNetwork.join(', ')}
 // An ENTRANCE is where you arrive on foot: a gate, or the tram stop you get off
 // at. A walk starts at one of those and ends at a lettered building — those are
 // the two ends of the only question a campus map is really asked.
-const isBuilding = (name) => BUILDINGS.buildings.some((b) => b.name === name);
-const entranceNodes = new Map([...anchors].filter(([, n]) => !isBuilding(n)));
-const buildingNodes = new Map([...anchors].filter(([, n]) => isBuilding(n)));
+const rankByName = new Map();
+for (const p of PLACES) rankByName.set(p.name, Math.min(rankByName.get(p.name) ?? 9, p.rank));
+const { entranceNodes, buildingNodes } = splitAnchors(
+  anchors,
+  rankByName,
+  new Set(BUILDINGS.buildings.map((b) => b.name))
+);
 
 const routes = walksFrom(graph, entranceNodes, buildingNodes)
   .filter((r) => r.lengthM >= MIN_M)
@@ -113,12 +117,11 @@ const routes = walksFrom(graph, entranceNodes, buildingNodes)
     coords: r.coords.map(([lon, lat]) => [round(lon), round(lat)]),
   }));
 
-// Where each place a route ends at actually sits, so the map can mark it
-// without re-deriving it from route endpoints. `kind` is what the UI needs to
-// decide whether to label it: a lettered building already names itself on the
-// map and must not get a second pill on top of its own letter.
-const rankByName = new Map();
-for (const p of PLACES) rankByName.set(p.name, Math.min(rankByName.get(p.name) ?? 9, p.rank));
+// Where each entrance actually sits, so the map can mark it without
+// re-deriving it from walk endpoints. `kind` is what the UI reads to decide
+// whether to label a place: a lettered building already names itself and must
+// never get a second pill on top of its own letter, which is why splitAnchors
+// keeps buildings out of here entirely.
 // Two views of the same thing. `network` is what gets DRAWN: every stretch of
 // path exactly once, so the map is one clean set of lines rather than 46
 // overlapping ones repainting each other. `routes` is what gets TAPPED: the
