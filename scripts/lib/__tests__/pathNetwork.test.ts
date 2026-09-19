@@ -257,8 +257,7 @@ describe('clipToRegion', () => {
 });
 
 describe('networkStrokes', () => {
-  const line = (lons: number[], lat = 49.21) =>
-    lons.map((lon) => [lon, lat] as [number, number]);
+  const line = (lons: number[], lat = 49.21) => lons.map((lon) => [lon, lat] as [number, number]);
   const edgesOf = (strokes: [number, number][][]) => {
     const out: string[] = [];
     for (const s of strokes)
@@ -288,20 +287,14 @@ describe('networkStrokes', () => {
   });
 
   it('covers every edge the routes use, and nothing else', () => {
-    const routes = [
-      { coords: line([16.614, 16.615]) },
-      { coords: line([16.616, 16.617]) },
-    ];
+    const routes = [{ coords: line([16.614, 16.615]) }, { coords: line([16.616, 16.617]) }];
     expect(edgesOf(networkStrokes(routes)).sort()).toEqual(
       edgesOf(routes.map((r) => r.coords)).sort()
     );
   });
 
   it('treats a stretch walked in the opposite direction as the same stretch', () => {
-    const routes = [
-      { coords: line([16.614, 16.615]) },
-      { coords: line([16.615, 16.614]) },
-    ];
+    const routes = [{ coords: line([16.614, 16.615]) }, { coords: line([16.615, 16.614]) }];
     expect(networkStrokes(routes)).toHaveLength(1);
     expect(edgesOf(networkStrokes(routes))).toHaveLength(1);
   });
@@ -315,7 +308,12 @@ describe('networkStrokes', () => {
   it('emits continuous strokes', () => {
     const strokes = networkStrokes([
       { coords: line([16.614, 16.615, 16.616]) },
-      { coords: [[16.615, 49.21], [16.615, 49.2106]] as [number, number][] },
+      {
+        coords: [
+          [16.615, 49.21],
+          [16.615, 49.2106],
+        ] as [number, number][],
+      },
     ]);
     for (const s of strokes)
       for (let i = 1; i < s.length; i++)
@@ -325,11 +323,116 @@ describe('networkStrokes', () => {
   it('is deterministic — the committed JSON must not churn between runs', () => {
     const routes = [
       { coords: line([16.614, 16.615, 16.616]) },
-      { coords: [[16.615, 49.21], [16.615, 49.2106]] as [number, number][] },
+      {
+        coords: [
+          [16.615, 49.21],
+          [16.615, 49.2106],
+        ] as [number, number][],
+      },
       { coords: line([16.616, 16.617]) },
     ];
     expect(JSON.stringify(networkStrokes(routes))).toBe(
       JSON.stringify(networkStrokes([...routes].reverse()))
     );
+  });
+});
+
+describe('snapAnchors when two places want the same node', () => {
+  const line = (lons: number[], lat = 49.21) => lons.map((lon) => [lon, lat] as [number, number]);
+  // nodes ~7 m apart
+  const g = buildGraph([{ coords: line([16.614, 16.6141, 16.6142, 16.6143]) }]);
+
+  it('does not silently drop one of them', () => {
+    // The real case: building E and the Akademická vinotéka both snap nearest
+    // to one node. Resolving that alphabetically made a rename decide which
+    // place existed — E only appeared on the map because "Vinotéka" sorts
+    // after it.
+    const anchors = snapAnchors(
+      g,
+      [
+        { name: 'E', lon: 16.614, lat: 49.21 },
+        { name: 'Vinotéka', lon: 16.61401, lat: 49.21 },
+      ],
+      35
+    );
+    expect([...anchors.values()].sort()).toEqual(['E', 'Vinotéka']);
+    expect(anchors.size).toBe(2);
+  });
+
+  it('gives the contested node to whichever place is actually closer to it', () => {
+    const anchors = snapAnchors(
+      g,
+      [
+        { name: 'Far', lon: 16.61402, lat: 49.21 },
+        { name: 'Near', lon: 16.614, lat: 49.21 },
+      ],
+      35
+    );
+    expect([...anchors.entries()].find(([k]) => k.startsWith('16.6140000'))?.[1]).toBe('Near');
+  });
+
+  it('drops a place only when every node in reach is already taken', () => {
+    const tiny = buildGraph([{ coords: line([16.614, 16.6141]) }]);
+    const anchors = snapAnchors(
+      tiny,
+      [
+        { name: 'A', lon: 16.614, lat: 49.21 },
+        { name: 'B', lon: 16.6141, lat: 49.21 },
+        { name: 'C', lon: 16.61405, lat: 49.21 },
+      ],
+      35
+    );
+    expect(anchors.size).toBe(2);
+    expect([...anchors.values()].sort()).toEqual(['A', 'B']);
+  });
+});
+
+describe('snapAnchors keeps anchors apart', () => {
+  const line = (lons: number[], lat = 49.21) => lons.map((lon) => [lon, lat] as [number, number]);
+  // four nodes, ~7 m apart
+  const g = buildGraph([{ coords: line([16.614, 16.6141, 16.6142, 16.6143]) }]);
+
+  it('refuses a second anchor a few metres from the first', () => {
+    // Building E and the Akademická vinotéka are the same doorway. Two anchors
+    // that close produce a 7 m route, the length floor drops it, and whichever
+    // place lost the contest is left on the map with no routes at all.
+    const anchors = snapAnchors(
+      g,
+      [
+        { name: 'E', lon: 16.614, lat: 49.21, rank: 0 },
+        { name: 'Vinotéka', lon: 16.61401, lat: 49.21, rank: 2 },
+      ],
+      35,
+      { minSeparationM: 25 }
+    );
+    expect([...anchors.values()]).toEqual(['E']);
+  });
+
+  it('lets the more useful place win — a lettered building over a café', () => {
+    const anchors = snapAnchors(
+      g,
+      [
+        // the café is NEARER the node, but a building is what people navigate by
+        { name: 'Vinotéka', lon: 16.614, lat: 49.21, rank: 2 },
+        { name: 'E', lon: 16.61401, lat: 49.21, rank: 0 },
+      ],
+      35,
+      { minSeparationM: 25 }
+    );
+    expect([...anchors.values()]).toEqual(['E']);
+  });
+
+  it('still keeps two places that are genuinely far apart', () => {
+    const far = buildGraph([{ coords: line([16.614, 16.6146]) }]); // ~44 m
+    const anchors = snapAnchors(
+      far,
+      [
+        { name: 'M', lon: 16.614, lat: 49.21, rank: 0 },
+        { name: 'Q', lon: 16.6146, lat: 49.21, rank: 0 },
+      ],
+      35,
+      { minSeparationM: 25 }
+    );
+    expect([...anchors.values()].sort()).toEqual(['M', 'Q']);
   });
 });

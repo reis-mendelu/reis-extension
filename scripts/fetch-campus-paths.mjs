@@ -20,6 +20,7 @@ import {
   connectingRoutes,
   networkStrokes,
   snapAnchors,
+  unplacedPlaces,
 } from './lib/pathNetwork.mjs';
 import { overpass } from './lib/overpass.mjs';
 
@@ -57,19 +58,24 @@ out geom;`;
 // Places a route is allowed to start or end at. A polygon contributes one entry
 // PER VERTEX so "near the place" means near its wall rather than its centre;
 // snapAnchors collapses each name back to a single node.
+// `rank` is how much a person navigates BY the place, and it settles which name
+// keeps a spot when two of them are the same doorway: building E outranks the
+// Akademická vinotéka inside it, so the route says "E".
+const RANK = { building: 0, gate: 1, cafeteria: 2, stop: 3 };
 function places() {
   const out = [];
-  const push = (name, lon, lat) => out.push({ name, lon, lat });
-  const ring = (name, coords) => coords.forEach(([lon, lat]) => push(name, lon, lat));
-  for (const b of BUILDINGS.buildings) ring(b.name, b.outline.coordinates[0]);
-  for (const l of LANDMARKS) ring(shortLandmark(l.name), l.outline.coordinates[0]);
+  const push = (name, lon, lat, rank) => out.push({ name, lon, lat, rank });
+  const ring = (name, coords, rank) => coords.forEach(([lon, lat]) => push(name, lon, lat, rank));
+  for (const b of BUILDINGS.buildings) ring(b.name, b.outline.coordinates[0], RANK.building);
+  for (const l of LANDMARKS) ring(shortLandmark(l.name), l.outline.coordinates[0], RANK.building);
   for (const f of POIS) {
     const { type, name } = f.properties;
     const [lon, lat] = f.geometry.coordinates;
     // The gatehouse is the main gate under another name — as a second anchor
     // 8 m away it only splits that route in two.
-    if (type === 'gate' || type === 'cafeteria') push(shortPoi(name), lon, lat);
-    else if (type === 'transportation_stop') push(shortStop(name), lon, lat);
+    if (type === 'gate') push(shortPoi(name), lon, lat, RANK.gate);
+    else if (type === 'cafeteria') push(shortPoi(name), lon, lat, RANK.cafeteria);
+    else if (type === 'transportation_stop') push(shortStop(name), lon, lat, RANK.stop);
   }
   return out;
 }
@@ -99,9 +105,10 @@ const shortPoi = (name) => {
 };
 const shortLandmark = (name) => name.replace(/\s*\(FRRMS\)\s*$/, '').trim();
 
-// Two places this close to each other are the same doorway under two names
-// (a gate and the drive through it). The route between them is a line nobody
-// needs to be shown.
+// Two places this close to each other are the same doorway under two names (a
+// gate and the drive through it, a building and the café in it). Used twice:
+// as the minimum gap between anchors, and as the length below which a route is
+// not worth drawing.
 const MIN_M = 25;
 
 const round = (v) => Number(v.toFixed(6)); // ~0.1 m; keeps the committed JSON small
@@ -123,7 +130,22 @@ const ways = data.elements
   );
 
 const graph = buildGraph(ways);
-const anchors = snapAnchors(graph, places(), 35);
+const PLACES = places();
+const anchors = snapAnchors(graph, PLACES, 35, { minSeparationM: MIN_M });
+
+// The lettered buildings and the gate everyone walks through are what the layer
+// exists for. If OSM shifts a node, or a rename changes which of two places
+// wins a contested one, a place can quietly stop being on the network and the
+// map just... has fewer routes. That is the kind of thing nobody notices for a
+// semester, so the run fails instead.
+const MUST_REACH = ['A', 'B', 'C', 'E', 'M', 'Q', 'X', 'Hlavní brána'];
+
+// Not an error — these are genuinely off-campus (Menza koleje is 955 m away,
+// Tauferovy 1.7 km) — but worth printing so a place that SHOULD be on the
+// network and quietly is not gets noticed.
+const offNetwork = unplacedPlaces(graph, PLACES, 35, { minSeparationM: MIN_M });
+if (offNetwork.length) console.log(`not on the network: ${offNetwork.join(', ')}`);
+
 const routes = connectingRoutes(graph, anchors)
   .filter((r) => r.lengthM >= MIN_M)
   .sort((a, b) => b.lengthM - a.lengthM || a.from.localeCompare(b.from))
@@ -143,11 +165,22 @@ const network = networkStrokes(routes).map((stroke) =>
   stroke.map(([lon, lat]) => [round(lon), round(lat)])
 );
 
+// Checked against the ROUTES, not the anchors: a place can hold a node and
+// still end up with no route to it, which is how building E briefly vanished
+// from the map while still being "on the network". If OSM shifts a node the run
+// fails rather than quietly shipping a campus with fewer ways across it.
+const reached = new Set(routes.flatMap((r) => [r.from, r.to]));
+const missing = MUST_REACH.filter((n) => !reached.has(n));
+if (missing.length) {
+  console.error(`No route reaches: ${missing.join(', ')}`);
+  console.error('The campus path network would ship without them. Refusing to write.');
+  process.exit(1);
+}
+
 writeFileSync(
   new URL('../src/data/map/campusPaths.json', import.meta.url),
   JSON.stringify({ source: 'OpenStreetMap (ODbL)', network, routes }, null, 0) + '\n'
 );
-const reached = new Set(routes.flatMap((r) => [r.from, r.to]));
 console.log(
   `${ways.length} clipped ways → ${graph.nodes.size} nodes, ` +
     `${anchors.size} places on the network → ${routes.length} routes ` +

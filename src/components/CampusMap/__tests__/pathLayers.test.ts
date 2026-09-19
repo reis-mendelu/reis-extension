@@ -174,7 +174,9 @@ describe('the committed campus path data', () => {
 
   it('reaches the lettered buildings and the gates a student arrives through', () => {
     const places = new Set(CAMPUS_PATHS.flatMap((p) => [p.from, p.to]));
-    for (const letter of ['A', 'B', 'C', 'M', 'Q', 'X']) expect(places).toContain(letter);
+    // The generator refuses to write a file that misses any of these, so this
+    // is the shipped half of that guard.
+    for (const letter of ['A', 'B', 'C', 'E', 'M', 'Q', 'X']) expect(places).toContain(letter);
     expect(places).toContain('Hlavní brána');
   });
 });
