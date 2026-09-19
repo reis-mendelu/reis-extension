@@ -930,7 +930,8 @@
     "audienceHint": "Uvidí studenti, kteří odebírají {society}.",
     "audienceHintGeneric": "Uvidí jen studenti, kteří tento spolek odebírají.",
     "panelCollapse": "Sbalit panel mapy",
-    "panelExpand": "Rozbalit panel mapy"
+    "panelExpand": "Rozbalit panel mapy",
+    "walkMinutes": "{n} min"
   },
   "admin": {
     "email": "E-mail",

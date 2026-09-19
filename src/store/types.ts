@@ -525,6 +525,14 @@ export interface MapSlice {
   activeBuildingId: number | null;
   activeFloorId: number | null;
   mapSelection: MapSelection | null;
+  /**
+   * The two halves of "how do I get to my building": the gate the student came
+   * in by, and the building they picked. Both null means the question has not
+   * been asked; an entrance with no building means it is half asked, which is
+   * when the buildings light up as choices.
+   */
+  mapWalkEntrance: string | null;
+  mapWalkBuilding: string | null;
   roomsByBuilding: Record<number, RoomsCollection>;
   mapLoadingBuilding: number | null;
   mapSearchQuery: string;
@@ -534,6 +542,12 @@ export interface MapSlice {
   exitToCampus: () => void;
   /** Clear the current selection (close the detail panel) without moving the camera — bare-map click in campus overview. */
   clearMapSelection: () => void;
+  /** Pick the gate. Picking a different one reopens the building question. */
+  selectWalkEntrance: (name: string | null) => void;
+  /** Pick the building, once a gate is chosen. */
+  selectWalkBuilding: (name: string | null) => void;
+  /** Step back one: drop the building if one is picked, otherwise the gate. */
+  clearWalkStep: () => void;
   setMapFloor: (floorId: number) => void;
   selectMapRoom: (room: RoomProperties) => void;
   selectMapPoi: (poi: PoiProperties, coord: [number, number]) => void;

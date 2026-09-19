@@ -463,3 +463,44 @@ body,
 .reis-hide-building-labels .leaflet-tooltip.building-label {
   display: none;
 }
+
+/* A gate's name, shown on hover only — six labels ringing the campus all the
+ * time is a wall of text around a map whose dots already say "you can get in
+ * here". On a phone there is no hover, so the tap that reveals the name is the
+ * same tap that draws the walks. */
+.leaflet-tooltip.place-label {
+  background: rgb(255 255 255 / 0.92);
+  border: none;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.12);
+  border-radius: 7px;
+  padding: 1px 6px;
+  color: #334155;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.leaflet-tooltip.place-label::before {
+  display: none;
+}
+/* The "4 min" at the end of each walk. Orange like the walk it belongs to, so a
+ * fan of times reads as one answer to one question rather than as loose labels
+ * scattered over the campus. */
+.leaflet-tooltip.walk-chip {
+  background: #ea580c;
+  border: none;
+  box-shadow: 0 1px 3px rgb(124 45 18 / 0.35);
+  border-radius: 9px;
+  padding: 2px 7px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  pointer-events: none;
+  /* NOT `white-space: normal`. A Leaflet tooltip pane has no width, so an
+   * auto-width child wraps at nearly zero — a two-word label came out as a
+   * four-line tower over the thing it was labelling. */
+  white-space: nowrap;
+}
+.leaflet-tooltip.walk-chip::before {
+  border-top-color: #ea580c;
+}

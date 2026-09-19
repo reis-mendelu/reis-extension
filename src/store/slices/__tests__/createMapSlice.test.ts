@@ -535,3 +535,71 @@ describe('mapFocusTarget', () => {
     expect(useAppStore.getState().mapFocusTarget).toBe('campus');
   });
 });
+
+describe('the two-step walk question', () => {
+  const s = () => useAppStore.getState();
+  beforeEach(() => {
+    useAppStore.setState({
+      mapWalkEntrance: null,
+      mapWalkBuilding: null,
+      activeBuildingId: null,
+      activeFloorId: null,
+      mapSelection: null,
+    });
+  });
+
+  it('starts with the question unasked', () => {
+    expect(s().mapWalkEntrance).toBeNull();
+    expect(s().mapWalkBuilding).toBeNull();
+  });
+
+  it('asks the second half only once the first is answered', () => {
+    s().selectWalkEntrance('Hlavní brána');
+    expect(s().mapWalkEntrance).toBe('Hlavní brána');
+    expect(s().mapWalkBuilding).toBeNull();
+    s().selectWalkBuilding('Q');
+    expect(s().mapWalkBuilding).toBe('Q');
+  });
+
+  it('puts a gate away when it is tapped again', () => {
+    s().selectWalkEntrance('Hlavní brána');
+    s().selectWalkEntrance('Hlavní brána');
+    expect(s().mapWalkEntrance).toBeNull();
+  });
+
+  it('reopens the building question when a DIFFERENT gate is picked', () => {
+    // Otherwise you silently keep the building you chose from the last gate,
+    // and the walk on screen is one nobody asked for.
+    s().selectWalkEntrance('Hlavní brána');
+    s().selectWalkBuilding('Q');
+    s().selectWalkEntrance('Brána Lesnická');
+    expect(s().mapWalkEntrance).toBe('Brána Lesnická');
+    expect(s().mapWalkBuilding).toBeNull();
+  });
+
+  it('steps back one at a time, so a fumbled tap does not cost both answers', () => {
+    s().selectWalkEntrance('Hlavní brána');
+    s().selectWalkBuilding('Q');
+    s().clearWalkStep();
+    expect(s().mapWalkEntrance).toBe('Hlavní brána');
+    expect(s().mapWalkBuilding).toBeNull();
+    s().clearWalkStep();
+    expect(s().mapWalkEntrance).toBeNull();
+  });
+
+  it('ends the question when a floor plan is opened', () => {
+    s().selectWalkEntrance('Hlavní brána');
+    s().selectWalkBuilding('Q');
+    s().setMapBuilding(54678); // building A
+    expect(s().mapWalkEntrance).toBeNull();
+    expect(s().mapWalkBuilding).toBeNull();
+  });
+
+  it('ends the question on the way back out to the campus', () => {
+    s().selectWalkEntrance('Hlavní brána');
+    s().selectWalkBuilding('Q');
+    s().exitToCampus();
+    expect(s().mapWalkEntrance).toBeNull();
+    expect(s().mapWalkBuilding).toBeNull();
+  });
+});

@@ -8,5 +8,9 @@ package-lock.json
 *.md
 # Generated + committed minified by reis-data/scripts/buildMapData.mjs
 src/data/map/rooms-index.json
+# Same: written minified by scripts/fetch-campus-paths.mjs. Nobody reads it —
+# the generator writes it and the tests assert its shape — so pretty-printing
+# it only makes the committed file several times larger.
+src/data/map/campusPaths.json
 # Written by `infisical init` — reformatting it just loses to the next init
 .infisical.json
