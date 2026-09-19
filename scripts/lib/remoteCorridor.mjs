@@ -29,13 +29,19 @@ import { metres } from './pathGeo.mjs';
  * @returns {{coords:[number,number][]}[]}
  */
 export function corridorWays(paths, anchor, maxM) {
+  // ENDPOINTS only. A stroke's own middle passing within tolerance of the gate
+  // is not "the corridor starts here" — rewriting an interior vertex would
+  // splice the campus into the side of a path and attach both of its halves,
+  // which is the invented connection this guard exists to refuse. If the
+  // curated geometry ever loses the endpoint it is meant to start at, the run
+  // should fail rather than quietly latch onto the nearest passing stroke.
   let best = { d: Infinity, path: -1, vertex: -1 };
-  paths.forEach((coords, path) =>
-    coords.forEach((c, vertex) => {
-      const d = metres(c, anchor);
+  paths.forEach((coords, path) => {
+    for (const vertex of [0, coords.length - 1]) {
+      const d = metres(coords[vertex], anchor);
       if (d < best.d) best = { d, path, vertex };
-    })
-  );
+    }
+  });
   if (best.d > maxM)
     throw new Error(
       `corridor starts ${best.d.toFixed(1)} m from its anchor (max ${maxM} m) — ` +

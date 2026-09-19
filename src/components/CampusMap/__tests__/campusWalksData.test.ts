@@ -44,8 +44,21 @@ describe('the committed walks', () => {
     }
   });
 
-  it('marks seven ways in', () => {
-    expect(CAMPUS_ENTRANCES).toHaveLength(7);
+  it('marks these seven ways in, by name', () => {
+    // By NAME, not by count. The garden corridor brings the Bieblova tram stop
+    // and the arboretum's own north gate within reach of the network, and an
+    // earlier cut promoted both into "ways onto the campus" — walks to building
+    // A that cross a ticketed garden. A count would let one of those quietly
+    // replace a real gate at the next regeneration.
+    expect(CAMPUS_ENTRANCES.map((e) => e.name).sort()).toEqual([
+      'Arboretum',
+      'Brána Lesnická',
+      'Brána u FRRMS',
+      'Brána u budovy Q',
+      'Hlavní brána',
+      'Vjezd u Q',
+      'Zemědělská',
+    ]);
     for (const e of CAMPUS_ENTRANCES) expect(['gate', 'stop']).toContain(e.kind);
   });
 

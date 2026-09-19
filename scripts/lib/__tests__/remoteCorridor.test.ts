@@ -52,6 +52,14 @@ describe('corridorWays', () => {
     ).toThrow(/corridor/i);
   });
 
+  it('refuses a corridor whose only match is in the MIDDLE of a stroke', () => {
+    // A stroke merely passing the gate is not a corridor that starts there.
+    // Rewriting its interior vertex would splice the campus into the side of a
+    // path and attach both halves of it.
+    const passingBy: [number, number][] = [[16.6143, 49.2114], GATE, [16.6147, 49.2111]];
+    expect(() => corridorWays([passingBy], [16.614543, 49.21122], 2)).toThrow(/corridor/i);
+  });
+
   it('keeps each committed path as its own way', () => {
     const ways = corridorWays(
       [

@@ -26,6 +26,23 @@ const LANDMARK_LABELS = landmarkGroupLabels(LANDMARKS);
 // instead of the hover name. The Místa picker still carries the full pair name.
 const LANDMARK_LETTERS: Record<number, string> = { 1587: 'Z' };
 
+/**
+ * The sites you cross rather than arrive at.
+ *
+ * The arboretum is one: a walk from Černá Pole to the campus goes straight
+ * through it, and nobody needs telling it is a few minutes away. So it answers
+ * no taps — they fall through to the map's own tap-away.
+ *
+ * A list of ids, deliberately, rather than a rule read off the geometry. The
+ * first cut used `!!place.area`, which is true of Panská lícha as well — its
+ * `area` is the surrounding grounds, but the riding hall inside it is exactly
+ * the sort of place a student is told to turn up at, and it quietly stopped
+ * being clickable. Which places are scenery is an editorial judgement; it is
+ * not derivable from whether OSM happens to draw a boundary.
+ */
+const WALK_THROUGH_IDS = new Set([-101]); // Botanická zahrada a arboretum
+export const walksThrough = (place: Pick<RemotePlace, 'id'>) => WALK_THROUGH_IDS.has(place.id);
+
 // OpenStreetMap's own tiles, desaturated to the grey the overlays were drawn
 // against.
 //
@@ -175,10 +192,14 @@ export function drawRemotePlaces(
     // map, which is the campus's own "tap away to dismiss".
     //
     // HOVER is untouched: the shapes stay interactive, they simply have no
-    // click handler, so the names still appear on a point or a tap. Only the
-    // far sites (Lednice/Žabčice/Křtiny) keep their click — a collapsed
+    // click handler, so the names still appear on a point or a tap. Every other
+    // site keeps its click — for the far ones (Lednice/Žabčice/Křtiny) an
     // outline on the edge of the map is their only handle.
-    const inert = !!p.area;
+    //
+    // Named, NOT inferred from `area`. Panská lícha has an `area` too — its
+    // grounds — but it is somewhere students are sent, and deriving this from
+    // geometry silently took the click off its riding hall as well.
+    const inert = walksThrough(p);
     const passThrough = (style: L.PathOptions) =>
       inert ? { ...style, bubblingMouseEvents: true } : style;
     const onClick = <T extends L.Layer>(l: T, fn: () => void) => (inert ? l : l.on('click', fn));
