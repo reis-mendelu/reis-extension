@@ -1,9 +1,13 @@
 import { EventDetailCard } from '../../../CampusMap/EventDetailCard';
+import { GardenPlaceCard } from '../../../CampusMap/GardenPlaceCard';
 import { MapEventsSection } from '../../../CampusMap/MapEventsSection';
 import type { MapEvent } from '../../../../types/events';
+import type { GardenPlace } from '../../../../types/campusMap';
 
 export interface MapPanelBodyProps {
   selectedEvent: MapEvent | null;
+  /** One of the botanical garden's places, tapped on the map. */
+  selectedGardenPlace: GardenPlace | null;
   /** The rail frames its own content, so the card inside it renders flush. */
   flush?: boolean;
 }
@@ -24,11 +28,22 @@ export interface MapPanelBodyProps {
  * kitchens and offices on Q's ground floor), and the map's own polygons and the
  * search bar are the two ways a student actually finds a room.
  */
-export function MapPanelBody({ selectedEvent, flush = false }: MapPanelBodyProps) {
+export function MapPanelBody({
+  selectedEvent,
+  selectedGardenPlace,
+  flush = false,
+}: MapPanelBodyProps) {
   if (selectedEvent) {
     return (
       <div className={flush ? 'px-5' : 'px-4'}>
         <EventDetailCard event={selectedEvent} flush={flush} />
+      </div>
+    );
+  }
+  if (selectedGardenPlace) {
+    return (
+      <div className={flush ? 'px-5' : 'px-4'}>
+        <GardenPlaceCard place={selectedGardenPlace} flush={flush} />
       </div>
     );
   }

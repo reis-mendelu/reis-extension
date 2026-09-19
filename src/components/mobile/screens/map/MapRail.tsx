@@ -43,13 +43,18 @@ export function MapRail() {
   const { resizing, railHandlers } = useRailResize();
 
   const selectedEvent = selection?.kind === 'event' ? selection.event : null;
+  // A tapped bubble in the botanical garden, handled exactly like a tapped
+  // event pin: the card replaces the list, and opening the rail is what makes
+  // it visible at all.
+  const selectedGardenPlace = selection?.kind === 'gardenPlace' ? selection.place : null;
+  const selectedCard = selectedEvent || selectedGardenPlace;
 
   // Picking a pin while the rail is closed has to bring it back — otherwise the
   // pin highlights and the answer to the tap is somewhere the student cannot
   // see. This is the only thing that opens the rail on the student's behalf.
   useEffect(() => {
-    if (selectedEvent) setOpen(true);
-  }, [selectedEvent, setOpen]);
+    if (selectedEvent || selectedGardenPlace) setOpen(true);
+  }, [selectedEvent, selectedGardenPlace, setOpen]);
 
   if (!open) {
     return (
@@ -123,7 +128,7 @@ export function MapRail() {
       </div>
 
       <div className="flex flex-shrink-0 items-center gap-1 py-4 pl-6 pr-3">
-        {selectedEvent ? (
+        {selectedCard ? (
           <button
             type="button"
             onClick={clearMapSelection}
@@ -160,7 +165,11 @@ export function MapRail() {
       </div>
 
       <div className="flex-1 overflow-y-auto pb-4 pl-1">
-        <MapPanelBody selectedEvent={selectedEvent} flush />
+        <MapPanelBody
+          selectedEvent={selectedEvent}
+          selectedGardenPlace={selectedGardenPlace}
+          flush
+        />
       </div>
     </aside>
   );
