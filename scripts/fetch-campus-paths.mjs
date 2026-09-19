@@ -18,12 +18,30 @@ import { buildGraph, snapAnchors, unplacedPlaces } from './lib/pathGraph.mjs';
 import { networkStrokes, walksFrom } from './lib/pathWalks.mjs';
 import { clipToRegion } from './lib/osmClip.mjs';
 import { campusPlaces, splitAnchors, KIND_OF_RANK } from './lib/campusPlaces.mjs';
+import { corridorWays } from './lib/remoteCorridor.mjs';
 import { overpass } from './lib/overpass.mjs';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const BUILDINGS = read('../src/data/map/buildings.json');
 const LANDMARKS = read('../src/data/map/landmarks.json').landmarks;
 const POIS = read('../src/data/map/pois.json').features;
+const REMOTE = read('../src/data/map/remotePlaces.json').places;
+
+// The arboretum footpaths, hand-curated in remotePlaces.json, reach the campus
+// at the arboretum gate. Folding them into the graph is what puts the garden's
+// FAR gate — out at Generála Píky, by FRRMS — on the network, and it is the
+// through-route students actually use between the campus and Černá Pole.
+//
+// Worth knowing what that buys and what it costs: the walks from that gate run
+// nine to thirteen minutes THROUGH the garden, which is ticketed and shuts at
+// dusk. reIS has no opening hours to check them against, so those walks are
+// honest only while the garden is open. Kept deliberately, eyes open.
+const GARDEN_ID = -101;
+const ARBORETUM_GATE = 'Arboretum';
+// The corridor must genuinely start at the gate. The two coordinates for it
+// differ only in the decimals Overpass keeps and the curated file rounds away,
+// which is well under a metre; 2 m is slack for that and nothing else.
+const CORRIDOR_ANCHOR_M = 2;
 
 // The campus, plus enough margin to keep the gates and the Zemědělská pavement
 // that students actually arrive on. It stops well short of the arboretum, which
@@ -75,8 +93,24 @@ const ways = data.elements
     ).map((coords) => ({ coords }))
   );
 
-const graph = buildGraph(ways);
+// Two passes, because the corridor can only be pinned once the campus graph
+// exists: the first builds the campus alone and asks it where the arboretum
+// gate actually landed, the second re-builds it with the corridor hanging off
+// that node. Everything downstream sees one network.
+const campusGraph = buildGraph(ways);
 const PLACES = campusPlaces(BUILDINGS, LANDMARKS, POIS);
+const gateKey = [...snapAnchors(campusGraph, PLACES, 35, { minSeparationM: MIN_M })].find(
+  ([, name]) => name === ARBORETUM_GATE
+)?.[0];
+if (!gateKey) {
+  console.error(`${ARBORETUM_GATE} is not on the campus network, so the corridor cannot join it.`);
+  console.error('Refusing to write.');
+  process.exit(1);
+}
+const GARDEN = REMOTE.find((p) => p.id === GARDEN_ID);
+const corridor = corridorWays(GARDEN.paths, campusGraph.nodes.get(gateKey), CORRIDOR_ANCHOR_M);
+
+const graph = buildGraph([...ways, ...corridor]);
 const anchors = snapAnchors(graph, PLACES, 35, { minSeparationM: MIN_M });
 
 // The lettered buildings and the gate everyone walks through are what the layer

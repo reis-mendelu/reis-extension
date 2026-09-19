@@ -146,55 +146,75 @@ export function drawLandmarks(
 }
 
 // The off-campus MENDELU sites drawn as their real OSM footprints, in the same
-// blue campus-building theme as landmarks. Sites with a grounds boundary (`area`,
-// the arboretum garden) DRILL IN like a campus faculty: collapsed they show only
-// the garden outline; clicking them reveals the inner map (footpaths + buildings
-// + labelled collections). `drilledId` is the currently-selected site's id.
-// Sites without an `area` (Lednice/Žabčice/Křtiny) are far off-screen, so they
-// always show their footprints. Any part of a site selects the whole site.
+// blue campus-building theme as landmarks.
+//
+// Every site draws its whole inner map — footpaths, buildings, labelled
+// collections — whatever is selected. It used to take a click to reveal any of
+// that for the arboretum, which meant the garden's footpaths, the one genuinely
+// useful thing about it, were visible only to someone who already knew to look.
+// There is no "drilled in" state left: with every site drawing its whole inner
+// map, selecting one changed nothing on screen. On a far site, any part of it
+// still selects the whole site.
 export function drawRemotePlaces(
   layer: L.LayerGroup,
-  select: ReturnType<typeof useAppStore.getState>,
-  drilledId: number | null
+  select: ReturnType<typeof useAppStore.getState>
 ) {
   for (const p of REMOTE) {
     const [clon, clat] = remotePlaceCenter(p);
-    const drilled = drilledId === p.id;
-    const collapsible = !!p.area;
-    // Collapsed garden: a click drills in (fly + reveal). Otherwise a click just
-    // selects the site in place (no camera move).
     const select_ = () =>
       select.selectMapPoi(
         { id: p.id, name: p.name, type: p.address ?? '', url: p.url, phone: null, email: null },
         [clon, clat]
       );
-    const enter = () => select.focusRemotePlaceById(p.id);
+    // The garden answers no question, so it takes no taps.
+    //
+    // It is scenery you walk through, not somewhere you navigate to — and a
+    // big green shape that swallowed a tap and flew the camera off to Černá
+    // Pole was answering a question nobody had asked, right next to seven
+    // buildings where a tap means something. Its taps now fall through to the
+    // map, which is the campus's own "tap away to dismiss".
+    //
+    // HOVER is untouched: the shapes stay interactive, they simply have no
+    // click handler, so the names still appear on a point or a tap. Only the
+    // far sites (Lednice/Žabčice/Křtiny) keep their click — a collapsed
+    // outline on the edge of the map is their only handle.
+    const inert = !!p.area;
+    const passThrough = (style: L.PathOptions) =>
+      inert ? { ...style, bubblingMouseEvents: true } : style;
+    const onClick = <T extends L.Layer>(l: T, fn: () => void) => (inert ? l : l.on('click', fn));
 
     if (p.area) {
-      L.polygon(ringToLatLng(p.area.coordinates[0]), GARDEN_STYLE)
-        .on('click', drilled ? select_ : enter)
+      L.polygon(ringToLatLng(p.area.coordinates[0]), passThrough(GARDEN_STYLE))
         .bindTooltip(p.shortName)
         .addTo(layer);
     }
-    // Inner detail only when drilled in (or for the always-shown far sites).
-    if (drilled || !collapsible) {
-      if (p.paths)
-        for (const path of p.paths) {
-          L.polyline(ringToLatLng(path), PATH_STYLE).addTo(layer);
-        }
-      for (const ring of remotePlaceRings(p.outline)) {
-        L.polygon(ringToLatLng(ring), BUILDING_STYLE)
-          .on('click', select_)
-          .bindTooltip(p.shortName)
+    // Drawn ALWAYS, not only once the garden has been clicked.
+    //
+    // The arboretum is not a place anyone navigates TO — nobody needs telling
+    // it is a two-minute walk. It is a place people walk THROUGH, on the way
+    // between the campus and Černá Pole, and the only thing the map owes them
+    // is the sight of a path going through it. Behind a click, that path was
+    // information only someone who already knew about it would ever find.
+    if (p.paths)
+      for (const path of p.paths) {
+        L.polyline(ringToLatLng(path), PATH_STYLE).addTo(layer);
+      }
+    for (const ring of remotePlaceRings(p.outline)) {
+      onClick(L.polygon(ringToLatLng(ring), passThrough(BUILDING_STYLE)), select_)
+        .bindTooltip(p.shortName)
+        .addTo(layer);
+    }
+    if (p.pois)
+      for (const poi of p.pois) {
+        onClick(L.circleMarker([poi.lat, poi.lon], passThrough(POI_MARKER_STYLE)), select_)
+          // Not `permanent`: two names pinned over the greenhouses sat on the
+          // map whether or not anyone had asked what those buildings were.
+          // Leaflet opens a plain tooltip on hover, and on a touch device on
+          // tap, so the name is still reachable on a phone. The default
+          // tooltip box is deliberate too — `room-label` is transparent, which
+          // reads only because a permanent label sits still.
+          .bindTooltip(poi.name, { direction: 'right' })
           .addTo(layer);
       }
-      if (p.pois)
-        for (const poi of p.pois) {
-          L.circleMarker([poi.lat, poi.lon], POI_MARKER_STYLE)
-            .on('click', select_)
-            .bindTooltip(poi.name, { permanent: true, direction: 'right', className: 'room-label' })
-            .addTo(layer);
-        }
-    }
   }
 }
