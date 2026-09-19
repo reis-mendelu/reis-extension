@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { CAMPUS_ENTRANCES, CAMPUS_NETWORK, CAMPUS_WALKS, WALKS_BY_ENTRANCE } from '../pathLayers';
 
 const BUILDINGS = ['A', 'B', 'C', 'E', 'M', 'Q', 'X'];
+/** The one gate that is not on the campus: the arboretum's far side, by FRRMS. */
+const FAR_GATE = 'Brána u FRRMS';
 
 describe('the committed walks', () => {
   it('runs every walk from an entrance to a lettered building', () => {
@@ -22,15 +24,41 @@ describe('the committed walks', () => {
     }
   });
 
-  it('keeps every walk plausible for a campus 400 m across', () => {
-    for (const w of CAMPUS_WALKS) {
+  it('keeps every walk from a campus gate plausible for a campus 400 m across', () => {
+    for (const w of CAMPUS_WALKS.filter((x) => x.from !== FAR_GATE)) {
       expect(w.lengthM).toBeGreaterThanOrEqual(25);
       expect(w.lengthM).toBeLessThan(900);
     }
   });
 
-  it('marks six ways in', () => {
-    expect(CAMPUS_ENTRANCES).toHaveLength(6);
+  it('keeps the walks from the far gate long, because it is a garden away', () => {
+    // Brána u FRRMS is the arboretum's own gate out on Generála Píky, and its
+    // walks run the length of the garden to get here. Asserted as a band rather
+    // than a ceiling: one of these coming out SHORT would mean the route had
+    // stopped somewhere inside the arboretum instead of reaching the campus.
+    const far = CAMPUS_WALKS.filter((x) => x.from === FAR_GATE);
+    expect(far).toHaveLength(BUILDINGS.length);
+    for (const w of far) {
+      expect(w.lengthM).toBeGreaterThan(700);
+      expect(w.lengthM).toBeLessThan(1300);
+    }
+  });
+
+  it('marks these seven ways in, by name', () => {
+    // By NAME, not by count. The garden corridor brings the Bieblova tram stop
+    // and the arboretum's own north gate within reach of the network, and an
+    // earlier cut promoted both into "ways onto the campus" — walks to building
+    // A that cross a ticketed garden. A count would let one of those quietly
+    // replace a real gate at the next regeneration.
+    expect(CAMPUS_ENTRANCES.map((e) => e.name).sort()).toEqual([
+      'Arboretum',
+      'Brána Lesnická',
+      'Brána u FRRMS',
+      'Brána u budovy Q',
+      'Hlavní brána',
+      'Vjezd u Q',
+      'Zemědělská',
+    ]);
     for (const e of CAMPUS_ENTRANCES) expect(['gate', 'stop']).toContain(e.kind);
   });
 
