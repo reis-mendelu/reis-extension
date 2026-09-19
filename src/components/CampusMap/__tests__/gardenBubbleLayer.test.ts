@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import L from 'leaflet';
-import { drawGardenBubbles, GARDEN_PLACES } from '../gardenBubbleLayer';
+import { drawGardenBubbles, GARDEN_PLACES, bubblesHidden } from '../gardenBubbleLayer';
 import type { GardenPlace } from '../../../types/campusMap';
 
 /** A place that HAS a photograph, so it draws as a bubble rather than a dot. */
@@ -65,5 +65,28 @@ describe('drawGardenBubbles', () => {
     expect((cz.getLayers()[0] as L.Marker).getTooltip()!.getContent()).toBe(
       GARDEN_PLACES[0]!.name.cz
     );
+  });
+});
+
+describe('bubblesHidden', () => {
+  const bounds = L.latLngBounds([49.2108, 16.6098], [49.2163, 16.6166]);
+  /** Only the two methods bubblesHidden asks for. */
+  const mapAt = (zoom: number, fitZoom: number) =>
+    ({ getZoom: () => zoom, getBoundsZoom: () => fitZoom }) as unknown as L.Map;
+
+  it('shows the bubbles once the garden fills the screen', () => {
+    expect(bubblesHidden(mapAt(16, 16), bounds)).toBe(false);
+    expect(bubblesHidden(mapAt(18, 16), bounds)).toBe(false);
+  });
+
+  it('hides them when the garden is drawn smaller than that', () => {
+    expect(bubblesHidden(mapAt(15, 16), bounds)).toBe(true);
+  });
+
+  it('follows the viewport, not a fixed zoom', () => {
+    // A 375px phone fits the garden at 15, where a desktop pane fits it at 16.
+    // A hardcoded floor of 16 hid every bubble on the phone — the bug this
+    // function exists to prevent.
+    expect(bubblesHidden(mapAt(15, 15), bounds)).toBe(false);
   });
 });

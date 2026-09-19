@@ -116,22 +116,40 @@ export interface RemotePlace {
 export interface GardenPlace {
   /** Stable slug, and the stem of the bundled thumb: `public/garden/<id>.webp`. */
   id: string;
-  /** The garden's own published numbering, e.g. "2.6" for Rokle. */
-  number: string;
+  /**
+   * The garden's own published numbering, e.g. "2.6" for Rokle — when the place
+   * is on the official plan at all.
+   *
+   * Optional, because the best places are not always on it. The minotaur, the
+   * ponds and the little wood are things that are actually there and worth
+   * walking to; the plan's five sections are a taxonomy of plant collections
+   * and simply do not name them. A place earns its spot by being worth sitting
+   * in, not by having a number.
+   */
+  number?: string;
   /** 1 Okolí správní budovy … 5 Botanický systém — the first half of `number`. */
-  section: 1 | 2 | 3 | 4 | 5;
+  section?: 1 | 2 | 3 | 4 | 5;
   name: { cz: string; en: string };
-  /** ONE line: the reason to walk there. */
-  why: { cz: string; en: string };
+  /**
+   * ONE line: the reason to walk there.
+   *
+   * Nothing renders it today — the card is the photograph alone, because a
+   * caption under a picture is the part nobody reads. Kept optional so the
+   * words can come back without a migration.
+   */
+  why?: { cz: string; en: string };
   lon: number;
   lat: number;
   /**
-   * The FULL photo's filename on the CDN, content-hashed
-   * (`rokle.8f3a1c.webp`) because jsDelivr caches `@main` mutably and a
-   * replaced photo at the same path would not propagate.
+   * The large photo's filename under `public/garden/`, e.g. `jezirka-full.jpg`.
+   * The 96px bubble thumb is `<id>.jpg` beside it.
    *
-   * Optional on purpose: coordinates are one pass and land first, photographs
-   * are picked on their own schedule. A place without one renders as a dot.
+   * Both are BUNDLED rather than fetched from the CDN. At three places that is
+   * ~320 KB and buys offline-in-the-garden for free; if the set grows past a
+   * dozen, move the large ones to reis-data and give them a content hash,
+   * because jsDelivr caches `@main` mutably.
+   *
+   * Optional: a place without one is a plain dot, not a bubble.
    */
   photo?: string;
   /** Author + licence; rendered under the photo only when set. */

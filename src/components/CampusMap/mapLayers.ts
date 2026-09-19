@@ -12,7 +12,7 @@ import {
   PATH_STYLE,
   POI_MARKER_STYLE,
 } from './mapHelpers';
-import { drawGardenBubbles, GARDEN_PLACE_ID, BUBBLE_HIDE_BELOW_ZOOM } from './gardenBubbleLayer';
+import { drawGardenBubbles, GARDEN_PLACE_ID, bubblesHidden } from './gardenBubbleLayer';
 import type { Landmark, RemotePlace, MapSelection } from '../../types/campusMap';
 
 const LANDMARKS = (landmarksJson as { landmarks: Landmark[] }).landmarks;
@@ -94,10 +94,13 @@ export function initLeafletMap(
     map.getContainer().classList.toggle('reis-hide-building-labels', map.getZoom() <= hideBelow);
     // Same mechanism for the garden's bubbles: zoomed out they pile on top of
     // each other, and the redraw that builds them is store-driven and knows
-    // nothing about zoom.
-    map
-      .getContainer()
-      .classList.toggle('reis-hide-garden-bubbles', map.getZoom() < BUBBLE_HIDE_BELOW_ZOOM);
+    // nothing about zoom. The threshold is the zoom at which the garden fills
+    // THIS viewport, not a constant — see bubblesHidden.
+    const garden = REMOTE.find((p) => p.id === GARDEN_PLACE_ID);
+    if (garden?.area) {
+      const bounds = L.latLngBounds(ringToLatLng(garden.area.coordinates[0]!));
+      map.getContainer().classList.toggle('reis-hide-garden-bubbles', bubblesHidden(map, bounds));
+    }
   };
   syncLabelVisibility();
   map.on('zoomend', syncLabelVisibility);

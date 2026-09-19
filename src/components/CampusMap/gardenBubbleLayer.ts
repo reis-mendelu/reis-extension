@@ -10,17 +10,28 @@ export const GARDEN_PLACE_ID = -101;
 export const GARDEN_PLACES = (gardenPlacesJson as { places: GardenPlace[] }).places;
 
 /**
- * Below this zoom the places converge into a heap of overlapping circles, so
- * they are hidden — by a container class toggled on `zoomend`, the way
- * `reis-hide-building-labels` already works, rather than by rebuilding markers
- * the store-driven redraw knows nothing about.
- *
- * 16 is the zoom drilling into the garden itself lands on (it fits the garden
- * to the screen). It was 17, which hid every bubble at exactly the moment the
- * student asked to see the garden — verified in the running app, not reasoned
- * about. So this floor only bites when someone deliberately zooms back out.
+ * The padding drilling into a remote place fits it with — MapCanvas.tsx:289.
+ * The threshold below MUST use the same value, or it computes a zoom one level
+ * deeper than the camera actually lands on and hides every bubble the instant
+ * the garden opens. That is exactly what happened: verified in the browser,
+ * twice, with two different wrong thresholds before this one.
  */
-export const BUBBLE_HIDE_BELOW_ZOOM = 16;
+const FOCUS_PADDING = 50;
+
+/**
+ * Whether the bubbles should be hidden right now.
+ *
+ * NOT an absolute zoom floor. Drilling into the garden calls fitBounds, and the
+ * zoom that produces depends on the viewport: 16 on a desktop pane, 15 on a
+ * 375px phone. A fixed floor of 16 hid every bubble on the primary device.
+ *
+ * The real question is "is the garden drawn smaller than the view it opens at",
+ * which getBoundsZoom answers for the current map size and padding.
+ */
+export function bubblesHidden(map: L.Map, gardenBounds: L.LatLngBounds): boolean {
+  const fitZoom = map.getBoundsZoom(gardenBounds, false, L.point(FOCUS_PADDING, FOCUS_PADDING));
+  return map.getZoom() < fitZoom;
+}
 
 /** Resting diameter. A mouse grows it on hover; a finger cannot, so a touch
  *  device rests at the 44px minimum target instead. */
@@ -73,7 +84,7 @@ export function drawGardenBubbles(
             // a `:hover { transform: scale(2) }` on the icon is silently ignored
             // (verified in the browser: the bubble never grew). Scaling a child
             // Leaflet does not touch is what actually works.
-            html: `<span class="garden-bubble-circle"><img src="/garden/${place.id}.webp" alt="" /></span>`,
+            html: `<span class="garden-bubble-circle"><img src="/garden/${place.id}.jpg" alt="" /></span>`,
             iconSize: [size, size],
             iconAnchor: [size / 2, size / 2],
           }),

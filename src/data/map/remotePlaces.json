@@ -512,6 +512,16 @@
       ],
       "pois": [
         {
+          "name": "Vodní kaskáda",
+          "lon": 16.6142,
+          "lat": 49.214055
+        },
+        {
+          "name": "Lesík s cestičkami",
+          "lon": 16.616026,
+          "lat": 49.212844
+        },
+        {
           "name": "Správní budova a učebny",
           "lon": 16.614536,
           "lat": 49.215447

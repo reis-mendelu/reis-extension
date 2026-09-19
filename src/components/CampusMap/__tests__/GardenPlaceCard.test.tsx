@@ -1,15 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { GardenPlaceCard } from '../GardenPlaceCard';
 import { useAppStore } from '../../../store/useAppStore';
 import type { GardenPlace } from '../../../types/campusMap';
 
 const PLACE: GardenPlace = {
   id: 'rokle',
-  number: '2.6',
-  section: 2,
   name: { cz: 'Rokle', en: 'The ravine' },
-  why: { cz: 'Zarostlý zářez pod jižními svahy.', en: 'An overgrown cut below the slopes.' },
   lon: 16.6123,
   lat: 49.2141,
 };
@@ -17,48 +14,60 @@ const PLACE: GardenPlace = {
 beforeEach(() => useAppStore.setState({ language: 'cz' }));
 
 describe('GardenPlaceCard', () => {
-  it('names the place, its section and why you would go', () => {
-    render(<GardenPlaceCard place={PLACE} />);
-    expect(screen.getByText('Rokle')).toBeInTheDocument();
-    expect(screen.getByText(/Jižní svahy/)).toBeInTheDocument();
-    expect(screen.getByText('2.6')).toBeInTheDocument();
-    expect(screen.getByText(PLACE.why.cz)).toBeInTheDocument();
+  it('shows the photograph and nothing else — no caption, no hours', () => {
+    const { container } = render(
+      <GardenPlaceCard place={{ ...PLACE, photo: 'rokle-full.jpg' }} />
+    );
+    expect(container.textContent).toBe('');
+    expect(container.querySelector('img[src="/garden/rokle-full.jpg"]')).not.toBeNull();
   });
 
-  it('always says when the garden is open and that students get in free', () => {
-    render(<GardenPlaceCard place={PLACE} />);
-    expect(screen.getByText(/7:00–15:00/)).toBeInTheDocument();
-    expect(screen.getByText(/zdarma/)).toBeInTheDocument();
+  it('paints the bundled thumb under it, so the card is never empty', () => {
+    const { container } = render(
+      <GardenPlaceCard place={{ ...PLACE, photo: 'rokle-full.jpg' }} />
+    );
+    expect(container.querySelector('img[src="/garden/rokle.jpg"]')).not.toBeNull();
   });
 
-  it('shows no photo block at all until a photograph is chosen', () => {
+  it('names the place for a screen reader, since nothing is written on screen', () => {
+    render(<GardenPlaceCard place={{ ...PLACE, photo: 'rokle-full.jpg' }} />);
+    expect(screen.getByAltText('Rokle')).toBeInTheDocument();
+  });
+
+  it('fetches nothing — both files are bundled', () => {
+    const { container } = render(
+      <GardenPlaceCard place={{ ...PLACE, photo: 'rokle-full.jpg' }} />
+    );
+    expect(container.querySelector('img[src^="http"]')).toBeNull();
+  });
+
+  it('renders an attribution only when the photo came from someone else', () => {
+    const { container } = render(
+      <GardenPlaceCard place={{ ...PLACE, photo: 'rokle-full.jpg', credit: 'Jan Novák, CC BY-SA 4.0' }} />
+    );
+    expect(container.textContent).toContain('Jan Novák');
+  });
+
+  it('shows nothing at all for a place with no photograph', () => {
     const { container } = render(<GardenPlaceCard place={PLACE} />);
-    // An empty framed box is the grey rectangle this card exists to avoid.
-    expect(container.querySelector('img')).toBeNull();
+    expect(container.innerHTML).toBe('');
   });
 
-  it('paints the bundled thumb under the full photo, so the card is never empty', () => {
-    const { container } = render(<GardenPlaceCard place={{ ...PLACE, photo: 'rokle.8f3a1c.webp' }} />);
-    expect(container.querySelector('img[src="/garden/rokle.webp"]')).not.toBeNull();
+  it('maximizes the photo when it is pressed, and closes again', () => {
+    render(<GardenPlaceCard place={{ ...PLACE, photo: 'rokle-full.jpg' }} />);
+    // Two images of the same place once open: the card's and the full-screen one.
+    expect(screen.getAllByAltText('Rokle')).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Rokle' }));
+    expect(screen.getAllByAltText('Rokle')).toHaveLength(2);
+    fireEvent.click(screen.getAllByRole('button')[1]!);
+    expect(screen.getAllByAltText('Rokle')).toHaveLength(1);
   });
 
-  it('loads the full photo from the CDN when one is recorded', () => {
-    render(
-      <GardenPlaceCard
-        place={{ ...PLACE, photo: 'rokle.8f3a1c.webp', credit: 'Jan Novák, CC BY-SA 4.0' }}
-      />
-    );
-    expect(screen.getByAltText('Rokle')).toHaveAttribute(
-      'src',
-      'https://cdn.jsdelivr.net/gh/reis-mendelu/reis-data@main/garden/rokle.8f3a1c.webp'
-    );
-    expect(screen.getByText(/Jan Novák/)).toBeInTheDocument();
-  });
-
-  it('follows the app language', () => {
-    useAppStore.setState({ language: 'en' });
-    render(<GardenPlaceCard place={PLACE} />);
-    expect(screen.getByText('The ravine')).toBeInTheDocument();
-    expect(screen.getByText(PLACE.why.en)).toBeInTheDocument();
+  it('closes the maximized photo on Escape', () => {
+    render(<GardenPlaceCard place={{ ...PLACE, photo: 'rokle-full.jpg' }} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Rokle' }));
+    expect(screen.getAllByAltText('Rokle')).toHaveLength(2);
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.getAllByAltText('Rokle')).toHaveLength(1);
   });
 });

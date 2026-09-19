@@ -5,23 +5,20 @@ import type { GardenPlace } from '../../../../../types/campusMap';
 
 const PLACE: GardenPlace = {
   id: 'rokle',
-  number: '2.6',
-  section: 2,
   name: { cz: 'Rokle', en: 'The ravine' },
-  why: { cz: 'Zarostlý zářez pod jižními svahy.', en: 'An overgrown cut below the slopes.' },
   lon: 16.6123,
   lat: 49.2141,
 };
 
 describe('MapPanelBody', () => {
   it('shows a garden place when one is selected', () => {
-    render(<MapPanelBody selectedEvent={null} selectedGardenPlace={PLACE} />);
-    expect(screen.getByText('Rokle')).toBeInTheDocument();
-    expect(screen.getByText(/7:00–15:00/)).toBeInTheDocument();
+    render(<MapPanelBody selectedEvent={null} selectedGardenPlace={{ ...PLACE, photo: 'rokle-full.jpg' }} />);
+    // The photograph IS the card, so the name lives in its alt text.
+    expect(screen.getByAltText('Rokle')).toBeInTheDocument();
   });
 
   it('falls back to the events list when nothing is selected', () => {
     render(<MapPanelBody selectedEvent={null} selectedGardenPlace={null} />);
-    expect(screen.queryByText('Rokle')).not.toBeInTheDocument();
+    expect(screen.queryByAltText('Rokle')).not.toBeInTheDocument();
   });
 });

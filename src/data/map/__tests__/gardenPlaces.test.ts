@@ -17,13 +17,17 @@ describe('gardenPlaces.json', () => {
       ids.add(p.id);
       expect(p.name.cz.length).toBeGreaterThan(0);
       expect(p.name.en.length).toBeGreaterThan(0);
-      expect(p.why.cz.length).toBeGreaterThan(0);
-      expect(p.why.en.length).toBeGreaterThan(0);
     }
   });
 
-  it('numbers every place per the official plan', () => {
+  it('numbers a place per the official plan, when it is on the plan at all', () => {
     for (const p of PLACES) {
+      if (p.number === undefined) {
+        // Not on the plan (the minotaur, the ponds, the little wood): then it
+        // must not claim a section either.
+        expect(p.section).toBeUndefined();
+        continue;
+      }
       expect(p.number).toMatch(/^[1-5]\.\d{1,2}$/);
       expect(p.section).toBe(Number(p.number.split('.')[0]));
     }
@@ -42,9 +46,15 @@ describe('gardenPlaces.json', () => {
     }
   });
 
-  it('only records a hashed filename for a photo', () => {
+  it('names a bundled photo file, since nothing is fetched', () => {
     for (const p of PLACES) {
-      if (p.photo !== undefined) expect(p.photo).toMatch(/^[a-z0-9-]+\.[0-9a-f]{6}\.webp$/);
+      if (p.photo !== undefined) expect(p.photo).toMatch(/^[a-z0-9-]+-full\.jpg$/);
     }
+  });
+
+  it('is a bubble only when it actually has a photograph', () => {
+    // Every place in THIS file carries one; a place without is a plain dot in
+    // remotePlaces.pois instead.
+    for (const p of PLACES) expect(p.photo, `${p.id} has no photo`).toBeDefined();
   });
 });
