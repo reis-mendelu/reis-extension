@@ -74,8 +74,12 @@ export function drawRemotePlaces(
       inert ? { ...style, bubblingMouseEvents: true } : style;
     const onClick = <T extends L.Layer>(l: T, fn: () => void) => (inert ? l : l.on('click', fn));
 
-    if (p.area) {
-      L.polygon(ringToLatLng(p.area.coordinates[0]), passThrough(GARDEN_STYLE))
+    // `coordinates[0]` is an indexed read, so it is only a ring by convention —
+    // a Polygon with an empty coordinate list types the same and would draw an
+    // empty shape here rather than failing where the data is wrong.
+    const grounds = p.area?.coordinates[0];
+    if (grounds?.length) {
+      L.polygon(ringToLatLng(grounds), passThrough(GARDEN_STYLE))
         .bindTooltip(p.shortName)
         .addTo(layer);
     }
