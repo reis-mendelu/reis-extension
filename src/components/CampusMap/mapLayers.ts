@@ -12,7 +12,8 @@ import {
   PATH_STYLE,
   POI_MARKER_STYLE,
 } from './mapHelpers';
-import type { Landmark, RemotePlace } from '../../types/campusMap';
+import { drawGardenBubbles, GARDEN_PLACE_ID, BUBBLE_HIDE_BELOW_ZOOM } from './gardenBubbleLayer';
+import type { Landmark, RemotePlace, MapSelection } from '../../types/campusMap';
 
 const LANDMARKS = (landmarksJson as { landmarks: Landmark[] }).landmarks;
 export const REMOTE = (remotePlacesJson as { places: RemotePlace[] }).places;
@@ -91,6 +92,12 @@ export function initLeafletMap(
     const restZoom = Math.min(18, Math.floor(map.getBoundsZoom(cb, false, L.point(40, 40))));
     const hideBelow = labelsAtRest ? restZoom - 1 : restZoom + 1;
     map.getContainer().classList.toggle('reis-hide-building-labels', map.getZoom() <= hideBelow);
+    // Same mechanism for the garden's bubbles: zoomed out they pile on top of
+    // each other, and the redraw that builds them is store-driven and knows
+    // nothing about zoom.
+    map
+      .getContainer()
+      .classList.toggle('reis-hide-garden-bubbles', map.getZoom() < BUBBLE_HIDE_BELOW_ZOOM);
   };
   syncLabelVisibility();
   map.on('zoomend', syncLabelVisibility);
@@ -152,6 +159,19 @@ export function drawLandmarks(
 // + labelled collections). `drilledId` is the currently-selected site's id.
 // Sites without an `area` (Lednice/Žabčice/Křtiny) are far off-screen, so they
 // always show their footprints. Any part of a site selects the whole site.
+/**
+ * Which remote site is open, from the current selection.
+ *
+ * `gardenPlace` counts: selecting one of the botanical garden's places must NOT
+ * fold the garden back into an outline — that would take the bubble you just
+ * clicked off the map with it.
+ */
+export function drilledRemoteId(selection: MapSelection | null): number | null {
+  if (selection?.kind === 'gardenPlace') return GARDEN_PLACE_ID;
+  if (selection?.kind === 'poi' && REMOTE_IDS.has(selection.poi.id)) return selection.poi.id;
+  return null;
+}
+
 export function drawRemotePlaces(
   layer: L.LayerGroup,
   select: ReturnType<typeof useAppStore.getState>,
@@ -195,6 +215,15 @@ export function drawRemotePlaces(
             .bindTooltip(poi.name, { permanent: true, direction: 'right', className: 'room-label' })
             .addTo(layer);
         }
+      // The garden's own places, each carried by its photograph. Inside the
+      // drill-in branch, so the campus overview never becomes a gallery.
+      if (p.id === GARDEN_PLACE_ID) {
+        drawGardenBubbles(layer, {
+          lang: select.language,
+          touch: typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches,
+          onSelect: select.selectGardenPlace,
+        });
+      }
     }
   }
 }

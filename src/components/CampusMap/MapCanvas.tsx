@@ -21,6 +21,7 @@ import {
   flyAndReveal,
   drawLandmarks,
   drawRemotePlaces,
+  drilledRemoteId,
   REMOTE,
   REMOTE_IDS,
 } from './mapLayers';
@@ -215,12 +216,9 @@ export function MapCanvas() {
       drawLandmarks(layer, select, BUILDING_STYLE);
       // A remote site is "drilled in" when it is the selected poi — then its inner
       // map (paths / buildings / collections) is revealed instead of just the
-      // collapsed garden outline.
-      const drilledRemoteId =
-        select.mapSelection?.kind === 'poi' && REMOTE_IDS.has(select.mapSelection.poi.id)
-          ? select.mapSelection.poi.id
-          : null;
-      drawRemotePlaces(layer, select, drilledRemoteId);
+      // collapsed garden outline. Selecting one of the garden's own places keeps
+      // it open too; see drilledRemoteId.
+      drawRemotePlaces(layer, select, drilledRemoteId(select.mapSelection));
       // The ways in, drawn after the buildings so a gate is never buried under
       // an outline.
       entrancesRef.current = drawCampusEntrances(layer, (name) => {

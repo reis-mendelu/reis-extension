@@ -108,6 +108,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
 
   selectMapRoom: (room) => set({ mapSelection: { kind: 'room', room } }),
   selectMapPoi: (poi, coord) => set({ mapSelection: { kind: 'poi', poi, coord } }),
+  selectGardenPlace: (place) => set({ mapSelection: { kind: 'gardenPlace', place } }),
 
   setMapSearchQuery: (q) =>
     set({ mapSearchQuery: q, mapSearchResults: searchPlaces(q, INDEX, POIS, LANDMARKS) }),

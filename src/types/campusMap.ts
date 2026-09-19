@@ -193,4 +193,5 @@ export type MapSelection =
   | { kind: 'roomRef'; entry: RoomIndexEntry } // from search/deep-link before geometry loads
   | { kind: 'poi'; poi: PoiProperties; coord: [number, number] }
   | { kind: 'landmark'; landmark: Landmark } // search result only; resolves to a poi selection on focus
+  | { kind: 'gardenPlace'; place: GardenPlace } // one of the botanical garden's places
   | { kind: 'event'; event: import('./events').MapEvent }; // a society event pin
