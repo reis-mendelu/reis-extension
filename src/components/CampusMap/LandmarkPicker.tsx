@@ -22,10 +22,7 @@ const PLACE_GROUPS = (() => {
     const label = NON_JAK_LABELS.get(l.id) ?? l.name;
     if (seen.has(label)) continue;
     seen.add(label);
-    groups.push({
-      label,
-      ids: NON_JAK.filter((x) => (NON_JAK_LABELS.get(x.id) ?? x.name) === label).map((x) => x.id),
-    });
+    groups.push({ label, ids: NON_JAK.filter((x) => (NON_JAK_LABELS.get(x.id) ?? x.name) === label).map((x) => x.id) });
   }
   return groups;
 })();
@@ -52,32 +49,22 @@ export function LandmarkPicker() {
 
   const row = (key: string, label: string, active: boolean, run: () => void) => (
     <li key={key}>
-      <button className={`justify-start ${active ? 'menu-active' : ''}`} onClick={run}>
-        {label}
-      </button>
+      <button className={`justify-start ${active ? 'menu-active' : ''}`} onClick={run}>{label}</button>
     </li>
   );
-  const title = (key: string, label: string) => (
-    <li key={key} className="menu-title">
-      {label}
-    </li>
-  );
+  const title = (key: string, label: string) => <li key={key} className="menu-title">{label}</li>;
 
   return (
     <ul className="menu menu-sm w-full flex-nowrap overflow-y-auto p-1">
       {title('t-campus', t('map.placesCampus'))}
       {PLACE_GROUPS.map((g) =>
-        row(String(g.ids[0]), g.label, g.ids.includes(selectedLandmark ?? -2), () =>
-          focusLandmark(g.ids[0])
-        )
+        row(String(g.ids[0]), g.label, g.ids.includes(selectedLandmark ?? -2), () => focusLandmark(g.ids[0])),
       )}
-      {row('jak', t('map.jakDorms'), selectedLandmark === -1, () =>
-        focusPoint(t('map.jakDorms'), JAK_CENTROID)
-      )}
+      {row('jak', t('map.jakDorms'), selectedLandmark === -1, () => focusPoint(t('map.jakDorms'), JAK_CENTROID))}
       {row('campus', t('map.mainCampus'), false, () => focusCampus())}
       {title('t-other', t('map.placesOther'))}
       {REMOTE.map((p) =>
-        row(String(p.id), p.shortName, selectedLandmark === p.id, () => focusRemotePlace(p.id))
+        row(String(p.id), p.shortName, selectedLandmark === p.id, () => focusRemotePlace(p.id)),
       )}
     </ul>
   );
