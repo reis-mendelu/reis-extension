@@ -464,34 +464,6 @@ body,
   display: none;
 }
 
-/* The two ends of a tapped campus walking route ("Hlavní brána ↔ C"). Dark
- * chip rather than the bare-text treatment the room and building labels use:
- * this one appears on demand over a path that may be crossing anything, so it
- * has to carry its own contrast instead of borrowing the basemap's. */
-.leaflet-tooltip.path-label {
-  background: #1e293b;
-  border: none;
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
-  border-radius: 4px;
-  padding: 3px 7px;
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 600;
-  pointer-events: none;
-  /* Names are shortened in the generator so a chip fits at 320 px, and this is
-   * the guard for the day someone renames one. NOT `white-space: normal`: a
-   * Leaflet tooltip pane has no width, so an auto-width child wraps at nearly
-   * zero and "Budova O ↔ Brána Lesnická" came out as a four-line tower over the
-   * route it was labelling. One line, capped, truncated if it ever has to be. */
-  white-space: nowrap;
-  max-width: 15rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.leaflet-tooltip.path-label::before {
-  border-top-color: #1e293b;
-}
-
 /* A gate's name, shown on hover only — six labels ringing the campus all the
  * time is a wall of text around a map whose dots already say "you can get in
  * here". On a phone there is no hover, so the tap that reveals the name is the
@@ -523,8 +495,11 @@ body,
   color: #ffffff;
   font-size: 11px;
   font-weight: 700;
-  white-space: nowrap;
   pointer-events: none;
+  /* NOT `white-space: normal`. A Leaflet tooltip pane has no width, so an
+   * auto-width child wraps at nearly zero — a two-word label came out as a
+   * four-line tower over the thing it was labelling. */
+  white-space: nowrap;
 }
 .leaflet-tooltip.walk-chip::before {
   border-top-color: #ea580c;
