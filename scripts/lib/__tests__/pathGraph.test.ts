@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 // @ts-expect-error - plain .mjs build helper, no types
 import { buildGraph, snapAnchors } from '../pathGraph.mjs';
 
+const line = (lons: number[], lat = 49.21) => lons.map((lon) => [lon, lat] as [number, number]);
+
 describe('buildGraph', () => {
   it('joins ways that share an exact node into one network', () => {
     const g = buildGraph([{ coords: line([16.614, 16.615]) }, { coords: line([16.615, 16.616]) }]);
