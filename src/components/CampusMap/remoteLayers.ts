@@ -79,7 +79,10 @@ export function drawRemotePlaces(
     // empty shape here rather than failing where the data is wrong.
     const grounds = p.area?.coordinates[0];
     if (grounds?.length) {
-      L.polygon(ringToLatLng(grounds), passThrough(GARDEN_STYLE))
+      // Through `onClick` like every other shape. Taking the handler off this
+      // one outright was the same mistake in a second place: Panská lícha's
+      // grounds are the biggest target it has, and they stopped opening it.
+      onClick(L.polygon(ringToLatLng(grounds), passThrough(GARDEN_STYLE)), select_)
         .bindTooltip(p.shortName)
         .addTo(layer);
     }
