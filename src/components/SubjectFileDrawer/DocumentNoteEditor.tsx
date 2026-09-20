@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { X, Plus } from 'lucide-react';
 import { useDocumentNote } from '../../hooks/data/useDocumentNote';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -21,13 +21,21 @@ export function DocumentNoteEditor({ courseCode, fileLink, fileName, onClose, sh
     const { t } = useTranslation();
     const { note, setNote, isLoading, isSaving, hasError } = useDocumentNote(courseCode, fileLink);
     const [data, setData] = useState<DocumentNoteData>({ cards: [], notes: '' });
-    const focusCardRef = useRef<string | null>(null);
+    // Which card should take the caret. This decides what renders, so it is
+    // state: a ref mutation schedules no render, and the focus only ever
+    // landed because the setData beside it happened to cause one.
+    const [focusCardId, setFocusCardId] = useState<string | null>(null);
 
-    // Hydrate from storage on initial load or when the file/course changes.
-    useEffect(() => {
-        if (!isLoading) setData(parseNote(note));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isLoading, fileLink, courseCode]);
+    // Hydrate from storage on initial load or when the file/course changes —
+    // deliberately NOT when `note` itself changes, or a save round-trip would
+    // throw away whatever the student has typed since. Adjusting state during
+    // render rather than in an effect keeps the parse out of a second pass.
+    const hydrationKey = `${courseCode}|${fileLink}|${isLoading}`;
+    const [hydratedFor, setHydratedFor] = useState<string | null>(null);
+    if (!isLoading && hydratedFor !== hydrationKey) {
+        setHydratedFor(hydrationKey);
+        setData(parseNote(note));
+    }
 
     const updateCard = useCallback((id: string, patch: CardPatch) => {
         setData((prev) => {
@@ -42,7 +50,7 @@ export function DocumentNoteEditor({ courseCode, fileLink, fileName, onClose, sh
 
     const addCard = useCallback((afterId?: string) => {
         const card: NoteCardData = { id: newCardId(), question: '', answer: '', collapsed: false, images: [] };
-        focusCardRef.current = card.id;
+        setFocusCardId(card.id);
         setData((prev) => {
             const cards = [...prev.cards];
             const idx = afterId ? cards.findIndex((c) => c.id === afterId) : -1;
@@ -57,7 +65,7 @@ export function DocumentNoteEditor({ courseCode, fileLink, fileName, onClose, sh
     const deleteCard = useCallback((id: string) => {
         setData((prev) => {
             const idx = prev.cards.findIndex((c) => c.id === id);
-            focusCardRef.current = idx > 0 ? prev.cards[idx - 1].id : null;
+            setFocusCardId(idx > 0 ? prev.cards[idx - 1].id : null);
             const next = { ...prev, cards: prev.cards.filter((c) => c.id !== id) };
             setNote(serializeNote(next), fileName);
             return next;
@@ -94,7 +102,7 @@ export function DocumentNoteEditor({ courseCode, fileLink, fileName, onClose, sh
                     <NoteCard
                         key={card.id}
                         card={card}
-                        autoFocus={focusCardRef.current === card.id}
+                        autoFocus={focusCardId === card.id}
                         onChange={(patch) => updateCard(card.id, patch)}
                         onEnterAnswer={() => addCard(card.id)}
                         onDelete={() => deleteCard(card.id)}

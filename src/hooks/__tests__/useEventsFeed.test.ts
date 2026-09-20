@@ -23,9 +23,19 @@ vi.mock('../../services/storage', () => ({
 }));
 
 import { useEventsFeed } from '../useEventsFeed';
+import type { MendeluEvent } from '../../types/events';
 
-function event(id: string) {
-  return { id, organizerKey: 'pef', title: id } as never;
+function event(title: string): MendeluEvent {
+  return {
+    title,
+    url: `https://example.test/${title}`,
+    date: '2026-09-20',
+    endDate: null,
+    time: null,
+    location: null,
+    imageUrl: null,
+    organizerKey: 'pef',
+  } as MendeluEvent;
 }
 
 function deferred<T>() {
@@ -42,15 +52,15 @@ describe('useEventsFeed', () => {
   });
 
   it('stops showing the previous language’s events the moment the language changes', async () => {
-    const cz = deferred<unknown[]>();
-    const en = deferred<unknown[]>();
+    const cz = deferred<MendeluEvent[]>();
+    const en = deferred<MendeluEvent[]>();
     mockFetchEvents.mockImplementation((lang: string) => (lang === 'cz' ? cz.promise : en.promise));
 
     const { result, rerender } = renderHook(() => useEventsFeed());
 
     await act(async () => cz.resolve([event('cz-event')]));
     await waitFor(() => expect(result.current.events).toHaveLength(1));
-    expect(result.current.events[0]!.id).toBe('cz-event');
+    expect(result.current.events[0]!.title).toBe('cz-event');
 
     // Switching language must not leave the Czech list on screen while the
     // English one is still in flight.
@@ -60,19 +70,19 @@ describe('useEventsFeed', () => {
 
     await act(async () => en.resolve([event('en-event')]));
     await waitFor(() => expect(result.current.events).toHaveLength(1));
-    expect(result.current.events[0]!.id).toBe('en-event');
+    expect(result.current.events[0]!.title).toBe('en-event');
   });
 
   it('hydrates from the per-language cache before the network answers', async () => {
     mockIDBGet.mockImplementation(async (_store: string, key: string) =>
       key === 'reis_events_cache_cz' ? [event('cached')] : undefined
     );
-    const never = new Promise<unknown[]>(() => {});
+    const never = new Promise<MendeluEvent[]>(() => {});
     mockFetchEvents.mockReturnValue(never);
 
     const { result } = renderHook(() => useEventsFeed());
 
     await waitFor(() => expect(result.current.events).toHaveLength(1));
-    expect(result.current.events[0]!.id).toBe('cached');
+    expect(result.current.events[0]!.title).toBe('cached');
   });
 });
