@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import roomsIndexJson from '../../data/map/rooms-index.json';
 import { ringToLatLng } from './mapHelpers';
+import { lookupRoomEntry } from '../../utils/rooms/lookupRoom';
 import { projectRing, type Extent } from './thumbnail';
 import type { RoomIndexEntry, RoomFeature } from '../../types/campusMap';
 
@@ -9,7 +10,7 @@ const INDEX = roomsIndexJson as RoomIndexEntry[];
 const BOX = { w: 380, h: 240, pad: 8 };
 
 export function RoomThumbnail({ roomName }: { roomName: string }) {
-  const entry = useMemo(() => INDEX.find((e) => e.code === roomName || e.name === roomName), [roomName]);
+  const entry = useMemo(() => lookupRoomEntry(roomName, INDEX), [roomName]);
   const rooms = useAppStore((s) => (entry ? s.roomsByBuilding[entry.buildingId] : undefined));
   const loadMapBuilding = useAppStore((s) => s.loadMapBuilding);
 
