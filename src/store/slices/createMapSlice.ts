@@ -19,9 +19,9 @@ import {
   remotePlaceCenter,
   roomCodeToCoord,
 } from '../../components/CampusMap/mapHelpers';
-import { fetchBuildingRooms } from '../../api/campusMap';
 import { fetchMapEvents, toMapEvent } from '../../api/mapEvents';
 import { logError } from '../../utils/reportError';
+import { createBuildingGeometryActions } from './buildingGeometryActions';
 import { lookupRoomEntry, isNonPhysicalRoom } from '../../utils/rooms/lookupRoom';
 
 const META = buildingsJson as BuildingsMeta;
@@ -29,11 +29,6 @@ const INDEX = roomsIndexJson as RoomIndexEntry[];
 const POIS = (poisJson as unknown as { features: PoiFeature[] }).features;
 const LANDMARKS = (landmarksJson as { landmarks: Landmark[] }).landmarks;
 const REMOTE = (remotePlacesJson as { places: RemotePlace[] }).places;
-
-// Geometry requests that have been started but not finished, so a second
-// caller joins the first instead of racing it. Keyed by building id and
-// cleared in `finally`, including on failure.
-const inFlightBuildings = new Map<number, Promise<void>>();
 
 const buildingById = (id: number) => META.buildings.find((b) => b.id === id) ?? null;
 
@@ -45,7 +40,11 @@ function locateEvent(e: MapEvent): MapEvent {
     : { ...e, coord: roomCodeToCoord(e.roomCode, INDEX, META) };
 }
 
-export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
+export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
+  // Loading a building's floor plan lives next door, so this file does not
+  // carry that responsibility too — see buildingGeometryActions.ts.
+  ...createBuildingGeometryActions(set, get, api),
+
   activeBuildingId: null,
   activeFloorId: null,
   mapSelection: null,
@@ -226,46 +225,6 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
       mapFocusRequest: get().mapFocusRequest + 1,
       mapFocusTarget: 'campus' as const,
     }),
-
-  // The hover card knows a room string ("A01", "Q01 (Poříčí)"); the loader
-  // wants a building id. Resolving between the two used to sit in
-  // RoomThumbnail, which then fetched from a useEffect — the Iron Rule says a
-  // component must not. The hover is the intent, so MapHoverCard calls this and
-  // the component is left reading the store synchronously.
-  loadRoomGeometry: async (roomName) => {
-    const entry = lookupRoomEntry(roomName, INDEX);
-    if (!entry) return; // nothing to draw; the card shows its dash
-    await get().loadMapBuilding(entry.buildingId);
-  },
-
-  loadMapBuilding: async (id) => {
-    if (get().roomsByBuilding[id]) return; // already in memory
-    // ...and if it is already on its way, wait for THAT rather than starting a
-    // second download of the same geojson. The stored-geometry check above
-    // cannot see a request still in flight, so two hover cards opened in one
-    // building a moment apart used to fetch it twice on a cold cache.
-    const pending = inFlightBuildings.get(id);
-    if (pending) return pending;
-
-    set({ mapLoadingBuilding: id });
-    const request = (async () => {
-      try {
-        const data = await fetchBuildingRooms(id);
-        if (data) set({ roomsByBuilding: { ...get().roomsByBuilding, [id]: data } });
-      } catch (err) {
-        logError('MapSlice.loadMapBuilding', err);
-      } finally {
-        // Cleared before the state update so a retry after a failure is never
-        // blocked by the attempt that failed.
-        inFlightBuildings.delete(id);
-        set({
-          mapLoadingBuilding: get().mapLoadingBuilding === id ? null : get().mapLoadingBuilding,
-        });
-      }
-    })();
-    inFlightBuildings.set(id, request);
-    return request;
-  },
 
   mapPanelCollapsed: false,
   setMapPanelTab: (tab) => set({ mapPanelTab: tab }),
