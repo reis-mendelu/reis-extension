@@ -26,3 +26,11 @@ src/api/__tests__/fixtures/**/*.html
 # left exactly as written. Their tests are ordinary code and stay formatted.
 src/utils/parsers/**/*.ts
 !src/utils/parsers/**/__tests__/**
+
+# The vendored mobile design prototype. docs/superpowers/plans/2026-07-26-reis-mobile.md
+# calls it "the literal visual source of truth" and cites it by exact line range
+# ~20 times ("read the cited prototype range, then build to it"). Reformatting
+# re-wraps it and silently points every one of those citations at the wrong
+# markup. Same reason as the IS fixtures above: it is referenced evidence, not
+# maintained source.
+docs/design/*.html
