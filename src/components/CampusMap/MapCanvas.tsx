@@ -20,6 +20,7 @@ import {
 import { initLeafletMap, flyAndReveal, drawLandmarks } from './mapLayers';
 import { drawRemotePlaces, REMOTE, REMOTE_IDS } from './remoteLayers';
 import { drawCampusPaths } from './pathLayers';
+import { roomLabelsHidden } from './roomLabels';
 import { setMapInstance } from './mapInstance';
 import { roomFocusView } from './focusBounds';
 import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
@@ -77,6 +78,9 @@ export function MapCanvas() {
   // Live room polygons keyed by placeId, with their unselected base style — lets
   // a plain map click re-highlight in place without a full redraw or camera move.
   const roomPolysRef = useRef<Map<number, { poly: L.Polygon; base: L.PathOptions }>>(new Map());
+  /** The open floor plan's building, so the label rule can be re-asked on every
+   *  camera settle without re-running the effect that owns the camera. */
+  const planBoundsRef = useRef<L.LatLngBounds | null>(null);
   /** The campus building outlines, kept so a restyle never needs a redraw
    *  (a redraw moves the camera). */
   const buildingPolysRef = useRef<Map<string, L.Polygon>>(new Map());
@@ -130,7 +134,18 @@ export function MapCanvas() {
     routeLayerRef.current.addTo(map);
     mapRef.current = map;
     setMapInstance(map);
+    // Room names are only worth drawing while the plan is close enough to read.
+    // On every camera settle rather than on a state change: the route fit is
+    // what zooms out from under an open plan, and it moves the camera without
+    // touching the floor the student chose. See roomLabels.
+    const syncRoomLabels = () =>
+      map
+        .getContainer()
+        .classList.toggle('reis-hide-room-labels', roomLabelsHidden(map, planBoundsRef.current));
+    syncRoomLabels();
+    map.on('moveend zoomend resize', syncRoomLabels);
     return () => {
+      map.off('moveend zoomend resize', syncRoomLabels);
       setMapInstance(null);
       map.remove();
       mapRef.current = null;
@@ -159,6 +174,7 @@ export function MapCanvas() {
     }
 
     if (activeBuildingId === null) {
+      planBoundsRef.current = null;
       // Paths first: the building outlines and the event pins belong on top of
       // them. A selected route lifts itself back above with bringToFront.
       drawCampusPaths(layer);
@@ -292,6 +308,7 @@ export function MapCanvas() {
 
     const fc = roomsByBuilding[activeBuildingId];
     const b = META.buildings.find((x) => x.id === activeBuildingId);
+    planBoundsRef.current = b ? L.latLngBounds(b.bounds as L.LatLngBoundsLiteral) : null;
     if (!fc) {
       // geometry still loading — show the building while we wait
       if (b)

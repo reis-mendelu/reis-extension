@@ -476,6 +476,20 @@ body,
   display: none;
 }
 
+/* Room names, on their OWN switch rather than the building letters'. That one
+ * is deliberately off on a phone (labelsAtRest — the letters are the only way
+ * to tell one outline from another on a screen with no side panel), so hanging
+ * room labels on it hid nothing on the primary device.
+ *
+ * Toggled by roomLabelsHidden: a floor plan used to be seen only while the
+ * camera was on its building, so its labels were never drawn at overview
+ * scale — until a route began fitting the whole walk, which zooms out with the
+ * plan still open. Measured at that moment: fifteen room names stacked over
+ * the building the walk ends at. */
+.reis-hide-room-labels .leaflet-tooltip.room-label {
+  display: none;
+}
+
 /* A gate's name, shown on hover only — six labels ringing the campus all the
  * time is a wall of text around a map whose dots already say "you can get in
  * here". On a phone there is no hover, so the tap that reveals the name is the
