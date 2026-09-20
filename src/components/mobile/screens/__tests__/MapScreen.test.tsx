@@ -194,7 +194,9 @@ describe('MapScreen', () => {
     expect(useAppStore.getState().mapSheetState).toBe('peek');
 
     // The click the browser still delivers must not toggle it straight back.
-    fireEvent.click(screen.getByRole('button', { name: /Akce na kampusu/ }));
+    // By testid, not by the band's words: it reads out whatever event is next,
+    // and this test is about the click, not the copy.
+    fireEvent.click(screen.getByTestId('map-sheet-peek'));
     expect(useAppStore.getState().mapSheetState).toBe('peek');
     forceDetentFlip = false;
   });
@@ -237,8 +239,30 @@ describe('MapScreen', () => {
 
   it('renders the sheet in peek state by default, with no tabs visible', () => {
     render(<MapScreen />);
-    expect(screen.getByText('Akce na kampusu')).toBeInTheDocument();
+    expect(screen.getByText('Zatím žádné akce na kampusu')).toBeInTheDocument();
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+  });
+
+  /**
+   * The closed band used to be the words "Akce na kampusu" over ~96px of space
+   * reserved for the floating BottomNav — so at rest the sheet named a category
+   * and showed none of it, and the only way to learn whether anything was on
+   * was to pull it open. That is the complaint that added the middle detent;
+   * the band it was meant to fix was left as it was.
+   */
+  it('shows the next event while the sheet is closed', () => {
+    useAppStore.setState({ mapEvents: [EVENT] } as never);
+    render(<MapScreen />);
+    const band = screen.getByRole('button', { name: /Deskovky/ });
+    expect(band).toBeInTheDocument();
+    expect(band).toHaveTextContent('18:30');
+  });
+
+  it('opens the list when the closed band is tapped', () => {
+    useAppStore.setState({ mapEvents: [EVENT] } as never);
+    render(<MapScreen />);
+    fireEvent.click(screen.getByRole('button', { name: /Deskovky/ }));
+    expect(useAppStore.getState().mapSheetState).toBe('half');
   });
 
   /**

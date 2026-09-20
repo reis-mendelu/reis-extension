@@ -1093,7 +1093,7 @@
     "map": {
       "searchPlaceholder": "Find a room, building, event…",
       "tabEvents": "Events",
-      "peekHint": "Campus events",
+      "peekEmpty": "No campus events right now",
       "thisWeek": "This week",
       "emptyTitle": "Map didn't load",
       "emptyBody": "Please try again.",

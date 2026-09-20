@@ -32,7 +32,7 @@ export function EventRow({
   return (
     <div
       className={`flex items-stretch border-l-2 transition-colors ${
-        selected ? 'border-primary bg-primary/10' : 'border-transparent hover:bg-base-200'
+        selected ? 'border-primary bg-primary/10' : 'border-transparent hover:bg-base-content/5'
       }`}
     >
       <button
@@ -44,7 +44,11 @@ export function EventRow({
           {event.imageUrl ? (
             <img src={event.imageUrl} alt="" className="h-full w-full object-cover" />
           ) : (
-            <span className="flex h-full w-full items-center justify-center bg-base-200">
+            // A tint of the ink, not a base tone: this row sits on the
+            // desktop panel (base-100) AND on the phone's map sheet
+            // (base-200), and any fixed base tone is invisible on one of them
+            // in one of the themes.
+            <span className="flex h-full w-full items-center justify-center bg-base-content/5">
               <img src={CATEGORY_EMOJI_SRC[event.category]} alt="" className="h-7 w-7" />
             </span>
           )}

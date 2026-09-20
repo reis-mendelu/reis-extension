@@ -1093,7 +1093,7 @@
     "map": {
       "searchPlaceholder": "Najdi místnost, budovu, akci…",
       "tabEvents": "Akce",
-      "peekHint": "Akce na kampusu",
+      "peekEmpty": "Zatím žádné akce na kampusu",
       "thisWeek": "Tenhle týden",
       "emptyTitle": "Mapa se nenačetla",
       "emptyBody": "Zkus to prosím znovu.",
