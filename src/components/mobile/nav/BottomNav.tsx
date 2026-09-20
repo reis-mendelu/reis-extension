@@ -36,7 +36,13 @@ export function BottomNav() {
   return (
     <nav
       aria-label={t('mobile.nav.label')}
-      className="absolute bottom-[18px] left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 rounded-full border border-base-300 bg-base-100 p-1.5 shadow-drawer max-[359px]:gap-0.5 max-[359px]:p-1"
+      // bottom carries --safe-bottom because targetSdk 36 draws the app
+      // edge-to-edge on Android 15+: the window extends UNDER the system
+      // navigation bar, so a flat 18px is measured from below it and a
+      // 48dp button bar covered 30 of this pill's 58px. Reported as
+      // "prekrývajú sa mi spodné tlačidlá". Everything that clears this
+      // pill carries the same inset — see utils/mobile/safeArea.ts.
+      className="absolute bottom-[calc(18px_+_var(--safe-bottom,0px))] left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 rounded-full border border-base-300 bg-base-100 p-1.5 shadow-drawer max-[359px]:gap-0.5 max-[359px]:p-1"
     >
       {TABS.map(({ id, icon: Icon, labelKey }) => {
         const active = id === activeTab;

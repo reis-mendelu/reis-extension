@@ -104,7 +104,7 @@ export function DayBody({
       ref={bodyRef}
       data-testid="day-body"
       {...handlers}
-      className="flex-1 touch-pan-y overflow-y-auto pb-36 transition-transform duration-200 ease-out"
+      className="flex-1 touch-pan-y overflow-y-auto pb-[calc(9rem_+_var(--safe-bottom,0px))] transition-transform duration-200 ease-out"
     >
       {agenda.length === 0 ? (
         <CalendarEmptyDay

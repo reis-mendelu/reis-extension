@@ -51,7 +51,10 @@ export function Sheet({ size, onClose, children, elevated, variant = 'sheet' }: 
     ? 'inset-0 pt-[var(--safe-top,0px)]'
     : size === 'full'
       ? 'top-[70px] bottom-0'
-      : 'bottom-0 max-h-[85dvh]';
+      : // pb carries --safe-bottom for the same reason `isScreen` above
+        // carries --safe-top: edge-to-edge means this panel's bottom edge is
+        // under the system navigation bar, so its last control was too.
+        'bottom-0 max-h-[85dvh] pb-[var(--safe-bottom,0px)]';
 
   const panelRef = useRef<HTMLDivElement>(null);
   /**

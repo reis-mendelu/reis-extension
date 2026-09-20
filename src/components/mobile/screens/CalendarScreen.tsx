@@ -129,7 +129,7 @@ export function CalendarScreen() {
     // (offline) is exactly where it earns its place. Not under the skeleton:
     // loading is transient and a card under placeholder bars reads as a glitch.
     return shell(
-      <div className="flex flex-1 flex-col overflow-y-auto pb-36">
+      <div className="flex flex-1 flex-col overflow-y-auto pb-[calc(9rem_+_var(--safe-bottom,0px))]">
         <ScreenError testId="calendar-error" />
         <RecentFilesStrip />
       </div>
