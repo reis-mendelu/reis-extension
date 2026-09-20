@@ -79,21 +79,14 @@ export function probeSource(): ProbeResult {
   // Leaflet's own geometry panes, NOT the whole `.leaflet-container`. The
   // container's subtree also holds map controls, popups and reIS's own
   // overlays — all app-owned content that CAN genuinely overflow and must
-  // still be reported. Only the panes Leaflet transform-positions beyond the
-  // viewport are excused: the tile pane, the overlay pane that carries the
-  // zoom-animated SVG and its paths, and the marker pane. Those were the exact
-  // selectors that produced 26 false failures.
-  //
-  // The marker pane joined them when the garden's photo bubbles landed: a
-  // marker's position is a MAP coordinate, so one at the garden's western edge
-  // sits left of a 320px viewport for exactly the same reason a tile does, and
-  // is clipped by the same container. It is not an app layout bug, and there is
-  // no layout fix for it — the alternative is not drawing markers outside the
-  // current view, which is the clipping Leaflet already does.
+  // still be reported. Only the two panes Leaflet transform-positions beyond
+  // the viewport are excused: the tile pane, and the overlay pane that carries
+  // the zoom-animated SVG and its paths. Those were the exact selectors that
+  // produced 26 false failures.
   //
   // The tooltip and popup panes are deliberately NOT here: those carry text,
   // and text that has drifted off the screen is a finding worth keeping.
-  const THIRD_PARTY_CLIPPERS = '.leaflet-tile-pane, .leaflet-overlay-pane, .leaflet-marker-pane';
+  const THIRD_PARTY_CLIPPERS = '.leaflet-tile-pane, .leaflet-overlay-pane';
   const insideThirdPartyClipper = (node: HTMLElement): boolean =>
     node.closest(THIRD_PARTY_CLIPPERS) !== null;
 
@@ -101,6 +94,16 @@ export function probeSource(): ProbeResult {
     const style = getComputedStyle(node);
     const r = node.getBoundingClientRect();
     const insideInnerClip = insideThirdPartyClipper(node);
+    // A marker's position is a MAP coordinate, so Leaflet parks its icon off
+    // the viewport exactly as it does a tile — but the icon's CONTENTS are
+    // ours, and an oversized child is a real finding. So rather than excusing
+    // the whole marker pane, record the relationship and let the overflow rule
+    // decide: the icon itself is Leaflet's, a descendant is only excused while
+    // it sits inside the icon's own box (displacement it merely inherited).
+    const markerIcon = node.closest<HTMLElement>('.leaflet-marker-icon');
+    const isLeafletMarker = markerIcon === node;
+    const leafletMarkerIdx =
+      markerIcon && markerIcon !== node ? (indexOf.get(markerIcon) ?? null) : null;
 
     const bgChain: { r: number; g: number; b: number; a: number }[] = [];
     const ancestors: number[] = [];
@@ -123,6 +126,8 @@ export function probeSource(): ProbeResult {
       text: hasDirectText ? (node.textContent ?? '').trim().slice(0, 40) : '',
       rect: { x: r.x, y: r.y, w: r.width, h: r.height },
       insideInnerClip,
+      isLeafletMarker,
+      leafletMarkerIdx,
       bg: resolveColor(style.backgroundColor),
       bgChain,
       color: resolveColor(style.color),

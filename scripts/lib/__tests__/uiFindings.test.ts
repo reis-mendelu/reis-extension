@@ -88,6 +88,68 @@ describe('analyzeProbe — horizontal overflow', () => {
     expect(kinds(f)).not.toContain('overflow-element');
   });
 
+  // A marker's position is a map coordinate, so Leaflet parks the icon off the
+  // viewport the same way it parks a tile. The icon is excused — but only the
+  // icon, and only its contents while they stay inside it.
+  it('ignores a Leaflet marker icon parked off the viewport', () => {
+    const f = analyzeProbe(
+      probe(
+        [
+          el({
+            sel: 'div.leaflet-marker-icon.garden-bubble',
+            rect: { x: -24, y: 100, w: 28, h: 28 },
+            isLeafletMarker: true,
+          }),
+        ],
+        { width: 320, docScrollWidth: 320, docClientWidth: 320 }
+      )
+    );
+    expect(kinds(f)).not.toContain('overflow-element');
+  });
+
+  it("ignores a marker's own contents, whose displacement is inherited", () => {
+    const f = analyzeProbe(
+      probe(
+        [
+          el({
+            sel: 'div.leaflet-marker-icon.garden-bubble',
+            rect: { x: -24, y: 100, w: 28, h: 28 },
+            isLeafletMarker: true,
+          }),
+          el({
+            sel: 'span.garden-bubble-circle',
+            rect: { x: -24, y: 100, w: 28, h: 28 },
+            leafletMarkerIdx: 0,
+          }),
+        ],
+        { width: 320, docScrollWidth: 320, docClientWidth: 320 }
+      )
+    );
+    expect(kinds(f)).not.toContain('overflow-element');
+  });
+
+  it('STILL reports app-owned marker contents that overflow their own icon', () => {
+    const f = analyzeProbe(
+      probe(
+        [
+          el({
+            sel: 'div.leaflet-marker-icon.garden-bubble',
+            rect: { x: 10, y: 100, w: 28, h: 28 },
+            isLeafletMarker: true,
+          }),
+          // 400px of photo inside a 28px bubble: the app's bug, not Leaflet's.
+          el({
+            sel: 'img.oversized',
+            rect: { x: 10, y: 100, w: 400, h: 28 },
+            leafletMarkerIdx: 0,
+          }),
+        ],
+        { width: 320, docScrollWidth: 320, docClientWidth: 320 }
+      )
+    );
+    expect(f.some((x) => x.kind === 'overflow-element' && x.sel === 'img.oversized')).toBe(true);
+  });
+
   it('reports an element hanging off the LEFT edge', () => {
     const f = analyzeProbe(
       probe([el({ sel: 'div.pinned', rect: { x: -20, y: 100, w: 100, h: 40 } })], {
