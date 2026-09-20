@@ -1,11 +1,16 @@
 import { User, Map as MapIcon, Clock, ChevronDown, ChevronUp } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
 import type { BlockLesson } from '../../../types/calendarTypes';
 import type { CourseMetadata } from '../../../types/documents';
 import { PersonHoverCard } from '../../PersonHoverCard';
 import { MapHoverCard } from '../../MapHoverCard';
+import roomsIndexJson from '../../../data/map/rooms-index.json';
+import type { RoomIndexEntry } from '../../../types/campusMap';
+import { lookupRoomEntry } from '../../../utils/rooms/lookupRoom';
+
+const INDEX = roomsIndexJson as RoomIndexEntry[];
 export function CourseMeta({
   lesson,
   courseInfo,
@@ -17,6 +22,7 @@ export function CourseMeta({
 }) {
   const [expanded, setExpanded] = useState(false);
   const { t, language } = useTranslation();
+  const findableRoom = useMemo(() => !!lookupRoomEntry(lesson?.room, INDEX), [lesson?.room]);
 
   if (!isSearchContext) {
     return (
@@ -48,7 +54,11 @@ export function CourseMeta({
               )}
             </span>
           )}
-          {lesson?.room?.startsWith('Q') && (
+          {lesson?.room && findableRoom && (
+            // The room code is the control, and every room the map can find
+            // gets the same one. This used to branch on `startsWith('Q')` —
+            // building Q is PEF — which gave a PEF student a hover card and
+            // everyone else a bare button over a lookup that then failed.
             <MapHoverCard roomName={lesson.room} className="flex items-center">
               <button
                 onClick={() => useAppStore.getState().focusRoomByCode(lesson.room)}
@@ -59,18 +69,15 @@ export function CourseMeta({
               </button>
             </MapHoverCard>
           )}
-          {lesson?.room && !lesson.room.startsWith('Q') && (
-            // Same shape as the Q-room branch above: the room code is the
-            // control. A room outside Q has no thumbnail to hover, but it
-            // should not therefore get a differently-shaped button labelled
-            // with a whole sentence.
-            <button
-              onClick={() => useAppStore.getState().focusRoomByCode(lesson.room)}
-              className="flex items-center gap-1 hover:text-success transition-colors"
-            >
+          {lesson?.room && !findableRoom && (
+            // Nothing in the dataset carries this room — a lesson held online,
+            // or a building MENDELU's map does not publish rooms for. Still
+            // say where the lesson is; just don't offer to show a place we
+            // cannot point at.
+            <span className="flex items-center gap-1">
               <MapIcon size={14} />
               <span>{lesson.room}</span>
-            </button>
+            </span>
           )}
           {lesson?.startTime && (
             <span className="flex items-center gap-1">
