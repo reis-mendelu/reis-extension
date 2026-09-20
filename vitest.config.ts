@@ -25,6 +25,27 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'happy-dom',
+    // No unit test may touch the public internet. happy-dom treats a real
+    // `window.open` / link click as a navigation and FETCHES the page —
+    // `src/mobile/__tests__/openExternal.test.ts` was pulling is.mendelu.cz and
+    // esn.mendelu.cz down over the wire, googletagmanager and all. That passed
+    // on a laptop and timed out at 5s on a CI runner, which is how PR #361
+    // failed Unit tests while green locally. Disabling navigation is the fix;
+    // raising testTimeout would only have made the flake slower.
+    //
+    // `disableFallbackToSetURL` is left at its default (false), so a blocked
+    // navigation still updates the URL — any assertion on location keeps working.
+    environmentOptions: {
+      happyDOM: {
+        settings: {
+          navigation: {
+            disableMainFrameNavigation: true,
+            disableChildFrameNavigation: true,
+            disableChildPageNavigation: true,
+          },
+        },
+      },
+    },
     setupFiles: ['./src/test/setup.ts'],
     // supabase/ is included for edge-function logic that is pure TypeScript and
     // imports no Deno globals. `tsc` covers only src/, so without this an edge
