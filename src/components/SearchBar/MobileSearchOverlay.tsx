@@ -23,17 +23,24 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, prefillQue
   const [isPortalOpen, setIsPortalOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Resetting the query is a state adjustment, not a synchronisation with
+  // anything outside React, so it happens during render rather than in the
+  // effect below. The trigger set is the one the effect had: the sheet opening
+  // or closing, and the header handing over a new prefill.
+  const prefillKey = isOpen ? `open:${prefillQuery}` : 'closed';
+  const [appliedPrefill, setAppliedPrefill] = useState(prefillKey);
+  if (prefillKey !== appliedPrefill) {
+    setAppliedPrefill(prefillKey);
+    if (!isOpen) setQuery('');
+    else if (prefillQuery) setQuery(prefillQuery);
+  }
+
   useEffect(() => {
     if (isOpen) {
       setIsOpen(true);
-      if (prefillQuery) {
-        setQuery(prefillQuery);
-      }
       setTimeout(() => inputRef.current?.focus(), 100);
-    } else {
-      setQuery('');
     }
-  }, [isOpen, setIsOpen, prefillQuery]);
+  }, [isOpen, setIsOpen]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
