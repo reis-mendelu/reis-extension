@@ -14,3 +14,8 @@ src/data/map/rooms-index.json
 src/data/map/campusPaths.json
 # Written by `infisical init` — reformatting it just loses to the next init
 .infisical.json
+# Captured IS Mendelu HTML. These are evidence of what IS actually emits, and
+# CLAUDE.md's Parser Rules make a real sample the only thing that justifies a
+# parser change — so they stay byte-for-byte as scraped. Reformatting them
+# would validate future parser work against markup IS never sends.
+src/api/__tests__/fixtures/**/*.html

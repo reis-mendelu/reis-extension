@@ -12,14 +12,38 @@ import { getModifierKey } from '../../utils/platform';
 interface MobileSearchOverlayProps {
   isOpen: boolean;
   onClose: () => void;
-  onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string, faculty?: string) => void;
+  onOpenSubject?: (
+    courseCode: string,
+    courseName?: string,
+    courseId?: string,
+    faculty?: string
+  ) => void;
   prefillQuery?: string;
 }
 
-export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, prefillQuery = '' }: MobileSearchOverlayProps) {
+export function MobileSearchOverlay({
+  isOpen,
+  onClose,
+  onOpenSubject,
+  prefillQuery = '',
+}: MobileSearchOverlayProps) {
   const { t, language } = useTranslation();
   const [query, setQuery] = useState('');
-  const { setIsOpen, selectedIndex, setSelectedIndex, sections, filteredResults, isLoading, recentSearches, studiumId, saveToHistory, scope, canScopeToFaculty, widenToUniversity, narrowToFaculty } = useSearch(query);
+  const {
+    setIsOpen,
+    selectedIndex,
+    setSelectedIndex,
+    sections,
+    filteredResults,
+    isLoading,
+    recentSearches,
+    studiumId,
+    saveToHistory,
+    scope,
+    canScopeToFaculty,
+    widenToUniversity,
+    narrowToFaculty,
+  } = useSearch(query);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -55,7 +79,10 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, prefillQue
     if (result.type === 'subject' && onOpenSubject) {
       onOpenSubject(result.subjectCode!, result.title, result.subjectId, result.faculty);
     } else if (result.link) {
-      window.open(injectUserParams(result.link, studiumId, language === 'en' ? 'en' : 'cz'), '_blank');
+      window.open(
+        injectUserParams(result.link, studiumId, language === 'en' ? 'en' : 'cz'),
+        '_blank'
+      );
     }
     setQuery('');
     onClose();
@@ -66,9 +93,16 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, prefillQue
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     const resultsCount = displayResults.length;
-    if (e.key === 'ArrowDown') { e.preventDefault(); setSelectedIndex(prev => (prev + 1) % resultsCount); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); setSelectedIndex(prev => prev <= 0 ? resultsCount - 1 : prev - 1); }
-    else if (e.key === 'Enter') { e.preventDefault(); if (resultsCount > 0) handleSelect(displayResults[selectedIndex >= 0 ? selectedIndex : 0]); }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev + 1) % resultsCount);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev <= 0 ? resultsCount - 1 : prev - 1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (resultsCount > 0) handleSelect(displayResults[selectedIndex >= 0 ? selectedIndex : 0]);
+    }
   };
 
   if (!isOpen) return null;
@@ -82,22 +116,33 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, prefillQue
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-base-content/50" />
               <span>{t('search.loading')}</span>
             </div>
-          ) : t('search.empty')}
+          ) : (
+            t('search.empty')
+          )}
         </div>
       );
     }
 
     let globalIdx = 0;
-    return sections.map(section => (
+    return sections.map((section) => (
       <div key={section.key}>
         <div className="px-4 py-1.5 text-xs font-semibold text-base-content/50 uppercase tracking-wider mt-1">
           {section.label}
         </div>
-        {section.results.map(result => {
+        {section.results.map((result) => {
           const idx = globalIdx++;
           return (
-            <SearchResultItem key={result.id} result={result} isRecent={false} isSelected={selectedIndex === idx}
-              onMouseEnter={() => setSelectedIndex(idx)} onMouseDown={(e) => { e.preventDefault(); handleSelect(result); }} />
+            <SearchResultItem
+              key={result.id}
+              result={result}
+              isRecent={false}
+              isSelected={selectedIndex === idx}
+              onMouseEnter={() => setSelectedIndex(idx)}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                handleSelect(result);
+              }}
+            />
           );
         })}
       </div>
@@ -126,12 +171,18 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, prefillQue
             className="w-full bg-transparent text-sm text-base-content placeholder-base-content/50 focus:outline-none"
           />
           {query && (
-            <button onClick={() => { setQuery(''); inputRef.current?.focus(); }} className="p-1">
+            <button
+              onClick={() => {
+                setQuery('');
+                inputRef.current?.focus();
+              }}
+              className="p-1"
+            >
               <X className="w-4 h-4 text-base-content/50" />
             </button>
           )}
         </div>
-        <button 
+        <button
           onClick={() => setIsPortalOpen(true)}
           className="p-2.5 bg-base-200 hover:bg-base-300 rounded-lg text-base-content/60 hover:text-primary transition-colors"
         >
@@ -145,16 +196,29 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, prefillQue
             <div className="px-4 py-2 text-xs font-semibold text-base-content/50 uppercase tracking-wider">
               {t('search.recent')}
             </div>
-            {recentSearches.length > 0 ? recentSearches.map((result, index) => (
-              <SearchResultItem key={result.id} result={result} isRecent isSelected={selectedIndex === index}
-                onMouseEnter={() => setSelectedIndex(index)} onMouseDown={(e) => { e.preventDefault(); handleSelect(result); }} />
-            )) : (
+            {recentSearches.length > 0 ? (
+              recentSearches.map((result, index) => (
+                <SearchResultItem
+                  key={result.id}
+                  result={result}
+                  isRecent
+                  isSelected={selectedIndex === index}
+                  onMouseEnter={() => setSelectedIndex(index)}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    handleSelect(result);
+                  }}
+                />
+              ))
+            ) : (
               <div className="px-4 py-8 text-center text-sm text-base-content/50">
                 {t('search.recentHint')}
               </div>
             )}
           </>
-        ) : renderSearchResults()}
+        ) : (
+          renderSearchResults()
+        )}
       </div>
       {!isEmptyQuery && canScopeToFaculty && (
         <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-t border-base-300">
@@ -163,7 +227,12 @@ export function MobileSearchOverlay({ isOpen, onClose, onOpenSubject, prefillQue
           </span>
           <button
             type="button"
-            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); if (scope === 'faculty') widenToUniversity(); else narrowToFaculty(); }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (scope === 'faculty') widenToUniversity();
+              else narrowToFaculty();
+            }}
             className="text-xs text-primary hover:underline flex items-center gap-1.5 shrink-0"
           >
             <Globe className="w-3.5 h-3.5" />

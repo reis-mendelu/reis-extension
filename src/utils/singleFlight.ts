@@ -5,18 +5,21 @@
  * latest state always get processed without overlapping passes.
  */
 export function singleFlight(task: () => Promise<void>): () => Promise<void> {
-    let running = false;
-    let dirty = false;
-    return async () => {
-        if (running) { dirty = true; return; }
-        running = true;
-        try {
-            do {
-                dirty = false;
-                await task();
-            } while (dirty);
-        } finally {
-            running = false;
-        }
-    };
+  let running = false;
+  let dirty = false;
+  return async () => {
+    if (running) {
+      dirty = true;
+      return;
+    }
+    running = true;
+    try {
+      do {
+        dirty = false;
+        await task();
+      } while (dirty);
+    } finally {
+      running = false;
+    }
+  };
 }

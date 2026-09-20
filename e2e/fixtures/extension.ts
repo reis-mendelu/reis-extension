@@ -29,9 +29,7 @@ export const test = base.extend<ExtensionFixtures>({
   extensionContext: async ({}, use) => {
     // Verify extension exists
     if (!fs.existsSync(path.join(EXTENSION_PATH, 'manifest.json'))) {
-      throw new Error(
-        `Extension not found at ${EXTENSION_PATH}. Run "npm run build" first.`
-      );
+      throw new Error(`Extension not found at ${EXTENSION_PATH}. Run "npm run build" first.`);
     }
 
     // Launch browser with extension
@@ -62,9 +60,11 @@ export const test = base.extend<ExtensionFixtures>({
   extensionId: async ({}, use) => {
     const manifestPath = path.join(EXTENSION_PATH, 'manifest.json');
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-    
+
     if (!manifest.key) {
-        throw new Error('Manifest does not contain a "key" field. Extension ID cannot be determined.');
+      throw new Error(
+        'Manifest does not contain a "key" field. Extension ID cannot be determined.'
+      );
     }
 
     const EXTENSION_ID = calculateExtensionId(manifest.key);
@@ -85,10 +85,10 @@ export const test = base.extend<ExtensionFixtures>({
   // Page for extension popup/UI - with console monitoring attached BEFORE navigation
   extensionPage: async ({ extensionContext, extensionId, consoleErrors, pageErrors }, use) => {
     const page = await extensionContext.newPage();
-    
+
     // CRITICAL: Attach listeners BEFORE navigation to catch all errors
     // This is the Munger-style fix: monitor from the very start
-    page.on('console', msg => {
+    page.on('console', (msg) => {
       if (msg.type() === 'error') {
         const text = msg.text();
         // Filter out favicon errors (common, harmless)
@@ -97,12 +97,12 @@ export const test = base.extend<ExtensionFixtures>({
         }
       }
     });
-    
+
     // Catch uncaught exceptions (pageerror)
-    page.on('pageerror', err => {
+    page.on('pageerror', (err) => {
       pageErrors.push(err.message);
     });
-    
+
     // Navigate to extension popup (WXT defaults to naming the entrypoint main.html if configured so)
     await page.goto(`chrome-extension://${extensionId}/main.html`, {
       waitUntil: 'domcontentloaded',

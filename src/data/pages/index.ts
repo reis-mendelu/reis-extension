@@ -9,19 +9,19 @@ import { herna, personalizace, nastaveniIS, ochranaUdaju } from './personal';
 export * from './types';
 
 export const pagesData: PageCategory[] = [
-    mojeStudium,
-    portalInfo,
-    vedaVyzkum,
-    elearning,
-    osobniManagement,
-    eAgenda,
-    technologie,
-    spravaIS,
-    dokumentace,
-    herna,
-    personalizace,
-    nastaveniIS,
-    ochranaUdaju
+  mojeStudium,
+  portalInfo,
+  vedaVyzkum,
+  elearning,
+  osobniManagement,
+  eAgenda,
+  technologie,
+  spravaIS,
+  dokumentace,
+  herna,
+  personalizace,
+  nastaveniIS,
+  ochranaUdaju,
 ];
 
-export const BASE_URL = "https://is.mendelu.cz";
+export const BASE_URL = 'https://is.mendelu.cz';

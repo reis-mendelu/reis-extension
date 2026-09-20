@@ -16,7 +16,12 @@ interface DailyViewProps {
   onNextWeek?: () => void;
   isOutsideTeachingPeriod: boolean;
   onEventClick: (lesson: BlockLesson, anchor: { x: number; y: number }) => void;
-  onCreateEvent?: (date: string, startTime: string, endTime: string, anchor: { x: number; y: number }) => void;
+  onCreateEvent?: (
+    date: string,
+    startTime: string,
+    endTime: string,
+    anchor: { x: number; y: number }
+  ) => void;
 }
 
 export function DailyView({
@@ -29,12 +34,12 @@ export function DailyView({
   onPrevWeek,
   onNextWeek,
   isOutsideTeachingPeriod,
-  onEventClick
+  onEventClick,
 }: DailyViewProps) {
   const { t } = useTranslation();
   const swipeRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  
+
   // Swipe to change weeks
   useSwipe(swipeRef, {
     onLeft: () => onNextWeek?.(),
@@ -82,7 +87,7 @@ export function DailyView({
 
   // Check if the entire week is empty
   const isWeekEmpty = useMemo(() => {
-    return lessonsByDay.every(dayLessons => !dayLessons || dayLessons.length === 0);
+    return lessonsByDay.every((dayLessons) => !dayLessons || dayLessons.length === 0);
   }, [lessonsByDay]);
 
   // Skeleton loading view
@@ -90,7 +95,10 @@ export function DailyView({
     return (
       <div className="flex h-full flex-col font-inter bg-base-100 p-4 space-y-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="flex flex-col gap-3 p-4 border border-base-200 rounded-2xl bg-base-200/50 animate-pulse">
+          <div
+            key={i}
+            className="flex flex-col gap-3 p-4 border border-base-200 rounded-2xl bg-base-200/50 animate-pulse"
+          >
             <div className="h-4 w-1/4 bg-base-300 rounded" />
             <div className="h-6 w-3/4 bg-base-300 rounded" />
             <div className="h-4 w-1/2 bg-base-300 rounded" />
@@ -101,7 +109,10 @@ export function DailyView({
   }
 
   return (
-    <div ref={swipeRef} className="flex h-full overflow-hidden flex-col font-inter bg-base-100 relative">
+    <div
+      ref={swipeRef}
+      className="flex h-full overflow-hidden flex-col font-inter bg-base-100 relative"
+    >
       {/* Top Navigation Bar (Chevrons removed as requested; week swiping is default) */}
       <div className="flex items-center justify-center py-3 border-b border-base-300 bg-base-100 flex-shrink-0">
         <span className="text-sm font-bold text-base-content font-inter tracking-wide">
@@ -145,7 +156,15 @@ export function DailyView({
                 a.startTime.localeCompare(b.startTime)
               );
 
-              const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+              const dayNames = [
+                'monday',
+                'tuesday',
+                'wednesday',
+                'thursday',
+                'friday',
+                'saturday',
+                'sunday',
+              ];
               const localizedDayName = t(`days.${dayNames[dayIndex]}`);
 
               return (
@@ -165,7 +184,10 @@ export function DailyView({
                     {holiday && (
                       // No truncation: long Czech holiday names ("Den vzniku samostatného…")
                       // were unreadable on touch where `title` doesn't surface. Wrap instead.
-                      <span className="text-[11px] font-semibold text-error bg-error/10 px-2 py-0.5 rounded-lg text-right leading-tight whitespace-normal break-words min-w-0" title={holiday}>
+                      <span
+                        className="text-[11px] font-semibold text-error bg-error/10 px-2 py-0.5 rounded-lg text-right leading-tight whitespace-normal break-words min-w-0"
+                        title={holiday}
+                      >
                         {holiday}
                       </span>
                     )}
@@ -177,8 +199,12 @@ export function DailyView({
                       <div className="py-4 text-center border border-dashed border-base-300 rounded-xl bg-base-100/50">
                         <span className="text-xs text-base-content/40 font-medium">
                           {holiday
-                            ? (language === 'en' ? 'Public holiday' : 'Státní svátek')
-                            : (language === 'en' ? 'No events scheduled' : 'Žádné události')}
+                            ? language === 'en'
+                              ? 'Public holiday'
+                              : 'Státní svátek'
+                            : language === 'en'
+                              ? 'No events scheduled'
+                              : 'Žádné události'}
                         </span>
                       </div>
                     ) : (

@@ -6,7 +6,7 @@ import { parseExamData } from '../index';
 // table_1 = registered terms, table_3 = available terms (empty here).
 
 function wrapInPage(table1Rows: string): string {
-    return `<html><body>
+  return `<html><body>
         <table id="table_1"><thead><tr class="zahlavi">
             <th>Poř.</th><th>Kód</th><th>Předmět</th><th>Datum termínu</th>
             <th>Kde</th><th>Druh (forma)</th><th>Vypsal</th><th>Přihlášeno</th>
@@ -62,23 +62,23 @@ const MATEMATIKA_ROW_PAST_DEADLINE = `
 </tr>`;
 
 describe('registeredTermsParser', () => {
-    it('extracts termId from odhlasit_ihned link when deadline is in the future', () => {
-        const subjects = parseExamData(wrapInPage(MATEMATIKA_ROW_ACTIVE), 'cz');
-        const term = subjects[0]?.sections[0]?.registeredTerm;
-        expect(term?.id).toBe('336592');
-    });
+  it('extracts termId from odhlasit_ihned link when deadline is in the future', () => {
+    const subjects = parseExamData(wrapInPage(MATEMATIKA_ROW_ACTIVE), 'cz');
+    const term = subjects[0]?.sections[0]?.registeredTerm;
+    expect(term?.id).toBe('336592');
+  });
 
-    it('extracts termId from terminy_info link when odhlasit_ihned is absent (past deadline)', () => {
-        const subjects = parseExamData(wrapInPage(MATEMATIKA_ROW_PAST_DEADLINE), 'cz');
-        const term = subjects[0]?.sections[0]?.registeredTerm;
-        expect(term?.id).toBe('336592');
-    });
+  it('extracts termId from terminy_info link when odhlasit_ihned is absent (past deadline)', () => {
+    const subjects = parseExamData(wrapInPage(MATEMATIKA_ROW_PAST_DEADLINE), 'cz');
+    const term = subjects[0]?.sections[0]?.registeredTerm;
+    expect(term?.id).toBe('336592');
+  });
 
-    it('parses date, time and room correctly', () => {
-        const subjects = parseExamData(wrapInPage(MATEMATIKA_ROW_ACTIVE), 'cz');
-        const term = subjects[0]?.sections[0]?.registeredTerm;
-        expect(term?.date).toBe('23.04.2026');
-        expect(term?.time).toBe('11:00');
-        expect(term?.room).toBe('Studovna PEF (ČP)');
-    });
+  it('parses date, time and room correctly', () => {
+    const subjects = parseExamData(wrapInPage(MATEMATIKA_ROW_ACTIVE), 'cz');
+    const term = subjects[0]?.sections[0]?.registeredTerm;
+    expect(term?.date).toBe('23.04.2026');
+    expect(term?.time).toBe('11:00');
+    expect(term?.room).toBe('Studovna PEF (ČP)');
+  });
 });

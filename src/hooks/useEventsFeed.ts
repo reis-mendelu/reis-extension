@@ -22,12 +22,12 @@ export function useEventsFeed() {
   });
   const [loading, setLoading] = useState(false);
   const { subscribedFaculties, isLoading: settingsLoading } = useEventsFacultySettings();
-  const language = useAppStore(s => s.language);
+  const language = useAppStore((s) => s.language);
   const cacheKey = `${CACHE_PREFIX}${language}`;
   const allEvents = cache.key === cacheKey ? cache.events : NO_EVENTS;
 
   useEffect(() => {
-    IndexedDBService.get('meta', cacheKey).then(c => {
+    IndexedDBService.get('meta', cacheKey).then((c) => {
       if (c) setCache({ key: cacheKey, events: c as MendeluEvent[] });
     });
   }, [cacheKey]);
@@ -59,8 +59,8 @@ export function useEventsFeed() {
     }
   }, [load, settingsLoading]);
 
-  const events = allEvents.filter(e => subscribedFaculties.includes(e.organizerKey));
-  const toggle = () => setIsOpen(o => !o);
+  const events = allEvents.filter((e) => subscribedFaculties.includes(e.organizerKey));
+  const toggle = () => setIsOpen((o) => !o);
 
   return { isOpen, setIsOpen, events, loading, toggle };
 }

@@ -22,7 +22,7 @@ export const esnDataset: SocietyDataset = {
             room: 'Q01',
             teacher: 'Assoc. Prof. John Smith, Ph.D.',
             teacherId: 'smith-john',
-            deregistrationDeadline: '14.02.2026 23:59'
+            deregistrationDeadline: '14.02.2026 23:59',
           },
           terms: [
             {
@@ -37,11 +37,11 @@ export const esnDataset: SocietyDataset = {
               registrationStart: '01.02.2026 00:00',
               registrationEnd: '14.02.2026 23:59',
               attemptTypes: ['regular'],
-              canRegisterNow: true
-            }
-          ]
-        }
-      ]
+              canRegisterNow: true,
+            },
+          ],
+        },
+      ],
     },
     {
       version: 1,
@@ -67,12 +67,12 @@ export const esnDataset: SocietyDataset = {
               registrationStart: '05.02.2026 00:00',
               registrationEnd: '17.02.2026 23:59',
               attemptTypes: ['regular'],
-              canRegisterNow: true
-            }
-          ]
-        }
-      ]
-    }
+              canRegisterNow: true,
+            },
+          ],
+        },
+      ],
+    },
   ],
   schedule: [
     {
@@ -84,7 +84,9 @@ export const esnDataset: SocietyDataset = {
       courseName: 'Algorithms',
       room: 'Q01',
       roomStructured: { name: 'Q01', id: 'q01' },
-      teachers: [{ fullName: 'Assoc. Prof. John Smith, Ph.D.', shortName: 'Smith', id: 'smith-john' }],
+      teachers: [
+        { fullName: 'Assoc. Prof. John Smith, Ph.D.', shortName: 'Smith', id: 'smith-john' },
+      ],
       isExam: false,
       isConsultation: 'false',
       studyId: '',
@@ -93,7 +95,7 @@ export const esnDataset: SocietyDataset = {
       courseId: 'ebc-alg',
       campus: 'Brno',
       isSeminar: 'false',
-      periodId: ''
+      periodId: '',
     },
     {
       id: 'sched-mon-czech',
@@ -104,7 +106,9 @@ export const esnDataset: SocietyDataset = {
       courseName: 'Czech Language for Foreigners',
       room: 'P12',
       roomStructured: { name: 'P12', id: 'p12' },
-      teachers: [{ fullName: 'Mgr. Anna Nováková, Ph.D.', shortName: 'Nováková', id: 'novakova-anna' }],
+      teachers: [
+        { fullName: 'Mgr. Anna Nováková, Ph.D.', shortName: 'Nováková', id: 'novakova-anna' },
+      ],
       isExam: false,
       isConsultation: 'false',
       studyId: '',
@@ -113,7 +117,7 @@ export const esnDataset: SocietyDataset = {
       courseId: 'ldf-czech',
       campus: 'Brno',
       isSeminar: 'true',
-      periodId: ''
-    }
-  ]
+      periodId: '',
+    },
+  ],
 };

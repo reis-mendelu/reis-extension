@@ -2,136 +2,179 @@ import { useState, useCallback } from 'react';
 import { X, Plus } from 'lucide-react';
 import { useDocumentNote } from '../../hooks/data/useDocumentNote';
 import { useTranslation } from '../../hooks/useTranslation';
-import { parseNote, serializeNote, type DocumentNoteData, type NoteCardData } from './utils/noteParser';
+import {
+  parseNote,
+  serializeNote,
+  type DocumentNoteData,
+  type NoteCardData,
+} from './utils/noteParser';
 import { NoteCard, type CardPatch } from './NoteCard';
 
 interface DocumentNoteEditorProps {
-    courseCode: string;
-    fileLink: string;
-    fileName: string;
-    onClose: () => void;
-    showHeader?: boolean;
+  courseCode: string;
+  fileLink: string;
+  fileName: string;
+  onClose: () => void;
+  showHeader?: boolean;
 }
 
 function newCardId(): string {
-    return `card-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  return `card-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-export function DocumentNoteEditor({ courseCode, fileLink, fileName, onClose, showHeader = false }: DocumentNoteEditorProps) {
-    const { t } = useTranslation();
-    const { note, setNote, isLoading, isSaving, hasError } = useDocumentNote(courseCode, fileLink);
-    const [data, setData] = useState<DocumentNoteData>({ cards: [], notes: '' });
-    // Which card should take the caret. This decides what renders, so it is
-    // state: a ref mutation schedules no render, and the focus only ever
-    // landed because the setData beside it happened to cause one.
-    const [focusCardId, setFocusCardId] = useState<string | null>(null);
+export function DocumentNoteEditor({
+  courseCode,
+  fileLink,
+  fileName,
+  onClose,
+  showHeader = false,
+}: DocumentNoteEditorProps) {
+  const { t } = useTranslation();
+  const { note, setNote, isLoading, isSaving, hasError } = useDocumentNote(courseCode, fileLink);
+  const [data, setData] = useState<DocumentNoteData>({ cards: [], notes: '' });
+  // Which card should take the caret. This decides what renders, so it is
+  // state: a ref mutation schedules no render, and the focus only ever
+  // landed because the setData beside it happened to cause one.
+  const [focusCardId, setFocusCardId] = useState<string | null>(null);
 
-    // Hydrate from storage on initial load or when the file/course changes —
-    // deliberately NOT when `note` itself changes, or a save round-trip would
-    // throw away whatever the student has typed since. Adjusting state during
-    // render rather than in an effect keeps the parse out of a second pass.
-    const hydrationKey = `${courseCode}|${fileLink}|${isLoading}`;
-    const [hydratedFor, setHydratedFor] = useState<string | null>(null);
-    if (!isLoading && hydratedFor !== hydrationKey) {
-        setHydratedFor(hydrationKey);
-        setData(parseNote(note));
-    }
+  // Hydrate from storage on initial load or when the file/course changes —
+  // deliberately NOT when `note` itself changes, or a save round-trip would
+  // throw away whatever the student has typed since. Adjusting state during
+  // render rather than in an effect keeps the parse out of a second pass.
+  const hydrationKey = `${courseCode}|${fileLink}|${isLoading}`;
+  const [hydratedFor, setHydratedFor] = useState<string | null>(null);
+  if (!isLoading && hydratedFor !== hydrationKey) {
+    setHydratedFor(hydrationKey);
+    setData(parseNote(note));
+  }
 
-    const updateCard = useCallback((id: string, patch: CardPatch) => {
-        setData((prev) => {
-            const next = {
-                ...prev,
-                cards: prev.cards.map((c) => (c.id === id ? { ...c, ...(typeof patch === 'function' ? patch(c) : patch) } : c)),
-            };
-            setNote(serializeNote(next), fileName);
-            return next;
-        });
-    }, [setNote, fileName]);
+  const updateCard = useCallback(
+    (id: string, patch: CardPatch) => {
+      setData((prev) => {
+        const next = {
+          ...prev,
+          cards: prev.cards.map((c) =>
+            c.id === id ? { ...c, ...(typeof patch === 'function' ? patch(c) : patch) } : c
+          ),
+        };
+        setNote(serializeNote(next), fileName);
+        return next;
+      });
+    },
+    [setNote, fileName]
+  );
 
-    const addCard = useCallback((afterId?: string) => {
-        const card: NoteCardData = { id: newCardId(), question: '', answer: '', collapsed: false, images: [] };
-        setFocusCardId(card.id);
-        setData((prev) => {
-            const cards = [...prev.cards];
-            const idx = afterId ? cards.findIndex((c) => c.id === afterId) : -1;
-            if (idx >= 0) cards.splice(idx + 1, 0, card);
-            else cards.push(card);
-            const next = { ...prev, cards };
-            setNote(serializeNote(next), fileName);
-            return next;
-        });
-    }, [setNote, fileName]);
+  const addCard = useCallback(
+    (afterId?: string) => {
+      const card: NoteCardData = {
+        id: newCardId(),
+        question: '',
+        answer: '',
+        collapsed: false,
+        images: [],
+      };
+      setFocusCardId(card.id);
+      setData((prev) => {
+        const cards = [...prev.cards];
+        const idx = afterId ? cards.findIndex((c) => c.id === afterId) : -1;
+        if (idx >= 0) cards.splice(idx + 1, 0, card);
+        else cards.push(card);
+        const next = { ...prev, cards };
+        setNote(serializeNote(next), fileName);
+        return next;
+      });
+    },
+    [setNote, fileName]
+  );
 
-    const deleteCard = useCallback((id: string) => {
-        setData((prev) => {
-            const idx = prev.cards.findIndex((c) => c.id === id);
-            setFocusCardId(idx > 0 ? prev.cards[idx - 1].id : null);
-            const next = { ...prev, cards: prev.cards.filter((c) => c.id !== id) };
-            setNote(serializeNote(next), fileName);
-            return next;
-        });
-    }, [setNote, fileName]);
+  const deleteCard = useCallback(
+    (id: string) => {
+      setData((prev) => {
+        const idx = prev.cards.findIndex((c) => c.id === id);
+        setFocusCardId(idx > 0 ? prev.cards[idx - 1].id : null);
+        const next = { ...prev, cards: prev.cards.filter((c) => c.id !== id) };
+        setNote(serializeNote(next), fileName);
+        return next;
+      });
+    },
+    [setNote, fileName]
+  );
 
-    const setNotes = useCallback((notes: string) => {
-        setData((prev) => {
-            const next = { ...prev, notes };
-            setNote(serializeNote(next), fileName);
-            return next;
-        });
-    }, [setNote, fileName]);
+  const setNotes = useCallback(
+    (notes: string) => {
+      setData((prev) => {
+        const next = { ...prev, notes };
+        setNote(serializeNote(next), fileName);
+        return next;
+      });
+    },
+    [setNote, fileName]
+  );
 
-    if (isLoading) {
-        return (
-            <div className={`flex items-center justify-center bg-base-100 ${showHeader ? 'h-full' : 'py-8 rounded-lg border border-base-300'}`}>
-                <span className="loading loading-spinner loading-md text-primary" />
-            </div>
-        );
-    }
-
+  if (isLoading) {
     return (
-        <div className={`flex flex-col bg-base-100 ${showHeader ? 'h-full border-l border-base-300' : 'max-h-[60vh] rounded-lg border border-base-300'}`}>
-            {showHeader && (
-                <div className="flex items-center justify-between px-4 py-3 border-b border-base-300 bg-base-200/50 shrink-0">
-                    <h3 className="text-sm font-semibold text-base-content truncate mr-3" title={fileName}>{fileName}</h3>
-                    <button onClick={onClose} className="btn btn-ghost btn-xs btn-square"><X size={14} /></button>
-                </div>
-            )}
-
-            <div className={`overflow-y-auto p-4 space-y-2 ${showHeader ? 'flex-1' : ''}`}>
-                {data.cards.map((card) => (
-                    <NoteCard
-                        key={card.id}
-                        card={card}
-                        autoFocus={focusCardId === card.id}
-                        onChange={(patch) => updateCard(card.id, patch)}
-                        onEnterAnswer={() => addCard(card.id)}
-                        onDelete={() => deleteCard(card.id)}
-                    />
-                ))}
-
-                <button
-                    onClick={() => addCard()}
-                    className="btn btn-ghost btn-sm gap-1.5 text-primary/80 hover:text-primary w-full justify-start"
-                >
-                    <Plus size={14} />
-                    {t('course.documentNote.addCard')}
-                </button>
-
-                <div className="pt-1">
-                    <textarea
-                        value={data.notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        placeholder={t('course.documentNote.notesPlaceholder')}
-                        className="textarea textarea-bordered w-full text-sm leading-relaxed min-h-20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                    />
-                </div>
-
-                <div className="h-4 text-[10px] font-medium">
-                    {hasError ? <span className="text-error">{t('course.documentNote.saveError')}</span>
-                        : isSaving ? <span className="text-primary/70">{t('course.documentNote.saving')}</span>
-                            : note ? <span className="text-success">{t('course.documentNote.saved')}</span> : null}
-                </div>
-            </div>
-        </div>
+      <div
+        className={`flex items-center justify-center bg-base-100 ${showHeader ? 'h-full' : 'py-8 rounded-lg border border-base-300'}`}
+      >
+        <span className="loading loading-spinner loading-md text-primary" />
+      </div>
     );
+  }
+
+  return (
+    <div
+      className={`flex flex-col bg-base-100 ${showHeader ? 'h-full border-l border-base-300' : 'max-h-[60vh] rounded-lg border border-base-300'}`}
+    >
+      {showHeader && (
+        <div className="flex items-center justify-between px-4 py-3 border-b border-base-300 bg-base-200/50 shrink-0">
+          <h3 className="text-sm font-semibold text-base-content truncate mr-3" title={fileName}>
+            {fileName}
+          </h3>
+          <button onClick={onClose} className="btn btn-ghost btn-xs btn-square">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      <div className={`overflow-y-auto p-4 space-y-2 ${showHeader ? 'flex-1' : ''}`}>
+        {data.cards.map((card) => (
+          <NoteCard
+            key={card.id}
+            card={card}
+            autoFocus={focusCardId === card.id}
+            onChange={(patch) => updateCard(card.id, patch)}
+            onEnterAnswer={() => addCard(card.id)}
+            onDelete={() => deleteCard(card.id)}
+          />
+        ))}
+
+        <button
+          onClick={() => addCard()}
+          className="btn btn-ghost btn-sm gap-1.5 text-primary/80 hover:text-primary w-full justify-start"
+        >
+          <Plus size={14} />
+          {t('course.documentNote.addCard')}
+        </button>
+
+        <div className="pt-1">
+          <textarea
+            value={data.notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder={t('course.documentNote.notesPlaceholder')}
+            className="textarea textarea-bordered w-full text-sm leading-relaxed min-h-20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+          />
+        </div>
+
+        <div className="h-4 text-[10px] font-medium">
+          {hasError ? (
+            <span className="text-error">{t('course.documentNote.saveError')}</span>
+          ) : isSaving ? (
+            <span className="text-primary/70">{t('course.documentNote.saving')}</span>
+          ) : note ? (
+            <span className="text-success">{t('course.documentNote.saved')}</span>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
 }

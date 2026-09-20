@@ -1,23 +1,25 @@
 export function validateHtmlStructure(doc: Document): void {
-    const warnings: string[] = [];
-    const table1 = doc.querySelector('#table_1');
-    const table2 = doc.querySelector('#table_2');
+  const warnings: string[] = [];
+  const table1 = doc.querySelector('#table_1');
+  const table2 = doc.querySelector('#table_2');
 
-    if (!table1 && !table2) {
-        warnings.push('Neither #table_1 nor #table_2 found - page structure may have changed');
+  if (!table1 && !table2) {
+    warnings.push('Neither #table_1 nor #table_2 found - page structure may have changed');
+  }
+
+  if (table2) {
+    const headers = Array.from(table2.querySelectorAll('thead th')).map(
+      (h) => h.textContent?.trim() || ''
+    );
+    const missing = ['Datum/Date/Kdy', 'Místnost/Where/Kde', 'Zkouška/Type/Druh'].filter((eh) => {
+      const parts = eh.split('/');
+      return !headers.some((ht) => parts.some((p) => ht.toLowerCase().includes(p.toLowerCase())));
+    });
+    if (missing.length > 0) {
+      warnings.push(`Missing expected headers: ${missing.join(', ')}`);
+      warnings.push(`Actual headers found: [${headers.join(', ')}]`);
     }
+  }
 
-    if (table2) {
-        const headers = Array.from(table2.querySelectorAll('thead th')).map(h => h.textContent?.trim() || '');
-        const missing = ['Datum/Date/Kdy', 'Místnost/Where/Kde', 'Zkouška/Type/Druh'].filter(eh => {
-            const parts = eh.split('/');
-            return !headers.some(ht => parts.some(p => ht.toLowerCase().includes(p.toLowerCase())));
-        });
-        if (missing.length > 0) {
-            warnings.push(`Missing expected headers: ${missing.join(', ')}`);
-            warnings.push(`Actual headers found: [${headers.join(', ')}]`);
-        }
-    }
-
-    // Warnings are silently collected — structure mismatches are handled gracefully by parsers
+  // Warnings are silently collected — structure mismatches are handled gracefully by parsers
 }

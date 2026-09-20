@@ -8,9 +8,9 @@
  * cookie to an attacker-controlled host. Comparing the parsed origin closes that gap.
  */
 export function isIsMendeluUrl(url: string): boolean {
-    try {
-        return new URL(url).origin === 'https://is.mendelu.cz';
-    } catch {
-        return false;
-    }
+  try {
+    return new URL(url).origin === 'https://is.mendelu.cz';
+  } catch {
+    return false;
+  }
 }

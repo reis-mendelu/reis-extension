@@ -7,7 +7,7 @@ import type { SubjectsData } from '@/types/documents';
  * never persisted, so it cannot leak into other plan consumers.
  */
 export function buildFallbackPlan(subjects: SubjectsData, language: 'cs' | 'en'): StudyPlan {
-  const items: SubjectStatus[] = Object.values(subjects.data).map(info => ({
+  const items: SubjectStatus[] = Object.values(subjects.data).map((info) => ({
     id: info.subjectId ?? '',
     code: info.subjectCode,
     name: (language === 'en' ? info.nameEn : info.nameCs) ?? info.displayName,

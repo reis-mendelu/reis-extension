@@ -6,7 +6,14 @@ import type { StudyStats } from '../../../types/studyPlan';
 
 function makeStats(over: Partial<StudyStats> = {}): StudyStats {
   return {
-    currentSemester: { enrolledCredits: 0, earnedCredits: 0, unearnedCredits: 0, completedSubjects: 0, gpa: 1.22, gpaWithFails: 1.22 },
+    currentSemester: {
+      enrolledCredits: 0,
+      earnedCredits: 0,
+      unearnedCredits: 0,
+      completedSubjects: 0,
+      gpa: 1.22,
+      gpaWithFails: 1.22,
+    },
     previousSemester: null,
     totalEarnedCredits: 0,
     creditsLastTwoPeriods: 0,
@@ -38,7 +45,14 @@ describe('StudyAveragesSection', () => {
 
   it('renders nothing when all three averages are zero', () => {
     const stats = makeStats({
-      currentSemester: { enrolledCredits: 0, earnedCredits: 0, unearnedCredits: 0, completedSubjects: 0, gpa: 0, gpaWithFails: 0 },
+      currentSemester: {
+        enrolledCredits: 0,
+        earnedCredits: 0,
+        unearnedCredits: 0,
+        completedSubjects: 0,
+        gpa: 0,
+        gpaWithFails: 0,
+      },
       gpaTotal: 0,
       weightedGpaTotal: 0,
     });

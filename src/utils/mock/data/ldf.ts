@@ -28,12 +28,12 @@ export const ldfDataset: SocietyDataset = {
               registrationStart: '15.02.2026 00:00',
               registrationEnd: '19.02.2026 23:59',
               attemptTypes: ['regular'],
-              canRegisterNow: false
-            }
-          ]
-        }
-      ]
-    }
+              canRegisterNow: false,
+            },
+          ],
+        },
+      ],
+    },
   ],
   schedule: [
     {
@@ -54,7 +54,7 @@ export const ldfDataset: SocietyDataset = {
       courseId: 'ldf-spatial',
       campus: 'Brno',
       isSeminar: 'false',
-      periodId: ''
-    }
-  ]
+      periodId: '',
+    },
+  ],
 };
