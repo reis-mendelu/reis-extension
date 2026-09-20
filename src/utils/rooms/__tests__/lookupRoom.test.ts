@@ -61,6 +61,26 @@ describe('lookupRoomEntry', () => {
     expect(exact?.code).toBe('BA03N5041a');
   });
 
+  // Five handles name two rooms each. For B22 the loser is the one a timetable
+  // means: `index.find` reaches the basement storage room before the third-floor
+  // classroom, and IS schedules 83 lessons a semester into "B22".
+  it('prefers the classroom over the storage room for B22', () => {
+    const hit = lookupRoomEntry('B22', INDEX);
+    expect(hit?.code).toBe('BA04N3022');
+    expect(hit?.floorLevel).toBe(3);
+  });
+
+  // The other four need no rule, and it matters that nobody adds one: B35 and
+  // C11 already land on their classroom, B52 is two offices (which no timetable
+  // prints), and E17 is two classrooms one floor apart with no tiebreak in the
+  // room string at all.
+  it.each([
+    ['B35', 'BA04N4036'],
+    ['C11', 'BA03N2045'],
+  ])('leaves %s on the classroom it already resolved to', (nick, code) => {
+    expect(lookupRoomEntry(nick, INDEX)?.code).toBe(code);
+  });
+
   it('returns null for a room the dataset does not contain', () => {
     // Real strings off a Zahradnická fakulta timetable. Building X's index
     // entries are all raw BA25* codes — no X02/X03 exists under any handle.

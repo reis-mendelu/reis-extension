@@ -59,6 +59,28 @@ function candidates(raw: string): string[] {
   return out;
 }
 
+/**
+ * Handles the DATA makes ambiguous, where the room a timetable means is still
+ * knowable — resolved by hand because the index does not carry what would
+ * decide it automatically.
+ *
+ * Fifteen handles name more than one room. Only this one currently resolves to
+ * the wrong kind of room: `index.find` reaches BA04P1011, a basement storage
+ * room, before BA04N3022, the third-floor classroom, and IS schedules 83
+ * lessons a semester into "B22". The map's geojson records `category` for both
+ * (`service` vs `teaching`) but `rooms-index.json` does not, so there is
+ * nothing to tiebreak on here; carrying `category` into the index upstream
+ * would retire this map.
+ *
+ * The other ambiguous handles deliberately get no entry: B35 and C11 already
+ * land on their classroom, B52 is two offices (which no timetable prints), and
+ * E17 is two classrooms one floor apart with no tiebreak in the room string at
+ * all. The frozen list in the test is what catches a new collision appearing.
+ */
+const PREFERRED_ROOM: Record<string, string> = {
+  b22: 'BA04N3022',
+};
+
 // Field precedence within one candidate: the estate code is unique, the printed
 // name next, the nickname last (nicknames are the only field that repeats — two
 // rooms are both called "E17", and a few carry a descriptive title instead of a
@@ -79,6 +101,11 @@ export function lookupRoomEntry(
   for (const candidate of candidates(raw)) {
     const needle = normalizeRoomKey(candidate);
     if (!needle) continue;
+    const preferred = PREFERRED_ROOM[needle];
+    if (preferred) {
+      const pick = index.find((e) => e.code === preferred);
+      if (pick) return pick;
+    }
     for (const field of FIELDS) {
       const exact = index.find((e) => field(e) === candidate);
       if (exact) return exact;

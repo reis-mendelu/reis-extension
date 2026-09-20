@@ -1,5 +1,5 @@
 {
-  "_comment": "Synthetic teaching-week fixture. NO real student data — fictional courses, teachers and rooms. Lesson dates are authored as dayOffset from 'now' and materialised to IS's compact YYYYMMDD by scripts/lib/fixtureRebase.ts, so this never rots. Ids are named after their offset (fx-d0-, fx-d7-, fx-dm7-) rather than a weekday, because which weekday an offset lands on depends on the day you run it. It spans three weeks on purpose: the phone's day switcher is the only way to reach another day, and an empty adjacent week hides whether it works. Serve with: npm run dev:web:week",
+  "_comment": "Synthetic teaching-week fixture. NO real student data — fictional courses, teachers and rooms. Lesson dates are authored as dayOffset from 'now' and materialised to IS's compact YYYYMMDD by scripts/lib/fixtureRebase.ts, so this never rots. Ids are named after their offset (fx-d0-, fx-d7-, fx-dm7-) rather than a weekday, because which weekday an offset lands on depends on the day you run it. It spans three weeks on purpose: the phone's day switcher is the only way to reach another day, and an empty adjacent week hides whether it works. Serve with: npm run dev:web:week Day 0 deliberately carries one room of each resolution class, because the real-data snapshot is all-PEF and so can never exercise them: Q01 (building Q puts the hall code in `name`), A01 (buildings A/B/C/E/M put it in `nickname` — the case that was broken for every non-PEF faculty) and Z18 (a building the dataset carries no rooms for, so the map control must not be offered at all).",
   "schedule": [
     {
       "id": "fx-d0-alg",
@@ -31,6 +31,39 @@
       "facultyCode": "PEF",
       "isDefaultCampus": "true",
       "courseId": "ebc-alg",
+      "campus": "Brno",
+      "periodId": ""
+    },
+    {
+      "id": "fx-d0-ekon",
+      "dayOffset": 0,
+      "startTime": "10:00",
+      "endTime": "11:50",
+      "courseCode": "EBC-EKO",
+      "courseName": "Ekonomie",
+      "courseNameCs": "Ekonomie",
+      "courseNameEn": "Economics",
+      "room": "A01",
+      "roomCs": "A01",
+      "roomEn": "A01",
+      "roomStructured": {
+        "name": "A01",
+        "id": "a01"
+      },
+      "teachers": [
+        {
+          "fullName": "Ing. Pavel Kučera, Ph.D.",
+          "shortName": "Kučera",
+          "id": "4"
+        }
+      ],
+      "isExam": false,
+      "isConsultation": "false",
+      "isSeminar": "false",
+      "studyId": "",
+      "facultyCode": "PEF",
+      "isDefaultCampus": "true",
+      "courseId": "ebc-eko",
       "campus": "Brno",
       "periodId": ""
     },
