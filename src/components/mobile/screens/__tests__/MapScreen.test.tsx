@@ -104,12 +104,19 @@ describe('MapScreen', () => {
 
     // A drag the sheet absorbs: press on the sheet, move far enough that it
     // consumes the travel, release — then the click the browser still delivers.
-    fireEvent.pointerDown(sheet, { clientY: 100 });
-    fireEvent.pointerMove(sheet, { clientY: 260 });
-    fireEvent.pointerUp(sheet, { clientY: 260 });
+    //
+    // UPWARD, though the reported gesture was a collapse. A card open means the
+    // sheet is at `half` (the effect puts it there), and a downward drag from
+    // half lands on peek, where collapsing now clears the selection by design —
+    // so a swallowed click and a working one would both leave it null and this
+    // test could no longer tell them apart. Upward exercises the same
+    // suppression against an outcome only Back can produce.
+    fireEvent.pointerDown(sheet, { clientY: 260 });
+    fireEvent.pointerMove(sheet, { clientY: 100 });
+    fireEvent.pointerUp(sheet, { clientY: 100 });
     fireEvent.click(back);
 
-    // Still selected: the drag collapsed the sheet, it did not press Back.
+    // Still selected: the drag moved the sheet, it did not press Back.
     expect(useAppStore.getState().mapSelection).not.toBeNull();
   });
 
@@ -472,6 +479,62 @@ describe('MapSheet drag', () => {
     render(<MapScreen />);
     fireEvent.click(screen.getByRole('button', { name: 'Akce' }));
     expect(useAppStore.getState().mapSheetState).toBe('peek');
+  });
+
+  /**
+   * `half` is where the sheet OPENS, and its heading row carries the same down
+   * chevron — and the same "Sbalit panel mapy" label — that the top stop does.
+   * The tap used to walk one rung UP the ladder from there, so the collapse
+   * affordance made the sheet TALLER: reported as "clicking on the expanded
+   * drawer just expands it even more", measured as 365px -> 568px.
+   */
+  it('collapses on a plain tap of the heading row at the middle stop', () => {
+    useAppStore.setState({ mapSheetState: 'half' } as never);
+    render(<MapScreen />);
+    fireEvent.click(screen.getByRole('button', { name: 'Akce' }));
+    expect(useAppStore.getState().mapSheetState).toBe('peek');
+  });
+
+  /**
+   * Collapsing while a pin's card is open used to strand both the sheet and the
+   * pin.
+   *
+   * The sheet, because it is sized by its CONTENT while a card shows, and at
+   * peek that content is one short row: ~52px, well under the 166px band the
+   * floating BottomNav is drawn over, so the hint row ended up half-buried
+   * behind the nav pill.
+   *
+   * The pin, because the effect that opens the sheet for a selection keys on
+   * the selected place's REFERENCE — the same object every time that bubble is
+   * tapped — so with the selection still set at peek, tapping the pin again
+   * changed no dep, ran no effect, and did nothing at all. Measured: the sheet
+   * stayed at 166px. Collapsing therefore drops the selection, which also keeps
+   * the peek row honest: it offers the events list, and that is what it must
+   * open.
+   */
+  const PLACE = {
+    id: 'rokle',
+    name: { cz: 'Rokle', en: 'The ravine' },
+    lon: 16.6123,
+    lat: 49.2141,
+  };
+
+  it('drops the pin and restores the peek band when tapped collapsed with a card open', () => {
+    useAppStore.setState({ mapSelection: { kind: 'gardenPlace', place: PLACE } } as never);
+    render(<MapScreen />);
+    fireEvent.click(screen.getByLabelText(/panel mapy/));
+    expect(useAppStore.getState().mapSheetState).toBe('peek');
+    expect(useAppStore.getState().mapSelection).toBeNull();
+    expect(screen.getByTestId('map-sheet').className).toContain('h-[166px]');
+  });
+
+  it('drops the pin when DRAGGED down to peek with a card open', () => {
+    useAppStore.setState({ mapSelection: { kind: 'gardenPlace', place: PLACE } } as never);
+    render(<MapScreen />);
+    // The effect put the sheet at `half`, one rung above peek.
+    drag(300, 500);
+    expect(useAppStore.getState().mapSheetState).toBe('peek');
+    expect(useAppStore.getState().mapSelection).toBeNull();
   });
 
   it('collapses when dragged down from the content area', () => {

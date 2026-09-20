@@ -4,6 +4,7 @@ import { useMapSheetDrag } from './useMapSheetDrag';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { MapPanelBody } from './MapPanelBody';
+import type { Detent } from '../../primitives/sheetDrag';
 
 /** The collapsed height, in px — kept in sync with the `h-[166px]` class below. */
 const PEEK_PX = 166;
@@ -49,9 +50,26 @@ export function MapSheet() {
   const expanded = sheetState !== 'peek';
   const fullyExpanded = sheetState === 'expanded';
   const panelRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Every route to a stop — tap and drag alike — so that collapsing always
+   * drops a pin's card with it.
+   *
+   * Leaving the selection behind at peek stranded the pin: the effect below
+   * opens the sheet for a selection and keys on the selected place/event
+   * REFERENCE, which is the same object each time that bubble is tapped, so a
+   * second tap changed no dep, ran no effect and did nothing at all. It also
+   * made the peek row lie — it says "Akce na kampusu" and would have reopened
+   * onto a photograph of a pond.
+   */
+  const goToDetent = (next: Detent) => {
+    if (next === 'peek' && selectedCard) clearMapSelection();
+    setSheetState(next);
+  };
+
   const { dragHeight, consumeDragClick, handlers } = useMapSheetDrag(
     sheetState,
-    setSheetState,
+    goToDetent,
     panelRef,
     PEEK_PX,
     EXPANDED_VH
@@ -59,12 +77,18 @@ export function MapSheet() {
 
   // A drag ends in a click too, and letting that click through would toggle the
   // sheet straight back out of the detent the drag just chose.
-  // Walks the ladder rather than flipping: tapping up from peek lands on the
-  // middle stop, the same place a drag would, so tap and drag agree. From the
-  // top it returns all the way down, which is what a collapse chevron means.
+  //
+  // Binary, not a rung of the ladder: every surface that calls this shows ONE
+  // chevron, and at any stop above peek that chevron points DOWN and is
+  // labelled "Sbalit panel mapy". Walking up a rung from `half` — which is
+  // where the sheet opens — meant the collapse affordance made the sheet
+  // taller, 365px to 568px, reported as "clicking on the expanded drawer just
+  // expands it even more". The ladder belongs to the DRAG, which is directional
+  // and can stop at `expanded`; a tap can only mean the direction it is drawn
+  // as.
   const toggle = () => {
     if (consumeDragClick()) return;
-    setSheetState(sheetState === 'peek' ? 'half' : sheetState === 'half' ? 'expanded' : 'peek');
+    goToDetent(expanded ? 'peek' : 'half');
   };
 
   /**
@@ -92,7 +116,14 @@ export function MapSheet() {
    * tabbed list keeps the detents: that content is a scrollable list with no
    * natural height, which is what detents are for.
    */
-  const hugContent = !!selectedCard;
+  // Only while the card is actually on screen. The card renders above peek
+  // only, so hugging it at peek sized the sheet to something it was not
+  // showing: the peek row alone is ~52px, under the 166px band the floating
+  // BottomNav is drawn over, so collapsing with a pin still selected left the
+  // hint row half-buried behind the nav pill. `goToDetent` now clears the
+  // selection on the way down, so this is the backstop for any other route to
+  // peek rather than the only guard.
+  const hugContent = !!selectedCard && expanded;
 
   return (
     <div
