@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { useAppStore } from '../../../store/useAppStore';
-import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
 import { ScreenError } from '../primitives/ScreenError';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useSchedule } from '../../../hooks/data/useSchedule';
@@ -18,21 +17,8 @@ import { DayChips } from './calendar/DayChips';
 import { DayBody } from './calendar/DayBody';
 import { TodayPill } from './calendar/TodayPill';
 import { RecentFilesStrip } from './calendar/RecentFilesStrip';
+import { CalendarSkeleton } from './calendar/CalendarSkeleton';
 import { formatHeaderDate } from '../../../utils/mobile/formatHeaderDate';
-
-function CalendarSkeleton() {
-  const { t } = useTranslation();
-  return (
-    <ScreenSkeleton
-      testId="calendar-skeleton"
-      label={t('mobile.calendar.loading')}
-      // One row shorter than it was, and no inset of its own: the header above
-      // it is real now rather than a placeholder bar.
-      rows={['h-28', 'h-10', 'h-20', 'h-20']}
-      underHeader
-    />
-  );
-}
 
 export function CalendarScreen() {
   const { language } = useTranslation();
