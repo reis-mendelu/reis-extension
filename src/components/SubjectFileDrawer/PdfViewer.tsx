@@ -155,6 +155,16 @@ export function PdfViewer({ blobUrl, onClose, onToggleNotes, hasNotesOpen }: Pdf
         ) : (
           <Document
             file={blobUrl}
+            // react-pdf 11 routes loading and failure through Suspense and an
+            // Error Boundary BY DEFAULT, which would retire the `loading` and
+            // `onLoadError` props below. There is no <Suspense> anywhere in
+            // this app (`grep -rn "Suspense" src/`), so a suspending Document
+            // would throw rather than show the spinner and take the file
+            // drawer with it. `suspense={false}` keeps the v10 behaviour;
+            // `Page` inherits it from the Document. Adopting Suspense properly
+            // means adding a boundary around this viewer — a separate change,
+            // not a dependency bump.
+            suspense={false}
             onLoadSuccess={onDocumentLoadSuccess}
             onLoadError={() => {}}
             loading={
