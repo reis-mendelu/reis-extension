@@ -36,6 +36,11 @@ export function MapSheet() {
   const clearMapSelection = useAppStore((s) => s.clearMapSelection);
   const { t } = useTranslation();
   const selectedEvent = selection?.kind === 'event' ? selection.event : null;
+  // A bubble in the botanical garden, tapped. Treated exactly as a tapped event
+  // pin is: the card IS the answer to the tap, so it replaces the list and the
+  // sheet hugs it rather than sitting at a detent.
+  const selectedGardenPlace = selection?.kind === 'gardenPlace' ? selection.place : null;
+  const selectedCard = selectedEvent || selectedGardenPlace;
 
   // `peek` is the only stop that hides the list. Both taller stops show it —
   // the middle one is the whole point of the third detent: the campus events
@@ -73,8 +78,8 @@ export function MapSheet() {
     // 'half', not 'expanded' — and the height below hugs the card anyway. Any
     // state out of 'peek' will do; what this call is really for is getting the
     // peek row out of the way so the card can render at all.
-    if (selectedEvent) setSheetState('half');
-  }, [selectedEvent, setSheetState]);
+    if (selectedEvent || selectedGardenPlace) setSheetState('half');
+  }, [selectedEvent, selectedGardenPlace, setSheetState]);
 
   /**
    * A single event card is ~300px of content. Pinning the sheet to a detent
@@ -87,7 +92,7 @@ export function MapSheet() {
    * tabbed list keeps the detents: that content is a scrollable list with no
    * natural height, which is what detents are for.
    */
-  const hugContent = !!selectedEvent;
+  const hugContent = !!selectedCard;
 
   return (
     <div
@@ -152,7 +157,7 @@ export function MapSheet() {
               row still has to exist (it is the nearest grab surface for
               collapsing a 70vh sheet — see the touch-none note above), so it
               becomes a plain heading whose tap collapses instead. */}
-          {selectedEvent ? (
+          {selectedCard ? (
             // A tapped pin replaces the tabs outright: the card IS the answer to
             // the tap, and leaving a tab row above it invites switching away
             // from the thing just asked for. Back returns to the list.
@@ -192,7 +197,7 @@ export function MapSheet() {
           {/* pb-24 clears the floating BottomNav, which is positioned against
               the SCREEN and draws over the sheet. */}
           <div className="flex-1 overflow-y-auto pb-24 pt-2">
-            <MapPanelBody selectedEvent={selectedEvent} />
+            <MapPanelBody selectedEvent={selectedEvent} selectedGardenPlace={selectedGardenPlace} />
           </div>
         </>
       )}

@@ -10,6 +10,7 @@ import {
   PATH_STYLE,
   POI_MARKER_STYLE,
 } from './mapHelpers';
+import { drawGardenBubbles, GARDEN_PLACE_ID } from './gardenBubbleLayer';
 import type { RemotePlace } from '../../types/campusMap';
 
 export const REMOTE = (remotePlacesJson as { places: RemotePlace[] }).places;
@@ -114,5 +115,23 @@ export function drawRemotePlaces(
           .bindTooltip(poi.name, { direction: 'right' })
           .addTo(layer);
       }
+
+    // The garden's photo bubbles.
+    //
+    // Drawn ALWAYS, like the footpaths above and for the same reason: behind a
+    // click they were findable only by someone who already knew. The garden
+    // itself stays inert — it is scenery you walk through — but a bubble is not
+    // the big green shape, it is a 28px photograph of one specific spot, and
+    // tapping THAT is a question worth answering.
+    //
+    // What keeps them off the campus overview is no longer a drilled-in state
+    // but zoom: see `bubblesHidden`, toggled as a container class on zoomend.
+    if (p.id === GARDEN_PLACE_ID) {
+      drawGardenBubbles(layer, {
+        lang: select.language,
+        touch: typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches,
+        onSelect: select.selectGardenPlace,
+      });
+    }
   }
 }

@@ -14,6 +14,7 @@ function resultLabel(m: MapSelection): string {
   if (m.kind === 'poi') return m.poi.name;
   if (m.kind === 'roomRef') return roomLabel(m.entry.name, m.entry.code, m.entry.nickname);
   if (m.kind === 'landmark') return m.landmark.name;
+  if (m.kind === 'gardenPlace') return m.place.name.cz;
   return '';
 }
 

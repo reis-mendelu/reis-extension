@@ -106,6 +106,56 @@ export interface RemotePlace {
   pois?: { name: string; lon: number; lat: number }[];
 }
 
+// A place INSIDE the botanical garden that is worth walking to — one of the
+// twelve carried by its own photograph, as opposed to the nineteen that stay
+// plain dots in `RemotePlace.pois`. Hand-authored in
+// `src/data/map/gardenPlaces.json`; no script generates or touches it.
+//
+// The curation line is "somewhere you would send a friend to sit", which is
+// what `why` has to earn — not a description of the plants.
+export interface GardenPlace {
+  /** Stable slug, and the stem of the bundled thumb: `public/garden/<id>.webp`. */
+  id: string;
+  /**
+   * The garden's own published numbering, e.g. "2.6" for Rokle — when the place
+   * is on the official plan at all.
+   *
+   * Optional, because the best places are not always on it. The minotaur, the
+   * ponds and the little wood are things that are actually there and worth
+   * walking to; the plan's five sections are a taxonomy of plant collections
+   * and simply do not name them. A place earns its spot by being worth sitting
+   * in, not by having a number.
+   */
+  number?: string;
+  /** 1 Okolí správní budovy … 5 Botanický systém — the first half of `number`. */
+  section?: 1 | 2 | 3 | 4 | 5;
+  name: { cz: string; en: string };
+  /**
+   * ONE line: the reason to walk there.
+   *
+   * Nothing renders it today — the card is the photograph alone, because a
+   * caption under a picture is the part nobody reads. Kept optional so the
+   * words can come back without a migration.
+   */
+  why?: { cz: string; en: string };
+  lon: number;
+  lat: number;
+  /**
+   * The large photo's filename under `public/garden/`, e.g. `jezirka-full.jpg`.
+   * The 96px bubble thumb is `<id>.jpg` beside it.
+   *
+   * Both are BUNDLED rather than fetched from the CDN. At three places that is
+   * ~320 KB and buys offline-in-the-garden for free; if the set grows past a
+   * dozen, move the large ones to reis-data and give them a content hash,
+   * because jsDelivr caches `@main` mutably.
+   *
+   * Optional: a place without one is a plain dot, not a bubble.
+   */
+  photo?: string;
+  /** Author + licence; rendered under the photo only when set. */
+  credit?: string;
+}
+
 // One walk across the Brno campus: the route from one campus place to the next
 // one you reach, built at build time from the OSM way network
 // (scripts/fetch-campus-paths.mjs). Routes connect — `to` of one is `from` of
@@ -160,4 +210,5 @@ export type MapSelection =
   | { kind: 'roomRef'; entry: RoomIndexEntry } // from search/deep-link before geometry loads
   | { kind: 'poi'; poi: PoiProperties; coord: [number, number] }
   | { kind: 'landmark'; landmark: Landmark } // search result only; resolves to a poi selection on focus
+  | { kind: 'gardenPlace'; place: GardenPlace } // one of the botanical garden's places
   | { kind: 'event'; event: import('./events').MapEvent }; // a society event pin
