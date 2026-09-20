@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import roomsIndexJson from '../../data/map/rooms-index.json';
 import { ringToLatLng } from './mapHelpers';
@@ -11,12 +11,10 @@ const BOX = { w: 380, h: 240, pad: 8 };
 
 export function RoomThumbnail({ roomName }: { roomName: string }) {
   const entry = useMemo(() => lookupRoomEntry(roomName, INDEX), [roomName]);
+  // Read-only on purpose. The geometry is requested by MapHoverCard when it
+  // opens the card, because a hover is what wants it — fetching from an effect
+  // here is the Iron Rule this component used to break.
   const rooms = useAppStore((s) => (entry ? s.roomsByBuilding[entry.buildingId] : undefined));
-  const loadMapBuilding = useAppStore((s) => s.loadMapBuilding);
-
-  useEffect(() => {
-    if (entry && !rooms) void loadMapBuilding(entry.buildingId);
-  }, [entry, rooms, loadMapBuilding]);
 
   if (!entry)
     return (

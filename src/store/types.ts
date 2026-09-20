@@ -565,6 +565,8 @@ export interface MapSlice {
   /** Fly to an arbitrary named coordinate without a real landmark/poi (e.g. the JAK dorm cluster centre). */
   focusPoint: (name: string, coord: [number, number]) => void;
   loadMapBuilding: (id: number) => Promise<void>;
+  /** Geometry for whatever room a room STRING names — resolves, then loads. */
+  loadRoomGeometry: (roomName: string) => Promise<void>;
   // --- Society events on the map ---
   mapEvents: MapEvent[];
   mapEventsLoaded: boolean;
