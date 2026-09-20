@@ -24,6 +24,7 @@ export interface TermNote {
  */
 export function isTermDetailPage(doc: Document): boolean {
     const crumb = doc.querySelector('li.breadcrumb-item.active[aria-current="page"] span');
+    // eslint-disable-next-line no-irregular-whitespace -- the literal inside the regex is U+00A0: IS Mendelu emits &nbsp; in this cell and the parser normalises it. Load-bearing, covered by terminyInfo.test.ts; suppressed rather than edited (CLAUDE.md Parser Rules).
     const text = (crumb?.textContent ?? '').replace(/ /g, ' ').trim();
     return text === 'Informace o termínu' || text === 'Information about exam date';
 }
@@ -52,6 +53,7 @@ export function parseTermNotePage(doc: Document): TermNote | null {
         if (!valueCell) continue;
 
         // Normalize NBSPs to regular spaces; collapse only trailing whitespace.
+        // eslint-disable-next-line no-irregular-whitespace -- the literal inside the regex is U+00A0: IS Mendelu emits &nbsp; in this cell and the parser normalises it. Load-bearing, covered by terminyInfo.test.ts; suppressed rather than edited (CLAUDE.md Parser Rules).
         const raw = (valueCell.textContent ?? '').replace(/ /g, ' ');
         const text = raw.replace(/[ \t]+$/gm, '').trim();
 
