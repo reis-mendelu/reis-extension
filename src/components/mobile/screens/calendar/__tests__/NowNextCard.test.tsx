@@ -75,3 +75,27 @@ describe('NowNextCard', () => {
     expect(screen.getByText(/en-next.*en-next-room/)).toBeInTheDocument();
   });
 });
+
+/**
+ * "Kam jít" is a promise to point at a place. It used to render for every
+ * next lesson, so a room the dataset does not carry sent the student to the
+ * Map tab and showed them nothing — the same dead control the agenda pin had.
+ */
+describe('NowNextCard route button', () => {
+  beforeEach(() => {
+    useAppStore.setState({ language: 'cz' } as never);
+  });
+
+  const withNextRoom = (room: string) =>
+    nowNext({ next: makeLesson({ courseName: 'Next', room, roomCs: room, roomEn: room }) });
+
+  it.each(['A01', 'Q01'])('offers the route for %s', (room) => {
+    render(<NowNextCard data={withNextRoom(room)} onRoute={() => {}} />);
+    expect(screen.getByRole('button')).toBeInTheDocument();
+  });
+
+  it.each(['X02', 'B Virtuální 6'])('withholds the route for %s', (room) => {
+    render(<NowNextCard data={withNextRoom(room)} onRoute={() => {}} />);
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+});
