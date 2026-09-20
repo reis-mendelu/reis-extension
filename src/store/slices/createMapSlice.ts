@@ -222,6 +222,17 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
       mapFocusTarget: 'campus' as const,
     }),
 
+  // The hover card knows a room string ("A01", "Q01 (Poříčí)"); the loader
+  // wants a building id. Resolving between the two used to sit in
+  // RoomThumbnail, which then fetched from a useEffect — the Iron Rule says a
+  // component must not. The hover is the intent, so MapHoverCard calls this and
+  // the component is left reading the store synchronously.
+  loadRoomGeometry: async (roomName) => {
+    const entry = lookupRoomEntry(roomName, INDEX);
+    if (!entry) return; // nothing to draw; the card shows its dash
+    await get().loadMapBuilding(entry.buildingId);
+  },
+
   loadMapBuilding: async (id) => {
     if (get().roomsByBuilding[id]) return; // already in memory
     set({ mapLoadingBuilding: id });
