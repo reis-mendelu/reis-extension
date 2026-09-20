@@ -79,11 +79,21 @@ export function probeSource(): ProbeResult {
   // Leaflet's own geometry panes, NOT the whole `.leaflet-container`. The
   // container's subtree also holds map controls, popups and reIS's own
   // overlays — all app-owned content that CAN genuinely overflow and must
-  // still be reported. Only the two panes Leaflet transform-positions beyond
-  // the viewport are excused: the tile pane, and the overlay pane that carries
-  // the zoom-animated SVG and its paths. Those were the exact selectors that
-  // produced 26 false failures.
-  const THIRD_PARTY_CLIPPERS = '.leaflet-tile-pane, .leaflet-overlay-pane';
+  // still be reported. Only the panes Leaflet transform-positions beyond the
+  // viewport are excused: the tile pane, the overlay pane that carries the
+  // zoom-animated SVG and its paths, and the marker pane. Those were the exact
+  // selectors that produced 26 false failures.
+  //
+  // The marker pane joined them when the garden's photo bubbles landed: a
+  // marker's position is a MAP coordinate, so one at the garden's western edge
+  // sits left of a 320px viewport for exactly the same reason a tile does, and
+  // is clipped by the same container. It is not an app layout bug, and there is
+  // no layout fix for it — the alternative is not drawing markers outside the
+  // current view, which is the clipping Leaflet already does.
+  //
+  // The tooltip and popup panes are deliberately NOT here: those carry text,
+  // and text that has drifted off the screen is a finding worth keeping.
+  const THIRD_PARTY_CLIPPERS = '.leaflet-tile-pane, .leaflet-overlay-pane, .leaflet-marker-pane';
   const insideThirdPartyClipper = (node: HTMLElement): boolean =>
     node.closest(THIRD_PARTY_CLIPPERS) !== null;
 

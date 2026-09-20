@@ -92,7 +92,10 @@ export function initLeafletMap(
     }
   };
   syncLabelVisibility();
-  map.on('zoomend', syncLabelVisibility);
+  // 'resize' too: the bubble threshold is viewport-dependent (getBoundsZoom),
+  // so widening the window without zooming would otherwise leave them hidden or
+  // shown according to the old viewport.
+  map.on('zoomend resize', syncLabelVisibility);
   return map;
 }
 
@@ -143,4 +146,3 @@ export function drawLandmarks(
     poly.addTo(layer);
   }
 }
-

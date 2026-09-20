@@ -156,7 +156,6 @@ export interface GardenPlace {
   credit?: string;
 }
 
-
 // One walk across the Brno campus: the route from one campus place to the next
 // one you reach, built at build time from the OSM way network
 // (scripts/fetch-campus-paths.mjs). Routes connect — `to` of one is `from` of

@@ -6,8 +6,9 @@ import type { GardenPlace } from '../../../../types/campusMap';
 
 export interface MapPanelBodyProps {
   selectedEvent: MapEvent | null;
-  /** One of the botanical garden's places, tapped on the map. */
-  selectedGardenPlace: GardenPlace | null;
+  /** One of the botanical garden's places, tapped on the map. Optional so the
+   *  shells that never show one (and their tests) need not pass it. */
+  selectedGardenPlace?: GardenPlace | null;
   /** The rail frames its own content, so the card inside it renders flush. */
   flush?: boolean;
 }
@@ -30,7 +31,7 @@ export interface MapPanelBodyProps {
  */
 export function MapPanelBody({
   selectedEvent,
-  selectedGardenPlace,
+  selectedGardenPlace = null,
   flush = false,
 }: MapPanelBodyProps) {
   if (selectedEvent) {

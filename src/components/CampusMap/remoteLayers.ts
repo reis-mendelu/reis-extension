@@ -128,6 +128,7 @@ export function drawRemotePlaces(
     // but zoom: see `bubblesHidden`, toggled as a container class on zoomend.
     if (p.id === GARDEN_PLACE_ID) {
       drawGardenBubbles(layer, {
+        lang: select.language,
         touch: typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches,
         onSelect: select.selectGardenPlace,
       });

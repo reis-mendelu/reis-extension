@@ -28,7 +28,12 @@ export interface GardenPlaceCardProps {
 export function GardenPlaceCard({ place, flush = false }: GardenPlaceCardProps) {
   const { t } = useTranslation();
   const lang = useAppStore((s) => s.language);
-  const [loaded, setLoaded] = useState(false);
+  // Keyed by id, NOT a bare boolean. The card stays mounted when the selection
+  // moves from one place to the next, so a boolean would still read `true` from
+  // the previous photo — hiding the new thumb and showing an unloaded image, a
+  // blank frame on exactly the slow connection the thumb exists for.
+  const [loadedId, setLoadedId] = useState<string | null>(null);
+  const loaded = loadedId === place.id;
   const [maximized, setMaximized] = useState(false);
 
   // Escape closes the full-screen photo, the way every image viewer does.
@@ -64,7 +69,7 @@ export function GardenPlaceCard({ place, flush = false }: GardenPlaceCardProps) 
         <img
           src={`/garden/${place.photo}`}
           alt={name}
-          onLoad={() => setLoaded(true)}
+          onLoad={() => setLoadedId(place.id)}
           className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
             loaded ? 'opacity-100' : 'opacity-0'
           }`}

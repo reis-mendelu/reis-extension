@@ -12,7 +12,12 @@ const PLACE: GardenPlace = {
 
 describe('MapPanelBody', () => {
   it('shows a garden place when one is selected', () => {
-    render(<MapPanelBody selectedEvent={null} selectedGardenPlace={{ ...PLACE, photo: 'rokle-full.jpg' }} />);
+    render(
+      <MapPanelBody
+        selectedEvent={null}
+        selectedGardenPlace={{ ...PLACE, photo: 'rokle-full.jpg' }}
+      />
+    );
     // The photograph IS the card, so the name lives in its alt text.
     expect(screen.getByAltText('Rokle')).toBeInTheDocument();
   });

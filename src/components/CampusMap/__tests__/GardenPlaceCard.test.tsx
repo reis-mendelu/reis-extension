@@ -15,17 +15,13 @@ beforeEach(() => useAppStore.setState({ language: 'cz' }));
 
 describe('GardenPlaceCard', () => {
   it('shows the photograph and nothing else — no caption, no hours', () => {
-    const { container } = render(
-      <GardenPlaceCard place={{ ...PLACE, photo: 'rokle-full.jpg' }} />
-    );
+    const { container } = render(<GardenPlaceCard place={{ ...PLACE, photo: 'rokle-full.jpg' }} />);
     expect(container.textContent).toBe('');
     expect(container.querySelector('img[src="/garden/rokle-full.jpg"]')).not.toBeNull();
   });
 
   it('paints the bundled thumb under it, so the card is never empty', () => {
-    const { container } = render(
-      <GardenPlaceCard place={{ ...PLACE, photo: 'rokle-full.jpg' }} />
-    );
+    const { container } = render(<GardenPlaceCard place={{ ...PLACE, photo: 'rokle-full.jpg' }} />);
     expect(container.querySelector('img[src="/garden/rokle.jpg"]')).not.toBeNull();
   });
 
@@ -35,15 +31,15 @@ describe('GardenPlaceCard', () => {
   });
 
   it('fetches nothing — both files are bundled', () => {
-    const { container } = render(
-      <GardenPlaceCard place={{ ...PLACE, photo: 'rokle-full.jpg' }} />
-    );
+    const { container } = render(<GardenPlaceCard place={{ ...PLACE, photo: 'rokle-full.jpg' }} />);
     expect(container.querySelector('img[src^="http"]')).toBeNull();
   });
 
   it('renders an attribution only when the photo came from someone else', () => {
     const { container } = render(
-      <GardenPlaceCard place={{ ...PLACE, photo: 'rokle-full.jpg', credit: 'Jan Novák, CC BY-SA 4.0' }} />
+      <GardenPlaceCard
+        place={{ ...PLACE, photo: 'rokle-full.jpg', credit: 'Jan Novák, CC BY-SA 4.0' }}
+      />
     );
     expect(container.textContent).toContain('Jan Novák');
   });
@@ -69,5 +65,26 @@ describe('GardenPlaceCard', () => {
     expect(screen.getAllByAltText('Rokle')).toHaveLength(2);
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(screen.getAllByAltText('Rokle')).toHaveLength(1);
+  });
+
+  it('shows the new thumb when the selection moves to another place', () => {
+    const a = { ...PLACE, photo: 'rokle-full.jpg' };
+    const b = {
+      ...PLACE,
+      id: 'jezirka',
+      name: { cz: 'Jezírka', en: 'The ponds' },
+      photo: 'jezirka-full.jpg',
+    };
+    const { container, rerender } = render(<GardenPlaceCard place={a} />);
+    // the first photo finishes loading, so its thumb fades out
+    fireEvent.load(screen.getByAltText('Rokle'));
+    expect(container.querySelector('img[src="/garden/rokle.jpg"]')!.className).toContain(
+      'opacity-0'
+    );
+    // moving to another place must NOT inherit that
+    rerender(<GardenPlaceCard place={b} />);
+    expect(container.querySelector('img[src="/garden/jezirka.jpg"]')!.className).toContain(
+      'opacity-100'
+    );
   });
 });

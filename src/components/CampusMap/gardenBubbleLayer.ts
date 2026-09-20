@@ -1,7 +1,7 @@
 import L from 'leaflet';
 import gardenPlacesJson from '../../data/map/gardenPlaces.json';
 import type { GardenPlace } from '../../types/campusMap';
-import { POI_MARKER_STYLE } from './mapHelpers';
+import type { Language } from '../../store/types';
 
 /** The botanical garden's id in remotePlaces.json — the only site with bubbles. */
 export const GARDEN_PLACE_ID = -101;
@@ -38,6 +38,8 @@ const SIZE_MOUSE = 28;
 const SIZE_TOUCH = 44;
 
 export interface GardenBubbleOptions {
+  /** Only for the photo's alt text — nothing is drawn in either language. */
+  lang: Language;
   /** True on a coarse pointer: no hover exists, so the middle state does not. */
   touch: boolean;
   onSelect: (place: GardenPlace) => void;
@@ -69,7 +71,13 @@ export function drawGardenBubbles(
     // it becomes a bubble by adding one field — nothing has to be surveyed
     // again.
     if (!place.photo) continue;
+    const name = place.name[opts.lang];
     const marker = L.marker([place.lat, place.lon], {
+      // Explicit, though false is already Marker's default (Path's is true): a
+      // bubble's click must not also reach the map, whose tap-away clears any
+      // non-poi selection — which would close the card in the same gesture that
+      // opened it.
+      bubblingMouseEvents: false,
       icon: L.divIcon({
         className: 'garden-bubble',
         // The circle is an INNER element on purpose. Leaflet writes
@@ -78,15 +86,28 @@ export function drawGardenBubbles(
         // `:hover { transform: scale(2) }` on the icon is silently ignored
         // (verified in the browser: the bubble never grew). Scaling a child
         // Leaflet does not touch is what actually works.
-        html: `<span class="garden-bubble-circle"><img src="/garden/${place.id}.jpg" alt="" /></span>`,
+        // The alt is the ONLY place a name survives. Nothing is drawn — no
+        // tooltip, no title — but an unlabelled image inside a role="button"
+        // leaves a screen reader with nothing to announce.
+        html: `<span class="garden-bubble-circle"><img src="/garden/${place.id}.jpg" alt="${name}" /></span>`,
         iconSize: [size, size],
         iconAnchor: [size / 2, size / 2],
       }),
     });
-    // No tooltip and no title: a bubble carries no words at all. You recognise
-    // the place by seeing it, which is the whole idea — the name survives only
-    // as the opened photo's alt text, for a screen reader.
-    marker.on('click', () => opts.onSelect(place)).addTo(layer);
+    // No tooltip and no title: a bubble carries no words on screen at all. You
+    // recognise the place by seeing it, which is the whole idea.
+    marker.on('click', () => opts.onSelect(place));
+    // Leaflet renders a divIcon marker as a DIV with role="button" and
+    // tabindex, so it takes focus — but a div fires no click on Enter/Space, so
+    // `marker.on('click')` alone is reachable by Tab and then does nothing.
+    marker.on('add', () => {
+      marker.getElement()?.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        opts.onSelect(place);
+      });
+    });
+    marker.addTo(layer);
     drawn++;
   }
   return drawn;

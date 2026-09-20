@@ -197,10 +197,7 @@ export function MapSheet() {
           {/* pb-24 clears the floating BottomNav, which is positioned against
               the SCREEN and draws over the sheet. */}
           <div className="flex-1 overflow-y-auto pb-24 pt-2">
-            <MapPanelBody
-              selectedEvent={selectedEvent}
-              selectedGardenPlace={selectedGardenPlace}
-            />
+            <MapPanelBody selectedEvent={selectedEvent} selectedGardenPlace={selectedGardenPlace} />
           </div>
         </>
       )}
