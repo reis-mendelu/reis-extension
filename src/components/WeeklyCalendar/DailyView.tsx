@@ -186,7 +186,7 @@ export function DailyView({
                         return (
                           <div key={lesson.id} className="h-20 min-h-[5rem] relative">
                             <CalendarEventCard
-                              lesson={lesson as any}
+                              lesson={lesson}
                               onClick={(e) => onEventClick(lesson, { x: e.clientX, y: e.clientY })}
                               language={language}
                             />
