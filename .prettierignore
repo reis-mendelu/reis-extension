@@ -19,3 +19,10 @@ src/data/map/campusPaths.json
 # parser change — so they stay byte-for-byte as scraped. Reformatting them
 # would validate future parser work against markup IS never sends.
 src/api/__tests__/fixtures/**/*.html
+# The IS Mendelu HTML parsers. CLAUDE.md's Parser Rules freeze them: they are
+# extremely brittle, column-index constants are load-bearing, and a change is
+# only justified by a real captured IS sample. Even behaviour-preserving
+# reformatting is churn in the files where churn is most expensive, so they are
+# left exactly as written. Their tests are ordinary code and stay formatted.
+src/utils/parsers/**/*.ts
+!src/utils/parsers/**/__tests__/**

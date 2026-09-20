@@ -94,4 +94,28 @@ describe('DocumentNoteEditor', () => {
     );
     expect(questionInputs()[0]!.value).toBe('other file');
   });
+
+  it('parses the note that arrives after the load, not the empty one before it', () => {
+    // documentNotesLoading[key] is undefined until the fetch starts, so the very
+    // first render sees isLoading=false with an empty note. The real note only
+    // exists after false -> true -> false.
+    note = '';
+    isLoading = false;
+    const props = {
+      courseCode: 'EBC',
+      fileLink: '/f/1',
+      fileName: 'slides.pdf',
+      onClose: () => {},
+    };
+    const { rerender } = render(<DocumentNoteEditor {...props} />);
+
+    isLoading = true;
+    rerender(<DocumentNoteEditor {...props} />);
+
+    isLoading = false;
+    note = noteWith('loaded from storage');
+    rerender(<DocumentNoteEditor {...props} />);
+
+    expect(questionInputs()[0]!.value).toBe('loaded from storage');
+  });
 });

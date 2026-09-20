@@ -41,11 +41,21 @@ export function DocumentNoteEditor({
   // deliberately NOT when `note` itself changes, or a save round-trip would
   // throw away whatever the student has typed since. Adjusting state during
   // render rather than in an effect keeps the parse out of a second pass.
-  const hydrationKey = `${courseCode}|${fileLink}|${isLoading}`;
-  const [hydratedFor, setHydratedFor] = useState<string | null>(null);
-  if (!isLoading && hydratedFor !== hydrationKey) {
-    setHydratedFor(hydrationKey);
-    setData(parseNote(note));
+  //
+  // What is tracked is the previous value of the effect's old dependency set,
+  // not a key that has to differ: `documentNotesLoading[key]` is undefined
+  // until the fetch starts, so the first render already sees isLoading=false
+  // with an empty note, and the real one only arrives after false -> true ->
+  // false. Comparing against a key would find it unchanged and never parse it.
+  const hydrationDeps = { file: `${courseCode}|${fileLink}`, isLoading };
+  const [lastHydrationDeps, setLastHydrationDeps] = useState<typeof hydrationDeps | null>(null);
+  if (
+    lastHydrationDeps === null ||
+    lastHydrationDeps.file !== hydrationDeps.file ||
+    lastHydrationDeps.isLoading !== hydrationDeps.isLoading
+  ) {
+    setLastHydrationDeps(hydrationDeps);
+    if (!isLoading) setData(parseNote(note));
   }
 
   const updateCard = useCallback(
