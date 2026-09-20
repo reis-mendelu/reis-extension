@@ -932,6 +932,7 @@
     "panelCollapse": "Sbalit panel mapy",
     "panelExpand": "Rozbalit panel mapy",
     "walkMinutes": "{n} min",
+    "routeToRoom": "Doveď mě do {room}",
     "routeTakeMeThere": "Najdi cestu",
     "routeLocating": "Hledám, kde jsi…",
     "routeDenied": "reIS nevidí tvoji polohu. Povol ji v nastavení telefonu, nebo si vyber budovu ručně.",

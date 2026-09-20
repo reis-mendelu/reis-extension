@@ -169,3 +169,42 @@ describe('createRouteSlice', () => {
     expect(s.routeFrom).toBeNull();
   });
 });
+
+describe('routeSuggestion', () => {
+  beforeEach(() => {
+    currentPosition.mockReset();
+    useAppStore.getState().clearRoute();
+  });
+
+  it('holds the lesson the student pointed at, without asking for a fix', () => {
+    useAppStore.getState().suggestRoute({ buildingName: 'Q', roomLabel: 'Q31' });
+    const s = useAppStore.getState();
+    expect(s.routeSuggestion).toEqual({ buildingName: 'Q', roomLabel: 'Q31' });
+    // The pin tap must not prompt for location. That happens when the student
+    // presses the button the suggestion offers, and not a moment earlier.
+    expect(currentPosition).not.toHaveBeenCalled();
+    expect(s.routeStatus).toBe('idle');
+  });
+
+  it('replaces the previous suggestion rather than stacking one behind it', () => {
+    useAppStore.getState().suggestRoute({ buildingName: 'Q', roomLabel: 'Q31' });
+    useAppStore.getState().suggestRoute({ buildingName: 'B', roomLabel: 'B11' });
+    expect(useAppStore.getState().routeSuggestion?.buildingName).toBe('B');
+  });
+
+  it('drops the suggestion once the route it offered is cleared', async () => {
+    currentPosition.mockResolvedValue(MAIN_GATE);
+    useAppStore.getState().suggestRoute({ buildingName: 'Q', roomLabel: 'Q31' });
+    await useAppStore.getState().routeTo('Q');
+    useAppStore.getState().clearRoute();
+    expect(useAppStore.getState().routeSuggestion).toBeNull();
+  });
+
+  it('drops the suggestion when the student picks somewhere else', () => {
+    useAppStore.getState().suggestRoute({ buildingName: 'Q', roomLabel: 'Q31' });
+    useAppStore.getState().setRoutePickerOpen(true);
+    // Opening the picker is the student saying "not that" — a stale suggestion
+    // would otherwise re-offer Thursday's lecture over the library they chose.
+    expect(useAppStore.getState().routeSuggestion).toBeNull();
+  });
+});

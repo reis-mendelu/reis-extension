@@ -5,6 +5,7 @@ import { snapToGraph } from '../../utils/routing/snapToGraph';
 import { shortestWalk, type Walk } from '../../utils/routing/shortestWalk';
 import { isGateOpen } from '../../utils/routing/gateHours';
 import { currentPosition, isPermissionDenied, NO_PLATFORM } from '../../utils/routing/position';
+import type { RouteTarget } from '../../utils/routing/nextLessonTarget';
 import { devForcedNow } from '../../utils/routing/devPosition';
 import { logError } from '../../utils/reportError';
 
@@ -43,6 +44,21 @@ export interface RouteSlice {
   routeWalk: Walk | null;
   routeStatus: RouteStatus;
   routeTargetBuilding: string | null;
+  /**
+   * The lesson the student pointed at, waiting to be offered as a walk.
+   *
+   * Set by the pin beside a timetable row, NOT by the map itself: without it
+   * the route button can only ever answer "where am I going now?", so tapping
+   * the pin on Thursday's lecture and then asking for a route walked you to
+   * whatever is next today — a different lesson, in a different building, with
+   * nothing on screen admitting the swap.
+   *
+   * Holding it here rather than firing `routeTo` on arrival is deliberate: the
+   * fix is a permission prompt, and a pin tap must not spend one. The
+   * suggestion is a button; the prompt is what pressing it costs.
+   */
+  routeSuggestion: RouteTarget | null;
+  suggestRoute: (target: RouteTarget | null) => void;
   /** Whether the destination picker is showing. In the store, not in a component. */
   routePickerOpen: boolean;
   setRoutePickerOpen: (open: boolean) => void;
@@ -66,9 +82,16 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set) => ({
   routeWalk: null,
   routeStatus: 'idle',
   routeTargetBuilding: null,
+  routeSuggestion: null,
   routePickerOpen: false,
 
-  setRoutePickerOpen: (open) => set({ routePickerOpen: open }),
+  suggestRoute: (target) => set({ routeSuggestion: target }),
+
+  // Opening the picker is the student saying "not that one". Keeping the
+  // suggestion alive through it would put the lecture back over the library
+  // they just chose, on the very next render.
+  setRoutePickerOpen: (open) =>
+    set(open ? { routePickerOpen: true, routeSuggestion: null } : { routePickerOpen: false }),
 
   routeTo: async (buildingName) => {
     const mine = ++routeGeneration;
@@ -137,6 +160,7 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set) => ({
       routeWalk: null,
       routeStatus: 'idle',
       routeTargetBuilding: null,
+      routeSuggestion: null,
       routePickerOpen: false,
     });
   },

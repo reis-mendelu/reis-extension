@@ -932,6 +932,7 @@
     "panelCollapse": "Collapse map panel",
     "panelExpand": "Expand map panel",
     "walkMinutes": "{n} min",
+    "routeToRoom": "Walk me to {room}",
     "routeTakeMeThere": "Take me there",
     "routeLocating": "Finding you…",
     "routeDenied": "reIS can't see your location. Allow it in your phone's settings, or pick a building instead.",

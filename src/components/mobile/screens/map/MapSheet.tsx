@@ -35,6 +35,7 @@ const EXPANDED_VH = 0.7;
 export function MapSheet() {
   const sheetState = useAppStore((s) => s.mapSheetState);
   const routeStatus = useAppStore((s) => s.routeStatus);
+  const routeSuggestion = useAppStore((s) => s.routeSuggestion);
   const setSheetState = useAppStore((s) => s.setMapSheetState);
   const selection = useAppStore((s) => s.mapSelection);
   const clearMapSelection = useAppStore((s) => s.clearMapSelection);
@@ -91,6 +92,15 @@ export function MapSheet() {
   useEffect(() => {
     if (routeStatus === 'ready') setSheetState('peek');
   }, [routeStatus, setSheetState]);
+
+  // And the same for the OFFER, one step earlier. The route button lives in the
+  // peek row, so a sheet left open on the events list hides the very thing the
+  // student crossed over from their timetable to press. Depends on the
+  // suggestion object, which is replaced on every tap, so arriving from a
+  // second lecture re-collapses a sheet reopened in between.
+  useEffect(() => {
+    if (routeSuggestion) setSheetState('peek');
+  }, [routeSuggestion, setSheetState]);
 
   /**
    * A single event card is ~300px of content. Pinning the sheet to a detent

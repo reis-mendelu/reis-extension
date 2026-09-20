@@ -11,7 +11,7 @@ import { getCzechHoliday } from '../../../utils/holidays';
 import { isOutsideTeaching } from '../../../utils/mobile/teachingPeriod';
 import { semesterStart } from '../../../utils/mobile/semesterStart';
 import { defaultCalendarDay } from '../../../utils/mobile/landingDay';
-import { roomCodeFor } from '../../../utils/mobile/lessonActions';
+import { roomCodeFor, routeSuggestionFor } from '../../../utils/mobile/lessonActions';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { NowNextCard } from './calendar/NowNextCard';
 import { DayChips } from './calendar/DayChips';
@@ -42,6 +42,7 @@ export function CalendarScreen() {
   const setMobileSelectedDay = useAppStore((s) => s.setMobileSelectedDay);
   const setMobileTab = useAppStore((s) => s.setMobileTab);
   const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
+  const suggestRoute = useAppStore((s) => s.suggestRoute);
   const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
@@ -163,6 +164,9 @@ export function CalendarScreen() {
     if (!nowNext?.next) return;
     setMobileTab('map');
     focusRoomByCode(roomCodeFor(nowNext.next));
+    // It is called "Trasa →" and it used to move the camera. The lesson it
+    // names on the hero is the one the map now offers to walk to.
+    suggestRoute(routeSuggestionFor(nowNext.next, language));
   };
 
   return shell(
