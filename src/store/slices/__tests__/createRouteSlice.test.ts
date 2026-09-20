@@ -71,6 +71,56 @@ describe('createRouteSlice', () => {
     expect(useAppStore.getState().routeStatus).toBe('unavailable');
   });
 
+  it('calls a TIMEOUT unavailable, not denied', async () => {
+    // The plugin rejects on its 10-second timeout and when no provider
+    // answers. Calling those "denied" sent a student with a cold GPS fix to a
+    // settings screen to fix a permission they had already granted.
+    currentPosition.mockRejectedValue(Object.assign(new Error('timeout'), { code: 3 }));
+    await useAppStore.getState().routeTo('Q');
+    expect(useAppStore.getState().routeStatus).toBe('unavailable');
+  });
+
+  it('keeps denied for the plugin code that really means refusal', async () => {
+    currentPosition.mockRejectedValue(
+      Object.assign(new Error('nope'), { code: 'OS-PLUG-GLOC-0003' })
+    );
+    await useAppStore.getState().routeTo('Q');
+    expect(useAppStore.getState().routeStatus).toBe('denied');
+  });
+
+  it('does not resurrect a route the student already cleared', async () => {
+    // clearRoute stays available while the fix is in flight — the close button
+    // is right there. Without a generation guard the pending request comes
+    // back and sets `ready` over the idle state they asked for.
+    let release: (v: [number, number]) => void = () => {};
+    currentPosition.mockReturnValue(
+      new Promise((r) => {
+        release = r;
+      })
+    );
+    const pending = useAppStore.getState().routeTo('Q');
+    useAppStore.getState().clearRoute();
+    release(MAIN_GATE);
+    await pending;
+    expect(useAppStore.getState().routeStatus).toBe('idle');
+    expect(useAppStore.getState().routeWalk).toBeNull();
+  });
+
+  it('lets the newer of two overlapping requests win', async () => {
+    let releaseFirst: (v: [number, number]) => void = () => {};
+    currentPosition.mockReturnValueOnce(
+      new Promise((r) => {
+        releaseFirst = r;
+      })
+    );
+    const first = useAppStore.getState().routeTo('A');
+    currentPosition.mockResolvedValue(MAIN_GATE);
+    await useAppStore.getState().routeTo('Q');
+    releaseFirst(MAIN_GATE);
+    await first;
+    expect(useAppStore.getState().routeTargetBuilding).toBe('Q');
+  });
+
   it('reports no-route for a building the graph does not name', async () => {
     // Budova Z — FRRMS. Not in the My MENDELU survey, so it has no nodes.
     currentPosition.mockResolvedValue(MAIN_GATE);

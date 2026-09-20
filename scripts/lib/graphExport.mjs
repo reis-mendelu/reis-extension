@@ -54,8 +54,12 @@ export function exportGraph(graph, buildingNodes, gateOf) {
     index.set(key, at);
   }
 
-  const edges = [];
-  const seen = new Set();
+  // Keyed by the EMITTED pair, and the winner is chosen rather than whichever
+  // arrived first. Two distinct 7-decimal edges can collapse onto one 6-decimal
+  // pair, and when one of them is gated and the other is not, keeping the first
+  // seen would let a closed garden delete a connection that is open all week.
+  // Ungated beats gated; within the same access class, shorter wins.
+  const chosen = new Map();
   for (const [from, neighbours] of graph.adj) {
     for (const [to, lengthM] of neighbours) {
       const a = index.get(from);
@@ -63,19 +67,29 @@ export function exportGraph(graph, buildingNodes, gateOf) {
       // Undirected: emit the pair once. Keyed on the sorted index pair so the
       // direction the adjacency happened to be walked in cannot change the
       // committed output.
-      // The merge above can bring an edge's two ends onto one node. That is a
-      // way doubling back on a point, not a route, and Dijkstra has no use for
-      // it.
+      // The node merge above can bring an edge's two ends onto one node. That
+      // is a way doubling back on a point, not a route, and Dijkstra has no use
+      // for it.
       if (a === b) continue;
       const lo = Math.min(a, b);
       const hi = Math.max(a, b);
       const pair = `${lo}-${hi}`;
-      if (seen.has(pair)) continue;
-      seen.add(pair);
       const gate = gateOf(from, to);
-      const edge = [lo, hi, Number(lengthM.toFixed(1))];
-      edges.push(gate ? [...edge, gate] : edge);
+      const prev = chosen.get(pair);
+      if (prev) {
+        const prevOpen = prev.gate === null;
+        const thisOpen = gate === null;
+        if (prevOpen && !thisOpen) continue; // keep the walkable one
+        if (prevOpen === thisOpen && prev.lengthM <= lengthM) continue; // keep the shorter
+      }
+      chosen.set(pair, { lo, hi, lengthM, gate });
     }
+  }
+
+  const edges = [];
+  for (const { lo, hi, lengthM, gate } of chosen.values()) {
+    const edge = [lo, hi, Number(lengthM.toFixed(1))];
+    edges.push(gate ? [...edge, gate] : edge);
   }
   edges.sort((x, y) => x[0] - y[0] || x[1] - y[1]); // deterministic JSON
 

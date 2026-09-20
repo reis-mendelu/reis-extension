@@ -79,12 +79,34 @@ describe('shortestWalk', () => {
     expect(shortestWalk(graph, from, [], open)).toBeNull();
   });
 
-  it('refuses to start from a stretch that is currently shut', () => {
-    // Snapped onto a garden edge while the garden is shut: you are not
-    // standing somewhere you are allowed to walk from.
+  it('refuses to start from INSIDE a stretch that is currently shut', () => {
+    // Snapped to the middle of a garden edge while the garden is shut: you are
+    // not standing anywhere you are allowed to walk from.
     const from = snapToGraph(graph, [16.60045, 49.21])!;
     expect(from.gateId).toBe('garden');
+    expect(from.toA).toBeGreaterThan(1);
+    expect(from.toB).toBeGreaterThan(1);
     expect(shortestWalk(graph, from, graph.buildings.Q!, shut)).toBeNull();
+  });
+
+  it('still leaves from the END of a shut edge, by an open one', () => {
+    // At node 0 the shut garden edge and the open 100 m edge meet, and
+    // snapToGraph can land on either in a tie. Refusing outright told a
+    // student standing on open ground there was no route.
+    const from = snapToGraph(graph, [16.6, 49.21])!;
+    const atEnd = { ...from, a: 0, b: 2, toA: 0, toB: 50, gateId: 'garden' };
+    const walk = shortestWalk(graph, atEnd, graph.buildings.Q!, shut);
+    expect(walk).not.toBeNull();
+    expect(walk!.lengthM).toBeCloseTo(200, 0); // the long way, not through the garden
+  });
+
+  it('does not cross a shut edge to reach its far end', () => {
+    // Standing at node 0, the far end (node 2) is only reachable over the shut
+    // garden edge, so it must not be seeded.
+    const from = snapToGraph(graph, [16.6, 49.21])!;
+    const atEnd = { ...from, a: 0, b: 2, toA: 0, toB: 50, gateId: 'garden' };
+    const walk = shortestWalk(graph, atEnd, [2], shut);
+    expect(walk).toBeNull();
   });
 
   it('reports the garden when the chosen path went through it', () => {

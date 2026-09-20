@@ -4,7 +4,7 @@ import type { CampusGraph } from '../../types/campusMap';
 import { snapToGraph } from '../../utils/routing/snapToGraph';
 import { shortestWalk, type Walk } from '../../utils/routing/shortestWalk';
 import { isGateOpen } from '../../utils/routing/gateHours';
-import { currentPosition, NO_PLATFORM } from '../../utils/routing/position';
+import { currentPosition, isPermissionDenied, NO_PLATFORM } from '../../utils/routing/position';
 import { devForcedNow } from '../../utils/routing/devPosition';
 import { logError } from '../../utils/reportError';
 
@@ -17,7 +17,12 @@ export type RouteStatus =
   | 'ready'
   /** The student refused the permission, or the fix could not be had. */
   | 'denied'
-  /** This build cannot ask for a position at all. */
+  /**
+   * No position to be had: this build cannot ask, or the fix timed out, or no
+   * provider answered. Distinct from `denied`, which means the student
+   * refused — sending them to a settings screen they never touched is worse
+   * than saying nothing.
+   */
   | 'unavailable'
   /** The fix landed too far from the network to route from. */
   | 'too-far'
@@ -45,6 +50,17 @@ export interface RouteSlice {
   clearRoute: () => void;
 }
 
+/**
+ * Which request the store is currently waiting on.
+ *
+ * `clearRoute` stays available while a fix is in flight — the close button is
+ * right there — and two `routeTo` calls can finish out of order. Without this,
+ * a request the student cancelled comes back from its await and sets `ready`
+ * over the idle state they asked for. Module-scope rather than store state
+ * because it is bookkeeping, not something any component renders.
+ */
+let routeGeneration = 0;
+
 export const createRouteSlice: AppSlice<RouteSlice> = (set) => ({
   routeFrom: null,
   routeWalk: null,
@@ -55,6 +71,9 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set) => ({
   setRoutePickerOpen: (open) => set({ routePickerOpen: open }),
 
   routeTo: async (buildingName) => {
+    const mine = ++routeGeneration;
+    const stale = () => mine !== routeGeneration;
+
     // The previous walk is dropped BEFORE the await, not after. Left up, it
     // would sit on the map under the new destination's heading for as long as
     // the fix takes — a route to somewhere the student is no longer going.
@@ -70,12 +89,17 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set) => ({
       at = await currentPosition();
     } catch (err) {
       logError('RouteSlice.locate', err);
-      // "You said no" and "this build cannot ask" are different answers, and
-      // the student deserves to be told which one they are looking at.
+      if (stale()) return;
+      // `denied` ONLY for an actual refusal. The plugin also rejects on its
+      // 10-second timeout and when no provider answers, and the first version
+      // called all of those "denied" — so a student on a cold GPS fix was told
+      // to go and change a permission they had already granted.
       const noPlatform = String((err as Error)?.message ?? '').includes(NO_PLATFORM);
-      set({ routeStatus: noPlatform ? 'unavailable' : 'denied' });
+      set({ routeStatus: !noPlatform && isPermissionDenied(err) ? 'denied' : 'unavailable' });
       return;
     }
+
+    if (stale()) return;
 
     const snap = snapToGraph(GRAPH, at);
     if (!snap) {
@@ -105,12 +129,15 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set) => ({
     set({ routeFrom: at, routeWalk: walk, routeStatus: 'ready' });
   },
 
-  clearRoute: () =>
+  clearRoute: () => {
+    // Anything still in flight now belongs to nobody.
+    routeGeneration++;
     set({
       routeFrom: null,
       routeWalk: null,
       routeStatus: 'idle',
       routeTargetBuilding: null,
       routePickerOpen: false,
-    }),
+    });
+  },
 });

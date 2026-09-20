@@ -103,4 +103,25 @@ describe('nextLessonTarget', () => {
   it('is null for an empty timetable', () => {
     expect(nextLessonTarget([], MON_10)).toBeNull();
   });
+
+  it('withholds the route when the EARLIEST lesson is the unresolvable one', () => {
+    // 11:00 at FRRMS (Z25, no floor plan), 13:00 in Q31. Walking the list until
+    // something resolves would send the student to Q while their actual next
+    // class is at FRRMS — a route to the wrong lesson, presented as the right
+    // one. Better to say nothing and leave the picker.
+    const t = nextLessonTarget(
+      [lesson('20260921', '11:00', 'Z25'), lesson('20260921', '13:00', 'Q31')],
+      MON_10
+    );
+    expect(t).toBeNull();
+  });
+
+  it('still resolves when the unresolvable lesson is the LATER one', () => {
+    const t = nextLessonTarget(
+      [lesson('20260921', '11:00', 'Q31'), lesson('20260921', '13:00', 'Z25')],
+      MON_10
+    );
+    expect(t!.buildingName).toBe('Q');
+    expect(t!.startsAt.getHours()).toBe(11);
+  });
 });

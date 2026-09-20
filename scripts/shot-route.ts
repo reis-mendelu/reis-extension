@@ -1,8 +1,8 @@
 /**
  * Walk the app through one journey and record what a student would see.
  *
- *   npm run shot:route -- --from 49.218161,16.614118 --to Q --at "2026-09-21T10:00"
- *   npm run shot:route -- --all            # every journey in JOURNEYS below
+ *   npm run shot:route                 # every journey in JOURNEYS below
+ *   npm run shot:route -- --id frrms-weekday    # just that one
  *
  * Why this exists rather than `verify:ui`: that tool seeds a view into
  * IndexedDB and screenshots it, deliberately never clicking, because clicking a
@@ -152,9 +152,20 @@ async function openMap(page: Page, j: Journey) {
 
 async function routeTo(page: Page, building: string) {
   await page.getByRole('button', { name: /Najdi cestu/ }).click();
-  await page.waitForTimeout(500);
-  // menuitem, not button: the letters sit in a role="menu" inside the sheet.
-  await page.getByRole('menuitem', { name: building, exact: true }).click();
+  await page.waitForTimeout(900);
+  // The button routes to the NEXT LESSON when one resolves, and only opens the
+  // picker otherwise — so with demo data loaded it usually goes straight to a
+  // route. "Jinam" is how a student asks for somewhere else, and how this
+  // harness reaches a named destination.
+  const letter = page.getByRole('menuitem', { name: building, exact: true });
+  if (!(await letter.isVisible().catch(() => false))) {
+    const elsewhere = page.getByRole('button', { name: /Jinam|Somewhere else/ });
+    if (await elsewhere.isVisible().catch(() => false)) {
+      await elsewhere.click();
+      await page.waitForTimeout(600);
+    }
+  }
+  await letter.click();
   await page.waitForTimeout(2800);
 }
 
@@ -164,6 +175,14 @@ async function run() {
     ? process.argv[process.argv.indexOf('--id') + 1]
     : null;
   const list = only ? JOURNEYS.filter((j) => j.id === only) : JOURNEYS;
+  // An unknown id used to run nothing and exit 0 — "0/0 journeys as expected",
+  // which reads like a pass. A typo in a verification command must not look
+  // like verification.
+  if (only && list.length === 0) {
+    console.error(`No journey with id "${only}". Known ids:`);
+    for (const j of JOURNEYS) console.error(`  ${j.id.padEnd(18)} ${j.label}`);
+    process.exit(1);
+  }
 
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });

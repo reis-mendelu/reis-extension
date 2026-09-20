@@ -536,9 +536,12 @@ export function MapCanvas() {
           searchEl.getBoundingClientRect().bottom - (ref.current?.getBoundingClientRect().top ?? 0)
         )
       : 78;
+    // The rail overlays the RIGHT of the map in landscape, so the destination
+    // and its time chip finish underneath it unless its width is reserved.
+    const rail = railRef.current.open ? railRef.current.width : 0;
     map.fitBounds(L.latLngBounds(shown.coords.map(([lon, lat]) => L.latLng(lat, lon))), {
       paddingTopLeft: [28, topChrome + 12],
-      paddingBottomRight: [28, sheetH + 12],
+      paddingBottomRight: [28 + rail, sheetH + 12],
       // A 1.3 km walk and a 160 m one both deserve to fill the frame, but not
       // past the point where the basemap stops carrying street names.
       maxZoom: 18,

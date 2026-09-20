@@ -942,7 +942,8 @@
     "routeGardenShut": "The garden is closed right now (Mon–Fri 6:00–20:00), so there's no walk from here. Take tram 9 from Bieblova — every ~3 min, a 2 min ride.",
     "routePickBuilding": "Where are you headed?",
     "routeArrived": "You're already there.",
-    "routeTo": "to {building}"
+    "routeTo": "to {building}",
+    "routeElsewhere": "Somewhere else"
   },
   "admin": {
     "email": "Email",

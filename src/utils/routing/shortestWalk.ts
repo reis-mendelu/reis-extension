@@ -39,8 +39,21 @@ export function shortestWalk(
   isOpen: (gateId: string) => boolean
 ): Walk | null {
   if (targets.length === 0) return null;
-  // Standing on a shut stretch is not a place you may walk from.
-  if (from.gateId && !isOpen(from.gateId)) return null;
+
+  // Standing on a shut stretch is not a place you may walk from — but standing
+  // at one END of it is. `snapToGraph` picks the nearest EDGE, and at a node
+  // where a garden path meets a public one an equal-distance tie can land on
+  // the garden edge; refusing outright then told a student standing on open
+  // ground that there was no route, when they could simply walk the other way.
+  //
+  // So: inside a shut edge is a refusal, at either end is not. At an end, only
+  // that end is seeded, or the search would set off across the shut stretch to
+  // reach the far one.
+  const ON_NODE_M = 0.01;
+  const shutUnderfoot = from.gateId !== null && !isOpen(from.gateId);
+  const atA = from.toA <= ON_NODE_M;
+  const atB = from.toB <= ON_NODE_M;
+  if (shutUnderfoot && !atA && !atB) return null;
 
   const adj = new Map<number, { to: number; len: number; gate: string | null }[]>();
   for (const edge of graph.edges) {
@@ -58,16 +71,18 @@ export function shortestWalk(
   const prev = new Map<number, number>();
   /** Which gate, if any, the edge leading INTO each node belonged to. */
   const prevGate = new Map<number, string | null>();
-  // Two seeds: from the snapped point the walk may leave along the edge it
-  // landed on in either direction, and which one is shorter depends on where
-  // it is going.
-  dist.set(from.a, from.toA);
-  dist.set(from.b, from.toB);
+  // Two seeds normally: from the snapped point the walk may leave along the
+  // edge it landed on in either direction, and which is shorter depends on
+  // where it is going. On a shut edge, only the end being stood on.
+  const seedA = !shutUnderfoot || atA;
+  const seedB = !shutUnderfoot || atB;
+  if (seedA) dist.set(from.a, from.toA);
+  if (seedB) dist.set(from.b, from.toB);
 
   // Linear scan rather than a binary heap. The campus graph is ~650 edges and
   // this runs once per tap, not per frame; a heap would be more code for time
   // nobody can perceive.
-  const queue: number[] = [from.a, from.b];
+  const queue: number[] = [...(seedA ? [from.a] : []), ...(seedB ? [from.b] : [])];
   const done = new Set<number>();
   let arrived: number | null = null;
 

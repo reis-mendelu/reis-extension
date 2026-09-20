@@ -80,4 +80,27 @@ describe('exportGraph', () => {
     expect(out.edges.every((e: number[]) => e[0] !== e[1])).toBe(true);
     expect(out.edges.every((e: number[]) => (e[2] as number) > 0)).toBe(true);
   });
+
+  it('keeps the WALKABLE edge when a gated and an ungated one collapse together', () => {
+    // Two 7-decimal edges can round onto one 6-decimal pair. If the gated one
+    // happened to be seen first, keeping it would let a closed garden delete a
+    // connection that is open all week — a route vanishing at 20:00 for a
+    // reason nothing on screen could explain.
+    // B2 and B3 differ in the 7th decimal — two nodes to buildGraph — but both
+    // round to 49.210100, so they become ONE emitted node and their two edges
+    // from A2 collapse onto one pair. 3 cm apart, which is the real scale of
+    // the corridor seam this handles.
+    const A2: [number, number] = [16.6, 49.21];
+    const B2: [number, number] = [16.6, 49.2101001];
+    const B3: [number, number] = [16.6, 49.2101004];
+    const gated = new Set(['16.6000000,49.2100000', '16.6000000,49.2101001']);
+    const gateOf = (k1: string, k2: string) => (gated.has(k1) && gated.has(k2) ? 'garden' : null);
+
+    // Gated pair built FIRST, ungated second — the order that used to lose.
+    const graph = buildGraph([{ coords: [A2, B2] }, { coords: [A2, B3] }]);
+    const out = exportGraph(graph, new Map(), gateOf);
+
+    expect(out.edges).toHaveLength(1);
+    expect(out.edges[0]).toHaveLength(3); // no gateId: the open one won
+  });
 });

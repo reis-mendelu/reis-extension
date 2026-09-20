@@ -25,6 +25,7 @@ export function RouteCard() {
   const walk = useAppStore((s) => s.routeWalk);
   const building = useAppStore((s) => s.routeTargetBuilding);
   const clearRoute = useAppStore((s) => s.clearRoute);
+  const setPickerOpen = useAppStore((s) => s.setRoutePickerOpen);
 
   if (status === 'idle') return null;
 
@@ -86,6 +87,17 @@ export function RouteCard() {
             {t('map.routeThroughGarden')}
           </p>
         )}
+        {/* The button routes to the next lesson, which is right nearly always
+            and wrong the moment a student wants the library. This is how they
+            say so — without it the picker is unreachable whenever a timetable
+            target resolves. */}
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm -ml-2 mt-1 min-h-9 px-2 text-xs font-semibold text-primary"
+          onClick={() => setPickerOpen(true)}
+        >
+          {t('map.routeElsewhere')}
+        </button>
       </div>
       <button
         type="button"

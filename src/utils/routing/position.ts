@@ -6,6 +6,25 @@ import { devForcedPosition } from './devPosition';
 export const NO_PLATFORM = 'geolocation: not a native platform';
 
 /**
+ * The only Capacitor Geolocation error that means the student said no.
+ *
+ * Everything else the plugin can reject with — the 10-second timeout, no
+ * provider, a hardware failure — is a location that could not be had, not a
+ * permission that was refused. Telling someone to go and change a setting they
+ * never touched is worse than saying nothing.
+ */
+export const PERMISSION_DENIED_CODE = 'OS-PLUG-GLOC-0003';
+
+export function isPermissionDenied(err: unknown): boolean {
+  const code = (err as { code?: unknown } | null)?.code;
+  if (typeof code === 'string' && code === PERMISSION_DENIED_CODE) return true;
+  // The web shim and older plugin builds reject with a DOMException-shaped
+  // object whose numeric code 1 is PERMISSION_DENIED.
+  if (typeof code === 'number' && code === 1) return true;
+  return /denied|permission/i.test(String((err as Error | null)?.message ?? ''));
+}
+
+/**
  * One position fix, as `[lon, lat]`.
  *
  * `getCurrentPosition`, never `watchPosition`. The plugin's own documentation

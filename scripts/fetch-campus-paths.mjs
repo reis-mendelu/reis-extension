@@ -100,7 +100,7 @@ const ORIGINS = new Set(CORRIDORS.map((c) => c.name));
  * garden's curated gate and OSM's node for the same gate — see osmCorridor.mjs.
  * A metre-scale tolerance here would start merging genuinely separate paths.
  */
-const CORRIDOR_JOIN_M = 1;
+const CORRIDOR_JOIN_M = 0.05;
 
 // Anything a person walks on INSIDE the campus.
 //

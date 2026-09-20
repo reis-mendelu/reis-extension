@@ -37,6 +37,7 @@ describe('the committed campus graph', () => {
     for (const e of graph.edges) {
       expect(e[0]).toBeGreaterThanOrEqual(0);
       expect(e[0] as number).toBeLessThan(graph.nodes.length);
+      expect(e[1]).toBeGreaterThanOrEqual(0);
       expect(e[1] as number).toBeLessThan(graph.nodes.length);
     }
   });
@@ -57,7 +58,12 @@ describe('the committed campus graph', () => {
     const seen = new Set<string>();
     for (const e of graph.edges) {
       expect(e[0]).not.toBe(e[1]);
-      const pair = `${e[0]}-${e[1]}`;
+      // Normalised, because the contract is UNDIRECTED: 1-2 and 2-1 are the
+      // same edge, and a key that tells them apart would pass a file
+      // containing both.
+      const a = e[0] as number;
+      const b = e[1] as number;
+      const pair = a < b ? `${a}-${b}` : `${b}-${a}`;
       expect(seen.has(pair)).toBe(false);
       seen.add(pair);
     }

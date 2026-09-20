@@ -63,16 +63,22 @@ export function nextLessonTarget(lessons: BlockLesson[], now: Date): LessonTarge
     .filter((c) => sameDay(c.start, now) && lessonEnd(c.lesson, c.start) > now)
     .sort((a, b) => a.start.getTime() - b.start.getTime());
 
-  for (const { lesson, start } of candidates) {
-    const resolved = resolveRoomCode([lesson.room, lesson.roomStructured?.name]);
-    if (!resolved) continue;
-    const entry = INDEX.find((e) => e.code === resolved.code);
-    // `buildingId === 0` is building Q — a real building. Compare against
-    // undefined, never for truthiness.
-    if (!entry || entry.buildingId === undefined) continue;
-    const buildingName = BUILDING_NAME.get(entry.buildingId);
-    if (!buildingName) continue;
-    return { buildingName, roomLabel: resolved.label, startsAt: start };
-  }
-  return null;
+  // The EARLIEST remaining lesson, and only that one. Walking the list until
+  // something resolves looks helpful and is not: a student whose 11:00 is at
+  // FRRMS (budova Z, no floor plan, does not resolve) and whose 13:00 is in Q31
+  // would be walked to Q while their actual next class is somewhere else
+  // entirely. Withholding the route is the honest answer — the picker is still
+  // one tap away, and it does not lie about which lesson it is taking them to.
+  const next = candidates[0];
+  if (!next) return null;
+
+  const resolved = resolveRoomCode([next.lesson.room, next.lesson.roomStructured?.name]);
+  if (!resolved) return null;
+  const entry = INDEX.find((e) => e.code === resolved.code);
+  // `buildingId === 0` is building Q — a real building. Compare against
+  // undefined, never for truthiness.
+  if (!entry || entry.buildingId === undefined) return null;
+  const buildingName = BUILDING_NAME.get(entry.buildingId);
+  if (!buildingName) return null;
+  return { buildingName, roomLabel: resolved.label, startsAt: next.start };
 }
