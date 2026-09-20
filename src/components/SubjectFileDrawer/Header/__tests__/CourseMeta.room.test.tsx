@@ -20,7 +20,9 @@ beforeEach(() => {
 });
 
 const renderRoom = (room: string) =>
-  render(<CourseMeta lesson={makeLesson({ room })} courseInfo={undefined} isSearchContext={false} />);
+  render(
+    <CourseMeta lesson={makeLesson({ room })} courseInfo={undefined} isSearchContext={false} />
+  );
 
 describe('CourseMeta room control', () => {
   it.each([
