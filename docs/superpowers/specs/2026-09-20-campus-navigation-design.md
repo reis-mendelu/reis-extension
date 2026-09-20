@@ -106,8 +106,10 @@ So `fetch-campus-paths.mjs` gains a fourth output key:
     // Deduplicated [lon, lat], 6 dp — the same rounding as every other
     // geometry in this file.
     "nodes": [[16.617241, 49.210133], ...],
-    // [fromIndex, toIndex, lengthM] — undirected, each pair once.
-    "edges": [[0, 1, 34.2], ...]
+    // [fromIndex, toIndex, lengthM, gateId?] — undirected, each pair once.
+    // `gateId` is present only on edges that are not always walkable; see
+    // "Closed edges" below. Absent on the overwhelming majority.
+    "edges": [[0, 1, 34.2], [7, 8, 61.0, "garden"], ...]
   }
 }
 ```
@@ -194,14 +196,27 @@ New, shipped, under `src/utils/routing/` — split to respect the 200-line rule:
   beyond a cutoff (proposal: 250 m), which is how "you are not near the campus"
   is represented. A student in Prague gets an honest nothing, not a route from
   the main gate.
-- `shortestWalk(graph, from, toNodeIndices)` → Dijkstra over `edges`, returning
-  the polyline and total `lengthM`. Multi-target because a building is a set of
-  nodes (its door nodes), not one point.
+- `shortestWalk(graph, from, toNodeIndices, isOpen)` → Dijkstra over `edges`,
+  returning the polyline and total `lengthM`. Multi-target because a building is
+  a set of nodes (its door nodes), not one point.
 - `buildingNodes(graph, buildingName)` → the node indices that count as arriving
   at that building.
 
 All three are pure functions over committed data, so all three are test-first
 with fixtures. No React, no store, no async.
+
+**Closed edges.** The graph contains the garden corridor, and the garden is shut
+at weekends and outside 06:00–20:00. Greying the route card is not enough: left
+alone, Dijkstra returns the garden route at 21:00 on a Saturday, and worse, will
+happily use the garden as an intermediate leg of some unrelated journey. So
+availability is a property of the graph, not of the card — `shortestWalk` takes
+an `isOpen(gateId) => boolean` predicate and skips any edge whose `gateId` is
+shut. The router then answers "what can you actually walk right now," and the
+card only has to explain the answer. This is why `gateId` is a fourth element on
+the edge tuple rather than a display-time concern.
+
+There is exactly one gate id today, `"garden"`. The mechanism is general because
+the cost of making it general is one string.
 
 ### 6. Geolocation
 
@@ -229,7 +244,8 @@ synchronously, per the project's data-flow rule.
 
 ### 7. Destination: the next lesson
 
-The chain, verified end to end against real bundled data:
+The chain. The first two hops are verified against real bundled data; the last
+is the new code this design adds:
 
 ```
 lesson room string  →  resolveRoomCode()  →  rooms-index entry
@@ -237,8 +253,10 @@ lesson room string  →  resolveRoomCode()  →  rooms-index entry
                     →  buildingNodes(graph, name)
 ```
 
-Checked: `BA39N4051` → `Q31` → `buildingId 0` → `"Q"`. `buildingId === 0` is a
-real building, and the existing constraint applies — never use truthiness to
+Checked against the shipped index: `BA39N4051` → `Q31` → `buildingId 0` → `"Q"`.
+The `buildingNodes` hop is unverified for the obvious reason that the graph does
+not exist yet; it is step 1 of the sequencing. `buildingId === 0` is a real
+building, and the existing constraint applies — never use truthiness to
 mean "no building selected."
 
 The rule for when there is no obvious next lesson, decided rather than left to
@@ -320,7 +338,12 @@ history of green signals that lie, the evidence for "done" is a route rendered
 on screen from a simulated position:
 
 - A **dev-only `?at=<lat>,<lon>` override**, `import.meta.env.DEV`-stripped from
-  shipped builds exactly as `devForcedPlatform()` is. This is a named task, not
+  shipped builds exactly as `devForcedPlatform()` is. **`lat,lon` order, not the
+  `[lon, lat]` this codebase stores geometry in** — the value gets pasted
+  straight out of Google Maps by a human, so it takes the order a human copies,
+  and the parser transposes once at that boundary. The same reasoning as `'cz'`
+  vs the `'cs'` locale: convert where the outside world meets the app, not
+  everywhere else. This is a named task, not
   an afterthought — it is what makes JAK, FRRMS and mid-campus positions
   testable in the browser harness without GPS or a walk.
 - Fixtures for: JAK Blok A, FRRMS, a point midway across campus between B and M,
@@ -346,7 +369,9 @@ on screen from a simulated position:
 1. Emit `graph` from the build; shape tests. No user-visible change.
 2. Port snap + Dijkstra into `src/`; unit tests. Still no user-visible change.
 3. The dev `?at=` override.
-4. Route rendering from a simulated position, destination picked manually.
+4. Route rendering from a simulated position, destination chosen with a building
+   picker. The picker is built here and is the same one section 7 falls back to
+   when there is no next lesson — it is not throwaway scaffolding.
 5. The two corridors.
 6. Destination from the next lesson.
 7. Capacitor geolocation; native permissions; release-APK verification.
