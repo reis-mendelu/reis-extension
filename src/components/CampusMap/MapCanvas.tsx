@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { useAppStore } from '../../store/useAppStore';
 import { drawRoute, drawPosition } from './routeLayers';
 import { usePhoneViewport } from '../../hooks/ui/usePhoneViewport';
-import { railOffsetPx } from '../../utils/mapRail';
+import { railOffsetPx, railPaddingPx } from '../../utils/mapRail';
 import buildingsJson from '../../data/map/buildings.json';
 import {
   ringToLatLng,
@@ -463,7 +463,18 @@ export function MapCanvas() {
       : 78;
     // The rail overlays the RIGHT of the map in landscape, so the destination
     // and its time chip finish underneath it unless its width is reserved.
-    const rail = railRef.current.open ? railRef.current.width : 0;
+    //
+    // Through the same tested rule the camera shift uses, not off the store.
+    // `mapRailOpen` defaults to true and `mapRailWidth` to 340 on every device,
+    // including the phones that never render a rail — so this reserved 368px of
+    // a 390px map, left Leaflet nothing to fit into, and the camera never
+    // moved. See railPaddingPx.
+    const rail = railPaddingPx(
+      map.getSize().x,
+      isPhone,
+      railRef.current.width,
+      railRef.current.open
+    );
     map.fitBounds(L.latLngBounds(shown.coords.map(([lon, lat]) => L.latLng(lat, lon))), {
       paddingTopLeft: [28, topChrome + 12],
       paddingBottomRight: [28 + rail, sheetH + 12],
@@ -472,7 +483,7 @@ export function MapCanvas() {
       maxZoom: 18,
       animate: true,
     });
-  }, [routeWalk, routeFrom, language]);
+  }, [routeWalk, routeFrom, language, isPhone]);
 
   return <div ref={ref} className="absolute inset-0" />;
 }

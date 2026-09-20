@@ -70,3 +70,36 @@ export function railOffsetPx(
   if (containerWidth < RAIL_MIN_WIDTH) return 0;
   return Math.round(railWidth / 2);
 }
+
+/**
+ * How much of the map's WIDTH the rail is covering, for a fit that has to keep
+ * its whole subject visible.
+ *
+ * `railOffsetPx` above answers a different question — how far to nudge a
+ * centred pin out from behind the rail — and takes half the width because
+ * re-centring in the remaining space is exactly half. Fitting a route is not a
+ * nudge: every metre of the walk has to end up on screen, so the padding is the
+ * whole rail.
+ *
+ * Same three gates as the offset, and they are the point. The rail's width
+ * lives in the store, where it defaults to open at 340px regardless of the
+ * screen it is not being rendered on; the route fit used to read it raw. On a
+ * 390px phone that asked Leaflet to fit a walk into 390 - 28 - 28 - 340 = -6px
+ * of map. Given nothing to fit into, `getBoundsZoom` returns its maximum, the
+ * fit becomes a no-op, and the camera stays on whatever the student was looking
+ * at before — a "9 min" card above a line that runs off the screen.
+ *
+ * Capped at half the container for the same reason the rail's own width is:
+ * a fit needs a map left over to fit into.
+ */
+export function railPaddingPx(
+  containerWidth: number,
+  isPhoneTree: boolean,
+  railWidth: number = RAIL_PX,
+  railOpen: boolean = true
+): number {
+  if (!isPhoneTree) return 0;
+  if (!railOpen) return 0;
+  if (containerWidth < RAIL_MIN_WIDTH) return 0;
+  return Math.round(Math.min(railWidth, containerWidth * RAIL_MAX_SHARE));
+}
