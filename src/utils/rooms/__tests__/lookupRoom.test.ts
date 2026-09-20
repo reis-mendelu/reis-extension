@@ -69,18 +69,66 @@ describe('lookupRoomEntry', () => {
     expect(lookupRoomEntry('', INDEX)).toBeNull();
   });
 
-  // The sweep the adversarial pass turns into a permanent guard: every handle
-  // the dataset advertises must be resolvable through the same entry point the
-  // UI uses. If a future index ships a handle shape this cannot find, this fails.
-  it('resolves every handle in the whole index', () => {
-    const unreachable: string[] = [];
+  // The 16 keys the DATASET makes ambiguous: two or more entries advertise the
+  // same handle, so one of them is unreachable by it and no resolver can tell
+  // them apart from the room string alone. Frozen deliberately — five of them
+  // (B22, B35, B52, C11, E17) name rooms on two different FLOORS, so if this
+  // list ever grows, someone is being sent to the wrong floor by a new
+  // collision and that must surface here rather than in a student's week.
+  const DATASET_AMBIGUOUS = [
+    '\b', // two byte-identical M rows whose code/name is a literal backspace
+    'b22',
+    'b35',
+    'b52',
+    'ba03n5041',
+    'ba03p1029',
+    'ba04n3049',
+    'ba04n4049',
+    'ba27', // three byte-identical duplicate M rows
+    'c11',
+    'e17',
+    'odpočinková zóna',
+    'pr oddělení',
+    'učebna agronomické fakulty.',
+    'zahraniční oddělení',
+  ];
+
+  // Stronger than "every handle resolves to something": every handle must
+  // resolve back to ITS OWN entry. The weaker form passes trivially for every
+  // collision above, which is exactly the failure that hurts — a button that
+  // opens the wrong room looks like it worked.
+  it('resolves every handle back to its own entry, bar the dataset ambiguities', () => {
+    const strays: string[] = [];
     for (const e of INDEX) {
       for (const handle of [e.code, e.name, e.nickname]) {
         if (!handle || !handle.trim()) continue;
-        if (!lookupRoomEntry(handle, INDEX)) unreachable.push(handle);
+        if (DATASET_AMBIGUOUS.includes(normalizeRoomKey(handle))) continue;
+        if (lookupRoomEntry(handle, INDEX) !== e) strays.push(handle);
       }
     }
-    expect(unreachable).toEqual([]);
+    expect(strays).toEqual([]);
+  });
+
+  // The property that makes matching `nickname` safe at all. A nickname is the
+  // friendly code a timetable prints ("A01"); an estate code is what the map
+  // stores. If a nickname ever equalled a DIFFERENT room's code or name, adding
+  // nickname matching would start hijacking lookups that used to be exact.
+  it('never lets a nickname shadow another entry’s code or name', () => {
+    const byNickname = new Map<string, RoomIndexEntry[]>();
+    for (const e of INDEX) {
+      if (!e.nickname || !e.nickname.trim()) continue;
+      const k = normalizeRoomKey(e.nickname);
+      byNickname.set(k, [...(byNickname.get(k) ?? []), e]);
+    }
+    const shadowed: string[] = [];
+    for (const e of INDEX) {
+      for (const handle of [e.code, e.name]) {
+        if (!handle || !handle.trim()) continue;
+        const owners = byNickname.get(normalizeRoomKey(handle)) ?? [];
+        if (owners.some((o) => o !== e)) shadowed.push(handle);
+      }
+    }
+    expect(shadowed).toEqual([]);
   });
 });
 
