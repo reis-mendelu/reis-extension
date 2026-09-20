@@ -493,10 +493,24 @@ export function MapCanvas() {
   }, [mapSelection]);
 
   // Drawing the route is a restyle of its own layer, never a redraw of the map
-  // — the heavy effect owns the camera, and re-running it here would throw away
-  // the view the student is looking at.
+  // — the heavy effect owns the layers, and re-running it here would throw away
+  // the floor the student is looking at.
+  //
+  // The CAMERA does move, though, and it has to. The route is the answer to a
+  // question the student just asked, and the first version of this drew it
+  // wherever it happened to fall: walking to Q from the main gate put the whole
+  // line south of the viewport, behind the sheet, with only the card to say it
+  // had worked at all. So the map fits the walk. Bottom padding clears the
+  // sheet, which owns roughly the lower third of a phone screen; without it the
+  // fit is honest about the bounds and still hides half the line.
   useEffect(() => {
     drawRoute(routeLayerRef.current, routeWalk, language);
+    const map = mapRef.current;
+    if (!map || !routeWalk || routeWalk.coords.length < 2) return;
+    map.fitBounds(
+      L.latLngBounds(routeWalk.coords.map(([lon, lat]) => L.latLng(lat, lon))),
+      { paddingTopLeft: [28, 96], paddingBottomRight: [28, map.getSize().y * 0.4], animate: true }
+    );
   }, [routeWalk, language]);
 
   /**

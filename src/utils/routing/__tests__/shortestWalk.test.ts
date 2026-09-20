@@ -87,6 +87,25 @@ describe('shortestWalk', () => {
     expect(shortestWalk(graph, from, graph.buildings.Q, shut)).toBeNull();
   });
 
+  it('reports the garden when the chosen path went through it', () => {
+    const from = snapToGraph(graph, [16.6, 49.21])!;
+    const walk = shortestWalk(graph, from, graph.buildings.Q, open)!;
+    expect(walk.gates).toEqual(['garden']);
+  });
+
+  it('reports no gates when the chosen path avoided them', () => {
+    const from = snapToGraph(graph, [16.6, 49.21])!;
+    const walk = shortestWalk(graph, from, graph.buildings.Q, shut)!;
+    expect(walk.gates).toEqual([]);
+  });
+
+  it('counts the gate of the edge it STARTED on', () => {
+    // Standing inside the garden and walking out of it still went through it.
+    const from = snapToGraph(graph, [16.60045, 49.21])!;
+    const walk = shortestWalk(graph, from, graph.buildings.Q, open)!;
+    expect(walk.gates).toContain('garden');
+  });
+
   it('includes the walk from the snapped point to the first node in the total', () => {
     // Snapped a quarter of the way along edge 0-1, heading for node 3 the long
     // way: 75 m to node 1, then 100 m on. Not 100.

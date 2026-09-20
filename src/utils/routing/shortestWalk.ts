@@ -5,6 +5,16 @@ export interface Walk {
   /** [lon, lat], from the snapped start to the arrival node. */
   coords: number[][];
   lengthM: number;
+  /**
+   * The distinct gates this walk actually passes through, in no order.
+   *
+   * Reported by the router rather than re-derived by the UI: the card wants to
+   * say "through the botanical garden — free with your ISIC", and the only
+   * thing that knows whether the chosen path went that way is the search that
+   * chose it. Re-deriving it by testing coordinates against the garden polygon
+   * would be a second, disagreeing answer to a question already settled here.
+   */
+  gates: string[];
 }
 
 /**
@@ -32,20 +42,22 @@ export function shortestWalk(
   // Standing on a shut stretch is not a place you may walk from.
   if (from.gateId && !isOpen(from.gateId)) return null;
 
-  const adj = new Map<number, { to: number; len: number }[]>();
+  const adj = new Map<number, { to: number; len: number; gate: string | null }[]>();
   for (const edge of graph.edges) {
     const gate = edgeGate(edge);
     if (gate !== null && !isOpen(gate)) continue;
     const a = edge[0] as number;
     const b = edge[1] as number;
     const len = edgeLength(edge);
-    (adj.get(a) ?? adj.set(a, []).get(a)!).push({ to: b, len });
-    (adj.get(b) ?? adj.set(b, []).get(b)!).push({ to: a, len });
+    (adj.get(a) ?? adj.set(a, []).get(a)!).push({ to: b, len, gate });
+    (adj.get(b) ?? adj.set(b, []).get(b)!).push({ to: a, len, gate });
   }
 
   const goal = new Set(targets);
   const dist = new Map<number, number>();
   const prev = new Map<number, number>();
+  /** Which gate, if any, the edge leading INTO each node belonged to. */
+  const prevGate = new Map<number, string | null>();
   // Two seeds: from the snapped point the walk may leave along the edge it
   // landed on in either direction, and which one is shorter depends on where
   // it is going.
@@ -71,12 +83,13 @@ export function shortestWalk(
       arrived = u;
       break;
     }
-    for (const { to, len } of adj.get(u) ?? []) {
+    for (const { to, len, gate } of adj.get(u) ?? []) {
       if (done.has(to)) continue;
       const nd = (dist.get(u) ?? Infinity) + len;
       if (nd < (dist.get(to) ?? Infinity)) {
         dist.set(to, nd);
         prev.set(to, u);
+        prevGate.set(to, gate);
         queue.push(to);
       }
     }
@@ -87,8 +100,18 @@ export function shortestWalk(
   const back: number[] = [arrived];
   while (prev.has(back[back.length - 1])) back.push(prev.get(back[back.length - 1])!);
   const nodes = back.reverse();
+  // The snapped start sits ON an edge, so its own gate counts too: a walk that
+  // begins inside the garden went through it whether or not it crosses another
+  // gated edge afterwards.
+  const gates = new Set<string>();
+  if (from.gateId) gates.add(from.gateId);
+  for (const n of nodes) {
+    const gate = prevGate.get(n);
+    if (gate) gates.add(gate);
+  }
   return {
     coords: [from.point, ...nodes.map((n) => graph.nodes[n])],
     lengthM: dist.get(arrived)!,
+    gates: [...gates],
   };
 }

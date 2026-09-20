@@ -10,6 +10,7 @@ const walk: Walk = {
     [16.6005, 49.2105],
   ],
   lengthM: 640,
+  gates: [],
 };
 
 const chipOf = (layer: L.LayerGroup) =>
@@ -73,7 +74,7 @@ describe('drawRoute', () => {
 
   it('draws nothing for a degenerate one-point walk', () => {
     const layer = L.layerGroup();
-    drawRoute(layer, { coords: [[16.6, 49.21]], lengthM: 0 }, 'cz');
+    drawRoute(layer, { coords: [[16.6, 49.21]], lengthM: 0, gates: [] }, 'cz');
     expect(layer.getLayers()).toHaveLength(0);
   });
 });
