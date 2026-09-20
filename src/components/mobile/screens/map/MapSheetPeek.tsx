@@ -37,7 +37,12 @@ export function MapSheetPeek() {
 
   return (
     <>
-      <span className="h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl">
+      {/* Below 360px the band also carries the route button, and the tile is
+          the first thing worth giving up: without this the title and the time
+          were both truncated — "Kvíz v ..." over "Úterý · 1...", a time cut
+          mid-digit, which is worse than no time. Same breakpoint BottomNav
+          tightens at, for the same reason. */}
+      <span className="h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl max-[359px]:hidden">
         {next.imageUrl ? (
           <img src={next.imageUrl} alt="" className="h-full w-full object-cover" />
         ) : (

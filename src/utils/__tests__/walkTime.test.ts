@@ -3,9 +3,9 @@ import { walkMinutes, WALK_M_PER_MIN } from '../walkTime';
 
 describe('walkMinutes', () => {
   it('answers in whole minutes, because that is how a student thinks about a walk', () => {
-    expect(walkMinutes(80)).toBe(1);
-    expect(walkMinutes(436)).toBe(5);
-    expect(walkMinutes(240)).toBe(3);
+    expect(walkMinutes(100)).toBe(1);
+    expect(walkMinutes(436)).toBe(4);
+    expect(walkMinutes(240)).toBe(2);
   });
 
   it('never says a walk takes zero minutes', () => {
@@ -15,10 +15,17 @@ describe('walkMinutes', () => {
     expect(walkMinutes(0)).toBe(1);
   });
 
-  it('walks at a campus pace, not a race', () => {
-    // 4.8 km/h — someone with a bag, crossing a courtyard, not a pedestrian
-    // in a routing benchmark.
-    expect(WALK_M_PER_MIN).toBe(80);
+  it('walks at the pace this campus is actually walked at', () => {
+    // 6 km/h. Measured, not guessed: FRRMS to building Q through the botanical
+    // garden is 1326 m and is walked in about 12 minutes, which is 110 m/min.
+    // 100 is that, rounded back towards someone who is not in a hurry.
+    expect(WALK_M_PER_MIN).toBe(100);
+  });
+
+  it('is honest about the walk that motivated the pace', () => {
+    // FRRMS -> Q, 1326 m. The old 80 m/min printed 17 min for this and was
+    // five minutes out, which on the way to a lecture is the whole question.
+    expect(walkMinutes(1326)).toBe(13);
   });
 
   it('shrugs off a nonsense length rather than printing NaN on the map', () => {
