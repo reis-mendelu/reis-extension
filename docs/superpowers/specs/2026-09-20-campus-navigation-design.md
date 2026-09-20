@@ -353,10 +353,27 @@ on screen from a simulated position:
 
 ## Open risks
 
-- **`walkMinutes` is a flat 80 m/min.** Honest for a 400 m courtyard crossing.
-  Over 1.26 km with an ISIC gate mid-route it is a guess wearing a number's
-  clothes. One real walk, timed, before the figure is printed as fact — and if
-  it is off, the fix is a per-corridor factor, not a global one.
+- **`walkMinutes` is a flat 80 m/min, and the first real data point says it is
+  wrong at this distance.** FRRMS → Q through the garden measures **1,326 m**
+  over the OSM network plus the curated garden paths (402 m FRRMS → Gen. Píky
+  gate, 596 m through the garden, 328 m arboretum gate → Q; straight line 967 m,
+  so a 1.37× detour ratio — normal). At 80 m/min that prints **16.6 min**. The
+  maintainer, who walks it, says **~12 min**, which implies **110 m/min
+  (6.6 km/h)**.
+
+  Both are honest for different people. 80 m/min was chosen for "someone with a
+  bag crossing a courtyard" — deliberately unhurried, and correct for the 200–400
+  m campus hops where a minute either way costs nothing. Over 1.3 km the same
+  constant is 4.5 minutes out, which is the difference between making a lecture
+  and not.
+
+  **This is not calibrated by one data point.** Before the figure ships it needs
+  two or three timed walks, including the JAK corridor, at a normal rather than
+  a demonstrative pace. The likely shape of the fix is a distance-dependent rate
+  — a courtyard crossing and a 1.3 km street walk are not the same activity —
+  not a single faster global constant, which would make every campus hop
+  optimistic to fix a number that is only wrong off-campus. Settle it with
+  measurements, in the implementation plan, not here.
 - **Committed size.** Stated as measured in the implementation plan, not
   estimated.
 - **Graph connectivity across the garden join.** The corridor pin is declared,
