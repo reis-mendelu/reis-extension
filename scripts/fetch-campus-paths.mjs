@@ -19,7 +19,9 @@ import { networkStrokes, walksFrom } from './lib/pathWalks.mjs';
 import { clipToRegion } from './lib/osmClip.mjs';
 import { campusPlaces, splitAnchors, KIND_OF_RANK } from './lib/campusPlaces.mjs';
 import { corridorWays } from './lib/remoteCorridor.mjs';
+import { exportGraph } from './lib/graphExport.mjs';
 import { overpass } from './lib/overpass.mjs';
+import { nodeKey } from './lib/pathGeo.mjs';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const BUILDINGS = read('../src/data/map/buildings.json');
@@ -74,6 +76,10 @@ out geom;`;
 // as the minimum gap between anchors, and as the length below which a route is
 // not worth drawing.
 const MIN_M = 25;
+
+// Mirrors src/utils/walkTime.ts. Only the summary log uses it; kept in step so
+// the build does not print minutes the app disagrees with.
+const WALK_M_PER_MIN = 100;
 
 const round = (v) => Number(v.toFixed(6)); // ~0.1 m; keeps the committed JSON small
 
@@ -140,6 +146,14 @@ const { entranceNodes, buildingNodes } = splitAnchors(
   new Set(BUILDINGS.buildings.map((b) => b.name))
 );
 
+// Every node the garden corridor contributed. An edge counts as "garden" only
+// when BOTH ends came from the corridor: an edge with one end on the campus is
+// the join AT the gate, which is public ground and always walkable.
+const gardenKeys = new Set();
+for (const way of corridor) for (const c of way.coords) gardenKeys.add(nodeKey(c));
+const gateOf = (a, b) => (gardenKeys.has(a) && gardenKeys.has(b) ? 'garden' : null);
+const routingGraph = exportGraph(graph, buildingNodes, gateOf);
+
 const routes = walksFrom(graph, entranceNodes, buildingNodes)
   .filter((r) => r.lengthM >= MIN_M)
   .sort((a, b) => a.from.localeCompare(b.from) || a.to.localeCompare(b.to))
@@ -201,7 +215,11 @@ if (missing.length) {
 
 writeFileSync(
   new URL('../src/data/map/campusPaths.json', import.meta.url),
-  JSON.stringify({ source: 'OpenStreetMap (ODbL)', entrances, network, routes }, null, 0) + '\n'
+  JSON.stringify(
+    { source: 'OpenStreetMap (ODbL)', entrances, network, routes, graph: routingGraph },
+    null,
+    0
+  ) + '\n'
 );
 console.log(
   `${ways.length} clipped ways → ${graph.nodes.size} nodes, ` +
@@ -211,5 +229,5 @@ console.log(
 console.log(`entrances: ${entrances.map((p) => `${p.name} (${p.kind})`).join(', ')}`);
 for (const r of routes)
   console.log(
-    `  ${String(Math.max(1, Math.round(r.lengthM / 80))).padStart(2)} min  ${r.from} → ${r.to}`
+    `  ${String(Math.max(1, Math.round(r.lengthM / WALK_M_PER_MIN))).padStart(2)} min  ${r.from} → ${r.to}`
   );
