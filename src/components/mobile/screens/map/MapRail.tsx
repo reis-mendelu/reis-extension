@@ -2,7 +2,6 @@ import { ChevronLeft, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { useEffect } from 'react';
 import { useAppStore } from '../../../../store/useAppStore';
 import { RouteButton } from '../../../CampusMap/RouteButton';
-import { RouteCard } from '../../../CampusMap/RouteCard';
 import { RoutePicker } from '../../../CampusMap/RoutePicker';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useRailResize } from './useRailResize';
@@ -104,7 +103,6 @@ export function MapRail() {
         <RouteButton />
         <RoutePicker />
       </div>
-      <RouteCard />
 
       {/* The left edge is the resize handle — the axis a tablet can afford to
           trade. Not a detent: it sets a width and keeps it. */}

@@ -3,7 +3,6 @@ import { ChevronUp } from 'lucide-react';
 import { useMapSheetDrag } from './useMapSheetDrag';
 import { useAppStore } from '../../../../store/useAppStore';
 import { RouteButton } from '../../../CampusMap/RouteButton';
-import { RouteCard } from '../../../CampusMap/RouteCard';
 import { RoutePicker } from '../../../CampusMap/RoutePicker';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { MapPanelBody } from './MapPanelBody';
@@ -208,7 +207,6 @@ export function MapSheet() {
 
       {/* The answer, when there is one. Above the peek row so the row below
           still says what is underneath the sheet and still expands it. */}
-      {!expanded && <RouteCard />}
 
       {/* ABOVE the button that opens it, not below. Below, the picker grew the
           sheet downward into the floating BottomNav, which covered the letters

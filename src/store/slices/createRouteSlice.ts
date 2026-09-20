@@ -3,40 +3,33 @@ import type { AppSlice } from '../types';
 import type { CampusGraph } from '../../types/campusMap';
 import { snapToGraph } from '../../utils/routing/snapToGraph';
 import { shortestWalk, type Walk } from '../../utils/routing/shortestWalk';
-import { isGateOpen } from '../../utils/routing/gateHours';
-import { currentPosition, isPermissionDenied, NO_PLATFORM } from '../../utils/routing/position';
+import { currentPosition } from '../../utils/routing/position';
 import type { RouteTarget } from '../../utils/routing/nextLessonTarget';
-import { devForcedNow } from '../../utils/routing/devPosition';
 import { logError } from '../../utils/reportError';
 
 const GRAPH = (campusPaths as unknown as { graph: CampusGraph }).graph;
 
+/** The gate predicate the router takes, answering yes to all of them. Named so
+ *  the call site reads as a decision rather than as a stray `() => true`. */
+const ALL_GATES_OPEN = () => true;
+
+/**
+ * Four states, and only two of them reach the screen.
+ *
+ * There used to be seven: `denied`, `unavailable`, `too-far`, `no-route` and
+ * `gate-shut` each existed to be SAID, in a card that explained which of them
+ * had happened. That card is gone while the walk itself is being perfected, so
+ * a distinction nothing can express is a distinction not worth keeping — every
+ * way of not getting a walk is `failed`, and the reason goes to the console
+ * (logcat on the device) where it can still be recovered.
+ */
 export type RouteStatus =
   | 'idle'
   | 'locating'
   /** A walk was found and is on the map. */
   | 'ready'
-  /** The student refused the permission, or the fix could not be had. */
-  | 'denied'
-  /**
-   * No position to be had: this build cannot ask, or the fix timed out, or no
-   * provider answered. Distinct from `denied`, which means the student
-   * refused — sending them to a settings screen they never touched is worse
-   * than saying nothing.
-   */
-  | 'unavailable'
-  /** The fix landed too far from the network to route from. */
-  | 'too-far'
-  /** Snapped fine, but nothing walkable reaches the destination right now. */
-  | 'no-route'
-  /**
-   * No walk NOW, but there is one while the garden is open.
-   *
-   * Distinct from `no-route` because the answers differ: this one can name the
-   * tram, the other cannot. Conflating them told a student standing on a
-   * disconnected stretch of path that the botanical garden was shut.
-   */
-  | 'gate-shut';
+  /** No walk, for any reason. The reason is in the log, never on screen. */
+  | 'failed';
 
 export interface RouteSlice {
   /** The raw fix, kept so the UI can say how far off the network it was. */
@@ -98,8 +91,8 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set) => ({
     const stale = () => mine !== routeGeneration;
 
     // The previous walk is dropped BEFORE the await, not after. Left up, it
-    // would sit on the map under the new destination's heading for as long as
-    // the fix takes — a route to somewhere the student is no longer going.
+    // would sit on the map under the new destination for as long as the fix
+    // takes — a route to somewhere the student is no longer going.
     set({
       routeStatus: 'locating',
       routeTargetBuilding: buildingName,
@@ -111,14 +104,12 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set) => ({
     try {
       at = await currentPosition();
     } catch (err) {
+      // Refusal, cold fix, plugin timeout, a browser with no native
+      // geolocation — all one outcome now, and the only place they are still
+      // told apart is this line.
       logError('RouteSlice.locate', err);
       if (stale()) return;
-      // `denied` ONLY for an actual refusal. The plugin also rejects on its
-      // 10-second timeout and when no provider answers, and the first version
-      // called all of those "denied" — so a student on a cold GPS fix was told
-      // to go and change a permission they had already granted.
-      const noPlatform = String((err as Error)?.message ?? '').includes(NO_PLATFORM);
-      set({ routeStatus: !noPlatform && isPermissionDenied(err) ? 'denied' : 'unavailable' });
+      set({ routeStatus: 'failed' });
       return;
     }
 
@@ -126,27 +117,23 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set) => ({
 
     const snap = snapToGraph(GRAPH, at);
     if (!snap) {
-      set({ routeFrom: at, routeStatus: 'too-far' });
+      logError('RouteSlice.snap', new Error(`fix too far from the path network: ${at.join()}`));
+      set({ routeFrom: at, routeStatus: 'failed' });
       return;
     }
 
-    const now = devForcedNow() ?? new Date();
+    // EVERY gate open, whatever the clock says. The garden's hours
+    // (po–pá 6:00–20:00) are real and `gateHours` still knows them, but they
+    // are not consulted while the walk is being perfected: a shut garden is
+    // the difference between a line and a sentence about tram 9, and the
+    // sentence is one of the things that went. Measured consequence, recorded
+    // so it is not rediscovered as a surprise — at 23:14 on a Sunday this now
+    // draws a walk through a garden nobody can enter.
     const targets = GRAPH.buildings[buildingName] ?? [];
-    const walk = shortestWalk(GRAPH, snap, targets, (gate) => isGateOpen(gate, now));
+    const walk = shortestWalk(GRAPH, snap, targets, ALL_GATES_OPEN);
     if (!walk) {
-      // Ask the same question again with every gate open. If a walk appears,
-      // the gate is the whole reason there isn't one — and that is a different
-      // answer for the student, because it comes with a tram. If none appears,
-      // there is genuinely nowhere to walk from here and saying "the garden is
-      // shut" would be a lie.
-      // Asked again with every gate open, only to tell the two silences apart:
-      // a walk that appears means the GATE is the reason there isn't one, and
-      // that answer comes with a tram. The would-be walk itself is not drawn —
-      // a grey line through a garden nobody can enter looked like an
-      // instruction, and the honest answer at that moment is the tram, not a
-      // path the student cannot take.
-      const ifOpen = shortestWalk(GRAPH, snap, targets, () => true);
-      set({ routeFrom: at, routeStatus: ifOpen ? 'gate-shut' : 'no-route' });
+      logError('RouteSlice.route', new Error(`no walk to ${buildingName} from ${at.join()}`));
+      set({ routeFrom: at, routeStatus: 'failed' });
       return;
     }
     set({ routeFrom: at, routeWalk: walk, routeStatus: 'ready' });

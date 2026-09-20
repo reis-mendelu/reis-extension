@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 const currentPosition = vi.fn();
 // Partial mock: only the fix itself is faked. NO_PLATFORM stays the real
@@ -16,12 +16,26 @@ import { useAppStore } from '../../useAppStore';
 const MAIN_GATE: [number, number] = [16.617241, 49.210133];
 const MID_CAMPUS: [number, number] = [16.6155, 49.2106];
 const PRAGUE: [number, number] = [14.42, 50.08];
+/** The FRRMS corridor, the far side of the arboretum — the one walk that used
+ *  to depend on the garden's opening hours. */
+const FRRMS: [number, number] = [16.614118, 49.218161];
+
+/** Whatever the slice last wrote to the console, joined. Nothing reaches the
+ *  screen any more, so this is the only place a reason can be checked. */
+let logLines: string[] = [];
+const logged = () => logLines.join(' | ');
 
 describe('createRouteSlice', () => {
   beforeEach(() => {
     currentPosition.mockReset();
+    logLines = [];
+    vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+      logLines.push(args.map(String).join(' '));
+    });
     useAppStore.getState().clearRoute();
   });
+
+  afterEach(() => vi.restoreAllMocks());
 
   it('starts idle with nothing drawn', () => {
     const s = useAppStore.getState();
@@ -49,43 +63,29 @@ describe('createRouteSlice', () => {
     expect(s.routeWalk!.lengthM).toBeLessThan(400);
   });
 
-  it('reports too-far rather than inventing a start', async () => {
+  it('never invents a start when the fix is nowhere near campus', async () => {
     currentPosition.mockResolvedValue(PRAGUE);
     await useAppStore.getState().routeTo('Q');
     const s = useAppStore.getState();
-    expect(s.routeStatus).toBe('too-far');
+    expect(s.routeStatus).toBe('failed');
     expect(s.routeWalk).toBeNull();
+    expect(logged()).toMatch(/too far|snap/i);
   });
 
-  it('reports denied when the student refused the permission', async () => {
+  it('fails silently when the fix cannot be had, and says why in the log', async () => {
+    // One `failed` for every way this can go wrong, because nothing on screen
+    // distinguishes them any more. The reason still has to be recoverable, so
+    // it goes to the console — logcat on the device.
     currentPosition.mockRejectedValue(new Error('User denied Geolocation'));
     await useAppStore.getState().routeTo('Q');
-    expect(useAppStore.getState().routeStatus).toBe('denied');
+    expect(useAppStore.getState().routeStatus).toBe('failed');
+    expect(logged()).toMatch(/RouteSlice/);
   });
 
-  it('reports unavailable on a platform that has no geolocation at all', async () => {
-    // A different answer from "you said no", and the student deserves to be
-    // told which one it is.
+  it('fails the same way on a platform with no geolocation at all', async () => {
     currentPosition.mockRejectedValue(new Error('geolocation: not a native platform'));
     await useAppStore.getState().routeTo('Q');
-    expect(useAppStore.getState().routeStatus).toBe('unavailable');
-  });
-
-  it('calls a TIMEOUT unavailable, not denied', async () => {
-    // The plugin rejects on its 10-second timeout and when no provider
-    // answers. Calling those "denied" sent a student with a cold GPS fix to a
-    // settings screen to fix a permission they had already granted.
-    currentPosition.mockRejectedValue(Object.assign(new Error('timeout'), { code: 3 }));
-    await useAppStore.getState().routeTo('Q');
-    expect(useAppStore.getState().routeStatus).toBe('unavailable');
-  });
-
-  it('keeps denied for the plugin code that really means refusal', async () => {
-    currentPosition.mockRejectedValue(
-      Object.assign(new Error('nope'), { code: 'OS-PLUG-GLOC-0003' })
-    );
-    await useAppStore.getState().routeTo('Q');
-    expect(useAppStore.getState().routeStatus).toBe('denied');
+    expect(useAppStore.getState().routeStatus).toBe('failed');
   });
 
   it('does not resurrect a route the student already cleared', async () => {
@@ -121,11 +121,24 @@ describe('createRouteSlice', () => {
     expect(useAppStore.getState().routeTargetBuilding).toBe('Q');
   });
 
-  it('reports no-route for a building the graph does not name', async () => {
+  it('fails for a building the graph does not name', async () => {
     // Budova Z — FRRMS. Not in the My MENDELU survey, so it has no nodes.
     currentPosition.mockResolvedValue(MAIN_GATE);
     await useAppStore.getState().routeTo('Z');
-    expect(useAppStore.getState().routeStatus).toBe('no-route');
+    expect(useAppStore.getState().routeStatus).toBe('failed');
+  });
+
+  it('walks through the garden at midnight on a Sunday', async () => {
+    // The gate hours are not consulted at all while the walk itself is being
+    // perfected: a closed garden used to be the difference between a route and
+    // a tram sentence, and the tram sentence is one of the messages that went.
+    // FRRMS, 23:14 on a Sunday — the exact position and clock this failed at on
+    // the device.
+    currentPosition.mockResolvedValue(FRRMS);
+    await useAppStore.getState().routeTo('Q');
+    const s = useAppStore.getState();
+    expect(s.routeStatus).toBe('ready');
+    expect(s.routeWalk!.gates).toContain('garden');
   });
 
   it('shows it is working while the fix is in flight', async () => {
