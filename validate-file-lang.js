@@ -4,18 +4,25 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { writeFileSync } from 'fs';
+import { writeFileSync, mkdtempSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
 const execAsync = promisify(exec);
 
 const TEST_FOLDER_ID = '150953'; // EBC-ALG Algorithmization
+
+// A fresh directory per run, not a fixed /tmp/files-<lang>.html: a predictable
+// path in a world-writable directory is one another user can pre-create as a
+// symlink, so the write lands wherever they point it.
+const OUT_DIR = mkdtempSync(join(tmpdir(), 'reis-lang-'));
 
 async function fetchAndSave(lang) {
   const url = `https://is.mendelu.cz/auth/dok_server/slozka.pl?id=${TEST_FOLDER_ID};lang=${lang}`;
 
   try {
     const { stdout } = await execAsync(`curl -s "${url}"`);
-    writeFileSync(`/tmp/files-${lang}.html`, stdout);
+    writeFileSync(join(OUT_DIR, `files-${lang}.html`), stdout);
     return stdout;
   } catch (error) {
     console.error('Error:', error.message);
@@ -113,8 +120,8 @@ async function main() {
   console.log('  ✓ Language parameter IS supported');
 
   console.log('\n📁 Saved files to:');
-  console.log('  /tmp/files-cz.html');
-  console.log('  /tmp/files-en.html');
+  console.log(' ', join(OUT_DIR, 'files-cz.html'));
+  console.log(' ', join(OUT_DIR, 'files-en.html'));
   console.log('\nYou can inspect these files to see the actual differences.');
 }
 
