@@ -30,6 +30,11 @@ const POIS = (poisJson as unknown as { features: PoiFeature[] }).features;
 const LANDMARKS = (landmarksJson as { landmarks: Landmark[] }).landmarks;
 const REMOTE = (remotePlacesJson as { places: RemotePlace[] }).places;
 
+// Geometry requests that have been started but not finished, so a second
+// caller joins the first instead of racing it. Keyed by building id and
+// cleared in `finally`, including on failure.
+const inFlightBuildings = new Map<number, Promise<void>>();
+
 const buildingById = (id: number) => META.buildings.find((b) => b.id === id) ?? null;
 
 // Campus events carry a room code but no coordinate; resolve it to the building
@@ -235,17 +240,31 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
 
   loadMapBuilding: async (id) => {
     if (get().roomsByBuilding[id]) return; // already in memory
+    // ...and if it is already on its way, wait for THAT rather than starting a
+    // second download of the same geojson. The stored-geometry check above
+    // cannot see a request still in flight, so two hover cards opened in one
+    // building a moment apart used to fetch it twice on a cold cache.
+    const pending = inFlightBuildings.get(id);
+    if (pending) return pending;
+
     set({ mapLoadingBuilding: id });
-    try {
-      const data = await fetchBuildingRooms(id);
-      if (data) set({ roomsByBuilding: { ...get().roomsByBuilding, [id]: data } });
-    } catch (err) {
-      logError('MapSlice.loadMapBuilding', err);
-    } finally {
-      set({
-        mapLoadingBuilding: get().mapLoadingBuilding === id ? null : get().mapLoadingBuilding,
-      });
-    }
+    const request = (async () => {
+      try {
+        const data = await fetchBuildingRooms(id);
+        if (data) set({ roomsByBuilding: { ...get().roomsByBuilding, [id]: data } });
+      } catch (err) {
+        logError('MapSlice.loadMapBuilding', err);
+      } finally {
+        // Cleared before the state update so a retry after a failure is never
+        // blocked by the attempt that failed.
+        inFlightBuildings.delete(id);
+        set({
+          mapLoadingBuilding: get().mapLoadingBuilding === id ? null : get().mapLoadingBuilding,
+        });
+      }
+    })();
+    inFlightBuildings.set(id, request);
+    return request;
   },
 
   mapPanelCollapsed: false,

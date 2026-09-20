@@ -35,6 +35,32 @@ describe('loadRoomGeometry', () => {
     expect(fetchBuildingRooms).not.toHaveBeenCalled();
   });
 
+  // `loadMapBuilding` only skips geometry it has ALREADY stored, so two reveals
+  // while the first request is still in flight both used to reach the network.
+  // A schedule full of Q rooms makes that easy to hit: hover Q01, then Q02 a
+  // moment later, and the same large geojson is fetched twice on a cold cache.
+  it('fetches once when two rooms in a building are revealed together', async () => {
+    let release!: () => void;
+    vi.mocked(fetchBuildingRooms).mockReturnValueOnce(
+      new Promise((resolve) => {
+        release = () => resolve({ type: 'FeatureCollection', features: [] });
+      })
+    );
+    const first = useAppStore.getState().loadRoomGeometry('Q01'); // building 0
+    const second = useAppStore.getState().loadRoomGeometry('Q02'); // same building
+    release();
+    await Promise.all([first, second]);
+    expect(fetchBuildingRooms).toHaveBeenCalledTimes(1);
+  });
+
+  // ...but a failed request must not poison the building forever.
+  it('lets a later reveal retry after a failed fetch', async () => {
+    vi.mocked(fetchBuildingRooms).mockRejectedValueOnce(new Error('offline'));
+    await useAppStore.getState().loadRoomGeometry('Q01');
+    await useAppStore.getState().loadRoomGeometry('Q01');
+    expect(fetchBuildingRooms).toHaveBeenCalledTimes(2);
+  });
+
   it('does not refetch geometry already in the store', async () => {
     useAppStore.setState({
       roomsByBuilding: { 54678: { type: 'FeatureCollection', features: [] } },
