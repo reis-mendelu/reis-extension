@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Mock } from 'vitest';
 import { createNotificationSlice } from '../createNotificationSlice';
 import type { NotificationSlice } from '../../types';
 import { IndexedDBService } from '../../../services/storage/IndexedDBService';
@@ -23,16 +24,16 @@ const FRESH = [{ id: 'new', title: 'Beseda', body: 'Beseda', expiresAt: '2026-09
  */
 describe('createNotificationSlice: the cache must not outrank the network', () => {
   let state: NotificationSlice;
-  let set: ReturnType<typeof vi.fn>;
-  let get: ReturnType<typeof vi.fn>;
+  let set: Mock & Parameters<typeof createNotificationSlice>[0];
+  let get: Mock & Parameters<typeof createNotificationSlice>[1];
 
   beforeEach(() => {
     vi.clearAllMocks();
-    set = vi.fn((updater) => {
+    set = vi.fn((updater: unknown) => {
       const patch = typeof updater === 'function' ? updater(state) : updater;
       state = { ...state, ...patch };
     });
-    get = vi.fn(() => state);
+    get = vi.fn(() => state) as unknown as typeof get;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     state = createNotificationSlice(set, get, {} as any);
     vi.mocked(IndexedDBService.get).mockImplementation(async (_store, key) =>

@@ -44,19 +44,6 @@ updates:
       # WXT and the Tailwind vite plugin list `^8`.
       - dependency-name: 'vite'
         versions: ['>= 8']
-      # vitest 4+ — @vitest/coverage-v8 pins `vitest` exactly, so the two only
-      # move together; any lone bump fails `npm ci` with ERESOLVE. Written `>= 4`
-      # rather than `4.x`: the pinned form let vitest 5.0.1 straight through on
-      # 2026-09-20 (#358/#359, red on every check within 12s). Lift both lines
-      # together when we do the deliberate vitest major migration.
-      - dependency-name: 'vitest'
-        versions: ['>= 4']
-      - dependency-name: '@vitest/coverage-v8'
-        versions: ['>= 4']
-      # Bumped alongside vitest by the same upstream release; same pinning, so
-      # the same ERESOLVE if it moves alone (#324).
-      - dependency-name: '@vitest/mocker'
-        versions: ['>= 4']
       # @playwright/test > 1.60 — @serenity-js/playwright-test (latest 3.44.0)
       # peers `@playwright/test ~1.60.0`, so 1.61+ fails npm ci. Block minor/major
       # (1.60.x patches still flow) and drop it from the dev group so the group's
@@ -64,9 +51,32 @@ updates:
       - dependency-name: '@playwright/test'
         update-types: ['version-update:semver-minor', 'version-update:semver-major']
     groups:
+      # ORDER MATTERS: a dependency joins the FIRST group it matches, so this
+      # sits above dev-dependencies.
+      #
+      # @vitest/coverage-v8 peers `vitest` at an EXACT version, so the family
+      # only ever moves as a unit — a lone bump of either is unresolvable and
+      # fails `npm ci` with ERESOLVE before a single test runs. Majors are
+      # excluded from the groups below, which is exactly what split them and
+      # produced #324, #358 and #359. Grouping the family across every
+      # update-type makes a vitest major arrive as ONE installable PR.
+      #
+      # This replaced a blanket `ignore` on vitest `>= 4`, which suppressed the
+      # symptom and, once the repo moved to 5.0.1, would have blocked every 5.x
+      # patch — including the next security one. The advisory that forced the
+      # 3.2.7 -> 5.0.1 migration (GHSA path traversal in @vitest/mocker) is the
+      # reason that mattered.
+      #
+      # A major still does not auto-merge: dependabot-auto-merge.yml gates on
+      # patch/minor, so a human reviews it. The point is that it arrives green.
+      vitest:
+        patterns:
+          - 'vitest'
+          - '@vitest/*'
+        update-types: ['major', 'minor', 'patch']
       # Batch low-risk bumps into one PR each to cut noise. Majors are excluded
-      # from groups so they arrive individually for careful review (they have
-      # broken the test suite before — the vite 8 / vitest 4 group).
+      # from these two so they arrive individually for careful review (they have
+      # broken the test suite before — the vite 8 group).
       dev-dependencies:
         dependency-type: 'development'
         update-types: ['minor', 'patch']
