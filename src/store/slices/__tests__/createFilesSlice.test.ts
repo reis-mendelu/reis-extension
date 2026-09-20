@@ -1,101 +1,101 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Mock } from 'vitest';
 import { createFilesSlice } from '../createFilesSlice';
 import { IndexedDBService } from '../../../services/storage';
 
 // Mock IndexedDB
 vi.mock('../../../services/storage', () => ({
-    IndexedDBService: {
-        get: vi.fn(),
-        set: vi.fn()
-    }
+  IndexedDBService: {
+    get: vi.fn(),
+    set: vi.fn(),
+  },
 }));
 
 describe('createFilesSlice', () => {
-    let set: ReturnType<typeof vi.fn>;
-    let get: ReturnType<typeof vi.fn>;
-    let slice: ReturnType<typeof createFilesSlice>;
+  let set: Mock & Parameters<typeof createFilesSlice>[0];
+  let get: Mock & Parameters<typeof createFilesSlice>[1];
+  let slice: ReturnType<typeof createFilesSlice>;
 
-    beforeEach(() => {
-        vi.clearAllMocks();
-        set = vi.fn((fn) => {
-            const result = typeof fn === 'function' ? fn({ files: {}, filesLoading: {}, lastFilesFetchedAt: {} }) : fn;
-            Object.assign(slice, result);
-        });
-
-        get = vi.fn(() => ({
-            ...slice,
-            syncStatus: { handshakeDone: true, handshakeTimedOut: false, isSyncing: false },
-            subjects: { data: {} },
-            language: 'cz',
-        }));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        slice = createFilesSlice(set, get, {} as unknown as any);
+  beforeEach(() => {
+    vi.clearAllMocks();
+    set = vi.fn((fn) => {
+      const result =
+        typeof fn === 'function' ? fn({ files: {}, filesLoading: {}, lastFilesFetchedAt: {} }) : fn;
+      Object.assign(slice, result);
     });
 
-    it('should initialize with default state', () => {
-        expect(slice.files).toEqual({});
-        expect(slice.filesLoading).toEqual({});
-        expect(slice.lastFilesFetchedAt).toEqual({});
-    });
+    get = vi.fn(() => ({
+      ...slice,
+      syncStatus: { handshakeDone: true, handshakeTimedOut: false, isSyncing: false },
+      subjects: { data: {} },
+      language: 'cz',
+    })) as unknown as typeof get;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    slice = createFilesSlice(set, get, {} as unknown as any);
+  });
 
-    it('should hydrate lastFilesFetchedAt from IDB', async () => {
-        const cached = { ALG: 1700000000000, BIO: 1700000005000 };
-        vi.mocked(IndexedDBService.get).mockResolvedValue(cached);
+  it('should initialize with default state', () => {
+    expect(slice.files).toEqual({});
+    expect(slice.filesLoading).toEqual({});
+    expect(slice.lastFilesFetchedAt).toEqual({});
+  });
 
-        await slice.hydrateLastFilesFetchedAt();
+  it('should hydrate lastFilesFetchedAt from IDB', async () => {
+    const cached = { ALG: 1700000000000, BIO: 1700000005000 };
+    vi.mocked(IndexedDBService.get).mockResolvedValue(cached);
 
-        expect(IndexedDBService.get).toHaveBeenCalledWith('meta', 'files_last_fetched');
-        expect(slice.lastFilesFetchedAt).toEqual(cached);
-    });
+    await slice.hydrateLastFilesFetchedAt();
 
-    it('should leave lastFilesFetchedAt empty when no IDB entry exists', async () => {
-        vi.mocked(IndexedDBService.get).mockResolvedValue(undefined);
+    expect(IndexedDBService.get).toHaveBeenCalledWith('meta', 'files_last_fetched');
+    expect(slice.lastFilesFetchedAt).toEqual(cached);
+  });
 
-        await slice.hydrateLastFilesFetchedAt();
+  it('should leave lastFilesFetchedAt empty when no IDB entry exists', async () => {
+    vi.mocked(IndexedDBService.get).mockResolvedValue(undefined);
 
-        expect(slice.lastFilesFetchedAt).toEqual({});
-    });
+    await slice.hydrateLastFilesFetchedAt();
 
-    it('should fetch files for a subject', async () => {
-        const mockFiles = [{ file_name: 'test.pdf' }];
-        vi.mocked(IndexedDBService.get).mockResolvedValue(mockFiles);
+    expect(slice.lastFilesFetchedAt).toEqual({});
+  });
 
-        await slice.fetchFiles('ALG');
+  it('should fetch files for a subject', async () => {
+    const mockFiles = [{ file_name: 'test.pdf' }];
+    vi.mocked(IndexedDBService.get).mockResolvedValue(mockFiles);
 
-        expect(IndexedDBService.get).toHaveBeenCalledWith('files', 'ALG');
-        expect(slice.files['ALG']).toEqual(mockFiles);
-        expect(slice.filesLoading['ALG']).toBe(false);
-    });
+    await slice.fetchFiles('ALG');
 
-    it('should set filesLoading to true synchronously before resolving', () => {
-        vi.mocked(IndexedDBService.get).mockReturnValue(new Promise(() => {})); // never resolves
+    expect(IndexedDBService.get).toHaveBeenCalledWith('files', 'ALG');
+    expect(slice.files['ALG']).toEqual(mockFiles);
+    expect(slice.filesLoading['ALG']).toBe(false);
+  });
 
-        slice.fetchFiles('ALG'); // intentionally not awaited
+  it('should set filesLoading to true synchronously before resolving', () => {
+    vi.mocked(IndexedDBService.get).mockReturnValue(new Promise(() => {})); // never resolves
 
-        expect(slice.filesLoading['ALG']).toBe(true);
-    });
+    slice.fetchFiles('ALG'); // intentionally not awaited
 
-    it('should handle fetch errors', async () => {
-        vi.mocked(IndexedDBService.get).mockRejectedValue(new Error('DB Error'));
+    expect(slice.filesLoading['ALG']).toBe(true);
+  });
 
-        await slice.fetchFiles('ALG');
+  it('should handle fetch errors', async () => {
+    vi.mocked(IndexedDBService.get).mockRejectedValue(new Error('DB Error'));
 
-        expect(slice.filesLoading['ALG']).toBe(false);
-        expect(slice.files['ALG']).toEqual([]);
-    });
+    await slice.fetchFiles('ALG');
 
-    it('should use filesLoading for priority fetch', async () => {
-        vi.mocked(IndexedDBService.get).mockResolvedValue(null);
+    expect(slice.filesLoading['ALG']).toBe(false);
+    expect(slice.files['ALG']).toEqual([]);
+  });
 
-        const promise = slice.fetchFilesPriority('ALG');
+  it('should use filesLoading for priority fetch', async () => {
+    vi.mocked(IndexedDBService.get).mockResolvedValue(null);
 
-        // Loading flag set synchronously
-        expect(slice.filesLoading['ALG']).toBe(true);
+    const promise = slice.fetchFilesPriority('ALG');
 
-        await promise;
-        // Loading cleared after completion
-        expect(slice.filesLoading['ALG']).toBe(false);
-    });
+    // Loading flag set synchronously
+    expect(slice.filesLoading['ALG']).toBe(true);
+
+    await promise;
+    // Loading cleared after completion
+    expect(slice.filesLoading['ALG']).toBe(false);
+  });
 });
-
-
