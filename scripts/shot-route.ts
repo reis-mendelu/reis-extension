@@ -116,7 +116,8 @@ async function run() {
         .catch(() => '')
     ).trim();
     const drawn = await page.evaluate(
-      () => document.querySelectorAll('path[stroke="#2563eb"][stroke-width="5"]').length > 0
+      // Matches ROUTE_COLOR in routeLayers; the walkable route only.
+      () => document.querySelectorAll('path[stroke="#a21caf"][stroke-width="5"]').length > 0
     );
     const chip = await page
       .locator('.walk-chip')

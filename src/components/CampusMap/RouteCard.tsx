@@ -60,8 +60,13 @@ export function RouteCard() {
   // this basemap is readable without carrying its own dark background.
   return (
     <div className="flex flex-shrink-0 items-start gap-3 px-5 pb-3 pt-1">
-      <span className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-primary/15">
-        <Navigation size={16} className="text-primary" aria-hidden />
+      {/* `route`, not `primary`: the icon and the line on the map have to read
+          as the same object, and the brand accent is a different thing. The
+          token is declared in index.css @theme rather than as a DaisyUI
+          semantic colour so it cannot invert away from a basemap that is always
+          light. */}
+      <span className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-route/15">
+        <Navigation size={16} className="text-route" aria-hidden />
       </span>
       <div className="min-w-0 flex-1">
         {status === 'ready' && walk && !arrived ? (

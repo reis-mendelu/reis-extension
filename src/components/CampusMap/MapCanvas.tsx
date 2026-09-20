@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAppStore } from '../../store/useAppStore';
-import { drawRoute } from './routeLayers';
+import { drawRoute, drawPosition } from './routeLayers';
 import { usePhoneViewport } from '../../hooks/ui/usePhoneViewport';
 import { railOffsetPx } from '../../utils/mapRail';
 import buildingsJson from '../../data/map/buildings.json';
@@ -128,7 +128,10 @@ export function MapCanvas() {
   // would vanish on any of those — including the camera move that follows a
   // route being drawn in the first place.
   const routeLayerRef = useRef<L.LayerGroup>(L.layerGroup());
+  /** "You are here", independent of whether a route exists. */
+  const positionLayerRef = useRef<L.LayerGroup>(L.layerGroup());
   const routeWalk = useAppStore((s) => s.routeWalk);
+  const routeFrom = useAppStore((s) => s.routeFrom);
   const language = useAppStore((s) => s.language);
   const languageRef = useRef(language);
   // Same "latest ref" trick, same reason: moving the draft pin (picking a
@@ -151,6 +154,7 @@ export function MapCanvas() {
     // Added AFTER the main layer, so the route paints over the campus rather
     // than under it. Its own group, for the reason its ref documents: the main
     // one is cleared and rebuilt on every building and floor change.
+    positionLayerRef.current.addTo(map);
     routeLayerRef.current.addTo(map);
     mapRef.current = map;
     setMapInstance(map);
@@ -505,8 +509,16 @@ export function MapCanvas() {
   // fit is honest about the bounds and still hides half the line.
   useEffect(() => {
     drawRoute(routeLayerRef.current, routeWalk, language);
+    drawPosition(positionLayerRef.current, routeFrom);
     const map = mapRef.current;
-    if (!map || !routeWalk || routeWalk.coords.length < 2) return;
+    if (!map) return;
+    // No walk, but we know where they are: put THEM on screen. Saying "the
+    // garden is shut" over a map centred on nothing was the version that shipped.
+    if (!routeWalk || routeWalk.coords.length < 2) {
+      if (routeFrom) map.setView(L.latLng(routeFrom[1], routeFrom[0]), Math.max(map.getZoom(), 16));
+      return;
+    }
+    const shown = routeWalk;
     // Padding measured off the real chrome, not guessed. The first version
     // padded the top by 96 for a card whose bottom is at 263 — so the route's
     // own start dot sat behind it — and the bottom by 0.4 of the viewport for a
@@ -522,7 +534,7 @@ export function MapCanvas() {
     const topChrome = searchEl
       ? Math.round(searchEl.getBoundingClientRect().bottom - (ref.current?.getBoundingClientRect().top ?? 0))
       : 78;
-    map.fitBounds(L.latLngBounds(routeWalk.coords.map(([lon, lat]) => L.latLng(lat, lon))), {
+    map.fitBounds(L.latLngBounds(shown.coords.map(([lon, lat]) => L.latLng(lat, lon))), {
       paddingTopLeft: [28, topChrome + 12],
       paddingBottomRight: [28, sheetH + 12],
       // A 1.3 km walk and a 160 m one both deserve to fill the frame, but not
@@ -530,7 +542,7 @@ export function MapCanvas() {
       maxZoom: 18,
       animate: true,
     });
-  }, [routeWalk, language]);
+  }, [routeWalk, routeFrom, language]);
 
   /**
    * Whose walks are actually lit, DERIVED rather than stored a second time.

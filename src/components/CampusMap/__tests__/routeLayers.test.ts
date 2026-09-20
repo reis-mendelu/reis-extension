@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import L from 'leaflet';
-import { drawRoute } from '../routeLayers';
+import { drawRoute, drawPosition, ROUTE_COLOR } from '../routeLayers';
 import type { Walk } from '../../../utils/routing/shortestWalk';
 
 const walk: Walk = {
@@ -17,10 +17,12 @@ const chipOf = (layer: L.LayerGroup) =>
   layer.getLayers().find((l) => l instanceof L.Tooltip) as L.Tooltip | undefined;
 
 describe('drawRoute', () => {
-  it('draws the halo, the line, a start dot and one time chip', () => {
+  it('draws the halo, the line and one time chip', () => {
+    // No start dot here: the position marker is its own layer, because it must
+    // show even when there is no route to be the start of.
     const layer = L.layerGroup();
     drawRoute(layer, walk, 'cz');
-    expect(layer.getLayers()).toHaveLength(4);
+    expect(layer.getLayers()).toHaveLength(3);
   });
 
   it('labels the walk in minutes at the shipped pace', () => {
@@ -52,11 +54,10 @@ describe('drawRoute', () => {
     expect(at.lng).toBeCloseTo(16.6005, 6);
   });
 
-  it('puts the start dot where the walk begins', () => {
+  it('leaves the start dot to the position layer', () => {
     const layer = L.layerGroup();
     drawRoute(layer, walk, 'cz');
-    const dot = layer.getLayers().find((l) => l instanceof L.CircleMarker) as L.CircleMarker;
-    expect(dot.getLatLng().lat).toBeCloseTo(49.21, 6);
+    expect(layer.getLayers().some((l) => l instanceof L.CircleMarker)).toBe(false);
   });
 
   it('converts [lon, lat] to Leaflet latlng rather than transposing them', () => {
@@ -82,12 +83,55 @@ describe('drawRoute', () => {
     drawRoute(layer, walk, 'cz');
     drawRoute(layer, walk, 'cz');
     drawRoute(layer, walk, 'cz');
-    expect(layer.getLayers()).toHaveLength(4);
+    expect(layer.getLayers()).toHaveLength(3);
   });
 
   it('draws nothing for a degenerate one-point walk', () => {
     const layer = L.layerGroup();
     drawRoute(layer, { coords: [[16.6, 49.21]], lengthM: 0, gates: [] }, 'cz');
+    expect(layer.getLayers()).toHaveLength(0);
+  });
+
+
+
+  it('is not the colour the buildings are drawn in', () => {
+    // The route was #2563eb, which is exactly BUILDING_STYLE.color in
+    // mapHelpers — the same hex as the footprints it threads between. Every
+    // other hue on this map is taken: orange is the entrance
+    // fan, green is the garden and the brand, grey is the path network.
+    const layer = L.layerGroup();
+    drawRoute(layer, walk, 'cz');
+    const line = layer.getLayers()[1] as L.Polyline;
+    expect(line.options.color).toBe(ROUTE_COLOR);
+    expect(ROUTE_COLOR).not.toBe('#2563eb');
+  });
+
+  it('shows where you are even with no route at all', () => {
+    // The bug this fixes: the dot lived inside drawRoute, so every answer that
+    // is not a walk left the map with no "you are here" — the app talked about
+    // a place it never pointed at.
+    const layer = L.layerGroup();
+    drawPosition(layer, [16.614118, 49.218161]);
+    expect(layer.getLayers()).toHaveLength(2); // soft halo + dot
+    const dot = layer.getLayers()[1] as L.CircleMarker;
+    expect(dot.getLatLng().lat).toBeCloseTo(49.218161, 6);
+    expect(dot.getLatLng().lng).toBeCloseTo(16.614118, 6);
+  });
+
+  it('is neither the route colour nor the buildings blue', () => {
+    // It must not claim to be part of a walk that may not exist, and blue is
+    // BUILDING_STYLE.color.
+    const layer = L.layerGroup();
+    drawPosition(layer, [16.6, 49.21]);
+    const dot = layer.getLayers()[1] as L.CircleMarker;
+    expect(dot.options.fillColor).not.toBe(ROUTE_COLOR);
+    expect(dot.options.fillColor).not.toBe('#2563eb');
+  });
+
+  it('clears when the position is gone', () => {
+    const layer = L.layerGroup();
+    drawPosition(layer, [16.6, 49.21]);
+    drawPosition(layer, null);
     expect(layer.getLayers()).toHaveLength(0);
   });
 });

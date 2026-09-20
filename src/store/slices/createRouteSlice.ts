@@ -62,7 +62,7 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set) => ({
       routeStatus: 'locating',
       routeTargetBuilding: buildingName,
       routeWalk: null,
-      routeFrom: null,
+          routeFrom: null,
     });
 
     let at: [number, number];
@@ -92,6 +92,12 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set) => ({
       // answer for the student, because it comes with a tram. If none appears,
       // there is genuinely nowhere to walk from here and saying "the garden is
       // shut" would be a lie.
+      // Asked again with every gate open, only to tell the two silences apart:
+      // a walk that appears means the GATE is the reason there isn't one, and
+      // that answer comes with a tram. The would-be walk itself is not drawn —
+      // a grey line through a garden nobody can enter looked like an
+      // instruction, and the honest answer at that moment is the tram, not a
+      // path the student cannot take.
       const ifOpen = shortestWalk(GRAPH, snap, targets, () => true);
       set({ routeFrom: at, routeStatus: ifOpen ? 'gate-shut' : 'no-route' });
       return;
