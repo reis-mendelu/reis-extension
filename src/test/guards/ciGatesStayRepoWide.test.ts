@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { load } from 'js-yaml';
 
 /**
  * CI guard for the lint/format gates, which have two failure modes that are
@@ -25,32 +24,27 @@ import { load } from 'js-yaml';
 
 const WORKFLOWS = join(__dirname, '../../../.github/workflows');
 
-function job(file: string, id: string) {
-  const doc = load(readFileSync(join(WORKFLOWS, file), 'utf8')) as {
-    jobs: Record<string, { name?: string; steps?: { run?: string }[] }>;
-  };
-  const found = doc.jobs[id];
-  expect(found, `${file} has no job "${id}"`).toBeDefined();
-  return { name: found!.name, runs: (found!.steps ?? []).map((s) => s.run ?? '').join('\n') };
-}
+// A text scan, like the other guards here: no YAML parser, so no types package
+// for one fence. The strings below are exact lines from the workflow files.
+const read = (file: string) => readFileSync(join(WORKFLOWS, file), 'utf8');
 
 describe('CI lint and format gates', () => {
   it('lints the whole repo, not just the files a PR touched', () => {
-    const { runs } = job('ci.yml', 'ui-gate');
-    expect(runs).toContain('npm run lint -- --max-warnings=0');
-    expect(runs).not.toContain('git diff --name-only');
+    const ci = read('ci.yml');
+    expect(ci).toContain('run: npm run lint -- --max-warnings=0');
+    expect(ci).not.toContain('git diff --name-only');
   });
 
   it('checks formatting across the whole repo', () => {
-    const { runs } = job('format.yml', 'format-gate');
-    expect(runs).toContain('npm run format:check');
-    expect(runs).not.toContain('git diff --name-only');
+    const format = read('format.yml');
+    expect(format).toContain('run: npm run format:check');
+    expect(format).not.toContain('git diff --name-only');
   });
 
   it('keeps the two job names branch protection requires verbatim', () => {
     // Changing either string means editing the required-status-check list on
     // BOTH `test` and `main` in the same change, or PRs hang. See the header.
-    expect(job('ci.yml', 'ui-gate').name).toBe('UI/UX gate (changed files)');
-    expect(job('format.yml', 'format-gate').name).toBe('Format (changed files)');
+    expect(read('ci.yml')).toContain('name: UI/UX gate (changed files)');
+    expect(read('format.yml')).toContain('name: Format (changed files)');
   });
 });
