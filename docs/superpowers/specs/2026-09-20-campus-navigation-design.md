@@ -353,27 +353,29 @@ on screen from a simulated position:
 
 ## Open risks
 
-- **`walkMinutes` is a flat 80 m/min, and the first real data point says it is
-  wrong at this distance.** FRRMS → Q through the garden measures **1,326 m**
-  over the OSM network plus the curated garden paths (402 m FRRMS → Gen. Píky
-  gate, 596 m through the garden, 328 m arboretum gate → Q; straight line 967 m,
-  so a 1.37× detour ratio — normal). At 80 m/min that prints **16.6 min**. The
-  maintainer, who walks it, says **~12 min**, which implies **110 m/min
-  (6.6 km/h)**.
+- **Walking pace: settled at 100 m/min (6 km/h), globally.** Was 80 m/min
+  (4.8 km/h), chosen as "someone with a bag crossing a courtyard" and never
+  checked, because on the 200–400 m hops the map drew at the time a minute
+  either way cost nothing.
 
-  Both are honest for different people. 80 m/min was chosen for "someone with a
-  bag crossing a courtyard" — deliberately unhurried, and correct for the 200–400
-  m campus hops where a minute either way costs nothing. Over 1.3 km the same
-  constant is 4.5 minutes out, which is the difference between making a lecture
-  and not.
+  The evidence: FRRMS → Q through the garden measures **1,326 m** (402 m to the
+  Gen. Píky gate, 596 m through the garden, 328 m arboretum gate → Q; straight
+  line 967 m, a 1.37× detour ratio). Cross-checked against the committed routes,
+  which put `Brána u FRRMS → Q` at 823 m with the gate 402 m from the building —
+  1,225 m by a different method. 80 m/min printed 17 minutes for that walk; it
+  is walked in about 12, which is 110 m/min.
 
-  **This is not calibrated by one data point.** Before the figure ships it needs
-  two or three timed walks, including the JAK corridor, at a normal rather than
-  a demonstrative pace. The likely shape of the fix is a distance-dependent rate
-  — a courtyard crossing and a 1.3 km street walk are not the same activity —
-  not a single faster global constant, which would make every campus hop
-  optimistic to fix a number that is only wrong off-campus. Settle it with
-  measurements, in the implementation plan, not here.
+  100 rather than the measured 110, deliberately: the 110 came from someone who
+  walks the route daily. The estimate should not assume that of a first-year.
+
+  **What it costs:** 34 of the 49 existing campus chips change — 27 by one
+  minute, 5 by two, 2 by three. The largest moves are the long FRRMS-gate walks
+  (`→ B` 13→10, `→ A` 12→9), which is exactly where the old constant was worst.
+  The shortest hops round down (123 m now prints "1 min" rather than "2"), which
+  is the cheapest place to be wrong. Changed in `src/utils/walkTime.ts` with the
+  reasoning in the comment, test-first; one downstream fixture in
+  `pathLayers.test.ts` moved with it.
+
 - **Committed size.** Stated as measured in the implementation plan, not
   estimated.
 - **Graph connectivity across the garden join.** The corridor pin is declared,
