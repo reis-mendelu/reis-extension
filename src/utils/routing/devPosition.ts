@@ -32,3 +32,24 @@ export function devForcedPosition(): [number, number] | null {
   if (!plausibleLat(lat) || !plausibleLon(lon)) return null;
   return [lon, lat];
 }
+
+/**
+ * `?now=<ISO datetime>` on the dev webapp, and nothing anywhere else.
+ *
+ * The garden's hours are the one piece of this feature that cannot be checked
+ * by standing somewhere: to see the weekday route you have to ask on a weekday,
+ * and to see the closed-gate copy you have to ask at the weekend. Waiting for
+ * Tuesday is not a verification strategy, and moving the laptop's clock breaks
+ * everything else in the app that reads a date.
+ *
+ * Same DEV guard and the same reasoning as `devForcedPosition`: stripped from
+ * every shipped build, so no student can talk the router into believing the
+ * garden is open at midnight.
+ */
+export function devForcedNow(): Date | null {
+  if (!import.meta.env.DEV || typeof window === 'undefined') return null;
+  const raw = new URLSearchParams(window.location.search).get('now');
+  if (!raw) return null;
+  const at = new Date(raw);
+  return Number.isNaN(at.getTime()) ? null : at;
+}

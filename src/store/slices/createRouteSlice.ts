@@ -5,6 +5,7 @@ import { snapToGraph } from '../../utils/routing/snapToGraph';
 import { shortestWalk, type Walk } from '../../utils/routing/shortestWalk';
 import { isGateOpen } from '../../utils/routing/gateHours';
 import { currentPosition, NO_PLATFORM } from '../../utils/routing/position';
+import { devForcedNow } from '../../utils/routing/devPosition';
 import { logError } from '../../utils/reportError';
 
 const GRAPH = (campusPaths as unknown as { graph: CampusGraph }).graph;
@@ -68,7 +69,7 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set) => ({
       return;
     }
 
-    const now = new Date();
+    const now = devForcedNow() ?? new Date();
     const walk = shortestWalk(GRAPH, snap, GRAPH.buildings[buildingName] ?? [], (gate) =>
       isGateOpen(gate, now)
     );

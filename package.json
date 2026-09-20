@@ -38,7 +38,7 @@
     "dev:web:deadlines": "REIS_FIXTURE=notificationFeed vite --config vite.web.config.ts",
     "dev:web:week": "REIS_FIXTURE=teachingWeek vite --config vite.web.config.ts",
     "build:web": "node scripts/assert-web-build-env.mjs && VITE_DEV_SOCIETY=reis VITE_PREVIEW_BUILD=true vite build --config vite.web.build.config.ts",
-    "build:web:real": "test -f public/preview-data.json || (echo 'Missing public/preview-data.json — run npm run sanitise:snapshot first' && exit 1) && VITE_PREVIEW_DATA=real npm run build:web",
+    "build:web:real": "test -f public/preview-data.json || (echo 'Missing public/preview-data.json \u2014 run npm run sanitise:snapshot first' && exit 1) && VITE_PREVIEW_DATA=real npm run build:web",
     "build:capacitor": "node scripts/with-secrets.mjs vite build --config vite.capacitor.config.ts",
     "cap:sync": "npm run check:native && npm run build:capacitor && npx cap sync && npm run ios:version",
     "cap:android": "npm run cap:sync && npx cap run android",
@@ -52,8 +52,9 @@
     "check:native": "node scripts/check-native-plugins.mjs",
     "preview:real": "npm run scrape:real && npm run sanitise:snapshot && npm run build:web:real && vite preview --config vite.web.build.config.ts",
     "check:app": "tsx --tsconfig tsconfig.app.json scripts/check-app.ts",
-    "preview:real:lan": "echo \"\n⚠  Serving YOUR real academic record to every device on this network.\n   On eduroam or any shared Wi-Fi that is everyone.\n   Use this only on a network you trust, and stop it when you are done.\n\" && npm run scrape:real && npm run sanitise:snapshot && npm run build:web:real && vite preview --config vite.web.build.config.ts --host",
-    "gen:splash": "tsx scripts/gen-splash.mts"
+    "preview:real:lan": "echo \"\n\u26a0  Serving YOUR real academic record to every device on this network.\n   On eduroam or any shared Wi-Fi that is everyone.\n   Use this only on a network you trust, and stop it when you are done.\n\" && npm run scrape:real && npm run sanitise:snapshot && npm run build:web:real && vite preview --config vite.web.build.config.ts --host",
+    "gen:splash": "tsx scripts/gen-splash.mts",
+    "shot:route": "tsx --tsconfig tsconfig.app.json scripts/shot-route.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",

@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { devForcedPosition } from '../devPosition';
+import { devForcedPosition, devForcedNow } from '../devPosition';
 
 const setSearch = (search: string) => {
   vi.stubGlobal('window', { location: { search } } as unknown as Window);
@@ -43,5 +43,23 @@ describe('devForcedPosition', () => {
     // spending an afternoon on why no route draws.
     setSearch('?at=16.614118,49.218161');
     expect(devForcedPosition()).toBeNull();
+  });
+});
+
+describe('devForcedNow', () => {
+  it('reads an ISO datetime from the query string', () => {
+    setSearch('?now=2026-09-21T10:00:00');
+    expect(devForcedNow()?.getHours()).toBe(10);
+    expect(devForcedNow()?.getDay()).toBe(1); // Monday
+  });
+
+  it('is null when absent, so the real clock is used', () => {
+    setSearch('?at=49.21,16.61');
+    expect(devForcedNow()).toBeNull();
+  });
+
+  it('is null for a value that is not a date', () => {
+    setSearch('?now=next%20tuesday');
+    expect(devForcedNow()).toBeNull();
   });
 });
