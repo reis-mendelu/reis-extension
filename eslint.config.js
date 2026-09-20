@@ -23,6 +23,19 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
+      // The `const { field: _field, ...rest }` idiom is how the schema tests build
+      // "this property is absent" fixtures — the binding exists only to drop the key.
+      // The code was already written to the `_` convention; this enables it.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+        },
+      ],
       // Enforce using StorageService or IndexedDBService instead of direct storage APIs
       'no-restricted-globals': [
         'error',

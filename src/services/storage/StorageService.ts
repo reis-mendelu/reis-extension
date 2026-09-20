@@ -5,7 +5,6 @@ import { IndexedDBService } from './IndexedDBService';
  * Enforces async usage and removes localStorage dependency.
  */
 export const StorageService = {
-    /* eslint-disable @typescript-eslint/no-unused-vars */
     // Deprecated sync methods - throwing to catch legacy usage
     get<T>(_key: string): T | null {
         throw new Error('StorageService.get is deprecated. Use getAsync.');
@@ -19,7 +18,6 @@ export const StorageService = {
     getKeysWithPrefix(_prefix: string): string[] {
          return [];
     },
-    /* eslint-enable @typescript-eslint/no-unused-vars */
     clearAll() {
         IndexedDBService.clear('meta').catch(() => {});
     },
