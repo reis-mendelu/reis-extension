@@ -548,40 +548,17 @@ body,
 .reis-hide-garden-bubbles .leaflet-marker-icon.garden-bubble {
   display: none;
 }
-/* The "4 min" at the end of each walk. Orange like the walk it belongs to, so a
- * fan of times reads as one answer to one question rather than as loose labels
- * scattered over the campus. */
-.leaflet-tooltip.walk-chip {
-  background: #ea580c;
-  border: none;
-  box-shadow: 0 1px 3px rgb(124 45 18 / 0.35);
-  border-radius: 9px;
-  padding: 2px 7px;
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 700;
-  pointer-events: none;
-  /* NOT `white-space: normal`. A Leaflet tooltip pane has no width, so an
-   * auto-width child wraps at nearly zero — a two-word label came out as a
-   * four-line tower over the thing it was labelling. */
-  white-space: nowrap;
-}
-.leaflet-tooltip.walk-chip::before {
-  border-top-color: #ea580c;
-}
-
-/* The computed route's own chip. Fuchsia, matching ROUTE_COLOR in routeLayers.
- * Not blue: #2563eb is exactly BUILDING_STYLE.color, so the route was drawn in
- * the same hex as the outlines it runs between. Not the fan's orange either —
- * the fan says
- * "one of your options from this gate" and this says "your way".
+/* The computed route's chip — the only time label on this map now that the
+ * gate fan is gone. Fuchsia, matching ROUTE_COLOR in routeLayers. Not blue:
+ * #2563eb is exactly BUILDING_STYLE.color, so the route would be drawn in the
+ * same hex as the outlines it runs between.
  *
- * A TOOLTIP, not a divIcon. The first version used L.divIcon with
- * className: 'walk-chip', which renders `leaflet-marker-icon walk-chip` and so
- * never matched `.leaflet-tooltip.walk-chip`: it shipped as a 12x12 box with a
- * transparent background and inherited base-content (#f3f4f6) on a basemap that
- * is always light. Invisible, and the unit test passed because it asserted the
- * divIcon's html, which is not the same question as whether anyone can see it. */
+ * A TOOLTIP, not a divIcon. The first version used L.divIcon, which renders
+ * `leaflet-marker-icon <class>` and so never matched a `.leaflet-tooltip`
+ * rule: it shipped as a 12x12 box with a transparent background and inherited
+ * base-content (#f3f4f6) on a basemap that is always light. Invisible, and the
+ * unit test passed because it asserted the divIcon's html, which is not the
+ * same question as whether anyone can see it. */
 .leaflet-tooltip.route-chip {
   background: #a21caf;
   border: none;

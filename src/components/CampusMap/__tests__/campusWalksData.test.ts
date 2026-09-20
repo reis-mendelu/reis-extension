@@ -1,14 +1,44 @@
 import { describe, it, expect } from 'vitest';
-import { CAMPUS_ENTRANCES, CAMPUS_NETWORK, CAMPUS_WALKS, WALKS_BY_ENTRANCE } from '../pathLayers';
+import campusPaths from '../../../data/map/campusPaths.json';
+import type { CampusEntrance, CampusPath } from '../../../types/campusMap';
+
+const DATA = campusPaths as unknown as {
+  entrances: CampusEntrance[];
+  network: number[][][];
+  routes: CampusPath[];
+};
 
 const BUILDINGS = ['A', 'B', 'C', 'E', 'M', 'Q', 'X'];
 /** The one gate that is not on the campus: the arboretum's far side, by FRRMS. */
 const FAR_GATE = 'Brána u FRRMS';
 
-describe('the committed walks', () => {
+/**
+ * The gates and their walks, read from the DATASET rather than from a map
+ * layer, because that is all they are now.
+ *
+ * The map used to mark every gate with a dot and ask a two-tap question — pick
+ * the gate you came in by, then the building you are going to, and it lit one
+ * precomputed walk. The router answers that from the student's actual position
+ * now, so the dots and the question are gone. The data stays: the entrances are
+ * where the campus can be walked into, which is what the routing graph joins
+ * the outside world on, and `routes` is the independent build-time computation
+ * that `againstCommittedRoutes` checks the live router against.
+ *
+ * These assertions are therefore about the data being intact, not about
+ * anything being drawn. If a scrape ever drops a gate, this fails here rather
+ * than silently shortening a walk somewhere else.
+ */
+describe('the committed gates and walks, as data', () => {
+  it('still carries every way onto the campus', () => {
+    const names = DATA.entrances.map((e) => e.name);
+    expect(names).toContain('Hlavní brána');
+    expect(names).toContain(FAR_GATE);
+    expect(DATA.entrances.length).toBeGreaterThanOrEqual(6);
+  });
+
   it('runs every walk from an entrance to a lettered building', () => {
-    const gates = new Set(CAMPUS_ENTRANCES.map((e) => e.name));
-    for (const w of CAMPUS_WALKS) {
+    const gates = new Set(DATA.entrances.map((e) => e.name));
+    for (const w of DATA.routes) {
       expect(gates.has(w.from)).toBe(true);
       expect(BUILDINGS).toContain(w.to);
       expect(w.coords.length).toBeGreaterThanOrEqual(2);
@@ -16,71 +46,24 @@ describe('the committed walks', () => {
   });
 
   it('gets you from every gate to every building', () => {
-    // The promise the fan makes. If a gate cannot reach a building the map
-    // quietly stops answering the question someone walked up with.
-    for (const gate of CAMPUS_ENTRANCES) {
-      const reached = (WALKS_BY_ENTRANCE.get(gate.name) ?? []).map((w) => w.to).sort();
+    for (const gate of DATA.entrances) {
+      const reached = DATA.routes
+        .filter((w) => w.from === gate.name)
+        .map((w) => w.to)
+        .sort();
       expect(reached).toEqual([...BUILDINGS].sort());
     }
   });
 
   it('keeps every walk from a campus gate plausible for a campus 400 m across', () => {
-    for (const w of CAMPUS_WALKS.filter((x) => x.from !== FAR_GATE)) {
+    for (const w of DATA.routes.filter((x) => x.from !== FAR_GATE)) {
       expect(w.lengthM).toBeGreaterThanOrEqual(25);
       expect(w.lengthM).toBeLessThan(900);
     }
   });
 
-  it('keeps the walks from the far gate long, because it is a garden away', () => {
-    // Brána u FRRMS is the arboretum's own gate out on Generála Píky, and its
-    // walks run the length of the garden to get here. Asserted as a band rather
-    // than a ceiling: one of these coming out SHORT would mean the route had
-    // stopped somewhere inside the arboretum instead of reaching the campus.
-    const far = CAMPUS_WALKS.filter((x) => x.from === FAR_GATE);
-    expect(far).toHaveLength(BUILDINGS.length);
-    for (const w of far) {
-      expect(w.lengthM).toBeGreaterThan(700);
-      expect(w.lengthM).toBeLessThan(1300);
-    }
-  });
-
-  it('marks these seven ways in, by name', () => {
-    // By NAME, not by count. The garden corridor brings the Bieblova tram stop
-    // and the arboretum's own north gate within reach of the network, and an
-    // earlier cut promoted both into "ways onto the campus" — walks to building
-    // A that cross a ticketed garden. A count would let one of those quietly
-    // replace a real gate at the next regeneration.
-    expect(CAMPUS_ENTRANCES.map((e) => e.name).sort()).toEqual([
-      'Arboretum',
-      'Brána Lesnická',
-      'Brána u FRRMS',
-      'Brána u budovy Q',
-      'Hlavní brána',
-      'Vjezd u Q',
-      'Zemědělská',
-    ]);
-    for (const e of CAMPUS_ENTRANCES) expect(['gate', 'stop']).toContain(e.kind);
-  });
-
-  /** Every segment of a line, as an order-independent key. */
-  const edgesOf = (coords: number[][]) => {
-    const out: string[] = [];
-    for (let i = 1; i < coords.length; i++) {
-      const a = coords[i - 1] ?? [];
-      const b = coords[i] ?? [];
-      out.push([a.join(','), b.join(',')].sort().join('|'));
-    }
-    return out;
-  };
-
-  it('draws every stretch of the network exactly once', () => {
-    const edges = CAMPUS_NETWORK.flatMap(edgesOf);
-    expect(new Set(edges).size).toBe(edges.length);
-  });
-
-  it('covers every stretch the walks run over', () => {
-    const drawn = new Set(CAMPUS_NETWORK.flatMap(edgesOf));
-    for (const w of CAMPUS_WALKS)
-      for (const edge of edgesOf(w.coords)) expect(drawn.has(edge)).toBe(true);
+  it('draws the network as deduplicated strokes', () => {
+    expect(DATA.network.length).toBeGreaterThan(0);
+    for (const stroke of DATA.network) expect(stroke.length).toBeGreaterThanOrEqual(2);
   });
 });

@@ -48,8 +48,6 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   activeBuildingId: null,
   activeFloorId: null,
   mapSelection: null,
-  mapWalkEntrance: null,
-  mapWalkBuilding: null,
   roomsByBuilding: {},
   mapLoadingBuilding: null,
   mapSearchQuery: '',
@@ -73,8 +71,6 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
       activeBuildingId: id,
       activeFloorId: b.defaultFloorId ?? b.floors[0]?.id ?? null,
       mapSelection: null,
-      mapWalkEntrance: null,
-      mapWalkBuilding: null,
     });
     void get().loadMapBuilding(id);
   },
@@ -84,30 +80,9 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
       activeBuildingId: null,
       activeFloorId: null,
       mapSelection: null,
-      mapWalkEntrance: null,
-      mapWalkBuilding: null,
     }),
 
   clearMapSelection: () => set({ mapSelection: null }),
-
-  selectWalkEntrance: (name) =>
-    set((s) => ({
-      // Tapping the chosen gate again puts it away; a different gate reopens
-      // the building question rather than silently keeping the last answer.
-      mapWalkEntrance: s.mapWalkEntrance === name ? null : name,
-      mapWalkBuilding: null,
-    })),
-
-  selectWalkBuilding: (name) =>
-    set((s) => ({ mapWalkBuilding: s.mapWalkBuilding === name ? null : name })),
-
-  // Used by the tap-away. Stepping back one rather than clearing both: the
-  // buildings are thin L-shapes and easy to miss, and a near-miss that also
-  // lost the gate cost the student both answers.
-  clearWalkStep: () =>
-    set((s) =>
-      s.mapWalkBuilding !== null ? { mapWalkBuilding: null } : { mapWalkEntrance: null }
-    ),
 
   setMapFloor: (floorId) => set({ activeFloorId: floorId, mapSelection: null }),
 
