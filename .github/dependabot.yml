@@ -69,10 +69,20 @@ updates:
       #
       # A major still does not auto-merge: dependabot-auto-merge.yml gates on
       # patch/minor, so a human reviews it. The point is that it arrives green.
+      #
+      # The two satellites are named explicitly as well as matched by the
+      # wildcard: GitHub documents `*` for dependency names but does not
+      # document it against scoped packages, and a `groups` entry that matches
+      # nothing fails silently — Dependabot logs a config error and carries on,
+      # which surfaces a week later as split PRs again. `update-types` here
+      # takes the short form ('major'), unlike `ignore` above, which takes
+      # 'version-update:semver-major'.
       vitest:
         patterns:
           - 'vitest'
           - '@vitest/*'
+          - '@vitest/coverage-v8'
+          - '@vitest/mocker'
         update-types: ['major', 'minor', 'patch']
       # Batch low-risk bumps into one PR each to cut noise. Majors are excluded
       # from these two so they arrive individually for careful review (they have
