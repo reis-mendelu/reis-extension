@@ -155,15 +155,27 @@ export function PdfViewer({ blobUrl, onClose, onToggleNotes, hasNotesOpen }: Pdf
         ) : (
           <Document
             file={blobUrl}
-            // react-pdf 11 routes loading and failure through Suspense and an
-            // Error Boundary BY DEFAULT, which would retire the `loading` and
-            // `onLoadError` props below. There is no <Suspense> anywhere in
-            // this app (`grep -rn "Suspense" src/`), so a suspending Document
-            // would throw rather than show the spinner and take the file
-            // drawer with it. `suspense={false}` keeps the v10 behaviour;
-            // `Page` inherits it from the Document. Adopting Suspense properly
-            // means adding a boundary around this viewer — a separate change,
-            // not a dependency bump.
+            // react-pdf 11 routes Document/Page loading and failure through
+            // Suspense and an Error Boundary BY DEFAULT, retiring the
+            // `loading` and `onLoadError` props below. Both mounts of this
+            // component ARE inside <ErrorBoundary><Suspense fallback=…> —
+            // SubjectFileDrawer/index.tsx and PdfDrawerLayout.tsx — so the
+            // default would not crash. It would relocate the UI:
+            //
+            //  - the inline spinner below is replaced by the drawer-level
+            //    `pdfFallback`, which covers the whole pane including the
+            //    zoom/page-count toolbar;
+            //  - worse, `Page` suspends too, and pages mount lazily as you
+            //    scroll (see computeRenderWindow), so every newly mounted page
+            //    would suspend the ONE boundary above and blank the entire
+            //    viewer mid-scroll;
+            //  - `onLoadError` stops firing and a failed load unmounts into
+            //    `pdfErrorFallback` instead.
+            //
+            // `suspense={false}` keeps the v10 behaviour exactly; `Page`
+            // inherits it. Moving to Suspense means a per-page boundary and a
+            // deliberate look at the loading UX — a change of its own, not a
+            // dependency bump. Regression test: __tests__/PdfViewer.suspense.test.tsx
             suspense={false}
             onLoadSuccess={onDocumentLoadSuccess}
             onLoadError={() => {}}
