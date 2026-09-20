@@ -17,7 +17,7 @@ import { writeFileSync, readFileSync } from 'node:fs';
 import { buildGraph, snapAnchors, unplacedPlaces } from './lib/pathGraph.mjs';
 import { networkStrokes, walksFrom } from './lib/pathWalks.mjs';
 import { clipToRegion } from './lib/osmClip.mjs';
-import { campusPlaces, splitAnchors, KIND_OF_RANK } from './lib/campusPlaces.mjs';
+import { campusPlaces, splitAnchors, KIND_OF_RANK, RANK } from './lib/campusPlaces.mjs';
 import { corridorWays } from './lib/remoteCorridor.mjs';
 import { joinAtAnchor } from './lib/osmCorridor.mjs';
 import { exportGraph } from './lib/graphExport.mjs';
@@ -78,6 +78,17 @@ const CORRIDORS = [
     after: 'garden',
     // The gate out at Generála Píky, and the faculty 250 m north of it.
     box: { s: 49.2152, w: 16.6118, n: 49.2192, e: 16.6168 },
+  },
+  {
+    // The four JAK blocks collapse to ONE origin named for the place, because
+    // four fans from four doors 60 m apart is four answers to one question.
+    // (The collapse happens in campusPlaces' SHORT_LANDMARK map.)
+    name: 'Koleje JAK',
+    anchor: 'Brána Lesnická',
+    after: 'campus',
+    // The dormitories at 16.6297..16.6316 / 49.2152..49.2166, and the campus's
+    // eastern gate 1.1 km west of them.
+    box: { s: 49.2118, w: 16.6168, n: 49.2172, e: 16.6322 },
   },
 ];
 /** Names in CORRIDORS are the landmarks that become RANK.origin. */
@@ -233,7 +244,42 @@ for (const way of corridor) for (const c of way.coords) gardenKeys.add(nodeKey(c
 const gateOf = (a, b) => (gardenKeys.has(a) && gardenKeys.has(b) ? 'garden' : null);
 const routingGraph = exportGraph(graph, buildingNodes, gateOf);
 
-const routes = walksFrom(graph, entranceNodes, buildingNodes)
+/**
+ * The fan origins, which are NOT every place the router can start from.
+ *
+ * `routes` is the precomputed place-to-place walk the entrance fan draws when a
+ * student taps a gate. It predates the graph and is still the right thing for
+ * that interaction — but it stores a full polyline per pair, and once the
+ * off-campus corridors arrived it was carrying seven origins' worth of
+ * cross-city geometry: 98 routes, 99.5 KB, more than the entire graph beside
+ * it, describing walks the router can now derive on demand.
+ *
+ * So the fan keeps the campus entrances it always had, and the corridors live
+ * in the graph alone. Nothing is lost: routing FROM FRRMS or the JAK
+ * dormitories works because the GRAPH reaches them, which is what
+ * `snapToGraph` needs, and "from where I am standing" is a better answer than
+ * a fan from a dormitory door anyway.
+ */
+const inCampus = ([lon, lat]) =>
+  lon >= REGION.w && lon <= REGION.e && lat >= REGION.s && lat <= REGION.n;
+const fanOrigins = new Map(
+  [...entranceNodes].filter(([key, name]) => {
+    const rank = rankByName.get(name);
+    // Every GATE, wherever it sits: the arboretum's far gate out at Generála
+    // Píky is 300 m north of the campus box and has always been a fan origin.
+    if (rank === RANK.gate) return true;
+    // A tram stop only if you can walk onto the campus from it directly. The
+    // corridors dragged in Merhautova, Provazníkova and three more, each a
+    // kilometre out — a fan from those is a cross-city polyline, not a campus
+    // walk.
+    if (rank === RANK.stop) return inCampus(key.split(',').map(Number));
+    // Never an off-campus origin. FRRMS and the JAK dormitories are reachable
+    // because the GRAPH reaches them, which is all snapToGraph needs.
+    return false;
+  })
+);
+
+const routes = walksFrom(graph, fanOrigins, buildingNodes)
   .filter((r) => r.lengthM >= MIN_M)
   .sort((a, b) => a.from.localeCompare(b.from) || a.to.localeCompare(b.to))
   .map((r, i) => ({
@@ -266,7 +312,7 @@ const reached = new Set(routes.flatMap((r) => [r.from, r.to]));
 // Only the entrances are shipped as points. The buildings already draw their
 // own letters, and the cafeteria in the middle of the campus was answering
 // nothing at all.
-const entrances = [...entranceNodes.entries()]
+const entrances = [...fanOrigins.entries()]
   .map(([k, name]) => {
     const [lon, lat] = k.split(',').map(Number);
     return {
@@ -279,7 +325,7 @@ const entrances = [...entranceNodes.entries()]
   .filter((p) => reached.has(p.name))
   .sort((a, b) => a.name.localeCompare(b.name));
 
-const gateNames = [...new Set([...entranceNodes.values()])].sort();
+const gateNames = [...new Set([...fanOrigins.values()])].sort();
 const hallNames = [...new Set([...buildingNodes.values()])].sort();
 const have = new Set(routes.map((r) => `${r.from}→${r.to}`));
 const missing = gateNames.flatMap((g) =>

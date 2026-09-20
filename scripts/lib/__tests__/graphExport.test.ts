@@ -65,4 +65,20 @@ describe('exportGraph', () => {
     const b = exportGraph(graph, new Map(), () => null);
     expect(JSON.stringify(a)).toBe(JSON.stringify(b));
   });
+
+  it('merges two nodes that round to the same emitted coordinate', () => {
+    // Real case: a corridor's clip seam against the campus geometry produces
+    // two 7-decimal nodes 4 cm apart. Emitted at 6 dp they are one point, and
+    // shipping both made a zero-length edge between two indices at the same
+    // place — a phantom the runtime cannot tell from a real edge.
+    const near1: [number, number] = [16.61680001, 49.2123061];
+    const near2: [number, number] = [16.61680002, 49.2123062];
+    const graph = buildGraph([{ coords: [A, near1] }, { coords: [near2, C] }]);
+    const out = exportGraph(graph, new Map(), () => null);
+
+    const coords = out.nodes.map((n: number[]) => n.join(','));
+    expect(new Set(coords).size).toBe(coords.length);
+    expect(out.edges.every((e: number[]) => e[0] !== e[1])).toBe(true);
+    expect(out.edges.every((e: number[]) => (e[2] as number) > 0)).toBe(true);
+  });
 });

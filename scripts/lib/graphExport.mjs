@@ -29,11 +29,29 @@ const round = (v) => Number(v.toFixed(6)); // ~0.1 m; matches the rest of the fi
  * @returns {{nodes: number[][], edges: (number|string)[][], buildings: Record<string, number[]>}}
  */
 export function exportGraph(graph, buildingNodes, gateOf) {
+  // Deduplicated by the coordinate AS EMITTED, not by the graph's own 7-decimal
+  // key. Two nodes whose raw positions differ in the 7th decimal round to the
+  // same 6, and emitting both produces a pair of distinct indices at one point
+  // joined by a zero-length edge — a phantom the runtime cannot tell from a
+  // real one. It happens for real at the seam where a corridor's clip box meets
+  // the campus geometry.
+  //
+  // At the precision this file ships, two points that round together ARE one
+  // point, so they become one node. The 7-decimal key stays the authority for
+  // whether two WAYS join; this only decides what the shipped array contains.
   const index = new Map();
+  const byCoord = new Map();
   const nodes = [];
   for (const [key, coord] of graph.nodes) {
-    index.set(key, nodes.length);
-    nodes.push([round(coord[0]), round(coord[1])]);
+    const emitted = [round(coord[0]), round(coord[1])];
+    const coordKey = `${emitted[0]},${emitted[1]}`;
+    let at = byCoord.get(coordKey);
+    if (at === undefined) {
+      at = nodes.length;
+      byCoord.set(coordKey, at);
+      nodes.push(emitted);
+    }
+    index.set(key, at);
   }
 
   const edges = [];
@@ -45,6 +63,10 @@ export function exportGraph(graph, buildingNodes, gateOf) {
       // Undirected: emit the pair once. Keyed on the sorted index pair so the
       // direction the adjacency happened to be walked in cannot change the
       // committed output.
+      // The merge above can bring an edge's two ends onto one node. That is a
+      // way doubling back on a point, not a route, and Dijkstra has no use for
+      // it.
+      if (a === b) continue;
       const lo = Math.min(a, b);
       const hi = Math.max(a, b);
       const pair = `${lo}-${hi}`;
@@ -59,9 +81,11 @@ export function exportGraph(graph, buildingNodes, gateOf) {
 
   const buildings = {};
   for (const [key, name] of buildingNodes) {
-    (buildings[name] ??= []).push(index.get(key));
+    (buildings[name] ??= new Set()).add(index.get(key));
   }
-  for (const name of Object.keys(buildings)) buildings[name].sort((a, b) => a - b);
+  for (const name of Object.keys(buildings)) {
+    buildings[name] = [...buildings[name]].sort((a, b) => a - b);
+  }
 
   return { nodes, edges, buildings };
 }
