@@ -16,6 +16,14 @@ updates:
     # upstream package widens its peer range. Ignored so they stop reopening every
     # week. Lift the matching entry once the blocker below ships a release, then
     # let Dependabot reoffer it.
+    #
+    # Always write these open-ended (`>= N`), never pinned (`N.x`): a pinned
+    # entry only blocks the major that was current when it was written, so the
+    # next major sails through and lands red. Two edits, two weeks apart, are
+    # what let vitest 5 through a block written for vitest 4.
+    #
+    # Dependabot reads this file from the DEFAULT branch (`main`), so an edit
+    # here does nothing until the next release train carries it to `main`.
     ignore:
       # typescript 6 & 7 — typescript-eslint@8 peers `typescript ">=4.8.4 <6.1.0"`,
       # so anything from 6.1 up (incl. the 7.x native port) fails `npm ci` with
@@ -25,23 +33,30 @@ updates:
         versions: ['>= 6']
       # eslint 10 / @eslint/js 10 conflict with the eslint peer range used
       # transitively by typescript-eslint. Both must move together. Lift when
-      # typescript-eslint supports eslint 10.
+      # typescript-eslint supports eslint 10. Open-ended (`>= 10`, not `10.x`)
+      # so eslint 11 does not walk straight past the block the way vitest 5 did.
       - dependency-name: 'eslint'
-        versions: ['10.x']
+        versions: ['>= 10']
       - dependency-name: '@eslint/js'
-        versions: ['10.x']
+        versions: ['>= 10']
       # vite 8 — @wxt-dev/module-react and @tailwindcss/vite peers cap at vite 7.
       # (vite 7 is still allowed through; only 8 is blocked.) Lift when both
       # WXT and the Tailwind vite plugin list `^8`.
       - dependency-name: 'vite'
-        versions: ['8.x']
-      # vitest 4 — @vitest/coverage-v8 4 pins `vitest@4` exactly, and vitest 4
-      # broke our test suite when trialed. Both must move together. Lift when we
-      # do the deliberate vitest 4 migration.
+        versions: ['>= 8']
+      # vitest 4+ — @vitest/coverage-v8 pins `vitest` exactly, so the two only
+      # move together; any lone bump fails `npm ci` with ERESOLVE. Written `>= 4`
+      # rather than `4.x`: the pinned form let vitest 5.0.1 straight through on
+      # 2026-09-20 (#358/#359, red on every check within 12s). Lift both lines
+      # together when we do the deliberate vitest major migration.
       - dependency-name: 'vitest'
-        versions: ['4.x']
+        versions: ['>= 4']
       - dependency-name: '@vitest/coverage-v8'
-        versions: ['4.x']
+        versions: ['>= 4']
+      # Bumped alongside vitest by the same upstream release; same pinning, so
+      # the same ERESOLVE if it moves alone (#324).
+      - dependency-name: '@vitest/mocker'
+        versions: ['>= 4']
       # @playwright/test > 1.60 — @serenity-js/playwright-test (latest 3.44.0)
       # peers `@playwright/test ~1.60.0`, so 1.61+ fails npm ci. Block minor/major
       # (1.60.x patches still flow) and drop it from the dev group so the group's
