@@ -182,7 +182,7 @@ export function ExamsScreen() {
           />
           <div
             data-testid="exam-list"
-            className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-24 pt-3"
+            className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-[calc(6rem_+_var(--safe-bottom,0px))] pt-3"
           >
             {thisWeek.length > 0 && (
               <ExamGroup title={t('mobile.exams.groupThisWeek')} count={thisWeek.length}>

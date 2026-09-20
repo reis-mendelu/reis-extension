@@ -97,7 +97,7 @@ export function ProfileScreen() {
           measured, `innerHeight - nav.top` at 375×780 — and 96 reserved 20px of
           nothing at the bottom of a screen that must not scroll. 8px of margin
           over the measurement, so a taller nav does not silently tuck under. */}
-      <div className="flex-1 overflow-y-auto pb-[84px]">
+      <div className="flex-1 overflow-y-auto pb-[calc(84px_+_var(--safe-bottom,0px))]">
         <div className="px-4 pb-0.5 pt-2 text-xs font-bold uppercase tracking-wider text-base-content/60">
           {t('mobile.profile.appearance')}
         </div>
