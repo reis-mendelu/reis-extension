@@ -62,7 +62,7 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set) => ({
       routeStatus: 'locating',
       routeTargetBuilding: buildingName,
       routeWalk: null,
-          routeFrom: null,
+      routeFrom: null,
     });
 
     let at: [number, number];

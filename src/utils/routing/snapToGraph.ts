@@ -45,11 +45,7 @@ export interface Snap {
  * is a real answer and a route invented from the main gate for someone in
  * Prague is not.
  */
-export function snapToGraph(
-  graph: CampusGraph,
-  at: [number, number],
-  maxM = 250
-): Snap | null {
+export function snapToGraph(graph: CampusGraph, at: [number, number], maxM = 250): Snap | null {
   let best: Snap | null = null;
   for (const edge of graph.edges) {
     const a = edge[0] as number;

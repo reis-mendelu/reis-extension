@@ -80,7 +80,11 @@ describe('createRouteSlice', () => {
 
   it('shows it is working while the fix is in flight', async () => {
     let release: (v: [number, number]) => void = () => {};
-    currentPosition.mockReturnValue(new Promise((r) => { release = r; }));
+    currentPosition.mockReturnValue(
+      new Promise((r) => {
+        release = r;
+      })
+    );
     const pending = useAppStore.getState().routeTo('Q');
     expect(useAppStore.getState().routeStatus).toBe('locating');
     release(MAIN_GATE);
@@ -92,7 +96,11 @@ describe('createRouteSlice', () => {
     currentPosition.mockResolvedValue(MAIN_GATE);
     await useAppStore.getState().routeTo('Q');
     let release: (v: [number, number]) => void = () => {};
-    currentPosition.mockReturnValue(new Promise((r) => { release = r; }));
+    currentPosition.mockReturnValue(
+      new Promise((r) => {
+        release = r;
+      })
+    );
     const pending = useAppStore.getState().routeTo('A');
     // The old Q route must not still be on screen under an "A" heading.
     expect(useAppStore.getState().routeWalk).toBeNull();

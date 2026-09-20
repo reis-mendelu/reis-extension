@@ -30,7 +30,7 @@ describe('the router against the committed routes', () => {
     expect(snap).not.toBeNull();
 
     for (const route of routes.filter((r) => r.from === name)) {
-      const walk = shortestWalk(graph, snap!, graph.buildings[route.to], alwaysOpen);
+      const walk = shortestWalk(graph, snap!, graph.buildings[route.to]!, alwaysOpen);
       expect(walk, `${name} → ${route.to} should be routable`).not.toBeNull();
       // Within 1 m. Not exact: the build snaps a place to one node, while the
       // router snaps a coordinate to the nearest point on an edge, and the
@@ -45,8 +45,8 @@ describe('the router against the committed routes', () => {
   it('finds the garden route from the Gen. Píky gate shorter than going round', () => {
     const gate = entrances.find((e) => e.name === 'Brána u FRRMS')!;
     const snap = snapToGraph(graph, [gate.lon, gate.lat], 30)!;
-    const through = shortestWalk(graph, snap, graph.buildings.Q, alwaysOpen);
-    const around = shortestWalk(graph, snap, graph.buildings.Q, () => false);
+    const through = shortestWalk(graph, snap, graph.buildings.Q!, alwaysOpen);
+    const around = shortestWalk(graph, snap, graph.buildings.Q!, () => false);
     // With the garden shut the gate is cut off entirely — it opens onto the
     // garden and nothing else. That is the honest answer, and the reason the
     // card has to say so rather than drawing a line.
@@ -58,7 +58,7 @@ describe('the router against the committed routes', () => {
     // Between B and M, which is the case precomputed routes can never answer
     // and the entire reason the graph exists.
     const snap = snapToGraph(graph, [16.6155, 49.2106])!;
-    const walk = shortestWalk(graph, snap, graph.buildings.Q, alwaysOpen)!;
+    const walk = shortestWalk(graph, snap, graph.buildings.Q!, alwaysOpen)!;
     expect(walk.lengthM).toBeLessThan(400);
     expect(walk.coords[0]).toEqual(snap.point);
   });

@@ -21,20 +21,22 @@ export interface LessonTarget {
 function lessonStart(lesson: BlockLesson): Date | null {
   const d = /^(\d{4})(\d{2})(\d{2})$/.exec(lesson.date);
   const t = /^(\d{1,2}):(\d{2})$/.exec(lesson.startTime ?? '');
-  if (!d || !t) return null;
+  if (!d?.[1] || !d[2] || !d[3] || !t?.[1] || !t[2]) return null;
   return new Date(+d[1], +d[2] - 1, +d[3], +t[1], +t[2]);
 }
 
 function lessonEnd(lesson: BlockLesson, start: Date): Date {
   const t = /^(\d{1,2}):(\d{2})$/.exec(lesson.endTime ?? '');
-  if (!t) return start;
+  if (!t?.[1] || !t[2]) return start;
   const end = new Date(start);
   end.setHours(+t[1], +t[2], 0, 0);
   return end;
 }
 
 const sameDay = (a: Date, b: Date) =>
-  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
 
 /**
  * The lesson a student is on their way to, and the building it is in.

@@ -160,7 +160,12 @@ out geom;`;
     .filter((el) => el.type === 'way' && Array.isArray(el.geometry))
     .filter((el) => (el.tags ?? {}).access !== 'private' && (el.tags ?? {}).foot !== 'no')
     .sort((a, b) => a.id - b.id)
-    .flatMap((way) => clipToRegion(way.geometry.map((p) => [p.lon, p.lat]), box));
+    .flatMap((way) =>
+      clipToRegion(
+        way.geometry.map((p) => [p.lon, p.lat]),
+        box
+      )
+    );
 }
 
 // Two passes, because the corridor can only be pinned once the campus graph

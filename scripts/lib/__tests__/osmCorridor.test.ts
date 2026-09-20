@@ -53,9 +53,18 @@ describe('joinAtAnchor', () => {
   });
 
   it('refuses a corridor with nothing near its anchor, rather than stretching', () => {
-    expect(() => joinAtAnchor([[[16.7, 49.3], [16.71, 49.31]]], CURATED, 1)).toThrow(
-      /does not reach the place it claims/
-    );
+    expect(() =>
+      joinAtAnchor(
+        [
+          [
+            [16.7, 49.3],
+            [16.71, 49.31],
+          ],
+        ],
+        CURATED,
+        1
+      )
+    ).toThrow(/does not reach the place it claims/);
   });
 
   it('says how far off it actually was, so the box can be fixed', () => {

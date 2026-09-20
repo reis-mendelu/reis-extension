@@ -7,9 +7,18 @@ const lesson = (date: string, startTime: string, room: string, endTime?: string)
   // Default to a 50-minute block, so a fixture's start time alone decides
   // whether the lesson is still running — an end time copied from another
   // fixture is how this test first "failed" against correct code.
-  const [h, m] = startTime.split(':').map(Number);
-  const end = endTime ?? `${String(h + (m >= 10 ? 1 : 0)).padStart(2, '0')}:${String((m + 50) % 60).padStart(2, '0')}`;
-  return { date, startTime, endTime: end, room, courseName: 'Test', id: room + startTime } as BlockLesson;
+  const [h = 0, m = 0] = startTime.split(':').map(Number);
+  const end =
+    endTime ??
+    `${String(h + (m >= 10 ? 1 : 0)).padStart(2, '0')}:${String((m + 50) % 60).padStart(2, '0')}`;
+  return {
+    date,
+    startTime,
+    endTime: end,
+    room,
+    courseName: 'Test',
+    id: room + startTime,
+  } as BlockLesson;
 };
 
 const at = (iso: string) => new Date(iso);

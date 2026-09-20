@@ -45,9 +45,7 @@ export function joinAtAnchor(ways, anchor, toleranceM) {
     }),
   }));
   if (joined === 0) {
-    const nearest = Math.min(
-      ...ways.flatMap((coords) => coords.map((c) => metres(c, anchor)))
-    );
+    const nearest = Math.min(...ways.flatMap((coords) => coords.map((c) => metres(c, anchor))));
     throw new Error(
       `corridor has no vertex within ${toleranceM} m of its anchor (nearest ${nearest.toFixed(1)} m) — ` +
         'it does not reach the place it claims to start at, and joining it would invent a connection'

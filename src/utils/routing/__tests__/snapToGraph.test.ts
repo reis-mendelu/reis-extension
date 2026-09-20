@@ -18,13 +18,13 @@ const graph: CampusGraph = {
 
 describe('edge accessors', () => {
   it('reads the length off the third element', () => {
-    expect(edgeLength(graph.edges[0])).toBe(11.1);
-    expect(edgeLength(graph.edges[1])).toBe(14.6);
+    expect(edgeLength(graph.edges[0]!)).toBe(11.1);
+    expect(edgeLength(graph.edges[1]!)).toBe(14.6);
   });
 
   it('reads the gate off the fourth, and null when there is none', () => {
-    expect(edgeGate(graph.edges[0])).toBe(null);
-    expect(edgeGate(graph.edges[1])).toBe('garden');
+    expect(edgeGate(graph.edges[0]!)).toBe(null);
+    expect(edgeGate(graph.edges[1]!)).toBe('garden');
   });
 });
 
@@ -41,7 +41,7 @@ describe('snapToGraph', () => {
 
   it('splits the edge length between the two ends', () => {
     const s = snapToGraph(graph, [16.6, 49.21005])!;
-    expect(s.toA + s.toB).toBeCloseTo(edgeLength(graph.edges[0]), 5);
+    expect(s.toA + s.toB).toBeCloseTo(edgeLength(graph.edges[0]!), 5);
     expect(s.toA).toBeGreaterThan(0);
     expect(s.toB).toBeGreaterThan(0);
   });

@@ -83,7 +83,10 @@ describe('the committed campus graph', () => {
   it('connects every building to every other with the garden open', () => {
     // A disconnected graph is the failure this feature would otherwise ship in
     // silence: the route simply never appears, and nothing says why.
-    const seen = reachableFrom(graph.buildings.A[0], adjacency(() => true));
+    const seen = reachableFrom(
+      graph.buildings.A![0]!,
+      adjacency(() => true)
+    );
     for (const [name, nodes] of Object.entries(graph.buildings)) {
       expect(`${name}:${nodes.some((n) => seen.has(n))}`).toBe(`${name}:true`);
     }
@@ -92,7 +95,10 @@ describe('the committed campus graph', () => {
   it('still connects every building to every other with the garden SHUT', () => {
     // The campus must not depend on the garden to hold itself together. If it
     // did, every route would vanish at 20:00 and at weekends.
-    const seen = reachableFrom(graph.buildings.A[0], adjacency((gate) => gate === null));
+    const seen = reachableFrom(
+      graph.buildings.A![0]!,
+      adjacency((gate) => gate === null)
+    );
     for (const [name, nodes] of Object.entries(graph.buildings)) {
       expect(`${name}:${nodes.some((n) => seen.has(n))}`).toBe(`${name}:true`);
     }

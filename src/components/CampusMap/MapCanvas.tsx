@@ -532,7 +532,9 @@ export function MapCanvas() {
     const sheetH = sheetEl ? Math.round(sheetEl.getBoundingClientRect().height) : 0;
     const searchEl = ref.current?.parentElement?.querySelector('label');
     const topChrome = searchEl
-      ? Math.round(searchEl.getBoundingClientRect().bottom - (ref.current?.getBoundingClientRect().top ?? 0))
+      ? Math.round(
+          searchEl.getBoundingClientRect().bottom - (ref.current?.getBoundingClientRect().top ?? 0)
+        )
       : 78;
     map.fitBounds(L.latLngBounds(shown.coords.map(([lon, lat]) => L.latLng(lat, lon))), {
       paddingTopLeft: [28, topChrome + 12],

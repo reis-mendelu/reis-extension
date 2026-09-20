@@ -64,7 +64,7 @@ describe('drawRoute', () => {
     const layer = L.layerGroup();
     drawRoute(layer, walk, 'cz');
     const line = layer.getLayers().find((l) => l instanceof L.Polyline) as L.Polyline;
-    const first = (line.getLatLngs() as L.LatLng[])[0];
+    const first = (line.getLatLngs() as L.LatLng[])[0]!;
     // Brno: latitude 49, longitude 16. Transposed, this would be lat 16.
     expect(first.lat).toBeGreaterThan(49);
     expect(first.lng).toBeGreaterThan(16);
@@ -92,8 +92,6 @@ describe('drawRoute', () => {
     expect(layer.getLayers()).toHaveLength(0);
   });
 
-
-
   it('is not the colour the buildings are drawn in', () => {
     // The route was #2563eb, which is exactly BUILDING_STYLE.color in
     // mapHelpers — the same hex as the footprints it threads between. Every
@@ -101,7 +99,8 @@ describe('drawRoute', () => {
     // fan, green is the garden and the brand, grey is the path network.
     const layer = L.layerGroup();
     drawRoute(layer, walk, 'cz');
-    const line = layer.getLayers()[1] as L.Polyline;
+    const line = layer.getLayers()[1] as L.Polyline | undefined;
+    if (!line) throw new Error('expected a line');
     expect(line.options.color).toBe(ROUTE_COLOR);
     expect(ROUTE_COLOR).not.toBe('#2563eb');
   });
@@ -113,7 +112,8 @@ describe('drawRoute', () => {
     const layer = L.layerGroup();
     drawPosition(layer, [16.614118, 49.218161]);
     expect(layer.getLayers()).toHaveLength(3); // glow + white collar + core
-    const dot = layer.getLayers()[2] as L.CircleMarker;
+    const dot = layer.getLayers()[2] as L.CircleMarker | undefined;
+    if (!dot) throw new Error('expected a dot');
     expect(dot.getLatLng().lat).toBeCloseTo(49.218161, 6);
     expect(dot.getLatLng().lng).toBeCloseTo(16.614118, 6);
   });
@@ -123,7 +123,8 @@ describe('drawRoute', () => {
     // underneath — pale paper, garden green or a building fill.
     const layer = L.layerGroup();
     drawPosition(layer, [16.6, 49.21]);
-    const [glow, collar, core] = layer.getLayers() as L.CircleMarker[];
+    const [glow, collar, core] = layer.getLayers() as (L.CircleMarker | undefined)[];
+    if (!glow || !collar || !core) throw new Error('expected three rings');
     expect(collar.options.fillColor).toBe('#ffffff');
     expect(core.options.fillColor).toBe(ROUTE_COLOR);
     expect(glow.options.radius).toBeGreaterThan(collar.options.radius!);

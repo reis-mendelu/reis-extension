@@ -27,8 +27,9 @@ export function devForcedPosition(): [number, number] | null {
   const raw = new URLSearchParams(window.location.search).get('at');
   if (!raw) return null;
   const parts = raw.split(',').map((p) => Number(p.trim()));
-  if (parts.length !== 2 || parts.some((n) => !Number.isFinite(n))) return null;
   const [lat, lon] = parts;
+  if (parts.length !== 2 || lat === undefined || lon === undefined) return null;
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
   if (!plausibleLat(lat) || !plausibleLon(lon)) return null;
   return [lon, lat];
 }

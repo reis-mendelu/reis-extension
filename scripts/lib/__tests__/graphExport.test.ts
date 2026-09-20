@@ -42,8 +42,7 @@ describe('exportGraph', () => {
     const keys: string[] = [...graph.nodes.keys()];
     // Gate only the stretch between the first two nodes.
     const gated = new Set([keys[0], keys[1]]);
-    const gateOf = (k1: string, k2: string) =>
-      gated.has(k1) && gated.has(k2) ? 'garden' : null;
+    const gateOf = (k1: string, k2: string) => (gated.has(k1) && gated.has(k2) ? 'garden' : null);
 
     const out = exportGraph(graph, new Map(), gateOf);
     const withGate = out.edges.filter((e: unknown[]) => e.length === 4);

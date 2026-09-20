@@ -71,13 +71,16 @@ export function shortestWalk(
   const done = new Set<number>();
   let arrived: number | null = null;
 
+  const distOf = (n: number | undefined) =>
+    n === undefined ? Infinity : (dist.get(n) ?? Infinity);
+
   while (queue.length) {
     let bestI = 0;
     for (let i = 1; i < queue.length; i++) {
-      if ((dist.get(queue[i]) ?? Infinity) < (dist.get(queue[bestI]) ?? Infinity)) bestI = i;
+      if (distOf(queue[i]) < distOf(queue[bestI])) bestI = i;
     }
     const u = queue.splice(bestI, 1)[0];
-    if (done.has(u)) continue;
+    if (u === undefined || done.has(u)) continue;
     done.add(u);
     if (goal.has(u)) {
       arrived = u;
@@ -85,7 +88,7 @@ export function shortestWalk(
     }
     for (const { to, len, gate } of adj.get(u) ?? []) {
       if (done.has(to)) continue;
-      const nd = (dist.get(u) ?? Infinity) + len;
+      const nd = distOf(u) + len;
       if (nd < (dist.get(to) ?? Infinity)) {
         dist.set(to, nd);
         prev.set(to, u);
@@ -98,7 +101,13 @@ export function shortestWalk(
   if (arrived === null) return null;
 
   const back: number[] = [arrived];
-  while (prev.has(back[back.length - 1])) back.push(prev.get(back[back.length - 1])!);
+  for (;;) {
+    const head = back.at(-1);
+    if (head === undefined) break;
+    const step = prev.get(head);
+    if (step === undefined) break;
+    back.push(step);
+  }
   const nodes = back.reverse();
   // The snapped start sits ON an edge, so its own gate counts too: a walk that
   // begins inside the garden went through it whether or not it crosses another
@@ -110,8 +119,10 @@ export function shortestWalk(
     if (gate) gates.add(gate);
   }
   return {
-    coords: [from.point, ...nodes.map((n) => graph.nodes[n])],
-    lengthM: dist.get(arrived)!,
+    // `nodes` are indices this search itself put there, so every one of them
+    // indexes a real node; the filter is what tells the compiler so.
+    coords: [from.point, ...nodes.map((n) => graph.nodes[n]).filter((c): c is number[] => !!c)],
+    lengthM: distOf(arrived),
     gates: [...gates],
   };
 }

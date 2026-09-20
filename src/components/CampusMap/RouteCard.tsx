@@ -75,9 +75,7 @@ export function RouteCard() {
               {t('map.walkMinutes', { n: walkMinutes(walk.lengthM) })}
             </span>
             {building && (
-              <span className="text-sm text-base-content/60">
-                {t('map.routeTo', { building })}
-              </span>
+              <span className="text-sm text-base-content/60">{t('map.routeTo', { building })}</span>
             )}
           </p>
         ) : (

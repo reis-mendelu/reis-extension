@@ -105,7 +105,9 @@ export function drawRoute(layer: L.LayerGroup, walk: Walk | null, language: stri
   // A single dot on the map would say nothing.
   if (!walk || walk.coords.length < 2) return;
 
-  const latlngs = walk.coords.map(([lon, lat]) => L.latLng(lat, lon));
+  const latlngs = walk.coords.map(([lon, lat]) => L.latLng(lat ?? 0, lon ?? 0));
+  const end = latlngs.at(-1);
+  if (!end) return;
   L.polyline(latlngs, HALO).addTo(layer);
   L.polyline(latlngs, LINE).addTo(layer);
 
@@ -124,7 +126,7 @@ export function drawRoute(layer: L.LayerGroup, walk: Walk | null, language: stri
     className: 'route-chip',
     offset: [0, -8],
   })
-    .setLatLng(latlngs[latlngs.length - 1])
+    .setLatLng(end)
     .setContent(translate(language, 'map.walkMinutes', { n: walkMinutes(walk.lengthM) }))
     .addTo(layer);
 }

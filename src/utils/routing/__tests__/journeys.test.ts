@@ -25,21 +25,33 @@ describe('real journeys over the committed graph', () => {
   it.each(places)('routes from %s to Q on a weekday', (name, at) => {
     const s = snapToGraph(g, at);
     expect(s, `${name} should snap`).not.toBeNull();
-    const w = shortestWalk(g, s!, g.buildings.Q, open(weekday));
+    const w = shortestWalk(g, s!, g.buildings.Q!, open(weekday));
     expect(w, `${name} should reach Q`).not.toBeNull();
-    report.push({ from: name, to: 'Q', m: Math.round(w!.lengthM), min: Math.max(1, Math.round(w!.lengthM / 100)), gates: w!.gates });
+    report.push({
+      from: name,
+      to: 'Q',
+      m: Math.round(w!.lengthM),
+      min: Math.max(1, Math.round(w!.lengthM / 100)),
+      gates: w!.gates,
+    });
   });
   it('FRRMS uses the garden on a weekday', () => {
     const s = snapToGraph(g, [16.614118, 49.218161])!;
-    expect(shortestWalk(g, s, g.buildings.Q, open(weekday))!.gates).toContain('garden');
+    expect(shortestWalk(g, s, g.buildings.Q!, open(weekday))!.gates).toContain('garden');
   });
   it('FRRMS on a weekend', () => {
     const s = snapToGraph(g, [16.614118, 49.218161])!;
-    const w = shortestWalk(g, s, g.buildings.Q, open(weekend));
-    report.push({ from: 'FRRMS (weekend)', to: 'Q', m: w ? Math.round(w.lengthM) : null, min: w ? Math.max(1, Math.round(w.lengthM / 100)) : null, gates: w?.gates ?? [] });
+    const w = shortestWalk(g, s, g.buildings.Q!, open(weekend));
+    report.push({
+      from: 'FRRMS (weekend)',
+      to: 'Q',
+      m: w ? Math.round(w.lengthM) : null,
+      min: w ? Math.max(1, Math.round(w.lengthM / 100)) : null,
+      gates: w?.gates ?? [],
+    });
   });
   it('JAK does not need the garden', () => {
     const s = snapToGraph(g, [16.630584, 49.216233])!;
-    expect(shortestWalk(g, s, g.buildings.Q, open(weekend))).not.toBeNull();
+    expect(shortestWalk(g, s, g.buildings.Q!, open(weekend))).not.toBeNull();
   });
 });
