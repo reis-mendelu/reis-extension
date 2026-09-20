@@ -25,9 +25,11 @@ vi.mock('../../../../hooks/useEventsFacultySettings', () => ({
   useEventsFacultySettings: () => ({ subscribedFaculties: ['mendelu'], isLoading: false }),
 }));
 
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MapScreen } from '../MapScreen';
 import { useAppStore } from '../../../../store/useAppStore';
+import { __resetSafeBottomCache } from '../../../../hooks/ui/useSafeBottom';
+import { peekHeightPx } from '../../../../utils/mobile/safeArea';
 
 // A real building id/floor id from src/data/map/buildings.json so FloorStack
 // and BuildingRoomList have something real to key off.
@@ -235,6 +237,38 @@ describe('MapScreen', () => {
   it('mounts the map canvas', () => {
     render(<MapScreen />);
     expect(screen.getByTestId('mock-map-canvas')).toBeInTheDocument();
+  });
+
+  /**
+   * targetSdk 36 draws the app edge-to-edge on Android 15+, so the window
+   * runs under the system navigation bar and the floating BottomNav — which
+   * this band reserves space for — had to move up by the inset. The band has
+   * to move with it, and so does the DRAG FLOOR: the resting height is a
+   * class and the floor is JavaScript, and if only the class grows a drag
+   * undershoots the resting height by the whole system bar and snaps back.
+   */
+  it('grows the closed band and its drag floor by the bottom inset', () => {
+    document.documentElement.style.setProperty('--safe-bottom', '48px');
+    __resetSafeBottomCache();
+    try {
+      render(<MapScreen />);
+      const sheet = screen.getByTestId('map-sheet');
+      expect(sheet.className).toContain('calc(166px_+_var(--safe-bottom,0px))');
+
+      // From `half`, because peek does not absorb downward travel — it IS the
+      // floor, so the clamp can only be observed on the way down to it. Far
+      // enough that the clamp binds rather than the finger.
+      act(() => {
+        useAppStore.setState({ mapSheetState: 'half' } as never);
+      });
+      fireEvent.pointerDown(sheet, { clientY: 200 });
+      fireEvent.pointerMove(sheet, { clientY: 800 });
+      expect(sheet.style.height).toBe(`${peekHeightPx(48)}px`);
+      fireEvent.pointerUp(sheet, { clientY: 800 });
+    } finally {
+      document.documentElement.style.removeProperty('--safe-bottom');
+      __resetSafeBottomCache();
+    }
   });
 
   it('renders the sheet in peek state by default, with no tabs visible', () => {
@@ -549,7 +583,7 @@ describe('MapSheet drag', () => {
     fireEvent.click(screen.getByLabelText(/panel mapy/));
     expect(useAppStore.getState().mapSheetState).toBe('peek');
     expect(useAppStore.getState().mapSelection).toBeNull();
-    expect(screen.getByTestId('map-sheet').className).toContain('h-[166px]');
+    expect(screen.getByTestId('map-sheet').className).toContain('h-[calc(166px_+_');
   });
 
   it('drops the pin when DRAGGED down to peek with a card open', () => {

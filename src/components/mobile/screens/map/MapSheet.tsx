@@ -6,10 +6,9 @@ import { useTranslation } from '../../../../hooks/useTranslation';
 import { MapPanelBody } from './MapPanelBody';
 import { MapSheetPeek } from './MapSheetPeek';
 import { MapSheetHeader } from './MapSheetHeader';
+import { useSafeBottom } from '../../../../hooks/ui/useSafeBottom';
+import { peekHeightPx } from '../../../../utils/mobile/safeArea';
 import type { Detent } from '../../primitives/sheetDrag';
-
-/** The collapsed height, in px — kept in sync with the `h-[166px]` class below. */
-const PEEK_PX = 166;
 
 /** The expanded height as a fraction of the viewport, matching `h-[70vh]`. */
 const EXPANDED_VH = 0.7;
@@ -21,10 +20,11 @@ const EXPANDED_VH = 0.7;
  * slice — no local state here).
  *
  * The collapsed height reserves the bottom ~96px for the floating `BottomNav`,
- * which is positioned against the SCREEN (bottom-[18px]), not this sheet, and
- * so draws straight over it. Sizing the collapsed sheet to its content instead
- * puts the peek row underneath the nav pill; the prototype reserves the same
- * band.
+ * which is positioned against the SCREEN, not this sheet, and so draws
+ * straight over it. Sizing the collapsed sheet to its content instead puts the
+ * peek row underneath the nav pill; the prototype reserves the same band. The
+ * band grows by `--safe-bottom`, because the nav it is reserving for does too
+ * — see `utils/mobile/safeArea.ts`.
  *
  * This is rendered as a sibling of `MapCanvas` in `MapScreen`, never a
  * wrapper around it: expanding/collapsing only changes THIS component's own
@@ -70,11 +70,17 @@ export function MapSheet() {
     setSheetState(next);
   };
 
+  // The drag's floor and the resting height below are ONE number, derived
+  // from the same inset. They used to be a `166` constant and an `h-[166px]`
+  // class kept in step by a comment; once the class grew by --safe-bottom, a
+  // constant left behind would let a drag undershoot the resting height by
+  // the whole system bar and snap back.
+  const peekPx = peekHeightPx(useSafeBottom());
   const { dragHeight, consumeDragClick, handlers } = useMapSheetDrag(
     sheetState,
     goToDetent,
     panelRef,
-    PEEK_PX,
+    peekPx,
     EXPANDED_VH
   );
 
@@ -154,7 +160,7 @@ export function MapSheet() {
             ? 'h-[70vh]'
             : sheetState === 'half'
               ? 'h-[45vh]'
-              : 'h-[166px]'
+              : 'h-[calc(166px_+_var(--safe-bottom,0px))]'
       }`}
       style={dragHeight === null ? undefined : { height: `${dragHeight}px` }}
     >
@@ -197,7 +203,7 @@ export function MapSheet() {
           />
           {/* pb-24 clears the floating BottomNav, which is positioned against
               the SCREEN and draws over the sheet. */}
-          <div className="flex-1 overflow-y-auto pb-24 pt-2">
+          <div className="flex-1 overflow-y-auto pb-[calc(6rem_+_var(--safe-bottom,0px))] pt-2">
             <MapPanelBody selectedEvent={selectedEvent} selectedGardenPlace={selectedGardenPlace} />
           </div>
         </>
