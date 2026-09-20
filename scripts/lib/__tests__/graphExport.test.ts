@@ -1,0 +1,106 @@
+import { describe, it, expect } from 'vitest';
+// @ts-expect-error - plain .mjs build helper, no types
+import { buildGraph } from '../pathGraph.mjs';
+// @ts-expect-error - plain .mjs build helper, no types
+import { exportGraph } from '../graphExport.mjs';
+
+// Three points in a line, 0.0001 degrees of latitude (~11 m) apart.
+const A: [number, number] = [16.6, 49.21];
+const B: [number, number] = [16.6, 49.2101];
+const C: [number, number] = [16.6, 49.2102];
+
+describe('exportGraph', () => {
+  it('emits every node once and every edge once', () => {
+    const graph = buildGraph([{ coords: [A, B, C] }]);
+    const out = exportGraph(graph, new Map(), () => null);
+
+    expect(out.nodes).toHaveLength(3);
+    expect(out.edges).toHaveLength(2);
+    // Undirected: the pair appears once, not once per direction.
+    const pairs = out.edges.map((e: number[]) => [e[0], e[1]].sort().join('-'));
+    expect(new Set(pairs).size).toBe(2);
+  });
+
+  it('rounds coordinates to 6 dp, like every other geometry in the file', () => {
+    const graph = buildGraph([{ coords: [[16.61234567, 49.2123456789], B] }]);
+    const out = exportGraph(graph, new Map(), () => null);
+    for (const [lon, lat] of out.nodes) {
+      expect(String(lon).split('.')[1]?.length ?? 0).toBeLessThanOrEqual(6);
+      expect(String(lat).split('.')[1]?.length ?? 0).toBeLessThanOrEqual(6);
+    }
+  });
+
+  it('carries the edge length in metres as the third element', () => {
+    const graph = buildGraph([{ coords: [A, B] }]);
+    const out = exportGraph(graph, new Map(), () => null);
+    expect(out.edges[0][2]).toBeGreaterThan(10);
+    expect(out.edges[0][2]).toBeLessThan(12);
+  });
+
+  it('tags a gated edge with its id, and leaves an ungated edge at length 3', () => {
+    const graph = buildGraph([{ coords: [A, B, C] }]);
+    const keys: string[] = [...graph.nodes.keys()];
+    // Gate only the stretch between the first two nodes.
+    const gated = new Set([keys[0], keys[1]]);
+    const gateOf = (k1: string, k2: string) => (gated.has(k1) && gated.has(k2) ? 'garden' : null);
+
+    const out = exportGraph(graph, new Map(), gateOf);
+    const withGate = out.edges.filter((e: unknown[]) => e.length === 4);
+    expect(withGate).toHaveLength(1);
+    expect(withGate[0][3]).toBe('garden');
+    expect(out.edges.filter((e: unknown[]) => e.length === 3)).toHaveLength(1);
+  });
+
+  it('maps each building name to the node indices that count as arriving', () => {
+    const graph = buildGraph([{ coords: [A, B, C] }]);
+    const keys: string[] = [...graph.nodes.keys()];
+    const out = exportGraph(graph, new Map([[keys[2], 'Q']]), () => null);
+    expect(out.buildings.Q).toEqual([2]);
+  });
+
+  it('is deterministic, so the committed JSON does not churn between runs', () => {
+    const graph = buildGraph([{ coords: [A, B, C] }]);
+    const a = exportGraph(graph, new Map(), () => null);
+    const b = exportGraph(graph, new Map(), () => null);
+    expect(JSON.stringify(a)).toBe(JSON.stringify(b));
+  });
+
+  it('merges two nodes that round to the same emitted coordinate', () => {
+    // Real case: a corridor's clip seam against the campus geometry produces
+    // two 7-decimal nodes 4 cm apart. Emitted at 6 dp they are one point, and
+    // shipping both made a zero-length edge between two indices at the same
+    // place — a phantom the runtime cannot tell from a real edge.
+    const near1: [number, number] = [16.61680001, 49.2123061];
+    const near2: [number, number] = [16.61680002, 49.2123062];
+    const graph = buildGraph([{ coords: [A, near1] }, { coords: [near2, C] }]);
+    const out = exportGraph(graph, new Map(), () => null);
+
+    const coords = out.nodes.map((n: number[]) => n.join(','));
+    expect(new Set(coords).size).toBe(coords.length);
+    expect(out.edges.every((e: number[]) => e[0] !== e[1])).toBe(true);
+    expect(out.edges.every((e: number[]) => (e[2] as number) > 0)).toBe(true);
+  });
+
+  it('keeps the WALKABLE edge when a gated and an ungated one collapse together', () => {
+    // Two 7-decimal edges can round onto one 6-decimal pair. If the gated one
+    // happened to be seen first, keeping it would let a closed garden delete a
+    // connection that is open all week — a route vanishing at 20:00 for a
+    // reason nothing on screen could explain.
+    // B2 and B3 differ in the 7th decimal — two nodes to buildGraph — but both
+    // round to 49.210100, so they become ONE emitted node and their two edges
+    // from A2 collapse onto one pair. 3 cm apart, which is the real scale of
+    // the corridor seam this handles.
+    const A2: [number, number] = [16.6, 49.21];
+    const B2: [number, number] = [16.6, 49.2101001];
+    const B3: [number, number] = [16.6, 49.2101004];
+    const gated = new Set(['16.6000000,49.2100000', '16.6000000,49.2101001']);
+    const gateOf = (k1: string, k2: string) => (gated.has(k1) && gated.has(k2) ? 'garden' : null);
+
+    // Gated pair built FIRST, ungated second — the order that used to lose.
+    const graph = buildGraph([{ coords: [A2, B2] }, { coords: [A2, B3] }]);
+    const out = exportGraph(graph, new Map(), gateOf);
+
+    expect(out.edges).toHaveLength(1);
+    expect(out.edges[0]).toHaveLength(3); // no gateId: the open one won
+  });
+});

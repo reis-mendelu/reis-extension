@@ -177,6 +177,35 @@ export interface CampusEntrance {
   lat: number;
 }
 
+// The walking network as a graph, for routing from an arbitrary point.
+//
+// `routes` below answers "walk from this gate to that building", which is what
+// the entrance fan draws. It cannot answer "walk from where I am standing" —
+// that needs adjacency, and adjacency cannot be recovered from `network`, whose
+// strokes are deduplicated RENDERING geometry merged for drawing. Rebuilding it
+// from them would mean matching coordinates by proximity, which is exactly the
+// invented connection `scripts/lib/remoteCorridor.mjs` exists to refuse. So the
+// graph is emitted explicitly at build time (`scripts/lib/graphExport.mjs`).
+export interface CampusGraph {
+  /** [lon, lat] per node, 6 dp — the same rounding as every other geometry. */
+  nodes: number[][];
+  /**
+   * `[fromIndex, toIndex, lengthM]`, or `[fromIndex, toIndex, lengthM, gateId]`
+   * when the stretch is only walkable while something is open. Undirected; each
+   * pair appears exactly once.
+   *
+   * Typed loosely rather than as a union of tuples for the reason
+   * `CampusPath.coords` gives: this comes straight out of a JSON import, whose
+   * inferred element type is not a tuple, and asserting one needs a cast
+   * through `unknown` that buys nothing the shape tests do not already check at
+   * runtime. Read it through `edgeLength` / `edgeGate`, never by index at a
+   * call site.
+   */
+  edges: (number | string)[][];
+  /** Building letter → the node indices that count as having arrived there. */
+  buildings: Record<string, number[]>;
+}
+
 export interface CampusPath {
   id: number;
   from: string;

@@ -70,5 +70,11 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<!-- When-in-use only. There is no background location and no watch, so
+	     NSLocationAlwaysAndWhenInUseUsageDescription is deliberately absent:
+	     asking for a permission the app never exercises is a review rejection
+	     waiting to happen. -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>reIS zjistí polohu jen ve chvíli, kdy ťukneš na Najdi cestu, aby ti nakreslilo cestu k další přednášce. Poloha zůstává v telefonu a nikam se neodesílá.</string>
 </dict>
 </plist>

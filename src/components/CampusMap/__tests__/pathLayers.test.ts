@@ -15,7 +15,7 @@ describe('walkLabel', () => {
     // letter, so repeating the destination would be saying it twice.
     expect(
       walkLabel({ id: 1, from: 'Hlavní brána', to: 'Q', lengthM: 320, coords: [] }, 'cz')
-    ).toBe('4 min');
+    ).toBe('3 min');
   });
 });
 

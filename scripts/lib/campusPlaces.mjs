@@ -11,8 +11,22 @@
 // `rank` is how much a person navigates BY the place, and it settles which name
 // keeps a spot when two of them are the same doorway: building E outranks the
 // Akademická vinotéka inside it, so the walk says "E".
-export const RANK = { building: 0, gate: 1, cafeteria: 2, stop: 3 };
-export const KIND_OF_RANK = ['building', 'gate', 'cafeteria', 'stop'];
+// `origin` is an off-campus place a student STARTS from — FRRMS, the JAK
+// dormitories. It is admitted to the ENTRANCES, which plain landmarks
+// deliberately are not: a landmark carries RANK.building so it beats a café for
+// a contested doorway, and admitting it to the entrances would ship it with
+// kind 'building' and give a lettered building a second pill on top of its own
+// letter. An origin is not a lettered building, so it can have one.
+//
+// It outranks a stop so that "FRRMS" wins a node it shares with "Bieblova":
+// a student navigates by the faculty, not by the tram stop beside it.
+//
+// KIND_OF_RANK is INDEXED BY RANK. The two are pinned to each other by a test
+// in __tests__/campusPlaces.test.ts, because inserting a rank without inserting
+// its kind in the same position relabels every entrance below it — a gate
+// shipping as a cafeteria, with nothing to say so.
+export const RANK = { building: 0, origin: 1, gate: 2, cafeteria: 3, stop: 4 };
+export const KIND_OF_RANK = ['building', 'other', 'gate', 'cafeteria', 'stop'];
 
 // "Zastávka Zemědělská (směr Halasovo náměstí)" is a timetable row, not a label
 // on a map — which direction the tram leaves in tells a pedestrian nothing.
@@ -38,7 +52,22 @@ const shortPoi = (name) => {
   const n = name.replace(/\.$/, '').trim();
   return SHORT[n] ?? n;
 };
-const shortLandmark = (name) => name.replace(/\s*\(FRRMS\)\s*$/, '').trim();
+// A landmark's name has to survive being half of a label on a 320 px phone,
+// and the IS names do not: the FRRMS one is 54 characters. These are the names
+// a student would actually say — and the four JAK blocks collapse to ONE, for
+// the reason the corridor does: four fans from four doors 60 m apart is four
+// answers to one question.
+const SHORT_LANDMARK = {
+  'Fakulta regionálního rozvoje a mezinárodních studií (FRRMS)': 'FRRMS',
+  'Koleje JAK Blok A': 'Koleje JAK',
+  'Koleje JAK Blok B': 'Koleje JAK',
+  'Koleje JAK Blok C': 'Koleje JAK',
+  'Koleje JAK Blok D': 'Koleje JAK',
+};
+const shortLandmark = (name) => {
+  const n = name.trim();
+  return SHORT_LANDMARK[n] ?? n.replace(/\s*\(FRRMS\)\s*$/, '').trim();
+};
 
 /**
  * Every candidate place, as {name, lon, lat, rank}.
@@ -47,12 +76,18 @@ const shortLandmark = (name) => name.replace(/\s*\(FRRMS\)\s*$/, '').trim();
  * near its wall rather than near its centre; snapAnchors collapses each name
  * back to a single node.
  */
-export function campusPlaces(buildings, landmarks, pois) {
+export function campusPlaces(buildings, landmarks, pois, origins = new Set()) {
   const out = [];
   const push = (name, lon, lat, rank) => out.push({ name, lon, lat, rank });
   const ring = (name, coords, rank) => coords.forEach(([lon, lat]) => push(name, lon, lat, rank));
   for (const b of buildings.buildings) ring(b.name, b.outline.coordinates[0], RANK.building);
-  for (const l of landmarks) ring(shortLandmark(l.name), l.outline.coordinates[0], RANK.building);
+  for (const l of landmarks) {
+    const name = shortLandmark(l.name);
+    // An off-campus ORIGIN is a place a student walks FROM, and it needs a rank
+    // that reaches the entrances. Everything else stays RANK.building, which
+    // wins a contested doorway and is excluded from both ends of a walk.
+    ring(name, l.outline.coordinates[0], origins.has(name) ? RANK.origin : RANK.building);
+  }
   for (const f of pois) {
     const { type, name } = f.properties;
     const [lon, lat] = f.geometry.coordinates;
@@ -93,7 +128,8 @@ export function splitAnchors(anchors, rankByName, buildingNames) {
   for (const [node, name] of anchors) {
     const rank = rankByName.get(name);
     if (buildingNames.has(name)) buildingNodes.set(node, name);
-    else if (rank === RANK.gate || rank === RANK.stop) entranceNodes.set(node, name);
+    else if (rank === RANK.gate || rank === RANK.stop || rank === RANK.origin)
+      entranceNodes.set(node, name);
   }
   return { entranceNodes, buildingNodes };
 }

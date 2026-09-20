@@ -1,6 +1,9 @@
 import { ChevronLeft, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { useEffect } from 'react';
 import { useAppStore } from '../../../../store/useAppStore';
+import { RouteButton } from '../../../CampusMap/RouteButton';
+import { RouteCard } from '../../../CampusMap/RouteCard';
+import { RoutePicker } from '../../../CampusMap/RoutePicker';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useRailResize } from './useRailResize';
 import { RAIL_MIN_PX, RAIL_MAX_PX } from '../../../../utils/mapRail';
@@ -92,6 +95,17 @@ export function MapRail() {
         resizing ? '' : 'transition-[width] duration-200 ease-out'
       }`}
     >
+      {/* The route controls live here too, not only in the sheet.
+          MapSheet and MapRail are two shells for the same screen, and the
+          landscape rail shipped without them: on a phone turned sideways there
+          was no way to ask for a route at all, and the map simply never drew
+          one. Found on a real device, in landscape, by the maintainer. */}
+      <div className="flex flex-shrink-0 flex-col gap-2 border-b border-base-content/10 p-3">
+        <RouteButton />
+        <RoutePicker />
+      </div>
+      <RouteCard />
+
       {/* The left edge is the resize handle — the axis a tablet can afford to
           trade. Not a detent: it sets a width and keeps it. */}
       {/* A separator with a value, and reachable from the keyboard: the pointer

@@ -66,4 +66,17 @@
          dialog via ACTION_WIFI_ADD_NETWORKS, not by us. -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <!-- Campus navigation. Asked at the moment the student taps "Najdi cestu",
+         never at startup, and used for ONE getCurrentPosition per tap — there
+         is no watch and no background location, so no ACCESS_BACKGROUND_LOCATION.
+         FINE is required for high accuracy from Android 12; COARSE is what the
+         system offers if the student picks "Approximate", and 5-20 m either way
+         is enough to say which building you are near, which is all the router
+         needs. The coordinate is used on the device and discarded — a guard
+         test (noStudentDataLeaves) fails the build if anything under
+         src/utils/routing can reach the network. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Not required: a phone without GPS still routes from a network fix. -->
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 </manifest>
