@@ -1608,7 +1608,7 @@ In `src/i18n/locales/cs.json`, inside the existing `map` object:
 "routeTooFar": "Nejsi v okolí kampusu.",
 "routeNoRoute": "Odsud sem cesta nevede.",
 "routeThroughGarden": "Přes botanickou zahradu — zdarma s ISIC, u brány z Generála Píky.",
-"routeGardenShut": "Zahrada je teď zavřená (po–pá 6:00–20:00), vede to okolo.",
+"routeGardenShut": "Zahrada je teď zavřená (po–pá 6:00–20:00). Pěšky to odsud nejde — jeď tramvají 9 nebo 11 z Bieblovy.",
 "routePickBuilding": "Kam jdeš?"
 ```
 
@@ -1622,7 +1622,7 @@ In `src/i18n/locales/en.json`, the same keys:
 "routeTooFar": "You're not near the campus.",
 "routeNoRoute": "There's no walk from here to there.",
 "routeThroughGarden": "Through the botanical garden — free with your ISIC, at the Gen. Píky gate.",
-"routeGardenShut": "The garden is closed right now (Mon–Fri 6:00–20:00), so this goes around.",
+"routeGardenShut": "The garden is closed right now (Mon–Fri 6:00–20:00). There's no walk from here — take tram 9 or 11 from Bieblova.",
 "routePickBuilding": "Where are you headed?"
 ```
 

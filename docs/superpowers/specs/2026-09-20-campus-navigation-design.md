@@ -285,12 +285,23 @@ The route card carries "free with your ISIC, tap at the Gen. Píky gate," becaus
 a first-year does not know the shortcut is theirs, and that sentence is the
 feature.
 
-**Weekends get a note, not a route.** The garden ways are currently the only
-thing joining the Gen. Píky side to the campus graph, so an "around" route is a
-third corridor with its own extract down Gen. Píky and Lesnická and its own
-anchor join — a pipeline stage, not a flag. On a weekend the garden route is
-shown greyed with "closed at weekends — walk around via Gen. Píky." Honest,
-near-free, and revisitable if anyone asks for the real line.
+**Weekends get a note, not a route — and the note is stronger than this spec
+first assumed.**
+
+Measured during implementation, against the committed graph: with the garden
+shut, `Brána u FRRMS` is **cut off from the campus entirely**. It opens onto the
+garden and onto nothing else, so there is no longer way round from it — the
+weekend route is not slower, it is **absent**. The earlier wording here
+("walk around via Gen. Píky") described a walk the data does not contain.
+
+So the copy says what is true, and hands over the answer that is: the tram.
+Bieblova is 251 m from FRRMS and shares lines **9 and 11** with Zemědělská, from
+the stop data already bundled in `pois.json`. "The garden's shut — there's no
+walk through it from here. Tram 9 or 11 from Bieblova." That is honest, costs
+nothing, and is more useful than a 25-minute street walk would have been.
+
+Building the third corridor down Gen. Píky remains possible and remains
+deferred; it is a pipeline stage, and the tram is the better answer anyway.
 
 Gating rule: `day <= Friday && hour >= 6 && hour < 20`, evaluated against the
 device clock. Czech public holidays are not modelled; the failure there is a
