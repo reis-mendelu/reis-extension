@@ -1,73 +1,41 @@
-import { useState } from 'react';
 import { Navigation } from 'lucide-react';
-import campusPaths from '../../data/map/campusPaths.json';
-import type { CampusGraph } from '../../types/campusMap';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 
 /**
- * The buildings you can be routed to — read from the GRAPH, not from
- * buildings.json.
+ * "Kam jdeš?" — opens the destination picker.
  *
- * Those two lists agree today, and the graph is the one that has to: a building
- * the router has no nodes for is a button that cannot work. Offering exactly
- * what is routable means the failure mode is a missing button rather than a
- * dead one.
- */
-const ROUTABLE = Object.keys(
-  (campusPaths as unknown as { graph: CampusGraph }).graph.buildings
-).sort();
-
-/**
- * "Take me there" — pick a building, get the walk from where you are standing.
+ * Lives in the sheet's peek row, not floating over the map, and the reason is
+ * contrast rather than tidiness. As an overlay it was `btn btn-primary btn-sm`:
+ * a 32px pale-green pill on a basemap that is always light whatever the app
+ * theme is, and it read as a ghost. Everything that floats over this map either
+ * carries its own dark surface — as the search bar does, with a hardcoded
+ * rgba — or disappears. On the sheet it sits on bg-base-100 and simply works,
+ * in both themes.
  *
- * This is the fallback destination picker. Once the timetable is wired in, the
- * next lesson's room is the default and this is what a student falls back to
- * when there is no lesson left today.
+ * `min-h-11` because the BottomNav in this same app already holds itself to 44,
+ * and this one is pressed while walking.
  */
 export function RouteButton() {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const routeTo = useAppStore((s) => s.routeTo);
+  // In the store rather than useState: "NO generic state" is an Iron Rule here,
+  // and it means something else can open the picker later — a search result, a
+  // tapped building.
+  const open = useAppStore((s) => s.routePickerOpen);
+  const setOpen = useAppStore((s) => s.setRoutePickerOpen);
   const status = useAppStore((s) => s.routeStatus);
 
-  const choose = (name: string) => {
-    setOpen(false);
-    void routeTo(name);
-  };
-
   return (
-    <div className="flex flex-col items-end gap-2">
-      <button
-        type="button"
-        className="btn btn-primary btn-sm gap-2 shadow-lg"
-        onClick={() => setOpen((v) => !v)}
-        disabled={status === 'locating'}
-        aria-expanded={open}
-      >
-        <Navigation size={15} aria-hidden />
-        {t('map.routeTakeMeThere')}
-      </button>
-
-      {open && (
-        <div className="card bg-base-100 shadow-lg">
-          <div className="card-body gap-2 p-3">
-            <p className="text-sm opacity-70">{t('map.routePickBuilding')}</p>
-            <div className="flex flex-wrap gap-1.5">
-              {ROUTABLE.map((name) => (
-                <button
-                  key={name}
-                  type="button"
-                  className="btn btn-outline btn-sm w-10"
-                  onClick={() => choose(name)}
-                >
-                  {name}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    <button
+      type="button"
+      className="btn btn-primary min-h-11 flex-shrink-0 gap-2"
+      onClick={() => setOpen(!open)}
+      disabled={status === 'locating'}
+      aria-expanded={open}
+      aria-haspopup="menu"
+    >
+      <Navigation size={16} aria-hidden />
+      {t('map.routeTakeMeThere')}
+    </button>
   );
 }

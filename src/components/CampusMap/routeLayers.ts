@@ -63,11 +63,19 @@ export function drawRoute(layer: L.LayerGroup, walk: Walk | null, language: stri
   // The chip sits at the DESTINATION, matching the entrance fan's convention:
   // the number answers "how long until I am there", so it belongs where there
   // is.
-  L.marker(latlngs[latlngs.length - 1], {
-    interactive: false,
-    icon: L.divIcon({
-      className: 'walk-chip',
-      html: translate(language, 'map.walkMinutes', { n: walkMinutes(walk.lengthM) }),
-    }),
-  }).addTo(layer);
+  //
+  // An L.tooltip, exactly as pathLayers builds its own — NOT an L.divIcon. A
+  // divIcon renders `leaflet-marker-icon <className>`, so it never matches the
+  // `.leaflet-tooltip.route-chip` rule that styles this: the first version
+  // shipped a 12x12 transparent box with theme-coloured text on an
+  // always-light basemap, i.e. nothing a student could read.
+  L.tooltip({
+    permanent: true,
+    direction: 'top',
+    className: 'route-chip',
+    offset: [0, -8],
+  })
+    .setLatLng(latlngs[latlngs.length - 1])
+    .setContent(translate(language, 'map.walkMinutes', { n: walkMinutes(walk.lengthM) }))
+    .addTo(layer);
 }

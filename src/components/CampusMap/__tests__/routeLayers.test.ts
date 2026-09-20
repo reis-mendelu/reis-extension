@@ -14,7 +14,7 @@ const walk: Walk = {
 };
 
 const chipOf = (layer: L.LayerGroup) =>
-  layer.getLayers().find((l) => l instanceof L.Marker) as L.Marker | undefined;
+  layer.getLayers().find((l) => l instanceof L.Tooltip) as L.Tooltip | undefined;
 
 describe('drawRoute', () => {
   it('draws the halo, the line, a start dot and one time chip', () => {
@@ -27,14 +27,27 @@ describe('drawRoute', () => {
     const layer = L.layerGroup();
     drawRoute(layer, walk, 'cz');
     // 640 m at 100 m/min.
-    const html = (chipOf(layer)!.options.icon as L.DivIcon).options.html;
-    expect(String(html)).toContain('6');
+    expect(String(chipOf(layer)!.getContent())).toContain('6');
+  });
+
+  it('emits a TOOLTIP, because only a tooltip gets styled', () => {
+    // The first version used L.divIcon, which renders
+    // `leaflet-marker-icon route-chip` and never matches the
+    // `.leaflet-tooltip.route-chip` rule — so it shipped as a 12x12
+    // transparent box with theme-coloured text on an always-light basemap.
+    // The old test asserted the divIcon's html and passed the whole way.
+    const layer = L.layerGroup();
+    drawRoute(layer, walk, 'cz');
+    const chip = chipOf(layer)!;
+    expect(chip).toBeInstanceOf(L.Tooltip);
+    expect(chip.options.className).toBe('route-chip');
+    expect(chip.options.permanent).toBe(true);
   });
 
   it('puts the chip at the destination, not at the start', () => {
     const layer = L.layerGroup();
     drawRoute(layer, walk, 'cz');
-    const at = chipOf(layer)!.getLatLng();
+    const at = chipOf(layer)!.getLatLng()!;
     expect(at.lat).toBeCloseTo(49.2105, 6);
     expect(at.lng).toBeCloseTo(16.6005, 6);
   });

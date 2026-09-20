@@ -55,12 +55,21 @@ describe('RouteCard', () => {
     expect(screen.getByText(/kampusu/)).toBeTruthy();
   });
 
-  it('names the tram when there is no walk, rather than just failing', () => {
+  it('names the tram when the GATE is what is shut', () => {
     // The Saturday FRRMS case: the garden is the only way in, so there is no
-    // route at all. A bare "no route" would leave the student stuck.
-    set({ routeStatus: 'no-route' });
+    // walk right now. A bare "no route" would leave the student stuck.
+    set({ routeStatus: 'gate-shut' });
     render(<RouteCard />);
     expect(screen.getByText(/tramvají 9 nebo 11/)).toBeTruthy();
+  });
+
+  it('does NOT blame the garden when the garden is not the problem', () => {
+    // Standing on a disconnected stretch of path is a different failure, and
+    // telling that student to catch a tram from Bieblova is a lie.
+    set({ routeStatus: 'no-route' });
+    render(<RouteCard />);
+    expect(screen.queryByText(/tramvají|Zahrada/)).toBeNull();
+    expect(screen.getByText(/cesta nevede/)).toBeTruthy();
   });
 
   it('tells the student the ISIC gets them through the garden', () => {

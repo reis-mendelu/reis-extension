@@ -28,7 +28,7 @@ describe('createMobileUiSlice', () => {
     expect(state.mobileSheets).toEqual([]);
     // The middle stop: the map sheet opens with the campus events already
     // visible, instead of a blank peek band the student had to drag up.
-    expect(state.mapSheetState).toBe('half');
+    expect(state.mapSheetState).toBe('peek');
     expect(state.devPhoneOverride).toBeNull();
   });
 

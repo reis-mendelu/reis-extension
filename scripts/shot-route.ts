@@ -82,9 +82,10 @@ async function openMap(page: Page, j: Journey) {
 
 async function routeTo(page: Page, building: string) {
   await page.getByRole('button', { name: /Najdi cestu/ }).click();
-  await page.waitForTimeout(400);
-  await page.getByRole('button', { name: building, exact: true }).click();
-  await page.waitForTimeout(2500);
+  await page.waitForTimeout(500);
+  // menuitem, not button: the letters sit in a role="menu" inside the sheet.
+  await page.getByRole('menuitem', { name: building, exact: true }).click();
+  await page.waitForTimeout(2800);
 }
 
 async function run() {
@@ -105,7 +106,15 @@ async function run() {
     // The store is not on window, so this reads what the STUDENT can see: the
     // card's own sentence and the drawn geometry. That is the right level for
     // this check anyway — it is the answer they get, not the state behind it.
-    const card = (await page.locator('.card').first().innerText().catch(() => '')).trim();
+    // The status reads off the sheet now, not a floating card — it moved there
+    // because a pale-green pill over an always-light basemap was invisible.
+    const card = (
+      await page
+        .locator('[data-testid="map-sheet"]')
+        .first()
+        .innerText()
+        .catch(() => '')
+    ).trim();
     const drawn = await page.evaluate(
       () => document.querySelectorAll('path[stroke="#2563eb"][stroke-width="5"]').length > 0
     );
@@ -117,13 +126,19 @@ async function run() {
 
     const minutes = /(\d+)\s*min/.exec(chip)?.[1] ?? /(\d+)\s*min/.exec(card)?.[1] ?? null;
     const gates = /ISIC/.test(card) ? ['garden'] : [];
+    // Match the whole sentence, not a word in it. Reading the sheet rather
+    // than a floating card means the peek row comes along too, and
+    // "Akce na kampusu" matched a bare /kampusu/ — every closed-garden journey
+    // was misreported as "not near the campus".
     const status = drawn
       ? 'route'
-      : /kampusu|near the campus/i.test(card)
+      : /Nejsi v okolí kampusu|not near the campus/i.test(card)
         ? 'too-far'
-        : /zavřená|closed|nejde|no walk/i.test(card)
+        : /Zahrada je zavřená|garden is closed/i.test(card)
           ? 'no-route'
-          : 'unknown';
+          : /cesta nevede|no walk from here/i.test(card)
+            ? 'unreachable'
+            : 'unknown';
 
     const pass = status === j.expect;
     const png = resolve(OUT, `${j.id}.png`);

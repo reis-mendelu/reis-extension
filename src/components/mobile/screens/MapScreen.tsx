@@ -8,8 +8,6 @@ import type { MapSelection } from '../../../types/campusMap';
 import { FloorSwitcher } from './map/FloorSwitcher';
 import { MapSheet } from './map/MapSheet';
 import { MapRail } from './map/MapRail';
-import { RouteCard } from '../../CampusMap/RouteCard';
-import { RouteButton } from '../../CampusMap/RouteButton';
 import { useWideViewport } from '../../../hooks/ui/useWideViewport';
 
 function resultLabel(m: MapSelection): string {
@@ -114,18 +112,6 @@ export function MapScreen() {
             ))}
           </ul>
         )}
-      </div>
-      {/* "Take me there", and what came back. Floated over the canvas as a
-          SIBLING of MapCanvas, never inside it — nesting would remount Leaflet
-          on every status change and throw away the camera along with the route
-          it had just drawn. Right-aligned and clear of the search above; the
-          sheet owns the bottom of the screen, so this sits under the search
-          rather than over the sheet. */}
-      <div className="pointer-events-none absolute right-4 top-[calc(5.5rem_+_var(--safe-top,0px))] z-[1000] flex w-56 flex-col items-end gap-2">
-        <div className="pointer-events-auto flex w-full flex-col items-end gap-2">
-          <RouteButton />
-          <RouteCard />
-        </div>
       </div>
       {/* Two shells, not one with breakpoints. A sheet's vocabulary is
           vertical — grab pill, detents, a chevron pointing down — and none of

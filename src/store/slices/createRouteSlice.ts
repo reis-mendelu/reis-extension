@@ -22,7 +22,15 @@ export type RouteStatus =
   /** The fix landed too far from the network to route from. */
   | 'too-far'
   /** Snapped fine, but nothing walkable reaches the destination right now. */
-  | 'no-route';
+  | 'no-route'
+  /**
+   * No walk NOW, but there is one while the garden is open.
+   *
+   * Distinct from `no-route` because the answers differ: this one can name the
+   * tram, the other cannot. Conflating them told a student standing on a
+   * disconnected stretch of path that the botanical garden was shut.
+   */
+  | 'gate-shut';
 
 export interface RouteSlice {
   /** The raw fix, kept so the UI can say how far off the network it was. */
@@ -30,6 +38,9 @@ export interface RouteSlice {
   routeWalk: Walk | null;
   routeStatus: RouteStatus;
   routeTargetBuilding: string | null;
+  /** Whether the destination picker is showing. In the store, not in a component. */
+  routePickerOpen: boolean;
+  setRoutePickerOpen: (open: boolean) => void;
   routeTo: (buildingName: string) => Promise<void>;
   clearRoute: () => void;
 }
@@ -39,6 +50,9 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set) => ({
   routeWalk: null,
   routeStatus: 'idle',
   routeTargetBuilding: null,
+  routePickerOpen: false,
+
+  setRoutePickerOpen: (open) => set({ routePickerOpen: open }),
 
   routeTo: async (buildingName) => {
     // The previous walk is dropped BEFORE the await, not after. Left up, it
@@ -70,16 +84,27 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set) => ({
     }
 
     const now = devForcedNow() ?? new Date();
-    const walk = shortestWalk(GRAPH, snap, GRAPH.buildings[buildingName] ?? [], (gate) =>
-      isGateOpen(gate, now)
-    );
+    const targets = GRAPH.buildings[buildingName] ?? [];
+    const walk = shortestWalk(GRAPH, snap, targets, (gate) => isGateOpen(gate, now));
     if (!walk) {
-      set({ routeFrom: at, routeStatus: 'no-route' });
+      // Ask the same question again with every gate open. If a walk appears,
+      // the gate is the whole reason there isn't one — and that is a different
+      // answer for the student, because it comes with a tram. If none appears,
+      // there is genuinely nowhere to walk from here and saying "the garden is
+      // shut" would be a lie.
+      const ifOpen = shortestWalk(GRAPH, snap, targets, () => true);
+      set({ routeFrom: at, routeStatus: ifOpen ? 'gate-shut' : 'no-route' });
       return;
     }
     set({ routeFrom: at, routeWalk: walk, routeStatus: 'ready' });
   },
 
   clearRoute: () =>
-    set({ routeFrom: null, routeWalk: null, routeStatus: 'idle', routeTargetBuilding: null }),
+    set({
+      routeFrom: null,
+      routeWalk: null,
+      routeStatus: 'idle',
+      routeTargetBuilding: null,
+      routePickerOpen: false,
+    }),
 });

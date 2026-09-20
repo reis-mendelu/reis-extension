@@ -31,10 +31,12 @@ export function RouteCard() {
   const arrived = status === 'ready' && walk !== null && walk.lengthM < ARRIVED_M;
   const throughGarden = walk?.gates.includes('garden') ?? false;
 
-  // `no-route` is not a shrug. The case that actually produces it is the
-  // Saturday walk in from FRRMS, where the garden is the only way onto the
-  // campus and there is genuinely no walk — so the copy hands over the answer
-  // that does work, which is the tram.
+  // Two different silences. `gate-shut` means a walk exists but not right now —
+  // the Saturday walk in from FRRMS, where the garden is the only way onto the
+  // campus — so the copy hands over the answer that does work, the tram.
+  // `no-route` means there is nowhere to walk from here at all, and claiming
+  // the garden is shut would be a lie told to someone standing somewhere else
+  // entirely.
   const message: string =
     status === 'locating'
       ? t('map.routeLocating')
@@ -44,40 +46,54 @@ export function RouteCard() {
           ? t('map.routeUnavailable')
           : status === 'too-far'
             ? t('map.routeTooFar')
-            : status === 'no-route'
+            : status === 'gate-shut'
               ? t('map.routeGardenShut')
-              : arrived
-                ? t('map.routeArrived')
-                : '';
+              : status === 'no-route'
+                ? t('map.routeNoRoute')
+                : arrived
+                  ? t('map.routeArrived')
+                  : '';
 
+  // Flush, not a card. It lives inside the sheet, which already provides the
+  // surface, the rounding and the shadow — a card in there is a box in a box.
+  // It floated over the map until the maintainer pointed out that nothing over
+  // this basemap is readable without carrying its own dark background.
   return (
-    <div className="card bg-base-100 shadow-lg">
-      <div className="card-body gap-2 p-3">
-        <div className="flex items-start gap-2">
-          <Navigation size={18} className="mt-0.5 shrink-0 text-primary" aria-hidden />
-          <div className="min-w-0 flex-1">
-            {status === 'ready' && walk && !arrived ? (
-              <p className="font-semibold">
-                {t('map.walkMinutes', { n: walkMinutes(walk.lengthM) })}
-                {building ? ` · ${t('map.routeTo', { building })}` : ''}
-              </p>
-            ) : (
-              <p className="font-semibold">{message}</p>
+    <div className="flex flex-shrink-0 items-start gap-3 px-5 pb-3 pt-1">
+      <span className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-primary/15">
+        <Navigation size={16} className="text-primary" aria-hidden />
+      </span>
+      <div className="min-w-0 flex-1">
+        {status === 'ready' && walk && !arrived ? (
+          <p className="flex items-baseline gap-2">
+            <span className="text-xl font-bold leading-tight">
+              {t('map.walkMinutes', { n: walkMinutes(walk.lengthM) })}
+            </span>
+            {building && (
+              <span className="text-sm text-base-content/60">
+                {t('map.routeTo', { building })}
+              </span>
             )}
-            {status === 'ready' && throughGarden && (
-              <p className="mt-1 text-sm opacity-70">{t('map.routeThroughGarden')}</p>
-            )}
-          </div>
-          <button
-            type="button"
-            className="btn btn-ghost btn-xs btn-circle"
-            onClick={clearRoute}
-            aria-label={t('common.close')}
-          >
-            <X size={14} />
-          </button>
-        </div>
+          </p>
+        ) : (
+          <p className="text-[13.5px] font-semibold leading-snug">{message}</p>
+        )}
+        {status === 'ready' && throughGarden && (
+          <p className="mt-0.5 text-xs leading-snug text-base-content/60">
+            {t('map.routeThroughGarden')}
+          </p>
+        )}
       </div>
+      <button
+        type="button"
+        // min-h-11, matching the BottomNav's own floor. The old btn-xs circle
+        // was a 24px target that erased the whole route.
+        className="btn btn-ghost min-h-11 w-11 flex-shrink-0 p-0"
+        onClick={clearRoute}
+        aria-label={t('common.close')}
+      >
+        <X size={18} />
+      </button>
     </div>
   );
 }

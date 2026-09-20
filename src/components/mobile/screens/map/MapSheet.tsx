@@ -2,6 +2,9 @@ import { useEffect, useRef } from 'react';
 import { ChevronDown, ChevronLeft, ChevronUp } from 'lucide-react';
 import { useMapSheetDrag } from './useMapSheetDrag';
 import { useAppStore } from '../../../../store/useAppStore';
+import { RouteButton } from '../../../CampusMap/RouteButton';
+import { RouteCard } from '../../../CampusMap/RouteCard';
+import { RoutePicker } from '../../../CampusMap/RoutePicker';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { MapPanelBody } from './MapPanelBody';
 
@@ -31,6 +34,7 @@ const EXPANDED_VH = 0.7;
  */
 export function MapSheet() {
   const sheetState = useAppStore((s) => s.mapSheetState);
+  const routeStatus = useAppStore((s) => s.routeStatus);
   const setSheetState = useAppStore((s) => s.setMapSheetState);
   const selection = useAppStore((s) => s.mapSelection);
   const clearMapSelection = useAppStore((s) => s.clearMapSelection);
@@ -81,6 +85,13 @@ export function MapSheet() {
     if (selectedEvent || selectedGardenPlace) setSheetState('half');
   }, [selectedEvent, selectedGardenPlace, setSheetState]);
 
+  // A drawn route is an answer, and the sheet is 45% of the screen in front of
+  // it. Whatever the student had open, the map wins the moment directions
+  // exist — the same reflex as the force-expand above, pointing the other way.
+  useEffect(() => {
+    if (routeStatus === 'ready') setSheetState('peek');
+  }, [routeStatus, setSheetState]);
+
   /**
    * A single event card is ~300px of content. Pinning the sheet to a detent
    * for it meant 70vh of sheet holding 300px of card — on an 812px phone that
@@ -92,7 +103,15 @@ export function MapSheet() {
    * tabbed list keeps the detents: that content is a scrollable list with no
    * natural height, which is what detents are for.
    */
-  const hugContent = !!selectedCard;
+  // The picker is sheet CONTENT, not a popover: this root is overflow-hidden,
+  // so anything opening upward out of it is clipped. Hugging lets the sheet
+  // grow to fit it and shrink back.
+  const routePickerOpen = useAppStore((s) => s.routePickerOpen);
+  // Also while a route is on screen. The peek detent is a fixed 166px and the
+  // BottomNav floats over its bottom 72, leaving ~90px — enough for the one row
+  // it was built for, and not for that row plus a route status above it, which
+  // pushed the row behind the nav.
+  const hugContent = !!selectedCard || routePickerOpen || routeStatus !== 'idle';
 
   return (
     <div
@@ -101,13 +120,16 @@ export function MapSheet() {
       {...handlers}
       // The height transition is dropped mid-drag: it animates the same height
       // the finger is setting, and leaving both on makes the sheet lag behind.
-      // The height transition is dropped mid-drag: it animates the same height
-      // the finger is setting, and leaving both on makes the sheet lag behind.
+      //
+      // `pb-[72px]` while hugging: the BottomNav FLOATS over this sheet rather
+      // than sitting under it, so a sheet sized to its own content puts its
+      // last row behind the nav. At the fixed detents the content is short
+      // enough that this never showed.
       className={`absolute inset-x-0 bottom-0 z-[1000] flex flex-col overflow-hidden rounded-t-[20px] bg-base-100 shadow-drawer ${
         dragHeight === null ? 'transition-[height] duration-300 ease-out' : ''
       } ${
         hugContent
-          ? 'h-auto max-h-[70vh]'
+          ? 'h-auto max-h-[70vh] pb-[72px]'
           : fullyExpanded
             ? 'h-[70vh]'
             : sheetState === 'half'
@@ -131,17 +153,45 @@ export function MapSheet() {
         <span className="mx-auto block h-1 w-9 rounded-full bg-base-300" />
       </button>
 
+      {/* The answer, when there is one. Above the peek row so the row below
+          still says what is underneath the sheet and still expands it. */}
+      {!expanded && <RouteCard />}
+
+      {/* ABOVE the button that opens it, not below. Below, the picker grew the
+          sheet downward into the floating BottomNav, which covered the letters
+          — and a menu that opens away from its own control reads as unrelated
+          to it. */}
+      {!expanded && <RoutePicker />}
+
       {!expanded && (
-        <button
-          type="button"
-          onClick={toggle}
-          className="flex flex-shrink-0 touch-none items-center justify-between px-5 pb-3.5 pt-0.5 text-left"
-        >
-          <span className="text-[13.5px] font-semibold text-base-content">
-            {t('mobile.map.peekHint')}
-          </span>
-          <ChevronUp size={18} className="flex-shrink-0 text-base-content/40" aria-hidden="true" />
-        </button>
+        // A ROW of two controls, not one button: the left half still expands
+        // the sheet, the right half asks for a route. Siblings rather than
+        // nested, because a button inside a button swallows its own click.
+        //
+        // This is where the route control lives, and the reason is contrast,
+        // not tidiness. Floating over the map it was `btn btn-primary` — a pale
+        // green pill on a basemap that is always light, whatever the app theme
+        // — and it read as a ghost. Everything that floats over this map either
+        // carries its own dark surface (as the search bar does, with a
+        // hardcoded rgba) or disappears. On the sheet it sits on bg-base-100
+        // and simply works, in both themes.
+        <div className="flex flex-shrink-0 touch-none items-center gap-2 px-5 pb-3.5 pt-0.5">
+          <button
+            type="button"
+            onClick={toggle}
+            className="flex min-h-11 flex-1 items-center justify-between gap-2 text-left"
+          >
+            <span className="truncate text-[13.5px] font-semibold text-base-content">
+              {t('mobile.map.peekHint')}
+            </span>
+            <ChevronUp
+              size={18}
+              className="flex-shrink-0 text-base-content/40"
+              aria-hidden="true"
+            />
+          </button>
+          <RouteButton />
+        </div>
       )}
 
       {expanded && (

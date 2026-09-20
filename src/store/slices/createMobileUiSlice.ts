@@ -15,10 +15,18 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
   mobileTab: 'calendar',
   mobileSelectedDayIso: null,
   mobileSheets: [],
-  // Opens at the middle stop so the campus events are visible without a drag:
-  // the peek band showed a title and blank space, and reaching the events meant
-  // pulling the sheet up over the map every time.
-  mapSheetState: 'half',
+  // Opens at the PEEK stop.
+  //
+  // It was 'half' — 45vh, 365px of a 375x812 phone — chosen when the Mapa tab
+  // was a place to browse society events and the map was scenery. It is now
+  // also how a student gets to a lecture, and at 'half' the sheet covered the
+  // bottom of every route drawn under it while showing, in the measured case,
+  // one 60px event row above 270px of nothing.
+  //
+  // Peek returns 199px — a quarter of the screen — and takes the unobstructed
+  // map from 47% to 72%. The reason 'half' was chosen still holds and is still
+  // one tap away: the peek row names what is underneath and expands on touch.
+  mapSheetState: 'peek',
   mapRailWidth: RAIL_PX,
   mapRailOpen: true,
   preferredMapApp: null,

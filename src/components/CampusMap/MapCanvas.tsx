@@ -507,10 +507,29 @@ export function MapCanvas() {
     drawRoute(routeLayerRef.current, routeWalk, language);
     const map = mapRef.current;
     if (!map || !routeWalk || routeWalk.coords.length < 2) return;
-    map.fitBounds(
-      L.latLngBounds(routeWalk.coords.map(([lon, lat]) => L.latLng(lat, lon))),
-      { paddingTopLeft: [28, 96], paddingBottomRight: [28, map.getSize().y * 0.4], animate: true }
-    );
+    // Padding measured off the real chrome, not guessed. The first version
+    // padded the top by 96 for a card whose bottom is at 263 — so the route's
+    // own start dot sat behind it — and the bottom by 0.4 of the viewport for a
+    // sheet that was 45% of it. Both were wrong in the direction that hides the
+    // thing the student just asked for.
+    //
+    // Read from the DOM rather than recomputed: the sheet animates between
+    // three detents and drags to arbitrary heights, so its class is not the
+    // authority on how tall it is right now.
+    const sheetEl = document.querySelector('[data-testid="map-sheet"]');
+    const sheetH = sheetEl ? Math.round(sheetEl.getBoundingClientRect().height) : 0;
+    const searchEl = ref.current?.parentElement?.querySelector('label');
+    const topChrome = searchEl
+      ? Math.round(searchEl.getBoundingClientRect().bottom - (ref.current?.getBoundingClientRect().top ?? 0))
+      : 78;
+    map.fitBounds(L.latLngBounds(routeWalk.coords.map(([lon, lat]) => L.latLng(lat, lon))), {
+      paddingTopLeft: [28, topChrome + 12],
+      paddingBottomRight: [28, sheetH + 12],
+      // A 1.3 km walk and a 160 m one both deserve to fill the frame, but not
+      // past the point where the basemap stops carrying street names.
+      maxZoom: 18,
+      animate: true,
+    });
   }, [routeWalk, language]);
 
   /**
