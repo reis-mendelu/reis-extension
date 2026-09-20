@@ -120,12 +120,15 @@ async function run() {
       () => document.querySelectorAll('path[stroke="#a21caf"][stroke-width="5"]').length > 0
     );
     const chip = await page
-      .locator('.walk-chip')
+      .locator('.route-chip')
       .first()
       .innerText()
       .catch(() => '');
 
-    const minutes = /(\d+)\s*min/.exec(chip)?.[1] ?? /(\d+)\s*min/.exec(card)?.[1] ?? null;
+    // Only from the CHIP, and only when a route is drawn. Reading it off the
+    // card text scraped "~3 minuty" out of the tram sentence and reported a
+    // three-minute walk on a journey that has no walk.
+    const minutes = drawn ? (/(\d+)\s*min/.exec(chip)?.[1] ?? null) : null;
     const gates = /ISIC/.test(card) ? ['garden'] : [];
     // Match the whole sentence, not a word in it. Reading the sheet rather
     // than a floating card means the peek row comes along too, and
@@ -135,7 +138,7 @@ async function run() {
       ? 'route'
       : /Nejsi v okolí kampusu|not near the campus/i.test(card)
         ? 'too-far'
-        : /Zahrada je zavřená|garden is closed/i.test(card)
+        : /zavřen|closed/i.test(card)
           ? 'no-route'
           : /cesta nevede|no walk from here/i.test(card)
             ? 'unreachable'
