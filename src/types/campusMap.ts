@@ -106,6 +106,44 @@ export interface RemotePlace {
   pois?: { name: string; lon: number; lat: number }[];
 }
 
+// One walk across the Brno campus: the route from one campus place to the next
+// one you reach, built at build time from the OSM way network
+// (scripts/fetch-campus-paths.mjs). Routes connect — `to` of one is `from` of
+// others — so following them end to end gets you anywhere on campus.
+//
+// `from`/`to` are never null: a route that does not run between two named
+// places is not emitted, because a line ending in open ground is not something
+// anyone would tap. It is the shortest walk along the paths OSM has MAPPED,
+// which is not the same as the shortest walk on the ground wherever OSM is
+// incomplete.
+// A way ONTO the campus: one of the gates, or the tram stop you get off at.
+// These are the only points the map marks. Buildings already draw their own
+// letters, and a point in the middle of the campus (the cafeteria in building
+// O) answered nothing — you do not arrive there.
+export interface CampusEntrance {
+  name: string;
+  kind: 'gate' | 'stop' | 'other';
+  lon: number;
+  lat: number;
+}
+
+export interface CampusPath {
+  id: number;
+  from: string;
+  to: string;
+  lengthM: number;
+  /**
+   * [lon, lat] pairs, matching every other geometry in this file.
+   *
+   * Typed as `number[][]` rather than as a tuple because this comes straight
+   * out of a JSON import, whose inferred element type is `number[]`; asserting
+   * the tuple there needs a cast through `unknown`, which buys nothing that the
+   * shape tests in `__tests__/pathLayers.test.ts` do not already check at
+   * runtime.
+   */
+  coords: number[][];
+}
+
 export interface RoomIndexEntry {
   code: string;
   name: string;
