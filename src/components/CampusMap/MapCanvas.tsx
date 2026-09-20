@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAppStore } from '../../store/useAppStore';
+import { drawRoute } from './routeLayers';
 import { usePhoneViewport } from '../../hooks/ui/usePhoneViewport';
 import { railOffsetPx } from '../../utils/mapRail';
 import buildingsJson from '../../data/map/buildings.json';
@@ -121,6 +122,13 @@ export function MapCanvas() {
   // The route chip says how long the walk takes, so it has to be written in the
   // student's language. Read here rather than inside the Leaflet layer, which is
   // not a component and has no hooks.
+  // The computed route lives in its OWN layer group, added straight to the map
+  // rather than to `layerRef`. The heavy effect below clears and rebuilds that
+  // group whenever the building or floor changes, and a route drawn into it
+  // would vanish on any of those — including the camera move that follows a
+  // route being drawn in the first place.
+  const routeLayerRef = useRef<L.LayerGroup>(L.layerGroup());
+  const routeWalk = useAppStore((s) => s.routeWalk);
   const language = useAppStore((s) => s.language);
   const languageRef = useRef(language);
   // Same "latest ref" trick, same reason: moving the draft pin (picking a
@@ -140,6 +148,10 @@ export function MapCanvas() {
       isPhone
     );
     layerRef.current.addTo(map);
+    // Added AFTER the main layer, so the route paints over the campus rather
+    // than under it. Its own group, for the reason its ref documents: the main
+    // one is cleared and rebuilt on every building and floor change.
+    routeLayerRef.current.addTo(map);
     mapRef.current = map;
     setMapInstance(map);
     // The walk's time chip is anchored to its building, so panning or zooming
@@ -479,6 +491,13 @@ export function MapCanvas() {
       } else poly.setStyle(base);
     }
   }, [mapSelection]);
+
+  // Drawing the route is a restyle of its own layer, never a redraw of the map
+  // — the heavy effect owns the camera, and re-running it here would throw away
+  // the view the student is looking at.
+  useEffect(() => {
+    drawRoute(routeLayerRef.current, routeWalk, language);
+  }, [routeWalk, language]);
 
   /**
    * Whose walks are actually lit, DERIVED rather than stored a second time.
