@@ -19,6 +19,7 @@ import { networkStrokes, walksFrom } from './lib/pathWalks.mjs';
 import { clipToRegion } from './lib/osmClip.mjs';
 import { campusPlaces, splitAnchors, KIND_OF_RANK } from './lib/campusPlaces.mjs';
 import { corridorWays } from './lib/remoteCorridor.mjs';
+import { joinAtAnchor } from './lib/osmCorridor.mjs';
 import { exportGraph } from './lib/graphExport.mjs';
 import { overpass } from './lib/overpass.mjs';
 import { nodeKey } from './lib/pathGeo.mjs';
@@ -53,6 +54,42 @@ const [[s, w], [n, e]] = BUILDINGS.campus.bounds;
 const dLat = MARGIN_M / 110540;
 const dLon = MARGIN_M / (111320 * Math.cos((49.21 * Math.PI) / 180));
 const REGION = { s: s - dLat, w: w - dLon, n: n + dLat, e: e + dLon };
+
+/**
+ * The off-campus places a student walks FROM, and the corridor of OSM footway
+ * that connects each one to the campus network.
+ *
+ * A corridor is its OWN Overpass extract joined at a DECLARED anchor, rather
+ * than a wider REGION. Widening REGION would re-clip the campus itself and
+ * silently rewrite the 49 committed campus routes as a side effect of a feature
+ * about somewhere else; a separate extract leaves them byte-identical and makes
+ * each corridor reviewable on its own.
+ *
+ * `anchor` is the graph node the corridor is pinned to, by name. Declared, not
+ * inferred: `corridorWays` rewrites the corridor endpoint nearest that node and
+ * REFUSES a corridor that does not in fact start there, rather than stretching
+ * to reach it. `after` says which pass the anchor exists in — the FRRMS gate is
+ * itself only on the network once the garden corridor has been folded in.
+ */
+const CORRIDORS = [
+  {
+    name: 'FRRMS',
+    anchor: 'Brána u FRRMS',
+    after: 'garden',
+    // The gate out at Generála Píky, and the faculty 250 m north of it.
+    box: { s: 49.2152, w: 16.6118, n: 49.2192, e: 16.6168 },
+  },
+];
+/** Names in CORRIDORS are the landmarks that become RANK.origin. */
+const ORIGINS = new Set(CORRIDORS.map((c) => c.name));
+/**
+ * How close an OSM corridor vertex must be to the anchor to BE that node.
+ *
+ * Centimetres, not metres. The gap being closed is the 2 cm between the
+ * garden's curated gate and OSM's node for the same gate — see osmCorridor.mjs.
+ * A metre-scale tolerance here would start merging genuinely separate paths.
+ */
+const CORRIDOR_JOIN_M = 1;
 
 // Anything a person walks on INSIDE the campus.
 //
@@ -99,12 +136,28 @@ const ways = data.elements
     ).map((coords) => ({ coords }))
   );
 
+/** The same filtering the campus ways get, over one corridor's own box. */
+async function corridorGeometry(box) {
+  const q = `[out:json][timeout:90];
+(
+  way["highway"~"^(footway|path|steps|pedestrian|living_street)$"](${box.s},${box.w},${box.n},${box.e});
+  way["highway"="service"]["service"!="parking_aisle"](${box.s},${box.w},${box.n},${box.e});
+);
+out geom;`;
+  const res = await overpass(q);
+  return res.elements
+    .filter((el) => el.type === 'way' && Array.isArray(el.geometry))
+    .filter((el) => (el.tags ?? {}).access !== 'private' && (el.tags ?? {}).foot !== 'no')
+    .sort((a, b) => a.id - b.id)
+    .flatMap((way) => clipToRegion(way.geometry.map((p) => [p.lon, p.lat]), box));
+}
+
 // Two passes, because the corridor can only be pinned once the campus graph
 // exists: the first builds the campus alone and asks it where the arboretum
 // gate actually landed, the second re-builds it with the corridor hanging off
 // that node. Everything downstream sees one network.
 const campusGraph = buildGraph(ways);
-const PLACES = campusPlaces(BUILDINGS, LANDMARKS, POIS);
+const PLACES = campusPlaces(BUILDINGS, LANDMARKS, POIS, ORIGINS);
 const gateKey = [...snapAnchors(campusGraph, PLACES, 35, { minSeparationM: MIN_M })].find(
   ([, name]) => name === ARBORETUM_GATE
 )?.[0];
@@ -116,7 +169,33 @@ if (!gateKey) {
 const GARDEN = REMOTE.find((p) => p.id === GARDEN_ID);
 const corridor = corridorWays(GARDEN.paths, campusGraph.nodes.get(gateKey), CORRIDOR_ANCHOR_M);
 
-const graph = buildGraph([...ways, ...corridor]);
+// The garden folded in; now the corridors that hang off IT. The FRRMS gate is
+// itself only a node because the garden corridor put it there, so its corridor
+// can only be pinned once this graph exists — the same two-pass reason, one
+// level further out.
+const gardenGraph = buildGraph([...ways, ...corridor]);
+const corridorWaysAll = [];
+for (const spec of CORRIDORS) {
+  const base = spec.after === 'garden' ? gardenGraph : campusGraph;
+  const anchorKey = [...snapAnchors(base, PLACES, 35, { minSeparationM: MIN_M })].find(
+    ([, name]) => name === spec.anchor
+  )?.[0];
+  if (!anchorKey) {
+    console.error(`${spec.name}: its anchor "${spec.anchor}" is not on the network.`);
+    console.error('Refusing to write.');
+    process.exit(1);
+  }
+  const geom = await corridorGeometry(spec.box);
+  if (!geom.length) {
+    console.error(`${spec.name}: Overpass returned no walkable way in its box.`);
+    process.exit(1);
+  }
+  const pinned = joinAtAnchor(geom, base.nodes.get(anchorKey), CORRIDOR_JOIN_M);
+  corridorWaysAll.push(...pinned);
+  console.log(`${spec.name}: ${pinned.length} corridor ways pinned at ${spec.anchor}`);
+}
+
+const graph = buildGraph([...ways, ...corridor, ...corridorWaysAll]);
 const anchors = snapAnchors(graph, PLACES, 35, { minSeparationM: MIN_M });
 
 // The lettered buildings and the gate everyone walks through are what the layer
