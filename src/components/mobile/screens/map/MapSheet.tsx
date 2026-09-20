@@ -189,7 +189,9 @@ export function MapSheet() {
           <button
             type="button"
             onClick={toggle}
-            className="flex min-h-11 flex-1 items-center justify-between gap-2 text-left"
+            // `min-w-0` or `flex-1` will not go below its own min-content
+            // width, which at 320 is 141px this row does not have to spare.
+            className="flex min-h-11 min-w-0 flex-1 items-center justify-between gap-2 text-left"
           >
             <span className="truncate text-[13.5px] font-semibold text-base-content">
               {t('mobile.map.peekHint')}

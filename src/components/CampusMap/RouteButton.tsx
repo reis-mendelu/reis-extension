@@ -55,7 +55,15 @@ export function RouteButton() {
   return (
     <button
       type="button"
-      className="btn btn-primary min-h-11 flex-shrink-0 gap-2"
+      // `shrink min-w-0`, where it used to be `flex-shrink-0`. With a room in
+      // the label this button is 178px wide, and at 320 the row it shares
+      // could not absorb that — it hung 26px off the screen. Both utilities
+      // are load-bearing: DaisyUI's `.btn` sets `flex-shrink: 0` itself, so
+      // dropping the utility alone left the computed value at 0 and the
+      // longest room name in the index still ran 71px past the viewport.
+      // Allowed to shrink, the span inside truncates and the peek hint beside
+      // it gives way first.
+      className="btn btn-primary min-h-11 min-w-0 shrink gap-2"
       onClick={press}
       disabled={status === 'locating'}
       aria-expanded={open}
