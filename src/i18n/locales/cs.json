@@ -939,7 +939,7 @@
     "routeTooFar": "Nejsi v okolí kampusu.",
     "routeNoRoute": "Odsud sem teď cesta nevede.",
     "routeThroughGarden": "Přes botanickou zahradu — zdarma s ISIC, u brány z Generála Píky.",
-    "routeGardenShut": "Zahrada je teď zavřená (po–pá 6:00–20:00), pěšky to odsud nejde. Jeď tramvají 9 nebo 11 z Bieblovy.",
+    "routeGardenShut": "Zahrada je teď zavřená (po–pá 6:00–20:00), pěšky to odsud nejde. Jeď tramvají 9 z Bieblovy — jede každé ~3 minuty a jsi tam za dvě.",
     "routePickBuilding": "Kam jdeš?",
     "routeArrived": "Už jsi tam.",
     "routeTo": "do {building}"

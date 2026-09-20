@@ -939,7 +939,7 @@
     "routeTooFar": "You're not near the campus.",
     "routeNoRoute": "There's no walk from here to there right now.",
     "routeThroughGarden": "Through the botanical garden — free with your ISIC, at the Gen. Píky gate.",
-    "routeGardenShut": "The garden is closed right now (Mon–Fri 6:00–20:00), so there's no walk from here. Take tram 9 or 11 from Bieblova.",
+    "routeGardenShut": "The garden is closed right now (Mon–Fri 6:00–20:00), so there's no walk from here. Take tram 9 from Bieblova — every ~3 min, a 2 min ride.",
     "routePickBuilding": "Where are you headed?",
     "routeArrived": "You're already there.",
     "routeTo": "to {building}"

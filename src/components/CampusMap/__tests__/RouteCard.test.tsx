@@ -60,7 +60,7 @@ describe('RouteCard', () => {
     // walk right now. A bare "no route" would leave the student stuck.
     set({ routeStatus: 'gate-shut' });
     render(<RouteCard />);
-    expect(screen.getByText(/tramvají 9 nebo 11/)).toBeTruthy();
+    expect(screen.getByText(/tramvají 9 z Bieblovy/)).toBeTruthy();
   });
 
   it('does NOT blame the garden when the garden is not the problem', () => {

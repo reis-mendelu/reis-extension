@@ -295,10 +295,25 @@ weekend route is not slower, it is **absent**. The earlier wording here
 ("walk around via Gen. Píky") described a walk the data does not contain.
 
 So the copy says what is true, and hands over the answer that is: the tram.
-Bieblova is 251 m from FRRMS and shares lines **9 and 11** with Zemědělská, from
-the stop data already bundled in `pois.json`. "The garden's shut — there's no
-walk through it from here. Tram 9 or 11 from Bieblova." That is honest, costs
-nothing, and is more useful than a 25-minute street walk would have been.
+Bieblova is 251 m from FRRMS. **Tram 9**, every ~3 minutes, a 2-minute ride.
+
+Those figures come from the IDS JMK GTFS feed (`kordis-jmk.cz/gtfs/gtfs.zip`,
+CC BY, stamped 2026-09-18), read once during implementation — not from the
+bundled `pois.json`, which says Bieblova is served by 9 and **11**. The feed
+says 9 and 7. The bundled table is a one-off snapshot of MENDELU's map API and
+has gone stale; the whole stop→line table wants re-checking against the feed,
+which is tracked separately. Line 9 is the one to name either way: 470 weekday
+departures between 07:00 and 19:00 against 41 for line 7.
+
+**And no clock.** A dedicated investigation of every Brno transit source
+concluded that live departures are not publicly available *from anyone*: the
+only realtime feed in the region (`gtfsReal.dat`) carries 1,500 vehicle
+positions and **zero TripUpdates**, so no arrival prediction is published, and
+the `delay` FeatureServer that data.brno.cz still advertises is a 404. Scheduled
+times could be bundled — a trim to the seven relevant stops is ~50 KiB gzipped
+and belongs in `reis-data`, not the app — but at a three-minute headway and a
+two-minute ride, a departure time is stale before the student looks up from the
+screen. Correct and useless. The sentence above is the whole feature.
 
 Building the third corridor down Gen. Píky remains possible and remains
 deferred; it is a pipeline stage, and the tram is the better answer anyway.

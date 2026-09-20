@@ -112,20 +112,22 @@ describe('drawRoute', () => {
     // a place it never pointed at.
     const layer = L.layerGroup();
     drawPosition(layer, [16.614118, 49.218161]);
-    expect(layer.getLayers()).toHaveLength(2); // soft halo + dot
-    const dot = layer.getLayers()[1] as L.CircleMarker;
+    expect(layer.getLayers()).toHaveLength(3); // glow + white collar + core
+    const dot = layer.getLayers()[2] as L.CircleMarker;
     expect(dot.getLatLng().lat).toBeCloseTo(49.218161, 6);
     expect(dot.getLatLng().lng).toBeCloseTo(16.614118, 6);
   });
 
-  it('is neither the route colour nor the buildings blue', () => {
-    // It must not claim to be part of a walk that may not exist, and blue is
-    // BUILDING_STYLE.color.
+  it('wears a white collar between the core and the map', () => {
+    // The collar is what stops the dot reading as a smudge on whatever is
+    // underneath — pale paper, garden green or a building fill.
     const layer = L.layerGroup();
     drawPosition(layer, [16.6, 49.21]);
-    const dot = layer.getLayers()[1] as L.CircleMarker;
-    expect(dot.options.fillColor).not.toBe(ROUTE_COLOR);
-    expect(dot.options.fillColor).not.toBe('#2563eb');
+    const [glow, collar, core] = layer.getLayers() as L.CircleMarker[];
+    expect(collar.options.fillColor).toBe('#ffffff');
+    expect(core.options.fillColor).toBe(ROUTE_COLOR);
+    expect(glow.options.radius).toBeGreaterThan(collar.options.radius!);
+    expect(collar.options.radius).toBeGreaterThan(core.options.radius!);
   });
 
   it('clears when the position is gone', () => {

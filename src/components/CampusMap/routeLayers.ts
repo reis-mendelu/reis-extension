@@ -55,26 +55,37 @@ const LINE: L.PathOptions = {
  * Drawn from the position alone, NOT as part of a route — that was the bug.
  * The start dot only existed inside `drawRoute`, so every answer that is not a
  * walk (the garden shut, too far, nowhere to go) left the map with no "you are
- * here" at all: the student was told something about a place the map never
- * pointed at. Measured on a real phone standing at FRRMS on a Sunday.
+ * here" at all: the app talked about a place it never pointed at.
  *
- * Slate, not the route's fuchsia and not blue. Blue is `BUILDING_STYLE.color`,
- * and the route colour would claim this dot is part of a walk that may not
- * exist. A dark neutral in a white ring is the one thing on this basemap that
- * cannot be mistaken for terrain.
+ * Three rings, which is what every map app converged on because it survives any
+ * terrain: a soft tinted halo that separates the dot from whatever is under it,
+ * a white collar, and a saturated core. The first version was a slate dot with
+ * a grey halo and read, correctly, as ugly — a dark blob on pale paper with
+ * nothing to say it belonged to this app.
+ *
+ * In the ROUTE's colour, not a neutral. When there is a walk this dot is its
+ * start, and when there is not it is still the thing the card is talking about;
+ * either way it belongs to the same answer, and the map already spends blue on
+ * buildings, orange on the entrance fan and green on the garden.
  */
-const POSITION_HALO: L.CircleMarkerOptions = {
-  radius: 11,
+const POSITION_GLOW: L.CircleMarkerOptions = {
+  radius: 14,
   stroke: false,
-  fillColor: '#1c1917',
-  fillOpacity: 0.14,
+  fillColor: ROUTE_COLOR,
+  fillOpacity: 0.13,
   interactive: false,
 };
-const POSITION_DOT: L.CircleMarkerOptions = {
-  radius: 6.5,
-  color: '#ffffff',
-  weight: 3,
-  fillColor: '#1c1917',
+const POSITION_COLLAR: L.CircleMarkerOptions = {
+  radius: 8.5,
+  stroke: false,
+  fillColor: '#ffffff',
+  fillOpacity: 1,
+  interactive: false,
+};
+const POSITION_CORE: L.CircleMarkerOptions = {
+  radius: 6,
+  stroke: false,
+  fillColor: ROUTE_COLOR,
   fillOpacity: 1,
   interactive: false,
 };
@@ -83,8 +94,9 @@ export function drawPosition(layer: L.LayerGroup, at: [number, number] | null): 
   layer.clearLayers();
   if (!at) return;
   const ll = L.latLng(at[1], at[0]);
-  L.circleMarker(ll, POSITION_HALO).addTo(layer);
-  L.circleMarker(ll, POSITION_DOT).addTo(layer);
+  L.circleMarker(ll, POSITION_GLOW).addTo(layer);
+  L.circleMarker(ll, POSITION_COLLAR).addTo(layer);
+  L.circleMarker(ll, POSITION_CORE).addTo(layer);
 }
 
 export function drawRoute(layer: L.LayerGroup, walk: Walk | null, language: string): void {
