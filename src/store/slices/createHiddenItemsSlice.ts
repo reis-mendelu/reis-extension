@@ -19,10 +19,19 @@ export const createHiddenItemsSlice: AppSlice<HiddenItemsSlice> = (set, get) => 
     }
   },
 
-  hideCourse: async (courseCode: string, courseName: string, type: 'lecture' | 'seminar' | 'all' = 'all') => {
+  hideCourse: async (
+    courseCode: string,
+    courseName: string,
+    type: 'lecture' | 'seminar' | 'all' = 'all'
+  ) => {
     const { hiddenItems } = get();
     // Don't add if already exactly hidden or if 'all' is already hidden
-    if (hiddenItems.courses.some((c) => c.courseCode === courseCode && (c.type === type || c.type === 'all'))) return;
+    if (
+      hiddenItems.courses.some(
+        (c) => c.courseCode === courseCode && (c.type === type || c.type === 'all')
+      )
+    )
+      return;
 
     const newHiddenItems = {
       ...hiddenItems,
@@ -37,8 +46,8 @@ export const createHiddenItemsSlice: AppSlice<HiddenItemsSlice> = (set, get) => 
     const { hiddenItems } = get();
     const newHiddenItems = {
       ...hiddenItems,
-      courses: hiddenItems.courses.filter((c) => 
-        !(c.courseCode === courseCode && (type === undefined || c.type === type))
+      courses: hiddenItems.courses.filter(
+        (c) => !(c.courseCode === courseCode && (type === undefined || c.type === type))
       ),
     };
 

@@ -6,15 +6,21 @@ const p12 = new Uint8Array([1, 2, 3]);
 
 describe('generateEapConfig', () => {
   it('throws on empty rootCaDer', () => {
-    expect(() => generateEapConfig({ rootCaDer: new Uint8Array(), clientP12: p12 })).toThrow(/rootCaDer/);
+    expect(() => generateEapConfig({ rootCaDer: new Uint8Array(), clientP12: p12 })).toThrow(
+      /rootCaDer/
+    );
   });
 
   it('throws on empty clientP12', () => {
-    expect(() => generateEapConfig({ rootCaDer: root, clientP12: new Uint8Array() })).toThrow(/clientP12/);
+    expect(() => generateEapConfig({ rootCaDer: root, clientP12: new Uint8Array() })).toThrow(
+      /clientP12/
+    );
   });
 
   it('throws on empty serverNames', () => {
-    expect(() => generateEapConfig({ rootCaDer: root, clientP12: p12, serverNames: [] })).toThrow(/serverNames/);
+    expect(() => generateEapConfig({ rootCaDer: root, clientP12: p12, serverNames: [] })).toThrow(
+      /serverNames/
+    );
   });
 
   it('emits an EAPIdentityProviderList root with EAP-TLS type 13', () => {
@@ -28,7 +34,9 @@ describe('generateEapConfig', () => {
   it('embeds the root CA as X.509 base64 and the client cert as PKCS12 base64', () => {
     const xml = generateEapConfig({ rootCaDer: root, clientP12: p12 });
     expect(xml).toContain('<CA format="X.509" encoding="base64">TWFu</CA>');
-    expect(xml).toContain('<ClientCertificate format="PKCS12" encoding="base64">AQID</ClientCertificate>');
+    expect(xml).toContain(
+      '<ClientCertificate format="PKCS12" encoding="base64">AQID</ClientCertificate>'
+    );
   });
 
   it('defaults the server id to aleph.mendelu.cz', () => {

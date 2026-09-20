@@ -3,14 +3,14 @@ import { isEnglishVariantCode, semesterRank } from '../subjectVariant';
 
 describe('isEnglishVariantCode', () => {
   it('detects the English-taught (v AJ) PEF variants by code', () => {
-    expect(isEnglishVariantCode('EBA-ST')).toBe(true);   // Statistika v AJ
-    expect(isEnglishVariantCode('ENA-MA')).toBe(true);   // Makroekonomie 2 v AJ
+    expect(isEnglishVariantCode('EBA-ST')).toBe(true); // Statistika v AJ
+    expect(isEnglishVariantCode('ENA-MA')).toBe(true); // Makroekonomie 2 v AJ
     expect(isEnglishVariantCode('EXA-CEUSR')).toBe(true);
-    expect(isEnglishVariantCode('eba-akp')).toBe(true);  // case-insensitive
+    expect(isEnglishVariantCode('eba-akp')).toBe(true); // case-insensitive
   });
 
   it('treats Czech-taught and non-PEF codes as not-English', () => {
-    expect(isEnglishVariantCode('EBC-ST')).toBe(false);  // Statistika (Czech)
+    expect(isEnglishVariantCode('EBC-ST')).toBe(false); // Statistika (Czech)
     expect(isEnglishVariantCode('ENC-MA')).toBe(false);
     expect(isEnglishVariantCode('MZD')).toBe(false);
     expect(isEnglishVariantCode('AGRL')).toBe(false);

@@ -19,9 +19,10 @@ import {
   remotePlaceCenter,
   roomCodeToCoord,
 } from '../../components/CampusMap/mapHelpers';
-import { fetchBuildingRooms } from '../../api/campusMap';
 import { fetchMapEvents, toMapEvent } from '../../api/mapEvents';
 import { logError } from '../../utils/reportError';
+import { createBuildingGeometryActions } from './buildingGeometryActions';
+import { lookupRoomEntry, isNonPhysicalRoom } from '../../utils/rooms/lookupRoom';
 
 const META = buildingsJson as BuildingsMeta;
 const INDEX = roomsIndexJson as RoomIndexEntry[];
@@ -39,7 +40,11 @@ function locateEvent(e: MapEvent): MapEvent {
     : { ...e, coord: roomCodeToCoord(e.roomCode, INDEX, META) };
 }
 
-export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
+export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
+  // Loading a building's floor plan lives next door, so this file does not
+  // carry that responsibility too — see buildingGeometryActions.ts.
+  ...createBuildingGeometryActions(set, get, api),
+
   activeBuildingId: null,
   activeFloorId: null,
   mapSelection: null,
@@ -114,9 +119,13 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
     set({ mapSearchQuery: q, mapSearchResults: searchPlaces(q, INDEX, POIS, LANDMARKS) }),
 
   focusRoomByCode: (code) => {
-    const entry = INDEX.find((e) => e.code === code || e.name === code);
+    const entry = lookupRoomEntry(code, INDEX);
     if (!entry) {
-      logError('MapSlice.focusRoomByCode', new Error(`unknown room ${code}`));
+      // A lesson held online has no place to fly to; that is the timetable
+      // being honest, not a lookup we got wrong, so it is not worth a log line.
+      if (!isNonPhysicalRoom(code)) {
+        logError('MapSlice.focusRoomByCode', new Error(`unknown room ${code}`));
+      }
       return;
     }
     const b = buildingById(entry.buildingId);
@@ -216,21 +225,6 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
       mapFocusRequest: get().mapFocusRequest + 1,
       mapFocusTarget: 'campus' as const,
     }),
-
-  loadMapBuilding: async (id) => {
-    if (get().roomsByBuilding[id]) return; // already in memory
-    set({ mapLoadingBuilding: id });
-    try {
-      const data = await fetchBuildingRooms(id);
-      if (data) set({ roomsByBuilding: { ...get().roomsByBuilding, [id]: data } });
-    } catch (err) {
-      logError('MapSlice.loadMapBuilding', err);
-    } finally {
-      set({
-        mapLoadingBuilding: get().mapLoadingBuilding === id ? null : get().mapLoadingBuilding,
-      });
-    }
-  },
 
   mapPanelCollapsed: false,
   setMapPanelTab: (tab) => set({ mapPanelTab: tab }),

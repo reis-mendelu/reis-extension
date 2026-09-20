@@ -24,6 +24,13 @@ describe('facultySubjektId', () => {
   });
 
   it('exposes the raw map for the six student faculties', () => {
-    expect(Object.keys(FACULTY_SUBJEKT_ID).sort()).toEqual(['AF', 'FRRMS', 'ICV', 'LDF', 'PEF', 'ZF']);
+    expect(Object.keys(FACULTY_SUBJEKT_ID).sort()).toEqual([
+      'AF',
+      'FRRMS',
+      'ICV',
+      'LDF',
+      'PEF',
+      'ZF',
+    ]);
   });
 });

@@ -38,7 +38,9 @@ export function generateEapConfig(input: EapConfigInput): string {
   const identifier = input.identifier ?? DEFAULT_IDENTIFIER;
   const displayName = input.displayName ?? DEFAULT_DISPLAY_NAME;
 
-  const serverIds = serverNames.map((n) => `          <ServerID>${escapeXml(n)}</ServerID>`).join('\n');
+  const serverIds = serverNames
+    .map((n) => `          <ServerID>${escapeXml(n)}</ServerID>`)
+    .join('\n');
 
   return [
     '<?xml version="1.0" encoding="utf-8"?>',

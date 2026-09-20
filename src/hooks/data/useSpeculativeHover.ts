@@ -9,25 +9,28 @@ export const HOVER_INTENT_MS = 100;
  * so flicker-scrolling does not trigger fetches.
  */
 export function useSpeculativeHover(courseCode: string, enabled: boolean) {
-    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    useEffect(() => () => {
-        if (timerRef.current) clearTimeout(timerRef.current);
-    }, []);
+  useEffect(
+    () => () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    },
+    []
+  );
 
-    const onMouseEnter = () => {
-        if (!enabled || !courseCode) return;
-        timerRef.current = setTimeout(() => {
-            useAppStore.getState().speculativeRefreshFiles(courseCode);
-        }, HOVER_INTENT_MS);
-    };
+  const onMouseEnter = () => {
+    if (!enabled || !courseCode) return;
+    timerRef.current = setTimeout(() => {
+      useAppStore.getState().speculativeRefreshFiles(courseCode);
+    }, HOVER_INTENT_MS);
+  };
 
-    const onMouseLeave = () => {
-        if (timerRef.current) {
-            clearTimeout(timerRef.current);
-            timerRef.current = null;
-        }
-    };
+  const onMouseLeave = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
 
-    return { onMouseEnter, onMouseLeave };
+  return { onMouseEnter, onMouseLeave };
 }

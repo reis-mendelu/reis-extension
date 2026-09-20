@@ -8,11 +8,16 @@ const CDN_BASE_URL = 'https://cdn.jsdelivr.net/gh/reis-mendelu/reis-data@main';
 const CACHE_EXPIRY = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 async function lastSync(buildingId: number): Promise<number | undefined> {
-  const map = (await IndexedDBService.get('meta', STORAGE_KEYS.MAP_ROOMS_LAST_SYNC)) as Record<string, number> | undefined;
+  const map = (await IndexedDBService.get('meta', STORAGE_KEYS.MAP_ROOMS_LAST_SYNC)) as
+    Record<string, number> | undefined;
   return map?.[String(buildingId)];
 }
 async function markSynced(buildingId: number): Promise<void> {
-  const map = ((await IndexedDBService.get('meta', STORAGE_KEYS.MAP_ROOMS_LAST_SYNC)) as Record<string, number>) || {};
+  const map =
+    ((await IndexedDBService.get('meta', STORAGE_KEYS.MAP_ROOMS_LAST_SYNC)) as Record<
+      string,
+      number
+    >) || {};
   map[String(buildingId)] = Date.now();
   await IndexedDBService.set('meta', STORAGE_KEYS.MAP_ROOMS_LAST_SYNC, map);
 }

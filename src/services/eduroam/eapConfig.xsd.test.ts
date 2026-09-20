@@ -32,6 +32,8 @@ describe('generateEapConfig — XSD validity', () => {
     const file = join(mkdtempSync(join(tmpdir(), 'eap-')), 'sample.eap-config');
     writeFileSync(file, xml);
     // execFileSync throws (non-zero exit) if the document does not validate.
-    expect(() => execFileSync('xmllint', ['--noout', '--schema', xsd, file], { stdio: 'pipe' })).not.toThrow();
+    expect(() =>
+      execFileSync('xmllint', ['--noout', '--schema', xsd, file], { stdio: 'pipe' })
+    ).not.toThrow();
   });
 });

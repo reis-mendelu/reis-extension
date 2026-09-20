@@ -8,5 +8,5 @@ import type { SyncStatus } from '../../services/sync';
  * Provides real-time visibility into sync state via central store.
  */
 export function useSyncStatus(): SyncStatus {
-    return useAppStore(useShallow(state => state.syncStatus));
+  return useAppStore(useShallow((state) => state.syncStatus));
 }
