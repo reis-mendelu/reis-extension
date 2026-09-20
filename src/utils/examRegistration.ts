@@ -7,10 +7,11 @@ import type { ExamSubject, ExamSection, ExamTerm } from '../types/exams';
  * logic in useMenuItems and gates the calendar's exam-period handoff banner.
  */
 export function hasRegisterableTerms(exams: ExamSubject[]): boolean {
-    return exams.some((sub: ExamSubject) =>
-        sub.sections.some((sec: ExamSection) =>
-            sec.status !== 'registered' &&
-            sec.terms.some((term: ExamTerm) => !term.full && term.canRegisterNow === true)
-        )
-    );
+  return exams.some((sub: ExamSubject) =>
+    sub.sections.some(
+      (sec: ExamSection) =>
+        sec.status !== 'registered' &&
+        sec.terms.some((term: ExamTerm) => !term.full && term.canRegisterNow === true)
+    )
+  );
 }

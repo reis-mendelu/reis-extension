@@ -8,19 +8,19 @@ const fixedUuids = { top: 'TOP', ca: 'CA', p12: 'P12', wifi: 'WIFI' };
 describe('generateEduroamMobileconfig', () => {
   it('throws on empty rootCaDer', () => {
     expect(() =>
-      generateEduroamMobileconfig({ rootCaDer: new Uint8Array(), clientP12: p12 }),
+      generateEduroamMobileconfig({ rootCaDer: new Uint8Array(), clientP12: p12 })
     ).toThrow(/rootCaDer/);
   });
 
   it('throws on empty clientP12', () => {
     expect(() =>
-      generateEduroamMobileconfig({ rootCaDer: root, clientP12: new Uint8Array() }),
+      generateEduroamMobileconfig({ rootCaDer: root, clientP12: new Uint8Array() })
     ).toThrow(/clientP12/);
   });
 
   it('throws on empty serverNames', () => {
     expect(() =>
-      generateEduroamMobileconfig({ rootCaDer: root, clientP12: p12, serverNames: [] }),
+      generateEduroamMobileconfig({ rootCaDer: root, clientP12: p12, serverNames: [] })
     ).toThrow(/serverNames/);
   });
 
@@ -44,7 +44,9 @@ describe('generateEduroamMobileconfig', () => {
     const caUuid = xml.slice(caUuidIdx, caUuidIdx + 120).match(/<string>([^<]+)<\/string>/)?.[1];
     // The Wi-Fi anchor reference.
     const anchorIdx = xml.indexOf('PayloadCertificateAnchorUUID');
-    const anchorUuid = xml.slice(anchorIdx, anchorIdx + 200).match(/<string>([^<]+)<\/string>/)?.[1];
+    const anchorUuid = xml
+      .slice(anchorIdx, anchorIdx + 200)
+      .match(/<string>([^<]+)<\/string>/)?.[1];
     expect(caUuid).toBeTruthy();
     expect(anchorUuid).toBe(caUuid);
   });

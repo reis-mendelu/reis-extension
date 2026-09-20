@@ -18,14 +18,20 @@ export function IsSearchTriggers({ onOpen, buttonClassName }: IsSearchTriggersPr
   return (
     <>
       <button
-        onClick={(e) => { e.stopPropagation(); onOpen('pages'); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onOpen('pages');
+        }}
         className={buttonClassName}
       >
         <Search className="w-4 h-4" />
         <span>{t('sidebar.isPages')}</span>
       </button>
       <button
-        onClick={(e) => { e.stopPropagation(); onOpen('people'); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onOpen('people');
+        }}
         className={buttonClassName}
       >
         <UserSearch className="w-4 h-4" />

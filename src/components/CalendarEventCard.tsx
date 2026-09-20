@@ -8,7 +8,7 @@
  */
 
 import { MapPin, Timer } from 'lucide-react';
-import type { LessonWithRow } from '../types/calendarTypes';
+import type { CardLesson } from '../types/calendarTypes';
 import { useCourseName } from '../hooks/ui/useCourseName';
 import { useAppStore } from '../store/useAppStore';
 import { useTimeline } from '../hooks/useTimeline';
@@ -16,13 +16,13 @@ import { renderedBlockMinutes, MIN_VISUAL_BLOCK_MINUTES } from './WeeklyCalendar
 import { CalendarEventCardHideMenu } from './CalendarEventCardHideMenu';
 
 interface CalendarEventCardProps {
-  lesson: LessonWithRow;
+  lesson: CardLesson;
   onClick?: (e: React.MouseEvent<HTMLElement>) => void;
   language?: string; // Language for localization
 }
 
 // Helper function to get localized course name
-function getLocalizedCourseName(lesson: LessonWithRow, language?: string): string {
+function getLocalizedCourseName(lesson: CardLesson, language?: string): string {
   if (language === 'en' && lesson.courseNameEn) {
     return lesson.courseNameEn;
   }
@@ -30,7 +30,7 @@ function getLocalizedCourseName(lesson: LessonWithRow, language?: string): strin
 }
 
 // Helper function to get localized room name
-function getLocalizedRoom(lesson: LessonWithRow, language?: string): string {
+function getLocalizedRoom(lesson: CardLesson, language?: string): string {
   if (language === 'en' && lesson.roomEn) {
     return lesson.roomEn;
   }

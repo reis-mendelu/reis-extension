@@ -4,11 +4,30 @@ import { IndexedDBService } from '../../services/storage';
 import { STORAGE_KEYS } from '../../services/storage/keys';
 import type { RoomsCollection } from '../../types/campusMap';
 
-const fc = (id: number): RoomsCollection => ({ type: 'FeatureCollection',
-  features: [{ type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[16.6, 49.2]]] },
-    properties: { id, buildingId: id, floorId: 1, floorLevel: 0, name: 'X', type: 't',
-      category: 'teaching', label: 'l', passportNumber: null, seats: null,
-      hasProjector: false, hasWhiteboard: false, code: null } }] });
+const fc = (id: number): RoomsCollection => ({
+  type: 'FeatureCollection',
+  features: [
+    {
+      type: 'Feature',
+      geometry: { type: 'Polygon', coordinates: [[[16.6, 49.2]]] },
+      properties: {
+        id,
+        buildingId: id,
+        floorId: 1,
+        floorLevel: 0,
+        name: 'X',
+        type: 't',
+        category: 'teaching',
+        label: 'l',
+        passportNumber: null,
+        seats: null,
+        hasProjector: false,
+        hasWhiteboard: false,
+        code: null,
+      },
+    },
+  ],
+});
 
 beforeEach(async () => {
   await IndexedDBService.clear('map_rooms');

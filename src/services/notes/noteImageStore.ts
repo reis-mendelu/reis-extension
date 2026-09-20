@@ -6,23 +6,35 @@ import type { NoteImage } from '../../types/documents';
 export const GC_GRACE_MS = 60_000;
 
 /** Store a normalized image, content-addressed. Returns the hash. Idempotent. */
-export async function storeImage(img: { blob: Blob; mime: string; w: number; h: number }): Promise<string> {
-    const hash = await hashBytes(await img.blob.arrayBuffer());
-    const existing = await IndexedDBService.get('note_images', hash);
-    if (existing) {
-        // Dedup — identical bytes already stored. Refresh createdAt so re-adding a
-        // long-lived blob restarts its grace window; otherwise an old (>grace)
-        // re-referenced image can be swept while its new note save is still in flight.
-        await IndexedDBService.set('note_images', hash, { ...existing, createdAt: Date.now() });
-        return hash;
-    }
-    const record: NoteImage = { hash, blob: img.blob, mime: img.mime, w: img.w, h: img.h, createdAt: Date.now() };
-    await IndexedDBService.set('note_images', hash, record);
+export async function storeImage(img: {
+  blob: Blob;
+  mime: string;
+  w: number;
+  h: number;
+}): Promise<string> {
+  const hash = await hashBytes(await img.blob.arrayBuffer());
+  const existing = await IndexedDBService.get('note_images', hash);
+  if (existing) {
+    // Dedup — identical bytes already stored. Refresh createdAt so re-adding a
+    // long-lived blob restarts its grace window; otherwise an old (>grace)
+    // re-referenced image can be swept while its new note save is still in flight.
+    await IndexedDBService.set('note_images', hash, { ...existing, createdAt: Date.now() });
     return hash;
+  }
+  const record: NoteImage = {
+    hash,
+    blob: img.blob,
+    mime: img.mime,
+    w: img.w,
+    h: img.h,
+    createdAt: Date.now(),
+  };
+  await IndexedDBService.set('note_images', hash, record);
+  return hash;
 }
 
 export function getImage(hash: string): Promise<NoteImage | undefined> {
-    return IndexedDBService.get('note_images', hash);
+  return IndexedDBService.get('note_images', hash);
 }
 
 /**
@@ -31,13 +43,13 @@ export function getImage(hash: string): Promise<NoteImage | undefined> {
  * Returns the number deleted.
  */
 export async function sweepOrphans(referenced: Set<string>, now: number): Promise<number> {
-    const all = await IndexedDBService.getAllWithKeys('note_images');
-    let deleted = 0;
-    for (const { key, value } of all) {
-        if (referenced.has(key)) continue;
-        if (now - value.createdAt < GC_GRACE_MS) continue;
-        await IndexedDBService.delete('note_images', key);
-        deleted++;
-    }
-    return deleted;
+  const all = await IndexedDBService.getAllWithKeys('note_images');
+  let deleted = 0;
+  for (const { key, value } of all) {
+    if (referenced.has(key)) continue;
+    if (now - value.createdAt < GC_GRACE_MS) continue;
+    await IndexedDBService.delete('note_images', key);
+    deleted++;
+  }
+  return deleted;
 }

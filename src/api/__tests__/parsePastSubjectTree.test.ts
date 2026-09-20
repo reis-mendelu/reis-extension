@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('../../services/storage/IndexedDBService', () => ({
-    IndexedDBService: {}
+  IndexedDBService: {},
 }));
 
 import { parsePastSubjectTree } from '../pastSubjects';
@@ -39,33 +39,31 @@ const FIXTURE = `
 `;
 
 describe('parsePastSubjectTree', () => {
-    it('extracts subject-level folders, ignoring container/subfolder nodes', () => {
-        const result = parsePastSubjectTree(FIXTURE);
+  it('extracts subject-level folders, ignoring container/subfolder nodes', () => {
+    const result = parsePastSubjectTree(FIXTURE);
 
-        expect(Object.keys(result).sort()).toEqual([
-            'EBC-ALG', 'EBC-AP', 'EBC-KOM', 'EBC-TZI',
-        ]);
+    expect(Object.keys(result).sort()).toEqual(['EBC-ALG', 'EBC-AP', 'EBC-KOM', 'EBC-TZI']);
 
-        expect(result['EBC-ALG']).toEqual({
-            subjectCode: 'EBC-ALG',
-            displayName: 'Algoritmizace',
-            folderUrl: 'https://is.mendelu.cz/auth/dok_server/slozka.pl?id=150953',
-        });
-
-        expect(result['EBC-KOM']).toEqual({
-            subjectCode: 'EBC-KOM',
-            displayName: 'Komunikace',
-            folderUrl: 'https://is.mendelu.cz/auth/dok_server/slozka.pl?id=150180',
-        });
+    expect(result['EBC-ALG']).toEqual({
+      subjectCode: 'EBC-ALG',
+      displayName: 'Algoritmizace',
+      folderUrl: 'https://is.mendelu.cz/auth/dok_server/slozka.pl?id=150953',
     });
 
-    it('returns empty object for empty or malformed HTML', () => {
-        expect(parsePastSubjectTree('')).toEqual({});
-        expect(parsePastSubjectTree('<div>no links</div>')).toEqual({});
+    expect(result['EBC-KOM']).toEqual({
+      subjectCode: 'EBC-KOM',
+      displayName: 'Komunikace',
+      folderUrl: 'https://is.mendelu.cz/auth/dok_server/slozka.pl?id=150180',
     });
+  });
 
-    it('skips subfolder nodes with " / " in the label', () => {
-        const result = parsePastSubjectTree(FIXTURE);
-        expect(result).not.toHaveProperty('EBC-TZI / Informace k výuce');
-    });
+  it('returns empty object for empty or malformed HTML', () => {
+    expect(parsePastSubjectTree('')).toEqual({});
+    expect(parsePastSubjectTree('<div>no links</div>')).toEqual({});
+  });
+
+  it('skips subfolder nodes with " / " in the label', () => {
+    const result = parsePastSubjectTree(FIXTURE);
+    expect(result).not.toHaveProperty('EBC-TZI / Informace k výuce');
+  });
 });

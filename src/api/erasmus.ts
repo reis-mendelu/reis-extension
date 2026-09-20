@@ -18,7 +18,7 @@ async function fetchWithRetry(url: string, attempts = 3): Promise<Response> {
     } catch (err) {
       lastErr = err;
     }
-    if (i < attempts - 1) await new Promise(r => setTimeout(r, 500 * (i + 1)));
+    if (i < attempts - 1) await new Promise((r) => setTimeout(r, 500 * (i + 1)));
   }
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
@@ -32,23 +32,24 @@ function syncKey(file: string): string {
 }
 
 export async function getStoredErasmusData(file: string): Promise<ErasmusCountryData | null> {
-  return await IndexedDBService.get('erasmus', cacheKey(file)) || null;
+  return (await IndexedDBService.get('erasmus', cacheKey(file))) || null;
 }
 
 async function isCacheValid(file: string): Promise<boolean> {
-  const lastSync = await IndexedDBService.get('meta', syncKey(file)) as number | null;
+  const lastSync = (await IndexedDBService.get('meta', syncKey(file))) as number | null;
   if (!lastSync) return false;
-  return (Date.now() - lastSync) < CACHE_EXPIRY;
+  return Date.now() - lastSync < CACHE_EXPIRY;
 }
 
 export async function getStoredErasmusConfig(): Promise<ErasmusConfig | null> {
-  return await IndexedDBService.get('meta', 'erasmus_config') || null;
+  return (await IndexedDBService.get('meta', 'erasmus_config')) || null;
 }
 
 export async function fetchErasmusConfig(): Promise<ErasmusConfig | null> {
   const cached = await getStoredErasmusConfig();
-  const lastSync = await IndexedDBService.get('meta', STORAGE_KEYS.ERASMUS_CONFIG_SYNC) as number | null;
-  if (cached && lastSync && (Date.now() - lastSync) < CACHE_EXPIRY) return cached;
+  const lastSync = (await IndexedDBService.get('meta', STORAGE_KEYS.ERASMUS_CONFIG_SYNC)) as
+    number | null;
+  if (cached && lastSync && Date.now() - lastSync < CACHE_EXPIRY) return cached;
 
   try {
     const url = `${CDN_BASE_URL}/erasmus/config.json`;
@@ -57,7 +58,7 @@ export async function fetchErasmusConfig(): Promise<ErasmusConfig | null> {
       loggers.api.error('[Erasmus] Config fetch failed:', res.status);
       return cached;
     }
-    const data = await res.json() as ErasmusConfig;
+    const data = (await res.json()) as ErasmusConfig;
     await IndexedDBService.set('meta', 'erasmus_config', data);
     await IndexedDBService.set('meta', STORAGE_KEYS.ERASMUS_CONFIG_SYNC, Date.now());
     return data;
@@ -69,7 +70,7 @@ export async function fetchErasmusConfig(): Promise<ErasmusConfig | null> {
 
 export async function fetchErasmusReports(file: string): Promise<ErasmusCountryData | null> {
   const cached = await getStoredErasmusData(file);
-  if (cached && await isCacheValid(file)) return cached;
+  if (cached && (await isCacheValid(file))) return cached;
 
   try {
     const url = `${CDN_BASE_URL}/erasmus/${file}`;
@@ -78,7 +79,7 @@ export async function fetchErasmusReports(file: string): Promise<ErasmusCountryD
       loggers.api.error('[Erasmus] CDN fetch failed:', res.status, file);
       return cached;
     }
-    const data = await res.json() as ErasmusCountryData;
+    const data = (await res.json()) as ErasmusCountryData;
     await IndexedDBService.set('erasmus', cacheKey(file), data);
     await IndexedDBService.set('meta', syncKey(file), Date.now());
     return data;

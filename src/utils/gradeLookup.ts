@@ -7,23 +7,24 @@ import type { CourseGrade } from '../types/documents';
  * Prefers a passing grade (letter A–E); otherwise the latest attempt.
  * Returns null when the subject has no grade entry.
  */
-export function gradeForCourse(grades: CourseGrade[], predmetId: string, courseCode?: string): CourseGrade | null {
+export function gradeForCourse(
+  grades: CourseGrade[],
+  predmetId: string,
+  courseCode?: string
+): CourseGrade | null {
   if (!predmetId && !courseCode) return null;
-  const matches = grades.filter(g =>
-    (!!predmetId && g.predmetId === predmetId) ||
-    (!!courseCode && g.courseCode === courseCode)
+  const matches = grades.filter(
+    (g) =>
+      (!!predmetId && g.predmetId === predmetId) || (!!courseCode && g.courseCode === courseCode)
   );
   if (matches.length === 0) return null;
-  const passing = matches.filter(g => /^[A-E]$/.test(g.gradeLetter));
+  const passing = matches.filter((g) => /^[A-E]$/.test(g.gradeLetter));
   const pool = passing.length ? passing : matches;
   return pool.reduce((best, g) => ((g.attempt ?? 0) >= (best.attempt ?? 0) ? g : best));
 }
 
-
 export type GradeBadge =
-  | { kind: 'letter'; text: string; passed: boolean }
-  | { kind: 'credited' }
-  | { kind: 'completed' };
+  { kind: 'letter'; text: string; passed: boolean } | { kind: 'credited' } | { kind: 'completed' };
 
 /**
  * Maps a grade to a small badge. Graded exams show the A–F letter; no-letter

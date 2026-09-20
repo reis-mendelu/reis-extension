@@ -1,5 +1,5 @@
 export interface BulletinPost {
-    title: string;
-    categories: string[];
-    url: string;
+  title: string;
+  categories: string[];
+  url: string;
 }

@@ -1,8 +1,8 @@
 declare module 'jsdom' {
-    export class JSDOM {
-        constructor(html?: string, options?: unknown);
-        window: {
-            document: Document;
-        };
-    }
+  export class JSDOM {
+    constructor(html?: string, options?: unknown);
+    window: {
+      document: Document;
+    };
+  }
 }
