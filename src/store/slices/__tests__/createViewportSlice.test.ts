@@ -1,18 +1,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { Mock } from 'vitest';
 import { createViewportSlice } from '../createViewportSlice';
 import type { ViewportSlice } from '../../types';
 
 describe('createViewportSlice', () => {
   let state: ViewportSlice;
-  let set: ReturnType<typeof vi.fn>;
-  let get: ReturnType<typeof vi.fn>;
+  let set: Mock & Parameters<typeof createViewportSlice>[0];
+  let get: Mock & Parameters<typeof createViewportSlice>[1];
 
   beforeEach(() => {
-    set = vi.fn((updater) => {
+    set = vi.fn((updater: unknown) => {
       const patch = typeof updater === 'function' ? updater(state) : updater;
       state = { ...state, ...patch };
     });
-    get = vi.fn(() => state);
+    get = vi.fn(() => state) as unknown as typeof get;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     state = createViewportSlice(set, get, {} as any);
   });

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Mock } from 'vitest';
 
 const fetchEventRsvps = vi.fn();
 const setEventRsvp = vi.fn();
@@ -27,19 +28,19 @@ describe('createRsvpSlice', () => {
   // The slice reads studentId and mapEvents off the composed store; the test
   // supplies just those two neighbours rather than the whole thing.
   let state: RsvpSlice & { mapEvents: MapEvent[] };
-  let set: ReturnType<typeof vi.fn>;
-  let get: ReturnType<typeof vi.fn>;
+  let set: Mock & Parameters<typeof createRsvpSlice>[0];
+  let get: Mock & Parameters<typeof createRsvpSlice>[1];
 
   beforeEach(() => {
     idb.clear();
     fetchEventRsvps.mockReset().mockResolvedValue({ counts: {}, ok: true });
     setEventRsvp.mockReset().mockResolvedValue(true);
     syncReminders.mockReset().mockResolvedValue(undefined);
-    set = vi.fn((updater) => {
+    set = vi.fn((updater: unknown) => {
       const patch = typeof updater === 'function' ? updater(state) : updater;
       state = { ...state, ...patch };
     });
-    get = vi.fn(() => state);
+    get = vi.fn(() => state) as unknown as typeof get;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     state = { ...createRsvpSlice(set, get, {} as any), mapEvents: [] };
   });
@@ -227,8 +228,8 @@ describe('createRsvpSlice — failure handling', () => {
     category: 'party',
   };
   let state: RsvpSlice & { mapEvents: MapEvent[] };
-  let set: ReturnType<typeof vi.fn>;
-  let get: ReturnType<typeof vi.fn>;
+  let set: Mock & Parameters<typeof createRsvpSlice>[0];
+  let get: Mock & Parameters<typeof createRsvpSlice>[1];
 
   beforeEach(() => {
     idb.clear();
@@ -239,7 +240,7 @@ describe('createRsvpSlice — failure handling', () => {
       const p = typeof u === 'function' ? u(state) : u;
       state = { ...state, ...p };
     });
-    get = vi.fn(() => state);
+    get = vi.fn(() => state) as unknown as typeof get;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     state = { ...createRsvpSlice(set, get, {} as any), mapEvents: [party] as never };
   });

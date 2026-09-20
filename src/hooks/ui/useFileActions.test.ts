@@ -3,15 +3,19 @@ import { useFileActions } from './useFileActions';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock dependencies
-vi.mock('jszip', () => {
-  return {
-    default: vi.fn().mockImplementation(() => ({
-      file: vi.fn(),
-      generateAsync: vi.fn().mockResolvedValue(new Blob(['test-zip-content'])),
-      files: { 'file1.pdf': {}, 'file2.pdf': {} },
-    })),
-  };
-});
+// The source does `new JSZip()`, so the mock's default export has to be
+// constructible. vitest 5 constructs a mock's implementation under `new`
+// instead of calling it, and an arrow function has no [[Construct]] — the old
+// `vi.fn().mockImplementation(() => ({...}))` now throws "is not a
+// constructor". Nothing here asserts on the JSZip constructor itself, so a
+// plain class is both sufficient and clearer than a mock wrapping one.
+vi.mock('jszip', () => ({
+  default: class {
+    file = vi.fn();
+    generateAsync = vi.fn().mockResolvedValue(new Blob(['test-zip-content']));
+    files = { 'file1.pdf': {}, 'file2.pdf': {} };
+  },
+}));
 
 vi.mock('file-saver', () => ({
   saveAs: vi.fn(),
