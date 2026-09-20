@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const rpc = vi.fn(async (..._args: unknown[]) => ({ data: null, error: null }));
 const from = vi.fn();
 vi.mock('../supabaseClient', () => ({

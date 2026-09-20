@@ -38,16 +38,38 @@ const COUNTRIES = [
 ];
 
 const ISO_TO_EUROSTAT = {
-  '040':'AT','056':'BE','100':'BG','191':'HR','196':'CY',
-  '208':'DK','233':'EE','246':'FI','250':'FR','276':'DE',
-  '300':'EL','348':'HU','372':'IE','380':'IT','428':'LV',
-  '440':'LT','528':'NL','578':'NO','616':'PL','620':'PT',
-  '642':'RO','688':'RS','703':'SK','705':'SI','724':'ES',
-  '752':'SE','792':'TR','826':'UK',
+  '040': 'AT',
+  '056': 'BE',
+  100: 'BG',
+  191: 'HR',
+  196: 'CY',
+  208: 'DK',
+  233: 'EE',
+  246: 'FI',
+  250: 'FR',
+  276: 'DE',
+  300: 'EL',
+  348: 'HU',
+  372: 'IE',
+  380: 'IT',
+  428: 'LV',
+  440: 'LT',
+  528: 'NL',
+  578: 'NO',
+  616: 'PL',
+  620: 'PT',
+  642: 'RO',
+  688: 'RS',
+  703: 'SK',
+  705: 'SI',
+  724: 'ES',
+  752: 'SE',
+  792: 'TR',
+  826: 'UK',
 };
 
 async function fetchPriceLevels() {
-  const geos = [...new Set(Object.values(ISO_TO_EUROSTAT))].map(g => `geo=${g}`).join('&');
+  const geos = [...new Set(Object.values(ISO_TO_EUROSTAT))].map((g) => `geo=${g}`).join('&');
   const url = `https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/tec00120?format=JSON&lang=en&${geos}`;
   try {
     const res = await fetch(url);
@@ -88,37 +110,38 @@ async function main() {
       const data = await res.json();
       const reports = data.reports || [];
 
-      const schools = new Set(reports.map(r => r.host.name));
+      const schools = new Set(reports.map((r) => r.host.name));
       const costs = reports
-        .map(r => {
+        .map((r) => {
           const cost = parseFloat(String(r.finance.totalCostCZK).replace(/\s/g, ''));
           const dur = parseFloat(r.stay.durationMonths);
           return cost > 0 && dur > 0 ? Math.round(cost / dur) : null;
         })
         .filter(Boolean);
 
-      const durations = reports
-        .map(r => parseFloat(r.stay.durationMonths))
-        .filter(d => d > 0);
+      const durations = reports.map((r) => parseFloat(r.stay.durationMonths)).filter((d) => d > 0);
 
       const ratings = reports
-        .map(r => parseFloat(r.overall.rating))
-        .filter(r => r > 0 && r <= 5);
+        .map((r) => parseFloat(r.overall.rating))
+        .filter((r) => r > 0 && r <= 5);
 
       // Find top school by frequency
       const schoolCounts = {};
       for (const r of reports) {
         schoolCounts[r.host.name] = (schoolCounts[r.host.name] || 0) + 1;
       }
-      const topSchool = Object.entries(schoolCounts)
-        .sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+      const topSchool = Object.entries(schoolCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
 
       results[c.id] = {
         count: reports.length,
-        avgRating: ratings.length ? +(ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : 0,
+        avgRating: ratings.length
+          ? +(ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)
+          : 0,
         schools: schools.size,
         medianCostPerMonth: median(costs),
-        avgDuration: durations.length ? +(durations.reduce((a, b) => a + b, 0) / durations.length).toFixed(1) : 0,
+        avgDuration: durations.length
+          ? +(durations.reduce((a, b) => a + b, 0) / durations.length).toFixed(1)
+          : 0,
         topSchool: topSchool.length > 45 ? topSchool.slice(0, 42) + '...' : topSchool,
         priceLevelIndex: priceLevels[ISO_TO_EUROSTAT[c.id]] ?? null,
       };

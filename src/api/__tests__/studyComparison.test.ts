@@ -52,7 +52,13 @@ function parse(html: string) {
 describe('parseStudyComparison', () => {
   it('reads Mode 3 (#perc_5: faculty + study type + year), not the first table', () => {
     const result = parse(PERCENTILE_HTML);
-    expect(result).toEqual({ rank: 34, total: 549, percentile: 6.19, gpa: 1.53, nextBetterGpa: 1.51 });
+    expect(result).toEqual({
+      rank: 34,
+      total: 549,
+      percentile: 6.19,
+      gpa: 1.53,
+      nextBetterGpa: 1.51,
+    });
   });
 
   it('returns null when the Mode 3 block is absent', () => {

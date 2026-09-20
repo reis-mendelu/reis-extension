@@ -14,3 +14,23 @@ src/data/map/rooms-index.json
 src/data/map/campusPaths.json
 # Written by `infisical init` — reformatting it just loses to the next init
 .infisical.json
+# Captured IS Mendelu HTML. These are evidence of what IS actually emits, and
+# CLAUDE.md's Parser Rules make a real sample the only thing that justifies a
+# parser change — so they stay byte-for-byte as scraped. Reformatting them
+# would validate future parser work against markup IS never sends.
+src/api/__tests__/fixtures/**/*.html
+# The IS Mendelu HTML parsers. CLAUDE.md's Parser Rules freeze them: they are
+# extremely brittle, column-index constants are load-bearing, and a change is
+# only justified by a real captured IS sample. Even behaviour-preserving
+# reformatting is churn in the files where churn is most expensive, so they are
+# left exactly as written. Their tests are ordinary code and stay formatted.
+src/utils/parsers/**/*.ts
+!src/utils/parsers/**/__tests__/**
+
+# The vendored mobile design prototype. docs/superpowers/plans/2026-07-26-reis-mobile.md
+# calls it "the literal visual source of truth" and cites it by exact line range
+# ~20 times ("read the cited prototype range, then build to it"). Reformatting
+# re-wraps it and silently points every one of those citations at the wrong
+# markup. Same reason as the IS fixtures above: it is referenced evidence, not
+# maintained source.
+docs/design/*.html

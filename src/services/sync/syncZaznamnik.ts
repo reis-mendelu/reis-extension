@@ -6,28 +6,30 @@ import type { SubjectZaznamnik } from '../../types/zaznamnik';
 const zaznamnikLimit = pLimit(2);
 
 export interface ZaznamnikSyncInput {
-    courseCode: string;
-    subjectId: string;
-    hasPrubezne?: boolean;
-    hasTest?: boolean;
+  courseCode: string;
+  subjectId: string;
+  hasPrubezne?: boolean;
+  hasTest?: boolean;
 }
 
 export async function syncZaznamnik(
-    studium: string,
-    obdobi: string,
-    inputs: ZaznamnikSyncInput[],
+  studium: string,
+  obdobi: string,
+  inputs: ZaznamnikSyncInput[]
 ): Promise<Record<string, SubjectZaznamnik | null>> {
-    const result: Record<string, SubjectZaznamnik | null> = {};
-    await Promise.all(
-        inputs
-            .filter(i => i.subjectId && (i.hasPrubezne || i.hasTest))
-            .map(i => zaznamnikLimit(async () => {
-                try {
-                    result[i.courseCode] = await fetchSubjectZaznamnik(studium, obdobi, i.subjectId);
-                } catch {
-                    // Swallow per-subject failures — partial map is fine, merge guard prevents overwrite
-                }
-            }))
-    );
-    return result;
+  const result: Record<string, SubjectZaznamnik | null> = {};
+  await Promise.all(
+    inputs
+      .filter((i) => i.subjectId && (i.hasPrubezne || i.hasTest))
+      .map((i) =>
+        zaznamnikLimit(async () => {
+          try {
+            result[i.courseCode] = await fetchSubjectZaznamnik(studium, obdobi, i.subjectId);
+          } catch {
+            // Swallow per-subject failures — partial map is fine, merge guard prevents overwrite
+          }
+        })
+      )
+  );
+  return result;
 }

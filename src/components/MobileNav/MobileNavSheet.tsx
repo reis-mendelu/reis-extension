@@ -4,7 +4,11 @@ import { useState } from 'react';
 import type { MenuItem } from '../menuConfig';
 import type { AppView } from '../../types/app';
 import { useAppStore } from '../../store/useAppStore';
-import { IsSearchTriggers, IsSearchPopovers, type IsSearchTarget } from '../SearchBar/IsSearchTriggers';
+import {
+  IsSearchTriggers,
+  IsSearchPopovers,
+  type IsSearchTarget,
+} from '../SearchBar/IsSearchTriggers';
 
 interface MobileNavSheetProps {
   item: MenuItem | null;
@@ -14,10 +18,16 @@ interface MobileNavSheetProps {
   onOpenProfile?: () => void;
 }
 
-export function MobileNavSheet({ item, onClose, onViewChange, onOpenSubject, onOpenProfile }: MobileNavSheetProps) {
+export function MobileNavSheet({
+  item,
+  onClose,
+  onViewChange,
+  onOpenSubject,
+  onOpenProfile,
+}: MobileNavSheetProps) {
   const [isSearchOpen, setIsSearchOpen] = useState<IsSearchTarget>(null);
-  const setIsEduroamOpen = useAppStore(s => s.setIsEduroamOpen);
-  const setIsDocumentsOpen = useAppStore(s => s.setIsDocumentsOpen);
+  const setIsEduroamOpen = useAppStore((s) => s.setIsEduroamOpen);
+  const setIsDocumentsOpen = useAppStore((s) => s.setIsDocumentsOpen);
 
   if (!item) return null;
 
@@ -77,21 +87,24 @@ export function MobileNavSheet({ item, onClose, onViewChange, onOpenSubject, onO
                   </div>
                 ) : (
                   <div className="flex flex-col gap-0.5">
-                    {item.children.map(child => (
-                      <div key={child.id} className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-base-content/70 hover:bg-base-200 active:bg-base-200 transition-colors w-full">
+                    {item.children.map((child) => (
+                      <div
+                        key={child.id}
+                        className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-base-content/70 hover:bg-base-200 active:bg-base-200 transition-colors w-full"
+                      >
                         <button
                           onClick={() => handleChildClick(child)}
                           className="flex items-center gap-3 flex-1 min-w-0 text-left"
                         >
                           {child.icon ? (
-                            <span className="text-base-content/50">
-                              {child.icon}
-                            </span>
+                            <span className="text-base-content/50">{child.icon}</span>
                           ) : null}
                           <div className="flex-1 flex flex-col min-w-0">
                             <span className="font-medium truncate">{child.label}</span>
                             {child.subtitle && (
-                              <span className="text-[10px] text-base-content/40 truncate">{child.subtitle}</span>
+                              <span className="text-[10px] text-base-content/40 truncate">
+                                {child.subtitle}
+                              </span>
                             )}
                           </div>
                           {!child.isFeature && !child.isSubject && (

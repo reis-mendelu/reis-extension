@@ -1,4 +1,3 @@
- 
 /**
  * E2E tests for Success Rate tab in file drawer
  */
@@ -27,15 +26,15 @@ test.describe('Success Rate Tab', () => {
                       term: 'termín 1',
                       pass: 10,
                       fail: 5,
-                      grades: { A: 2, B: 2, C: 2, D: 2, E: 2, F: 5, FN: 0 }
-                    }
-                  ]
-                }
+                      grades: { A: 2, B: 2, C: 2, D: 2, E: 2, F: 5, FN: 0 },
+                    },
+                  ],
+                },
               ],
-              lastUpdated: new Date().toISOString()
-            }
-          }
-        })
+              lastUpdated: new Date().toISOString(),
+            },
+          },
+        }),
       });
     });
 
@@ -54,26 +53,28 @@ test.describe('Success Rate Tab', () => {
       await route.fulfill({
         status: 200,
         contentType: 'text/html',
-        body: mockHtml
+        body: mockHtml,
       });
     });
 
     // 3. Search for the subject
-    const searchInput = extensionPage.locator('input[placeholder*="Hledat"], input[aria-label="Vyhledávání"]').first();
+    const searchInput = extensionPage
+      .locator('input[placeholder*="Hledat"], input[aria-label="Vyhledávání"]')
+      .first();
     await expect(searchInput).toBeVisible({ timeout: 10000 });
     await searchInput.fill('Algoritmy');
     await extensionPage.keyboard.press('Enter');
-    
+
     // 3. Wait for and click result
     const resultItem = extensionPage.locator('[data-testid="search-result-item"]').first();
     await expect(resultItem).toBeVisible({ timeout: 5000 });
     await resultItem.click();
-    
+
     // 4. Navigate to success rate tab in drawer
     const statsTabButton = extensionPage.locator('button', { hasText: /Úspěšnost/i });
     await expect(statsTabButton).toBeVisible();
     await statsTabButton.click();
-    
+
     // 5. Verify stats content is visible
     const statsContent = extensionPage.locator('text=/Rozdělení známek|statist/i');
     await expect(statsContent.first()).toBeVisible();

@@ -1,4 +1,3 @@
- 
 /**
  * Visual regression tests for Calendar view
  */
@@ -18,13 +17,13 @@ test.describe('Visual: Calendar', () => {
 
   test('calendar with event selected', async ({ extensionPage }) => {
     await extensionPage.waitForLoadState('networkidle');
-    
+
     // Click on first calendar event if available
     const event = extensionPage.locator('[class*="event"], [class*="subject"]').first();
-    if (await event.count() > 0) {
+    if ((await event.count()) > 0) {
       await event.click();
       await extensionPage.waitForTimeout(500);
-      
+
       await expect(extensionPage).toHaveScreenshot('calendar-event-selected.png', {
         fullPage: true,
       });
