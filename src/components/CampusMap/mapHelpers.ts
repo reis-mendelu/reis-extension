@@ -8,6 +8,7 @@ import type {
   Landmark,
   RemotePlace,
 } from '../../types/campusMap';
+import { lookupRoomEntry } from '../../utils/rooms/lookupRoom';
 
 export interface RoomStyle {
   fill: string;
@@ -23,12 +24,10 @@ export function roomCodeToCoord(
   index: RoomIndexEntry[],
   buildings: BuildingsMeta
 ): [number, number] | null {
-  // Room code is free text in the authoring UI, so normalize both sides —
-  // a stray case/whitespace difference must not silently drop the pin.
-  const needle = code.trim().toLowerCase();
-  const entry = index.find(
-    (e) => e.code.toLowerCase() === needle || e.name.toLowerCase() === needle
-  );
+  // Room code is free text in the authoring UI, so share the app's one
+  // resolver — a stray case difference, a bracketed campus, or a hall known
+  // only by its nickname must not silently drop the pin.
+  const entry = lookupRoomEntry(code, index);
   if (!entry) return null;
   const b = buildings.buildings.find((x) => x.id === entry.buildingId);
   if (!b) return null;
@@ -37,14 +36,11 @@ export function roomCodeToCoord(
 
 // Events persist only the IS-internal room code (e.g. "BA39N1009"); the
 // human-readable hall name ("Q01") lives in the rooms index. Resolve code →
-// name for display. Normalizes like roomCodeToCoord and also matches on name,
-// so a legacy row that stored the name already stays a name. Falls back to the
-// given string for an unknown code so the user still sees something.
+// name for display. Resolves like roomCodeToCoord, so a legacy row that stored
+// the name (or a nickname) already still resolves. Falls back to the given
+// string for an unknown code so the user still sees something.
 export function roomCodeToName(code: string, index: RoomIndexEntry[]): string {
-  const needle = code.trim().toLowerCase();
-  const entry = index.find(
-    (e) => e.code.toLowerCase() === needle || e.name.toLowerCase() === needle
-  );
+  const entry = lookupRoomEntry(code, index);
   return entry ? roomLabel(entry.name, entry.code, entry.nickname) : code;
 }
 

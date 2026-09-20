@@ -22,6 +22,7 @@ import {
 import { fetchBuildingRooms } from '../../api/campusMap';
 import { fetchMapEvents, toMapEvent } from '../../api/mapEvents';
 import { logError } from '../../utils/reportError';
+import { lookupRoomEntry, isNonPhysicalRoom } from '../../utils/rooms/lookupRoom';
 
 const META = buildingsJson as BuildingsMeta;
 const INDEX = roomsIndexJson as RoomIndexEntry[];
@@ -114,9 +115,13 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
     set({ mapSearchQuery: q, mapSearchResults: searchPlaces(q, INDEX, POIS, LANDMARKS) }),
 
   focusRoomByCode: (code) => {
-    const entry = INDEX.find((e) => e.code === code || e.name === code);
+    const entry = lookupRoomEntry(code, INDEX);
     if (!entry) {
-      logError('MapSlice.focusRoomByCode', new Error(`unknown room ${code}`));
+      // A lesson held online has no place to fly to; that is the timetable
+      // being honest, not a lookup we got wrong, so it is not worth a log line.
+      if (!isNonPhysicalRoom(code)) {
+        logError('MapSlice.focusRoomByCode', new Error(`unknown room ${code}`));
+      }
       return;
     }
     const b = buildingById(entry.buildingId);
