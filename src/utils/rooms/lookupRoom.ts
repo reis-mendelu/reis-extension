@@ -60,26 +60,68 @@ function candidates(raw: string): string[] {
 }
 
 /**
- * Handles the DATA makes ambiguous, where the room a timetable means is still
- * knowable — resolved by hand because the index does not carry what would
- * decide it automatically.
+ * Handles that name rooms in more than one PLACE, and the one a timetable means.
  *
- * Fifteen handles name more than one room. Only this one currently resolves to
- * the wrong kind of room: `index.find` reaches BA04P1011, a basement storage
- * room, before BA04N3022, the third-floor classroom, and IS schedules 83
- * lessons a semester into "B22". The map's geojson records `category` for both
- * (`service` vs `teaching`) but `rooms-index.json` does not, so there is
- * nothing to tiebreak on here; carrying `category` into the index upstream
- * would retire this map.
+ * Fifteen handles in the index are carried by two or more rooms, but ten of
+ * those are duplicates within a single building and floor — byte-identical rows
+ * (three "BA27" in building M) or a descriptive nickname shared by neighbours
+ * ("Učebna agronomické fakulty."). Picking the first of those is harmless; a
+ * student cannot tell.
  *
- * The other ambiguous handles deliberately get no entry: B35 and C11 already
- * land on their classroom, B52 is two offices (which no timetable prints), and
- * E17 is two classrooms one floor apart with no tiebreak in the room string at
- * all. The frozen list in the test is what catches a new collision appearing.
+ * Five are not: B22, B35, B52, C11 and E17 each name rooms on different floors.
+ * For three of them the map's geojson settles it by `category`, which
+ * `rooms-index.json` does not carry — so the answer is written down here with
+ * its evidence, and carrying `category` into the index upstream would retire
+ * this table:
+ *
+ *   B22  BA04P1011 service  floor -1  vs  BA04N3022 teaching floor 3   (83 lessons)
+ *   B35  BA04N1033 office   floor  1  vs  BA04N4036 teaching floor 4  (100 lessons)
+ *   C11  BA03N1046 office   floor  0  vs  BA03N2045 teaching floor 1   (26 lessons)
+ *
+ * B35 and C11 already resolved to their classroom, but only by array order;
+ * pinning them stops a reordered index moving 126 lessons a semester into
+ * someone's office.
+ *
+ * B52 (two offices) and E17 (two classrooms) get no entry on purpose. Nothing
+ * in the room string can break those ties, so `lookupRoomEntry` returns null
+ * for them rather than guessing — see `ambiguousHandles`.
  */
 const PREFERRED_ROOM: Record<string, string> = {
   b22: 'BA04N3022',
+  b35: 'BA04N4036',
+  c11: 'BA03N2045',
 };
+
+/**
+ * Every handle that names rooms in two or more distinct (building, floor)
+ * pairs. Without a `PREFERRED_ROOM` entry these must not resolve at all: a
+ * coin flip between two floors looks exactly as confident as a real answer,
+ * and the caller has no way to know it was a guess. Returning null is the
+ * honest outcome and the UI already withholds its map controls for one.
+ *
+ * Computed once per index array — the app has exactly one — and cached weakly
+ * so a test passing a stub index gets its own answer.
+ */
+const ambiguousCache = new WeakMap<RoomIndexEntry[], Set<string>>();
+
+function ambiguousHandles(index: RoomIndexEntry[]): Set<string> {
+  const cached = ambiguousCache.get(index);
+  if (cached) return cached;
+  const places = new Map<string, Set<string>>();
+  for (const e of index) {
+    for (const handle of [e.code, e.name, e.nickname]) {
+      if (!handle || !handle.trim()) continue;
+      const key = normalizeRoomKey(handle);
+      const seen = places.get(key) ?? new Set<string>();
+      seen.add(`${e.buildingId}/${e.floorId}`);
+      places.set(key, seen);
+    }
+  }
+  const out = new Set<string>();
+  for (const [key, seen] of places) if (seen.size > 1) out.add(key);
+  ambiguousCache.set(index, out);
+  return out;
+}
 
 // Field precedence within one candidate: the estate code is unique, the printed
 // name next, the nickname last (nicknames are the only field that repeats — two
@@ -106,6 +148,9 @@ export function lookupRoomEntry(
       const pick = index.find((e) => e.code === preferred);
       if (pick) return pick;
     }
+    // Ambiguous across floors with nothing to decide it: skip to the next
+    // candidate rather than returning a room we cannot stand behind.
+    if (ambiguousHandles(index).has(needle)) continue;
     for (const field of FIELDS) {
       const exact = index.find((e) => field(e) === candidate);
       if (exact) return exact;

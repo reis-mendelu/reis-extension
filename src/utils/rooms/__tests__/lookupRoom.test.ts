@@ -70,16 +70,35 @@ describe('lookupRoomEntry', () => {
     expect(hit?.floorLevel).toBe(3);
   });
 
-  // The other four need no rule, and it matters that nobody adds one: B35 and
-  // C11 already land on their classroom, B52 is two offices (which no timetable
-  // prints), and E17 is two classrooms one floor apart with no tiebreak in the
-  // room string at all.
+  // B35 and C11 already happened to land on their classroom, but only because of
+  // array order. Pinned so a reordered index cannot silently move 126 lessons a
+  // semester into an office.
   it.each([
     ['B35', 'BA04N4036'],
     ['C11', 'BA03N2045'],
-  ])('leaves %s on the classroom it already resolved to', (nick, code) => {
+  ])('pins %s to its classroom rather than the office sharing the handle', (nick, code) => {
     expect(lookupRoomEntry(nick, INDEX)?.code).toBe(code);
   });
+
+  // The whole point of the ambiguity rule. Both E17s are classrooms one floor
+  // apart and both B52s are offices five floors apart; nothing in the room
+  // string can break either tie. Guessing puts a student on the wrong floor
+  // while looking certain, so the honest answer is no answer — and now that the
+  // UI withholds its controls for an unresolved room, that degrades cleanly.
+  it.each(['E17', 'B52'])('refuses to guess for %s', (nick) => {
+    expect(lookupRoomEntry(nick, INDEX)).toBeNull();
+  });
+
+  // ...but a handle repeated within ONE place is not ambiguous in any way a
+  // student can feel: the index carries byte-identical duplicate rows (three
+  // "BA27" in building M) and descriptive nicknames shared by rooms on the same
+  // floor. Suppressing those would lose resolutions for nothing.
+  it.each(['BA27', 'Učebna agronomické fakulty.'])(
+    'still resolves %s, duplicated within one place',
+    (h) => {
+      expect(lookupRoomEntry(h, INDEX)).not.toBeNull();
+    }
+  );
 
   it('returns null for a room the dataset does not contain', () => {
     // Real strings off a Zahradnická fakulta timetable. Building X's index
