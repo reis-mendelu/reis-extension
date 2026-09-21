@@ -322,6 +322,7 @@
     },
     "file": {
       "openFailed": "Couldn't open the file.",
+      "downloading": "Downloading…",
       "savedToDownloads": "Saved to Downloads"
     },
     "documentNote": {
@@ -922,9 +923,6 @@
     "openInMaps": "Open in Maps",
     "openInAppleMaps": "Apple Maps",
     "openInGoogleMaps": "Google Maps",
-    "rememberChoice": "Don't ask again",
-    "mapApp": "Maps",
-    "mapAppAsk": "Always ask",
     "audienceLabel": "WHO SEES IT",
     "audienceEveryone": "Everyone",
     "audienceHint": "Seen by students who follow {society}.",
@@ -1067,7 +1065,9 @@
       "groupLater": "Registered · later",
       "groupOpen": "Open slots",
       "groupNotYetOpen": "Not open yet",
-      "opensAt": "opens {when}",
+      "opensAtLabel": "opens",
+      "refresh": "Refresh exams",
+      "refreshing": "Updating…",
       "registeredCountOne": "{count} registered",
       "registeredCountFew": "{count} registered",
       "registeredCountOther": "{count} registered",
@@ -1083,7 +1083,6 @@
       "creditsOf": "{earned} / {total} credits",
       "creditProgress": "{pct}% of credits completed",
       "currentSemester": "Semester {n}",
-      "running": "in progress · {credits} cr.",
       "doneOf": "{done}/{total} done",
       "average": "Grade average",
       "avgSemester": "This semester",
@@ -1099,8 +1098,17 @@
       "creditOther": "credits",
       "loading": "Loading your courses…",
       "noneEnrolled": "You have no subjects enrolled for this semester yet.",
-      "startsOn": "starts {date} · {credits} cr.",
-      "creditsOnly": "{credits} cr."
+      "teachers": "Teachers",
+      "teacherRole": {
+        "guarantor": "Guarantor",
+        "lecturer": "Lecturers",
+        "tutor": "Tutors",
+        "examiner": "Examiners",
+        "other": "Other"
+      },
+      "enrolledCountOne": "{count} enrolled subject",
+      "enrolledCountFew": "{count} enrolled subjects",
+      "enrolledCountOther": "{count} enrolled subjects"
     },
     "map": {
       "searchPlaceholder": "Find a room, building, event…",

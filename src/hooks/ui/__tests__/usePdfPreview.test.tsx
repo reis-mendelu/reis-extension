@@ -4,12 +4,13 @@ import { renderHook, act } from '@testing-library/react';
 const openPdfInline = vi.fn();
 const fetchPdfBlob = vi.fn();
 const openFile = vi.fn();
+const downloadSingle = vi.fn();
 vi.mock('../useFileActions', () => ({
   useFileActions: () => ({
     openPdfInline: (...a: unknown[]) => openPdfInline(...a),
     fetchPdfBlob: (...a: unknown[]) => fetchPdfBlob(...a),
     openFile: (...a: unknown[]) => openFile(...a),
-    downloadSingle: vi.fn(),
+    downloadSingle: (...a: unknown[]) => downloadSingle(...a),
     isDownloading: false,
     downloadProgress: null,
   }),
@@ -34,6 +35,54 @@ vi.mock('sonner', () => ({ toast }));
 
 import { usePdfPreview } from '../usePdfPreview';
 import { useAppStore } from '../../../store/useAppStore';
+
+describe('usePdfPreview — downloads', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  /**
+   * The row's download button gave no sign it had been tapped. A file comes
+   * down the IS session whole, which on a phone is seconds for a large PDF, and
+   * a button that does nothing visible for that long reads as broken — the
+   * same complaint the open-file spinner answered. Which link, not a boolean,
+   * so only the tapped row changes.
+   */
+  it('names the file it is downloading, and stops when the download ends', async () => {
+    let finish!: () => void;
+    downloadSingle.mockReturnValue(new Promise<void>((resolve) => (finish = resolve)));
+    const { result } = renderHook(() => usePdfPreview('EBC-EKM'));
+    let pending!: Promise<void>;
+    act(() => {
+      pending = result.current.downloadSingle('https://is.mendelu.cz/a.pdf');
+    });
+    expect(result.current.downloadingLink).toBe('https://is.mendelu.cz/a.pdf');
+    await act(async () => {
+      finish();
+      await pending;
+    });
+    expect(result.current.downloadingLink).toBeNull();
+  });
+
+  it('clears the mark when the download fails, so the row does not spin forever', async () => {
+    downloadSingle.mockRejectedValue(new Error('network'));
+    const { result } = renderHook(() => usePdfPreview('EBC-EKM'));
+    await act(async () => {
+      await result.current.downloadSingle('https://is.mendelu.cz/a.pdf').catch(() => {});
+    });
+    expect(result.current.downloadingLink).toBeNull();
+  });
+
+  it('ignores a second tap while the same file is still coming down', async () => {
+    downloadSingle.mockReturnValue(new Promise<void>(() => {}));
+    const { result } = renderHook(() => usePdfPreview('EBC-EKM'));
+    act(() => {
+      void result.current.downloadSingle('https://is.mendelu.cz/a.pdf');
+    });
+    act(() => {
+      void result.current.downloadSingle('https://is.mendelu.cz/a.pdf');
+    });
+    expect(downloadSingle).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe('usePdfPreview', () => {
   beforeEach(() => {

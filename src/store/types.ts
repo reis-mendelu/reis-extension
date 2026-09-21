@@ -1,5 +1,4 @@
 import type { StateCreator } from 'zustand';
-import type { PreferredMapApp } from '../utils/venueMapUrl';
 import type { BlockLesson, HiddenItems, CalendarCustomEvent } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
 import type { SyncDomain } from '../types/messages/base';
@@ -487,8 +486,6 @@ export interface MobileUiSlice {
   /** Whether the tablet rail is showing. A rail has exactly two states — the
    *  sheet's three detents are a phone answer to a phone problem. */
   mapRailOpen: boolean;
-  /** Which map app a venue opens in, remembered across launches. `null` asks. */
-  preferredMapApp: PreferredMapApp;
   /** Dev-only forced phone/desktop branch. null = defer to viewport. */
   devPhoneOverride: boolean | null;
   /**
@@ -517,8 +514,6 @@ export interface MobileUiSlice {
   setMapSheetState: (state: MapSheetState) => void;
   setMapRailWidth: (px: number) => void;
   setMapRailOpen: (open: boolean) => void;
-  loadPreferredMapApp: () => Promise<void>;
-  setPreferredMapApp: (app: PreferredMapApp) => Promise<void>;
   setDevPhoneOverride: (value: boolean | null) => void;
 }
 

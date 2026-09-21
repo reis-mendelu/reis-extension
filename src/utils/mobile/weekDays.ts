@@ -38,20 +38,42 @@ export function shiftIso(iso: string, days: number): string {
   return toIso(date);
 }
 
+/** Whether any stored lesson falls on the given weekday (0 = Sunday … 6). */
+function taughtOn(lessonDates: ReadonlySet<string>, weekday: number): boolean {
+  for (const compact of lessonDates) {
+    const d = new Date(+compact.slice(0, 4), +compact.slice(4, 6) - 1, +compact.slice(6, 8));
+    if (d.getDay() === weekday) return true;
+  }
+  return false;
+}
+
 /**
- * Mon–Fri, plus any weekend day that actually holds a lesson.
+ * Mon–Fri, plus Saturday and/or Sunday for a student who is ever taught on
+ * them — in every week, not only the weeks that happen to hold a lesson.
  *
- * MENDELU teaches combined-study cohorts on Saturdays, so a fixed five made
- * those lessons unreachable: the agenda follows the selected day and no chip
- * could select a Saturday. An empty weekend never pads the strip, so the common
- * week stays five even chips. The desktop grid widens the same way, on the same
- * rule — see `visibleDayCount` in `WeeklyCalendar/useCalendarData.ts`.
+ * The weekend is a property of the STUDENT: "ukazuj to pouze pro lidi, co mají
+ * výuku v ty dny o víkendu — pokud student v těch dnech nikdy mít výuku
+ * nebude, neukazuj mu to". Two rules came before this one and each failed a
+ * different student:
+ *
+ * - Mon–Fri plus a weekend day only when THAT week had a lesson on it. A
+ *   combined-study student could not select their Saturday in the weeks
+ *   between teaching blocks — no chip, and the agenda follows the chip.
+ * - Always all seven. Every full-time student got two empty chips all
+ *   semester.
+ *
+ * `lessonDates` is the whole stored semester (`syncSchedule` keeps it all), so
+ * "has this student ever got a Saturday lesson" is answerable, and answering
+ * it per student settles both. The desktop grid still widens per week — see
+ * `visibleDayCount` in `WeeklyCalendar/useCalendarData.ts`.
  */
 export function weekDays(selectedIso: string, lessonDates: ReadonlySet<string>): Date[] {
   const monday = mondayOf(selectedIso);
+  const saturday = taughtOn(lessonDates, 6);
+  const sunday = taughtOn(lessonDates, 0);
   return Array.from({ length: 7 }, (_, i) => {
     const date = new Date(monday);
     date.setDate(monday.getDate() + i);
     return date;
-  }).filter((date, i) => i < 5 || lessonDates.has(toCompact(toIso(date))));
+  }).filter((_, i) => i < 5 || (i === 5 && saturday) || (i === 6 && sunday));
 }

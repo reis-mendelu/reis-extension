@@ -38,6 +38,10 @@ describe('ExamsScreen', () => {
   beforeEach(() => {
     useAppStore.setState({
       language: 'cz',
+      // Pinned before the 1.6.2026 terms below. Unset, the store clock is the
+      // real date, and once that passes June these registered exams count as
+      // already sat — which the screen now hides (see dropFinished).
+      now: new Date(2026, 4, 25, 9, 0),
       syncStatus: {
         isSyncing: false,
         lastSync: 1,

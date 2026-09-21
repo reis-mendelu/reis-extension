@@ -8,6 +8,7 @@ import { CalendarEmptyDay } from './CalendarEmptyDay';
 import { RecentFilesStrip } from './RecentFilesStrip';
 import { MenuCard } from './MenuCard';
 import { useSwipeSteps } from './useSwipeSteps';
+import { AlwaysScrollable } from '../../primitives/AlwaysScrollable';
 
 export interface DayBodyProps {
   agenda: AgendaRow[];
@@ -97,28 +98,30 @@ export function DayBody({
       ref={bodyRef}
       data-testid="day-body"
       {...handlers}
-      className="flex-1 touch-pan-y overflow-y-auto pb-[calc(9rem_+_var(--safe-bottom,0px))] transition-transform duration-200 ease-out"
+      className="flex-1 touch-pan-y overflow-y-auto transition-transform duration-200 ease-out"
     >
-      {agenda.length === 0 ? (
-        <CalendarEmptyDay
-          holiday={holiday}
-          outsideTeaching={outsideTeaching}
-          teachingStartsOn={teachingStartsOn}
-        />
-      ) : (
-        <DayAgenda
-          rows={agenda}
-          // The row hands over the day's own lesson object, so there is no
-          // id to look up and no week to disambiguate.
-          onOpenSubject={(lesson) => pushSheet(subjectSheetFor(lesson))}
-          onShowOnMap={(lesson) => {
-            setMobileTab('map');
-            focusRoomByCode(roomCodeFor(lesson));
-          }}
-        />
-      )}
-      <RecentFilesStrip />
-      <MenuCard dayIso={selectedIso} />
+      <AlwaysScrollable className="pb-[calc(9rem_+_var(--safe-bottom,0px))]">
+        {agenda.length === 0 ? (
+          <CalendarEmptyDay
+            holiday={holiday}
+            outsideTeaching={outsideTeaching}
+            teachingStartsOn={teachingStartsOn}
+          />
+        ) : (
+          <DayAgenda
+            rows={agenda}
+            // The row hands over the day's own lesson object, so there is no
+            // id to look up and no week to disambiguate.
+            onOpenSubject={(lesson) => pushSheet(subjectSheetFor(lesson))}
+            onShowOnMap={(lesson) => {
+              setMobileTab('map');
+              focusRoomByCode(roomCodeFor(lesson));
+            }}
+          />
+        )}
+        <RecentFilesStrip />
+        <MenuCard dayIso={selectedIso} />
+      </AlwaysScrollable>
     </div>
   );
 }
