@@ -4,6 +4,8 @@ import type { CampusGraph } from '../../types/campusMap';
 import { snapToGraph } from '../../utils/routing/snapToGraph';
 import { shortestWalk, type Walk } from '../../utils/routing/shortestWalk';
 import { currentPosition } from '../../utils/routing/position';
+import { quietPosition } from '../../utils/routing/quietPosition';
+import { canRouteFrom } from '../../utils/routing/routableStart';
 import type { RouteTarget } from '../../utils/routing/nextLessonTarget';
 import { logError } from '../../utils/reportError';
 
@@ -51,7 +53,18 @@ export interface RouteSlice {
    * suggestion is a button; the prompt is what pressing it costs.
    */
   routeSuggestion: RouteTarget | null;
-  suggestRoute: (target: RouteTarget | null) => void;
+  /**
+   * Whether a walk could be built from where the student is standing.
+   *
+   * `true` until something says otherwise, and "not knowing" stays `true` on
+   * purpose: the fix behind it is only taken when the permission was already
+   * granted, so on a device that never granted it this is simply never
+   * answered — and hiding the offer on a guess would take the feature away
+   * from someone standing on the campus.
+   */
+  canRouteFromHere: boolean;
+  /** Sets the offer, and quietly asks whether it is worth making. */
+  suggestRoute: (target: RouteTarget | null) => Promise<void>;
   /** Whether the destination picker is showing. In the store, not in a component. */
   routePickerOpen: boolean;
   setRoutePickerOpen: (open: boolean) => void;
@@ -70,15 +83,29 @@ export interface RouteSlice {
  */
 let routeGeneration = 0;
 
-export const createRouteSlice: AppSlice<RouteSlice> = (set) => ({
+export const createRouteSlice: AppSlice<RouteSlice> = (set, get) => ({
   routeFrom: null,
   routeWalk: null,
   routeStatus: 'idle',
   routeTargetBuilding: null,
   routeSuggestion: null,
+  canRouteFromHere: true,
   routePickerOpen: false,
 
-  suggestRoute: (target) => set({ routeSuggestion: target }),
+  suggestRoute: async (target) => {
+    set({ routeSuggestion: target, canRouteFromHere: true });
+    if (!target) return;
+    // Quietly, and only if the permission is already there — the prompt
+    // belongs to the press. A student across the city is not offered a walk
+    // that could only fail; see canRouteFrom for why this asks the router
+    // rather than measuring a radius.
+    const at = await quietPosition();
+    // The offer may have been retired while the fix was in flight: a tab
+    // switch, another room tapped, the route cleared. Answering a question
+    // nobody is asking any more would hide the NEXT offer.
+    if (!get().routeSuggestion) return;
+    set({ canRouteFromHere: canRouteFrom(at) });
+  },
 
   // Opening the picker is the student saying "not that one". Keeping the
   // suggestion alive through it would put the lecture back over the library
@@ -152,6 +179,7 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set) => ({
       routeStatus: 'idle',
       routeTargetBuilding: null,
       routeSuggestion: null,
+      canRouteFromHere: true,
       routePickerOpen: false,
     });
   },

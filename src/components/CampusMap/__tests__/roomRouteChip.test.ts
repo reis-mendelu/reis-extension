@@ -72,11 +72,18 @@ describe('chipShown', () => {
   const asked = { buildingName: 'Q', roomLabel: 'Q16' };
 
   it('offers the walk on a room the timetable sent you to', () => {
-    expect(chipShown(asked, 'idle')).toBe(true);
+    expect(chipShown(asked, 'idle', true)).toBe(true);
+  });
+
+  it('says nothing where no walk could be built from', () => {
+    // Prague, Špilberk, a park with no mapped path — anywhere the router
+    // cannot start. The press would draw nothing at all, and since the
+    // sentences are gone that reads as a broken button.
+    expect(chipShown(asked, 'idle', false)).toBe(false);
   });
 
   it('says nothing on a room the student merely tapped', () => {
-    expect(chipShown(null, 'idle')).toBe(false);
+    expect(chipShown(null, 'idle', true)).toBe(false);
   });
 
   it('gets out of the way once the walk is on the map', () => {
@@ -84,8 +91,8 @@ describe('chipShown', () => {
     // each other: the pill and the "12 min" chip both land at the destination,
     // and they overlapped at 320, 390 and 430. Once the line is drawn the
     // question has been answered — the pill has nothing left to offer.
-    expect(chipShown(asked, 'ready')).toBe(false);
-    expect(chipShown(asked, 'locating')).toBe(false);
-    expect(chipShown(asked, 'failed')).toBe(false);
+    expect(chipShown(asked, 'ready', true)).toBe(false);
+    expect(chipShown(asked, 'locating', true)).toBe(false);
+    expect(chipShown(asked, 'failed', true)).toBe(false);
   });
 });

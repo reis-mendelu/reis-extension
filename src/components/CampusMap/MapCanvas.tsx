@@ -115,6 +115,7 @@ export function MapCanvas() {
   const routeWalk = useAppStore((s) => s.routeWalk);
   const routeSuggestion = useAppStore((s) => s.routeSuggestion);
   const routeStatus = useAppStore((s) => s.routeStatus);
+  const canRouteFromHere = useAppStore((s) => s.canRouteFromHere);
   const routeFrom = useAppStore((s) => s.routeFrom);
   const language = useAppStore((s) => s.language);
   // Same "latest ref" trick, same reason: moving the draft pin (picking a
@@ -458,7 +459,7 @@ export function MapCanvas() {
       null;
     drawRoomRouteChip(
       roomChipRef.current,
-      chipShown(routeSuggestion, routeStatus) && building ? selected : null,
+      chipShown(routeSuggestion, routeStatus, canRouteFromHere) && building ? selected : null,
       translate(language, 'map.routeTakeMeThere'),
       () => {
         if (building) void useAppStore.getState().routeTo(building);
@@ -470,7 +471,15 @@ export function MapCanvas() {
     // with no chip on it, because there was no polygon to pin one to yet.
     // Re-running when the floor arrives is free — this effect restyles and
     // never touches the camera.
-  }, [mapSelection, activeBuildingId, language, roomsByBuilding, routeSuggestion, routeStatus]);
+  }, [
+    mapSelection,
+    activeBuildingId,
+    language,
+    roomsByBuilding,
+    routeSuggestion,
+    routeStatus,
+    canRouteFromHere,
+  ]);
 
   // Drawing the route is a restyle of its own layer, never a redraw of the map
   // — the heavy effect owns the layers, and re-running it here would throw away

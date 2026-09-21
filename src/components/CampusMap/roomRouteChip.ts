@@ -76,14 +76,24 @@ export function drawRoomRouteChip(
 /**
  * Whether the offer belongs on screen at all.
  *
- * Two rules, both learned on the device. It appears only for a lesson — the
+ * Three rules, all learned on the device. It appears only for a lesson — the
  * suggestion is set by the pin beside a timetable row and by nothing else, so
  * a student reading the floor plan is not asked whether they want directions
  * to every room they tap. And it goes away the moment the walk exists: the
  * pill and the "12 min" chip both land at the destination and were drawn on
  * top of each other at 320, 390 and 430. Once the line is there the question
  * has been answered.
+ *
+ * And it is not offered where no walk could be built from — across the city,
+ * or in a park with no mapped path within the snap tolerance. The press would
+ * draw nothing, and with the sentences gone that is indistinguishable from a
+ * broken button. `canRoute` defaults true where nothing is known; see
+ * `canRouteFrom`.
  */
-export function chipShown(suggestion: RouteTarget | null, status: RouteStatus): boolean {
-  return !!suggestion && status === 'idle';
+export function chipShown(
+  suggestion: RouteTarget | null,
+  status: RouteStatus,
+  canRoute: boolean
+): boolean {
+  return !!suggestion && status === 'idle' && canRoute;
 }

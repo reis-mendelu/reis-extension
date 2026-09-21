@@ -4,6 +4,8 @@ const currentPosition = vi.fn();
 // Partial mock: only the fix itself is faked. NO_PLATFORM stays the real
 // constant, so the slice's "unavailable vs denied" branch is tested against
 // the string the module actually throws rather than a copy that can drift.
+const quiet = vi.fn();
+vi.mock('../../../utils/routing/quietPosition', () => ({ quietPosition: () => quiet() }));
 vi.mock('../../../utils/routing/position', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../utils/routing/position')>()),
   currentPosition: () => currentPosition(),
@@ -219,5 +221,44 @@ describe('routeSuggestion', () => {
     // Opening the picker is the student saying "not that" — a stale suggestion
     // would otherwise re-offer Thursday's lecture over the library they chose.
     expect(useAppStore.getState().routeSuggestion).toBeNull();
+  });
+});
+
+describe('the offer and where the student is standing', () => {
+  beforeEach(() => {
+    quiet.mockReset();
+    useAppStore.getState().clearRoute();
+  });
+
+  it('starts out not knowing, which is not a no', () => {
+    expect(useAppStore.getState().canRouteFromHere).toBe(true);
+  });
+
+  it('withdraws the offer when the fix cannot start a walk', async () => {
+    quiet.mockResolvedValue(PRAGUE);
+    await useAppStore.getState().suggestRoute({ buildingName: 'Q', roomLabel: 'Q01' });
+    expect(useAppStore.getState().canRouteFromHere).toBe(false);
+  });
+
+  it('keeps it at FRRMS, the far side of the arboretum', async () => {
+    quiet.mockResolvedValue(FRRMS);
+    await useAppStore.getState().suggestRoute({ buildingName: 'Q', roomLabel: 'Q01' });
+    expect(useAppStore.getState().canRouteFromHere).toBe(true);
+  });
+
+  it('keeps it when no fix can be had without asking', async () => {
+    // The permission was never granted, so nothing was asked and nothing is
+    // known. Hiding the offer on that would take the feature away from a
+    // student standing on the campus.
+    quiet.mockResolvedValue(null);
+    await useAppStore.getState().suggestRoute({ buildingName: 'Q', roomLabel: 'Q01' });
+    expect(useAppStore.getState().canRouteFromHere).toBe(true);
+  });
+
+  it('forgets what it knew once the offer is cleared', async () => {
+    quiet.mockResolvedValue(PRAGUE);
+    await useAppStore.getState().suggestRoute({ buildingName: 'Q', roomLabel: 'Q01' });
+    useAppStore.getState().clearRoute();
+    expect(useAppStore.getState().canRouteFromHere).toBe(true);
   });
 });
