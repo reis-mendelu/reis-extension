@@ -4,6 +4,7 @@ import { Calendar } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
 import { ScreenError } from '../primitives/ScreenError';
+import { RefreshButton } from '../primitives/RefreshButton';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useExams } from '../../../hooks/data/useExams';
 import { useExamActions } from '../../ExamPanel/useExamActions';
@@ -137,13 +138,30 @@ export function ExamsScreen() {
       </span>
     ) : undefined;
 
+  // The refresh circle rides the pill's row rather than earning one of its
+  // own, so it costs zero vertical space on a screen that must fit without
+  // scrolling. The row is unconditional even though the pill is not: at zero
+  // registered exams `registeredPill` is `undefined`, and a control that
+  // disappears for the student with nothing registered is missing exactly when
+  // they are waiting on a fetch. A fourth header action was the alternative and
+  // is ruled out — see HeaderActions on what a fourth 40px target does to
+  // "Zkoušky" at 320px.
+  const belowRow = (
+    <div className="flex items-center gap-2">
+      {registeredPill}
+      <span className="ml-auto">
+        <RefreshButton />
+      </span>
+    </div>
+  );
+
   // The header renders in every state below, not only the loaded one. Returning
   // a bare skeleton or error in its place left two of the four tabs with no
   // route to the vývěska, search or notifications for as long as a crawl took —
   // the same hole CalendarScreen had, caught in review on this PR.
   const shell = (body: ReactNode) => (
     <div data-testid="exams-screen" className="flex flex-1 flex-col overflow-hidden">
-      <ScreenHeader eyebrow={eyebrow} title={t('mobile.exams.title')} below={registeredPill} />
+      <ScreenHeader eyebrow={eyebrow} title={t('mobile.exams.title')} below={belowRow} />
       {body}
     </div>
   );
