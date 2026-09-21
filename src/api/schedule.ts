@@ -65,11 +65,28 @@ export async function fetchWeekSchedule(
     });
 
     const contentType = response.headers.get('content-type');
+    const text = await response.text();
+
     if (!contentType || !contentType.includes('application/json')) {
-      return [];
+      // IS answers a window with NO lessons in it with an HTML page instead of
+      // empty JSON — measured on 2026-09-21, same session, only the range
+      // varying (01.09.2026–31.08.2027 → JSON/136 lessons, 01.03.2026–
+      // 31.03.2026 → text/html). The page carries `logout.pl`, so
+      // `isAuthenticatedHtml` waves it through as data.
+      //
+      // That sentence is the whole discrimination: with it, the answer is a
+      // true "you have no lessons"; without it the body is a login page, an IS
+      // error or anything else, and the caller must hear a FAILURE. Returning
+      // [] for both is what let a broken fetch wipe a real timetable.
+      // Fixture: src/api/__tests__/fixtures/is-rozvrh-no-results.html
+      if (text.includes('nevyhovuje žádná rozvrhová akce')) return [];
+      logError('Api.fetchWeekSchedule:nonJson', new Error('Non-JSON schedule response'), {
+        lang,
+        contentType,
+      });
+      return null;
     }
 
-    const text = await response.text();
     try {
       const data: ScheduleData = JSON.parse(text);
       return data.blockLessons || [];
