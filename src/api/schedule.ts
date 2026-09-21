@@ -7,6 +7,22 @@ import type { BlockLesson, ScheduleData } from '../types/schedule';
 
 const SCHEDULE_URL = `${BASE_URL}/auth/katalog/rozvrhy_view.pl`;
 
+/**
+ * IS's "this window has no lessons" sentence, in both languages it serves.
+ *
+ * BOTH are required, not one: `fetchDualLanguageSchedule` asks for `cz` AND
+ * `en` on every sync, and IS translates the page. Matching only the Czech one
+ * made the English leg return `null` — a reported failure — for a window that
+ * merely has nothing in it, filing a false error on every sync cycle.
+ *
+ * Measured against live IS on 2026-09-21, same empty window, same session.
+ * The English grammar is IS's own; do not "correct" it.
+ */
+const NO_RESULTS_MARKERS = [
+  'nevyhovuje žádná rozvrhová akce',
+  'No class match the selected criteria',
+] as const;
+
 export async function fetchWeekSchedule(
   specific?: { start: Date; end: Date },
   lang: string = 'cz'
@@ -78,8 +94,8 @@ export async function fetchWeekSchedule(
       // true "you have no lessons"; without it the body is a login page, an IS
       // error or anything else, and the caller must hear a FAILURE. Returning
       // [] for both is what let a broken fetch wipe a real timetable.
-      // Fixture: src/api/__tests__/fixtures/is-rozvrh-no-results.html
-      if (text.includes('nevyhovuje žádná rozvrhová akce')) return [];
+      // Fixtures: src/api/__tests__/fixtures/is-rozvrh-no-results{,-en}.html
+      if (NO_RESULTS_MARKERS.some((marker) => text.includes(marker))) return [];
       logError('Api.fetchWeekSchedule:nonJson', new Error('Non-JSON schedule response'), {
         lang,
         contentType,

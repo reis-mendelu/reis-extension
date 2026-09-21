@@ -27,6 +27,21 @@ const noResultsHtml = readFileSync(
   'utf8'
 );
 
+/**
+ * The SAME page in English, because `fetchDualLanguageSchedule` asks IS for
+ * both languages on every sync and IS translates this sentence.
+ *
+ * Measured against live IS on 2026-09-21, same empty window, same session:
+ * `lang=cz` answers `nevyhovuje žádná rozvrhová akce`, `lang=en` answers
+ * `No class match the selected criteria.` — IS's own wording, grammar and all.
+ * Matching only the Czech one made every EN leg report a FAILURE for a window
+ * that simply has no lessons, and file a false error report for each one.
+ */
+const noResultsHtmlEn = readFileSync(
+  resolve(process.cwd(), 'src/api/__tests__/fixtures/is-rozvrh-no-results-en.html'),
+  'utf8'
+);
+
 const fetchWithAuth = vi.fn();
 vi.mock('../client', () => ({
   fetchWithAuth: (...a: unknown[]) => fetchWithAuth(...a),
@@ -39,6 +54,7 @@ vi.mock('../../utils/userParams', () => ({
 vi.mock('../../utils/reportError', () => ({ logError: vi.fn() }));
 
 import { fetchWeekSchedule } from '../schedule';
+import { logError } from '../../utils/reportError';
 
 const RANGE = { start: new Date(2026, 2, 1), end: new Date(2026, 2, 31) };
 
@@ -67,6 +83,25 @@ describe('fetchWeekSchedule distinguishes an empty window from a failure', () =>
   it('still parses a JSON answer', async () => {
     respond(JSON.stringify({ blockLessons: [{ id: 'l1' }] }), 'application/json');
     await expect(fetchWeekSchedule(RANGE, 'cz')).resolves.toEqual([{ id: 'l1' }]);
+  });
+
+  it("returns [] for IS's English zero-result page, and reports no failure", async () => {
+    respond(noResultsHtmlEn, 'text/html; charset=utf-8');
+    await expect(fetchWeekSchedule(RANGE, 'en')).resolves.toEqual([]);
+    expect(vi.mocked(logError)).not.toHaveBeenCalled();
+  });
+
+  it('still reports a genuine non-JSON failure, in either language', async () => {
+    respond('<html><body>Internal server error</body></html>', 'text/html; charset=utf-8');
+    await expect(fetchWeekSchedule(RANGE, 'en')).resolves.toBeNull();
+    expect(vi.mocked(logError)).toHaveBeenCalled();
+  });
+
+  it('the English fixture really is the page IS serves', () => {
+    expect(noResultsHtmlEn).toContain('No class match the selected criteria');
+    expect(noResultsHtmlEn).toContain('logout.pl');
+    // The whole point of the second marker: the Czech sentence is absent here.
+    expect(noResultsHtmlEn).not.toContain('nevyhovuje žádná rozvrhová akce');
   });
 
   it('the fixture really is the page IS serves — marker present, session still valid', () => {
