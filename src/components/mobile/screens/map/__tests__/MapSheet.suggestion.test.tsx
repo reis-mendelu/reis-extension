@@ -4,13 +4,13 @@ import { MapSheet } from '../MapSheet';
 import { useAppStore } from '../../../../../store/useAppStore';
 
 /**
- * The offer has to be ON SCREEN when the student arrives from the timetable.
+ * The MAP has to be on screen when the student arrives from the timetable.
  *
- * The route button lives in the peek row, and the peek row is the one thing a
- * taller detent replaces. A student who had left the sheet open on the events
- * list — which is where a drag or a tapped pin leaves it — crossed over from
- * their lecture to a map holding a list of society events, with the button
- * that would walk them there hidden behind it.
+ * The offer itself is pinned to the room now, not carried in this sheet — but
+ * a sheet left open on the events list is 45% of the screen in front of the
+ * room it was just asked about. A student who had dragged it up (which is
+ * where a tapped event pin leaves it) crossed over from their lecture to a
+ * list of society events with their room behind it.
  */
 describe('MapSheet when a lecture is offered as a walk', () => {
   beforeEach(() => {
@@ -18,14 +18,21 @@ describe('MapSheet when a lecture is offered as a walk', () => {
     useAppStore.setState({ language: 'cz', mapSheetState: 'expanded' });
   });
 
-  it('comes back to the peek row so the offer is visible', () => {
+  it('comes back to the peek row so the room is visible', () => {
     render(<MapSheet />);
-    expect(screen.queryByText(/Doveď mě do/)).toBeNull();
 
     act(() => useAppStore.getState().suggestRoute({ buildingName: 'Q', roomLabel: 'Q31' }));
 
     expect(useAppStore.getState().mapSheetState).toBe('peek');
-    expect(screen.getByText('Doveď mě do Q31')).toBeTruthy();
+  });
+
+  it('carries no route button of its own any more', () => {
+    // The ask moved onto the floor plan, at the room it is about — see
+    // roomRouteChip. Two controls saying "Najdi cestu" on one screen was one
+    // too many, and the sheet's was the one further from the question.
+    act(() => useAppStore.getState().suggestRoute({ buildingName: 'Q', roomLabel: 'Q31' }));
+    render(<MapSheet />);
+    expect(screen.queryByText(/Najdi cestu|Doveď mě do/)).toBeNull();
   });
 
   it('leaves a sheet the student opened alone when nothing was suggested', () => {

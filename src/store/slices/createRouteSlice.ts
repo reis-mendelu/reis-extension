@@ -117,7 +117,11 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set) => ({
 
     const snap = snapToGraph(GRAPH, at);
     if (!snap) {
-      logError('RouteSlice.snap', new Error(`fix too far from the path network: ${at.join()}`));
+      // The REASON, never the coordinates. Nothing here leaves the device, but
+      // the position is the one thing in this feature worth not writing down at
+      // all — logcat is readable over adb, and the destination alone is enough
+      // to tell this failure from the others.
+      logError('RouteSlice.snap', new Error('fix too far from the path network'));
       set({ routeFrom: at, routeStatus: 'failed' });
       return;
     }
@@ -132,7 +136,7 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set) => ({
     const targets = GRAPH.buildings[buildingName] ?? [];
     const walk = shortestWalk(GRAPH, snap, targets, ALL_GATES_OPEN);
     if (!walk) {
-      logError('RouteSlice.route', new Error(`no walk to ${buildingName} from ${at.join()}`));
+      logError('RouteSlice.route', new Error(`no walk to ${buildingName}`));
       set({ routeFrom: at, routeStatus: 'failed' });
       return;
     }

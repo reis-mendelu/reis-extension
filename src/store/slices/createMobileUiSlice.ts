@@ -55,7 +55,16 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
 
   // Switching tabs closes sheets: a sheet belongs to the screen that opened it.
   setMobileTab: (tab) => {
-    set({ mobileTab: tab, mobileSheets: [] });
+    // And leaving the map drops the lesson's route offer, which belongs to one
+    // arrival from the timetable rather than to the room it points at —
+    // otherwise coming back for something else re-asks "Najdi cestu" about a
+    // room the student already walked away from.
+    //
+    // Here rather than as an unmount cleanup in MapScreen, which is what it
+    // looks like it should be: this app runs under StrictMode, so effects are
+    // double-invoked and that cleanup ran milliseconds after the pin set the
+    // suggestion. The chip never appeared at all.
+    set({ mobileTab: tab, mobileSheets: [], ...(tab === 'map' ? {} : { routeSuggestion: null }) });
     // A file opened from the Subjects tab should be in the calendar's
     // "recently opened" strip by the time the student gets there.
     if (tab === 'calendar') void get().refreshRecentPdfs();

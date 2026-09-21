@@ -53,4 +53,17 @@ describe('drawRoomRouteChip', () => {
     drawRoomRouteChip(layer, room(), 'Najdi cestu', vi.fn());
     expect((layer.getLayers()[0] as L.Marker).options.bubblingMouseEvents).toBe(false);
   });
+
+  it('sits above the room, never over its name', () => {
+    // The name is drawn dead centre of the polygon, and a pill anchored there
+    // covered it: "now it's not clear what the underlying room's name is".
+    // Anchored to the room's northern edge instead, so the label stays legible
+    // and the pill reads as pointing at the room rather than labelling it.
+    const layer = L.layerGroup();
+    const poly = room();
+    drawRoomRouteChip(layer, poly, 'Najdi cestu', vi.fn());
+    const at = (layer.getLayers()[0] as L.Marker).getLatLng();
+    expect(at.lat).toBeCloseTo(poly.getBounds().getNorth(), 6);
+    expect(at.lng).toBeCloseTo(poly.getBounds().getCenter().lng, 6);
+  });
 });

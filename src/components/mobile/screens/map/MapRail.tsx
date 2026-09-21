@@ -1,8 +1,11 @@
 import { ChevronLeft, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { useEffect } from 'react';
 import { useAppStore } from '../../../../store/useAppStore';
-import { RouteButton } from '../../../CampusMap/RouteButton';
 import { RouteDismiss } from '../../../CampusMap/RouteDismiss';
+// Still mounted, and deliberately: it renders nothing unless
+// `routePickerOpen`, nothing on screen opens that any more, and the ten
+// committed route journeys reach a named building through it. Delete the
+// mount and scripts/shot-route has no way to ask for a destination.
 import { RoutePicker } from '../../../CampusMap/RoutePicker';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useRailResize } from './useRailResize';
@@ -101,7 +104,6 @@ export function MapRail() {
           was no way to ask for a route at all, and the map simply never drew
           one. Found on a real device, in landscape, by the maintainer. */}
       <div className="flex flex-shrink-0 flex-col gap-2 border-b border-base-content/10 p-3">
-        <RouteButton />
         <RouteDismiss />
         <RoutePicker />
       </div>

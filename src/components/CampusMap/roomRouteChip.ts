@@ -1,8 +1,8 @@
 import L from 'leaflet';
 
-/** Roughly the pill's own height plus a hair, so it sits ABOVE the room rather
- *  than over the room's own name, which is drawn dead centre. */
-const LIFT_PX = 30;
+/** Clear air between the pill's bottom edge and the room's outline. The pill
+ *  is ~27px tall, so this lifts it just off the polygon it points at. */
+const LIFT_PX = 34;
 
 /**
  * "Najdi cestu", pinned to the room the student just tapped.
@@ -37,7 +37,12 @@ export function drawRoomRouteChip(
   layer.clearLayers();
   if (!room) return;
 
-  const marker = L.marker(room.getBounds().getCenter(), {
+  // Anchored to the room's NORTHERN edge, not its centre. The room's own name
+  // is drawn dead centre, and a pill over the centre hid it — "now it's not
+  // clear what the underlying room's name is". From the top edge the pill
+  // points at the room instead of labelling it, and the name stays readable.
+  const bounds = room.getBounds();
+  const marker = L.marker(L.latLng(bounds.getNorth(), bounds.getCenter().lng), {
     // A press must not also reach the map, whose tap-away clears the very
     // selection this chip belongs to — the same trap the garden bubbles
     // document, and it would close the room in the gesture that asked for it.

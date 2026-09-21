@@ -86,7 +86,12 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
 
   setMapFloor: (floorId) => set({ activeFloorId: floorId, mapSelection: null }),
 
-  selectMapRoom: (room) => set({ mapSelection: { kind: 'room', room } }),
+  // Tapping a room by hand retires the timetable's offer. The "Najdi cestu"
+  // chip is pinned to the room a LESSON sent the student to; left alive, it
+  // followed the selection onto whatever room they tapped next and still
+  // routed to the lecture's building — an offer about one room, sitting on
+  // another.
+  selectMapRoom: (room) => set({ mapSelection: { kind: 'room', room }, routeSuggestion: null }),
   selectMapPoi: (poi, coord) => set({ mapSelection: { kind: 'poi', poi, coord } }),
   selectGardenPlace: (place) => set({ mapSelection: { kind: 'gardenPlace', place } }),
 

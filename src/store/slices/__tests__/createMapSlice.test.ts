@@ -562,3 +562,15 @@ describe('mapFocusTarget', () => {
     expect(useAppStore.getState().mapFocusTarget).toBe('campus');
   });
 });
+
+describe('tapping a room by hand', () => {
+  it('retires the lesson offer, because the student moved on from it', () => {
+    // The chip is the timetable's question, pinned to the room the timetable
+    // sent them to. Tapping a DIFFERENT room is a different question: without
+    // this, the offer followed the selection onto a room it was never about
+    // and still routed to the lecture's building.
+    useAppStore.getState().suggestRoute({ buildingName: 'Q', roomLabel: 'Q01' });
+    useAppStore.getState().selectMapRoom({ id: 42, name: 'B11' } as never);
+    expect(useAppStore.getState().routeSuggestion).toBeNull();
+  });
+});

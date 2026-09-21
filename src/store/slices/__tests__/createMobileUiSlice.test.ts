@@ -147,3 +147,29 @@ describe('createMobileUiSlice', () => {
     });
   });
 });
+
+describe('leaving the map tab', () => {
+  it('drops the lesson offer, so coming back does not re-ask', () => {
+    // The chip belongs to ONE arrival from the timetable. Expressed in the
+    // store and not as an unmount cleanup in MapScreen, which is what it looks
+    // like it should be: this app runs under StrictMode, which double-invokes
+    // effects, so that cleanup ran milliseconds after the pin set the
+    // suggestion and the chip never appeared at all. Measured, then moved.
+    const patches: Record<string, unknown>[] = [];
+    const set = ((updater: unknown) => {
+      patches.push(
+        (typeof updater === 'function' ? updater({}) : updater) as Record<string, unknown>
+      );
+    }) as unknown as Parameters<typeof createMobileUiSlice>[0];
+    const get = (() => ({ refreshRecentPdfs: () => Promise.resolve() })) as unknown as Parameters<
+      typeof createMobileUiSlice
+    >[1];
+    const slice = createMobileUiSlice(set, get, {} as never);
+
+    slice.setMobileTab('map');
+    expect(patches.at(-1)).not.toHaveProperty('routeSuggestion');
+
+    slice.setMobileTab('calendar');
+    expect(patches.at(-1)).toMatchObject({ routeSuggestion: null });
+  });
+});

@@ -2,8 +2,11 @@ import { useEffect, useRef } from 'react';
 import { ChevronUp } from 'lucide-react';
 import { useMapSheetDrag } from './useMapSheetDrag';
 import { useAppStore } from '../../../../store/useAppStore';
-import { RouteButton } from '../../../CampusMap/RouteButton';
 import { RouteDismiss } from '../../../CampusMap/RouteDismiss';
+// Still mounted, and deliberately: it renders nothing unless
+// `routePickerOpen`, nothing on screen opens that any more, and the ten
+// committed route journeys reach a named building through it. Delete the
+// mount and scripts/shot-route has no way to ask for a destination.
 import { RoutePicker } from '../../../CampusMap/RoutePicker';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { MapPanelBody } from './MapPanelBody';
@@ -247,7 +250,6 @@ export function MapSheet() {
               aria-hidden="true"
             />
           </button>
-          <RouteButton />
           <RouteDismiss />
         </div>
       )}
