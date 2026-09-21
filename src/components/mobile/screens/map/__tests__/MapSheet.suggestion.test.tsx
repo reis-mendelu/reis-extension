@@ -39,4 +39,17 @@ describe('MapSheet when a lecture is offered as a walk', () => {
     render(<MapSheet />);
     expect(useAppStore.getState().mapSheetState).toBe('expanded');
   });
+
+  it('clears the floating nav by the safe inset too, not just by 72px', () => {
+    // Hugging its content is what a drawn route puts the sheet into, and the
+    // BottomNav floats OVER the sheet at `bottom-[calc(18px + --safe-bottom)]`
+    // — it rides the gesture bar. A flat 72px does not, so on a Pixel the
+    // nav rose by the inset and sat on the event band's second line: measured
+    // at 390px, the last row ended 12px above the nav before the inset was
+    // counted, and behind it on the device.
+    act(() => useAppStore.setState({ routeStatus: 'ready' } as never));
+    render(<MapSheet />);
+    const sheet = screen.getByTestId('map-sheet');
+    expect(sheet.className).toContain('var(--safe-bottom,0px)');
+  });
 });
