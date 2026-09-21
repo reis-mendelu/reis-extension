@@ -21,6 +21,8 @@ import { initLeafletMap, flyAndReveal, drawLandmarks } from './mapLayers';
 import { drawRemotePlaces, REMOTE, REMOTE_IDS } from './remoteLayers';
 import { drawCampusPaths } from './pathLayers';
 import { roomLabelsHidden } from './roomLabels';
+import { drawRoomRouteChip } from './roomRouteChip';
+import { translate } from '../../i18n/translate';
 import { setMapInstance } from './mapInstance';
 import { roomFocusView } from './focusBounds';
 import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
@@ -78,6 +80,9 @@ export function MapCanvas() {
   // Live room polygons keyed by placeId, with their unselected base style — lets
   // a plain map click re-highlight in place without a full redraw or camera move.
   const roomPolysRef = useRef<Map<number, { poly: L.Polygon; base: L.PathOptions }>>(new Map());
+  /** The "Najdi cestu" pill pinned to the selected room. Its own group, so a
+   *  selection change never redraws the plan — a redraw moves the camera. */
+  const roomChipRef = useRef<L.LayerGroup>(L.layerGroup());
   /** The open floor plan's building, so the label rule can be re-asked on every
    *  camera settle without re-running the effect that owns the camera. */
   const planBoundsRef = useRef<L.LatLngBounds | null>(null);
@@ -132,6 +137,7 @@ export function MapCanvas() {
     // one is cleared and rebuilt on every building and floor change.
     positionLayerRef.current.addTo(map);
     routeLayerRef.current.addTo(map);
+    roomChipRef.current.addTo(map);
     mapRef.current = map;
     setMapInstance(map);
     // Room names are only worth drawing while the plan is close enough to read.
@@ -430,13 +436,33 @@ export function MapCanvas() {
         : mapSelection?.kind === 'roomRef'
           ? mapSelection.entry.placeId
           : null;
+    let selected: L.Polygon | null = null;
     for (const [id, { poly, base }] of roomPolysRef.current) {
       if (id === selId) {
         poly.setStyle(SELECTED_STYLE);
         poly.bringToFront();
+        selected = poly;
       } else poly.setStyle(base);
     }
-  }, [mapSelection]);
+    // The offer belongs where the question was asked. Drawn here rather than in
+    // the heavy effect so picking a different room restyles and re-pins without
+    // rebuilding the floor — see roomRouteChip.
+    const building = META.buildings.find((x) => x.id === activeBuildingId)?.name ?? null;
+    drawRoomRouteChip(
+      roomChipRef.current,
+      building ? selected : null,
+      translate(language, 'map.routeTakeMeThere'),
+      () => {
+        if (building) void useAppStore.getState().routeTo(building);
+      }
+    );
+    // `roomsByBuilding` is a dependency because the polygons this reads are
+    // built by the heavy effect, and on the way in from a lesson pin the
+    // selection lands BEFORE they exist: the map arrived on the right room
+    // with no chip on it, because there was no polygon to pin one to yet.
+    // Re-running when the floor arrives is free — this effect restyles and
+    // never touches the camera.
+  }, [mapSelection, activeBuildingId, language, roomsByBuilding]);
 
   // Drawing the route is a restyle of its own layer, never a redraw of the map
   // — the heavy effect owns the layers, and re-running it here would throw away

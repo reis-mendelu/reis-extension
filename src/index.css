@@ -573,6 +573,58 @@ body,
  * base-content (#f3f4f6) on a basemap that is always light. Invisible, and the
  * unit test passed because it asserted the divIcon's html, which is not the
  * same question as whether anyone can see it. */
+/* "Najdi cestu", pinned to the room you tapped.
+ *
+ * A MARKER, so `.leaflet-marker-icon` — not `.leaflet-tooltip`. That is the
+ * whole reason this comment exists: the walk chip shipped once styled against
+ * the tooltip rule while being rendered as a divIcon, and went out invisible.
+ *
+ * Dark surface, like the search pill: this basemap is always light whatever
+ * the app theme is, and anything floating over it either carries its own
+ * background or disappears. The glyph takes the route's fuchsia so the control
+ * resembles the line it draws; the solid fuchsia belongs to the "9 min" chip,
+ * which is the answer rather than the offer.
+ *
+ * `width: 0` on the icon with the pill centred on it: the label's width is not
+ * known when the icon is built, and Leaflet would otherwise box the shadow
+ * around dead space. */
+.leaflet-marker-icon.room-route-chip {
+  width: 0 !important;
+  height: 0 !important;
+  overflow: visible;
+}
+.room-route-chip-pill {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  background: #1c2431;
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgb(15 23 42 / 0.35);
+  cursor: pointer;
+}
+.room-route-chip-pill > svg {
+  color: #d946ef;
+  flex: none;
+}
+/* The focus ring has to be visible against BOTH the pill and the light
+ * basemap it floats on, so it is drawn outside the pill rather than inside. */
+.leaflet-marker-icon.room-route-chip:focus-visible {
+  outline: none;
+}
+.leaflet-marker-icon.room-route-chip:focus-visible .room-route-chip-pill {
+  outline: 2px solid #d946ef;
+  outline-offset: 2px;
+}
+
 .leaflet-tooltip.route-chip {
   background: #a21caf;
   border: none;

@@ -2,6 +2,7 @@ import { ChevronLeft, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { useEffect } from 'react';
 import { useAppStore } from '../../../../store/useAppStore';
 import { RouteButton } from '../../../CampusMap/RouteButton';
+import { RouteDismiss } from '../../../CampusMap/RouteDismiss';
 import { RoutePicker } from '../../../CampusMap/RoutePicker';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useRailResize } from './useRailResize';
@@ -101,6 +102,7 @@ export function MapRail() {
           one. Found on a real device, in landscape, by the maintainer. */}
       <div className="flex flex-shrink-0 flex-col gap-2 border-b border-base-content/10 p-3">
         <RouteButton />
+        <RouteDismiss />
         <RoutePicker />
       </div>
 

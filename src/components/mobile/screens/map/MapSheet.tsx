@@ -3,6 +3,7 @@ import { ChevronUp } from 'lucide-react';
 import { useMapSheetDrag } from './useMapSheetDrag';
 import { useAppStore } from '../../../../store/useAppStore';
 import { RouteButton } from '../../../CampusMap/RouteButton';
+import { RouteDismiss } from '../../../CampusMap/RouteDismiss';
 import { RoutePicker } from '../../../CampusMap/RoutePicker';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { MapPanelBody } from './MapPanelBody';
@@ -247,6 +248,7 @@ export function MapSheet() {
             />
           </button>
           <RouteButton />
+          <RouteDismiss />
         </div>
       )}
 

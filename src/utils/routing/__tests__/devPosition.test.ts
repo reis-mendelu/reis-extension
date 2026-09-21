@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { devForcedPosition, devForcedNow } from '../devPosition';
+import { devForcedPosition, devForcedNow, bakedPosition } from '../devPosition';
 
 const setSearch = (search: string) => {
   vi.stubGlobal('window', { location: { search } } as unknown as Window);
@@ -61,5 +61,25 @@ describe('devForcedNow', () => {
   it('is null for a value that is not a date', () => {
     setSearch('?now=next%20tuesday');
     expect(devForcedNow()).toBeNull();
+  });
+});
+
+describe('bakedPosition', () => {
+  it('is null when nothing was baked in, which is every shipped build', () => {
+    expect(bakedPosition(undefined)).toBeNull();
+    expect(bakedPosition('')).toBeNull();
+  });
+
+  it('reads a lat,lon pasted out of a map, in that order', () => {
+    // Same order as `?at=` and for the same reason: a human copies lat,lon,
+    // and the transpose happens once, here at the boundary.
+    expect(bakedPosition('49.218161,16.614118')).toEqual([16.614118, 49.218161]);
+  });
+
+  it('refuses a pair that cannot be a Brno lat/lon in that order', () => {
+    // Transposed. Accepting it starts the walk in the Indian Ocean, where the
+    // failure looks like a broken router rather than a backwards value.
+    expect(bakedPosition('16.614118,49.218161')).toBeNull();
+    expect(bakedPosition('nonsense')).toBeNull();
   });
 });
