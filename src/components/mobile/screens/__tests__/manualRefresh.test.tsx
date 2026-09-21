@@ -86,6 +86,23 @@ describe('the manual refresh circle', () => {
     expect(screen.getByLabelText(REFRESH)).toBeInTheDocument();
   });
 
+  it('keeps a 44px tap target, however small the glyph looks', () => {
+    // Measured on the running app at 320px: the glyph is 12px but the button
+    // is 44x44 and the row it sits in is still 24px tall, because `-my-2.5`
+    // hands the extra height back. A `btn-xs` circle measures 24x24, which
+    // would be the smallest target in the app — DayChips grew its arrows to
+    // h-11 for this exact reason and the header actions are h-10.
+    //
+    // Asserted as a class contract rather than a measurement: the test DOM
+    // does not lay out, so geometry cannot be read here. The live numbers are
+    // in the PR description.
+    render(<CalendarScreen />);
+    const cls = screen.getByLabelText(REFRESH).className;
+    expect(cls).toContain('h-11');
+    expect(cls).toContain('w-11');
+    expect(cls).not.toContain('btn-xs');
+  });
+
   it('renders on the exams screen', () => {
     render(<ExamsScreen />);
     expect(screen.getByLabelText(REFRESH)).toBeInTheDocument();

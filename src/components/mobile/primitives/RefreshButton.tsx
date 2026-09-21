@@ -18,6 +18,24 @@ import { syncService } from '../../../services/sync';
  *
  * Its own copy, not `course.freshness.refresh`: that one reads "Obnovit
  * soubory" / "Refresh files", which is a lie on the calendar.
+ *
+ * The GLYPH is 12px and the HIT AREA is 44px, which is not a contradiction.
+ * "A small rotate circle" is what it must look like; 44px is the touch minimum
+ * this app already holds itself to — DayChips grew its arrows to h-11 for
+ * exactly this reason ("the touch minimum the old 36px missed") and the header
+ * actions are h-10. A btn-xs circle measures 24x24 on device, which would have
+ * made this the smallest tap target in the app by a wide margin.
+ *
+ * `-my-2.5` hands the extra height back to the layout, so the row still
+ * occupies the ~24px it did and the calendar keeps fitting without scrolling.
+ * Measured on both screens at 320px: nothing interactive sits within 200px
+ * above or below, so the overhang cannot steal a tap.
+ *
+ * `size={12}` and `text-base-content/50` are the desktop values, not a guess —
+ * ExamsFreshness inherits the tint from its wrapping div and FilesFreshness
+ * spells it out on the button. A brighter, larger circle was the first draft
+ * and it read as a control demanding attention rather than one waiting to be
+ * used.
  */
 export function RefreshButton() {
   const { t } = useTranslation();
@@ -30,9 +48,9 @@ export function RefreshButton() {
       disabled={isSyncing}
       title={t('mobile.header.refresh')}
       aria-label={t('mobile.header.refresh')}
-      className="btn btn-ghost btn-xs btn-circle interactive disabled:opacity-50"
+      className="btn btn-ghost btn-circle interactive -my-2.5 h-11 min-h-11 w-11 text-base-content/50 disabled:opacity-50"
     >
-      <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+      <RefreshCw size={12} className={isSyncing ? 'animate-spin' : ''} />
     </button>
   );
 }
