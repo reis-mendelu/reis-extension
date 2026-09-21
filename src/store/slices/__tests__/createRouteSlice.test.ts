@@ -261,4 +261,29 @@ describe('the offer and where the student is standing', () => {
     useAppStore.getState().clearRoute();
     expect(useAppStore.getState().canRouteFromHere).toBe(true);
   });
+
+  it('lets the newer of two overlapping offers decide', async () => {
+    // Two lesson pins tapped in quick succession. The first fix resolves LAST,
+    // and a guard that only asks "is there a suggestion?" is satisfied by the
+    // second one — so the first would answer a question nobody asked any more
+    // and hide, or show, the wrong offer. Same generation guard `routeTo`
+    // already carries, for the same reason.
+    let releaseFirst: (v: [number, number] | null) => void = () => {};
+    quiet.mockReturnValueOnce(
+      new Promise((r) => {
+        releaseFirst = r;
+      })
+    );
+    const first = useAppStore.getState().suggestRoute({ buildingName: 'Q', roomLabel: 'Q01' });
+
+    quiet.mockResolvedValue(FRRMS);
+    await useAppStore.getState().suggestRoute({ buildingName: 'B', roomLabel: 'B11' });
+    expect(useAppStore.getState().canRouteFromHere).toBe(true);
+
+    // The abandoned request comes back from Prague. It must not be heard.
+    releaseFirst(PRAGUE);
+    await first;
+    expect(useAppStore.getState().canRouteFromHere).toBe(true);
+    expect(useAppStore.getState().routeSuggestion?.roomLabel).toBe('B11');
+  });
 });

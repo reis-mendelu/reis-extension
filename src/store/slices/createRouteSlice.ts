@@ -83,6 +83,17 @@ export interface RouteSlice {
  */
 let routeGeneration = 0;
 
+/**
+ * The same bookkeeping for the offer's own quiet fix.
+ *
+ * Two lesson pins tapped in quick succession leave two fixes in flight, and
+ * they can land out of order. A guard that only asked "is there a suggestion?"
+ * was satisfied by the SECOND one, so the first came back and answered a
+ * question nobody was asking any more — measured: a stale fix from across the
+ * city withdrew an offer that was valid where the student actually stood.
+ */
+let suggestGeneration = 0;
+
 export const createRouteSlice: AppSlice<RouteSlice> = (set, get) => ({
   routeFrom: null,
   routeWalk: null,
@@ -93,6 +104,7 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set, get) => ({
   routePickerOpen: false,
 
   suggestRoute: async (target) => {
+    const mine = ++suggestGeneration;
     set({ routeSuggestion: target, canRouteFromHere: true });
     if (!target) return;
     // Quietly, and only if the permission is already there — the prompt
@@ -100,10 +112,11 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set, get) => ({
     // that could only fail; see canRouteFrom for why this asks the router
     // rather than measuring a radius.
     const at = await quietPosition();
-    // The offer may have been retired while the fix was in flight: a tab
-    // switch, another room tapped, the route cleared. Answering a question
-    // nobody is asking any more would hide the NEXT offer.
-    if (!get().routeSuggestion) return;
+    // This exact offer, not merely "an offer". It may have been retired while
+    // the fix was in flight — a tab switch, another room tapped, the route
+    // cleared — or overtaken by a newer one, and answering for either would
+    // decide the wrong question.
+    if (mine !== suggestGeneration || !get().routeSuggestion) return;
     set({ canRouteFromHere: canRouteFrom(at) });
   },
 
@@ -171,8 +184,10 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set, get) => ({
   },
 
   clearRoute: () => {
-    // Anything still in flight now belongs to nobody.
+    // Anything still in flight now belongs to nobody — the walk's fix and the
+    // offer's alike.
     routeGeneration++;
+    suggestGeneration++;
     set({
       routeFrom: null,
       routeWalk: null,
