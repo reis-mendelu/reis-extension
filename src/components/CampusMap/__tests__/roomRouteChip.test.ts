@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import L from 'leaflet';
-import { drawRoomRouteChip } from '../roomRouteChip';
+import { drawRoomRouteChip, chipShown } from '../roomRouteChip';
 
 const room = () =>
   L.polygon([
@@ -65,5 +65,27 @@ describe('drawRoomRouteChip', () => {
     const at = (layer.getLayers()[0] as L.Marker).getLatLng();
     expect(at.lat).toBeCloseTo(poly.getBounds().getNorth(), 6);
     expect(at.lng).toBeCloseTo(poly.getBounds().getCenter().lng, 6);
+  });
+});
+
+describe('chipShown', () => {
+  const asked = { buildingName: 'Q', roomLabel: 'Q16' };
+
+  it('offers the walk on a room the timetable sent you to', () => {
+    expect(chipShown(asked, 'idle')).toBe(true);
+  });
+
+  it('says nothing on a room the student merely tapped', () => {
+    expect(chipShown(null, 'idle')).toBe(false);
+  });
+
+  it('gets out of the way once the walk is on the map', () => {
+    // The offer and the answer are different objects, and they were sitting on
+    // each other: the pill and the "12 min" chip both land at the destination,
+    // and they overlapped at 320, 390 and 430. Once the line is drawn the
+    // question has been answered — the pill has nothing left to offer.
+    expect(chipShown(asked, 'ready')).toBe(false);
+    expect(chipShown(asked, 'locating')).toBe(false);
+    expect(chipShown(asked, 'failed')).toBe(false);
   });
 });

@@ -1,4 +1,6 @@
 import L from 'leaflet';
+import type { RouteStatus } from '../../store/slices/createRouteSlice';
+import type { RouteTarget } from '../../utils/routing/nextLessonTarget';
 
 /** Clear air between the pill's bottom edge and the room's outline. The pill
  *  is ~27px tall, so this lifts it just off the polygon it points at. */
@@ -69,4 +71,19 @@ export function drawRoomRouteChip(
     });
   });
   marker.addTo(layer);
+}
+
+/**
+ * Whether the offer belongs on screen at all.
+ *
+ * Two rules, both learned on the device. It appears only for a lesson — the
+ * suggestion is set by the pin beside a timetable row and by nothing else, so
+ * a student reading the floor plan is not asked whether they want directions
+ * to every room they tap. And it goes away the moment the walk exists: the
+ * pill and the "12 min" chip both land at the destination and were drawn on
+ * top of each other at 320, 390 and 430. Once the line is there the question
+ * has been answered.
+ */
+export function chipShown(suggestion: RouteTarget | null, status: RouteStatus): boolean {
+  return !!suggestion && status === 'idle';
 }

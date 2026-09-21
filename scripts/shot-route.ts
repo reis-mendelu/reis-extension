@@ -17,7 +17,8 @@
  * point — a screenshot proves a thing rendered, and only the JSON says whether
  * the answer was right.
  *
- * Requires the dev webapp on :3000 (`npm run dev:web`).
+ * Requires the dev webapp (`npm run dev:web`, or the reis-webapp preview). It
+ * listens on :3000 unless REIS_BASE says otherwise.
  */
 
 import { chromium, type Page } from '@playwright/test';
@@ -25,7 +26,14 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const OUT = resolve(process.cwd(), '.verify/routes');
-const BASE = 'http://localhost:3000';
+/**
+ * The dev webapp. 3000 by default, but `preview_start` assigns another port
+ * when that one is taken (autoPort), and a harness that cannot follow it is a
+ * harness you stop running.
+ *
+ *   REIS_BASE=http://localhost:50742 npm run shot:route
+ */
+const BASE = process.env.REIS_BASE ?? 'http://localhost:3000';
 const WEEKDAY = '2026-09-21T10:00';
 const WEEKEND = '2026-09-26T10:00';
 
