@@ -4,6 +4,7 @@ import landmarksJson from '../../data/map/landmarks.json';
 import { ringToLatLng, landmarkGroupLabels } from './mapHelpers';
 import { REMOTE } from './remoteLayers';
 import { GARDEN_PLACE_ID, bubblesHidden } from './gardenBubbleLayer';
+import { LABELS_PANE, TOOLTIP_CARVE_OUTS, ensureReisPanes } from './mapPanes';
 import type { Landmark } from '../../types/campusMap';
 
 const LANDMARKS = (landmarksJson as { landmarks: Landmark[] }).landmarks;
@@ -61,6 +62,9 @@ export function initLeafletMap(
   // The search box + floor selector own the top-left now, so move the native
   // +/- control to the bottom-right where it no longer sits under them.
   map.zoomControl.setPosition('bottomright');
+  // Up front, because a tooltip that names a pane the map has not got throws
+  // inside Leaflet (`getPane()` returns undefined and it appends to it anyway).
+  ensureReisPanes(map);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 22,
     maxNativeZoom: 19,
@@ -105,9 +109,14 @@ export function initLeafletMap(
 // panes for the duration of the fly so only the basemap animates; reveal once
 // the camera has settled.
 export function flyAndReveal(map: L.Map, fly: () => void): void {
-  const panes = [map.getPane('overlayPane'), map.getPane('tooltipPane')].filter(
-    (p): p is HTMLElement => p != null
-  );
+  // The carve-outs too: the building letters were moved out of `tooltipPane`
+  // into a pane of their own, and a pane left visible here flashes its labels at
+  // the pre-fly position while the basemap animates away underneath them.
+  const panes = [
+    map.getPane('overlayPane'),
+    map.getPane('tooltipPane'),
+    ...TOOLTIP_CARVE_OUTS.map((n) => map.getPane(n)),
+  ].filter((p): p is HTMLElement => p != null);
   for (const p of panes) p.style.visibility = 'hidden';
   const reveal = () => {
     for (const p of panes) p.style.visibility = '';
@@ -141,6 +150,7 @@ export function drawLandmarks(
         permanent: true,
         direction: 'center',
         className: 'building-label',
+        pane: LABELS_PANE,
       });
     else poly.bindTooltip(LANDMARK_LABELS.get(l.id) ?? l.name);
     poly.addTo(layer);

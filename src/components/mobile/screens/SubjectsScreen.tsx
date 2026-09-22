@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { BookOpen, ListTree } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
 import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
@@ -12,6 +12,7 @@ import { CreditRing } from './subjects/CreditRing';
 import { SemesterCard } from './subjects/SemesterCard';
 import { AverageAccordion } from './subjects/AverageAccordion';
 import { NavRow } from '../primitives/NavRow';
+import { AlwaysScrollable } from '../primitives/AlwaysScrollable';
 
 function SubjectsSkeleton() {
   const { t } = useTranslation();
@@ -128,32 +129,37 @@ export function SubjectsScreen() {
 
   return shell(
     <>
-      <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-4 pb-[calc(6rem_+_var(--safe-bottom,0px))] pt-3.5">
-        <CreditRing earned={plan.creditsAcquired} total={plan.creditsRequired} />
-        {enrolled.length > 0 ? (
-          <SemesterCard enrolled={enrolled} semester={semester} onOpenSubject={openSubject} />
-        ) : (
-          // Said plainly rather than left blank: a student who has not
-          // registered yet used to be shown a semester the heuristics picked,
-          // with no sign it was a guess.
-          <div
-            data-testid="subjects-none-enrolled"
-            className="flex-shrink-0 rounded-2xl border border-base-300 bg-base-100 px-4 py-5 text-center text-sm text-base-content/60"
-          >
-            {t('mobile.subjects.noneEnrolled')}
-          </div>
-        )}
-        <AverageAccordion studyStats={studyStats} comparison={studyComparison} />
-        {/* Under the average, and only where the plan is real: in the skeleton
-            and error shells above there is nothing to open. */}
-        <div className="flex-shrink-0 overflow-hidden rounded-2xl border border-base-300 bg-base-100">
-          <NavRow
-            icon={ListTree}
-            label={t('mobile.subjects.studyPlan')}
-            sublabel={plan.title}
-            onClick={openPlan}
+      {/* Always draggable, even when it fits — see AlwaysScrollable. */}
+      <div data-testid="subjects-scroll" className="flex-1 overflow-y-auto">
+        <AlwaysScrollable className="gap-2.5 px-4 pb-[calc(6rem_+_var(--safe-bottom,0px))] pt-3.5">
+          <CreditRing
+            earned={plan.creditsAcquired}
+            total={plan.creditsRequired}
+            lastTwoPeriods={studyStats?.creditsLastTwoPeriods ?? null}
           />
-        </div>
+          {enrolled.length > 0 ? (
+            <SemesterCard enrolled={enrolled} semester={semester} onOpenSubject={openSubject} />
+          ) : (
+            // Said plainly rather than left blank: a student who has not
+            // registered yet used to be shown a semester the heuristics picked,
+            // with no sign it was a guess.
+            <div
+              data-testid="subjects-none-enrolled"
+              className="flex-shrink-0 rounded-2xl border border-base-300 bg-base-100 px-4 py-5 text-center text-sm text-base-content/60"
+            >
+              {t('mobile.subjects.noneEnrolled')}
+            </div>
+          )}
+          <AverageAccordion studyStats={studyStats} comparison={studyComparison} />
+          {/* Under the average, and only where the plan is real: in the skeleton
+            and error shells above there is nothing to open. */}
+          <div className="flex-shrink-0 overflow-hidden rounded-2xl border border-base-300 bg-base-100">
+            {/* No icon and no sublabel: this row is the twin of the "Studijní
+              průměr" header above it, and the English plan title under a Czech
+              label was the same thing said twice. */}
+            <NavRow label={t('mobile.subjects.studyPlan')} onClick={openPlan} />
+          </div>
+        </AlwaysScrollable>
       </div>
     </>,
     plan.title

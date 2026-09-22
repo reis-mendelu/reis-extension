@@ -36,7 +36,13 @@ export function formatDayMonth(date: Date, locale: string): string {
   const weekday = new Intl.DateTimeFormat(locale, { weekday: 'short' })
     .format(date)
     .replace(/\.$/, '');
-  return `${weekday} ${date.getDate()}. ${date.getMonth() + 1}.`;
+  return `${weekday} ${formatDayMonthBare(date)}`;
+}
+
+/** "21. 9." — the same numerals without the weekday, for the places that sit
+ *  beside a date which already names the day. */
+export function formatDayMonthBare(date: Date): string {
+  return `${date.getDate()}. ${date.getMonth() + 1}.`;
 }
 
 /** The strip's lead line: "dnes · 15:00" when it is today, else "út 21. 7. · 8:00". */
@@ -72,4 +78,21 @@ export function splitByWeek<T>(
     (isSameWeek(dateOf(item), now) ? thisWeek : later).push(item);
   }
   return { thisWeek, later };
+}
+
+/**
+ * Everything except the exams whose day is already over.
+ *
+ * IS keeps a registered exam on the list after it has been sat, until it is
+ * graded. Left in, it led "Co tě čeká" with the upcoming dot, landed under
+ * "Přihlášené · později" because `splitByWeek` files everything outside this
+ * week there, and offered "Odhlásit" for something that had happened. Hidden
+ * rather than grouped — the student's call.
+ *
+ * By day, not by start time: on the day itself the room and time are exactly
+ * what a student needs, late or not.
+ */
+export function dropFinished<T>(items: T[], dateOf: (item: T) => Date, now: Date): T[] {
+  const today = startOfDay(now).getTime();
+  return items.filter((item) => startOfDay(dateOf(item)).getTime() >= today);
 }

@@ -44,6 +44,39 @@ describe('the profile tab', () => {
     expect(screen.getByRole('button', { name: 'Profil' })).toBeInTheDocument();
   });
 
+  /**
+   * Under the name: the student ID, and nothing else. It is what every MENDELU
+   * office, form and exam sign-in sheet asks for, and a student otherwise has to
+   * dig it out of IS. It already sits in the store (`studentId`, IS's
+   * "Identifikační číslo uživatele") for the profile photo.
+   *
+   * This row used to carry the study plan's title — "B-F prez - ZS 2025/2026",
+   * or, when `extractPlanTitle` found no heading, the literal "Study Plan". Both
+   * describe a plan, not the person, and the Předměty tab is where the plan
+   * lives: "stačí ID studenta".
+   */
+  it("shows the student's ID under the name", () => {
+    render(<ProfileScreen />);
+    expect(screen.getByText('ID 123456')).toBeInTheDocument();
+  });
+
+  it('shows no ID line before IS has told us one', () => {
+    useAppStore.setState({ studentId: null } as never);
+    render(<ProfileScreen />);
+    expect(screen.queryByText(/^ID /)).not.toBeInTheDocument();
+  });
+
+  it('no longer names the study plan or its period under the name', () => {
+    const plan = { title: 'B-F prez - ZS 2025/2026', blocks: [] };
+    useAppStore.setState({
+      studyPlanDual: { cz: plan, en: plan },
+      // IS's own studies line, which briefly took the plan title's place.
+      userStudyCode: 'PEF B-F prez [sem 5, roč 3]',
+    } as never);
+    render(<ProfileScreen />);
+    expect(screen.queryByText(/Study Plan|ZS 2025\/2026|prez/)).not.toBeInTheDocument();
+  });
+
   it('switches to it on tap', () => {
     useAppStore.setState({ mobileTab: 'calendar' } as never);
     render(<BottomNav />);

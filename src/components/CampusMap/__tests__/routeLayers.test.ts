@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import L from 'leaflet';
 import { drawRoute, drawPosition, ROUTE_COLOR } from '../routeLayers';
 import type { Walk } from '../../../utils/routing/shortestWalk';
+import { EVENTS_PANE, LEAFLET_PANE_Z, REIS_PANE_Z } from '../mapPanes';
 
 const walk: Walk = {
   coords: [
@@ -44,6 +45,17 @@ describe('drawRoute', () => {
     expect(chip).toBeInstanceOf(L.Tooltip);
     expect(chip.options.className).toBe('route-chip');
     expect(chip.options.permanent).toBe(true);
+  });
+
+  it('keeps the chip above the event pins', () => {
+    // The pins were lifted out of the tooltip pane into one of their own, so a
+    // chip that let Leaflet's default stand would be fine and a chip moved into
+    // the labels pane would vanish under a pin. This is the answer written down:
+    // the student asked for this route, so its time wins.
+    const layer = L.layerGroup();
+    drawRoute(layer, walk, 'cz');
+    expect(chipOf(layer)!.options.pane).toBe('tooltipPane');
+    expect(LEAFLET_PANE_Z.tooltip).toBeGreaterThan(REIS_PANE_Z[EVENTS_PANE]);
   });
 
   it('puts the chip at the destination, not at the start', () => {

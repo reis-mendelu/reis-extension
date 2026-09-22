@@ -101,6 +101,25 @@ describe('SubjectsScreen', () => {
     expect(screen.queryByRole('img', { name: /kreditů/ })).not.toBeInTheDocument();
   });
 
+  /**
+   * "chci aby si lidi mohli scrollovat v předmětech dolů a nahoru". The screen
+   * does scroll once it overflows, but on most phones it does not: a semester
+   * card, the average and the plan row fit, so a drag moved nothing and the tab
+   * felt frozen next to every other list on the device. The content is held one
+   * pixel taller than its scroller, so iOS always has something to
+   * rubber-band — the native "this is a list" feel — with no visible gap.
+   */
+  it('always gives the subject list something to scroll, even when it fits', () => {
+    const p = plan();
+    useAppStore.setState({ studyPlanDual: { cz: p, en: p } } as never);
+    render(<SubjectsScreen />);
+    const scroller = screen.getByTestId('subjects-scroll');
+    expect(scroller.className).toContain('overflow-y-auto');
+    expect((scroller.firstElementChild as HTMLElement).className).toContain(
+      'min-h-[calc(100%+1px)]'
+    );
+  });
+
   it('shows the credit ring for a seeded plan', () => {
     const p = plan();
     useAppStore.setState({ studyPlanDual: { cz: p, en: p } } as never);

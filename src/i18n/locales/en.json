@@ -322,6 +322,7 @@
     },
     "file": {
       "openFailed": "Couldn't open the file.",
+      "downloading": "Downloading…",
       "savedToDownloads": "Saved to Downloads"
     },
     "documentNote": {
@@ -890,6 +891,7 @@
     "noPlaceFound": "Nothing found — try another name or pick on the map.",
     "orPickOnMap": "or pick manually on the map",
     "mapPoint": "Point selected on map",
+    "venueOnMap": "Place on the map",
     "changePlace": "Change place",
     "publish": "Publish event",
     "clickToPlace": "Tap the button, then mark the spot on the map",
@@ -922,9 +924,6 @@
     "openInMaps": "Open in Maps",
     "openInAppleMaps": "Apple Maps",
     "openInGoogleMaps": "Google Maps",
-    "rememberChoice": "Don't ask again",
-    "mapApp": "Maps",
-    "mapAppAsk": "Always ask",
     "audienceLabel": "WHO SEES IT",
     "audienceEveryone": "Everyone",
     "audienceHint": "Seen by students who follow {society}.",
@@ -1008,7 +1007,18 @@
       "noData": "No data yet.",
       "under5": "under 5",
       "unknown": "not set",
-      "loadFailed": "Could not load statistics."
+      "loadFailed": "Could not load statistics.",
+      "signals": "Features (30 days)",
+      "signalsNote": "Installs, not people. The map counts after three seconds on screen; eduroam is split between “the app configured the network” and “we handed over a profile” — a handed-over profile still has to be installed by the student.",
+      "signalMapDwell": "Map for 3+ seconds",
+      "signalEduroamConfigured": "eduroam configured by the app",
+      "signalEduroamDelivered": "eduroam profile handed over",
+      "signalInstalls": "installs",
+      "topEvents": "Most-opened events on the map",
+      "mapViews": "opens",
+      "mapViewsNote": "A count of opens, not of people — no identifier sits behind these numbers.",
+      "trendAria": "Trend: {label}, last {days} days, {total} {unit} in total, peak {max} in a day.",
+      "trendWithheld": "No chart for this signal yet — under 5 installs in 30 days."
     },
     "loginName": "login",
     "audience": {
@@ -1019,6 +1029,7 @@
   },
   "mobile": {
     "header": {
+      "refresh": "Refresh",
       "search": "Search"
     },
     "nav": {
@@ -1067,7 +1078,9 @@
       "groupLater": "Registered · later",
       "groupOpen": "Open slots",
       "groupNotYetOpen": "Not open yet",
-      "opensAt": "opens {when}",
+      "opensAtLabel": "opens",
+      "refresh": "Refresh exams",
+      "refreshing": "Updating…",
       "registeredCountOne": "{count} registered",
       "registeredCountFew": "{count} registered",
       "registeredCountOther": "{count} registered",
@@ -1083,7 +1096,6 @@
       "creditsOf": "{earned} / {total} credits",
       "creditProgress": "{pct}% of credits completed",
       "currentSemester": "Semester {n}",
-      "running": "in progress · {credits} cr.",
       "doneOf": "{done}/{total} done",
       "average": "Grade average",
       "avgSemester": "This semester",
@@ -1099,8 +1111,17 @@
       "creditOther": "credits",
       "loading": "Loading your courses…",
       "noneEnrolled": "You have no subjects enrolled for this semester yet.",
-      "startsOn": "starts {date} · {credits} cr.",
-      "creditsOnly": "{credits} cr."
+      "teachers": "Teachers",
+      "teacherRole": {
+        "guarantor": "Guarantor",
+        "lecturer": "Lecturers",
+        "tutor": "Tutors",
+        "examiner": "Examiners",
+        "other": "Other"
+      },
+      "enrolledCountOne": "{count} enrolled subject",
+      "enrolledCountFew": "{count} enrolled subjects",
+      "enrolledCountOther": "{count} enrolled subjects"
     },
     "map": {
       "searchPlaceholder": "Find a room, building, event…",

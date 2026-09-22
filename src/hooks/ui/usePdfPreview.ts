@@ -55,6 +55,12 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
   // year and no caller ever read it, so a tap on a file showed nothing at all
   // while a whole PDF came down the IS session.
   const [openingLink, setOpeningLink] = useState<string | null>(null);
+  // The same for the row's download button, which gave no sign at all that it
+  // had been tapped: IS hands a file over whole, which for a large PDF on a
+  // phone is seconds of a button that looks dead. A ref guards re-entry,
+  // because state lags a double tap by a render.
+  const [downloadingLink, setDownloadingLink] = useState<string | null>(null);
+  const downloadingRef = useRef<string | null>(null);
 
   // Blob URLs are held by the document until revoked; a drawer opened and
   // closed a dozen times would otherwise pin every PDF it ever showed in memory.
@@ -147,6 +153,21 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
     [courseCode, tryNativeReader, openPdfInline, openFile, openingLink]
   );
 
+  const downloadTracked = useCallback(
+    async (link: string) => {
+      if (downloadingRef.current === link) return;
+      downloadingRef.current = link;
+      setDownloadingLink(link);
+      try {
+        await downloadSingle(link);
+      } finally {
+        downloadingRef.current = null;
+        setDownloadingLink(null);
+      }
+    },
+    [downloadSingle]
+  );
+
   const closePreview = useCallback(() => {
     setPreviewUrl(null);
     setPreviewFile(null);
@@ -160,7 +181,8 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
     viewPdf,
     closePreview,
     openFile,
-    downloadSingle,
+    downloadSingle: downloadTracked,
+    downloadingLink,
     isDownloading,
     downloadProgress,
   };
