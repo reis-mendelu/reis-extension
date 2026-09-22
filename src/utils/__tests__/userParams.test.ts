@@ -337,6 +337,66 @@ describe('getUserParams', () => {
   });
 
   /**
+   * A read that lands WHILE a check is naming someone else. The offline first
+   * attempt left the previous student's record cached, unconfirmed; the later
+   * check sets `_identityChecked` as soon as IS answers, then waits on the
+   * wipe. A read in that window passed the cache shortcut and got the previous
+   * student's record — confirmed, as far as it knew. It has to wait for the
+   * check instead.
+   */
+  it('never serves the cached record to a read made while a switch is being handled', async () => {
+    vi.useFakeTimers();
+    idbGet.mockResolvedValue(COMPLETE);
+    fetchUserBaseIds.mockRejectedValueOnce(new Error('offline'));
+    await getUserParams(); // caches the previous student, unconfirmed
+
+    vi.advanceTimersByTime(61_000);
+    fetchUserBaseIds.mockResolvedValue(OTHER);
+    let finishWipe: () => void = () => {};
+    idbClearAll.mockImplementation(() => new Promise<void>((r) => (finishWipe = r)));
+
+    const check = getUserParams();
+    await vi.waitFor(() => expect(idbClearAll).toHaveBeenCalledTimes(1));
+    const during = getUserParams(); // lands mid-wipe
+    finishWipe();
+
+    expect((await check)?.studentId).toBe('987654');
+    expect((await during)?.studentId).toBe('987654');
+  });
+
+  /**
+   * `complete()` asks for a name as well as an id, and the switch used to ask
+   * for `complete()`. A stored record carrying the previous student's id but
+   * no name therefore skipped the wipe — and the new student's params were
+   * written straight over it, beside the previous student's schedule and
+   * classmates. The id is what says whose data it is; compare it whenever
+   * both sides have one.
+   */
+  it('wipes on a different student id even when the stored record has no name', async () => {
+    idbGet.mockResolvedValue({ studium: '149707', obdobi: '812', studentId: '120344' });
+    fetchUserBaseIds.mockResolvedValue(OTHER);
+
+    const params = await getUserParams();
+    expect(idbClearAll).toHaveBeenCalledTimes(1);
+    expect(params?.studentId).toBe('987654');
+  });
+
+  /**
+   * A stored record with no id at all cannot be attributed, and it is not
+   * wiped. That shape is the English-`studium.pl` half-record, written for the
+   * SAME student, and a wipe would take their local-only data (notes, their
+   * own calendar events) with it. It is repaired in place instead.
+   */
+  it('repairs a stored record with no id rather than wiping it', async () => {
+    idbGet.mockResolvedValue({ studium: '149707', obdobi: '812' });
+    fetchUserBaseIds.mockResolvedValue(COMPLETE);
+
+    const params = await getUserParams();
+    expect(idbClearAll).not.toHaveBeenCalled();
+    expect(params?.studentId).toBe('120344');
+  });
+
+  /**
    * The one that matters. A record written while IS was answering in English
    * has `studium`/`obdobi` and nothing else — and the old guard accepted it as
    * complete, so the empty `studentId` outlived the parser bug that produced

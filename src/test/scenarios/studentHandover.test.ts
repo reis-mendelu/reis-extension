@@ -31,10 +31,23 @@ vi.mock('../../utils/userParams/fetchers', () => ({
   fetchUserNetId: () => fetchUserNetId(),
 }));
 
-// Supabase, and the only other thing that leaves the device.
-const clearAdminSession = vi.fn(async () => {});
-vi.mock('../../services/admin/clearAdminSession', () => ({
-  clearAdminSession: () => clearAdminSession(),
+// The society login, down to where it is actually kept. Only the network edge
+// is faked (Supabase's revoke); `clearAdminSession` itself runs for real
+// against an in-memory `chrome.storage.local`, so these scenarios assert the
+// credential is GONE — the state that decides who gets into the console — not
+// merely that a function with the right name was called.
+const ADMIN_KEY = 'reis_admin_auth';
+const adminStore = new Map<string, string>();
+vi.mock('../../services/admin/authClient', () => ({
+  ADMIN_AUTH_STORAGE_KEY: 'reis_admin_auth',
+  adminAuthClient: { auth: { signOut: async () => ({ error: null }) } },
+}));
+vi.mock('../../services/admin/chromeStorageAdapter', () => ({
+  chromeStorageAdapter: {
+    getItem: async (k: string) => adminStore.get(k) ?? null,
+    setItem: async (k: string, v: string) => void adminStore.set(k, v),
+    removeItem: async (k: string) => void adminStore.delete(k),
+  },
 }));
 
 const { IndexedDBService, INSTALL_ID_KEY } =
@@ -113,10 +126,13 @@ async function dumpEverything(): Promise<string> {
   });
   const out: Record<string, unknown[]> = {};
   for (const store of Array.from(db.objectStoreNames)) {
-    out[store] = await new Promise((resolve) => {
+    // A failed read rejects rather than reading as empty: an empty store is a
+    // pass here, so a read that quietly returned [] could hide the very data
+    // these tests look for.
+    out[store] = await new Promise((resolve, reject) => {
       const req = db.transaction(store).objectStore(store).getAll();
       req.onsuccess = () => resolve(req.result);
-      req.onerror = () => resolve([]);
+      req.onerror = () => reject(req.error);
     });
   }
   db.close();
@@ -136,6 +152,7 @@ describe('handing the browser to the next student', () => {
     fetchUserNetId.mockResolvedValue({ username: '' });
     clearUserParamsCache();
     await IndexedDBService.clearAll();
+    adminStore.clear();
     window.history.replaceState({}, '', '/auth/student/studium.pl');
   });
 
@@ -154,6 +171,7 @@ describe('handing the browser to the next student', () => {
    */
   it('leaves nothing of the student who signed out, and serves the next one their own data', async () => {
     await seedStudentData(PETR);
+    adminStore.set(ADMIN_KEY, 'petr-society-session');
     // The seed has to be real, or everything below passes vacuously.
     expect(await IndexedDBService.get('schedule', 'current')).toHaveLength(1);
     expect(dumpEverythingIncludes(await dumpEverything(), PETR)).toBe(true);
@@ -167,11 +185,20 @@ describe('handing the browser to the next student', () => {
     } as never);
     const postMessage = vi.spyOn(window.parent, 'postMessage').mockImplementation(() => {});
     void logout().catch(() => {});
-    await vi.waitFor(async () =>
-      expect(await IndexedDBService.get('meta', 'reis_user_params')).toBeUndefined()
+    // Its last step asks the host page to sign out — and the host's wipe below
+    // only happens in production if this message is actually sent.
+    await vi.waitFor(() =>
+      expect(postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'REIS_ACTION', action: 'logout' }),
+        '*'
+      )
     );
-    await vi.waitFor(() => expect(clearAdminSession).toHaveBeenCalled());
     postMessage.mockRestore();
+    expect(adminStore.has(ADMIN_KEY)).toBe(false);
+    // Checked BEFORE the host's half. Both halves share one database here,
+    // unlike production, so the host's wipe would otherwise hide anything the
+    // iframe's own wipe left behind.
+    expectNoTraceOf(await dumpEverything(), PETR);
 
     // …and the host page's half, the one no sign-out used to reach.
     await signOutFromHostPage();
@@ -235,21 +262,23 @@ describe('handing the browser to the next student', () => {
    */
   it('drops the previous student’s society login when the student changes without a sign-out', async () => {
     await seedStudentData(PETR);
+    adminStore.set(ADMIN_KEY, 'petr-society-session');
     clearUserParamsCache();
     fetchUserBaseIds.mockResolvedValue(TONDA);
     fetchUserNetId.mockResolvedValue({ username: 'xvomacka' });
 
-    const order: string[] = [];
-    clearAdminSession.mockImplementation(async () => {
-      order.push('clearAdminSession');
+    // What is in storage at the moment of the restart — the restart ends the
+    // page, so a credential still there then survives into Tonda's session.
+    let credentialAtRestart: boolean | null = null;
+    const restart = vi.fn(() => {
+      credentialAtRestart = adminStore.has(ADMIN_KEY);
     });
-    const restart = vi.fn(() => order.push('restart'));
 
     const stop = watchSignedInStudent(restart, { attempts: 1 });
     await vi.waitFor(() => expect(restart).toHaveBeenCalledTimes(1));
     stop();
 
-    expect(order).toEqual(['clearAdminSession', 'restart']);
+    expect(credentialAtRestart).toBe(false);
     expectNoTraceOf(await dumpEverything(), PETR);
   });
 

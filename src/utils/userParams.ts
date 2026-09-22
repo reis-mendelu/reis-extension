@@ -90,13 +90,16 @@ const complete = (p?: Partial<UserParams> | null) =>
  */
 export async function getUserParams(): Promise<UserParams | null> {
   if (_wrongStudentOnDisk) return null;
+  // A check in flight answers first, BEFORE the cache: it sets
+  // `_identityChecked` as soon as IS names someone, then waits on the wipe, and
+  // a read in that window used to pass the shortcut below and get the previous
+  // student's cached record as if it were confirmed.
+  if (_inflight) return _inflight;
   // The cached record is served straight back once the identity behind it has
   // been confirmed. Until then it is only the best guess available, so a later
   // call is allowed to try the check again — see IDENTITY_RECHECK_GAP_MS.
   if (_cached && (_identityChecked || Date.now() - _lastIdentityAttempt < IDENTITY_RECHECK_GAP_MS))
     return _cached;
-  // Dedup: if a fetch is already in-flight, share its promise
-  if (_inflight) return _inflight;
 
   _inflight = (async () => {
     // Hoisted so the catch below can still fall back to it: the refetch this
@@ -141,9 +144,19 @@ export async function getUserParams(): Promise<UserParams | null> {
       // present — an English `studium.pl` used to parse to an empty
       // `studentId`, and treating that as "somebody else" would wipe a
       // healthy install.
-      switched = complete(stored) && !!base.studentId && stored!.studentId !== base.studentId;
+      //
+      // The id alone, not `complete()`: that also wants a name, and a stored
+      // record with the previous student's id but no name skipped the wipe and
+      // had the new student's params written over it. A record with no id at
+      // all cannot be attributed and is repaired below, not wiped — that shape
+      // is the same student's English half-record, and a wipe would take their
+      // local-only notes with it.
+      switched = !!stored?.studentId && !!base.studentId && stored.studentId !== base.studentId;
 
       if (switched) {
+        // Nothing may serve the previous student's record from here on, even
+        // while the wipe below is still running.
+        _cached = null;
         // Before the new record is written, not after: `clearAll` would take
         // the new student's own params straight back out again, and the next
         // boot would have nothing to check against.
