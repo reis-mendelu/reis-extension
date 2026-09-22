@@ -1029,6 +1029,7 @@
   },
   "mobile": {
     "header": {
+      "refresh": "Obnovit",
       "search": "Hledat"
     },
     "nav": {

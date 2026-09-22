@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useAppStore } from '../../../store/useAppStore';
 import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
 import { ScreenError } from '../primitives/ScreenError';
+import { RefreshButton } from '../primitives/RefreshButton';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useSchedule } from '../../../hooks/data/useSchedule';
 import { resolveNowNext } from '../../../utils/mobile/nowNext';
@@ -103,7 +104,19 @@ export function CalendarScreen() {
           week and which day this is. The way back to today is not here
           either: the header is full at a date and three actions (see
           TodayPill), so it floats above the tab bar instead. */}
-      <ScreenHeader title={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale)} />
+      {/* The refresh circle gets the shortest row there is — 24px of button,
+          right-aligned under the date. The schedule TTL is 24h, so without it
+          a student looking at a stale week has no way to ask for this one, and
+          the day strip is not available for it: collecting controls into a
+          pill on the right of that row was tried and rejected (DayChips). */}
+      <ScreenHeader
+        title={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale)}
+        below={
+          <div className="-mt-1 flex justify-end">
+            <RefreshButton />
+          </div>
+        }
+      />
     </>
   );
   const shell = (body: ReactNode) => (

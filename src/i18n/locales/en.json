@@ -1029,6 +1029,7 @@
   },
   "mobile": {
     "header": {
+      "refresh": "Refresh",
       "search": "Search"
     },
     "nav": {
