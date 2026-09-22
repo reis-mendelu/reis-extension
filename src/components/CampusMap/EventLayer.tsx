@@ -6,6 +6,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { groupEventsByVenue, type VenueGroup } from './eventHelpers';
 import { subscribeMapInstance } from './mapInstance';
+import { EVENTS_PANE, ensurePane } from './mapPanes';
 import { EventPin } from './EventPin';
 import { DraftPin } from './DraftPin';
 import { societyById } from '../../data/societies';
@@ -27,9 +28,11 @@ type ZoomAnimMap = {
   ): L.Point;
 };
 
-// Dedicated Leaflet pane for our pins. A child of the map pane (z below tooltips),
-// so Leaflet translates it for free while panning — pins stay glued with no JS.
-const PANE_NAME = 'reisEvents';
+// The pins live in their own Leaflet pane — a child of the map pane, so Leaflet
+// translates it for free while panning and pins stay glued with no JS. Which
+// pane, and where it sits in the paint order, is decided in mapPanes.ts: this
+// used to be a bare `640` here, which put every pin (and its hover bubble)
+// underneath Leaflet's tooltip pane, i.e. underneath the lettered building names.
 
 // HTML pins (not Leaflet markers) so the balloons can use Tailwind/DaisyUI and
 // hover bubbles, but rendered INTO a Leaflet pane via a portal. Positions are
@@ -145,10 +148,7 @@ export function EventLayer() {
       }
     };
     const bind = (m: L.Map) => {
-      const p = m.getPane(PANE_NAME) ?? m.createPane(PANE_NAME);
-      p.style.zIndex = '640';
-      p.style.pointerEvents = 'none';
-      setPane(p);
+      setPane(ensurePane(m, EVENTS_PANE));
       m.on('zoomanim', onZoomAnim);
       m.on('move', onMove);
       m.on('zoomend viewreset', recompute);
