@@ -3,6 +3,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { StatsBars } from './StatsBars';
 import { DailyActivityChart } from './DailyActivityChart';
 import { DayDetail } from './DayDetail';
+import { FeatureSignals } from './FeatureSignals';
 
 /**
  * Counts of DEVICES, never people — the note under the tiles says so, and the
@@ -72,6 +73,11 @@ export function AdminStatsPanel() {
       </section>
 
       {stats.day && <DayDetail detail={stats.day} />}
+
+      {/* Loaded by the same `loadAdminStats` action, from its own RPC, and
+          renders nothing until it arrives — so a failed feature read costs the
+          usage numbers above nothing. */}
+      <FeatureSignals />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <section>

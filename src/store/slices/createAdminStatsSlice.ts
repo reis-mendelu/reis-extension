@@ -1,5 +1,6 @@
 import type { AppSlice } from '../types';
 import { fetchUsageStats, type UsageStats } from '../../api/usageStats';
+import { fetchFeatureStats, type FeatureStats } from '../../api/featureStats';
 
 const WINDOW_DAYS = 30;
 
@@ -18,6 +19,13 @@ export interface AdminStatsSlice {
    * app's state, ad-hoc module globals included.
    */
   adminStatsRequestId: number;
+  /**
+   * The three feature signals and the per-event map views, from the same tab
+   * as the usage numbers above. Kept in its own field rather than folded into
+   * `adminStats`: a failed feature read must not blank the usage panel, and
+   * the two come from different RPCs.
+   */
+  adminFeatureStats: FeatureStats | null;
   loadAdminStats: () => Promise<void>;
   selectAdminStatsDay: (day: string | null) => Promise<void>;
 }
@@ -46,11 +54,26 @@ async function load(set: Set, get: Get, day: string | null): Promise<void> {
   });
 }
 
+/**
+ * Fire-and-forget beside the usage load: the panel renders the two
+ * independently, so one failing must not cost the other its numbers. A failed
+ * read keeps whatever is already on screen rather than blanking it, the same
+ * way `load` above does.
+ */
+async function loadFeatures(set: Set): Promise<void> {
+  const stats = await fetchFeatureStats(WINDOW_DAYS);
+  if (stats) set({ adminFeatureStats: stats });
+}
+
 export const createAdminStatsSlice: AppSlice<AdminStatsSlice> = (set, get) => ({
   adminStats: null,
   adminStatsLoading: false,
   adminStatsDay: null,
   adminStatsRequestId: 0,
-  loadAdminStats: () => load(set, get, get().adminStatsDay),
+  adminFeatureStats: null,
+  loadAdminStats: () => {
+    void loadFeatures(set);
+    return load(set, get, get().adminStatsDay);
+  },
   selectAdminStatsDay: (day) => load(set, get, day),
 });
