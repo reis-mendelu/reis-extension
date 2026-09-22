@@ -23,6 +23,52 @@ When a task involves IS Mendelu data, a new scraper, or the CDN data shape: read
 - Everything else is in `package.json` scripts.
 - Verifying a UI change (screenshots at 320/390/430 + overflow, collision and contrast assertions) → the `verify-ui` skill. Never judge a UI change from a screenshot alone.
 
+### What to run locally, and what CI owns
+
+CI runs four jobs on every PR — `lint`, `typecheck` + `nuia:gate`, the full
+`test:run`, and `build:web` + `check:app`. Running all of that locally as well
+is duplicated work, and for some of it the local answer is the *less* reliable
+one.
+
+**Run locally, every time:**
+
+- the tests covering what you touched — `npx vitest run <pattern>`, not `test:run`
+- `npm run typecheck`
+
+That is the evidence your change works. It takes seconds.
+
+**Leave to CI:** repo-wide `lint` and `format:check`, the full `test:run`,
+`build:web`, `check:app` and the e2e suites. They are slow here, and CI runs
+them in a clean checkout, which is the only place they mean anything —
+`format:check` reports differently after an Android build has touched the tree,
+and the nuia ratchet fails PRs that pass locally either way. A local green on
+those is not the signal; the PR's is.
+
+**Exception:** when a change is *about* one of those gates (a lint rule, the
+formatter, a build script, `check:app` itself), run that gate locally — you are
+changing the thing it measures.
+
+This machine often has a dozen sibling worktrees running at once. At load 40+,
+vitest's worker handshake times out before a test file loads; `--no-file-parallelism
+--maxWorkers=1` gets a run through when that happens.
+
+### Worktrees own their node_modules
+
+`.claude/hooks/worktree-bootstrap.sh` gives each worktree its own `node_modules`
+by APFS-cloning the main checkout's (copy-on-write: instant, and near-zero disk
+until the trees diverge). **So `npm ci` in a worktree is safe** — it touches
+nothing but that worktree.
+
+It used to symlink instead, and that is a trap worth remembering: sharing one
+install is fine while every session only reads it, and destroys every session at
+once the moment one runs `npm ci`, because that deletes and rebuilds the whole
+tree. Two sessions doing it concurrently leave every worktree half-installed and
+npm dying on `ENOTEMPTY`. If the hook ever reports `node_modules is SHARED`
+(clonefile unavailable), believe it and do not install from the worktree.
+
+The dev snapshot and `.env` are still symlinks, deliberately: they are read and
+never rewritten, so a fresh scrape in the main checkout reaches every worktree.
+
 ### Secrets (Infisical)
 
 Local secrets live in Infisical, not in the repo. `scripts/with-secrets.mjs`
