@@ -2,9 +2,10 @@
 // from a public URL. The preview needs exactly two variables (VITE_DEV_SOCIETY,
 // VITE_PREVIEW_BUILD); anything else carrying the VITE_ prefix must stop the
 // build rather than be published — an allowlist, not a denylist of the
-// specific secrets we happened to think of. .env.example alone names
+// specific secrets we happened to think of. .env.example once named
 // VITE_GEMINI_API_KEY and VITE_GOOGLE_CLIENT_ID, neither of which a denylist
-// of just VITE_EXTENSION_SECRET / VITE_SUPABASE_* would ever catch.
+// of just VITE_EXTENSION_SECRET / VITE_SUPABASE_* would ever catch — and the
+// next such name will arrive the same way, unannounced.
 //
 // Asserts on the ENVIRONMENT, not on the built output: grepping the bundle for
 // a secret's value would require the value to be present in CI and in the test.
