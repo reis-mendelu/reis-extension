@@ -4,9 +4,8 @@ import { gradeBadge } from '../../../../utils/gradeLookup';
 import { isRealCredits } from '../../../SubjectsPanel/utils';
 import { computeFailRate } from '../../../SubjectsPanel/computeFailRate';
 import { orderHardestFirst } from '../../../SubjectsPanel/orderHardestFirst';
+import { FailRateLegend } from '../../../SubjectsPanel/FailRateLegend';
 import { useAppStore } from '../../../../store/useAppStore';
-import { useSchedule } from '../../../../hooks/data/useSchedule';
-import { semesterProgress } from '../../../../utils/mobile/semesterStart';
 import { pluralSuffix } from '../../../../utils/plural';
 import type { SubjectStatus } from '../../../../types/studyPlan';
 import type { EnrolledSubject } from '../../../../utils/mobile/enrolledSubjects';
@@ -43,22 +42,24 @@ function GradeChip({ subject }: { subject: SubjectStatus }) {
 }
 
 /**
- * How often this subject is failed, and the word saying so.
+ * How often this subject is failed, as the number and nothing else.
  *
  * The phone never showed this; the browser extension has carried it on every
  * row for years, from the same `computeFailRate` over the same store data —
  * another case of the phone screen being written fresh instead of reusing what
  * the desktop already had.
  *
- * The label is not hover-revealed, the way the desktop's was until this same
- * change: a bare colour-coded percentage does not say what it measures, and a
- * touch screen has no hover to reveal it with.
+ * It carried the words "Prům. neúspěšnost:" on every row until the study plan
+ * settled the same question the other way: a column's name belongs in a header,
+ * not on each cell, and at 320px the sentence was most of the row. The words
+ * now appear once per list in `FailRateLegend`, exactly as they do in the plan,
+ * so the two screens no longer describe the same number two different ways.
  *
- * And it says PRŮM. — an average — because `computeFailRate` pools the last
- * three semesters. Without that word the chip contradicted the drawer it opens:
- * "people are confused by seeing 28 % neúspěšnost on a subject but when
- * clicking on it seeing that the last semester had e.g. 35 %". Both numbers
- * were right; only one of them said what it was.
+ * `title`/`aria-label` keep the full sentence for a pointer and a screen
+ * reader — including the PRŮM., an average, because `computeFailRate` pools the
+ * last three semesters and the drawer this opens shows one: "people are
+ * confused by seeing 28 % neúspěšnost on a subject but when clicking on it
+ * seeing that the last semester had e.g. 35 %".
  */
 function FailRate({ subject }: { subject: SubjectStatus }) {
   const { t } = useTranslation();
@@ -70,10 +71,13 @@ function FailRate({ subject }: { subject: SubjectStatus }) {
   const failRate = computeFailRate(rate);
   if (failRate == null) return null;
 
+  const label = t('subjects.failRateChip', { rate: failRate });
   return (
     <span
       data-testid="subject-fail-rate"
-      className={`w-fit flex-shrink-0 rounded px-1.5 py-0.5 text-xs font-medium ${
+      title={label}
+      aria-label={label}
+      className={`w-fit flex-shrink-0 rounded px-1.5 py-0.5 text-xs font-medium tabular-nums ${
         failRate >= 25
           ? 'bg-error/10 text-error'
           : failRate >= 20
@@ -81,7 +85,7 @@ function FailRate({ subject }: { subject: SubjectStatus }) {
             : 'bg-base-content/5 text-base-content/50'
       }`}
     >
-      {t('subjects.failRateChip', { rate: failRate })}
+      {failRate}%
     </span>
   );
 }
@@ -108,24 +112,22 @@ function SemesterRow({
       // first line, and on the common single-line row this renders identically.
       className="flex w-full items-start gap-2.5 rounded-lg px-2 py-2.5 text-left active:bg-base-200"
     >
-      {/* Inline with the name from `md:` up, stacked under it below that.
-          Measured, not taste: the labelled chip is ~130px and the credits ~65px,
-          so on a phone an inline name is left with forty pixels — `break-words`
-          then breaks it mid-word and it still spills over the chip. The iPad
-          (834pt portrait, and it runs this same phone tree) and the desktop sit
-          above the breakpoint and keep the chip on the row, where there is
-          room for it.
+      {/* Inline with the name at every width now. It used to stack under the
+          name on a phone for a measured reason: the chip read "Prům.
+          neúspěšnost: 28 %" and was ~130px, which against ~65px of credits left
+          an inline name forty pixels to live in. The chip is now the bare
+          number the study plan uses — under 30px — so the reason is gone, and
+          the row reads the way it always did from `md:` up.
 
-          The name wraps rather than truncating either way — the prototype
-          ellipsizes exam card titles but deliberately not these, and at 390px a
-          cut landed mid-word ("Databázové systémy a návrh d…"), losing the half
-          that distinguishes one subject from another. */}
-      {/* md:justify-between is what puts the chip on the RIGHT from `md:` up,
-          against the credits, rather than trailing the name in the middle of
-          the row. The wrapper is flex-1, so its right edge is the credits' left
-          edge — the two read as one metadata column. On a phone the wrapper is
-          a column and this has no effect. */}
-      <span className="flex min-w-0 flex-1 flex-col gap-1 md:flex-row md:items-start md:justify-between md:gap-2.5">
+          `justify-between` puts the chip at the right edge of this wrapper,
+          which is the credits' left edge, so percentage and credits read as one
+          metadata column rather than the chip trailing the name mid-row.
+
+          The name wraps rather than truncating — the prototype ellipsizes exam
+          card titles but deliberately not these, and at 390px a cut landed
+          mid-word ("Databázové systémy a návrh d…"), losing the half that
+          distinguishes one subject from another. */}
+      <span className="flex min-w-0 flex-1 flex-row items-start justify-between gap-2.5">
         <span className="min-w-0 break-words text-md font-medium text-base-content">
           {subject.name}
         </span>
@@ -142,7 +144,7 @@ function SemesterRow({
 }
 
 /**
- * This semester's subject list: header (semester number, total credits,
+ * This semester's subject list: header (semester number, enrolled count,
  * done/total badge) plus one row per subject with a grade chip.
  *
  * Fed the ENROLLED subjects rather than a study-plan block. A block is the
@@ -172,31 +174,22 @@ export function SemesterCard({ enrolled, semester, onOpenSubject }: SemesterCard
     (e) => computeFailRate(successRates[e.subject.code]),
     (e) => e.done
   ).map((e) => e.subject);
-  const totalCredits = subjects.reduce(
-    (sum, s) => sum + (isRealCredits(s.credits) ? s.credits : 0),
-    0
-  );
   const doneCount = enrolled.filter((e) => e.done).length;
   const semNum = semester === null ? '' : String(semester);
 
-  // "Právě běží" used to be asserted whatever the date, so the week before term
-  // announced these subjects as already running. The schedule answers it: the
-  // earliest stored lesson is the first teaching day.
-  const { schedule } = useSchedule();
-  const progress = semesterProgress(schedule);
-  const subtitle =
-    progress.state === 'running'
-      ? t('mobile.subjects.running', { credits: totalCredits })
-      : progress.state === 'upcoming'
-        ? t('mobile.subjects.startsOn', {
-            date: progress.start.toLocaleDateString(language === 'en' ? 'en-US' : 'cs-CZ', {
-              day: 'numeric',
-              month: 'numeric',
-            }),
-            credits: totalCredits,
-          })
-        : // No schedule to reason from: the credits are a fact, "running" is not.
-          t('mobile.subjects.creditsOnly', { credits: totalCredits });
+  // Same test the rows apply, so the caption appears exactly when a number it
+  // explains does: unfulfilled, and with enough results to compute a rate.
+  const anyFailRate = subjects.some(
+    (s) => !s.isFulfilled && computeFailRate(successRates[s.code]) != null
+  );
+
+  // How many subjects the student is enrolled in, and nothing else. This line
+  // used to say whether term had started ("právě běží", "začíná 21. 9.") and
+  // the credit total — the date belongs to the calendar, the credits are on
+  // every row below, and the count, the one number checked here, was missing.
+  const subtitle = t(`mobile.subjects.enrolledCount${pluralSuffix(language, subjects.length)}`, {
+    count: subjects.length,
+  });
 
   return (
     <div className="flex-shrink-0 overflow-hidden rounded-2xl border border-primary/30 bg-base-100 shadow-card">
@@ -212,6 +205,14 @@ export function SemesterCard({ enrolled, semester, onOpenSubject }: SemesterCard
           {t('mobile.subjects.doneOf', { done: doneCount, total: subjects.length })}
         </span>
       </div>
+      {/* Once for the list, never on the rows — the same bargain the study plan
+          struck, and the reason the rows below show a bare percentage. Only
+          where a row actually shows one: a caption over nothing is noise. */}
+      {anyFailRate && (
+        <div className="px-3.5 pt-1">
+          <FailRateLegend />
+        </div>
+      )}
       <div className="flex flex-col px-2 pb-2 pt-1">
         {subjects.map((s) => (
           <SemesterRow key={s.code} subject={s} onOpenSubject={onOpenSubject} />

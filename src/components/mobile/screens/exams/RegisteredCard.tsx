@@ -7,6 +7,7 @@ import type { RegisteredExam } from '../../../../utils/mobile/examRows';
 import type { ExamSection } from '../../../../types/exams';
 import { ExamRowCard } from './ExamRowCard';
 import { TermRow } from './TermRow';
+import { parseRegistrationStart } from '../../../../utils/termUtils';
 
 /** The classmate line inside an expanded registered card. Its own component so
  *  `useExamClassmates` only fetches for the card actually open. */
@@ -29,6 +30,8 @@ function ClassmateLine({ termId }: { termId?: string }) {
 export interface RegisteredCardProps {
   row: RegisteredExam;
   locale: string;
+  /** The store's clock, passed through to each term row. */
+  now: Date;
   expanded: boolean;
   onToggle: () => void;
   isProcessing: boolean;
@@ -47,6 +50,7 @@ export interface RegisteredCardProps {
 export function RegisteredCard({
   row,
   locale,
+  now,
   expanded,
   onToggle,
   isProcessing,
@@ -54,33 +58,47 @@ export function RegisteredCard({
   onRegister,
 }: RegisteredCardProps) {
   const { t } = useTranslation();
+  const deadline = row.term.deregistrationDeadline
+    ? parseRegistrationStart(row.term.deregistrationDeadline)
+    : null;
+  const pastDeregDeadline = !!deadline && now.getTime() > deadline.getTime();
   return (
     <ExamRowCard
-      title={row.sectionName}
-      subtitle={row.subjectName}
+      title={row.subjectName}
+      subtitle={row.sectionName}
       primaryMeta={formatWhenRow(row.date, row.term.time, locale)}
       secondaryMeta={row.term.room ?? ''}
       expanded={expanded}
       onToggle={onToggle}
     >
       <ClassmateLine termId={row.term.id} />
-      <button
-        type="button"
-        onClick={() => onUnregister(row.section)}
-        disabled={isProcessing}
-        className="min-h-11 w-full rounded-lg border border-error/35 text-sm font-bold text-error disabled:opacity-50"
-      >
-        {isProcessing ? (
-          <span className="loading loading-spinner loading-xs" />
-        ) : (
-          t('mobile.exams.unregister')
-        )}
-      </button>
+      {/* IS closes deregistration at `deregistrationDeadline`. The button was
+          offered whatever the date, so past the deadline a tap could only
+          fail; the desktop panel has always said so instead. */}
+      {pastDeregDeadline ? (
+        <span className="flex min-h-11 w-full items-center justify-center rounded-lg bg-base-200 text-sm text-base-content/70">
+          {t('exams.afterDeadlineCannotDeregister')}
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={() => onUnregister(row.section)}
+          disabled={isProcessing}
+          className="min-h-11 w-full rounded-lg border border-error/35 text-sm font-bold text-error disabled:opacity-50"
+        >
+          {isProcessing ? (
+            <span className="loading loading-spinner loading-xs" />
+          ) : (
+            t('mobile.exams.unregister')
+          )}
+        </button>
+      )}
       {row.section.terms.map((term) => (
         <TermRow
           key={term.id}
           term={term}
           section={row.section}
+          now={now}
           isProcessing={isProcessing}
           onRegister={onRegister}
         />

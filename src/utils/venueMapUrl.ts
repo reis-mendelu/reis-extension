@@ -99,29 +99,19 @@ export function venueMapChoices(
   ];
 }
 
-/** Which map app the student told us to use from now on. `null` = ask. */
-export type PreferredMapApp = 'apple' | 'google' | null;
-
 /**
  * The URL to open directly, or `null` when the student should be asked.
  *
- * Pure, so "do we ask?" is one testable question rather than a condition spread
- * across the sheet and the opener. Android resolves whatever the preference
- * says, because there is nothing to ask there — `geo:` hands the choice to the
- * system every time.
- *
- * An unrecognised preference resolves to `null` rather than to nothing: a value
- * left by an older build, or edited by hand, must not wedge the tap into doing
- * nothing at all.
+ * Asked every time on iOS — there is no remembered choice. A Profil setting and
+ * a "Zapamatovat volbu" checkbox both existed and both went: the student wants
+ * the question, the way the phone's own share sheet asks. Android resolves to
+ * its single option, because `geo:` hands the choice to the system anyway.
  */
 export function resolveVenueChoice(
   coord: [number, number],
   label: string,
-  platform: MapPlatform,
-  preferred: PreferredMapApp
+  platform: MapPlatform
 ): string | null {
   const choices = venueMapChoices(coord, label, platform);
-  if (choices.length === 1) return choices[0]!.url;
-  if (!preferred) return null;
-  return choices.find((c) => c.id === preferred)?.url ?? null;
+  return choices.length === 1 ? choices[0]!.url : null;
 }
