@@ -35,6 +35,9 @@ describe('createRouteSlice', () => {
       logLines.push(args.map(String).join(' '));
     });
     useAppStore.getState().clearRoute();
+    // `clearRoute` keeps the offer now — the × puts the line away, it does
+    // not forget the lecture — so a test that wants a clean slate says so.
+    useAppStore.getState().suggestRoute(null);
   });
 
   afterEach(() => vi.restoreAllMocks());
@@ -207,12 +210,18 @@ describe('routeSuggestion', () => {
     expect(useAppStore.getState().routeSuggestion?.buildingName).toBe('B');
   });
 
-  it('drops the suggestion once the route it offered is cleared', async () => {
+  it('KEEPS the offer when the walk is put away, so it can be asked again', async () => {
+    // The × means "take this line off the map", not "forget the lecture".
+    // Clearing both made it a one-way door: measured on the flow, after
+    // dismissing there was no pill and no other route control anywhere, with
+    // the room still selected — the only way back was the timetable.
     currentPosition.mockResolvedValue(MAIN_GATE);
-    useAppStore.getState().suggestRoute({ buildingName: 'Q', roomLabel: 'Q31' });
+    await useAppStore.getState().suggestRoute({ buildingName: 'Q', roomLabel: 'Q31' });
     await useAppStore.getState().routeTo('Q');
     useAppStore.getState().clearRoute();
-    expect(useAppStore.getState().routeSuggestion).toBeNull();
+    expect(useAppStore.getState().routeStatus).toBe('idle');
+    expect(useAppStore.getState().routeWalk).toBeNull();
+    expect(useAppStore.getState().routeSuggestion?.roomLabel).toBe('Q31');
   });
 
   it('drops the suggestion when the student picks somewhere else', () => {
@@ -255,9 +264,13 @@ describe('the offer and where the student is standing', () => {
     expect(useAppStore.getState().canRouteFromHere).toBe(true);
   });
 
-  it('forgets what it knew once the offer is cleared', async () => {
+  it('re-asks where the student is when the offer comes back', async () => {
+    // `clearRoute` keeps the offer now, so the proximity answer it was given
+    // must not outlive the walk: the student may have dismissed the line and
+    // walked somewhere the next press could not start from.
     quiet.mockResolvedValue(PRAGUE);
     await useAppStore.getState().suggestRoute({ buildingName: 'Q', roomLabel: 'Q01' });
+    expect(useAppStore.getState().canRouteFromHere).toBe(false);
     useAppStore.getState().clearRoute();
     expect(useAppStore.getState().canRouteFromHere).toBe(true);
   });

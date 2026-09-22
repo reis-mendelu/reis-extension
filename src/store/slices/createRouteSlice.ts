@@ -188,12 +188,22 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set, get) => ({
     // offer's alike.
     routeGeneration++;
     suggestGeneration++;
+    // `routeSuggestion` SURVIVES. The × means "take this line off the map",
+    // not "forget which lecture I was going to": clearing both made it a
+    // one-way door — measured on the flow, after dismissing there was no pill
+    // and no other route control anywhere on the map, the room still selected,
+    // and the only way back was the timetable. Keeping it puts the offer back
+    // on the room, so a dismissal is reversible with one tap.
+    //
+    // `canRouteFromHere` does NOT survive, for the same reason: the student
+    // may have dismissed the line and walked somewhere the next press cannot
+    // start from, so the next offer asks again rather than trusting an answer
+    // given to a walk that is over. It is left permissive, as it starts.
     set({
       routeFrom: null,
       routeWalk: null,
       routeStatus: 'idle',
       routeTargetBuilding: null,
-      routeSuggestion: null,
       canRouteFromHere: true,
       routePickerOpen: false,
     });

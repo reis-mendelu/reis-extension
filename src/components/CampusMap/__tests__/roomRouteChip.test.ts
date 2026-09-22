@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import L from 'leaflet';
-import { drawRoomRouteChip, chipShown } from '../roomRouteChip';
+import { drawRoomRouteChip, chipShown, chipShiftPx } from '../roomRouteChip';
 
 const room = () =>
   L.polygon([
@@ -94,5 +94,30 @@ describe('chipShown', () => {
     expect(chipShown(asked, 'ready', true)).toBe(false);
     expect(chipShown(asked, 'locating', true)).toBe(false);
     expect(chipShown(asked, 'failed', true)).toBe(false);
+  });
+});
+
+describe('chipShiftPx', () => {
+  it('leaves a pill that already fits alone', () => {
+    expect(chipShiftPx(100, 106, 390, 0)).toBe(0);
+  });
+
+  it('pulls a pill back onto the map at the right edge', () => {
+    // 330 + 106 = 436 against a 390px map: 50 past the edge, plus the 4px pad.
+    expect(chipShiftPx(330, 106, 390, 0)).toBe(-50);
+  });
+
+  it('keeps clear of the rail, which overlays the map rather than sitting beside it', () => {
+    // Measured in phone landscape (844x390): the rail is on screen and the
+    // pill was drawn on top of it — the offer floating over the panel. The
+    // usable map ends where the rail starts, so that is the width to fit into:
+    // 844 - 340 = 504, less the 4px pad, against a pill ending at 666.
+    expect(chipShiftPx(560, 106, 844, 340)).toBe(-166);
+  });
+
+  it('gives up gracefully when the pill is wider than the space', () => {
+    // Pinned to the left edge rather than centring the overflow, which is
+    // what tooltipShift already decided for the walk labels.
+    expect(chipShiftPx(20, 400, 390, 0)).toBe(-16);
   });
 });

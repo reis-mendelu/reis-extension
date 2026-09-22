@@ -21,7 +21,7 @@ import { initLeafletMap, flyAndReveal, drawLandmarks } from './mapLayers';
 import { drawRemotePlaces, REMOTE, REMOTE_IDS } from './remoteLayers';
 import { drawCampusPaths } from './pathLayers';
 import { roomLabelsHidden } from './roomLabels';
-import { drawRoomRouteChip, chipShown } from './roomRouteChip';
+import { drawRoomRouteChip, chipShown, clampRoomChip } from './roomRouteChip';
 import { translate } from '../../i18n/translate';
 import { setMapInstance } from './mapInstance';
 import { roomFocusView } from './focusBounds';
@@ -147,10 +147,20 @@ export function MapCanvas() {
     // On every camera settle rather than on a state change: the route fit is
     // what zooms out from under an open plan, and it moves the camera without
     // touching the floor the student chose. See roomLabels.
-    const syncRoomLabels = () =>
+    const syncRoomLabels = () => {
       map
         .getContainer()
         .classList.toggle('reis-hide-room-labels', roomLabelsHidden(map, planBoundsRef.current));
+      // The pill is anchored to the room and the rail overlays the right of
+      // the canvas, so a room near that edge puts its offer on top of the
+      // panel. Re-asked on every settle, because the student can pan the room
+      // there afterwards and the rail can be dragged wider under it.
+      clampRoomChip(
+        roomChipRef.current,
+        map,
+        railPaddingPx(map.getSize().x, isPhone, railRef.current.width, railRef.current.open)
+      );
+    };
     syncRoomLabels();
     map.on('moveend zoomend resize', syncRoomLabels);
     return () => {
@@ -465,6 +475,13 @@ export function MapCanvas() {
         if (building) void useAppStore.getState().routeTo(building);
       }
     );
+    const map = mapRef.current;
+    if (map)
+      clampRoomChip(
+        roomChipRef.current,
+        map,
+        railPaddingPx(map.getSize().x, isPhone, railRef.current.width, railRef.current.open)
+      );
     // `roomsByBuilding` is a dependency because the polygons this reads are
     // built by the heavy effect, and on the way in from a lesson pin the
     // selection lands BEFORE they exist: the map arrived on the right room
@@ -479,6 +496,10 @@ export function MapCanvas() {
     routeSuggestion,
     routeStatus,
     canRouteFromHere,
+    // Read by the pill's clamp, through railPaddingPx. Stable for the life of
+    // a device but it flips on a browser resize, and re-running is free here:
+    // this effect restyles and re-pins, and never touches the camera.
+    isPhone,
   ]);
 
   // Drawing the route is a restyle of its own layer, never a redraw of the map

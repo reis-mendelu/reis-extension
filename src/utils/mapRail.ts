@@ -29,6 +29,16 @@ export const RAIL_MIN_WIDTH = 768;
 export const RAIL_MIN_PX = 300;
 export const RAIL_MAX_PX = 560;
 
+/**
+ * The gap the rail floats in, matching its own `right-4`.
+ *
+ * It does not dock: it is inset on three sides and fully rounded, so the band
+ * of canvas it occupies is its width PLUS this. Reserving only the width left
+ * the room pill 12px under the panel in phone landscape — clamped to 504 on an
+ * 844px map, with the rail's left edge at 488.
+ */
+export const RAIL_INSET_PX = 16;
+
 /** Never let the rail take more than this share of the screen — the map is the
  *  point, and a rail past half is a list with a map accessory. */
 const RAIL_MAX_SHARE = 0.5;
@@ -101,5 +111,5 @@ export function railPaddingPx(
   if (!isPhoneTree) return 0;
   if (!railOpen) return 0;
   if (containerWidth < RAIL_MIN_WIDTH) return 0;
-  return Math.round(Math.min(railWidth, containerWidth * RAIL_MAX_SHARE));
+  return Math.round(Math.min(railWidth + RAIL_INSET_PX, containerWidth * RAIL_MAX_SHARE));
 }

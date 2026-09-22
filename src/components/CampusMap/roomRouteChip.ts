@@ -1,6 +1,7 @@
 import L from 'leaflet';
 import type { RouteStatus } from '../../store/slices/createRouteSlice';
 import type { RouteTarget } from '../../utils/routing/nextLessonTarget';
+import { tooltipShift } from '../../utils/tooltipShift';
 
 /** Clear air between the pill's bottom edge and the room's outline. The pill
  *  is ~27px tall, so this lifts it just off the polygon it points at. */
@@ -96,4 +97,49 @@ export function chipShown(
   canRoute: boolean
 ): boolean {
   return !!suggestion && status === 'idle' && canRoute;
+}
+
+/**
+ * How far sideways the pill has to move to stay on the usable map.
+ *
+ * Leaflet anchors it on the room and does not care whether the result is still
+ * inside anything, so a room near the edge pushes its pill off — and the RAIL
+ * makes that worse, because it overlays the right of the canvas rather than
+ * sitting beside it. Measured in phone landscape (844x390): the rail was on
+ * screen and the pill was drawn on top of it, the offer apparently floating
+ * over the panel.
+ *
+ * `tooltipShift` already decided this arithmetic for the walk labels, including
+ * what to do when the thing is wider than the space. It was left without a
+ * caller when the gate fan went; this is the same question, so it gets its
+ * caller back rather than a second copy of the rule.
+ */
+export function chipShiftPx(
+  left: number,
+  width: number,
+  containerWidth: number,
+  railPx: number
+): number {
+  return tooltipShift(left, width, containerWidth - railPx);
+}
+
+/**
+ * Nudges the pill back onto the usable map, and keeps doing it.
+ *
+ * Called on every camera settle, not once: the student can pan or zoom the
+ * room towards the edge after the pill is placed, and the rail can be dragged
+ * wider underneath it.
+ */
+export function clampRoomChip(layer: L.LayerGroup, map: L.Map, railPx: number): void {
+  for (const marker of layer.getLayers()) {
+    const el = (marker as L.Marker)
+      .getElement()
+      ?.querySelector<HTMLElement>('.room-route-chip-pill');
+    if (!el) continue;
+    el.style.marginLeft = '0px';
+    const box = el.getBoundingClientRect();
+    const host = map.getContainer().getBoundingClientRect();
+    const shift = chipShiftPx(box.left - host.left, box.width, host.width, railPx);
+    if (shift) el.style.marginLeft = `${shift}px`;
+  }
 }

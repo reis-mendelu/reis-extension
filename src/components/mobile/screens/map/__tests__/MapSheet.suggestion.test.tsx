@@ -15,6 +15,9 @@ import { useAppStore } from '../../../../../store/useAppStore';
 describe('MapSheet when a lecture is offered as a walk', () => {
   beforeEach(() => {
     useAppStore.getState().clearRoute();
+    // `clearRoute` keeps the offer now — the × puts the line away, it does
+    // not forget the lecture — so a test that wants a clean slate says so.
+    useAppStore.getState().suggestRoute(null);
     useAppStore.setState({ language: 'cz', mapSheetState: 'expanded' });
   });
 

@@ -47,11 +47,16 @@ describe('railOffsetPx', () => {
 });
 
 describe('railPaddingPx', () => {
-  it('reserves the whole rail on a tablet running the phone tree', () => {
+  it('reserves the whole rail, and the gap it floats in', () => {
     // The camera SHIFT takes half the rail (it re-centres behind it); fitting
     // a route has to clear the whole of it, or the destination finishes
     // underneath the panel.
-    expect(railPaddingPx(1024, true, 340, true)).toBe(340);
+    //
+    // Plus the inset: the rail FLOATS at `right-4`, so the band it occupies
+    // starts 16px before its own width. Measured in phone landscape — the
+    // room pill was clamped to 504 on an 844px map and the rail's left edge
+    // was at 488, so it still sat 12px under the panel.
+    expect(railPaddingPx(1024, true, 340, true)).toBe(356);
   });
 
   it('reserves nothing on a phone, whatever the store says the rail is', () => {
