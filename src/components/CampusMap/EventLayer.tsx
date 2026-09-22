@@ -10,6 +10,7 @@ import { EventPin } from './EventPin';
 import { DraftPin } from './DraftPin';
 import { societyById } from '../../data/societies';
 import { isScheduledEvent } from './eventWindow';
+import { trackMapEventView } from '../../api/featureUsage';
 
 interface Placed {
   key: string;
@@ -64,6 +65,16 @@ export function EventLayer() {
   const [draftPt, setDraftPt] = useState<{ x: number; y: number } | null>(null);
   const [pane, setPane] = useState<HTMLElement | null>(null);
   const activeDraft = composerOpen ? draftCoord : null;
+  // A pin opened on the student map is the map-view signal. NOT while
+  // authoring: the admin console renders this same layer over a society's own
+  // events, and a society checking its own listing is not a student looking at
+  // it. Tracked here rather than inside `focusEventById`, because that action
+  // is also how a Novinky feed click and the admin console's own list open an
+  // event — both of which would arrive as map views.
+  const selectEvent = (id: string) => {
+    if (!authoring) void trackMapEventView(id);
+    focusEvent(id);
+  };
   const draftColor = (assocId ? societyById(assocId)?.color : null) ?? '#0046a0';
   // Events are loaded by the store (initializeStore + language handlers), not a
   // fetch-in-useEffect here — this layer stays presentational over store state.
@@ -192,7 +203,7 @@ export function EventLayer() {
           selected={p.group.events.some((e) => e.id === selectedId)}
           scheduled={authoring && p.group.events.some((e) => isScheduledEvent(e.date))}
           locale={language === 'en' ? 'en-US' : 'cs-CZ'}
-          onSelect={focusEvent}
+          onSelect={selectEvent}
         />
       ))}
       {draftPt && (

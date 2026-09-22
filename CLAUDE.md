@@ -129,13 +129,22 @@ the start of a semester.
 
 ### What reIS still sends
 
-Only three things, all disclosed in `docs/privacy-policy-app.md`:
+Only these, all disclosed in `docs/privacy-policy-app.md`:
 
 1. **Daily install count** — a random per-install UUID (`services/identity/installId.ts`),
    never anything derived from the student. Deliberately counts installs, not people.
 2. **Feedback the student typed** — via the `submit_suggestion` RPC (`src/api/suggestions.ts`),
    with screen name, app version, browser and viewport.
 3. **Society event view/click counters** — a post row id and nothing else.
+4. **Three feature counters** (`src/api/featureUsage.ts`, September 2026) — the same random
+   install UUID plus one label from a database-enforced whitelist: `map_dwell_3s`,
+   `eduroam_wifi_configured`, `eduroam_profile_delivered`. Counts installs, not people.
+5. **Map views per event** (same file) — a society event's row id and *no* identifier at all,
+   rolled up per event per day in `event_map_views`, kept clear of the Novinky `view_count`.
+   The server stamps the date; the request carries only the event id.
+
+4 and 5 are deliberately **unjoinable**: nothing records which event a given install looked
+at, because that pairing would be a behavioural profile. Keep it that way.
 
 `SUPABASE_CALLERS` in the guard test is the authoritative list of files allowed
 to talk to Supabase at all; adding one requires a written justification there.
