@@ -890,6 +890,7 @@
     "noPlaceFound": "Nothing found — try another name or pick on the map.",
     "orPickOnMap": "or pick manually on the map",
     "mapPoint": "Point selected on map",
+    "venueOnMap": "Place on the map",
     "changePlace": "Change place",
     "publish": "Publish event",
     "clickToPlace": "Tap the button, then mark the spot on the map",
