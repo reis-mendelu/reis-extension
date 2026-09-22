@@ -93,6 +93,10 @@ export async function getUserParams(): Promise<UserParams | null> {
     // body), and a rejection reaching the outer catch returned null and threw
     // away a perfectly usable record.
     let stored: Partial<UserParams> | undefined;
+    // Outside the try, because the catch has to know: once the wipe below has
+    // run, the record it wiped must never be served again, whatever fails
+    // afterwards.
+    let switched = false;
     try {
       stored = (await IndexedDBService.get('meta', STORAGE_KEYS.USER_PARAMS)) as
         Partial<UserParams> | undefined;
@@ -109,15 +113,21 @@ export async function getUserParams(): Promise<UserParams | null> {
       const base = await fetchUserBaseIds();
       if (!base) return serveStored(stored);
 
-      // IS has answered, so from here on this context knows who is signed in.
-      _identityChecked = true;
+      // IS has answered WITH AN IDENTITY on it — and only then does this
+      // context know who is signed in. A page that parses without one (IS
+      // answering in a language the regexes do not read, a truncated body)
+      // proves nothing: claiming it as a confirmation would stop the watcher
+      // retrying and freeze the previous student's record in place for the
+      // whole session. The record is still built below, because a first
+      // install with no `studium` at all is worse than an unconfirmed one.
+      if (base.studentId) _identityChecked = true;
 
       // The only thing that may delete a student's data: IS naming a
       // different person than the stored record does. Both ids have to be
       // present — an English `studium.pl` used to parse to an empty
       // `studentId`, and treating that as "somebody else" would wipe a
       // healthy install.
-      const switched = complete(stored) && !!base.studentId && stored!.studentId !== base.studentId;
+      switched = complete(stored) && !!base.studentId && stored!.studentId !== base.studentId;
 
       if (switched) {
         // Before the new record is written, not after: `clearAll` would take
@@ -146,9 +156,24 @@ export async function getUserParams(): Promise<UserParams | null> {
       return params;
     } catch (e) {
       logError('getUserParams', e);
-      // Stale identity beats none: `studium` is what the schedule, the study
-      // plan, the teaching weeks and the grade history all read, and the next
-      // launch tries the repair again.
+
+      // Not once the wipe has already run. Everything after it can throw — the
+      // two detail pages, the write — and falling back to `stored` there hands
+      // back the record of the student who just LEFT, caches it for the
+      // session, and skips the announcement that restarts the app. The new
+      // student would be left with an emptied database and a crawl going out
+      // under the old `studium`, which is the failure this whole check exists
+      // to end. Nothing beats a stale identity that is known to be the wrong
+      // person's: the next call finds the emptied store and rebuilds.
+      if (switched) {
+        _cached = null;
+        announceIdentityChange(null);
+        return null;
+      }
+
+      // Otherwise stale identity beats none: `studium` is what the schedule,
+      // the study plan, the teaching weeks and the grade history all read, and
+      // the next launch tries the repair again.
       return serveStored(stored);
     }
   })();

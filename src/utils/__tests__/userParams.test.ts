@@ -20,7 +20,7 @@ vi.mock('../userParams/fetchers', () => ({
   fetchUserNetId: () => fetchUserNetId(),
 }));
 
-const { getUserParams, clearUserParamsCache } = await import('../userParams');
+const { getUserParams, clearUserParamsCache, isIdentityConfirmed } = await import('../userParams');
 const { onIdentityChange } = await import('../userParams/identityEvents');
 
 const COMPLETE = {
@@ -171,6 +171,74 @@ describe('getUserParams', () => {
 
     await getUserParams();
     expect(idbClearAll).not.toHaveBeenCalled();
+  });
+
+  /**
+   * And it must not CLAIM to have confirmed one either. A page that parses
+   * without an identity — IS answering in a language the regexes do not read,
+   * a truncated body — proves nothing about who is signed in, and marking the
+   * session confirmed on it stops the watcher retrying and freezes the
+   * previous student's record in place for the whole session. That is the
+   * original bug wearing a different hat.
+   */
+  it('does not count an answer with no identity on it as a confirmation', async () => {
+    idbGet.mockResolvedValue(COMPLETE);
+    fetchUserBaseIds.mockResolvedValue({ ...COMPLETE, studentId: '' });
+
+    await getUserParams();
+    expect(isIdentityConfirmed()).toBe(false);
+  });
+
+  // A first install must still get its params out of such a page. Bailing out
+  // with null instead would leave the app with no `studium` at all — no
+  // schedule, no study plan, no grade history — which is worse than an
+  // unconfirmed record.
+  it('still builds a record from a page with no identity on it', async () => {
+    idbGet.mockResolvedValue(undefined);
+    fetchUserBaseIds.mockResolvedValue({ ...COMPLETE, studentId: '' });
+
+    const params = await getUserParams();
+    expect(params?.studium).toBe('149707');
+    expect(idbSet).toHaveBeenCalled();
+  });
+
+  /**
+   * The wipe is not undoable, so once it has happened the previous student's
+   * record must never be served again — and everything after it can throw.
+   *
+   * `fetchUserStudyDetails` rejecting here used to fall into the catch, which
+   * handed back the record belonging to the student who just left, cached it
+   * for the session, and skipped the announcement that restarts the app. The
+   * new student then had an emptied database AND a crawl going out under the
+   * old `studium` — exactly the state this whole change exists to end.
+   */
+  it('never serves the previous student’s record once the wipe has happened', async () => {
+    const seen: unknown[] = [];
+    const off = onIdentityChange((p) => seen.push(p));
+    idbGet.mockResolvedValue(COMPLETE);
+    fetchUserBaseIds.mockResolvedValue(OTHER);
+    fetchUserStudyDetails.mockRejectedValue(new Error('IS hiccup'));
+
+    const params = await getUserParams();
+    off();
+
+    expect(idbClearAll).toHaveBeenCalledTimes(1);
+    expect(params).toBeNull();
+    // The app still has to be told: its store is holding the previous
+    // student's schedule, and no database wipe reaches that.
+    expect(seen).toHaveLength(1);
+  });
+
+  // And the next call repairs rather than resurrecting: the wipe emptied the
+  // store, so there is nothing left to mistake for the new student's record.
+  it('rebuilds on the next call after a failed switch', async () => {
+    idbGet.mockResolvedValueOnce(COMPLETE).mockResolvedValue(undefined);
+    fetchUserBaseIds.mockResolvedValue(OTHER);
+    fetchUserStudyDetails.mockRejectedValueOnce(new Error('IS hiccup')).mockResolvedValue({});
+
+    expect(await getUserParams()).toBeNull();
+    const params = await getUserParams();
+    expect(params?.studentId).toBe('987654');
   });
 
   // A failing check must not turn into a fetch storm: ~20 call sites read
