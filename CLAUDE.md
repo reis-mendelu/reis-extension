@@ -156,7 +156,14 @@ These are enforced by linting and project convention:
 - **NO `localStorage`/`sessionStorage`** — use `IndexedDBService`
 - **NO proxy/re-export files** — import directly from implementation files
 - **NO `useEffect` for data fetching** — fetch in services/store, not components
-- **NO custom CSS** — use DaisyUI semantic classes (`btn-primary`, `bg-base-200`)
+- **NO custom CSS** — use DaisyUI semantic classes (`btn-primary`, `bg-base-200`).
+  The one standing exception is **Leaflet-generated DOM**: Leaflet builds its
+  own tooltip and marker elements and accepts a single `className`, so its
+  labels are styled by class in `src/index.css` (`.room-label`,
+  `.building-label`, `.place-label`, `.walk-chip`, `.reis-hide-building-labels`).
+  Tailwind utilities cannot reach that DOM without `!important` fighting
+  Leaflet's own `.leaflet-tooltip` background, border and shadow — which is more
+  custom CSS, not less. The rule is about app chrome, where DaisyUI applies.
 - **NO generic state** — all state lives in Zustand slices
 - **Max 200 lines per file** — convention, not lint-enforced; split proactively when a file grows past this
 - **Direct imports only** — no middleman re-export barrels; import from the specific file

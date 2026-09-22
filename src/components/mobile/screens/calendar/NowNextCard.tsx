@@ -1,6 +1,11 @@
 import type { NowNext } from '../../../../utils/mobile/nowNext';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { localizedCourseName, localizedRoom } from '../../../../utils/localizedLesson';
+import roomsIndexJson from '../../../../data/map/rooms-index.json';
+import type { RoomIndexEntry } from '../../../../types/campusMap';
+import { lookupRoomEntry } from '../../../../utils/rooms/lookupRoom';
+
+const INDEX = roomsIndexJson as RoomIndexEntry[];
 
 export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => void }) {
   const { t, language } = useTranslation();
@@ -12,6 +17,10 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
   const currentRoom = localizedRoom(current, language);
   const nextName = next ? localizedCourseName(next, language) : '';
   const nextRoom = next ? localizedRoom(next, language) : '';
+  // "Kam jít" points at a place, so it is offered only when there is one to
+  // point at — a lesson held online, or a room MENDELU's map does not
+  // publish, would otherwise take the student to an empty campus overview.
+  const routable = !!next && !!lookupRoomEntry(next.room, INDEX);
 
   return (
     <div
@@ -42,9 +51,11 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
           <span className="text-sm font-medium text-base-content/60">
             {t('mobile.calendar.next', { title: `${nextName} · ${nextRoom} · ${next.startTime}` })}
           </span>
-          <button onClick={onRoute} className="py-1.5 pl-3 text-sm font-semibold text-primary">
-            {t('mobile.calendar.route')}
-          </button>
+          {routable && (
+            <button onClick={onRoute} className="py-1.5 pl-3 text-sm font-semibold text-primary">
+              {t('mobile.calendar.route')}
+            </button>
+          )}
         </div>
       )}
     </div>

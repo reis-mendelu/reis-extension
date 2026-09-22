@@ -128,7 +128,7 @@ export function SubjectsScreen() {
 
   return shell(
     <>
-      <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-4 pb-24 pt-3.5">
+      <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-4 pb-[calc(6rem_+_var(--safe-bottom,0px))] pt-3.5">
         <CreditRing earned={plan.creditsAcquired} total={plan.creditsRequired} />
         {enrolled.length > 0 ? (
           <SemesterCard enrolled={enrolled} semester={semester} onOpenSubject={openSubject} />

@@ -38,27 +38,27 @@ const REAL_ROW_HTML = `
 `;
 
 vi.mock('./client', () => ({
-    BASE_URL: 'https://is.mendelu.cz',
-    fetchWithAuth: vi.fn(async () => ({ text: async () => REAL_ROW_HTML })),
+  BASE_URL: 'https://is.mendelu.cz',
+  fetchWithAuth: vi.fn(async () => ({ text: async () => REAL_ROW_HTML })),
 }));
 
 describe('parseGradeHistory column mapping (podrobne_vsechna_obdobi, 11 cols)', () => {
-    beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => vi.clearAllMocks());
 
-    it('maps code, examType, attempt, grade letter, and credits to the right columns', async () => {
-        const { fetchGradeHistory } = await import('./gradeHistory');
-        const result = await fetchGradeHistory('143752', '812');
+  it('maps code, examType, attempt, grade letter, and credits to the right columns', async () => {
+    const { fetchGradeHistory } = await import('./gradeHistory');
+    const result = await fetchGradeHistory('143752', '812');
 
-        expect(result).not.toBeNull();
-        expect(result!.grades).toHaveLength(1);
+    expect(result).not.toBeNull();
+    expect(result!.grades).toHaveLength(1);
 
-        const g = result!.grades[0];
-        expect(g.courseCode).toBe('EBC-BA');      // cells[0]
-        expect(g.courseName).toBe('Bankovnictví 1');
-        expect(g.examType).toBe('zk');            // cells[4]
-        expect(g.attempt).toBe(1);                // cells[5]
-        expect(g.gradeLetter).toBe('A');
-        expect(g.credits).toBe(4);                // cells[9]
-        expect(g.period).toBe('LS 2025/2026 - PEF');
-    });
+    const g = result!.grades[0];
+    expect(g.courseCode).toBe('EBC-BA'); // cells[0]
+    expect(g.courseName).toBe('Bankovnictví 1');
+    expect(g.examType).toBe('zk'); // cells[4]
+    expect(g.attempt).toBe(1); // cells[5]
+    expect(g.gradeLetter).toBe('A');
+    expect(g.credits).toBe(4); // cells[9]
+    expect(g.period).toBe('LS 2025/2026 - PEF');
+  });
 });

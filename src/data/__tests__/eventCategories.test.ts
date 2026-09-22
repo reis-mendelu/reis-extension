@@ -2,7 +2,18 @@ import { describe, it, expect } from 'vitest';
 import { CATEGORY_ICON, CATEGORY_EMOJI_SRC, CATEGORY_COLOR } from '../eventCategories';
 import type { EventCategory } from '../../types/events';
 
-const ALL_CATEGORIES: EventCategory[] = ['party', 'boardgames', 'trip', 'quiz', 'sports', 'film', 'karaoke', 'culture', 'social', 'other'];
+const ALL_CATEGORIES: EventCategory[] = [
+  'party',
+  'boardgames',
+  'trip',
+  'quiz',
+  'sports',
+  'film',
+  'karaoke',
+  'culture',
+  'social',
+  'other',
+];
 
 describe('category maps', () => {
   it('have a lucide icon, an emoji svg path, and a vivid colour for every category', () => {

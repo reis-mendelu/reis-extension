@@ -3,19 +3,19 @@ import { useSyncExternalStore } from 'react';
 const MOBILE_QUERY = '(max-width: 767px) and (pointer: coarse)';
 
 function subscribe(callback: () => void) {
-    const mql = window.matchMedia(MOBILE_QUERY);
-    mql.addEventListener('change', callback);
-    return () => mql.removeEventListener('change', callback);
+  const mql = window.matchMedia(MOBILE_QUERY);
+  mql.addEventListener('change', callback);
+  return () => mql.removeEventListener('change', callback);
 }
 
 function getSnapshot() {
-    return window.matchMedia(MOBILE_QUERY).matches;
+  return window.matchMedia(MOBILE_QUERY).matches;
 }
 
 function getServerSnapshot() {
-    return false;
+  return false;
 }
 
 export function useIsMobile(): boolean {
-    return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }

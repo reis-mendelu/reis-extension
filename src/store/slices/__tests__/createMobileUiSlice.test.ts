@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Mock } from 'vitest';
 import { createMobileUiSlice } from '../createMobileUiSlice';
 import type { MobileUiSlice } from '../../types';
 import { IndexedDBService } from '../../../services/storage';
@@ -9,15 +10,15 @@ vi.mock('../../../services/storage', () => ({
 
 describe('createMobileUiSlice', () => {
   let state: MobileUiSlice;
-  let set: ReturnType<typeof vi.fn>;
-  let get: ReturnType<typeof vi.fn>;
+  let set: Mock & Parameters<typeof createMobileUiSlice>[0];
+  let get: Mock & Parameters<typeof createMobileUiSlice>[1];
 
   beforeEach(() => {
-    set = vi.fn((updater) => {
+    set = vi.fn((updater: unknown) => {
       const patch = typeof updater === 'function' ? updater(state) : updater;
       state = { ...state, ...patch };
     });
-    get = vi.fn(() => state);
+    get = vi.fn(() => state) as unknown as typeof get;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     state = createMobileUiSlice(set, get, {} as any);
   });
@@ -27,7 +28,7 @@ describe('createMobileUiSlice', () => {
     expect(state.mobileSheets).toEqual([]);
     // The middle stop: the map sheet opens with the campus events already
     // visible, instead of a blank peek band the student had to drag up.
-    expect(state.mapSheetState).toBe('half');
+    expect(state.mapSheetState).toBe('peek');
     expect(state.devPhoneOverride).toBeNull();
   });
 

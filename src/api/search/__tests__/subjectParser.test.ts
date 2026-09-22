@@ -31,7 +31,7 @@ describe('parseSubjectResults', () => {
       ${link('2', 'MZD Mezinárodní zdanění', ' LS 2025/2026 - PEF')}
     </body></html>`;
     const out = parseSubjectResults(html);
-    expect(out.map(s => s.code)).toEqual(['MZD']);
+    expect(out.map((s) => s.code)).toEqual(['MZD']);
   });
 
   it('handles short hyphenated codes and missing semester/faculty gracefully', () => {

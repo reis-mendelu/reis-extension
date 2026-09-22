@@ -42,5 +42,11 @@ export const ERASMUS_COUNTRIES: ErasmusCountry[] = [
   { id: '752', alpha2: 'SE', cs: 'Švédsko', en: 'Sweden', file: 'country-752-study.json' },
   { id: '756', alpha2: 'CH', cs: 'Švýcarsko', en: 'Switzerland', file: '' },
   { id: '792', alpha2: 'TR', cs: 'Turecko', en: 'Turkey', file: 'country-792-study.json' },
-  { id: '826', alpha2: 'GB', cs: 'Velká Británie', en: 'United Kingdom', file: 'country-826-study.json' },
+  {
+    id: '826',
+    alpha2: 'GB',
+    cs: 'Velká Británie',
+    en: 'United Kingdom',
+    file: 'country-826-study.json',
+  },
 ];

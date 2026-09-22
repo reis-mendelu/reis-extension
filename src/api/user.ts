@@ -1,48 +1,46 @@
- 
- 
-import { fetchWithAuth, BASE_URL } from "./client";
-import { IndexedDBService } from "../services/storage";
-import { logError } from "../utils/reportError";
+import { fetchWithAuth, BASE_URL } from './client';
+import { IndexedDBService } from '../services/storage';
+import { logError } from '../utils/reportError';
 
 const ID_URL = `${BASE_URL}/auth/student/studium.pl`;
 
 export async function fetchUserId(): Promise<string | null> {
-    try {
-        const response = await fetchWithAuth(ID_URL);
-        const html = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, "text/html");
+  try {
+    const response = await fetchWithAuth(ID_URL);
+    const html = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
 
-        const tds = doc.getElementsByTagName("td");
-        if (tds.length === 0) return null;
+    const tds = doc.getElementsByTagName('td');
+    if (tds.length === 0) return null;
 
-        for (let i = 0; i < tds.length; i++) {
-            if (tds[i].innerText?.toLowerCase().includes("identif")) {
-                if (tds[i + 1]) {
-                    return tds[i + 1].innerText.replace(" ", "");
-                }
-            }
+    for (let i = 0; i < tds.length; i++) {
+      if (tds[i].innerText?.toLowerCase().includes('identif')) {
+        if (tds[i + 1]) {
+          return tds[i + 1].innerText.replace(' ', '');
         }
-        return null;
-    } catch (error) {
-        logError('Api.fetchUserId', error);
-        return null;
+      }
     }
+    return null;
+  } catch (error) {
+    logError('Api.fetchUserId', error);
+    return null;
+  }
 }
 
 export async function getUserId(): Promise<string | null> {
-    try {
-        const id = await IndexedDBService.get('meta', "user_id");
-        if (id) return id;
+  try {
+    const id = await IndexedDBService.get('meta', 'user_id');
+    if (id) return id;
 
-        const fetchedId = await fetchUserId();
-        if (fetchedId) {
-            await IndexedDBService.set('meta', "user_id", fetchedId);
-            return fetchedId;
-        }
-    } catch (err) {
-        logError('Api.getUserId', err);
+    const fetchedId = await fetchUserId();
+    if (fetchedId) {
+      await IndexedDBService.set('meta', 'user_id', fetchedId);
+      return fetchedId;
     }
+  } catch (err) {
+    logError('Api.getUserId', err);
+  }
 
-    return null;
+  return null;
 }

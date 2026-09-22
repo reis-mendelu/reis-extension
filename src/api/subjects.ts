@@ -1,321 +1,369 @@
- 
- 
-import { fetchWithAuth, BASE_URL } from "./client";
-import type { SubjectInfo, SubjectsData, SubjectAttendance, AttendanceRecord, AttendanceStatus, AvailablePeriod } from "../types/documents";
-import { SubjectsDataSchema } from "../schemas/subjectSchema";
-import { logError } from "../utils/reportError";
+import { fetchWithAuth, BASE_URL } from './client';
+import type {
+  SubjectInfo,
+  SubjectsData,
+  SubjectAttendance,
+  AttendanceRecord,
+  AttendanceStatus,
+  AvailablePeriod,
+} from '../types/documents';
+import { SubjectsDataSchema } from '../schemas/subjectSchema';
+import { logError } from '../utils/reportError';
 
 const STUDENT_LIST_URL = `${BASE_URL}/auth/student/list.pl`;
 
-export async function fetchSubjects(lang: string = 'cz', studium?: string): Promise<SubjectsData | null> {
-    try {
-        const isLang = lang;
-        const url = studium 
-            ? `${STUDENT_LIST_URL}?lang=${isLang};studium=${studium}`
-            : `${STUDENT_LIST_URL}?lang=${isLang}`;
-            
-        const response = await fetchWithAuth(url);
-        const html = await response.text();
-        const subjectsMap = parseSubjectFolders(html);
-        const subjectsData = showFullSubjects(subjectsMap, lang);
+export async function fetchSubjects(
+  lang: string = 'cz',
+  studium?: string
+): Promise<SubjectsData | null> {
+  try {
+    const isLang = lang;
+    const url = studium
+      ? `${STUDENT_LIST_URL}?lang=${isLang};studium=${studium}`
+      : `${STUDENT_LIST_URL}?lang=${isLang}`;
 
-        const result = SubjectsDataSchema.safeParse(subjectsData);
-        if (result.success) {
-            return result.data;
-        } else {
-            return subjectsData;
-        }
-    } catch (e) {
-        logError('Api.fetchSubjects', e, { lang });
-        return null;
+    const response = await fetchWithAuth(url);
+    const html = await response.text();
+    const subjectsMap = parseSubjectFolders(html);
+    const subjectsData = showFullSubjects(subjectsMap, lang);
+
+    const result = SubjectsDataSchema.safeParse(subjectsData);
+    if (result.success) {
+      return result.data;
+    } else {
+      return subjectsData;
     }
+  } catch (e) {
+    logError('Api.fetchSubjects', e, { lang });
+    return null;
+  }
 }
 
 export interface SubjectsFetchResult {
-    subjects: SubjectsData;
-    attendance: Record<string, SubjectAttendance[]>;
-    availablePeriods: AvailablePeriod[];
+  subjects: SubjectsData;
+  attendance: Record<string, SubjectAttendance[]>;
+  availablePeriods: AvailablePeriod[];
 }
 
 function buildListUrl(lang: string, studium?: string, obdobi?: string): string {
-    const params = new URLSearchParams();
-    params.set('lang', lang);
-    if (studium) params.set('studium', studium);
-    if (obdobi) params.set('obdobi', obdobi);
-    return `${STUDENT_LIST_URL}?${params.toString().replace(/&/g, ';')}`;
+  const params = new URLSearchParams();
+  params.set('lang', lang);
+  if (studium) params.set('studium', studium);
+  if (obdobi) params.set('obdobi', obdobi);
+  return `${STUDENT_LIST_URL}?${params.toString().replace(/&/g, ';')}`;
 }
 
 export function parseAvailablePeriods(html: string): AvailablePeriod[] {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const select = doc.querySelector('select[name="obdobi"]');
-    if (!select) return [];
-    return Array.from(select.querySelectorAll('option')).map(opt => ({
-        id: opt.getAttribute('value') ?? '',
-        label: opt.textContent?.trim() ?? '',
-    })).filter(p => p.id);
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const select = doc.querySelector('select[name="obdobi"]');
+  if (!select) return [];
+  return Array.from(select.querySelectorAll('option'))
+    .map((opt) => ({
+      id: opt.getAttribute('value') ?? '',
+      label: opt.textContent?.trim() ?? '',
+    }))
+    .filter((p) => p.id);
 }
 
 /**
  * Fetches subjects + attendance for a specific past semester (no periods list).
  * Result is cached in IDB by the caller — this function is pure fetch+parse.
  */
-export async function fetchPastSemesterData(studium: string, obdobi: string): Promise<SubjectsFetchResult | null> {
-    try {
-        const [czRes, enRes] = await Promise.all([
-            fetchWithAuth(buildListUrl('cz', studium, obdobi)),
-            fetchWithAuth(buildListUrl('en', studium, obdobi)),
-        ]);
-        const czHtml = await czRes.text();
-        const enHtml = await enRes.text();
+export async function fetchPastSemesterData(
+  studium: string,
+  obdobi: string
+): Promise<SubjectsFetchResult | null> {
+  try {
+    const [czRes, enRes] = await Promise.all([
+      fetchWithAuth(buildListUrl('cz', studium, obdobi)),
+      fetchWithAuth(buildListUrl('en', studium, obdobi)),
+    ]);
+    const czHtml = await czRes.text();
+    const enHtml = await enRes.text();
 
-        const attendance = parseAttendance(czHtml);
-        const czMap = parseSubjectFolders(czHtml);
-        const enMap = parseSubjectFolders(enHtml);
+    const attendance = parseAttendance(czHtml);
+    const czMap = parseSubjectFolders(czHtml);
+    const enMap = parseSubjectFolders(enHtml);
 
-        const merged: Record<string, SubjectInfo> = {};
-        for (const [fullName, data] of Object.entries(czMap)) {
-            const code = extractSubjectCode(fullName);
-            const name = extractCleanName(fullName);
-            merged[code] = { displayName: name, fullName, nameCs: name, subjectCode: code, subjectId: data.subjectId, folderUrl: data.folderUrl, fetchedAt: new Date().toISOString(), hasPrubezne: data.hasPrubezne, hasTest: data.hasTest, autoHref: data.autoHref };
-        }
-        for (const [fullName] of Object.entries(enMap)) {
-            const code = extractSubjectCode(fullName);
-            if (merged[code]) merged[code].nameEn = extractCleanName(fullName);
-        }
-
-        const subjectsData: SubjectsData = { version: 1, lastUpdated: new Date().toISOString(), data: merged };
-        return { subjects: subjectsData, attendance, availablePeriods: [] };
-    } catch (e) {
-        logError('Api.fetchPastSemesterData', e);
-        return null;
+    const merged: Record<string, SubjectInfo> = {};
+    for (const [fullName, data] of Object.entries(czMap)) {
+      const code = extractSubjectCode(fullName);
+      const name = extractCleanName(fullName);
+      merged[code] = {
+        displayName: name,
+        fullName,
+        nameCs: name,
+        subjectCode: code,
+        subjectId: data.subjectId,
+        folderUrl: data.folderUrl,
+        fetchedAt: new Date().toISOString(),
+        hasPrubezne: data.hasPrubezne,
+        hasTest: data.hasTest,
+        autoHref: data.autoHref,
+      };
     }
+    for (const [fullName] of Object.entries(enMap)) {
+      const code = extractSubjectCode(fullName);
+      if (merged[code]) merged[code].nameEn = extractCleanName(fullName);
+    }
+
+    const subjectsData: SubjectsData = {
+      version: 1,
+      lastUpdated: new Date().toISOString(),
+      data: merged,
+    };
+    return { subjects: subjectsData, attendance, availablePeriods: [] };
+  } catch (e) {
+    logError('Api.fetchPastSemesterData', e);
+    return null;
+  }
 }
 
 /**
  * Fetches subjects in both Czech and English and merges them.
  */
-export async function fetchDualLanguageSubjects(studium?: string, obdobi?: string): Promise<SubjectsFetchResult | null> {
-    try {
-        const czUrl = buildListUrl('cz', studium, obdobi);
-        const enUrl = buildListUrl('en', studium, obdobi);
+export async function fetchDualLanguageSubjects(
+  studium?: string,
+  obdobi?: string
+): Promise<SubjectsFetchResult | null> {
+  try {
+    const czUrl = buildListUrl('cz', studium, obdobi);
+    const enUrl = buildListUrl('en', studium, obdobi);
 
-        // Fetch both in parallel; fetch without obdobi separately to get the period picker dropdown
-        const periodsUrl = buildListUrl('cz', studium);
-        const periodsPromise = obdobi
-            ? fetchWithAuth(periodsUrl).catch(() => null)
-            : Promise.resolve(null);
+    // Fetch both in parallel; fetch without obdobi separately to get the period picker dropdown
+    const periodsUrl = buildListUrl('cz', studium);
+    const periodsPromise = obdobi
+      ? fetchWithAuth(periodsUrl).catch(() => null)
+      : Promise.resolve(null);
 
-        const [czRes, enRes, periodsRes] = await Promise.all([
-            fetchWithAuth(czUrl),
-            fetchWithAuth(enUrl),
-            periodsPromise,
-        ]);
+    const [czRes, enRes, periodsRes] = await Promise.all([
+      fetchWithAuth(czUrl),
+      fetchWithAuth(enUrl),
+      periodsPromise,
+    ]);
 
-        const czHtml = await czRes.text();
-        const attendance = parseAttendance(czHtml);
-        const enHtml = await enRes.text();
-        const periodsHtml = periodsRes ? await periodsRes.text() : czHtml;
+    const czHtml = await czRes.text();
+    const attendance = parseAttendance(czHtml);
+    const enHtml = await enRes.text();
+    const periodsHtml = periodsRes ? await periodsRes.text() : czHtml;
 
-        const czMap = parseSubjectFolders(czHtml);
-        const enMap = parseSubjectFolders(enHtml);
+    const czMap = parseSubjectFolders(czHtml);
+    const enMap = parseSubjectFolders(enHtml);
 
-        const merged: Record<string, SubjectInfo> = {};
-        
-        // Process CZ as base
-        for (const [fullName, data] of Object.entries(czMap)) {
-            const code = extractSubjectCode(fullName);
-            const name = extractCleanName(fullName);
-            
-            merged[code] = {
-                displayName: name,
-                fullName,
-                nameCs: name,
-                subjectCode: code,
-                subjectId: data.subjectId,
-                folderUrl: data.folderUrl,
-                fetchedAt: new Date().toISOString(),
-                hasPrubezne: data.hasPrubezne,
-                hasTest: data.hasTest,
-                autoHref: data.autoHref,
-            };
-        }
+    const merged: Record<string, SubjectInfo> = {};
 
-        // Merge EN names
-        for (const [fullName] of Object.entries(enMap)) {
-            const code = extractSubjectCode(fullName);
-            if (merged[code]) {
-                merged[code].nameEn = extractCleanName(fullName);
-            }
-        }
+    // Process CZ as base
+    for (const [fullName, data] of Object.entries(czMap)) {
+      const code = extractSubjectCode(fullName);
+      const name = extractCleanName(fullName);
 
-        const subjectsData: SubjectsData = {
-            version: 1,
-            lastUpdated: new Date().toISOString(),
-            data: merged
-        };
-
-        const result = SubjectsDataSchema.safeParse(subjectsData);
-        const availablePeriods = parseAvailablePeriods(periodsHtml);
-        return { subjects: result.success ? result.data : subjectsData, attendance, availablePeriods };
-    } catch (e) {
-        logError('Api.fetchDualLanguageSubjects', e);
-        return null;
+      merged[code] = {
+        displayName: name,
+        fullName,
+        nameCs: name,
+        subjectCode: code,
+        subjectId: data.subjectId,
+        folderUrl: data.folderUrl,
+        fetchedAt: new Date().toISOString(),
+        hasPrubezne: data.hasPrubezne,
+        hasTest: data.hasTest,
+        autoHref: data.autoHref,
+      };
     }
+
+    // Merge EN names
+    for (const [fullName] of Object.entries(enMap)) {
+      const code = extractSubjectCode(fullName);
+      if (merged[code]) {
+        merged[code].nameEn = extractCleanName(fullName);
+      }
+    }
+
+    const subjectsData: SubjectsData = {
+      version: 1,
+      lastUpdated: new Date().toISOString(),
+      data: merged,
+    };
+
+    const result = SubjectsDataSchema.safeParse(subjectsData);
+    const availablePeriods = parseAvailablePeriods(periodsHtml);
+    return { subjects: result.success ? result.data : subjectsData, attendance, availablePeriods };
+  } catch (e) {
+    logError('Api.fetchDualLanguageSubjects', e);
+    return null;
+  }
 }
 
 interface SubjectLinkData {
-    folderUrl: string;
-    subjectId?: string;
-    hasPrubezne?: boolean;
-    hasTest?: boolean;
-    autoHref?: string | null;
+  folderUrl: string;
+  subjectId?: string;
+  hasPrubezne?: boolean;
+  hasTest?: boolean;
+  autoHref?: string | null;
 }
 
 function parseSubjectFolders(htmlString: string): Record<string, SubjectLinkData> {
-    const subjectMap: Record<string, SubjectLinkData> = {};
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(htmlString, 'text/html');
+  const subjectMap: Record<string, SubjectLinkData> = {};
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(htmlString, 'text/html');
 
-    const table = doc.querySelector('#tmtab_1');
-    if (!table) return subjectMap;
+  const table = doc.querySelector('#tmtab_1');
+  if (!table) return subjectMap;
 
-    const subjectRows = table.querySelectorAll('tr.uis-hl-table');
-    subjectRows.forEach((row) => {
-        const subjectLinkElement = row.querySelector('a[href*="/auth/katalog/syllabus.pl"]');
-        const folderLinkElement = row.querySelector('a[href*="../dok_server/slozka.pl"]');
+  const subjectRows = table.querySelectorAll('tr.uis-hl-table');
+  subjectRows.forEach((row) => {
+    const subjectLinkElement = row.querySelector('a[href*="/auth/katalog/syllabus.pl"]');
+    const folderLinkElement = row.querySelector('a[href*="../dok_server/slozka.pl"]');
 
-        if (subjectLinkElement && folderLinkElement) {
-            const subjectName = subjectLinkElement.textContent?.trim() || '';
-            const relativeUrl = folderLinkElement.getAttribute('href') || '';
-            const cleanUrl = relativeUrl.replace('../', '');
-            const absoluteUrl = new URL(cleanUrl, `${BASE_URL}/auth/`).href;
+    if (subjectLinkElement && folderLinkElement) {
+      const subjectName = subjectLinkElement.textContent?.trim() || '';
+      const relativeUrl = folderLinkElement.getAttribute('href') || '';
+      const cleanUrl = relativeUrl.replace('../', '');
+      const absoluteUrl = new URL(cleanUrl, `${BASE_URL}/auth/`).href;
 
-            const syllabusHref = subjectLinkElement.getAttribute('href') || '';
-            const idMatch = syllabusHref.match(/[?&;]predmet=(\d+)/);
-            const subjectId = idMatch ? idMatch[1] : undefined;
+      const syllabusHref = subjectLinkElement.getAttribute('href') || '';
+      const idMatch = syllabusHref.match(/[?&;]predmet=(\d+)/);
+      const subjectId = idMatch ? idMatch[1] : undefined;
 
-            const hasPrubezne = !!row.querySelector('td[title="Průběžné hodnocení"] a');
-            const hasTest = !!row.querySelector('td[title^="Výsledky"] a');
-            const autoAnchor = row.querySelector('td[title="Automatické hodnocení"] a');
-            const rawAutoHref = autoAnchor ? (autoAnchor.getAttribute('href') ?? null) : null;
-            let autoHref: string | null = null;
-            if (rawAutoHref) {
-                try {
-                    autoHref = rawAutoHref.startsWith('http://') || rawAutoHref.startsWith('https://')
-                        ? rawAutoHref
-                        : new URL(rawAutoHref, `${BASE_URL}/auth/`).href;
-                } catch { autoHref = null; }
-                if (autoHref && !autoHref.startsWith('https://') && !autoHref.startsWith('http://')) autoHref = null;
-            }
-
-            subjectMap[subjectName] = {
-                folderUrl: absoluteUrl,
-                subjectId,
-                hasPrubezne,
-                hasTest,
-                autoHref,
-            };
+      const hasPrubezne = !!row.querySelector('td[title="Průběžné hodnocení"] a');
+      const hasTest = !!row.querySelector('td[title^="Výsledky"] a');
+      const autoAnchor = row.querySelector('td[title="Automatické hodnocení"] a');
+      const rawAutoHref = autoAnchor ? (autoAnchor.getAttribute('href') ?? null) : null;
+      let autoHref: string | null = null;
+      if (rawAutoHref) {
+        try {
+          autoHref =
+            rawAutoHref.startsWith('http://') || rawAutoHref.startsWith('https://')
+              ? rawAutoHref
+              : new URL(rawAutoHref, `${BASE_URL}/auth/`).href;
+        } catch {
+          autoHref = null;
         }
-    });
-    return subjectMap;
+        if (autoHref && !autoHref.startsWith('https://') && !autoHref.startsWith('http://'))
+          autoHref = null;
+      }
+
+      subjectMap[subjectName] = {
+        folderUrl: absoluteUrl,
+        subjectId,
+        hasPrubezne,
+        hasTest,
+        autoHref,
+      };
+    }
+  });
+  return subjectMap;
 }
 
 const SYSID_TO_STATUS: Record<string, AttendanceStatus> = {
-    'doch-pritomen': 'present',
-    'doch-neomluven': 'absent',
-    'doch-omluven': 'excused',
-    'doch-pozde': 'late',
-    'doch-drivejsi-odchod': 'early-leave',
-    'doch-vyloucen': 'excluded',
-    'doch-pritomen-jinde': 'elsewhere',
+  'doch-pritomen': 'present',
+  'doch-neomluven': 'absent',
+  'doch-omluven': 'excused',
+  'doch-pozde': 'late',
+  'doch-drivejsi-odchod': 'early-leave',
+  'doch-vyloucen': 'excluded',
+  'doch-pritomen-jinde': 'elsewhere',
 };
 
 export function parseAttendance(htmlString: string): Record<string, SubjectAttendance[]> {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(htmlString, 'text/html');
-    const table = doc.querySelector('#tmtab_1');
-    if (!table) return {};
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(htmlString, 'text/html');
+  const table = doc.querySelector('#tmtab_1');
+  if (!table) return {};
 
-    const result: Record<string, SubjectAttendance[]> = {};
-    let currentCode: string | null = null;
+  const result: Record<string, SubjectAttendance[]> = {};
+  let currentCode: string | null = null;
 
-    const rows = table.querySelectorAll('tr.uis-hl-table');
-    for (const row of rows) {
-        const syllabusLink = row.querySelector('a[href*="/auth/katalog/syllabus.pl"]');
+  const rows = table.querySelectorAll('tr.uis-hl-table');
+  for (const row of rows) {
+    const syllabusLink = row.querySelector('a[href*="/auth/katalog/syllabus.pl"]');
 
-        if (syllabusLink) {
-            const fullName = syllabusLink.textContent?.trim() || '';
-            currentCode = fullName.split(' ')[0] || null;
-            continue;
-        }
-
-        if (!currentCode) continue;
-
-        const imgs = row.querySelectorAll('img[sysid^="doch-"]');
-        if (imgs.length === 0) continue;
-
-        const cells = row.querySelectorAll('td');
-        const label = cells[1]?.textContent?.trim().replace(/\s*Každý týden\s*/g, '').trim()
-            || cells[0]?.textContent?.trim().replace(/\s*Každý týden\s*/g, '').trim()
-            || '';
-
-        const records: AttendanceRecord[] = [];
-        for (const img of imgs) {
-            const sysid = img.getAttribute('sysid') || '';
-            const status = SYSID_TO_STATUS[sysid];
-            if (!status) continue;
-
-            const title = img.getAttribute('title') || '';
-            const parts = title.split(', ');
-            if (parts.length < 3) continue;
-
-            const datePart = parts[0];
-            const timePart = parts[1];
-            const roomAndStatus = parts.slice(2).join(', ');
-            const room = roomAndStatus.split(' - ')[0];
-
-            records.push({ date: datePart, time: timePart, room, status });
-        }
-
-        if (records.length > 0) {
-            if (!result[currentCode]) result[currentCode] = [];
-            result[currentCode].push({ label, records });
-        }
+    if (syllabusLink) {
+      const fullName = syllabusLink.textContent?.trim() || '';
+      currentCode = fullName.split(' ')[0] || null;
+      continue;
     }
 
-    return result;
+    if (!currentCode) continue;
+
+    const imgs = row.querySelectorAll('img[sysid^="doch-"]');
+    if (imgs.length === 0) continue;
+
+    const cells = row.querySelectorAll('td');
+    const label =
+      cells[1]?.textContent
+        ?.trim()
+        .replace(/\s*Každý týden\s*/g, '')
+        .trim() ||
+      cells[0]?.textContent
+        ?.trim()
+        .replace(/\s*Každý týden\s*/g, '')
+        .trim() ||
+      '';
+
+    const records: AttendanceRecord[] = [];
+    for (const img of imgs) {
+      const sysid = img.getAttribute('sysid') || '';
+      const status = SYSID_TO_STATUS[sysid];
+      if (!status) continue;
+
+      const title = img.getAttribute('title') || '';
+      const parts = title.split(', ');
+      if (parts.length < 3) continue;
+
+      const datePart = parts[0];
+      const timePart = parts[1];
+      const roomAndStatus = parts.slice(2).join(', ');
+      const room = roomAndStatus.split(' - ')[0];
+
+      records.push({ date: datePart, time: timePart, room, status });
+    }
+
+    if (records.length > 0) {
+      if (!result[currentCode]) result[currentCode] = [];
+      result[currentCode].push({ label, records });
+    }
+  }
+
+  return result;
 }
 
 function extractSubjectCode(subjectName: string): string {
-    return subjectName.split(" ")[0];
+  return subjectName.split(' ')[0];
 }
 
 function extractCleanName(fullName: string): string {
-    const code = extractSubjectCode(fullName);
-    // Remove code at start and trailing info in brackets
-    return fullName.replace(code, '').replace(/\s*\([^)]+\)\s*$/, '').trim();
+  const code = extractSubjectCode(fullName);
+  // Remove code at start and trailing info in brackets
+  return fullName
+    .replace(code, '')
+    .replace(/\s*\([^)]+\)\s*$/, '')
+    .trim();
 }
 
-function showFullSubjects(subjectsObject: Record<string, SubjectLinkData>, lang: string): SubjectsData {
-    const enrichedSubjects: Record<string, SubjectInfo> = {};
-    for (const [fullName, data] of Object.entries(subjectsObject)) {
-        const subjectCode = extractSubjectCode(fullName);
-        const name = extractCleanName(fullName);
-        
-        enrichedSubjects[subjectCode] = {
-            displayName: name,
-            fullName,
-            nameCs: lang === 'cz' ? name : undefined,
-            nameEn: lang === 'en' ? name : undefined,
-            subjectCode,
-            subjectId: data.subjectId,
-            folderUrl: data.folderUrl,
-            fetchedAt: new Date().toISOString()
-        };
-    }
-    return {
-        version: 1,
-        lastUpdated: new Date().toISOString(),
-        data: enrichedSubjects
+function showFullSubjects(
+  subjectsObject: Record<string, SubjectLinkData>,
+  lang: string
+): SubjectsData {
+  const enrichedSubjects: Record<string, SubjectInfo> = {};
+  for (const [fullName, data] of Object.entries(subjectsObject)) {
+    const subjectCode = extractSubjectCode(fullName);
+    const name = extractCleanName(fullName);
+
+    enrichedSubjects[subjectCode] = {
+      displayName: name,
+      fullName,
+      nameCs: lang === 'cz' ? name : undefined,
+      nameEn: lang === 'en' ? name : undefined,
+      subjectCode,
+      subjectId: data.subjectId,
+      folderUrl: data.folderUrl,
+      fetchedAt: new Date().toISOString(),
     };
+  }
+  return {
+    version: 1,
+    lastUpdated: new Date().toISOString(),
+    data: enrichedSubjects,
+  };
 }

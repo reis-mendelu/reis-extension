@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Mock } from 'vitest';
 import { createFeedbackSlice } from '../createFeedbackSlice';
 import { IndexedDBService } from '../../../services/storage';
 
@@ -23,8 +24,8 @@ vi.mock('../../../utils/userParams', () => ({
 }));
 
 describe('createFeedbackSlice', () => {
-  let set: ReturnType<typeof vi.fn>;
-  let get: ReturnType<typeof vi.fn>;
+  let set: Mock & Parameters<typeof createFeedbackSlice>[0];
+  let get: Mock & Parameters<typeof createFeedbackSlice>[1];
   let slice: ReturnType<typeof createFeedbackSlice>;
 
   beforeEach(() => {
@@ -34,7 +35,7 @@ describe('createFeedbackSlice', () => {
         typeof fn === 'function' ? fn({ feedbackEligible: false, feedbackDismissed: false }) : fn;
       Object.assign(slice, result);
     });
-    get = vi.fn(() => slice);
+    get = vi.fn(() => slice) as unknown as typeof get;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     slice = createFeedbackSlice(set, get, {} as unknown as any);
   });

@@ -4,6 +4,7 @@ import pois from '../pois.json';
 import index from '../rooms-index.json';
 import remotePlaces from '../remotePlaces.json';
 import type { RemotePlace } from '../../../types/campusMap';
+import { pointInRing } from './pointInRing';
 
 /** Mean of a ring's vertices — good enough for a convex-ish building footprint. */
 function centroid(ring: number[][]): number[] {
@@ -14,21 +15,6 @@ function centroid(ring: number[][]): number[] {
     y += p[1]!;
   }
   return [x / ring.length, y / ring.length];
-}
-
-/** Ray casting, mirroring the selection the fetch script makes. */
-function pointInRing(point: number[], ring: number[][]): boolean {
-  const px = point[0]!;
-  const py = point[1]!;
-  let inside = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const xi = ring[i]![0]!;
-    const yi = ring[i]![1]!;
-    const xj = ring[j]![0]!;
-    const yj = ring[j]![1]!;
-    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside;
-  }
-  return inside;
 }
 
 describe('bundled map data', () => {

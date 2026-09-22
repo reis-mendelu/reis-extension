@@ -21,6 +21,16 @@ vi.mock('../hooks/useSpolkySettings', () => ({
   useSpolkySettings: vi.fn(() => ({ subscribedAssociations: [] })),
 }));
 
+// Mock IndexedDBService. This sat inside the `describe` body until vitest 5,
+// which errors on a hoisted call written below the top level rather than
+// silently lifting it — it always ran here, the indentation just said otherwise.
+vi.mock('../services/storage', () => ({
+  IndexedDBService: {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 // Mock localStorage
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
@@ -96,14 +106,6 @@ describe('NotificationFeed', () => {
       associationId: 'test-assoc-2',
     },
   ];
-
-  // Mock IndexedDBService
-  vi.mock('../services/storage', () => ({
-    IndexedDBService: {
-      get: vi.fn().mockResolvedValue(null),
-      set: vi.fn().mockResolvedValue(undefined),
-    },
-  }));
 
   beforeEach(() => {
     vi.clearAllMocks();

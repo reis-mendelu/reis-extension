@@ -38,6 +38,7 @@ import { createAdminSlice } from './slices/createAdminSlice';
 import { createAdminStatsSlice } from './slices/createAdminStatsSlice';
 import { createSuggestionsSlice } from './slices/createSuggestionsSlice';
 import { createDemoSlice } from './slices/createDemoSlice';
+import { createRouteSlice } from './slices/createRouteSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 import { resetRealDataStores } from '../services/loadRealDataSnapshot';
@@ -84,6 +85,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createAdminSlice(...a),
   ...createAdminStatsSlice(...a),
   ...createSuggestionsSlice(...a),
+  ...createRouteSlice(...a),
   ...createDemoSlice(...a),
 }));
 

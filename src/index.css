@@ -241,6 +241,18 @@ body,
 
 /* Tailwind v4: Custom tokens via @theme */
 @theme {
+  /* The computed walking route.
+   *
+   * A theme TOKEN rather than a DaisyUI semantic colour, deliberately: it has
+   * to match a line drawn on the Leaflet basemap, and that basemap is always
+   * light whatever theme the app is in. A semantic colour would invert in dark
+   * mode and the card's icon would stop matching the line it names.
+   *
+   * The value and the reasoning live with ROUTE_COLOR in
+   * components/CampusMap/routeLayers.ts; the short version is that the previous
+   * blue was exactly BUILDING_STYLE.color. */
+  --color-route: #a21caf;
+
   /* Event Type Colors */
   --color-exam-border: #dc2626;
   --color-exam-bg: #fef2f2;
@@ -462,4 +474,126 @@ body,
  * pins; they reappear once the user zooms in to choose a building. */
 .reis-hide-building-labels .leaflet-tooltip.building-label {
   display: none;
+}
+
+/* A gate's name, shown on hover only — six labels ringing the campus all the
+ * time is a wall of text around a map whose dots already say "you can get in
+ * here". On a phone there is no hover, so the tap that reveals the name is the
+ * same tap that draws the walks. */
+.leaflet-tooltip.place-label {
+  background: rgb(255 255 255 / 0.92);
+  border: none;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.12);
+  border-radius: 7px;
+  padding: 1px 6px;
+  color: #334155;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.leaflet-tooltip.place-label::before {
+  display: none;
+}
+
+/* One of the botanical garden's places, carried by its own photograph. Leaflet
+ * builds this DOM from a divIcon and takes a single className, which is why
+ * this is CSS and not a Tailwind class — the same standing exception as
+ * .room-label and .place-label above.
+ *
+ * The growth is a transform, not a size change: Leaflet positions the icon by
+ * its top-left corner, so animating width/height would walk the bubble off its
+ * own place while it grows. */
+/* The icon element itself stays unstyled: Leaflet writes an inline
+ * `transform: translate3d(...)` on it to position it, and an inline transform
+ * beats any stylesheet rule — so the growth has to happen on a child. */
+.leaflet-marker-icon.garden-bubble {
+  background: none;
+  border: 0;
+}
+.garden-bubble .garden-bubble-circle {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  overflow: hidden;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgb(15 23 42 / 0.28);
+  background: #e3ebdd;
+  box-sizing: border-box;
+  transition:
+    transform 140ms ease-out,
+    box-shadow 140ms ease-out;
+}
+.garden-bubble .garden-bubble-circle img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Only where a pointer can actually hover. On a phone this rule must not apply
+ * at all, or a tap leaves the bubble stuck at 2x until something else is
+ * tapped. */
+@media (hover: hover) {
+  .garden-bubble:hover .garden-bubble-circle {
+    transform: scale(2);
+    box-shadow: 0 8px 20px rgb(15 23 42 / 0.32);
+  }
+  .garden-bubble:hover {
+    z-index: 1000 !important;
+  }
+}
+/* Zoomed out, the bubbles land on top of each other — toggled from the map by
+ * zoom, exactly like the building letters. */
+.reis-hide-garden-bubbles .leaflet-marker-icon.garden-bubble {
+  display: none;
+}
+/* The "4 min" at the end of each walk. Orange like the walk it belongs to, so a
+ * fan of times reads as one answer to one question rather than as loose labels
+ * scattered over the campus. */
+.leaflet-tooltip.walk-chip {
+  background: #ea580c;
+  border: none;
+  box-shadow: 0 1px 3px rgb(124 45 18 / 0.35);
+  border-radius: 9px;
+  padding: 2px 7px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  pointer-events: none;
+  /* NOT `white-space: normal`. A Leaflet tooltip pane has no width, so an
+   * auto-width child wraps at nearly zero — a two-word label came out as a
+   * four-line tower over the thing it was labelling. */
+  white-space: nowrap;
+}
+.leaflet-tooltip.walk-chip::before {
+  border-top-color: #ea580c;
+}
+
+/* The computed route's own chip. Fuchsia, matching ROUTE_COLOR in routeLayers.
+ * Not blue: #2563eb is exactly BUILDING_STYLE.color, so the route was drawn in
+ * the same hex as the outlines it runs between. Not the fan's orange either —
+ * the fan says
+ * "one of your options from this gate" and this says "your way".
+ *
+ * A TOOLTIP, not a divIcon. The first version used L.divIcon with
+ * className: 'walk-chip', which renders `leaflet-marker-icon walk-chip` and so
+ * never matched `.leaflet-tooltip.walk-chip`: it shipped as a 12x12 box with a
+ * transparent background and inherited base-content (#f3f4f6) on a basemap that
+ * is always light. Invisible, and the unit test passed because it asserted the
+ * divIcon's html, which is not the same question as whether anyone can see it. */
+.leaflet-tooltip.route-chip {
+  background: #a21caf;
+  border: none;
+  box-shadow: 0 1px 3px rgb(112 26 117 / 0.35);
+  border-radius: 9px;
+  padding: 3px 8px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.leaflet-tooltip.route-chip::before {
+  border-top-color: #a21caf;
 }

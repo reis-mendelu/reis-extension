@@ -8,7 +8,7 @@ import { fetchPersonPhoto } from '../../api/personPhoto';
 const resolvedPhotos = new Map<string, string>();
 
 export function __resetResolvedPhotos(): void {
-    resolvedPhotos.clear();
+  resolvedPhotos.clear();
 }
 
 /**
@@ -17,20 +17,24 @@ export function __resetResolvedPhotos(): void {
  * loading or on failure — callers render their own fallback (initials / icon).
  */
 export function usePersonPhoto(personId: string | number | null | undefined): string | null {
-    const id = personId == null || personId === '' ? null : String(personId);
-    const [, bump] = useState(0);
+  const id = personId == null || personId === '' ? null : String(personId);
+  const [, bump] = useState(0);
 
-    useEffect(() => {
-        if (!id || resolvedPhotos.has(id)) return;
-        let active = true;
-        fetchPersonPhoto(id)
-            .then((dataUrl) => {
-                resolvedPhotos.set(id, dataUrl);
-                if (active) bump((n) => n + 1);
-            })
-            .catch(() => { /* leave unresolved → caller keeps its fallback */ });
-        return () => { active = false; };
-    }, [id]);
+  useEffect(() => {
+    if (!id || resolvedPhotos.has(id)) return;
+    let active = true;
+    fetchPersonPhoto(id)
+      .then((dataUrl) => {
+        resolvedPhotos.set(id, dataUrl);
+        if (active) bump((n) => n + 1);
+      })
+      .catch(() => {
+        /* leave unresolved → caller keeps its fallback */
+      });
+    return () => {
+      active = false;
+    };
+  }, [id]);
 
-    return id ? resolvedPhotos.get(id) ?? null : null;
+  return id ? (resolvedPhotos.get(id) ?? null) : null;
 }

@@ -5,34 +5,34 @@
 
 // Czech version (lang=cz):
 const czechUILabels = {
-  breadcrumbs: "Přihlášení do systému",
-  folderLabel: "Složka",
-  fileLabel: "Soubor", 
-  nameHeader: "Název",
-  commentHeader: "Komentář",
-  authorHeader: "Autor",
-  dateHeader: "Datum",
-  sizeHeader: "Velikost",
-  helpText: "Zobrazit nápovědu k aplikaci"
+  breadcrumbs: 'Přihlášení do systému',
+  folderLabel: 'Složka',
+  fileLabel: 'Soubor',
+  nameHeader: 'Název',
+  commentHeader: 'Komentář',
+  authorHeader: 'Autor',
+  dateHeader: 'Datum',
+  sizeHeader: 'Velikost',
+  helpText: 'Zobrazit nápovědu k aplikaci',
 };
 
 // English version (lang=en):
 const englishUILabels = {
-  breadcrumbs: "Log in to system",
-  folderLabel: "Folder",
-  fileLabel: "File",
-  nameHeader: "Name", 
-  commentHeader: "Comment",
-  authorHeader: "Author",
-  dateHeader: "Date",
-  sizeHeader: "Size",
-  helpText: "View application help"
+  breadcrumbs: 'Log in to system',
+  folderLabel: 'Folder',
+  fileLabel: 'File',
+  nameHeader: 'Name',
+  commentHeader: 'Comment',
+  authorHeader: 'Author',
+  dateHeader: 'Date',
+  sizeHeader: 'Size',
+  helpText: 'View application help',
 };
 
 /**
  * IMPORTANT: The file NAMES themselves (uploaded by teachers) don't change
  * Example: "Lecture_01.pdf" stays "Lecture_01.pdf" in both languages
- * 
+ *
  * What DOES change:
  * - UI labels (headers, buttons, breadcrumbs)
  * - Folder structure labels (if any)

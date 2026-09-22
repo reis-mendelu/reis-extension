@@ -930,7 +930,20 @@
     "audienceHint": "Seen by students who follow {society}.",
     "audienceHintGeneric": "Seen only by students who follow this society.",
     "panelCollapse": "Collapse map panel",
-    "panelExpand": "Expand map panel"
+    "panelExpand": "Expand map panel",
+    "walkMinutes": "{n} min",
+    "routeTakeMeThere": "Take me there",
+    "routeLocating": "Finding you…",
+    "routeDenied": "reIS can't see your location. Allow it in your phone's settings, or pick a building instead.",
+    "routeUnavailable": "Location works in the mobile app only.",
+    "routeTooFar": "You're not near the campus.",
+    "routeNoRoute": "There's no walk from here to there right now.",
+    "routeThroughGarden": "Through the botanical garden — free with your ISIC, at the Gen. Píky gate.",
+    "routeGardenShut": "The garden is closed right now (Mon–Fri 6:00–20:00), so there's no walk from here. Take tram 9 from Bieblova — every ~3 min, a 2 min ride.",
+    "routePickBuilding": "Where are you headed?",
+    "routeArrived": "You're already there.",
+    "routeTo": "to {building}",
+    "routeElsewhere": "Somewhere else"
   },
   "admin": {
     "email": "Email",
@@ -1092,7 +1105,7 @@
     "map": {
       "searchPlaceholder": "Find a room, building, event…",
       "tabEvents": "Events",
-      "peekHint": "Campus events",
+      "peekEmpty": "No campus events right now",
       "thisWeek": "This week",
       "emptyTitle": "Map didn't load",
       "emptyBody": "Please try again.",
