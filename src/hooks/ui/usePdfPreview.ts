@@ -45,8 +45,15 @@ export interface PdfPreviewSubject {
  * same anchors) falls back to the download rather than opening an empty viewer.
  */
 export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) {
-  const { openFile, openPdfInline, fetchPdfBlob, downloadSingle, isDownloading, downloadProgress } =
-    useFileActions();
+  const {
+    openFile,
+    openPdfInline,
+    fetchPdfBlob,
+    downloadSingle,
+    isDownloading,
+    downloadProgress,
+    activeDownloads,
+  } = useFileActions();
   const { t } = useTranslation();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewFile, setPreviewFile] = useState<PdfPreviewFile | null>(null);
@@ -163,5 +170,8 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
     downloadSingle,
     isDownloading,
     downloadProgress,
+    // The phone and tablet render the same FileList as the desktop drawer, so
+    // the row indicator is one wiring, not three.
+    activeDownloads,
   };
 }

@@ -175,3 +175,68 @@ describe('FileList: the row being opened', () => {
     expect(onViewPdf).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * The row's download button had no busy state on any platform: the tap looked
+ * identical to a dead button until the file appeared. These assertions are
+ * platform-independent — the same FileList renders in the desktop drawer and
+ * in the phone/tablet SubjectDrawerSheet.
+ */
+describe('FileList download progress', () => {
+  it('marks the downloading row busy and refuses a second tap', async () => {
+    const onDownloadSingle = vi.fn();
+    renderList({
+      onDownloadSingle,
+      downloadingLinks: { [DOWNLOAD]: { loaded: 0, total: null } },
+    });
+
+    const button = screen.getByTestId(`file-download-${DOWNLOAD}`);
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-busy', 'true');
+
+    await userEvent.click(button);
+    expect(onDownloadSingle).not.toHaveBeenCalled();
+  });
+
+  it('shows the share of bytes received once IS declares a size', () => {
+    renderList({
+      onDownloadSingle: vi.fn(),
+      downloadingLinks: { [DOWNLOAD]: { loaded: 512, total: 2048 } },
+    });
+
+    const bar = within(screen.getByTestId(`file-download-${DOWNLOAD}`)).getByRole('progressbar');
+    expect(bar).toHaveAttribute('aria-valuenow', '25');
+  });
+
+  it('stays indeterminate when IS declares no size, rather than inventing a number', () => {
+    renderList({
+      onDownloadSingle: vi.fn(),
+      downloadingLinks: { [DOWNLOAD]: { loaded: 512, total: null } },
+    });
+
+    const bar = within(screen.getByTestId(`file-download-${DOWNLOAD}`)).getByRole('progressbar');
+    expect(bar).not.toHaveAttribute('aria-valuenow');
+  });
+
+  it('leaves the other rows alone', () => {
+    const OTHER = 'https://is.mendelu.cz/auth/dok_server/slozka.pl?download=359058;id=1';
+    renderList({
+      onDownloadSingle: vi.fn(),
+      downloadingLinks: { [DOWNLOAD]: { loaded: 0, total: null } },
+      groups: groups([
+        {
+          file_name: 'Prednaska 09',
+          date: '12. 3. 2026',
+          files: [{ name: 'Prednaska 09', type: 'pdf', link: DOWNLOAD }],
+        },
+        {
+          file_name: 'Prednaska 10',
+          date: '19. 3. 2026',
+          files: [{ name: 'Prednaska 10', type: 'pdf', link: OTHER }],
+        },
+      ] as unknown as FileGroup['files']),
+    });
+    expect(screen.getByTestId(`file-download-${DOWNLOAD}`)).toBeDisabled();
+    expect(screen.getByTestId(`file-download-${OTHER}`)).not.toBeDisabled();
+  });
+});
