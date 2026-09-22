@@ -91,7 +91,6 @@ export async function ensureSession(deps: SessionDeps): Promise<string> {
     let settled = false;
     let handle: ListenerHandle | null = null;
     let dismissHandle: ListenerHandle | null = null;
-    let deadline: ReturnType<typeof setTimeout> | undefined;
 
     const cleanup = async () => {
       clearTimeout(deadline);
@@ -190,7 +189,15 @@ export async function ensureSession(deps: SessionDeps): Promise<string> {
     // resolves only in `onPageFinished` and rejects only in
     // `onReceivedError` — so during a stall THE OPEN CALL ITSELF never
     // settles. A deadline armed after it would never be armed at all.
-    deadline = setTimeout(onDeadline, deps.firstLoadTimeoutMs ?? DEFAULT_FIRST_LOAD_TIMEOUT_MS);
+    // `const`, declared here rather than `let` beside the handles above, even
+    // though `cleanup` and `onLoad` close over it further up: those two are
+    // only ever CALLED after this line has run — from the timer, from a
+    // listener registered by the IIFE below, or from `finish` — so the
+    // temporal dead zone is never entered.
+    const deadline = setTimeout(
+      onDeadline,
+      deps.firstLoadTimeoutMs ?? DEFAULT_FIRST_LOAD_TIMEOUT_MS
+    );
 
     void (async () => {
       try {
