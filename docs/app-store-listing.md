@@ -1266,8 +1266,12 @@ Submitted 2026-09-16 10:33 UTC, `releaseType AFTER_APPROVAL`, no phased release.
 - USAF verified rendering in the running app: the societies list read SUPEF, ESN
   Mendelu, AU FRRMS, **USAF**, ZF Spolek, LDF Spolek — no "AF Spolek", no ICV.
 
-### 14.6 Metadata is still editable
+### 14.6 What can still change after submission
 
-A version stays editable while `WAITING_FOR_REVIEW`; it locks at `IN_REVIEW`. A build
-can also still be swapped in that window — after `IN_REVIEW` that needs a rejection
-first.
+While `WAITING_FOR_REVIEW`, only _some_ app information stays editable — screenshots
+and app previews do not. The build cannot be swapped in place in either state:
+removing the version from review (allowed in both `WAITING_FOR_REVIEW` and
+`IN_REVIEW`) moves it to `DEVELOPER_REJECTED`, and only then can a different build be
+attached and the version resubmitted — which restarts review. Source: Apple's
+[App and submission statuses](https://developer.apple.com/help/app-store-connect/reference/app-information/app-and-submission-statuses/)
+reference.
