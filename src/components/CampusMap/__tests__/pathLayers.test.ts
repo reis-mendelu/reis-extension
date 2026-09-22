@@ -8,6 +8,7 @@ import {
   showWalk,
   walkLabel,
 } from '../pathLayers';
+import { EVENTS_PANE, LEAFLET_PANE_Z, REIS_PANE_Z } from '../mapPanes';
 
 describe('walkLabel', () => {
   it('says how long the walk takes, and nothing else', () => {
@@ -101,6 +102,17 @@ describe('showWalk', () => {
     expect(chip.getLatLng()!.lat).toBeCloseTo(lat, 9);
     expect(chip.getLatLng()!.lng).toBeCloseTo(lon, 9);
     expect(String(chip.getContent())).toMatch(/^\d+ min$/);
+  });
+
+  it('keeps the time chip above the event pins', () => {
+    // The pins were lifted out of the tooltip pane into one of their own. A chip
+    // that left Leaflet's default implicit would still be right, but the answer
+    // is a decision, so it is written down: the student asked for this walk.
+    const layers = setup();
+    showWalk(layers, findWalk('Hlavní brána', 'Q'), 'cz');
+    const chip = layers.chips.getLayers()[0] as L.Tooltip;
+    expect(chip.options.pane).toBe('tooltipPane');
+    expect(LEAFLET_PANE_Z.tooltip).toBeGreaterThan(REIS_PANE_Z[EVENTS_PANE]);
   });
 
   it('swaps cleanly from one walk to another — no leftovers', () => {
