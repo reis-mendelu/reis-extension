@@ -49,6 +49,8 @@ export interface FileListProps {
   onDownloadSingle?: (link: string) => void;
   /** The file whose bytes are being fetched right now, so its row can say so. */
   openingLink?: string | null;
+  /** The file whose download is in flight, so its download button can say so. */
+  downloadingLink?: string | null;
   folderUrl?: string;
   lastVisitedAt?: number | null;
   /** Per-row selection checkboxes. Defaults to on for desktop, where

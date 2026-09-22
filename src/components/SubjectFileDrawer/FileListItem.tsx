@@ -36,6 +36,8 @@ export interface FileListItemProps {
   onCloseNote: () => void;
   /** This row's file is being fetched right now. */
   isOpening?: boolean;
+  /** This file's download is in flight — the button shows it and stops taking taps. */
+  isDownloading?: boolean;
 }
 
 export function FileListItem({
@@ -58,6 +60,7 @@ export function FileListItem({
   onToggleNote,
   onCloseNote,
   isOpening = false,
+  isDownloading = false,
 }: FileListItemProps) {
   const { t } = useTranslation();
 
@@ -95,10 +98,10 @@ export function FileListItem({
         }}
         onClick={activate}
         className={`
-          flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer group hover:shadow-sm
+          relative overflow-hidden flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer group hover:shadow-sm
           focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none
           ${
-            isSelected
+            isSelected || isDownloading
               ? 'bg-primary/10 border-primary/20 shadow-sm'
               : 'bg-base-100 border-transparent hover:bg-base-200/50 hover:border-base-300'
           }
@@ -126,7 +129,13 @@ export function FileListItem({
             )}
           </div>
           <div className="text-xs text-base-content/50 truncate flex items-center gap-2">
-            {date && <span className="shrink-0">{date}</span>}
+            {isDownloading ? (
+              <span className="shrink-0 font-medium text-primary">
+                {t('course.file.downloading')}
+              </span>
+            ) : (
+              date && <span className="shrink-0">{date}</span>
+            )}
             {comment && <span className="truncate">{comment}</span>}
           </div>
         </div>
@@ -159,10 +168,22 @@ export function FileListItem({
                 e.stopPropagation();
                 onDownloadSingle(subFile.link);
               }}
-              className="btn btn-ghost btn-xs btn-square text-base-content/40 hover:text-base-content/70"
+              // The spinner replaces the icon in place, so nothing reflows: IS
+              // hands a file over whole, and for seconds a tapped button that
+              // looked unchanged read as one that had not registered the tap.
+              disabled={isDownloading}
+              aria-busy={isDownloading || undefined}
+              className="btn btn-ghost btn-xs btn-square text-base-content/40 hover:text-base-content/70 disabled:bg-transparent"
               title={t('course.footer.download') || 'Download'}
             >
-              <Download size={14} />
+              {isDownloading ? (
+                <span
+                  data-testid="file-download-spinner"
+                  className="loading loading-spinner loading-xs text-primary"
+                />
+              ) : (
+                <Download size={14} />
+              )}
             </button>
           )}
           {isPdfFile(subFile) && onViewPdf && (
@@ -184,6 +205,16 @@ export function FileListItem({
           )}
           <FileTypeBadge type={subFile.type} />
         </div>
+        {/* Along the row's bottom edge, not in the 24px button: a spinner
+            that small was "not visible enough". Indeterminate because the
+            phone's native HTTP layer hands the whole file over at once — there
+            is no byte count to fill a determinate bar from. */}
+        {isDownloading && (
+          <progress
+            aria-label={t('course.file.downloading')}
+            className="progress progress-primary absolute inset-x-0 bottom-0 h-1 rounded-none"
+          />
+        )}
       </div>
 
       {NOTES_ENABLED && isExpanded && (

@@ -31,6 +31,7 @@ interface DrawerTabBodyProps {
   openFile: (link: string) => void;
   onViewPdf?: (link: string, meta: PdfRowMeta) => void;
   openingLink?: string | null;
+  downloadingLink?: string | null;
   onDownloadSingle?: (link: string) => void;
   resolvedCourseId: string;
   syllabusResult: { syllabus: SyllabusRequirements | null; isLoading: boolean };
@@ -73,6 +74,7 @@ export function DrawerTabBody({
   openFile,
   onViewPdf,
   openingLink,
+  downloadingLink,
   onDownloadSingle,
   resolvedCourseId,
   syllabusResult,
@@ -134,6 +136,7 @@ export function DrawerTabBody({
             onOpenFile={openFile}
             onViewPdf={onViewPdf}
             openingLink={openingLink}
+            downloadingLink={downloadingLink}
             onDownloadSingle={onDownloadSingle}
             folderUrl={folderUrl}
             lastVisitedAt={lastVisitedAt}

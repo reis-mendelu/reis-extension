@@ -322,6 +322,7 @@
     },
     "file": {
       "openFailed": "Soubor se nepodařilo otevřít.",
+      "downloading": "Stahuji…",
       "savedToDownloads": "Uloženo do Stažených souborů"
     },
     "documentNote": {
@@ -922,9 +923,6 @@
     "openInMaps": "Otevřít v mapách",
     "openInAppleMaps": "Apple Mapy",
     "openInGoogleMaps": "Google Maps",
-    "rememberChoice": "Příště se neptat",
-    "mapApp": "Mapy",
-    "mapAppAsk": "Vždy se zeptat",
     "audienceLabel": "KDO TO UVIDÍ",
     "audienceEveryone": "Všichni",
     "audienceHint": "Uvidí studenti, kteří odebírají {society}.",
@@ -1067,7 +1065,9 @@
       "groupLater": "Přihlášené · později",
       "groupOpen": "Otevřené termíny",
       "groupNotYetOpen": "Ještě neotevřené",
-      "opensAt": "otevírá se {when}",
+      "opensAtLabel": "otevírá se",
+      "refresh": "Obnovit zkoušky",
+      "refreshing": "Aktualizuji…",
       "registeredCountOne": "{count} přihlášený",
       "registeredCountFew": "{count} přihlášené",
       "registeredCountOther": "{count} přihlášených",
@@ -1083,7 +1083,6 @@
       "creditsOf": "{earned} / {total} kreditů",
       "creditProgress": "Splněno {pct} % kreditů",
       "currentSemester": "{n}. semestr",
-      "running": "právě běží · {credits} kr.",
       "doneOf": "{done}/{total} hotovo",
       "average": "Studijní průměr",
       "avgSemester": "Tento semestr",
@@ -1099,8 +1098,17 @@
       "creditOther": "kreditů",
       "loading": "Načítám předměty…",
       "noneEnrolled": "Zatím nemáš zapsané žádné předměty na tento semestr.",
-      "startsOn": "začíná {date} · {credits} kr.",
-      "creditsOnly": "{credits} kr."
+      "teachers": "Vyučující",
+      "teacherRole": {
+        "guarantor": "Garant",
+        "lecturer": "Přednášející",
+        "tutor": "Cvičící",
+        "examiner": "Zkoušející",
+        "other": "Další"
+      },
+      "enrolledCountOne": "{count} zapsaný předmět",
+      "enrolledCountFew": "{count} zapsané předměty",
+      "enrolledCountOther": "{count} zapsaných předmětů"
     },
     "map": {
       "searchPlaceholder": "Najdi místnost, budovu, akci…",
