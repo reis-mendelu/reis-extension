@@ -188,7 +188,19 @@ docker rm -f reis-shim reis-postgrest reis-sqlcheck && docker network rm reis-ne
 
 ## 6. Applying it for real
 
-No CI applies `supabase/migrations/`. The file has to be run by hand against
-the linked project (`npx supabase db query --linked`, never `db push`), and
-until it is, the three RPCs 404 and every counter in the app is a silent no-op
-— which is the intended failure mode, not an outage.
+**This one was applied on 2026-09-22**, before the branch merged. Nothing in it
+touches an existing table, so a released build running against the migrated
+database is unaffected.
+
+No CI applies `supabase/migrations/`. A file has to be run by hand against the
+linked project, and until it is, its RPCs 404 and every counter is a silent
+no-op — the intended failure mode, not an outage.
+
+```bash
+npx supabase db query --linked -f supabase/migrations/<file>.sql
+```
+
+Use `-f`. Passing the SQL as a positional argument (`"$(cat <file>)"`) makes the
+CLI read a leading `--` comment line as a flag and refuse to run. And never
+`db push`: this directory is a log of hand-applied changes, not a replayable
+schema, so push has nothing reliable to reconcile against.

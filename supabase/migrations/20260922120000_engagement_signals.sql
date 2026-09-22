@@ -2,8 +2,18 @@
 -- looked at, which society event on it is opened, and whether a student who
 -- starts the eduroam setup ever finishes it.
 --
--- NOT APPLIED YET. No CI applies this directory — run it by hand against the
--- linked project (`npx supabase db query --linked`, never `db push`).
+-- APPLIED 2026-09-22 against the linked project (zvbpgkmnrqyprtkyxkwn), before
+-- the branch merged — nothing here touches an existing table, so an old build
+-- against a migrated database is unaffected. No CI applies this directory; it
+-- is run by hand with `npx supabase db query --linked -f <this file>`, never
+-- `db push`. Note the `-f`: passing the file as a positional argument makes the
+-- CLI read these leading `--` comment lines as flags and refuse to run.
+--
+-- Verified after applying, through the public API with the shipped publishable
+-- key: both writers accept a call (204), an unknown signal label and a
+-- non-existent event id are both dropped without raising, anon reads the tables
+-- back as `[]` (RLS on, no policies), and anon calling feature_stats is 401.
+-- Test rows were removed; both tables start empty.
 --
 -- Privacy posture, disclosed in PRIVACY.md section 2 and
 -- docs/privacy-policy-app.md before this migration was written:
