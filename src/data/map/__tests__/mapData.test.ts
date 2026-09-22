@@ -153,3 +153,24 @@ describe('bundled map data', () => {
     }
   });
 });
+
+describe('room index: the two building-M ghosts stay out', () => {
+  const rows = index as { code: string; name: string; nickname: string | null }[];
+
+  // Regenerated upstream from IS Mendelu, so IS will keep handing these back;
+  // this is what catches them coming home with the next refresh.
+  it("has no BA27N1074 / BA27N1075 — open air between M's wings, not rooms", () => {
+    expect(rows.filter((e) => e.code === 'BA27N1074' || e.code === 'BA27N1075')).toEqual([]);
+  });
+
+  it('keeps the real N1074/N1075 halls in A and B', () => {
+    const kept = rows.filter((e) => e.code.endsWith('N1074') || e.code.endsWith('N1075'));
+    expect(kept.map((e) => e.code).sort()).toEqual([
+      'BA01N1074',
+      'BA01N1075',
+      'BA04N1074',
+      'BA04N1075',
+    ]);
+    expect(kept.map((e) => e.nickname).sort()).toEqual(['A121', 'B4', 'B5', null]);
+  });
+});
