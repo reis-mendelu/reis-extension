@@ -2,6 +2,7 @@ import { IndexedDBService } from '../services/storage';
 import { STORAGE_KEYS } from '../services/storage/keys';
 import { fetchUserBaseIds, fetchUserStudyDetails, fetchUserNetId } from './userParams/fetchers';
 import { logError } from './reportError';
+import { announceIdentityChange } from './userParams/identityEvents';
 
 export interface UserParams {
   studium: string;
@@ -47,22 +48,6 @@ let _lastIdentityAttempt = 0;
  * answering. One attempt a minute is neither.
  */
 const IDENTITY_RECHECK_GAP_MS = 60_000;
-
-type IdentityListener = (params: UserParams | null) => void;
-const _identityListeners = new Set<IdentityListener>();
-
-/**
- * Called when IS turns out to have a DIFFERENT student signed in than the
- * stored record describes. The local data has already been wiped by then; this
- * exists for the state a wipe cannot reach — the Zustand store, which is still
- * holding the previous student's schedule in memory.
- */
-export function onIdentityChange(cb: IdentityListener): () => void {
-  _identityListeners.add(cb);
-  return () => {
-    _identityListeners.delete(cb);
-  };
-}
 
 /**
  * `studium`/`obdobi` alone are not a complete record. They are the two fields
@@ -187,16 +172,6 @@ export async function getUserParams(): Promise<UserParams | null> {
 function serveStored(stored?: Partial<UserParams>): UserParams | null {
   if (complete(stored)) _cached = stored as UserParams;
   return (stored as UserParams | undefined) ?? null;
-}
-
-function announceIdentityChange(params: UserParams | null): void {
-  for (const cb of _identityListeners) {
-    try {
-      cb(params);
-    } catch (e) {
-      logError('getUserParams.onIdentityChange', e);
-    }
-  }
 }
 
 /**

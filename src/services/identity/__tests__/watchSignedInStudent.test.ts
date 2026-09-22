@@ -9,6 +9,8 @@ vi.mock('../../../utils/userParams', () => ({
   getUserParams: () => getUserParams(),
   isIdentityConfirmed: () => confirmed,
   clearUserParamsCache: () => clearUserParamsCache(),
+}));
+vi.mock('../../../utils/userParams/identityEvents', () => ({
   onIdentityChange: (cb: (p: unknown) => void) => {
     announce = cb;
     return () => {

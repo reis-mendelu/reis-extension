@@ -1,9 +1,5 @@
-import {
-  getUserParams,
-  isIdentityConfirmed,
-  clearUserParamsCache,
-  onIdentityChange,
-} from '../../utils/userParams';
+import { getUserParams, isIdentityConfirmed, clearUserParamsCache } from '../../utils/userParams';
+import { onIdentityChange } from '../../utils/userParams/identityEvents';
 
 /** Between attempts to reach IS for the identity check. */
 const RETRY_GAP_MS = 20_000;

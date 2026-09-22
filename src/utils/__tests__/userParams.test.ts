@@ -20,7 +20,8 @@ vi.mock('../userParams/fetchers', () => ({
   fetchUserNetId: () => fetchUserNetId(),
 }));
 
-const { getUserParams, clearUserParamsCache, onIdentityChange } = await import('../userParams');
+const { getUserParams, clearUserParamsCache } = await import('../userParams');
+const { onIdentityChange } = await import('../userParams/identityEvents');
 
 const COMPLETE = {
   studium: '149707',
