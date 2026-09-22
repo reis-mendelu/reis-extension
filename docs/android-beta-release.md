@@ -67,8 +67,10 @@ what `-genkeypair` gives you unless you deliberately set a separate one.
 After that:
 
 1. Back the `.jks` up somewhere that is not this machine.
-2. Put the password in the gitignored root `.env`, alongside the other reIS
-   secrets.
+2. Back the password up with it, also off this machine. The build reads it only
+   from `android/keystore.properties` (or `REIS_KEYSTORE_*` in CI) — the root
+   `.env` is never loaded by the Android release commands, and a copy on the
+   same laptop is not a backup.
 
 Or run `bash scripts/link-keystore.sh` instead of writing the file by hand: it
 checks the password actually opens the keystore before writing anything, asks

@@ -247,11 +247,11 @@ the harness in as a real account, so publishes hit live Supabase and its RLS
 policies:
 
 ```bash
-infisical run --env=dev -- npm run dev:web:admin
+npm run dev:web:admin
 ```
 
-Two secrets, `REIS_ADMIN_EMAIL` and `REIS_ADMIN_PASSWORD`. Any env source works
-— Infisical is just the one that keeps them out of the repo and off disk.
+Two secrets, `REIS_ADMIN_EMAIL` and `REIS_ADMIN_PASSWORD`, read from the
+gitignored root `.env` (template: `.env.example`) or an explicit export.
 
 **The sign-in happens in the Vite dev server, not the browser**
 (`dev/adminSessionPlugin.ts`). The password stays in the node process; only the

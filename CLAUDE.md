@@ -213,9 +213,9 @@ its host before the React root renders:
 | Capacitor | `capacitor/main.capacitor.tsx` | `capacitor/installCapacitorPlatform.ts` |
 | Dev webapp | `dev/main.web.tsx` | `dev/installWebPlatform.ts` |
 
-`getPlatform()` **falls back to the extension** when `chrome.runtime.id` is
-visible and **throws** everywhere else — a deliberate asymmetry documented in
-`src/platform/index.ts`. Native-only code is `src/mobile/`; `native/` holds three
+`getPlatform()` returns the installed platform. If none is installed, it **falls
+back to the extension** when `chrome.runtime.id` is visible and **throws**
+otherwise — a deliberate asymmetry documented in `src/platform/index.ts`. Native-only code is `src/mobile/`; `native/` holds three
 custom Capacitor plugins; `android/` and `ios/` are the shells.
 
 ### State & Storage (3-Tier)
