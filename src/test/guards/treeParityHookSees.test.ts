@@ -1,5 +1,6 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { existsSync, readFileSync, mkdtempSync, symlinkSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
@@ -28,7 +29,8 @@ type Hook = {
   classify: (
     changed: Iterable<string>,
     mobile: Set<string>,
-    desktop: Set<string>
+    desktop: Set<string>,
+    pinnedText?: string
   ) => { desktopOnly: string[]; mobileOnly: string[] };
   buildReason: (sets: { desktopOnly: string[]; mobileOnly: string[] }) => string | null;
   isDirectRun: (argv1: string | undefined, moduleUrl: string) => boolean;
@@ -85,12 +87,39 @@ describe('tree-parity hook can still tell the two UI trees apart', () => {
     expect(hook.buildReason({ desktopOnly: [], mobileOnly: [] })).toBeNull();
   });
 
+  it('a guard clears only the files it names, not the whole turn', () => {
+    // The blanket version of this escape hatch hid a second forgotten
+    // capability whenever any guard file happened to be touched.
+    const pinned = 'src/components/MapHoverCard.tsx';
+    const forgotten = 'src/components/SubjectFileDrawer/Header/CourseMeta.tsx';
+    for (const f of [pinned, forgotten]) expect(existsSync(f)).toBe(true);
+    // Guards name files the way desktopHasNoShowOnMap.test.ts does: src-relative.
+    const guardText = `// ${pinned.replace(/^src\//, '')} is hover-only; touch has no hover.`;
+
+    expect(hook.classify([pinned], mobile, desktop, guardText).desktopOnly).toEqual([]);
+    expect(hook.classify([pinned, forgotten], mobile, desktop, guardText).desktopOnly).toEqual([
+      forgotten,
+    ]);
+  });
+
   it('still recognises itself as directly run through a symlinked path', () => {
     // /tmp -> /private/tmp on macOS. Comparing URLs instead of real paths made
     // the hook exit 0 without running, which looks exactly like a pass.
     const real = resolve(HOOK);
     expect(hook.isDirectRun(real, pathToFileURL(real).href)).toBe(true);
-    expect(hook.isDirectRun('/tmp/x.mjs', pathToFileURL('/private/tmp/x.mjs').href)).toBe(true);
+
+    // A REAL symlink, not two made-up /tmp paths: realpathSync only resolves
+    // paths that exist, so a fabricated pair proves nothing about the macOS
+    // /tmp -> /private/tmp case this exists to survive.
+    const dir = mkdtempSync(join(tmpdir(), 'reis-parity-'));
+    const link = join(dir, 'hook.mjs');
+    symlinkSync(real, link);
+    try {
+      expect(hook.isDirectRun(link, pathToFileURL(real).href)).toBe(true);
+    } finally {
+      rmSync(dirname(link), { recursive: true, force: true });
+    }
+
     expect(hook.isDirectRun(undefined, pathToFileURL(real).href)).toBe(false);
     expect(hook.isDirectRun('/some/other/file.mjs', pathToFileURL(real).href)).toBe(false);
   });
