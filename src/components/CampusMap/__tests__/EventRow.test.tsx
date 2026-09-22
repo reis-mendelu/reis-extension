@@ -30,6 +30,24 @@ describe('EventRow', () => {
     expect(img).toBeTruthy();
   });
 
+  // An event whose pin was dropped by hand has a coordinate and no name. The
+  // row used to print nothing at all there, so in a list next to a named venue
+  // it read as an event with no place — while the detail card had a working
+  // "open in Maps" link all along. A generic label restores the line.
+  it('labels a hand-dropped venue instead of dropping the line', () => {
+    const dropped: MapEvent = { ...ev, location: null };
+    render(<EventRow event={dropped} locale="cs-CZ" t={t} selected={false} onClick={() => {}} />);
+    expect(screen.getByText('map.venueOnMap')).toBeInTheDocument();
+  });
+
+  // Nothing to say: an event with neither a name nor a coordinate keeps the
+  // compact two-line row it has always had.
+  it('renders no venue line when there is neither a name nor a coordinate', () => {
+    const nowhere: MapEvent = { ...ev, location: null, coord: null };
+    render(<EventRow event={nowhere} locale="cs-CZ" t={t} selected={false} onClick={() => {}} />);
+    expect(screen.queryByText('map.venueOnMap')).toBeNull();
+  });
+
   it('uses the subline override when provided', () => {
     render(
       <EventRow

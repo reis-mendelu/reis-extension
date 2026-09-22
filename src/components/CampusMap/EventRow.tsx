@@ -58,10 +58,16 @@ export function EventRow({
             {event.title}
           </span>
           <span className="mt-0.5 block truncate text-[11px] text-base-content/60">{day}</span>
-          {event.location && (
+          {/* A venue the society dropped on the map by hand carries a
+              coordinate and no name. Gated on the name alone, the line simply
+              vanished — so in a list beside a named venue the event read as
+              one with no place at all, while its detail card had a working
+              "open in Maps" link the whole time. The coordinate is a venue;
+              only its label is missing. */}
+          {(event.location || event.coord) && (
             <span className="mt-0.5 flex items-center gap-1 text-[11px] text-base-content/60">
               <MapPin size={11} className="flex-shrink-0" />
-              <span className="truncate">{event.location}</span>
+              <span className="truncate">{event.location ?? t('map.venueOnMap')}</span>
             </span>
           )}
         </span>
