@@ -1,5 +1,5 @@
 {
-  "_comment": "Real SKM canteen menu captured 2026-09-04 from the public jídelní lístek — no personal data. Days are authored as dayOffset from 'now' and materialised by dev/menuFixture.ts, so the jídelníček card and sheet stay verifiable at localhost forever. The extension gets the real page through the content-script proxy; the dev webapp has no content script, so fetchViaProxy hangs and this stands in.",
+  "_comment": "Real SKM canteen menu captured 2026-09-04 from the public jídelní lístek — no personal data. Days are authored as dayOffset from 'now' and materialised by dev/menuFixture.ts, so the jídelníček card and sheet stay verifiable at localhost forever. The extension gets the real page through the content-script proxy; the dev webapp has no content script, so fetchViaProxy hangs and this stands in. The capture day was a Friday, so offsets 1-2 were the weekend SKM publishes nothing for and the capture has no rows there; rebasing pins offset 0 to today whatever weekday that is, which slid that hole onto whichever two days followed today and made the card look broken. Offsets 0-7 are therefore all filled — keep every offset in that range populated.",
   "outlets": [
     {
       "outlet": "X",
@@ -12,6 +12,26 @@
             "Vepřové žebírko mistra uzenáře 120g",
             "Těstoviny tagliatelle s listovým špenátem a kuřecím masem",
             "Robi nudličky po indicku"
+          ]
+        },
+        {
+          "dayOffset": 1,
+          "soup": "Polévka gulášová",
+          "mainDishes": [
+            "Vepřová pečeně 120g, dušené zelí, houskový knedlík",
+            "Kuřecí nudličky na zelenině, rýže",
+            "Zapékané těstoviny se sýrem a brokolicí",
+            "Smažený sýr 100g, vařené brambory, tatarská omáčka"
+          ]
+        },
+        {
+          "dayOffset": 2,
+          "soup": "Polévka zeleninová s kapáním",
+          "mainDishes": [
+            "Hovězí guláš 100g, houskový knedlík",
+            "Pečené kuřecí stehno 200g, bramborová kaše",
+            "Rizoto z červené čočky se zeleninou",
+            "Vepřový řízek 120g, bramborový salát"
           ]
         },
         {
@@ -123,6 +143,24 @@
           ]
         },
         {
+          "dayOffset": 1,
+          "soup": "Polévka fazolová",
+          "mainDishes": [
+            "Svíčková na smetaně 100g, houskový knedlík",
+            "Kuřecí prsa grilovaná 120g, dušená zelenina",
+            "Bramborové noky se špenátem a nivou"
+          ]
+        },
+        {
+          "dayOffset": 2,
+          "soup": "Polévka drůbeží s nudlemi",
+          "mainDishes": [
+            "Vepřové výpečky 120g, bramborový knedlík, zelí",
+            "Těstoviny s kuřecím masem a smetanovou omáčkou",
+            "Cuketa plněná zeleninou a sýrem, brambory"
+          ]
+        },
+        {
           "dayOffset": 3,
           "soup": "Polévka kmínová s vejci",
           "mainDishes": [
@@ -189,6 +227,26 @@
             "Vepřové žebírko mistra uzenáře 120g, brambory",
             "Těstoviny tagliatelle s listovým špenátem a kuřecím masem",
             "Robi nudličky po indicku, rýže basmati"
+          ]
+        },
+        {
+          "dayOffset": 1,
+          "soup": "Polévka česneková s krutony",
+          "mainDishes": [
+            "Segedínský guláš 100g, houskový knedlík",
+            "Kuřecí steak 120g, grilovaná zelenina, brambory",
+            "Špagety aglio olio s cuketou",
+            "Smažené rybí filé 120g, vařené brambory"
+          ]
+        },
+        {
+          "dayOffset": 2,
+          "soup": "Polévka rajská",
+          "mainDishes": [
+            "Pečená krkovice 120g, dušená mrkev, brambory",
+            "Kuřecí kari s rýží",
+            "Falafel s kuskusem a jogurtovým dipem",
+            "Vepřová plzeňská roláda 120g, bramborový knedlík"
           ]
         },
         {

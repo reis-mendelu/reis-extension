@@ -51,9 +51,11 @@ export function AverageAccordion({ studyStats, comparison }: AverageAccordionPro
         aria-expanded={open}
         className="flex w-full items-center justify-between px-4 py-3.5"
       >
-        <span className="text-xs font-bold uppercase tracking-wider text-base-content/60">
-          {t('mobile.subjects.average')}
-        </span>
+        {/* The same type as the "Studijní plán" row directly below, not the
+            uppercase group-heading style: the two are siblings in one stack,
+            and setting them differently made them look like different kinds of
+            thing rather than two ways into the same subject data. */}
+        <span className="text-md font-medium">{t('mobile.subjects.average')}</span>
         {open ? (
           <ChevronUp size={14} className="flex-shrink-0 text-base-content/50" />
         ) : (

@@ -103,36 +103,20 @@ describe('the manual refresh circle', () => {
     expect(cls).not.toContain('btn-xs');
   });
 
-  it('renders on the exams screen', () => {
-    render(<ExamsScreen />);
-    expect(screen.getByLabelText(REFRESH)).toBeInTheDocument();
-  });
-
-  it('still renders on the exams screen when nothing is registered', () => {
-    // The registered pill is `undefined` at zero, and the circle shares its
-    // row — so an unconditional row is the only thing keeping the control on
-    // screen for the student most likely to be waiting on a fetch.
-    baseState({ exams: { data: [], status: 'success', error: null } });
-    render(<ExamsScreen />);
-    expect(screen.queryByText(/přihlášen/i)).not.toBeInTheDocument();
-    expect(screen.getByLabelText(REFRESH)).toBeInTheDocument();
-  });
-
-  it('keeps the registered pill beside it', () => {
+  it('is not on the exams screen — ExamsRefresh owns that one', () => {
+    // Exams already has a refresh control (exams/ExamsRefresh.tsx, #372), and
+    // it is the right one there: it calls `triggerExamsRefresh`, and exam terms
+    // are fetched on every sync run regardless of TTL, so this circle's full
+    // crawl would buy nothing but a slower answer during registration. Two
+    // refresh controls on one screen is what this test keeps shut.
     baseState({ exams: { data: [examWithTerm()], status: 'success', error: null } });
     render(<ExamsScreen />);
-    expect(screen.getByText('1 přihlášený')).toBeInTheDocument();
-    expect(screen.getByLabelText(REFRESH)).toBeInTheDocument();
+    expect(screen.getByTestId('exams-screen')).toBeInTheDocument();
+    expect(screen.queryByLabelText(REFRESH)).not.toBeInTheDocument();
   });
 
   it('triggers a sync from the calendar screen', () => {
     render(<CalendarScreen />);
-    fireEvent.click(screen.getByLabelText(REFRESH));
-    expect(trigger).toHaveBeenCalledTimes(1);
-  });
-
-  it('triggers a sync from the exams screen', () => {
-    render(<ExamsScreen />);
     fireEvent.click(screen.getByLabelText(REFRESH));
     expect(trigger).toHaveBeenCalledTimes(1);
   });
@@ -146,7 +130,7 @@ describe('the manual refresh circle', () => {
   });
 
   it('does not spin when no sync is running', () => {
-    render(<ExamsScreen />);
+    render(<CalendarScreen />);
     const button = screen.getByLabelText(REFRESH);
     expect(button).not.toBeDisabled();
     expect(button.querySelector('svg')?.getAttribute('class') ?? '').not.toContain('animate-spin');
@@ -154,17 +138,17 @@ describe('the manual refresh circle', () => {
 
   it('fires nothing when clicked mid-sync', () => {
     baseState({ syncStatus: SYNCING });
-    render(<ExamsScreen />);
+    render(<CalendarScreen />);
     fireEvent.click(screen.getByLabelText(REFRESH));
     expect(trigger).not.toHaveBeenCalled();
   });
 
-  it('survives both screens loading and error gates', () => {
+  it('survives the calendar loading and error gates', () => {
     // Same rule the header actions already follow: a control that vanishes
     // during a crawl is missing exactly when a student reaches for it.
     baseState({ syncLoaded: {}, syncStatus: { ...LOADED, isSyncing: true } });
-    const loading = render(<ExamsScreen />);
-    expect(screen.getByTestId('exams-skeleton')).toBeInTheDocument();
+    const loading = render(<CalendarScreen />);
+    expect(screen.getByTestId('calendar-skeleton')).toBeInTheDocument();
     expect(screen.getByLabelText(REFRESH)).toBeInTheDocument();
     loading.unmount();
 

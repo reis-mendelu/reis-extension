@@ -42,6 +42,59 @@ function renderList(over: Partial<Parameters<typeof FileList>[0]> = {}) {
   return { props, ...render(<FileList {...(props as Parameters<typeof FileList>[0])} />) };
 }
 
+describe('FileList folder headers', () => {
+  /**
+   * A subject's files are split by the folders the teacher made in IS —
+   * "Kombinovaná forma studia" holds "Blok 1", "Přednášky" holds the lectures.
+   * The folder name was `text-base-content/50` uppercase, the faintest text in
+   * the drawer, so a file like "Blok 1" read as though it belonged to nothing:
+   * "skoro nevýrazné".
+   */
+  it('names each folder as a heading, not as faint caption text', () => {
+    renderList();
+    const heading = screen.getByRole('heading', { name: /Materiály/ });
+    expect(heading.className).not.toContain('text-base-content/50');
+    expect(heading.className).not.toContain('uppercase');
+  });
+
+  it('says how many documents the folder holds', () => {
+    renderList();
+    const heading = screen.getByRole('heading', { name: /Materiály/ });
+    expect(within(heading).getByText('1')).toBeInTheDocument();
+  });
+});
+
+describe('FileList download feedback', () => {
+  it('turns the download button into a spinner while that file comes down', () => {
+    renderList({ onDownloadSingle: vi.fn(), downloadingLink: DOWNLOAD });
+    const button = screen.getByRole('button', { name: /Stáhnout|Download/ });
+    expect(button).toBeDisabled();
+    expect(within(button).getByTestId('file-download-spinner')).toBeInTheDocument();
+  });
+
+  /**
+   * A spinner in a 24px button was too quiet — "zkus z toho udělat nějaký
+   * progress bar, který bude více viditelný". The row itself now says it:
+   * a bar along its bottom edge and "Stahuji…" in place of the date. The bar
+   * is indeterminate because the phone's native HTTP layer hands the file over
+   * in one piece, with no byte count to fill it from.
+   */
+  it('shows a progress bar across the row, and says it is downloading', () => {
+    renderList({ onDownloadSingle: vi.fn(), downloadingLink: DOWNLOAD });
+    const bar = screen.getByRole('progressbar', { name: 'Stahuji…' });
+    expect(bar.className).toContain('progress-primary');
+    expect(screen.getByText('Stahuji…')).toBeInTheDocument();
+    expect(screen.queryByText('12. 3. 2026')).not.toBeInTheDocument();
+  });
+
+  it('leaves the other rows alone', () => {
+    renderList({ onDownloadSingle: vi.fn(), downloadingLink: 'https://is.mendelu.cz/other' });
+    const button = screen.getByRole('button', { name: /Stáhnout|Download/ });
+    expect(button).not.toBeDisabled();
+    expect(screen.queryByTestId('file-download-spinner')).not.toBeInTheDocument();
+  });
+});
+
 describe('FileList', () => {
   it('renders one row per document, not one per IS link', () => {
     renderList();

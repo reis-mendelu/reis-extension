@@ -1,66 +1,64 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { SemesterCard } from '../SemesterCard';
 import { useAppStore } from '../../../../../store/useAppStore';
 import type { SubjectStatus } from '../../../../../types/studyPlan';
 import type { EnrolledSubject } from '../../../../../utils/mobile/enrolledSubjects';
 
-const subject: SubjectStatus = {
-  id: '1',
-  code: 'EBC-JAVA',
-  name: 'Java',
-  credits: 6,
-  type: 'zk',
-  isEnrolled: true,
-  isFulfilled: false,
-  enrollmentCount: 1,
-  rawStatusText: '',
-};
-const enrolled: EnrolledSubject[] = [{ subject, semester: 3, done: false }];
-
-function seedSchedule(dates: string[]) {
-  useAppStore.setState({
-    language: 'cz',
-    successRates: {},
-    gradeHistory: null,
-    schedule: { data: dates.map((date) => ({ date })), status: 'success' },
-  } as never);
+function subject(code: string): SubjectStatus {
+  return {
+    id: code,
+    code,
+    name: code,
+    credits: 5,
+    type: 'zk',
+    isEnrolled: true,
+    isFulfilled: false,
+    enrollmentCount: 1,
+    rawStatusText: '',
+  };
 }
+const enrolledOf = (codes: string[]): EnrolledSubject[] =>
+  codes.map((c) => ({ subject: subject(c), semester: 3, done: false }));
 
 /**
- * "Právě běží" was asserted unconditionally, so a student opening the app in
- * the week before term saw their enrolled subjects announced as already
- * running. The answer comes from the schedule — `syncSchedule` stores the whole
- * semester, so the earliest lesson IS the first teaching day — rather than from
- * a hardcoded mid-September date that would drift.
+ * The line under "5. semestr" says how many subjects the student is enrolled
+ * in, and nothing else.
+ *
+ * It used to say whether term had started ("právě běží", "začíná 21. 9.") and
+ * the credit total. Both were facts nobody acts on from this card — the date
+ * belongs to the calendar, and the credits are already on every row below —
+ * while the one number a student does check here, how many subjects they have,
+ * was not on it at all.
  */
-describe('SemesterCard — has term started', () => {
-  beforeEach(() => vi.useFakeTimers());
-  afterEach(() => vi.useRealTimers());
-
-  it('says it is running once teaching has begun', () => {
-    vi.setSystemTime(new Date(2026, 9, 20));
-    seedSchedule(['20260915', '20261005']);
-    render(<SemesterCard enrolled={enrolled} semester={3} onOpenSubject={() => {}} />);
-    expect(screen.getByText(/právě běží/i)).toBeInTheDocument();
+describe('SemesterCard — enrolled count', () => {
+  beforeEach(() => {
+    useAppStore.setState({ language: 'cz', successRates: {}, gradeHistory: null } as never);
   });
 
-  it('says when it starts instead of claiming it already has', () => {
-    vi.setSystemTime(new Date(2026, 8, 1));
-    seedSchedule(['20260915', '20261005']);
-    render(<SemesterCard enrolled={enrolled} semester={3} onOpenSubject={() => {}} />);
-    expect(screen.queryByText(/právě běží/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/začíná/i)).toBeInTheDocument();
-    expect(screen.getByText(/15\./)).toBeInTheDocument();
+  it('counts the enrolled subjects, with the Czech plural', () => {
+    render(
+      <SemesterCard
+        enrolled={enrolledOf(['A', 'B', 'C', 'D', 'E', 'F', 'G'])}
+        semester={5}
+        onOpenSubject={() => {}}
+      />
+    );
+    expect(screen.getByText('7 zapsaných předmětů')).toBeInTheDocument();
   });
 
-  it('claims neither when there is no schedule to reason from', () => {
-    vi.setSystemTime(new Date(2026, 8, 1));
-    seedSchedule([]);
-    render(<SemesterCard enrolled={enrolled} semester={3} onOpenSubject={() => {}} />);
-    expect(screen.queryByText(/právě běží/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/začíná/i)).not.toBeInTheDocument();
-    // The credits are a fact either way.
-    expect(screen.getByText(/6 kr\./)).toBeInTheDocument();
+  it('uses the few-form for two to four', () => {
+    render(
+      <SemesterCard enrolled={enrolledOf(['A', 'B', 'C'])} semester={5} onOpenSubject={() => {}} />
+    );
+    expect(screen.getByText('3 zapsané předměty')).toBeInTheDocument();
+  });
+
+  it('no longer says whether term is running, nor the credit total', () => {
+    render(
+      <SemesterCard enrolled={enrolledOf(['A', 'B'])} semester={5} onOpenSubject={() => {}} />
+    );
+    expect(screen.queryByText(/právě běží|začíná/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\d+ kr\./)).not.toBeInTheDocument();
   });
 });

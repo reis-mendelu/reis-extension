@@ -19,6 +19,10 @@ import { syncService } from '../../../services/sync';
  * Its own copy, not `course.freshness.refresh`: that one reads "Obnovit
  * soubory" / "Refresh files", which is a lie on the calendar.
  *
+ * Calendar only. Exams has `exams/ExamsRefresh`, which refreshes just the exam
+ * terms and says how old they are — exams are fetched on every run regardless
+ * of TTL, so this full crawl would only be a slower way to the same answer.
+ *
  * The GLYPH is 12px and the HIT AREA is 44px, which is not a contradiction.
  * "A small rotate circle" is what it must look like; 44px is the touch minimum
  * this app already holds itself to — DayChips grew its arrows to h-11 for

@@ -168,14 +168,22 @@ export async function syncAllData() {
     const schedulePromise = ttlGated('schedule', TTL.SEMESTER, !!cachedData.schedule, () =>
       fetchFullSemesterSchedule()
     ).then((value) => {
-      if (value) {
+      if (value && value.length > 0) {
         cachedData = { ...cachedData, schedule: value };
         pushEarly({ schedule: value, loaded: ['schedule'] });
+      } else if (value) {
+        // The fetch finished and the answer is "no lessons in the whole
+        // window" — IS says so with an HTML page, which fetchWeekSchedule
+        // turns into []. Same shape as exams below: arrival WITHOUT data, so
+        // the screen stops waiting while the cached timetable survives. []
+        // being truthy is exactly how a student's term got blanked.
+        pushEarly({ loaded: ['schedule'] });
       }
-      // No else: a null here means ttlGated skipped the fetch as still fresh,
-      // which is not an answer about this student's week — the same ambiguity
-      // that made Předměty claim "no subjects". The cached schedule is already
-      // on screen in that case, and the end-of-sync latch covers the rest.
+      // No else: a null is either a ttlGated skip or a failed fetch, and
+      // neither is an answer about this student's week — the same ambiguity
+      // that made Předměty claim "no subjects". Nothing is pushed, not even an
+      // arrival, so a student with no cached timetable reaches ScreenError and
+      // its retry button instead of "you have no lessons" with no way back.
       return value;
     });
 
@@ -255,8 +263,12 @@ export async function syncAllData() {
 
     cachedData = {
       ...cachedData,
+      // `.length > 0`, like exams below: an empty read keeps the cached
+      // timetable. This is the contract syncTtl.ts already documents ("it
+      // keeps the previous value for a null result or an empty list") — the
+      // truthiness of [] is what made schedule the one resource that broke it.
       schedule:
-        fullSchedule.status === 'fulfilled' && fullSchedule.value
+        fullSchedule.status === 'fulfilled' && fullSchedule.value && fullSchedule.value.length > 0
           ? fullSchedule.value
           : cachedData.schedule,
       exams:

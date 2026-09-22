@@ -4,6 +4,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { weekSections } from './eventHelpers';
 import { EventRow } from './EventRow';
+import { trackMapEventView } from '../../api/featureUsage';
 
 // The events tab body shared by the desktop MapSidePanel and the mobile map
 // sheet's Akce tab: the upcoming events grouped into "This week" / "Next week",
@@ -52,7 +53,13 @@ export function MapEventsSection() {
                   locale={locale}
                   t={t}
                   selected={e.id === selectedId}
-                  onClick={() => focusEvent(e.id, { fly: true })}
+                  onClick={() => {
+                    // This panel is the student map's own list on both
+                    // surfaces (desktop MapSidePanel, mobile Akce tab), so a
+                    // row opened here is a map view exactly like a pin.
+                    void trackMapEventView(e.id);
+                    focusEvent(e.id, { fly: true });
+                  }}
                 />
               ))}
             </div>

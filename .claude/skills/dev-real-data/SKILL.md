@@ -24,6 +24,8 @@ The snapshot only contains what IS was serving when it was scraped. A July scrap
 npm run dev:web:exams    # REIS_FIXTURE=examSeason
 ```
 
+`.claude/launch.json` wraps this as `reis-webapp-exams`, so a Claude session starts it with `preview_start` like any other preview rather than through Bash — same for `reis-webapp-mock`, `reis-webapp-admin` and `reis-webapp-reis-admin`.
+
 `REIS_FIXTURE=<name>` makes `dev/snapshotPlugin.ts` serve `dev/fixtures/<name>.json` **overlaid on** the real snapshot, so synthetic exams sit alongside real subjects and files, and the real snapshot is never modified. Fixtures are synthetic and committed; dates are authored as `dayOffset` from today and materialised to IS `DD.MM.YYYY` at serve time by `scripts/lib/fixtureRebase.ts`, so they never rot. Term offset keys: `dayOffset`, `regStartDayOffset`, `regEndDayOffset`, `deregDayOffset` (+ `deregTime`). Add a fixture by dropping a JSON file in `dev/fixtures/` — no plumbing needed. A fixture is never treated as stale, so no background scrape is triggered.
 
 ## Working in a worktree
