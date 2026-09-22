@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { AppState } from './types';
+import { watchSignedInStudent } from '../services/identity/watchSignedInStudent';
 import { createScheduleSlice } from './slices/createScheduleSlice';
 import { createExamSlice } from './slices/createExamSlice';
 import { createSyllabusSlice } from './slices/createSyllabusSlice';
@@ -45,7 +46,7 @@ import { resetRealDataStores } from '../services/loadRealDataSnapshot';
 import { devAdminSeed } from '../utils/mock/devSociety';
 import type { Session } from '@supabase/supabase-js';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
-import { setDemoModeFlag } from '../errors/demoMode';
+import { setDemoModeFlag, isDemoMode } from '../errors/demoMode';
 
 export const useAppStore = create<AppState>()((...a) => ({
   ...createScheduleSlice(...a),
@@ -110,6 +111,16 @@ export const initializeStore = async () => {
   }
 
   const s = useAppStore.getState();
+
+  // Who is signed in is confirmed against IS once per session, and the app
+  // restarts if it turns out to be somebody else — see watchSignedInStudent.
+  //
+  // Not in demo mode. `fetchWithAuth` would refuse the request anyway
+  // (DemoModeError), but asking at all means a logged failure on every demo
+  // boot, and demo mode is the build a store reviewer runs — the one boot that
+  // is supposed to reach nothing.
+  const demo = import.meta.env.VITE_USE_MOCK_DATA === 'true' || isDemoMode();
+  const offIdentityWatch = demo ? () => {} : watchSignedInStudent();
 
   // Start global pulse
   const pulseInterval = setInterval(() => {
@@ -272,6 +283,7 @@ export const initializeStore = async () => {
 
   return () => {
     clearInterval(pulseInterval);
+    offIdentityWatch();
     unsubscribe();
     bcTheme.close();
     bcLang.close();
