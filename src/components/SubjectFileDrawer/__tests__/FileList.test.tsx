@@ -42,6 +42,96 @@ function renderList(over: Partial<Parameters<typeof FileList>[0]> = {}) {
   return { props, ...render(<FileList {...(props as Parameters<typeof FileList>[0])} />) };
 }
 
+describe('FileList folder headers', () => {
+  /**
+   * A subject's files are split by the folders the teacher made in IS —
+   * "Kombinovaná forma studia" holds "Blok 1", "Přednášky" holds the lectures.
+   * The folder name was `text-base-content/50` uppercase, the faintest text in
+   * the drawer, so a file like "Blok 1" read as though it belonged to nothing:
+   * "skoro nevýrazné".
+   */
+  it('names each folder as a heading, not as faint caption text', () => {
+    renderList();
+    const heading = screen.getByRole('heading', { name: /Materiály/ });
+    expect(heading.className).not.toContain('text-base-content/50');
+    expect(heading.className).not.toContain('uppercase');
+  });
+
+  it('says how many documents the folder holds', () => {
+    renderList();
+    const heading = screen.getByRole('heading', { name: /Materiály/ });
+    expect(within(heading).getByText('1')).toBeInTheDocument();
+  });
+});
+
+describe('FileList download feedback', () => {
+  /** The bottom-edge bar of the one row on screen, or null. */
+  const rowBar = (container: HTMLElement) =>
+    container.querySelector<HTMLProgressElement>('progress.progress-primary');
+
+  it('puts the indicator inside the download button, in place of its icon', () => {
+    renderList({
+      onDownloadSingle: vi.fn(),
+      downloadingLinks: { [DOWNLOAD]: { loaded: 0, total: null } },
+    });
+    const button = screen.getByTestId(`file-download-${DOWNLOAD}`);
+    expect(button).toBeDisabled();
+    expect(within(button).getByTestId('download-progress')).toBeInTheDocument();
+  });
+
+  /**
+   * A spinner in a 24px button was too quiet — "zkus z toho udělat nějaký
+   * progress bar, který bude více viditelný". So the row itself says it too: a
+   * bar along its bottom edge and "Stahuji…" in place of the date.
+   *
+   * The bar is visual reinforcement only. The ring in the button is the
+   * progressbar a screen reader announces; announcing the bar as well would
+   * read the same download out twice.
+   */
+  it('shows a bar across the row and says it is downloading', () => {
+    const { container } = renderList({
+      onDownloadSingle: vi.fn(),
+      downloadingLinks: { [DOWNLOAD]: { loaded: 0, total: null } },
+    });
+    const bar = rowBar(container);
+    expect(bar).not.toBeNull();
+    expect(bar).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByText('Stahuji…')).toBeInTheDocument();
+    expect(screen.queryByText('12. 3. 2026')).not.toBeInTheDocument();
+  });
+
+  // It was indeterminate while nothing counted bytes. The browser fetch does
+  // now, against IS's Content-Length, so the bar fills like the ring does.
+  it('fills the bar with the bytes received once IS declares a size', () => {
+    const { container } = renderList({
+      onDownloadSingle: vi.fn(),
+      downloadingLinks: { [DOWNLOAD]: { loaded: 512, total: 2048 } },
+    });
+    expect(rowBar(container)).toHaveAttribute('value', '512');
+    expect(rowBar(container)).toHaveAttribute('max', '2048');
+  });
+
+  // Capacitor hands the file over whole, and IS sends no size for the PDFs it
+  // generates: no denominator, so no invented one.
+  it('keeps the bar indeterminate when there is no size to fill it against', () => {
+    const { container } = renderList({
+      onDownloadSingle: vi.fn(),
+      downloadingLinks: { [DOWNLOAD]: { loaded: 512, total: null } },
+    });
+    expect(rowBar(container)).not.toHaveAttribute('value');
+  });
+
+  it('leaves a row that is not downloading alone', () => {
+    const { container } = renderList({
+      onDownloadSingle: vi.fn(),
+      downloadingLinks: { 'https://is.mendelu.cz/other': { loaded: 0, total: null } },
+    });
+    expect(screen.getByTestId(`file-download-${DOWNLOAD}`)).not.toBeDisabled();
+    expect(rowBar(container)).toBeNull();
+    expect(screen.getByText('12. 3. 2026')).toBeInTheDocument();
+  });
+});
+
 describe('FileList', () => {
   it('renders one row per document, not one per IS link', () => {
     renderList();

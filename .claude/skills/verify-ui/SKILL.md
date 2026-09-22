@@ -148,15 +148,18 @@ Occluded elements are skipped, so findings describe what is actually on screen.
 - Real exam data is seasonal and usually absent from the snapshot — a July
   scrape leaves the Exams screen permanently empty. Serve the exam fixture for a
   populated screen instead of hand-editing `public/dev-real-data.json`.
-  `REIS_FIXTURE` is read from the process env at server start, so this one needs
-  a background Bash server — there is no launch config for it:
+  `REIS_FIXTURE` is read from the process env at server start, so it has to be
+  the server's own config rather than a flag on the run — which is what
+  `reis-webapp-exams` in `.claude/launch.json` is. Start it the same way as any
+  other preview, and pass the port it reports:
 
-  ```bash
-  npm run dev:web:exams
+  ```text
+  preview_start { name: "reis-webapp-exams" }
   ```
 
-  This is the documented exception to "never start the dev webapp with Bash";
-  every other run uses the `reis-webapp` preview config.
+  There is no Bash exception here: every dev webapp run, fixture or not, goes
+  through `preview_start`. `.claude/launch.json` also carries `reis-webapp-mock`,
+  `reis-webapp-admin` and `reis-webapp-reis-admin` for the other seeded states.
 
 ## Fixtures
 

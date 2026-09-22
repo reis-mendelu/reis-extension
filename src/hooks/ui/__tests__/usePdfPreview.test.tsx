@@ -4,14 +4,17 @@ import { renderHook, act } from '@testing-library/react';
 const openPdfInline = vi.fn();
 const fetchPdfBlob = vi.fn();
 const openFile = vi.fn();
+const downloadSingle = vi.fn();
+const activeDownloads = { 'https://is.mendelu.cz/a.pdf': { loaded: 512, total: 2048 } };
 vi.mock('../useFileActions', () => ({
   useFileActions: () => ({
     openPdfInline: (...a: unknown[]) => openPdfInline(...a),
     fetchPdfBlob: (...a: unknown[]) => fetchPdfBlob(...a),
     openFile: (...a: unknown[]) => openFile(...a),
-    downloadSingle: vi.fn(),
+    downloadSingle,
     isDownloading: false,
     downloadProgress: null,
+    activeDownloads,
   }),
 }));
 
@@ -34,6 +37,26 @@ vi.mock('sonner', () => ({ toast }));
 
 import { usePdfPreview } from '../usePdfPreview';
 import { useAppStore } from '../../../store/useAppStore';
+
+describe('usePdfPreview — downloads', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  /**
+   * The row's download button gave no sign it had been tapped — a file comes
+   * down the IS session whole, and a button that does nothing visible for
+   * seconds reads as broken. That tracking lives in `useFileActions` now,
+   * per link and with byte counts (see its tests: progress published and
+   * cleared, cleared on failure, a second tap refused). This hook's job is to
+   * hand it to the phone sheet untouched, and NOT to wrap `downloadSingle`
+   * again: a wrapper that awaited it whole kept spinning through iOS's share
+   * sheet, after the bytes had landed.
+   */
+  it('passes the per-row download state through, with downloadSingle unwrapped', () => {
+    const { result } = renderHook(() => usePdfPreview('EBC-EKM'));
+    expect(result.current.activeDownloads).toBe(activeDownloads);
+    expect(result.current.downloadSingle).toBe(downloadSingle);
+  });
+});
 
 describe('usePdfPreview', () => {
   beforeEach(() => {

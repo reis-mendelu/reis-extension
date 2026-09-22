@@ -79,6 +79,45 @@ describe('EventDetailCard', () => {
     expect(screen.queryByRole('link', { name: /more info/i })).toBeNull();
   });
 
+  // A society that drops the pin by hand (map.orPickOnMap) publishes a
+  // coordinate and NO location name. The card used to gate the whole venue
+  // row on that name, so the student got no row at all: a pin on our map and
+  // no way to hand it to a maps app. The coordinate is what makes the venue
+  // openable, so the coordinate is what the row is gated on; the name only
+  // chooses the label.
+  it('links a hand-dropped pin (no location name) to Maps at its coordinates', () => {
+    const dropped: MapEvent = { ...ev, location: null, coord: [16.6097, 49.1959] };
+    render(<EventDetailCard event={dropped} />);
+    const link = screen.getByRole('link', { name: /open in maps/i });
+    expect(link).toHaveAttribute(
+      'href',
+      'https://www.google.com/maps/search/?api=1&query=49.1959,16.6097'
+    );
+    expect(link).toHaveAttribute('target', '_blank');
+  });
+
+  // A campus event keeps its "fly to the room" button: that one navigates
+  // INSIDE reIS, which is more useful than a map app for a lecture hall.
+  it('prefers the room button over the Maps link for a campus event', () => {
+    const campusEvent: MapEvent = {
+      ...ev,
+      roomCode: 'BA39N1009',
+      venueKind: 'campus',
+      location: null,
+    };
+    render(<EventDetailCard event={campusEvent} />);
+    expect(screen.queryByRole('link', { name: /open in maps/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /Q01/ })).toBeTruthy();
+  });
+
+  // Nothing to open: no coordinate, no name, no row — rather than a link
+  // pointing at 0,0.
+  it('renders no venue row when the event has neither a coordinate nor a name', () => {
+    const nowhere: MapEvent = { ...ev, location: null, coord: null };
+    render(<EventDetailCard event={nowhere} />);
+    expect(screen.queryByRole('link', { name: /open in maps/i })).toBeNull();
+  });
+
   it('still renders the More-info link for a plain https url', () => {
     const safeEvent: MapEvent = { ...ev, url: 'https://example.com/event' };
     render(<EventDetailCard event={safeEvent} />);

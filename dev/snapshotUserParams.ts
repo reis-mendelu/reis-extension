@@ -32,12 +32,25 @@ import { loadRealDataSnapshot } from '../src/services/loadRealDataSnapshot';
 if (import.meta.env.DEV) {
   void (async () => {
     try {
-      const existing = await IndexedDBService.get('meta', 'reis_user_params');
-      if (existing?.studium && existing?.obdobi) return;
-      await IndexedDBService.set('meta', 'reis_user_params', {
-        ...(existing ?? {}),
+      const existing = (await IndexedDBService.get('meta', 'reis_user_params')) ?? {};
+      // Field by field, never wholesale. The guard used to be "bail if studium
+      // and obdobi are set", which meant a profile created by an earlier
+      // session — before this file seeded anything else — could never gain a
+      // field added later: the record existed, so the whole write was skipped.
+      // Filling only what is absent keeps the original promise (a session that
+      // got REAL params keeps every one of them) without freezing the seed at
+      // whatever the first run happened to write.
+      const defaults: Record<string, unknown> = {
         studium: 'dev-studium',
         obdobi: 'dev-obdobi',
+      };
+      const missing = Object.entries(defaults).filter(
+        ([key]) => (existing as Record<string, unknown>)[key] == null
+      );
+      if (missing.length === 0) return;
+      await IndexedDBService.set('meta', 'reis_user_params', {
+        ...existing,
+        ...Object.fromEntries(missing),
       });
       await loadRealDataSnapshot();
     } catch {

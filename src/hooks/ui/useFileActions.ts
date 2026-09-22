@@ -142,8 +142,8 @@ export function useFileActions(): UseFileActionsResult {
     [fetchPdfBlob]
   );
 
-  const clearRow = useCallback((link: string) => {
-    inFlight.current.delete(link);
+  /** Ends the row's INDICATOR only. The lock is `releaseRow`'s. */
+  const clearRowProgress = useCallback((link: string) => {
     setActiveDownloads((d) => {
       if (!(link in d)) return d;
       const next = { ...d };
@@ -151,6 +151,15 @@ export function useFileActions(): UseFileActionsResult {
       return next;
     });
   }, []);
+
+  /** Ends the indicator AND releases the lock — only once delivery has settled. */
+  const releaseRow = useCallback(
+    (link: string) => {
+      inFlight.current.delete(link);
+      clearRowProgress(link);
+    },
+    [clearRowProgress]
+  );
 
   /**
    * The row's own download. Every exit clears the row: a spinner that never
@@ -174,8 +183,14 @@ export function useFileActions(): UseFileActionsResult {
         // student picks a folder — the file is already saved by then, and a row
         // spinning through their own dialog says the app is still working when
         // it is waiting for them.
+        //
+        // The indicator only. The lock is held until `finally`: on Android the
+        // base64 conversion and `Downloads.save` are still running here, and
+        // releasing it early let a second tap start a duplicate download.
         if (isNativeHost()) {
-          await openNativeFile(fullUrl, 'useFileActions.downloadSingle', t, () => clearRow(link));
+          await openNativeFile(fullUrl, 'useFileActions.downloadSingle', t, () =>
+            clearRowProgress(link)
+          );
           return;
         }
         assertNotDemo();
@@ -207,10 +222,10 @@ export function useFileActions(): UseFileActionsResult {
         log.error('Failed to download file', e);
         window.open(fullUrl, '_blank', 'noopener,noreferrer');
       } finally {
-        clearRow(link);
+        releaseRow(link);
       }
     },
-    [t, clearRow]
+    [t, clearRowProgress, releaseRow]
   );
 
   const downloadZip = useCallback(async (fileLinks: string[], zipFileName: string) => {

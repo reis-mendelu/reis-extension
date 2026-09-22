@@ -108,23 +108,36 @@ export function StudyPlanPage({
 
   const firstCurrentIdx = plan.blocks.findIndex((block) => getSemesterState(block) === 'current');
 
-  // A caption over a column that is not on screen explains nothing. The rates
-  // only render on unfulfilled subjects inside an OPEN semester, so the legend
-  // asks the same question rather than merely "does this plan have any rates" —
-  // with every section collapsed, which is how the page opens, the answer is no
-  // and the line stays away. Raised in review on this PR.
-  const anyVisibleFailRate = plan.blocks.some(
-    (block, bi) =>
-      openSemesters.has(bi) &&
-      block.groups.some((g) =>
-        g.subjects.some((sub) => !sub.isFulfilled && failRates[sub.code] != null)
-      )
-  );
+  // A caption over a column that is not on screen explains nothing. In the plan
+  // below, rates only render on unfulfilled subjects inside an OPEN semester,
+  // so the legend asks the same question rather than merely "does this plan
+  // have any rates" — with every section collapsed, which is how the page
+  // opens, the answer is no and the line stays away. Raised in review on this PR.
+  //
+  // The two insight cards at the top are the other half of it: they show rates
+  // whatever the sections are doing, and since they stopped spelling the words
+  // out on every row, the legend is now their caption too.
+  const anyVisibleFailRate =
+    hardest.length > 0 ||
+    zameraniStats.some((z) => z.subjects.some((s) => s.stat)) ||
+    plan.blocks.some(
+      (block, bi) =>
+        openSemesters.has(bi) &&
+        block.groups.some((g) =>
+          g.subjects.some((sub) => !sub.isFulfilled && failRates[sub.code] != null)
+        )
+    );
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {header}
       <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 flex flex-col gap-2">
+        {/* Once, above everything that shows a rate — the insight cards at the
+            top included. It used to sit below them, which was fine while they
+            spelled the words out themselves and wrong the moment they stopped:
+            the first percentages on the page would have had their caption
+            underneath them. */}
+        {anyVisibleFailRate && <FailRateLegend />}
         {(hardest.length > 0 || zameraniStats.length >= 2) && (
           <div
             className={`grid gap-3 items-start ${
@@ -149,9 +162,6 @@ export function StudyPlanPage({
             />
           </div>
         )}
-        {/* Once, above the whole plan, because the rows below dropped the
-            words to keep the number — see FailRateLegend. */}
-        {anyVisibleFailRate && <FailRateLegend />}
         {plan.blocks.map((block, bi) => {
           const hasSubjects = block.groups
             .flatMap((g) => g.subjects)

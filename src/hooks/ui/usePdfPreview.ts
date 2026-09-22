@@ -62,6 +62,10 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
   // year and no caller ever read it, so a tap on a file showed nothing at all
   // while a whole PDF came down the IS session.
   const [openingLink, setOpeningLink] = useState<string | null>(null);
+  // Row downloads are NOT tracked here. `useFileActions.activeDownloads` does
+  // it, per link and with byte counts where the transport has them — and ends
+  // on `onFetched`, before iOS opens the share sheet. A wrapper here awaited
+  // `downloadSingle` whole, so it spun on through the student's own dialog.
 
   // Blob URLs are held by the document until revoked; a drawer opened and
   // closed a dozen times would otherwise pin every PDF it ever showed in memory.

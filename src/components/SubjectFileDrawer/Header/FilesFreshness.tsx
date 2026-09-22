@@ -2,21 +2,10 @@ import { useMemo } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { relativeTime } from '../../../utils/relativeTime';
 
 interface Props {
   courseCode: string;
-}
-
-const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
-
-function relativeTime(deltaMs: number, locale: string): string {
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
-  if (deltaMs < MINUTE) return '';
-  if (deltaMs < HOUR) return rtf.format(-Math.round(deltaMs / MINUTE), 'minute');
-  if (deltaMs < DAY) return rtf.format(-Math.round(deltaMs / HOUR), 'hour');
-  return rtf.format(-Math.round(deltaMs / DAY), 'day');
 }
 
 export function FilesFreshness({ courseCode }: Props) {

@@ -48,8 +48,10 @@ export function FileRowActions({
 }: FileRowActionsProps) {
   const { t } = useTranslation();
   const isDownloading = downloadTick != null;
+  // The row's own word, the same one its label and bottom bar use. The
+  // header's bulk button keeps `course.footer.downloading`.
   const downloadLabel = isDownloading
-    ? t('course.footer.downloading')
+    ? t('course.file.downloading')
     : t('course.footer.download') || 'Download';
 
   return (

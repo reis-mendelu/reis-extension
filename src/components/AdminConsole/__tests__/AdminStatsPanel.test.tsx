@@ -35,6 +35,9 @@ describe('AdminStatsPanel', () => {
       adminStatsLoading: false,
       adminStatsDay: null,
       adminStats: STATS,
+      // Reset explicitly: the store is module-level, so a test that seeds the
+      // feature half would otherwise leak it into every test after it.
+      adminFeatureStats: null,
       selectAdminStatsDay: vi.fn(async () => {}),
     } as never);
   });
@@ -121,5 +124,43 @@ describe('AdminStatsPanel', () => {
   it('labels the refresh button for screen readers', () => {
     render(<AdminStatsPanel />);
     expect(screen.getByRole('button', { name: 'Obnovit' })).toBeInTheDocument();
+  });
+
+  // The two halves come from different RPCs. An early return on the usage read
+  // used to take the feature signals down with it, hiding numbers that had
+  // arrived perfectly well.
+  it('still shows the feature signals when the usage read failed', () => {
+    useAppStore.setState({
+      adminStats: null,
+      adminStatsLoading: false,
+      adminFeatureStats: {
+        byFeature: [{ feature: 'map_dwell_3s', installs: 7, hits: 14 }],
+        daily: [{ day: '2026-09-22', feature: 'map_dwell_3s', installs: 7 }],
+        topEvents: [],
+        eventDaily: [],
+      },
+    } as never);
+
+    render(<AdminStatsPanel />);
+
+    expect(screen.getByText('Statistiky se nepodařilo načíst.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Mapa aspoň 3 sekundy/ })).toBeInTheDocument();
+  });
+
+  it('still shows the feature signals while the usage read is loading', () => {
+    useAppStore.setState({
+      adminStats: null,
+      adminStatsLoading: true,
+      adminFeatureStats: {
+        byFeature: [{ feature: 'map_dwell_3s', installs: 7, hits: 14 }],
+        daily: [],
+        topEvents: [],
+        eventDaily: [],
+      },
+    } as never);
+
+    render(<AdminStatsPanel />);
+
+    expect(screen.getByRole('button', { name: /Mapa aspoň 3 sekundy/ })).toBeInTheDocument();
   });
 });

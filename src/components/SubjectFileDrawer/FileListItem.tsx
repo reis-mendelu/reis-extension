@@ -65,6 +65,7 @@ export function FileListItem({
   downloadTick = null,
 }: FileListItemProps) {
   const { t } = useTranslation();
+  const isDownloading = downloadTick != null;
 
   // Click and Enter/Space must do the same thing, so the decision lives once.
   const activate = (e: React.SyntheticEvent & { ctrlKey?: boolean; metaKey?: boolean }) => {
@@ -100,10 +101,10 @@ export function FileListItem({
         }}
         onClick={activate}
         className={`
-          flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer group hover:shadow-sm
+          relative overflow-hidden flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer group hover:shadow-sm
           focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none
           ${
-            isSelected
+            isSelected || isDownloading
               ? 'bg-primary/10 border-primary/20 shadow-sm'
               : 'bg-base-100 border-transparent hover:bg-base-200/50 hover:border-base-300'
           }
@@ -131,7 +132,15 @@ export function FileListItem({
             )}
           </div>
           <div className="text-xs text-base-content/50 truncate flex items-center gap-2">
-            {date && <span className="shrink-0">{date}</span>}
+            {isDownloading ? (
+              // The tonal token, not raw `text-primary`: that measured 2.29:1
+              // on the light theme's white row (see DownloadProgress).
+              <span className="shrink-0 font-medium text-[var(--btn-tonal-primary)]">
+                {t('course.file.downloading')}
+              </span>
+            ) : (
+              date && <span className="shrink-0">{date}</span>
+            )}
             {comment && <span className="truncate">{comment}</span>}
           </div>
         </div>
@@ -148,6 +157,20 @@ export function FileListItem({
           onViewPdf={onViewPdf}
           onDownloadSingle={onDownloadSingle}
         />
+        {/* Along the row's bottom edge, not only in the 24px button: a spinner
+            that small was "not visible enough" (#372). Determinate when the
+            transport can count bytes against a Content-Length; indeterminate
+            when it cannot — Capacitor hands the whole file over at once, and IS
+            sends no length for the PDFs it generates. Hidden from assistive
+            tech: the ring in the button is the announced progressbar, and a
+            second one would read the same download out twice. */}
+        {downloadTick && (
+          <progress
+            aria-hidden="true"
+            {...(downloadTick.total ? { value: downloadTick.loaded, max: downloadTick.total } : {})}
+            className="progress progress-primary absolute inset-x-0 bottom-0 h-1 rounded-none"
+          />
+        )}
       </div>
 
       {NOTES_ENABLED && isExpanded && (
