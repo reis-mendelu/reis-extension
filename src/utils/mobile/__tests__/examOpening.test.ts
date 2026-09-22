@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { splitByRegistrationOpen, formatOpensAt } from '../examOpening';
+import { splitByRegistrationOpen, formatOpensAtBare } from '../examOpening';
 import type { ExamSection, ExamTerm } from '../../../types/exams';
 
 const term = (over: Partial<ExamTerm>): ExamTerm => ({
@@ -62,13 +62,16 @@ describe('splitting the open exams by whether registration has started', () => {
     expect(notYetOpen.map((r) => r.row.section.id)).toEqual(['soon', 'late']);
   });
 
-  it('formats the opening moment the way a registered row shows its date', () => {
-    expect(formatOpensAt(new Date(2026, 11, 1, 8, 0), 'cs-CZ')).toMatch(/1\. 12\. 8:00$/);
+  it('formats the opening moment without a weekday', () => {
+    // The label now sits in the term row's trailing slot, beside a date that
+    // already carries the weekday. Repeating it there spends the width the
+    // room name needs on a fact the row states one line to the left.
+    expect(formatOpensAtBare(new Date(2026, 11, 1, 8, 0))).toBe('1. 12. 8:00');
   });
 
   it('says only the day when IS gave a date and no clock', () => {
     // parseRegistrationStart defaults a bare "30.09.2026" to midnight. Printing
     // "0:00" there invents a precision the source never had.
-    expect(formatOpensAt(new Date(2026, 8, 30, 0, 0), 'cs-CZ')).toMatch(/30\. 9\.$/);
+    expect(formatOpensAtBare(new Date(2026, 8, 30, 0, 0))).toBe('30. 9.');
   });
 });

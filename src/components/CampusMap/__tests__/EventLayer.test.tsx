@@ -12,6 +12,7 @@ import { setMapInstance } from '../mapInstance';
 import { useAppStore } from '../../../store/useAppStore';
 import { MOCK_MAP_EVENTS } from './fixtures/mockMapEvents';
 import { PUBLIC_WINDOW_DAYS } from '../eventWindow';
+import { EVENTS_PANE, LABELS_PANE, LEAFLET_PANE_Z, REIS_PANE_Z } from '../mapPanes';
 
 /**
  * An ISO date `days` from today, so a test that needs an event on one side of
@@ -32,16 +33,23 @@ let handlers: Record<string, (...a: any[]) => void>;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let fakeMap: any;
 let paneEl: HTMLElement;
+let panes: Map<string, HTMLElement>;
 
 beforeEach(() => {
   handlers = {};
   paneEl = document.createElement('div');
+  // Name-aware, like Leaflet's own: a mock that handed the same element back
+  // for every name would let the pins and the labels share one pane and the
+  // paint order under test would be unobservable.
+  panes = new Map<string, HTMLElement>();
   fakeMap = {
-    createdPane: false,
-    getPane: () => undefined,
-    createPane() {
-      this.createdPane = true;
-      return paneEl;
+    getPane(n: string) {
+      return panes.get(n);
+    },
+    createPane(n: string) {
+      const el = n === EVENTS_PANE ? paneEl : document.createElement('div');
+      panes.set(n, el);
+      return el;
     },
     // Current zoom — lets EventLayer tell a pure pan from a fly's zoom change.
     zoom: 17,
@@ -86,12 +94,26 @@ describe('EventLayer', () => {
     render(<EventLayer />);
     // A dedicated map pane is created and pins are portaled into it — being a
     // child of the map pane is what makes panning track for free (no JS).
-    expect(fakeMap.createdPane).toBe(true);
+    expect(panes.get(EVENTS_PANE)).toBe(paneEl);
     const btn = paneEl.querySelector('button') as HTMLElement;
     expect(btn).toBeTruthy();
     expect(btn.style.transform).toContain('10px'); // resting layer point (10,20)
     // Pins ride the zoom animation like native markers (no hiding).
     expect(handlers.zoomanim).toBeTruthy();
+  });
+
+  /**
+   * The pane's z-index, which is the whole reason a pin's hover bubble is
+   * readable. It used to be a bare `640` written here, one step BELOW Leaflet's
+   * tooltip pane — and every lettered building name is a Leaflet tooltip, so
+   * the letters drew straight through the bubble.
+   */
+  it('puts the pins above the map labels and below the user-invoked tooltips', () => {
+    render(<EventLayer />);
+    const z = Number(paneEl.style.zIndex);
+    expect(z).toBe(REIS_PANE_Z[EVENTS_PANE]);
+    expect(z).toBeGreaterThan(REIS_PANE_Z[LABELS_PANE]);
+    expect(z).toBeLessThan(LEAFLET_PANE_Z.tooltip);
   });
 
   it('animates pins to the post-zoom layer point during a zoom (no hiding)', () => {

@@ -2,6 +2,7 @@ import { lazy, Suspense, useRef, useState } from 'react';
 import type { SyntheticEvent } from 'react';
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
+import { TeacherList } from './TeacherList';
 import { SubjectDrawerTabs } from './SubjectDrawerTabs';
 import { DrawerTabBody } from '../../SubjectFileDrawer/DrawerTabBody';
 import { groupAndSortFiles } from '../../SubjectFileDrawer/utils/groupFiles';
@@ -77,11 +78,18 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
   // The course keys the iPad reader's ink and PDF cache, and its PDFs fill the
   // reader's sidebar so a student can switch files without coming back here —
   // in the drawer's grouped order, so both lists read the same.
-  const { previewUrl, viewPdf, closePreview, openFile, downloadSingle, openingLink } =
-    usePdfPreview(courseCode, {
-      title: courseName || courseCode,
-      files: listSubjectPdfs(groupedFiles.flatMap((g) => g.files)),
-    });
+  const {
+    previewUrl,
+    viewPdf,
+    closePreview,
+    openFile,
+    downloadSingle,
+    openingLink,
+    downloadingLink,
+  } = usePdfPreview(courseCode, {
+    title: courseName || courseCode,
+    files: listSubjectPdfs(groupedFiles.flatMap((g) => g.files)),
+  });
   const { classmates } = useClassmates(courseCode);
   const pushSheet = useAppStore((s) => s.pushSheet);
   const { data: zaznamnikData } = useZaznamnik(courseCode);
@@ -101,9 +109,6 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
   };
 
   const disabledTabs = subjectInfo?.subjectId ? [] : NO_ID_DISABLED;
-  const teacherLine = syllabusResult.syllabus?.courseInfo?.teachers
-    ?.map((teacher) => teacher.name)
-    .join(', ');
 
   const toggleSelect = (id: string, e: SyntheticEvent) => {
     e.stopPropagation();
@@ -119,12 +124,10 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
 
   return (
     <Sheet size="full" variant="screen" onClose={onClose}>
-      <SheetHeader
-        eyebrow={courseCode}
-        title={courseName || courseCode}
-        subtitle={teacherLine}
-        onBack={onClose}
-      />
+      <SheetHeader eyebrow={courseCode} title={courseName || courseCode} onBack={onClose} />
+      {/* Below the header, not inside it: the header is `touch-none` so the
+          sheet can be dragged by it, and this is a list of things to tap. */}
+      <TeacherList teachers={syllabusResult.syllabus?.courseInfo?.teachers} />
       <SubjectDrawerTabs
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -149,6 +152,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
           openFile={openFile}
           onViewPdf={viewPdf}
           openingLink={openingLink}
+          downloadingLink={downloadingLink}
           onDownloadSingle={downloadSingle}
           resolvedCourseId={resolvedCourseId}
           syllabusResult={syllabusResult}

@@ -143,7 +143,15 @@ export function showWalk(
   // Above the building, not on it: the chip sat over the letter the building
   // draws in its own centre, hiding the name of the place it is telling you
   // about.
-  L.tooltip({ permanent: true, direction: 'top', className: 'walk-chip', offset: [0, -30] })
+  // pane: the student asked for these walks, so their times stay above the
+  // event pins rather than disappearing under one.
+  L.tooltip({
+    permanent: true,
+    direction: 'top',
+    className: 'walk-chip',
+    offset: [0, -30],
+    pane: 'tooltipPane',
+  })
     .setLatLng(end)
     .setContent(walkLabel(walk, language))
     .addTo(chips);

@@ -45,4 +45,13 @@ describe('NavRow', () => {
     fireEvent.click(screen.getByRole('button'));
     expect(onClick).toHaveBeenCalledOnce();
   });
+
+  it('drops the leading icon when none is given, keeping the chevron', () => {
+    // The study plan row sits directly under the "Studijní průměr" accordion
+    // and has to read as its twin. That header carries no icon, so a row with
+    // one beside it looked like a different kind of control.
+    render(<NavRow label="Studijní plán" onClick={() => {}} />);
+    expect(screen.getByRole('button').querySelectorAll('svg')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Studijní plán' })).toBeInTheDocument();
+  });
 });

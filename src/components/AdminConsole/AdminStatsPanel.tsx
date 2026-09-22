@@ -3,6 +3,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { StatsBars } from './StatsBars';
 import { DailyActivityChart } from './DailyActivityChart';
 import { DayDetail } from './DayDetail';
+import { FeatureSignals } from './FeatureSignals';
 
 /**
  * Counts of DEVICES, never people — the note under the tiles says so, and the
@@ -23,15 +24,23 @@ export function AdminStatsPanel() {
   const label = (k: string) => (k === 'unknown' ? t('admin.stats.unknown') : k);
   const today = stats?.daily.at(-1) ?? null;
 
+  // The usage numbers and the feature signals come from DIFFERENT RPCs, so
+  // neither may gate the other: an early return here used to hide the feature
+  // block whenever `usage_stats` failed, even though `feature_stats` had
+  // answered. The usage half degrades on its own below, and `FeatureSignals`
+  // renders nothing until its own read lands.
+  //
   // --color-warning-content is now #111827 in both themes (index.css),
   // 8.26:1 on --color-warning — the DaisyUI alert-warning fill already
   // carries readable text, no override needed.
-  if (!stats && !loading)
-    return <div className="alert alert-warning m-2 text-sm">{t('admin.stats.loadFailed')}</div>;
-  if (!stats) return <span className="loading loading-dots loading-sm m-4" />;
-
-  return (
-    <div className="flex flex-col gap-4 p-3">
+  const usage = !stats ? (
+    loading ? (
+      <span className="loading loading-dots loading-sm m-4" />
+    ) : (
+      <div className="alert alert-warning m-2 text-sm">{t('admin.stats.loadFailed')}</div>
+    )
+  ) : (
+    <>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div className="stats stats-horizontal shadow-sm">
           {(
@@ -93,6 +102,16 @@ export function AdminStatsPanel() {
       >
         ↻
       </button>
+    </>
+  );
+
+  return (
+    <div className="flex flex-col gap-4 p-3">
+      {usage}
+      {/* Outside the usage branch on purpose: loaded by the same
+          `loadAdminStats` action but from its own RPC, so it survives a failed
+          usage read and renders nothing until its own answer arrives. */}
+      <FeatureSignals />
     </div>
   );
 }

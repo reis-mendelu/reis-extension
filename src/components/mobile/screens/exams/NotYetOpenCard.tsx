@@ -1,6 +1,5 @@
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { pluralSuffix } from '../../../../utils/plural';
-import { formatOpensAt } from '../../../../utils/mobile/examOpening';
 import type { OpenExam } from '../../../../utils/mobile/examRows';
 import type { ExamSection } from '../../../../types/exams';
 import { ExamRowCard } from './ExamRowCard';
@@ -8,9 +7,8 @@ import { TermRow } from './TermRow';
 
 export interface NotYetOpenCardProps {
   row: OpenExam;
-  /** When the earliest of this section's terms opens for registration. */
-  earliest: Date;
-  locale: string;
+  /** The store's clock, passed through to each term row. */
+  now: Date;
   expanded: boolean;
   onToggle: () => void;
   isProcessing: boolean;
@@ -21,9 +19,12 @@ export interface NotYetOpenCardProps {
  * A section IS has not opened for registration yet.
  *
  * Its own component rather than a fourth closure inside ExamsScreen, which is
- * already past the 200-line line. The row is the ordinary one; only the right
- * column differs — where a bookable section says how many slots are free, this
- * says when there will be any.
+ * already past the 200-line line.
+ *
+ * The header says nothing about when registration opens. Each term row carries
+ * its own opening moment instead — sections hand out terms that open on
+ * different days, and a single section-level date (the earliest of them) was
+ * right about one row and wrong about the rest.
  *
  * The terms still render underneath, and TermRow still decides for itself that
  * they cannot be registered: this card changes what the student is told, not
@@ -31,8 +32,7 @@ export interface NotYetOpenCardProps {
  */
 export function NotYetOpenCard({
   row,
-  earliest,
-  locale,
+  now,
   expanded,
   onToggle,
   isProcessing,
@@ -41,12 +41,9 @@ export function NotYetOpenCard({
   const { t, language } = useTranslation();
   return (
     <ExamRowCard
-      title={row.sectionName}
-      subtitle={row.subjectName}
-      primaryMeta={t('mobile.exams.opensAt', { when: formatOpensAt(earliest, locale) })}
-      // Not the accent: nothing here can be acted on yet, and the green that
-      // means "bookable" three rows down would be a lie about this one.
-      primaryTone="muted"
+      title={row.subjectName}
+      subtitle={row.sectionName}
+      primaryMeta=""
       secondaryMeta={t(
         `mobile.exams.termCount${pluralSuffix(language, row.section.terms.length)}`,
         {
@@ -61,6 +58,7 @@ export function NotYetOpenCard({
           key={term.id}
           term={term}
           section={row.section}
+          now={now}
           isProcessing={isProcessing}
           onRegister={onRegister}
         />

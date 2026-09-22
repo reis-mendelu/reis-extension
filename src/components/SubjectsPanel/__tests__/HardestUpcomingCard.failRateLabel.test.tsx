@@ -41,20 +41,21 @@ describe('HardestUpcomingCard fail-rate label', () => {
     fireEvent.click(screen.getByText('Nejtěžší předměty, které tě čekají'));
   };
 
-  it('names the rate on every row, the way the semester lists do', () => {
+  it('keeps the number bare, the way the semester rows do', () => {
+    // The words moved to `FailRateLegend`, said once above the whole page, so
+    // one screen no longer describes the same figure two different ways. What
+    // #265 forbade was the label being *unreachable* on a touch screen, not the
+    // label being said once — and the legend is visible to a thumb.
     open();
 
-    expect(screen.getAllByText(LABEL)).toHaveLength(entries.length);
+    expect(screen.queryByText(LABEL)).not.toBeInTheDocument();
   });
 
-  // The mechanism that made this invisible: zero width and zero opacity until
-  // a hover that a finger cannot produce.
-  it('does not hide the label behind a hover', () => {
+  it('still names the rate for a pointer and a screen reader', () => {
     open();
 
-    for (const label of screen.getAllByText(LABEL)) {
-      expect(label.className).not.toContain('opacity-0');
-      expect(label.className).not.toContain('max-w-0');
+    for (const rate of [45, 41, 9]) {
+      expect(screen.getByLabelText(`${LABEL} ${rate} %`)).toBeInTheDocument();
     }
   });
 
