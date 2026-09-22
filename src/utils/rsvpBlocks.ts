@@ -26,6 +26,18 @@ export const rsvpBlockId = (eventId: string): string => `${RSVP_BLOCK_PREFIX}${e
 
 export const isRsvpBlock = (id: string): boolean => id.startsWith(RSVP_BLOCK_PREFIX);
 
+/**
+ * The event a block stands for, or null when the id is not one of ours.
+ *
+ * The inverse of `rsvpBlockId`, and the reason the prefix is worth carrying: a
+ * calendar row knows only its own id, so this is what lets the phone send a tap
+ * on "ESN Welcome Party" to the event on the map rather than to a subject
+ * drawer for a course code that does not exist. Null for an entry the student
+ * typed in themselves — there is no event behind it to open.
+ */
+export const eventIdFromRsvpBlock = (id: string): string | null =>
+  isRsvpBlock(id) ? id.slice(RSVP_BLOCK_PREFIX.length) : null;
+
 const pad = (n: number) => String(n).padStart(2, '0');
 const ymd = (d: Date) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
 const hm = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
