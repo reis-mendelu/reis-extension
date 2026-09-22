@@ -200,6 +200,16 @@ function announceIdentityChange(params: UserParams | null): void {
 }
 
 /**
+ * Has IS confirmed, in this context and this session, who is signed in?
+ *
+ * False means the record being served is the best guess available and nothing
+ * has checked it — either the check has not run yet or it could not reach IS.
+ */
+export function isIdentityConfirmed(): boolean {
+  return _identityChecked;
+}
+
+/**
  * Clear the in-memory cache (call on logout).
  *
  * The identity check goes with it: the cache is being dropped precisely

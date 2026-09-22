@@ -2,9 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 let announce: ((p: unknown) => void) | null = null;
 const getUserParams = vi.fn(async () => null);
+const clearUserParamsCache = vi.fn();
+let confirmed = true;
 
 vi.mock('../../../utils/userParams', () => ({
   getUserParams: () => getUserParams(),
+  isIdentityConfirmed: () => confirmed,
+  clearUserParamsCache: () => clearUserParamsCache(),
   onIdentityChange: (cb: (p: unknown) => void) => {
     announce = cb;
     return () => {
@@ -18,7 +22,9 @@ const { watchSignedInStudent } = await import('../watchSignedInStudent');
 describe('watchSignedInStudent', () => {
   beforeEach(() => {
     announce = null;
+    confirmed = true;
     getUserParams.mockClear();
+    clearUserParamsCache.mockClear();
   });
 
   /**
@@ -29,6 +35,46 @@ describe('watchSignedInStudent', () => {
   it('asks who is signed in rather than waiting to be asked', () => {
     watchSignedInStudent(vi.fn());
     expect(getUserParams).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * And keeps asking until IS answers. In the iframe this call and the
+   * daily-usage ping are the only reads of the params at boot, so a first
+   * attempt lost to a slow IS or a cold fetch proxy would leave the previous
+   * student on screen with nothing left to trigger the re-check.
+   *
+   * The cache has to be dropped between attempts or the retry asks nothing:
+   * `getUserParams` serves what it is holding.
+   */
+  it('retries until IS confirms who is signed in', async () => {
+    confirmed = false;
+    getUserParams.mockImplementation(async () => {
+      if (getUserParams.mock.calls.length >= 2) confirmed = true;
+      return null;
+    });
+
+    watchSignedInStudent(vi.fn(), { attempts: 3, gapMs: 0 });
+    await vi.waitFor(() => expect(getUserParams).toHaveBeenCalledTimes(2));
+    expect(clearUserParamsCache).toHaveBeenCalledTimes(1);
+
+    // Confirmed on the second attempt — it stops there.
+    await new Promise((r) => setTimeout(r, 10));
+    expect(getUserParams).toHaveBeenCalledTimes(2);
+  });
+
+  // A confirmed first answer asks once and never again — the common case, and
+  // the one that must not cost three requests.
+  it('asks exactly once when the first answer confirms', async () => {
+    watchSignedInStudent(vi.fn(), { attempts: 3, gapMs: 0 });
+    await new Promise((r) => setTimeout(r, 10));
+    expect(getUserParams).toHaveBeenCalledTimes(1);
+  });
+
+  it('gives up rather than retrying forever', async () => {
+    confirmed = false;
+    watchSignedInStudent(vi.fn(), { attempts: 2, gapMs: 0 });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(getUserParams).toHaveBeenCalledTimes(2);
   });
 
   /**
