@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 
 /**
@@ -43,6 +43,7 @@ vi.mock('@/services/admin/authClient', () => ({
 vi.mock('@/utils/mock/devSociety', () => ({ DEV_SOCIETY: false }));
 
 import { fetchFeatureStats } from '../featureStats';
+import { assertLocalStack } from './liveStack';
 
 const EV_1 = '33333333-3333-3333-3333-333333333333';
 const EV_2 = '44444444-4444-4444-4444-444444444444';
@@ -57,7 +58,17 @@ const admin = () => createClient(URL_!, DB!);
  * exact-match assertions failed depending on run order — a fixture that is
  * only correct when you ran the right psql first is not a fixture.
  */
+/** Everything this file created, removed again in afterAll. */
+async function cleanup(): Promise<void> {
+  const db = admin();
+  await db.from('event_map_views').delete().in('event_id', [EV_1, EV_2]);
+  await db.from('feature_usage').delete().like('install_id', 'install-uuid-%');
+  await db.from('spolky_events').delete().in('id', [EV_1, EV_2]);
+}
+
 async function seed(): Promise<void> {
+  // Checked before a single statement runs: this function deletes rows.
+  assertLocalStack(URL_!);
   const db = admin();
   const must = <T extends { error: unknown }>(r: T): T => {
     // A silent seed failure is how this file first went green against numbers
@@ -65,14 +76,14 @@ async function seed(): Promise<void> {
     expect(r.error).toBeNull();
     return r;
   };
-  must(
-    await db
-      .from('event_map_views')
-      .delete()
-      .neq('event_id', '00000000-0000-0000-0000-000000000000')
-  );
-  must(await db.from('feature_usage').delete().neq('install_id', ''));
-  must(await db.from('spolky_events').delete().neq('id', '00000000-0000-0000-0000-000000000000'));
+  // spolky_events is real content, so only this file's own two rows go — never
+  // "everything that is not a sentinel". The two counter tables are cleared
+  // outright: they hold nothing but counts, the totals asserted below are only
+  // meaningful from a known-empty start, and the guard above has already
+  // established that this is a disposable stack.
+  must(await db.from('spolky_events').delete().in('id', [EV_1, EV_2]));
+  must(await db.from('event_map_views').delete().gte('views', 0));
+  must(await db.from('feature_usage').delete().gte('hits', 0));
 
   must(
     await db.from('spolky_events').insert([
@@ -122,6 +133,10 @@ async function seed(): Promise<void> {
 describe.skipIf(!configured)('fetchFeatureStats against a live PostgREST', () => {
   beforeAll(async () => {
     if (configured) await seed();
+  });
+
+  afterAll(async () => {
+    if (configured) await cleanup();
   });
 
   it('parses the RPC payload into exactly what the admin panel reads', async () => {

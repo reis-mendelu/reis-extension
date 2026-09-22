@@ -43,6 +43,7 @@ import {
   trackMapEventView,
   __resetFeatureSignalsForTests,
 } from '../featureUsage';
+import { assertLocalStack } from './liveStack';
 
 // Reads go through a role that bypasses RLS, because anon deliberately cannot
 // read `feature_usage` back — which is itself part of what this file proves.
@@ -52,6 +53,9 @@ describe.skipIf(!configured)('featureUsage against a live PostgREST', () => {
   let eventId = '';
 
   beforeAll(async () => {
+    // This suite only inserts, but a misconfigured URL would inflate real
+    // counters just the same.
+    assertLocalStack(URL_!);
     const { data, error } = await admin()
       .from('spolky_events')
       .insert({ title: `live test ${INSTALL}` })
