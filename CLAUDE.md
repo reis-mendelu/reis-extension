@@ -19,20 +19,30 @@ When a task involves IS Mendelu data, a new scraper, or the CDN data shape: read
 ## Local dev, release, and commands
 
 - Local dev against real IS data (`npm run dev:web` at `localhost:3000`) → the `dev-real-data` skill.
-- Releasing (version bump → tag → CI publishes to all three stores) → `/release`.
+- Releasing (version bump → `test` → `main` → a `vX.Y.Z` tag) → `/release`. The
+  tag drives **iOS only**. The extension is published **separately and by hand**:
+  `gh workflow run publish.yml --ref vX.Y.Z -f tag=vX.Y.Z`, to Chrome and Firefox
+  (Edge is not a target — Edge users install from the CWS). The `push: tags`
+  trigger was removed on purpose: a store submission cannot be recalled.
 - Everything else is in `package.json` scripts.
 - Verifying a UI change (screenshots at 320/390/430 + overflow, collision and contrast assertions) → the `verify-ui` skill. Never judge a UI change from a screenshot alone.
 
-### Secrets (Infisical)
+### Secrets
 
-Local secrets live in Infisical, not in the repo. `scripts/with-secrets.mjs`
-wraps the scripts that need them, so **just run the npm script** — no
-`infisical run --` prefix. It prints which source it used and falls back to
-`.env` / the ambient environment when the CLI is missing or the login has
-expired. One-time machine setup is `infisical login` (`.infisical.json` is
-committed, so `infisical init` is not needed per worktree).
+Local secrets live in `.env` (gitignored; `.env.example` is the template).
+**Infisical is no longer used** — the `with-secrets.mjs` wrapper and
+`.infisical.json` are gone, and every consumer now reads `.env` itself:
+`dev/adminSessionPlugin.ts` and `scripts/scrape-real-data.ts` via `dotenv/config`,
+`scripts/release-ios.ts` explicitly, and the Vite builds through `envDir` for
+`VITE_*`. So: **just run the npm script**, with no wrapper in front of it.
 
-Testing the admin console against real Supabase:
+Testing the admin console against real Supabase needs exactly two keys in
+`.env`: `REIS_ADMIN_EMAIL` and `REIS_ADMIN_PASSWORD` (`dev/adminSessionPlugin.ts`).
+The Supabase URL and publishable key are **not** env vars — they are hardcoded in
+`src/services/supabase/config.ts`. Signing in as one society instead reads
+`REIS_SOCIETY_<ID>_EMAIL` / `_PASSWORD`, uppercased. Missing credentials leave the
+harness on its login screen signed in as nobody — check that before concluding
+the console itself is broken:
 
 ```bash
 npm run dev:web:admin              # signs in as reis_admin; picker covers every society
@@ -59,8 +69,11 @@ there never reach Supabase, so never cite them as evidence a write works.
   failing if it boots onto skeletons, calls IS Mendelu, writes to Supabase, or
   carries a real snapshot in the output. That check passing for the exact commit
   is what the release gate requires.
-- `main` accepts only the `test` → `main` release PR, and merging it submits to
-  the stores. Use `/release`.
+- Three more gates fail PRs that pass a casual local run: `lint --max-warnings=0`
+  and `format:check` are **repo-wide**, not changed-files, and `nuia:gate` is a
+  ratchet — a new `noUncheckedIndexedAccess` error fails even if the count drops.
+- `main` accepts only the `test` → `main` release PR. Merging it pushes the
+  `vX.Y.Z` tag and stops — **no workflow submits to any store**. Use `/release`.
 - **Do not merge into `test` while a release PR is open.**
 - **Testing against your own data is local.** `npm run preview:real` scrapes
   your IS data, strips other students' identities, builds the production bundle
@@ -72,6 +85,23 @@ there never reach Supabase, so never cite them as evidence a write works.
 ## Architecture
 
 The manifest is generated from `wxt.config.ts` — never hand-edited.
+
+### Hosts (3) — the platform seam
+
+The same app ships as a browser extension, a Capacitor iOS/Android app, and the
+dev webapp. `src/platform/types.ts` is the **only** seam; each entry tree installs
+its host before the React root renders:
+
+| Host | Entry | Installs the platform |
+|------|-------|----------------------|
+| Extension | `src/entrypoints/{content,background,main}` | implicitly — see below |
+| Capacitor | `capacitor/main.capacitor.tsx` | `capacitor/installCapacitorPlatform.ts` |
+| Dev webapp | `dev/main.web.tsx` | `dev/installWebPlatform.ts` |
+
+`getPlatform()` **falls back to the extension** when `chrome.runtime.id` is
+visible and **throws** everywhere else — a deliberate asymmetry documented in
+`src/platform/index.ts`. Native-only code is `src/mobile/`; `native/` holds three
+custom Capacitor plugins; `android/` and `ios/` are the shells.
 
 ### State & Storage (3-Tier)
 1. **Zustand** (in-memory, reactive) — all UI reads go through `useAppStore` synchronously
