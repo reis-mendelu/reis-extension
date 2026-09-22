@@ -5,8 +5,6 @@ export interface TrendPoint {
   value: number;
 }
 
-const DAY_MS = 86_400_000;
-
 /** `Date` -> `YYYY-MM-DD` in LOCAL time, matching how the RPC's dates read. */
 function iso(d: Date): string {
   const m = `${d.getMonth() + 1}`.padStart(2, '0');
@@ -43,7 +41,12 @@ export function buildTrendSeries(
   const end = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const out: TrendPoint[] = [];
   for (let i = span - 1; i >= 0; i--) {
-    const d = new Date(end.getTime() - i * DAY_MS);
+    // Calendar arithmetic, not milliseconds: a local day is 23 or 25 hours
+    // across a daylight-saving change, so subtracting a fixed 86,400,000 skips
+    // or repeats a date every autumn. `setDate` steps calendar days, which is
+    // what a date axis is made of.
+    const d = new Date(end);
+    d.setDate(end.getDate() - i);
     const key = iso(d);
     out.push({ day: key, value: byDay.get(key) ?? 0 });
   }

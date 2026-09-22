@@ -41,16 +41,21 @@ alter table public.event_map_views enable row level security;
 create or replace function public.increment_event_map_view(row_id uuid)
 returns void language plpgsql security definer set search_path = '' as $$
 begin
-  -- Checked rather than left to the foreign key: a view of an event that has
-  -- since been deleted is a race, not a fault, and a raised FK violation would
-  -- surface to a student as a failed request over a counter.
-  if not exists (select 1 from public.spolky_events where id = row_id) then
-    return;
-  end if;
   insert into public.event_map_views (event_id, view_date, views)
   values (row_id, current_date, 1)
   on conflict (event_id, view_date)
     do update set views = public.event_map_views.views + 1;
+exception
+  -- A view of an event that has since been deleted is a race, not a fault, and
+  -- it must not surface to a student as a failed request over a counter.
+  --
+  -- Handled here rather than with a `select 1 from spolky_events` first: an
+  -- unlocked existence check is a TOCTOU gap, because `deletePost` can remove
+  -- the row between the check and the insert, and the foreign key then raises
+  -- anyway. Catching the violation covers the deleted-mid-write case AND the
+  -- never-existed case in one, with no lock taken on the event row.
+  when foreign_key_violation then
+    return;
 end;
 $$;
 

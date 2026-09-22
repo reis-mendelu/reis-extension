@@ -29,6 +29,21 @@ create table public.spolky_events (
   view_count integer not null default 0,
   click_count integer not null default 0
 );
+-- Only needed for the browser run in section 4, which seeds a real-looking
+-- event so pins render. The SQL checks in section 2 use the four columns above.
+alter table public.spolky_events
+  add column association_id text,
+  add column category      text,
+  add column date          date,
+  add column end_date      date,
+  add column time          text,
+  add column venue_kind    text,
+  add column room_code     text,
+  add column coord_lng     double precision,
+  add column coord_lat     double precision,
+  add column location      text,
+  add column url           text,
+  add column subscribers_only boolean default false;
 -- Stands in for the real role helper; the deployed one reads the JWT claim.
 create function public.get_my_role() returns text language sql stable as $$
   select current_setting('request.test_role', true) $$;

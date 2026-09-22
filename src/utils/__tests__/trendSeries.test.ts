@@ -60,6 +60,23 @@ describe('buildTrendSeries', () => {
     expect(buildTrendSeries([], -5, TODAY)).toHaveLength(1);
   });
 
+  // A local day is 23 or 25 hours across a daylight-saving change, so stepping
+  // back by a fixed 86,400,000 ms skips or repeats a date every autumn. Europe
+  // /Prague ends DST on 25 October 2026. Asserted as "distinct, consecutive
+  // calendar days" rather than against fixed strings, so it is meaningful in a
+  // DST timezone and still correct on a CI runner pinned to UTC.
+  it('steps calendar days across a daylight-saving change', () => {
+    const series = buildTrendSeries([], 5, new Date(2026, 9, 27)); // 27 October
+    const days = series.map((p) => p.day);
+
+    expect(new Set(days).size).toBe(days.length);
+    for (let i = 1; i < days.length; i++) {
+      const prev = new Date(`${days[i - 1]}T00:00:00Z`);
+      prev.setUTCDate(prev.getUTCDate() + 1);
+      expect(days[i]).toBe(prev.toISOString().slice(0, 10));
+    }
+  });
+
   // Crossing a month boundary is where naive day arithmetic breaks.
   it('walks back across a month boundary', () => {
     const series = buildTrendSeries([], 3, new Date(2026, 9, 1)); // 1 October

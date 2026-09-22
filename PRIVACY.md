@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: September 6, 2026**
+**Last Updated: September 22, 2026**
 
 ## Introduction
 reIS ("we", "our", or "us") is a Chrome extension designed to modernize and enhance the user experience of the Mendel University Information System (IS Mendelu). We are committed to protecting your privacy and ensuring the security of your data.

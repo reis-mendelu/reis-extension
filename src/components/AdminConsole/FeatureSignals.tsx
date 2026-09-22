@@ -49,7 +49,10 @@ export function FeatureSignals() {
   if (!stats) return null;
 
   const byKey = new Map(stats.byFeature.map((r) => [r.feature, r]));
-  const suppressed = (row: FeatureSignalCount | undefined) => !row || row.installs === -1;
+  // ONLY -1 is suppression. A missing row means the RPC returned nothing for
+  // this signal — zero, not withheld — and saying otherwise would claim a
+  // privacy action that never happened.
+  const suppressed = (row: FeatureSignalCount | undefined) => row?.installs === -1;
   const value = (row: FeatureSignalCount | undefined) => {
     if (!row) return '0';
     return row.installs === -1 ? t('admin.stats.under5') : String(row.installs);
