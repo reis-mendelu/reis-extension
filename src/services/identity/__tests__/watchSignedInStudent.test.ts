@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-let announce: ((p: unknown) => void) | null = null;
+let announce: ((p: unknown, change: { wiped: boolean }) => void) | null = null;
 const getUserParams = vi.fn(async () => null);
 const clearUserParamsCache = vi.fn();
 let confirmed = true;
@@ -11,7 +11,7 @@ vi.mock('../../../utils/userParams', () => ({
   clearUserParamsCache: () => clearUserParamsCache(),
 }));
 vi.mock('../../../utils/userParams/identityEvents', () => ({
-  onIdentityChange: (cb: (p: unknown) => void) => {
+  onIdentityChange: (cb: (p: unknown, change: { wiped: boolean }) => void) => {
     announce = cb;
     return () => {
       announce = null;
@@ -86,11 +86,60 @@ describe('watchSignedInStudent', () => {
    * reasoning `mobile/signOut.ts` restarts on, rather than hand-rolling a
    * teardown for forty slices.
    */
-  it('restarts the app when IS turns out to have someone else signed in', () => {
+  it('restarts the app when IS turns out to have someone else signed in', async () => {
     const restart = vi.fn();
-    watchSignedInStudent(restart);
-    announce?.({ studentId: '987654' });
-    expect(restart).toHaveBeenCalledTimes(1);
+    watchSignedInStudent(restart, { clearAdmin: async () => {} });
+    announce?.({ studentId: '987654' }, { wiped: true });
+    await vi.waitFor(() => expect(restart).toHaveBeenCalledTimes(1));
+  });
+
+  /**
+   * The society/admin login is a second credential, and it is not in
+   * IndexedDB — supabase-js keeps it in `chrome.storage.local`, which the wipe
+   * never touches. Sign-out already drops it; a switch without a sign-out has
+   * to as well, or on a shared browser the next student lands in the previous
+   * one's society console. Before the restart, because the restart ends this
+   * page and anything still pending with it.
+   */
+  it('drops the society login before it restarts', async () => {
+    const order: string[] = [];
+    const clearAdmin = vi.fn(async () => {
+      order.push('clearAdmin');
+    });
+    const restart = vi.fn(() => order.push('restart'));
+    watchSignedInStudent(restart, { clearAdmin });
+    announce?.(null, { wiped: true });
+    await vi.waitFor(() => expect(restart).toHaveBeenCalledTimes(1));
+    expect(order).toEqual(['clearAdmin', 'restart']);
+  });
+
+  /**
+   * A wipe that failed leaves the previous student's record on disk, so a
+   * restart would find it, detect the same switch, fail the same wipe and
+   * restart again — forever. The society login still goes: IS has positively
+   * named somebody else, and that credential does not depend on IndexedDB.
+   */
+  it('drops the society login but does not restart when the wipe failed', async () => {
+    const clearAdmin = vi.fn(async () => {});
+    const restart = vi.fn();
+    watchSignedInStudent(restart, { clearAdmin });
+    announce?.(null, { wiped: false });
+    await vi.waitFor(() => expect(clearAdmin).toHaveBeenCalledTimes(1));
+    await new Promise((r) => setTimeout(r, 10));
+    expect(restart).not.toHaveBeenCalled();
+  });
+
+  // `clearAdminSession` never rejects, but the lazy import in front of it can
+  // (a chunk that fails to load). That must not cost the student the restart.
+  it('still restarts when dropping the society login fails', async () => {
+    const restart = vi.fn();
+    watchSignedInStudent(restart, {
+      clearAdmin: async () => {
+        throw new Error('chunk failed to load');
+      },
+    });
+    announce?.(null, { wiped: true });
+    await vi.waitFor(() => expect(restart).toHaveBeenCalledTimes(1));
   });
 
   it('stops listening once the app tears the watch down', () => {

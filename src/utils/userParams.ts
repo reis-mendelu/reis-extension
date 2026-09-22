@@ -38,6 +38,16 @@ let _identityChecked = false;
 let _lastIdentityAttempt = 0;
 
 /**
+ * IS named a different student and the wipe of the previous one's data FAILED,
+ * so their record is still on disk. Nothing is served for the rest of the
+ * session: with `_identityChecked` already true, the next read would otherwise
+ * take that record as confirmed and hand the new student the old `studium`.
+ * Only a sign-out lifts it (`clearUserParamsCache`), and it is about to retry
+ * the wipe; otherwise the next boot does.
+ */
+let _wrongStudentOnDisk = false;
+
+/**
  * How long an UNCONFIRMED record is served before the check is tried again.
  *
  * The first attempt can fail for reasons that pass: the laptop is offline, IS
@@ -79,6 +89,7 @@ const complete = (p?: Partial<UserParams> | null) =>
  * that fails is offline, not a new student.
  */
 export async function getUserParams(): Promise<UserParams | null> {
+  if (_wrongStudentOnDisk) return null;
   // The cached record is served straight back once the identity behind it has
   // been confirmed. Until then it is only the best guess available, so a later
   // call is allowed to try the check again — see IDENTITY_RECHECK_GAP_MS.
@@ -97,6 +108,9 @@ export async function getUserParams(): Promise<UserParams | null> {
     // run, the record it wiped must never be served again, whatever fails
     // afterwards.
     let switched = false;
+    // Set only once `clearAll` has RESOLVED. `switched` is decided before the
+    // wipe, so on its own it cannot tell a wipe that failed from one that ran.
+    let wiped = false;
     try {
       stored = (await IndexedDBService.get('meta', STORAGE_KEYS.USER_PARAMS)) as
         Partial<UserParams> | undefined;
@@ -134,6 +148,7 @@ export async function getUserParams(): Promise<UserParams | null> {
         // the new student's own params straight back out again, and the next
         // boot would have nothing to check against.
         await IndexedDBService.clearAll();
+        wiped = true;
       } else if (complete(stored)) {
         // Same student. Serve the record as it stands rather than rebuilding
         // it — the rebuild below is two more IS pages, on every boot.
@@ -152,7 +167,7 @@ export async function getUserParams(): Promise<UserParams | null> {
       };
       await IndexedDBService.set('meta', STORAGE_KEYS.USER_PARAMS, params);
       _cached = params;
-      if (switched) announceIdentityChange(params);
+      if (switched) announceIdentityChange(params, { wiped: true });
       return params;
     } catch (e) {
       logError('getUserParams', e);
@@ -165,9 +180,16 @@ export async function getUserParams(): Promise<UserParams | null> {
       // under the old `studium`, which is the failure this whole check exists
       // to end. Nothing beats a stale identity that is known to be the wrong
       // person's: the next call finds the emptied store and rebuilds.
+      //
+      // Unless the wipe itself is what threw. Then the record is still on disk,
+      // and asking the app to restart looped: the next boot recomputed the same
+      // switch, the wipe failed the same way, and it reloaded again, uncapped.
+      // The app is still told — the society login goes either way — but with
+      // `wiped: false`, and this context serves nothing until a sign-out.
       if (switched) {
         _cached = null;
-        announceIdentityChange(null);
+        if (!wiped) _wrongStudentOnDisk = true;
+        announceIdentityChange(null, { wiped });
         return null;
       }
 
@@ -220,6 +242,7 @@ export function clearUserParamsCache() {
   _cached = null;
   _identityChecked = false;
   _lastIdentityAttempt = 0;
+  _wrongStudentOnDisk = false;
 }
 
 export async function getStudium(): Promise<string | null> {

@@ -41,6 +41,7 @@ const { IndexedDBService, INSTALL_ID_KEY } =
   await import('../../services/storage/IndexedDBService');
 const { getUserParams, clearUserParamsCache } = await import('../../utils/userParams');
 const { onIdentityChange } = await import('../../utils/userParams/identityEvents');
+const { watchSignedInStudent } = await import('../../services/identity/watchSignedInStudent');
 const { signOutFromHostPage } = await import('../../injector/hostSignOut');
 const { logout } = await import('../../api/proxyClient');
 const { setPlatform, __resetPlatformForTests } = await import('../../platform');
@@ -224,6 +225,32 @@ describe('handing the browser to the next student', () => {
     const afterRestart = await getUserParams();
     expect(afterRestart?.studium).toBe('201555');
     expect(await IndexedDBService.get('schedule', 'current')).toBeUndefined();
+  });
+
+  /**
+   * The same path, through the real watcher, for the credential the wipe does
+   * not reach. Petr's society login lives in `chrome.storage.local`; sign-out
+   * drops it, and this path used to leave it — so Tonda, on the same browser,
+   * opened Petr's society console. It has to go before the restart.
+   */
+  it('drops the previous student’s society login when the student changes without a sign-out', async () => {
+    await seedStudentData(PETR);
+    clearUserParamsCache();
+    fetchUserBaseIds.mockResolvedValue(TONDA);
+    fetchUserNetId.mockResolvedValue({ username: 'xvomacka' });
+
+    const order: string[] = [];
+    clearAdminSession.mockImplementation(async () => {
+      order.push('clearAdminSession');
+    });
+    const restart = vi.fn(() => order.push('restart'));
+
+    const stop = watchSignedInStudent(restart, { attempts: 1 });
+    await vi.waitFor(() => expect(restart).toHaveBeenCalledTimes(1));
+    stop();
+
+    expect(order).toEqual(['clearAdminSession', 'restart']);
+    expectNoTraceOf(await dumpEverything(), PETR);
   });
 
   /**

@@ -1,9 +1,17 @@
 import { getUserParams, isIdentityConfirmed, clearUserParamsCache } from '../../utils/userParams';
 import { onIdentityChange } from '../../utils/userParams/identityEvents';
+import { logError } from '../../utils/reportError';
 
 /** Between attempts to reach IS for the identity check. */
 const RETRY_GAP_MS = 20_000;
 const ATTEMPTS = 3;
+
+/** Lazy for the same reason `proxyClient` imports it lazily: it carries the
+ *  Supabase client, which a boot that never switches students has no use for. */
+async function clearAdminSessionLazily(): Promise<void> {
+  const { clearAdminSession } = await import('../admin/clearAdminSession');
+  await clearAdminSession();
+}
 
 /**
  * Watches for the signed-in student changing under the app's feet.
@@ -22,18 +30,42 @@ const ATTEMPTS = 3;
  *    trigger the re-check `getUserParams` is prepared to do. (The content
  *    script needs none of this: its sync ticks re-read the params on their
  *    own.)
- * 2. **Restart.** The wipe empties IndexedDB, but the store has already
- *    hydrated the previous student's schedule, exams and subjects into memory
- *    and the screens read it synchronously. Re-running boot is what clears
- *    that — the same reasoning `mobile/signOut.ts` restarts on, instead of a
- *    hand-rolled teardown across forty slices.
+ * 2. **Drop the society login, then restart.** The wipe empties IndexedDB,
+ *    but two things live outside it. The society/admin login is kept by
+ *    supabase-js in `chrome.storage.local` — sign-out already drops it, and a
+ *    switch without a sign-out has to as well, or the next student inherits
+ *    the previous one's society console. And the store has already hydrated
+ *    the previous student's schedule, exams and subjects into memory; re-running
+ *    boot is what clears that — the same reasoning `mobile/signOut.ts`
+ *    restarts on, instead of a hand-rolled teardown across forty slices.
+ *
+ *    No restart when the wipe itself failed: the previous record is still on
+ *    disk, so a restart would find it, fail the same wipe and restart again.
+ *
+ * Only this listener clears the society login, and that covers every host:
+ * the content script's IndexedDB is a separate copy, but the iframe holds its
+ * own record and detects the switch independently, and `chrome.storage.local`
+ * is shared between them.
  */
 export function watchSignedInStudent(
   restart: () => void = () => window.location.reload(),
-  { attempts = ATTEMPTS, gapMs = RETRY_GAP_MS } = {}
+  {
+    attempts = ATTEMPTS,
+    gapMs = RETRY_GAP_MS,
+    clearAdmin = clearAdminSessionLazily,
+  }: { attempts?: number; gapMs?: number; clearAdmin?: () => Promise<void> } = {}
 ): () => void {
   let stopped = false;
-  const off = onIdentityChange(() => restart());
+  const off = onIdentityChange((_params, { wiped }) => {
+    void (async () => {
+      try {
+        await clearAdmin();
+      } catch (e) {
+        logError('watchSignedInStudent.clearAdmin', e);
+      }
+      if (wiped) restart();
+    })();
+  });
 
   void (async () => {
     for (let attempt = 0; attempt < attempts && !stopped; attempt++) {

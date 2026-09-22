@@ -127,13 +127,13 @@ describe('getUserParams', () => {
   // student's schedule in memory, and no IDB wipe reaches that.
   it('announces the change so the app can reset itself', async () => {
     const seen: unknown[] = [];
-    const off = onIdentityChange((p) => seen.push(p));
+    const off = onIdentityChange((_p, change) => seen.push(change));
     idbGet.mockResolvedValue(COMPLETE);
     fetchUserBaseIds.mockResolvedValue(OTHER);
 
     await getUserParams();
     off();
-    expect(seen).toHaveLength(1);
+    expect(seen).toEqual([{ wiped: true }]);
   });
 
   // Same student, same session — no announcement, nothing reset.
@@ -239,6 +239,64 @@ describe('getUserParams', () => {
     expect(await getUserParams()).toBeNull();
     const params = await getUserParams();
     expect(params?.studentId).toBe('987654');
+  });
+
+  /**
+   * The wipe ITSELF failing is a different case from a failure after it: the
+   * previous student's record is still on disk. Asking for a restart there
+   * looped — the next boot recomputed the same switch from the same record,
+   * the wipe failed the same way, and the app reloaded forever with no cap.
+   *
+   * The app is still told (the society session has to go either way), but
+   * with `wiped: false`, so it knows a restart would only find the record
+   * again.
+   */
+  it('does not ask for a restart when the wipe itself fails', async () => {
+    const seen: unknown[] = [];
+    const off = onIdentityChange((p, change) => seen.push({ p, change }));
+    idbGet.mockResolvedValue(COMPLETE);
+    fetchUserBaseIds.mockResolvedValue(OTHER);
+    idbClearAll.mockRejectedValue(new Error('IndexedDB unavailable'));
+
+    const params = await getUserParams();
+    off();
+
+    expect(params).toBeNull();
+    expect(seen).toEqual([{ p: null, change: { wiped: false } }]);
+  });
+
+  /**
+   * And it has to stay null. `_identityChecked` is already true by then — IS
+   * did answer — so the next read would otherwise find a complete record on
+   * disk, take it as confirmed, and hand the new student the previous one's
+   * `studium`. Serving nothing for the rest of the session is the only answer
+   * that is not somebody else's identity.
+   */
+  it('serves nothing for the rest of the session once the wipe has failed', async () => {
+    idbGet.mockResolvedValue(COMPLETE);
+    fetchUserBaseIds.mockResolvedValue(OTHER);
+    idbClearAll.mockRejectedValue(new Error('IndexedDB unavailable'));
+
+    expect(await getUserParams()).toBeNull();
+    expect(await getUserParams()).toBeNull();
+    expect(await getUserParams()).toBeNull();
+    // Nor does each read go back to IS to rediscover the same switch.
+    expect(fetchUserBaseIds).toHaveBeenCalledTimes(1);
+  });
+
+  // A sign-out is the one thing that lifts it: it is about to retry the wipe.
+  it('asks IS again after a sign-out clears the cache', async () => {
+    idbGet.mockResolvedValue(COMPLETE);
+    fetchUserBaseIds.mockResolvedValue(OTHER);
+    idbClearAll.mockRejectedValueOnce(new Error('IndexedDB unavailable'));
+
+    expect(await getUserParams()).toBeNull();
+    clearUserParamsCache();
+    idbGet.mockResolvedValue(undefined);
+
+    const params = await getUserParams();
+    expect(params?.studentId).toBe('987654');
+    expect(fetchUserBaseIds).toHaveBeenCalledTimes(2);
   });
 
   // A failing check must not turn into a fetch storm: ~20 call sites read
