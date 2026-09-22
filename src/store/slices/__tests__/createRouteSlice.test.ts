@@ -300,3 +300,42 @@ describe('the offer and where the student is standing', () => {
     expect(useAppStore.getState().routeSuggestion?.roomLabel).toBe('B11');
   });
 });
+
+describe('arriving from a second lesson', () => {
+  beforeEach(() => {
+    quiet.mockReset();
+    currentPosition.mockReset();
+    useAppStore.getState().clearRoute();
+    useAppStore.getState().suggestRoute(null);
+  });
+
+  it('retires the walk drawn for the previous one', async () => {
+    // Measured: walk to Q16, back to the timetable, tap Q02's pin — and Q16's
+    // line was still on the map with no pill, because the offer is suppressed
+    // while a walk exists. The only way to ask for Q02 was to press × first,
+    // which is a dead end nobody would guess at.
+    currentPosition.mockResolvedValue(MAIN_GATE);
+    quiet.mockResolvedValue(null);
+    await useAppStore.getState().suggestRoute({ buildingName: 'Q', roomLabel: 'Q16' });
+    await useAppStore.getState().routeTo('Q');
+    expect(useAppStore.getState().routeStatus).toBe('ready');
+
+    await useAppStore.getState().suggestRoute({ buildingName: 'Q', roomLabel: 'Q02' });
+    const s = useAppStore.getState();
+    expect(s.routeStatus).toBe('idle');
+    expect(s.routeWalk).toBeNull();
+    expect(s.routeSuggestion?.roomLabel).toBe('Q02');
+  });
+
+  it('leaves a drawn walk alone when the offer is merely retired', async () => {
+    // `suggestRoute(null)` is what leaving the map tab does. The student may
+    // come back to the line they asked for, so that must not wipe it.
+    currentPosition.mockResolvedValue(MAIN_GATE);
+    quiet.mockResolvedValue(null);
+    await useAppStore.getState().suggestRoute({ buildingName: 'Q', roomLabel: 'Q16' });
+    await useAppStore.getState().routeTo('Q');
+    await useAppStore.getState().suggestRoute(null);
+    expect(useAppStore.getState().routeStatus).toBe('ready');
+    expect(useAppStore.getState().routeWalk).not.toBeNull();
+  });
+});

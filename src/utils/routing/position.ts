@@ -40,11 +40,37 @@ export function isPermissionDenied(err: unknown): boolean {
  *
  * The dev override comes first so the browser harness can exercise every
  * position in the design without a GPS or a walk.
+ *
+ * This is the ONLY place in the feature that asks the student for their
+ * location, and it is reached only by pressing "Najdi cestu" — the offer's own
+ * proximity check reads `checkPermissions` and stops there (see
+ * quietPosition), so opening the map from a lecture costs nothing.
+ *
+ * The ask is EXPLICIT. `getCurrentPosition` would raise the dialog by itself,
+ * but as a side effect of asking for a fix rather than as a decision, and not
+ * identically on both platforms. Doing it here means the press is visibly what
+ * asks, and a refusal is distinguishable from a cold GPS: the plugin's
+ * `requestPermissions` answers "denied", which `isPermissionDenied` recognises
+ * — where a timeout does not.
  */
 export async function currentPosition(): Promise<[number, number]> {
   const forced = devForcedPosition();
   if (forced) return forced;
   if (getPlatform().kind !== 'capacitor') throw new Error(NO_PLATFORM);
+
+  const held = await Geolocation.checkPermissions();
+  if (held.location !== 'granted' && held.coarseLocation !== 'granted') {
+    // The prompt, on the press, and nowhere else.
+    const asked = await Geolocation.requestPermissions();
+    if (asked.location !== 'granted' && asked.coarseLocation !== 'granted') {
+      throw Object.assign(new Error('location permission denied'), {
+        code: PERMISSION_DENIED_CODE,
+      });
+    }
+  }
+
+  // Coarse is plenty for a campus 400 m across, so a coarse-only grant is
+  // taken rather than refused — the snap tolerance is 250 m.
   const fix = await Geolocation.getCurrentPosition({
     enableHighAccuracy: true,
     timeout: 10_000,

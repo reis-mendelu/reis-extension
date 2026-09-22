@@ -107,6 +107,18 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set, get) => ({
     const mine = ++suggestGeneration;
     set({ routeSuggestion: target, canRouteFromHere: true });
     if (!target) return;
+
+    // A NEW lesson retires the walk drawn for the previous one. Measured:
+    // walk to Q16, back to the timetable, tap Q02's pin — and Q16's line was
+    // still on the map with no pill on Q02, because the offer is suppressed
+    // while a walk exists. The only way out was to press × first, which is a
+    // dead end nobody would guess at.
+    //
+    // Only for a real target: `suggestRoute(null)` is what leaving the map tab
+    // does, and a student who comes back should find the line they asked for
+    // still there.
+    routeGeneration++;
+    set({ routeFrom: null, routeWalk: null, routeStatus: 'idle', routeTargetBuilding: null });
     // Quietly, and only if the permission is already there — the prompt
     // belongs to the press. A student across the city is not offered a walk
     // that could only fail; see canRouteFrom for why this asks the router
@@ -117,7 +129,7 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set, get) => ({
     // cleared — or overtaken by a newer one, and answering for either would
     // decide the wrong question.
     if (mine !== suggestGeneration || !get().routeSuggestion) return;
-    set({ canRouteFromHere: canRouteFrom(at) });
+    set({ canRouteFromHere: canRouteFrom(at, target.buildingName) });
   },
 
   // Opening the picker is the student saying "not that one". Keeping the

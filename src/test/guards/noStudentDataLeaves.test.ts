@@ -248,7 +248,13 @@ describe('no student data leaves the device', () => {
   // error reporter reintroduced under a different name still trips this if it
   // reaches for the old RPCs, and the RPCs are gone from the database anyway,
   // so a reintroduction has to be a conscious, visible act.
-  it('sends no error, stack or file path anywhere', () => {
+  // 20s, not vitest's default 5: this one reads EVERY file under src/ and
+  // greps four strings through each, and on a loaded machine it sat right on
+  // the 5s line — failing a run, passing the next. A privacy guard that flakes
+  // is worse than a slow one: the failure looks like noise, so the next person
+  // re-runs instead of reading it, and the run where it fails for a real
+  // reason looks exactly the same.
+  it('sends no error, stack or file path anywhere', { timeout: 20_000 }, () => {
     const offenders: string[] = [];
     for (const file of walk(SRC)) {
       const rel = relative(ROOT, file);
