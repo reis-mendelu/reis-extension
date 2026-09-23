@@ -35,7 +35,7 @@ export function FileList({
   onViewPdf,
   onDownloadSingle,
   openingLink,
-  downloadingLink,
+  downloadingLinks,
   folderUrl,
   lastVisitedAt,
   selectable = true,
@@ -100,7 +100,7 @@ export function FileList({
                       onOpenFile={onOpenFile}
                       onViewPdf={onViewPdf}
                       isOpening={openingLink === subFile.link}
-                      isDownloading={downloadingLink === subFile.link}
+                      downloadTick={downloadingLinks?.[subFile.link] ?? null}
                       onDownloadSingle={onDownloadSingle}
                       onToggleNote={() =>
                         setExpandedLink(expandedLink === subFile.link ? null : subFile.link)

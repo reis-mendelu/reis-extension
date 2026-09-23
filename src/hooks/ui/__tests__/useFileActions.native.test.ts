@@ -53,7 +53,15 @@ describe('useFileActions on Capacitor', () => {
         await result.current[method]('slozka.pl?download=1');
       });
 
-      expect(openIsFileNatively).toHaveBeenCalledWith('slozka.pl?download=1');
+      // The trailing args are the filename override, the unsealed fallback and
+      // `onFetched` — the last is how the ROW's progress indicator stops when
+      // the bytes land rather than when iOS's share sheet is finally answered.
+      expect(openIsFileNatively).toHaveBeenCalledWith(
+        'slozka.pl?download=1',
+        undefined,
+        undefined,
+        method === 'downloadSingle' ? expect.any(Function) : undefined
+      );
       expect(global.fetch).not.toHaveBeenCalled();
     }
   );
@@ -132,5 +140,54 @@ describe('useFileActions on Capacitor', () => {
     expect(global.fetch).toHaveBeenCalled();
     expect(openIsFileNatively).not.toHaveBeenCalled();
     expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  /**
+   * `onFetched` ends the row's INDICATOR — the bytes are in hand, and on iOS
+   * what follows is the student's own share sheet. It must not end the LOCK.
+   * On Android the base64 conversion and `Downloads.save` are still running at
+   * that point, and releasing the lock there re-enabled the button: a second
+   * tap started a duplicate download of the same file.
+   */
+  it('ends the indicator on onFetched but keeps refusing the row until delivery settles', async () => {
+    let finishDelivery: () => void = () => {};
+    vi.mocked(openIsFileNatively).mockImplementation(async (_url, _name, _fallback, onFetched) => {
+      onFetched?.();
+      await new Promise<void>((resolve) => {
+        finishDelivery = resolve;
+      });
+      return { usedFallback: false, delivered: 'downloads' };
+    });
+    const { result } = renderHook(() => useFileActions());
+
+    let first: Promise<void> = Promise.resolve();
+    await act(async () => {
+      first = result.current.downloadSingle('slozka.pl?download=1');
+      await Promise.resolve();
+    });
+
+    // Indicator gone — the bytes have landed…
+    expect(result.current.activeDownloads['slozka.pl?download=1']).toBeUndefined();
+    // …but a second tap while delivery is still in flight is refused. Not
+    // awaited: a duplicate that DID start would hang on its own delivery.
+    await act(async () => {
+      void result.current.downloadSingle('slozka.pl?download=1');
+      await Promise.resolve();
+    });
+    expect(openIsFileNatively).toHaveBeenCalledTimes(1);
+
+    // Once delivery settles, the row takes a tap again.
+    await act(async () => {
+      finishDelivery();
+      await first;
+    });
+    vi.mocked(openIsFileNatively).mockResolvedValue({
+      usedFallback: false,
+      delivered: 'downloads',
+    });
+    await act(async () => {
+      await result.current.downloadSingle('slozka.pl?download=1');
+    });
+    expect(openIsFileNatively).toHaveBeenCalledTimes(2);
   });
 });

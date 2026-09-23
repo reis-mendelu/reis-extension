@@ -288,7 +288,10 @@
       "noFiles": "No files",
       "noFilesAvailable": "No files available.",
       "download": "Download",
-      "openInSidebar": "Open preview"
+      "openInSidebar": "Open preview",
+      "downloading": "Downloading…",
+      "downloadingCount": "Downloading ({completed}/{total})…",
+      "downloadSelected": "Download ({count})"
     },
     "pdf": {
       "loadFailed": "Couldn't open the PDF.",

@@ -65,33 +65,70 @@ describe('FileList folder headers', () => {
 });
 
 describe('FileList download feedback', () => {
-  it('turns the download button into a spinner while that file comes down', () => {
-    renderList({ onDownloadSingle: vi.fn(), downloadingLink: DOWNLOAD });
-    const button = screen.getByRole('button', { name: /Stáhnout|Download/ });
+  /** The bottom-edge bar of the one row on screen, or null. */
+  const rowBar = (container: HTMLElement) =>
+    container.querySelector<HTMLProgressElement>('progress.progress-primary');
+
+  it('puts the indicator inside the download button, in place of its icon', () => {
+    renderList({
+      onDownloadSingle: vi.fn(),
+      downloadingLinks: { [DOWNLOAD]: { loaded: 0, total: null } },
+    });
+    const button = screen.getByTestId(`file-download-${DOWNLOAD}`);
     expect(button).toBeDisabled();
-    expect(within(button).getByTestId('file-download-spinner')).toBeInTheDocument();
+    expect(within(button).getByTestId('download-progress')).toBeInTheDocument();
   });
 
   /**
    * A spinner in a 24px button was too quiet — "zkus z toho udělat nějaký
-   * progress bar, který bude více viditelný". The row itself now says it:
-   * a bar along its bottom edge and "Stahuji…" in place of the date. The bar
-   * is indeterminate because the phone's native HTTP layer hands the file over
-   * in one piece, with no byte count to fill it from.
+   * progress bar, který bude více viditelný". So the row itself says it too: a
+   * bar along its bottom edge and "Stahuji…" in place of the date.
+   *
+   * The bar is visual reinforcement only. The ring in the button is the
+   * progressbar a screen reader announces; announcing the bar as well would
+   * read the same download out twice.
    */
-  it('shows a progress bar across the row, and says it is downloading', () => {
-    renderList({ onDownloadSingle: vi.fn(), downloadingLink: DOWNLOAD });
-    const bar = screen.getByRole('progressbar', { name: 'Stahuji…' });
-    expect(bar.className).toContain('progress-primary');
+  it('shows a bar across the row and says it is downloading', () => {
+    const { container } = renderList({
+      onDownloadSingle: vi.fn(),
+      downloadingLinks: { [DOWNLOAD]: { loaded: 0, total: null } },
+    });
+    const bar = rowBar(container);
+    expect(bar).not.toBeNull();
+    expect(bar).toHaveAttribute('aria-hidden', 'true');
     expect(screen.getByText('Stahuji…')).toBeInTheDocument();
     expect(screen.queryByText('12. 3. 2026')).not.toBeInTheDocument();
   });
 
-  it('leaves the other rows alone', () => {
-    renderList({ onDownloadSingle: vi.fn(), downloadingLink: 'https://is.mendelu.cz/other' });
-    const button = screen.getByRole('button', { name: /Stáhnout|Download/ });
-    expect(button).not.toBeDisabled();
-    expect(screen.queryByTestId('file-download-spinner')).not.toBeInTheDocument();
+  // It was indeterminate while nothing counted bytes. The browser fetch does
+  // now, against IS's Content-Length, so the bar fills like the ring does.
+  it('fills the bar with the bytes received once IS declares a size', () => {
+    const { container } = renderList({
+      onDownloadSingle: vi.fn(),
+      downloadingLinks: { [DOWNLOAD]: { loaded: 512, total: 2048 } },
+    });
+    expect(rowBar(container)).toHaveAttribute('value', '512');
+    expect(rowBar(container)).toHaveAttribute('max', '2048');
+  });
+
+  // Capacitor hands the file over whole, and IS sends no size for the PDFs it
+  // generates: no denominator, so no invented one.
+  it('keeps the bar indeterminate when there is no size to fill it against', () => {
+    const { container } = renderList({
+      onDownloadSingle: vi.fn(),
+      downloadingLinks: { [DOWNLOAD]: { loaded: 512, total: null } },
+    });
+    expect(rowBar(container)).not.toHaveAttribute('value');
+  });
+
+  it('leaves a row that is not downloading alone', () => {
+    const { container } = renderList({
+      onDownloadSingle: vi.fn(),
+      downloadingLinks: { 'https://is.mendelu.cz/other': { loaded: 0, total: null } },
+    });
+    expect(screen.getByTestId(`file-download-${DOWNLOAD}`)).not.toBeDisabled();
+    expect(rowBar(container)).toBeNull();
+    expect(screen.getByText('12. 3. 2026')).toBeInTheDocument();
   });
 });
 
@@ -226,5 +263,70 @@ describe('FileList: the row being opened', () => {
     renderList({ groups: twoDocs, openingLink: DOWNLOAD, onViewPdf });
     await userEvent.click(screen.getByText('Přednáška 09'));
     expect(onViewPdf).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * The row's download button had no busy state on any platform: the tap looked
+ * identical to a dead button until the file appeared. These assertions are
+ * platform-independent — the same FileList renders in the desktop drawer and
+ * in the phone/tablet SubjectDrawerSheet.
+ */
+describe('FileList download progress', () => {
+  it('marks the downloading row busy and refuses a second tap', async () => {
+    const onDownloadSingle = vi.fn();
+    renderList({
+      onDownloadSingle,
+      downloadingLinks: { [DOWNLOAD]: { loaded: 0, total: null } },
+    });
+
+    const button = screen.getByTestId(`file-download-${DOWNLOAD}`);
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-busy', 'true');
+
+    await userEvent.click(button);
+    expect(onDownloadSingle).not.toHaveBeenCalled();
+  });
+
+  it('shows the share of bytes received once IS declares a size', () => {
+    renderList({
+      onDownloadSingle: vi.fn(),
+      downloadingLinks: { [DOWNLOAD]: { loaded: 512, total: 2048 } },
+    });
+
+    const bar = within(screen.getByTestId(`file-download-${DOWNLOAD}`)).getByRole('progressbar');
+    expect(bar).toHaveAttribute('aria-valuenow', '25');
+  });
+
+  it('stays indeterminate when IS declares no size, rather than inventing a number', () => {
+    renderList({
+      onDownloadSingle: vi.fn(),
+      downloadingLinks: { [DOWNLOAD]: { loaded: 512, total: null } },
+    });
+
+    const bar = within(screen.getByTestId(`file-download-${DOWNLOAD}`)).getByRole('progressbar');
+    expect(bar).not.toHaveAttribute('aria-valuenow');
+  });
+
+  it('leaves the other rows alone', () => {
+    const OTHER = 'https://is.mendelu.cz/auth/dok_server/slozka.pl?download=359058;id=1';
+    renderList({
+      onDownloadSingle: vi.fn(),
+      downloadingLinks: { [DOWNLOAD]: { loaded: 0, total: null } },
+      groups: groups([
+        {
+          file_name: 'Prednaska 09',
+          date: '12. 3. 2026',
+          files: [{ name: 'Prednaska 09', type: 'pdf', link: DOWNLOAD }],
+        },
+        {
+          file_name: 'Prednaska 10',
+          date: '19. 3. 2026',
+          files: [{ name: 'Prednaska 10', type: 'pdf', link: OTHER }],
+        },
+      ] as unknown as FileGroup['files']),
+    });
+    expect(screen.getByTestId(`file-download-${DOWNLOAD}`)).toBeDisabled();
+    expect(screen.getByTestId(`file-download-${OTHER}`)).not.toBeDisabled();
   });
 });

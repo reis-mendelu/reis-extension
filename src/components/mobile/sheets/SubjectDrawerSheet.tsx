@@ -85,7 +85,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
     openFile,
     downloadSingle,
     openingLink,
-    downloadingLink,
+    activeDownloads,
   } = usePdfPreview(courseCode, {
     title: courseName || courseCode,
     files: listSubjectPdfs(groupedFiles.flatMap((g) => g.files)),
@@ -152,7 +152,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
           openFile={openFile}
           onViewPdf={viewPdf}
           openingLink={openingLink}
-          downloadingLink={downloadingLink}
+          downloadingLinks={activeDownloads}
           onDownloadSingle={downloadSingle}
           resolvedCourseId={resolvedCourseId}
           syllabusResult={syllabusResult}

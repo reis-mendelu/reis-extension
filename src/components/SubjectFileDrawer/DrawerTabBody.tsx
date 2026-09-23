@@ -12,6 +12,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { SelectedSubject } from '../../types/app';
 import type { Classmate } from '../../types/classmates';
+import type { DownloadTick } from '../../hooks/ui/readBlobWithProgress';
 
 interface DrawerTabBodyProps {
   tab: DrawerTab;
@@ -31,7 +32,7 @@ interface DrawerTabBodyProps {
   openFile: (link: string) => void;
   onViewPdf?: (link: string, meta: PdfRowMeta) => void;
   openingLink?: string | null;
-  downloadingLink?: string | null;
+  downloadingLinks?: Record<string, DownloadTick>;
   onDownloadSingle?: (link: string) => void;
   resolvedCourseId: string;
   syllabusResult: { syllabus: SyllabusRequirements | null; isLoading: boolean };
@@ -74,7 +75,7 @@ export function DrawerTabBody({
   openFile,
   onViewPdf,
   openingLink,
-  downloadingLink,
+  downloadingLinks,
   onDownloadSingle,
   resolvedCourseId,
   syllabusResult,
@@ -136,7 +137,7 @@ export function DrawerTabBody({
             onOpenFile={openFile}
             onViewPdf={onViewPdf}
             openingLink={openingLink}
-            downloadingLink={downloadingLink}
+            downloadingLinks={downloadingLinks}
             onDownloadSingle={onDownloadSingle}
             folderUrl={folderUrl}
             lastVisitedAt={lastVisitedAt}

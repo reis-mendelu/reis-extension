@@ -27,8 +27,15 @@ export function SubjectFileDrawer({
   onClose: () => void;
 }) {
   const state = useSubjectFileDrawerState(lesson, isOpen);
-  const { isDownloading, downloadProgress, openFile, openPdfInline, downloadSingle, downloadZip } =
-    useFileActions();
+  const {
+    isDownloading,
+    downloadProgress,
+    activeDownloads,
+    openFile,
+    openPdfInline,
+    downloadSingle,
+    downloadZip,
+  } = useFileActions();
   const [showDragHint, setShowDragHint] = useState(false);
   const [activePdfUrl, setActivePdfUrl] = useState<string | null>(null);
   const [activePdfFile, setActivePdfFile] = useState<{ link: string; name: string } | null>(null);
@@ -273,6 +280,7 @@ export function SubjectFileDrawer({
             openFile={openFile}
             onViewPdf={handleViewPdf}
             onDownloadSingle={downloadSingle}
+            downloadingLinks={activeDownloads}
             resolvedCourseId={resolvedCourseId}
             syllabusResult={syllabusResult}
             folderUrl={state.subjectInfo?.folderUrl}

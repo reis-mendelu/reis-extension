@@ -288,7 +288,10 @@
       "noFiles": "Žádné soubory",
       "noFilesAvailable": "Žádné soubory nejsou k dispozici.",
       "download": "Stáhnout",
-      "openInSidebar": "Otevřít náhled"
+      "openInSidebar": "Otevřít náhled",
+      "downloading": "Stahování…",
+      "downloadingCount": "Stahování ({completed}/{total})…",
+      "downloadSelected": "Stáhnout ({count})"
     },
     "pdf": {
       "loadFailed": "PDF se nepodařilo otevřít.",
