@@ -1,37 +1,20 @@
-import { Geolocation } from '@capacitor/geolocation';
-import { getPlatform } from '../../platform';
 import { devForcedPosition } from './devPosition';
 
 /**
- * A position fix, but only if taking one costs the student nothing.
+ * A position fix, but only if taking one costs the student nothing — PARKED.
  *
  * The route offer is hidden where no walk can be built, and knowing that needs
- * a position — which is a permission prompt. Tapping a lesson's map icon is a
- * lighter intent than "walk me there", so this asks the plugin what it has
- * already been granted and goes no further. The prompt still belongs to the
- * press, exactly where it was.
+ * a position. This used to ask the Geolocation plugin what it had already been
+ * granted (`checkPermissions`) and take a coarse 4-second fix only then, so the
+ * prompt stayed with the press.
  *
- * Every failure is `null`, never a throw: nothing on screen depends on this
- * succeeding. A null leaves the offer showing, which is also what a device
- * that never granted location does — see `canRouteFrom`, where not knowing is
- * deliberately not a no.
+ * Campus navigation is dormant (./navigationEnabled.ts) and the plugin is
+ * uninstalled, so there is nothing to ask: every build answers `null`, which
+ * `canRouteFrom` treats as "not known" rather than "no". The dev override still
+ * answers, so the harness can exercise the offer. The real body is in #368's
+ * history; src/test/guards/campusNavigationIsDormant.test.ts lists what
+ * reviving the feature takes.
  */
 export async function quietPosition(): Promise<[number, number] | null> {
-  const forced = devForcedPosition();
-  if (forced) return forced;
-  if (getPlatform().kind !== 'capacitor') return null;
-  try {
-    const perm = await Geolocation.checkPermissions();
-    if (perm.location !== 'granted' && perm.coarseLocation !== 'granted') return null;
-    // Shorter than the press's 10s and happy with a coarse fix: this decides
-    // whether to draw a pill, not where to start a walk. A student who presses
-    // still gets the accurate fix from `currentPosition`.
-    const fix = await Geolocation.getCurrentPosition({
-      enableHighAccuracy: false,
-      timeout: 4_000,
-    });
-    return [fix.coords.longitude, fix.coords.latitude];
-  } catch {
-    return null;
-  }
+  return devForcedPosition();
 }

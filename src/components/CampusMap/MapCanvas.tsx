@@ -23,6 +23,7 @@ import { drawCampusPaths } from './pathLayers';
 import { roomLabelsHidden } from './roomLabels';
 import { drawRoomRouteChip, chipShown, clampRoomChip } from './roomRouteChip';
 import { translate } from '../../i18n/translate';
+import { CAMPUS_NAVIGATION_ENABLED } from '../../utils/routing/navigationEnabled';
 import { setMapInstance } from './mapInstance';
 import { LABELS_PANE } from './mapPanes';
 import { roomFocusView } from './focusBounds';
@@ -476,7 +477,13 @@ export function MapCanvas() {
       null;
     drawRoomRouteChip(
       roomChipRef.current,
-      chipShown(routeSuggestion, routeStatus, canRouteFromHere) && building ? selected : null,
+      // Never while navigation is parked: this chip is the only control that
+      // can start a walk.
+      CAMPUS_NAVIGATION_ENABLED &&
+        chipShown(routeSuggestion, routeStatus, canRouteFromHere) &&
+        building
+        ? selected
+        : null,
       translate(language, 'map.routeTakeMeThere'),
       () => {
         if (building) void useAppStore.getState().routeTo(building);

@@ -7,6 +7,7 @@ import { RouteDismiss } from '../../../CampusMap/RouteDismiss';
 // committed route journeys reach a named building through it. Delete the
 // mount and scripts/shot-route has no way to ask for a destination.
 import { RoutePicker } from '../../../CampusMap/RoutePicker';
+import { CAMPUS_NAVIGATION_ENABLED } from '../../../../utils/routing/navigationEnabled';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useRailResize } from './useRailResize';
 import { RAIL_MIN_PX, RAIL_MAX_PX } from '../../../../utils/mapRail';
@@ -103,10 +104,12 @@ export function MapRail() {
           landscape rail shipped without them: on a phone turned sideways there
           was no way to ask for a route at all, and the map simply never drew
           one. Found on a real device, in landscape, by the maintainer. */}
-      <div className="flex flex-shrink-0 flex-col gap-2 border-b border-base-content/10 p-3">
-        <RouteDismiss />
-        <RoutePicker />
-      </div>
+      {CAMPUS_NAVIGATION_ENABLED && (
+        <div className="flex flex-shrink-0 flex-col gap-2 border-b border-base-content/10 p-3">
+          <RouteDismiss />
+          <RoutePicker />
+        </div>
+      )}
 
       {/* The left edge is the resize handle — the axis a tablet can afford to
           trade. Not a detent: it sets a width and keeps it. */}

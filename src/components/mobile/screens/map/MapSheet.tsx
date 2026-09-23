@@ -8,6 +8,7 @@ import { RouteDismiss } from '../../../CampusMap/RouteDismiss';
 // committed route journeys reach a named building through it. Delete the
 // mount and scripts/shot-route has no way to ask for a destination.
 import { RoutePicker } from '../../../CampusMap/RoutePicker';
+import { CAMPUS_NAVIGATION_ENABLED } from '../../../../utils/routing/navigationEnabled';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { MapPanelBody } from './MapPanelBody';
 import { MapSheetPeek } from './MapSheetPeek';
@@ -222,7 +223,7 @@ export function MapSheet() {
           sheet downward into the floating BottomNav, which covered the letters
           — and a menu that opens away from its own control reads as unrelated
           to it. */}
-      {!expanded && <RoutePicker />}
+      {!expanded && CAMPUS_NAVIGATION_ENABLED && <RoutePicker />}
 
       {!expanded && (
         // A ROW of two controls, not one button: the left half expands the
@@ -256,7 +257,7 @@ export function MapSheet() {
               aria-hidden="true"
             />
           </button>
-          <RouteDismiss />
+          {CAMPUS_NAVIGATION_ENABLED && <RouteDismiss />}
         </div>
       )}
 

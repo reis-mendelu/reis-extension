@@ -20,6 +20,7 @@ import { DayBody } from './calendar/DayBody';
 import { TodayPill } from './calendar/TodayPill';
 import { RecentFilesStrip } from './calendar/RecentFilesStrip';
 import { CalendarSkeleton } from './calendar/CalendarSkeleton';
+import { CAMPUS_NAVIGATION_ENABLED } from '../../../utils/routing/navigationEnabled';
 import { formatHeaderDate } from '../../../utils/mobile/formatHeaderDate';
 
 export function CalendarScreen() {
@@ -184,7 +185,8 @@ export function CalendarScreen() {
     focusRoomByCode(roomCodeFor(nowNext.next));
     // It is called "Trasa →" and it used to move the camera. The lesson it
     // names on the hero is the one the map now offers to walk to.
-    suggestRoute(routeSuggestionFor(nowNext.next, language));
+    // Not while navigation is parked: "Trasa →" only moves the camera.
+    if (CAMPUS_NAVIGATION_ENABLED) suggestRoute(routeSuggestionFor(nowNext.next, language));
   };
 
   return shell(

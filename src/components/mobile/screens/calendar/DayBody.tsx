@@ -7,6 +7,7 @@ import {
   subjectSheetFor,
 } from '../../../../utils/mobile/lessonActions';
 import { useTranslation } from '../../../../hooks/useTranslation';
+import { CAMPUS_NAVIGATION_ENABLED } from '../../../../utils/routing/navigationEnabled';
 import { eventIdFromRsvpBlock } from '../../../../utils/rsvpBlocks';
 import { shiftIso } from '../../../../utils/mobile/weekDays';
 import { DayAgenda } from './DayAgenda';
@@ -149,7 +150,8 @@ export function DayBody({
               // the lesson over makes the button offer this one. `null` for a
               // room the map cannot place, so a previous tap's lecture is not
               // still on offer over a lesson that has none.
-              suggestRoute(routeSuggestionFor(lesson, language));
+              // Not while navigation is parked: the pin only focuses the room.
+              if (CAMPUS_NAVIGATION_ENABLED) suggestRoute(routeSuggestionFor(lesson, language));
             }}
           />
         )}
