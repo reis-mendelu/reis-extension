@@ -109,8 +109,10 @@ export function buildSignOutDeps(): SignOutDeps {
         InAppBrowser.clearCookies({ url: IS_COOKIE_URL }),
         CapacitorCookies.clearCookies({ url: IS_COOKIE_URL }),
       ]);
-      const failed = results.filter((r) => r.status === 'rejected');
-      if (failed.length === results.length) throw failed[0].reason;
+      const [first] = results;
+      if (first?.status === 'rejected' && results.every((r) => r.status === 'rejected')) {
+        throw first.reason;
+      }
     },
     clearUserParams: () => clearUserParamsCache(),
     clearAdminSession: async () => {
