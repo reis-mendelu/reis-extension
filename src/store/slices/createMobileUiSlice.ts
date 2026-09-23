@@ -32,7 +32,7 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
   devPhoneOverride: null,
   welcomeSeen: null,
   externalOpening: false,
-  pullHintLearned: null,
+  pullHintSeen: null,
 
   // Read once at boot, before the root renders (capacitor/main.capacitor.tsx).
   // Same key as the desktop WelcomeModal: a device that dismissed it there has
@@ -53,22 +53,22 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
     await IndexedDBService.set('meta', 'welcome_dismissed', true);
   },
 
-  // Read once at boot beside the welcome flag. Demo mode counts as learned: a
+  // Read once at boot beside the welcome flag. Demo mode counts as seen: a
   // pull there answers "not available in demo", so teaching it teaches a dead
   // end — and the reviewer's first screen should not move on its own.
   hydratePullHint: async ({ demo }) => {
     if (demo) {
-      set({ pullHintLearned: true });
+      set({ pullHintSeen: true });
       return;
     }
-    const learned = await IndexedDBService.get('meta', 'pull_hint_learned');
-    set({ pullHintLearned: learned === true });
+    const seen = await IndexedDBService.get('meta', 'pull_hint_seen');
+    set({ pullHintSeen: seen === true });
   },
-  // One real pull on either screen retires the hint on both.
-  learnPullHint: () => {
-    if (get().pullHintLearned === true) return;
-    set({ pullHintLearned: true });
-    IndexedDBService.set('meta', 'pull_hint_learned', true).catch(() => {});
+  // Once, ever: marked when the hint plays, or when the student pulls first.
+  markPullHintSeen: () => {
+    if (get().pullHintSeen === true) return;
+    set({ pullHintSeen: true });
+    IndexedDBService.set('meta', 'pull_hint_seen', true).catch(() => {});
   },
 
   // Switching tabs closes sheets: a sheet belongs to the screen that opened it.
@@ -86,6 +86,12 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
     // A file opened from the Subjects tab should be in the calendar's
     // "recently opened" strip by the time the student gets there.
     if (tab === 'calendar') void get().refreshRecentPdfs();
+    // Exams are fetched fresh on every visit: registration moves by the minute,
+    // and a list that could be an hour old is the one screen where that costs a
+    // student a slot. Exam terms only (~0.6s), never the full crawl, and the
+    // refresh is visible — the list holds down with the spinner until it
+    // answers. Not in demo, where it could only say "not available".
+    if (tab === 'exams' && !get().demoMode) get().triggerExamsRefresh();
   },
   setMobileSelectedDay: (iso) => set({ mobileSelectedDayIso: iso }),
 

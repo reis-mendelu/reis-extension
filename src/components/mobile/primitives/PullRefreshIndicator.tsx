@@ -3,6 +3,7 @@ import { RefreshCw } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { usePullToRefresh } from './usePullToRefresh';
 import { usePullHint } from './usePullHint';
+import { useRefreshHold } from './useRefreshHold';
 
 /**
  * The spinner a pull on the calendar winds up, and the gesture behind it.
@@ -22,7 +23,10 @@ import { usePullHint } from './usePullHint';
  * Pass store actions: they are stable references, so the hook's listeners are
  * bound once per mount and a re-render mid-gesture cannot drop the pull.
  *
- * Until the student has pulled once, it also plays the pull hint (usePullHint).
+ * While a refresh runs, the list is held down with the spinner in the gap
+ * (useRefreshHold). With `hint`, it also plays the pull hint once, ever
+ * (usePullHint) — the calendar's lesson. Exams need none: they refresh on
+ * every visit, so the student watches the gesture's result each time.
  *
  * `aria-hidden` because it is decoration: the screen-reader route to the same
  * refresh is the `sr-only` RefreshButton in the header, since VoiceOver cannot
@@ -32,20 +36,23 @@ export function PullRefreshIndicator({
   scrollerRef,
   refreshing,
   onRefresh,
+  hint = false,
 }: {
   scrollerRef: RefObject<HTMLElement | null>;
   refreshing: boolean;
   onRefresh: () => void;
+  hint?: boolean;
 }) {
   const indicatorRef = useRef<HTMLDivElement>(null);
-  const learned = useAppStore((s) => s.pullHintLearned);
-  const learn = useAppStore((s) => s.learnPullHint);
+  const seen = useAppStore((s) => s.pullHintSeen);
+  const markSeen = useAppStore((s) => s.markPullHintSeen);
   const pulled = useCallback(() => {
-    learn();
+    markSeen();
     onRefresh();
-  }, [learn, onRefresh]);
+  }, [markSeen, onRefresh]);
   usePullToRefresh({ scrollerRef, indicatorRef, onRefresh: pulled });
-  usePullHint(scrollerRef, indicatorRef, learned === false && !refreshing);
+  usePullHint(scrollerRef, indicatorRef, hint && seen === false && !refreshing, markSeen);
+  useRefreshHold(scrollerRef, refreshing);
   return (
     <div
       ref={indicatorRef}

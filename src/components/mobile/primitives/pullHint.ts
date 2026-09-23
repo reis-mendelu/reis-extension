@@ -16,16 +16,18 @@ import { pullIndicatorFrame } from './pullToRefresh';
 /** Long enough for the screen to settle and the eye to land on the list first. */
 export const PULL_HINT_DELAY_MS = 700;
 
-const DEPTH_PX = 44;
-const DOWN_MS = 380;
+/** Also the depth a running refresh holds the list at, so hint and refresh match. */
+export const PULL_DEPTH_PX = 44;
+const DEPTH_PX = PULL_DEPTH_PX;
+export const DOWN_MS = 380;
 const HOLD_MS = 220;
-const BACK_MS = 520;
+export const BACK_MS = 520;
 export const PULL_HINT_DURATION_MS = DOWN_MS + HOLD_MS + BACK_MS;
 
 const at = (ms: number) => ms / PULL_HINT_DURATION_MS;
-const DOWN = 'cubic-bezier(0.2, 0.7, 0.2, 1)';
+export const DOWN = 'cubic-bezier(0.2, 0.7, 0.2, 1)';
 // A small overshoot on the way back: the list lands like something let go of.
-const BACK = 'cubic-bezier(0.34, 1.4, 0.64, 1)';
+export const BACK = 'cubic-bezier(0.34, 1.4, 0.64, 1)';
 
 export function pullHintContentKeyframes(): Keyframe[] {
   return [

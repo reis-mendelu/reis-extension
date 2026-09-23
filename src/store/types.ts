@@ -508,13 +508,12 @@ export interface MobileUiSlice {
   hydrateWelcome: (o: { demo: boolean }) => Promise<void>;
   dismissWelcome: () => Promise<void>;
   /**
-   * Whether the student has refreshed by pulling at least once. Until then the
-   * calendar and exams lists nudge themselves to teach it. null = not hydrated
-   * yet, which never plays the hint.
+   * Whether the calendar's pull hint has played (or the student has pulled).
+   * It plays once, ever. null = not hydrated yet, which never plays it.
    */
-  pullHintLearned: boolean | null;
+  pullHintSeen: boolean | null;
   hydratePullHint: (o: { demo: boolean }) => Promise<void>;
-  learnPullHint: () => void;
+  markPullHintSeen: () => void;
 
   setMobileTab: (tab: MobileTab) => void;
   setMobileSelectedDay: (iso: string | null) => void;

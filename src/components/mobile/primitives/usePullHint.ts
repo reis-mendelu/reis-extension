@@ -7,7 +7,11 @@ import {
 } from './pullHint';
 
 /**
- * Plays the pull hint once per visit to the screen, while `enabled`.
+ * Plays the pull hint once while `enabled`, and reports when it has played to
+ * the end — the caller marks it seen, so it plays once ever, not once per
+ * visit. Reported on FINISH, not start: marking it seen flips `enabled` off,
+ * and that cleanup would cancel the hint a frame after it began. A hint that
+ * never finished (a finger landed first) does not count, and tries next time.
  *
  * The Web Animations API rather than a CSS keyframe: the repo keeps app chrome
  * free of custom CSS, and this needs no stylesheet at all. It moves the
@@ -21,7 +25,8 @@ import {
 export function usePullHint(
   scrollerRef: RefObject<HTMLElement | null>,
   indicatorRef: RefObject<HTMLElement | null>,
-  enabled: boolean
+  enabled: boolean,
+  onPlayed: () => void
 ) {
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -46,6 +51,8 @@ export function usePullHint(
         content.animate(pullHintContentKeyframes(), opts),
         indicator.animate(pullHintIndicatorKeyframes(), opts),
       ];
+      // A cancelled animation rejects `finished`; that is "not seen", not an error.
+      running[0]!.finished.then(onPlayed, () => {});
     }, PULL_HINT_DELAY_MS);
 
     scroller.addEventListener('touchstart', stop, { passive: true });
@@ -53,5 +60,5 @@ export function usePullHint(
       scroller.removeEventListener('touchstart', stop);
       stop();
     };
-  }, [scrollerRef, indicatorRef, enabled]);
+  }, [scrollerRef, indicatorRef, enabled, onPlayed]);
 }

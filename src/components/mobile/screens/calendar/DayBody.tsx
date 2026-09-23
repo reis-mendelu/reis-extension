@@ -114,6 +114,7 @@ export function DayBody({
         scrollerRef={bodyRef}
         refreshing={scheduleRefreshing}
         onRefresh={triggerScheduleRefresh}
+        hint
       />
       <div
         ref={bodyRef}
