@@ -95,6 +95,9 @@ When a task involves IS Mendelu data, a new scraper, or the CDN data shape: read
   trigger was removed on purpose: a store submission cannot be recalled.
 - Everything else is in `package.json` scripts.
 - Verifying a UI change (screenshots at 320/390/430 + overflow, collision and contrast assertions) → the `verify-ui` skill. Never judge a UI change from a screenshot alone.
+- An Android device stuck on the IS login → ask the developer to run `npm run android:signin`
+  (`-- --device <serial>` with several attached). It types `.env`'s `MENDELU_USER`/`MENDELU_PASS`
+  over adb. An agent may run `-- --dry-run`, which types nothing, but never the real thing.
 
 ### What to run locally, and what CI owns
 

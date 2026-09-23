@@ -45,6 +45,7 @@
     "cap:ios": "npm run cap:sync && npx cap run ios",
     "android:apk": "node scripts/android-release.mjs apk",
     "android:aab": "node scripts/android-release.mjs aab",
+    "android:signin": "node scripts/android-signin.mjs",
     "android:feature-graphic": "node scripts/gen-feature-graphic.mjs",
     "release:ios": "tsx --tsconfig tsconfig.app.json scripts/release-ios.ts",
     "ios:version": "tsx --tsconfig tsconfig.app.json scripts/sync-ios-version.ts",
