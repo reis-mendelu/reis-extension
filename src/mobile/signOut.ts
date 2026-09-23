@@ -36,7 +36,8 @@ export interface SignOutDeps {
  * opens a login, IS answers with the dashboard because the cookie is still
  * good, the page-load poll reads it back, and the student is silently returned
  * to the same account without typing anything — a sign-out that visibly
- * un-does itself.
+ * un-does itself. This module clears them best-effort; what guarantees it is
+ * the login opening with `clearCookiesOnOpen` (see below for why).
  *
  * The server-side session is deliberately NOT invalidated: IS's logout URL is
  * only ever discovered from its page chrome, and guessing an endpoint here
@@ -51,31 +52,28 @@ export async function signOutMobile(deps: SignOutDeps): Promise<void> {
   // plus a device that can still act as the student is the worst outcome.
   await deps.clearToken();
 
-  // Also allowed to throw, and this was wrong before: the cookie is not a
-  // best-effort tidy-up on the way out, it is the half that can UN-DO the
-  // sign-out. `ensureSession` detects a completed login by polling the cookie
-  // jar, so a surviving UISAuth means the next login WebView is answered with
-  // the dashboard, the poll reads the cookie straight back, and the student is
-  // returned to the same account without typing anything. Swallowing this
-  // failure and restarting would walk them into exactly that.
+  // Best-effort from here down: the credential is gone, so the sign-out has
+  // already succeeded in the sense that matters, and nothing below may strand
+  // the student in a half-signed-out app. The restart puts them at the login,
+  // which gates the data anyway.
   //
-  // Reported here rather than at the caller because the throw crosses the
-  // `logout()` boundary as a bare rejection.
+  // The cookie used to be allowed to throw here, because a surviving UISAuth
+  // answers the next login with the dashboard and signs the student straight
+  // back in. But `InAppBrowser.clearCookies` only reaches an OPEN browser
+  // dialog on Android (and iOS below 17), and none is open at sign-out, so it
+  // rejected every time on those devices. The token was already gone, so the
+  // throw refused nothing. It skipped the wipe, the society sign-out and the
+  // restart, and showed an error over an app that was in fact signed out. The
+  // guarantee now lives where the cookie does harm: the login opens with
+  // `clearCookiesOnOpen` (mobile/inAppLoginDeps).
   try {
     await deps.clearIsCookies();
   } catch (e) {
     logError('Mobile.signOut:cookies', e);
-    throw e;
   }
 
-  // Best-effort from here down, and only from here: the credential AND the
-  // cookie are both gone, so the sign-out has already succeeded in the sense
-  // that matters, and a stubborn IndexedDB must not strand the student in a
-  // half-signed-out app. The restart puts them at the login, which gates the
-  // data anyway.
-  //
-  // The society/admin login belongs in this block and not above it, for the
-  // same reason: it is a second credential, kept by supabase-js outside
+  // The society/admin login belongs after the token clear and not before it:
+  // it is a second credential, kept by supabase-js outside
   // IndexedDB, and it has to go — but a sign-out this function REFUSES must
   // not have taken it. Signed in as the student and signed out of their
   // society console is exactly the half-torn-down state the refusal exists to
@@ -98,9 +96,23 @@ export async function signOutMobile(deps: SignOutDeps): Promise<void> {
 export function buildSignOutDeps(): SignOutDeps {
   return {
     clearToken: () => clearStoredToken(),
+    // Both jars, because each plugin reaches a different one: CapacitorCookies
+    // works with no dialog open and covers the process-wide jar the transport
+    // seeds on Android, and InAppBrowser covers its own store on iOS 17+.
+    // Either one succeeding is a normal sign-out, not something to log.
     clearIsCookies: async () => {
-      const { InAppBrowser } = await import('@capgo/capacitor-inappbrowser');
-      await InAppBrowser.clearCookies({ url: IS_COOKIE_URL });
+      const [{ InAppBrowser }, { CapacitorCookies }] = await Promise.all([
+        import('@capgo/capacitor-inappbrowser'),
+        import('@capacitor/core'),
+      ]);
+      const results = await Promise.allSettled([
+        InAppBrowser.clearCookies({ url: IS_COOKIE_URL }),
+        CapacitorCookies.clearCookies({ url: IS_COOKIE_URL }),
+      ]);
+      const [first] = results;
+      if (first?.status === 'rejected' && results.every((r) => r.status === 'rejected')) {
+        throw first.reason;
+      }
     },
     clearUserParams: () => clearUserParamsCache(),
     clearAdminSession: async () => {
