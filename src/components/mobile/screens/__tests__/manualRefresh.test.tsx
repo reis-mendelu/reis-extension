@@ -189,6 +189,15 @@ describe('the calendar refresh', () => {
     expect(screen.getByLabelText(REFRESH).className).toContain('sr-only');
   });
 
+  it('shows itself to a keyboard user who tabs onto it', () => {
+    // An iPad with a keyboard can focus it; an invisible focused control is a
+    // dead end for a sighted keyboard user.
+    render(<CalendarScreen />);
+    const cls = screen.getByLabelText(REFRESH).className;
+    expect(cls).toContain('focus-visible:not-sr-only');
+    expect(cls).toMatch(/focus-visible:outline/);
+  });
+
   it('keeps a screen-reader button, because a pull cannot be made by VoiceOver', () => {
     render(<CalendarScreen />);
     fireEvent.click(screen.getByLabelText(REFRESH));

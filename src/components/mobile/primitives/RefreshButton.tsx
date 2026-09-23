@@ -36,7 +36,9 @@ export function RefreshButton({
       onClick={() => onRefresh()}
       disabled={refreshing}
       aria-label={label}
-      className="sr-only"
+      // Revealed on keyboard focus: an iPad with a keyboard can tab onto it,
+      // and an invisible focused control is a dead end for a sighted user.
+      className="sr-only self-start rounded-full text-sm font-semibold text-base-content focus-visible:not-sr-only focus-visible:bg-base-200 focus-visible:px-3 focus-visible:py-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
     >
       {label}
     </button>

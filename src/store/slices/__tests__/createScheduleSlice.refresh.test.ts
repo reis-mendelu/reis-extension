@@ -75,4 +75,32 @@ describe('triggerScheduleRefresh', () => {
     slice.triggerScheduleRefresh();
     expect(refresh).toHaveBeenCalledTimes(1);
   });
+
+  it('a late answer from a timed-out refresh does not end the next one', async () => {
+    // First request never answers in time: the 15s backstop releases the flag.
+    let lateFirst!: () => void;
+    refresh.mockReturnValueOnce(new Promise<void>((r) => (lateFirst = r)));
+    slice.triggerScheduleRefresh();
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(slice.scheduleRefreshing).toBe(false);
+    // A second one starts, and the first finally answers while it runs.
+    refresh.mockReturnValueOnce(new Promise(() => {}));
+    slice.triggerScheduleRefresh();
+    expect(slice.scheduleRefreshing).toBe(true);
+    lateFirst();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(slice.scheduleRefreshing).toBe(true);
+  });
+
+  it("the first refresh's backstop does not end a later one either", async () => {
+    refresh.mockResolvedValueOnce(undefined);
+    slice.triggerScheduleRefresh();
+    await vi.advanceTimersByTimeAsync(0);
+    refresh.mockReturnValueOnce(new Promise(() => {}));
+    await vi.advanceTimersByTimeAsync(10_000);
+    slice.triggerScheduleRefresh();
+    // The first run's 15s timer fires 5s into the second run.
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(slice.scheduleRefreshing).toBe(true);
+  });
 });

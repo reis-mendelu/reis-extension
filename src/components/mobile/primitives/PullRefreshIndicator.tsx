@@ -46,10 +46,12 @@ export function PullRefreshIndicator({
   const indicatorRef = useRef<HTMLDivElement>(null);
   const seen = useAppStore((s) => s.pullHintSeen);
   const markSeen = useAppStore((s) => s.markPullHintSeen);
+  // Only the screen that teaches the pull may retire its lesson: a pull on
+  // exams first must not stop the calendar from ever showing it.
   const pulled = useCallback(() => {
-    markSeen();
+    if (hint) markSeen();
     onRefresh();
-  }, [markSeen, onRefresh]);
+  }, [hint, markSeen, onRefresh]);
   usePullToRefresh({ scrollerRef, indicatorRef, onRefresh: pulled });
   usePullHint(scrollerRef, indicatorRef, hint && seen === false && !refreshing, markSeen);
   useRefreshHold(scrollerRef, refreshing);

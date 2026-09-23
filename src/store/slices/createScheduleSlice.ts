@@ -3,6 +3,13 @@ import { IndexedDBService } from '../../services/storage';
 import { logError } from '../../utils/reportError';
 import { syncService } from '../../services/sync/SyncService';
 
+/**
+ * Which refresh is the current one. A request that outlived its 15s backstop
+ * can still answer later — after a newer refresh has started — and must not
+ * end that one. Each trigger takes a new number; only the current one may stop.
+ */
+let refreshGeneration = 0;
+
 export const createScheduleSlice: AppSlice<ScheduleSlice> = (set, get) => ({
   schedule: {
     data: [],
@@ -42,8 +49,10 @@ export const createScheduleSlice: AppSlice<ScheduleSlice> = (set, get) => ({
   triggerScheduleRefresh: () => {
     if (get().scheduleRefreshing) return;
     set({ scheduleRefreshing: true });
+    const generation = ++refreshGeneration;
     const stop = () => {
-      if (get().scheduleRefreshing) set({ scheduleRefreshing: false });
+      if (generation === refreshGeneration && get().scheduleRefreshing)
+        set({ scheduleRefreshing: false });
     };
     syncService
       .triggerScheduleRefresh()
