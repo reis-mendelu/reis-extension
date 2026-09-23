@@ -74,6 +74,12 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // Before the root renders, so the first frame is already either the welcome
   // or the app — never the app with the welcome flashing over it a tick later.
   await useAppStore.getState().hydrateWelcome({ demo });
+  // Beside it, so the calendar's first frame already knows whether to teach the
+  // pull. A failed read leaves it null, which simply never plays the hint.
+  await useAppStore
+    .getState()
+    .hydratePullHint({ demo })
+    .catch(() => {});
 
   // Dynamic import on purpose: this module renders the React root on
   // evaluation, so a static import would boot the app BEFORE a session exists

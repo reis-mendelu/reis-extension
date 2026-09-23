@@ -46,6 +46,9 @@ export interface ScheduleSlice {
   };
   fetchSchedule: () => Promise<void>;
   setSchedule: (data: BlockLesson[]) => void;
+  /** A student-asked timetable refresh is in flight (the calendar's pull). */
+  scheduleRefreshing: boolean;
+  triggerScheduleRefresh: () => void;
 }
 
 export interface ExamSlice {
@@ -504,6 +507,13 @@ export interface MobileUiSlice {
   setExternalOpening: (opening: boolean) => void;
   hydrateWelcome: (o: { demo: boolean }) => Promise<void>;
   dismissWelcome: () => Promise<void>;
+  /**
+   * Whether the calendar's pull hint has played (or the student has pulled).
+   * It plays once, ever. null = not hydrated yet, which never plays it.
+   */
+  pullHintSeen: boolean | null;
+  hydratePullHint: (o: { demo: boolean }) => Promise<void>;
+  markPullHintSeen: () => void;
 
   setMobileTab: (tab: MobileTab) => void;
   setMobileSelectedDay: (iso: string | null) => void;

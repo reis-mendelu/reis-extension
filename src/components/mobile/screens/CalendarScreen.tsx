@@ -24,7 +24,7 @@ import { CAMPUS_NAVIGATION_ENABLED } from '../../../utils/routing/navigationEnab
 import { formatHeaderDate } from '../../../utils/mobile/formatHeaderDate';
 
 export function CalendarScreen() {
-  const { language } = useTranslation();
+  const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
   const { schedule } = useSchedule();
   const mobileSelectedDayIso = useAppStore((s) => s.mobileSelectedDayIso);
@@ -40,6 +40,8 @@ export function CalendarScreen() {
   const hiddenItems = useAppStore((s) => s.hiddenItems);
   const teachingWeekData = useAppStore((s) => s.teachingWeekData);
   const customEvents = useAppStore((s) => s.customEvents);
+  const scheduleRefreshing = useAppStore((s) => s.scheduleRefreshing);
+  const triggerScheduleRefresh = useAppStore((s) => s.triggerScheduleRefresh);
 
   // The vývěska is no longer mounted here. It was a portal owned by this one
   // screen while the button that opens it ships with every screen's header, so
@@ -92,17 +94,18 @@ export function CalendarScreen() {
           week and which day this is. The way back to today is not here
           either: the header is full at a date and three actions (see
           TodayPill), so it floats above the tab bar instead. */}
-      {/* The refresh circle gets the shortest row there is — 24px of button,
-          right-aligned under the date. The schedule TTL is 24h, so without it
-          a student looking at a stale week has no way to ask for this one, and
-          the day strip is not available for it: collecting controls into a
-          pill on the right of that row was tried and rejected (DayChips). */}
+      {/* Refreshing is a pull on the day (DayBody). The visible circle that
+          sat on its own row here made this header one line taller than every
+          other tab's; what is left is the screen-reader route to the same
+          sync, which takes no layout. */}
       <ScreenHeader
         title={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale)}
         below={
-          <div className="-mt-1 flex justify-end">
-            <RefreshButton />
-          </div>
+          <RefreshButton
+            label={t('mobile.header.refresh')}
+            refreshing={scheduleRefreshing}
+            onRefresh={triggerScheduleRefresh}
+          />
         }
       />
     </>

@@ -1,4 +1,5 @@
 import { IndexedDBService } from '../storage';
+import { executeAction } from '../../api/proxyClient';
 
 export type SyncStatus = {
   isSyncing: boolean;
@@ -53,11 +54,18 @@ class SyncServiceClass {
       '*'
     );
   }
-  triggerExamRefresh() {
-    window.parent.postMessage(
-      { type: 'REIS_ACTION', id: crypto.randomUUID(), action: 'refresh_exams', payload: {} },
-      '*'
-    );
+  /**
+   * Resolves when the refresh has FINISHED, data or not — the reply to the
+   * action, not the data push. An empty exams read pushes nothing (it looks
+   * the same as a failure), so a spinner waiting for data waited out its
+   * whole fallback for a student with no exams.
+   */
+  async triggerExamRefresh(): Promise<void> {
+    await executeAction('refresh_exams', {});
+  }
+  /** The timetable only, awaitable the same way. See injector `refreshSchedule`. */
+  async triggerScheduleRefresh(): Promise<void> {
+    await executeAction('refresh_schedule', {});
   }
   triggerRefresh(a?: string) {
     this.notifyListeners(a);
