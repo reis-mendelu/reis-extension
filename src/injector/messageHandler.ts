@@ -10,6 +10,7 @@ import { scrapedNavMenu } from './sniper';
 import { downloadDocumentInPage } from './documentDownloader';
 import { isIsMendeluUrl } from './isMendeluUrl';
 import { signOutFromHostPage } from './hostSignOut';
+import { readBytesBody } from './readBytesBody';
 
 let topUpPopupRef: Window | null = null;
 
@@ -85,7 +86,7 @@ async function handleFetchRequest(
     method?: string;
     headers?: Record<string, string>;
     body?: string;
-    responseType?: 'text' | 'image';
+    responseType?: 'text' | 'image' | 'bytes';
   }
 ) {
   try {
@@ -111,6 +112,11 @@ async function handleFetchRequest(
         const contentType = response.headers.get('content-type') ?? '';
         if (!contentType.startsWith('image/')) throw new Error(`Not an image (${contentType})`);
         text = await blobToDataUrl(await response.blob());
+      } else if (options?.responseType === 'bytes') {
+        // fetchAuthedBytes from the iframe (eduroam root CA + p12). Same
+        // reason as photos: the iframe's own fetch loses UISAuth wherever
+        // third-party cookies are blocked, and IS answers that with 403.
+        text = await readBytesBody(response);
       } else {
         text = await response.text();
       }
