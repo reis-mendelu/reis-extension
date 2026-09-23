@@ -34,7 +34,11 @@ export function initProxyListener() {
     };
     if (type === 'REIS_FETCH_RESULT') handle(pendingFetches);
     else if (type === 'REIS_ACTION_RESULT') handle(pendingActions);
-    else if (type === 'REIS_POPUP_STATE') {
+    else if (type === 'REIS_FETCH_PROGRESS' && typeof e.data.loaded === 'number') {
+      // Looked up, not removed: the request is still running.
+      const total = typeof e.data.total === 'number' ? e.data.total : null;
+      pendingFetches.get(id)?.onProgress({ loaded: e.data.loaded, total });
+    } else if (type === 'REIS_POPUP_STATE') {
       window.dispatchEvent(new CustomEvent('reis:popup-state', { detail: { open: e.data.open } }));
     }
   });

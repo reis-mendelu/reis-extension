@@ -45,6 +45,10 @@ export const Messages = {
     data: d,
     error: e,
   }),
+  fetchProgress: (
+    id: string,
+    tick: { loaded: number; total: number | null }
+  ): T.FetchProgressMessage => ({ type: 'REIS_FETCH_PROGRESS', id, ...tick }),
   actionResult: (
     id: string,
     s: boolean,

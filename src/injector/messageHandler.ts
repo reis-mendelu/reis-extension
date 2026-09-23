@@ -10,6 +10,7 @@ import { scrapedNavMenu } from './sniper';
 import { downloadDocumentInPage } from './documentDownloader';
 import { isIsMendeluUrl } from './isMendeluUrl';
 import { signOutFromHostPage } from './hostSignOut';
+import { fetchFileForIframe } from './fetchFileForIframe';
 
 let topUpPopupRef: Window | null = null;
 
@@ -85,10 +86,18 @@ async function handleFetchRequest(
     method?: string;
     headers?: Record<string, string>;
     body?: string;
-    responseType?: 'text' | 'image';
+    responseType?: 'text' | 'image' | 'file';
   }
 ) {
   try {
+    if (options?.responseType === 'file') {
+      // Its own path — no login redirect on 403. See fetchFileForIframe.
+      const payload = await fetchFileForIframe(url, (tick) =>
+        sendToIframe(Messages.fetchProgress(id, tick))
+      );
+      sendToIframe(Messages.fetchResult(id, true, payload));
+      return;
+    }
     let text: string;
     if (isIsMendeluUrl(url)) {
       const response = await fetch(url, {

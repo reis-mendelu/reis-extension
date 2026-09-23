@@ -14,6 +14,7 @@ import { normalizeFileUrl } from '../../utils/fileUrl';
 import { createLogger } from '../../utils/logger';
 import { requestQueue } from '../../utils/requestQueue';
 import { assertNotDemo } from './assertNotDemo';
+import { fetchIsFile } from './fetchIsFile';
 
 const log = createLogger('downloadZipFiles');
 
@@ -48,15 +49,13 @@ export async function downloadZipFiles(
         const fullUrl = normalizeFileUrl(link);
         assertNotDemo();
 
-        // Basic retry logic (1 retry)
-        let response = await fetch(fullUrl, { credentials: 'include' });
-        if (!response.ok && response.status >= 500) {
-          response = await fetch(fullUrl, { credentials: 'include' });
-        }
-        if (!response.ok) return;
-
-        const blob = await response.blob();
-        zip.file(safeEntryName(response.headers.get('content-disposition'), link), blob);
+        // One retry, on an IS 5xx only. Through the proxy the status arrives
+        // as text, so it is read from the message on both paths.
+        const { blob, contentDisposition } = await fetchIsFile(fullUrl).catch((e: unknown) => {
+          if (/HTTP 5\d\d/.test(String(e))) return fetchIsFile(fullUrl);
+          throw e;
+        });
+        zip.file(safeEntryName(contentDisposition, link), blob);
       } catch (e) {
         log.error(`Failed to add file ${link} to zip`, e);
       } finally {

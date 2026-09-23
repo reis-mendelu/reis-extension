@@ -2,7 +2,13 @@ import { Messages } from '../types/messages';
 import * as MsgTypes from '../types/messages/base';
 import type { DataRequestType } from '../types/messages/base';
 import type { ActionType } from '../types/messages';
-import { pendingFetches, pendingActions, REQUEST_TIMEOUT } from './proxy/pendingRequests';
+import {
+  pendingFetches,
+  pendingActions,
+  REQUEST_TIMEOUT,
+  type PendingFetch,
+} from './proxy/pendingRequests';
+import type { DownloadTick } from '../hooks/ui/readBlobWithProgress';
 import { initProxyListener } from './proxy/messageListener';
 import { IndexedDBService } from '../services/storage/IndexedDBService';
 import { clearUserParamsCache } from '../utils/userParams';
@@ -11,16 +17,29 @@ import { getPlatform } from '../platform';
 
 export async function fetchViaProxy(
   url: string,
-  opts?: MsgTypes.FetchRequestMessage['options']
+  opts?: MsgTypes.FetchRequestMessage['options'],
+  onProgress?: (tick: DownloadTick) => void
 ): Promise<string> {
   initProxyListener();
   const msg = Messages.fetch(url, opts);
   return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      pendingFetches.delete(msg.id);
-      reject(new Error(`Timeout: ${url}`));
-    }, REQUEST_TIMEOUT);
-    pendingFetches.set(msg.id, { resolve, reject, timeout });
+    const arm = () =>
+      setTimeout(() => {
+        pendingFetches.delete(msg.id);
+        reject(new Error(`Timeout: ${url}`));
+      }, REQUEST_TIMEOUT);
+    const pending: PendingFetch = {
+      resolve,
+      reject,
+      timeout: arm(),
+      // Only 'file' fetches tick. Each one proves the download is moving.
+      onProgress: (tick) => {
+        clearTimeout(pending.timeout);
+        pending.timeout = arm();
+        onProgress?.(tick);
+      },
+    };
+    pendingFetches.set(msg.id, pending);
     window.parent.postMessage(msg, '*');
   });
 }

@@ -12,7 +12,8 @@ import { DemoModeError, isDemoMode } from '../../errors/demoMode';
 import { logError } from '../../utils/reportError';
 import { assertNotDemo } from './assertNotDemo';
 import { downloadZipFiles } from './downloadZipFiles';
-import { readBlobWithProgress, type DownloadTick } from './readBlobWithProgress';
+import type { DownloadTick } from './readBlobWithProgress';
+import { fetchIsFile } from './fetchIsFile';
 
 const log = createLogger('useFileActions');
 
@@ -60,15 +61,7 @@ export function useFileActions(): UseFileActionsResult {
 
       try {
         assertNotDemo();
-        const response = await fetch(fullUrl, { credentials: 'include' });
-
-        if (!response.ok) {
-          log.warn('Fetch failed, falling back to direct link');
-          window.open(fullUrl, '_blank', 'noopener,noreferrer');
-          return;
-        }
-
-        const blob = await response.blob();
+        const { blob } = await fetchIsFile(fullUrl);
         const blobUrl = URL.createObjectURL(blob);
 
         window.open(blobUrl, '_blank', 'noopener,noreferrer');
@@ -84,6 +77,8 @@ export function useFileActions(): UseFileActionsResult {
           logError('useFileActions.openFile', e);
           return;
         }
+        // A failed fetch — a 403, IS down — still gets the student their file:
+        // a top-level tab is first-party, so it carries the session.
         log.error('Failed to fetch file as blob, falling back to direct link', e);
         window.open(fullUrl, '_blank', 'noopener,noreferrer');
       }
@@ -121,9 +116,7 @@ export function useFileActions(): UseFileActionsResult {
         return (await looksLikePdf(result.blob)) ? result.blob : null;
       }
       assertNotDemo();
-      const response = await fetch(fullUrl, { credentials: 'include' });
-      if (!response.ok) return null;
-      const blob = await response.blob();
+      const { blob } = await fetchIsFile(fullUrl);
       return (await looksLikePdf(blob)) ? blob : null;
     } catch (e) {
       log.error('Failed to fetch PDF inline', e);
@@ -194,16 +187,10 @@ export function useFileActions(): UseFileActionsResult {
           return;
         }
         assertNotDemo();
-        const response = await fetch(fullUrl, { credentials: 'include' });
-        if (!response.ok) {
-          window.open(fullUrl, '_blank', 'noopener,noreferrer');
-          return;
-        }
-        const blob = await readBlobWithProgress(response, (tick) =>
+        const { blob, contentDisposition } = await fetchIsFile(fullUrl, (tick) =>
           setActiveDownloads((d) => (link in d ? { ...d, [link]: tick } : d))
         );
-        const cd = response.headers.get('content-disposition');
-        const match = cd?.match(/filename="?([^"]+)"?/);
+        const match = contentDisposition?.match(/filename="?([^"]+)"?/);
         const filename = match?.[1] || link.split('/').pop() || 'download';
         const blobUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
