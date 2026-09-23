@@ -46,6 +46,9 @@ export interface ScheduleSlice {
   };
   fetchSchedule: () => Promise<void>;
   setSchedule: (data: BlockLesson[]) => void;
+  /** A student-asked timetable refresh is in flight (the calendar's pull). */
+  scheduleRefreshing: boolean;
+  triggerScheduleRefresh: () => void;
 }
 
 export interface ExamSlice {

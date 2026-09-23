@@ -1,18 +1,14 @@
 import { useEffect, type RefObject } from 'react';
-import { useAppStore } from '../../../store/useAppStore';
 import { PULL_REFRESH_THRESHOLD_PX, pullClaims, pullIndicatorFrame } from './pullToRefresh';
 
 export interface PullToRefreshConfig {
   /** The scroller the finger pulls. It only arms while this is at its top. */
   scrollerRef: RefObject<HTMLElement | null>;
-  /** The indicator. Its `data-state` is `refreshing` while it holds a spinner. */
+  /** The indicator, painted to follow the finger. Whether it SPINS is its owner's. */
   indicatorRef: RefObject<HTMLElement | null>;
-  /** Called on a release past the threshold, unless a sync is already running. */
+  /** Called on a release past the threshold. Guarding a double refresh is its job. */
   onRefresh: () => void;
 }
-
-/** How long to hold the spinner for a sync that never reports starting. */
-const START_TIMEOUT_MS = 4000;
 
 /**
  * Pull the scroller down from its top, let go past the threshold, and it
@@ -29,8 +25,8 @@ const START_TIMEOUT_MS = 4000;
  *
  * The indicator is written straight to its node, never through state: a
  * render per touchmove is the jank DayBody and DayChips already measured and
- * designed out. Whether it is spinning follows the store's `isSyncing` through
- * a subscription, for the same reason.
+ * designed out. Only the pull is painted here; the spinner that follows the
+ * release is ordinary rendered state, once per refresh rather than per frame.
  */
 export function usePullToRefresh({ scrollerRef, indicatorRef, onRefresh }: PullToRefreshConfig) {
   useEffect(() => {
@@ -41,11 +37,6 @@ export function usePullToRefresh({ scrollerRef, indicatorRef, onRefresh }: PullT
     let start: { x: number; y: number } | null = null;
     let owned: boolean | null = null;
     let pull = 0;
-    // Whether the sync this spinner is waiting on has been seen running. The
-    // request is a postMessage round-trip, so `isSyncing` is still false for a
-    // tick after the release; only a true→false edge may end the spinner.
-    let sawSync = false;
-    let fallback: ReturnType<typeof setTimeout> | undefined;
 
     const paint = (dy: number | null) => {
       if (dy === null) {
@@ -58,11 +49,6 @@ export function usePullToRefresh({ scrollerRef, indicatorRef, onRefresh }: PullT
       indicator.style.transition = 'none';
       indicator.style.opacity = String(opacity);
       indicator.style.transform = `translateY(${y}px) rotate(${deg}deg)`;
-    };
-    const settle = () => {
-      clearTimeout(fallback);
-      sawSync = false;
-      delete indicator.dataset.state;
     };
     const reset = () => {
       start = null;
@@ -98,34 +84,14 @@ export function usePullToRefresh({ scrollerRef, indicatorRef, onRefresh }: PullT
     const onEnd = () => {
       const pulled = owned === true && pull >= PULL_REFRESH_THRESHOLD_PX;
       reset();
-      if (!pulled) return;
-      indicator.dataset.state = 'refreshing';
-      // A sync already running is the answer the student asked for: show it,
-      // and do not queue a second crawl behind it.
-      if (useAppStore.getState().syncStatus.isSyncing) {
-        sawSync = true;
-        return;
-      }
-      onRefresh();
-      clearTimeout(fallback);
-      fallback = setTimeout(() => {
-        if (!sawSync) settle();
-      }, START_TIMEOUT_MS);
+      if (pulled) onRefresh();
     };
-
-    const unsubscribe = useAppStore.subscribe((s, prev) => {
-      if (indicator.dataset.state !== 'refreshing') return;
-      if (s.syncStatus.isSyncing) sawSync = true;
-      else if (prev.syncStatus.isSyncing) settle();
-    });
 
     scroller.addEventListener('touchstart', onStart, { passive: true });
     scroller.addEventListener('touchmove', onMove, { passive: true });
     scroller.addEventListener('touchend', onEnd, { passive: true });
     scroller.addEventListener('touchcancel', reset, { passive: true });
     return () => {
-      unsubscribe();
-      clearTimeout(fallback);
       scroller.removeEventListener('touchstart', onStart);
       scroller.removeEventListener('touchmove', onMove);
       scroller.removeEventListener('touchend', onEnd);

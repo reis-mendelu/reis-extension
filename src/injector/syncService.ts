@@ -512,6 +512,43 @@ async function syncSubjectDetails(
   }
 }
 
+/**
+ * The calendar's refresh: the timetable and nothing else.
+ *
+ * The pull used to run the whole `user` sync — 109 IS requests and ~30s on a
+ * real account, where the schedule is 4 requests and ~3s. The rest (file
+ * folders, syllabi, classmates) is nothing the calendar shows, and its spinner
+ * waited for all of it.
+ *
+ * The three shapes are the full sync's, and for its reasons
+ * (syncScheduleEmpty.test): a non-empty read is data and arrival, `[]` is
+ * arrival only because IS answers "no lessons" and "failed" with the same
+ * bytes, and `null` is nothing, so the calendar can still reach ScreenError.
+ *
+ * `isSyncing` rides along unchanged: this is not a sync, and a background run
+ * that happens to be in flight must not be reported as finished by it.
+ */
+export async function refreshSchedule(): Promise<void> {
+  const value = await fetchFullSemesterSchedule();
+  if (!value) return;
+  if (value.length > 0) {
+    markFetched('schedule');
+    cachedData = { ...cachedData, schedule: value };
+    sendToIframe(
+      Messages.syncUpdate({
+        schedule: value,
+        loaded: ['schedule'],
+        isSyncing,
+        lastSync: cachedData.lastSync,
+      })
+    );
+    return;
+  }
+  sendToIframe(
+    Messages.syncUpdate({ loaded: ['schedule'], isSyncing, lastSync: cachedData.lastSync })
+  );
+}
+
 export async function refreshExams(): Promise<void> {
   const fresh = await fetchDualLanguageExams();
   if (fresh.length > 0) {

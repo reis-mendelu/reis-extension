@@ -1,6 +1,5 @@
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { syncService } from '../../../services/sync';
 
 /**
  * The calendar's refresh for whoever cannot pull: screen-reader only.
@@ -18,22 +17,22 @@ import { syncService } from '../../../services/sync';
  * calendar state, skeleton and error included — the same rule that keeps the
  * header actions reachable during a crawl.
  *
- * `triggerSync` is the `user` reason all the way down (mobile/actionHandler →
- * syncGate), which calls `resetSyncTtl()` and clears every freshness stamp, so
- * the 24h schedule TTL cannot swallow it.
+ * The same `triggerScheduleRefresh` the pull calls: the timetable only, which
+ * ignores the 24h schedule TTL and takes ~3s where the full sync took ~30s.
  *
  * Its own copy, not `course.freshness.refresh`: that one reads "Obnovit
  * soubory" / "Refresh files", which is a lie on the calendar.
  */
 export function RefreshButton() {
   const { t } = useTranslation();
-  const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
+  const refreshing = useAppStore((s) => s.scheduleRefreshing);
+  const refresh = useAppStore((s) => s.triggerScheduleRefresh);
 
   return (
     <button
       type="button"
-      onClick={() => syncService.triggerSync()}
-      disabled={isSyncing}
+      onClick={() => refresh()}
+      disabled={refreshing}
       aria-label={t('mobile.header.refresh')}
       className="sr-only"
     >

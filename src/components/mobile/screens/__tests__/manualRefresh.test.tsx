@@ -12,8 +12,9 @@ import type { ExamSubject } from '../../../../types/exams';
  * button for whoever cannot pull.
  *
  * The schedule TTL is 24h, so a student who sees yesterday's timetable has no
- * way to ask for today's — `trigger_sync` is the `user` reason, which clears
- * every freshness stamp and bypasses the schedule TTL entirely.
+ * way to ask for today's. Both routes call `refresh_schedule`, which fetches
+ * the timetable and nothing else — ~3s against a real account, where the full
+ * `trigger_sync` crawl it replaced took ~30s for data the calendar never shows.
  *
  * It was a visible circle on its own 24px row under the date (#370). That row
  * made the calendar header taller than every other tab's for a control used a
@@ -32,7 +33,6 @@ const LOADED = {
   handshakeDone: true,
   handshakeTimedOut: false,
 };
-const SYNCING = { ...LOADED, isSyncing: true };
 
 function examWithTerm(): ExamSubject {
   return {
@@ -67,6 +67,7 @@ function baseState(overrides: Record<string, unknown> = {}) {
     examClassmatesError: {},
     lastExamClassmatesFetchedAt: {},
     syncStatus: LOADED,
+    scheduleRefreshing: false,
     ...overrides,
   } as never);
 }
@@ -83,42 +84,54 @@ const FAR = PULL_REFRESH_THRESHOLD_PX + 20;
 
 describe('the calendar refresh', () => {
   let trigger: ReturnType<typeof vi.spyOn>;
+  let full: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-04-20T10:00:00'));
     baseState();
-    trigger = vi.spyOn(syncService, 'triggerSync').mockImplementation(() => undefined);
+    trigger = vi.spyOn(syncService, 'triggerScheduleRefresh').mockResolvedValue(undefined);
+    full = vi.spyOn(syncService, 'triggerSync').mockImplementation(() => undefined);
   });
   afterEach(() => {
     trigger.mockRestore();
+    full.mockRestore();
     vi.useRealTimers();
   });
 
-  it('pulling the day down past the threshold asks for a sync, once', () => {
+  it('pulling the day down past the threshold refreshes the schedule, once', () => {
     render(<CalendarScreen />);
     drag(screen.getByTestId('day-body'), 0, FAR);
     expect(trigger).toHaveBeenCalledTimes(1);
   });
 
-  it('shows a spinning indicator after the pull, and hides it when the sync ends', () => {
+  it('never runs the full sync — the calendar asks for the timetable only', () => {
+    render(<CalendarScreen />);
+    drag(screen.getByTestId('day-body'), 0, FAR);
+    fireEvent.click(screen.getByLabelText(REFRESH));
+    expect(full).not.toHaveBeenCalled();
+  });
+
+  it('spins while the schedule refresh runs, and stops when it answers', async () => {
+    let done!: () => void;
+    trigger.mockReturnValue(new Promise<void>((r) => (done = r)));
     render(<CalendarScreen />);
     const indicator = screen.getByTestId('pull-refresh-indicator');
     expect(indicator.dataset.state).toBeUndefined();
     drag(screen.getByTestId('day-body'), 0, FAR);
     expect(indicator.dataset.state).toBe('refreshing');
-    act(() => useAppStore.setState({ syncStatus: SYNCING } as never));
-    expect(indicator.dataset.state).toBe('refreshing');
-    act(() => useAppStore.setState({ syncStatus: LOADED } as never));
+    await act(async () => {
+      done();
+      await vi.advanceTimersByTimeAsync(0);
+    });
     expect(indicator.dataset.state).toBeUndefined();
   });
 
-  it('lets go of the indicator if the sync never starts', () => {
+  it('does not spin for the scheduled background sync', () => {
+    // The spinner answers the student's pull. A background run is not that.
+    baseState({ syncStatus: { ...LOADED, isSyncing: true } });
     render(<CalendarScreen />);
-    const indicator = screen.getByTestId('pull-refresh-indicator');
-    drag(screen.getByTestId('day-body'), 0, FAR);
-    act(() => vi.advanceTimersByTime(5000));
-    expect(indicator.dataset.state).toBeUndefined();
+    expect(screen.getByTestId('pull-refresh-indicator').dataset.state).toBeUndefined();
   });
 
   it('a short pull does nothing', () => {
@@ -149,8 +162,8 @@ describe('the calendar refresh', () => {
     expect(trigger).not.toHaveBeenCalled();
   });
 
-  it('a pull mid-sync starts no second sync', () => {
-    baseState({ syncStatus: SYNCING });
+  it('a pull mid-refresh starts no second refresh', () => {
+    baseState({ scheduleRefreshing: true });
     render(<CalendarScreen />);
     drag(screen.getByTestId('day-body'), 0, FAR);
     expect(trigger).not.toHaveBeenCalled();
@@ -182,8 +195,8 @@ describe('the calendar refresh', () => {
     expect(trigger).toHaveBeenCalledTimes(1);
   });
 
-  it('disables the screen-reader button while a sync is running', () => {
-    baseState({ syncStatus: SYNCING });
+  it('disables the screen-reader button while the refresh is running', () => {
+    baseState({ scheduleRefreshing: true });
     render(<CalendarScreen />);
     expect(screen.getByLabelText(REFRESH)).toBeDisabled();
   });

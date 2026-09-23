@@ -26,6 +26,7 @@ export interface MobileActionDeps {
     fallbackUrl?: string
   ): Promise<{ usedFallback: boolean }>;
   refreshExams(): Promise<void>;
+  refreshSchedule(): Promise<void>;
   syncAllData(): Promise<void>;
 }
 
@@ -58,6 +59,9 @@ export async function runMobileAction(
     }
     case 'refresh_exams':
       await deps.refreshExams();
+      return { success: true };
+    case 'refresh_schedule':
+      await deps.refreshSchedule();
       return { success: true };
     case 'trigger_sync':
       await deps.syncAllData();
@@ -117,6 +121,10 @@ export function installMobileActionHandler(): void {
     refreshExams: async () => {
       const { refreshExams } = await import('../injector/syncService');
       await refreshExams();
+    },
+    refreshSchedule: async () => {
+      const { refreshSchedule } = await import('../injector/syncService');
+      await refreshSchedule();
     },
     syncAllData: async () => {
       // 'user': a refresh the student asked for, so it skips the foreground

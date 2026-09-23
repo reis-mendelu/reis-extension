@@ -9,6 +9,7 @@ function deps(over: Partial<MobileActionDeps> = {}): MobileActionDeps {
   return {
     downloadDocument: vi.fn(async () => ({ usedFallback: false })),
     refreshExams: vi.fn(async () => {}),
+    refreshSchedule: vi.fn(async () => {}),
     syncAllData: vi.fn(async () => {}),
     ...over,
   };
@@ -60,6 +61,13 @@ describe('runMobileAction', () => {
     expect(await runMobileAction('trigger_sync', {}, d)).toEqual({ success: true });
     expect(d.refreshExams).toHaveBeenCalledOnce();
     expect(d.syncAllData).toHaveBeenCalledOnce();
+  });
+
+  it('routes refresh_schedule to the schedule-only refresh, not the full sync', async () => {
+    const d = deps();
+    expect(await runMobileAction('refresh_schedule', {}, d)).toEqual({ success: true });
+    expect(d.refreshSchedule).toHaveBeenCalledOnce();
+    expect(d.syncAllData).not.toHaveBeenCalled();
   });
 
   it.each(['open_url', 'logout', 'download_file'])(

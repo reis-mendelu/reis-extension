@@ -263,10 +263,18 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
   triggerExamsRefresh: () => {
     if (get().examsRefreshing) return;
     set({ examsRefreshing: true });
-    syncService.triggerExamRefresh();
-    setTimeout(() => {
+    // Ends on the refresh's ANSWER. Waiting for `setExams` instead meant a
+    // student with no exams this month — an empty read pushes nothing — spun
+    // for the full 15s after a lookup that took 0.6s. The timer stays as the
+    // backstop for an answer that never comes.
+    const stop = () => {
       if (get().examsRefreshing) set({ examsRefreshing: false });
-    }, 15_000);
+    };
+    syncService
+      .triggerExamRefresh()
+      .catch((e) => logError('ExamSlice.triggerExamsRefresh', e))
+      .finally(stop);
+    setTimeout(stop, 15_000);
   },
   setExams: (data) => {
     // A transient/failed IS fetch resolves to [] (see fetchExamData), and a

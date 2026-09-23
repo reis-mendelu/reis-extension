@@ -1,6 +1,7 @@
 import type { ScheduleSlice, AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
 import { logError } from '../../utils/reportError';
+import { syncService } from '../../services/sync/SyncService';
 
 export const createScheduleSlice: AppSlice<ScheduleSlice> = (set, get) => ({
   schedule: {
@@ -29,5 +30,25 @@ export const createScheduleSlice: AppSlice<ScheduleSlice> = (set, get) => ({
     set((state) => ({
       schedule: { ...state.schedule, data: data || [] },
     }));
+  },
+  scheduleRefreshing: false,
+  /**
+   * The calendar's refresh: the timetable only, ~3s, where the full sync it
+   * replaced was ~30s of data the calendar never shows. Ends on the refresh's
+   * answer rather than on data, the same contract as `triggerExamsRefresh`,
+   * because an empty read pushes no data at all. The timer is the backstop for
+   * an answer that never comes.
+   */
+  triggerScheduleRefresh: () => {
+    if (get().scheduleRefreshing) return;
+    set({ scheduleRefreshing: true });
+    const stop = () => {
+      if (get().scheduleRefreshing) set({ scheduleRefreshing: false });
+    };
+    syncService
+      .triggerScheduleRefresh()
+      .catch((e) => logError('ScheduleSlice.triggerScheduleRefresh', e))
+      .finally(stop);
+    setTimeout(stop, 15_000);
   },
 });
