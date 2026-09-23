@@ -17,6 +17,28 @@ The extension uses a **push-based postMessage IPC** for its injected host. There
 | Iframe bootstrap | `entrypoints/main/main.tsx` → `hooks/useAppLogic.ts` | IDB hydration → signal `REIS_READY` → listen for `REIS_SYNC_UPDATE` |
 | Skeleton guard | `store/slices/createSyncSlice.ts` | `handshakeDone` / `handshakeTimedOut` (10s) unblock skeletons |
 
+## Storage is split across TWO origins
+
+`IndexedDBService` is one module, but IndexedDB is origin-scoped and this
+extension runs it in two places:
+
+| Context | Origin | What it stores there |
+|---|---|---|
+| Iframe app | `chrome-extension://<id>` | everything the UI hydrates from |
+| Content script | `https://is.mendelu.cz` | `meta.reis_user_params`, `classmates`, `past_semester_*` (written by `injector/syncService.ts` and `utils/userParams.ts`, which run in BOTH contexts) |
+
+So `reis_db` is two databases with the same name, and neither can read or
+clear the other. Consequences that have already cost a bug:
+
+- A wipe from the iframe (`proxyClient.logout()` → `IndexedDBService.clearAll()`)
+  empties the iframe's half only. The host-origin half is cleared by
+  `injector/hostSignOut.ts`, which is the only context that can.
+- Uninstalling the extension does **not** clear the host-origin half: that
+  storage belongs to is.mendelu.cz, not to the extension.
+- Anything that must hold for "the student's data is gone" has to be done in
+  both contexts, or in a module that runs in both — `getUserParams()`'s
+  identity check is the latter.
+
 ## Sync scheduling (IS Mendelu, shared with the mobile app)
 
 `syncAllData` is never called directly — every trigger goes through

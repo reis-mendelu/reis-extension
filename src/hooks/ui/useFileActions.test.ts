@@ -115,4 +115,130 @@ describe('useFileActions', () => {
       expect(await result.current.openPdfInline('https://is.mendelu.cz/x.pdf')).toBeNull();
     });
   });
+  /**
+   * The gap this suite exists to close: tapping the row's download button used
+   * to set no state at all, so on a slow IS connection nothing moved between
+   * the tap and the file appearing — "there's no loading so it seems the button
+   * is not working". The row, not a global flag, is where the student is
+   * looking, so the state is keyed by the row's link.
+   */
+  describe('downloadSingle progress', () => {
+    it('publishes progress for the row being downloaded and clears it when done', async () => {
+      let release: (r: unknown) => void = () => {};
+      global.fetch = vi.fn(
+        () =>
+          new Promise((resolve) => {
+            release = resolve;
+          })
+      ) as unknown as typeof fetch;
+
+      const { result } = renderHook(() => useFileActions());
+
+      let pending!: Promise<void>;
+      act(() => {
+        pending = result.current.downloadSingle('link1');
+      });
+
+      expect(result.current.activeDownloads['link1']).toEqual({ loaded: 0, total: null });
+      // The header's bulk button shares the busy flag: one download at a time.
+      expect(result.current.isDownloading).toBe(true);
+
+      await act(async () => {
+        release({
+          ok: true,
+          blob: async () => new Blob(['pdf']),
+          headers: new Map([['content-disposition', 'attachment; filename="a.pdf"']]),
+        });
+        await pending;
+      });
+
+      expect(result.current.activeDownloads['link1']).toBeUndefined();
+      expect(result.current.isDownloading).toBe(false);
+    });
+
+    it('carries real byte counts when IS declares a Content-Length', async () => {
+      const chunks = [new Uint8Array([1, 2, 3, 4, 5]), new Uint8Array([6, 7, 8, 9, 10])];
+      let i = 0;
+      // The second chunk is held back so the test can observe a COMMITTED
+      // mid-stream render. Without the gate React batches the whole download
+      // into one commit and every intermediate tick is invisible — which is
+      // also what a student would see if the ticks never reached state.
+      let releaseSecond: () => void = () => {};
+      const secondChunk = new Promise<void>((resolve) => {
+        releaseSecond = resolve;
+      });
+
+      global.fetch = vi.fn(async () => ({
+        ok: true,
+        headers: new Headers({ 'content-length': '10' }),
+        body: {
+          getReader: () => ({
+            read: async () => {
+              if (i === 1) await secondChunk;
+              return i < chunks.length
+                ? { done: false, value: chunks[i++] }
+                : { done: true, value: undefined };
+            },
+          }),
+        },
+        blob: async () => new Blob(chunks as BlobPart[]),
+      })) as unknown as typeof fetch;
+
+      const { result } = renderHook(() => useFileActions());
+
+      let pending!: Promise<void>;
+      await act(async () => {
+        pending = result.current.downloadSingle('link1');
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      expect(result.current.activeDownloads['link1']).toEqual({ loaded: 5, total: 10 });
+
+      await act(async () => {
+        releaseSecond();
+        await pending;
+      });
+
+      expect(result.current.activeDownloads['link1']).toBeUndefined();
+    });
+
+    it('ignores a second tap on a row already downloading', async () => {
+      let release: (r: unknown) => void = () => {};
+      global.fetch = vi.fn(
+        () =>
+          new Promise((resolve) => {
+            release = resolve;
+          })
+      ) as unknown as typeof fetch;
+      const { result } = renderHook(() => useFileActions());
+
+      let first!: Promise<void>;
+      let second!: Promise<void>;
+      act(() => {
+        first = result.current.downloadSingle('link1');
+        second = result.current.downloadSingle('link1');
+      });
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        release({ ok: true, blob: async () => new Blob(['pdf']), headers: new Map() });
+        await Promise.all([first, second]);
+      });
+    });
+
+    it('clears the row even when the download fails', async () => {
+      global.fetch = vi.fn().mockRejectedValue(new Error('network down'));
+      window.open = vi.fn();
+      const { result } = renderHook(() => useFileActions());
+
+      await act(async () => {
+        await result.current.downloadSingle('link1');
+      });
+
+      // A row stuck spinning forever is worse than the missing spinner was.
+      expect(result.current.activeDownloads['link1']).toBeUndefined();
+      expect(result.current.isDownloading).toBe(false);
+    });
+  });
 });

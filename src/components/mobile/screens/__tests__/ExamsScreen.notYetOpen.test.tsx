@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { ExamsScreen } from '../ExamsScreen';
 import { useAppStore } from '../../../../store/useAppStore';
 import type { ExamSubject } from '../../../../types/exams';
@@ -35,7 +35,7 @@ describe('exams that have not opened for registration yet', () => {
     });
   });
 
-  it('lists them in their own group with the date they open', () => {
+  it('lists them in their own group, with the date on the term the date belongs to', () => {
     useAppStore.setState({
       exams: {
         data: [
@@ -64,10 +64,17 @@ describe('exams that have not opened for registration yet', () => {
     render(<ExamsScreen />);
 
     expect(screen.getByText('Ještě neotevřené')).toBeInTheDocument();
-    expect(screen.getByText(/otevírá se/)).toBeInTheDocument();
-    expect(screen.getByText(/1\. 12\./)).toBeInTheDocument();
     // And it is no longer counted among the bookable ones.
     expect(screen.queryByText('Otevřené termíny')).not.toBeInTheDocument();
+
+    // The opening moment belongs to the term, not to the section: one section
+    // hands out terms that open on different days. It therefore rides in the
+    // term row's trailing slot — the same slot the register button will take
+    // once IS opens it — and appears when the card is opened.
+    expect(screen.queryByText(/otevírá se/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Ekonometrie 1/ }));
+    expect(screen.getByText('otevírá se')).toBeInTheDocument();
+    expect(screen.getByText('1. 12. 8:00')).toBeInTheDocument();
   });
 
   it('leaves a section that really is open where it was', () => {

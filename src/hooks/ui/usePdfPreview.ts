@@ -45,8 +45,15 @@ export interface PdfPreviewSubject {
  * same anchors) falls back to the download rather than opening an empty viewer.
  */
 export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) {
-  const { openFile, openPdfInline, fetchPdfBlob, downloadSingle, isDownloading, downloadProgress } =
-    useFileActions();
+  const {
+    openFile,
+    openPdfInline,
+    fetchPdfBlob,
+    downloadSingle,
+    isDownloading,
+    downloadProgress,
+    activeDownloads,
+  } = useFileActions();
   const { t } = useTranslation();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewFile, setPreviewFile] = useState<PdfPreviewFile | null>(null);
@@ -55,6 +62,10 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
   // year and no caller ever read it, so a tap on a file showed nothing at all
   // while a whole PDF came down the IS session.
   const [openingLink, setOpeningLink] = useState<string | null>(null);
+  // Row downloads are NOT tracked here. `useFileActions.activeDownloads` does
+  // it, per link and with byte counts where the transport has them — and ends
+  // on `onFetched`, before iOS opens the share sheet. A wrapper here awaited
+  // `downloadSingle` whole, so it spun on through the student's own dialog.
 
   // Blob URLs are held by the document until revoked; a drawer opened and
   // closed a dozen times would otherwise pin every PDF it ever showed in memory.
@@ -163,5 +174,8 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
     downloadSingle,
     isDownloading,
     downloadProgress,
+    // The phone and tablet render the same FileList as the desktop drawer, so
+    // the row indicator is one wiring, not three.
+    activeDownloads,
   };
 }

@@ -46,6 +46,11 @@ export function drawRoomRouteChip(
   // points at the room instead of labelling it, and the name stays readable.
   const bounds = room.getBounds();
   const marker = L.marker(L.latLng(bounds.getNorth(), bounds.getCenter().lng), {
+    // Above the event pins (their pane is 640; Leaflet's marker pane is 600).
+    // The student just asked for this by tapping the room, and a pin standing
+    // near it would otherwise hide the offer — the same call the walk's time
+    // chip makes. See mapPanes.ts.
+    pane: 'tooltipPane',
     // A press must not also reach the map, whose tap-away clears the very
     // selection this chip belongs to — the same trap the garden bubbles
     // document, and it would close the room in the gesture that asked for it.

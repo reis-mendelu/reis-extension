@@ -1,5 +1,4 @@
 import type { StateCreator } from 'zustand';
-import type { PreferredMapApp } from '../utils/venueMapUrl';
 import type { BlockLesson, HiddenItems, CalendarCustomEvent } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
 import type { SyncDomain } from '../types/messages/base';
@@ -487,8 +486,6 @@ export interface MobileUiSlice {
   /** Whether the tablet rail is showing. A rail has exactly two states — the
    *  sheet's three detents are a phone answer to a phone problem. */
   mapRailOpen: boolean;
-  /** Which map app a venue opens in, remembered across launches. `null` asks. */
-  preferredMapApp: PreferredMapApp;
   /** Dev-only forced phone/desktop branch. null = defer to viewport. */
   devPhoneOverride: boolean | null;
   /**
@@ -517,8 +514,6 @@ export interface MobileUiSlice {
   setMapSheetState: (state: MapSheetState) => void;
   setMapRailWidth: (px: number) => void;
   setMapRailOpen: (open: boolean) => void;
-  loadPreferredMapApp: () => Promise<void>;
-  setPreferredMapApp: (app: PreferredMapApp) => Promise<void>;
   setDevPhoneOverride: (value: boolean | null) => void;
 }
 
@@ -526,12 +521,6 @@ export interface MapSlice {
   activeBuildingId: number | null;
   activeFloorId: number | null;
   mapSelection: MapSelection | null;
-  /**
-   * The two halves of "how do I get to my building": the gate the student came
-   * in by, and the building they picked. Both null means the question has not
-   * been asked; an entrance with no building means it is half asked, which is
-   * when the buildings light up as choices.
-   */
   roomsByBuilding: Record<number, RoomsCollection>;
   mapLoadingBuilding: number | null;
   mapSearchQuery: string;
@@ -541,9 +530,6 @@ export interface MapSlice {
   exitToCampus: () => void;
   /** Clear the current selection (close the detail panel) without moving the camera — bare-map click in campus overview. */
   clearMapSelection: () => void;
-  /** Pick the gate. Picking a different one reopens the building question. */
-  /** Pick the building, once a gate is chosen. */
-  /** Step back one: drop the building if one is picked, otherwise the gate. */
   setMapFloor: (floorId: number) => void;
   selectMapRoom: (room: RoomProperties) => void;
   selectMapPoi: (poi: PoiProperties, coord: [number, number]) => void;

@@ -24,6 +24,7 @@ import { roomLabelsHidden } from './roomLabels';
 import { drawRoomRouteChip, chipShown, clampRoomChip } from './roomRouteChip';
 import { translate } from '../../i18n/translate';
 import { setMapInstance } from './mapInstance';
+import { LABELS_PANE } from './mapPanes';
 import { roomFocusView } from './focusBounds';
 import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
 
@@ -209,6 +210,7 @@ export function MapCanvas() {
             permanent: true,
             direction: 'center',
             className: 'building-label',
+            pane: LABELS_PANE,
           })
           .addTo(layer);
         buildingPolysRef.current.set(b.name, poly);
@@ -350,6 +352,7 @@ export function MapCanvas() {
           permanent: true,
           direction: 'center',
           className: 'building-label',
+          pane: LABELS_PANE,
         })
         .addTo(layer);
     }
@@ -409,6 +412,10 @@ export function MapCanvas() {
             permanent: big,
             direction: 'center',
             className: big ? 'room-label' : '',
+            // A permanent number is annotation and belongs under whatever is
+            // drawn on top of the map; the hover one was asked for, so it stays
+            // on top.
+            pane: big ? LABELS_PANE : 'tooltipPane',
           });
         }
       }

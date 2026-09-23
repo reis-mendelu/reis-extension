@@ -37,8 +37,8 @@ describe('findForbiddenWebBuildVars', () => {
   });
 
   // This used to be "ignores unrelated VITE_ variables it does not know
-  // about" — a denylist hole: .env.example names VITE_GEMINI_API_KEY and
-  // VITE_GOOGLE_CLIENT_ID, and neither would ever have appeared in
+  // about" — a denylist hole: .env.example used to name VITE_GEMINI_API_KEY
+  // and VITE_GOOGLE_CLIENT_ID, and neither would ever have appeared in
   // FORBIDDEN_EXACT / FORBIDDEN_PREFIXES. The script is an allowlist now, so
   // any VITE_ variable the build doesn't explicitly need is rejected.
   it('rejects any VITE_ variable that is not on the allowlist', () => {
@@ -47,7 +47,7 @@ describe('findForbiddenWebBuildVars', () => {
     ]);
   });
 
-  it('rejects VITE_ variables named in .env.example that the web build does not use', () => {
+  it('rejects VITE_ variables from elsewhere in the repo that the web build does not use', () => {
     expect(
       findForbiddenWebBuildVars({
         VITE_GEMINI_API_KEY: 'key',

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useAppStore } from '../../../store/useAppStore';
 import { ScreenError } from '../primitives/ScreenError';
+import { RefreshButton } from '../primitives/RefreshButton';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useSchedule } from '../../../hooks/data/useSchedule';
 import { resolveNowNext } from '../../../utils/mobile/nowNext';
@@ -11,6 +12,7 @@ import { isOutsideTeaching } from '../../../utils/mobile/teachingPeriod';
 import { semesterStart } from '../../../utils/mobile/semesterStart';
 import { defaultCalendarDay } from '../../../utils/mobile/landingDay';
 import { roomCodeFor, routeSuggestionFor } from '../../../utils/mobile/lessonActions';
+import { customEventToLesson } from '../../../utils/customEventLesson';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { NowNextCard } from './calendar/NowNextCard';
 import { DayChips } from './calendar/DayChips';
@@ -36,6 +38,7 @@ export function CalendarScreen() {
   const syncLoaded = useAppStore((s) => s.syncLoaded);
   const hiddenItems = useAppStore((s) => s.hiddenItems);
   const teachingWeekData = useAppStore((s) => s.teachingWeekData);
+  const customEvents = useAppStore((s) => s.customEvents);
 
   // The vývěska is no longer mounted here. It was a portal owned by this one
   // screen while the button that opens it ships with every screen's header, so
@@ -64,7 +67,21 @@ export function CalendarScreen() {
   const visibleSchedule = schedule.filter((l) => !isLessonHidden(l, hiddenItems));
   const defaultIso = defaultCalendarDay(visibleSchedule, teachingWeekData, new Date());
   const selectedIso = mobileSelectedDayIso ?? defaultIso;
-  const lessonDates = new Set(visibleSchedule.map((l) => l.date));
+  // The student's own entries — a society event they answered "Mám zájem" to,
+  // or one they typed in themselves. The desktop grid has merged these since it
+  // shipped; the phone never did, so every one of them was written, persisted
+  // and invisible.
+  //
+  // Merged HERE and not into `schedule`, which is deliberate and load-bearing.
+  // `schedule` answers "did the IS crawl deliver?", and the sync gates below
+  // read it as exactly that: an RSVP block in it would suppress the skeleton
+  // and the error state, so a failed sync would render as a successful one
+  // holding a single society event. For the same reason it stays out of
+  // `semesterStart` (a party is not the first teaching day) and out of
+  // `defaultCalendarDay` (the calendar must still open on a teaching day).
+  const customLessons = customEvents.map(customEventToLesson);
+  const dayLessons = [...visibleSchedule, ...customLessons];
+  const lessonDates = new Set(dayLessons.map((l) => l.date));
   const chrome = (
     <>
       {/* The date IS the title, and the eyebrow stays empty. It was the
@@ -74,7 +91,19 @@ export function CalendarScreen() {
           week and which day this is. The way back to today is not here
           either: the header is full at a date and three actions (see
           TodayPill), so it floats above the tab bar instead. */}
-      <ScreenHeader title={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale)} />
+      {/* The refresh circle gets the shortest row there is — 24px of button,
+          right-aligned under the date. The schedule TTL is 24h, so without it
+          a student looking at a stale week has no way to ask for this one, and
+          the day strip is not available for it: collecting controls into a
+          pill on the right of that row was tried and rejected (DayChips). */}
+      <ScreenHeader
+        title={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale)}
+        below={
+          <div className="-mt-1 flex justify-end">
+            <RefreshButton />
+          </div>
+        }
+      />
     </>
   );
   const shell = (body: ReactNode) => (
@@ -123,8 +152,11 @@ export function CalendarScreen() {
   }
 
   const now = new Date();
-  const nowNext = resolveNowNext(schedule, now);
-  const agenda = buildDayAgenda(visibleSchedule, selectedIso);
+  // Custom events count here too: an event starting at seven that the student
+  // said they would go to IS their next thing, and leaving it out would be the
+  // same surprise as leaving it off the agenda, one card higher up.
+  const nowNext = resolveNowNext(dayLessons, now);
+  const agenda = buildDayAgenda(dayLessons, selectedIso);
   // The util has existed since the desktop calendar shipped; the phone simply
   // never asked. Without it a public holiday reads as an ordinary free day —
   // "Nic nemáš, pohodička" over 28 September.

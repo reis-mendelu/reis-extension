@@ -2,6 +2,8 @@ import campusPaths from '../../data/map/campusPaths.json';
 import type { CampusGraph } from '../../types/campusMap';
 import { snapToGraph } from './snapToGraph';
 import { shortestWalk } from './shortestWalk';
+import { isGateOpen } from './gateHours';
+import { devForcedNow } from './devPosition';
 
 const GRAPH = (campusPaths as unknown as { graph: CampusGraph }).graph;
 
@@ -32,9 +34,11 @@ const GRAPH = (campusPaths as unknown as { graph: CampusGraph }).graph;
  * so no walk to it exists from anywhere, and asking about the student's own
  * lecture keeps the offer honest rather than merely plausible.
  *
- * Every gate open, matching `routeTo` — while the walk itself is being
- * perfected the hours are not consulted, and a gate that said yes here and no
- * on the press would be the same dead press by another road.
+ * The garden's hours count here exactly as they do in `routeTo`: a gate that
+ * said yes here and no on the press would be the same dead press by another
+ * road. So at night FRRMS, which reaches campus only through the garden, is
+ * not offered a walk. Asked when the offer is made, not continuously, so it
+ * does not flicker while the student looks at it.
  *
  * `null` is not a no. No fix means the student was never asked for their
  * location, and hiding the offer on a guess would take the feature away from
@@ -44,5 +48,7 @@ export function canRouteFrom(at: [number, number] | null, buildingName: string):
   if (!at) return true;
   const snap = snapToGraph(GRAPH, at);
   if (!snap) return false;
-  return shortestWalk(GRAPH, snap, GRAPH.buildings[buildingName] ?? [], () => true) !== null;
+  const now = devForcedNow() ?? new Date();
+  const isOpen = (gate: string) => isGateOpen(gate, now);
+  return shortestWalk(GRAPH, snap, GRAPH.buildings[buildingName] ?? [], isOpen) !== null;
 }

@@ -27,6 +27,21 @@ const FRRMS: [number, number] = [16.614118, 49.218161];
 let logLines: string[] = [];
 const logged = () => logLines.join(' | ');
 
+/** A Wednesday morning, garden open (po–pá 6:00–20:00). */
+const WEEKDAY_MORNING = new Date('2026-09-23T10:00:00');
+/** 23:14 on a Sunday — the clock the garden walk was first seen failing at. */
+const SUNDAY_NIGHT = new Date('2026-09-27T23:14:00');
+
+// The router AND the offer read the garden's hours, so every block in this file
+// depends on the clock. Pinned here, at file level, or the file would pass by
+// day and fail in a night-time CI run. Date only — the slice's own awaits still
+// run on real timers. A test that needs the night sets it itself.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(WEEKDAY_MORNING);
+});
+afterEach(() => vi.useRealTimers());
+
 describe('createRouteSlice', () => {
   beforeEach(() => {
     currentPosition.mockReset();
@@ -133,17 +148,28 @@ describe('createRouteSlice', () => {
     expect(useAppStore.getState().routeStatus).toBe('failed');
   });
 
-  it('walks through the garden at midnight on a Sunday', async () => {
-    // The gate hours are not consulted at all while the walk itself is being
-    // perfected: a closed garden used to be the difference between a route and
-    // a tram sentence, and the tram sentence is one of the messages that went.
-    // FRRMS, 23:14 on a Sunday — the exact position and clock this failed at on
-    // the device.
+  // Open hours: the garden is the short way from FRRMS, and the walk takes it.
+  it('walks through the garden while it is open', async () => {
     currentPosition.mockResolvedValue(FRRMS);
     await useAppStore.getState().routeTo('Q');
     const s = useAppStore.getState();
     expect(s.routeStatus).toBe('ready');
     expect(s.routeWalk!.gates).toContain('garden');
+  });
+
+  /**
+   * And never once it is shut. For a while the hours were not consulted at
+   * all, and at 23:14 on a Sunday this drew a walk through a garden nobody can
+   * enter — a line on the map reads as an instruction. The gate is closed to
+   * the router now; where there is no other way, there is no walk, and the
+   * reason goes to the log with the other failures.
+   */
+  it('never walks through the garden once it is shut', async () => {
+    vi.setSystemTime(SUNDAY_NIGHT);
+    currentPosition.mockResolvedValue(FRRMS);
+    await useAppStore.getState().routeTo('Q');
+    const s = useAppStore.getState();
+    expect(s.routeWalk?.gates ?? []).not.toContain('garden');
   });
 
   it('shows it is working while the fix is in flight', async () => {

@@ -6,14 +6,12 @@ import { shortestWalk, type Walk } from '../../utils/routing/shortestWalk';
 import { currentPosition } from '../../utils/routing/position';
 import { quietPosition } from '../../utils/routing/quietPosition';
 import { canRouteFrom } from '../../utils/routing/routableStart';
+import { isGateOpen } from '../../utils/routing/gateHours';
+import { devForcedNow } from '../../utils/routing/devPosition';
 import type { RouteTarget } from '../../utils/routing/nextLessonTarget';
 import { logError } from '../../utils/reportError';
 
 const GRAPH = (campusPaths as unknown as { graph: CampusGraph }).graph;
-
-/** The gate predicate the router takes, answering yes to all of them. Named so
- *  the call site reads as a decision rather than as a stray `() => true`. */
-const ALL_GATES_OPEN = () => true;
 
 /**
  * Four states, and only two of them reach the screen.
@@ -178,15 +176,16 @@ export const createRouteSlice: AppSlice<RouteSlice> = (set, get) => ({
       return;
     }
 
-    // EVERY gate open, whatever the clock says. The garden's hours
-    // (po–pá 6:00–20:00) are real and `gateHours` still knows them, but they
-    // are not consulted while the walk is being perfected: a shut garden is
-    // the difference between a line and a sentence about tram 9, and the
-    // sentence is one of the things that went. Measured consequence, recorded
-    // so it is not rediscovered as a surprise — at 23:14 on a Sunday this now
-    // draws a walk through a garden nobody can enter.
+    // The garden's hours are consulted (po–pá 6:00–20:00, ISIC at the gate —
+    // see gateHours.ts). For a while they were not, and at 23:14 on a Sunday
+    // this drew a walk through a garden nobody can enter; a line on the map
+    // reads as an instruction. A shut gate is simply not an edge: the walk
+    // goes around it where there is a way, and where there is none — FRRMS at
+    // night — there is no walk, and the reason goes to the log below with the
+    // other failures. The tram sentence that once explained it is not back.
+    const now = devForcedNow() ?? new Date();
     const targets = GRAPH.buildings[buildingName] ?? [];
-    const walk = shortestWalk(GRAPH, snap, targets, ALL_GATES_OPEN);
+    const walk = shortestWalk(GRAPH, snap, targets, (gate) => isGateOpen(gate, now));
     if (!walk) {
       logError('RouteSlice.route', new Error(`no walk to ${buildingName}`));
       set({ routeFrom: at, routeStatus: 'failed' });

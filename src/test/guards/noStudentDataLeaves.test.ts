@@ -68,6 +68,23 @@ const SUPABASE_CALLERS = new Set([
   'src/services/spolky/spolkyService.ts',
   // Reads the public society events feed. No student data in either direction.
   'src/api/mapEvents.ts',
+  // Two feature counters, added September 2026, both disclosed in PRIVACY.md
+  // section 2 and docs/privacy-policy-app.md BEFORE this entry was added.
+  //
+  // `track_feature_usage` sends the random per-install UUID and one label from
+  // a three-value whitelist enforced in the database ('map_dwell_3s',
+  // 'eduroam_wifi_configured', 'eduroam_profile_delivered'). Same identifier
+  // and same posture as `feedback.ts`: it counts INSTALLS, not people.
+  //
+  // `increment_event_map_view` sends a society event's row id and NO
+  // identifier whatsoever — the same shape `increment_post_view` has always
+  // had in spolkyService.ts.
+  //
+  // What makes this safe to allow is that the two are deliberately kept
+  // unjoinable: nothing anywhere records which event a given install looked
+  // at. That pairing would be a behavioural profile, and no payload here can
+  // express it.
+  'src/api/featureUsage.ts',
 ]);
 
 /**

@@ -57,10 +57,13 @@ describe('ZameraniComparisonCard fail-rate label', () => {
     fireEvent.click(screen.getByText('Vývoj webových aplikací'));
   };
 
-  it('names the rate on each subject row', () => {
+  it('keeps the number bare, with the words said once per page instead', () => {
+    // `FailRateLegend` now sits above this card and captions it, so spelling
+    // the same words out on every row made one screen say it twice. What #265
+    // forbade was a label a finger could never reach; a legend is not that.
     openFirstZamerani();
 
-    expect(screen.getAllByText(LABEL)).toHaveLength(2);
+    expect(screen.queryByText(LABEL)).not.toBeInTheDocument();
   });
 
   it('keeps the number itself', () => {
@@ -70,13 +73,11 @@ describe('ZameraniComparisonCard fail-rate label', () => {
     expect(screen.getByText('0%')).toBeInTheDocument();
   });
 
-  it('does not hide the label behind a hover', () => {
+  it('still names the rate for a pointer and a screen reader', () => {
     openFirstZamerani();
 
-    for (const label of screen.getAllByText(LABEL)) {
-      expect(label.className).not.toContain('opacity-0');
-      expect(label.className).not.toContain('max-w-0');
-    }
+    expect(screen.getByLabelText(`${LABEL} 11 %`)).toBeInTheDocument();
+    expect(screen.getByLabelText(`${LABEL} 0 %`)).toBeInTheDocument();
   });
 
   // A subject with no statistics shows an em dash. There is no rate, so there

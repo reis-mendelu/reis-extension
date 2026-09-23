@@ -29,7 +29,6 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
   mapSheetState: 'peek',
   mapRailWidth: RAIL_PX,
   mapRailOpen: true,
-  preferredMapApp: null,
   devPhoneOverride: null,
   welcomeSeen: null,
   externalOpening: false,
@@ -97,18 +96,5 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
   setMapRailWidth: (px) => set({ mapRailWidth: clampRailWidth(px, window.innerWidth) }),
   setMapRailOpen: (open) => set({ mapRailOpen: open }),
 
-  // Read at boot, like the theme and the language. A venue tap is a one-tap
-  // action; asking it to await IndexedDB would put a frame of "ask" in front of
-  // a student who had already answered.
-  loadPreferredMapApp: async () => {
-    const saved = await IndexedDBService.get('meta', 'preferred_map_app');
-    if (saved === 'apple' || saved === 'google') set({ preferredMapApp: saved });
-  },
-  // State first, storage second: the sheet must close on the tap, and a failed
-  // write costs the student one extra ask next time rather than the journey.
-  setPreferredMapApp: async (app) => {
-    set({ preferredMapApp: app });
-    await IndexedDBService.set('meta', 'preferred_map_app', app);
-  },
   setDevPhoneOverride: (value) => set({ devPhoneOverride: value }),
 });

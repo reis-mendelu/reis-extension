@@ -74,12 +74,22 @@ describe('SemesterCard fail rate', () => {
     } as never);
   });
 
-  it('reads "Neúspěšnost: 28 %", so the number needs no legend', () => {
+  it('shows the bare number and explains it once, in a legend over the list', () => {
     // 28 of 100 fail.
     seedRate('EBC-PSI', 72, 28);
     render(<SemesterCard enrolled={[enrolledOf(subj())]} semester={3} onOpenSubject={() => {}} />);
-    // The whole label, not a bare number: "Neúspěšnost: 28 %".
-    expect(screen.getByTestId('subject-fail-rate')).toHaveTextContent(/Neúspěšnost:\s*28\s*%/i);
+    // The words used to ride on every row — "Prům. neúspěšnost: 28 %" — which
+    // at 320px was most of the row, and described the same figure differently
+    // from the study plan. The plan's bargain applies here too: number on the
+    // row, words once above it.
+    expect(screen.getByTestId('subject-fail-rate')).toHaveTextContent(/^\s*28\s*%\s*$/);
+    expect(screen.getByTestId('fail-rate-legend')).toBeInTheDocument();
+    expect(screen.getByLabelText(/Prům. neúspěšnost:\s*28\s*%/i)).toBeInTheDocument();
+  });
+
+  it('leaves the legend out when no row carries a number to explain', () => {
+    render(<SemesterCard enrolled={[enrolledOf(subj())]} semester={3} onOpenSubject={() => {}} />);
+    expect(screen.queryByTestId('fail-rate-legend')).not.toBeInTheDocument();
   });
 
   it('shows nothing where there is no data for the subject', () => {

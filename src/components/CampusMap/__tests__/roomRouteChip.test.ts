@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import L from 'leaflet';
 import { drawRoomRouteChip, chipShown, chipShiftPx } from '../roomRouteChip';
+import { EVENTS_PANE, LEAFLET_PANE_Z, REIS_PANE_Z } from '../mapPanes';
 
 const room = () =>
   L.polygon([
@@ -65,6 +66,18 @@ describe('drawRoomRouteChip', () => {
     const at = (layer.getLayers()[0] as L.Marker).getLatLng();
     expect(at.lat).toBeCloseTo(poly.getBounds().getNorth(), 6);
     expect(at.lng).toBeCloseTo(poly.getBounds().getCenter().lng, 6);
+  });
+
+  it('stays above the event pins — the student just asked for it', () => {
+    // The event pins were lifted into their own pane at 640, above Leaflet's
+    // marker pane (600). A divIcon marker left in the default pane would sit
+    // UNDER any pin near the tapped room, hiding the offer the tap produced.
+    // Same decision the walk's time chip made: what the student asked for is
+    // drawn above what they did not.
+    const layer = L.layerGroup();
+    drawRoomRouteChip(layer, room(), 'Najdi cestu', vi.fn());
+    expect((layer.getLayers()[0] as L.Marker).options.pane).toBe('tooltipPane');
+    expect(LEAFLET_PANE_Z.tooltip).toBeGreaterThan(REIS_PANE_Z[EVENTS_PANE]);
   });
 });
 

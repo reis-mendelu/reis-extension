@@ -1,5 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { canRouteFrom } from '../routableStart';
+
+// The answer reads the garden's hours, so the clock is pinned to a weekday
+// morning (garden open) unless a test says otherwise.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-09-23T10:00:00'));
+});
+afterEach(() => vi.useRealTimers());
 
 /** Real places, measured against the committed graph. */
 const AT = {
@@ -29,6 +37,19 @@ describe('canRouteFrom', () => {
     expect(canRouteFrom(AT.mainGate, 'Q')).toBe(true);
     expect(canRouteFrom(AT.frrms, 'Q')).toBe(true);
     expect(canRouteFrom(AT.jakDorms, 'Q')).toBe(true);
+  });
+
+  /**
+   * The same gate hours the press uses. FRRMS reaches campus only through the
+   * garden, and the router will not take a shut gate — so at night an offer
+   * here would be pressed and draw nothing, the dead press this whole rule
+   * exists to prevent.
+   */
+  it('says no at FRRMS once the garden is shut, because the press would draw nothing', () => {
+    vi.setSystemTime(new Date('2026-09-27T23:14:00')); // Sunday night
+    expect(canRouteFrom(AT.frrms, 'Q')).toBe(false);
+    // Campus itself does not depend on the garden.
+    expect(canRouteFrom(AT.mainGate, 'Q')).toBe(true);
   });
 
   it('says no across the city, where a press could only fail', () => {

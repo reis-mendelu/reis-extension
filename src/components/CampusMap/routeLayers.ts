@@ -125,6 +125,8 @@ export function drawRoute(layer: L.LayerGroup, walk: Walk | null, language: stri
     direction: 'top',
     className: 'route-chip',
     offset: [0, -8],
+    // Above the event pins: this is the answer to "how do I get there".
+    pane: 'tooltipPane',
   })
     .setLatLng(end)
     .setContent(translate(language, 'map.walkMinutes', { n: walkMinutes(walk.lengthM) }))

@@ -2,9 +2,9 @@ import type { ReactNode } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 export interface ExamRowCardProps {
-  /** Bold first line — the assessment type ("Zkouška", "Zápočet"). */
+  /** Bold first line — the subject ("Ekonometrie 1"). */
   title: string;
-  /** Muted second line — which subject it belongs to. */
+  /** Muted second line — the assessment type ("Průběžný test 1", "Zkouška"). */
   subtitle: string;
   /** Right column, first line: the date for a registered exam, the free-slot
    *  count for an open one. Carries the accent colour. */
@@ -27,11 +27,13 @@ export interface ExamRowCardProps {
 }
 
 /**
- * One exam row. The assessment type leads and the subject follows beneath it,
- * which reads oddly out of context but is right here: a student scanning this
- * screen during exam season is looking for *what kind of thing* is happening
- * and *when*, and the same subject can appear two or three times with different
- * assessment types.
+ * One exam row. The subject leads and the assessment type follows beneath it:
+ * the subject is what a student recognises at a glance, while "Průběžný test 1"
+ * is a label several subjects in the same list wear at once.
+ *
+ * (This row read the other way round until the phone screens were reviewed
+ * against real exam-season data, where a column of "Průběžný test 1 / 2" told
+ * the reader nothing about which course each belonged to.)
  *
  * The left accent bar is the only always-on colour in the row, so a glance down
  * the list reads as a column of markers rather than a wall of cards.
@@ -60,13 +62,17 @@ export function ExamRowCard({
           <span className="truncate text-2sm text-base-content/60">{subtitle}</span>
         </span>
         <span className="flex flex-shrink-0 flex-col items-end gap-0.5">
-          <span
-            className={`whitespace-nowrap text-2sm font-bold ${
-              primaryTone === 'muted' ? 'text-base-content/70' : 'text-success'
-            }`}
-          >
-            {primaryMeta}
-          </span>
+          {/* Rendered only when there is something to say: an empty span still
+              takes a line box, which pushed the remaining line off centre. */}
+          {primaryMeta && (
+            <span
+              className={`whitespace-nowrap text-2sm font-bold ${
+                primaryTone === 'muted' ? 'text-base-content/70' : 'text-success'
+              }`}
+            >
+              {primaryMeta}
+            </span>
+          )}
           <span className="whitespace-nowrap text-2sm text-base-content/60">{secondaryMeta}</span>
         </span>
         {expanded ? (

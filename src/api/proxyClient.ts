@@ -78,7 +78,9 @@ export async function logout(): Promise<void> {
   // DOM-bound in the content script: it finds IS's own logout FORM in the host
   // page and submits it (see injector/messageHandler). The app has no host
   // page, so what signs this device out is removing the stored UISAuth token
-  // and the cookie jar that would otherwise restore it — see mobile/signOut.
+  // and the cookie jar that would otherwise restore it — see mobile/signOut,
+  // which also owns the society sign-out on that platform, so that a REFUSED
+  // sign-out leaves nothing half torn down.
   if (getPlatform().kind === 'capacitor') {
     const { signOutMobile, buildSignOutDeps } = await import('../mobile/signOut');
     return signOutMobile(buildSignOutDeps());
@@ -89,6 +91,23 @@ export async function logout(): Promise<void> {
   } catch (e) {
     logError('ProxyClient.logout:clearAll', e);
   }
+
+  // The society/admin login is a SECOND credential, kept by supabase-js in
+  // chrome.storage.local rather than in IndexedDB — so the wipe above went
+  // straight past it, and on a shared browser the next student inherited the
+  // previous one's admin console.
+  //
+  // Awaited here, after the student's own data is already gone and before the
+  // step that ends this context: `executeAction('logout')` navigates the host
+  // page away, so anything merely started would be killed mid-flight.
+  //
+  // Imported lazily for the same reason the mobile path above is: this module
+  // is in the Capacitor boot path, and a static import constructs the
+  // supabase-js admin client at EVALUATION time — which reads chrome.storage
+  // through the platform and throws on a WebView that has no `chrome` global.
+  const { clearAdminSession } = await import('../services/admin/clearAdminSession');
+  await clearAdminSession();
+
   return executeAction('logout', {});
 }
 
