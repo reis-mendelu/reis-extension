@@ -1,5 +1,6 @@
 import { fetchWithAuth, BASE_URL } from './client';
 import { logError } from '../utils/reportError';
+import { iconSysid } from './documents/iconSysid';
 
 export interface CvicnyTest {
   courseId: string;
@@ -30,7 +31,7 @@ async function fetchLang(studium: string, lang: 'cz' | 'en'): Promise<RawTest[] 
     const html = await res.text();
     const doc = new DOMParser().parseFromString(html, 'text/html');
 
-    const table = doc.getElementById('tmtab_1');
+    const table = doc.getElementById('tmtab_1') ?? findOsnovyTable(doc);
     if (!table) return [];
 
     const rows = table.getElementsByTagName('tr');
@@ -56,8 +57,9 @@ async function fetchLang(studium: string, lang: 'cz' | 'en'): Promise<RawTest[] 
 
       const osnovaName = cols[offset + 1].textContent?.trim() || '';
 
-      const statusImg = cols[offset + 2].getElementsByTagName('img')[0];
-      const statusSysId = statusImg?.getAttribute('sysid');
+      // iconSysid reads both markups: IS now serves <span data-sysid> where it
+      // served <img sysid>, and only the legacy one was read here.
+      const statusSysId = iconSysid(cols[offset + 2]);
       const status: 'accessible' | 'inaccessible' =
         statusSysId === 'osnova-pristupna' ? 'accessible' : 'inaccessible';
 
@@ -78,6 +80,25 @@ async function fetchLang(studium: string, lang: 'cz' | 'en'): Promise<RawTest[] 
     logError('Api.fetchCvicneTests', error);
     return null;
   }
+}
+
+/**
+ * The e-osnovy table when IS gave it no id. IS attaches its table manager, and
+ * with it `id="tmtab_1"`, only to a list of more than one osnova: with a single
+ * one the table is a bare `<table>`, and requiring the id showed the student no
+ * practice tests while IS listed one. Real sample: seznam_osnov.pl on
+ * 2026-09-23, one osnova, in both locales (fixtures/seznam-osnov-single.*.html).
+ *
+ * Matched by the "Vstup" link (`osnova=`) in a cell of the table's own rows,
+ * exactly where the real markup has it. The portal menu above links
+ * seznam_osnov.pl too, but never with `osnova=`.
+ */
+function findOsnovyTable(doc: Document): Element | null {
+  return (
+    Array.from(doc.querySelectorAll('table')).find(
+      (t) => !!t.querySelector(':scope > tbody > tr > td > a[href*="osnova="]')
+    ) ?? null
+  );
 }
 
 export interface CvicneTestsResult {

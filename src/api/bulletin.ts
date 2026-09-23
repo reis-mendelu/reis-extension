@@ -15,7 +15,7 @@ export function parseBulletinHtml(html: string): BulletinPost[] {
   if (!html || typeof html !== 'string') return [];
 
   const doc = new DOMParser().parseFromString(html, 'text/html');
-  const table = doc.querySelector('table#tmtab_1');
+  const table = doc.querySelector('table#tmtab_1') ?? findPostsTable(doc);
   if (!table) return [];
 
   const posts: BulletinPost[] = [];
@@ -48,6 +48,24 @@ export function parseBulletinHtml(html: string): BulletinPost[] {
   }
 
   return posts;
+}
+
+/**
+ * The posts table when IS gave it no id. IS attaches its table manager, and
+ * with it `id="tmtab_1"`, only to a list of more than one post: with a single
+ * new post the table is a bare `<table>`, and requiring the id showed the
+ * student "no posts" while IS had one. Real sample: nove_prispevky.pl on
+ * 2026-09-23, one post, in both locales (fixtures/vyveska-single.*.html).
+ *
+ * Matched by the post's view link in a cell of the table's own rows, which is
+ * exactly where the real markup has it.
+ */
+function findPostsTable(doc: Document): Element | null {
+  return (
+    Array.from(doc.querySelectorAll('table')).find(
+      (t) => !!t.querySelector(':scope > tbody > tr > td > a[href*="slozka.pl?zobrazeni="]')
+    ) ?? null
+  );
 }
 
 function extractTitle(cell: Element): string {
