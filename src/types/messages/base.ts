@@ -67,9 +67,10 @@ export interface FetchRequestMessage {
     method?: string;
     headers?: Record<string, string>;
     body?: string;
+    // 'bytes': fetchAuthedBytes (eduroam) — base64 of the body, HTML refused.
     // 'file': bytes for the iframe as a FileFetchPayload JSON string, with
     // REIS_FETCH_PROGRESS ticks while the body arrives.
-    responseType?: 'text' | 'image' | 'file';
+    responseType?: 'text' | 'image' | 'bytes' | 'file';
   };
 }
 export interface ActionRequestMessage {

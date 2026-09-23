@@ -55,7 +55,7 @@ const FetchRequestMsg = z.object({
       method: z.string().optional(),
       headers: z.record(z.string(), z.string()).optional(),
       body: z.string().optional(),
-      responseType: z.enum(['text', 'image', 'file']).optional(),
+      responseType: z.enum(['text', 'image', 'bytes', 'file']).optional(),
     })
     .optional(),
 });
