@@ -90,6 +90,13 @@ function clearLoadingAndError(set: SetState, terminId: string): void {
   });
 }
 
+/**
+ * Which exams refresh is the current one — see createScheduleSlice's
+ * `refreshGeneration`: a request that outlived its backstop must not end a
+ * newer refresh when it finally answers.
+ */
+let refreshGeneration = 0;
+
 export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
   exams: {
     data: [],
@@ -263,10 +270,20 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
   triggerExamsRefresh: () => {
     if (get().examsRefreshing) return;
     set({ examsRefreshing: true });
-    syncService.triggerExamRefresh();
-    setTimeout(() => {
-      if (get().examsRefreshing) set({ examsRefreshing: false });
-    }, 15_000);
+    // Ends on the refresh's ANSWER. Waiting for `setExams` instead meant a
+    // student with no exams this month — an empty read pushes nothing — spun
+    // for the full 15s after a lookup that took 0.6s. The timer stays as the
+    // backstop for an answer that never comes.
+    const generation = ++refreshGeneration;
+    const stop = () => {
+      if (generation === refreshGeneration && get().examsRefreshing)
+        set({ examsRefreshing: false });
+    };
+    syncService
+      .triggerExamRefresh()
+      .catch((e) => logError('ExamSlice.triggerExamsRefresh', e))
+      .finally(stop);
+    setTimeout(stop, 15_000);
   },
   setExams: (data) => {
     // A transient/failed IS fetch resolves to [] (see fetchExamData), and a

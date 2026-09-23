@@ -21,6 +21,8 @@ describe('createMobileUiSlice', () => {
     get = vi.fn(() => state) as unknown as typeof get;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     state = createMobileUiSlice(set, get, {} as any);
+    // Cross-slice actions setMobileTab calls: switching to exams refreshes them.
+    Object.assign(state, { triggerExamsRefresh: vi.fn(), demoMode: false });
   });
 
   it('defaults to the calendar tab with no sheets open', () => {

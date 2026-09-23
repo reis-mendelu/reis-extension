@@ -35,6 +35,7 @@ const actionType = z.enum([
   'download_document',
   'trigger_sync',
   'refresh_exams',
+  'refresh_schedule',
   'open_url',
   'logout',
 ]);

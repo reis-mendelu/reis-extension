@@ -9,6 +9,7 @@ export type ActionType =
   | 'download_document'
   | 'trigger_sync'
   | 'refresh_exams'
+  | 'refresh_schedule'
   | 'open_url'
   | 'logout';
 
