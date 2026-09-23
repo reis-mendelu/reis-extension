@@ -1,22 +1,13 @@
 import L from 'leaflet';
 import { useAppStore } from '../../store/useAppStore';
 import landmarksJson from '../../data/map/landmarks.json';
-import remotePlacesJson from '../../data/map/remotePlaces.json';
-import {
-  ringToLatLng,
-  landmarkGroupLabels,
-  remotePlaceRings,
-  remotePlaceCenter,
-  BUILDING_STYLE,
-  GARDEN_STYLE,
-  PATH_STYLE,
-  POI_MARKER_STYLE,
-} from './mapHelpers';
-import type { Landmark, RemotePlace } from '../../types/campusMap';
+import { ringToLatLng, landmarkGroupLabels } from './mapHelpers';
+import { REMOTE } from './remoteLayers';
+import { GARDEN_PLACE_ID, bubblesHidden } from './gardenBubbleLayer';
+import { LABELS_PANE, TOOLTIP_CARVE_OUTS, ensureReisPanes } from './mapPanes';
+import type { Landmark } from '../../types/campusMap';
 
 const LANDMARKS = (landmarksJson as { landmarks: Landmark[] }).landmarks;
-export const REMOTE = (remotePlacesJson as { places: RemotePlace[] }).places;
-export const REMOTE_IDS = new Set(REMOTE.map((p) => p.id));
 // FRRMS + Kolej Akademie are one building under two names → a combined "A / B"
 // tooltip. (Adjacent-but-separate places like Tauferovy/sports centre are NOT
 // merged — see landmarkGroupLabels.)
@@ -71,6 +62,9 @@ export function initLeafletMap(
   // The search box + floor selector own the top-left now, so move the native
   // +/- control to the bottom-right where it no longer sits under them.
   map.zoomControl.setPosition('bottomright');
+  // Up front, because a tooltip that names a pane the map has not got throws
+  // inside Leaflet (`getPane()` returns undefined and it appends to it anyway).
+  ensureReisPanes(map);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 22,
     maxNativeZoom: 19,
@@ -91,9 +85,21 @@ export function initLeafletMap(
     const restZoom = Math.min(18, Math.floor(map.getBoundsZoom(cb, false, L.point(40, 40))));
     const hideBelow = labelsAtRest ? restZoom - 1 : restZoom + 1;
     map.getContainer().classList.toggle('reis-hide-building-labels', map.getZoom() <= hideBelow);
+    // Same mechanism for the garden's bubbles: zoomed out they pile on top of
+    // each other, and the redraw that builds them is store-driven and knows
+    // nothing about zoom. The threshold is the zoom at which the garden fills
+    // THIS viewport, not a constant — see bubblesHidden.
+    const garden = REMOTE.find((p) => p.id === GARDEN_PLACE_ID);
+    if (garden?.area) {
+      const bounds = L.latLngBounds(ringToLatLng(garden.area.coordinates[0]!));
+      map.getContainer().classList.toggle('reis-hide-garden-bubbles', bubblesHidden(map, bounds));
+    }
   };
   syncLabelVisibility();
-  map.on('zoomend', syncLabelVisibility);
+  // 'resize' too: the bubble threshold is viewport-dependent (getBoundsZoom),
+  // so widening the window without zooming would otherwise leave them hidden or
+  // shown according to the old viewport.
+  map.on('zoomend resize', syncLabelVisibility);
   return map;
 }
 
@@ -103,9 +109,14 @@ export function initLeafletMap(
 // panes for the duration of the fly so only the basemap animates; reveal once
 // the camera has settled.
 export function flyAndReveal(map: L.Map, fly: () => void): void {
-  const panes = [map.getPane('overlayPane'), map.getPane('tooltipPane')].filter(
-    (p): p is HTMLElement => p != null
-  );
+  // The carve-outs too: the building letters were moved out of `tooltipPane`
+  // into a pane of their own, and a pane left visible here flashes its labels at
+  // the pre-fly position while the basemap animates away underneath them.
+  const panes = [
+    map.getPane('overlayPane'),
+    map.getPane('tooltipPane'),
+    ...TOOLTIP_CARVE_OUTS.map((n) => map.getPane(n)),
+  ].filter((p): p is HTMLElement => p != null);
   for (const p of panes) p.style.visibility = 'hidden';
   const reveal = () => {
     for (const p of panes) p.style.visibility = '';
@@ -139,62 +150,9 @@ export function drawLandmarks(
         permanent: true,
         direction: 'center',
         className: 'building-label',
+        pane: LABELS_PANE,
       });
     else poly.bindTooltip(LANDMARK_LABELS.get(l.id) ?? l.name);
     poly.addTo(layer);
-  }
-}
-
-// The off-campus MENDELU sites drawn as their real OSM footprints, in the same
-// blue campus-building theme as landmarks. Sites with a grounds boundary (`area`,
-// the arboretum garden) DRILL IN like a campus faculty: collapsed they show only
-// the garden outline; clicking them reveals the inner map (footpaths + buildings
-// + labelled collections). `drilledId` is the currently-selected site's id.
-// Sites without an `area` (Lednice/Žabčice/Křtiny) are far off-screen, so they
-// always show their footprints. Any part of a site selects the whole site.
-export function drawRemotePlaces(
-  layer: L.LayerGroup,
-  select: ReturnType<typeof useAppStore.getState>,
-  drilledId: number | null
-) {
-  for (const p of REMOTE) {
-    const [clon, clat] = remotePlaceCenter(p);
-    const drilled = drilledId === p.id;
-    const collapsible = !!p.area;
-    // Collapsed garden: a click drills in (fly + reveal). Otherwise a click just
-    // selects the site in place (no camera move).
-    const select_ = () =>
-      select.selectMapPoi(
-        { id: p.id, name: p.name, type: p.address ?? '', url: p.url, phone: null, email: null },
-        [clon, clat]
-      );
-    const enter = () => select.focusRemotePlaceById(p.id);
-
-    if (p.area) {
-      L.polygon(ringToLatLng(p.area.coordinates[0]), GARDEN_STYLE)
-        .on('click', drilled ? select_ : enter)
-        .bindTooltip(p.shortName)
-        .addTo(layer);
-    }
-    // Inner detail only when drilled in (or for the always-shown far sites).
-    if (drilled || !collapsible) {
-      if (p.paths)
-        for (const path of p.paths) {
-          L.polyline(ringToLatLng(path), PATH_STYLE).addTo(layer);
-        }
-      for (const ring of remotePlaceRings(p.outline)) {
-        L.polygon(ringToLatLng(ring), BUILDING_STYLE)
-          .on('click', select_)
-          .bindTooltip(p.shortName)
-          .addTo(layer);
-      }
-      if (p.pois)
-        for (const poi of p.pois) {
-          L.circleMarker([poi.lat, poi.lon], POI_MARKER_STYLE)
-            .on('click', select_)
-            .bindTooltip(poi.name, { permanent: true, direction: 'right', className: 'room-label' })
-            .addTo(layer);
-        }
-    }
   }
 }

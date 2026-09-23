@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Mock } from 'vitest';
 import { fetchViaCapacitor } from '../capacitorTransport';
 import { setSessionExpiredHandler } from '../../services/sessionExpiry';
 
@@ -17,7 +18,7 @@ const deps = {
  * passes through.
  */
 describe('session expiry reaches the handler from the transport', () => {
-  let handler: ReturnType<typeof vi.fn>;
+  let handler: Mock<NonNullable<Parameters<typeof setSessionExpiredHandler>[0]>>;
 
   beforeEach(() => {
     vi.clearAllMocks();

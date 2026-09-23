@@ -32,7 +32,7 @@ export function EventRow({
   return (
     <div
       className={`flex items-stretch border-l-2 transition-colors ${
-        selected ? 'border-primary bg-primary/10' : 'border-transparent hover:bg-base-200'
+        selected ? 'border-primary bg-primary/10' : 'border-transparent hover:bg-base-content/5'
       }`}
     >
       <button
@@ -44,7 +44,11 @@ export function EventRow({
           {event.imageUrl ? (
             <img src={event.imageUrl} alt="" className="h-full w-full object-cover" />
           ) : (
-            <span className="flex h-full w-full items-center justify-center bg-base-200">
+            // A tint of the ink, not a base tone: this row sits on the
+            // desktop panel (base-100) AND on the phone's map sheet
+            // (base-200), and any fixed base tone is invisible on one of them
+            // in one of the themes.
+            <span className="flex h-full w-full items-center justify-center bg-base-content/5">
               <img src={CATEGORY_EMOJI_SRC[event.category]} alt="" className="h-7 w-7" />
             </span>
           )}
@@ -54,10 +58,16 @@ export function EventRow({
             {event.title}
           </span>
           <span className="mt-0.5 block truncate text-[11px] text-base-content/60">{day}</span>
-          {event.location && (
+          {/* A venue the society dropped on the map by hand carries a
+              coordinate and no name. Gated on the name alone, the line simply
+              vanished — so in a list beside a named venue the event read as
+              one with no place at all, while its detail card had a working
+              "open in Maps" link the whole time. The coordinate is a venue;
+              only its label is missing. */}
+          {(event.location || event.coord) && (
             <span className="mt-0.5 flex items-center gap-1 text-[11px] text-base-content/60">
               <MapPin size={11} className="flex-shrink-0" />
-              <span className="truncate">{event.location}</span>
+              <span className="truncate">{event.location ?? t('map.venueOnMap')}</span>
             </span>
           )}
         </span>

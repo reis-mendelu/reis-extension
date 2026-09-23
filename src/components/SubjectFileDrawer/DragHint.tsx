@@ -1,6 +1,6 @@
 /**
  * Drag Hint Animation Component
- * 
+ *
  * Shows a first-use hint for drag selection.
  */
 
@@ -8,41 +8,41 @@ import { MousePointer2 } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 
 interface DragHintProps {
-    show: boolean;
+  show: boolean;
 }
 
 export function DragHint({ show }: DragHintProps) {
-    const { t } = useTranslation();
-    if (!show) return null;
+  const { t } = useTranslation();
+  if (!show) return null;
 
-    return (
-        <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden">
-            {/* Animated lasso selection */}
-            <div 
-                className="absolute border-2 border-success bg-success/15 rounded-sm"
-                style={{
-                    animation: 'dragHintLasso 2s ease-in-out infinite',
-                    top: '80px',
-                    left: '40px',
-                    width: '0px',
-                    height: '0px',
-                }}
-            />
-            {/* Tooltip */}
-            <div 
-                className="absolute bg-neutral text-neutral-content text-sm px-3 py-2 rounded-lg shadow-lg flex items-center gap-2"
-                style={{
-                    animation: 'dragHintFade 8s ease-in-out forwards',
-                    top: '200px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                }}
-            >
-                <MousePointer2 size={16} className="text-primary" />
-                {t('course.dragHint')}
-            </div>
+  return (
+    <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden">
+      {/* Animated lasso selection */}
+      <div
+        className="absolute border-2 border-success bg-success/15 rounded-sm"
+        style={{
+          animation: 'dragHintLasso 2s ease-in-out infinite',
+          top: '80px',
+          left: '40px',
+          width: '0px',
+          height: '0px',
+        }}
+      />
+      {/* Tooltip */}
+      <div
+        className="absolute bg-neutral text-neutral-content text-sm px-3 py-2 rounded-lg shadow-lg flex items-center gap-2"
+        style={{
+          animation: 'dragHintFade 8s ease-in-out forwards',
+          top: '200px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+        }}
+      >
+        <MousePointer2 size={16} className="text-primary" />
+        {t('course.dragHint')}
+      </div>
 
-            <style>{`
+      <style>{`
                 @keyframes dragHintLasso {
                     0% { width: 0; height: 0; opacity: 0; }
                     10% { opacity: 1; }
@@ -57,30 +57,30 @@ export function DragHint({ show }: DragHintProps) {
                     100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
                 }
             `}</style>
-        </div>
-    );
+    </div>
+  );
 }
 
 /**
  * Selection Box Overlay Component
  */
 interface SelectionBoxProps {
-    isDragging: boolean;
-    style: { left: number; top: number; width: number; height: number } | null;
+  isDragging: boolean;
+  style: { left: number; top: number; width: number; height: number } | null;
 }
 
 export function SelectionBox({ isDragging, style }: SelectionBoxProps) {
-    if (!isDragging || !style) return null;
+  if (!isDragging || !style) return null;
 
-    return (
-        <div 
-            className="absolute border border-success bg-success/10 pointer-events-none z-50"
-            style={{
-                left: style.left,
-                top: style.top,
-                width: style.width,
-                height: style.height
-            }}
-        />
-    );
+  return (
+    <div
+      className="absolute border border-success bg-success/10 pointer-events-none z-50"
+      style={{
+        left: style.left,
+        top: style.top,
+        width: style.width,
+        height: style.height,
+      }}
+    />
+  );
 }

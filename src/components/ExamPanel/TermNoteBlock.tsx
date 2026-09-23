@@ -11,34 +11,32 @@ import { useTranslation } from '../../hooks/useTranslation';
  * signal via `note.isEmphasized` from the parser.
  */
 export function TermNoteBlock({ terminId }: { terminId: string }) {
-    const { t } = useTranslation();
-    const { note, isLoading } = useExamNote(terminId);
+  const { t } = useTranslation();
+  const { note, isLoading } = useExamNote(terminId);
 
-    if (isLoading && note === undefined) {
-        return (
-            <div className="px-3 py-1.5 border-t border-base-200/60 flex items-center gap-1.5 text-[10px] text-base-content/40 italic">
-                <span className="loading loading-dots loading-xs" />
-                <span>{t('exams.loadingNote')}</span>
-            </div>
-        );
-    }
-
-    if (!note) return null;
-
+  if (isLoading && note === undefined) {
     return (
-        <div
-            onClick={e => e.stopPropagation()}
-            className="px-3 py-2 border-t text-xs leading-relaxed bg-base-200/30 border-base-200/60"
-        >
-            <div className="flex items-start gap-1.5">
-                <AlertTriangle
-                    size={12}
-                    className={`mt-0.5 shrink-0 ${note.isEmphasized ? 'text-warning' : 'text-base-content/40'}`}
-                />
-                <div className="whitespace-pre-wrap text-base-content/80">
-                    {note.text}
-                </div>
-            </div>
-        </div>
+      <div className="px-3 py-1.5 border-t border-base-200/60 flex items-center gap-1.5 text-[10px] text-base-content/40 italic">
+        <span className="loading loading-dots loading-xs" />
+        <span>{t('exams.loadingNote')}</span>
+      </div>
     );
+  }
+
+  if (!note) return null;
+
+  return (
+    <div
+      onClick={(e) => e.stopPropagation()}
+      className="px-3 py-2 border-t text-xs leading-relaxed bg-base-200/30 border-base-200/60"
+    >
+      <div className="flex items-start gap-1.5">
+        <AlertTriangle
+          size={12}
+          className={`mt-0.5 shrink-0 ${note.isEmphasized ? 'text-warning' : 'text-base-content/40'}`}
+        />
+        <div className="whitespace-pre-wrap text-base-content/80">{note.text}</div>
+      </div>
+    </div>
+  );
 }

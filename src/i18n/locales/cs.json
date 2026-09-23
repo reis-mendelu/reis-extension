@@ -288,7 +288,10 @@
       "noFiles": "Žádné soubory",
       "noFilesAvailable": "Žádné soubory nejsou k dispozici.",
       "download": "Stáhnout",
-      "openInSidebar": "Otevřít náhled"
+      "openInSidebar": "Otevřít náhled",
+      "downloading": "Stahování…",
+      "downloadingCount": "Stahování ({completed}/{total})…",
+      "downloadSelected": "Stáhnout ({count})"
     },
     "pdf": {
       "loadFailed": "PDF se nepodařilo otevřít.",
@@ -322,6 +325,7 @@
     },
     "file": {
       "openFailed": "Soubor se nepodařilo otevřít.",
+      "downloading": "Stahuji…",
       "savedToDownloads": "Uloženo do Stažených souborů"
     },
     "documentNote": {
@@ -890,6 +894,7 @@
     "noPlaceFound": "Nic nenalezeno — zkuste jiný název nebo vyberte na mapě.",
     "orPickOnMap": "nebo vybrat ručně na mapě",
     "mapPoint": "Vybrané místo na mapě",
+    "venueOnMap": "Místo na mapě",
     "changePlace": "Změnit místo",
     "publish": "Zveřejnit akci",
     "clickToPlace": "Klepněte na tlačítko a poté označte místo v mapě",
@@ -922,15 +927,25 @@
     "openInMaps": "Otevřít v mapách",
     "openInAppleMaps": "Apple Mapy",
     "openInGoogleMaps": "Google Maps",
-    "rememberChoice": "Příště se neptat",
-    "mapApp": "Mapy",
-    "mapAppAsk": "Vždy se zeptat",
     "audienceLabel": "KDO TO UVIDÍ",
     "audienceEveryone": "Všichni",
     "audienceHint": "Uvidí studenti, kteří odebírají {society}.",
     "audienceHintGeneric": "Uvidí jen studenti, kteří tento spolek odebírají.",
     "panelCollapse": "Sbalit panel mapy",
-    "panelExpand": "Rozbalit panel mapy"
+    "panelExpand": "Rozbalit panel mapy",
+    "walkMinutes": "{n} min",
+    "routeTakeMeThere": "Najdi cestu",
+    "routeLocating": "Hledám, kde jsi…",
+    "routeDenied": "reIS nevidí tvoji polohu. Povol ji v nastavení telefonu, nebo si vyber budovu ručně.",
+    "routeUnavailable": "Polohu umí jen mobilní aplikace.",
+    "routeTooFar": "Nejsi v okolí kampusu.",
+    "routeNoRoute": "Odsud sem teď cesta nevede.",
+    "routeThroughGarden": "Přes botanickou zahradu — zdarma s ISIC, u brány z Generála Píky.",
+    "routeGardenShut": "Zahrada je teď zavřená (po–pá 6:00–20:00), pěšky to odsud nejde. Jeď tramvají 9 z Bieblovy — jede každé ~3 minuty a jsi tam za dvě.",
+    "routePickBuilding": "Kam jdeš?",
+    "routeArrived": "Už jsi tam.",
+    "routeTo": "do {building}",
+    "routeElsewhere": "Jinam"
   },
   "admin": {
     "email": "E-mail",
@@ -995,7 +1010,18 @@
       "noData": "Zatím žádná data.",
       "under5": "méně než 5",
       "unknown": "neuvedeno",
-      "loadFailed": "Statistiky se nepodařilo načíst."
+      "loadFailed": "Statistiky se nepodařilo načíst.",
+      "signals": "Funkce (30 dní)",
+      "signalsNote": "Instalace, ne lidé. Mapa se počítá po třech sekundách na obrazovce; eduroam zvlášť pro „aplikace síť nastavila“ a „profil jsme předali k instalaci“ — předaný profil ještě musí student sám nainstalovat.",
+      "signalMapDwell": "Mapa aspoň 3 sekundy",
+      "signalEduroamConfigured": "eduroam nastaven aplikací",
+      "signalEduroamDelivered": "eduroam profil předán",
+      "signalInstalls": "instalací",
+      "topEvents": "Nejotevíranější akce na mapě",
+      "mapViews": "otevření",
+      "mapViewsNote": "Počet otevření, ne lidí — u těchto čísel není žádný identifikátor.",
+      "trendAria": "Vývoj: {label}, posledních {days} dní, celkem {total} {unit}, maximum {max} za den.",
+      "trendWithheld": "Pro tento signál zatím graf nezobrazujeme — méně než 5 instalací za 30 dní."
     },
     "loginName": "login",
     "audience": {
@@ -1006,6 +1032,7 @@
   },
   "mobile": {
     "header": {
+      "refresh": "Obnovit",
       "search": "Hledat"
     },
     "nav": {
@@ -1054,7 +1081,9 @@
       "groupLater": "Přihlášené · později",
       "groupOpen": "Otevřené termíny",
       "groupNotYetOpen": "Ještě neotevřené",
-      "opensAt": "otevírá se {when}",
+      "opensAtLabel": "otevírá se",
+      "refresh": "Obnovit zkoušky",
+      "refreshing": "Aktualizuji…",
       "registeredCountOne": "{count} přihlášený",
       "registeredCountFew": "{count} přihlášené",
       "registeredCountOther": "{count} přihlášených",
@@ -1070,7 +1099,6 @@
       "creditsOf": "{earned} / {total} kreditů",
       "creditProgress": "Splněno {pct} % kreditů",
       "currentSemester": "{n}. semestr",
-      "running": "právě běží · {credits} kr.",
       "doneOf": "{done}/{total} hotovo",
       "average": "Studijní průměr",
       "avgSemester": "Tento semestr",
@@ -1086,13 +1114,22 @@
       "creditOther": "kreditů",
       "loading": "Načítám předměty…",
       "noneEnrolled": "Zatím nemáš zapsané žádné předměty na tento semestr.",
-      "startsOn": "začíná {date} · {credits} kr.",
-      "creditsOnly": "{credits} kr."
+      "teachers": "Vyučující",
+      "teacherRole": {
+        "guarantor": "Garant",
+        "lecturer": "Přednášející",
+        "tutor": "Cvičící",
+        "examiner": "Zkoušející",
+        "other": "Další"
+      },
+      "enrolledCountOne": "{count} zapsaný předmět",
+      "enrolledCountFew": "{count} zapsané předměty",
+      "enrolledCountOther": "{count} zapsaných předmětů"
     },
     "map": {
       "searchPlaceholder": "Najdi místnost, budovu, akci…",
       "tabEvents": "Akce",
-      "peekHint": "Akce na kampusu",
+      "peekEmpty": "Zatím žádné akce na kampusu",
       "thisWeek": "Tenhle týden",
       "emptyTitle": "Mapa se nenačetla",
       "emptyBody": "Zkus to prosím znovu.",

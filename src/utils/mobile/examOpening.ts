@@ -1,6 +1,6 @@
 import type { ExamSection } from '../../types/exams';
 import { getSectionState } from '../../components/ExamPanel/utils';
-import { formatDayMonth, trimHour } from './examWhen';
+import { formatDayMonthBare, trimHour } from './examWhen';
 
 /**
  * Exam sections whose registration has not started yet, told apart from the
@@ -42,15 +42,19 @@ export function splitByRegistrationOpen<T extends { section: ExamSection }>(
 }
 
 /**
- * When registration opens: "po 1. 12. 8:00", or just "po 1. 12." at midnight.
+ * When registration opens: "1. 12. 8:00", or just "1. 12." at midnight.
+ *
+ * No weekday. The label's only home is the term row's trailing slot, one line
+ * to the right of a date that already names the day — saying "po" twice in the
+ * same row spends the width the room name needs on nothing.
  *
  * The time is dropped at exactly 00:00 because that is not a time IS meant —
  * `parseRegistrationStart` defaults a date with no clock component to midnight,
  * and IS does hand out bare dates. Printing "0:00" there invents a precision
  * the source did not have, and it reads as a typo besides.
  */
-export function formatOpensAt(date: Date, locale: string): string {
-  const day = formatDayMonth(date, locale);
+export function formatOpensAtBare(date: Date): string {
+  const day = formatDayMonthBare(date);
   if (date.getHours() === 0 && date.getMinutes() === 0) return day;
   const clock = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
   return `${day} ${trimHour(clock)}`;

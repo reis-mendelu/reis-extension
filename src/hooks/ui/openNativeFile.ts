@@ -17,14 +17,19 @@ import { openIsFileNatively } from '../../mobile/openIsFile';
  *
  * `t` is passed in rather than read from useTranslation here so this stays a
  * plain function — the caller is already a hook and owns the subscription.
+ *
+ * `onFetched` is forwarded to openIsFileNatively so a caller showing a progress
+ * indicator can stop it when the BYTES land rather than when this promise
+ * settles — on iOS the tail of that promise is the student's own share sheet.
  */
 export async function openNativeFile(
   fullUrl: string,
   context: string,
-  t: (key: string) => string
+  t: (key: string) => string,
+  onFetched?: () => void
 ): Promise<void> {
   try {
-    const { delivered } = await openIsFileNatively(fullUrl);
+    const { delivered } = await openIsFileNatively(fullUrl, undefined, undefined, onFetched);
     // Android saves into Downloads and posts a notification — but
     // POST_NOTIFICATIONS is a runtime grant, and a student who declined it (or
     // was never asked, which was the case) got NO signal at all while the file

@@ -6,6 +6,7 @@ function makeDeps(over: Partial<SignOutDeps> = {}): SignOutDeps {
     clearToken: vi.fn(async () => {}),
     clearIsCookies: vi.fn(async () => {}),
     clearUserParams: vi.fn(),
+    clearAdminSession: vi.fn(async () => {}),
     clearLocalData: vi.fn(async () => {}),
     restart: vi.fn(),
     ...over,
@@ -24,6 +25,32 @@ describe('signOutMobile', () => {
     expect(deps.clearUserParams).toHaveBeenCalled();
     expect(deps.clearLocalData).toHaveBeenCalled();
     expect(deps.restart).toHaveBeenCalled();
+  });
+
+  /**
+   * The society/admin login is a second credential and supabase-js keeps it
+   * outside IndexedDB, so no wipe here reaches it. On a shared handset that
+   * means the next student inherits the previous one's admin console.
+   */
+  it('drops the society session too', async () => {
+    const deps = makeDeps();
+    await signOutMobile(deps);
+    expect(deps.clearAdminSession).toHaveBeenCalled();
+  });
+
+  /**
+   * And not when the sign-out is refused. Signed in as the student but signed
+   * out of their society console is precisely the half-torn-down state the
+   * refusal above exists to prevent.
+   */
+  it('leaves the society session alone when the sign-out is refused', async () => {
+    const deps = makeDeps({
+      clearToken: vi.fn(async () => {
+        throw new Error('keystore unavailable');
+      }),
+    });
+    await expect(signOutMobile(deps)).rejects.toThrow();
+    expect(deps.clearAdminSession).not.toHaveBeenCalled();
   });
 
   it('clears the cookies as well as the token', async () => {

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  dropFinished,
   startOfWeek,
   isSameWeek,
   isSameDay,
@@ -110,5 +111,39 @@ describe('splitByWeek', () => {
       new Date(2026, 6, 22, 9, 0)
     );
     expect(thisWeek).toHaveLength(1);
+  });
+});
+
+/**
+ * A registered exam IS still lists after it has been sat — it stays until it
+ * is graded. The phone showed it as the next thing coming ("Co tě čeká" first,
+ * with the upcoming dot), filed it under "Přihlášené · později" because it was
+ * not in this week, and offered "Odhlásit" for it. The decision: hide it.
+ *
+ * Hidden once its DAY is over, not once its start time passes: on the day a
+ * student still wants the room and the time in front of them, including when
+ * they are running late for it.
+ */
+describe('dropFinished', () => {
+  const at = (y: number, m: number, d: number, h = 0) => new Date(y, m - 1, d, h);
+  const NOW = at(2026, 9, 21, 18); // Monday evening
+
+  it('drops an exam whose day is over', () => {
+    const rows = [{ id: 'fri', date: at(2026, 9, 18, 13) }];
+    expect(dropFinished(rows, (r) => r.date, NOW)).toEqual([]);
+  });
+
+  it("keeps today's exam even after it started", () => {
+    const rows = [{ id: 'today', date: at(2026, 9, 21, 9) }];
+    expect(dropFinished(rows, (r) => r.date, NOW).map((r) => r.id)).toEqual(['today']);
+  });
+
+  it('keeps everything still to come', () => {
+    const rows = [
+      { id: 'past', date: at(2026, 9, 1, 9) },
+      { id: 'wed', date: at(2026, 9, 23, 9) },
+      { id: 'oct', date: at(2026, 10, 7, 10) },
+    ];
+    expect(dropFinished(rows, (r) => r.date, NOW).map((r) => r.id)).toEqual(['wed', 'oct']);
   });
 });

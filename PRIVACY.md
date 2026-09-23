@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: September 6, 2026**
+**Last Updated: September 22, 2026**
 
 ## Introduction
 reIS ("we", "our", or "us") is a Chrome extension designed to modernize and enhance the user experience of the Mendel University Information System (IS Mendelu). We are committed to protecting your privacy and ensuring the security of your data.
@@ -21,7 +21,9 @@ There is no longer any exception to that. Library study-room booking — the one
 ### 2. Anonymous Usage Analytics
 We collect anonymous usage data to improve the extension:
 - **Interaction Data**: Clicks on notifications and views of the notification feed.
-- **Purpose**: To rank relevance of student association notifications.
+- **Map Event Views**: When you open a society event on the campus map, a counter on that event is incremented. The request carries **the event's id and nothing else** — no identifier of yours, not even the random install identifier described in section 3.
+- **Feature Counters**: Two things are counted, each as one labelled event per installation per day carrying the random install identifier from section 3 and nothing else: that you spent **at least three seconds** on the campus map, and that you **completed the eduroam Wi-Fi setup** (recorded separately for "the app configured the network itself" and "the profile was handed over for you to install"). No event ids, no room or building names, no timings beyond the three-second threshold, and nothing about what you were looking at.
+- **Purpose**: To rank relevance of student association notifications, and to know whether the map and the eduroam setup are actually used.
 - **Privacy**: This data is **not linked** to your identity, IS credentials, or personal content.
 
 ### 3. Daily Usage & NPS Feedback

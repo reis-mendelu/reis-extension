@@ -89,7 +89,7 @@ describe('useAppLogic real-data-mode listener attachment', () => {
 
     renderHook(() => useAppLogic());
 
-    const attachedMessage = addSpy.mock.calls.some((call) => call[0] === 'message');
+    const attachedMessage = addSpy.mock.calls.some((call: unknown[]) => call[0] === 'message');
     expect(attachedMessage).toBe(true);
   });
 
@@ -100,7 +100,7 @@ describe('useAppLogic real-data-mode listener attachment', () => {
 
     renderHook(() => useAppLogic());
 
-    const attachedMessage = addSpy.mock.calls.some((call) => call[0] === 'message');
+    const attachedMessage = addSpy.mock.calls.some((call: unknown[]) => call[0] === 'message');
     expect(attachedMessage).toBe(false);
   });
 });

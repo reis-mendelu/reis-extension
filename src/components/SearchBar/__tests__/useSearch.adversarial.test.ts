@@ -34,7 +34,7 @@ describe('useSearch — adversarial inputs & scope toggling', () => {
   it('never hits the network for whitespace-only queries', async () => {
     setup();
     renderHook(() => useSearch('     '));
-    await new Promise(r => setTimeout(r, 350));
+    await new Promise((r) => setTimeout(r, 350));
     expect(mockExecuteSearch).not.toHaveBeenCalled();
   });
 
@@ -51,20 +51,34 @@ describe('useSearch — adversarial inputs & scope toggling', () => {
     const { result } = renderHook(() => useSearch('marketing'));
     await waitFor(() => expect(mockExecuteSearch).toHaveBeenCalled());
 
-    act(() => { result.current.widenToUniversity(); });
-    act(() => { result.current.narrowToFaculty(); });
-    act(() => { result.current.widenToUniversity(); });
-    act(() => { result.current.narrowToFaculty(); });
+    act(() => {
+      result.current.widenToUniversity();
+    });
+    act(() => {
+      result.current.narrowToFaculty();
+    });
+    act(() => {
+      result.current.widenToUniversity();
+    });
+    act(() => {
+      result.current.narrowToFaculty();
+    });
 
     await waitFor(() => expect(result.current.scope).toBe('faculty'));
-    await waitFor(() => expect(mockExecuteSearch).toHaveBeenLastCalledWith('marketing', 'cz', '43110'));
+    await waitFor(() =>
+      expect(mockExecuteSearch).toHaveBeenLastCalledWith('marketing', 'cz', '43110')
+    );
   });
 
   it('a fresh keystroke resets a widened scope back to faculty (documented behavior)', async () => {
     setup({ language: 'cz', userFaculty: 'PEF' });
-    const { result, rerender } = renderHook(({ q }) => useSearch(q), { initialProps: { q: 'mark' } });
+    const { result, rerender } = renderHook(({ q }) => useSearch(q), {
+      initialProps: { q: 'mark' },
+    });
     await waitFor(() => expect(mockExecuteSearch).toHaveBeenCalled());
-    act(() => { result.current.widenToUniversity(); });
+    act(() => {
+      result.current.widenToUniversity();
+    });
     await waitFor(() => expect(result.current.scope).toBe('all'));
 
     rerender({ q: 'marke' }); // user types another char
@@ -75,12 +89,24 @@ describe('useSearch — adversarial inputs & scope toggling', () => {
     setup({ language: 'en', userFaculty: 'PEF' });
     mockExecuteSearch.mockResolvedValue({
       people: [],
-      subjects: [{ id: '', code: '', name: 'Orphan subject', link: 'l', faculty: 'PEF', facultyColor: '#fff', semester: '' }],
+      subjects: [
+        {
+          id: '',
+          code: '',
+          name: 'Orphan subject',
+          link: 'l',
+          faculty: 'PEF',
+          facultyColor: '#fff',
+          semester: '',
+        },
+      ],
       subjectsTruncated: false,
     });
     const { result } = renderHook(() => useSearch('orphan'));
-    await waitFor(() => expect(result.current.sections.find(s => s.key === 'subjects')?.results.length).toBe(1));
-    const r = result.current.sections.find(s => s.key === 'subjects')!.results[0];
+    await waitFor(() =>
+      expect(result.current.sections.find((s) => s.key === 'subjects')?.results.length).toBe(1)
+    );
+    const r = result.current.sections.find((s) => s.key === 'subjects')!.results[0];
     expect(r.title).toBe('Orphan subject');
     expect(r.subjectId).toBe('');
   });

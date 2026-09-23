@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: 6 September 2026**
+**Last Updated: 22 September 2026**
 
 reIS is a student-built project that simplifies the Mendel University in Brno
 Information System (IS Mendelu). It is a browser extension (Chrome, Edge,
@@ -32,6 +32,10 @@ platform.
 | Feedback | you press send | your message, any contact detail you type, the screen name, app version, browser, window size |
 | In-app survey, event RSVP | you answer / RSVP | the same random install identifier |
 | Society post view or click | you open one | a post id |
+| Map event opened | you open an event on the campus map | that event's id and nothing else — a counter on the event, with no identifier of yours attached |
+| Map used for 3 seconds | at most once a day, after three seconds on the map | the random install identifier and the fixed `map_dwell_3s` label |
+| eduroam network configured | the app itself saves the eduroam network (phone) | the random install identifier and the fixed `eduroam_wifi_configured` label |
+| eduroam profile handed over | a profile is prepared for you to install (Mac, Windows) | the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it |
 
 Nothing else. Feedback is read by the developers and passed to nobody.
 

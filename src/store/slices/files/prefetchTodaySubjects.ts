@@ -5,10 +5,10 @@ export const PREFETCH_STALE_MS = 60_000;
 export const PREFETCH_MAX = 6;
 
 interface PrefetchInput {
-    schedule: BlockLesson[];
-    lastFilesFetchedAt: Record<string, number>;
-    refreshFilesForSubject: (code: string) => Promise<void>;
-    now?: number;
+  schedule: BlockLesson[];
+  lastFilesFetchedAt: Record<string, number>;
+  refreshFilesForSubject: (code: string) => Promise<void>;
+  now?: number;
 }
 
 /**
@@ -18,19 +18,19 @@ interface PrefetchInput {
  * Returns the set of course codes for which a refresh was actually triggered.
  */
 export function prefetchTodaySubjectsImpl({
-    schedule,
-    lastFilesFetchedAt,
-    refreshFilesForSubject,
-    now = Date.now(),
+  schedule,
+  lastFilesFetchedAt,
+  refreshFilesForSubject,
+  now = Date.now(),
 }: PrefetchInput): Set<string> {
-    const codes = todaysCourseCodes(schedule, new Date(now));
-    const fired = new Set<string>();
-    for (const code of codes) {
-        if (fired.size >= PREFETCH_MAX) break;
-        const last = lastFilesFetchedAt[code];
-        if (last && now - last < PREFETCH_STALE_MS) continue;
-        fired.add(code);
-        refreshFilesForSubject(code).catch(() => {});
-    }
-    return fired;
+  const codes = todaysCourseCodes(schedule, new Date(now));
+  const fired = new Set<string>();
+  for (const code of codes) {
+    if (fired.size >= PREFETCH_MAX) break;
+    const last = lastFilesFetchedAt[code];
+    if (last && now - last < PREFETCH_STALE_MS) continue;
+    fired.add(code);
+    refreshFilesForSubject(code).catch(() => {});
+  }
+  return fired;
 }

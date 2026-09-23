@@ -2,11 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { parseSyllabusOffline } from '../syllabusParser';
 
 describe('syllabusParser', () => {
-    /**
-     * Test Case 1: Full syllabus with both text requirements and grading table
-     * Simulates a typical IS Mendelu syllabus page
-     */
-    const FULL_SYLLABUS_HTML = `
+  /**
+   * Test Case 1: Full syllabus with both text requirements and grading table
+   * Simulates a typical IS Mendelu syllabus page
+   */
+  const FULL_SYLLABUS_HTML = `
     <html>
         <body>
             <table>
@@ -58,34 +58,34 @@ describe('syllabusParser', () => {
     </html>
     `;
 
-    it('should parse full syllabus with both text and table', () => {
-        const result = parseSyllabusOffline(FULL_SYLLABUS_HTML);
+  it('should parse full syllabus with both text and table', () => {
+    const result = parseSyllabusOffline(FULL_SYLLABUS_HTML);
 
-        // Verify text requirements
-        expect(result.requirementsText).toContain('Student je povinen:');
-        expect(result.requirementsText).toContain('Zúčastnit se minimálně 80 % přednášek');
-        expect(result.requirementsText).toContain('Odevzdat všechny semestrální projekty');
-        
-        // Verify text preserves newlines (from <br> tags)
-        expect(result.requirementsText.split('\n').length).toBeGreaterThan(1);
+    // Verify text requirements
+    expect(result.requirementsText).toContain('Student je povinen:');
+    expect(result.requirementsText).toContain('Zúčastnit se minimálně 80 % přednášek');
+    expect(result.requirementsText).toContain('Odevzdat všechny semestrální projekty');
 
-        // Verify table structure
-        expect(result.requirementsTable).toHaveLength(4); // Header + 3 data rows
-        
-        // Check header row
-        expect(result.requirementsTable[0]).toEqual(['Aktivita', 'Body', 'Min. body']);
-        
-        // Check data rows
-        expect(result.requirementsTable[1]).toEqual(['Průběžné testy', '40', '20']);
-        expect(result.requirementsTable[2]).toEqual(['Semestrální projekt', '30', '15']);
-        expect(result.requirementsTable[3]).toEqual(['Závěrečná zkouška', '30', '15']);
-    });
+    // Verify text preserves newlines (from <br> tags)
+    expect(result.requirementsText.split('\n').length).toBeGreaterThan(1);
 
-    /**
-     * Test Case 2: Only text requirements, no table
-     * Some subjects might not have a detailed grading breakdown
-     */
-    const TEXT_ONLY_HTML = `
+    // Verify table structure
+    expect(result.requirementsTable).toHaveLength(4); // Header + 3 data rows
+
+    // Check header row
+    expect(result.requirementsTable[0]).toEqual(['Aktivita', 'Body', 'Min. body']);
+
+    // Check data rows
+    expect(result.requirementsTable[1]).toEqual(['Průběžné testy', '40', '20']);
+    expect(result.requirementsTable[2]).toEqual(['Semestrální projekt', '30', '15']);
+    expect(result.requirementsTable[3]).toEqual(['Závěrečná zkouška', '30', '15']);
+  });
+
+  /**
+   * Test Case 2: Only text requirements, no table
+   * Some subjects might not have a detailed grading breakdown
+   */
+  const TEXT_ONLY_HTML = `
     <html>
         <body>
             <table>
@@ -106,22 +106,22 @@ describe('syllabusParser', () => {
     </html>
     `;
 
-    it('should parse text-only requirements without table', () => {
-        const result = parseSyllabusOffline(TEXT_ONLY_HTML);
+  it('should parse text-only requirements without table', () => {
+    const result = parseSyllabusOffline(TEXT_ONLY_HTML);
 
-        expect(result.requirementsText).toContain('Pro udělení zápočtu je nutné:');
-        expect(result.requirementsText).toContain('Aktivní účast na cvičeních');
-        expect(result.requirementsText).toContain('Splnění všech domácích úkolů');
-        
-        // Should have empty table
-        expect(result.requirementsTable).toEqual([]);
-    });
+    expect(result.requirementsText).toContain('Pro udělení zápočtu je nutné:');
+    expect(result.requirementsText).toContain('Aktivní účast na cvičeních');
+    expect(result.requirementsText).toContain('Splnění všech domácích úkolů');
 
-    /**
-     * Test Case 3: Complex table with percentage grading
-     * Real-world example with detailed point distribution
-     */
-    const COMPLEX_TABLE_HTML = `
+    // Should have empty table
+    expect(result.requirementsTable).toEqual([]);
+  });
+
+  /**
+   * Test Case 3: Complex table with percentage grading
+   * Real-world example with detailed point distribution
+   */
+  const COMPLEX_TABLE_HTML = `
     <html>
         <body>
             <table>
@@ -178,25 +178,25 @@ describe('syllabusParser', () => {
     </html>
     `;
 
-    it('should parse complex grading table with percentages', () => {
-        const result = parseSyllabusOffline(COMPLEX_TABLE_HTML);
+  it('should parse complex grading table with percentages', () => {
+    const result = parseSyllabusOffline(COMPLEX_TABLE_HTML);
 
-        expect(result.requirementsText).toBe('Klasifikovaný zápočet');
-        
-        expect(result.requirementsTable).toHaveLength(6); // Header + 4 activities + total
-        expect(result.requirementsTable[0]).toEqual(['Aktivita', 'Max. body', 'Procento']);
-        expect(result.requirementsTable[1]).toEqual(['Aktivita na cvičeních', '10', '10 %']);
-        expect(result.requirementsTable[3]).toEqual(['Projekt', '20', '20 %']); // Index 3, not 4
-        
-        // Check total row (should preserve bold text as regular text)
-        expect(result.requirementsTable[5]).toEqual(['Celkem', '100', '100 %']);
-    });
+    expect(result.requirementsText).toBe('Klasifikovaný zápočet');
 
-    /**
-     * Test Case 4: Missing requirements section
-     * Edge case where syllabus doesn't have the expected sections
-     */
-    const MISSING_SECTION_HTML = `
+    expect(result.requirementsTable).toHaveLength(6); // Header + 4 activities + total
+    expect(result.requirementsTable[0]).toEqual(['Aktivita', 'Max. body', 'Procento']);
+    expect(result.requirementsTable[1]).toEqual(['Aktivita na cvičeních', '10', '10 %']);
+    expect(result.requirementsTable[3]).toEqual(['Projekt', '20', '20 %']); // Index 3, not 4
+
+    // Check total row (should preserve bold text as regular text)
+    expect(result.requirementsTable[5]).toEqual(['Celkem', '100', '100 %']);
+  });
+
+  /**
+   * Test Case 4: Missing requirements section
+   * Edge case where syllabus doesn't have the expected sections
+   */
+  const MISSING_SECTION_HTML = `
     <html>
         <body>
             <table>
@@ -211,18 +211,18 @@ describe('syllabusParser', () => {
     </html>
     `;
 
-    it('should handle missing requirements section gracefully', () => {
-        const result = parseSyllabusOffline(MISSING_SECTION_HTML);
+  it('should handle missing requirements section gracefully', () => {
+    const result = parseSyllabusOffline(MISSING_SECTION_HTML);
 
-        expect(result.requirementsText).toBe('Error: Section not found');
-        expect(result.requirementsTable).toEqual([]);
-    });
+    expect(result.requirementsText).toBe('Error: Section not found');
+    expect(result.requirementsTable).toEqual([]);
+  });
 
-    /**
-     * Test Case 5: Whitespace normalization
-     * Ensure excessive whitespace is cleaned up
-     */
-    const WHITESPACE_HTML = `
+  /**
+   * Test Case 5: Whitespace normalization
+   * Ensure excessive whitespace is cleaned up
+   */
+  const WHITESPACE_HTML = `
     <html>
         <body>
             <table>
@@ -255,21 +255,21 @@ describe('syllabusParser', () => {
     </html>
     `;
 
-    it('should normalize excessive whitespace in text and table', () => {
-        const result = parseSyllabusOffline(WHITESPACE_HTML);
+  it('should normalize excessive whitespace in text and table', () => {
+    const result = parseSyllabusOffline(WHITESPACE_HTML);
 
-        // Text should have single spaces
-        expect(result.requirementsText).toBe('Text s mnoha mezerami');
-        
-        // Table cells should have normalized whitespace
-        expect(result.requirementsTable[0]).toEqual(['Test s mezerami', '25 %']);
-    });
+    // Text should have single spaces
+    expect(result.requirementsText).toBe('Text s mnoha mezerami');
 
-    /**
-     * Test Case 6: Special characters and Czech diacritics
-     * Ensure proper encoding and handling of Czech characters
-     */
-    const CZECH_CHARS_HTML = `
+    // Table cells should have normalized whitespace
+    expect(result.requirementsTable[0]).toEqual(['Test s mezerami', '25 %']);
+  });
+
+  /**
+   * Test Case 6: Special characters and Czech diacritics
+   * Ensure proper encoding and handling of Czech characters
+   */
+  const CZECH_CHARS_HTML = `
     <html>
         <body>
             <table>
@@ -307,42 +307,42 @@ describe('syllabusParser', () => {
     </html>
     `;
 
-    it('should preserve Czech diacritics correctly', () => {
-        const result = parseSyllabusOffline(CZECH_CHARS_HTML);
+  it('should preserve Czech diacritics correctly', () => {
+    const result = parseSyllabusOffline(CZECH_CHARS_HTML);
 
-        expect(result.requirementsText).toContain('žádoucí úroveň znalostí');
-        expect(result.requirementsText).toContain('ě, š, č, ř, ž, ý, á, í, é');
-        
-        expect(result.requirementsTable[0]).toEqual(['Řešení příkladů', '60 bodů']);
-        expect(result.requirementsTable[1]).toEqual(['Účast na přednáškách', '40 bodů']);
-    });
+    expect(result.requirementsText).toContain('žádoucí úroveň znalostí');
+    expect(result.requirementsText).toContain('ě, š, č, ř, ž, ý, á, í, é');
 
-    /**
-     * Test Case 7: Empty HTML / Malformed input
-     */
-    it('should handle empty HTML gracefully', () => {
-        const result = parseSyllabusOffline('');
-        
-        expect(result.requirementsText).toBe('Error: Section not found');
-        expect(result.requirementsTable).toEqual([]);
-    });
+    expect(result.requirementsTable[0]).toEqual(['Řešení příkladů', '60 bodů']);
+    expect(result.requirementsTable[1]).toEqual(['Účast na přednáškách', '40 bodů']);
+  });
 
-    it('should handle null/undefined input gracefully', () => {
-        const result1 = parseSyllabusOffline(null as unknown as string);
-        const result2 = parseSyllabusOffline(undefined as unknown as string);
-        
-        expect(result1.requirementsText).toBe('Error: Section not found');
-        expect(result1.requirementsTable).toEqual([]);
-        
-        expect(result2.requirementsText).toBe('Error: Section not found');
-        expect(result2.requirementsTable).toEqual([]);
-    });
+  /**
+   * Test Case 7: Empty HTML / Malformed input
+   */
+  it('should handle empty HTML gracefully', () => {
+    const result = parseSyllabusOffline('');
 
-    /**
-     * Test Case 8: Table with mixed th/td headers
-     * Some tables use <td> for headers instead of <th>
-     */
-    const MIXED_HEADERS_HTML = `
+    expect(result.requirementsText).toBe('Error: Section not found');
+    expect(result.requirementsTable).toEqual([]);
+  });
+
+  it('should handle null/undefined input gracefully', () => {
+    const result1 = parseSyllabusOffline(null as unknown as string);
+    const result2 = parseSyllabusOffline(undefined as unknown as string);
+
+    expect(result1.requirementsText).toBe('Error: Section not found');
+    expect(result1.requirementsTable).toEqual([]);
+
+    expect(result2.requirementsText).toBe('Error: Section not found');
+    expect(result2.requirementsTable).toEqual([]);
+  });
+
+  /**
+   * Test Case 8: Table with mixed th/td headers
+   * Some tables use <td> for headers instead of <th>
+   */
+  const MIXED_HEADERS_HTML = `
     <html>
         <body>
             <table>
@@ -381,22 +381,22 @@ describe('syllabusParser', () => {
     </html>
     `;
 
-    it('should handle tables with <td> headers (instead of <th>)', () => {
-        const result = parseSyllabusOffline(MIXED_HEADERS_HTML);
+  it('should handle tables with <td> headers (instead of <th>)', () => {
+    const result = parseSyllabusOffline(MIXED_HEADERS_HTML);
 
-        expect(result.requirementsText).toBe('Zkouška');
-        
-        // Parser should capture th AND td cells
-        expect(result.requirementsTable).toHaveLength(3);
-        expect(result.requirementsTable[0]).toEqual(['Typ', 'Body']);
-        expect(result.requirementsTable[1]).toEqual(['Písemná zkouška', '70']);
-        expect(result.requirementsTable[2]).toEqual(['Ústní zkouška', '30']);
-    });
+    expect(result.requirementsText).toBe('Zkouška');
 
-    /**
-     * Test Case 9: English syllabus with Assessment data
-     */
-    const ENGLISH_SYLLABUS_HTML = `
+    // Parser should capture th AND td cells
+    expect(result.requirementsTable).toHaveLength(3);
+    expect(result.requirementsTable[0]).toEqual(['Typ', 'Body']);
+    expect(result.requirementsTable[1]).toEqual(['Písemná zkouška', '70']);
+    expect(result.requirementsTable[2]).toEqual(['Ústní zkouška', '30']);
+  });
+
+  /**
+   * Test Case 9: English syllabus with Assessment data
+   */
+  const ENGLISH_SYLLABUS_HTML = `
     <html>
         <body>
             <table>
@@ -461,15 +461,23 @@ describe('syllabusParser', () => {
     </html>
     `;
 
-    it('should parse English syllabus with metadata', () => {
-        const result = parseSyllabusOffline(ENGLISH_SYLLABUS_HTML);
+  it('should parse English syllabus with metadata', () => {
+    const result = parseSyllabusOffline(ENGLISH_SYLLABUS_HTML);
 
-        // Verify metadata
-        expect(result.courseInfo!.credits).toBe('Exam');
-        expect(result.courseInfo!.garant).toEqual({ name: 'John Doe', id: '12345' });
+    // Verify metadata
+    expect(result.courseInfo!.credits).toBe('Exam');
+    expect(result.courseInfo!.garant).toEqual({ name: 'John Doe', id: '12345' });
 
-        expect(result.courseInfo!.teachers).toHaveLength(2);
-        expect(result.courseInfo!.teachers[0]).toEqual({ name: 'Jane Doe', id: '22222', roles: 'lecturer' });
-        expect(result.courseInfo!.teachers[1]).toEqual({ name: 'Bob Smith', id: '33333', roles: 'tutor' });
+    expect(result.courseInfo!.teachers).toHaveLength(2);
+    expect(result.courseInfo!.teachers[0]).toEqual({
+      name: 'Jane Doe',
+      id: '22222',
+      roles: 'lecturer',
     });
+    expect(result.courseInfo!.teachers[1]).toEqual({
+      name: 'Bob Smith',
+      id: '33333',
+      roles: 'tutor',
+    });
+  });
 });

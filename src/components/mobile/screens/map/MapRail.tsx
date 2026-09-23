@@ -1,6 +1,9 @@
 import { ChevronLeft, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { useEffect } from 'react';
 import { useAppStore } from '../../../../store/useAppStore';
+import { RouteButton } from '../../../CampusMap/RouteButton';
+import { RouteCard } from '../../../CampusMap/RouteCard';
+import { RoutePicker } from '../../../CampusMap/RoutePicker';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useRailResize } from './useRailResize';
 import { RAIL_MIN_PX, RAIL_MAX_PX } from '../../../../utils/mapRail';
@@ -43,13 +46,18 @@ export function MapRail() {
   const { resizing, railHandlers } = useRailResize();
 
   const selectedEvent = selection?.kind === 'event' ? selection.event : null;
+  // A tapped bubble in the botanical garden, handled exactly like a tapped
+  // event pin: the card replaces the list, and opening the rail is what makes
+  // it visible at all.
+  const selectedGardenPlace = selection?.kind === 'gardenPlace' ? selection.place : null;
+  const selectedCard = selectedEvent || selectedGardenPlace;
 
   // Picking a pin while the rail is closed has to bring it back — otherwise the
   // pin highlights and the answer to the tap is somewhere the student cannot
   // see. This is the only thing that opens the rail on the student's behalf.
   useEffect(() => {
-    if (selectedEvent) setOpen(true);
-  }, [selectedEvent, setOpen]);
+    if (selectedEvent || selectedGardenPlace) setOpen(true);
+  }, [selectedEvent, selectedGardenPlace, setOpen]);
 
   if (!open) {
     return (
@@ -87,6 +95,17 @@ export function MapRail() {
         resizing ? '' : 'transition-[width] duration-200 ease-out'
       }`}
     >
+      {/* The route controls live here too, not only in the sheet.
+          MapSheet and MapRail are two shells for the same screen, and the
+          landscape rail shipped without them: on a phone turned sideways there
+          was no way to ask for a route at all, and the map simply never drew
+          one. Found on a real device, in landscape, by the maintainer. */}
+      <div className="flex flex-shrink-0 flex-col gap-2 border-b border-base-content/10 p-3">
+        <RouteButton />
+        <RoutePicker />
+      </div>
+      <RouteCard />
+
       {/* The left edge is the resize handle — the axis a tablet can afford to
           trade. Not a detent: it sets a width and keeps it. */}
       {/* A separator with a value, and reachable from the keyboard: the pointer
@@ -123,7 +142,7 @@ export function MapRail() {
       </div>
 
       <div className="flex flex-shrink-0 items-center gap-1 py-4 pl-6 pr-3">
-        {selectedEvent ? (
+        {selectedCard ? (
           <button
             type="button"
             onClick={clearMapSelection}
@@ -160,7 +179,11 @@ export function MapRail() {
       </div>
 
       <div className="flex-1 overflow-y-auto pb-4 pl-1">
-        <MapPanelBody selectedEvent={selectedEvent} flush />
+        <MapPanelBody
+          selectedEvent={selectedEvent}
+          selectedGardenPlace={selectedGardenPlace}
+          flush
+        />
       </div>
     </aside>
   );

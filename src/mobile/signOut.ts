@@ -10,6 +10,8 @@ export interface SignOutDeps {
   /** Empties the WebView cookie jar for is.mendelu.cz. */
   clearIsCookies(): Promise<void>;
   clearUserParams(): void;
+  /** Drops the society/admin login, which supabase-js keeps outside IndexedDB. */
+  clearAdminSession(): Promise<void>;
   clearLocalData(): Promise<void>;
   /** Sends the app back through boot, which presents the login. */
   restart(): void;
@@ -71,8 +73,16 @@ export async function signOutMobile(deps: SignOutDeps): Promise<void> {
   // that matters, and a stubborn IndexedDB must not strand the student in a
   // half-signed-out app. The restart puts them at the login, which gates the
   // data anyway.
+  //
+  // The society/admin login belongs in this block and not above it, for the
+  // same reason: it is a second credential, kept by supabase-js outside
+  // IndexedDB, and it has to go — but a sign-out this function REFUSES must
+  // not have taken it. Signed in as the student and signed out of their
+  // society console is exactly the half-torn-down state the refusal exists to
+  // prevent.
   try {
     deps.clearUserParams();
+    await deps.clearAdminSession();
     await deps.clearLocalData();
   } catch (e) {
     logError('Mobile.signOut:localData', e);
@@ -93,6 +103,10 @@ export function buildSignOutDeps(): SignOutDeps {
       await InAppBrowser.clearCookies({ url: IS_COOKIE_URL });
     },
     clearUserParams: () => clearUserParamsCache(),
+    clearAdminSession: async () => {
+      const { clearAdminSession } = await import('../services/admin/clearAdminSession');
+      await clearAdminSession();
+    },
     clearLocalData: () => IndexedDBService.clearAll(),
     // A reload rather than a hand-rolled teardown: boot() already owns the
     // "no token → present login" path, and re-running it is what guarantees

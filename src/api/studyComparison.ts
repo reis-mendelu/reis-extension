@@ -55,9 +55,14 @@ export function parseStudyComparison(doc: Document): StudyComparison | null {
 
 const PERCENTILE_URL = `${BASE_URL}/auth/student/pruchod_studiem.pl`;
 
-export async function fetchStudyComparison(studium: string, obdobi: string): Promise<StudyComparison | null> {
+export async function fetchStudyComparison(
+  studium: string,
+  obdobi: string
+): Promise<StudyComparison | null> {
   try {
-    const res = await fetchWithAuth(`${PERCENTILE_URL}?vyber=zobrazeni_percentilu;studium=${studium};obdobi=${obdobi};lang=cz`);
+    const res = await fetchWithAuth(
+      `${PERCENTILE_URL}?vyber=zobrazeni_percentilu;studium=${studium};obdobi=${obdobi};lang=cz`
+    );
     const html = await res.text();
     const doc = new DOMParser().parseFromString(html, 'text/html');
     return parseStudyComparison(doc);

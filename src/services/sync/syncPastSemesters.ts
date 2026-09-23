@@ -8,50 +8,50 @@ import type { SyncedData } from '../../types/messages/base';
 const META_KEY_PREFIX = 'past_semester_';
 
 export async function syncPastSemesters(
-    studium: string,
-    currentObdobi: string,
-    allPeriods: AvailablePeriod[],
+  studium: string,
+  currentObdobi: string,
+  allPeriods: AvailablePeriod[]
 ): Promise<void> {
-    const pastPeriods = allPeriods.filter(p => p.id !== currentObdobi);
-    if (pastPeriods.length === 0) return;
+  const pastPeriods = allPeriods.filter((p) => p.id !== currentObdobi);
+  if (pastPeriods.length === 0) return;
 
-    const mergedPastAttendance: Record<string, SubjectAttendance[]> = {};
+  const mergedPastAttendance: Record<string, SubjectAttendance[]> = {};
 
-    for (const period of pastPeriods) {
-        const cacheKey = `${META_KEY_PREFIX}${period.id}`;
+  for (const period of pastPeriods) {
+    const cacheKey = `${META_KEY_PREFIX}${period.id}`;
 
-        // Permanent cache — past semesters are immutable facts
-        const cached = await IndexedDBService.get('meta', cacheKey) as
-            { subjects: SubjectsData; attendance: Record<string, SubjectAttendance[]> } | undefined;
+    // Permanent cache — past semesters are immutable facts
+    const cached = (await IndexedDBService.get('meta', cacheKey)) as
+      { subjects: SubjectsData; attendance: Record<string, SubjectAttendance[]> } | undefined;
 
-        let subjects: SubjectsData | null = null;
-        let attendance: Record<string, SubjectAttendance[]> = {};
+    let subjects: SubjectsData | null = null;
+    let attendance: Record<string, SubjectAttendance[]> = {};
 
-        if (cached?.subjects && cached?.attendance) {
-            subjects = cached.subjects;
-            attendance = cached.attendance;
-        } else {
-            const result = await fetchPastSemesterData(studium, period.id);
-            if (result) {
-                subjects = result.subjects;
-                attendance = result.attendance;
-                await IndexedDBService.set('meta', cacheKey, { subjects, attendance });
-            }
-        }
-
-        for (const [code, records] of Object.entries(attendance)) {
-            if (mergedPastAttendance[code]) {
-                mergedPastAttendance[code] = [...mergedPastAttendance[code], ...records];
-            } else {
-                mergedPastAttendance[code] = records;
-            }
-        }
+    if (cached?.subjects && cached?.attendance) {
+      subjects = cached.subjects;
+      attendance = cached.attendance;
+    } else {
+      const result = await fetchPastSemesterData(studium, period.id);
+      if (result) {
+        subjects = result.subjects;
+        attendance = result.attendance;
+        await IndexedDBService.set('meta', cacheKey, { subjects, attendance });
+      }
     }
 
-    const update: Partial<SyncedData> = {
-        pastAttendance: mergedPastAttendance,
-        lastSync: Date.now(),
-    };
+    for (const [code, records] of Object.entries(attendance)) {
+      if (mergedPastAttendance[code]) {
+        mergedPastAttendance[code] = [...mergedPastAttendance[code], ...records];
+      } else {
+        mergedPastAttendance[code] = records;
+      }
+    }
+  }
 
-    sendToIframe(Messages.syncUpdate(update as SyncedData));
+  const update: Partial<SyncedData> = {
+    pastAttendance: mergedPastAttendance,
+    lastSync: Date.now(),
+  };
+
+  sendToIframe(Messages.syncUpdate(update as SyncedData));
 }

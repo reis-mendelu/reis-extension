@@ -139,6 +139,33 @@ describe('mapSlice', () => {
     expect(s.mapFocusRequest).toBe(before + 1);
   });
 
+  // The regression students outside PEF actually hit. Building A prints its
+  // hall code in `nickname` ("A01"), not `name` — a timetable gives the button
+  // that string and nothing else, so matching code/name alone left the button
+  // dead for every faculty but PEF.
+  it('focusRoomByCode resolves a hall known only by its nickname', () => {
+    const before = useAppStore.getState().mapFocusRequest;
+    useAppStore.getState().focusRoomByCode('A01'); // BA01N1052, building 54678
+    const s = useAppStore.getState();
+    expect(s.activeBuildingId).toBe(54678);
+    expect(s.mapSelection?.kind).toBe('roomRef');
+    expect(s.mapFocusRequest).toBe(before + 1);
+  });
+
+  it('focusRoomByCode ignores the campus a timetable brackets after the room', () => {
+    useAppStore.getState().focusRoomByCode('Q01 (Poříčí)');
+    expect(useAppStore.getState().activeBuildingId).toBe(0);
+  });
+
+  it('focusRoomByCode leaves the map alone for a room it cannot find', () => {
+    useAppStore.getState().focusCampus();
+    const before = useAppStore.getState().mapFocusRequest;
+    // A real Zahradnická fakulta timetable room; building X carries no such
+    // handle under any field, so there is nothing to fly to.
+    useAppStore.getState().focusRoomByCode('X02');
+    expect(useAppStore.getState().mapFocusRequest).toBe(before);
+  });
+
   it('focusCampus returns to overview and bumps the focus request', () => {
     useAppStore.getState().setMapBuilding(54678);
     const before = useAppStore.getState().mapFocusRequest;
@@ -533,5 +560,73 @@ describe('mapFocusTarget', () => {
     useAppStore.getState().closeComposer();
     expect(useAppStore.getState().draftCoord).toBeNull();
     expect(useAppStore.getState().mapFocusTarget).toBe('campus');
+  });
+});
+
+describe('the two-step walk question', () => {
+  const s = () => useAppStore.getState();
+  beforeEach(() => {
+    useAppStore.setState({
+      mapWalkEntrance: null,
+      mapWalkBuilding: null,
+      activeBuildingId: null,
+      activeFloorId: null,
+      mapSelection: null,
+    });
+  });
+
+  it('starts with the question unasked', () => {
+    expect(s().mapWalkEntrance).toBeNull();
+    expect(s().mapWalkBuilding).toBeNull();
+  });
+
+  it('asks the second half only once the first is answered', () => {
+    s().selectWalkEntrance('Hlavní brána');
+    expect(s().mapWalkEntrance).toBe('Hlavní brána');
+    expect(s().mapWalkBuilding).toBeNull();
+    s().selectWalkBuilding('Q');
+    expect(s().mapWalkBuilding).toBe('Q');
+  });
+
+  it('puts a gate away when it is tapped again', () => {
+    s().selectWalkEntrance('Hlavní brána');
+    s().selectWalkEntrance('Hlavní brána');
+    expect(s().mapWalkEntrance).toBeNull();
+  });
+
+  it('reopens the building question when a DIFFERENT gate is picked', () => {
+    // Otherwise you silently keep the building you chose from the last gate,
+    // and the walk on screen is one nobody asked for.
+    s().selectWalkEntrance('Hlavní brána');
+    s().selectWalkBuilding('Q');
+    s().selectWalkEntrance('Brána Lesnická');
+    expect(s().mapWalkEntrance).toBe('Brána Lesnická');
+    expect(s().mapWalkBuilding).toBeNull();
+  });
+
+  it('steps back one at a time, so a fumbled tap does not cost both answers', () => {
+    s().selectWalkEntrance('Hlavní brána');
+    s().selectWalkBuilding('Q');
+    s().clearWalkStep();
+    expect(s().mapWalkEntrance).toBe('Hlavní brána');
+    expect(s().mapWalkBuilding).toBeNull();
+    s().clearWalkStep();
+    expect(s().mapWalkEntrance).toBeNull();
+  });
+
+  it('ends the question when a floor plan is opened', () => {
+    s().selectWalkEntrance('Hlavní brána');
+    s().selectWalkBuilding('Q');
+    s().setMapBuilding(54678); // building A
+    expect(s().mapWalkEntrance).toBeNull();
+    expect(s().mapWalkBuilding).toBeNull();
+  });
+
+  it('ends the question on the way back out to the campus', () => {
+    s().selectWalkEntrance('Hlavní brána');
+    s().selectWalkBuilding('Q');
+    s().exitToCampus();
+    expect(s().mapWalkEntrance).toBeNull();
+    expect(s().mapWalkBuilding).toBeNull();
   });
 });

@@ -7,22 +7,47 @@ import userEvent from '@testing-library/user-event';
 const { prefillSpy, plan } = vi.hoisted(() => ({
   prefillSpy: vi.fn(),
   plan: {
-    title: 'Test plan', isFulfilled: false, creditsAcquired: 0, creditsRequired: 180,
-    blocks: [{
-      title: 'Semester 1',
-      groups: [{
-        name: 'Required', statusDescription: '', subjects: [
-          { id: '', code: 'EBC-ST', name: 'Statistika', credits: 5, type: 'P', isEnrolled: false, isFulfilled: false, enrollmentCount: 0, rawStatusText: '' },
+    title: 'Test plan',
+    isFulfilled: false,
+    creditsAcquired: 0,
+    creditsRequired: 180,
+    blocks: [
+      {
+        title: 'Semester 1',
+        groups: [
+          {
+            name: 'Required',
+            statusDescription: '',
+            subjects: [
+              {
+                id: '',
+                code: 'EBC-ST',
+                name: 'Statistika',
+                credits: 5,
+                type: 'P',
+                isEnrolled: false,
+                isFulfilled: false,
+                enrollmentCount: 0,
+                rawStatusText: '',
+              },
+            ],
+          },
         ],
-      }],
-    }],
+      },
+    ],
   },
 }));
 
 // SearchBar: register the prefill spy into prefillRef like the real component does, render a marker.
 vi.mock('../../SearchBar/index', () => ({
-  SearchBar: ({ prefillRef }: { prefillRef?: React.MutableRefObject<((q: string) => void) | null> }) => {
-    React.useEffect(() => { if (prefillRef) prefillRef.current = prefillSpy; });
+  SearchBar: ({
+    prefillRef,
+  }: {
+    prefillRef?: React.MutableRefObject<((q: string) => void) | null>;
+  }) => {
+    React.useEffect(() => {
+      if (prefillRef) prefillRef.current = prefillSpy;
+    });
     return <div data-testid="study-plan-search" />;
   },
 }));
@@ -36,9 +61,26 @@ vi.mock('../SemesterSection', () => ({
 
 // Keep the rest of the page light and deterministic.
 vi.mock('@/hooks/useStudyPlan', () => ({ useStudyPlan: () => plan }));
-vi.mock('../useSubjectsData', () => ({ useSubjectsData: () => ({ zameraniLookup: new Map(), subjectSemesters: new Map(), subjectToZameranis: new Map(), zameraniProgress: new Map(), failRates: {}, enrolledCredits: 0 }) }));
-vi.mock('../useOpenSemesters', () => ({ useOpenSemesters: () => ({ openSemesters: new Set(), currentSemesterRef: { current: null }, handleToggle: () => {} }) }));
-vi.mock('../useZameraniPicks', () => ({ useZameraniPicks: () => ({ effectivePicks: [], togglePick: () => {} }) }));
+vi.mock('../useSubjectsData', () => ({
+  useSubjectsData: () => ({
+    zameraniLookup: new Map(),
+    subjectSemesters: new Map(),
+    subjectToZameranis: new Map(),
+    zameraniProgress: new Map(),
+    failRates: {},
+    enrolledCredits: 0,
+  }),
+}));
+vi.mock('../useOpenSemesters', () => ({
+  useOpenSemesters: () => ({
+    openSemesters: new Set(),
+    currentSemesterRef: { current: null },
+    handleToggle: () => {},
+  }),
+}));
+vi.mock('../useZameraniPicks', () => ({
+  useZameraniPicks: () => ({ effectivePicks: [], togglePick: () => {} }),
+}));
 vi.mock('../insights', () => ({ topHardestUpcoming: () => [], zameraniInsights: () => [] }));
 
 import { StudyPlanPage } from '../StudyPlanPage';

@@ -37,8 +37,8 @@ export function OpenCard({
   const openCount = state.type === 'open' ? state.openCount : 0;
   return (
     <ExamRowCard
-      title={row.sectionName}
-      subtitle={row.subjectName}
+      title={row.subjectName}
+      subtitle={row.sectionName}
       primaryMeta={openCount > 0 ? `${openCount} ${t('exams.available')}` : ''}
       secondaryMeta={t(
         `mobile.exams.termCount${pluralSuffix(language, row.section.terms.length)}`,
@@ -54,6 +54,7 @@ export function OpenCard({
           key={term.id}
           term={term}
           section={row.section}
+          now={now}
           isProcessing={isProcessing}
           onRegister={onRegister}
         />

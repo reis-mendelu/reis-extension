@@ -19,9 +19,10 @@ import {
   remotePlaceCenter,
   roomCodeToCoord,
 } from '../../components/CampusMap/mapHelpers';
-import { fetchBuildingRooms } from '../../api/campusMap';
 import { fetchMapEvents, toMapEvent } from '../../api/mapEvents';
 import { logError } from '../../utils/reportError';
+import { createBuildingGeometryActions } from './buildingGeometryActions';
+import { lookupRoomEntry, isNonPhysicalRoom } from '../../utils/rooms/lookupRoom';
 
 const META = buildingsJson as BuildingsMeta;
 const INDEX = roomsIndexJson as RoomIndexEntry[];
@@ -39,10 +40,16 @@ function locateEvent(e: MapEvent): MapEvent {
     : { ...e, coord: roomCodeToCoord(e.roomCode, INDEX, META) };
 }
 
-export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
+export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
+  // Loading a building's floor plan lives next door, so this file does not
+  // carry that responsibility too — see buildingGeometryActions.ts.
+  ...createBuildingGeometryActions(set, get, api),
+
   activeBuildingId: null,
   activeFloorId: null,
   mapSelection: null,
+  mapWalkEntrance: null,
+  mapWalkBuilding: null,
   roomsByBuilding: {},
   mapLoadingBuilding: null,
   mapSearchQuery: '',
@@ -66,26 +73,59 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
       activeBuildingId: id,
       activeFloorId: b.defaultFloorId ?? b.floors[0]?.id ?? null,
       mapSelection: null,
+      mapWalkEntrance: null,
+      mapWalkBuilding: null,
     });
     void get().loadMapBuilding(id);
   },
 
-  exitToCampus: () => set({ activeBuildingId: null, activeFloorId: null, mapSelection: null }),
+  exitToCampus: () =>
+    set({
+      activeBuildingId: null,
+      activeFloorId: null,
+      mapSelection: null,
+      mapWalkEntrance: null,
+      mapWalkBuilding: null,
+    }),
 
   clearMapSelection: () => set({ mapSelection: null }),
+
+  selectWalkEntrance: (name) =>
+    set((s) => ({
+      // Tapping the chosen gate again puts it away; a different gate reopens
+      // the building question rather than silently keeping the last answer.
+      mapWalkEntrance: s.mapWalkEntrance === name ? null : name,
+      mapWalkBuilding: null,
+    })),
+
+  selectWalkBuilding: (name) =>
+    set((s) => ({ mapWalkBuilding: s.mapWalkBuilding === name ? null : name })),
+
+  // Used by the tap-away. Stepping back one rather than clearing both: the
+  // buildings are thin L-shapes and easy to miss, and a near-miss that also
+  // lost the gate cost the student both answers.
+  clearWalkStep: () =>
+    set((s) =>
+      s.mapWalkBuilding !== null ? { mapWalkBuilding: null } : { mapWalkEntrance: null }
+    ),
 
   setMapFloor: (floorId) => set({ activeFloorId: floorId, mapSelection: null }),
 
   selectMapRoom: (room) => set({ mapSelection: { kind: 'room', room } }),
   selectMapPoi: (poi, coord) => set({ mapSelection: { kind: 'poi', poi, coord } }),
+  selectGardenPlace: (place) => set({ mapSelection: { kind: 'gardenPlace', place } }),
 
   setMapSearchQuery: (q) =>
     set({ mapSearchQuery: q, mapSearchResults: searchPlaces(q, INDEX, POIS, LANDMARKS) }),
 
   focusRoomByCode: (code) => {
-    const entry = INDEX.find((e) => e.code === code || e.name === code);
+    const entry = lookupRoomEntry(code, INDEX);
     if (!entry) {
-      logError('MapSlice.focusRoomByCode', new Error(`unknown room ${code}`));
+      // A lesson held online has no place to fly to; that is the timetable
+      // being honest, not a lookup we got wrong, so it is not worth a log line.
+      if (!isNonPhysicalRoom(code)) {
+        logError('MapSlice.focusRoomByCode', new Error(`unknown room ${code}`));
+      }
       return;
     }
     const b = buildingById(entry.buildingId);
@@ -185,21 +225,6 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get) => ({
       mapFocusRequest: get().mapFocusRequest + 1,
       mapFocusTarget: 'campus' as const,
     }),
-
-  loadMapBuilding: async (id) => {
-    if (get().roomsByBuilding[id]) return; // already in memory
-    set({ mapLoadingBuilding: id });
-    try {
-      const data = await fetchBuildingRooms(id);
-      if (data) set({ roomsByBuilding: { ...get().roomsByBuilding, [id]: data } });
-    } catch (err) {
-      logError('MapSlice.loadMapBuilding', err);
-    } finally {
-      set({
-        mapLoadingBuilding: get().mapLoadingBuilding === id ? null : get().mapLoadingBuilding,
-      });
-    }
-  },
 
   mapPanelCollapsed: false,
   setMapPanelTab: (tab) => set({ mapPanelTab: tab }),

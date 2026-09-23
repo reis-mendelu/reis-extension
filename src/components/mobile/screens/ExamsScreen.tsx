@@ -13,7 +13,7 @@ import {
   type RegisteredExam,
   type OpenExam,
 } from '../../../utils/mobile/examRows';
-import { splitByWeek } from '../../../utils/mobile/examWhen';
+import { splitByWeek, dropFinished } from '../../../utils/mobile/examWhen';
 import { splitByRegistrationOpen } from '../../../utils/mobile/examOpening';
 import { pluralSuffix } from '../../../utils/plural';
 import { ScreenHeader } from './calendar/ScreenHeader';
@@ -22,6 +22,8 @@ import { NextUpStrip } from './exams/NextUpStrip';
 import { NotYetOpenCard } from './exams/NotYetOpenCard';
 import { RegisteredCard } from './exams/RegisteredCard';
 import { OpenCard } from './exams/OpenCard';
+import { ExamsRefresh } from './exams/ExamsRefresh';
+import { AlwaysScrollable } from '../primitives/AlwaysScrollable';
 import { ConfirmSheet } from '../sheets/ConfirmSheet';
 
 function ExamsSkeleton() {
@@ -69,7 +71,14 @@ export function ExamsScreen() {
     handleConfirmAction,
   } = useExamActions({ exams, setExpandedSectionId: setExpandedId });
 
-  const registered = useMemo(() => buildRegisteredExams(exams, language), [exams, language]);
+  // Only what is still to come. IS keeps a registered exam listed after it has
+  // been sat, until it is graded — see `dropFinished` for why it is hidden
+  // rather than grouped, and why "finished" means the day is over. Filtered
+  // here, once, so the strip, the groups and the count all agree.
+  const registered = useMemo(
+    () => dropFinished(buildRegisteredExams(exams, language), (r) => r.date, now),
+    [exams, language, now]
+  );
   const open = useMemo(() => buildOpenExams(exams, language), [exams, language]);
   const { thisWeek, later } = useMemo(
     () => splitByWeek(registered, (r) => r.date, now),
@@ -96,6 +105,7 @@ export function ExamsScreen() {
       key={row.section.id}
       row={row}
       locale={locale}
+      now={now}
       expanded={expandedId === row.section.id}
       onToggle={() => toggle(row.section.id)}
       isProcessing={processingSectionId === row.section.id}
@@ -141,9 +151,23 @@ export function ExamsScreen() {
   // a bare skeleton or error in its place left two of the four tabs with no
   // route to the vývěska, search or notifications for as long as a crawl took —
   // the same hole CalendarScreen had, caught in review on this PR.
+  // The refresh shares the row under the title with the registered pill: that
+  // row already exists at every width, and beside the header actions it would
+  // be a fourth 44px target squeezing the title at 320px.
   const shell = (body: ReactNode) => (
     <div data-testid="exams-screen" className="flex flex-1 flex-col overflow-hidden">
-      <ScreenHeader eyebrow={eyebrow} title={t('mobile.exams.title')} below={registeredPill} />
+      <ScreenHeader
+        eyebrow={eyebrow}
+        title={t('mobile.exams.title')}
+        below={
+          <div className="flex items-center gap-2">
+            {registeredPill}
+            <div className="ml-auto">
+              <ExamsRefresh />
+            </div>
+          </div>
+        }
+      />
       {body}
     </div>
   );
@@ -180,44 +204,42 @@ export function ExamsScreen() {
             t={t}
             onOpen={(item) => setExpandedId(item.section.id)}
           />
-          <div
-            data-testid="exam-list"
-            className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-24 pt-3"
-          >
-            {thisWeek.length > 0 && (
-              <ExamGroup title={t('mobile.exams.groupThisWeek')} count={thisWeek.length}>
-                {thisWeek.map(registeredCard)}
-              </ExamGroup>
-            )}
-            {later.length > 0 && (
-              <ExamGroup title={t('mobile.exams.groupLater')} count={later.length}>
-                {later.map(registeredCard)}
-              </ExamGroup>
-            )}
-            {/* Above the bookable ones: a term that has not opened is the
+          <div data-testid="exam-list" className="flex-1 overflow-y-auto">
+            <AlwaysScrollable className="gap-4 px-4 pb-[calc(6rem_+_var(--safe-bottom,0px))] pt-3">
+              {thisWeek.length > 0 && (
+                <ExamGroup title={t('mobile.exams.groupThisWeek')} count={thisWeek.length}>
+                  {thisWeek.map(registeredCard)}
+                </ExamGroup>
+              )}
+              {later.length > 0 && (
+                <ExamGroup title={t('mobile.exams.groupLater')} count={later.length}>
+                  {later.map(registeredCard)}
+                </ExamGroup>
+              )}
+              {/* Above the bookable ones: a term that has not opened is the
                 thing a student is waiting on, and burying it under the list
                 they have already decided about hides the date they came for. */}
-            {notYetOpen.length > 0 && (
-              <ExamGroup title={t('mobile.exams.groupNotYetOpen')} count={notYetOpen.length}>
-                {notYetOpen.map(({ row, earliest }) => (
-                  <NotYetOpenCard
-                    key={row.section.id}
-                    row={row}
-                    earliest={earliest}
-                    locale={locale}
-                    expanded={expandedId === row.section.id}
-                    onToggle={() => toggle(row.section.id)}
-                    isProcessing={processingSectionId === row.section.id}
-                    onRegister={handleRegisterRequest}
-                  />
-                ))}
-              </ExamGroup>
-            )}
-            {bookable.length > 0 && (
-              <ExamGroup title={t('mobile.exams.groupOpen')} count={bookable.length}>
-                {bookable.map(openCard)}
-              </ExamGroup>
-            )}
+              {notYetOpen.length > 0 && (
+                <ExamGroup title={t('mobile.exams.groupNotYetOpen')} count={notYetOpen.length}>
+                  {notYetOpen.map(({ row }) => (
+                    <NotYetOpenCard
+                      key={row.section.id}
+                      row={row}
+                      now={now}
+                      expanded={expandedId === row.section.id}
+                      onToggle={() => toggle(row.section.id)}
+                      isProcessing={processingSectionId === row.section.id}
+                      onRegister={handleRegisterRequest}
+                    />
+                  ))}
+                </ExamGroup>
+              )}
+              {bookable.length > 0 && (
+                <ExamGroup title={t('mobile.exams.groupOpen')} count={bookable.length}>
+                  {bookable.map(openCard)}
+                </ExamGroup>
+              )}
+            </AlwaysScrollable>
           </div>
         </>
       )}

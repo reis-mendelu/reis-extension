@@ -6,10 +6,12 @@ import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { groupEventsByVenue, type VenueGroup } from './eventHelpers';
 import { subscribeMapInstance } from './mapInstance';
+import { EVENTS_PANE, ensurePane } from './mapPanes';
 import { EventPin } from './EventPin';
 import { DraftPin } from './DraftPin';
 import { societyById } from '../../data/societies';
 import { isScheduledEvent } from './eventWindow';
+import { trackMapEventView } from '../../api/featureUsage';
 
 interface Placed {
   key: string;
@@ -27,9 +29,11 @@ type ZoomAnimMap = {
   ): L.Point;
 };
 
-// Dedicated Leaflet pane for our pins. A child of the map pane (z below tooltips),
-// so Leaflet translates it for free while panning — pins stay glued with no JS.
-const PANE_NAME = 'reisEvents';
+// The pins live in their own Leaflet pane — a child of the map pane, so Leaflet
+// translates it for free while panning and pins stay glued with no JS. Which
+// pane, and where it sits in the paint order, is decided in mapPanes.ts: this
+// used to be a bare `640` here, which put every pin (and its hover bubble)
+// underneath Leaflet's tooltip pane, i.e. underneath the lettered building names.
 
 // HTML pins (not Leaflet markers) so the balloons can use Tailwind/DaisyUI and
 // hover bubbles, but rendered INTO a Leaflet pane via a portal. Positions are
@@ -64,6 +68,16 @@ export function EventLayer() {
   const [draftPt, setDraftPt] = useState<{ x: number; y: number } | null>(null);
   const [pane, setPane] = useState<HTMLElement | null>(null);
   const activeDraft = composerOpen ? draftCoord : null;
+  // A pin opened on the student map is the map-view signal. NOT while
+  // authoring: the admin console renders this same layer over a society's own
+  // events, and a society checking its own listing is not a student looking at
+  // it. Tracked here rather than inside `focusEventById`, because that action
+  // is also how a Novinky feed click and the admin console's own list open an
+  // event — both of which would arrive as map views.
+  const selectEvent = (id: string) => {
+    if (!authoring) void trackMapEventView(id);
+    focusEvent(id);
+  };
   const draftColor = (assocId ? societyById(assocId)?.color : null) ?? '#0046a0';
   // Events are loaded by the store (initializeStore + language handlers), not a
   // fetch-in-useEffect here — this layer stays presentational over store state.
@@ -145,10 +159,7 @@ export function EventLayer() {
       }
     };
     const bind = (m: L.Map) => {
-      const p = m.getPane(PANE_NAME) ?? m.createPane(PANE_NAME);
-      p.style.zIndex = '640';
-      p.style.pointerEvents = 'none';
-      setPane(p);
+      setPane(ensurePane(m, EVENTS_PANE));
       m.on('zoomanim', onZoomAnim);
       m.on('move', onMove);
       m.on('zoomend viewreset', recompute);
@@ -192,7 +203,7 @@ export function EventLayer() {
           selected={p.group.events.some((e) => e.id === selectedId)}
           scheduled={authoring && p.group.events.some((e) => isScheduledEvent(e.date))}
           locale={language === 'en' ? 'en-US' : 'cs-CZ'}
-          onSelect={focusEvent}
+          onSelect={selectEvent}
         />
       ))}
       {draftPt && (

@@ -288,7 +288,10 @@
       "noFiles": "No files",
       "noFilesAvailable": "No files available.",
       "download": "Download",
-      "openInSidebar": "Open preview"
+      "openInSidebar": "Open preview",
+      "downloading": "Downloading…",
+      "downloadingCount": "Downloading ({completed}/{total})…",
+      "downloadSelected": "Download ({count})"
     },
     "pdf": {
       "loadFailed": "Couldn't open the PDF.",
@@ -322,6 +325,7 @@
     },
     "file": {
       "openFailed": "Couldn't open the file.",
+      "downloading": "Downloading…",
       "savedToDownloads": "Saved to Downloads"
     },
     "documentNote": {
@@ -890,6 +894,7 @@
     "noPlaceFound": "Nothing found — try another name or pick on the map.",
     "orPickOnMap": "or pick manually on the map",
     "mapPoint": "Point selected on map",
+    "venueOnMap": "Place on the map",
     "changePlace": "Change place",
     "publish": "Publish event",
     "clickToPlace": "Tap the button, then mark the spot on the map",
@@ -922,15 +927,25 @@
     "openInMaps": "Open in Maps",
     "openInAppleMaps": "Apple Maps",
     "openInGoogleMaps": "Google Maps",
-    "rememberChoice": "Don't ask again",
-    "mapApp": "Maps",
-    "mapAppAsk": "Always ask",
     "audienceLabel": "WHO SEES IT",
     "audienceEveryone": "Everyone",
     "audienceHint": "Seen by students who follow {society}.",
     "audienceHintGeneric": "Seen only by students who follow this society.",
     "panelCollapse": "Collapse map panel",
-    "panelExpand": "Expand map panel"
+    "panelExpand": "Expand map panel",
+    "walkMinutes": "{n} min",
+    "routeTakeMeThere": "Take me there",
+    "routeLocating": "Finding you…",
+    "routeDenied": "reIS can't see your location. Allow it in your phone's settings, or pick a building instead.",
+    "routeUnavailable": "Location works in the mobile app only.",
+    "routeTooFar": "You're not near the campus.",
+    "routeNoRoute": "There's no walk from here to there right now.",
+    "routeThroughGarden": "Through the botanical garden — free with your ISIC, at the Gen. Píky gate.",
+    "routeGardenShut": "The garden is closed right now (Mon–Fri 6:00–20:00), so there's no walk from here. Take tram 9 from Bieblova — every ~3 min, a 2 min ride.",
+    "routePickBuilding": "Where are you headed?",
+    "routeArrived": "You're already there.",
+    "routeTo": "to {building}",
+    "routeElsewhere": "Somewhere else"
   },
   "admin": {
     "email": "Email",
@@ -995,7 +1010,18 @@
       "noData": "No data yet.",
       "under5": "under 5",
       "unknown": "not set",
-      "loadFailed": "Could not load statistics."
+      "loadFailed": "Could not load statistics.",
+      "signals": "Features (30 days)",
+      "signalsNote": "Installs, not people. The map counts after three seconds on screen; eduroam is split between “the app configured the network” and “we handed over a profile” — a handed-over profile still has to be installed by the student.",
+      "signalMapDwell": "Map for 3+ seconds",
+      "signalEduroamConfigured": "eduroam configured by the app",
+      "signalEduroamDelivered": "eduroam profile handed over",
+      "signalInstalls": "installs",
+      "topEvents": "Most-opened events on the map",
+      "mapViews": "opens",
+      "mapViewsNote": "A count of opens, not of people — no identifier sits behind these numbers.",
+      "trendAria": "Trend: {label}, last {days} days, {total} {unit} in total, peak {max} in a day.",
+      "trendWithheld": "No chart for this signal yet — under 5 installs in 30 days."
     },
     "loginName": "login",
     "audience": {
@@ -1006,6 +1032,7 @@
   },
   "mobile": {
     "header": {
+      "refresh": "Refresh",
       "search": "Search"
     },
     "nav": {
@@ -1054,7 +1081,9 @@
       "groupLater": "Registered · later",
       "groupOpen": "Open slots",
       "groupNotYetOpen": "Not open yet",
-      "opensAt": "opens {when}",
+      "opensAtLabel": "opens",
+      "refresh": "Refresh exams",
+      "refreshing": "Updating…",
       "registeredCountOne": "{count} registered",
       "registeredCountFew": "{count} registered",
       "registeredCountOther": "{count} registered",
@@ -1070,7 +1099,6 @@
       "creditsOf": "{earned} / {total} credits",
       "creditProgress": "{pct}% of credits completed",
       "currentSemester": "Semester {n}",
-      "running": "in progress · {credits} cr.",
       "doneOf": "{done}/{total} done",
       "average": "Grade average",
       "avgSemester": "This semester",
@@ -1086,13 +1114,22 @@
       "creditOther": "credits",
       "loading": "Loading your courses…",
       "noneEnrolled": "You have no subjects enrolled for this semester yet.",
-      "startsOn": "starts {date} · {credits} cr.",
-      "creditsOnly": "{credits} cr."
+      "teachers": "Teachers",
+      "teacherRole": {
+        "guarantor": "Guarantor",
+        "lecturer": "Lecturers",
+        "tutor": "Tutors",
+        "examiner": "Examiners",
+        "other": "Other"
+      },
+      "enrolledCountOne": "{count} enrolled subject",
+      "enrolledCountFew": "{count} enrolled subjects",
+      "enrolledCountOther": "{count} enrolled subjects"
     },
     "map": {
       "searchPlaceholder": "Find a room, building, event…",
       "tabEvents": "Events",
-      "peekHint": "Campus events",
+      "peekEmpty": "No campus events right now",
       "thisWeek": "This week",
       "emptyTitle": "Map didn't load",
       "emptyBody": "Please try again.",
