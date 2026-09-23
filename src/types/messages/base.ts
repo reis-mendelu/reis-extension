@@ -67,7 +67,7 @@ export interface FetchRequestMessage {
     method?: string;
     headers?: Record<string, string>;
     body?: string;
-    responseType?: 'text' | 'image';
+    responseType?: 'text' | 'image' | 'bytes';
   };
 }
 export interface ActionRequestMessage {
