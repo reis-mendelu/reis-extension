@@ -72,6 +72,13 @@ describe('MapRail', () => {
     expect(sep).toHaveAccessibleName('Změnit šířku panelu');
   });
 
+  // Campus navigation is parked (src/utils/routing/navigationEnabled.ts): no
+  // control on the map may start a walk.
+  it('offers no route while navigation is parked', () => {
+    render(<MapRail />);
+    expect(screen.queryByRole('button', { name: 'Najdi cestu' })).not.toBeInTheDocument();
+  });
+
   it('offers a way back to the list from an event', () => {
     useAppStore.setState({ mapSelection: { kind: 'event', event: EVENT } } as never);
     render(<MapRail />);

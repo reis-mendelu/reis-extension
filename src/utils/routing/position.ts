@@ -1,5 +1,3 @@
-import { Geolocation } from '@capacitor/geolocation';
-import { getPlatform } from '../../platform';
 import { devForcedPosition } from './devPosition';
 
 /** Thrown when this build has no way to ask for a position at all. */
@@ -25,29 +23,25 @@ export function isPermissionDenied(err: unknown): boolean {
 }
 
 /**
- * One position fix, as `[lon, lat]`.
+ * One position fix, as `[lon, lat]` — PARKED.
  *
- * `getCurrentPosition`, never `watchPosition`. The plugin's own documentation
- * warns that watching "can consume a large amount of energy", and a route
- * already drawn on screen does not need re-deriving while the student walks
- * along it looking at it.
+ * Campus navigation is dormant (./navigationEnabled.ts), and the device half of
+ * it is gone rather than hidden: `@capacitor/geolocation` is uninstalled and
+ * neither native app declares a location permission, so no store has one to
+ * review. Every build therefore answers "no platform", which the route slice
+ * already reports as unavailable rather than as a refusal.
  *
- * Capacitor only. On the web the app is a `chrome-extension://` iframe inside
- * is.mendelu.cz, where geolocation needs `allow="geolocation"` set on the
- * iframe element by the content script — and a student sitting at a desk has no
- * use for a blue dot anyway. Gating on the platform sidesteps that question
- * rather than answering it.
+ * The real body was `getCurrentPosition({ enableHighAccuracy: true, timeout:
+ * 10_000 })` from the plugin, Capacitor only — never `watchPosition`, whose own
+ * documentation warns it "can consume a large amount of energy". It is in git
+ * at 2ccf9f40 (#366); src/test/guards/campusNavigationIsDormant.test.ts lists
+ * everything else that has to come back with it.
  *
- * The dev override comes first so the browser harness can exercise every
- * position in the design without a GPS or a walk.
+ * The dev override still comes first, so the browser harness can exercise the
+ * router and the route UI without a GPS.
  */
 export async function currentPosition(): Promise<[number, number]> {
   const forced = devForcedPosition();
   if (forced) return forced;
-  if (getPlatform().kind !== 'capacitor') throw new Error(NO_PLATFORM);
-  const fix = await Geolocation.getCurrentPosition({
-    enableHighAccuracy: true,
-    timeout: 10_000,
-  });
-  return [fix.coords.longitude, fix.coords.latitude];
+  throw new Error(NO_PLATFORM);
 }

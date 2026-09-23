@@ -5,6 +5,7 @@ import { useAppStore } from '../../../../store/useAppStore';
 import { RouteButton } from '../../../CampusMap/RouteButton';
 import { RouteCard } from '../../../CampusMap/RouteCard';
 import { RoutePicker } from '../../../CampusMap/RoutePicker';
+import { CAMPUS_NAVIGATION_ENABLED } from '../../../../utils/routing/navigationEnabled';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { MapPanelBody } from './MapPanelBody';
 import { MapSheetPeek } from './MapSheetPeek';
@@ -198,13 +199,13 @@ export function MapSheet() {
 
       {/* The answer, when there is one. Above the peek row so the row below
           still says what is underneath the sheet and still expands it. */}
-      {!expanded && <RouteCard />}
+      {!expanded && CAMPUS_NAVIGATION_ENABLED && <RouteCard />}
 
       {/* ABOVE the button that opens it, not below. Below, the picker grew the
           sheet downward into the floating BottomNav, which covered the letters
           — and a menu that opens away from its own control reads as unrelated
           to it. */}
-      {!expanded && <RoutePicker />}
+      {!expanded && CAMPUS_NAVIGATION_ENABLED && <RoutePicker />}
 
       {!expanded && (
         // A ROW of two controls, not one button: the left half expands the
@@ -235,7 +236,7 @@ export function MapSheet() {
               aria-hidden="true"
             />
           </button>
-          <RouteButton />
+          {CAMPUS_NAVIGATION_ENABLED && <RouteButton />}
         </div>
       )}
 

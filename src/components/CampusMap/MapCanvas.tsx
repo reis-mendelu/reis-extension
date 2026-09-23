@@ -28,6 +28,7 @@ import {
 } from './pathLayers';
 import { drawCampusEntrances, markActiveEntrance } from './entranceLayers';
 import { markPickableBuildings } from './buildingChooser';
+import { CAMPUS_NAVIGATION_ENABLED } from '../../utils/routing/navigationEnabled';
 import { setMapInstance } from './mapInstance';
 import { LABELS_PANE } from './mapPanes';
 import { roomFocusView } from './focusBounds';
@@ -227,14 +228,17 @@ export function MapCanvas() {
       drawLandmarks(layer, select, BUILDING_STYLE);
       drawRemotePlaces(layer, select);
       // The ways in, drawn after the buildings so a gate is never buried under
-      // an outline.
-      entrancesRef.current = drawCampusEntrances(layer, (name) => {
-        // Choosing a gate IS a choice on the map, so it retires whatever place
-        // or room was chosen before it — which is also what keeps the walk
-        // below from being suppressed by a stale selection.
-        select.clearMapSelection();
-        select.selectWalkEntrance(name);
-      });
+      // an outline. Not drawn while navigation is parked: a gate is where a
+      // walk starts, and with no gate on the map none can be chosen.
+      entrancesRef.current = CAMPUS_NAVIGATION_ENABLED
+        ? drawCampusEntrances(layer, (name) => {
+            // Choosing a gate IS a choice on the map, so it retires whatever place
+            // or room was chosen before it — which is also what keeps the walk
+            // below from being suppressed by a stale selection.
+            select.clearMapSelection();
+            select.selectWalkEntrance(name);
+          })
+        : new Map();
       // Re-apply after a redraw (a new search, a new focus) so the walk the
       // student asked for does not quietly vanish under them.
       if (pathsRef.current)
