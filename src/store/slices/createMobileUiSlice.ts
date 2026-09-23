@@ -32,6 +32,7 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
   devPhoneOverride: null,
   welcomeSeen: null,
   externalOpening: false,
+  pullHintLearned: null,
 
   // Read once at boot, before the root renders (capacitor/main.capacitor.tsx).
   // Same key as the desktop WelcomeModal: a device that dismissed it there has
@@ -50,6 +51,24 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
   dismissWelcome: async () => {
     set({ welcomeSeen: true });
     await IndexedDBService.set('meta', 'welcome_dismissed', true);
+  },
+
+  // Read once at boot beside the welcome flag. Demo mode counts as learned: a
+  // pull there answers "not available in demo", so teaching it teaches a dead
+  // end — and the reviewer's first screen should not move on its own.
+  hydratePullHint: async ({ demo }) => {
+    if (demo) {
+      set({ pullHintLearned: true });
+      return;
+    }
+    const learned = await IndexedDBService.get('meta', 'pull_hint_learned');
+    set({ pullHintLearned: learned === true });
+  },
+  // One real pull on either screen retires the hint on both.
+  learnPullHint: () => {
+    if (get().pullHintLearned === true) return;
+    set({ pullHintLearned: true });
+    IndexedDBService.set('meta', 'pull_hint_learned', true).catch(() => {});
   },
 
   // Switching tabs closes sheets: a sheet belongs to the screen that opened it.

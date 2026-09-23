@@ -24,7 +24,7 @@ import { CAMPUS_NAVIGATION_ENABLED } from '../../../utils/routing/navigationEnab
 import { formatHeaderDate } from '../../../utils/mobile/formatHeaderDate';
 
 export function CalendarScreen() {
-  const { language } = useTranslation();
+  const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
   const { schedule } = useSchedule();
   const mobileSelectedDayIso = useAppStore((s) => s.mobileSelectedDayIso);
@@ -40,6 +40,8 @@ export function CalendarScreen() {
   const hiddenItems = useAppStore((s) => s.hiddenItems);
   const teachingWeekData = useAppStore((s) => s.teachingWeekData);
   const customEvents = useAppStore((s) => s.customEvents);
+  const scheduleRefreshing = useAppStore((s) => s.scheduleRefreshing);
+  const triggerScheduleRefresh = useAppStore((s) => s.triggerScheduleRefresh);
 
   // The vývěska is no longer mounted here. It was a portal owned by this one
   // screen while the button that opens it ships with every screen's header, so
@@ -98,7 +100,13 @@ export function CalendarScreen() {
           sync, which takes no layout. */}
       <ScreenHeader
         title={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale)}
-        below={<RefreshButton />}
+        below={
+          <RefreshButton
+            label={t('mobile.header.refresh')}
+            refreshing={scheduleRefreshing}
+            onRefresh={triggerScheduleRefresh}
+          />
+        }
       />
     </>
   );

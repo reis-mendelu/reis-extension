@@ -69,6 +69,8 @@ export function DayBody({
   const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
   const focusEventById = useAppStore((s) => s.focusEventById);
   const suggestRoute = useAppStore((s) => s.suggestRoute);
+  const scheduleRefreshing = useAppStore((s) => s.scheduleRefreshing);
+  const triggerScheduleRefresh = useAppStore((s) => s.triggerScheduleRefresh);
   const { language } = useTranslation();
   const bodyRef = useRef<HTMLDivElement>(null);
 
@@ -108,7 +110,11 @@ export function DayBody({
     // The wrapper exists for the pull indicator, which must not live inside the
     // scroller: the day swipe translates the scroller and iOS rubber-bands it.
     <div className="relative flex min-h-0 flex-1 flex-col">
-      <PullRefreshIndicator scrollerRef={bodyRef} />
+      <PullRefreshIndicator
+        scrollerRef={bodyRef}
+        refreshing={scheduleRefreshing}
+        onRefresh={triggerScheduleRefresh}
+      />
       <div
         ref={bodyRef}
         data-testid="day-body"

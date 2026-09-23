@@ -1,8 +1,6 @@
-import { useAppStore } from '../../../store/useAppStore';
-import { useTranslation } from '../../../hooks/useTranslation';
-
 /**
- * The calendar's refresh for whoever cannot pull: screen-reader only.
+ * A screen's refresh for whoever cannot pull: screen-reader only. The calendar
+ * and exams each pass their own label, action and flag.
  *
  * Sighted students refresh by pulling the day down (PullRefreshIndicator). That
  * gesture is unreachable from VoiceOver and TalkBack, whose swipes move focus
@@ -23,20 +21,24 @@ import { useTranslation } from '../../../hooks/useTranslation';
  * Its own copy, not `course.freshness.refresh`: that one reads "Obnovit
  * soubory" / "Refresh files", which is a lie on the calendar.
  */
-export function RefreshButton() {
-  const { t } = useTranslation();
-  const refreshing = useAppStore((s) => s.scheduleRefreshing);
-  const refresh = useAppStore((s) => s.triggerScheduleRefresh);
-
+export function RefreshButton({
+  label,
+  refreshing,
+  onRefresh,
+}: {
+  label: string;
+  refreshing: boolean;
+  onRefresh: () => void;
+}) {
   return (
     <button
       type="button"
-      onClick={() => refresh()}
+      onClick={() => onRefresh()}
       disabled={refreshing}
-      aria-label={t('mobile.header.refresh')}
+      aria-label={label}
       className="sr-only"
     >
-      {t('mobile.header.refresh')}
+      {label}
     </button>
   );
 }

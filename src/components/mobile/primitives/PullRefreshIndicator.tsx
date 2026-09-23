@@ -1,7 +1,8 @@
-import { useRef, type RefObject } from 'react';
+import { useCallback, useRef, type RefObject } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { usePullToRefresh } from './usePullToRefresh';
+import { usePullHint } from './usePullHint';
 
 /**
  * The spinner a pull on the calendar winds up, and the gesture behind it.
@@ -15,11 +16,13 @@ import { usePullToRefresh } from './usePullToRefresh';
  * day swipe translates sideways and iOS rubber-bands downward; an indicator in
  * there would be dragged by both.
  *
- * It refreshes the TIMETABLE, not everything (`triggerScheduleRefresh`), and it
- * spins only for that refresh — not for the scheduled background sync, which
- * the student did not ask for. The store action is a stable reference, so the
- * hook's listeners are bound once per mount and a re-render mid-gesture cannot
- * drop the pull.
+ * Each screen hands it its OWN refresh and flag — the calendar the timetable,
+ * exams the exam terms — so a pull fetches what that screen shows and nothing
+ * else, and spins only for that refresh, never for the background sync.
+ * Pass store actions: they are stable references, so the hook's listeners are
+ * bound once per mount and a re-render mid-gesture cannot drop the pull.
+ *
+ * Until the student has pulled once, it also plays the pull hint (usePullHint).
  *
  * `aria-hidden` because it is decoration: the screen-reader route to the same
  * refresh is the `sr-only` RefreshButton in the header, since VoiceOver cannot
@@ -27,13 +30,22 @@ import { usePullToRefresh } from './usePullToRefresh';
  */
 export function PullRefreshIndicator({
   scrollerRef,
+  refreshing,
+  onRefresh,
 }: {
   scrollerRef: RefObject<HTMLElement | null>;
+  refreshing: boolean;
+  onRefresh: () => void;
 }) {
   const indicatorRef = useRef<HTMLDivElement>(null);
-  const refreshing = useAppStore((s) => s.scheduleRefreshing);
-  const refresh = useAppStore((s) => s.triggerScheduleRefresh);
-  usePullToRefresh({ scrollerRef, indicatorRef, onRefresh: refresh });
+  const learned = useAppStore((s) => s.pullHintLearned);
+  const learn = useAppStore((s) => s.learnPullHint);
+  const pulled = useCallback(() => {
+    learn();
+    onRefresh();
+  }, [learn, onRefresh]);
+  usePullToRefresh({ scrollerRef, indicatorRef, onRefresh: pulled });
+  usePullHint(scrollerRef, indicatorRef, learned === false && !refreshing);
   return (
     <div
       ref={indicatorRef}

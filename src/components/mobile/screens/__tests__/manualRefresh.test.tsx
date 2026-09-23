@@ -216,15 +216,12 @@ describe('the calendar refresh', () => {
     expect(screen.getByLabelText(REFRESH)).toBeInTheDocument();
   });
 
-  it('is not on the exams screen — ExamsRefresh owns that one', () => {
-    // Exams already has a refresh control (exams/ExamsRefresh.tsx, #372), and
-    // it is the right one there: it calls `triggerExamsRefresh`, and exam terms
-    // are fetched on every sync run regardless of TTL, so this full crawl would
-    // buy nothing but a slower answer during registration.
+  it('does not put the calendar refresh on the exams screen', () => {
+    // Exams has its own pull, which refreshes exam terms only (pullHint.test).
+    // This button's timetable refresh would be the wrong answer there.
     baseState({ exams: { data: [examWithTerm()], status: 'success', error: null } });
     render(<ExamsScreen />);
     expect(screen.getByTestId('exams-screen')).toBeInTheDocument();
     expect(screen.queryByLabelText(REFRESH)).not.toBeInTheDocument();
-    expect(screen.queryByTestId('pull-refresh-indicator')).not.toBeInTheDocument();
   });
 });
