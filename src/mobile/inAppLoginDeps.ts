@@ -32,6 +32,19 @@ export async function buildInAppLoginDeps(): Promise<SessionDeps> {
         title: 'Přihlášení do UIS',
         isPresentAfterPageLoad: true,
       });
+      // openWebView resolves in onPageFinished, the same event that presents
+      // the dialog — so the login is on screen now, which is all the splash
+      // was waiting to know. Android before 12 keeps every window of the app
+      // hidden until the activity's own window draws, and the compat splash
+      // (launchAutoHide: false) blocks that draw until hide(). Leaving the
+      // hide to boot(), after login, kept the login itself invisible: Android
+      // 10/11 sat on the splash forever. iOS presents the modal above the
+      // splash, so it keeps boot()'s hide and the no-empty-frame guarantee.
+      const { Capacitor } = await import('@capacitor/core');
+      if (Capacitor.getPlatform() === 'android') {
+        const { SplashScreen } = await import('@capacitor/splash-screen');
+        await SplashScreen.hide();
+      }
     },
     onPageLoaded: (cb) => InAppBrowser.addListener('browserPageLoaded', () => cb()),
     // Backing out of the login must reject rather than hang the caller.
