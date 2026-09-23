@@ -26,6 +26,7 @@ const PHONE_FILES = [
   'components/mobile/primitives/pullToRefresh.ts',
   'components/mobile/primitives/usePullHint.ts',
   'components/mobile/primitives/usePullToRefresh.ts',
+  'components/mobile/primitives/useRefreshHold.ts',
   'components/mobile/screens/CalendarScreen.tsx',
   'components/mobile/screens/ExamsScreen.tsx',
   'components/mobile/screens/calendar/DayBody.tsx',
@@ -67,6 +68,7 @@ describe('pull-to-refresh placement', () => {
     expect(src).not.toContain('PullRefreshIndicator');
     expect(src).not.toContain('usePullToRefresh');
     expect(src).not.toContain('usePullHint');
+    expect(src).not.toContain('useRefreshHold');
   });
 
   it('the desktop exams panel keeps its visible refresh button', () => {

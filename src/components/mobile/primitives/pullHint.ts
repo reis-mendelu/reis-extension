@@ -2,7 +2,7 @@ import { pullIndicatorFrame } from './pullToRefresh';
 
 /**
  * The pull hint: the list slides itself down and springs back, with the spinner
- * peeking out, until the student has pulled once.
+ * peeking out — once, ever, on the calendar.
  *
  * It is a REPLAY of a short real pull, not an illustration of one. The spinner's
  * peak comes from `pullIndicatorFrame` at the hint's depth, so it is exactly
