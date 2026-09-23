@@ -17,7 +17,8 @@
  * point — a screenshot proves a thing rendered, and only the JSON says whether
  * the answer was right.
  *
- * Requires the dev webapp on :3000 (`npm run dev:web`).
+ * Requires the dev webapp (`npm run dev:web`, or the reis-webapp preview). It
+ * listens on :3000 unless REIS_BASE says otherwise.
  */
 
 import { chromium, type Page } from '@playwright/test';
@@ -25,7 +26,14 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const OUT = resolve(process.cwd(), '.verify/routes');
-const BASE = 'http://localhost:3000';
+/**
+ * The dev webapp. 3000 by default, but `preview_start` assigns another port
+ * when that one is taken (autoPort), and a harness that cannot follow it is a
+ * harness you stop running.
+ *
+ *   REIS_BASE=http://localhost:50742 npm run shot:route
+ */
+const BASE = process.env.REIS_BASE ?? 'http://localhost:3000';
 const WEEKDAY = '2026-09-21T10:00';
 const WEEKEND = '2026-09-26T10:00';
 
@@ -35,8 +43,16 @@ interface Journey {
   from: string;
   to: string;
   at: string;
-  /** What a student should get. Checked, not just photographed. */
-  expect: 'route' | 'no-route' | 'too-far';
+  /**
+   * What a student should get. Checked, not just photographed.
+   *
+   * Two outcomes now, not four. The screen no longer explains WHY there is no
+   * walk — the card that said "you are not near the campus" or "the garden is
+   * shut" is gone while the walk itself is being perfected — so a harness that
+   * told those apart would be reading text that no longer exists. A line, or
+   * nothing.
+   */
+  expect: 'route' | 'no-route';
 }
 
 /** Where students actually start from. */
@@ -55,7 +71,9 @@ const JOURNEYS: Journey[] = [
     from: '49.218161,16.614118',
     to: 'Q',
     at: WEEKEND,
-    expect: 'no-route',
+    // Was 'no-route': the garden is shut at the weekend and this walk needs it.
+    // The hours are not consulted any more, so the walk is drawn.
+    expect: 'route',
   },
   {
     id: 'frrms-evening',
@@ -63,7 +81,8 @@ const JOURNEYS: Journey[] = [
     from: '49.218161,16.614118',
     to: 'Q',
     at: '2026-09-21T21:00',
-    expect: 'no-route',
+    // Same: 21:00 is past the garden's 20:00, and that no longer stops it.
+    expect: 'route',
   },
   {
     id: 'jak-weekday',
@@ -119,7 +138,8 @@ const JOURNEYS: Journey[] = [
     from: '50.08,14.42',
     to: 'Q',
     at: WEEKDAY,
-    expect: 'too-far',
+    // Still nothing, and now silently — the reason is in the console only.
+    expect: 'no-route',
   },
 ];
 
@@ -151,21 +171,25 @@ async function openMap(page: Page, j: Journey) {
 }
 
 async function routeTo(page: Page, building: string) {
-  await page.getByRole('button', { name: /Najdi cestu/ }).click();
-  await page.waitForTimeout(900);
-  // The button routes to the NEXT LESSON when one resolves, and only opens the
-  // picker otherwise — so with demo data loaded it usually goes straight to a
-  // route. "Jinam" is how a student asks for somewhere else, and how this
-  // harness reaches a named destination.
-  const letter = page.getByRole('menuitem', { name: building, exact: true });
-  if (!(await letter.isVisible().catch(() => false))) {
-    const elsewhere = page.getByRole('button', { name: /Jinam|Somewhere else/ });
-    if (await elsewhere.isVisible().catch(() => false)) {
-      await elsewhere.click();
-      await page.waitForTimeout(600);
-    }
-  }
-  await letter.click();
+  // The picker is opened through the store, not through the UI.
+  //
+  // It used to be reachable from the route card's "Jinam", and the card is
+  // gone. The button itself only opens the picker when no lesson resolves, and
+  // with the dev snapshot loaded one usually does — so driving the button
+  // routes to the timetable's answer instead of the destination this journey
+  // is about. `window.__reisStore` is the same DEV-only handle the other
+  // harnesses use (dev/storeHandle.ts); nothing else here reaches past the UI,
+  // and the assertion below still reads only what is drawn on screen.
+  await page.evaluate(() => {
+    const store = (
+      window as unknown as {
+        __reisStore?: { getState(): { setRoutePickerOpen(open: boolean): void } };
+      }
+    ).__reisStore;
+    store?.getState().setRoutePickerOpen(true);
+  });
+  await page.waitForTimeout(600);
+  await page.getByRole('menuitem', { name: building, exact: true }).click();
   await page.waitForTimeout(2800);
 }
 
@@ -218,20 +242,13 @@ async function run() {
     // card text scraped "~3 minuty" out of the tram sentence and reported a
     // three-minute walk on a journey that has no walk.
     const minutes = drawn ? (/(\d+)\s*min/.exec(chip)?.[1] ?? null) : null;
-    const gates = /ISIC/.test(card) ? ['garden'] : [];
-    // Match the whole sentence, not a word in it. Reading the sheet rather
-    // than a floating card means the peek row comes along too, and
-    // "Akce na kampusu" matched a bare /kampusu/ — every closed-garden journey
-    // was misreported as "not near the campus".
-    const status = drawn
-      ? 'route'
-      : /Nejsi v okolí kampusu|not near the campus/i.test(card)
-        ? 'too-far'
-        : /zavřen|closed/i.test(card)
-          ? 'no-route'
-          : /cesta nevede|no walk from here/i.test(card)
-            ? 'unreachable'
-            : 'unknown';
+    // The drawn line is the whole verdict. There is no sentence left to read,
+    // which also means this harness can no longer be fooled by one: it used to
+    // match the sheet's text, and "Akce na kampusu" in the peek row once
+    // matched a bare /kampusu/ and reported every closed-garden journey as
+    // "not near the campus".
+    const status = drawn ? 'route' : 'no-route';
+    const gates: string[] = [];
 
     const pass = status === j.expect;
     const png = resolve(OUT, `${j.id}.png`);

@@ -22,9 +22,8 @@
 const plausibleLat = (v: number) => v > 48 && v < 51;
 const plausibleLon = (v: number) => v > 12 && v < 19;
 
-export function devForcedPosition(): [number, number] | null {
-  if (!import.meta.env.DEV || typeof window === 'undefined') return null;
-  const raw = new URLSearchParams(window.location.search).get('at');
+/** `lat,lon` → the app's `[lon, lat]`, or null if it is not a Brno pair. */
+function parseLatLon(raw: string | undefined | null): [number, number] | null {
   if (!raw) return null;
   const parts = raw.split(',').map((p) => Number(p.trim()));
   const [lat, lon] = parts;
@@ -32,6 +31,31 @@ export function devForcedPosition(): [number, number] | null {
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
   if (!plausibleLat(lat) || !plausibleLon(lon)) return null;
   return [lon, lat];
+}
+
+export function devForcedPosition(): [number, number] | null {
+  if (typeof window !== 'undefined' && import.meta.env.DEV) {
+    const fromUrl = parseLatLon(new URLSearchParams(window.location.search).get('at'));
+    if (fromUrl) return fromUrl;
+  }
+  // And a position baked in at BUILD time, which is the only way to fake one
+  // in the app on a phone. `?at=` cannot reach it — a Capacitor WebView loads
+  // the bundle with no query string, and the DEV guard strips that branch from
+  // a release build anyway — so testing a walk otherwise means physically
+  // standing somewhere else. Standing at PEF, which is where the walks end,
+  // there is no walk to look at.
+  //
+  // Guarded by the variable's own absence rather than by DEV: nothing sets it
+  // in CI or in a store build, where this reads `undefined` and returns null.
+  // Set it deliberately for a test APK:
+  //
+  //   VITE_DEV_POSITION=49.218161,16.614118 npm run android:apk
+  return bakedPosition(import.meta.env.VITE_DEV_POSITION as string | undefined);
+}
+
+/** Exported for its test: the build-time position, parsed and sanity-checked. */
+export function bakedPosition(raw: string | undefined): [number, number] | null {
+  return parseLatLon(raw);
 }
 
 /**

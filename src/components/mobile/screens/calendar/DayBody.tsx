@@ -1,7 +1,13 @@
 import { useRef } from 'react';
 import type { AgendaRow } from '../../../../utils/mobile/dayAgenda';
 import { useAppStore } from '../../../../store/useAppStore';
-import { roomCodeFor, subjectSheetFor } from '../../../../utils/mobile/lessonActions';
+import {
+  roomCodeFor,
+  routeSuggestionFor,
+  subjectSheetFor,
+} from '../../../../utils/mobile/lessonActions';
+import { useTranslation } from '../../../../hooks/useTranslation';
+import { CAMPUS_NAVIGATION_ENABLED } from '../../../../utils/routing/navigationEnabled';
 import { eventIdFromRsvpBlock } from '../../../../utils/rsvpBlocks';
 import { shiftIso } from '../../../../utils/mobile/weekDays';
 import { DayAgenda } from './DayAgenda';
@@ -61,6 +67,8 @@ export function DayBody({
   const setMobileTab = useAppStore((s) => s.setMobileTab);
   const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
   const focusEventById = useAppStore((s) => s.focusEventById);
+  const suggestRoute = useAppStore((s) => s.suggestRoute);
+  const { language } = useTranslation();
   const bodyRef = useRef<HTMLDivElement>(null);
 
   /**
@@ -135,6 +143,15 @@ export function DayBody({
             onShowOnMap={(lesson) => {
               setMobileTab('map');
               focusRoomByCode(roomCodeFor(lesson));
+              // The camera move alone was the whole of this handler, and it left
+              // the student looking at the right room with no way to be walked
+              // to it: the map's own button asks the timetable what is next
+              // TODAY, which on a Thursday row is a different building. Handing
+              // the lesson over makes the button offer this one. `null` for a
+              // room the map cannot place, so a previous tap's lecture is not
+              // still on offer over a lesson that has none.
+              // Not while navigation is parked: the pin only focuses the room.
+              if (CAMPUS_NAVIGATION_ENABLED) suggestRoute(routeSuggestionFor(lesson, language));
             }}
           />
         )}

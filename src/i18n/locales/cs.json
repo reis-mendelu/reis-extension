@@ -934,18 +934,9 @@
     "panelCollapse": "Sbalit panel mapy",
     "panelExpand": "Rozbalit panel mapy",
     "walkMinutes": "{n} min",
+    "routeToRoom": "Doveď mě do {room}",
     "routeTakeMeThere": "Najdi cestu",
-    "routeLocating": "Hledám, kde jsi…",
-    "routeDenied": "reIS nevidí tvoji polohu. Povol ji v nastavení telefonu, nebo si vyber budovu ručně.",
-    "routeUnavailable": "Polohu umí jen mobilní aplikace.",
-    "routeTooFar": "Nejsi v okolí kampusu.",
-    "routeNoRoute": "Odsud sem teď cesta nevede.",
-    "routeThroughGarden": "Přes botanickou zahradu — zdarma s ISIC, u brány z Generála Píky.",
-    "routeGardenShut": "Zahrada je teď zavřená (po–pá 6:00–20:00), pěšky to odsud nejde. Jeď tramvají 9 z Bieblovy — jede každé ~3 minuty a jsi tam za dvě.",
-    "routePickBuilding": "Kam jdeš?",
-    "routeArrived": "Už jsi tam.",
-    "routeTo": "do {building}",
-    "routeElsewhere": "Jinam"
+    "routePickBuilding": "Kam jdeš?"
   },
   "admin": {
     "email": "E-mail",

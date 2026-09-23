@@ -34,3 +34,11 @@ src/utils/parsers/**/*.ts
 # markup. Same reason as the IS fixtures above: it is referenced evidence, not
 # maintained source.
 docs/design/*.html
+
+# Gradle's output. `npm run android:apk` fills android/**/build with merged
+# manifests, resource blame files and Capacitor's vendored native-bridge.js —
+# 139 files that fail `format:check` and one that fails `lint`, none of them
+# written here. All of it is gitignored, so CI never sees it; the only person
+# who does is whoever just built an APK, on gates that are otherwise at zero.
+android/app/build
+android/capacitor-cordova-android-plugins/build

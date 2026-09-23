@@ -9,11 +9,14 @@ const BUILDING_NAME = new Map(
   (buildingsJson as BuildingsMeta).buildings.map((b) => [b.id, b.name])
 );
 
-export interface LessonTarget {
+export interface RouteTarget {
   /** The letter the routing graph joins on. */
   buildingName: string;
   /** What to show the student — "Q31", not "BA39N4051". */
   roomLabel: string;
+}
+
+export interface LessonTarget extends RouteTarget {
   startsAt: Date;
 }
 
@@ -72,7 +75,26 @@ export function nextLessonTarget(lessons: BlockLesson[], now: Date): LessonTarge
   const next = candidates[0];
   if (!next) return null;
 
-  const resolved = resolveRoomCode([next.lesson.room, next.lesson.roomStructured?.name]);
+  const target = lessonTarget(next.lesson);
+  return target && { ...target, startsAt: next.start };
+}
+
+/**
+ * Where ONE lesson is, with no opinion about when it is.
+ *
+ * `nextLessonTarget` answers "where am I going now?" and is bounded to today
+ * for a good reason. This answers "where is THIS lesson?", which is a different
+ * question and needs no bound: the student tapped the pin beside a specific row
+ * on a specific day, so refusing to route to Thursday would be refusing the
+ * thing they asked for.
+ *
+ * Still `null` for a room the map cannot place — every building reachable from
+ * rooms-index.json (A, B, C, E, M, Q, X) is in the routing graph, so a target
+ * that resolves here always has somewhere to walk to, and one that does not
+ * would be a button that looks fine and does nothing.
+ */
+export function lessonTarget(lesson: BlockLesson): RouteTarget | null {
+  const resolved = resolveRoomCode([lesson.room, lesson.roomStructured?.name]);
   if (!resolved) return null;
   const entry = INDEX.find((e) => e.code === resolved.code);
   // `buildingId === 0` is building Q — a real building. Compare against
@@ -80,5 +102,5 @@ export function nextLessonTarget(lessons: BlockLesson[], now: Date): LessonTarge
   if (!entry || entry.buildingId === undefined) return null;
   const buildingName = BUILDING_NAME.get(entry.buildingId);
   if (!buildingName) return null;
-  return { buildingName, roomLabel: resolved.label, startsAt: next.start };
+  return { buildingName, roomLabel: resolved.label };
 }

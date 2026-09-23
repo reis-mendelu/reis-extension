@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { nextLessonTarget } from '../nextLessonTarget';
+import { nextLessonTarget, lessonTarget } from '../nextLessonTarget';
 import type { BlockLesson } from '../../../types/schedule';
 
 /** Only the fields the target resolver reads; the rest of BlockLesson is noise here. */
@@ -123,5 +123,29 @@ describe('nextLessonTarget', () => {
     );
     expect(t!.buildingName).toBe('Q');
     expect(t!.startsAt.getHours()).toBe(11);
+  });
+});
+
+describe('lessonTarget', () => {
+  it('resolves any lesson, not just one that is still to come today', () => {
+    // Thursday's lecture, asked on Monday. `nextLessonTarget` refuses this on
+    // purpose; the pin beside a row must not, because the student pointed at
+    // that row.
+    const t = lessonTarget(lesson('20260924', '09:00', 'Q31'));
+    expect(t).not.toBeNull();
+    expect(t!.buildingName).toBe('Q');
+    // The label is the friendliest name the ROOM has, which for Q31 is a
+    // nickname rather than the code the timetable printed. That is
+    // `resolveRoomCode`'s existing contract; asserted here only so a change to
+    // it cannot pass unnoticed.
+    expect(t!.roomLabel).toBe('Učebna bankovnictví Komerčka');
+  });
+
+  it('is null for a room the map cannot find', () => {
+    expect(lessonTarget(lesson('20260921', '09:00', 'Z14'))).toBeNull();
+  });
+
+  it('reads through the campus suffix IS prints on a schedule', () => {
+    expect(lessonTarget(lesson('20260921', '09:00', 'Q31 (Poříčí)'))?.buildingName).toBe('Q');
   });
 });

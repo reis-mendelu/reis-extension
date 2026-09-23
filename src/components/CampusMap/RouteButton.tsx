@@ -5,7 +5,8 @@ import { nextLessonTarget } from '../../utils/routing/nextLessonTarget';
 import { devForcedNow } from '../../utils/routing/devPosition';
 
 /**
- * "Kam jdeš?" — route to the next lesson, or open the picker.
+ * "Kam jdeš?" — route to the lesson the student pointed at, else the next one
+ * today, else open the picker.
  *
  * The timetable comes FIRST. That is the whole feature: reIS knows the student
  * has a lesson in Q31 at 13:00, so tapping this should walk them there rather
@@ -32,13 +33,18 @@ export function RouteButton() {
   const status = useAppStore((s) => s.routeStatus);
   const routeTo = useAppStore((s) => s.routeTo);
   const lessons = useAppStore((s) => s.schedule.data);
+  // The pin beside a timetable row puts a lesson here on its way to the map.
+  // It wins over the timetable's own answer, and the reason is that the student
+  // named a lecture: tapping the pin on Thursday's block and being walked to
+  // whatever is next today is the wrong building with no note saying so.
+  const suggestion = useAppStore((s) => s.routeSuggestion);
 
   const press = () => {
     if (open) {
       setOpen(false);
       return;
     }
-    const target = nextLessonTarget(lessons, devForcedNow() ?? new Date());
+    const target = suggestion ?? nextLessonTarget(lessons, devForcedNow() ?? new Date());
     if (target) {
       void routeTo(target.buildingName);
       return;
@@ -49,14 +55,30 @@ export function RouteButton() {
   return (
     <button
       type="button"
-      className="btn btn-primary min-h-11 flex-shrink-0 gap-2"
+      // `shrink min-w-0`, where it used to be `flex-shrink-0`. With a room in
+      // the label this button is 178px wide, and at 320 the row it shares
+      // could not absorb that — it hung 26px off the screen. Both utilities
+      // are load-bearing: DaisyUI's `.btn` sets `flex-shrink: 0` itself, so
+      // dropping the utility alone left the computed value at 0 and the
+      // longest room name in the index still ran 71px past the viewport.
+      // Allowed to shrink, the span inside truncates and the peek hint beside
+      // it gives way first.
+      className="btn btn-primary min-h-11 min-w-0 shrink gap-2"
       onClick={press}
       disabled={status === 'locating'}
       aria-expanded={open}
       aria-haspopup="menu"
     >
       <Navigation size={16} aria-hidden />
-      {t('map.routeTakeMeThere')}
+      {/* The room, when one was pointed at — "Doveď mě do Q31" is a promise
+          about that lecture, where "Najdi cestu" is a promise about nothing in
+          particular. Truncated because 23 rooms in the index carry a name
+          longer than the peek row can hold. */}
+      <span className="truncate">
+        {suggestion
+          ? t('map.routeToRoom', { room: suggestion.roomLabel })
+          : t('map.routeTakeMeThere')}
+      </span>
     </button>
   );
 }

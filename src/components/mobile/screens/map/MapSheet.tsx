@@ -2,8 +2,11 @@ import { useEffect, useRef } from 'react';
 import { ChevronUp } from 'lucide-react';
 import { useMapSheetDrag } from './useMapSheetDrag';
 import { useAppStore } from '../../../../store/useAppStore';
-import { RouteButton } from '../../../CampusMap/RouteButton';
-import { RouteCard } from '../../../CampusMap/RouteCard';
+import { RouteDismiss } from '../../../CampusMap/RouteDismiss';
+// Still mounted, and deliberately: it renders nothing unless
+// `routePickerOpen`, nothing on screen opens that any more, and the ten
+// committed route journeys reach a named building through it. Delete the
+// mount and scripts/shot-route has no way to ask for a destination.
 import { RoutePicker } from '../../../CampusMap/RoutePicker';
 import { CAMPUS_NAVIGATION_ENABLED } from '../../../../utils/routing/navigationEnabled';
 import { useTranslation } from '../../../../hooks/useTranslation';
@@ -40,6 +43,7 @@ const EXPANDED_VH = 0.7;
 export function MapSheet() {
   const sheetState = useAppStore((s) => s.mapSheetState);
   const routeStatus = useAppStore((s) => s.routeStatus);
+  const routeSuggestion = useAppStore((s) => s.routeSuggestion);
   const setSheetState = useAppStore((s) => s.setMapSheetState);
   const selection = useAppStore((s) => s.mapSelection);
   const clearMapSelection = useAppStore((s) => s.clearMapSelection);
@@ -126,6 +130,15 @@ export function MapSheet() {
     if (routeStatus === 'ready') setSheetState('peek');
   }, [routeStatus, setSheetState]);
 
+  // And the same for the OFFER, one step earlier. The route button lives in the
+  // peek row, so a sheet left open on the events list hides the very thing the
+  // student crossed over from their timetable to press. Depends on the
+  // suggestion object, which is replaced on every tap, so arriving from a
+  // second lecture re-collapses a sheet reopened in between.
+  useEffect(() => {
+    if (routeSuggestion) setSheetState('peek');
+  }, [routeSuggestion, setSheetState]);
+
   /**
    * A single event card is ~300px of content. Pinning the sheet to a detent
    * for it meant 70vh of sheet holding 300px of card — on an 812px phone that
@@ -156,10 +169,16 @@ export function MapSheet() {
       {...handlers}
       // The height transition is dropped mid-drag: it animates the same height
       // the finger is setting, and leaving both on makes the sheet lag behind.
-      // `pb-[72px]` while hugging: the BottomNav FLOATS over this sheet rather
-      // than sitting under it, so a sheet sized to its own content puts its
-      // last row behind the nav. At the fixed detents the content is short
-      // enough that this never showed.
+      // The padding while hugging clears the BottomNav, which FLOATS over this
+      // sheet rather than sitting under it — a sheet sized to its own content
+      // otherwise puts its last row behind it. At the fixed detents the
+      // content is short enough that this never showed.
+      //
+      // `+ var(--safe-bottom)` because the nav itself rides the gesture bar
+      // (`bottom-[calc(18px + var(--safe-bottom))]`), so a flat 72px is short
+      // by exactly the inset on any phone that has one. Found on a Pixel 9a
+      // with a route drawn: the sheet hugs, and the event band's second line
+      // was underneath the nav pill.
       //
       // bg-base-200, the PAGE tone, not the card tone. The floating BottomNav
       // is `bg-base-100` and is drawn against the screen, so on a base-100
@@ -173,7 +192,7 @@ export function MapSheet() {
         dragHeight === null ? 'transition-[height] duration-300 ease-out' : ''
       } ${
         hugContent
-          ? 'h-auto max-h-[70vh] pb-[72px]'
+          ? 'h-auto max-h-[70vh] pb-[calc(72px_+_var(--safe-bottom,0px))]'
           : fullyExpanded
             ? 'h-[70vh]'
             : sheetState === 'half'
@@ -199,7 +218,6 @@ export function MapSheet() {
 
       {/* The answer, when there is one. Above the peek row so the row below
           still says what is underneath the sheet and still expands it. */}
-      {!expanded && CAMPUS_NAVIGATION_ENABLED && <RouteCard />}
 
       {/* ABOVE the button that opens it, not below. Below, the picker grew the
           sheet downward into the floating BottomNav, which covered the letters
@@ -227,6 +245,9 @@ export function MapSheet() {
             // No aria-label: the band's whole point is that it now SAYS what is
             // on, and a label would replace that with the word "expand".
             aria-expanded={false}
+            // `min-w-0` is load-bearing, not tidiness: `flex-1` will not shrink
+            // below its own min-content width, which at 320 is 141px this row
+            // does not have to spare once the route button carries a room name.
             className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-left"
           >
             <MapSheetPeek />
@@ -236,7 +257,7 @@ export function MapSheet() {
               aria-hidden="true"
             />
           </button>
-          {CAMPUS_NAVIGATION_ENABLED && <RouteButton />}
+          {CAMPUS_NAVIGATION_ENABLED && <RouteDismiss />}
         </div>
       )}
 

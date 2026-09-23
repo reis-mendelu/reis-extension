@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { useAppStore } from '../../../store/useAppStore';
-import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
 import { ScreenError } from '../primitives/ScreenError';
 import { RefreshButton } from '../primitives/RefreshButton';
 import { useTranslation } from '../../../hooks/useTranslation';
@@ -12,7 +11,7 @@ import { getCzechHoliday } from '../../../utils/holidays';
 import { isOutsideTeaching } from '../../../utils/mobile/teachingPeriod';
 import { semesterStart } from '../../../utils/mobile/semesterStart';
 import { defaultCalendarDay } from '../../../utils/mobile/landingDay';
-import { roomCodeFor } from '../../../utils/mobile/lessonActions';
+import { roomCodeFor, routeSuggestionFor } from '../../../utils/mobile/lessonActions';
 import { customEventToLesson } from '../../../utils/customEventLesson';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { NowNextCard } from './calendar/NowNextCard';
@@ -20,21 +19,9 @@ import { DayChips } from './calendar/DayChips';
 import { DayBody } from './calendar/DayBody';
 import { TodayPill } from './calendar/TodayPill';
 import { RecentFilesStrip } from './calendar/RecentFilesStrip';
+import { CalendarSkeleton } from './calendar/CalendarSkeleton';
+import { CAMPUS_NAVIGATION_ENABLED } from '../../../utils/routing/navigationEnabled';
 import { formatHeaderDate } from '../../../utils/mobile/formatHeaderDate';
-
-function CalendarSkeleton() {
-  const { t } = useTranslation();
-  return (
-    <ScreenSkeleton
-      testId="calendar-skeleton"
-      label={t('mobile.calendar.loading')}
-      // One row shorter than it was, and no inset of its own: the header above
-      // it is real now rather than a placeholder bar.
-      rows={['h-28', 'h-10', 'h-20', 'h-20']}
-      underHeader
-    />
-  );
-}
 
 export function CalendarScreen() {
   const { language } = useTranslation();
@@ -44,6 +31,7 @@ export function CalendarScreen() {
   const setMobileSelectedDay = useAppStore((s) => s.setMobileSelectedDay);
   const setMobileTab = useAppStore((s) => s.setMobileTab);
   const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
+  const suggestRoute = useAppStore((s) => s.suggestRoute);
   const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
@@ -195,6 +183,10 @@ export function CalendarScreen() {
     if (!nowNext?.next) return;
     setMobileTab('map');
     focusRoomByCode(roomCodeFor(nowNext.next));
+    // It is called "Trasa →" and it used to move the camera. The lesson it
+    // names on the hero is the one the map now offers to walk to.
+    // Not while navigation is parked: "Trasa →" only moves the camera.
+    if (CAMPUS_NAVIGATION_ENABLED) suggestRoute(routeSuggestionFor(nowNext.next, language));
   };
 
   return shell(

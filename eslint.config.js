@@ -7,7 +7,13 @@ import eslintConfigPrettier from 'eslint-config-prettier';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
-  globalIgnores(['dist', '.wxt', '.output', 'supabase/functions']),
+  // `android/app/build` is Gradle's output, not source: `cap sync` copies
+  // Capacitor's own `native-bridge.js` in there, and it carries eslint-disable
+  // directives for rules this config does not define. It is gitignored, so CI
+  // never sees it — but anyone who builds an APK locally then gets a lint
+  // ERROR from a vendored file they did not write, on a gate that is otherwise
+  // at zero.
+  globalIgnores(['dist', '.wxt', '.output', 'supabase/functions', 'android/app/build']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
