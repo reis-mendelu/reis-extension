@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import { parseBulletinHtml } from '../bulletin';
 
 const FIXTURE = readFileSync(join(__dirname, 'fixtures', 'vyveska.html'), 'utf-8');
+const SINGLE_CZ = readFileSync(join(__dirname, 'fixtures', 'vyveska-single.cz.html'), 'utf-8');
+const SINGLE_EN = readFileSync(join(__dirname, 'fixtures', 'vyveska-single.en.html'), 'utf-8');
 
 describe('parseBulletinHtml', () => {
   it('returns empty for missing or malformed input', () => {
@@ -20,6 +22,38 @@ describe('parseBulletinHtml', () => {
     expect(first.title.length).toBeGreaterThan(0);
     expect(first.url).toMatch(/slozka\.pl\?/);
     expect(first.categories.length).toBeGreaterThan(0);
+  });
+
+  // IS attaches its table manager — and with it id="tmtab_1" — only to a list of
+  // more than one post. With a single new post the table is a bare <table>, and
+  // requiring the id made the vývěska show "no posts" while IS had one.
+  it.each([
+    ['cz', SINGLE_CZ],
+    ['en', SINGLE_EN],
+  ])('parses the one post of a real single-row page without tmtab_1 (%s)', (_lang, html) => {
+    expect(new DOMParser().parseFromString(html, 'text/html').getElementById('tmtab_1')).toBeNull();
+    const posts = parseBulletinHtml(html);
+    expect(posts).toHaveLength(1);
+    expect(posts).toMatchObject([
+      {
+        title: 'CITACE A\u00a0CITOVÁNÍ – webinář pro studenty, 30. 9. od 14:00',
+        categories: ['Inzerce', 'Ostatní'],
+        url: expect.stringContaining('klic=36828') as unknown,
+      },
+    ]);
+  });
+
+  it('prefers tmtab_1 over an earlier bare table that also links a post', () => {
+    const row = (title: string, klic: number) => `<tr>
+            <td><input name="oznacene" value="${klic}"></td>
+            <td>${title}<br><font size="-2"><a href="slozka.pl?id=1">Cat</a></font></td>
+            <td><a href="slozka.pl?zobrazeni=1;klic=${klic}"><img></a></td>
+        </tr>`;
+    const html = `<html><body>
+            <table><tbody>${row('Decoy', 1)}</tbody></table>
+            <table id="tmtab_1"><tbody>${row('Real', 2)}</tbody></table>
+        </body></html>`;
+    expect(parseBulletinHtml(html).map((p) => p.title)).toEqual(['Real']);
   });
 
   it('caps results at 10 posts even if more rows exist', () => {
