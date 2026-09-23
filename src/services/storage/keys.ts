@@ -40,6 +40,8 @@ export const STORAGE_KEYS = {
   // Success rate data
   SUCCESS_RATES_DATA: 'reis_success_rates',
   GLOBAL_STATS_LAST_SYNC: 'reis_global_stats_sync',
+  // reis-data meta.json version the cached success rates are checked against
+  SUCCESS_RATES_CDN_VERSION: 'reis_success_rates_cdn_version',
 
   // Study Program Data
   STUDY_PROGRAM_DATA: 'reis_study_program',

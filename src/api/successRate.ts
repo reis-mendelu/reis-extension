@@ -10,7 +10,7 @@ import { loggers } from '../utils/logger';
 import type { SubjectSuccessRate, SuccessRateData } from '../types/documents';
 
 // CDN for GitHub-hosted data
-const CDN_BASE_URL = 'https://cdn.jsdelivr.net/gh/reis-mendelu/reis-data@main';
+export const CDN_BASE_URL = 'https://cdn.jsdelivr.net/gh/reis-mendelu/reis-data@main';
 const CACHE_EXPIRY = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 /**
@@ -45,6 +45,18 @@ async function isCacheValid(courseCode: string): Promise<boolean> {
 }
 
 /**
+ * Was this entry fetched under an older reis-data version than `version`?
+ * With no version known (meta.json never reached), nothing is stale — the
+ * behaviour before versions existed.
+ */
+export function isStaleForVersion(
+  entry: Pick<SubjectSuccessRate, 'cdnVersion'>,
+  version: string | null
+): boolean {
+  return version !== null && entry.cdnVersion !== version;
+}
+
+/**
  * Mark a course code as synced.
  */
 async function markAsSynced(courseCodes: string[]): Promise<void> {
@@ -64,8 +76,15 @@ async function markAsSynced(courseCodes: string[]): Promise<void> {
  * Fetches success rates for the given list of target course codes.
  * Uses GitHub-hosted static JSON files via JSDelivr CDN.
  * Returns a SuccessRateData object and saves it to storage.
+ *
+ * `version` is the reis-data version from `ensureSuccessRateVersion`: a cached
+ * entry stamped with any other version is fetched again, and what is fetched
+ * is stamped with it.
  */
-export async function fetchSubjectSuccessRates(targetCodes: string[]): Promise<SuccessRateData> {
+export async function fetchSubjectSuccessRates(
+  targetCodes: string[],
+  version: string | null = null
+): Promise<SuccessRateData> {
   // loggers.api.info('[SuccessRate] Fetching from CDN...', targetCodes.length, targetCodes);
 
   // 1. Check cache for each code
@@ -87,7 +106,9 @@ export async function fetchSubjectSuccessRates(targetCodes: string[]): Promise<S
           // Check 2: Missing 'type' field (New schema requirement)
           cached.stats.some((s) => !s.type));
 
-      return !hasCached || !cacheValid || isLegacy ? code : null;
+      const isStale = hasCached && isStaleForVersion(cached, version);
+
+      return !hasCached || !cacheValid || isLegacy || isStale ? code : null;
     })
   );
 
@@ -105,7 +126,11 @@ export async function fetchSubjectSuccessRates(targetCodes: string[]): Promise<S
     const url = `${CDN_BASE_URL}/subjects/${code}.json`;
     // loggers.api.info('[SuccessRate] Fetching URL:', url);
     try {
-      const response = await fetch(url);
+      // jsDelivr sends max-age=604800, so a plain fetch can hand back a week-old
+      // browser copy of a file that was just refreshed. 'no-cache' revalidates
+      // (usually a 304 on the ETag). A `?v=` query would not help: the edge
+      // ignores query strings.
+      const response = await fetch(url, { cache: 'no-cache' });
       if (!response.ok) {
         if (response.status === 404) {
           // loggers.api.info('[SuccessRate] No data for:', code);
@@ -113,7 +138,8 @@ export async function fetchSubjectSuccessRates(targetCodes: string[]): Promise<S
         }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      return (await response.json()) as SubjectSuccessRate;
+      const file = (await response.json()) as SubjectSuccessRate;
+      return version === null ? file : { ...file, cdnVersion: version };
     } catch (error) {
       loggers.api.error('[SuccessRate] Failed to fetch:', code, error);
       return null;
