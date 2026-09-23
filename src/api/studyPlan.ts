@@ -1,6 +1,7 @@
 import { fetchWithAuth, BASE_URL } from './client';
 import { parseRequiredInt, parseOptionalInt, ParserError } from '../utils/parsers/parserGuards';
 import { logError } from '../utils/reportError';
+import { STUDY_PLAN_SORT_PARAM, repeatedSemesterTitles } from './studyPlanSortMode';
 import type {
   StudyPlan,
   DualLanguageStudyPlan,
@@ -72,8 +73,8 @@ export async function fetchDualLanguageStudyPlan(
 ): Promise<DualLanguageStudyPlan | null> {
   try {
     const [czRes, enRes] = await Promise.all([
-      fetchWithAuth(`${STUDY_PLAN_URL}?studium=${studium};lang=cz`),
-      fetchWithAuth(`${STUDY_PLAN_URL}?studium=${studium};lang=en`),
+      fetchWithAuth(`${STUDY_PLAN_URL}?studium=${studium};${STUDY_PLAN_SORT_PARAM};lang=cz`),
+      fetchWithAuth(`${STUDY_PLAN_URL}?studium=${studium};${STUDY_PLAN_SORT_PARAM};lang=en`),
     ]);
 
     const [czHtml, enHtml] = await Promise.all([czRes.text(), enRes.text()]);
@@ -81,6 +82,18 @@ export async function fetchDualLanguageStudyPlan(
 
     const czPlan = parseStudyPlanDOM(parser.parseFromString(czHtml, 'text/html'), 'cz');
     const enPlan = parseStudyPlanDOM(parser.parseFromString(enHtml, 'text/html'), 'en');
+    for (const [lang, plan] of [
+      ['cz', czPlan],
+      ['en', enPlan],
+    ] as const) {
+      const repeated = repeatedSemesterTitles(plan);
+      if (repeated.length > 0) {
+        logError('Api.fetchDualLanguageStudyPlan', new Error('Study plan repeats semesters'), {
+          lang,
+          repeated,
+        });
+      }
+    }
 
     return { cz: czPlan, en: borrowZameranisFromCz(enPlan, czPlan) };
   } catch (e) {
