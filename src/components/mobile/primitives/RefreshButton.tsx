@@ -1,60 +1,46 @@
-import { RefreshCw } from 'lucide-react';
-import { useAppStore } from '../../../store/useAppStore';
-import { useTranslation } from '../../../hooks/useTranslation';
-import { syncService } from '../../../services/sync';
-
 /**
- * Ask for fresh data now — the desktop `ExamsFreshness` circle, on a phone.
+ * A screen's refresh for whoever cannot pull: screen-reader only. The calendar
+ * and exams each pass their own label, action and flag.
  *
- * Icon only, and that IS desktop parity rather than a reduction: desktop hides
- * its "aktualizováno před 3 hodinami" label behind `hidden md:inline`, so at
- * phone width the original is this button and nothing else.
+ * Sighted students refresh by pulling the day down (PullRefreshIndicator). That
+ * gesture is unreachable from VoiceOver and TalkBack, whose swipes move focus
+ * rather than the page, so without this button a screen-reader user would have
+ * no way at all to ask for today's timetable before the next scheduled run.
  *
- * `triggerSync` is the `user` reason all the way down (mobile/actionHandler →
- * syncGate), which calls `resetSyncTtl()` and clears every freshness stamp. So
- * this is not a nudge that the 24h schedule TTL can swallow — it is the only
- * way a student who is looking at yesterday's timetable can get today's before
- * the next scheduled run.
+ * It was a visible 44px circle on its own row under the date (#370). `sr-only`
+ * is position:absolute, so it takes no flex gap and no height: the calendar
+ * header is back to the height of every other tab's.
+ *
+ * Rendered in the header rather than in the day body, so it exists in every
+ * calendar state, skeleton and error included — the same rule that keeps the
+ * header actions reachable during a crawl.
+ *
+ * The same `triggerScheduleRefresh` the pull calls: the timetable only, which
+ * ignores the 24h schedule TTL and takes ~3s where the full sync took ~30s.
  *
  * Its own copy, not `course.freshness.refresh`: that one reads "Obnovit
  * soubory" / "Refresh files", which is a lie on the calendar.
- *
- * Calendar only. Exams has `exams/ExamsRefresh`, which refreshes just the exam
- * terms and says how old they are — exams are fetched on every run regardless
- * of TTL, so this full crawl would only be a slower way to the same answer.
- *
- * The GLYPH is 12px and the HIT AREA is 44px, which is not a contradiction.
- * "A small rotate circle" is what it must look like; 44px is the touch minimum
- * this app already holds itself to — DayChips grew its arrows to h-11 for
- * exactly this reason ("the touch minimum the old 36px missed") and the header
- * actions are h-10. A btn-xs circle measures 24x24 on device, which would have
- * made this the smallest tap target in the app by a wide margin.
- *
- * `-my-2.5` hands the extra height back to the layout, so the row still
- * occupies the ~24px it did and the calendar keeps fitting without scrolling.
- * Measured on both screens at 320px: nothing interactive sits within 200px
- * above or below, so the overhang cannot steal a tap.
- *
- * `size={12}` and `text-base-content/50` are the desktop values, not a guess —
- * ExamsFreshness inherits the tint from its wrapping div and FilesFreshness
- * spells it out on the button. A brighter, larger circle was the first draft
- * and it read as a control demanding attention rather than one waiting to be
- * used.
  */
-export function RefreshButton() {
-  const { t } = useTranslation();
-  const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
-
+export function RefreshButton({
+  label,
+  refreshing,
+  onRefresh,
+}: {
+  label: string;
+  refreshing: boolean;
+  onRefresh: () => void;
+}) {
   return (
     <button
       type="button"
-      onClick={() => syncService.triggerSync()}
-      disabled={isSyncing}
-      title={t('mobile.header.refresh')}
-      aria-label={t('mobile.header.refresh')}
-      className="btn btn-ghost btn-circle interactive -my-2.5 h-11 min-h-11 w-11 text-base-content/50 disabled:opacity-50"
+      onClick={() => onRefresh()}
+      disabled={refreshing}
+      aria-label={label}
+      // Revealed on keyboard focus: an iPad with a keyboard can tab onto it,
+      // and an invisible focused control is a dead end for a sighted user.
+      className="sr-only self-start rounded-full text-sm font-semibold text-base-content focus-visible:not-sr-only focus-visible:bg-base-200 focus-visible:px-3 focus-visible:py-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
     >
-      <RefreshCw size={12} className={isSyncing ? 'animate-spin' : ''} />
+      {label}
     </button>
   );
 }
