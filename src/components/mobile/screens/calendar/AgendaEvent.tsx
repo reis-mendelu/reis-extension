@@ -70,7 +70,8 @@ export function AgendaEvent({ lesson, onOpenSubject, onShowOnMap }: AgendaEventP
   // Surname only ("Melicharová"), not the full titled name — that is what
   // lets room, time and teacher share one line at 390px without clipping.
   // Every teacher's full name is in the subject drawer's header.
-  const teacher = lesson.teachers[0]?.shortName || lesson.teachers[0]?.fullName;
+  // An answered society event has no teacher; who runs it goes there instead.
+  const teacher = lesson.teachers[0]?.shortName || lesson.teachers[0]?.fullName || place.host;
   const styles = eventStyles(lesson);
 
   return (

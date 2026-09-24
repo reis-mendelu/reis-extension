@@ -5,6 +5,7 @@ import roomsIndexJson from '../data/map/rooms-index.json';
 import { localizedRoom } from './localizedLesson';
 import { lookupRoomEntry } from './rooms/lookupRoom';
 import { eventIdFromRsvpBlock } from './rsvpBlocks';
+import { SOCIETIES } from '../data/societies';
 
 const INDEX = roomsIndexJson as RoomIndexEntry[];
 
@@ -15,6 +16,12 @@ export interface LessonPlace {
   eventId: string | null;
   /** Whether "show on map" has anywhere to go. */
   onMap: boolean;
+  /**
+   * The society running an answered event ("ESN"), for the slot a lesson gives
+   * its teacher. Read from the catalogue rather than `societyById`, which falls
+   * back to ESN: an unknown id names no host rather than the wrong one.
+   */
+  host: string | null;
 }
 
 /**
@@ -43,14 +50,20 @@ export function lessonPlace(
   const room = localizedRoom(lesson, language);
   const eventId = lesson.isCustom ? eventIdFromRsvpBlock(lesson.customEventId ?? '') : null;
   if (eventId === null) {
-    return { label: room, eventId: null, onMap: !!lookupRoomEntry(lesson.room, INDEX) };
+    return {
+      label: room,
+      eventId: null,
+      onMap: !!lookupRoomEntry(lesson.room, INDEX),
+      host: null,
+    };
   }
 
   const event = events.find((e) => e.id === eventId);
   // Cold start: the blocks come back from IndexedDB before the events do.
-  if (!event) return { label: room, eventId: null, onMap: false };
+  if (!event) return { label: room, eventId: null, onMap: false, host: null };
 
+  const host = SOCIETIES[event.societyId]?.shortName ?? null;
   const named = event.location?.trim();
-  if (!event.coord) return { label: named || room, eventId: null, onMap: false };
-  return { label: named || onMapLabel, eventId: event.id, onMap: true };
+  if (!event.coord) return { label: named || room, eventId: null, onMap: false, host };
+  return { label: named || onMapLabel, eventId: event.id, onMap: true, host };
 }

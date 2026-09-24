@@ -53,6 +53,7 @@ describe('lessonPlace', () => {
       label: ON_MAP,
       eventId: 'evt-1',
       onMap: true,
+      host: 'ESN',
     });
   });
 
@@ -63,7 +64,7 @@ describe('lessonPlace', () => {
       [mapEvent({ location: 'Klub Fléda' })],
       ON_MAP
     );
-    expect(place).toEqual({ label: 'Klub Fléda', eventId: 'evt-1', onMap: true });
+    expect(place).toEqual({ label: 'Klub Fléda', eventId: 'evt-1', onMap: true, host: 'ESN' });
   });
 
   it('falls back to the block when the events have not loaded yet', () => {
@@ -73,12 +74,13 @@ describe('lessonPlace', () => {
       label: 'Klub Fléda',
       eventId: null,
       onMap: false,
+      host: null,
     });
   });
 
   it('offers no map for an event with no coordinate', () => {
     const place = lessonPlace(block(), 'cz', [mapEvent({ coord: null })], ON_MAP);
-    expect(place).toEqual({ label: '', eventId: null, onMap: false });
+    expect(place).toEqual({ label: '', eventId: null, onMap: false, host: 'ESN' });
   });
 
   it('leaves a lesson to the room index', () => {
@@ -86,6 +88,7 @@ describe('lessonPlace', () => {
       label: 'Q01',
       eventId: null,
       onMap: true,
+      host: null,
     });
     expect(lessonPlace(makeLesson({ room: 'X02' }), 'cz', [], ON_MAP).onMap).toBe(false);
   });
@@ -102,6 +105,14 @@ describe('lessonPlace', () => {
       label: '',
       eventId: null,
       onMap: false,
+      host: null,
     });
+  });
+
+  it('names no host rather than the wrong one for a society it does not know', () => {
+    // `societyById` falls back to ESN; a row must not credit ESN with someone
+    // else's event.
+    const place = lessonPlace(block(), 'cz', [mapEvent({ societyId: 'nobody' })], ON_MAP);
+    expect(place.host).toBeNull();
   });
 });

@@ -123,7 +123,8 @@ describe('AgendaEvent, for an answered society event', () => {
 
   it('says where it is and offers the map', () => {
     render(<AgendaEvent lesson={cityGame} onOpenSubject={vi.fn()} onShowOnMap={vi.fn()} />);
-    expect(screen.getByText('Místo na mapě · 18:30 – 20:00')).toBeInTheDocument();
+    // The society sits where a lesson's teacher does: who is running it.
+    expect(screen.getByText('Místo na mapě · 18:30 – 20:00 · ESN')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Ukázat na mapě' })).toBeInTheDocument();
   });
 

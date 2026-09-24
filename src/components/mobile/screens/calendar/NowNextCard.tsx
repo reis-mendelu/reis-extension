@@ -7,13 +7,15 @@ import { lessonPlace } from '../../../../utils/lessonPlace';
 export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => void }) {
   const { t, language } = useTranslation();
   const { current, next, elapsedPct, minutesLeft } = data;
-  // Teacher has fullName/shortName, not `.name` — the prototype's placeholder
-  // data used a plain `.name` field that doesn't exist on the real type.
-  const teacher = current.teachers[0]?.fullName ?? '';
   const mapEvents = useAppStore((s) => s.mapEvents);
   const onMapLabel = t('map.venueOnMap');
+  const currentPlace = lessonPlace(current, language, mapEvents, onMapLabel);
+  // Teacher has fullName/shortName, not `.name` — the prototype's placeholder
+  // data used a plain `.name` field that doesn't exist on the real type. An
+  // answered society event has none; who runs it goes there instead.
+  const teacher = current.teachers[0]?.fullName || currentPlace.host;
   const currentName = localizedCourseName(current, language);
-  const currentRoom = lessonPlace(current, language, mapEvents, onMapLabel).label;
+  const currentRoom = currentPlace.label;
   const nextName = next ? localizedCourseName(next, language) : '';
   const nextPlace = next ? lessonPlace(next, language, mapEvents, onMapLabel) : null;
   // "Kam jít" points at a place, so it is offered only when there is one to
