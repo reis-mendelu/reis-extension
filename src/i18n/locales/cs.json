@@ -71,7 +71,6 @@
     "eduroam": "Wi-Fi (eduroam)",
     "contactCenter": "Kontaktní centrum",
     "slides": "snímků",
-    "more": "Více",
     "isPages": "IS stránky",
     "people": "Lidé",
     "map": "Mapa"
@@ -464,6 +463,7 @@
   "subjects": {
     "title": "Moje předměty",
     "credits": "kreditů",
+    "creditsShort": "kr.",
     "studyPlan": "Studijní plán",
     "noData": "Žádná data o studijním plánu",
     "noPlanExchange": "Studijní plán není pro výměnná studia dostupný — zobrazujeme tvoje zapsané předměty.",

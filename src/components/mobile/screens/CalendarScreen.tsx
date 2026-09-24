@@ -191,14 +191,16 @@ export function CalendarScreen() {
       ? firstTeachingDay
       : null;
 
+  // The RUNNING lesson, not the next one: the hero is about the lesson on now,
+  // and the student who opens it mid-lesson is the one late for it.
   const openRoute = () => {
-    if (!nowNext?.next) return;
+    if (!nowNext) return;
     setMobileTab('map');
-    focusRoomByCode(roomCodeFor(nowNext.next));
+    focusRoomByCode(roomCodeFor(nowNext.current));
     // It is called "Trasa →" and it used to move the camera. The lesson it
-    // names on the hero is the one the map now offers to walk to.
+    // sits beside on the hero is the one the map now offers to walk to.
     // Not while navigation is parked: "Trasa →" only moves the camera.
-    if (CAMPUS_NAVIGATION_ENABLED) suggestRoute(routeSuggestionFor(nowNext.next, language));
+    if (CAMPUS_NAVIGATION_ENABLED) suggestRoute(routeSuggestionFor(nowNext.current, language));
   };
 
   return shell(
