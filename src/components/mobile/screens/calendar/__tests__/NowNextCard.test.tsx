@@ -3,6 +3,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { NowNextCard } from '../NowNextCard';
 import { useAppStore } from '../../../../../store/useAppStore';
 import { makeLesson } from '../../../../../test/fixtures/lesson';
+import { customEventToLesson } from '../../../../../utils/customEventLesson';
+import { rsvpBlockId } from '../../../../../utils/rsvpBlocks';
 import type { NowNext } from '../../../../../utils/mobile/nowNext';
 
 function nowNext(over: Partial<NowNext> = {}): NowNext {
@@ -167,5 +169,53 @@ describe('NowNextCard route button', () => {
     render(<NowNextCard data={withCurrentRoom('Q01')} onRoute={onRoute} />);
     fireEvent.click(screen.getByRole('button', { name: /Trasa/ }));
     expect(onRoute).toHaveBeenCalledOnce();
+  });
+});
+
+/** The same gap one card higher: an answered event is often what comes next. */
+describe('NowNextCard, when an answered society event is next', () => {
+  beforeEach(() => {
+    useAppStore.setState({
+      language: 'cz',
+      mapEvents: [
+        {
+          id: 'evt-1',
+          title: 'City Game',
+          url: '',
+          date: '2026-09-24',
+          endDate: null,
+          time: '18:30',
+          location: null,
+          imageUrl: null,
+          organizerKey: 'mendelu',
+          societyId: 'esn',
+          coord: [16.6077, 49.1976],
+          roomCode: null,
+          venueKind: 'offcampus',
+          category: 'other',
+        },
+      ],
+    } as never);
+  });
+
+  const cityGame = customEventToLesson({
+    id: rsvpBlockId('evt-1'),
+    title: 'City Game',
+    date: '20260924',
+    startTime: '18:30',
+    endTime: '20:00',
+  });
+
+  it('says where it is when it comes next', () => {
+    render(<NowNextCard data={nowNext({ next: cityGame })} onRoute={() => {}} />);
+    expect(screen.getByText(/City Game · Místo na mapě · 18:30 – 20:00/)).toBeInTheDocument();
+  });
+
+  it('says where it is, who runs it, and offers the way there while it runs', () => {
+    // "Trasa →" belongs to the running entry (#409). The room index never knows
+    // a venue in town, so it is the event's coordinate that makes it routable.
+    render(<NowNextCard data={nowNext({ current: cityGame })} onRoute={() => {}} />);
+    expect(screen.getByText('Místo na mapě · 18:30 – 20:00 · ESN')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Trasa/ })).toBeInTheDocument();
   });
 });

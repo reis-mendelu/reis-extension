@@ -1,30 +1,32 @@
 import type { NowNext } from '../../../../utils/mobile/nowNext';
 import { useTranslation } from '../../../../hooks/useTranslation';
-import { localizedCourseName, localizedRoom } from '../../../../utils/localizedLesson';
-import roomsIndexJson from '../../../../data/map/rooms-index.json';
-import type { RoomIndexEntry } from '../../../../types/campusMap';
-import { lookupRoomEntry } from '../../../../utils/rooms/lookupRoom';
-
-const INDEX = roomsIndexJson as RoomIndexEntry[];
+import { useAppStore } from '../../../../store/useAppStore';
+import { localizedCourseName } from '../../../../utils/localizedLesson';
+import { lessonPlace } from '../../../../utils/lessonPlace';
 
 export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => void }) {
   const { t, language } = useTranslation();
   const { current, next, elapsedPct, minutesLeft } = data;
+  const mapEvents = useAppStore((s) => s.mapEvents);
+  const onMapLabel = t('map.venueOnMap');
+  const currentPlace = lessonPlace(current, language, mapEvents, onMapLabel);
   // Teacher has fullName/shortName, not `.name` — the prototype's placeholder
-  // data used a plain `.name` field that doesn't exist on the real type.
-  const teacher = current.teachers[0]?.fullName ?? '';
+  // data used a plain `.name` field that doesn't exist on the real type. An
+  // answered society event has none; who runs it goes there instead.
+  const teacher = current.teachers[0]?.fullName || currentPlace.host;
   const currentName = localizedCourseName(current, language);
-  const currentRoom = localizedRoom(current, language);
+  const currentRoom = currentPlace.label;
   const nextName = next ? localizedCourseName(next, language) : '';
-  const nextRoom = next ? localizedRoom(next, language) : '';
+  const nextPlace = next ? lessonPlace(next, language, mapEvents, onMapLabel) : null;
   // "Kam jít" points at the RUNNING lesson's room — the lesson this card is
   // about. It used to point at the next one, so a student opening the app
   // late for the lecture on now was walked to the one after it instead.
   //
   // Offered only when there is a place to point at: a lesson held online, or a
   // room MENDELU's map does not publish, would otherwise take the student to
-  // an empty campus overview.
-  const routable = !!lookupRoomEntry(current.room, INDEX);
+  // an empty campus overview. An answered society event has one whenever it
+  // has a coordinate.
+  const routable = currentPlace.onMap;
 
   return (
     <div
@@ -54,8 +56,9 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
           )}
         </div>
         <span className="text-sm text-base-content/70">
-          {currentRoom} · {current.startTime} – {current.endTime}
-          {teacher && ` · ${teacher}`}
+          {[currentRoom, `${current.startTime} – ${current.endTime}`, teacher]
+            .filter(Boolean)
+            .join(' · ')}
         </span>
       </div>
       <div className="flex items-center gap-2.5">
@@ -72,7 +75,9 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
               was the question the start time on its own left open. */}
           <span className="min-w-0 flex-1 text-sm font-medium text-base-content/60">
             <span className="font-bold text-base-content/80">{t('mobile.calendar.nextLabel')}</span>{' '}
-            {nextName} · {nextRoom} · {next.startTime} – {next.endTime}
+            {[nextName, nextPlace?.label, `${next.startTime} – ${next.endTime}`]
+              .filter(Boolean)
+              .join(' · ')}
           </span>
         </div>
       )}

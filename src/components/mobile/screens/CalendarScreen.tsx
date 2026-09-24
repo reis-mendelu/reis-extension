@@ -11,8 +11,8 @@ import { getCzechHoliday } from '../../../utils/holidays';
 import { isOutsideTeaching } from '../../../utils/mobile/teachingPeriod';
 import { semesterStart } from '../../../utils/mobile/semesterStart';
 import { defaultCalendarDay } from '../../../utils/mobile/landingDay';
-import { roomCodeFor, routeSuggestionFor } from '../../../utils/mobile/lessonActions';
 import { customEventToLesson } from '../../../utils/customEventLesson';
+import { useShowLessonOnMap } from './calendar/useShowLessonOnMap';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { NowNextCard } from './calendar/NowNextCard';
 import { DayChips } from './calendar/DayChips';
@@ -20,7 +20,6 @@ import { DayBody } from './calendar/DayBody';
 import { TodayPill } from './calendar/TodayPill';
 import { RecentFilesStrip } from './calendar/RecentFilesStrip';
 import { CalendarSkeleton } from './calendar/CalendarSkeleton';
-import { CAMPUS_NAVIGATION_ENABLED } from '../../../utils/routing/navigationEnabled';
 import { formatHeaderDate } from '../../../utils/mobile/formatHeaderDate';
 
 export function CalendarScreen() {
@@ -29,9 +28,7 @@ export function CalendarScreen() {
   const { schedule } = useSchedule();
   const mobileSelectedDayIso = useAppStore((s) => s.mobileSelectedDayIso);
   const setMobileSelectedDay = useAppStore((s) => s.setMobileSelectedDay);
-  const setMobileTab = useAppStore((s) => s.setMobileTab);
-  const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
-  const suggestRoute = useAppStore((s) => s.suggestRoute);
+  const showOnMap = useShowLessonOnMap();
   const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
@@ -192,15 +189,12 @@ export function CalendarScreen() {
       : null;
 
   // The RUNNING lesson, not the next one: the hero is about the lesson on now,
-  // and the student who opens it mid-lesson is the one late for it.
+  // and the student who opens it mid-lesson is the one late for it. It is
+  // called "Trasa →" and it used to move the camera; the lesson it sits beside
+  // is the one the map now offers to walk to — or, for an answered society
+  // event, the event itself.
   const openRoute = () => {
-    if (!nowNext) return;
-    setMobileTab('map');
-    focusRoomByCode(roomCodeFor(nowNext.current));
-    // It is called "Trasa →" and it used to move the camera. The lesson it
-    // sits beside on the hero is the one the map now offers to walk to.
-    // Not while navigation is parked: "Trasa →" only moves the camera.
-    if (CAMPUS_NAVIGATION_ENABLED) suggestRoute(routeSuggestionFor(nowNext.current, language));
+    if (nowNext) showOnMap(nowNext.current);
   };
 
   return shell(
