@@ -13,6 +13,12 @@ export interface ScreenHeaderProps {
    * targets plus a text button overflows a 320px viewport.
    */
   below?: ReactNode;
+  /**
+   * One more circle at the START of the actions row: the screen's refresh.
+   * Only drawn where there is no pull to make it (RefreshButton) — a Mac — and
+   * otherwise `sr-only`, which is absolute and takes no flex slot.
+   */
+  action?: ReactNode;
 }
 
 /**
@@ -24,7 +30,7 @@ export interface ScreenHeaderProps {
  * three destinations were reachable from one of five tabs; making the actions
  * part of the header means a screen cannot render one without them.
  */
-export function ScreenHeader({ eyebrow, title, below }: ScreenHeaderProps) {
+export function ScreenHeader({ eyebrow, title, below, action }: ScreenHeaderProps) {
   return (
     // The top padding carries --safe-top because this is the topmost element on
     // every mobile screen and targetSdk 36 forces edge-to-edge: without it the
@@ -49,7 +55,10 @@ export function ScreenHeader({ eyebrow, title, below }: ScreenHeaderProps) {
             {title}
           </span>
         </div>
-        <HeaderActions />
+        <div className="flex flex-shrink-0 items-center gap-2 max-[359px]:gap-1">
+          {action}
+          <HeaderActions />
+        </div>
       </div>
       {below}
     </div>

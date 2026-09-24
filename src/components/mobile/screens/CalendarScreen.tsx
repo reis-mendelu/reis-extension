@@ -98,11 +98,12 @@ export function CalendarScreen() {
           TodayPill), so it floats above the tab bar instead. */}
       {/* Refreshing is a pull on the day (DayBody). The visible circle that
           sat on its own row here made this header one line taller than every
-          other tab's; what is left is the screen-reader route to the same
-          sync, which takes no layout. */}
+          other tab's; on a touch screen what is left is the screen-reader
+          route to the same sync, which takes no layout, and on a Mac — where
+          nothing can pull — a circle among the header actions. */}
       <ScreenHeader
         title={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale)}
-        below={
+        action={
           <RefreshButton
             label={t('mobile.header.refresh')}
             refreshing={scheduleRefreshing}
