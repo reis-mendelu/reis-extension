@@ -44,7 +44,7 @@ export function ExamGroup({ title, count, tone, children }: ExamGroupProps) {
           {title}
         </span>
         {count !== undefined && (
-          <span className="rounded-full bg-base-300 px-1.5 py-0.5 text-xs font-semibold text-base-content/60">
+          <span className="rounded-full bg-base-300 px-1.5 py-0.5 text-xs font-semibold text-base-content/70">
             {count}
           </span>
         )}

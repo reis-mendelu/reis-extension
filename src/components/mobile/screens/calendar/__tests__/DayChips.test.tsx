@@ -32,6 +32,15 @@ describe('DayChips', () => {
     expect(screen.getByRole('button', { name: /24/ })).toBeInTheDocument();
   });
 
+  it('spells the selected day in the tone token, not raw primary', () => {
+    // Raw lime on its own /15 tint measured 1.89:1 in the light theme — the
+    // label of the one chip the student is looking at was the faintest on the row.
+    render(<DayChips selectedIso="2026-04-22" onSelect={() => {}} lessonDates={new Set()} />);
+    const selected = screen.getByRole('button', { name: /22/ });
+    expect(selected.className).toContain('text-[var(--tone-primary)]');
+    expect(selected.className.split(/\s+/)).not.toContain('text-primary');
+  });
+
   it('moves the selection a week forward', async () => {
     const onSelect = vi.fn();
     const user = userEvent.setup();

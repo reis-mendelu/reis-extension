@@ -60,7 +60,7 @@ export function HeaderActions() {
         aria-label={t('bulletin.expand')}
         className="flex h-10 w-10 items-center justify-center rounded-full border border-base-300 bg-base-100 max-[359px]:h-9 max-[359px]:w-9"
       >
-        <Pin size={18} className="text-primary" />
+        <Pin size={18} className="text-[var(--tone-primary)]" />
       </button>
       {/* The Student tab was a fifth of the primary navigation spent on a
           text field. As a header action, search is on every tab at once and

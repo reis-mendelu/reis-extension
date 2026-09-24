@@ -61,7 +61,7 @@ export function RegisteredStrip({
               className={`flex w-[178px] flex-shrink-0 flex-col gap-0.5 rounded-2xl border px-3.5 py-2.5 text-left ${look}`}
             >
               <span
-                className={`truncate text-xs font-bold ${today ? 'text-error' : 'text-success'}`}
+                className={`truncate text-xs font-bold ${today ? 'text-[var(--tone-error)]' : 'text-[var(--tone-success)]'}`}
               >
                 {formatWhenRow(row.date, row.term.time, locale)}
               </span>

@@ -62,6 +62,18 @@ describe('feedback', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
+  // The desktop NPS prompt is a row of plain buttons, so anything that clicks
+  // through the dev webapp — a verify-ui --click, an exploratory Playwright
+  // run — filed a real rating against production. Caught on 2026-09-24 by a
+  // click-through that blocked the POST before it left.
+  it('does not submit feedback from a development or preview build', async () => {
+    isHarnessEnabled.mockReturnValue(true);
+
+    await expect(submitFeedback('nps', '9', 'ZS2026')).resolves.toBe(false);
+
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it('does not track usage in demo mode', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     useAppStore.setState({ demoMode: true });

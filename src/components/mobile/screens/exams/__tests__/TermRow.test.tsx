@@ -189,7 +189,9 @@ describe('TermRow — registration not open yet', () => {
         onRegister={vi.fn()}
       />
     );
-    expect(screen.getByText('otevírá se').parentElement?.className).toContain('text-warning');
+    expect(screen.getByText('otevírá se').parentElement?.className).toContain(
+      'text-[var(--tone-warning)]'
+    );
   });
 
   it('gives way to the register button once IS opens registration', () => {
@@ -328,7 +330,7 @@ describe('TermRow — seat count colour', () => {
         onRegister={vi.fn()}
       />
     );
-    expect(screen.getByText('volno 56 z 66').className).toContain('text-success');
+    expect(screen.getByText('volno 56 z 66').className).toContain('text-[var(--tone-success)]');
   });
 
   it('reads error once the last seat goes', () => {
@@ -341,7 +343,7 @@ describe('TermRow — seat count colour', () => {
         onRegister={vi.fn()}
       />
     );
-    expect(screen.getByText('volno 0 z 66').className).toContain('text-error');
+    expect(screen.getByText('volno 0 z 66').className).toContain('text-[var(--tone-error)]');
   });
 });
 

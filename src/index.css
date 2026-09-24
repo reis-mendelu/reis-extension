@@ -160,6 +160,8 @@ body,
   --tone-warning: color-mix(in oklab, var(--color-warning) 55%, black);
   --tone-error: color-mix(in oklab, var(--color-error) 62%, black);
   --tone-info: color-mix(in oklab, var(--color-info) 62%, black);
+  /* Accent is already a deep navy (#00548f) here and reads as text as-is. */
+  --tone-accent: var(--color-accent);
 }
 
 /* Custom Mendelu dark theme for REIS extension */
@@ -237,6 +239,9 @@ body,
   --tone-warning: color-mix(in oklab, var(--color-warning) 84%, white);
   --tone-error: color-mix(in oklab, var(--color-error) 62%, white);
   --tone-info: color-mix(in oklab, var(--color-info) 64%, white);
+  /* The same blue as info (#3b82f6), 3.52:1 as the desktop calendar's "today"
+   * number on its own tint — lifted the same way. */
+  --tone-accent: color-mix(in oklab, var(--color-accent) 64%, white);
 }
 
 /* Tailwind v4: Custom tokens via @theme */
@@ -321,7 +326,7 @@ body,
 }
 
 .text-current-day {
-  color: var(--color-accent);
+  color: var(--tone-accent);
 }
 
 /* Clickable link styles - explicit hover effects */

@@ -40,7 +40,7 @@ export function TermRowStatus({
   const isClosed = !!regEnd && regEnd.getTime() < now.getTime();
 
   return isRegHere ? (
-    <span className="flex-shrink-0 text-sm font-bold text-success">
+    <span className="flex-shrink-0 text-sm font-bold text-[var(--tone-success)]">
       {t('mobile.exams.yourTerm')}
     </span>
   ) : isClosed ? (
@@ -75,7 +75,7 @@ export function TermRowStatus({
       type="button"
       onClick={() => onRegister(section, term.id)}
       disabled={isProcessing}
-      className="min-h-11 flex-shrink-0 rounded-lg bg-primary/15 px-4 text-sm font-bold text-primary disabled:opacity-50"
+      className="min-h-11 flex-shrink-0 rounded-lg bg-primary/15 px-4 text-sm font-bold text-[var(--tone-primary)] disabled:opacity-50"
     >
       {t('mobile.exams.register')}
     </button>
@@ -84,7 +84,7 @@ export function TermRowStatus({
     // 375px screen — it ate the room name and cut the time mid-digit
     // ("po 9. 11. · 10:2…"). Stacked, it is about as wide as the register
     // button that will replace it, which is the point of the slot.
-    <span className="flex flex-shrink-0 flex-col items-end leading-tight text-warning/90">
+    <span className="flex flex-shrink-0 flex-col items-end leading-tight text-[var(--tone-warning)]">
       <span className="whitespace-nowrap text-2sm">{t('mobile.exams.opensAtLabel')}</span>
       <span className="whitespace-nowrap text-2sm font-medium">{formatOpensAtBare(opensAt)}</span>
     </span>

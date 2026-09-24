@@ -28,8 +28,8 @@ const urgencyBorder = {
 
 const urgencyBadge = {
   none: null,
-  warning: 'bg-warning/10 text-warning border-warning/20',
-  critical: 'bg-error/10 text-error border-error/20 animate-pulse',
+  warning: 'bg-warning/10 text-[var(--tone-warning)] border-warning/20',
+  critical: 'bg-error/10 text-[var(--tone-error)] border-error/20 animate-pulse',
   expired: null,
 };
 
@@ -81,12 +81,12 @@ const ContentBox: React.FC<ContentBoxProps> = ({
             {subjectName}
           </div>
           {sectionName && (
-            <div className="text-[10px] font-medium text-base-content/45 uppercase tracking-wide leading-none">
+            <div className="text-[10px] font-medium text-base-content/70 uppercase tracking-wide leading-none">
               {sectionName}
             </div>
           )}
         </div>
-        <div className="text-[12px] font-bold text-primary flex items-center gap-1 mt-0.5 whitespace-nowrap">
+        <div className="text-[12px] font-bold text-[var(--tone-primary)] flex items-center gap-1 mt-0.5 whitespace-nowrap">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-3 w-3"
@@ -105,7 +105,7 @@ const ContentBox: React.FC<ContentBoxProps> = ({
         </div>
       </div>
       <div className="flex items-center justify-between gap-2">
-        <div className="text-[11px] font-mono font-extrabold tracking-widest uppercase text-primary">
+        <div className="text-[11px] font-mono font-extrabold tracking-widest uppercase text-[var(--tone-primary)]">
           {term.date} • {term.time}
         </div>
         {countdown && badgeClass && (
@@ -116,7 +116,7 @@ const ContentBox: React.FC<ContentBoxProps> = ({
       </div>
       {onClick && (
         <div
-          className={`flex items-center justify-center mt-2 pt-1.5 border-t transition-colors ${isSelected ? 'border-primary/20 text-primary' : 'border-base-content/8 text-base-content/25 hover:text-base-content/50'}`}
+          className={`flex items-center justify-center mt-2 pt-1.5 border-t transition-colors ${isSelected ? 'border-primary/20 text-[var(--tone-primary)]' : 'border-base-content/8 text-base-content/50 hover:text-base-content/70'}`}
         >
           {isSelected ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
         </div>
@@ -164,12 +164,12 @@ const CompactCard: React.FC<CompactCardProps> = ({
         {subjectName}
       </div>
       {sectionName && (
-        <div className="text-[10px] font-medium text-base-content/40 uppercase tracking-wide truncate leading-none mt-0.5">
+        <div className="text-[10px] font-medium text-base-content/70 uppercase tracking-wide truncate leading-none mt-0.5">
           {sectionName}
         </div>
       )}
       <div className="flex items-center gap-1.5 mt-1.5">
-        <div className="text-[11px] font-mono text-primary/80 leading-none whitespace-nowrap">
+        <div className="text-[11px] font-mono text-[var(--tone-primary)] leading-none whitespace-nowrap">
           {term.date} · {term.time}
         </div>
       </div>
