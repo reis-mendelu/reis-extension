@@ -119,6 +119,12 @@ export async function fetchWeekSchedule(
 /**
  * Fetches schedule in both Czech and English and merges them.
  * Each lesson will have both courseNameCs/courseNameEn and roomCs/roomEn populated.
+ *
+ * Both legs or `null`. This used to fall back to whichever leg succeeded, and a
+ * surviving EN leg is raw English lessons with no `courseNameCs` — so one flaky
+ * CZ request turned a Czech student's calendar English, and the refresh wrote
+ * that over the good cached copy. `null` is what every caller already treats as
+ * "failed, keep what is cached" (see scheduleDualLanguage.test.ts).
  */
 export async function fetchDualLanguageSchedule(dateRange: {
   start: Date;
@@ -131,10 +137,7 @@ export async function fetchDualLanguageSchedule(dateRange: {
       fetchWeekSchedule(dateRange, 'en'),
     ]);
 
-    if (!czLessons || !enLessons) {
-      // Fall back to whichever succeeded
-      return czLessons || enLessons;
-    }
+    if (!czLessons || !enLessons) return null;
 
     // Create a map of EN lessons by unique key (id + date + startTime)
     const enMap = new Map<string, BlockLesson>();
