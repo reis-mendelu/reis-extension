@@ -1,6 +1,6 @@
 import { EyeOff, Calendar, CalendarRange } from 'lucide-react';
 import { toast } from 'sonner';
-import type { LessonWithRow } from '../types/calendarTypes';
+import type { CardLesson } from '../types/calendarTypes';
 import { useAppStore } from '../store/useAppStore';
 import { useTranslation } from '../hooks/useTranslation';
 import { useHintStatus } from '../hooks/ui/useHintStatus';
@@ -24,7 +24,7 @@ export function CalendarEventCardHideMenu({
   /** The name the menu heads itself with — the nickname, where there is one. */
   baseName,
 }: {
-  lesson: LessonWithRow;
+  lesson: CardLesson;
   fullName: string;
   baseName: string;
 }) {

@@ -63,9 +63,68 @@ describe('enrichExamsWithDurations', () => {
     expect(result[0]!.sections[0]!.registeredTerm?.durationMinutes).toBe(45);
   });
 
-  it('skips sections that are not registered', async () => {
-    await enrichExamsWithDurations([subject('A')], [], '111', '222');
+  // Every listed term, not only the registered ones: the phone shows each
+  // term's length under it. Registered terms go first, so the budget spends
+  // itself on the calendar's blocks before anything else.
+  it('also attaches durations to the terms a section lists, registered one first', async () => {
+    vi.mocked(fetchTermDuration).mockImplementation(async (id) => (id === '1' ? 90 : 25));
+    const s = subject('A', { id: '1' });
+    s.sections[0]!.terms = [
+      { id: '2', date: '01.07.2026', time: '09:00' },
+      { id: '1', date: '24.06.2026', time: '09:45' },
+    ];
+    const result = await enrichExamsWithDurations([s], [], '111', '222');
+    expect(vi.mocked(fetchTermDuration).mock.calls.map((c) => c[0])).toEqual(['1', '2']);
+    const terms = result[0]!.sections[0]!.terms;
+    expect(terms.find((t) => t.id === '2')?.durationMinutes).toBe(25);
+    expect(terms.find((t) => t.id === '1')?.durationMinutes).toBe(90);
+    expect(result[0]!.sections[0]!.registeredTerm?.durationMinutes).toBe(90);
+  });
+
+  it('reuses a cached duration of a listed term instead of refetching', async () => {
+    const cached = subject('A');
+    cached.sections[0]!.terms = [
+      { id: '7', date: '01.07.2026', time: '09:00', durationMinutes: 30 },
+    ];
+    const fresh = subject('A');
+    fresh.sections[0]!.terms = [{ id: '7', date: '01.07.2026', time: '09:00' }];
+    const result = await enrichExamsWithDurations([fresh], [cached], '111', '222');
     expect(fetchTermDuration).not.toHaveBeenCalled();
+    expect(result[0]!.sections[0]!.terms[0]!.durationMinutes).toBe(30);
+  });
+
+  // A listed term whose page has no length answered null, which used to be
+  // cached as nothing — so every sync fetched it again, for every such term.
+  it('remembers a listed term IS gave no length for, and does not refetch it', async () => {
+    vi.mocked(fetchTermDuration).mockResolvedValue(null);
+    const first = subject('A');
+    first.sections[0]!.terms = [{ id: '7', date: '01.07.2026', time: '09:00' }];
+    const synced = await enrichExamsWithDurations([first], [], '111', '222');
+    expect(synced[0]!.sections[0]!.terms[0]!.durationMinutes).toBeNull();
+
+    vi.mocked(fetchTermDuration).mockClear();
+    const again = subject('A');
+    again.sections[0]!.terms = [{ id: '7', date: '01.07.2026', time: '09:00' }];
+    const result = await enrichExamsWithDurations([again], synced, '111', '222');
+    expect(fetchTermDuration).not.toHaveBeenCalled();
+    expect(result[0]!.sections[0]!.terms[0]!.durationMinutes).toBeNull();
+  });
+
+  // The calendar sizes the registered term's block, and a teacher can fill the
+  // length in later — so a registered term with none is asked again. There are
+  // a handful of those, not one per listed term.
+  it('keeps asking about a registered term that had no length', async () => {
+    const cached = subject('A', { id: '1' });
+    cached.sections[0]!.terms = [
+      { id: '1', date: '24.06.2026', time: '09:45', durationMinutes: null },
+    ];
+    vi.mocked(fetchTermDuration).mockResolvedValue(60);
+    const fresh = subject('A', { id: '1' });
+    fresh.sections[0]!.terms = [{ id: '1', date: '24.06.2026', time: '09:45' }];
+    const result = await enrichExamsWithDurations([fresh], [cached], '111', '222');
+    expect(fetchTermDuration).toHaveBeenCalledWith('1', '111', '222');
+    expect(result[0]!.sections[0]!.registeredTerm?.durationMinutes).toBe(60);
+    expect(result[0]!.sections[0]!.terms[0]!.durationMinutes).toBe(60);
   });
 
   it('skips registered terms with no term id', async () => {
@@ -130,6 +189,31 @@ describe('the enrichment budget', () => {
       await vi.advanceTimersByTimeAsync(ENRICHMENT_BUDGET_MS + 1000);
       const result = await promise;
       expect(result[0]!.sections[0]!.registeredTerm?.durationMinutes).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // Losing the race used to leave the workers running: they kept pulling terms
+  // off the queue after the sync had moved on, into the next sync's burst.
+  it('starts no new fetch once the budget is spent', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.mocked(fetchTermDuration).mockImplementation(
+        () => new Promise((resolve) => setTimeout(() => resolve(10), 15000))
+      );
+      const s = subject('A');
+      s.sections[0]!.terms = Array.from({ length: 12 }, (_, i) => ({
+        id: String(i + 1),
+        date: '01.07.2026',
+        time: '09:00',
+      }));
+      const promise = enrichExamsWithDurations([s], [], '111', '222');
+      // 3 start at 0 s, 3 more at 15 s; the budget ends at 20 s.
+      await vi.advanceTimersByTimeAsync(ENRICHMENT_BUDGET_MS + 1000);
+      await promise;
+      await vi.advanceTimersByTimeAsync(120000);
+      expect(fetchTermDuration).toHaveBeenCalledTimes(6);
     } finally {
       vi.useRealTimers();
     }

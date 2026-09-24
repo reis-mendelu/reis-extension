@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  railPaddingPx,
   railOffsetPx,
   clampRailWidth,
   RAIL_PX,
@@ -42,6 +43,44 @@ describe('railOffsetPx', () => {
   it('does not shift the desktop tree at any width', () => {
     expect(railOffsetPx(1440, false)).toBe(0);
     expect(railOffsetPx(834, false)).toBe(0);
+  });
+});
+
+describe('railPaddingPx', () => {
+  it('reserves the whole rail, and the gap it floats in', () => {
+    // The camera SHIFT takes half the rail (it re-centres behind it); fitting
+    // a route has to clear the whole of it, or the destination finishes
+    // underneath the panel.
+    //
+    // Plus the inset: the rail FLOATS at `right-4`, so the band it occupies
+    // starts 16px before its own width. Measured in phone landscape — the
+    // room pill was clamped to 504 on an 844px map and the rail's left edge
+    // was at 488, so it still sat 12px under the panel.
+    expect(railPaddingPx(1024, true, 340, true)).toBe(356);
+  });
+
+  it('reserves nothing on a phone, whatever the store says the rail is', () => {
+    // The bug this exists for: the route fit read the rail width straight off
+    // the store, which defaults to open at 340. On a 390px map that is 368px
+    // of right padding against a 390px container — wider than the map. Leaflet
+    // then has no room left to fit into, returns its maxZoom, and the camera
+    // stays exactly where it was: the student gets a "9 min" card and a line
+    // running off the screen.
+    expect(railPaddingPx(390, true, 340, true)).toBe(0);
+    expect(railPaddingPx(767, true, 340, true)).toBe(0);
+  });
+
+  it('reserves nothing when the rail is closed', () => {
+    expect(railPaddingPx(1024, true, 340, false)).toBe(0);
+  });
+
+  it('reserves nothing for the desktop tree, which floats its own panel', () => {
+    expect(railPaddingPx(1440, false, 340, true)).toBe(0);
+  });
+
+  it('never reserves more than half the map, however wide the rail got', () => {
+    // A rail dragged wide on a small tablet must still leave a map to fit into.
+    expect(railPaddingPx(800, true, 560, true)).toBeLessThanOrEqual(400);
   });
 });
 

@@ -1,7 +1,7 @@
 // Matches how scripts/scrape-real-data.ts takes MENDELU_USER / MENDELU_PASS:
-// a gitignored .env is this repo's existing home for local credentials. dotenv
-// does not overwrite variables already in the environment, so `infisical run`
-// (or a plain export) still wins over .env when both are present.
+// a gitignored .env is this repo's home for local credentials. dotenv does not
+// overwrite variables already in the environment, so a plain export still wins
+// over .env when both are present.
 import 'dotenv/config';
 import type { Plugin } from 'vite';
 import { createClient } from '@supabase/supabase-js';
@@ -22,9 +22,10 @@ import { ADMIN_SESSION_ROUTE } from './adminSessionRoute';
  * the resulting session crosses to the page — exactly what a real login would
  * have put there anyway.
  *
- * Credentials come from the environment, so any source works:
+ * Credentials come from the environment, so any source works — the gitignored
+ * root .env (REIS_ADMIN_EMAIL / REIS_ADMIN_PASSWORD) or an explicit export:
  *
- *   infisical run --env=dev -- npm run dev:web:admin
+ *   REIS_ADMIN_EMAIL=… REIS_ADMIN_PASSWORD=… npm run dev:web:admin
  *
  * Absent credentials the route replies 204 and the harness simply shows the
  * normal login screen. This plugin is only ever registered by

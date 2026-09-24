@@ -2,11 +2,11 @@ import type { ReactNode } from 'react';
 import { usePersonPhoto } from '../../hooks/data/usePersonPhoto';
 
 interface PersonPhotoProps {
-    personId: string | number | null | undefined;
-    alt: string;
-    className?: string;
-    /** Rendered while the photo loads or when none is available. */
-    fallback: ReactNode;
+  personId: string | number | null | undefined;
+  alt: string;
+  className?: string;
+  /** Rendered while the photo loads or when none is available. */
+  fallback: ReactNode;
 }
 
 /**
@@ -16,7 +16,7 @@ interface PersonPhotoProps {
  * fallback markup (initials, icon, sizing).
  */
 export function PersonPhoto({ personId, alt, className, fallback }: PersonPhotoProps) {
-    const src = usePersonPhoto(personId);
-    if (!src) return <>{fallback}</>;
-    return <img src={src} alt={alt} className={className} />;
+  const src = usePersonPhoto(personId);
+  if (!src) return <>{fallback}</>;
+  return <img src={src} alt={alt} className={className} />;
 }

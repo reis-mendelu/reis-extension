@@ -87,8 +87,7 @@ function ZameraniRow({
           <span className="flex-1 text-sm font-medium truncate">{cleanName}</span>
           {insight.totalCredits > 0 && (
             <span className="text-[10px] text-base-content/70 font-mono shrink-0">
-              {insight.totalCredits}
-              <span className="hidden md:inline"> kr.</span>
+              {insight.totalCredits} {t('subjects.creditsShort')}
             </span>
           )}
           {hasDetail && (
@@ -126,22 +125,20 @@ function ZameraniRow({
                     <span className="hidden md:inline"> sem.</span>
                   </span>
                 )}
+                {/* The number alone. This card compares zaměření BY failure
+                    rate, and it used to spell the words out on every row to say
+                    so — but the page now names them once in `FailRateLegend`,
+                    and one screen saying it both ways was the inconsistency.
+                    `title`/`aria-label` carry the sentence where the legend is
+                    out of view. Nothing to name when there is no stat. */}
                 <span
-                  className={`flex items-center justify-center h-4 px-1 rounded text-[10px] font-medium shrink-0 ${rateClass(s.stat?.rate ?? null)}`}
+                  title={s.stat ? `${t('subjects.failRateLabel')} ${s.stat.rate} %` : undefined}
+                  aria-label={
+                    s.stat ? `${t('subjects.failRateLabel')} ${s.stat.rate} %` : undefined
+                  }
+                  className={`flex items-center justify-center h-4 px-1 rounded text-[10px] font-medium tabular-nums shrink-0 ${rateClass(s.stat?.rate ?? null)}`}
                 >
-                  {/* Named, not a bare number. This card compares zaměření BY
-                      failure rate, and its rows were the one place in the study
-                      plan that still showed "11%" with nothing saying what it
-                      was a percentage of. Nothing when there is no stat: an em
-                      dash has nothing to name. */}
-                  {s.stat ? (
-                    <>
-                      <span className="mr-1 whitespace-nowrap">{t('subjects.failRateLabel')}</span>
-                      {s.stat.rate}%
-                    </>
-                  ) : (
-                    '—'
-                  )}
+                  {s.stat ? `${s.stat.rate}%` : '—'}
                 </span>
               </button>
             );

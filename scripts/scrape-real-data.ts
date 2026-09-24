@@ -64,7 +64,11 @@ async function dumpRawHtml() {
   }
   mkdirSync(HTML_OUT, { recursive: true });
   const pages: Array<[string, string]> = [
-    ['study-plan', `${BASE_URL}/auth/studijni/studijni_povinnosti.pl?studium=${studium}`],
+    [
+      'study-plan',
+      `${BASE_URL}/auth/studijni/studijni_povinnosti.pl?studium=${studium};razeni=obdobi`,
+    ],
+    ['exam-terms', `${BASE_URL}/auth/student/terminy_seznam.pl?studium=${studium}`],
   ];
   for (const [name, base] of pages) {
     for (const lang of ['cz', 'en']) {

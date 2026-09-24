@@ -25,9 +25,11 @@ vi.mock('../../../../hooks/useEventsFacultySettings', () => ({
   useEventsFacultySettings: () => ({ subscribedFaculties: ['mendelu'], isLoading: false }),
 }));
 
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MapScreen } from '../MapScreen';
 import { useAppStore } from '../../../../store/useAppStore';
+import { __resetSafeBottomCache } from '../../../../hooks/ui/useSafeBottom';
+import { peekHeightPx } from '../../../../utils/mobile/safeArea';
 
 // A real building id/floor id from src/data/map/buildings.json so FloorStack
 // and BuildingRoomList have something real to key off.
@@ -104,12 +106,19 @@ describe('MapScreen', () => {
 
     // A drag the sheet absorbs: press on the sheet, move far enough that it
     // consumes the travel, release — then the click the browser still delivers.
-    fireEvent.pointerDown(sheet, { clientY: 100 });
-    fireEvent.pointerMove(sheet, { clientY: 260 });
-    fireEvent.pointerUp(sheet, { clientY: 260 });
+    //
+    // UPWARD, though the reported gesture was a collapse. A card open means the
+    // sheet is at `half` (the effect puts it there), and a downward drag from
+    // half lands on peek, where collapsing now clears the selection by design —
+    // so a swallowed click and a working one would both leave it null and this
+    // test could no longer tell them apart. Upward exercises the same
+    // suppression against an outcome only Back can produce.
+    fireEvent.pointerDown(sheet, { clientY: 260 });
+    fireEvent.pointerMove(sheet, { clientY: 100 });
+    fireEvent.pointerUp(sheet, { clientY: 100 });
     fireEvent.click(back);
 
-    // Still selected: the drag collapsed the sheet, it did not press Back.
+    // Still selected: the drag moved the sheet, it did not press Back.
     expect(useAppStore.getState().mapSelection).not.toBeNull();
   });
 
@@ -187,7 +196,9 @@ describe('MapScreen', () => {
     expect(useAppStore.getState().mapSheetState).toBe('peek');
 
     // The click the browser still delivers must not toggle it straight back.
-    fireEvent.click(screen.getByRole('button', { name: /Akce na kampusu/ }));
+    // By testid, not by the band's words: it reads out whatever event is next,
+    // and this test is about the click, not the copy.
+    fireEvent.click(screen.getByTestId('map-sheet-peek'));
     expect(useAppStore.getState().mapSheetState).toBe('peek');
     forceDetentFlip = false;
   });
@@ -228,10 +239,64 @@ describe('MapScreen', () => {
     expect(screen.getByTestId('mock-map-canvas')).toBeInTheDocument();
   });
 
+  /**
+   * targetSdk 36 draws the app edge-to-edge on Android 15+, so the window
+   * runs under the system navigation bar and the floating BottomNav — which
+   * this band reserves space for — had to move up by the inset. The band has
+   * to move with it, and so does the DRAG FLOOR: the resting height is a
+   * class and the floor is JavaScript, and if only the class grows a drag
+   * undershoots the resting height by the whole system bar and snaps back.
+   */
+  it('grows the closed band and its drag floor by the bottom inset', () => {
+    document.documentElement.style.setProperty('--safe-bottom', '48px');
+    __resetSafeBottomCache();
+    try {
+      render(<MapScreen />);
+      const sheet = screen.getByTestId('map-sheet');
+      expect(sheet.className).toContain('calc(166px_+_var(--safe-bottom,0px))');
+
+      // From `half`, because peek does not absorb downward travel — it IS the
+      // floor, so the clamp can only be observed on the way down to it. Far
+      // enough that the clamp binds rather than the finger.
+      act(() => {
+        useAppStore.setState({ mapSheetState: 'half' } as never);
+      });
+      fireEvent.pointerDown(sheet, { clientY: 200 });
+      fireEvent.pointerMove(sheet, { clientY: 800 });
+      expect(sheet.style.height).toBe(`${peekHeightPx(48)}px`);
+      fireEvent.pointerUp(sheet, { clientY: 800 });
+    } finally {
+      document.documentElement.style.removeProperty('--safe-bottom');
+      __resetSafeBottomCache();
+    }
+  });
+
   it('renders the sheet in peek state by default, with no tabs visible', () => {
     render(<MapScreen />);
-    expect(screen.getByText('Akce na kampusu')).toBeInTheDocument();
+    expect(screen.getByText('Zatím žádné akce na kampusu')).toBeInTheDocument();
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+  });
+
+  /**
+   * The closed band used to be the words "Akce na kampusu" over ~96px of space
+   * reserved for the floating BottomNav — so at rest the sheet named a category
+   * and showed none of it, and the only way to learn whether anything was on
+   * was to pull it open. That is the complaint that added the middle detent;
+   * the band it was meant to fix was left as it was.
+   */
+  it('shows the next event while the sheet is closed', () => {
+    useAppStore.setState({ mapEvents: [EVENT] } as never);
+    render(<MapScreen />);
+    const band = screen.getByRole('button', { name: /Deskovky/ });
+    expect(band).toBeInTheDocument();
+    expect(band).toHaveTextContent('18:30');
+  });
+
+  it('opens the list when the closed band is tapped', () => {
+    useAppStore.setState({ mapEvents: [EVENT] } as never);
+    render(<MapScreen />);
+    fireEvent.click(screen.getByRole('button', { name: /Deskovky/ }));
+    expect(useAppStore.getState().mapSheetState).toBe('half');
   });
 
   /**
@@ -472,6 +537,62 @@ describe('MapSheet drag', () => {
     render(<MapScreen />);
     fireEvent.click(screen.getByRole('button', { name: 'Akce' }));
     expect(useAppStore.getState().mapSheetState).toBe('peek');
+  });
+
+  /**
+   * `half` is where the sheet OPENS, and its heading row carries the same down
+   * chevron — and the same "Sbalit panel mapy" label — that the top stop does.
+   * The tap used to walk one rung UP the ladder from there, so the collapse
+   * affordance made the sheet TALLER: reported as "clicking on the expanded
+   * drawer just expands it even more", measured as 365px -> 568px.
+   */
+  it('collapses on a plain tap of the heading row at the middle stop', () => {
+    useAppStore.setState({ mapSheetState: 'half' } as never);
+    render(<MapScreen />);
+    fireEvent.click(screen.getByRole('button', { name: 'Akce' }));
+    expect(useAppStore.getState().mapSheetState).toBe('peek');
+  });
+
+  /**
+   * Collapsing while a pin's card is open used to strand both the sheet and the
+   * pin.
+   *
+   * The sheet, because it is sized by its CONTENT while a card shows, and at
+   * peek that content is one short row: ~52px, well under the 166px band the
+   * floating BottomNav is drawn over, so the hint row ended up half-buried
+   * behind the nav pill.
+   *
+   * The pin, because the effect that opens the sheet for a selection keys on
+   * the selected place's REFERENCE — the same object every time that bubble is
+   * tapped — so with the selection still set at peek, tapping the pin again
+   * changed no dep, ran no effect, and did nothing at all. Measured: the sheet
+   * stayed at 166px. Collapsing therefore drops the selection, which also keeps
+   * the peek row honest: it offers the events list, and that is what it must
+   * open.
+   */
+  const PLACE = {
+    id: 'rokle',
+    name: { cz: 'Rokle', en: 'The ravine' },
+    lon: 16.6123,
+    lat: 49.2141,
+  };
+
+  it('drops the pin and restores the peek band when tapped collapsed with a card open', () => {
+    useAppStore.setState({ mapSelection: { kind: 'gardenPlace', place: PLACE } } as never);
+    render(<MapScreen />);
+    fireEvent.click(screen.getByLabelText(/panel mapy/));
+    expect(useAppStore.getState().mapSheetState).toBe('peek');
+    expect(useAppStore.getState().mapSelection).toBeNull();
+    expect(screen.getByTestId('map-sheet').className).toContain('h-[calc(166px_+_');
+  });
+
+  it('drops the pin when DRAGGED down to peek with a card open', () => {
+    useAppStore.setState({ mapSelection: { kind: 'gardenPlace', place: PLACE } } as never);
+    render(<MapScreen />);
+    // The effect put the sheet at `half`, one rung above peek.
+    drag(300, 500);
+    expect(useAppStore.getState().mapSheetState).toBe('peek');
+    expect(useAppStore.getState().mapSelection).toBeNull();
   });
 
   it('collapses when dragged down from the content area', () => {

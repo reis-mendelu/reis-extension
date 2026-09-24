@@ -5,6 +5,7 @@ import { DetailPanel } from './DetailPanel';
 import { RoomSearch } from './RoomSearch';
 import { EventLayer } from './EventLayer';
 import { useAppStore } from '../../store/useAppStore';
+import { useMapDwell } from '../../hooks/useMapDwell';
 import { useTranslation } from '../../hooks/useTranslation';
 
 export function CampusMapView() {
@@ -12,6 +13,9 @@ export function CampusMapView() {
   const placing = useAppStore((s) => s.placingEvent);
   const cancelPlacing = useAppStore((s) => s.cancelPlacing);
   const { t } = useTranslation();
+  // Counts this install once the map has been looked at for three seconds.
+  // Mobile's MapScreen mounts the same hook; one number covers both surfaces.
+  useMapDwell();
   // `isolate` (isolation: isolate) confines Leaflet's internal panes/controls
   // and our z-[1000] overlays to this subtree's stacking context. Without it
   // those high z-indexes escape to the root and paint OVER app drawers/popovers

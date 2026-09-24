@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useAppStore } from '../../useAppStore';
 
-beforeEach(() => { useAppStore.setState({ isDocumentsOpen: false }); });
+beforeEach(() => {
+  useAppStore.setState({ isDocumentsOpen: false });
+});
 
 describe('documents slice', () => {
   it('defaults isDocumentsOpen to false', () => {

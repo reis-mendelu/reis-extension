@@ -139,6 +139,33 @@ describe('mapSlice', () => {
     expect(s.mapFocusRequest).toBe(before + 1);
   });
 
+  // The regression students outside PEF actually hit. Building A prints its
+  // hall code in `nickname` ("A01"), not `name` — a timetable gives the button
+  // that string and nothing else, so matching code/name alone left the button
+  // dead for every faculty but PEF.
+  it('focusRoomByCode resolves a hall known only by its nickname', () => {
+    const before = useAppStore.getState().mapFocusRequest;
+    useAppStore.getState().focusRoomByCode('A01'); // BA01N1052, building 54678
+    const s = useAppStore.getState();
+    expect(s.activeBuildingId).toBe(54678);
+    expect(s.mapSelection?.kind).toBe('roomRef');
+    expect(s.mapFocusRequest).toBe(before + 1);
+  });
+
+  it('focusRoomByCode ignores the campus a timetable brackets after the room', () => {
+    useAppStore.getState().focusRoomByCode('Q01 (Poříčí)');
+    expect(useAppStore.getState().activeBuildingId).toBe(0);
+  });
+
+  it('focusRoomByCode leaves the map alone for a room it cannot find', () => {
+    useAppStore.getState().focusCampus();
+    const before = useAppStore.getState().mapFocusRequest;
+    // A real Zahradnická fakulta timetable room; building X carries no such
+    // handle under any field, so there is nothing to fly to.
+    useAppStore.getState().focusRoomByCode('X02');
+    expect(useAppStore.getState().mapFocusRequest).toBe(before);
+  });
+
   it('focusCampus returns to overview and bumps the focus request', () => {
     useAppStore.getState().setMapBuilding(54678);
     const before = useAppStore.getState().mapFocusRequest;
@@ -533,5 +560,17 @@ describe('mapFocusTarget', () => {
     useAppStore.getState().closeComposer();
     expect(useAppStore.getState().draftCoord).toBeNull();
     expect(useAppStore.getState().mapFocusTarget).toBe('campus');
+  });
+});
+
+describe('tapping a room by hand', () => {
+  it('retires the lesson offer, because the student moved on from it', () => {
+    // The chip is the timetable's question, pinned to the room the timetable
+    // sent them to. Tapping a DIFFERENT room is a different question: without
+    // this, the offer followed the selection onto a room it was never about
+    // and still routed to the lecture's building.
+    useAppStore.getState().suggestRoute({ buildingName: 'Q', roomLabel: 'Q01' });
+    useAppStore.getState().selectMapRoom({ id: 42, name: 'B11' } as never);
+    expect(useAppStore.getState().routeSuggestion).toBeNull();
   });
 });

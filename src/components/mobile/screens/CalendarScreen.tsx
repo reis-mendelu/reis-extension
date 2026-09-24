@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { useAppStore } from '../../../store/useAppStore';
-import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
 import { ScreenError } from '../primitives/ScreenError';
+import { RefreshButton } from '../primitives/RefreshButton';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useSchedule } from '../../../hooks/data/useSchedule';
 import { resolveNowNext } from '../../../utils/mobile/nowNext';
@@ -11,44 +11,42 @@ import { getCzechHoliday } from '../../../utils/holidays';
 import { isOutsideTeaching } from '../../../utils/mobile/teachingPeriod';
 import { semesterStart } from '../../../utils/mobile/semesterStart';
 import { defaultCalendarDay } from '../../../utils/mobile/landingDay';
-import { roomCodeFor } from '../../../utils/mobile/lessonActions';
+import { roomCodeFor, routeSuggestionFor } from '../../../utils/mobile/lessonActions';
+import { customEventToLesson } from '../../../utils/customEventLesson';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { NowNextCard } from './calendar/NowNextCard';
 import { DayChips } from './calendar/DayChips';
 import { DayBody } from './calendar/DayBody';
 import { TodayPill } from './calendar/TodayPill';
 import { RecentFilesStrip } from './calendar/RecentFilesStrip';
+import { CalendarSkeleton } from './calendar/CalendarSkeleton';
+import { CAMPUS_NAVIGATION_ENABLED } from '../../../utils/routing/navigationEnabled';
 import { formatHeaderDate } from '../../../utils/mobile/formatHeaderDate';
 
-function CalendarSkeleton() {
-  const { t } = useTranslation();
-  return (
-    <ScreenSkeleton
-      testId="calendar-skeleton"
-      label={t('mobile.calendar.loading')}
-      // One row shorter than it was, and no inset of its own: the header above
-      // it is real now rather than a placeholder bar.
-      rows={['h-28', 'h-10', 'h-20', 'h-20']}
-      underHeader
-    />
-  );
-}
-
 export function CalendarScreen() {
-  const { language } = useTranslation();
+  const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
   const { schedule } = useSchedule();
   const mobileSelectedDayIso = useAppStore((s) => s.mobileSelectedDayIso);
   const setMobileSelectedDay = useAppStore((s) => s.setMobileSelectedDay);
   const setMobileTab = useAppStore((s) => s.setMobileTab);
   const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
+  const suggestRoute = useAppStore((s) => s.suggestRoute);
   const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
   const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
   const syncLoaded = useAppStore((s) => s.syncLoaded);
   const hiddenItems = useAppStore((s) => s.hiddenItems);
+  // The store's clock, not `new Date()`: the pulse advances it, so the running
+  // lesson's card and its countdown move with it instead of being stamped once
+  // per render and then only when something else happened to re-render.
+  const now = useAppStore((s) => s.now);
   const teachingWeekData = useAppStore((s) => s.teachingWeekData);
+  const customEvents = useAppStore((s) => s.customEvents);
+  const scheduleRefreshing = useAppStore((s) => s.scheduleRefreshing);
+  const triggerScheduleRefresh = useAppStore((s) => s.triggerScheduleRefresh);
+  const screenRef = useRef<HTMLDivElement>(null);
 
   // The vývěska is no longer mounted here. It was a portal owned by this one
   // screen while the button that opens it ships with every screen's header, so
@@ -77,7 +75,21 @@ export function CalendarScreen() {
   const visibleSchedule = schedule.filter((l) => !isLessonHidden(l, hiddenItems));
   const defaultIso = defaultCalendarDay(visibleSchedule, teachingWeekData, new Date());
   const selectedIso = mobileSelectedDayIso ?? defaultIso;
-  const lessonDates = new Set(visibleSchedule.map((l) => l.date));
+  // The student's own entries — a society event they answered "Mám zájem" to,
+  // or one they typed in themselves. The desktop grid has merged these since it
+  // shipped; the phone never did, so every one of them was written, persisted
+  // and invisible.
+  //
+  // Merged HERE and not into `schedule`, which is deliberate and load-bearing.
+  // `schedule` answers "did the IS crawl deliver?", and the sync gates below
+  // read it as exactly that: an RSVP block in it would suppress the skeleton
+  // and the error state, so a failed sync would render as a successful one
+  // holding a single society event. For the same reason it stays out of
+  // `semesterStart` (a party is not the first teaching day) and out of
+  // `defaultCalendarDay` (the calendar must still open on a teaching day).
+  const customLessons = customEvents.map(customEventToLesson);
+  const dayLessons = [...visibleSchedule, ...customLessons];
+  const lessonDates = new Set(dayLessons.map((l) => l.date));
   const chrome = (
     <>
       {/* The date IS the title, and the eyebrow stays empty. It was the
@@ -87,13 +99,31 @@ export function CalendarScreen() {
           week and which day this is. The way back to today is not here
           either: the header is full at a date and three actions (see
           TodayPill), so it floats above the tab bar instead. */}
-      <ScreenHeader title={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale)} />
+      {/* Refreshing is a pull on the day (DayBody). The visible circle that
+          sat on its own row here made this header one line taller than every
+          other tab's; what is left is the screen-reader route to the same
+          sync, which takes no layout. */}
+      <ScreenHeader
+        title={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale)}
+        below={
+          <RefreshButton
+            label={t('mobile.header.refresh')}
+            refreshing={scheduleRefreshing}
+            onRefresh={triggerScheduleRefresh}
+          />
+        }
+      />
     </>
   );
   const shell = (body: ReactNode) => (
     // `relative` anchors the floating Dnes pill; it renders in every state,
     // skeleton and error included, because the day strip works in all of them.
-    <div data-testid="calendar-screen" className="relative flex flex-1 flex-col overflow-hidden">
+    // The ref is where a pull to refresh may start (DayBody).
+    <div
+      ref={screenRef}
+      data-testid="calendar-screen"
+      className="relative flex flex-1 flex-col overflow-hidden"
+    >
       {chrome}
       {body}
       <TodayPill selectedIso={selectedIso} defaultIso={defaultIso} />
@@ -128,16 +158,18 @@ export function CalendarScreen() {
     // (offline) is exactly where it earns its place. Not under the skeleton:
     // loading is transient and a card under placeholder bars reads as a glitch.
     return shell(
-      <div className="flex flex-1 flex-col overflow-y-auto pb-36">
+      <div className="flex flex-1 flex-col overflow-y-auto pb-[calc(9rem_+_var(--safe-bottom,0px))]">
         <ScreenError testId="calendar-error" />
         <RecentFilesStrip />
       </div>
     );
   }
 
-  const now = new Date();
-  const nowNext = resolveNowNext(schedule, now);
-  const agenda = buildDayAgenda(visibleSchedule, selectedIso);
+  // Custom events count here too: an event starting at seven that the student
+  // said they would go to IS their next thing, and leaving it out would be the
+  // same surprise as leaving it off the agenda, one card higher up.
+  const nowNext = resolveNowNext(dayLessons, now);
+  const agenda = buildDayAgenda(dayLessons, selectedIso);
   // The util has existed since the desktop calendar shipped; the phone simply
   // never asked. Without it a public holiday reads as an ordinary free day —
   // "Nic nemáš, pohodička" over 28 September.
@@ -163,6 +195,10 @@ export function CalendarScreen() {
     if (!nowNext?.next) return;
     setMobileTab('map');
     focusRoomByCode(roomCodeFor(nowNext.next));
+    // It is called "Trasa →" and it used to move the camera. The lesson it
+    // names on the hero is the one the map now offers to walk to.
+    // Not while navigation is parked: "Trasa →" only moves the camera.
+    if (CAMPUS_NAVIGATION_ENABLED) suggestRoute(routeSuggestionFor(nowNext.next, language));
   };
 
   return shell(
@@ -195,6 +231,7 @@ export function CalendarScreen() {
         outsideTeaching={outsideTeaching}
         teachingStartsOn={teachingStartsOn}
         onSelectDay={setMobileSelectedDay}
+        pullSurfaceRef={screenRef}
       />
     </>
   );

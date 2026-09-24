@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Mock } from 'vitest';
 import { createSuggestionsSlice, type SuggestionsSlice } from '../createSuggestionsSlice';
 import type { SuggestionRow } from '../../../types/suggestions';
 
@@ -28,18 +29,18 @@ function row(id: number, status: SuggestionRow['status']): SuggestionRow {
 
 describe('createSuggestionsSlice', () => {
   let state: SuggestionsSlice;
-  let set: ReturnType<typeof vi.fn>;
-  let get: ReturnType<typeof vi.fn>;
+  let set: Mock & Parameters<typeof createSuggestionsSlice>[0];
+  let get: Mock & Parameters<typeof createSuggestionsSlice>[1];
 
   beforeEach(() => {
     listSuggestions.mockReset();
     setSuggestionStatus.mockReset();
     setSuggestionStatus.mockResolvedValue(true);
-    set = vi.fn((updater) => {
+    set = vi.fn((updater: unknown) => {
       const patch = typeof updater === 'function' ? updater(state) : updater;
       state = { ...state, ...patch };
     });
-    get = vi.fn(() => state);
+    get = vi.fn(() => state) as unknown as typeof get;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     state = createSuggestionsSlice(set, get, {} as any);
   });

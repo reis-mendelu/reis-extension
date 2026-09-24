@@ -1,10 +1,6 @@
 import roomsIndex from '../../data/map/rooms-index.json';
-
-interface RoomIndexEntry {
-  code: string;
-  name: string;
-  nickname: string | null;
-}
+import type { RoomIndexEntry } from '../../types/campusMap';
+import { lookupRoomEntry } from '../rooms/lookupRoom';
 
 const INDEX = roomsIndex as RoomIndexEntry[];
 
@@ -22,22 +18,18 @@ export interface ResolvedRoom {
  * Rooms carry up to three names and IS hands out different ones in different
  * places: a profile's office cell gives the estate code AND the friendly name
  * ("BA39N2056 (Q2.56)"), while a schedule gives the room as printed on the
- * timetable, sometimes with a campus in brackets ("Q01 (Poříčí)"). The map's
- * index matches `code` or `name`, so which string arrives decides whether a
- * lookup succeeds.
+ * timetable, sometimes with a campus in brackets ("Q01 (Poříčí)"). Which string
+ * arrives used to decide whether a lookup succeeded; `lookupRoomEntry` accepts
+ * all three fields, so it no longer does.
  *
- * Resolving BEFORE rendering is the point: `focusRoomByCode` only reports an
- * unknown room to telemetry, so an unresolvable code becomes a button that
- * looks fine and does nothing. Callers offer the button only if this returns.
+ * Resolving BEFORE rendering is the point: `focusRoomByCode` only writes an
+ * unknown room to the local console (error reporting was removed, so nobody
+ * ever hears about it), so an unresolvable code becomes a button that looks
+ * fine and does nothing. Callers offer the button only if this returns.
  */
 export function resolveRoomCode(candidates: (string | null | undefined)[]): ResolvedRoom | null {
   for (const raw of candidates) {
-    if (!raw) continue;
-    // Schedules print the campus in brackets after the room; the index does not.
-    const cleaned = raw.replace(/\s*\([^)]*\)\s*$/, '').trim();
-    if (!cleaned) continue;
-
-    const entry = INDEX.find((e) => e.code === cleaned || e.name === cleaned);
+    const entry = lookupRoomEntry(raw, INDEX);
     if (entry) {
       // The friendliest name the room has: a nickname ("A01") beats the
       // printed name ("Q2.56"), which beats the estate code.

@@ -50,32 +50,24 @@ describe('DayChips', () => {
     expect(onSelect).toHaveBeenCalledWith('2026-03-26');
   });
 
-  it('adds a weekend chip when that day actually has a lesson', () => {
-    // MENDELU teaches combined-study cohorts on Saturdays, and the desktop
-    // week grid carries all seven days. A fixed Mon–Fri row on the phone made
-    // those lessons unreachable: the agenda follows the selected day, and no
-    // chip could ever select a Saturday.
+  it('keeps a student with no weekend teaching to Mon–Fri', () => {
+    // "pokud student v těch dnech nikdy mít výuku nebude, neukazuj mu to."
     render(
-      <DayChips selectedIso="2026-04-22" onSelect={() => {}} lessonDates={new Set(['20260425'])} />
+      <DayChips selectedIso="2026-04-22" onSelect={() => {}} lessonDates={new Set(['20260421'])} />
     );
-    expect(screen.getByRole('button', { name: /25/ })).toBeInTheDocument();
-    // Sunday has nothing, so it stays out rather than padding the row.
+    expect(screen.getByRole('button', { name: /24/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /25/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /26/ })).not.toBeInTheDocument();
   });
 
-  it('does not add a weekend chip just because that day is selected', () => {
-    // Opening the app on a free Saturday leaves the row at Mon–Fri with nothing
-    // highlighted; the header still names the day. Deliberate: a lesson is the
-    // only thing that earns a sixth chip, so the ordinary week keeps five
-    // even-width ones.
-    render(<DayChips selectedIso="2026-04-25" onSelect={() => {}} lessonDates={new Set()} />);
-    expect(screen.queryByRole('button', { name: /25/ })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /24/ })).toBeInTheDocument();
-  });
-
-  it('keeps the row to Mon–Fri when nothing needs a weekend', () => {
-    render(<DayChips selectedIso="2026-04-22" onSelect={() => {}} lessonDates={new Set()} />);
-    expect(screen.queryByRole('button', { name: /25/ })).not.toBeInTheDocument();
+  it('gives a weekend-taught student their Saturday in every week', () => {
+    // The Saturday lesson is weeks away; this week's Saturday is still offered,
+    // because MENDELU teaches combined-study cohorts in blocks and the student
+    // has to be able to reach the empty Saturdays between them too.
+    render(
+      <DayChips selectedIso="2026-04-22" onSelect={() => {}} lessonDates={new Set(['20260516'])} />
+    );
+    expect(screen.getByRole('button', { name: /25/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /26/ })).not.toBeInTheDocument();
   });
 

@@ -15,7 +15,9 @@ const config: CapacitorConfig = {
   plugins: {
     // The app must not become visible until we know whether a login WebView is
     // about to be presented — otherwise the student sees an empty reIS frame
-    // flash before the IS login page. main.capacitor.ts hides it explicitly.
+    // flash before the IS login page. main.capacitor.ts hides it explicitly —
+    // and on Android so does openLogin (src/mobile/inAppLoginDeps.ts), because
+    // before Android 12 a held splash keeps the login dialog itself hidden.
     SplashScreen: { launchAutoHide: false },
   },
 };

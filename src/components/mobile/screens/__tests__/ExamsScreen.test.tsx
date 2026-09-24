@@ -38,6 +38,10 @@ describe('ExamsScreen', () => {
   beforeEach(() => {
     useAppStore.setState({
       language: 'cz',
+      // Pinned before the 1.6.2026 terms below. Unset, the store clock is the
+      // real date, and once that passes June these registered exams count as
+      // already sat — which the screen now hides (see dropFinished).
+      now: new Date(2026, 4, 25, 9, 0),
       syncStatus: {
         isSyncing: false,
         lastSync: 1,
@@ -159,7 +163,8 @@ describe('ExamsScreen', () => {
     render(<ExamsScreen />);
     expect(screen.queryByText('Odhlásit')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { expanded: false }));
+    // From its tile in the strip: registered exams have no list card of their own.
+    fireEvent.click(screen.getByRole('button', { pressed: false }));
     expect(screen.getByText('Odhlásit')).toBeInTheDocument();
   });
 
@@ -210,7 +215,7 @@ describe('ExamsScreen', () => {
     expect(listText.indexOf('AvailableSubject')).toBeGreaterThan(openIdx);
   });
 
-  it('marks the matching term as "tvůj termín" once a registered section is expanded', () => {
+  it('shows the registered term once, as the card itself, not as a row under it', () => {
     useAppStore.setState({
       examClassmates: { 'term-1': [] },
       lastExamClassmatesFetchedAt: { 'term-1': Date.now() },
@@ -230,7 +235,10 @@ describe('ExamsScreen', () => {
     render(<ExamsScreen />);
     // The strip carries the same subject name, so target the list card.
     fireEvent.click(within(screen.getByTestId('exam-list')).getByText('Algoritmizace'));
-    expect(screen.getByText('tvůj termín')).toBeInTheDocument();
+    // The card's header IS that term; a row for it below would be the same
+    // term twice, one above the other.
+    expect(screen.getByText('Odhlásit')).toBeInTheDocument();
+    expect(screen.queryByText('tvůj termín')).not.toBeInTheDocument();
   });
 });
 

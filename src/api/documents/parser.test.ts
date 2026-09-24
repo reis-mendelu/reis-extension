@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { parseServerFiles } from './parser';
 
 describe('parseServerFiles - Link Filtering', () => {
-    it('should ignore teacher profile and document info links, resolving only download links', () => {
-        const html = `
+  it('should ignore teacher profile and document info links, resolving only download links', () => {
+    const html = `
             <table id="tmtab_1">
                 <thead>
                     <tr class="zahlavi">
@@ -54,21 +54,21 @@ describe('parseServerFiles - Link Filtering', () => {
             </table>
         `;
 
-        const result = parseServerFiles(html);
-        const file = result.files[0];
+    const result = parseServerFiles(html);
+    const file = result.files[0];
 
-        expect(result.files).toHaveLength(1);
-        expect(file.file_name).toBe('Přednáška 92 -- abstraktní datové typy moduly');
-        
-        // Before fix: This would likely have 3 files/links
-        // After fix: Should have only 1
-        expect(file.files).toHaveLength(1);
-        expect(file.files[0].link).toContain('slozka.pl?download=');
-        expect(file.files[0].type).toBe('pdf');
-    });
+    expect(result.files).toHaveLength(1);
+    expect(file.file_name).toBe('Přednáška 92 -- abstraktní datové typy moduly');
 
-    it('should ignore Document Server system menu even if it has >= 5 cells', () => {
-        const html = `
+    // Before fix: This would likely have 3 files/links
+    // After fix: Should have only 1
+    expect(file.files).toHaveLength(1);
+    expect(file.files[0].link).toContain('slozka.pl?download=');
+    expect(file.files[0].type).toBe('pdf');
+  });
+
+  it('should ignore Document Server system menu even if it has >= 5 cells', () => {
+    const html = `
             <table class="portal_menu">
                 <tr>
                     <td class="portal_menu_hole"></td>
@@ -102,13 +102,13 @@ describe('parseServerFiles - Link Filtering', () => {
             </table>
         `;
 
-        const result = parseServerFiles(html);
-        expect(result.files).toHaveLength(1);
-        expect(result.files[0].file_name).toBe('Actual File');
-    });
+    const result = parseServerFiles(html);
+    expect(result.files).toHaveLength(1);
+    expect(result.files[0].file_name).toBe('Actual File');
+  });
 
-    it('should filter out localized system labels like "All my folders"', () => {
-        const html = `
+  it('should filter out localized system labels like "All my folders"', () => {
+    const html = `
             <table>
                 <tr>
                     <td>1</td>
@@ -121,7 +121,7 @@ describe('parseServerFiles - Link Filtering', () => {
             </table>
         `;
 
-        const result = parseServerFiles(html);
-        expect(result.files).toHaveLength(0);
-    });
+    const result = parseServerFiles(html);
+    expect(result.files).toHaveLength(0);
+  });
 });

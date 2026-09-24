@@ -1,0 +1,62 @@
+{
+  "places": [
+    {
+      "id": "skleniky",
+      "name": {
+        "cz": "Skleníky",
+        "en": "Greenhouses"
+      },
+      "lon": 16.61432,
+      "lat": 49.215612,
+      "photo": "skleniky-full.jpg"
+    },
+    {
+      "id": "mustek-minotaur",
+      "name": {
+        "cz": "Můstek a minotaurus",
+        "en": "The bridge and the minotaur"
+      },
+      "lon": 16.613126,
+      "lat": 49.215709,
+      "photo": "mustek-minotaur-full.jpg"
+    },
+    {
+      "id": "jezirka",
+      "name": {
+        "cz": "Jezírka",
+        "en": "The ponds"
+      },
+      "lon": 16.614642,
+      "lat": 49.213619,
+      "photo": "jezirka-full.jpg"
+    },
+    {
+      "id": "rokle",
+      "name": {
+        "cz": "Rokle",
+        "en": "The ravine"
+      },
+      "lon": 16.612467,
+      "lat": 49.215413,
+      "photo": "rokle-full.jpg"
+    },
+    {
+      "id": "vodni-kaskada",
+      "name": {
+        "cz": "Vodní kaskáda",
+        "en": "The water cascade"
+      },
+      "lon": 16.6142,
+      "lat": 49.214055
+    },
+    {
+      "id": "lesik",
+      "name": {
+        "cz": "Lesík s cestičkami",
+        "en": "The little wood"
+      },
+      "lon": 16.616026,
+      "lat": 49.212844
+    }
+  ]
+}

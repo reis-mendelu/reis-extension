@@ -128,7 +128,7 @@ describe('useSheetDrag', () => {
   // touchmove would pass on React's alone and prove nothing.
   const nonPassiveTouchmoves = (spy: ReturnType<typeof vi.spyOn>) =>
     spy.mock.calls.filter(
-      ([type, , opts]) =>
+      ([type, , opts]: unknown[]) =>
         type === 'touchmove' &&
         typeof opts === 'object' &&
         opts !== null &&

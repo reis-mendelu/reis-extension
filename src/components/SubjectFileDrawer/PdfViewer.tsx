@@ -4,6 +4,8 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { resolvePdfWorkerSource } from './pdfWorkerSource';
 import { computeRenderWindow } from './pdfWindow';
+import { clampScale } from './pinchZoom';
+import { usePinchZoom } from './usePinchZoom';
 
 // Resolving the worker moved to pdfWorkerSource so it goes through the platform
 // seam: the old `chrome.runtime.getURL` here is undefined on Capacitor, which is
@@ -38,6 +40,7 @@ export function PdfViewer({ blobUrl, onClose, onToggleNotes, hasNotesOpen }: Pdf
   const [ready, setReady] = useState(false);
   const [visible, setVisible] = useState<Set<number>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   // Per-page heights at scale 1, learned as pages render; `baseHeight` (page 1)
   // is the fallback for pages that have not been mounted/measured yet. Sizing
@@ -45,6 +48,7 @@ export function PdfViewer({ blobUrl, onClose, onToggleNotes, hasNotesOpen }: Pdf
   // for mixed-geometry PDFs (e.g. a portrait cover before landscape slides).
   const [baseHeight, setBaseHeight] = useState(0);
   const [pageHeights, setPageHeights] = useState<Map<number, number>>(new Map());
+  usePinchZoom(containerRef, contentRef, scale, setScale);
 
   useEffect(() => {
     getWorkerReady()
@@ -114,14 +118,14 @@ export function PdfViewer({ blobUrl, onClose, onToggleNotes, hasNotesOpen }: Pdf
         <div className="flex items-center gap-1">
           <button
             className="btn btn-ghost btn-xs btn-square"
-            onClick={() => setScale((s) => Math.max(0.5, s - 0.25))}
+            onClick={() => setScale((s) => clampScale(s - 0.25))}
           >
             <ZoomOut size={14} />
           </button>
           <span className="text-xs font-mono w-12 text-center">{Math.round(scale * 100)}%</span>
           <button
             className="btn btn-ghost btn-xs btn-square"
-            onClick={() => setScale((s) => Math.min(3, s + 0.25))}
+            onClick={() => setScale((s) => clampScale(s + 0.25))}
           >
             <ZoomIn size={14} />
           </button>
@@ -147,7 +151,12 @@ export function PdfViewer({ blobUrl, onClose, onToggleNotes, hasNotesOpen }: Pdf
           </button>
         </div>
       </div>
-      <div ref={containerRef} className="flex-1 overflow-auto bg-base-300/30">
+      {/* Panning stays the browser's; the pinch is usePinchZoom's. */}
+      <div
+        ref={containerRef}
+        data-testid="pdf-scroll-area"
+        className="flex-1 touch-pan-x touch-pan-y overflow-auto bg-base-300/30"
+      >
         {!ready ? (
           <div className="flex items-center justify-center h-64">
             <Loader2 className="animate-spin text-primary" size={24} />
@@ -155,6 +164,29 @@ export function PdfViewer({ blobUrl, onClose, onToggleNotes, hasNotesOpen }: Pdf
         ) : (
           <Document
             file={blobUrl}
+            inputRef={contentRef}
+            // react-pdf 11 routes Document/Page loading and failure through
+            // Suspense and an Error Boundary BY DEFAULT, retiring the
+            // `loading` and `onLoadError` props below. Both mounts of this
+            // component ARE inside <ErrorBoundary><Suspense fallback=…> —
+            // SubjectFileDrawer/index.tsx and PdfDrawerLayout.tsx — so the
+            // default would not crash. It would relocate the UI:
+            //
+            //  - the inline spinner below is replaced by the drawer-level
+            //    `pdfFallback`, which covers the whole pane including the
+            //    zoom/page-count toolbar;
+            //  - worse, `Page` suspends too, and pages mount lazily as you
+            //    scroll (see computeRenderWindow), so every newly mounted page
+            //    would suspend the ONE boundary above and blank the entire
+            //    viewer mid-scroll;
+            //  - `onLoadError` stops firing and a failed load unmounts into
+            //    `pdfErrorFallback` instead.
+            //
+            // `suspense={false}` keeps the v10 behaviour exactly; `Page`
+            // inherits it. Moving to Suspense means a per-page boundary and a
+            // deliberate look at the loading UX — a change of its own, not a
+            // dependency bump. Regression test: __tests__/PdfViewer.suspense.test.tsx
+            suspense={false}
             onLoadSuccess={onDocumentLoadSuccess}
             onLoadError={() => {}}
             loading={
@@ -167,7 +199,10 @@ export function PdfViewer({ blobUrl, onClose, onToggleNotes, hasNotesOpen }: Pdf
               <div
                 key={i}
                 ref={(el) => registerPage(el, i)}
-                className="mb-4 flex justify-center"
+                // No justify-center: it overflows a zoomed page to the LEFT too,
+                // where a scroll pane cannot reach. Page's mx-auto centres it
+                // and drops to 0 once the page is wider than the pane.
+                className="mb-4 flex"
                 style={renderSet.has(i) ? undefined : { minHeight: placeholderFor(i) }}
               >
                 {renderSet.has(i) && (

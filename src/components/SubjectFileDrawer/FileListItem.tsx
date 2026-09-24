@@ -2,16 +2,18 @@
  * One attachment row inside the file drawer.
  *
  * Split out of FileList so that file stays within the 200-line convention;
- * FileList owns the grouping and this owns a single row's rendering.
+ * FileList owns the grouping and this owns a single row's rendering. The
+ * right-hand control cluster is a further split again, into FileRowActions —
+ * adding download progress pushed this file past the same limit.
  */
 
-import { Download, PanelRightOpen, StickyNote } from 'lucide-react';
 import type { FileAttachment } from '../../types/documents';
 import { useTranslation } from '../../hooks/useTranslation';
 import { DocumentNoteEditor } from './DocumentNoteEditor';
 import { NOTES_ENABLED } from '../../config/featureFlags';
-import { FileTypeBadge } from './fileRowBits';
-import { isPdfFile, opensInReader } from './utils/isPdfFile';
+import { FileRowActions } from './FileRowActions';
+import type { DownloadTick } from '../../hooks/ui/readBlobWithProgress';
+import { opensInReader } from './utils/isPdfFile';
 import type { PdfRowMeta } from './types';
 
 export interface FileListItemProps {
@@ -36,6 +38,8 @@ export interface FileListItemProps {
   onCloseNote: () => void;
   /** This row's file is being fetched right now. */
   isOpening?: boolean;
+  /** Bytes so far for this row's download, or null when it is not downloading. */
+  downloadTick?: DownloadTick | null;
 }
 
 export function FileListItem({
@@ -58,8 +62,10 @@ export function FileListItem({
   onToggleNote,
   onCloseNote,
   isOpening = false,
+  downloadTick = null,
 }: FileListItemProps) {
   const { t } = useTranslation();
+  const isDownloading = downloadTick != null;
 
   // Click and Enter/Space must do the same thing, so the decision lives once.
   const activate = (e: React.SyntheticEvent & { ctrlKey?: boolean; metaKey?: boolean }) => {
@@ -95,10 +101,10 @@ export function FileListItem({
         }}
         onClick={activate}
         className={`
-          flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer group hover:shadow-sm
+          relative overflow-hidden flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer group hover:shadow-sm
           focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none
           ${
-            isSelected
+            isSelected || isDownloading
               ? 'bg-primary/10 border-primary/20 shadow-sm'
               : 'bg-base-100 border-transparent hover:bg-base-200/50 hover:border-base-300'
           }
@@ -126,64 +132,45 @@ export function FileListItem({
             )}
           </div>
           <div className="text-xs text-base-content/50 truncate flex items-center gap-2">
-            {date && <span className="shrink-0">{date}</span>}
+            {isDownloading ? (
+              // The tonal token, not raw `text-primary`: that measured 2.29:1
+              // on the light theme's white row (see DownloadProgress).
+              <span className="shrink-0 font-medium text-[var(--btn-tonal-primary)]">
+                {t('course.file.downloading')}
+              </span>
+            ) : (
+              date && <span className="shrink-0">{date}</span>
+            )}
             {comment && <span className="truncate">{comment}</span>}
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
-          {/* The whole point of this row's existence per the report: "there's no
-              loading so it seems the button is not working". It sits with the
-              row's other controls so nothing reflows when it appears. */}
-          {isOpening && (
-            <span
-              data-testid="file-row-spinner"
-              className="loading loading-spinner loading-xs text-primary"
-            />
-          )}
-          {NOTES_ENABLED && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleNote();
-              }}
-              className={`btn btn-ghost btn-xs btn-square ${hasNote || isExpanded ? 'text-primary hover:text-primary' : 'text-base-content/40 hover:text-base-content/70'}`}
-              title={hasNote ? t('course.documentNote.edit') : t('course.documentNote.add')}
-            >
-              <StickyNote size={14} className={hasNote ? 'fill-primary/15' : ''} />
-            </button>
-          )}
-          {onDownloadSingle && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDownloadSingle(subFile.link);
-              }}
-              className="btn btn-ghost btn-xs btn-square text-base-content/40 hover:text-base-content/70"
-              title={t('course.footer.download') || 'Download'}
-            >
-              <Download size={14} />
-            </button>
-          )}
-          {isPdfFile(subFile) && onViewPdf && (
-            <button
-              // Both `onViewPdf` implementations already refuse a second call
-              // while the first is in flight, so this is about the affordance,
-              // not the fetch: the row is showing a spinner and this button
-              // should not still look like it is offering to do something.
-              disabled={isOpening}
-              onClick={(e) => {
-                e.stopPropagation();
-                onViewPdf(subFile.link, { name: displayName, date });
-              }}
-              className="btn btn-ghost btn-xs btn-square text-base-content/40 hover:text-primary"
-              title={t('course.footer.openInSidebar') || 'Open in Sidebar'}
-            >
-              <PanelRightOpen size={14} />
-            </button>
-          )}
-          <FileTypeBadge type={subFile.type} />
-        </div>
+        <FileRowActions
+          subFile={subFile}
+          displayName={displayName}
+          date={date}
+          hasNote={hasNote}
+          isExpanded={isExpanded}
+          isOpening={isOpening}
+          downloadTick={downloadTick}
+          onToggleNote={onToggleNote}
+          onViewPdf={onViewPdf}
+          onDownloadSingle={onDownloadSingle}
+        />
+        {/* Along the row's bottom edge, not only in the 24px button: a spinner
+            that small was "not visible enough" (#372). Determinate when the
+            transport can count bytes against a Content-Length; indeterminate
+            when it cannot — Capacitor hands the whole file over at once, and IS
+            sends no length for the PDFs it generates. Hidden from assistive
+            tech: the ring in the button is the announced progressbar, and a
+            second one would read the same download out twice. */}
+        {downloadTick && (
+          <progress
+            aria-hidden="true"
+            {...(downloadTick.total ? { value: downloadTick.loaded, max: downloadTick.total } : {})}
+            className="progress progress-primary absolute inset-x-0 bottom-0 h-1 rounded-none"
+          />
+        )}
       </div>
 
       {NOTES_ENABLED && isExpanded && (

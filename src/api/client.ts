@@ -4,6 +4,7 @@ import { fetchViaCapacitor } from './capacitorTransport';
 import { buildCapacitorRequestOptions } from './capacitorRequest';
 import { loadStoredToken } from '../platform/tokenStore';
 import { DemoModeError, isDemoMode } from '../errors/demoMode';
+import { base64ToBytes } from '../services/eduroam/base64';
 
 export const BASE_URL = 'https://is.mendelu.cz';
 
@@ -132,8 +133,15 @@ export async function fetchAuthedBytes(url: string): Promise<Uint8Array> {
     );
   }
 
-  // Extension / iframe / dev webapp: unchanged from what eduroam did before —
-  // a direct credentialed fetch, no DEFAULT_HEADERS, no proxy hop.
+  // Extension iframe: first-party through the content script, like every other
+  // IS request. The iframe is chrome-extension://, cross-site to IS, so a direct
+  // fetch from it carries UISAuth only where the browser allows third-party
+  // cookies — Brave or Chrome with them blocked got 403 on the eduroam files.
+  if (isInIframe()) {
+    return base64ToBytes(await fetchViaProxy(url, { responseType: 'bytes' }));
+  }
+
+  // Content script / dev webapp: a direct credentialed fetch, no DEFAULT_HEADERS.
   const res = await fetch(url, { credentials: 'include' });
   if (!res.ok) throw new Error(`GET ${url} -> ${res.status}`);
   // Lowercased because `Headers` normalises header NAMES but not VALUES — a

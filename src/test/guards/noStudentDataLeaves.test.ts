@@ -68,6 +68,23 @@ const SUPABASE_CALLERS = new Set([
   'src/services/spolky/spolkyService.ts',
   // Reads the public society events feed. No student data in either direction.
   'src/api/mapEvents.ts',
+  // Two feature counters, added September 2026, both disclosed in PRIVACY.md
+  // section 2 and docs/privacy-policy-app.md BEFORE this entry was added.
+  //
+  // `track_feature_usage` sends the random per-install UUID and one label from
+  // a three-value whitelist enforced in the database ('map_dwell_3s',
+  // 'eduroam_wifi_configured', 'eduroam_profile_delivered'). Same identifier
+  // and same posture as `feedback.ts`: it counts INSTALLS, not people.
+  //
+  // `increment_event_map_view` sends a society event's row id and NO
+  // identifier whatsoever — the same shape `increment_post_view` has always
+  // had in spolkyService.ts.
+  //
+  // What makes this safe to allow is that the two are deliberately kept
+  // unjoinable: nothing anywhere records which event a given install looked
+  // at. That pairing would be a behavioural profile, and no payload here can
+  // express it.
+  'src/api/featureUsage.ts',
 ]);
 
 /**
@@ -248,7 +265,13 @@ describe('no student data leaves the device', () => {
   // error reporter reintroduced under a different name still trips this if it
   // reaches for the old RPCs, and the RPCs are gone from the database anyway,
   // so a reintroduction has to be a conscious, visible act.
-  it('sends no error, stack or file path anywhere', () => {
+  // 20s, not vitest's default 5: this one reads EVERY file under src/ and
+  // greps four strings through each, and on a loaded machine it sat right on
+  // the 5s line — failing a run, passing the next. A privacy guard that flakes
+  // is worse than a slow one: the failure looks like noise, so the next person
+  // re-runs instead of reading it, and the run where it fails for a real
+  // reason looks exactly the same.
+  it('sends no error, stack or file path anywhere', { timeout: 20_000 }, () => {
     const offenders: string[] = [];
     for (const file of walk(SRC)) {
       const rel = relative(ROOT, file);
@@ -268,6 +291,51 @@ describe('no student data leaves the device', () => {
         `If the project has genuinely changed its mind, update PRIVACY.md, ` +
         `docs/privacy-policy-app.md and the published policy gist FIRST, then ` +
         `this test:\n` +
+        offenders.join('\n')
+    ).toEqual([]);
+  });
+
+  /**
+   * The routing module learns where the student is physically standing. That is
+   * the most sensitive thing reIS has ever held, and the only defensible reason
+   * to hold it is that it never goes anywhere.
+   *
+   * A guard rather than a policy sentence, because "we don't send it" is the
+   * kind of claim that stays in a document while a convenience call gets added
+   * to a file nobody re-reads.
+   */
+  it('never sends a coordinate off the device', () => {
+    const offenders: string[] = [];
+    const reach = [
+      { pattern: /\bfetch\s*\(/, what: 'fetch(' },
+      { pattern: /\bXMLHttpRequest\b/, what: 'XMLHttpRequest' },
+      { pattern: /navigator\.sendBeacon/, what: 'sendBeacon' },
+      { pattern: /supabase/i, what: 'supabase' },
+      { pattern: /\bWebSocket\b/, what: 'WebSocket' },
+    ];
+    for (const file of walk(join(SRC, 'utils/routing'))) {
+      const rel = relative(ROOT, file);
+      if (rel.includes('__tests__')) continue;
+      const src = readFileSync(file, 'utf-8');
+      for (const { pattern, what } of reach) {
+        if (pattern.test(src)) offenders.push(`${rel} → ${what}`);
+      }
+    }
+    // The slice that drives it is held to the same rule.
+    const slice = relative(ROOT, join(SRC, 'store/slices/createRouteSlice.ts'));
+    const sliceSrc = readFileSync(join(SRC, 'store/slices/createRouteSlice.ts'), 'utf-8');
+    for (const { pattern, what } of reach) {
+      if (pattern.test(sliceSrc)) offenders.push(`${slice} → ${what}`);
+    }
+
+    expect(
+      offenders,
+      `Something in the routing path can reach the network. A student's ` +
+        `position is derived, used and discarded on the device — it is never ` +
+        `transmitted, never persisted to Supabase, and never attached to a ` +
+        `suggestion or an install count. The store of record for this promise ` +
+        `is docs/privacy-policy-app.md; change that FIRST if the project has ` +
+        `genuinely changed its mind:\n` +
         offenders.join('\n')
     ).toEqual([]);
   });

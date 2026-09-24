@@ -6,10 +6,9 @@ import { useTranslation } from '../../../../hooks/useTranslation';
 /**
  * Dark mode and language — the two rows under VZHLED.
  *
- * Extracted with `MapAppRow`, which is deliberately shaped like the language
- * row: same `join` of `btn-xs` buttons, same "label left, options right". They
- * sit next to each other in one folder so the next settings control has an
- * obvious pattern to copy rather than a screen to read.
+ * The language row is a `join` of `btn-xs` buttons, "label left, options
+ * right" — the pattern to copy for the next settings control, rather than a
+ * screen to read.
  */
 export function AppearanceRows() {
   const { t } = useTranslation();

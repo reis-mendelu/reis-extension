@@ -1,0 +1,143 @@
+import type { CampusGraph } from '../../types/campusMap';
+import { edgeGate, edgeLength, type Snap } from './snapToGraph';
+
+export interface Walk {
+  /** [lon, lat], from the snapped start to the arrival node. */
+  coords: number[][];
+  lengthM: number;
+  /**
+   * The distinct gates this walk actually passes through, in no order.
+   *
+   * Reported by the router rather than re-derived by the UI: the card wants to
+   * say "through the botanical garden — free with your ISIC", and the only
+   * thing that knows whether the chosen path went that way is the search that
+   * chose it. Re-deriving it by testing coordinates against the garden polygon
+   * would be a second, disagreeing answer to a question already settled here.
+   */
+  gates: string[];
+}
+
+/**
+ * The shortest walk from a snapped position to any one of several target nodes.
+ *
+ * Multi-target because a building is a set of door nodes, not a point. Asking
+ * for "the" node would pick a door on the wrong side of the building as often
+ * as not, and send a student the long way round it.
+ *
+ * `isOpen` is what stops the router recommending a walk nobody can take. The
+ * botanical garden shuts at 20:00 and all weekend, and greying the card
+ * afterwards is not enough: left to itself the search returns the garden route
+ * at 21:00 on a Saturday, and — worse, because it is invisible — threads the
+ * garden through the middle of a journey that had nothing to do with it.
+ * Availability is a property of the graph, so it is applied here, where the
+ * path is chosen. The card then only has to explain the answer.
+ */
+export function shortestWalk(
+  graph: CampusGraph,
+  from: Snap,
+  targets: number[],
+  isOpen: (gateId: string) => boolean
+): Walk | null {
+  if (targets.length === 0) return null;
+
+  // Standing on a shut stretch is not a place you may walk from — but standing
+  // at one END of it is. `snapToGraph` picks the nearest EDGE, and at a node
+  // where a garden path meets a public one an equal-distance tie can land on
+  // the garden edge; refusing outright then told a student standing on open
+  // ground that there was no route, when they could simply walk the other way.
+  //
+  // So: inside a shut edge is a refusal, at either end is not. At an end, only
+  // that end is seeded, or the search would set off across the shut stretch to
+  // reach the far one.
+  const ON_NODE_M = 0.01;
+  const shutUnderfoot = from.gateId !== null && !isOpen(from.gateId);
+  const atA = from.toA <= ON_NODE_M;
+  const atB = from.toB <= ON_NODE_M;
+  if (shutUnderfoot && !atA && !atB) return null;
+
+  const adj = new Map<number, { to: number; len: number; gate: string | null }[]>();
+  for (const edge of graph.edges) {
+    const gate = edgeGate(edge);
+    if (gate !== null && !isOpen(gate)) continue;
+    const a = edge[0] as number;
+    const b = edge[1] as number;
+    const len = edgeLength(edge);
+    (adj.get(a) ?? adj.set(a, []).get(a)!).push({ to: b, len, gate });
+    (adj.get(b) ?? adj.set(b, []).get(b)!).push({ to: a, len, gate });
+  }
+
+  const goal = new Set(targets);
+  const dist = new Map<number, number>();
+  const prev = new Map<number, number>();
+  /** Which gate, if any, the edge leading INTO each node belonged to. */
+  const prevGate = new Map<number, string | null>();
+  // Two seeds normally: from the snapped point the walk may leave along the
+  // edge it landed on in either direction, and which is shorter depends on
+  // where it is going. On a shut edge, only the end being stood on.
+  const seedA = !shutUnderfoot || atA;
+  const seedB = !shutUnderfoot || atB;
+  if (seedA) dist.set(from.a, from.toA);
+  if (seedB) dist.set(from.b, from.toB);
+
+  // Linear scan rather than a binary heap. The campus graph is ~650 edges and
+  // this runs once per tap, not per frame; a heap would be more code for time
+  // nobody can perceive.
+  const queue: number[] = [...(seedA ? [from.a] : []), ...(seedB ? [from.b] : [])];
+  const done = new Set<number>();
+  let arrived: number | null = null;
+
+  const distOf = (n: number | undefined) =>
+    n === undefined ? Infinity : (dist.get(n) ?? Infinity);
+
+  while (queue.length) {
+    let bestI = 0;
+    for (let i = 1; i < queue.length; i++) {
+      if (distOf(queue[i]) < distOf(queue[bestI])) bestI = i;
+    }
+    const u = queue.splice(bestI, 1)[0];
+    if (u === undefined || done.has(u)) continue;
+    done.add(u);
+    if (goal.has(u)) {
+      arrived = u;
+      break;
+    }
+    for (const { to, len, gate } of adj.get(u) ?? []) {
+      if (done.has(to)) continue;
+      const nd = distOf(u) + len;
+      if (nd < (dist.get(to) ?? Infinity)) {
+        dist.set(to, nd);
+        prev.set(to, u);
+        prevGate.set(to, gate);
+        queue.push(to);
+      }
+    }
+  }
+
+  if (arrived === null) return null;
+
+  const back: number[] = [arrived];
+  for (;;) {
+    const head = back.at(-1);
+    if (head === undefined) break;
+    const step = prev.get(head);
+    if (step === undefined) break;
+    back.push(step);
+  }
+  const nodes = back.reverse();
+  // The snapped start sits ON an edge, so its own gate counts too: a walk that
+  // begins inside the garden went through it whether or not it crosses another
+  // gated edge afterwards.
+  const gates = new Set<string>();
+  if (from.gateId) gates.add(from.gateId);
+  for (const n of nodes) {
+    const gate = prevGate.get(n);
+    if (gate) gates.add(gate);
+  }
+  return {
+    // `nodes` are indices this search itself put there, so every one of them
+    // indexes a real node; the filter is what tells the compiler so.
+    coords: [from.point, ...nodes.map((n) => graph.nodes[n]).filter((c): c is number[] => !!c)],
+    lengthM: distOf(arrived),
+    gates: [...gates],
+  };
+}

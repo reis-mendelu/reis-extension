@@ -12,6 +12,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { SelectedSubject } from '../../types/app';
 import type { Classmate } from '../../types/classmates';
+import type { DownloadTick } from '../../hooks/ui/readBlobWithProgress';
 
 interface DrawerTabBodyProps {
   tab: DrawerTab;
@@ -31,6 +32,7 @@ interface DrawerTabBodyProps {
   openFile: (link: string) => void;
   onViewPdf?: (link: string, meta: PdfRowMeta) => void;
   openingLink?: string | null;
+  downloadingLinks?: Record<string, DownloadTick>;
   onDownloadSingle?: (link: string) => void;
   resolvedCourseId: string;
   syllabusResult: { syllabus: SyllabusRequirements | null; isLoading: boolean };
@@ -40,9 +42,10 @@ interface DrawerTabBodyProps {
   selectable?: boolean;
   /**
    * Whether the tab bodies render their own trailing 'IS MENDELU' link.
-   * Off for the phone sheet, which pins its own 'Otevrit v IS MENDELU'
-   * footer — showing both put two identical-looking links to the same
-   * place in every tab.
+   * Off for the phone sheet. It was switched off while that sheet pinned an
+   * 'Otevřít v IS MENDELU' footer, so every tab showed two identical links;
+   * #341 then dropped the footer (it opened the file structure whatever tab
+   * you were on), so the phone's tabs now have no IS link at all.
    */
   showIsBacklink?: boolean;
   /** Forwarded to ClassmatesTab — the phone routes taps to its own PersonSheet. */
@@ -73,6 +76,7 @@ export function DrawerTabBody({
   openFile,
   onViewPdf,
   openingLink,
+  downloadingLinks,
   onDownloadSingle,
   resolvedCourseId,
   syllabusResult,
@@ -104,7 +108,7 @@ export function DrawerTabBody({
         {showSkeleton ? (
           <FileListSkeleton />
         ) : isEmpty && !showProgress ? (
-          <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+          <div className="flex flex-1 flex-col items-center justify-center h-full p-6 text-center">
             <FileText className="w-12 h-12 text-base-content/20 mb-3" />
             {/* One message regardless of how the subject was reached. The
                 search case used to claim files exist only for subjects in the
@@ -134,6 +138,7 @@ export function DrawerTabBody({
             onOpenFile={openFile}
             onViewPdf={onViewPdf}
             openingLink={openingLink}
+            downloadingLinks={downloadingLinks}
             onDownloadSingle={onDownloadSingle}
             folderUrl={folderUrl}
             lastVisitedAt={lastVisitedAt}

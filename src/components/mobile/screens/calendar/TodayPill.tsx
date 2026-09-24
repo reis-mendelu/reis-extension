@@ -41,7 +41,7 @@ export function TodayPill({
     <button
       type="button"
       onClick={() => setMobileSelectedDay(defaultIso === todayIso ? null : todayIso)}
-      className="absolute bottom-[84px] left-1/2 z-30 flex min-h-11 -translate-x-1/2 items-center whitespace-nowrap rounded-full border border-base-300 bg-base-100 px-4 text-sm font-semibold text-base-content shadow-drawer"
+      className="absolute bottom-[calc(84px_+_var(--safe-bottom,0px))] left-1/2 z-30 flex min-h-11 -translate-x-1/2 items-center whitespace-nowrap rounded-full border border-base-300 bg-base-100 px-4 text-sm font-semibold text-base-content shadow-drawer"
     >
       {t('common.today')}
     </button>

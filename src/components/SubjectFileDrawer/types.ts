@@ -7,6 +7,7 @@
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { ParsedFile, CourseMetadata, SubjectInfo } from '../../types/documents';
 import type { SelectedSubject } from '../../types/app';
+import type { DownloadTick } from '../../hooks/ui/readBlobWithProgress';
 
 export type DrawerTab = 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik';
 
@@ -49,6 +50,9 @@ export interface FileListProps {
   onDownloadSingle?: (link: string) => void;
   /** The file whose bytes are being fetched right now, so its row can say so. */
   openingLink?: string | null;
+  /** In-flight row downloads keyed by link. A map, not one link: the desktop
+   *  drawer lets a student start several before the first finishes. */
+  downloadingLinks?: Record<string, DownloadTick>;
   folderUrl?: string;
   lastVisitedAt?: number | null;
   /** Per-row selection checkboxes. Defaults to on for desktop, where
@@ -56,7 +60,7 @@ export interface FileListProps {
    *  download. The phone drawer has neither, so it turns them off — a
    *  checkbox that only ever selects one row at a time is noise. */
   selectable?: boolean;
-  /** Off for the phone sheet, which pins its own IS MENDELU footer. */
+  /** Off for the phone sheet — see `showIsBacklink` in DrawerTabBody. */
   showIsBacklink?: boolean;
 }
 

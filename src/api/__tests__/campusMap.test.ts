@@ -4,11 +4,30 @@ import { IndexedDBService } from '../../services/storage';
 import { STORAGE_KEYS } from '../../services/storage/keys';
 import type { RoomsCollection } from '../../types/campusMap';
 
-const fc = (id: number): RoomsCollection => ({ type: 'FeatureCollection',
-  features: [{ type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[16.6, 49.2]]] },
-    properties: { id, buildingId: id, floorId: 1, floorLevel: 0, name: 'X', type: 't',
-      category: 'teaching', label: 'l', passportNumber: null, seats: null,
-      hasProjector: false, hasWhiteboard: false, code: null } }] });
+const fc = (id: number): RoomsCollection => ({
+  type: 'FeatureCollection',
+  features: [
+    {
+      type: 'Feature',
+      geometry: { type: 'Polygon', coordinates: [[[16.6, 49.2]]] },
+      properties: {
+        id,
+        buildingId: id,
+        floorId: 1,
+        floorLevel: 0,
+        name: 'X',
+        type: 't',
+        category: 'teaching',
+        label: 'l',
+        passportNumber: null,
+        seats: null,
+        hasProjector: false,
+        hasWhiteboard: false,
+        code: null,
+      },
+    },
+  ],
+});
 
 beforeEach(async () => {
   await IndexedDBService.clear('map_rooms');
@@ -42,5 +61,49 @@ describe('fetchBuildingRooms', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
     const out = await fetchBuildingRooms(510096);
     expect(out?.features[0].properties.buildingId).toBe(510096);
+  });
+});
+
+// BA27N1074 / BA27N1075 are two "hall" strips building M's floor plan draws in
+// the open air between the wings — not rooms, not a terrace, nothing a student
+// can stand in. They are deleted from the bundled index, but the geometry comes
+// from the CDN (and from a 30-day IndexedDB cache), so the only thing that takes
+// them off the map for someone who already opened M is a filter on the way out.
+const withGhosts = (): RoomsCollection => {
+  const base = fc(582134);
+  const ghost = (id: number, name: string) => ({
+    ...base.features[0]!,
+    properties: {
+      ...base.features[0]!.properties,
+      id,
+      name,
+      type: 'hall',
+      category: 'other' as const,
+    },
+  });
+  return {
+    type: 'FeatureCollection',
+    features: [...base.features, ghost(585208, 'BA27N1074'), ghost(585217, 'BA27N1075')],
+  };
+};
+const names = (c: RoomsCollection | null) => c!.features.map((f) => f.properties.name);
+
+describe('fetchBuildingRooms drops the out-of-building M halls', () => {
+  it('drops them from a fresh CDN response', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => withGhosts() }));
+    expect(names(await fetchBuildingRooms(582134))).toEqual(['X']);
+  });
+
+  it('drops them from a fresh cache hit (nobody re-fetches for 30 days)', async () => {
+    await IndexedDBService.set('map_rooms', '582134', withGhosts());
+    await IndexedDBService.set('meta', STORAGE_KEYS.MAP_ROOMS_LAST_SYNC, { '582134': Date.now() });
+    vi.stubGlobal('fetch', vi.fn());
+    expect(names(await fetchBuildingRooms(582134))).toEqual(['X']);
+  });
+
+  it('drops them from the stale-cache fallback', async () => {
+    await IndexedDBService.set('map_rooms', '582134', withGhosts());
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+    expect(names(await fetchBuildingRooms(582134))).toEqual(['X']);
   });
 });

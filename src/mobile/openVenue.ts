@@ -29,10 +29,9 @@ export async function openVenue(coord: [number, number], label: string): Promise
   }
   const { Capacitor } = await import('@capacitor/core');
   const platform = Capacitor.getPlatform() === 'android' ? 'android' : 'ios';
-  // Resolved, or null meaning "ask". Null happens only on iOS with nothing
-  // remembered: Android's `geo:` IS the chooser, so there is never anything to
-  // ask there, and a remembered choice skips the sheet outright.
-  const direct = resolveVenueChoice(coord, label, platform, useAppStore.getState().preferredMapApp);
+  // Resolved, or null meaning "ask" — which on iOS is every time: there is no
+  // remembered choice. Android's `geo:` IS the chooser, so it never asks here.
+  const direct = resolveVenueChoice(coord, label, platform);
   if (direct) {
     window.location.href = direct;
     return;

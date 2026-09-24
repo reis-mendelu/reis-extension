@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react";
-import { cn } from "./utils";
+import * as React from 'react';
+import { CheckIcon, ChevronRightIcon, CircleIcon } from 'lucide-react';
+import { cn } from './utils';
 
 /**
  * DropdownMenu component using daisyUI
@@ -16,7 +16,6 @@ interface DropdownContextValue {
 
 const DropdownContext = React.createContext<DropdownContextValue | null>(null);
 
- 
 // function useDropdownContext() {
 //   const context = React.useContext(DropdownContext);
 //   if (!context) {
@@ -24,7 +23,6 @@ const DropdownContext = React.createContext<DropdownContextValue | null>(null);
 //   }
 //   return context;
 // }
-
 
 interface DropdownMenuProps {
   children: React.ReactNode;
@@ -37,7 +35,7 @@ function DropdownMenu({ children, open: controlledOpen, onOpenChange }: Dropdown
 
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : uncontrolledOpen;
-  const setOpen = isControlled ? (onOpenChange ?? (() => { })) : setUncontrolledOpen;
+  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setUncontrolledOpen;
 
   return (
     <DropdownContext.Provider value={{ open, setOpen }}>
@@ -56,16 +54,11 @@ interface DropdownMenuTriggerProps extends React.ButtonHTMLAttributes<HTMLButton
   asChild?: boolean;
 }
 
-function DropdownMenuTrigger({
-  className,
-  asChild,
-  children,
-  ...props
-}: DropdownMenuTriggerProps) {
+function DropdownMenuTrigger({ className, asChild, children, ...props }: DropdownMenuTriggerProps) {
   if (asChild && React.isValidElement(children)) {
     return React.cloneElement(children as React.ReactElement<any>, {
       tabIndex: 0,
-      role: "button",
+      role: 'button',
       className: cn((children as React.ReactElement<any>).props.className, className),
     });
   }
@@ -76,7 +69,7 @@ function DropdownMenuTrigger({
       type="button"
       role="button"
       data-slot="dropdown-menu-trigger"
-      className={cn("btn", className)}
+      className={cn('btn', className)}
       {...props}
     >
       {children}
@@ -85,24 +78,24 @@ function DropdownMenuTrigger({
 }
 
 interface DropdownMenuContentProps extends React.HTMLAttributes<HTMLUListElement> {
-  align?: "start" | "end" | "center";
+  align?: 'start' | 'end' | 'center';
   sideOffset?: number;
 }
 
 function DropdownMenuContent({
   className,
-  align = "start",
+  align = 'start',
   children,
   ...props
 }: DropdownMenuContentProps) {
-  const alignClass = align === "end" ? "dropdown-end" : "";
+  const alignClass = align === 'end' ? 'dropdown-end' : '';
 
   return (
     <ul
       tabIndex={0}
       data-slot="dropdown-menu-content"
       className={cn(
-        "dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-lg border border-base-300",
+        'dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-lg border border-base-300',
         alignClass,
         className
       )}
@@ -127,7 +120,7 @@ function DropdownMenuGroup({
 
 interface DropdownMenuItemProps extends React.LiHTMLAttributes<HTMLLIElement> {
   inset?: boolean;
-  variant?: "default" | "destructive";
+  variant?: 'default' | 'destructive';
   disabled?: boolean;
   onSelect?: () => void;
 }
@@ -135,7 +128,7 @@ interface DropdownMenuItemProps extends React.LiHTMLAttributes<HTMLLIElement> {
 function DropdownMenuItem({
   className,
   inset,
-  variant = "default",
+  variant = 'default',
   disabled,
   onSelect,
   children,
@@ -160,10 +153,10 @@ function DropdownMenuItem({
     >
       <a
         className={cn(
-          "flex items-center gap-2",
-          variant === "destructive" && "text-error",
-          disabled && "opacity-50 pointer-events-none",
-          inset && "pl-8",
+          'flex items-center gap-2',
+          variant === 'destructive' && 'text-error',
+          disabled && 'opacity-50 pointer-events-none',
+          inset && 'pl-8',
           className
         )}
       >
@@ -189,7 +182,7 @@ function DropdownMenuCheckboxItem({
   return (
     <li data-slot="dropdown-menu-checkbox-item" {...props}>
       <a
-        className={cn("flex items-center gap-2", className)}
+        className={cn('flex items-center gap-2', className)}
         onClick={() => onCheckedChange?.(!checked)}
       >
         <span className="w-4 h-4 flex items-center justify-center">
@@ -246,7 +239,7 @@ function DropdownMenuRadioItem({
       onClick={() => context?.onValueChange?.(value)}
       {...props}
     >
-      <a className={cn("flex items-center gap-2", className)}>
+      <a className={cn('flex items-center gap-2', className)}>
         <span className="w-4 h-4 flex items-center justify-center">
           {isSelected && <CircleIcon className="w-2 h-2 fill-current" />}
         </span>
@@ -260,16 +253,11 @@ interface DropdownMenuLabelProps extends React.LiHTMLAttributes<HTMLLIElement> {
   inset?: boolean;
 }
 
-function DropdownMenuLabel({
-  className,
-  inset,
-  children,
-  ...props
-}: DropdownMenuLabelProps) {
+function DropdownMenuLabel({ className, inset, children, ...props }: DropdownMenuLabelProps) {
   return (
     <li
       data-slot="dropdown-menu-label"
-      className={cn("menu-title", inset && "pl-8", className)}
+      className={cn('menu-title', inset && 'pl-8', className)}
       {...props}
     >
       {children}
@@ -277,27 +265,17 @@ function DropdownMenuLabel({
   );
 }
 
-function DropdownMenuSeparator({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+function DropdownMenuSeparator({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div
-      data-slot="dropdown-menu-separator"
-      className={cn("divider my-1", className)}
-      {...props}
-    />
+    <div data-slot="dropdown-menu-separator" className={cn('divider my-1', className)} {...props} />
   );
 }
 
-function DropdownMenuShortcut({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLSpanElement>) {
+function DropdownMenuShortcut({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) {
   return (
     <span
       data-slot="dropdown-menu-shortcut"
-      className={cn("ml-auto text-xs opacity-60", className)}
+      className={cn('ml-auto text-xs opacity-60', className)}
       {...props}
     />
   );
@@ -321,7 +299,7 @@ function DropdownMenuSubTrigger({
 }: DropdownMenuSubTriggerProps) {
   return (
     <li data-slot="dropdown-menu-sub-trigger" {...props}>
-      <a className={cn("flex items-center justify-between", inset && "pl-8", className)}>
+      <a className={cn('flex items-center justify-between', inset && 'pl-8', className)}>
         {children}
         <ChevronRightIcon className="w-4 h-4 ml-auto" />
       </a>
@@ -337,10 +315,7 @@ function DropdownMenuSubContent({
   return (
     <ul
       data-slot="dropdown-menu-sub-content"
-      className={cn(
-        "menu bg-base-100 rounded-box p-2 shadow-lg",
-        className
-      )}
+      className={cn('menu bg-base-100 rounded-box p-2 shadow-lg', className)}
       {...props}
     >
       {children}

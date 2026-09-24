@@ -1,6 +1,11 @@
 import type { NowNext } from '../../../../utils/mobile/nowNext';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { localizedCourseName, localizedRoom } from '../../../../utils/localizedLesson';
+import roomsIndexJson from '../../../../data/map/rooms-index.json';
+import type { RoomIndexEntry } from '../../../../types/campusMap';
+import { lookupRoomEntry } from '../../../../utils/rooms/lookupRoom';
+
+const INDEX = roomsIndexJson as RoomIndexEntry[];
 
 export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => void }) {
   const { t, language } = useTranslation();
@@ -12,21 +17,20 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
   const currentRoom = localizedRoom(current, language);
   const nextName = next ? localizedCourseName(next, language) : '';
   const nextRoom = next ? localizedRoom(next, language) : '';
+  // "Kam jít" points at a place, so it is offered only when there is one to
+  // point at — a lesson held online, or a room MENDELU's map does not
+  // publish, would otherwise take the student to an empty campus overview.
+  const routable = !!next && !!lookupRoomEntry(next.room, INDEX);
 
   return (
     <div
       data-testid="now-next-card"
-      className="mx-4 mt-3.5 flex flex-shrink-0 flex-col gap-2.5 rounded-2xl border border-primary/25 bg-base-100 p-4"
+      className="mx-4 mt-3.5 flex flex-shrink-0 flex-col gap-2 rounded-2xl border border-primary/25 bg-base-100 px-4 py-3"
     >
-      <div className="flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-          {t('mobile.calendar.nowRunning')}
-        </span>
-        <span className="text-sm font-semibold text-base-content/60">
-          {t('mobile.calendar.endsIn', { minutes: minutesLeft })}
-        </span>
-      </div>
+      {/* The countdown rides the progress bar's line. Its own row above the
+          title left a band of empty card; on the title's line it pushed the
+          course name onto two lines at 390px. Beside the bar it says the same
+          thing the bar shows, in the words a student wants. */}
       <div className="flex flex-col gap-0.5">
         <span className="font-display text-lg font-bold tracking-tight">{currentName}</span>
         <span className="text-sm text-base-content/70">
@@ -34,17 +38,30 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
           {teacher && ` · ${teacher}`}
         </span>
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-base-300">
-        <div className="h-full rounded-full bg-primary" style={{ width: `${elapsedPct}%` }} />
+      <div className="flex items-center gap-2.5">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-base-300">
+          <div className="h-full rounded-full bg-primary" style={{ width: `${elapsedPct}%` }} />
+        </div>
+        <span className="flex-shrink-0 whitespace-nowrap text-sm font-semibold text-base-content/60">
+          {t('mobile.calendar.endsIn', { minutes: minutesLeft })}
+        </span>
       </div>
       {next && (
-        <div className="flex items-center justify-between pt-0.5">
-          <span className="text-sm font-medium text-base-content/60">
-            {t('mobile.calendar.next', { title: `${nextName} · ${nextRoom} · ${next.startTime}` })}
+        <div className="flex items-start justify-between gap-2">
+          {/* The whole time it runs, not just when it starts: "until when?"
+              was the question the start time on its own left open. */}
+          <span className="min-w-0 flex-1 text-sm font-medium text-base-content/60">
+            <span className="font-bold text-base-content/80">{t('mobile.calendar.nextLabel')}</span>{' '}
+            {nextName} · {nextRoom} · {next.startTime} – {next.endTime}
           </span>
-          <button onClick={onRoute} className="py-1.5 pl-3 text-sm font-semibold text-primary">
-            {t('mobile.calendar.route')}
-          </button>
+          {routable && (
+            <button
+              onClick={onRoute}
+              className="flex-shrink-0 whitespace-nowrap pl-3 text-sm font-semibold text-primary"
+            >
+              {t('mobile.calendar.route')}
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -177,12 +177,18 @@ export function useAppLogic() {
       // (no exams this month), and the screen still has to stop waiting.
       if (r.loaded) useAppStore.getState().markSyncLoaded(r.loaded);
 
-      if (r.schedule) {
+      // `?.length`, not truthiness: [] is truthy, and an empty schedule push
+      // used to both blank the store and overwrite `schedule/current` in IDB —
+      // so the blank outlived the app. An empty read is never worth a write;
+      // `loaded` above is what tells the screen the domain has answered.
+      // Accepted cost, same as the exams path: a student whose term genuinely
+      // ends keeps last term's lessons until the next successful fetch.
+      if (r.schedule?.length) {
         useAppStore.getState().setSchedule(r.schedule as any);
       }
 
       try {
-        if (r.schedule) {
+        if (r.schedule?.length) {
           await IndexedDBService.set('schedule', 'current', r.schedule);
         }
 

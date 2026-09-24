@@ -3,7 +3,7 @@ import { pluralSuffix } from '../../../../utils/plural';
 import { getSectionState } from '../../../ExamPanel/utils';
 import type { OpenExam } from '../../../../utils/mobile/examRows';
 import type { ExamSection } from '../../../../types/exams';
-import { ExamRowCard } from './ExamRowCard';
+import { ExamRowCard, type ExamAccent } from './ExamRowCard';
 import { TermRow } from './TermRow';
 
 export interface OpenCardProps {
@@ -14,6 +14,8 @@ export interface OpenCardProps {
   onToggle: () => void;
   isProcessing: boolean;
   onRegister: (section: ExamSection, termId: string) => void;
+  /** Grey for the "Nelze se přihlásit" group; blue otherwise. */
+  accent?: ExamAccent;
 }
 
 /**
@@ -31,14 +33,16 @@ export function OpenCard({
   onToggle,
   isProcessing,
   onRegister,
+  accent = 'info',
 }: OpenCardProps) {
   const { t, language } = useTranslation();
   const state = getSectionState(row.section, now);
   const openCount = state.type === 'open' ? state.openCount : 0;
   return (
     <ExamRowCard
-      title={row.sectionName}
-      subtitle={row.subjectName}
+      title={row.subjectName}
+      subtitle={row.sectionName}
+      accent={accent}
       primaryMeta={openCount > 0 ? `${openCount} ${t('exams.available')}` : ''}
       secondaryMeta={t(
         `mobile.exams.termCount${pluralSuffix(language, row.section.terms.length)}`,
@@ -54,6 +58,7 @@ export function OpenCard({
           key={term.id}
           term={term}
           section={row.section}
+          now={now}
           isProcessing={isProcessing}
           onRegister={onRegister}
         />
