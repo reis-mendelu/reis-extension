@@ -17,10 +17,14 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
   const currentRoom = localizedRoom(current, language);
   const nextName = next ? localizedCourseName(next, language) : '';
   const nextRoom = next ? localizedRoom(next, language) : '';
-  // "Kam jít" points at a place, so it is offered only when there is one to
-  // point at — a lesson held online, or a room MENDELU's map does not
-  // publish, would otherwise take the student to an empty campus overview.
-  const routable = !!next && !!lookupRoomEntry(next.room, INDEX);
+  // "Kam jít" points at the RUNNING lesson's room — the lesson this card is
+  // about. It used to point at the next one, so a student opening the app
+  // late for the lecture on now was walked to the one after it instead.
+  //
+  // Offered only when there is a place to point at: a lesson held online, or a
+  // room MENDELU's map does not publish, would otherwise take the student to
+  // an empty campus overview.
+  const routable = !!lookupRoomEntry(current.room, INDEX);
 
   return (
     <div
@@ -31,12 +35,24 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
           title left a band of empty card; on the title's line it pushed the
           course name onto two lines at 390px. Beside the bar it says the same
           thing the bar shows, in the words a student wants. */}
-      <div className="flex flex-col gap-0.5">
-        <span className="font-display text-lg font-bold tracking-tight">{currentName}</span>
-        <span className="text-sm text-base-content/70">
-          {currentRoom} · {current.startTime} – {current.endTime}
-          {teacher && ` · ${teacher}`}
-        </span>
+      {/* The button sits with the lesson it routes to. On the "Následuje" row
+          it read as a promise about the lesson after. */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="font-display text-lg font-bold tracking-tight">{currentName}</span>
+          <span className="text-sm text-base-content/70">
+            {currentRoom} · {current.startTime} – {current.endTime}
+            {teacher && ` · ${teacher}`}
+          </span>
+        </div>
+        {routable && (
+          <button
+            onClick={onRoute}
+            className="flex-shrink-0 whitespace-nowrap pl-3 pt-1 text-sm font-semibold text-primary"
+          >
+            {t('mobile.calendar.route')}
+          </button>
+        )}
       </div>
       <div className="flex items-center gap-2.5">
         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-base-300">
@@ -47,21 +63,13 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
         </span>
       </div>
       {next && (
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start gap-2">
           {/* The whole time it runs, not just when it starts: "until when?"
               was the question the start time on its own left open. */}
           <span className="min-w-0 flex-1 text-sm font-medium text-base-content/60">
             <span className="font-bold text-base-content/80">{t('mobile.calendar.nextLabel')}</span>{' '}
             {nextName} · {nextRoom} · {next.startTime} – {next.endTime}
           </span>
-          {routable && (
-            <button
-              onClick={onRoute}
-              className="flex-shrink-0 whitespace-nowrap pl-3 text-sm font-semibold text-primary"
-            >
-              {t('mobile.calendar.route')}
-            </button>
-          )}
         </div>
       )}
     </div>
