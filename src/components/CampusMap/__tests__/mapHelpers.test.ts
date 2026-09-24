@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   shortLabel,
   roomLabel,
+  planLabel,
   lonLatToLatLng,
   ringToLatLng,
   searchPlaces,
@@ -73,21 +74,43 @@ describe('roomLabel', () => {
     expect(roomLabel('Q6.06', 'BA39N6006', null)).toBe('Q6.06');
   });
   it('ignores a descriptive nickname when the name is already the friendly code', () => {
-    expect(roomLabel('Q3.54', 'BA39N3054', 'KPMG Hall')).toBe('Q3.54');
+    expect(roomLabel('Q3.54', 'BA39N3999', 'KPMG Hall')).toBe('Q3.54');
   });
   it('uses the nickname when the name is the raw passport code (building A)', () => {
     expect(roomLabel('BA01N1052', 'BA01N1052', 'A01')).toBe('A01');
   });
   it('falls back to the stripped prefix when there is no nickname', () => {
-    expect(roomLabel('BA01N1052', 'BA01N1052', null)).toBe('N1052');
+    expect(roomLabel('BA01N9999', 'BA01N9999', null)).toBe('N9999');
   });
   it('tolerates an empty name by stripping the raw code', () => {
-    expect(roomLabel('', 'BA01N1052', undefined)).toBe('N1052');
+    expect(roomLabel('', 'BA01N9999', undefined)).toBe('N9999');
+  });
+  // The label a timetable prints, from IS's room catalogue, beats every name the
+  // map has — otherwise search finds "B06" and the plan still says "B40".
+  it('shows the IS label for a room the map left unnamed', () => {
+    expect(roomLabel('BA04N1065', 'BA04N1065', null)).toBe('B05 – Strojový sál');
+  });
+  it('shows the IS label over a map nickname that disagrees', () => {
+    expect(roomLabel('BA04N1029', 'BA04N1029', 'B40')).toBe('B06');
   });
   it('prefers the nickname when rawCode is null (building B: no passportNumber)', () => {
     // name is a raw-code-shaped string but there is no passport code to compare
     // against, so the nickname must still win.
     expect(roomLabel('BA02N9999', null, 'B564')).toBe('B564');
+  });
+});
+
+describe('planLabel', () => {
+  // A permanent floor-plan label sits inside the room's outline; IS's full
+  // "B05 – Strojový sál" runs into B03 next door at phone width.
+  it('keeps only the room code of a descriptive IS label', () => {
+    expect(planLabel('B05 – Strojový sál')).toBe('B05');
+    expect(planLabel('B106, zasedačka LDF')).toBe('B106');
+  });
+  it('leaves a plain code or a hyphenated one alone', () => {
+    expect(planLabel('B06')).toBe('B06');
+    expect(planLabel('Q-LCNA')).toBe('Q-LCNA');
+    expect(planLabel('Individuální studovna 1')).toBe('Individuální studovna 1');
   });
 });
 
@@ -254,6 +277,42 @@ describe('searchRooms', () => {
     expect(searchRooms('a01', idx).map((r) => r.code)).toContain('BA01N1052');
     // the raw N-code still matches too
     expect(searchRooms('n1052', idx).map((r) => r.code)).toContain('BA01N1052');
+  });
+  it('finds a room by its IS label, ranked first', () => {
+    const idx: RoomIndexEntry[] = [
+      {
+        code: 'BA04N1067',
+        name: 'BA04N1067',
+        nickname: 'B01',
+        buildingId: 1,
+        floorId: 2,
+        floorLevel: 1,
+        placeId: 1,
+      },
+      {
+        code: 'BA04N1065',
+        name: 'BA04N1065',
+        nickname: null,
+        buildingId: 1,
+        floorId: 2,
+        floorLevel: 1,
+        placeId: 2,
+      },
+      {
+        code: 'BA04N1029',
+        name: 'BA04N1029',
+        nickname: 'B40',
+        buildingId: 1,
+        floorId: 2,
+        floorLevel: 1,
+        placeId: 3,
+      },
+    ];
+    expect(searchRooms('b05', idx).map((r) => r.code)[0]).toBe('BA04N1065');
+    expect(searchRooms('strojový', idx).map((r) => r.code)).toEqual(['BA04N1065']);
+    expect(searchRooms('b06', idx).map((r) => r.code)[0]).toBe('BA04N1029');
+    // the map's own nickname keeps working for anyone who searches by it
+    expect(searchRooms('b40', idx).map((r) => r.code)).toEqual(['BA04N1029']);
   });
 });
 

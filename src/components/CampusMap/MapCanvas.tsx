@@ -9,6 +9,7 @@ import buildingsJson from '../../data/map/buildings.json';
 import {
   ringToLatLng,
   roomLabel,
+  planLabel,
   categoryStyle,
   remotePlaceBounds,
   ringContains,
@@ -412,7 +413,7 @@ export function MapCanvas() {
           const pb = poly.getBounds();
           const big = pb.getNorthEast().distanceTo(pb.getSouthWest()) > 12;
           const label = roomLabel(p.name, p.passportNumber, p.nickname);
-          poly.bindTooltip(label, {
+          poly.bindTooltip(big ? planLabel(label) : label, {
             permanent: big,
             direction: 'center',
             className: big ? 'room-label' : '',

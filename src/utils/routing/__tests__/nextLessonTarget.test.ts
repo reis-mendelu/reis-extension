@@ -134,11 +134,11 @@ describe('lessonTarget', () => {
     const t = lessonTarget(lesson('20260924', '09:00', 'Q31'));
     expect(t).not.toBeNull();
     expect(t!.buildingName).toBe('Q');
-    // The label is the friendliest name the ROOM has, which for Q31 is a
-    // nickname rather than the code the timetable printed. That is
-    // `resolveRoomCode`'s existing contract; asserted here only so a change to
-    // it cannot pass unnoticed.
-    expect(t!.roomLabel).toBe('Učebna bankovnictví Komerčka');
+    // The label is the name IS prints for the room — "Q31", the same string the
+    // timetable row shows and the map labels it with — ahead of its sponsor
+    // nickname ("Učebna bankovnictví Komerčka"). That is `resolveRoomCode`'s
+    // contract; asserted here only so a change to it cannot pass unnoticed.
+    expect(t!.roomLabel).toBe('Q31');
   });
 
   it('is null for a room the map cannot find', () => {
