@@ -27,6 +27,7 @@ import { CAMPUS_NAVIGATION_ENABLED } from '../../utils/routing/navigationEnabled
 import { setMapInstance } from './mapInstance';
 import { LABELS_PANE } from './mapPanes';
 import { roomFocusView } from './focusBounds';
+import { panPinClearOfSheet } from './sheetClearance';
 import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
 
 const META = buildingsJson as BuildingsMeta;
@@ -291,6 +292,8 @@ export function MapCanvas() {
             railRef.current.open
           );
           if (dx) map.panBy([dx, 0], { animate: false });
+          // And the sheet covers its bottom on a phone. See sheetClearance.ts.
+          if (isPhone) panPinClearOfSheet(map, [lat, lon]);
         });
       } else if (cameFromMapTap) {
         // Left floor-view by tapping the basemap: drop the floor plan but leave
