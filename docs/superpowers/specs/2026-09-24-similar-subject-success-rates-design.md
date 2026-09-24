@@ -61,7 +61,10 @@ labelled as another subject.** The app shows evidence, never a verdict.
 
 ### New step: `scripts/build-similar.ts`
 
-`npm run semester` runs it after the plan and timetable crawls.
+It runs in the `scrape-reis-data` procedure right after `audit/export-data.ts`.
+It reads that export (`dist-data/subjects/`, `dist-data/syllabuses/`) and the
+committed `data/study-plans/`. It can't run inside `npm run semester`, because
+that chain never exports `dist-data/`.
 
 1. **Targets.** Every code in the current period's `study-plans.json` or
    `timetable-events.json` that has no exported `subjects/<CODE>.json`. Skip
@@ -73,8 +76,11 @@ labelled as another subject.** The app shows evidence, never a verdict.
    plan row carries `predmet_id` directly where it exists. We take the Czech and
    English names, completion type and credits, guarantor, teachers and
    literature. No credentials are used.
-3. **Candidates.** Same-faculty subjects that have stats. A candidate
-   qualifies through at least one of:
+3. **Candidates.** Same-faculty subjects that have stats. A name prefilter
+   (ratio ≥ 0.5, see below) runs over the whole pool first; only the survivors
+   get their guarantor from `dist-data/syllabuses/`, or from the public syllabus
+   by `predmetId` when no stored syllabus exists. A candidate qualifies through
+   at least one of:
    - the same name after stripping programme tags: parentheticals, `Bc.`,
      `mgr.`, and programme short codes such as `ZAKR`, `RASZ`, `RSZ`, `KA` and
      `KRAA`;
@@ -208,14 +214,19 @@ text contrast per the desktop-tree rules (ink on tints, `/70` muted text).
 - The public catalogue search and syllabus parsers get real IS HTML fixtures,
   captured with `--dump-html` and kept in the private scraper repo, never in
   reis-data (parser rules).
-- **An eval over the 57 subjects both reviewers agreed on.** Checked:
-  - the true predecessor is in the top 3 for every "same course" and "type
-    changed" subject;
-  - `completionChanged` is set on all 9 type-change cases.
+- **An eval over the 57 subjects both reviewers agreed on**, pinned at the
+  baseline measured on 2026-09-24 by simulating these rules:
+  - the true predecessor is in the top 3 for **at least 31 of the 34** "same
+    course" and "type changed" subjects. The known misses are ZLZG → LZE and
+    2DCD → SYCAD (name ratio below 0.5) and SVPS → ODAP;
+  - `completionChanged` is set on every "type changed" subject whose
+    predecessor is found;
+  - **at most 2 of the 14** "no predecessor" subjects get any suggestion (PRKO
+    and EBC-VZ do today).
 
-  Reported but not asserted: how many "no predecessor" subjects still get
-  suggestions. The labels are an eval, not ground truth (same-model reviewers,
-  whose inputs overlap the rules).
+  A change that lowers either number fails the eval. Raising the recall is
+  fine, but the noise bound still has to hold. The labels are an eval, not
+  ground truth (same-model reviewers, whose inputs overlap the rules).
 
 ### App tests (test first)
 
@@ -234,7 +245,11 @@ text contrast per the desktop-tree rules (ink on tints, `/70` muted text).
 ### Rollout
 
 1. Scraper step, then a reis-data push. The files sit unused until an app reads
-   them, and older app versions never request `similar/`.
+   them, and older app versions never request `similar/`. The publish step
+   today is `cp -r dist-data/* ../reis-data/`, which deletes nothing. It has to
+   `rm -rf ../reis-data/similar` first, or a retired file would outlive its
+   subject getting stats. The app never asks for it then, but the dataset
+   should still not carry stale files.
 2. App PR against `test`.
 3. **Acceptance on the real case:**
    - EKOE1 offers EKO1R with the type-change warning;
