@@ -132,7 +132,8 @@ export const MERGED_ROOMS: readonly MergedRoom[] = [
   },
   {
     // A shop is not a teaching room; `other` is what the API gives its one
-    // other shop (the wine shop), so it draws like every non-room space.
+    // other shop (the wine shop). Type `shop` gets its own amber fill
+    // (`TYPE_STYLE` in mapHelpers.ts) so it does not read as empty floor.
     id: 475900,
     name: 'BA25N1015',
     nickname: 'MENDELU Shop',

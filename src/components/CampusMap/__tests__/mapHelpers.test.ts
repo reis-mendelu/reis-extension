@@ -96,6 +96,14 @@ describe('categoryStyle', () => {
     expect(categoryStyle('teaching')).toEqual({ fill: '#c8e6a0', stroke: '#7cb342' });
     expect(categoryStyle('circulation')).toEqual({ fill: '#ece1cb', stroke: '#cbb994' });
   });
+
+  // The MENDELU Shop is `other` like a balcony; drawn that way it read as a hole
+  // in the floor. A room type may override its category's colour.
+  it('lets a room type override its category', () => {
+    expect(categoryStyle('other', 'shop')).toEqual({ fill: '#fcd34d', stroke: '#ca8a04' });
+    expect(categoryStyle('other', 'balcony')).toEqual(categoryStyle('other'));
+    expect(categoryStyle('service', 'bistro')).toEqual(categoryStyle('service'));
+  });
 });
 
 describe('shortLabel', () => {
