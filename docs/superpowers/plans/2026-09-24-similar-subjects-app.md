@@ -18,6 +18,7 @@
 ## Global Constraints
 
 - **Both trees.** `SuccessRateTab` is mounted by `DrawerTabBody` for the extension drawer *and* the phone sheet (`SubjectDrawerSheet` / `SubjectDrawerScroller`), which the iPad also runs. Every file here is shared, so no guard in `src/test/guards/` is needed. Verify all three shells anyway (Task 4).
+- **A preview belongs to the subject it was opened for.** The desktop drawer reuses `SuccessRateTab` when the student switches subject, and two new subjects can offer the same old one (ZABAH and ZABIHY both offer KLI). So the preview state records its course code and is ignored for any other. There's a test for it.
 - **Never attribute an old subject's numbers to the new code.** `successRates[newCode]` stays empty through a preview. The pass-rate badges, semester insights and `AttemptBadge` read that key.
 - **No new transmission.** The one new request is a public CDN file keyed by a subject code already sent for `subjects/<code>.json`. No Supabase caller. `src/test/guards/noStudentDataLeaves.test.ts` must pass unmodified.
 - **Iron rules:**
@@ -34,8 +35,8 @@
 
 ## Proven 2026-09-24
 
-Every code block below ran in a throwaway worktree at `21bc6381`:
-- 14 new tests green, alongside the existing `successRateFreshness` and `studyPlanSuccessRates` tests;
+Every code block below ran in a throwaway worktree at `11c896d3`, and was then re-applied from this plan's text to a fresh checkout and run again:
+- 15 new tests green, alongside the existing `successRateFreshness` and `studyPlanSuccessRates` tests;
 - `npm run typecheck`, `nuia:gate`, and ESLint `--max-warnings=0` clean, and Prettier clean on every touched file;
 - rendered on the phone tree with the scraper's real output for a B-RASZ first-year's 7 subjects (screenshots in the session).
 
@@ -611,13 +612,29 @@ describe('SuccessRateTab', () => {
     expect(screen.queryByRole('status')).toBeNull();
     expect(screen.getByText('Podobné předměty z minulých let')).toBeTruthy();
   });
+
+  it('does not carry a preview over to another subject that offers the same one', () => {
+    // The desktop drawer reuses the tab when the student switches subject.
+    // ZABAH and ZABIHY both offer KLI; the second must open on its list.
+    seed({
+      similarSubjects: { ZABAH: [KLI], ZABIHY: [KLI] },
+      successRates: { KLI: rate('KLI', 'exam') },
+    });
+    const { rerender } = render(<SuccessRateTab courseCode="ZABAH" />);
+    fireEvent.click(screen.getByRole('button', { name: /KLI/ }));
+    expect(screen.getByRole('status')).toBeTruthy();
+
+    rerender(<SuccessRateTab courseCode="ZABIHY" />);
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.getByText('Podobné předměty z minulých let')).toBeTruthy();
+  });
 });
 ```
 
 - [ ] **Step 2: Run it and watch it fail**
 
 Run: `npx vitest run src/components/SuccessRateTab.test.tsx`
-Expected: the "own stats" test passes against today's tab; the other three fail on missing text ("Zatím bez výsledků" and the rest).
+Expected: the "own stats" test passes against today's tab; the other four fail on missing text ("Zatím bez výsledků" and the rest).
 
 - [ ] **Step 3: Add the copy**
 
@@ -939,7 +956,10 @@ export function SuccessRateTab({
 }) {
   const { stats: data, loading } = useSuccessRate(courseCode);
   const suggestions = useAppStore((s) => s.similarSubjects[courseCode]);
-  const [previewCode, setPreviewCode] = useState<string | null>(null);
+  // Which subject the preview was opened FOR: the desktop drawer reuses this
+  // component across subjects, and two new subjects can offer the same old one.
+  const [preview, setPreview] = useState<{ course: string; code: string } | null>(null);
+  const previewCode = preview?.course === courseCode ? preview.code : null;
   const { t } = useTranslation();
 
   if (loading) return <Spinner />;
@@ -952,14 +972,14 @@ export function SuccessRateTab({
       />
     );
 
-  const preview = suggestions?.find((s) => s.code === previewCode);
-  if (preview)
+  const picked = suggestions?.find((s) => s.code === previewCode);
+  if (picked)
     return (
       <SimilarPreview
-        suggestion={preview}
+        suggestion={picked}
         facultyCode={facultyCode}
         showIsBacklink={showIsBacklink}
-        onBack={() => setPreviewCode(null)}
+        onBack={() => setPreview(null)}
       />
     );
 
@@ -971,7 +991,10 @@ export function SuccessRateTab({
         <p className="text-xs text-base-content/70 mt-1">{t('successRate.noResultsBody')}</p>
       </div>
       {suggestions && suggestions.length > 0 && (
-        <SimilarSubjectsList suggestions={suggestions} onPick={setPreviewCode} />
+        <SimilarSubjectsList
+          suggestions={suggestions}
+          onPick={(code) => setPreview({ course: courseCode, code })}
+        />
       )}
     </div>
   );
@@ -1022,7 +1045,7 @@ Delete the line `"src/components/SuccessRateTab.tsx",` from `nuia-baseline.json`
 - [ ] **Step 10: Run the tests and the gates**
 
 Run: `npx vitest run src/components/SuccessRateTab.test.tsx src/store/slices/__tests__/similarSubjects.test.ts && npm run typecheck && npm run nuia:gate`
-Expected: 10 pass; typecheck is silent; `✅ nuia ratchet ok`.
+Expected: 11 pass; typecheck is silent; `✅ nuia ratchet ok`.
 Run: `npx prettier --write` on every file this plan created or touched, then `npx eslint --max-warnings=0` on the same list.
 Expected: no findings.
 
