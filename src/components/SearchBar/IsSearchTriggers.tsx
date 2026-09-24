@@ -12,7 +12,7 @@ interface IsSearchTriggersProps {
   buttonClassName: string;
 }
 
-/** The "IS stránky" + "Lidé" trigger rows shown in the IS flyout (desktop sidebar and mobile sheet). */
+/** The "Starý IS" + "Lidé" trigger rows shown in the IS flyout (desktop sidebar and mobile sheet). */
 export function IsSearchTriggers({ onOpen, buttonClassName }: IsSearchTriggersProps) {
   const { t } = useTranslation();
   return (
