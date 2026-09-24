@@ -112,7 +112,7 @@ export function RegisteredCard({
           type="button"
           onClick={() => onUnregister(row.section)}
           disabled={isProcessing}
-          className="min-h-11 w-full rounded-lg border border-error/35 text-sm font-bold text-error disabled:opacity-50"
+          className="min-h-11 w-full rounded-lg border border-error/35 text-sm font-bold text-[var(--tone-error)] disabled:opacity-50"
         >
           {isProcessing ? (
             <span className="loading loading-spinner loading-xs" />

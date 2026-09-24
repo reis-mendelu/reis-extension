@@ -147,7 +147,7 @@ export function ExamsScreen() {
   // "Přihlášen na 3 zkoušky" next to the actions overflows 320px.
   const registeredPill =
     registered.length > 0 ? (
-      <span className="w-fit whitespace-nowrap rounded-full bg-success/15 px-3 py-1.5 text-sm font-semibold text-success">
+      <span className="w-fit whitespace-nowrap rounded-full bg-success/15 px-3 py-1.5 text-sm font-semibold text-[var(--tone-success)]">
         {t(`mobile.exams.registeredCount${pluralSuffix(language, registered.length)}`, {
           count: registered.length,
         })}
@@ -207,7 +207,7 @@ export function ExamsScreen() {
           surfaceRef={screenRef}
           className="items-center justify-center gap-3 px-6 text-center"
         >
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-[var(--tone-primary)]">
             <Calendar size={28} />
           </div>
           <div className="font-display text-lg font-bold">{t('mobile.exams.emptyTitle')}</div>

@@ -88,7 +88,7 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
           aria-label={t('bulletin.expand')}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-base-100 border border-base-300 rounded-lg hover:bg-base-200 transition-colors"
         >
-          <Pin className="w-3 h-3 text-primary flex-shrink-0" />
+          <Pin className="w-3 h-3 text-[var(--tone-primary)] flex-shrink-0" />
           <span className="text-xs font-semibold text-base-content whitespace-nowrap">
             {t('bulletin.title')}
           </span>
@@ -115,10 +115,10 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
         }}
         aria-label={expanded ? t('bulletin.collapse') : t('bulletin.expand')}
         className={`flex items-center gap-1.5 px-3 py-1.5 bg-base-100 border border-base-300 rounded-lg hover:bg-base-200 transition-all ${
-          expanded ? 'bg-base-200/80 border-primary/40 text-primary' : ''
+          expanded ? 'bg-base-200/80 border-primary/40 text-[var(--tone-primary)]' : ''
         }`}
       >
-        <Pin className="w-3 h-3 text-primary flex-shrink-0" />
+        <Pin className="w-3 h-3 text-[var(--tone-primary)] flex-shrink-0" />
         <span className="text-xs font-semibold text-base-content whitespace-nowrap">
           {t('bulletin.title')}
         </span>
@@ -129,7 +129,7 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-base-300/80 bg-base-200/40">
             <div className="flex items-center gap-2">
-              <Pin className="w-3.5 h-3.5 text-primary" />
+              <Pin className="w-3.5 h-3.5 text-[var(--tone-primary)]" />
               <span className="text-xs font-bold text-base-content">{t('bulletin.title')}</span>
             </div>
             <div className="flex items-center gap-1">
@@ -139,7 +139,7 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
                 rel="noopener noreferrer"
                 aria-label={t('bulletin.showAll')}
                 title={t('bulletin.showAll')}
-                className="p-1 hover:bg-base-300 rounded-lg text-base-content/40 hover:text-primary transition-all"
+                className="p-1 hover:bg-base-300 rounded-lg text-base-content/40 hover:text-[var(--tone-primary)] transition-all"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
@@ -163,7 +163,9 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
               </div>
             )}
             {!loading && error && posts.length === 0 && (
-              <div className="p-4 text-center text-xs text-error/85">{t('bulletin.error')}</div>
+              <div className="p-4 text-center text-xs text-[var(--tone-error)]">
+                {t('bulletin.error')}
+              </div>
             )}
             {!loading && !error && posts.length === 0 && (
               <div className="p-4 text-center text-xs text-base-content/50">

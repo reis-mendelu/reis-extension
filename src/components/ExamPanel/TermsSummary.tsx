@@ -26,10 +26,10 @@ export function TermsSummary({
     const ms = sectionState.earliest.getTime() - now.getTime();
     return (
       <div className="flex items-center gap-2 mt-2.5">
-        <span className="text-[10px] uppercase font-bold text-base-content/40 tracking-wider whitespace-nowrap">
+        <span className="text-[10px] uppercase font-bold text-base-content/70 tracking-wider whitespace-nowrap">
           {count} {label}
         </span>
-        <span className="flex items-center gap-1 text-[10px] font-bold text-warning/70 tracking-wide">
+        <span className="flex items-center gap-1 text-[10px] font-bold text-[var(--tone-warning)] tracking-wide">
           <Clock size={9} className="shrink-0" />
           {t('exams.opens')} {ms > 0 ? formatCountdown(ms) : t('exams.opening')}
         </span>
@@ -41,7 +41,7 @@ export function TermsSummary({
     <div className="flex flex-col gap-2 mt-2.5">
       <div className="flex items-center gap-3">
         {sectionState.type !== 'open' && (
-          <span className="text-[10px] uppercase font-bold text-base-content/40 tracking-wider whitespace-nowrap">
+          <span className="text-[10px] uppercase font-bold text-base-content/70 tracking-wider whitespace-nowrap">
             {count} {label}
           </span>
         )}
@@ -52,12 +52,12 @@ export function TermsSummary({
               key={term.id}
               className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold ${
                 term.full || (term.capacity && term.capacity.occupied >= term.capacity.total)
-                  ? 'bg-base-200 text-base-content/30'
+                  ? 'bg-base-200 text-base-content/70'
                   : term.attemptTypes?.some((t) => t !== 'regular')
-                    ? 'bg-warning/10 text-warning/80'
+                    ? 'bg-warning/10 text-[var(--tone-warning)]'
                     : term.canRegisterNow === true
-                      ? 'bg-success/10 text-success/80'
-                      : 'bg-primary/5 text-primary/70'
+                      ? 'bg-success/10 text-[var(--tone-success)]'
+                      : 'bg-primary/5 text-[var(--tone-primary)]'
               }`}
             >
               {term.attemptTypes?.includes('regular') &&
@@ -71,7 +71,7 @@ export function TermsSummary({
             </div>
           ))}
           {terms.length > 3 && (
-            <span className="text-[10px] font-bold text-base-content/30">+{terms.length - 3}</span>
+            <span className="text-[10px] font-bold text-base-content/70">+{terms.length - 3}</span>
           )}
         </div>
       </div>
