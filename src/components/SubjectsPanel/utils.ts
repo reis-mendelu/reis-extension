@@ -1,4 +1,4 @@
-import type { SemesterBlock, StudyPlan } from '@/types/studyPlan';
+import type { SemesterBlock, StudyPlan, SubjectStatus } from '@/types/studyPlan';
 
 export type SemesterState = 'past' | 'current' | 'future';
 
@@ -56,6 +56,23 @@ export function buildSubjectToZameranis(plan: StudyPlan | null | undefined): Map
     }
   }
   return map;
+}
+
+// A subject is "always visible" if it's not affiliated with any zaměření
+// (mandatory / general elective). Affiliated subjects show only when at least
+// one of their zaměření is picked. Hides the noise of unchosen zaměření paths.
+// The semester list and the hardest-subjects card both ask this, so a subject
+// of a zaměření the student never picked is hidden from both or neither.
+export function isSubjectVisible(
+  s: SubjectStatus,
+  subjectToZameranis?: Map<string, string[]>,
+  picked?: Set<string>
+): boolean {
+  if (isZameraniCode(s.code)) return false;
+  const memberOf = subjectToZameranis?.get(s.code);
+  if (!memberOf || memberOf.length === 0) return true;
+  if (!picked || picked.size === 0) return false;
+  return memberOf.some((z) => picked.has(z));
 }
 
 export function buildSubjectSemesters(
