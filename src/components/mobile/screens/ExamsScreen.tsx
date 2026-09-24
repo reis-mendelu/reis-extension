@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Calendar } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
@@ -62,6 +62,7 @@ export function ExamsScreen() {
   const examsRefreshing = useAppStore((s) => s.examsRefreshing);
   const triggerExamsRefresh = useAppStore((s) => s.triggerExamsRefresh);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const screenRef = useRef<HTMLDivElement>(null);
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
 
   const {
@@ -157,8 +158,13 @@ export function ExamsScreen() {
   // title is back to carrying only the registered pill, and only when there is
   // one. The sr-only button is the screen-reader route to the same refresh and
   // takes no layout.
+  // Where a pull to refresh may start: anywhere on the screen (ExamsPullArea).
   const shell = (body: ReactNode) => (
-    <div data-testid="exams-screen" className="flex flex-1 flex-col overflow-hidden">
+    <div
+      ref={screenRef}
+      data-testid="exams-screen"
+      className="flex flex-1 flex-col overflow-hidden"
+    >
       <ScreenHeader
         eyebrow={eyebrow}
         title={t('mobile.exams.title')}
@@ -193,7 +199,10 @@ export function ExamsScreen() {
   return shell(
     <>
       {exams.length === 0 ? (
-        <ExamsPullArea className="items-center justify-center gap-3 px-6 text-center">
+        <ExamsPullArea
+          surfaceRef={screenRef}
+          className="items-center justify-center gap-3 px-6 text-center"
+        >
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Calendar size={28} />
           </div>
@@ -209,7 +218,10 @@ export function ExamsScreen() {
             t={t}
             onOpen={(item) => setExpandedId(item.section.id)}
           />
-          <ExamsPullArea className="gap-4 px-4 pb-[calc(6rem_+_var(--safe-bottom,0px))] pt-3">
+          <ExamsPullArea
+            surfaceRef={screenRef}
+            className="gap-4 px-4 pb-[calc(6rem_+_var(--safe-bottom,0px))] pt-3"
+          >
             {thisWeek.length > 0 && (
               <ExamGroup title={t('mobile.exams.groupThisWeek')} count={thisWeek.length}>
                 {thisWeek.map(registeredCard)}

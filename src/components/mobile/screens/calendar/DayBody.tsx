@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, type RefObject } from 'react';
 import type { AgendaRow } from '../../../../utils/mobile/dayAgenda';
 import { useAppStore } from '../../../../store/useAppStore';
 import {
@@ -26,6 +26,12 @@ export interface DayBodyProps {
   teachingStartsOn: Date | null;
   /** Swiping the day sideways moves to the next or previous one. */
   onSelectDay: (iso: string) => void;
+  /**
+   * The whole calendar screen. A pull may start anywhere on it — the date, the
+   * Now/Next card, the week strip — not only on the day below them, which was
+   * the lower half of the screen and the half a finger reaches for last.
+   */
+  pullSurfaceRef?: RefObject<HTMLElement | null>;
 }
 
 /**
@@ -63,6 +69,7 @@ export function DayBody({
   outsideTeaching,
   teachingStartsOn,
   onSelectDay,
+  pullSurfaceRef,
 }: DayBodyProps) {
   const pushSheet = useAppStore((s) => s.pushSheet);
   const setMobileTab = useAppStore((s) => s.setMobileTab);
@@ -112,6 +119,7 @@ export function DayBody({
     <div className="relative flex min-h-0 flex-1 flex-col">
       <PullRefreshIndicator
         scrollerRef={bodyRef}
+        surfaceRef={pullSurfaceRef}
         refreshing={scheduleRefreshing}
         onRefresh={triggerScheduleRefresh}
         hint
