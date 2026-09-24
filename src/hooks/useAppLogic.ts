@@ -58,7 +58,6 @@ export function useAppLogic() {
   const [currentView, setCurrentView] = useState<AppView>('calendar');
   const [selectedSubject, setSelectedSubject] = useState<SelectedSubject | null>(null);
   const [weekNavCount, setWeekNavCount] = useState(0);
-  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const openSettingsRef = useRef<(() => void) | null>(null);
   const searchPrefillRef = useRef<((query: string) => void) | null>(null);
   useSpolkySettings();
@@ -392,8 +391,6 @@ export function useAppLogic() {
     setSelectedSubject,
     weekNavCount,
     setWeekNavCount,
-    isFeedbackOpen,
-    setIsFeedbackOpen,
     openSettingsRef,
     searchPrefillRef,
     handleOpenSubjectFromSearch,

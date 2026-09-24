@@ -5,6 +5,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import type { VtTestAttempt } from '../../types/zaznamnik';
 import { VtTestGroup } from './Zaznamnik/VtTestGroup';
 import { PhArchView } from './Zaznamnik/PhArchView';
+import { ReportMissingLink } from '../Feedback/ReportMissingLink';
 
 const IS_BASE = 'https://is.mendelu.cz';
 
@@ -78,11 +79,14 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
     const hasFlags = subjectInfo?.hasPrubezne || subjectInfo?.hasTest;
     return (
       <div className="flex flex-col h-full">
-        <div className="flex flex-col items-center justify-center flex-1 p-6 opacity-40 text-center">
-          <ClipboardList className="w-12 h-12 mb-3" />
-          <p className="text-sm">
-            {hasFlags ? t('zaznamnik.noData') : t('zaznamnik.noAssessment')}
-          </p>
+        <div className="flex flex-col items-center justify-center flex-1 p-6 text-center">
+          <div className="flex flex-col items-center opacity-40">
+            <ClipboardList className="w-12 h-12 mb-3" />
+            <p className="text-sm">
+              {hasFlags ? t('zaznamnik.noData') : t('zaznamnik.noAssessment')}
+            </p>
+          </div>
+          {hasFlags && <ReportMissingLink prefill="zaznamnikEmpty" className="mt-2" />}
         </div>
         {backlinks}
       </div>
@@ -115,9 +119,12 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
       )}
 
       {nonEmptyArches.length === 0 && vtGroups.length === 0 && (
-        <div className="flex flex-col items-center justify-center h-full p-6 opacity-40 text-center">
-          <ClipboardList className="w-12 h-12 mb-3" />
-          <p className="text-sm">{t('zaznamnik.noData')}</p>
+        <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+          <div className="flex flex-col items-center opacity-40">
+            <ClipboardList className="w-12 h-12 mb-3" />
+            <p className="text-sm">{t('zaznamnik.noData')}</p>
+          </div>
+          <ReportMissingLink prefill="zaznamnikEmpty" className="mt-2" />
         </div>
       )}
 

@@ -88,7 +88,10 @@ describe('TermRow', () => {
     render(
       <TermRow term={term} section={section} now={NOW} isProcessing={false} onRegister={vi.fn()} />
     );
-    expect(toast.error).toHaveBeenCalledWith('Session expired');
+    expect(toast.error).toHaveBeenCalledWith(
+      'Session expired',
+      expect.objectContaining({ duration: 10_000 })
+    );
   });
 
   it('falls back to the generic failure message when the toggle fails with no specific error', () => {
@@ -100,7 +103,28 @@ describe('TermRow', () => {
     render(
       <TermRow term={term} section={section} now={NOW} isProcessing={false} onRegister={vi.fn()} />
     );
-    expect(toast.error).toHaveBeenCalledWith('Hlídače se nepodařilo aktivovat.');
+    expect(toast.error).toHaveBeenCalledWith(
+      'Hlídače se nepodařilo aktivovat.',
+      expect.objectContaining({ duration: 10_000 })
+    );
+  });
+
+  it('offers Nahlásit on a failed toggle, prefilled with our own title', () => {
+    useAppStore.setState({ reportOpen: false, reportPrefill: null } as never);
+    mockedUseWatchdog.mockReturnValue({
+      ...baseHookState(),
+      feedback: 'failed',
+      errorMessage: 'IS says no',
+    });
+    render(
+      <TermRow term={term} section={section} now={NOW} isProcessing={false} onRegister={vi.fn()} />
+    );
+    const opts = vi.mocked(toast.error).mock.calls[0]?.[1] as unknown as {
+      action: { label: string; onClick: () => void };
+    };
+    expect(opts.action.label).toBe('Nahlásit');
+    opts.action.onClick();
+    expect(useAppStore.getState().reportPrefill).toEqual({ title: 'Zkoušky: akce selhala' });
   });
 
   it('does not toast when there is no feedback yet', () => {

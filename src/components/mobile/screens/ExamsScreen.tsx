@@ -25,6 +25,7 @@ import { OpenCard } from './exams/OpenCard';
 import { ExamsPullArea } from './exams/ExamsPullArea';
 import { RefreshButton } from '../primitives/RefreshButton';
 import { ConfirmSheet } from '../sheets/ConfirmSheet';
+import { ReportMissingLink } from '../../Feedback/ReportMissingLink';
 
 function ExamsSkeleton() {
   const { t } = useTranslation();
@@ -211,6 +212,7 @@ export function ExamsScreen() {
           </div>
           <div className="font-display text-lg font-bold">{t('mobile.exams.emptyTitle')}</div>
           <div className="max-w-56 text-sm text-base-content/60">{t('mobile.exams.emptyBody')}</div>
+          <ReportMissingLink prefill="examsEmpty" />
         </ExamsPullArea>
       ) : (
         <>

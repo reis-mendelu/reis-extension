@@ -7,6 +7,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Mock } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
+import { toast } from 'sonner';
 import { useExamActions } from '../useExamActions';
 import * as examsAPI from '../../../api/exams';
 import { IndexedDBService } from '../../../services/storage';
@@ -34,20 +35,25 @@ vi.mock('sonner', () => ({
   },
 }));
 
-const { mockSetExams, mockFetchExams, mockTriggerExamsRefresh } = vi.hoisted(() => ({
-  mockSetExams: vi.fn((data) => {
-    IndexedDBService.set('exams', 'current', data);
-    IndexedDBService.set('meta', 'exams_modified', Date.now());
-  }),
-  mockFetchExams: vi.fn(),
-  mockTriggerExamsRefresh: vi.fn(),
-}));
+const { mockSetExams, mockFetchExams, mockTriggerExamsRefresh, mockOpenReport } = vi.hoisted(
+  () => ({
+    mockSetExams: vi.fn((data) => {
+      IndexedDBService.set('exams', 'current', data);
+      IndexedDBService.set('meta', 'exams_modified', Date.now());
+    }),
+    mockFetchExams: vi.fn(),
+    mockTriggerExamsRefresh: vi.fn(),
+    mockOpenReport: vi.fn(),
+  })
+);
 
 vi.mock('../../../store/useAppStore', () => {
   const mockState = {
     setExams: mockSetExams,
     fetchExams: mockFetchExams,
     triggerExamsRefresh: mockTriggerExamsRefresh,
+    language: 'en',
+    openReport: mockOpenReport,
   };
   const mockUseAppStore = vi.fn((selector: (s: typeof mockState) => unknown) =>
     selector(mockState)
@@ -303,6 +309,45 @@ describe('useExamActions - Optimistic Updates', () => {
   });
 
   describe('Error Handling', () => {
+    it('offers Report on a failed registration, prefilled with our title, never the IS text', async () => {
+      vi.mocked(examsAPI.registerExam).mockResolvedValue({
+        success: false,
+        error: 'Termín EBC-ALG studium=123 je plný',
+      });
+      const { result } = renderHook(() =>
+        useExamActions({ exams: mockExams, setExpandedSectionId: mockSetExpandedSectionId })
+      );
+      await act(async () => {
+        await result.current.handleRegisterDirect(mockExams[0].sections[0], 'term-1');
+      });
+
+      const [text, opts] = vi.mocked(toast.error).mock.calls[0] as unknown as [
+        string,
+        { duration: number; action: { label: string; onClick: () => void } },
+      ];
+      expect(text).toBe('Termín EBC-ALG studium=123 je plný');
+      expect(opts.duration).toBe(10_000);
+      expect(opts.action.label).toBe('Report');
+      opts.action.onClick();
+      expect(mockOpenReport).toHaveBeenCalledWith({ title: 'Exams: action failed' });
+    });
+
+    it('offers Report when unregistering has no term id', async () => {
+      const { result } = renderHook(() =>
+        useExamActions({ exams: mockExams, setExpandedSectionId: mockSetExpandedSectionId })
+      );
+      act(() => {
+        result.current.handleUnregisterRequest({
+          ...mockExams[0].sections[0],
+          registeredTerm: undefined,
+        });
+      });
+      await act(async () => {
+        await result.current.handleConfirmAction();
+      });
+      expect(vi.mocked(toast.error).mock.calls[0][1]).toMatchObject({ duration: 10_000 });
+    });
+
     it('should rollback optimistic update on API failure', async () => {
       // Mock API failure
       vi.mocked(examsAPI.registerExam).mockResolvedValue({

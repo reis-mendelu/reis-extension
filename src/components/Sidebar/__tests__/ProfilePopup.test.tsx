@@ -44,3 +44,15 @@ describe('ProfilePopup — eduroam', () => {
     expect(useAppStore.getState().eduroamInitialTarget).toBeNull();
   });
 });
+
+describe('ProfilePopup — report a problem', () => {
+  it('opens the report form from the store and closes the popup', () => {
+    useAppStore.setState({ reportOpen: false, reportPrefill: null });
+    const onClose = vi.fn();
+    render(<ProfilePopup isOpen onClose={onClose} />);
+    fireEvent.click(screen.getByRole('button', { name: /Report Bug/i }));
+    expect(useAppStore.getState().reportOpen).toBe(true);
+    expect(useAppStore.getState().reportPrefill).toBeNull();
+    expect(onClose).toHaveBeenCalled();
+  });
+});

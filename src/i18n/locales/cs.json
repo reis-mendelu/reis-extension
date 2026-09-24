@@ -255,7 +255,16 @@
       "other": "Jiné"
     },
     "toastOffline": "Nejsi online. Zkus to znovu, až budeš připojený.",
-    "toastRateLimited": "Teď jsme přijali hodně zpráv. Zkus to prosím za chvíli."
+    "toastRateLimited": "Teď jsme přijali hodně zpráv. Zkus to prosím za chvíli.",
+    "reportLink": "Chybí tu něco? Nahlásit",
+    "reportAction": "Nahlásit",
+    "prefill": {
+      "examsEmpty": "Zkoušky: prázdný seznam",
+      "subjectsEmpty": "Předměty: prázdný seznam",
+      "syllabusEmpty": "Sylabus: chybí data",
+      "zaznamnikEmpty": "Záznamník: chybí data",
+      "examActionFailed": "Zkoušky: akce selhala"
+    }
   },
   "course": {
     "setNickname": "Nastavit přezdívku",

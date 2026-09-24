@@ -5,7 +5,6 @@ import { useSpolkySettings } from '../../../hooks/useSpolkySettings';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { SpolkySection } from '../../Sidebar/Profile/SpolkySection';
 import { HiddenItemsSection } from '../../Sidebar/Profile/HiddenItemsSection';
-import { FeedbackModal } from '../../Feedback/FeedbackModal';
 import { SignOutConfirm } from '../sheets/SignOutConfirm';
 import { PersonPhoto } from '../../ui/PersonPhoto';
 import { AboutSection } from './profile/AboutSection';
@@ -27,7 +26,8 @@ function initials(name: string): string {
 /**
  * The profile TAB: theme, language, eduroam setup,
  * hidden items, society map filters, feedback and logout. Reuses desktop's
- * `SpolkySection` / `HiddenItemsSection` / `FeedbackModal` wholesale rather
+ * `SpolkySection` / `HiddenItemsSection` / the shared report form (mounted by
+ * `MobileApp`) wholesale rather
  * than rebuilding them — only the row layout around them is phone-specific.
  *
  * `HiddenItemsSection` is the same component the desktop sidebar profile
@@ -41,7 +41,7 @@ export function ProfileScreen() {
   const pushSheet = useAppStore((s) => s.pushSheet);
   const setMobileTab = useAppStore((s) => s.setMobileTab);
   const [spolkyOpen, setSpolkyOpen] = useState(false);
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const openReport = useAppStore((s) => s.openReport);
   const [signOutOpen, setSignOutOpen] = useState(false);
 
   const studentId = useAppStore((s) => s.studentId);
@@ -155,7 +155,7 @@ export function ProfileScreen() {
           <NavRow
             icon={MessageSquarePlus}
             label={t('settings.reportBug')}
-            onClick={() => setFeedbackOpen(true)}
+            onClick={() => openReport()}
           />
 
           <button
@@ -175,7 +175,6 @@ export function ProfileScreen() {
       </div>
 
       <SignOutConfirm open={signOutOpen} onCancel={() => setSignOutOpen(false)} />
-      <FeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </div>
   );
 }

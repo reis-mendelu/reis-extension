@@ -663,6 +663,7 @@ export type AppState = ScheduleSlice &
   import('./slices/createAdminSlice').AdminSlice &
   import('./slices/createSuggestionsSlice').SuggestionsSlice &
   import('./slices/createRouteSlice').RouteSlice &
+  import('./slices/createReportSlice').ReportSlice &
   DemoSlice;
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

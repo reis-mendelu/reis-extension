@@ -9,6 +9,7 @@ import { EnrolledNowSection } from './EnrolledNowSection';
 import { StudyAveragesSection } from './StudyAveragesSection';
 import { useSubjectsData } from './useSubjectsData';
 import { buildFallbackPlan } from './buildFallbackPlan';
+import { ReportMissingLink } from '../Feedback/ReportMissingLink';
 
 interface SubjectsPanelProps {
   onOpenSubject: (
@@ -66,8 +67,9 @@ export function SubjectsPanel({
     if (!studyPlanLoaded || (!handshakeDone && !handshakeTimedOut) || isSyncing)
       return <SubjectsPanelSkeleton />;
     return (
-      <div className="flex items-center justify-center h-full text-base-content/70">
-        {t('subjects.noData')}
+      <div className="flex flex-col items-center justify-center gap-2 h-full text-base-content/70">
+        <p>{t('subjects.noData')}</p>
+        <ReportMissingLink prefill="subjectsEmpty" />
       </div>
     );
   }
