@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 import type { StudyPlan } from '@/types/studyPlan';
 import type { SubjectsData } from '@/types/documents';
 
@@ -106,6 +106,14 @@ describe('SubjectsPanel Erasmus fallback', () => {
     renderPanel();
     expect(screen.getByText('No study plan data')).toBeTruthy();
     expect(screen.queryByTestId('enrolled-now')).toBeNull();
+  });
+
+  it('offers to report the missing study plan from the noData state', () => {
+    setStore({ plan: null, subjects: null });
+    useAppStore.setState({ reportOpen: false, reportPrefill: null });
+    renderPanel();
+    fireEvent.click(screen.getByRole('button', { name: 'Something missing? Report it' }));
+    expect(useAppStore.getState().reportPrefill).toEqual({ title: 'Subjects: list is empty' });
   });
 
   it('renders the skeleton, not the fallback, when subjects are present but the plan has not settled yet', () => {

@@ -89,6 +89,13 @@ describe('SubjectsScreen', () => {
     expect(screen.getByText('Zatím žádné předměty')).toBeInTheDocument();
   });
 
+  it('offers to report from the empty state', () => {
+    useAppStore.setState({ reportOpen: false, reportPrefill: null } as never);
+    render(<SubjectsScreen />);
+    fireEvent.click(screen.getByRole('button', { name: 'Chybí tu něco? Nahlásit' }));
+    expect(useAppStore.getState().reportPrefill).toEqual({ title: 'Předměty: prázdný seznam' });
+  });
+
   it('renders the empty state for an unparseable plan (blocks: []) instead of a broken 0 % ring', () => {
     // parseStudyPlanDOM never returns null — when the credits label and
     // subject rows aren't found it returns { creditsAcquired: 0, creditsRequired: 0, blocks: [] }.

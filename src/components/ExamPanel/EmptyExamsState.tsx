@@ -1,5 +1,6 @@
 import { Coffee } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
+import { ReportMissingLink } from '../Feedback/ReportMissingLink';
 
 export function EmptyExamsState() {
   const { t } = useTranslation();
@@ -11,6 +12,7 @@ export function EmptyExamsState() {
       </div>
       <h3 className="text-lg font-semibold text-base-content/80 mb-2">{t('exams.emptyTitle')}</h3>
       <p className="text-sm text-base-content/70 max-w-sm">{t('exams.emptySubtitle')}</p>
+      <ReportMissingLink prefill="examsEmpty" className="mt-3" />
     </div>
   );
 }

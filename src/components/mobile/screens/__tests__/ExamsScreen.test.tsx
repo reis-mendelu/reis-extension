@@ -62,6 +62,13 @@ describe('ExamsScreen', () => {
     expect(screen.getByText('Žádné zkoušky')).toBeInTheDocument();
   });
 
+  it('offers to report from the empty state', () => {
+    useAppStore.setState({ reportOpen: false, reportPrefill: null } as never);
+    render(<ExamsScreen />);
+    fireEvent.click(screen.getByRole('button', { name: 'Chybí tu něco? Nahlásit' }));
+    expect(useAppStore.getState().reportPrefill).toEqual({ title: 'Zkoušky: prázdný seznam' });
+  });
+
   it('renders a collapsed card for a subject with terms', () => {
     setExams([
       subject([
