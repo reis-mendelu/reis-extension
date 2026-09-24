@@ -413,7 +413,8 @@ export function MapCanvas() {
           const pb = poly.getBounds();
           const big = pb.getNorthEast().distanceTo(pb.getSouthWest()) > 12;
           const label = roomLabel(p.name, p.passportNumber, p.nickname);
-          poly.bindTooltip(big ? planLabel(label) : label, {
+          const shown = big ? planLabel(label) : label;
+          poly.bindTooltip(shown, {
             permanent: big,
             direction: 'center',
             className: big ? 'room-label' : '',
@@ -422,6 +423,12 @@ export function MapCanvas() {
             // on top.
             pane: big ? LABELS_PANE : 'tooltipPane',
           });
+          // The permanent label keeps only the code ("B05"); hovering the room
+          // shows IS's full name ("B05 – Strojový sál").
+          if (shown !== label) {
+            poly.on('mouseover', () => poly.setTooltipContent(label));
+            poly.on('mouseout', () => poly.setTooltipContent(shown));
+          }
         }
       }
       poly.addTo(layer);

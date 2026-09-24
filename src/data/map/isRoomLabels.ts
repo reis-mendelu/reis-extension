@@ -28,3 +28,22 @@ const BY_CODE = new Map(IS_ROOM_LABELS.map((l) => [l.code, l.label]));
 export function isLabelForCode(code: string | null | undefined): string | undefined {
   return code ? BY_CODE.get(code) : undefined;
 }
+
+// Case and spacing folded the way `normalizeRoomKey` does (lookupRoom imports
+// this module, so it cannot be imported back).
+const fold = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
+const CODE_BY_LABEL = new Map(IS_ROOM_LABELS.map((l) => [fold(l.label), l.code]));
+
+/**
+ * Whether IS gives `name` to a DIFFERENT room than `code`. The map nicknames
+ * BA01N4082 "A412", but IS's A412 is BA01N5036 a floor up; showing or matching
+ * the map's copy puts two A412s on the plan. False when `code` is unknown.
+ */
+export function isLabelOfAnotherRoom(
+  name: string | null | undefined,
+  code: string | null | undefined
+): boolean {
+  if (!name || !code) return false;
+  const owner = CODE_BY_LABEL.get(fold(name));
+  return owner !== undefined && owner !== code;
+}

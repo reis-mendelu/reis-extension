@@ -9,7 +9,7 @@ import type {
   RemotePlace,
 } from '../../types/campusMap';
 import { lookupRoomEntry } from '../../utils/rooms/lookupRoom';
-import { isLabelForCode } from '../../data/map/isRoomLabels';
+import { isLabelForCode, isLabelOfAnotherRoom } from '../../data/map/isRoomLabels';
 
 export interface RoomStyle {
   fill: string;
@@ -167,7 +167,9 @@ export function roomLabel(
   // a nickname but no passportNumber) we can't tell, so we must not short-circuit
   // here — otherwise a raw-code-shaped `name` would win over a real nickname.
   if (name && rawCode != null && name !== rawCode) return name; // PEF: name is friendly
-  if (nickname) return nickname; // A/C/E/M (and B): friendly code lives in nickname
+  // A/C/E/M (and B): friendly code lives in nickname — unless IS gives that
+  // name to another room (the map's stale "A412" on BA01N4082).
+  if (nickname && !isLabelOfAnotherRoom(nickname, rawCode)) return nickname;
   return shortLabel(name || rawCode || ''); // fallback: strip the prefix
 }
 
@@ -364,15 +366,18 @@ function matchRank(q: string, name: string, code: string, nickname = ''): number
 // top-left map search and the composer's room picker so both order hits the
 // same way (exact "Q01" beats the dotted Q01.NN offices listed earlier).
 function rankedRooms(q: string, index: RoomIndexEntry[]) {
+  // A nickname IS gives to another room is not this room's name (roomLabel).
+  const nick = (e: RoomIndexEntry) =>
+    isLabelOfAnotherRoom(e.nickname, e.code) ? '' : (e.nickname ?? '');
   return index
     .filter(
       (e) =>
         e.code.toLowerCase().includes(q) ||
         e.name.toLowerCase().includes(q) ||
-        (e.nickname ?? '').toLowerCase().includes(q) ||
+        nick(e).toLowerCase().includes(q) ||
         (isLabelForCode(e.code) ?? '').toLowerCase().includes(q)
     )
-    .map((entry) => ({ entry, rank: matchRank(q, entry.name, entry.code, entry.nickname ?? '') }));
+    .map((entry) => ({ entry, rank: matchRank(q, entry.name, entry.code, nick(entry)) }));
 }
 
 export function searchRooms(query: string, index: RoomIndexEntry[], limit = 6): RoomIndexEntry[] {
