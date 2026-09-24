@@ -22,6 +22,28 @@ export async function fetchFilesFromFolder(
   currentDepth = 0,
   maxDepth = 2
 ): Promise<ParsedFile[]> {
+  return (await fetchFolderListing(folderUrl, lang, recursive, currentDepth, maxDepth)).files;
+}
+
+export interface FolderListing {
+  files: ParsedFile[];
+  /**
+   * False when a pagination page or a subfolder (at any depth) failed and was
+   * skipped. The files that DID load are still in `files`; what is missing is
+   * unknown, so a caller must not read an absent file as a deleted one.
+   */
+  complete: boolean;
+}
+
+/** `fetchFilesFromFolder`, plus whether every part of the crawl loaded. */
+export async function fetchFolderListing(
+  folderUrl: string,
+  lang: string = 'cz',
+  recursive = true,
+  currentDepth = 0,
+  maxDepth = 2
+): Promise<FolderListing> {
+  let complete = true;
   try {
     // Append language parameter if not already present
     let url = folderUrl;
@@ -60,6 +82,7 @@ export async function fetchFilesFromFolder(
         return pageFiles;
       } catch (err) {
         logError('Documents.paginationFetch', err);
+        complete = false;
         return [];
       }
     });
@@ -91,17 +114,13 @@ export async function fetchFilesFromFolder(
         folders,
         async (f) => {
           try {
-            const results = await fetchFilesFromFolder(
-              f.url,
-              lang,
-              true,
-              currentDepth + 1,
-              maxDepth
-            );
-            results.forEach((r) => (r.subfolder = f.name));
-            return results;
+            const sub = await fetchFolderListing(f.url, lang, true, currentDepth + 1, maxDepth);
+            if (!sub.complete) complete = false;
+            sub.files.forEach((r) => (r.subfolder = f.name));
+            return sub.files;
           } catch (err) {
             logError('Documents.subfolderFetch', err, { depth: currentDepth });
+            complete = false;
             return []; // Resilience: return empty array instead of failing the whole fetch
           }
         },
@@ -137,7 +156,7 @@ export async function fetchFilesFromFolder(
       f.language = lang;
     });
 
-    return finalResults;
+    return { files: finalResults, complete };
   } catch (e) {
     logError('Documents.fetchFilesFromFolder', e);
     throw e;

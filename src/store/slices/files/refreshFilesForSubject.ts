@@ -2,6 +2,7 @@ import { IndexedDBService } from '../../../services/storage';
 import { logError } from '../../../utils/reportError';
 import type { ParsedFile, SubjectsData } from '../../../types/documents';
 import type { Language } from '../../types';
+import { mergeFolderListing } from './mergeFolderListing';
 
 export const FILES_LAST_FETCHED_KEY = 'files_last_fetched';
 
@@ -18,7 +19,8 @@ interface FolderFetchResult {
 
 /**
  * Force-fetch a single subject's files from IS Mendelu, merge into the
- * dual-language IDB cache, and return the list in the active language.
+ * dual-language IDB cache, and return the list in the active language. What
+ * the merge keeps when the crawl was partial is `mergeFolderListing`'s rule.
  * Returns null if the subject has no folder URL (nothing to fetch).
  */
 export async function fetchAndPersistFolderFiles({
@@ -35,14 +37,16 @@ export async function fetchAndPersistFolderFiles({
   if (!folderId) return null;
 
   const folderUrl = `https://is.mendelu.cz/auth/dok_server/slozka.pl?id=${folderId}`;
-  const { fetchFilesFromFolder } = await import('../../../api/documents/service');
-  const fullFilesList = await fetchFilesFromFolder(folderUrl, language, true, 0, 2);
+  const { fetchFolderListing } = await import('../../../api/documents/service');
+  const listing = await fetchFolderListing(folderUrl, language, true, 0, 2);
 
   const cachedFiles = await IndexedDBService.get('files', courseCode);
   const data =
     cachedFiles && 'cz' in cachedFiles && 'en' in cachedFiles
       ? (cachedFiles as { cz: ParsedFile[]; en: ParsedFile[] })
       : { cz: [] as ParsedFile[], en: [] as ParsedFile[] };
+  // A crawl that lost a subfolder or page must not delete that part's files.
+  const fullFilesList = mergeFolderListing(data[language], listing);
   if (language === 'en') data.en = fullFilesList;
   else data.cz = fullFilesList;
   await IndexedDBService.set('files', courseCode, data);

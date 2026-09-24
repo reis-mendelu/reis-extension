@@ -13,6 +13,11 @@ import { describe, expect, it } from 'vitest';
  * `triggerExamsRefresh`. The desktop calendar has no manual refresh at all —
  * that is a known gap, not a choice made here.
  *
+ * A subject's Files tab pulls too (SubjectDrawerScroller). Its desktop twin is
+ * FilesFreshness, the refresh circle in the drawer header, and both call the
+ * same `refreshFilesForSubject` — so what a refresh keeps and adds is one rule
+ * (`mergeFolderListing`) on both products, and only the trigger differs.
+ *
  * Both halves are pinned. The phone files below own the gesture; the desktop
  * surfaces must not reach for them (a "just reuse the indicator" would ship a
  * gesture with no touch behind it) and the desktop exams panel keeps its button.
@@ -31,6 +36,8 @@ const PHONE_FILES = [
   'components/mobile/screens/ExamsScreen.tsx',
   'components/mobile/screens/calendar/DayBody.tsx',
   'components/mobile/screens/exams/ExamsPullArea.tsx',
+  'components/mobile/sheets/SubjectDrawerScroller.tsx',
+  'components/mobile/sheets/SubjectDrawerSheet.tsx',
 ];
 
 function filesUnder(dir: string): string[] {
@@ -46,6 +53,7 @@ const DESKTOP_SURFACES = [
   ...filesUnder('components/WeeklyCalendar'),
   ...filesUnder('components/ExamPanel'),
   ...filesUnder('components/Exams'),
+  ...filesUnder('components/SubjectFileDrawer'),
   'components/CalendarEventCard.tsx',
 ];
 
@@ -61,6 +69,9 @@ describe('pull-to-refresh placement', () => {
     expect(read('components/mobile/screens/exams/ExamsPullArea.tsx')).toContain(
       'PullRefreshIndicator'
     );
+    expect(read('components/mobile/sheets/SubjectDrawerScroller.tsx')).toContain(
+      'PullRefreshIndicator'
+    );
   });
 
   it.each(DESKTOP_SURFACES)('%s does not use the touch-only pull', (file) => {
@@ -73,5 +84,14 @@ describe('pull-to-refresh placement', () => {
 
   it('the desktop exams panel keeps its visible refresh button', () => {
     expect(read('components/ExamPanel/ExamsFreshness.tsx')).toContain('triggerExamsRefresh');
+  });
+
+  it('the desktop subject drawer keeps its files refresh button, on the same action', () => {
+    expect(read('components/SubjectFileDrawer/Header/FilesFreshness.tsx')).toContain(
+      'refreshFilesForSubject'
+    );
+    expect(read('components/mobile/sheets/SubjectDrawerScroller.tsx')).toContain(
+      'refreshFilesForSubject'
+    );
   });
 });

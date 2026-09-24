@@ -107,7 +107,7 @@ export function DrawerTabBody({
         {showSkeleton ? (
           <FileListSkeleton />
         ) : isEmpty && !showProgress ? (
-          <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+          <div className="flex flex-1 flex-col items-center justify-center h-full p-6 text-center">
             <FileText className="w-12 h-12 text-base-content/20 mb-3" />
             {/* One message regardless of how the subject was reached. The
                 search case used to claim files exist only for subjects in the
