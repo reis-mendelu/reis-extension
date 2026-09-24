@@ -1,6 +1,16 @@
 import type { ReactNode } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
+export type ExamAccent = 'success' | 'warning' | 'info' | 'neutral';
+
+// Literal class names: Tailwind only ships classes it can find verbatim.
+const ACCENT_BAR: Record<ExamAccent, string> = {
+  success: 'bg-success',
+  warning: 'bg-warning',
+  info: 'bg-info',
+  neutral: 'bg-base-content/30',
+};
+
 export interface ExamRowCardProps {
   /** Bold first line — the subject ("Ekonometrie 1"). */
   title: string;
@@ -21,6 +31,13 @@ export interface ExamRowCardProps {
   primaryTone?: 'accent' | 'muted';
   /** Right column, second line: room, or how many terms are on offer. */
   secondaryMeta: string;
+  /**
+   * The colour of the left bar, which says which group the row is in:
+   * registered (success), still to open (warning), bookable (info). The bar is
+   * the only always-on colour in the row, so it is what tells the three apart
+   * at a glance — "ať se mezi tím user vyzná".
+   */
+  accent?: ExamAccent;
   expanded: boolean;
   onToggle: () => void;
   children?: ReactNode;
@@ -44,6 +61,7 @@ export function ExamRowCard({
   primaryMeta,
   primaryTone = 'accent',
   secondaryMeta,
+  accent = 'success',
   expanded,
   onToggle,
   children,
@@ -56,7 +74,10 @@ export function ExamRowCard({
         onClick={onToggle}
         className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left"
       >
-        <span className="h-8 w-1 flex-shrink-0 rounded-full bg-primary" />
+        <span
+          data-testid="exam-accent"
+          className={`h-8 w-1 flex-shrink-0 rounded-full ${ACCENT_BAR[accent]}`}
+        />
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="truncate text-md font-bold text-base-content">{title}</span>
           <span className="truncate text-2sm text-base-content/60">{subtitle}</span>

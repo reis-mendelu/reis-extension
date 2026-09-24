@@ -44,6 +44,7 @@ export function NotYetOpenCard({
       title={row.subjectName}
       subtitle={row.sectionName}
       primaryMeta=""
+      accent="warning"
       secondaryMeta={t(
         `mobile.exams.termCount${pluralSuffix(language, row.section.terms.length)}`,
         {
