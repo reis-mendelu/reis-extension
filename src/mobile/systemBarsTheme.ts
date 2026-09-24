@@ -22,7 +22,7 @@ export function barStyleForTheme(theme: string | null): BarStyle {
  */
 export function syncSystemBarsToTheme(
   root: HTMLElement,
-  setStyle: (style: BarStyle) => void,
+  setStyle: (style: BarStyle) => void
 ): () => void {
   const apply = () => setStyle(barStyleForTheme(root.getAttribute('data-theme')));
   apply();
