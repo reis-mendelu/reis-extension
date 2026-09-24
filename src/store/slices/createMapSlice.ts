@@ -310,7 +310,11 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
     set({
       activeBuildingId: null,
       activeFloorId: null,
-      mapSelection: { kind: 'event', event },
+      // On the selection, not a field of its own: every later focus builds a
+      // new selection, so a pin tap after the calendar's drops it by itself.
+      mapSelection: opts?.reveal
+        ? { kind: 'event', event, reveal: opts.reveal }
+        : { kind: 'event', event },
       ...(fly
         ? { mapFocusRequest: get().mapFocusRequest + 1, mapFocusTarget: 'campus' as const }
         : {}),

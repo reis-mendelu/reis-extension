@@ -67,8 +67,6 @@ export function DayBody({
   pullSurfaceRef,
 }: DayBodyProps) {
   const pushSheet = useAppStore((s) => s.pushSheet);
-  const setMobileTab = useAppStore((s) => s.setMobileTab);
-  const focusEventById = useAppStore((s) => s.focusEventById);
   const scheduleRefreshing = useAppStore((s) => s.scheduleRefreshing);
   const triggerScheduleRefresh = useAppStore((s) => s.triggerScheduleRefresh);
   const showOnMap = useShowLessonOnMap();
@@ -147,8 +145,9 @@ export function DayBody({
                   // behind it — switching to the map would change tabs and then log
                   // "unknown event" — so the row is simply text.
                   if (!eventId) return;
-                  setMobileTab('map');
-                  focusEventById(eventId, { fly: true });
+                  // The pin's own path: there is nothing more to open for an
+                  // event than the map, so the row and its pin are one action.
+                  showOnMap(lesson);
                   return;
                 }
                 pushSheet(subjectSheetFor(lesson));

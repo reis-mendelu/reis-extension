@@ -74,8 +74,12 @@ export function MapSheet() {
    * made the peek row lie — it says "Akce na kampusu" and would have reopened
    * onto a photograph of a pond.
    */
+  //
+  // Only on a move INTO peek. The calendar leaves an event selected AT peek,
+  // and a tap on that row reaches here first as a zero-travel drag settling on
+  // `peek` — clearing then turned "open this event's card" into "open the list".
   const goToDetent = (next: Detent) => {
-    if (next === 'peek' && selectedCard) clearMapSelection();
+    if (next === 'peek' && sheetState !== 'peek' && selectedCard) clearMapSelection();
     setSheetState(next);
   };
 
@@ -116,12 +120,25 @@ export function MapSheet() {
    * otherwise be invisible: the pin would highlight and nothing else would
    * happen.
    */
+  //
+  // Except from the calendar (`reveal: 'map'`). The student read the event in
+  // their timetable and crossed over to see WHERE it is; the card, hugged to
+  // ~470px, was in front of the pin — measured at 390×844, the pin at y=422
+  // under a sheet topped at 373, and reported from a Pixel 9a as "it opens
+  // straight into the detail, I can't see the map". So that focus goes to peek,
+  // actively: the detent survives tab switches, and a sheet left at `half` by
+  // an earlier visit would otherwise still show the card. The peek row names
+  // the event, one tap from its card.
+  //
+  // Keyed on the selection OBJECT, not the event: a pin tap after the
+  // calendar's selects the same event reference, and must still open the card.
   useEffect(() => {
+    if (!selection || (selection.kind !== 'event' && selection.kind !== 'gardenPlace')) return;
     // 'half', not 'expanded' — and the height below hugs the card anyway. Any
     // state out of 'peek' will do; what this call is really for is getting the
     // peek row out of the way so the card can render at all.
-    if (selectedEvent || selectedGardenPlace) setSheetState('half');
-  }, [selectedEvent, selectedGardenPlace, setSheetState]);
+    setSheetState(selection.kind === 'event' && selection.reveal === 'map' ? 'peek' : 'half');
+  }, [selection, setSheetState]);
 
   // A drawn route is an answer, and the sheet is 45% of the screen in front of
   // it. Whatever the student had open, the map wins the moment directions

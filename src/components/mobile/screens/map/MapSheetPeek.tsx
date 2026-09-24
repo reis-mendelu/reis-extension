@@ -2,6 +2,7 @@ import { CATEGORY_EMOJI_SRC } from '../../../../data/eventCategories';
 import { relativeDayLabel, sortByDate } from '../../../CampusMap/eventHelpers';
 import { useVisibleMapEvents } from '../../../../hooks/useVisibleMapEvents';
 import { useTranslation } from '../../../../hooks/useTranslation';
+import { useAppStore } from '../../../../store/useAppStore';
 
 /**
  * What the map sheet shows while it is closed: the next thing happening.
@@ -16,11 +17,17 @@ import { useTranslation } from '../../../../hooks/useTranslation';
  * pin and opens the card) and carries a third line for the venue. Here the
  * whole band is one target with one meaning — open the list — so the venue
  * line, the selection state and the nested button all have to go.
+ *
+ * Except when an event is SELECTED at peek, which only the calendar does (see
+ * MapSheet): then the band names that event, the one whose pin is highlighted,
+ * and the same tap opens its card. Naming "the next event" there would have
+ * the row and the pin describing two different things.
  */
 export function MapSheetPeek() {
   const { t, language } = useTranslation();
   const events = useVisibleMapEvents();
-  const next = sortByDate(events)[0];
+  const selection = useAppStore((s) => s.mapSelection);
+  const next = selection?.kind === 'event' ? selection.event : sortByDate(events)[0];
 
   if (!next) {
     // Not "no events": the band is the only place this sheet says what it is
