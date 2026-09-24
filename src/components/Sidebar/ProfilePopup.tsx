@@ -12,13 +12,7 @@ import { logout } from '../../api/proxyClient';
 import { HiddenItemsSection } from './Profile/HiddenItemsSection';
 import { desktopEduroamTarget } from '../../utils/desktopEduroamTarget';
 
-export function ProfilePopup({
-  isOpen,
-  onClose,
-}: {
-  isOpen: boolean;
-  onClose?: () => void;
-}) {
+export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: () => void }) {
   const { isDark, isLoading: tLoading, toggle: tTheme } = useTheme(),
     { isSubscribed, toggleAssociation } = useSpolkySettings(),
     [spolkyOpen, setSpolkyOpen] = useState(false);

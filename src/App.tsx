@@ -76,10 +76,7 @@ function App() {
         setCurrentView={s.setCurrentView}
       />
 
-      <AppOverlays
-        selectedSubject={s.selectedSubject}
-        setSelectedSubject={s.setSelectedSubject}
-      />
+      <AppOverlays selectedSubject={s.selectedSubject} setSelectedSubject={s.setSelectedSubject} />
     </div>
   );
 }

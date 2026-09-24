@@ -35,15 +35,17 @@ vi.mock('sonner', () => ({
   },
 }));
 
-const { mockSetExams, mockFetchExams, mockTriggerExamsRefresh, mockOpenReport } = vi.hoisted(() => ({
-  mockSetExams: vi.fn((data) => {
-    IndexedDBService.set('exams', 'current', data);
-    IndexedDBService.set('meta', 'exams_modified', Date.now());
-  }),
-  mockFetchExams: vi.fn(),
-  mockTriggerExamsRefresh: vi.fn(),
-  mockOpenReport: vi.fn(),
-}));
+const { mockSetExams, mockFetchExams, mockTriggerExamsRefresh, mockOpenReport } = vi.hoisted(
+  () => ({
+    mockSetExams: vi.fn((data) => {
+      IndexedDBService.set('exams', 'current', data);
+      IndexedDBService.set('meta', 'exams_modified', Date.now());
+    }),
+    mockFetchExams: vi.fn(),
+    mockTriggerExamsRefresh: vi.fn(),
+    mockOpenReport: vi.fn(),
+  })
+);
 
 vi.mock('../../../store/useAppStore', () => {
   const mockState = {

@@ -13,12 +13,7 @@ interface SidebarProps {
   items?: MenuItem[];
 }
 
-export const Sidebar = ({
-  currentView,
-  onViewChange,
-  onOpenSubject,
-  items,
-}: SidebarProps) => {
+export const Sidebar = ({ currentView, onViewChange, onOpenSubject, items }: SidebarProps) => {
   const [hovered, setHovered] = useState<string | null>(null);
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hookItems = useMenuItems();

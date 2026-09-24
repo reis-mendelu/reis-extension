@@ -63,10 +63,7 @@ export function BottomActions() {
           <span className="text-[10px] mt-1 font-medium">{t('sidebar.profile')}</span>
         </button>
         <div onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
-          <ProfilePopup
-            isOpen={isOpen}
-            onClose={() => setIsOpen(false)}
-          />
+          <ProfilePopup isOpen={isOpen} onClose={() => setIsOpen(false)} />
         </div>
       </div>
     </div>

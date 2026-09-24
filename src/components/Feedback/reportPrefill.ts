@@ -5,11 +5,7 @@ import { useAppStore } from '../../store/useAppStore';
  * `suggestions` on the exact title, so every resolved title must be distinct.
  */
 export type ReportPrefillKey =
-  | 'examsEmpty'
-  | 'subjectsEmpty'
-  | 'syllabusEmpty'
-  | 'zaznamnikEmpty'
-  | 'examActionFailed';
+  'examsEmpty' | 'subjectsEmpty' | 'syllabusEmpty' | 'zaznamnikEmpty' | 'examActionFailed';
 
 export const REPORT_TOAST_DURATION_MS = 10_000;
 
@@ -22,8 +18,7 @@ export function reportToastOptions(t: (key: string) => string, prefill: ReportPr
     duration: REPORT_TOAST_DURATION_MS,
     action: {
       label: t('feedback.reportAction'),
-      onClick: () =>
-        useAppStore.getState().openReport({ title: t(`feedback.prefill.${prefill}`) }),
+      onClick: () => useAppStore.getState().openReport({ title: t(`feedback.prefill.${prefill}`) }),
     },
   };
 }
