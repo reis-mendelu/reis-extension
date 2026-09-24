@@ -93,6 +93,11 @@ describe('roomLabel', () => {
   it('shows the IS label over a map nickname that disagrees', () => {
     expect(roomLabel('BA04N1029', 'BA04N1029', 'B40')).toBe('B06');
   });
+  // IS gives "A412" to BA01N5036; the map still nicknames BA01N4082, a floor
+  // below, "A412". Two rooms on the plan must not both say A412.
+  it('drops a map nickname IS gives to a different room', () => {
+    expect(roomLabel('BA01N4082', 'BA01N4082', 'A412')).toBe('N4082');
+  });
   it('prefers the nickname when rawCode is null (building B: no passportNumber)', () => {
     // name is a raw-code-shaped string but there is no passport code to compare
     // against, so the nickname must still win.
@@ -277,6 +282,29 @@ describe('searchRooms', () => {
     expect(searchRooms('a01', idx).map((r) => r.code)).toContain('BA01N1052');
     // the raw N-code still matches too
     expect(searchRooms('n1052', idx).map((r) => r.code)).toContain('BA01N1052');
+  });
+  it('does not find a room by a nickname IS gives to another room', () => {
+    const idx: RoomIndexEntry[] = [
+      {
+        code: 'BA01N4082',
+        name: 'BA01N4082',
+        nickname: 'A412',
+        buildingId: 1,
+        floorId: 3,
+        floorLevel: 3,
+        placeId: 1,
+      },
+      {
+        code: 'BA01N5036',
+        name: 'BA01N5036',
+        nickname: null,
+        buildingId: 1,
+        floorId: 4,
+        floorLevel: 4,
+        placeId: 2,
+      },
+    ];
+    expect(searchRooms('a412', idx).map((r) => r.code)).toEqual(['BA01N5036']);
   });
   it('finds a room by its IS label, ranked first', () => {
     const idx: RoomIndexEntry[] = [
