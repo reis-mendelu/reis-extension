@@ -30,6 +30,9 @@ export async function submitFeedback(
 ): Promise<boolean> {
   // Demo mode is a fabricated student; its feedback would pollute real rows.
   if (isDemoMode()) return false;
+  // Same reason as trackDailyUsage below: `dev:web` and the preview are not
+  // students, and the NPS prompt is plain buttons any click-through will hit.
+  if (isHarnessEnabled(import.meta.env)) return false;
 
   const { error } = await supabase.rpc('submit_feedback', {
     p_student_id: await getInstallId(),

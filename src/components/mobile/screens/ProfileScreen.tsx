@@ -64,7 +64,7 @@ export function ProfileScreen() {
               so the existing authenticated fetch covers this with no new
               endpoint. Initials stay as the fallback while it loads or when
               there is no picture. */}
-          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-base-200 font-display text-base font-bold text-primary">
+          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-base-200 font-display text-base font-bold text-[var(--tone-primary)]">
             <PersonPhoto
               personId={studentId}
               alt={name}
@@ -161,7 +161,7 @@ export function ProfileScreen() {
           <button
             type="button"
             onClick={() => setSignOutOpen(true)}
-            className="flex w-full items-center gap-3 px-4 py-3 text-error"
+            className="flex w-full items-center gap-3 px-4 py-3 text-[var(--tone-error)]"
           >
             <LogOut size={17} className="flex-shrink-0" />
             <span className="flex-1 text-left text-md font-medium">{t('settings.logout')}</span>

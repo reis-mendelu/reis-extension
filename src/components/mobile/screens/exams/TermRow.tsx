@@ -107,7 +107,9 @@ export function TermRow({ term, section, now, isProcessing, onRegister }: TermRo
             {subline && (
               <span
                 className={`flex-shrink-0 ${
-                  seats && seats.free > 0 ? 'text-success' : 'text-error'
+                  seats && seats.free > 0
+                    ? 'text-[var(--tone-success)]'
+                    : 'text-[var(--tone-error)]'
                 }`}
               >
                 {subline}
@@ -141,7 +143,9 @@ export function TermRow({ term, section, now, isProcessing, onRegister }: TermRo
             disabled={firing}
             aria-label={armed ? t('exams.unwatchAriaLabel') : t('exams.watchAriaLabel')}
             className={`flex min-h-11 min-w-11 flex-shrink-0 items-center justify-center rounded-lg border ${
-              armed ? 'border-success/40 text-success' : 'border-warning/40 text-warning'
+              armed
+                ? 'border-success/40 text-[var(--tone-success)]'
+                : 'border-warning/40 text-[var(--tone-warning)]'
             } ${firing ? 'opacity-60' : ''}`}
           >
             {armed ? <BellRing size={13} /> : <Bell size={13} />}
