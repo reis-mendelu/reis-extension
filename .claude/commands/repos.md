@@ -1,16 +1,22 @@
+---
+description: Map of the sibling reis-mendelu repos and the scraper → reis-data → CDN pipeline. Use for scraped data, CDN data shapes, or a new IS Mendelu scraper.
+---
+
 # /repos
 
-Orientation skill for the three active reis-mendelu repos. Use this when a task touches scraped data, the CDN data pipeline, or requires building a new IS Mendelu scraper.
+Orientation for the reis-mendelu repos that take part in the data pipeline. Use this when a task touches scraped data, the CDN data pipeline, or requires building a new IS Mendelu scraper.
 
 ## Repo Map
 
-All repos are siblings under `../` relative to `reis-extension`:
+The repos are siblings of the **main** `reis-extension` checkout. Every `../` below is relative to that checkout. From a worktree, resolve a sibling as `"$(git rev-parse --path-format=absolute --git-common-dir)/../../<repo>"`.
 
 | Repo | Path | Role |
 |------|------|------|
-| **reis-extension** | `../reis-extension` | The browser extension — consumes CDN data and Supabase at runtime |
+| **reis-extension** | `../reis-extension` | The extension, iOS and Android apps (one codebase) — consumes CDN data and Supabase at runtime |
 | **reis-scraper** | `../reis-scraper` | Playwright scraper — logs into IS Mendelu with real credentials, crawls data |
 | **reis-data** | `../reis-data` | Static file CDN — pre-crawled subject difficulty JSON served via jsDelivr |
+
+`../reis-page` (the static landing page) is the fourth sibling and has no part in the pipeline.
 
 ## Pipeline: subject difficulty data
 
@@ -59,9 +65,7 @@ When building a new IS Mendelu scraper, read `../reis-scraper/scripts/` for exis
 
 ## How to run scraper tasks
 
-Spawn a sub-agent pointed at `../reis-scraper` that:
-1. Reads the relevant script(s) in `scripts/` for context and patterns
-2. Writes or runs the crawl (`npx tsx scripts/<script>.ts`)
+Scraper work runs in `../reis-scraper`, modelled on the closest existing script in `scripts/`, and crawls with `npx tsx scripts/<script>.ts`.
 
 ## When to use each repo
 
@@ -77,4 +81,3 @@ Spawn a sub-agent pointed at `../reis-scraper` that:
 
 - Before designing a new API shape in the extension, read `../reis-scraper/db/schema.sql` to understand what is already collected.
 - Never copy scraper code into the extension — data always flows through reis-data as static JSON.
-- Scraper tasks always go through a dedicated sub-agent.

@@ -45,7 +45,7 @@ npm run verify:ui -- <label> --view exams --url http://localhost:<port>
 | `--view` | current | Seeded into IndexedDB (`meta.reis_current_view`), then reloaded. |
 | `--theme` | dark | `dark` \| `light`. Seeds `meta.reis_theme`, mapped to the theme names the store accepts. |
 | `--click` | — | Text to click after load, e.g. opening a drawer or driving a flow into its error state. |
-| `--onboarding` | off | Force the desktop welcome modal by seeding `welcome_dismissed: false`. Off by default (it blocks the whole page) — and it has to seed rather than skip the key, because any earlier run in the same profile already wrote `true`, so a flag that only skipped it photographed the page behind a modal that never appeared. **Needs a desktop viewport** — see below. |
+| `--onboarding` | off | Force the desktop welcome modal by seeding `welcome_dismissed: false`. Off by default (it blocks the whole page). **Needs a desktop viewport** — see below. |
 | `--wait` | 600 | ms to settle after navigation. |
 
 ### Widths
@@ -117,11 +117,6 @@ Occluded elements are skipped, so findings describe what is actually on screen.
   DEV-only, in `src/mobile/eduroamNative.ts`) so the real screen is reachable.
   Where no such override exists, **say the screen was not measured** rather than
   reporting the run clean, and treat the device build as the gate.
-- **`--theme light` used to be a silent no-op** — it seeded the literal string
-  `light`, and `createThemeSlice` accepts only `mendelu` / `mendelu-dark` and
-  falls back to dark for anything else, so the "light" run measured the dark
-  theme. Fixed in `scripts/shot.ts`; a light run is now real. Sanity-check the
-  first one by eye anyway.
 - **The first run after an edit can capture the pre-edit module.** Three
   consecutive runs once photographed a button style that had already been
   replaced, and the finding was chased as a real one. Confirm the change is
