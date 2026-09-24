@@ -11,6 +11,7 @@ import { TermRow } from './TermRow';
 import { TermDetails } from './TermDetails';
 import { MoreChip } from './MoreChip';
 import { parseRegistrationStart } from '../../../../utils/termUtils';
+import { alternativeTerms } from '../../../ExamPanel/utils';
 
 /** The classmate line inside an expanded registered card. Its own component so
  *  `useExamClassmates` only fetches for the card actually open. */
@@ -79,7 +80,7 @@ export function RegisteredCard({
   // one that carries IS's Podrobnosti link (the real studium/obdobi behind
   // "Kdo jde se mnou"), the seat count and the form.
   const mine = row.section.terms.find((term) => term.id === row.term.id) ?? (row.term as ExamTerm);
-  const others = row.section.terms.filter((term) => term.id !== row.term.id);
+  const others = alternativeTerms(row.section);
   return (
     <ExamRowCard
       title={row.subjectName}

@@ -134,6 +134,7 @@
     "terms5plus": "terms",
     "full": "FULL",
     "closed": "CLOSED",
+    "cannotRegister": "CAN'T REGISTER",
     "watch": "Watch",
     "watching": "Watching",
     "watchAriaLabel": "Activate term watchdog — IS will email you when it opens",

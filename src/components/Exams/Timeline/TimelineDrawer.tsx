@@ -3,6 +3,7 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { TermTile } from '../../TermTile';
 import { getDeadlineUrgency } from './deadlineUtils';
 import type { ExamSection } from '../../../types/exams';
+import { alternativeTerms } from '../../ExamPanel/utils';
 import type { TimelineExam } from './ExamTimeline';
 
 interface Props {
@@ -22,6 +23,8 @@ const urgencyText = {
 export function TimelineDrawer({ exam, onUnregister, onChangeTerm, isProcessing }: Props) {
   const { t } = useTranslation();
   const section = exam.section!;
+  // Not the term the student is already on — see alternativeTerms.
+  const alternatives = alternativeTerms(section);
   const deadline = section.registeredTerm?.deregistrationDeadline;
   const urgency = getDeadlineUrgency(deadline);
 
@@ -73,12 +76,12 @@ export function TimelineDrawer({ exam, onUnregister, onChangeTerm, isProcessing 
         )}
       </div>
 
-      {section.terms.length > 0 && (
+      {alternatives.length > 0 && (
         <div className="mt-3 pt-3 border-t border-base-200 flex flex-col gap-2 max-h-96 overflow-y-auto">
           <div className="text-[10px] font-black uppercase tracking-widest opacity-30 mb-1">
             {t('exams.changeTerm')}
           </div>
-          {section.terms.map((term) => (
+          {alternatives.map((term) => (
             <TermTile
               key={term.id}
               term={term}

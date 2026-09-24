@@ -46,11 +46,15 @@ export function TermTile({
   const regStart = term.registrationStart ? parseRegistrationStart(term.registrationStart) : null;
   const regEnd = term.registrationEnd ? parseRegistrationStart(term.registrationEnd) : null;
   const msRemaining = regStart ? regStart.getTime() - now.getTime() : 0;
-  const isFuture = !!(regStart && regStart > now),
+  // From "Kam se přihlásit nemohu?": IS's dates stay on it, but they never open
+  // for this student — so no countdown, and never an auto-registration to arm.
+  const cannotRegister = !!term.cannotRegister;
+  const isFuture = !cannotRegister && !!(regStart && regStart > now),
     isClosed = !!(regEnd && regEnd < now),
     isFull = term.full || (term.capacity && term.capacity.occupied >= term.capacity.total);
   const isWithinSniperWindow = isFuture && msRemaining <= SNIPER_WINDOW_MS;
-  const isBlocked = term.canRegisterNow === false && !isFuture && !isFull;
+  const isBlocked = cannotRegister || (term.canRegisterNow === false && !isFuture && !isFull);
+  const blockedLabel = cannotRegister ? t('exams.cannotRegister') : t('exams.closed');
   const disabled = isFull || isProcessing || isFuture || isClosed || isBlocked;
   const sameDeadline =
     term.registrationEnd &&
@@ -191,7 +195,7 @@ export function TermTile({
               ) : isClosed || isBlocked ? (
                 <div className="flex items-center gap-2 flex-wrap justify-end">
                   <span className="text-[10px] font-bold opacity-30 uppercase tracking-wider">
-                    {t('exams.closed')}
+                    {blockedLabel}
                   </span>
                   <TermBuiltinActions term={term} />
                 </div>
@@ -377,7 +381,7 @@ export function TermTile({
                 ) : isClosed || isBlocked ? (
                   <div className="flex items-center gap-2">
                     <span className="text-[9px] font-bold opacity-30 uppercase tracking-wider">
-                      {t('exams.closed')}
+                      {blockedLabel}
                     </span>
                     <TermBuiltinActions term={term} />
                   </div>

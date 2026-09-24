@@ -7,7 +7,7 @@ import { TermNoteBlock } from './TermNoteBlock';
 import { TermsSummary } from './TermsSummary';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
-import { getSectionState } from './utils';
+import { alternativeTerms, getSectionState } from './utils';
 import { parseRegistrationStart } from '../../utils/termUtils';
 import type { ArmedTerm } from './useAutoRegistration';
 
@@ -48,6 +48,8 @@ export function ExamSectionCard({
   const now = useAppStore((s) => s.now);
   const isReg = section.status === 'registered';
   const sectionState = isReg ? { type: 'registered' as const } : getSectionState(section, now);
+  // Everything but the student's own term — see alternativeTerms.
+  const alternatives = alternativeTerms(section);
 
   const isAfterDeadline = (() => {
     const deadline = section.registeredTerm?.deregistrationDeadline;
@@ -66,8 +68,8 @@ export function ExamSectionCard({
       className={`card bg-base-100 shadow-sm border hover:shadow-md transition-shadow overflow-hidden ${stateCardClass[sectionState.type]}`}
     >
       <div
-        onClick={() => section.terms.length > 0 && onToggleExpand(section.id)}
-        className={`flex flex-wrap items-start justify-between gap-2 p-3 transition-colors ${section.terms.length > 0 ? 'cursor-pointer hover:bg-base-200/50' : ''}`}
+        onClick={() => alternatives.length > 0 && onToggleExpand(section.id)}
+        className={`flex flex-wrap items-start justify-between gap-2 p-3 transition-colors ${alternatives.length > 0 ? 'cursor-pointer hover:bg-base-200/50' : ''}`}
       >
         <div className="flex-1 min-w-[200px]">
           <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -85,8 +87,8 @@ export function ExamSectionCard({
           {isReg && section.registeredTerm ? (
             <RegisteredTermDetails section={section} isCollapsed={!isExpanded} />
           ) : (
-            section.terms.length > 0 &&
-            !isExpanded && <TermsSummary terms={section.terms} sectionState={sectionState} />
+            alternatives.length > 0 &&
+            !isExpanded && <TermsSummary terms={alternatives} sectionState={sectionState} />
           )}
         </div>
 
@@ -113,7 +115,7 @@ export function ExamSectionCard({
             </div>
           )}
 
-          {section.terms.length > 0 && (
+          {alternatives.length > 0 && (
             <div
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${isReg && !isExpanded ? 'bg-warning/10 text-warning border border-warning/20' : 'opacity-60'}`}
             >
@@ -180,11 +182,11 @@ export function ExamSectionCard({
         </div>
       )}
 
-      {isExpanded && section.terms.length > 0 && (
+      {isExpanded && alternatives.length > 0 && (
         <div className="p-3 pt-0">
           <div className="mt-1 pt-4 border-t border-base-200">
             <div className="flex flex-col gap-2">
-              {section.terms.map((term) => (
+              {alternatives.map((term) => (
                 <TermTile
                   key={term.id}
                   term={term}

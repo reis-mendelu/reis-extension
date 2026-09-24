@@ -38,7 +38,7 @@ export const ExamTermSchema = z.object({
   watchdogUrl: z.string().optional(),
   blockReasonUrl: z.string().optional(),
   detailUrl: z.string().optional(),
-  durationMinutes: z.number().optional(),
+  durationMinutes: z.number().nullable().optional(),
   cannotRegister: z.boolean().optional(),
 });
 

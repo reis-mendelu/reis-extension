@@ -2,7 +2,7 @@
  * ExamPanel Shared Utilities
  */
 import { parseRegistrationStart } from '../../utils/termUtils';
-import type { ExamSection } from '../../types/exams';
+import type { ExamSection, ExamTerm } from '../../types/exams';
 
 export type SectionState =
   | { type: 'registered' }
@@ -40,6 +40,18 @@ export function getSectionState(section: ExamSection, now: Date): SectionState {
   if (allBlocked) return { type: 'empty' };
 
   return { type: 'noInfo' };
+}
+
+/**
+ * The terms a student could move to: every term but the one they are on.
+ *
+ * The parser lists the registered term in `terms` too — the phone's card reads
+ * its seats, form and Podrobnosti link from there — so a "change term" list
+ * built from `terms` alone offered the student their own term, greyed out.
+ */
+export function alternativeTerms(section: ExamSection): ExamTerm[] {
+  const mine = section.registeredTerm?.id;
+  return mine ? section.terms.filter((t) => t.id !== mine) : section.terms;
 }
 
 /**
