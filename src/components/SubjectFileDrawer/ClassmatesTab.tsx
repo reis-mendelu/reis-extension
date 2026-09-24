@@ -11,7 +11,7 @@ import { PersonPhoto } from '../ui/PersonPhoto';
 import type { Classmate } from '../../types/classmates';
 
 interface ClassmatesTabProps {
-  /** Off for the phone sheet, which pins its own IS MENDELU footer. */
+  /** Off for the phone sheet — see `showIsBacklink` in DrawerTabBody. */
   showIsBacklink?: boolean;
   courseCode: string;
   /**
