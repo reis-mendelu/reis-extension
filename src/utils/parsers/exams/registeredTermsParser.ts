@@ -81,7 +81,9 @@ export function parseRegisteredTerms(
     // Raw "54/70", the shape this stage carries everywhere — a later step turns
     // it into {occupied,total,raw}.
     const capacityStr = cols[dateIndex + 4]?.textContent?.trim() || '';
-    const [occupied, total] = capacityStr.split('/').map((x) => Number(x.replace(/\(\d+\)$/, '')));
+    const [occupied = NaN, total = NaN] = capacityStr
+      .split('/')
+      .map((x) => Number(x.replace(/\(\d+\)$/, '')));
     const isFull = Number.isFinite(occupied) && Number.isFinite(total) && occupied >= total;
     const attemptTypes: AttemptType[] = [];
     for (let i = 0; i < cols.length; i++) {
