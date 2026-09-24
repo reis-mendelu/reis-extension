@@ -29,6 +29,8 @@ describe('CalendarScreen → map route suggestion', () => {
     useAppStore.getState().clearRoute();
     useAppStore.setState({
       language: 'cz',
+      // The screen reads the store's clock, the one the pulse advances.
+      now: new Date('2026-04-20T10:00:00'),
       mobileSelectedDayIso: '2026-04-20',
       syncStatus: {
         isSyncing: false,
