@@ -28,12 +28,9 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
   // blurred backdrop is a desktop idiom, and every other mobile surface here
   // rises from the bottom edge.
   const isPhone = useAppStore((s) => s.isTouch && s.isNarrow);
-  // No field is focused on a touch device: a soft keyboard raised while the
-  // sheet slides in resizes the WebView under it, and the sheet jumps. A
-  // hardware keyboard costs nothing, so desktop lands in the first empty field.
-  const isTouch = useAppStore((s) => s.isTouch);
-  const focusTitle = !isTouch && !initialTitle;
-  const focusMessage = !isTouch && !!initialTitle;
+  // No field is focused on open, on any device. The student first picks
+  // Chyba/Nápad/Jiné, and on a phone a focused field raised the soft keyboard
+  // mid-slide, resized the WebView and made the sheet jump.
 
   const handleSubmit = async (e?: React.SyntheticEvent) => {
     if (e) e.preventDefault();
@@ -180,7 +177,6 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
                       placeholder={t('feedback.subjectPlaceholder')}
                       className="input input-bordered w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors"
                       required
-                      autoFocus={focusTitle}
                       maxLength={120}
                       onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                     />
@@ -199,7 +195,6 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
                       placeholder={t('feedback.descriptionPlaceholder')}
                       className="textarea textarea-bordered h-32 w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors leading-relaxed resize-none"
                       required
-                      autoFocus={focusMessage}
                       maxLength={2000}
                     />
                   </div>
