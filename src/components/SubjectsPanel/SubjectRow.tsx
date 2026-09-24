@@ -146,7 +146,7 @@ export function SubjectRow({
           {badgeEl}
           {typeEl}
           {showCredits && (
-            <span className="hidden md:inline text-xs text-base-content/70 shrink-0">
+            <span className="text-[11px] font-semibold text-base-content/80 shrink-0 md:text-xs">
               {subject.credits} kr.
             </span>
           )}
@@ -274,7 +274,7 @@ export function SubjectRow({
           </span>
         )}
         {showCredits && (
-          <span className="hidden md:inline text-xs text-base-content/70 shrink-0">
+          <span className="text-[11px] font-semibold text-base-content/80 shrink-0 md:text-xs">
             {subject.credits} kr.
           </span>
         )}
