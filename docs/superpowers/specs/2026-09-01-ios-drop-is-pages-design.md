@@ -4,7 +4,7 @@
 > now opens an is.mendelu.cz link in an in-app WebView that carries the IS
 > session, and the session survives navigation inside the page. The directory
 > returned to the phone as the **Starý IS** segment of the search sheet in
-> #PR_NUMBER. What follows is the original reasoning, kept for the record.
+> #416. What follows is the original reasoning, kept for the record.
 
 **Date:** 2026-09-01 · **Ships in:** 5.0.7 (iOS / Android) · **Status:** approved
 
