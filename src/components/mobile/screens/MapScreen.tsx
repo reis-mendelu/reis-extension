@@ -94,7 +94,13 @@ export function MapScreen() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('mobile.map.searchPlaceholder')}
             aria-label={t('mobile.map.searchPlaceholder')}
-            className="w-full flex-1 select-text bg-transparent text-[13.5px] outline-none"
+            // Never under 16px: WebKit zooms the page onto a smaller focused
+            // field, and with Capacitor's pinch switched off the student cannot
+            // zoom back out until they restart the app. DaisyUI's .input and
+            // .textarea bump themselves to 1rem on iOS focus; this bare field
+            // gets no such help. Exactly 16, not text-base (17): at 17 the
+            // Czech placeholder fills a 320px phone's field to within 0.1px.
+            className="w-full flex-1 select-text bg-transparent text-[16px] outline-none"
             style={{ color: '#f3f4f6' }}
           />
         </label>

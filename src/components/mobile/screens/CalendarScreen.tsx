@@ -188,11 +188,13 @@ export function CalendarScreen() {
       ? firstTeachingDay
       : null;
 
-  // It is called "Trasa →" and it used to move the camera. The lesson it names
-  // on the hero is the one the map now offers to walk to — or, for an answered
-  // society event, the event itself.
+  // The RUNNING lesson, not the next one: the hero is about the lesson on now,
+  // and the student who opens it mid-lesson is the one late for it. It is
+  // called "Trasa →" and it used to move the camera; the lesson it sits beside
+  // is the one the map now offers to walk to — or, for an answered society
+  // event, the event itself.
   const openRoute = () => {
-    if (nowNext?.next) showOnMap(nowNext.next);
+    if (nowNext) showOnMap(nowNext.current);
   };
 
   return shell(

@@ -1,9 +1,8 @@
 import { Bell, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { NotificationItem } from './NotificationItem';
-import { openExternal } from '../../mobile/openExternal';
 import { DeadlineAlertItem } from './DeadlineAlertItem';
-import { trackNotificationClick } from '../../services/spolky';
+import { useOpenNotification } from '../../hooks/useOpenNotification';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { SpolekNotification } from '../../services/spolky';
 import type { DeadlineAlert } from '../../hooks/useDeadlineAlerts';
@@ -14,6 +13,8 @@ interface NotificationDropdownProps {
   loading: boolean;
   onClose: () => void;
   onVisible: (id: string) => void;
+  /** Switches the extension to its map view, where the tapped event is selected. */
+  onShowMap: () => void;
   dropdownRef: React.RefObject<HTMLDivElement | null>;
   deadlineAlerts: DeadlineAlert[];
 }
@@ -23,12 +24,19 @@ export function NotificationDropdown({
   loading,
   onClose,
   onVisible,
+  onShowMap,
   dropdownRef,
   deadlineAlerts,
 }: NotificationDropdownProps) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const hasContent = notifications.length > 0 || deadlineAlerts.length > 0;
+  // The phone's Novinky sheet runs this same hook. A row without a link used to
+  // be a disabled button here while the phone opened it on the map.
+  const { opensSomewhere, openNotification } = useOpenNotification({
+    onClose,
+    showMap: onShowMap,
+  });
 
   // Cards in a gapped column, not `divide-y` rows: the two row components are
   // now self-contained `ExamRowCard`-style cards (see NotificationItem), and a
@@ -56,18 +64,8 @@ export function NotificationDropdown({
               key={n.id}
               notification={n}
               onVisible={() => onVisible(n.id)}
-              onClick={() => {
-                if (n.link) {
-                  if (!n.associationId?.startsWith('academic_')) trackNotificationClick(n.id);
-                  // openExternal, not window.open: this dropdown portals to a
-                  // full-screen mobile surface too, and on Capacitor
-                  // window.open hands the URL to the system browser. It also
-                  // validates the link — a notification's URL is data from
-                  // outside the app — and adds noopener,noreferrer elsewhere.
-                  void openExternal(n.link);
-                  onClose();
-                }
-              }}
+              onClick={() => void openNotification(n)}
+              clickable={opensSomewhere(n)}
             />
           ))}
         </div>

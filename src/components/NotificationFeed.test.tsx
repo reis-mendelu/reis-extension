@@ -130,7 +130,7 @@ describe('NotificationFeed', () => {
       return Promise.resolve(null);
     });
 
-    render(<NotificationFeed />);
+    render(<NotificationFeed onShowMap={vi.fn()} />);
 
     // Open dropdown
     const bellButton = screen.getByLabelText('Notifications');
@@ -167,7 +167,7 @@ describe('NotificationFeed', () => {
       },
     });
 
-    render(<NotificationFeed />);
+    render(<NotificationFeed onShowMap={vi.fn()} />);
 
     const bellButton = screen.getByLabelText('Notifications');
     await act(async () => {
@@ -190,7 +190,7 @@ describe('NotificationFeed', () => {
   });
 
   it('should track click when a notification is clicked', async () => {
-    render(<NotificationFeed />);
+    render(<NotificationFeed onShowMap={vi.fn()} />);
 
     const bellButton = screen.getByLabelText('Notifications');
     await act(async () => {
