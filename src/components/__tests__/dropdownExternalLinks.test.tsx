@@ -78,6 +78,7 @@ describe('dropdown external links', () => {
         loading={false}
         onClose={() => {}}
         onVisible={() => {}}
+        onShowMap={() => {}}
         dropdownRef={createRef<HTMLDivElement>()}
         deadlineAlerts={[]}
       />
