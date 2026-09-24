@@ -9,6 +9,7 @@ import { App as CapApp } from '@capacitor/app';
 import { resolveNativeEduroamSupport } from '@/mobile/eduroamNative';
 import { installMobileActionHandler } from '@/mobile/actionHandler';
 import { installExternalLinkHandler } from '@/mobile/openExternal';
+import { installReminderTapHandler } from '@/mobile/reminderTap';
 import { promptSessionRecovery } from '@/mobile/sessionRecovery';
 import { setSessionExpiredHandler } from '@/services/sessionExpiry';
 import { setDemoErrorHandler } from '@/utils/reportError';
@@ -87,6 +88,13 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   await import('@/entrypoints/main/main');
   appMounted = true;
   await SplashScreen.hide();
+
+  // After the mount, not before the root like the handlers above: a tap that
+  // launched the app is held by the plugin until a listener attaches, so it
+  // still arrives — and arriving after the boot means nothing the boot does
+  // can put the calendar back over the event it opened. Before the demo
+  // return, since an RSVP in the demo schedules a real reminder too.
+  installReminderTapHandler();
 
   // Demo data is seeded, static and complete. Syncing would only produce
   // failed IS requests, and fetchWithAuth throws DemoModeError anyway.
