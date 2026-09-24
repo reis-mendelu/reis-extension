@@ -73,4 +73,26 @@ describe('fetchIsFile', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('x', { status: 503 }));
     await expect(fetchIsFile(URL_)).rejects.toThrow('HTTP 503');
   });
+
+  // IS answers some file anchors with a viewer page, and an expired session
+  // with the login page — both 200 HTML. Neither is the file: saving it under
+  // the file's name, or zipping it, hands the student a web page.
+  it('inside the iframe: an HTML page rejects instead of passing for the file', async () => {
+    fetchViaProxy.mockResolvedValue(
+      JSON.stringify({
+        contentType: 'text/html; charset=utf-8',
+        contentDisposition: null,
+        base64: 'PGh0bWw+', // <html>
+      })
+    );
+    await expect(fetchIsFile(URL_)).rejects.toThrow('HTML');
+  });
+
+  it('outside an iframe: an HTML page rejects too', async () => {
+    inIframe = false;
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('<html>', { headers: { 'content-type': 'Text/HTML' } })
+    );
+    await expect(fetchIsFile(URL_)).rejects.toThrow('HTML');
+  });
 });

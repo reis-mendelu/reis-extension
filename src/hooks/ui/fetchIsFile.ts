@@ -26,7 +26,22 @@ export interface IsFile {
   contentDisposition: string | null;
 }
 
-/** Rejects on any failure — a non-ok status reads `HTTP <code>` either way. */
+/**
+ * A viewer page (IS serves them under file anchors) or the login page of an
+ * expired session: 200 HTML either way, and not the file. The native path
+ * (capacitorBinary) and the eduroam proxy (readBytesBody) draw the same line.
+ */
+function assertNotPage(contentType: string | null): void {
+  if (contentType?.toLowerCase().includes('text/html')) {
+    throw new Error('Expected an IS file, got an HTML page');
+  }
+}
+
+/**
+ * Rejects on any failure — a non-ok status reads `HTTP <code>` either way, and
+ * an HTML page rejects too, so every caller takes its fallback (open the URL
+ * top-level, leave it out of the zip, no inline preview).
+ */
 export async function fetchIsFile(
   url: string,
   onTick?: (tick: DownloadTick) => void
@@ -34,6 +49,7 @@ export async function fetchIsFile(
   if (isInIframe()) {
     const raw = await fetchViaProxy(url, { responseType: 'file' }, onTick);
     const { contentType, contentDisposition, base64 } = JSON.parse(raw) as FileFetchPayload;
+    assertNotPage(contentType);
     const blob = new Blob(
       [base64ToBytes(base64) as BlobPart],
       contentType ? { type: contentType } : undefined
@@ -44,6 +60,7 @@ export async function fetchIsFile(
   // The dev webapp: top-level on its own origin, nothing to proxy through.
   const res = await fetch(url, { credentials: 'include' });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  assertNotPage(res.headers.get('content-type'));
   const blob = onTick ? await readBlobWithProgress(res, onTick) : await res.blob();
   return { blob, contentDisposition: res.headers.get('content-disposition') };
 }

@@ -30,6 +30,12 @@ const pdf = (name: string) =>
     base64: 'JVBERi0xLjQ=', // %PDF-1.4
   });
 
+const page = JSON.stringify({
+  contentType: 'text/html; charset=utf-8',
+  contentDisposition: null,
+  base64: 'PGh0bWw+', // <html>
+});
+
 describe('useFileActions inside the extension iframe', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -97,5 +103,34 @@ describe('useFileActions inside the extension iframe', () => {
       result.current.downloadZip(['https://is.mendelu.cz/a', 'https://is.mendelu.cz/b'], 'x.zip')
     );
     expect(fetchViaProxy).toHaveBeenCalledTimes(2);
+  });
+
+  // A viewer or login page is not the file: the student gets the URL opened
+  // top-level, where IS answers for itself, never a blob of the page.
+  it('openFile opens the IS URL, not a blob, when IS answers with a page', async () => {
+    fetchViaProxy.mockResolvedValue(page);
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    const { result } = renderHook(() => useFileActions());
+    await act(() => result.current.openFile('https://is.mendelu.cz/a'));
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
+    expect(open).toHaveBeenCalledWith('https://is.mendelu.cz/a', '_blank', 'noopener,noreferrer');
+  });
+
+  it('downloadSingle opens the IS URL instead of saving a page under the file name', async () => {
+    fetchViaProxy.mockResolvedValue(page);
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    const { result } = renderHook(() => useFileActions());
+    await act(() => result.current.downloadSingle('https://is.mendelu.cz/a'));
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
+    expect(open).toHaveBeenCalledWith('https://is.mendelu.cz/a', '_blank', 'noopener,noreferrer');
+  });
+
+  it('downloadZip leaves a page out of the zip', async () => {
+    fetchViaProxy.mockResolvedValueOnce(page).mockResolvedValueOnce(pdf('b.pdf'));
+    const { result } = renderHook(() => useFileActions());
+    await act(() =>
+      result.current.downloadZip(['https://is.mendelu.cz/a', 'https://is.mendelu.cz/b'], 'x.zip')
+    );
+    expect(zipFile.mock.calls.map((c) => c[0])).toEqual(['b.pdf']);
   });
 });
