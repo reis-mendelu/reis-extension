@@ -42,9 +42,10 @@ interface DrawerTabBodyProps {
   selectable?: boolean;
   /**
    * Whether the tab bodies render their own trailing 'IS MENDELU' link.
-   * Off for the phone sheet, which pins its own 'Otevrit v IS MENDELU'
-   * footer — showing both put two identical-looking links to the same
-   * place in every tab.
+   * Off for the phone sheet. It was switched off while that sheet pinned an
+   * 'Otevřít v IS MENDELU' footer, so every tab showed two identical links;
+   * #341 then dropped the footer (it opened the file structure whatever tab
+   * you were on), so the phone's tabs now have no IS link at all.
    */
   showIsBacklink?: boolean;
   /** Forwarded to ClassmatesTab — the phone routes taps to its own PersonSheet. */
