@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Download } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { downloadErasmusPdf } from '@/utils/erasmusPdf';
+import { fetchEnglishStudyPlan } from '@/api/studyPlan';
+import { englishPlanSubjects } from './englishPlanSubjects';
 
 interface Props {
   className?: string;
@@ -13,16 +15,18 @@ export function ErasmusExportButton({ className = '' }: Props) {
   const tableBCourses = useAppStore((s) => s.erasmusTableBCourses);
   const tableBManual = useAppStore((s) => s.erasmusTableBManualCourses);
   const dualPlan = useAppStore((s) => s.studyPlanDual);
+  const studium = useAppStore((s) => s.studiumId);
   const [loading, setLoading] = useState(false);
-
-  // PDF must always use English subject names regardless of UI language (EU guidelines)
-  const allSubjects = (dualPlan?.en?.blocks ?? []).flatMap((b) =>
-    (b.groups ?? []).flatMap((g) => g.subjects ?? [])
-  );
 
   const handleExport = async () => {
     setLoading(true);
     try {
+      // PDF must always use English subject names regardless of UI language (EU guidelines)
+      const allSubjects = await englishPlanSubjects(
+        dualPlan,
+        studium ?? undefined,
+        fetchEnglishStudyPlan
+      );
       await downloadErasmusPdf(studentInfo, options, tableBCourses, allSubjects, tableBManual);
     } finally {
       setLoading(false);

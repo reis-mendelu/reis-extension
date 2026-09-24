@@ -20,8 +20,11 @@ import { getUserParams } from '../utils/userParams';
 import { enrichExamsWithDurations } from '../services/sync/examDurations';
 import type { ExamSubject } from '../types/exams';
 import { fetchFullSemesterSchedule } from './dataFetchers';
+import { withoutLang } from './folderUrl';
 import { sendToIframe } from './iframeManager';
-import { TTL, ttlGated, isFresh, markFetched } from './syncTtl';
+import { TTL, ttlGated, isFresh, markFetched, resetSyncTtl } from './syncTtl';
+import { readSyncLanguage } from '../services/sync/syncLanguage';
+import type { Language } from '../store/types';
 import type { SyncedData } from '../types/messages';
 import { IndexedDBService } from '../services/storage/IndexedDBService';
 import type { SubjectsData } from '../types/documents';
@@ -49,6 +52,9 @@ let currentSemesterCodes: string[] | null = null;
  */
 let lastPastSubjects: { cz: Record<string, unknown>; en: Record<string, unknown> } | null = null;
 
+/** The language the previous run fetched in; a change makes everything due. */
+let lastSyncLanguage: Language | null = null;
+
 export async function syncAllData() {
   if (isSyncing) return;
 
@@ -58,6 +64,15 @@ export async function syncAllData() {
     // Inside the try on purpose: this used to sit above it, so a throw here
     // left isSyncing stuck true and no sync ever ran again.
     sendToIframe(Messages.syncUpdate({ isSyncing: true, lastSync: cachedData.lastSync }));
+
+    // The student's language, read once and passed to EVERY fetch below: a
+    // fetcher left on its default is how a Czech student's sync would send
+    // lang=en again. A change since the last run makes everything due, or a
+    // fresh TTL would keep serving the previous language's names.
+    const lang = await readSyncLanguage();
+    if (lastSyncLanguage && lastSyncLanguage !== lang) resetSyncTtl();
+    lastSyncLanguage = lang;
+    cachedData = { ...cachedData, language: lang };
 
     /**
      * Hands one Phase 2 result to the UI the moment it lands.
@@ -81,7 +96,7 @@ export async function syncAllData() {
 
     // Phase 2a: Start subjects early — fast fetch (explicit obdobi prevents session-state coupling)
     const subjectsPromise = ttlGated('subjects', TTL.DAILY, !!cachedData.subjects, () =>
-      fetchDualLanguageSubjects(studium || undefined, userParams?.obdobi || undefined)
+      fetchDualLanguageSubjects(studium || undefined, userParams?.obdobi || undefined, lang)
     ).then((result) => {
       if (result) {
         cachedData = { ...cachedData, subjects: result.subjects, attendance: result.attendance };
@@ -95,7 +110,7 @@ export async function syncAllData() {
     // Phase 2a-II: Fetch study plan + study stats concurrently with early subjects
     const studyPlanPromise = studium
       ? ttlGated('studyPlan', TTL.SEMESTER, !!cachedData.studyPlan, () =>
-          fetchDualLanguageStudyPlan(studium)
+          fetchDualLanguageStudyPlan(studium, lang)
         ).then((plan) => {
           if (plan) {
             cachedData = { ...cachedData, studyPlan: plan };
@@ -112,7 +127,7 @@ export async function syncAllData() {
     // Past-semester folders from doc server history — used to backfill
     // SubjectInfo for fulfilled subjects that list.pl no longer returns.
     const pastSubjectsPromise = ttlGated('pastSubjects', TTL.SEMESTER, !!lastPastSubjects, () =>
-      fetchDualLanguagePastSubjects()
+      fetchDualLanguagePastSubjects(lang)
     ).then((value) => {
       if (value) lastPastSubjects = value as typeof lastPastSubjects;
       return value;
@@ -143,7 +158,7 @@ export async function syncAllData() {
 
     const cvicneTestsPromise = studium
       ? ttlGated('cvicneTests', TTL.DAILY, !!cachedData.cvicneTests, () =>
-          syncCvicneTests(studium)
+          syncCvicneTests(studium, lang)
         ).then((result) => {
           if (result) {
             cachedData = { ...cachedData, cvicneTests: result.tests };
@@ -154,7 +169,7 @@ export async function syncAllData() {
 
     const odevzdavarnyPromise =
       studium && userParams?.obdobi
-        ? syncOdevzdavarny(studium, userParams.obdobi).then((result) => {
+        ? syncOdevzdavarny(studium, userParams.obdobi, lang).then((result) => {
             if (result) {
               cachedData = { ...cachedData, odevzdavarny: result.assignments };
             }
@@ -166,7 +181,7 @@ export async function syncAllData() {
     // Named rather than inline in the allSettled below, so each can post the
     // moment it resolves. These two are the screens a student opens first.
     const schedulePromise = ttlGated('schedule', TTL.SEMESTER, !!cachedData.schedule, () =>
-      fetchFullSemesterSchedule()
+      fetchFullSemesterSchedule(lang)
     ).then((value) => {
       if (value && value.length > 0) {
         cachedData = { ...cachedData, schedule: value };
@@ -189,7 +204,7 @@ export async function syncAllData() {
 
     // exams and odevzdavarny stay hot: registration state and submission
     // deadlines are the two things that genuinely move within a day.
-    const examsPromise = fetchDualLanguageExams().then((value) => {
+    const examsPromise = fetchDualLanguageExams(lang).then((value) => {
       if (value.length > 0) {
         cachedData = { ...cachedData, exams: value };
         pushEarly({ exams: value, loaded: ['exams'] });
@@ -339,7 +354,8 @@ export async function syncAllData() {
     if (subjectsForDetails) {
       await syncSubjectDetails(
         subjectsForDetails,
-        fullSchedule.status === 'fulfilled' ? fullSchedule.value : null
+        fullSchedule.status === 'fulfilled' ? fullSchedule.value : null,
+        lang
       );
     }
 
@@ -353,7 +369,7 @@ export async function syncAllData() {
       subjects.status === 'fulfilled' &&
       subjects.value?.availablePeriods.length
     ) {
-      syncPastSemesters(studium, userParams.obdobi, subjects.value.availablePeriods).catch(
+      syncPastSemesters(studium, userParams.obdobi, subjects.value.availablePeriods, lang).catch(
         () => {}
       );
     }
@@ -370,7 +386,8 @@ async function syncSubjectDetails(
   subjectsValue: {
     data: Record<string, { folderUrl?: string; subjectId?: string; skupinaId?: string }>;
   },
-  scheduleValue: { studyId?: string; periodId?: string }[] | null
+  scheduleValue: { studyId?: string; periodId?: string }[] | null,
+  lang: Language
 ) {
   // Scoped, not everything in the map: `subjects.data` has been through
   // mergePastSubjects by now and holds every subject the student ever took.
@@ -403,7 +420,7 @@ async function syncSubjectDetails(
           // fetchFilesFromFolder recurses two levels deep and follows every
           // pagination link, so this one call is several requests per subject.
           ttlGated(`files:${code}`, TTL.FILES, !!cachedFiles?.[code], () =>
-            fetchFilesFromFolder(subjectFull.folderUrl!)
+            fetchFilesFromFolder(withoutLang(subjectFull.folderUrl!), lang)
           )
             .then((f) => {
               if (f) (cachedData.files as Record<string, unknown>)[code] = f;
@@ -416,7 +433,7 @@ async function syncSubjectDetails(
             // fetchSyllabus degrades to a sentinel rather than throwing, and an
             // object always looks "useful" — so without this a transient failure
             // would be stamped fresh and pin the error for a whole semester.
-            const syllabus = await fetchSyllabus(subjectFull.subjectId!);
+            const syllabus = await fetchSyllabus(subjectFull.subjectId!, lang);
             return syllabus.requirementsText === SYLLABUS_FETCH_FAILED ? null : syllabus;
           })
             .then((s) => {
@@ -529,7 +546,7 @@ async function syncSubjectDetails(
  * that happens to be in flight must not be reported as finished by it.
  */
 export async function refreshSchedule(): Promise<void> {
-  const value = await fetchFullSemesterSchedule();
+  const value = await fetchFullSemesterSchedule(await readSyncLanguage());
   if (!value) return;
   if (value.length > 0) {
     markFetched('schedule');
@@ -550,7 +567,7 @@ export async function refreshSchedule(): Promise<void> {
 }
 
 export async function refreshExams(): Promise<void> {
-  const fresh = await fetchDualLanguageExams();
+  const fresh = await fetchDualLanguageExams(await readSyncLanguage());
   if (fresh.length > 0) {
     const params = await getUserParams();
     const enriched = await enrichExamsWithDurations(

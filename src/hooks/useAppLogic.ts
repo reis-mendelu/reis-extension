@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { getSmartWeekRange } from '../utils/calendar';
 import { IndexedDBService } from '../services/storage';
 import { syncService, syncGradeHistory } from '../services/sync';
+import { refetchIfStale } from '../services/sync/languageRefetch';
 
 import { useSpolkySettings } from './useSpolkySettings';
 import { useAppStore, initializeStore } from '../store/useAppStore';
@@ -51,6 +52,8 @@ interface SyncedData {
   isSyncing?: boolean;
   /** Domains whose fetch finished in this run — empty answers included. */
   loaded?: SyncDomain[];
+  /** The language the run fetched IS in. */
+  language?: 'cz' | 'en';
 }
 
 export function useAppLogic() {
@@ -171,6 +174,12 @@ export function useAppLogic() {
             ? (d.data as unknown as SyncedData)
             : null;
       if (!r) return;
+
+      // Fetched in a language the student is not reading (the first run after
+      // single-language fetching shipped, a switch in another tab): ask once
+      // for theirs. The data below is still applied, so nothing blanks meanwhile.
+      const { isLanguageLoading, language } = useAppStore.getState();
+      if (!isLanguageLoading) refetchIfStale(r.language, language, () => syncService.triggerSync());
 
       // Instantly update store for reactivity, then persist to IDB in background
       // Before the data branches: a domain can finish with nothing to send

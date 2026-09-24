@@ -51,7 +51,8 @@ export interface StudyPlan {
 
 export interface DualLanguageStudyPlan {
   cz: StudyPlan;
-  en: StudyPlan;
+  /** Null when only Czech was fetched — a Czech student's sync asks for no English. */
+  en: StudyPlan | null;
 }
 
 export interface SemesterStats {

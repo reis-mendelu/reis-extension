@@ -48,7 +48,7 @@ describe('fetchCvicneTests parsing', () => {
     expect(doc.getElementById('tmtab_1')).toBeNull();
     serve(SINGLE_CZ, SINGLE_EN);
 
-    const result = await fetchCvicneTests('1');
+    const result = await fetchCvicneTests('1', 'both');
 
     expect(result?.tests).toHaveLength(1);
     expect(result?.tests).toMatchObject([
@@ -66,7 +66,7 @@ describe('fetchCvicneTests parsing', () => {
   // <img sysid>. Read only the legacy attribute, an open osnova was inaccessible.
   it('reads an accessible osnova from the modern data-sysid icon', async () => {
     serve(SINGLE_CZ, SINGLE_EN);
-    const result = await fetchCvicneTests('1');
+    const result = await fetchCvicneTests('1', 'both');
     expect(result?.tests[0]?.status).toBe('accessible');
   });
 
@@ -75,7 +75,7 @@ describe('fetchCvicneTests parsing', () => {
     ['osnova-nepristupna', 'inaccessible'],
   ])('keeps the legacy tmtab_1 + <img sysid="%s"> markup reading as %s', async (sysid, want) => {
     serve(legacyPage(sysid), legacyPage(sysid));
-    const result = await fetchCvicneTests('1');
+    const result = await fetchCvicneTests('1', 'both');
     expect(result?.tests).toMatchObject([{ courseId: '42', name: 'Osnova', status: want }]);
   });
 });

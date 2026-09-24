@@ -1,5 +1,6 @@
 import { fetchWithAuth, BASE_URL } from './client';
 import { logError } from '../utils/reportError';
+import { asksCzech, asksEnglish, type FetchLanguage } from './fetchLanguage';
 
 const PAST_SUBJECTS_TREE_URL = `${BASE_URL}/auth/dok_server/strom_od.pl?id=6`;
 
@@ -23,13 +24,14 @@ export async function fetchPastSubjectFolders(
   }
 }
 
-export async function fetchDualLanguagePastSubjects(): Promise<{
+/** Past-subject folders in the languages `lang` asks for; `{}` for one not asked. */
+export async function fetchDualLanguagePastSubjects(lang: FetchLanguage): Promise<{
   cz: Record<string, PastSubjectFolder>;
   en: Record<string, PastSubjectFolder>;
 }> {
   const [cz, en] = await Promise.all([
-    fetchPastSubjectFolders('cz'),
-    fetchPastSubjectFolders('en'),
+    asksCzech(lang) ? fetchPastSubjectFolders('cz') : {},
+    asksEnglish(lang) ? fetchPastSubjectFolders('en') : {},
   ]);
   return { cz, en };
 }

@@ -30,6 +30,9 @@ export type ActionType =
 export type SyncDomain = 'schedule' | 'exams';
 
 export interface SyncedData {
+  /** The language this run fetched IS in. The app refetches once when it is
+   *  not the one the student reads (see languageRefetch.ts). */
+  language?: 'cz' | 'en';
   /** Domains whose fetch has completed in this run, empty results included. */
   loaded?: SyncDomain[];
   schedule?: unknown;

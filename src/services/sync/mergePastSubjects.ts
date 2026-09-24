@@ -33,26 +33,30 @@ export function mergePastSubjects(
           planById.set(s.code, s.id);
           planNameCs.set(s.code, s.name);
         }
-    for (const block of plan.en.blocks)
+    for (const block of plan.en?.blocks ?? [])
       for (const group of block.groups)
         for (const s of group.subjects) {
           planNameEn.set(s.code, s.name);
         }
   }
 
+  // The folders arrive in the student's language only, so an English student's
+  // `past.cz` is empty: take every code either side has, Czech folder first.
   const now = new Date().toISOString();
-  for (const [code, czFolder] of Object.entries(past.cz)) {
+  for (const code of new Set([...Object.keys(past.cz), ...Object.keys(past.en)])) {
     if (subjectsData.data[code]) continue;
-    const nameCs = planNameCs.get(code) ?? czFolder.displayName;
+    const folder = past.cz[code] ?? past.en[code]!;
+    const nameCs = planNameCs.get(code) ?? past.cz[code]?.displayName;
     const nameEn = planNameEn.get(code) ?? past.en[code]?.displayName;
+    const displayName = nameCs ?? nameEn ?? folder.displayName;
     subjectsData.data[code] = {
       subjectCode: code,
-      displayName: nameCs,
-      fullName: `${code} ${nameCs}`,
+      displayName,
+      fullName: `${code} ${displayName}`,
       nameCs,
       nameEn,
       subjectId: planById.get(code),
-      folderUrl: czFolder.folderUrl,
+      folderUrl: folder.folderUrl,
       fetchedAt: now,
     };
   }

@@ -171,13 +171,10 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
           if (folderId) {
             const folderUrl = `https://is.mendelu.cz/auth/dok_server/slozka.pl?id=${folderId}`;
             try {
-              const [czFiles, enFiles] = await Promise.all([
-                fetchFilesFromFolder(folderUrl, 'cz'),
-                fetchFilesFromFolder(folderUrl, 'en'),
-              ]);
-              const dualData = { cz: czFiles || [], en: enFiles || [] };
-              await IndexedDBService.set('files', courseCode, dualData);
-              filesList = currentLang === 'en' ? dualData.en : dualData.cz;
+              // The language being read, and only it: each file is stamped
+              // with it, so the check above refetches again only on a switch.
+              filesList = (await fetchFilesFromFolder(folderUrl, currentLang)) || [];
+              await IndexedDBService.set('files', courseCode, filesList);
             } catch (e) {
               logError('FilesSlice.refreshFiles:langRefetch', e, { courseCode });
             }

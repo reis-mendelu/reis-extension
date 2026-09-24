@@ -98,7 +98,7 @@ export function useSearch(query: string, subjectsOnly = false) {
     const codes = new Set<string>();
     if (!studyPlan) return codes;
     for (const plan of [studyPlan.cz, studyPlan.en]) {
-      for (const block of plan.blocks) {
+      for (const block of plan?.blocks ?? []) {
         for (const group of block.groups) {
           for (const subj of group.subjects) {
             if (subj.code) codes.add(subj.code);

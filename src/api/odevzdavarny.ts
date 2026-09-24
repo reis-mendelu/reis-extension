@@ -1,5 +1,6 @@
 import { fetchWithAuth, BASE_URL } from './client';
 import { logError } from '../utils/reportError';
+import { asksCzech, asksEnglish, type FetchLanguage } from './fetchLanguage';
 
 export interface Odevzdavarna {
   courseId: string;
@@ -129,27 +130,34 @@ export interface OdevzdavarnyResult {
   lastFetched: number;
 }
 
+/**
+ * Assignments in the languages `lang` asks for. The Czech read is the base when
+ * there is one; a one-language read fills both name fields with the name it
+ * has, since the schema requires both.
+ */
 export async function fetchOdevzdavarny(
   studium: string,
-  obdobi: string
+  obdobi: string,
+  lang: FetchLanguage
 ): Promise<OdevzdavarnyResult | null> {
   const [czData, enData] = await Promise.all([
-    fetchLang(studium, obdobi, 'cz'),
-    fetchLang(studium, obdobi, 'en'),
+    asksCzech(lang) ? fetchLang(studium, obdobi, 'cz') : undefined,
+    asksEnglish(lang) ? fetchLang(studium, obdobi, 'en') : undefined,
   ]);
 
-  if (!czData) return null;
+  const base = asksCzech(lang) ? czData : enData;
+  if (!base) return null;
 
-  const merged: Odevzdavarna[] = czData.map((cz, i) => ({
-    courseId: cz.courseId,
-    courseNameCs: cz.courseName,
-    courseNameEn: enData?.[i]?.courseName ?? cz.courseName,
-    name: cz.name,
-    type: cz.type,
-    deadline: cz.deadline,
-    odevzdavarnaId: cz.odevzdavarnaId,
-    fileCount: cz.fileCount,
-    uploadUrl: cz.uploadUrl,
+  const merged: Odevzdavarna[] = base.map((row, i) => ({
+    courseId: row.courseId,
+    courseNameCs: czData?.[i]?.courseName ?? row.courseName,
+    courseNameEn: enData?.[i]?.courseName ?? row.courseName,
+    name: row.name,
+    type: row.type,
+    deadline: row.deadline,
+    odevzdavarnaId: row.odevzdavarnaId,
+    fileCount: row.fileCount,
+    uploadUrl: row.uploadUrl,
   }));
 
   return { assignments: merged, lastFetched: Date.now() };

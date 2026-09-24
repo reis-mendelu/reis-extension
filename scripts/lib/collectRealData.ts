@@ -30,6 +30,10 @@ type SubjectInfo = {
   hasTest?: boolean;
 };
 
+/**
+ * Every fetch here asks for `'both'`: the snapshot feeds the dev webapp, which
+ * has no IS behind it, so it must already hold both languages to switch.
+ */
 export async function collectRealData(): Promise<SyncedData> {
   const params = await getUserParams();
   const studium = params?.studium;
@@ -47,15 +51,15 @@ export async function collectRealData(): Promise<SyncedData> {
     odev,
     pastSubjects,
   ] = await Promise.allSettled([
-    fetchFullSemesterSchedule(),
-    fetchDualLanguageExams(),
-    fetchDualLanguageSubjects(studium || undefined, obdobi || undefined),
-    studium ? fetchDualLanguageStudyPlan(studium) : Promise.resolve(null),
+    fetchFullSemesterSchedule('both'),
+    fetchDualLanguageExams('both'),
+    fetchDualLanguageSubjects(studium || undefined, obdobi || undefined, 'both'),
+    studium ? fetchDualLanguageStudyPlan(studium, 'both') : Promise.resolve(null),
     studium && obdobi ? fetchStudyStats(studium, obdobi) : Promise.resolve(null),
     studium && obdobi ? fetchStudyComparison(studium, obdobi) : Promise.resolve(null),
-    studium ? syncCvicneTests(studium) : Promise.resolve(null),
-    studium && obdobi ? syncOdevzdavarny(studium, obdobi) : Promise.resolve(null),
-    fetchDualLanguagePastSubjects(),
+    studium ? syncCvicneTests(studium, 'both') : Promise.resolve(null),
+    studium && obdobi ? syncOdevzdavarny(studium, obdobi, 'both') : Promise.resolve(null),
+    fetchDualLanguagePastSubjects('both'),
   ]);
 
   const subjects = val(subjectsRes) ?? null;

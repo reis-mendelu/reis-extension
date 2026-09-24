@@ -29,17 +29,19 @@ const failed = (): SyllabusRequirements =>
 describe('fetchAndCacheSingleSyllabus', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('caches and returns the requested language when both fetches succeed', async () => {
+  // One language, stored as a single-language record: the reader refetches a
+  // record whose `language` does not match the UI, so a switch costs one
+  // request on the next open instead of every open costing two.
+  it('fetches, caches and returns only the language being read', async () => {
     vi.mocked(findSubjectId).mockResolvedValue('12345');
     vi.mocked(fetchSyllabus).mockImplementation(async (_id, lang) => ok(lang ?? 'cz'));
 
     const res = await fetchAndCacheSingleSyllabus('EBC-PS', 'en', '12345');
 
     expect(res?.requirementsText).toBe('real en');
-    expect(IndexedDBService.set).toHaveBeenCalledWith('syllabuses', 'EBC-PS', {
-      cz: ok('cz'),
-      en: ok('en'),
-    });
+    expect(fetchSyllabus).toHaveBeenCalledTimes(1);
+    expect(fetchSyllabus).toHaveBeenCalledWith('12345', 'en');
+    expect(IndexedDBService.set).toHaveBeenCalledWith('syllabuses', 'EBC-PS', ok('en'));
   });
 
   // `fetchSyllabus` degrades gracefully by returning SYLLABUS_FETCH_FAILED as
@@ -57,22 +59,6 @@ describe('fetchAndCacheSingleSyllabus', () => {
 
     expect(res).toBeUndefined();
     expect(IndexedDBService.set).not.toHaveBeenCalled();
-  });
-
-  // A partial write would break the record's shape: the reader branches on
-  // `'cz' in data && 'en' in data`, so a half-record falls through to the
-  // single-syllabus branch and the whole `{cz: ...}` wrapper gets treated as a
-  // syllabus. Store both or neither.
-  it('does not write a partial record when only one language fails', async () => {
-    vi.mocked(findSubjectId).mockResolvedValue('12345');
-    vi.mocked(fetchSyllabus).mockImplementation(async (_id, lang) =>
-      lang === 'en' ? failed() : ok('cz')
-    );
-
-    const res = await fetchAndCacheSingleSyllabus('EBC-PS', 'cz', '12345');
-
-    expect(IndexedDBService.set).not.toHaveBeenCalled();
-    expect(res).toBeUndefined();
   });
 
   it('returns undefined without fetching when no id can be resolved', async () => {

@@ -116,6 +116,16 @@ describe('StudyPlanOrDualLanguageSchema (union used by the IDB store)', () => {
     );
   });
 
+  // A Czech student's sync fetches no English plan. The store validates
+  // fail-closed, so rejecting this would drop the whole plan on write.
+  it('accepts a Czech-only plan, whose English side is null', () => {
+    expect(StudyPlanOrDualLanguageSchema.safeParse({ cz: realPlan, en: null }).success).toBe(true);
+  });
+
+  it('still requires the Czech side', () => {
+    expect(StudyPlanOrDualLanguageSchema.safeParse({ cz: null, en: realPlan }).success).toBe(false);
+  });
+
   it('rejects genuine corruption: null', () => {
     expect(StudyPlanOrDualLanguageSchema.safeParse(null).success).toBe(false);
   });

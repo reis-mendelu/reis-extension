@@ -3,6 +3,7 @@ import { iframeElement, sendToIframe, markIframeReady } from './iframeManager';
 import { cachedData, isSyncing, refreshExams, refreshSchedule } from './syncService';
 import { requestSync } from './syncGate';
 import { fetchFullSemesterSchedule } from './dataFetchers';
+import { readSyncLanguage } from '../services/sync/syncLanguage';
 import { fetchExamData, registerExam, unregisterExam } from '../api/exams';
 import { fetchSubjects } from '../api/subjects';
 import type { DataRequestType } from '../types/messages';
@@ -52,7 +53,7 @@ async function handleDataRequest(dataType: DataRequestType) {
       let data: unknown = null;
       switch (dataType) {
         case 'schedule':
-          data = await fetchFullSemesterSchedule();
+          data = await fetchFullSemesterSchedule(await readSyncLanguage());
           break;
         case 'exams':
           data = await fetchExamData();

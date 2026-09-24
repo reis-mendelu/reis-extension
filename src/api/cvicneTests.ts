@@ -1,5 +1,6 @@
 import { fetchWithAuth, BASE_URL } from './client';
 import { logError } from '../utils/reportError';
+import { asksCzech, asksEnglish, type FetchLanguage } from './fetchLanguage';
 import { iconSysid } from './documents/iconSysid';
 
 export interface CvicnyTest {
@@ -106,21 +107,26 @@ export interface CvicneTestsResult {
   lastFetched: number;
 }
 
-export async function fetchCvicneTests(studium: string): Promise<CvicneTestsResult | null> {
+/** Practice tests in the languages `lang` asks for, merged like fetchOdevzdavarny. */
+export async function fetchCvicneTests(
+  studium: string,
+  lang: FetchLanguage
+): Promise<CvicneTestsResult | null> {
   const [czTests, enTests] = await Promise.all([
-    fetchLang(studium, 'cz'),
-    fetchLang(studium, 'en'),
+    asksCzech(lang) ? fetchLang(studium, 'cz') : undefined,
+    asksEnglish(lang) ? fetchLang(studium, 'en') : undefined,
   ]);
 
-  if (!czTests) return null;
+  const base = asksCzech(lang) ? czTests : enTests;
+  if (!base) return null;
 
-  const merged: CvicnyTest[] = czTests.map((czTest, i) => ({
-    courseId: czTest.courseId,
-    courseNameCs: czTest.courseName,
-    courseNameEn: enTests?.[i]?.courseName ?? czTest.courseName,
-    name: czTest.name,
-    url: czTest.url,
-    status: czTest.status,
+  const merged: CvicnyTest[] = base.map((test, i) => ({
+    courseId: test.courseId,
+    courseNameCs: czTests?.[i]?.courseName ?? test.courseName,
+    courseNameEn: enTests?.[i]?.courseName ?? test.courseName,
+    name: test.name,
+    url: test.url,
+    status: test.status,
   }));
 
   return { tests: merged, lastFetched: Date.now() };

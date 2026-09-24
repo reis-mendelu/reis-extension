@@ -31,8 +31,8 @@ describe('IS GET endpoints use the shared transport', () => {
   });
 
   it.each([
-    ['fetchCvicneTests', () => fetchCvicneTests('123'), 2],
-    ['fetchOdevzdavarny', () => fetchOdevzdavarny('123', '456'), 2],
+    ['fetchCvicneTests', () => fetchCvicneTests('123', 'both'), 2],
+    ['fetchOdevzdavarny', () => fetchOdevzdavarny('123', '456', 'both'), 2],
     ['fetchKontrolaData', () => fetchKontrolaData(), 1],
   ])('%s goes through fetchWithAuth, never the bare browser fetch', async (_n, run, calls) => {
     await run();
@@ -42,7 +42,7 @@ describe('IS GET endpoints use the shared transport', () => {
   });
 
   it('fetchCvicneTests still requests both languages of seznam_osnov', async () => {
-    await fetchCvicneTests('123');
+    await fetchCvicneTests('123', 'both');
 
     expect(vi.mocked(fetchWithAuth).mock.calls.map((c) => c[0])).toEqual([
       'https://is.mendelu.cz/auth/elis/student/seznam_osnov.pl?studium=123;lang=cz',
@@ -51,7 +51,7 @@ describe('IS GET endpoints use the shared transport', () => {
   });
 
   it('fetchOdevzdavarny still requests both languages for the period', async () => {
-    await fetchOdevzdavarny('123', '456');
+    await fetchOdevzdavarny('123', '456', 'both');
 
     expect(vi.mocked(fetchWithAuth).mock.calls.map((c) => c[0])).toEqual([
       'https://is.mendelu.cz/auth/student/odevzdavarny.pl?studium=123;obdobi=456;lang=cz',
@@ -72,8 +72,8 @@ describe('IS GET endpoints use the shared transport', () => {
   // dropped catch would turn a lapsed session into an unhandled rejection
   // inside a sync run rather than a missing panel.
   it.each([
-    ['fetchCvicneTests', () => fetchCvicneTests('123')],
-    ['fetchOdevzdavarny', () => fetchOdevzdavarny('123', '456')],
+    ['fetchCvicneTests', () => fetchCvicneTests('123', 'both')],
+    ['fetchOdevzdavarny', () => fetchOdevzdavarny('123', '456', 'both')],
     ['fetchKontrolaData', () => fetchKontrolaData()],
   ])('%s degrades to null when the request throws', async (_n, run) => {
     vi.mocked(fetchWithAuth).mockRejectedValue(new Error('Request failed with status 500'));
@@ -82,8 +82,8 @@ describe('IS GET endpoints use the shared transport', () => {
   });
 
   it.each([
-    ['fetchCvicneTests', () => fetchCvicneTests('123')],
-    ['fetchOdevzdavarny', () => fetchOdevzdavarny('123', '456')],
+    ['fetchCvicneTests', () => fetchCvicneTests('123', 'both')],
+    ['fetchOdevzdavarny', () => fetchOdevzdavarny('123', '456', 'both')],
     ['fetchKontrolaData', () => fetchKontrolaData()],
   ])('%s degrades to null on a non-ok response', async (_n, run) => {
     vi.mocked(fetchWithAuth).mockResolvedValue({

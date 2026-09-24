@@ -49,7 +49,7 @@ describe('a partial bilingual exam fetch', () => {
       return html(CZ_ROW);
     });
 
-    const merged = await fetchDualLanguageExams();
+    const merged = await fetchDualLanguageExams('en');
     expect(czCalls).toBe(2);
     const section = merged[0]!.sections[0]!;
     expect(section.nameCs).toBe('Zápis na cvičení');
@@ -69,7 +69,7 @@ describe('a partial bilingual exam fetch', () => {
       throw new Error('IS is down');
     });
 
-    const merged = await fetchDualLanguageExams();
+    const merged = await fetchDualLanguageExams('en');
     expect(merged).toHaveLength(1);
     expect(merged[0]!.sections[0]!.nameEn).toBe('Registration for seminar');
   });
@@ -82,7 +82,7 @@ describe('a partial bilingual exam fetch', () => {
       return html(CZ_ROW);
     });
 
-    const merged = await fetchDualLanguageExams();
+    const merged = await fetchDualLanguageExams('en');
     expect(czCalls).toBe(1);
     const section = merged[0]!.sections[0]!;
     expect(section.nameCs).toBe('Zápis na cvičení');
@@ -96,7 +96,7 @@ describe('a partial bilingual exam fetch', () => {
       return html('<table id="table_2"><tbody></tbody></table>');
     });
 
-    await expect(fetchDualLanguageExams()).resolves.toEqual([]);
+    await expect(fetchDualLanguageExams('en')).resolves.toEqual([]);
     expect(czCalls).toBe(1);
   });
 });

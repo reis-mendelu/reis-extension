@@ -8,19 +8,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { syncService } from '../../services/sync';
 import { IndexedDBService } from '../../services/storage';
 
-// Mock the sync functions
-vi.mock('./syncExams', () => ({
-  syncExams: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock('./syncSchedule', () => ({
-  syncSchedule: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock('./syncSubjects', () => ({
-  syncSubjects: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock('../../services/storage', () => ({
   StorageService: {
     get: vi.fn(),

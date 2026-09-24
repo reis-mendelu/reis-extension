@@ -77,7 +77,9 @@ export const StudyPlanSchema = z
 export const DualLanguageStudyPlanSchema = z
   .object({
     cz: StudyPlanSchema,
-    en: StudyPlanSchema,
+    // Null for a Czech-only fetch. Rejecting it would drop the whole plan on
+    // write, since validate() is fail-closed.
+    en: StudyPlanSchema.nullable(),
   })
   .passthrough() as unknown as z.ZodType<DualLanguageStudyPlan>;
 

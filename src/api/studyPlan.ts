@@ -2,6 +2,7 @@ import { fetchWithAuth, BASE_URL } from './client';
 import { parseRequiredInt, parseOptionalInt, ParserError } from '../utils/parsers/parserGuards';
 import { logError } from '../utils/reportError';
 import { STUDY_PLAN_SORT_PARAM, repeatedSemesterTitles } from './studyPlanSortMode';
+import { asksEnglish, type FetchLanguage } from './fetchLanguage';
 import type {
   StudyPlan,
   DualLanguageStudyPlan,
@@ -68,36 +69,65 @@ const LANG: Record<Lang, LangConstants> = {
   },
 };
 
+/**
+ * The study plan in Czech, plus English when `lang` asks for it; `en` is null
+ * otherwise, so a reader can tell an absent English plan from a present one
+ * (the Erasmus export needs English names and fetches them on demand).
+ *
+ * Czech is fetched for every student: IS does not translate the zaměření
+ * section, and the English plan borrows it (`borrowZameranisFromCz`).
+ */
 export async function fetchDualLanguageStudyPlan(
-  studium: string
+  studium: string,
+  lang: FetchLanguage
 ): Promise<DualLanguageStudyPlan | null> {
   try {
+    const url = (l: 'cz' | 'en') =>
+      `${STUDY_PLAN_URL}?studium=${studium};${STUDY_PLAN_SORT_PARAM};lang=${l}`;
     const [czRes, enRes] = await Promise.all([
-      fetchWithAuth(`${STUDY_PLAN_URL}?studium=${studium};${STUDY_PLAN_SORT_PARAM};lang=cz`),
-      fetchWithAuth(`${STUDY_PLAN_URL}?studium=${studium};${STUDY_PLAN_SORT_PARAM};lang=en`),
+      fetchWithAuth(url('cz')),
+      asksEnglish(lang) ? fetchWithAuth(url('en')) : null,
     ]);
 
-    const [czHtml, enHtml] = await Promise.all([czRes.text(), enRes.text()]);
+    const [czHtml, enHtml] = await Promise.all([czRes.text(), enRes ? enRes.text() : null]);
     const parser = new DOMParser();
 
     const czPlan = parseStudyPlanDOM(parser.parseFromString(czHtml, 'text/html'), 'cz');
-    const enPlan = parseStudyPlanDOM(parser.parseFromString(enHtml, 'text/html'), 'en');
-    for (const [lang, plan] of [
+    const enPlan =
+      enHtml === null ? null : parseStudyPlanDOM(parser.parseFromString(enHtml, 'text/html'), 'en');
+    for (const [planLang, plan] of [
       ['cz', czPlan],
       ['en', enPlan],
     ] as const) {
+      if (!plan) continue;
       const repeated = repeatedSemesterTitles(plan);
       if (repeated.length > 0) {
         logError('Api.fetchDualLanguageStudyPlan', new Error('Study plan repeats semesters'), {
-          lang,
+          lang: planLang,
           repeated,
         });
       }
     }
 
-    return { cz: czPlan, en: borrowZameranisFromCz(enPlan, czPlan) };
+    return { cz: czPlan, en: enPlan ? borrowZameranisFromCz(enPlan, czPlan) : null };
   } catch (e) {
     logError('Api.fetchDualLanguageStudyPlan', e);
+    return null;
+  }
+}
+
+/** The English study plan alone — for the Erasmus export, which needs English
+ *  names when a Czech student's sync held none. No zaměření borrowing: the
+ *  export reads subjects only. */
+export async function fetchEnglishStudyPlan(studium: string): Promise<StudyPlan | null> {
+  try {
+    const res = await fetchWithAuth(
+      `${STUDY_PLAN_URL}?studium=${studium};${STUDY_PLAN_SORT_PARAM};lang=en`
+    );
+    const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+    return parseStudyPlanDOM(doc, 'en');
+  } catch (e) {
+    logError('Api.fetchEnglishStudyPlan', e);
     return null;
   }
 }

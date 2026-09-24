@@ -8,6 +8,7 @@ import type {
   AvailablePeriod,
 } from '../types/documents';
 import { SubjectsDataSchema } from '../schemas/subjectSchema';
+import { asksEnglish, type FetchLanguage } from './fetchLanguage';
 import { logError } from '../utils/reportError';
 
 const STUDENT_LIST_URL = `${BASE_URL}/auth/student/list.pl`;
@@ -71,19 +72,21 @@ export function parseAvailablePeriods(html: string): AvailablePeriod[] {
  */
 export async function fetchPastSemesterData(
   studium: string,
-  obdobi: string
+  obdobi: string,
+  lang: FetchLanguage
 ): Promise<SubjectsFetchResult | null> {
   try {
+    // Czech always, for the same reason as fetchDualLanguageSubjects.
     const [czRes, enRes] = await Promise.all([
       fetchWithAuth(buildListUrl('cz', studium, obdobi)),
-      fetchWithAuth(buildListUrl('en', studium, obdobi)),
+      asksEnglish(lang) ? fetchWithAuth(buildListUrl('en', studium, obdobi)) : null,
     ]);
     const czHtml = await czRes.text();
-    const enHtml = await enRes.text();
+    const enHtml = enRes ? await enRes.text() : '';
 
     const attendance = parseAttendance(czHtml);
     const czMap = parseSubjectFolders(czHtml);
-    const enMap = parseSubjectFolders(enHtml);
+    const enMap = enHtml ? parseSubjectFolders(enHtml) : {};
 
     const merged: Record<string, SubjectInfo> = {};
     for (const [fullName, data] of Object.entries(czMap)) {
@@ -120,15 +123,19 @@ export async function fetchPastSemesterData(
 }
 
 /**
- * Fetches subjects in both Czech and English and merges them.
+ * Fetches subjects in Czech, plus the English names when `lang` asks for them.
+ *
+ * Czech is fetched for every student: attendance is parsed off Czech `title`
+ * attributes ("Průběžné hodnocení"), so the English page cannot stand alone.
  */
 export async function fetchDualLanguageSubjects(
-  studium?: string,
-  obdobi?: string
+  studium: string | undefined,
+  obdobi: string | undefined,
+  lang: FetchLanguage
 ): Promise<SubjectsFetchResult | null> {
   try {
     const czUrl = buildListUrl('cz', studium, obdobi);
-    const enUrl = buildListUrl('en', studium, obdobi);
+    const enUrl = asksEnglish(lang) ? buildListUrl('en', studium, obdobi) : null;
 
     // Fetch both in parallel; fetch without obdobi separately to get the period picker dropdown
     const periodsUrl = buildListUrl('cz', studium);
@@ -138,17 +145,17 @@ export async function fetchDualLanguageSubjects(
 
     const [czRes, enRes, periodsRes] = await Promise.all([
       fetchWithAuth(czUrl),
-      fetchWithAuth(enUrl),
+      enUrl ? fetchWithAuth(enUrl) : null,
       periodsPromise,
     ]);
 
     const czHtml = await czRes.text();
     const attendance = parseAttendance(czHtml);
-    const enHtml = await enRes.text();
+    const enHtml = enRes ? await enRes.text() : '';
     const periodsHtml = periodsRes ? await periodsRes.text() : czHtml;
 
     const czMap = parseSubjectFolders(czHtml);
-    const enMap = parseSubjectFolders(enHtml);
+    const enMap = enHtml ? parseSubjectFolders(enHtml) : {};
 
     const merged: Record<string, SubjectInfo> = {};
 

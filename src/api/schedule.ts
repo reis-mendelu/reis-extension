@@ -4,14 +4,15 @@ import { getScheduleFormat } from '../utils/date';
 import { getUserParams } from '../utils/userParams';
 import { logError } from '../utils/reportError';
 import type { BlockLesson, ScheduleData } from '../types/schedule';
+import { asksCzech, asksEnglish, type FetchLanguage } from './fetchLanguage';
 
 const SCHEDULE_URL = `${BASE_URL}/auth/katalog/rozvrhy_view.pl`;
 
 /**
  * IS's "this window has no lessons" sentence, in both languages it serves.
  *
- * BOTH are required, not one: `fetchDualLanguageSchedule` asks for `cz` AND
- * `en` on every sync, and IS translates the page. Matching only the Czech one
+ * BOTH are required, not one: a sync asks in the student's language, and IS
+ * translates the page. Matching only the Czech one
  * made the English leg return `null` — a reported failure — for a window that
  * merely has nothing in it, filing a false error on every sync cycle.
  *
@@ -117,23 +118,32 @@ export async function fetchWeekSchedule(
 }
 
 /**
- * Fetches schedule in both Czech and English and merges them.
- * Each lesson will have both courseNameCs/courseNameEn and roomCs/roomEn populated.
+ * Fetches the schedule in the languages `lang` asks for; `'both'` merges them.
+ *
+ * A student's sync asks for their own language only, so the lesson carries the
+ * one `*Cs` or `*En` pair that was fetched and `localizedCourseName` falls back
+ * to it until a refetch in the other language lands.
+ *
+ * Any leg that was asked for and failed makes the whole read `null`, which
+ * every caller treats as "failed, keep what is cached". Falling back to the
+ * surviving leg is how one flaky CZ request once turned a Czech calendar
+ * English (#403).
  */
-export async function fetchDualLanguageSchedule(dateRange: {
-  start: Date;
-  end: Date;
-}): Promise<BlockLesson[] | null> {
+export async function fetchDualLanguageSchedule(
+  dateRange: { start: Date; end: Date },
+  lang: FetchLanguage
+): Promise<BlockLesson[] | null> {
   try {
-    // Fetch both languages in parallel
     const [czLessons, enLessons] = await Promise.all([
-      fetchWeekSchedule(dateRange, 'cz'),
-      fetchWeekSchedule(dateRange, 'en'),
+      asksCzech(lang) ? fetchWeekSchedule(dateRange, 'cz') : undefined,
+      asksEnglish(lang) ? fetchWeekSchedule(dateRange, 'en') : undefined,
     ]);
-
-    if (!czLessons || !enLessons) {
-      // Fall back to whichever succeeded
-      return czLessons || enLessons;
+    if (czLessons === null || enLessons === null) return null;
+    if (!enLessons) {
+      return (czLessons ?? []).map((l) => ({ ...l, courseNameCs: l.courseName, roomCs: l.room }));
+    }
+    if (!czLessons) {
+      return enLessons.map((l) => ({ ...l, courseNameEn: l.courseName, roomEn: l.room }));
     }
 
     // Create a map of EN lessons by unique key (id + date + startTime)

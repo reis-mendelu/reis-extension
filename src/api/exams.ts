@@ -4,6 +4,7 @@ import { fetchWithAuth } from './client';
 import { getUserParams } from '../utils/userParams';
 import { logError } from '../utils/reportError';
 import { mergeDualLanguageExams } from './mergeDualLanguageExams';
+import { asksEnglish, type FetchLanguage } from './fetchLanguage';
 
 /**
  * Result of exam registration/unregistration.
@@ -76,12 +77,17 @@ export async function fetchExamData(lang: string = 'cz'): Promise<ExamSubject[]>
 }
 
 /**
- * Fetch exam data in both Czech and English in parallel and merge them.
- * Enables instant language switching in the UI.
+ * Fetch exam data in Czech, and in English too when `lang` asks for it.
+ *
+ * Czech is fetched for every student: `isGroupSignupSection` matches IS's Czech
+ * druh, so an English-only read would let seminar signup back into the list.
  */
-export async function fetchDualLanguageExams(): Promise<ExamSubject[]> {
+export async function fetchDualLanguageExams(lang: FetchLanguage): Promise<ExamSubject[]> {
   try {
-    const [first, enData] = await Promise.all([fetchExamData('cz'), fetchExamData('en')]);
+    const [first, enData] = await Promise.all([
+      fetchExamData('cz'),
+      asksEnglish(lang) ? fetchExamData('en') : [],
+    ]);
     let czData = first;
     // Both calls hit the same page for the same account, so an empty CZ result
     // beside a non-empty EN one means the CZ fetch failed — `fetchExamData`

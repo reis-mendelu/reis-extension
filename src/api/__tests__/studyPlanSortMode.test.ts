@@ -100,7 +100,7 @@ describe('fetchDualLanguageStudyPlan', () => {
       )
     );
     const { fetchDualLanguageStudyPlan } = await import('../studyPlan');
-    await fetchDualLanguageStudyPlan('100000');
+    await fetchDualLanguageStudyPlan('100000', 'both');
 
     const urls = fetchWithAuth.mock.calls.map((c) => String(c[0]));
     expect(urls).toHaveLength(2);
@@ -113,7 +113,7 @@ describe('fetchDualLanguageStudyPlan', () => {
       Promise.resolve(new Response(html('study-plan-by-plans.three-plans.cz.html')))
     );
     const { fetchDualLanguageStudyPlan } = await import('../studyPlan');
-    await fetchDualLanguageStudyPlan('100000');
+    await fetchDualLanguageStudyPlan('100000', 'both');
 
     expect(logError).toHaveBeenCalledWith(
       'Api.fetchDualLanguageStudyPlan',
