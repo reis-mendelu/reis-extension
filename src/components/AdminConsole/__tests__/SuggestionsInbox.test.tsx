@@ -1,8 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { SuggestionsInbox } from '../SuggestionsInbox';
 import type { SuggestionRow } from '../../../types/suggestions';
+import { setPlatform, __resetPlatformForTests } from '../../../platform';
+import type { ReisPlatform } from '../../../platform/types';
 
 const row: SuggestionRow = {
   id: 1,
@@ -23,6 +25,8 @@ describe('SuggestionsInbox', () => {
   beforeEach(() => {
     useAppStore.setState({ language: 'en', suggestions: [], suggestionsUnread: 0 });
   });
+
+  afterEach(() => __resetPlatformForTests());
 
   it('shows an empty state when there is nothing', () => {
     render(<SuggestionsInbox />);
@@ -54,5 +58,32 @@ describe('SuggestionsInbox', () => {
     render(<SuggestionsInbox />);
     fireEvent.click(screen.getByRole('button', { name: /Done/i }));
     expect(updateSuggestionStatus).toHaveBeenCalledWith(1, 'done');
+  });
+
+  it('offers a reply that opens a Gmail draft in a new tab', () => {
+    useAppStore.setState({ suggestions: [row] });
+    render(<SuggestionsInbox />);
+    const reply = screen.getByRole('link', { name: /Reply/i });
+    expect(reply.getAttribute('href')).toMatch(/^https:\/\/mail\.google\.com\/mail\/\?/);
+    expect(reply).toHaveAttribute('target', '_blank');
+  });
+
+  it('offers no reply when the contact is not an email', () => {
+    useAppStore.setState({ suggestions: [{ ...row, contact: '+420 777 123 456' }] });
+    render(<SuggestionsInbox />);
+    expect(screen.getByText('+420 777 123 456')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Reply/i })).toBeNull();
+  });
+
+  // No target on the native app: a _blank link is intercepted by
+  // installExternalLinkHandler, and a mailto: is left to the WebView, which
+  // hands it to the phone's mail app.
+  it('replies through mailto: in the native app', () => {
+    setPlatform({ kind: 'capacitor' } as ReisPlatform);
+    useAppStore.setState({ suggestions: [row] });
+    render(<SuggestionsInbox />);
+    const reply = screen.getByRole('link', { name: /Reply/i });
+    expect(reply.getAttribute('href')).toMatch(/^mailto:student@mendelu\.cz\?/);
+    expect(reply).not.toHaveAttribute('target');
   });
 });

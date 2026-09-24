@@ -1,6 +1,9 @@
+import { Reply } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { SuggestionRow } from '../../types/suggestions';
+import { getPlatform } from '../../platform';
+import { buildReplyHref } from '../../utils/suggestionReply';
 
 const TYPE_BADGE: Record<SuggestionRow['type'], string> = {
   bug: 'badge-error',
@@ -13,6 +16,7 @@ export function SuggestionsInbox() {
   const update = useAppStore((s) => s.updateSuggestionStatus);
   const pending = useAppStore((s) => s.suggestionsPending);
   const { t } = useTranslation();
+  const native = getPlatform().kind === 'capacitor';
 
   if (items.length === 0) {
     return (
@@ -22,51 +26,66 @@ export function SuggestionsInbox() {
 
   return (
     <ul className="space-y-2 max-h-96 overflow-y-auto custom-scrollbar pr-1">
-      {items.map((s) => (
-        <li
-          key={s.id}
-          className={`rounded-lg border border-base-300 p-3 ${
-            s.status === 'new' ? 'bg-base-200' : 'bg-base-100 opacity-60'
-          }`}
-        >
-          <div className="flex items-start justify-between gap-2">
-            {/* min-w-0: a flex item defaults to min-width:auto, which pins it to
+      {items.map((s) => {
+        const replyHref = buildReplyHref(s, { native });
+        return (
+          <li
+            key={s.id}
+            className={`rounded-lg border border-base-300 p-3 ${
+              s.status === 'new' ? 'bg-base-200' : 'bg-base-100 opacity-60'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-2">
+              {/* min-w-0: a flex item defaults to min-width:auto, which pins it to
                 its longest unbreakable run — a 120-char title with no spaces then
                 pushes the type badge off-screen and makes the row scroll
                 sideways. break-words only takes effect once shrinking is allowed. */}
-            <span className="min-w-0 font-semibold text-sm break-words">{s.title}</span>
-            <span className={`badge badge-sm shrink-0 ${TYPE_BADGE[s.type]}`}>{s.type}</span>
-          </div>
-          <p className="text-xs text-base-content/70 mt-1 whitespace-pre-wrap break-words">
-            {s.body}
-          </p>
-          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] text-base-content/50">
-            <span>{s.screen}</span>
-            <span>
-              {s.browser_name} {s.browser_version}
-            </span>
-            <span>{s.viewport}</span>
-            <span>{new Date(s.created_at).toLocaleDateString()}</span>
-            {s.contact && <span className="break-all">{s.contact}</span>}
-          </div>
-          <div className="flex gap-2 mt-2">
-            <button
-              className="btn btn-xs btn-ghost"
-              onClick={() => void update(s.id, 'triaged')}
-              disabled={s.status !== 'new' || pending.includes(s.id)}
-            >
-              {t('admin.markTriaged')}
-            </button>
-            <button
-              className="btn btn-xs btn-ghost"
-              onClick={() => void update(s.id, 'done')}
-              disabled={s.status === 'done' || pending.includes(s.id)}
-            >
-              {t('admin.markDone')}
-            </button>
-          </div>
-        </li>
-      ))}
+              <span className="min-w-0 font-semibold text-sm break-words">{s.title}</span>
+              <span className={`badge badge-sm shrink-0 ${TYPE_BADGE[s.type]}`}>{s.type}</span>
+            </div>
+            <p className="text-xs text-base-content/70 mt-1 whitespace-pre-wrap break-words">
+              {s.body}
+            </p>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] text-base-content/50">
+              <span>{s.screen}</span>
+              <span>
+                {s.browser_name} {s.browser_version}
+              </span>
+              <span>{s.viewport}</span>
+              <span>{new Date(s.created_at).toLocaleDateString()}</span>
+              {s.contact && <span className="break-all">{s.contact}</span>}
+            </div>
+            <div className="flex gap-2 mt-2">
+              {replyHref && (
+                // Native: no target, so installExternalLinkHandler leaves the
+                // mailto: to the WebView, which hands it to the phone's mail app.
+                <a
+                  href={replyHref}
+                  {...(native ? {} : { target: '_blank', rel: 'noopener noreferrer' })}
+                  className="btn btn-xs btn-outline btn-primary gap-1"
+                >
+                  <Reply size={12} aria-hidden="true" />
+                  {t('admin.reply')}
+                </a>
+              )}
+              <button
+                className="btn btn-xs btn-ghost"
+                onClick={() => void update(s.id, 'triaged')}
+                disabled={s.status !== 'new' || pending.includes(s.id)}
+              >
+                {t('admin.markTriaged')}
+              </button>
+              <button
+                className="btn btn-xs btn-ghost"
+                onClick={() => void update(s.id, 'done')}
+                disabled={s.status === 'done' || pending.includes(s.id)}
+              >
+                {t('admin.markDone')}
+              </button>
+            </div>
+          </li>
+        );
+      })}
     </ul>
   );
 }
