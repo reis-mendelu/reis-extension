@@ -87,7 +87,7 @@ describe('CalendarScreen → map route suggestion', () => {
     expect(useAppStore.getState().routeSuggestion?.roomLabel).toBe('Q01');
   });
 
-  it('focuses the running lesson\'s room while navigation is parked', () => {
+  it("focuses the running lesson's room while navigation is parked", () => {
     nav.on = false;
     useAppStore.setState({
       routeSuggestion: null,

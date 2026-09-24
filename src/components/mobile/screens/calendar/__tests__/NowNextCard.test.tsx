@@ -146,7 +146,7 @@ describe('NowNextCard route button', () => {
 
   // The next lesson's room is not what the button answers for, so a routable
   // next lesson must not conjure the button over an unroutable running one.
-  it('ignores the next lesson\'s room', () => {
+  it("ignores the next lesson's room", () => {
     const data = nowNext({ current: lessonIn('X02'), next: lessonIn('Q01', 'Next') });
     render(<NowNextCard data={data} onRoute={() => {}} />);
     expect(screen.queryByRole('button')).toBeNull();
