@@ -11,7 +11,10 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
   const onMapLabel = t('map.venueOnMap');
   const currentPlace = lessonPlace(current, language, mapEvents, onMapLabel);
   const currentName = localizedCourseName(current, language);
-  const currentRoom = currentPlace.label;
+  // The agenda row's rule (AgendaEvent): the short name, so no titles; an
+  // answered society event has no teacher, and who runs it goes there instead.
+  const teacher = current.teachers[0]?.shortName || current.teachers[0]?.fullName || currentPlace.host;
+  const currentLine = [currentPlace.label, teacher].filter(Boolean).join(' · ');
   const nextName = next ? localizedCourseName(next, language) : '';
   const nextPlace = next ? lessonPlace(next, language, mapEvents, onMapLabel) : null;
   // "Kam jít" points at the RUNNING lesson's room — the lesson this card is
@@ -31,11 +34,11 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
     >
       {/* The card renders only on today, right above today's agenda, whose
           row for this lesson already carries its room, time range and
-          teacher. So the card says only what that row does not: how long is
-          left, and the way there. The time range went because the bar and the
-          countdown answer it; the teacher (and an answered event's society,
-          which rode the same slot) because the row beneath names them. That
-          freed the room's line for the countdown, and the card lost a line. */}
+          teacher. The time range stays off the card because the bar and the
+          countdown answer it, which freed the room's line for the countdown.
+          The teacher was dropped with it and brought back on request, short
+          ("I. Grellneth", not the titled full name that made the card wordy),
+          and truncating before the countdown does at 320px. */}
       {/* The button sits with the lesson it routes to. On the "Následuje" row
           it read as a promise about the lesson after. */}
       <div className="flex flex-col gap-0.5">
@@ -53,7 +56,7 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
           )}
         </div>
         <div className="flex items-baseline justify-between gap-3 text-sm">
-          <span className="min-w-0 font-semibold text-base-content/80">{currentRoom}</span>
+          <span className="min-w-0 truncate font-semibold text-base-content/80">{currentLine}</span>
           <span className="flex-shrink-0 whitespace-nowrap font-semibold text-base-content/60">
             {t('mobile.calendar.endsIn', { minutes: minutesLeft })}
           </span>

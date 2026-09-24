@@ -44,12 +44,11 @@ describe('NowNextCard', () => {
     expect(container.querySelectorAll('[style*="width: 40%"]')).toHaveLength(1);
   });
 
-  // The card renders only on today, and today's agenda sits right beneath it
-  // with the same lesson's row: room, time range and teacher. Repeating them
-  // made the card the wordiest line on screen (device report, Pixel 9a). The
-  // bar and the countdown already say how long it runs; the subject drawer
-  // has every teacher's full name.
-  it('leaves the time range and the teacher to the agenda row', () => {
+  // The time range stays with the agenda row: the bar and the countdown
+  // already say how long it runs (device report, Pixel 9a: the card was the
+  // wordiest line on screen). The teacher came back on request, in the short
+  // form the agenda row uses — the titled full name is what made it wordy.
+  it('names the teacher beside the room, short, and leaves the time range to the row', () => {
     const current = makeLesson({
       courseName: 'Počítačové sítě',
       courseNameCs: 'Počítačové sítě',
@@ -63,7 +62,8 @@ describe('NowNextCard', () => {
     const card = screen.getByTestId('now-next-card');
     expect(card.textContent).toContain('Q03');
     expect(card.textContent).not.toMatch(/13:00|14:50/);
-    expect(card.textContent).not.toMatch(/Grellneth/);
+    expect(screen.getByText('Q03 · I. Grellneth')).toBeInTheDocument();
+    expect(card.textContent).not.toMatch(/Ing\.|Ph\.D\./);
   });
 
   it('says nothing about what follows when nothing does', () => {
@@ -238,14 +238,12 @@ describe('NowNextCard, when an answered society event is next', () => {
     expect(screen.getByText(/City Game · Místo na mapě · 18:30$/)).toBeInTheDocument();
   });
 
-  // Who runs it rode the teacher's slot, and went with it: the agenda row
-  // beneath still says "ESN".
-  it('says where it is and offers the way there while it runs', () => {
+  // Who runs it rides the teacher's slot, as it does on the agenda row.
+  it('says where it is, who runs it, and offers the way there while it runs', () => {
     // "Trasa →" belongs to the running entry (#409). The room index never knows
     // a venue in town, so it is the event's coordinate that makes it routable.
     render(<NowNextCard data={nowNext({ current: cityGame })} onRoute={() => {}} />);
-    expect(screen.getByText('Místo na mapě')).toBeInTheDocument();
-    expect(screen.queryByText(/ESN/)).not.toBeInTheDocument();
+    expect(screen.getByText('Místo na mapě · ESN')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Trasa/ })).toBeInTheDocument();
   });
 });
