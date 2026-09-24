@@ -135,7 +135,7 @@ function SemesterRow({
       </span>
       <GradeChip subject={subject} />
       {isRealCredits(subject.credits) && (
-        <span className="flex-shrink-0 text-sm text-base-content/50">
+        <span className="flex-shrink-0 text-sm font-semibold text-base-content/80">
           {subject.credits} {creditWord}
         </span>
       )}

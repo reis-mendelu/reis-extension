@@ -47,6 +47,13 @@ function Row({
         </span>
       )}
       <span className="flex-1 text-sm truncate">{displayName}</span>
+      {/* Credits belong beside a subject you are deciding whether to take —
+          this card listed the name and the fail rate and left them out. */}
+      {subject.credits > 0 && (
+        <span className="text-[11px] font-semibold text-base-content/80 shrink-0">
+          {subject.credits} kr.
+        </span>
+      )}
       {/* The number alone, with the words said once per page in
           `FailRateLegend` — the arrangement the semester rows below already
           use. This card spelled them out on every row instead, which at 320px

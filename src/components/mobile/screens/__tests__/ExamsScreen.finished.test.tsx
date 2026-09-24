@@ -99,12 +99,13 @@ describe('unregistering after the deregistration deadline', () => {
       lastExamClassmatesFetchedAt: {},
     } as never);
   }
+  // A registered exam opens from its tile in the strip — see RegisteredStrip.
   const open = () =>
     fireEvent.click(
       screen
         .getAllByRole('button')
         .find(
-          (b) => b.getAttribute('aria-expanded') !== null && /Matematika/.test(b.textContent ?? '')
+          (b) => b.getAttribute('aria-pressed') !== null && /Matematika/.test(b.textContent ?? '')
         )!
     );
 

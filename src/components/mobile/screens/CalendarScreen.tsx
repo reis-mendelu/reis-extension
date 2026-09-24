@@ -38,6 +38,10 @@ export function CalendarScreen() {
   const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
   const syncLoaded = useAppStore((s) => s.syncLoaded);
   const hiddenItems = useAppStore((s) => s.hiddenItems);
+  // The store's clock, not `new Date()`: the pulse advances it, so the running
+  // lesson's card and its countdown move with it instead of being stamped once
+  // per render and then only when something else happened to re-render.
+  const now = useAppStore((s) => s.now);
   const teachingWeekData = useAppStore((s) => s.teachingWeekData);
   const customEvents = useAppStore((s) => s.customEvents);
   const scheduleRefreshing = useAppStore((s) => s.scheduleRefreshing);
@@ -161,7 +165,6 @@ export function CalendarScreen() {
     );
   }
 
-  const now = new Date();
   // Custom events count here too: an event starting at seven that the student
   // said they would go to IS their next thing, and leaving it out would be the
   // same surprise as leaving it off the agenda, one card higher up.

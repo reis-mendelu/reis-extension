@@ -35,6 +35,8 @@ export interface ExamTerm {
   watchdogUrl?: string; // IS Mendelu "hlídací pes" activation link (aktivace=1), present only when watchable
   blockReasonUrl?: string; // IS Mendelu "Zobrazit důvod" link (zobraz_duvod=1), present only when blocked
   detailUrl?: string; // IS Mendelu "Podrobnosti" link (terminy_info.pl)
+  cannotRegister?: boolean; // Listed under "Kam se přihlásit nemohu?" (table_3) — shown, never registrable; blockReasonUrl says why
+  durationMinutes?: number | null; // "Délka trvání akce" from terminy_info.pl, attached at sync (services/sync/examDurations); null = IS has none
 }
 
 export interface ExamSection {

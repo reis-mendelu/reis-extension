@@ -43,7 +43,9 @@ describe('rebaseFixture', () => {
                 dayOffset: -3,
                 time: '08:00',
                 regStartDayOffset: -20,
+                regStartTime: '13:00',
                 regEndDayOffset: -4,
+                regEndTime: '20:00',
               },
             ],
           },
@@ -75,10 +77,13 @@ describe('rebaseFixture', () => {
     expect(terms[1]!).toMatchObject({ deregistrationDeadline: '15.02.2026 23:59' });
   });
 
+  // IS gives a clock with every registration moment and the phone prints it,
+  // so an authored fixture carries one too — without it every term read
+  // "8. 11." where the real thing reads "8. 11. 20:00".
   it('projects registration window offsets', () => {
     expect(terms[2]!).toMatchObject({
-      registrationStart: '21.01.2026',
-      registrationEnd: '06.02.2026',
+      registrationStart: '21.01.2026 13:00',
+      registrationEnd: '06.02.2026 20:00',
     });
   });
 
@@ -186,6 +191,39 @@ describe('rebaseFixture — schedule', () => {
     const rows = out.schedule as Record<string, unknown>[];
     expect(rows[0]).not.toHaveProperty('dayOffset');
     expect(rows[1]!.date).toBe('20260101');
+  });
+});
+
+describe('rebaseFixture: a lesson running right now', () => {
+  // Lesson times are authored as a clock ("08:00"), which puts "TEĎ BĚŽÍ" out
+  // of reach unless you happen to open the app at eight. Minutes from `now`
+  // make the running-lesson state reachable at any hour, which is the only way
+  // to work on how it looks.
+  const NOON = new Date(2026, 1, 10, 12, 20, 0);
+
+  const out = rebaseFixture(
+    {
+      schedule: [
+        { id: 'l1', dayOffset: 0, startMinutesFromNow: -35, endMinutesFromNow: 55 },
+        { id: 'l2', dayOffset: 0, startMinutesFromNow: 80, endMinutesFromNow: 170 },
+        { id: 'l3', dayOffset: 1, startTime: '08:00', endTime: '09:50' },
+      ],
+    },
+    NOON
+  ) as unknown as { schedule: Record<string, unknown>[] };
+
+  it('turns minutes from now into the clock the lesson runs on', () => {
+    expect(out.schedule[0]).toMatchObject({ startTime: '11:45', endTime: '13:15' });
+    expect(out.schedule[0]).not.toHaveProperty('startMinutesFromNow');
+    expect(out.schedule[0]).not.toHaveProperty('endMinutesFromNow');
+  });
+
+  it('projects a lesson still ahead the same way', () => {
+    expect(out.schedule[1]).toMatchObject({ startTime: '13:40', endTime: '15:10' });
+  });
+
+  it('leaves a lesson authored with a plain clock alone', () => {
+    expect(out.schedule[2]).toMatchObject({ startTime: '08:00', endTime: '09:50' });
   });
 });
 

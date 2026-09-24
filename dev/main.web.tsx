@@ -30,6 +30,10 @@ import '@/entrypoints/main/main';
 // reliable substitute.
 import './storeHandle';
 
+// Side-effect import: `?now=` moves the dev clock. After the app, because it
+// replaces the pulse action the store was created with.
+import './clockOverride';
+
 // After the app too, and deliberately: it re-posts the snapshot once it has
 // written the user params the app's own first pass had to do without. See
 // snapshotUserParams.ts.

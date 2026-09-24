@@ -2,7 +2,7 @@
  * ExamPanel Shared Utilities
  */
 import { parseRegistrationStart } from '../../utils/termUtils';
-import type { ExamSection } from '../../types/exams';
+import type { ExamSection, ExamTerm } from '../../types/exams';
 
 export type SectionState =
   | { type: 'registered' }
@@ -22,7 +22,10 @@ export function getSectionState(section: ExamSection, now: Date): SectionState {
   ).length;
   if (openCount > 0) return { type: 'open', openCount };
 
+  // A term from "Kam se přihlásit nemohu?" keeps IS's dates, but they never
+  // open for this student — its start is not an "opens on".
   const futureDates = section.terms
+    .filter((t) => !t.cannotRegister)
     .map((t) => (t.registrationStart ? parseRegistrationStart(t.registrationStart) : null))
     .filter((d): d is Date => d !== null && d > now)
     .sort((a, b) => a.getTime() - b.getTime());
@@ -37,6 +40,18 @@ export function getSectionState(section: ExamSection, now: Date): SectionState {
   if (allBlocked) return { type: 'empty' };
 
   return { type: 'noInfo' };
+}
+
+/**
+ * The terms a student could move to: every term but the one they are on.
+ *
+ * The parser lists the registered term in `terms` too — the phone's card reads
+ * its seats, form and Podrobnosti link from there — so a "change term" list
+ * built from `terms` alone offered the student their own term, greyed out.
+ */
+export function alternativeTerms(section: ExamSection): ExamTerm[] {
+  const mine = section.registeredTerm?.id;
+  return mine ? section.terms.filter((t) => t.id !== mine) : section.terms;
 }
 
 /**
