@@ -60,6 +60,15 @@ describe('BottomNav', () => {
     expect(calendarButton).not.toHaveTextContent('Kalendář');
   });
 
+  // Raw primary on its own /15 tint is 2.03:1 in the light theme (verify:ui).
+  // jsdom cannot measure contrast, so this pins the token that fixed it.
+  it('colours the active entry with the tone token, not raw primary', () => {
+    render(<BottomNav />);
+    const active = screen.getByRole('button', { name: 'Kalendář' });
+    expect(active.className).toContain('text-[var(--tone-primary)]');
+    expect(active.className.split(/\s+/)).not.toContain('text-primary');
+  });
+
   it('renders nothing while the soft keyboard is open', () => {
     useAppStore.setState({ keyboardOpen: true });
     const { container } = render(<BottomNav />);

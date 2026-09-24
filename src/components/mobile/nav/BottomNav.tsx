@@ -24,6 +24,10 @@ const TABS: { id: MobileTab; icon: typeof Calendar; labelKey: string }[] = [
  * Below 360px the horizontal padding tightens: the widest active label
  * ("Předměty") pushes the pill to 325px, which overflows a 320px viewport
  * outright. Wider phones keep the roomier spacing.
+ *
+ * The active entry is --tone-primary, not raw primary: raw green on its own
+ * /15 tint measured 2.03:1 in the light theme. Dark resolves the token to raw
+ * primary, so only light changes.
  */
 export function BottomNav() {
   const activeTab = useAppStore((s) => s.mobileTab);
@@ -53,7 +57,7 @@ export function BottomNav() {
             aria-label={t(labelKey)}
             onClick={() => setMobileTab(id)}
             className={`flex min-h-11 min-w-11 items-center gap-1.5 rounded-full px-3 transition-colors max-[359px]:px-2 ${
-              active ? 'bg-primary/15 text-primary' : 'text-base-content/60'
+              active ? 'bg-primary/15 text-[var(--tone-primary)]' : 'text-base-content/60'
             }`}
           >
             <Icon className="h-[19px] w-[19px]" />
