@@ -2,7 +2,10 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 vi.mock('@/hooks/useTranslation', () => ({
-  useTranslation: () => ({ t: (k: string) => k, language: 'cs' }),
+  useTranslation: () => ({
+    t: (k: string) => (k === 'subjects.creditsShort' ? 'kr.' : k),
+    language: 'cs',
+  }),
 }));
 vi.mock('@/hooks/ui/useCourseName', () => ({ useCourseName: (_c: string, n: string) => n }));
 vi.mock('@/hooks/useTimeline', () => ({ useTimeline: () => null }));
@@ -31,17 +34,25 @@ const subject: SubjectStatus = {
  * ever showed on a desktop-width screen.
  */
 describe('SubjectRow — credits', () => {
-  const creditCell = () => screen.getByText('6 kr.');
+  // Two copies since the phone moved them under the name: the one without a
+  // bare `hidden` class is what a phone renders. `\bhidden\b` would also match
+  // `md:hidden`, so compare class tokens instead.
+  const isPhoneVisible = (el: HTMLElement) => !el.className.split(/\s+/).includes('hidden');
+  const creditCell = () => {
+    const cell = screen.getAllByText('6 kr.').find(isPhoneVisible);
+    if (!cell) throw new Error('no credits render at phone width');
+    return cell;
+  };
 
   it('shows the credits at phone width', () => {
     render(<SubjectRow subject={subject} onOpenSubject={() => {}} onSearchSubject={() => {}} />);
-    expect(creditCell().className).not.toMatch(/\bhidden\b/);
+    expect(isPhoneVisible(creditCell())).toBe(true);
   });
 
   it('shows them in the compact row too', () => {
     render(
       <SubjectRow subject={subject} compact onOpenSubject={() => {}} onSearchSubject={() => {}} />
     );
-    expect(creditCell().className).not.toMatch(/\bhidden\b/);
+    expect(isPhoneVisible(creditCell())).toBe(true);
   });
 });

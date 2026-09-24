@@ -2,7 +2,10 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 vi.mock('@/hooks/useTranslation', () => ({
-  useTranslation: () => ({ t: (k: string) => k, language: 'cs' }),
+  useTranslation: () => ({
+    t: (k: string) => (k === 'subjects.creditsShort' ? 'kr.' : k),
+    language: 'cs',
+  }),
 }));
 vi.mock('@/hooks/ui/useCourseName', () => ({ useCourseName: (_c: string, n: string) => n }));
 vi.mock('@/hooks/useTimeline', () => ({ useTimeline: () => null }));
@@ -66,9 +69,11 @@ describe('study plan — credits and group headings', () => {
 
   it('prints each subject credits legibly, not as faint filler', () => {
     renderSection();
-    const credits = screen.getByText('6 kr.');
-    expect(credits.className).toMatch(/font-semibold/);
-    expect(credits.className).not.toMatch(/text-base-content\/70/);
+    // Both copies — under the name on a phone, the column from `md` up.
+    for (const credits of screen.getAllByText('6 kr.')) {
+      expect(credits.className).toMatch(/font-semibold/);
+      expect(credits.className).not.toMatch(/text-base-content\/70/);
+    }
   });
 
   it('makes a group heading read as a heading', () => {
