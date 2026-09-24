@@ -88,7 +88,7 @@ export function ExamRowCard({
           {primaryMeta && (
             <span
               className={`whitespace-nowrap text-2sm font-bold ${
-                primaryTone === 'muted' ? 'text-base-content/70' : 'text-success'
+                primaryTone === 'muted' ? 'text-base-content/70' : 'text-[var(--tone-success)]'
               }`}
             >
               {primaryMeta}
