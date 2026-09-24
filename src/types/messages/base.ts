@@ -67,7 +67,10 @@ export interface FetchRequestMessage {
     method?: string;
     headers?: Record<string, string>;
     body?: string;
-    responseType?: 'text' | 'image' | 'bytes';
+    // 'bytes': fetchAuthedBytes (eduroam) — base64 of the body, HTML refused.
+    // 'file': bytes for the iframe as a FileFetchPayload JSON string, with
+    // REIS_FETCH_PROGRESS ticks while the body arrives.
+    responseType?: 'text' | 'image' | 'bytes' | 'file';
   };
 }
 export interface ActionRequestMessage {
@@ -89,6 +92,23 @@ export interface FetchResultMessage {
   success: boolean;
   data?: string;
   error?: string;
+}
+/**
+ * The `data` of a successful 'file' fetch, JSON-encoded. Base64 because the
+ * reply carries a string; the headers ride along because the iframe needs the
+ * filename and the type, and it never sees the Response.
+ */
+export interface FileFetchPayload {
+  contentType: string | null;
+  contentDisposition: string | null;
+  base64: string;
+}
+/** Bytes received so far on a 'file' fetch. Also re-arms its timeout. */
+export interface FetchProgressMessage {
+  type: 'REIS_FETCH_PROGRESS';
+  id: string;
+  loaded: number;
+  total: number | null;
 }
 // `demoMode` marks a failure as DemoModeError rather than a real fault. Needed
 // because on Capacitor this reply loops back through postMessage to the app's
@@ -129,6 +149,7 @@ export type IframeToContentMessage =
 export type ContentToIframeMessage =
   | DataResponseMessage
   | FetchResultMessage
+  | FetchProgressMessage
   | ActionResultMessage
   | SyncUpdateMessage
   | PopupStateMessage

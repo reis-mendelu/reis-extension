@@ -55,7 +55,7 @@ const FetchRequestMsg = z.object({
       method: z.string().optional(),
       headers: z.record(z.string(), z.string()).optional(),
       body: z.string().optional(),
-      responseType: z.enum(['text', 'image', 'bytes']).optional(),
+      responseType: z.enum(['text', 'image', 'bytes', 'file']).optional(),
     })
     .optional(),
 });
@@ -87,6 +87,12 @@ const FetchResultMsg = z.object({
   data: z.string().optional(),
   error: z.string().optional(),
 });
+const FetchProgressMsg = z.object({
+  type: z.literal('REIS_FETCH_PROGRESS'),
+  id: z.string(),
+  loaded: z.number(),
+  total: z.number().nullable(),
+});
 const ActionResultMsg = z.object({
   type: z.literal('REIS_ACTION_RESULT'),
   id: z.string(),
@@ -117,6 +123,7 @@ const NavMenuMsg = z.object({ type: z.literal('REIS_NAV_MENU'), categories: z.ar
 export const ContentToIframeSchema = z.discriminatedUnion('type', [
   DataResponseMsg,
   FetchResultMsg,
+  FetchProgressMsg,
   ActionResultMsg,
   SyncUpdateMsg,
   PopupStateMsg,
