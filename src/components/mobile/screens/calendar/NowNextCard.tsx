@@ -13,7 +13,8 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
   const currentName = localizedCourseName(current, language);
   // The agenda row's rule (AgendaEvent): the short name, so no titles; an
   // answered society event has no teacher, and who runs it goes there instead.
-  const teacher = current.teachers[0]?.shortName || current.teachers[0]?.fullName || currentPlace.host;
+  const teacher =
+    current.teachers[0]?.shortName || current.teachers[0]?.fullName || currentPlace.host;
   const currentLine = [currentPlace.label, teacher].filter(Boolean).join(' · ');
   const nextName = next ? localizedCourseName(next, language) : '';
   const nextPlace = next ? lessonPlace(next, language, mapEvents, onMapLabel) : null;
