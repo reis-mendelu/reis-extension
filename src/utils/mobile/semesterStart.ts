@@ -7,7 +7,7 @@
  * semestr" is the request to stop guessing and say which it is.
  *
  * Derived from the schedule rather than from a calendar rule, because the rule
- * would be a second guess. `syncSchedule` stores the WHOLE semester in one go,
+ * would be a second guess. `fetchFullSemesterSchedule` stores the WHOLE semester in one go,
  * so the earliest lesson in it is the day teaching begins — no hardcoded
  * mid-September date to drift, and it is automatically right for a faculty or
  * a year that starts on a different day.

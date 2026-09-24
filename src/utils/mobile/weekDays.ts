@@ -5,7 +5,7 @@
  * needs the answer: the screen header now labels the week the strip is showing,
  * and two independent computations of "which week is this" is precisely how the
  * strip and the header came to disagree the first time — the row was anchored
- * to `schedule.weekStart`, which `syncSchedule` writes as the semester start,
+ * to `schedule.weekStart`, which the sync (`fetchFullSemesterSchedule`) writes as the semester start,
  * so a device in April offered five days in February.
  */
 
@@ -62,7 +62,7 @@ function taughtOn(lessonDates: ReadonlySet<string>, weekday: number): boolean {
  * - Always all seven. Every full-time student got two empty chips all
  *   semester.
  *
- * `lessonDates` is the whole stored semester (`syncSchedule` keeps it all), so
+ * `lessonDates` is the whole stored semester (`fetchFullSemesterSchedule` keeps it all), so
  * "has this student ever got a Saturday lesson" is answerable, and answering
  * it per student settles both. The desktop grid still widens per week — see
  * `visibleDayCount` in `WeeklyCalendar/useCalendarData.ts`.

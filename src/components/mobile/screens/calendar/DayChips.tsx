@@ -20,7 +20,7 @@ export interface DayChipsProps {
  * `utils/mobile/weekDays`, which now owns that arithmetic because the screen
  * header labels the same week and the two must not compute it separately.
  *
- * Moving a week needs no fetch: `syncSchedule` already stores the whole
+ * Moving a week needs no fetch: `fetchFullSemesterSchedule` already stores the whole
  * semester in one go, so every week the arrows can reach is already local.
  *
  * Two routes to a different week, because the old single route was a 28px
