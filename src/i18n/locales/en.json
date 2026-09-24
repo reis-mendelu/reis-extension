@@ -210,7 +210,16 @@
       "other": "Other"
     },
     "toastOffline": "You're offline. Try again once you're connected.",
-    "toastRateLimited": "We've had a lot of messages just now. Please try again in a bit."
+    "toastRateLimited": "We've had a lot of messages just now. Please try again in a bit.",
+    "reportLink": "Something missing? Report it",
+    "reportAction": "Report",
+    "prefill": {
+      "examsEmpty": "Exams: list is empty",
+      "subjectsEmpty": "Subjects: list is empty",
+      "syllabusEmpty": "Syllabus: no data",
+      "zaznamnikEmpty": "Records: no data",
+      "examActionFailed": "Exams: action failed"
+    }
   },
   "common": {
     "loading": "Loading...",
