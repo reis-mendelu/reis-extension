@@ -1,11 +1,11 @@
 import { ChevronDown, CheckCircle2, BookOpen, Clock, Layers } from 'lucide-react';
-import type { SemesterBlock, Zamerani, SubjectStatus } from '@/types/studyPlan';
+import type { SemesterBlock, Zamerani } from '@/types/studyPlan';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { ZameraniProgress } from './SubjectsPanelHeader';
 import { SubjectRow } from './SubjectRow';
 import {
   getSemesterState,
-  isZameraniCode,
+  isSubjectVisible,
   normalizeZameraniName,
   type SemesterState,
   cleanGroupName,
@@ -32,21 +32,6 @@ interface SemesterSectionProps {
     isFulfilled?: boolean
   ) => void;
   onSearchSubject: (name: string) => void;
-}
-
-// A subject is "always visible" if it's not affiliated with any zaměření
-// (mandatory / general elective). Affiliated subjects show only when at least
-// one of their zaměření is picked. Hides the noise of unchosen zaměření paths.
-function isSubjectVisible(
-  s: SubjectStatus,
-  subjectToZameranis?: Map<string, string[]>,
-  picked?: Set<string>
-): boolean {
-  if (isZameraniCode(s.code)) return false;
-  const memberOf = subjectToZameranis?.get(s.code);
-  if (!memberOf || memberOf.length === 0) return true;
-  if (!picked || picked.size === 0) return false;
-  return memberOf.some((z) => picked.has(z));
 }
 
 const stateConfig: Record<

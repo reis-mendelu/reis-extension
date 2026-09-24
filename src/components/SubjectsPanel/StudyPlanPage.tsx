@@ -60,8 +60,18 @@ export function StudyPlanPage({
   const picks = useZameraniPicks();
 
   const hardest = useMemo(
-    () => (plan ? topHardestUpcoming(plan, successRates, subjectSemesters, 5) : []),
-    [plan, successRates, subjectSemesters]
+    () =>
+      plan
+        ? topHardestUpcoming(
+            plan,
+            successRates,
+            subjectSemesters,
+            subjectToZameranis,
+            picks.effectivePicks,
+            5
+          )
+        : [],
+    [plan, successRates, subjectSemesters, subjectToZameranis, picks.effectivePicks]
   );
   const zameraniStats = useMemo(
     () => (plan ? zameraniInsights(plan, successRates) : []),
