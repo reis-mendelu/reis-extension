@@ -21,6 +21,17 @@ describe('ReportMissingLink', () => {
     });
   });
 
+  // A grey text link read as a caption, not something to tap. An outlined
+  // button in neutral ink is unmistakably tappable without the error or
+  // primary colour that would say the empty list is wrong.
+  it('reads as a neutral button with an icon, not a caption', () => {
+    render(<ReportMissingLink prefill="examsEmpty" />);
+    const button = screen.getByRole('button');
+    expect(button).toHaveClass('btn-outline', 'text-base-content');
+    expect(button).not.toHaveClass('btn-link', 'btn-primary', 'btn-error');
+    expect(button.querySelector('svg')).not.toBeNull();
+  });
+
   it('has a phone-sized touch target', () => {
     render(<ReportMissingLink prefill="examsEmpty" />);
     expect(screen.getByRole('button')).toHaveClass('min-h-11');
