@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { SubjectDrawerSheet } from '../SubjectDrawerSheet';
 import { useAppStore } from '../../../../store/useAppStore';
 import { pull } from '../../screens/__tests__/pullTestSetup';
-import type { SubjectInfo } from '../../../../types/documents';
+import type { ParsedFile, SubjectInfo } from '../../../../types/documents';
 
 vi.mock('../../../../hooks/ui/useFileActions', () => ({
   useFileActions: () => ({
@@ -24,6 +24,15 @@ const ALG: SubjectInfo = {
   subjectId: '159410',
   folderUrl: 'https://is.mendelu.cz/auth/dok_server/slozka.pl?id=1',
   fetchedAt: '',
+};
+
+const SYLLABUS: ParsedFile = {
+  subfolder: '',
+  file_name: 'Sylabus',
+  file_comment: '',
+  author: '',
+  date: '01.09.2026',
+  files: [{ name: 'Sylabus', type: 'pdf', link: 'https://is.mendelu.cz/x?download=1;id=1' }],
 };
 
 const renderSheet = () =>
@@ -69,11 +78,21 @@ describe('pulling a subject’s Files tab', () => {
   });
 
   it('does not start a second refresh while one is running, and shows it spinning', () => {
-    useAppStore.setState({ filesLoading: { ALG: true } } as never);
+    useAppStore.setState({ files: { ALG: [SYLLABUS] }, filesLoading: { ALG: true } } as never);
     renderSheet();
     pull(screen.getByTestId('subject-drawer-scroller'));
     expect(refresh).not.toHaveBeenCalled();
     expect(screen.getByTestId('pull-refresh-indicator').dataset.state).toBe('refreshing');
+  });
+
+  // With nothing on screen yet, the skeleton and its "Načítání souborů…" bar
+  // already say "loading". A spinner over them said it a third time, and held
+  // the skeleton 44px down for no list to reveal.
+  it('does not spin over the skeleton', () => {
+    useAppStore.setState({ files: { ALG: undefined }, filesLoading: { ALG: true } } as never);
+    renderSheet();
+    expect(screen.getByTestId('pull-refresh-indicator').dataset.state).toBeUndefined();
+    expect(screen.getByText('Načítání souborů...')).toBeInTheDocument();
   });
 
   it('can be pulled when the tab is empty — the case a student pulls to check', () => {

@@ -30,7 +30,12 @@ export function SubjectDrawerScroller({
   children: ReactNode;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const refreshing = useAppStore((s) => !!s.filesLoading[courseCode]);
+  // Spins only over a list. With none on screen the tab shows its skeleton and
+  // "Načítání souborů…" bar (DrawerTabBody's own isEmpty test), which already
+  // say it; a spinner on top said it twice and held the skeleton down too.
+  const refreshing = useAppStore(
+    (s) => !!s.filesLoading[courseCode] && (s.files[courseCode]?.length ?? 0) > 0
+  );
   const refresh = useCallback(() => {
     const state = useAppStore.getState();
     if (!state.filesLoading[courseCode]) void state.refreshFilesForSubject(courseCode);
