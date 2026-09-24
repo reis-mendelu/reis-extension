@@ -30,6 +30,7 @@ const SWEPT = [
   'src/components/ExamPanel/TermsSummary.tsx',
   'src/components/ExamPanel/ExamSectionCard.tsx',
   'src/components/ExamPanel/TermNoteBlock.tsx',
+  'src/components/Bulletin/BulletinBanner.tsx',
 ];
 
 const RAW = /(?:^|[\s'"`:])text-(success|error|warning|info|primary)(?:\/\d+)?(?=[\s'"`]|$)/gm;
