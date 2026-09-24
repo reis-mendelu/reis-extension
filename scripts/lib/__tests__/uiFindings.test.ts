@@ -201,6 +201,39 @@ describe('analyzeProbe — horizontal overflow', () => {
     expect(kinds(f)).not.toContain('overflow');
   });
 
+  /**
+   * A swipeable row — the registered-exam carousel — parks its later slides
+   * past the viewport on purpose, inside a container that scrolls sideways.
+   * Those slides are reachable by a swipe, which is exactly what "clipped" is
+   * not. Excused only within the scroller's scrollable range: an element that
+   * runs past even that range is still unreachable, and still reported.
+   */
+  it('excuses a slide a horizontal scroller can bring into view', () => {
+    const f = analyzeProbe(
+      probe([
+        el({
+          sel: 'div.slide-2',
+          rect: { x: 390, y: 100, w: 360, h: 60 },
+          hScrollRange: { left: 15, right: 750 },
+        }),
+      ])
+    );
+    expect(kinds(f)).not.toContain('overflow-element');
+  });
+
+  it('still reports what runs past the end of the scroller as well', () => {
+    const f = analyzeProbe(
+      probe([
+        el({
+          sel: 'div.too-wide',
+          rect: { x: 390, y: 100, w: 500, h: 60 },
+          hScrollRange: { left: 15, right: 750 },
+        }),
+      ])
+    );
+    expect(f.some((x) => x.kind === 'overflow-element' && x.sel === 'div.too-wide')).toBe(true);
+  });
+
   it('names the element that sticks out past the viewport', () => {
     const f = analyzeProbe(
       probe([el({ sel: 'div.exam-rail', rect: { x: 300, y: 0, w: 200, h: 20 }, bg: SLATE_700 })], {

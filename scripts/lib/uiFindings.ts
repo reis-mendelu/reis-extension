@@ -25,6 +25,16 @@ export interface ProbeElement {
    * everything with a clipping ancestor excuses most of the app.
    */
   insideInnerClip?: boolean;
+  /**
+   * The x-range the nearest sideways-scrolling ancestor can bring into view —
+   * its left edge minus how far it is scrolled, out to its scroll width. Set
+   * only for an ancestor whose `overflow-x` is auto/scroll AND that actually
+   * overflows. A swipeable row's later slides sit past the viewport on purpose
+   * and are one swipe away; that is not the unreachable content this rule is
+   * for. Deliberately not "any clipping ancestor": vertical scrollers are the
+   * whole app, and excusing them killed this check once already.
+   */
+  hScrollRange?: { left: number; right: number } | null;
   /** The element IS a Leaflet marker icon — positioned in map coordinates. */
   isLeafletMarker?: boolean;
   /** Index of the marker icon this element sits inside, if any. */
@@ -185,6 +195,15 @@ function overflowFindings(p: ProbeResult): Finding[] {
       const host = p.elements[e.leafletMarkerIdx];
       if (host && withinHost(e.rect, host.rect)) continue;
     }
+    // Reachable by swiping its row sideways — see `hScrollRange`. Only while it
+    // lies inside that range: something wider than even the scrolled row is
+    // still cut off, and still reported.
+    if (
+      e.hScrollRange &&
+      e.rect.x >= e.hScrollRange.left - PX_SLACK &&
+      e.rect.x + e.rect.w <= e.hScrollRange.right + PX_SLACK
+    )
+      continue;
     // BOTH edges. Measuring only the right one let an element at x:-20 sit
     // half off the left of the screen and report nothing — clipped by #root
     // and just as unreachable as one running off the right.

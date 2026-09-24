@@ -90,6 +90,20 @@ export function probeSource(): ProbeResult {
   const insideThirdPartyClipper = (node: HTMLElement): boolean =>
     node.closest(THIRD_PARTY_CLIPPERS) !== null;
 
+  // The x-range a sideways scroller around `node` can bring into view: the
+  // nearest ancestor that scrolls horizontally AND overflows. Vertical
+  // scrollers are deliberately ignored — see `hScrollRange` in uiFindings.
+  const hScrollRangeOf = (node: HTMLElement): { left: number; right: number } | null => {
+    for (let p = node.parentElement; p; p = p.parentElement) {
+      const ox = getComputedStyle(p).overflowX;
+      if ((ox === 'auto' || ox === 'scroll') && p.scrollWidth > p.clientWidth) {
+        const left = p.getBoundingClientRect().x - p.scrollLeft;
+        return { left, right: left + p.scrollWidth };
+      }
+    }
+    return null;
+  };
+
   const elements = nodes.map((node, idx) => {
     const style = getComputedStyle(node);
     const r = node.getBoundingClientRect();
@@ -126,6 +140,7 @@ export function probeSource(): ProbeResult {
       text: hasDirectText ? (node.textContent ?? '').trim().slice(0, 40) : '',
       rect: { x: r.x, y: r.y, w: r.width, h: r.height },
       insideInnerClip,
+      hScrollRange: hScrollRangeOf(node),
       isLeafletMarker,
       leafletMarkerIdx,
       bg: resolveColor(style.backgroundColor),
