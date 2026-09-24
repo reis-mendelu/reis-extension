@@ -19,6 +19,9 @@ export function dismissTappedToast(event: MouseEvent) {
   const target = event.target as Element;
   // Action and cancel buttons dismiss their own toast.
   if (target.closest('button')) return;
+  // A drag-select to copy the message (desktop) also ends in a click; sonner's
+  // own swipe handler bails on a selection for the same reason.
+  if (window.getSelection()?.toString()) return;
   const li = target.closest('[data-sonner-toast]');
   if (li?.getAttribute('data-front') !== 'true' || li.getAttribute('data-removed') === 'true')
     return;

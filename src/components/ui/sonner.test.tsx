@@ -17,6 +17,7 @@ beforeAll(() => {
 });
 
 afterEach(async () => {
+  window.getSelection()?.removeAllRanges();
   act(() => {
     toast.dismiss();
   });
@@ -66,6 +67,14 @@ describe('Toaster dismissal', () => {
   it('dismisses on a tap', async () => {
     fireEvent.click(await show('tap'));
     await gone('tap');
+  });
+
+  it('a click that ends a text selection leaves the toast, so its message can be copied', async () => {
+    const el = await show('copy me');
+    window.getSelection()?.selectAllChildren(screen.getByText('copy me'));
+    fireEvent.click(screen.getByText('copy me'));
+    await new Promise((r) => setTimeout(r, 300));
+    expect(el).toBeInTheDocument();
   });
 
   it('a tap dismisses only the toast on screen, not the one queued behind it', async () => {
