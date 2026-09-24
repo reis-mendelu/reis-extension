@@ -47,6 +47,8 @@ export function EditableCourseTitle({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleSave();
     if (e.key === 'Escape') {
+      // Kept: cancels the edit, not the drawer around it.
+      e.preventDefault();
       setIsEditing(false);
       setInputValue(nickname || '');
     }

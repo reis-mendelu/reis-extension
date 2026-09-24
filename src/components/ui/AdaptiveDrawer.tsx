@@ -3,6 +3,7 @@ import type React from 'react';
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from './drawer';
 import { useAppStore } from '../../store/useAppStore';
 import { logError } from '../../utils/reportError';
+import { useEscapeLayer } from '../../hooks/ui/useEscapeLayer';
 
 interface AdaptiveDrawerProps {
   open: boolean;
@@ -33,6 +34,10 @@ export function AdaptiveDrawer({
   const isTouch = useAppStore((s) => s.isTouch);
   const isNarrow = useAppStore((s) => s.isNarrow);
   const isPhone = isTouch && isNarrow;
+  // The side drawer is the one a keyboard meets: the extension, an iPad with a
+  // keyboard, and the Mac app (pointer: fine, so never the vaul branch). vaul
+  // answers Escape on its own, so the phone branch is not a layer.
+  useEscapeLayer(open && !isPhone, onClose);
 
   // Phone branch: vaul needs to observe open: true→false on a mounted host
   // to play its exit animation and to let an in-flight swipe-to-dismiss

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, fireEvent } from '@testing-library/react';
 import { SheetHost } from '../SheetHost';
+import { FeedbackModalHost } from '../../../Feedback/FeedbackModalHost';
 import { useAppStore } from '../../../../store/useAppStore';
 
 /**
@@ -19,6 +20,7 @@ describe('Escape and the sheet stack', () => {
     useAppStore.setState({
       mobileSheets: [],
       reportOpen: false,
+      externalOpening: false,
       language: 'cz',
       syncStatus: {
         isSyncing: false,
@@ -59,9 +61,24 @@ describe('Escape and the sheet stack', () => {
   it('closes the feedback form before the sheet under it', () => {
     // The report form opens over a sheet (failed exam actions, empty states).
     useAppStore.setState({ mobileSheets: [SUBJECT], reportOpen: true } as never);
-    render(<SheetHost />);
+    render(
+      <>
+        <SheetHost />
+        <FeedbackModalHost />
+      </>
+    );
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(useAppStore.getState().reportOpen).toBe(false);
+    expect(useAppStore.getState().mobileSheets).toEqual([SUBJECT]);
+  });
+
+  it('leaves the sheet alone while a link is opening over it', () => {
+    // The "opening…" scrim covers everything while the in-app browser loads,
+    // and the link was pressed INSIDE the sheet: popping it would pull the
+    // page out from under the browser that is about to present over it.
+    useAppStore.setState({ mobileSheets: [SUBJECT], externalOpening: true } as never);
+    render(<SheetHost />);
+    fireEvent.keyDown(document, { key: 'Escape' });
     expect(useAppStore.getState().mobileSheets).toEqual([SUBJECT]);
   });
 

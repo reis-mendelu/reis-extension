@@ -106,7 +106,11 @@ export function CountryPicker({
             setIsOpen(true);
           }}
           onKeyDown={(e) => {
-            if (e.key === 'Escape') setIsOpen(false);
+            if (e.key === 'Escape' && isOpen) {
+              // Kept while the list is open: it closes the list, not the drawer.
+              e.preventDefault();
+              setIsOpen(false);
+            }
             if (e.key === 'Enter' && results.length > 0) {
               onChange(results[0].en);
               setIsOpen(false);
