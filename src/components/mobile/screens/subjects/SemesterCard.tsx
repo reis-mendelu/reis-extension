@@ -3,6 +3,7 @@ import { useCourseGrade } from '../../../../hooks/data/useCourseGrade';
 import { gradeBadge } from '../../../../utils/gradeLookup';
 import { isRealCredits } from '../../../SubjectsPanel/utils';
 import { computeFailRate } from '../../../SubjectsPanel/computeFailRate';
+import { failRateTone } from '../../../SubjectsPanel/failRateTone';
 import { orderHardestFirst } from '../../../SubjectsPanel/orderHardestFirst';
 import { FailRateLegend } from '../../../SubjectsPanel/FailRateLegend';
 import { useAppStore } from '../../../../store/useAppStore';
@@ -77,13 +78,10 @@ function FailRate({ subject }: { subject: SubjectStatus }) {
       data-testid="subject-fail-rate"
       title={label}
       aria-label={label}
-      className={`w-fit flex-shrink-0 rounded px-1.5 py-0.5 text-xs font-medium tabular-nums ${
-        failRate >= 25
-          ? 'bg-error/10 text-error'
-          : failRate >= 20
-            ? 'bg-warning/15 text-warning-content'
-            : 'bg-base-content/5 text-base-content/50'
-      }`}
+      // failRateTone, the band the study plan's pill uses: this chip had its
+      // own copy, with `text-warning-content` — ink for a SOLID warning fill —
+      // on a /15 tint, which is dark on dark and invisible in the dark theme.
+      className={`w-fit flex-shrink-0 rounded px-1.5 py-0.5 text-xs font-medium tabular-nums ${failRateTone(failRate)}`}
     >
       {failRate}%
     </span>

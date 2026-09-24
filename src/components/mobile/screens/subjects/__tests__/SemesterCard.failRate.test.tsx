@@ -5,6 +5,7 @@ import { useAppStore } from '../../../../../store/useAppStore';
 import type { SubjectStatus } from '../../../../../types/studyPlan';
 import type { EnrolledSubject } from '../../../../../utils/mobile/enrolledSubjects';
 import type { SubjectSuccessRate } from '../../../../../types/documents';
+import { failRateTone } from '../../../../SubjectsPanel/failRateTone';
 
 function subj(over: Partial<SubjectStatus> = {}): SubjectStatus {
   return {
@@ -109,6 +110,28 @@ describe('SemesterCard fail rate', () => {
       />
     );
     expect(screen.queryByTestId('subject-fail-rate')).not.toBeInTheDocument();
+  });
+
+  it('colours the chip with the same band as the study plan, not with ink meant for a solid fill', () => {
+    // v5.2.5 on a phone, dark theme: "Management" at 20 % rendered
+    // `text-warning-content` (#111827) on `bg-warning/15` over #1f2937, dark
+    // ink on a dark tint, invisible. The desktop pill had the same drift three
+    // times and was fixed with `failRateTone`; the phone never adopted it.
+    for (const [fail, band] of [
+      [22, 'text-[var(--tone-warning)]'],
+      [28, 'text-[var(--tone-error)]'],
+    ] as const) {
+      seedRate('EBC-PSI', 100 - fail, fail);
+      const { unmount } = render(
+        <SemesterCard enrolled={[enrolledOf(subj())]} semester={3} onOpenSubject={() => {}} />
+      );
+      const chip = screen.getByTestId('subject-fail-rate');
+      expect(chip.className).toContain(failRateTone(fail));
+      expect(chip.className).toContain(band);
+      expect(chip.className).not.toContain('text-warning-content');
+      expect(chip.className).not.toMatch(/(^|\s)text-error(\s|$)/);
+      unmount();
+    }
   });
 
   it('suppresses a rate computed from too few students', () => {
