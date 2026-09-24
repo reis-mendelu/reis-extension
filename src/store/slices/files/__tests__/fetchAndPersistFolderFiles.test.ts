@@ -77,4 +77,39 @@ describe('fetchAndPersistFolderFiles', () => {
     const written = vi.mocked(IndexedDBService.set).mock.calls[0]?.[2] as { en: ParsedFile[] };
     expect(written.en.map((f) => f.file_name)).toEqual(['Lecture 1 EN']);
   });
+
+  // The background sync writes a bare single-language array, not { cz, en }.
+  // A subject whose cache is still that shape has files on screen too.
+  it('keeps the files of a legacy single-language cache in the same language', async () => {
+    vi.mocked(IndexedDBService.get).mockResolvedValue([
+      { ...row('Lecture 1', '1'), language: 'cz' },
+    ]);
+    vi.mocked(fetchFolderListing).mockResolvedValue({
+      files: [row('Lecture 3', '3')],
+      complete: false,
+    });
+
+    const result = await fetchAndPersistFolderFiles({
+      courseCode: 'ALG',
+      language: 'cz',
+      subjects,
+    });
+
+    expect(result?.displayList.map((f) => f.file_name).sort()).toEqual(['Lecture 1', 'Lecture 3']);
+  });
+
+  it('does not carry a legacy cache into the other language', async () => {
+    vi.mocked(IndexedDBService.get).mockResolvedValue([
+      { ...row('Přednáška 1', '1'), language: 'cz' },
+    ]);
+    vi.mocked(fetchFolderListing).mockResolvedValue({ files: [], complete: false });
+
+    const result = await fetchAndPersistFolderFiles({
+      courseCode: 'ALG',
+      language: 'en',
+      subjects,
+    });
+
+    expect(result?.displayList).toEqual([]);
+  });
 });

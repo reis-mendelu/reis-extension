@@ -45,8 +45,12 @@ export async function fetchAndPersistFolderFiles({
     cachedFiles && 'cz' in cachedFiles && 'en' in cachedFiles
       ? (cachedFiles as { cz: ParsedFile[]; en: ParsedFile[] })
       : { cz: [] as ParsedFile[], en: [] as ParsedFile[] };
+  // A bare array is the background sync's single-language shape; it counts as
+  // this language's cache only if it was fetched in this language.
+  const legacy = Array.isArray(cachedFiles) ? (cachedFiles as ParsedFile[]) : null;
+  const previous = legacy ? (legacy[0]?.language === language ? legacy : []) : data[language];
   // A crawl that lost a subfolder or page must not delete that part's files.
-  const fullFilesList = mergeFolderListing(data[language], listing);
+  const fullFilesList = mergeFolderListing(previous, listing);
   if (language === 'en') data.en = fullFilesList;
   else data.cz = fullFilesList;
   await IndexedDBService.set('files', courseCode, data);
