@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/react';
 import { NowNextCard } from '../NowNextCard';
 import { useAppStore } from '../../../../../store/useAppStore';
 import { makeLesson } from '../../../../../test/fixtures/lesson';
+import { customEventToLesson } from '../../../../../utils/customEventLesson';
+import { rsvpBlockId } from '../../../../../utils/rsvpBlocks';
 import type { NowNext } from '../../../../../utils/mobile/nowNext';
 
 function nowNext(over: Partial<NowNext> = {}): NowNext {
@@ -139,5 +141,45 @@ describe('NowNextCard route button', () => {
   it.each(['X02', 'B Virtuální 6'])('withholds the route for %s', (room) => {
     render(<NowNextCard data={withNextRoom(room)} onRoute={() => {}} />);
     expect(screen.queryByRole('button')).toBeNull();
+  });
+});
+
+/** The same gap one card higher: an answered event is often what comes next. */
+describe('NowNextCard, when an answered society event is next', () => {
+  beforeEach(() => {
+    useAppStore.setState({
+      language: 'cz',
+      mapEvents: [
+        {
+          id: 'evt-1',
+          title: 'City Game',
+          url: '',
+          date: '2026-09-24',
+          endDate: null,
+          time: '18:30',
+          location: null,
+          imageUrl: null,
+          organizerKey: 'mendelu',
+          societyId: 'esn',
+          coord: [16.6077, 49.1976],
+          roomCode: null,
+          venueKind: 'offcampus',
+          category: 'other',
+        },
+      ],
+    } as never);
+  });
+
+  it('says where it is and offers the way there', () => {
+    const next = customEventToLesson({
+      id: rsvpBlockId('evt-1'),
+      title: 'City Game',
+      date: '20260924',
+      startTime: '18:30',
+      endTime: '20:00',
+    });
+    render(<NowNextCard data={nowNext({ next })} onRoute={() => {}} />);
+    expect(screen.getByText(/City Game · Místo na mapě · 18:30 – 20:00/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Trasa/ })).toBeInTheDocument();
   });
 });

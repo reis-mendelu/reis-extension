@@ -3,6 +3,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { AgendaEvent } from '../AgendaEvent';
 import { useAppStore } from '../../../../../store/useAppStore';
 import { makeLesson } from '../../../../../test/fixtures/lesson';
+import { customEventToLesson } from '../../../../../utils/customEventLesson';
+import { rsvpBlockId } from '../../../../../utils/rsvpBlocks';
 
 describe('AgendaEvent', () => {
   beforeEach(() => {
@@ -77,5 +79,63 @@ describe('AgendaEvent pin, for a room the map cannot find', () => {
       <AgendaEvent lesson={makeLesson({ room })} onOpenSubject={vi.fn()} onShowOnMap={vi.fn()} />
     );
     expect(screen.queryByRole('button', { name: 'Ukázat na mapě' })).toBeNull();
+  });
+});
+
+/**
+ * An answered society event, as the calendar block it becomes. The City Game
+ * was placed with a pin and no place name, and its row printed only the time —
+ * a dangling " · 18:30 – 20:00" — with no pin, because the pin asked the room
+ * index about a room the block never had.
+ */
+describe('AgendaEvent, for an answered society event', () => {
+  const cityGame = customEventToLesson({
+    id: rsvpBlockId('evt-1'),
+    title: 'City Game',
+    date: '20260924',
+    startTime: '18:30',
+    endTime: '20:00',
+  });
+
+  beforeEach(() => {
+    useAppStore.setState({
+      language: 'cz',
+      mapEvents: [
+        {
+          id: 'evt-1',
+          title: 'City Game',
+          url: '',
+          date: '2026-09-24',
+          endDate: null,
+          time: '18:30',
+          location: null,
+          imageUrl: null,
+          organizerKey: 'mendelu',
+          societyId: 'esn',
+          coord: [16.6077, 49.1976],
+          roomCode: null,
+          venueKind: 'offcampus',
+          category: 'other',
+        },
+      ],
+    } as never);
+  });
+
+  it('says where it is and offers the map', () => {
+    render(<AgendaEvent lesson={cityGame} onOpenSubject={vi.fn()} onShowOnMap={vi.fn()} />);
+    expect(screen.getByText('Místo na mapě · 18:30 – 20:00')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ukázat na mapě' })).toBeInTheDocument();
+  });
+
+  it('prints no dangling separator for an entry with no place at all', () => {
+    const own = customEventToLesson({
+      id: 'custom-1',
+      title: 'Zubař',
+      date: '20260924',
+      startTime: '08:00',
+      endTime: '09:00',
+    });
+    render(<AgendaEvent lesson={own} onOpenSubject={vi.fn()} onShowOnMap={vi.fn()} />);
+    expect(screen.getByText('08:00 – 09:00')).toBeInTheDocument();
   });
 });
