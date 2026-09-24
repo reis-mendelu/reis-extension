@@ -120,8 +120,22 @@ const CATEGORY_STYLE: Record<RoomCategory, RoomStyle> = {
   other: { fill: '#e8edf2', stroke: '#c2c8d0' },
 };
 
-export function categoryStyle(c: RoomCategory): RoomStyle {
-  return CATEGORY_STYLE[c] ?? CATEGORY_STYLE.other;
+// Room types that must not look like their category. Measured over the real
+// backdrop (fill at 0.6 on the #d7d7d7 building footprint), CIEDE2000 to the
+// nearest existing fill / to the selected orange, and contrast of the label
+// ink #1f2937 and the route #a21caf on it:
+//   amber  #fcd34d  14.9 (teaching) / 21.4   label 10.1  route 4.35  ← chosen
+//   teal   #8fd9cd  13.9 (teaching) / 37.1   label  9.4  route 4.06
+//   violet #c4b5fd  12.2 (service)  / 38.3   label  8.8  route 3.80
+//   rose   #ff819d  16.7 (service)  / 28.2   label  7.4  route 3.18  (MyMENDELU's bistro)
+// MyMENDELU has no shop type to copy. Only reIS's MENDELU Shop is typed `shop`
+// (mergedRooms.ts); the API's wine shop and bistro keep their category colour.
+const TYPE_STYLE: Record<string, RoomStyle> = {
+  shop: { fill: '#fcd34d', stroke: '#ca8a04' },
+};
+
+export function categoryStyle(c: RoomCategory, type?: string): RoomStyle {
+  return (type && TYPE_STYLE[type]) || CATEGORY_STYLE[c] || CATEGORY_STYLE.other;
 }
 
 export function shortLabel(name: string): string {

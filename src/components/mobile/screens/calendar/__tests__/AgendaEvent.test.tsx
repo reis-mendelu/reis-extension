@@ -72,7 +72,7 @@ describe('AgendaEvent pin, for a room the map cannot find', () => {
   });
 
   it.each([
-    ['X02', 'a room absent from the dataset'],
+    ['ZFAC1', 'a room absent from the dataset'],
     ['B Virtuální 6', 'a lesson held online'],
   ])('withholds the pin for %s (%s)', (room) => {
     render(

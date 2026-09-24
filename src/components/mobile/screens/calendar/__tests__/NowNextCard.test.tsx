@@ -168,7 +168,7 @@ describe('NowNextCard route button', () => {
     expect(screen.getByRole('button', { name: /Trasa/ })).toBeInTheDocument();
   });
 
-  it.each(['X02', 'B Virtuální 6'])('withholds the route for a running lesson in %s', (room) => {
+  it.each(['ZFAC1', 'B Virtuální 6'])('withholds the route for a running lesson in %s', (room) => {
     render(<NowNextCard data={withCurrentRoom(room)} onRoute={() => {}} />);
     expect(screen.queryByRole('button')).toBeNull();
   });
@@ -176,7 +176,7 @@ describe('NowNextCard route button', () => {
   // The next lesson's room is not what the button answers for, so a routable
   // next lesson must not conjure the button over an unroutable running one.
   it("ignores the next lesson's room", () => {
-    const data = nowNext({ current: lessonIn('X02'), next: lessonIn('Q01', 'Next') });
+    const data = nowNext({ current: lessonIn('ZFAC1'), next: lessonIn('Q01', 'Next') });
     render(<NowNextCard data={data} onRoute={() => {}} />);
     expect(screen.queryByRole('button')).toBeNull();
   });

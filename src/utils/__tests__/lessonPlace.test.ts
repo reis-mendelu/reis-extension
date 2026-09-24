@@ -90,7 +90,7 @@ describe('lessonPlace', () => {
       onMap: true,
       host: null,
     });
-    expect(lessonPlace(makeLesson({ room: 'X02' }), 'cz', [], ON_MAP).onMap).toBe(false);
+    expect(lessonPlace(makeLesson({ room: 'ZFAC1' }), 'cz', [], ON_MAP).onMap).toBe(false);
   });
 
   it('says nothing about an entry the student typed in without a room', () => {

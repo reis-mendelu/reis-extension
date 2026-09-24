@@ -162,7 +162,7 @@ describe('mapSlice', () => {
     const before = useAppStore.getState().mapFocusRequest;
     // A real Zahradnická fakulta timetable room; building X carries no such
     // handle under any field, so there is nothing to fly to.
-    useAppStore.getState().focusRoomByCode('X02');
+    useAppStore.getState().focusRoomByCode('ZFAC1');
     expect(useAppStore.getState().mapFocusRequest).toBe(before);
   });
 

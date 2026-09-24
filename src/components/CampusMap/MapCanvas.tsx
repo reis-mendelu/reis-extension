@@ -387,7 +387,7 @@ export function MapCanvas() {
       const p = f.properties,
         struct = p.category === 'structure';
       const isSel = p.id === selectedId;
-      const st = categoryStyle(p.category);
+      const st = categoryStyle(p.category, p.type);
       const base: L.PathOptions = struct
         ? STRUCTURE_STYLE
         : {
