@@ -39,6 +39,7 @@ import { createAdminSlice } from './slices/createAdminSlice';
 import { createAdminStatsSlice } from './slices/createAdminStatsSlice';
 import { createSuggestionsSlice } from './slices/createSuggestionsSlice';
 import { createDemoSlice } from './slices/createDemoSlice';
+import { createReportSlice } from './slices/createReportSlice';
 import { createRouteSlice } from './slices/createRouteSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
@@ -88,6 +89,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createSuggestionsSlice(...a),
   ...createRouteSlice(...a),
   ...createDemoSlice(...a),
+  ...createReportSlice(...a),
 }));
 
 // Initialize store and subscribe to sync updates
