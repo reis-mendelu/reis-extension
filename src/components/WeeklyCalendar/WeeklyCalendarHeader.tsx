@@ -177,7 +177,7 @@ export function WeeklyCalendarHeader({
           >
             <div className="flex flex-col items-center justify-center h-full">
               <div
-                className={`text-lg font-semibold leading-tight ${holiday ? 'text-error' : isToday ? 'text-current-day' : 'text-base-content'}`}
+                className={`text-lg font-semibold leading-tight ${holiday ? 'text-[var(--tone-error)]' : isToday ? 'text-current-day' : 'text-base-content'}`}
               >
                 {dateInfo?.day}
               </div>

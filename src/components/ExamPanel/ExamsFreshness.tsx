@@ -20,7 +20,7 @@ export function ExamsFreshness() {
   }, [fetchedAt, now, locale, t]);
 
   return (
-    <div className="flex items-center gap-1.5 text-xs text-base-content/50">
+    <div className="flex items-center gap-1.5 text-xs text-base-content/70">
       {label && <span className="hidden md:inline">{label}</span>}
       <button
         type="button"

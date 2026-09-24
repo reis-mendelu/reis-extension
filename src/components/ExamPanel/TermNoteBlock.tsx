@@ -16,7 +16,7 @@ export function TermNoteBlock({ terminId }: { terminId: string }) {
 
   if (isLoading && note === undefined) {
     return (
-      <div className="px-3 py-1.5 border-t border-base-200/60 flex items-center gap-1.5 text-[10px] text-base-content/40 italic">
+      <div className="px-3 py-1.5 border-t border-base-200/60 flex items-center gap-1.5 text-[10px] text-base-content/70 italic">
         <span className="loading loading-dots loading-xs" />
         <span>{t('exams.loadingNote')}</span>
       </div>
@@ -33,7 +33,7 @@ export function TermNoteBlock({ terminId }: { terminId: string }) {
       <div className="flex items-start gap-1.5">
         <AlertTriangle
           size={12}
-          className={`mt-0.5 shrink-0 ${note.isEmphasized ? 'text-warning' : 'text-base-content/40'}`}
+          className={`mt-0.5 shrink-0 ${note.isEmphasized ? 'text-[var(--tone-warning)]' : 'text-base-content/60'}`}
         />
         <div className="whitespace-pre-wrap text-base-content/80">{note.text}</div>
       </div>

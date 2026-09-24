@@ -25,6 +25,11 @@ const SWEPT = [
   'src/components/mobile/screens/calendar/DayChips.tsx',
   'src/components/mobile/screens/ProfileScreen.tsx',
   'src/components/mobile/screens/HeaderActions.tsx',
+  // desktop tree (the extension)
+  'src/components/Exams/Timeline/ExamItem.tsx',
+  'src/components/ExamPanel/TermsSummary.tsx',
+  'src/components/ExamPanel/ExamSectionCard.tsx',
+  'src/components/ExamPanel/TermNoteBlock.tsx',
 ];
 
 const RAW = /(?:^|[\s'"`:])text-(success|error|warning|info|primary)(?:\/\d+)?(?=[\s'"`]|$)/gm;

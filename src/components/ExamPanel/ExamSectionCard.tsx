@@ -73,7 +73,7 @@ export function ExamSectionCard({
       >
         <div className="flex-1 min-w-[200px]">
           <div className="flex flex-wrap items-center gap-2 mb-1">
-            <span className="badge badge-sm font-bold bg-primary/10 text-primary py-1 h-auto whitespace-normal border-none">
+            <span className="badge badge-sm font-bold bg-primary/10 text-[var(--tone-primary)] py-1 h-auto whitespace-normal border-none">
               {subjectName}
             </span>
             <span className="text-sm font-bold opacity-80">{sectionName}</span>
@@ -117,7 +117,7 @@ export function ExamSectionCard({
 
           {alternatives.length > 0 && (
             <div
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${isReg && !isExpanded ? 'bg-warning/10 text-warning border border-warning/20' : 'opacity-60'}`}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${isReg && !isExpanded ? 'bg-warning/10 text-[var(--tone-warning)] border border-warning/20' : 'opacity-60'}`}
             >
               {isExpanded ? (
                 <>
@@ -155,7 +155,7 @@ export function ExamSectionCard({
             )}
           </button>
           {isAfterDeadline && (
-            <p className="text-[10px] text-error mt-1 text-center font-bold">
+            <p className="text-[10px] text-[var(--tone-error)] mt-1 text-center font-bold">
               {t('exams.afterDeadlineCannotDeregister')}
             </p>
           )}
@@ -215,14 +215,14 @@ function SectionStatePill({
 }) {
   if (state.type === 'open')
     return (
-      <span className="flex items-center gap-1 text-[10px] font-bold text-success/90 uppercase tracking-wide">
+      <span className="flex items-center gap-1 text-[10px] font-bold text-[var(--tone-success)] uppercase tracking-wide">
         <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" />
         {state.openCount} {t('exams.available')}
       </span>
     );
   if (state.type === 'opening')
     return (
-      <span className="text-[10px] font-bold text-warning/60 uppercase tracking-wide">
+      <span className="text-[10px] font-bold text-[var(--tone-warning)] uppercase tracking-wide">
         {t('exams.opening')}
       </span>
     );
