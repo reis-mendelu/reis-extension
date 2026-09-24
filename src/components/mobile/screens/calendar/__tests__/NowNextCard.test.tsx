@@ -27,6 +27,48 @@ describe('NowNextCard', () => {
     useAppStore.setState({ language: 'cz' } as never);
   });
 
+  // The badge said "TEĎ BĚŽÍ" above a card that only ever renders while
+  // something IS running, next to a countdown that says the same thing — three
+  // ways of saying one fact, at the top of the screen.
+  // A row of its own above the title left a band of empty card; on the title's
+  // line it pushed a real course name onto two lines. It belongs beside the
+  // bar that shows the same thing.
+  it('puts the countdown beside the progress bar', () => {
+    const { container } = render(<NowNextCard data={nowNext()} onRoute={() => {}} />);
+    const countdown = screen.getByText(/konec za 20 min/);
+    expect(countdown.parentElement?.querySelector('.rounded-full')).toBeTruthy();
+    expect(container.querySelectorAll('[style*="width: 40%"]')).toHaveLength(1);
+  });
+
+  it('says nothing about what follows when nothing does', () => {
+    render(<NowNextCard data={nowNext({ next: null })} onRoute={() => {}} />);
+    expect(screen.queryByText(/Následuje/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Trasa/ })).not.toBeInTheDocument();
+  });
+
+  it('does not label the card "Teď běží"', () => {
+    render(<NowNextCard data={nowNext()} onRoute={() => {}} />);
+    expect(screen.queryByText(/Teď běží/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/konec za 20 min/)).toBeInTheDocument();
+  });
+
+  // "Pak:" with a bare start time left the obvious question open — until when?
+  it('heads the following lesson "Následuje", in bold, with the whole time it runs', () => {
+    const next = makeLesson({
+      courseName: 'Marketing 1',
+      courseNameCs: 'Marketing 1',
+      room: 'A11',
+      roomCs: 'A11',
+      startTime: '11:50',
+      endTime: '13:20',
+    });
+    render(<NowNextCard data={nowNext({ next })} onRoute={() => {}} />);
+    const label = screen.getByText('Následuje:');
+    expect(label.className).toMatch(/font-bold|font-semibold/);
+    expect(screen.getByText(/Marketing 1 · A11 · 11:50 – 13:20/)).toBeInTheDocument();
+    expect(screen.queryByText(/^Pak/)).not.toBeInTheDocument();
+  });
+
   it('CZ mode: shows the Czech localized course name and room for the running lesson', () => {
     render(<NowNextCard data={nowNext()} onRoute={() => {}} />);
     expect(screen.getByText('cz-current')).toBeInTheDocument();

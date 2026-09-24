@@ -10,6 +10,8 @@ describe('CalendarScreen', () => {
     vi.setSystemTime(new Date('2026-04-20T10:00:00'));
     useAppStore.setState({
       language: 'cz',
+      // The screen reads the store's clock, the one the pulse advances.
+      now: new Date('2026-04-20T10:00:00'),
       mobileSelectedDayIso: '2026-04-20',
       syncStatus: {
         isSyncing: false,
@@ -33,7 +35,9 @@ describe('CalendarScreen', () => {
       schedule: { data: [lesson({})], status: 'success' } as never,
     });
     render(<CalendarScreen />);
-    expect(within(screen.getByTestId('now-next-card')).getByText('Teď běží')).toBeInTheDocument();
+    // The card exists only while something runs, so its countdown is what
+    // says so — the "Teď běží" badge above it was the same fact a third time.
+    expect(within(screen.getByTestId('now-next-card')).getByText(/konec za/)).toBeInTheDocument();
     expect(within(screen.getByTestId('now-next-card')).getByText(/Management/)).toBeInTheDocument();
   });
 
@@ -140,6 +144,8 @@ describe('CalendarScreen first-sync loading', () => {
     vi.setSystemTime(new Date('2026-04-20T10:00:00'));
     useAppStore.setState({
       language: 'cz',
+      // The screen reads the store's clock, the one the pulse advances.
+      now: new Date('2026-04-20T10:00:00'),
       mobileSelectedDayIso: '2026-04-20',
       schedule: { data: [], status: 'loading' } as never,
       firstSyncSettled: false,
