@@ -87,8 +87,7 @@ function ZameraniRow({
           <span className="flex-1 text-sm font-medium truncate">{cleanName}</span>
           {insight.totalCredits > 0 && (
             <span className="text-[10px] text-base-content/70 font-mono shrink-0">
-              {insight.totalCredits}
-              <span className="hidden md:inline"> kr.</span>
+              {insight.totalCredits} {t('subjects.creditsShort')}
             </span>
           )}
           {hasDetail && (
