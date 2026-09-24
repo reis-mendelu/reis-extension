@@ -9,8 +9,6 @@ const __dirname = path.dirname(__filename);
 // mobile-chromium testMatch and the desktop/firefox-android testIgnore so
 // the two filters cannot drift apart. Specs like mobile-shell.spec.ts assert
 // the phone branch mounted, which only holds under touch-emulated projects.
-// Note: e2e/mobile-smoke.spec.ts is deliberately NOT covered because it
-// targets firefox-android and self-guards on browserName.
 const MOBILE_ONLY_SPEC = /serenity[\\/]specs[\\/]mobile-.*\.spec\.ts$/;
 
 export default defineConfig({
