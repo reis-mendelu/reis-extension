@@ -216,13 +216,20 @@ text contrast per the desktop-tree rules (ink on tints, `/70` muted text).
   reis-data (parser rules).
 - **An eval over the 57 subjects both reviewers agreed on**, pinned at the
   baseline measured on 2026-09-24 by simulating these rules:
-  - the true predecessor is in the top 3 for **at least 31 of the 34** "same
+  - the true predecessor is in the top 3 for **at least 32 of the 34** "same
     course" and "type changed" subjects. The known misses are ZLZG → LZE and
-    2DCD → SYCAD (name ratio below 0.5) and SVPS → ODAP;
-  - `completionChanged` is set on every "type changed" subject whose
-    predecessor is found;
+    2DCD → SYCAD, whose name ratio is below 0.5;
+  - `completionChanged` is set for the five genuine credit ↔ exam changes the
+    rules find: OZPS, GEODZ, EKOE1, UVDEK and ZABIHY. The other three "type
+    changed" verdicts (BOTKA, ABOBC, ZABAH) were changes of content or
+    guarantor, which no flag expresses; the student sees only the reasons;
   - **at most 2 of the 14** "no predecessor" subjects get any suggestion (PRKO
     and EBC-VZ do today).
+
+  The eval runs over a frozen fixture (`audit/fixtures/similar/eval.json`):
+  the 57 labels plus, for each new subject, every same-faculty old subject with
+  stats whose name ratio is at least 0.5 (1,031 entries). The Python reference
+  implementation beside it produced these numbers.
 
   A change that lowers either number fails the eval. Raising the recall is
   fine, but the noise bound still has to hold. The labels are an eval, not
