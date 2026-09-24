@@ -7,6 +7,7 @@ import { useTranslation } from '../../../../hooks/useTranslation';
 import { freeSeats } from '../../../../utils/mobile/examRows';
 import { parseCzechDateTime } from '../../../../utils/mobile/examTimeline';
 import { formatDayMonth, trimHour } from '../../../../utils/mobile/examWhen';
+import { reportToastOptions } from '../../../Feedback/reportPrefill';
 import { AttemptBadge } from './AttemptBadge';
 import { MoreChip } from './MoreChip';
 import { TermDetails } from './TermDetails';
@@ -44,7 +45,11 @@ export function TermRow({ term, section, now, isProcessing, onRegister }: TermRo
   useEffect(() => {
     if (feedback === 'activated') toast.success(t('exams.watchdogActivated'));
     else if (feedback === 'deactivated') toast.info(t('exams.watchdogDeactivated'));
-    else if (feedback === 'failed') toast.error(errorMessage || t('exams.watchdogFailed'));
+    else if (feedback === 'failed')
+      toast.error(
+        errorMessage || t('exams.watchdogFailed'),
+        reportToastOptions(t, 'examActionFailed')
+      );
     // Intentionally reacting only to `feedback` transitions: errorMessage/t
     // are read at the moment feedback fires (set together in useWatchdog),
     // not on every render.

@@ -6,6 +6,7 @@ import { updateExamOptimistically } from './actions/optimisticUpdates';
 import type { ExamSubject, ExamSection, ExamTerm } from '../../types/exams';
 import { logError } from '../../utils/reportError';
 import { useTranslation } from '../../hooks/useTranslation';
+import { reportToastOptions } from '../Feedback/reportPrefill';
 
 interface PendingAction {
   type: 'register' | 'unregister';
@@ -21,6 +22,9 @@ export function useExamActions({
   setExpandedSectionId: (id: string | null) => void;
 }) {
   const { t: tr } = useTranslation();
+  // Every failure toast here offers "Nahlásit". The prefill is our own
+  // title; the toast text may still show IS's own message.
+  const report = () => reportToastOptions(tr, 'examActionFailed');
   const [procId, setProcId] = useState<string | null>(null),
     [pending, setPending] = useState<PendingAction | null>(null);
   const setExams = useAppStore((s) => s.setExams);
@@ -32,7 +36,7 @@ export function useExamActions({
       const previousTermId = sec.status === 'registered' ? sec.registeredTerm?.id : undefined;
       if (previousTermId) {
         if (!(await unregisterExam(previousTermId)).success) {
-          toast.error(tr('exams.actionUnregisterFailed'));
+          toast.error(tr('exams.actionUnregisterFailed'), report());
           setProcId(null);
           return;
         }
@@ -64,7 +68,7 @@ export function useExamActions({
       if (previousTermId) {
         const rollback = await registerExam(previousTermId);
         if (rollback.success) {
-          toast.error(tr('exams.actionSwitchFailedRolledBack'));
+          toast.error(tr('exams.actionSwitchFailedRolledBack'), report());
         } else {
           logError(
             'useExamActions.handleRegister.rollbackFailed',
@@ -72,22 +76,22 @@ export function useExamActions({
               `restore failed for ${previousTermId} after register ${tid} failed: regErr=${res.error}; rollbackErr=${rollback.error}`
             )
           );
-          toast.error(tr('exams.actionSwitchFailedNoRollback'));
+          toast.error(tr('exams.actionSwitchFailedNoRollback'), report());
         }
         useAppStore.getState().triggerExamsRefresh();
       } else {
-        toast.error(res.error || tr('exams.actionFailed'));
+        toast.error(res.error || tr('exams.actionFailed'), report());
       }
     } catch (e) {
       logError('useExamActions.handleRegister', e);
-      toast.error(tr('exams.actionGenericError'));
+      toast.error(tr('exams.actionGenericError'), report());
     } finally {
       setProcId(null);
     }
   };
 
   const handleUnregister = async (sec: ExamSection) => {
-    if (!sec.registeredTerm?.id) return toast.error(tr('exams.actionMissingId'));
+    if (!sec.registeredTerm?.id) return toast.error(tr('exams.actionMissingId'), report());
     setProcId(sec.id);
     setPending(null);
     try {
@@ -100,10 +104,10 @@ export function useExamActions({
         });
         setExams(updated);
         useAppStore.getState().triggerExamsRefresh();
-      } else toast.error(res.error || tr('exams.actionFailed'));
+      } else toast.error(res.error || tr('exams.actionFailed'), report());
     } catch (e) {
       logError('useExamActions.handleUnregister', e);
-      toast.error(tr('exams.actionGenericError'));
+      toast.error(tr('exams.actionGenericError'), report());
     } finally {
       setProcId(null);
     }
