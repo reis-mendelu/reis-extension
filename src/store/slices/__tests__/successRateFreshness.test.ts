@@ -170,6 +170,27 @@ describe('fetchSuccessRateBatch after a reis-data refresh', () => {
     const nopeCalls = fetchMock.mock.calls.filter(([url]) => String(url).includes('/NOPE.json'));
     expect(nopeCalls).toHaveLength(1);
   });
+
+  it('stamps a cached subject whose file the new version removed, so it is asked once', async () => {
+    await seed([rate('EBC-ST', 'ZS 2025/2026', V1)]);
+    version.known = V2;
+    version.current = V2;
+    const fetchMock = serveCdn({});
+
+    await useAppStore.getState().fetchSuccessRateBatch(['EBC-ST']);
+    await useAppStore.getState().fetchSuccessRateBatch(['EBC-MAT']);
+    await useAppStore.getState().fetchSuccessRate('EBC-ST');
+    // A reload: nothing in memory, only what IDB kept.
+    useAppStore.setState({ successRates: {}, successRatesLoading: {} } as never);
+    await useAppStore.getState().fetchSuccessRateBatch(['EBC-ST']);
+
+    const stCalls = fetchMock.mock.calls.filter(([url]) => String(url).includes('/EBC-ST.json'));
+    expect(stCalls).toHaveLength(1);
+    expect(newestShown('EBC-ST')).toBe('ZS 2025/2026 - PEF');
+    const stored = await IndexedDBService.get('success_rates', 'current');
+    expect(stored?.data['EBC-ST']?.cdnVersion).toBe(V2);
+    expect(stored?.data['EBC-ST']?.stats).toHaveLength(1);
+  });
 });
 
 describe('fetchSuccessRate after a reis-data refresh', () => {

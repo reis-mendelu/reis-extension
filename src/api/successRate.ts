@@ -133,8 +133,10 @@ export async function fetchSubjectSuccessRates(
       const response = await fetch(url, { cache: 'no-cache' });
       if (!response.ok) {
         if (response.status === 404) {
-          // loggers.api.info('[SuccessRate] No data for:', code);
-          return null;
+          // No file under this version: keep the cached data, but stamp it so it
+          // is not asked for again until the version moves.
+          const cached = results[code];
+          return cached && version !== null ? { ...cached, cdnVersion: version } : null;
         }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
