@@ -22,6 +22,7 @@ const MEMBER_POINTS: Record<string, [number, number]> = {
   BA25N1003A: [16.6147586, 49.210562],
   BA25N1003B: [16.6148298, 49.210578],
   BA25N1003C: [16.6147881, 49.2105265],
+  BA25N1004: [16.6147571, 49.2104405],
   BA25N1004A: [16.614524, 49.2103925],
   BA25N1004B: [16.614556, 49.2103535],
 };
@@ -51,7 +52,7 @@ const allMembers = MERGED_ROOMS.flatMap((r) => r.members);
 const buildingX = (): RoomsCollection => ({
   type: 'FeatureCollection',
   features: [
-    feature(475906, 'BA25N1004'), // Studovna X — a neighbour that must survive
+    feature(475905, 'BA25N1009'), // a toilet — a neighbour that must survive
     ...allMembers.map((name, i) => feature(476000 + i, name)),
   ],
 });
@@ -59,12 +60,23 @@ const names = (c: RoomsCollection) =>
   c.features.map((f) => f.properties.nickname ?? f.properties.name);
 
 describe('MERGED_ROOMS', () => {
-  it('names the three IS classrooms and the shop', () => {
-    expect(MERGED_ROOMS.map((r) => r.nickname)).toEqual(['X01', 'X02', 'X03', 'MENDELU Shop']);
+  it('names the three IS classrooms, the study room and the shop', () => {
+    expect(MERGED_ROOMS.map((r) => r.nickname)).toEqual([
+      'X01',
+      'X02',
+      'X03',
+      'Studovna X',
+      'MENDELU Shop',
+    ]);
+  });
+
+  it("keeps a real member as each room's identity, listed first", () => {
+    for (const room of MERGED_ROOMS) expect(room.members[0]).toBe(room.name);
   });
 
   it('covers every piece it replaces', () => {
     for (const room of MERGED_ROOMS) {
+      if (!room.ring) continue; // a relabel keeps the member's own outline
       for (const m of room.members) {
         const point = MEMBER_POINTS[m];
         expect(point, m).toBeDefined();
@@ -75,6 +87,7 @@ describe('MERGED_ROOMS', () => {
 
   it('draws each outline as a closed ring', () => {
     for (const room of MERGED_ROOMS) {
+      if (!room.ring) continue;
       expect(room.ring.length).toBeGreaterThanOrEqual(4);
       expect(room.ring[0]).toEqual(room.ring[room.ring.length - 1]);
     }
@@ -88,7 +101,15 @@ describe('MERGED_ROOMS', () => {
 describe('mergeRoomGroups', () => {
   it('replaces each group with one room and leaves the neighbours alone', () => {
     const out = mergeRoomGroups(buildingX());
-    expect(names(out)).toEqual(['BA25N1004', 'X01', 'X02', 'X03', 'MENDELU Shop']);
+    expect(names(out)).toEqual(['BA25N1009', 'X01', 'X02', 'X03', 'Studovna X', 'MENDELU Shop']);
+  });
+
+  it('relabels the shop but keeps its own outline', () => {
+    const before = buildingX();
+    const own = before.features.find((f) => f.properties.name === 'BA25N1015')!.geometry;
+    const shop = mergeRoomGroups(before).features.find((f) => f.properties.name === 'BA25N1015');
+    expect(shop?.geometry).toBe(own);
+    expect(shop?.properties).toMatchObject({ nickname: 'MENDELU Shop', category: 'other' });
   });
 
   it('gives the merged room the outline, and the building and floor of its pieces', () => {
