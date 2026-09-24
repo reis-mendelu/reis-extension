@@ -3,13 +3,15 @@
 // NOT part of the shipped bundle — the JSON output is committed instead.
 //
 // Usage: node scripts/fetch-landmarks.mjs
+//        node scripts/fetch-landmarks.mjs --only=-201   fetch just these ids and
+//        merge them into the committed file, leaving the rest untouched.
 //
 // For each landmark point we ask Overpass for building ways within 40 m and
 // pick the footprint whose centroid is nearest the point. Misses are logged
 // loudly so they can be hand-checked rather than silently shipping a wrong
 // polygon (mirrors the project's "needs real evidence" rule for parsers).
 
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 
 const OVERPASS = 'https://overpass-api.de/api/interpreter';
 
@@ -95,7 +97,29 @@ const LANDMARKS = [
     lon: 16.588579,
     lat: 49.21517,
   },
+  // Not a map-API POI, so a negative id that cannot collide with one. IS lists
+  // "Design lab MENDELU" as building F10 with no address; LDF gives Lesnická
+  // 810/37 (building B's own conscription number) and describes a two-storey
+  // building of 11 containers. MENDELU's campus plan (mendelu.cz, Mapa kampusu
+  // 26.1.2024) marks "dl." between L and T, and OSM way 1396081978 — an
+  // unnamed 20 × 17 m building added 2025-06-17 — is the one footprint there.
+  {
+    id: -201,
+    name: 'design lab MENDELU',
+    type: 'building',
+    url: 'https://ldf.mendelu.cz/design-lab-mendelu/',
+    phone: null,
+    email: 'anna.horakova@mendelu.cz',
+    lon: 16.61682,
+    lat: 49.21175,
+  },
 ];
+
+const only = process.argv
+  .find((a) => a.startsWith('--only='))
+  ?.slice('--only='.length)
+  .split(',')
+  .map(Number);
 
 const ringCentroid = (ring) => {
   let lon = 0,
@@ -143,7 +167,7 @@ async function fetchFootprint(lm) {
 }
 
 const out = [];
-for (const lm of LANDMARKS) {
+for (const lm of only ? LANDMARKS.filter((x) => only.includes(x.id)) : LANDMARKS) {
   let ring = null;
   try {
     ring = await fetchFootprint(lm);
@@ -166,10 +190,15 @@ for (const lm of LANDMARKS) {
   await new Promise((r) => setTimeout(r, 1200)); // be polite to Overpass
 }
 
-writeFileSync(
-  new URL('../src/data/map/landmarks.json', import.meta.url),
-  JSON.stringify({ landmarks: out }, null, 2) + '\n'
-);
+const target = new URL('../src/data/map/landmarks.json', import.meta.url);
+// --only: keep every landmark not fetched this run exactly as committed.
+const prevById = only
+  ? new Map(JSON.parse(readFileSync(target, 'utf8')).landmarks.map((l) => [l.id, l]))
+  : new Map();
+const landmarks = only
+  ? LANDMARKS.map((lm) => out.find((l) => l.id === lm.id) ?? prevById.get(lm.id)).filter(Boolean)
+  : out;
+writeFileSync(target, JSON.stringify({ landmarks }, null, 2) + '\n');
 console.log(
-  `Wrote ${out.length}/${LANDMARKS.length} landmark footprints. Verify any MISS/SKIPPED above.`
+  `Wrote ${landmarks.length}/${LANDMARKS.length} landmark footprints (${out.length} fetched). Verify any MISS/SKIPPED above.`
 );

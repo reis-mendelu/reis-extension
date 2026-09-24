@@ -1,0 +1,722 @@
+[
+  {
+    "label": "01019",
+    "campus": "LedR",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "A1 CSA",
+    "campus": "TAK",
+    "kind": "landmark",
+    "id": 1623
+  },
+  {
+    "label": "A2 CSA",
+    "campus": "TAK",
+    "kind": "landmark",
+    "id": 1623
+  },
+  {
+    "label": "B1 CSA",
+    "campus": "TAK",
+    "kind": "landmark",
+    "id": 1623
+  },
+  {
+    "label": "B2 CSA",
+    "campus": "TAK",
+    "kind": "landmark",
+    "id": 1623
+  },
+  {
+    "label": "BA01N4011",
+    "campus": "ČP",
+    "kind": "building",
+    "id": 54678
+  },
+  {
+    "label": "BZ231",
+    "campus": "ČP",
+    "kind": "building",
+    "id": 510096
+  },
+  {
+    "label": "D01",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1592
+  },
+  {
+    "label": "D02",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1592
+  },
+  {
+    "label": "D03",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1592
+  },
+  {
+    "label": "D04",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1592
+  },
+  {
+    "label": "D05",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1592
+  },
+  {
+    "label": "D06",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1592
+  },
+  {
+    "label": "D07",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1592
+  },
+  {
+    "label": "D2",
+    "campus": "VASS",
+    "kind": "remote",
+    "id": -110
+  },
+  {
+    "label": "Design lab MENDELU",
+    "campus": "ČP",
+    "kind": "landmark",
+    "id": -201
+  },
+  {
+    "label": "E03",
+    "campus": "ČP",
+    "kind": "building",
+    "id": 1279313
+  },
+  {
+    "label": "Hranice 1",
+    "campus": "SLŠ",
+    "kind": "remote",
+    "id": -109
+  },
+  {
+    "label": "J02",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1579
+  },
+  {
+    "label": "J04",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1579
+  },
+  {
+    "label": "J06",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1579
+  },
+  {
+    "label": "J08",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1579
+  },
+  {
+    "label": "K01",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "K02",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "K03",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "Lesní škola Jezírko",
+    "campus": "ŠLP",
+    "kind": "remote",
+    "id": -104
+  },
+  {
+    "label": "Malá zasedačka PEF",
+    "campus": "ČP",
+    "kind": "building",
+    "id": 0
+  },
+  {
+    "label": "N1011",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "N11",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1589
+  },
+  {
+    "label": "N12",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1589
+  },
+  {
+    "label": "N13",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1589
+  },
+  {
+    "label": "N21",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1589
+  },
+  {
+    "label": "N22",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1589
+  },
+  {
+    "label": "N3001",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "N3010",
+    "campus": "Kar",
+    "kind": "remote",
+    "id": -108
+  },
+  {
+    "label": "P-ATE",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1609
+  },
+  {
+    "label": "P-CAL",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1609
+  },
+  {
+    "label": "P-dilny",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1609
+  },
+  {
+    "label": "P1014",
+    "campus": "ČP",
+    "kind": "building",
+    "id": 465899
+  },
+  {
+    "label": "P1058",
+    "campus": "ČP",
+    "kind": "building",
+    "id": 582134
+  },
+  {
+    "label": "P220",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1609
+  },
+  {
+    "label": "Q-LVR",
+    "campus": "ČP",
+    "kind": "building",
+    "id": 0
+  },
+  {
+    "label": "Q01.58",
+    "campus": "ČP",
+    "kind": "building",
+    "id": 0
+  },
+  {
+    "label": "Q04",
+    "campus": "ČP",
+    "kind": "building",
+    "id": 0
+  },
+  {
+    "label": "R204",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1591
+  },
+  {
+    "label": "R206",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1591
+  },
+  {
+    "label": "R209",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1591
+  },
+  {
+    "label": "R210",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1591
+  },
+  {
+    "label": "S122",
+    "campus": "BZA",
+    "kind": "remote",
+    "id": -101
+  },
+  {
+    "label": "S127",
+    "campus": "BZA",
+    "kind": "remote",
+    "id": -101
+  },
+  {
+    "label": "Studovna PEF",
+    "campus": "ČP",
+    "kind": "building",
+    "id": 0
+  },
+  {
+    "label": "T-lab",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1572
+  },
+  {
+    "label": "T-lab 2",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1572
+  },
+  {
+    "label": "T17",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1572
+  },
+  {
+    "label": "T18",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1572
+  },
+  {
+    "label": "T27",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1572
+  },
+  {
+    "label": "T28",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1572
+  },
+  {
+    "label": "T412",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1572
+  },
+  {
+    "label": "T413",
+    "campus": "ČP",
+    "kind": "poi",
+    "id": 1572
+  },
+  {
+    "label": "Velká zasedačka PEF",
+    "campus": "ČP",
+    "kind": "building",
+    "id": 0
+  },
+  {
+    "label": "VT3",
+    "campus": "VASS",
+    "kind": "remote",
+    "id": -110
+  },
+  {
+    "label": "VT5",
+    "campus": "VASS",
+    "kind": "remote",
+    "id": -110
+  },
+  {
+    "label": "X01",
+    "campus": "ČP",
+    "kind": "building",
+    "id": 465899
+  },
+  {
+    "label": "X02",
+    "campus": "ČP",
+    "kind": "building",
+    "id": 465899
+  },
+  {
+    "label": "X03",
+    "campus": "ČP",
+    "kind": "building",
+    "id": 465899
+  },
+  {
+    "label": "Z1",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "Z10",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "Z11",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "Z13",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "Z14",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "Z15",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "Z2",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "Z24",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "Z25",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "Z26",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "Z28",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "Z3",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "Z4",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "Z5",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "Z6",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "Z7",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "Z8",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "Z9",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "ZAB01",
+    "campus": "Žab",
+    "kind": "remote",
+    "id": -103
+  },
+  {
+    "label": "Zasedačka FRRMS 4NP",
+    "campus": "ČP II.",
+    "kind": "landmark",
+    "id": 1587
+  },
+  {
+    "label": "ZFAA1",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFAA2",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFAA3",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFAB1",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFAB2",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFAC1",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFAC2",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFAC3",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFAC4",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFAC5",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFAC6",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFAula",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFB03",
+    "campus": "LedR",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFB16",
+    "campus": "LedR",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFB17",
+    "campus": "LedR",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFC11",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFC12",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFC13",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFC21",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFD02",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFD03",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFD04",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFD11",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFD12",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFD21",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFD22",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFD31",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFDP1",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFEM",
+    "campus": "Mend",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFEM1",
+    "campus": "Mend",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFEM2",
+    "campus": "Mend",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFG",
+    "campus": "LedR",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFG11",
+    "campus": "LedR",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFSK1",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  },
+  {
+    "label": "ZFSK2",
+    "campus": "Led",
+    "kind": "remote",
+    "id": -102
+  }
+]

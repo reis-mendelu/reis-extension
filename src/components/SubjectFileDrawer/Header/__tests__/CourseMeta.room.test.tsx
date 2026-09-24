@@ -36,12 +36,20 @@ describe('CourseMeta room control', () => {
     expect(focus).toHaveBeenCalledWith(room);
   });
 
-  it('shows an unfindable room as plain text rather than a dead button', () => {
-    // A real Zahradnická fakulta timetable room. Nothing in the dataset
-    // carries it, so a button would be a promise reIS cannot keep.
-    renderRoom('ZFAC1');
-    expect(screen.getByText('ZFAC1')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'ZFAC1' })).toBeNull();
+  // No floor plan, but the map can show the building (T) or campus (Lednice)
+  // — focusRoomByCode takes the full string, campus and all, to find it.
+  it.each(['T18', 'ZFAC1 (Led)'])('offers %s, which has only a building, as a button', (room) => {
+    renderRoom(room);
+    fireEvent.click(screen.getByRole('button', { name: room }));
+    expect(focus).toHaveBeenCalledWith(room);
+  });
+
+  it('shows a room the map cannot place at all as plain text rather than a dead button', () => {
+    // Útěchov is held until the site is confirmed; a button would be a
+    // promise reIS cannot keep.
+    renderRoom('ucebna_utechov (Sob)');
+    expect(screen.getByText('ucebna_utechov (Sob)')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'ucebna_utechov (Sob)' })).toBeNull();
   });
 
   it('shows a virtual room as plain text too', () => {

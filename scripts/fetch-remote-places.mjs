@@ -4,6 +4,9 @@
 // bundle — the JSON output is committed instead.
 //
 // Usage: node scripts/fetch-remote-places.mjs
+//        node scripts/fetch-remote-places.mjs --only=-108,-109   fetch just these
+//        ids and merge them into the committed file, leaving every other place
+//        (and its hand-trimmed outline) byte-for-byte as it is.
 //
 // Each site pins a hand-verified OSM way ID, so the geometry is unambiguous:
 //  - single-building / single-area sites → one Polygon (arboretum garden,
@@ -81,7 +84,43 @@ const SITES = [
     url: 'https://www.panskalicha.cz/',
     address: 'Panská lícha 632/6, Obřany, 614 00 Brno',
   },
+  // The three below are IS "areály" with classrooms (is.mendelu.cz/mistnosti/)
+  // and no pin until 2026-09-24. Each wayId is the one OSM building at the
+  // address IS or the school itself publishes.
+  {
+    // IS Kar-01 "Zděná budova Karlov", Karlov 35, Malá Morávka.
+    wayId: 253778949,
+    id: -108,
+    name: 'MENDELU Karlov',
+    shortName: 'Karlov',
+    url: null,
+    address: 'Karlov 35, Malá Morávka',
+  },
+  {
+    // IS Hranice-A; address from the school (slshranice.cz/kontakty, ČŠI 600017770).
+    wayId: 52471767,
+    id: -109,
+    name: 'Střední lesnická škola Hranice',
+    shortName: 'SLŠ Hranice',
+    url: 'https://www.slshranice.cz/',
+    address: 'Jurikova 588, Hranice',
+  },
+  {
+    // IS Bosk-A; address from the school (vassboskovice.cz, "Kde nás najdete").
+    wayId: 81276601,
+    id: -110,
+    name: 'VOŠ a SŠ Boskovice',
+    shortName: 'VOŠ Boskovice',
+    url: 'https://www.vosassboskovice.cz/',
+    address: 'Hybešova 982/53, Boskovice',
+  },
 ];
+
+const only = process.argv
+  .find((a) => a.startsWith('--only='))
+  ?.slice('--only='.length)
+  .split(',')
+  .map(Number);
 
 // A single way → one closed ring.
 async function fetchWay(wayId) {
@@ -121,7 +160,7 @@ async function fetchBuildingsInGrounds(groundsWayId) {
 }
 
 const out = [];
-for (const s of SITES) {
+for (const s of only ? SITES.filter((x) => only.includes(x.id)) : SITES) {
   const meta = { id: s.id, name: s.name, shortName: s.shortName, url: s.url, address: s.address };
   if (s.groundsWayId) {
     const res = await fetchBuildingsInGrounds(s.groundsWayId);
@@ -194,5 +233,12 @@ for (const place of out) {
 // NOTE: `outline`/`area` ARE regenerated from OSM here, so any manual footprint
 // trimming (e.g. the arboretum kept only the greenhouse complex) must be
 // re-applied by hand after a regeneration.
-writeFileSync(target, JSON.stringify({ places: out }, null, 2) + '\n');
-console.log(`Wrote ${out.length}/${SITES.length} remote-place footprints.`);
+// --only: every place not fetched this run is kept exactly as committed, in
+// SITES order, with the fetched ones replacing or joining it by id.
+const places = only
+  ? SITES.map((s) => out.find((p) => p.id === s.id) ?? prevById.get(s.id)).filter(Boolean)
+  : out;
+writeFileSync(target, JSON.stringify({ places }, null, 2) + '\n');
+console.log(
+  `Wrote ${places.length}/${SITES.length} remote-place footprints (${out.length} fetched).`
+);
