@@ -26,7 +26,7 @@ export function SuccessRateTab({
 }: {
   courseCode: string;
   facultyCode?: string;
-  /** Off for the phone sheet, which pins its own IS MENDELU footer. */
+  /** Off for the phone sheet — see `showIsBacklink` in DrawerTabBody. */
   showIsBacklink?: boolean;
 }) {
   const { stats: data, loading } = useSuccessRate(courseCode);

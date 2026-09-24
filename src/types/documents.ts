@@ -95,6 +95,10 @@ export interface SubjectSuccessRate {
    * open not-enrolled study-plan subjects directly in the SubjectDrawer. May be a stale
    * (older-semester) instance or, rarely, junk — always validate before use. */
   predmetId?: string;
+  /** reis-data `meta.json` `lastUpdated` this entry was fetched under. Set by
+   * `fetchSubjectSuccessRates`, not present in the CDN file; an entry whose stamp
+   * differs from the current version is fetched again. */
+  cdnVersion?: string;
 }
 
 export interface SuccessRateData {

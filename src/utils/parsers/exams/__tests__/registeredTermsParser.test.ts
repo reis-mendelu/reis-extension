@@ -6,7 +6,7 @@ import { parseExamData } from '../index';
 // table_1 = registered terms, table_3 = available terms (empty here).
 
 function wrapInPage(table1Rows: string): string {
-    return `<html><body>
+  return `<html><body>
         <table id="table_1"><thead><tr class="zahlavi">
             <th>Poř.</th><th>Kód</th><th>Předmět</th><th>Datum termínu</th>
             <th>Kde</th><th>Druh (forma)</th><th>Vypsal</th><th>Přihlášeno</th>
@@ -62,23 +62,73 @@ const MATEMATIKA_ROW_PAST_DEADLINE = `
 </tr>`;
 
 describe('registeredTermsParser', () => {
-    it('extracts termId from odhlasit_ihned link when deadline is in the future', () => {
-        const subjects = parseExamData(wrapInPage(MATEMATIKA_ROW_ACTIVE), 'cz');
-        const term = subjects[0]?.sections[0]?.registeredTerm;
-        expect(term?.id).toBe('336592');
-    });
+  it('extracts termId from odhlasit_ihned link when deadline is in the future', () => {
+    const subjects = parseExamData(wrapInPage(MATEMATIKA_ROW_ACTIVE), 'cz');
+    const term = subjects[0]?.sections[0]?.registeredTerm;
+    expect(term?.id).toBe('336592');
+  });
 
-    it('extracts termId from terminy_info link when odhlasit_ihned is absent (past deadline)', () => {
-        const subjects = parseExamData(wrapInPage(MATEMATIKA_ROW_PAST_DEADLINE), 'cz');
-        const term = subjects[0]?.sections[0]?.registeredTerm;
-        expect(term?.id).toBe('336592');
-    });
+  it('extracts termId from terminy_info link when odhlasit_ihned is absent (past deadline)', () => {
+    const subjects = parseExamData(wrapInPage(MATEMATIKA_ROW_PAST_DEADLINE), 'cz');
+    const term = subjects[0]?.sections[0]?.registeredTerm;
+    expect(term?.id).toBe('336592');
+  });
 
-    it('parses date, time and room correctly', () => {
-        const subjects = parseExamData(wrapInPage(MATEMATIKA_ROW_ACTIVE), 'cz');
-        const term = subjects[0]?.sections[0]?.registeredTerm;
-        expect(term?.date).toBe('23.04.2026');
-        expect(term?.time).toBe('11:00');
-        expect(term?.room).toBe('Studovna PEF (ČP)');
-    });
+  it('parses date, time and room correctly', () => {
+    const subjects = parseExamData(wrapInPage(MATEMATIKA_ROW_ACTIVE), 'cz');
+    const term = subjects[0]?.sections[0]?.registeredTerm;
+    expect(term?.date).toBe('23.04.2026');
+    expect(term?.time).toBe('11:00');
+    expect(term?.room).toBe('Studovna PEF (ČP)');
+  });
+});
+
+// A real table_1 row in the markup IS serves now (captured 2026-09-22), with
+// the teacher, study and period ids replaced. `data-sysid` icons, a period
+// column, and the registration window in one cell: od / do / odhlášení do.
+const REGISTERED_ROW_MODERN = `<tr class=" uis-hl-table lbn" ><td class="odsazena" align="right">1.</td><td class="odsazena" align="left">EBC-EKM</td><td class="odsazena" align="left"><a href="/auth/katalog/syllabus.pl?predmet=163979;lang=cz" target="_blank">Ekonometrie 1</a></td><td class="odsazena" align="left" nowrap="1">ZS 2026/2027 - PEF</td><td class="odsazena" align="left" nowrap="1">09.11.2026 11:00 (po)</td><td class="odsazena" align="left" nowrap="1"><a href="/auth/mistnosti/index.pl?zobrazit_mistnost=659;lang=cz">Studovna PEF (ČP)</a></td><td class="odsazena" align="left" nowrap="1">průběžný test 1<br />(e-test)</td><td class="odsazena" nowrap="nowrap" align="left"><a href="/auth/lide/clovek.pl?id=12345;lang=cz" target="_blank">J. Novák</a></td><td class="odsazena" align="center" nowrap="1">74/74</td><td class="odsazena" align="center" nowrap="1"><span class="uf-icon xs" role="img" data-sysid="termin-radny" data-id="2227" aria-label="řádný" alt="řádný" title="řádný" >  </span></td><td class="odsazena" align="center" nowrap="1">21.09.2026 13:00<br />08.11.2026 20:00<br />08.11.2026 20:00</td><td class="odsazena" align="center"><a href="terminy_info.pl?termin=343995;studium=149707;obdobi=812;lang=cz"><span class="uf-icon sm" role="img" data-sysid="prohlizeni-info" data-id="1146" aria-label="Podrobnosti" alt="Podrobnosti" title="Podrobnosti" >  </span></a></td><td class="odsazena" align="center"><a href="terminy_seznam.pl?termin=343995;studium=149707;obdobi=812;odhlasit_ihned=1;lang=cz"><span class="uf-icon xs" role="img" data-sysid="small-arrow-right-double" data-id="445" aria-label="Ihned se odhlásit z&nbsp;termínu" alt="Ihned se odhlásit" title="Ihned se odhlásit" >  </span></a></td></tr>`;
+
+/**
+ * The term the student is ON has to be in the section's term list too, not
+ * only in `registeredTerm`: the phone's card lists `terms`, so their own term
+ * was the one row missing from it — and every row it did show was somebody
+ * else's, saying "Přihlášení do" where they wanted "Odhlášení do".
+ */
+describe('registeredTermsParser — the own term among the section terms', () => {
+  const parse = () => {
+    const result = parseExamData(wrapInPage(REGISTERED_ROW_MODERN), 'cz');
+    return result[0]!.sections[0]!;
+  };
+
+  it('lists it, matching the id registeredTerm carries', () => {
+    const section = parse();
+    expect(section.registeredTerm?.id).toBe('343995');
+    expect(section.terms.map((t) => t.id)).toContain('343995');
+  });
+
+  it('carries the facts the row gives: seats, attempt, and both deadlines', () => {
+    const term = parse().terms.find((t) => t.id === '343995')!;
+    expect(term.date).toBe('09.11.2026');
+    expect(term.time).toBe('11:00');
+    expect(term.capacity).toEqual({ occupied: 74, total: 74, raw: '74/74' });
+    expect(term.attemptTypes).toEqual(['regular']);
+    expect(term.registrationEnd).toBe('08.11.2026 20:00');
+    expect(term.deregistrationDeadline).toBe('08.11.2026 20:00');
+    expect(term.canRegisterNow).toBe(false);
+    expect(term.sectionForm).toBe('e-test');
+    // IS's own Podrobnosti link: the only place the real studium/obdobi come
+    // from, and what "Kdo jde se mnou na termín" is built out of.
+    expect(term.detailUrl).toBe(
+      'https://is.mendelu.cz/auth/student/terminy_info.pl?termin=343995;studium=149707;obdobi=812;lang=cz'
+    );
+  });
+
+  it('does not list it twice when the same term also shows up as available', () => {
+    const page = wrapInPage(REGISTERED_ROW_MODERN).replace(
+      '<tbody></tbody>',
+      `<tbody>${REGISTERED_ROW_MODERN}</tbody>`
+    );
+    const ids = parseExamData(page, 'cz')[0]!.sections[0]!.terms.map((t) => t.id);
+    expect(ids.filter((id) => id === '343995')).toHaveLength(1);
+  });
 });

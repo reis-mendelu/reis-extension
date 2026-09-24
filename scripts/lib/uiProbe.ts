@@ -83,14 +83,41 @@ export function probeSource(): ProbeResult {
   // the viewport are excused: the tile pane, and the overlay pane that carries
   // the zoom-animated SVG and its paths. Those were the exact selectors that
   // produced 26 false failures.
+  //
+  // The tooltip and popup panes are deliberately NOT here: those carry text,
+  // and text that has drifted off the screen is a finding worth keeping.
   const THIRD_PARTY_CLIPPERS = '.leaflet-tile-pane, .leaflet-overlay-pane';
   const insideThirdPartyClipper = (node: HTMLElement): boolean =>
     node.closest(THIRD_PARTY_CLIPPERS) !== null;
+
+  // The x-range a sideways scroller around `node` can bring into view: the
+  // nearest ancestor that scrolls horizontally AND overflows. Vertical
+  // scrollers are deliberately ignored — see `hScrollRange` in uiFindings.
+  const hScrollRangeOf = (node: HTMLElement): { left: number; right: number } | null => {
+    for (let p = node.parentElement; p; p = p.parentElement) {
+      const ox = getComputedStyle(p).overflowX;
+      if ((ox === 'auto' || ox === 'scroll') && p.scrollWidth > p.clientWidth) {
+        const left = p.getBoundingClientRect().x - p.scrollLeft;
+        return { left, right: left + p.scrollWidth };
+      }
+    }
+    return null;
+  };
 
   const elements = nodes.map((node, idx) => {
     const style = getComputedStyle(node);
     const r = node.getBoundingClientRect();
     const insideInnerClip = insideThirdPartyClipper(node);
+    // A marker's position is a MAP coordinate, so Leaflet parks its icon off
+    // the viewport exactly as it does a tile — but the icon's CONTENTS are
+    // ours, and an oversized child is a real finding. So rather than excusing
+    // the whole marker pane, record the relationship and let the overflow rule
+    // decide: the icon itself is Leaflet's, a descendant is only excused while
+    // it sits inside the icon's own box (displacement it merely inherited).
+    const markerIcon = node.closest<HTMLElement>('.leaflet-marker-icon');
+    const isLeafletMarker = markerIcon === node;
+    const leafletMarkerIdx =
+      markerIcon && markerIcon !== node ? (indexOf.get(markerIcon) ?? null) : null;
 
     const bgChain: { r: number; g: number; b: number; a: number }[] = [];
     const ancestors: number[] = [];
@@ -113,6 +140,9 @@ export function probeSource(): ProbeResult {
       text: hasDirectText ? (node.textContent ?? '').trim().slice(0, 40) : '',
       rect: { x: r.x, y: r.y, w: r.width, h: r.height },
       insideInnerClip,
+      hScrollRange: hScrollRangeOf(node),
+      isLeafletMarker,
+      leafletMarkerIdx,
       bg: resolveColor(style.backgroundColor),
       bgChain,
       color: resolveColor(style.color),

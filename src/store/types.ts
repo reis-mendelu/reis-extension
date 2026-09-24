@@ -1,5 +1,4 @@
 import type { StateCreator } from 'zustand';
-import type { PreferredMapApp } from '../utils/venueMapUrl';
 import type { BlockLesson, HiddenItems, CalendarCustomEvent } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
 import type { SyncDomain } from '../types/messages/base';
@@ -27,6 +26,7 @@ import type {
   MapSelection,
   PoiProperties,
   RoomProperties,
+  GardenPlace,
 } from '../types/campusMap';
 import type { MapEvent } from '../types/events';
 
@@ -46,6 +46,9 @@ export interface ScheduleSlice {
   };
   fetchSchedule: () => Promise<void>;
   setSchedule: (data: BlockLesson[]) => void;
+  /** A student-asked timetable refresh is in flight (the calendar's pull). */
+  scheduleRefreshing: boolean;
+  triggerScheduleRefresh: () => void;
 }
 
 export interface ExamSlice {
@@ -73,6 +76,8 @@ export interface ExamSlice {
   examNotesLoading: Record<string, boolean>;
   examNotesError: Record<string, string>;
   lastExamNotesFetchedAt: Record<string, number>;
+  /** terminId → "Délka trvání akce" in minutes, read by the same request as the note. null = page had none. */
+  examTermDurations: Record<string, number | null>;
   fetchExamNotePriority: (terminId: string) => Promise<void>;
 }
 
@@ -122,6 +127,8 @@ export interface ClassmatesSlice {
   classmatesLoading: Record<string, boolean>;
   lastClassmatesFetchedAt: Record<string, number>;
   classmatesError: Record<string, string>;
+  /** courseCode → true when the subject has no seminar group (lecture-only). */
+  classmatesNoSeminar: Record<string, boolean>;
   fetchClassmatesPriority: (courseCode: string) => Promise<void>;
   fetchAllClassmates: () => Promise<void>;
   refreshClassmatesForSubject: (courseCode: string) => Promise<void>;
@@ -486,8 +493,6 @@ export interface MobileUiSlice {
   /** Whether the tablet rail is showing. A rail has exactly two states — the
    *  sheet's three detents are a phone answer to a phone problem. */
   mapRailOpen: boolean;
-  /** Which map app a venue opens in, remembered across launches. `null` asks. */
-  preferredMapApp: PreferredMapApp;
   /** Dev-only forced phone/desktop branch. null = defer to viewport. */
   devPhoneOverride: boolean | null;
   /**
@@ -506,6 +511,13 @@ export interface MobileUiSlice {
   setExternalOpening: (opening: boolean) => void;
   hydrateWelcome: (o: { demo: boolean }) => Promise<void>;
   dismissWelcome: () => Promise<void>;
+  /**
+   * Whether the calendar's pull hint has played (or the student has pulled).
+   * It plays once, ever. null = not hydrated yet, which never plays it.
+   */
+  pullHintSeen: boolean | null;
+  hydratePullHint: (o: { demo: boolean }) => Promise<void>;
+  markPullHintSeen: () => void;
 
   setMobileTab: (tab: MobileTab) => void;
   setMobileSelectedDay: (iso: string | null) => void;
@@ -516,8 +528,6 @@ export interface MobileUiSlice {
   setMapSheetState: (state: MapSheetState) => void;
   setMapRailWidth: (px: number) => void;
   setMapRailOpen: (open: boolean) => void;
-  loadPreferredMapApp: () => Promise<void>;
-  setPreferredMapApp: (app: PreferredMapApp) => Promise<void>;
   setDevPhoneOverride: (value: boolean | null) => void;
 }
 
@@ -537,6 +547,8 @@ export interface MapSlice {
   setMapFloor: (floorId: number) => void;
   selectMapRoom: (room: RoomProperties) => void;
   selectMapPoi: (poi: PoiProperties, coord: [number, number]) => void;
+  /** Open one of the botanical garden's places. Keeps the garden drilled in. */
+  selectGardenPlace: (place: GardenPlace) => void;
   setMapSearchQuery: (q: string) => void;
   focusRoomByCode: (code: string) => void;
   focusPoiById: (id: number) => void;
@@ -548,6 +560,8 @@ export interface MapSlice {
   /** Fly to an arbitrary named coordinate without a real landmark/poi (e.g. the JAK dorm cluster centre). */
   focusPoint: (name: string, coord: [number, number]) => void;
   loadMapBuilding: (id: number) => Promise<void>;
+  /** Geometry for whatever room a room STRING names — resolves, then loads. */
+  loadRoomGeometry: (roomName: string) => Promise<void>;
   // --- Society events on the map ---
   mapEvents: MapEvent[];
   mapEventsLoaded: boolean;
@@ -648,6 +662,7 @@ export type AppState = ScheduleSlice &
   import('./slices/createAdminStatsSlice').AdminStatsSlice &
   import('./slices/createAdminSlice').AdminSlice &
   import('./slices/createSuggestionsSlice').SuggestionsSlice &
+  import('./slices/createRouteSlice').RouteSlice &
   DemoSlice;
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

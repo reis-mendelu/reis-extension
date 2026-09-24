@@ -168,14 +168,22 @@ export async function syncAllData() {
     const schedulePromise = ttlGated('schedule', TTL.SEMESTER, !!cachedData.schedule, () =>
       fetchFullSemesterSchedule()
     ).then((value) => {
-      if (value) {
+      if (value && value.length > 0) {
         cachedData = { ...cachedData, schedule: value };
         pushEarly({ schedule: value, loaded: ['schedule'] });
+      } else if (value) {
+        // The fetch finished and the answer is "no lessons in the whole
+        // window" — IS says so with an HTML page, which fetchWeekSchedule
+        // turns into []. Same shape as exams below: arrival WITHOUT data, so
+        // the screen stops waiting while the cached timetable survives. []
+        // being truthy is exactly how a student's term got blanked.
+        pushEarly({ loaded: ['schedule'] });
       }
-      // No else: a null here means ttlGated skipped the fetch as still fresh,
-      // which is not an answer about this student's week — the same ambiguity
-      // that made Předměty claim "no subjects". The cached schedule is already
-      // on screen in that case, and the end-of-sync latch covers the rest.
+      // No else: a null is either a ttlGated skip or a failed fetch, and
+      // neither is an answer about this student's week — the same ambiguity
+      // that made Předměty claim "no subjects". Nothing is pushed, not even an
+      // arrival, so a student with no cached timetable reaches ScreenError and
+      // its retry button instead of "you have no lessons" with no way back.
       return value;
     });
 
@@ -255,8 +263,12 @@ export async function syncAllData() {
 
     cachedData = {
       ...cachedData,
+      // `.length > 0`, like exams below: an empty read keeps the cached
+      // timetable. This is the contract syncTtl.ts already documents ("it
+      // keeps the previous value for a null result or an empty list") — the
+      // truthiness of [] is what made schedule the one resource that broke it.
       schedule:
-        fullSchedule.status === 'fulfilled' && fullSchedule.value
+        fullSchedule.status === 'fulfilled' && fullSchedule.value && fullSchedule.value.length > 0
           ? fullSchedule.value
           : cachedData.schedule,
       exams:
@@ -498,6 +510,43 @@ async function syncSubjectDetails(
     // (no map), so there is no cascade to log.
     console.error('[reIS:error] Sync.fetchSeminarGroupIds.retry:', e);
   }
+}
+
+/**
+ * The calendar's refresh: the timetable and nothing else.
+ *
+ * The pull used to run the whole `user` sync — 109 IS requests and ~30s on a
+ * real account, where the schedule is 4 requests and ~3s. The rest (file
+ * folders, syllabi, classmates) is nothing the calendar shows, and its spinner
+ * waited for all of it.
+ *
+ * The three shapes are the full sync's, and for its reasons
+ * (syncScheduleEmpty.test): a non-empty read is data and arrival, `[]` is
+ * arrival only because IS answers "no lessons" and "failed" with the same
+ * bytes, and `null` is nothing, so the calendar can still reach ScreenError.
+ *
+ * `isSyncing` rides along unchanged: this is not a sync, and a background run
+ * that happens to be in flight must not be reported as finished by it.
+ */
+export async function refreshSchedule(): Promise<void> {
+  const value = await fetchFullSemesterSchedule();
+  if (!value) return;
+  if (value.length > 0) {
+    markFetched('schedule');
+    cachedData = { ...cachedData, schedule: value };
+    sendToIframe(
+      Messages.syncUpdate({
+        schedule: value,
+        loaded: ['schedule'],
+        isSyncing,
+        lastSync: cachedData.lastSync,
+      })
+    );
+    return;
+  }
+  sendToIframe(
+    Messages.syncUpdate({ loaded: ['schedule'], isSyncing, lastSync: cachedData.lastSync })
+  );
 }
 
 export async function refreshExams(): Promise<void> {

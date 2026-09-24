@@ -9,11 +9,13 @@ import { FloorSwitcher } from './map/FloorSwitcher';
 import { MapSheet } from './map/MapSheet';
 import { MapRail } from './map/MapRail';
 import { useWideViewport } from '../../../hooks/ui/useWideViewport';
+import { useMapDwell } from '../../../hooks/useMapDwell';
 
 function resultLabel(m: MapSelection): string {
   if (m.kind === 'poi') return m.poi.name;
   if (m.kind === 'roomRef') return roomLabel(m.entry.name, m.entry.code, m.entry.nickname);
   if (m.kind === 'landmark') return m.landmark.name;
+  if (m.kind === 'gardenPlace') return m.place.name.cz;
   return '';
 }
 
@@ -39,6 +41,10 @@ function resultLabel(m: MapSelection): string {
  */
 export function MapScreen() {
   const isRail = useWideViewport();
+  // Same three-second dwell counter the desktop map mounts. Both surfaces need
+  // it: they are independent components over the same MapCanvas, so counting
+  // in one place would have made the number silently desktop-only.
+  useMapDwell();
   const { t } = useTranslation();
   const query = useAppStore((s) => s.mapSearchQuery);
   const results = useAppStore((s) => s.mapSearchResults);

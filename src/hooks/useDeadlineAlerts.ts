@@ -53,6 +53,9 @@ export function useDeadlineAlerts() {
 
         if (section.status === 'available') {
           for (const term of section.terms) {
+            // "Kam se přihlásit nemohu?": IS's dates, but they never open for
+            // this student, so there is nothing to alert them to.
+            if (term.cannotRegister) continue;
             if (term.registrationStart) {
               const start = parseCzDateTime(term.registrationStart);
               if (start) {

@@ -47,6 +47,13 @@ export function isNativeHost(): boolean {
  * 3. **On Android it lands in Downloads with a notification**, like any
  *    browser — not a share sheet. See deliverFile for the iOS asymmetry.
  *
+ * `onFetched` fires the moment the bytes are in hand, before delivery. The two
+ * are not the same wait and must not share one indicator: on iOS delivery is
+ * the share sheet, which settles only when the student picks a destination for
+ * a file that is ALREADY written to Documents. A caller that ends its spinner
+ * on the returned promise therefore shows "downloading" while the student is
+ * busy answering their own dialog.
+ *
  * `filenameOverride` exists for the study documents: `tisk_dokumentu.pl`
  * returns IS's own Content-Disposition name, but STUDY_DOCUMENTS defines what
  * the student should actually see (`Potvrzeni_o_studiu.pdf`). Subject files
@@ -55,7 +62,8 @@ export function isNativeHost(): boolean {
 export async function openIsFileNatively(
   url: string,
   filenameOverride?: string,
-  fallbackUrl?: string
+  fallbackUrl?: string,
+  onFetched?: () => void
 ): Promise<{ usedFallback: boolean; delivered: DeliveryKind }> {
   const token = await loadStoredToken();
   const { Capacitor, CapacitorHttp, CapacitorCookies } = await import('@capacitor/core');
@@ -87,6 +95,9 @@ export async function openIsFileNatively(
   if (result.kind !== 'binary') {
     throw new Error(`IS did not return a file for ${url}`);
   }
+
+  // The download is over here; everything below is delivery. See `onFetched`.
+  onFetched?.();
 
   const base64 = await blobToBase64(result.blob);
   // The delivery kind is returned rather than discarded: it is what tells the

@@ -6,6 +6,7 @@ import { configureEduroam, type EduroamConfigOutcome } from '../../mobile/config
 import { canConfigureEduroamNatively, nativeEduroamDeps } from '../../mobile/eduroamNative';
 import { deliverEduroamProfile, buildProfileDelivery } from '../../mobile/eduroamProfile';
 import { logError } from '../../utils/reportError';
+import { trackFeatureSignal } from '../../api/featureUsage';
 
 export type EduroamStatus = 'idle' | 'working' | 'done' | 'error';
 /** Which device the student is setting up — not necessarily the desktop's OS. */
@@ -49,6 +50,13 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
       if (canConfigureEduroamNatively(t)) {
         const result = await configureEduroam(material, nativeEduroamDeps);
         setOutcome(result);
+        // Only `saved` is a setup that finished. `already-configured` applied
+        // nothing — the network was there before reIS was asked — and counting
+        // it would report students as newly set up who were already on
+        // eduroam. `cancelled`, `failed` and `stale-association` installed
+        // nothing at all. The file paths below get their own signal, because a
+        // delivered profile still needs the student to install it.
+        if (result === 'saved') void trackFeatureSignal('eduroam_wifi_configured');
         setPassword(extractionPw);
         // Dismissing Android's dialog is a choice, not a fault: go back to idle
         // so the button is simply offered again, with no error banner.
@@ -100,6 +108,11 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
         );
       }
 
+      // Deliberately a different signal from the native one: this is a
+      // profile handed over, not a configured network. The student still has
+      // to open it and approve the install (or load it from geteduroam's
+      // menu on Windows), and reIS cannot see whether they did.
+      void trackFeatureSignal('eduroam_profile_delivered');
       setPassword(extractionPw);
       setStatus('done');
     } catch (e) {

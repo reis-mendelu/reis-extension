@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import { resolve } from 'node:path';
 import { snapshotAgeMs, isStale, maxAgeMsFromEnv, DAY_MS } from '../scripts/lib/snapshotFreshness';
 import { rebaseFixture, applyFixture } from '../scripts/lib/fixtureRebase';
+import { fixtureNow } from '../scripts/lib/fixtureClock';
 
 const LOCK_TTL_MS = 10 * 60 * 1000; // assume a scrape older than this died
 
@@ -43,8 +44,11 @@ export function reisSnapshotPlugin(): Plugin {
       // path identical: it still fetches /dev-real-data.json.
       const fixtureName = process.env.REIS_FIXTURE;
       if (fixtureName) {
-        server.middlewares.use('/dev-real-data.json', (_req, res) => {
-          const body = buildFixtureSnapshot(root, fixtureName, snapshotPath, log);
+        server.middlewares.use('/dev-real-data.json', (req, res) => {
+          // `?now=` — on this request or on the page it came from — rebases the
+          // fixture on the same clock dev/clockOverride gives the app.
+          const at = fixtureNow(req.url ?? '', req.headers.referer, new Date());
+          const body = buildFixtureSnapshot(root, fixtureName, snapshotPath, log, at);
           res.setHeader('Content-Type', 'application/json');
           res.setHeader('Cache-Control', 'no-store');
           res.end(body);
@@ -96,7 +100,8 @@ function buildFixtureSnapshot(
   root: string,
   name: string,
   snapshotPath: string,
-  log: (m: string) => void
+  log: (m: string) => void,
+  at: Date = new Date()
 ): string {
   let base: Record<string, unknown> = {};
   try {
@@ -107,7 +112,7 @@ function buildFixtureSnapshot(
   const fixturePath = resolve(root, 'dev/fixtures', `${name}.json`);
   try {
     const fixture = JSON.parse(readFileSync(fixturePath, 'utf8'));
-    return JSON.stringify(applyFixture(base, rebaseFixture(fixture, new Date())));
+    return JSON.stringify(applyFixture(base, rebaseFixture(fixture, at)));
   } catch (err) {
     log(`fixture "${name}" unreadable (${fixturePath}) — serving the real snapshot`);
     log(`  ${err instanceof Error ? err.message : String(err)}`);

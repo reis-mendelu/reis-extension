@@ -3,6 +3,7 @@ import type { SyncedData } from '@/types/messages';
 import { getUserParams } from '@/utils/userParams';
 import { fetchFullSemesterSchedule } from '@/injector/dataFetchers';
 import { fetchDualLanguageExams } from '@/api/exams';
+import { enrichExamsWithDurations } from '@/services/sync/examDurations';
 import { fetchDualLanguageSubjects } from '@/api/subjects';
 import { fetchDualLanguagePastSubjects } from '@/api/pastSubjects';
 import { fetchDualLanguageStudyPlan } from '@/api/studyPlan';
@@ -63,7 +64,13 @@ export async function collectRealData(): Promise<SyncedData> {
     mergePastSubjects(subjects.subjects, past, val(studyPlan) ?? null);
   }
 
-  const examsVal = val(exams);
+  // The same enrichment the extension's sync runs, so the snapshot carries each
+  // term's length like a real sync would.
+  const rawExams = val(exams);
+  const examsVal =
+    rawExams && rawExams.length && studium && obdobi
+      ? await enrichExamsWithDurations(rawExams, [], studium, obdobi)
+      : rawExams;
   const data: SyncedData = {
     schedule: val(schedule) ?? undefined,
     exams: examsVal && examsVal.length ? examsVal : undefined,

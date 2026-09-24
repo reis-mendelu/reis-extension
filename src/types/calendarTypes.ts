@@ -92,6 +92,13 @@ export interface LessonWithRow extends BlockLesson {
   renderedMinutes: number;
 }
 
+/**
+ * A lesson the calendar card can render. The week grid supplies layout hints
+ * (row, maxColumns, renderedMinutes); the day list has no overlap layout and
+ * supplies none, so they are optional here and the card falls back.
+ */
+export type CardLesson = BlockLesson & Partial<Omit<LessonWithRow, keyof BlockLesson>>;
+
 export interface OrganizedLessons {
   lessons: LessonWithRow[];
   totalRows: number;

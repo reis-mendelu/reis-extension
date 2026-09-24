@@ -2,6 +2,11 @@ import { MapPin } from 'lucide-react';
 import type { BlockLesson } from '../../../../types/calendarTypes';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { localizedCourseName, localizedRoom } from '../../../../utils/localizedLesson';
+import roomsIndexJson from '../../../../data/map/rooms-index.json';
+import type { RoomIndexEntry } from '../../../../types/campusMap';
+import { lookupRoomEntry } from '../../../../utils/rooms/lookupRoom';
+
+const INDEX = roomsIndexJson as RoomIndexEntry[];
 
 /**
  * Colour tokens match `CalendarEventCard`'s desktop scheme exactly (same
@@ -45,6 +50,12 @@ export interface AgendaEventProps {
  * One lesson on the day's agenda: the row opens the subject (files, syllabus,
  * classmates), the pin on the right shows the room on the map.
  *
+ * The pin appears only when the map can actually find the room. Tapping it
+ * switches the whole screen to the Map tab, so on a room the dataset does not
+ * carry — a lesson held online, or a building MENDELU's map publishes no rooms
+ * for — it used to cost the student their place in the week and give them an
+ * unfocused campus overview in exchange.
+ *
  * Two SIBLING buttons inside a div, not a button with a button in it — that is
  * invalid HTML and browsers dispatch the inner tap to both. The whole text area
  * is the subject tap; the pin is its own `min-h-11` target.
@@ -57,6 +68,9 @@ export function AgendaEvent({ lesson, onOpenSubject, onShowOnMap }: AgendaEventP
   const { t, language } = useTranslation();
   const courseName = localizedCourseName(lesson, language);
   const room = localizedRoom(lesson, language);
+  // `lesson.room` and not the localized string: it is what the handler
+  // eventually hands the map, so it is what has to be findable.
+  const findable = !!lookupRoomEntry(lesson.room, INDEX);
   // Surname only ("Melicharová"), not the full titled name — that is what
   // lets room, time and teacher share one line at 390px without clipping.
   // Every teacher's full name is in the subject drawer's header.
@@ -90,19 +104,21 @@ export function AgendaEvent({ lesson, onOpenSubject, onShowOnMap }: AgendaEventP
       {/* A split button, not a decoration: the hairline and the filled circle
           are what tell a thumb this is its own control. On the device the bare
           glyph read as part of the card and nobody would have found the map. */}
-      <button
-        type="button"
-        aria-label={t('mobile.sheet.showOnMap')}
-        onClick={(e) => {
-          e.stopPropagation();
-          onShowOnMap();
-        }}
-        className="my-1.5 flex min-h-11 min-w-11 flex-shrink-0 cursor-pointer items-center justify-center border-l border-content-primary/10 px-1.5"
-      >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-content-primary/10 text-content-primary">
-          <MapPin size={16} />
-        </span>
-      </button>
+      {findable && (
+        <button
+          type="button"
+          aria-label={t('mobile.sheet.showOnMap')}
+          onClick={(e) => {
+            e.stopPropagation();
+            onShowOnMap();
+          }}
+          className="my-1.5 flex min-h-11 min-w-11 flex-shrink-0 cursor-pointer items-center justify-center border-l border-content-primary/10 px-1.5"
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-content-primary/10 text-content-primary">
+            <MapPin size={16} />
+          </span>
+        </button>
+      )}
     </div>
   );
 }

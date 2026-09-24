@@ -1,32 +1,21 @@
 /**
- * useFileActions - Hook for file operations (open, download ZIP).
+ * useFileActions - Hook for file operations (open, download, download ZIP).
  */
 
-import { useState, useCallback } from 'react';
-import JSZip from 'jszip';
-import { saveAs } from 'file-saver';
+import { useState, useCallback, useRef } from 'react';
 import { normalizeFileUrl } from '../../utils/fileUrl';
 import { createLogger } from '../../utils/logger';
-import { requestQueue } from '../../utils/requestQueue';
 import { isNativeHost } from '../../mobile/openIsFile';
 import { openNativeFile } from './openNativeFile';
 import { useTranslation } from '../useTranslation';
 import { DemoModeError, isDemoMode } from '../../errors/demoMode';
 import { logError } from '../../utils/reportError';
+import { assertNotDemo } from './assertNotDemo';
+import { downloadZipFiles } from './downloadZipFiles';
+import type { DownloadTick } from './readBlobWithProgress';
+import { fetchIsFile } from './fetchIsFile';
 
 const log = createLogger('useFileActions');
-
-/**
- * Demo mode exists only on Capacitor today, and every branch below already
- * sits behind `isNativeHost()`, which routes Capacitor through
- * `openNativeFile` instead — so this can never trip in production. It stays
- * here as defence in depth, not a live bug fix: if demo mode ever reaches a
- * non-native host, these credentialed fetches must not become the way a
- * reviewer's tap reaches a real IS session.
- */
-function assertNotDemo(): void {
-  if (isDemoMode()) throw new DemoModeError();
-}
 
 interface DownloadProgress {
   completed: number;
@@ -34,8 +23,12 @@ interface DownloadProgress {
 }
 
 interface UseFileActionsResult {
+  /** True while ANY download is running — single or zip. The header's bulk
+   *  button reads this; a row reads `activeDownloads` instead. */
   isDownloading: boolean;
   downloadProgress: DownloadProgress | null;
+  /** In-flight single downloads, keyed by the row's link. */
+  activeDownloads: Record<string, DownloadTick>;
   openFile: (link: string) => Promise<void>;
   /** The bytes of an IS PDF, or null when IS served a viewer page instead. */
   fetchPdfBlob: (link: string) => Promise<Blob | null>;
@@ -45,8 +38,13 @@ interface UseFileActionsResult {
 }
 
 export function useFileActions(): UseFileActionsResult {
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [isZipping, setIsZipping] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
+  const [activeDownloads, setActiveDownloads] = useState<Record<string, DownloadTick>>({});
+  // A ref, not `activeDownloads`: a second click landing before React commits
+  // the first `setActiveDownloads` would read an empty map and fire a duplicate
+  // request. Same reasoning as useDocumentDownload's `inFlight`.
+  const inFlight = useRef<Set<string>>(new Set());
   const { t } = useTranslation();
 
   const openFile = useCallback(
@@ -63,15 +61,7 @@ export function useFileActions(): UseFileActionsResult {
 
       try {
         assertNotDemo();
-        const response = await fetch(fullUrl, { credentials: 'include' });
-
-        if (!response.ok) {
-          log.warn('Fetch failed, falling back to direct link');
-          window.open(fullUrl, '_blank', 'noopener,noreferrer');
-          return;
-        }
-
-        const blob = await response.blob();
+        const { blob } = await fetchIsFile(fullUrl);
         const blobUrl = URL.createObjectURL(blob);
 
         window.open(blobUrl, '_blank', 'noopener,noreferrer');
@@ -87,6 +77,8 @@ export function useFileActions(): UseFileActionsResult {
           logError('useFileActions.openFile', e);
           return;
         }
+        // A failed fetch — a 403, IS down — still gets the student their file:
+        // a top-level tab is first-party, so it carries the session.
         log.error('Failed to fetch file as blob, falling back to direct link', e);
         window.open(fullUrl, '_blank', 'noopener,noreferrer');
       }
@@ -124,9 +116,7 @@ export function useFileActions(): UseFileActionsResult {
         return (await looksLikePdf(result.blob)) ? result.blob : null;
       }
       assertNotDemo();
-      const response = await fetch(fullUrl, { credentials: 'include' });
-      if (!response.ok) return null;
-      const blob = await response.blob();
+      const { blob } = await fetchIsFile(fullUrl);
       return (await looksLikePdf(blob)) ? blob : null;
     } catch (e) {
       log.error('Failed to fetch PDF inline', e);
@@ -145,25 +135,62 @@ export function useFileActions(): UseFileActionsResult {
     [fetchPdfBlob]
   );
 
+  /** Ends the row's INDICATOR only. The lock is `releaseRow`'s. */
+  const clearRowProgress = useCallback((link: string) => {
+    setActiveDownloads((d) => {
+      if (!(link in d)) return d;
+      const next = { ...d };
+      delete next[link];
+      return next;
+    });
+  }, []);
+
+  /** Ends the indicator AND releases the lock — only once delivery has settled. */
+  const releaseRow = useCallback(
+    (link: string) => {
+      inFlight.current.delete(link);
+      clearRowProgress(link);
+    },
+    [clearRowProgress]
+  );
+
+  /**
+   * The row's own download. Every exit clears the row: a spinner that never
+   * stops is worse than the missing spinner this replaced.
+   *
+   * Keyed by the link the ROW was rendered with, not by `normalizeFileUrl`'s
+   * output — the row is what the student is looking at, and the two differ.
+   */
   const downloadSingle = useCallback(
     async (link: string) => {
+      if (inFlight.current.has(link)) return;
+      inFlight.current.add(link);
+      setActiveDownloads((d) => ({ ...d, [link]: { loaded: 0, total: null } }));
+
       const fullUrl = normalizeFileUrl(link);
-      // See openFile: the browser fetch and its window.open fallback are both
-      // dead ends on Capacitor.
-      if (isNativeHost()) {
-        await openNativeFile(fullUrl, 'useFileActions.downloadSingle', t);
-        return;
-      }
       try {
-        assertNotDemo();
-        const response = await fetch(fullUrl, { credentials: 'include' });
-        if (!response.ok) {
-          window.open(fullUrl, '_blank', 'noopener,noreferrer');
+        // See openFile: the browser fetch and its window.open fallback are both
+        // dead ends on Capacitor. `onFetched` ends the row's busy state as soon
+        // as the bytes are in hand, because what follows is DELIVERY, not
+        // download: on iOS that is the share sheet, which only settles once the
+        // student picks a folder — the file is already saved by then, and a row
+        // spinning through their own dialog says the app is still working when
+        // it is waiting for them.
+        //
+        // The indicator only. The lock is held until `finally`: on Android the
+        // base64 conversion and `Downloads.save` are still running here, and
+        // releasing it early let a second tap start a duplicate download.
+        if (isNativeHost()) {
+          await openNativeFile(fullUrl, 'useFileActions.downloadSingle', t, () =>
+            clearRowProgress(link)
+          );
           return;
         }
-        const blob = await response.blob();
-        const cd = response.headers.get('content-disposition');
-        const match = cd?.match(/filename="?([^"]+)"?/);
+        assertNotDemo();
+        const { blob, contentDisposition } = await fetchIsFile(fullUrl, (tick) =>
+          setActiveDownloads((d) => (link in d ? { ...d, [link]: tick } : d))
+        );
+        const match = contentDisposition?.match(/filename="?([^"]+)"?/);
         const filename = match?.[1] || link.split('/').pop() || 'download';
         const blobUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -181,18 +208,20 @@ export function useFileActions(): UseFileActionsResult {
         }
         log.error('Failed to download file', e);
         window.open(fullUrl, '_blank', 'noopener,noreferrer');
+      } finally {
+        releaseRow(link);
       }
     },
-    [t]
+    [t, clearRowProgress, releaseRow]
   );
 
   const downloadZip = useCallback(async (fileLinks: string[], zipFileName: string) => {
     if (fileLinks.length < 2) return;
 
     // Checked once, before the workers spawn, rather than relying on the
-    // per-worker assertNotDemo below: that one throws inside each queued task,
-    // whose catch only logs and ticks progress, so a demo user watched a
-    // progress bar run to completion and produce an empty zip with no
+    // per-worker assertNotDemo in downloadZipFiles: that one throws inside each
+    // queued task, whose catch only logs and ticks progress, so a demo user
+    // watched a progress bar run to completion and produce an empty zip with no
     // explanation. One toast for the action, not one per file — and the
     // per-worker guard stays as the actual network boundary.
     if (isDemoMode()) {
@@ -200,78 +229,24 @@ export function useFileActions(): UseFileActionsResult {
       return;
     }
 
-    setIsDownloading(true);
+    setIsZipping(true);
     setDownloadProgress({ completed: 0, total: fileLinks.length });
-
-    const zip = new JSZip();
-
     try {
-      const downloadPromises = fileLinks.map(async (link) => {
-        return requestQueue.add(async () => {
-          try {
-            const fullUrl = normalizeFileUrl(link);
-            assertNotDemo();
-
-            // Basic retry logic (1 retry)
-            let response = await fetch(fullUrl, { credentials: 'include' });
-            if (!response.ok && response.status >= 500) {
-              response = await fetch(fullUrl, { credentials: 'include' });
-            }
-
-            if (!response.ok) {
-              setDownloadProgress((prev) =>
-                prev ? { ...prev, completed: prev.completed + 1 } : null
-              );
-              return;
-            }
-
-            const blob = await response.blob();
-
-            const cd = response.headers.get('content-disposition');
-            let filename = 'file';
-            if (cd) {
-              const match = cd.match(/filename="?([^"]+)"?/);
-              if (match?.[1]) filename = match[1];
-            }
-
-            if (filename === 'file') {
-              filename = link.split('/').pop() || `file_${Math.random().toString(36).substr(2, 9)}`;
-            }
-
-            filename = filename.replace(/[\\/:*?"<>|]/g, '_');
-            zip.file(filename, blob);
-
-            // Update progress after successful download and processing
-            setDownloadProgress((prev) =>
-              prev ? { ...prev, completed: prev.completed + 1 } : null
-            );
-          } catch (e) {
-            log.error(`Failed to add file ${link} to zip`, e);
-            setDownloadProgress((prev) =>
-              prev ? { ...prev, completed: prev.completed + 1 } : null
-            );
-          }
-        });
-      });
-
-      await Promise.all(downloadPromises);
-
-      const entries = Object.keys(zip.files);
-      if (entries.length === 0) return;
-
-      const content = await zip.generateAsync({ type: 'blob' });
-      saveAs(content, zipFileName);
+      await downloadZipFiles(fileLinks, zipFileName, () =>
+        setDownloadProgress((prev) => (prev ? { ...prev, completed: prev.completed + 1 } : null))
+      );
     } catch (e) {
       log.error('Failed to generate/save ZIP', e);
     } finally {
-      setIsDownloading(false);
+      setIsZipping(false);
       setDownloadProgress(null);
     }
   }, []);
 
   return {
-    isDownloading,
+    isDownloading: isZipping || Object.keys(activeDownloads).length > 0,
     downloadProgress,
+    activeDownloads,
     openFile,
     fetchPdfBlob,
     openPdfInline,

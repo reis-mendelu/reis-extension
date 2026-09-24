@@ -5,12 +5,13 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { ClassmatesListSkeleton } from './ClassmatesListSkeleton';
 import { useAppStore } from '../../store/useAppStore';
 import { ISBacklink } from './ISBacklink';
+import { NoSeminarState } from './NoSeminarState';
 import { ClassmatePersonDrawer } from '../Classmates/ClassmatePersonDrawer';
 import { PersonPhoto } from '../ui/PersonPhoto';
 import type { Classmate } from '../../types/classmates';
 
 interface ClassmatesTabProps {
-  /** Off for the phone sheet, which pins its own IS MENDELU footer. */
+  /** Off for the phone sheet — see `showIsBacklink` in DrawerTabBody. */
   showIsBacklink?: boolean;
   courseCode: string;
   /**
@@ -36,7 +37,10 @@ export function ClassmatesTab({
   const { t, language } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState<Classmate | null>(null);
-  const { classmates, isLoading, error } = useClassmates(courseCode);
+  const { classmates, isLoading, error, noSeminar } = useClassmates(courseCode);
+  const total = classmates?.length ?? 0;
+  // Lecture-only: we read classmates from the seminar group, and there is none.
+  const showNoSeminar = noSeminar && total === 0;
   const subjectInfo = useAppStore((s) => (courseCode ? s.subjects?.data[courseCode] : undefined));
   const studium = useAppStore((s) => s.studiumId);
   const obdobi = useAppStore((s) => s.obdobiId);
@@ -83,6 +87,7 @@ export function ClassmatesTab({
         </div>
       );
     }
+    if (showNoSeminar) return <NoSeminarState isUrl={classmatesUrl} />;
     if (filteredClassmates.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-20 text-base-content/40">
@@ -92,84 +97,91 @@ export function ClassmatesTab({
       );
     }
     return (
-      <div className="grid grid-cols-1 gap-3">
-        {filteredClassmates.map((student) => (
-          <div
-            key={student.personId}
-            role="button"
-            tabIndex={0}
-            onClick={() => openPerson(student)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                openPerson(student);
-              }
-            }}
-            className="flex items-center justify-between p-3 rounded-xl border border-base-200 bg-base-100 hover:border-primary/20 hover:shadow-sm transition-all group cursor-pointer text-left"
-          >
-            <div className="flex items-center gap-4 group/profile flex-1">
-              <div className="avatar">
-                <div className="w-14 h-14 rounded-full ring-1 ring-base-200 ring-offset-base-100 ring-offset-2 group-hover/profile:ring-primary/40 transition-all">
-                  <PersonPhoto
-                    personId={student.personId}
-                    alt={student.name}
-                    className="w-full h-full object-cover scale-[1.05]"
-                    fallback={
-                      <div className="bg-neutral text-neutral-content w-full h-full flex items-center justify-center">
-                        <User size={24} strokeWidth={1.5} />
-                      </div>
-                    }
-                  />
+      <>
+        <p className="mb-3 text-xs font-medium text-base-content/70">
+          {t('classmates.fromSeminar', { count: total })}
+        </p>
+        <div className="grid grid-cols-1 gap-3">
+          {filteredClassmates.map((student) => (
+            <div
+              key={student.personId}
+              role="button"
+              tabIndex={0}
+              onClick={() => openPerson(student)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  openPerson(student);
+                }
+              }}
+              className="flex items-center justify-between p-3 rounded-xl border border-base-200 bg-base-100 hover:border-primary/20 hover:shadow-sm transition-all group cursor-pointer text-left"
+            >
+              <div className="flex items-center gap-4 group/profile flex-1">
+                <div className="avatar">
+                  <div className="w-14 h-14 rounded-full ring-1 ring-base-200 ring-offset-base-100 ring-offset-2 group-hover/profile:ring-primary/40 transition-all">
+                    <PersonPhoto
+                      personId={student.personId}
+                      alt={student.name}
+                      className="w-full h-full object-cover scale-[1.05]"
+                      fallback={
+                        <div className="bg-neutral text-neutral-content w-full h-full flex items-center justify-center">
+                          <User size={24} strokeWidth={1.5} />
+                        </div>
+                      }
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="flex min-w-0 flex-1 flex-col">
-                <div className="flex min-w-0 items-center gap-2">
-                  <span className="truncate font-bold text-base-content leading-tight">
-                    {student.name}
-                  </span>
-                  {showStudyInfo && student.studyInfo && (
-                    <>
-                      <span className="text-base-content/20">•</span>
-                      <span
-                        className="text-xs text-base-content/60 line-clamp-1 max-w-[150px] md:max-w-[250px] mt-0.5"
-                        title={student.studyInfo}
-                      >
-                        {student.studyInfo}
-                      </span>
-                    </>
-                  )}
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="truncate font-bold text-base-content leading-tight">
+                      {student.name}
+                    </span>
+                    {showStudyInfo && student.studyInfo && (
+                      <>
+                        <span className="text-base-content/20">•</span>
+                        <span
+                          className="text-xs text-base-content/60 line-clamp-1 max-w-[150px] md:max-w-[250px] mt-0.5"
+                          title={student.studyInfo}
+                        >
+                          {student.studyInfo}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </>
     );
   };
 
   return (
     <div className="flex flex-col h-full bg-base-100">
-      <div className="flex items-center gap-4 px-6 py-4 border-b border-base-300">
-        <div className="relative flex-1">
-          <input
-            type="text"
-            placeholder={translate('classmates.search', 'Vyhledat...')}
-            className="input input-sm input-bordered w-full h-10 pl-9 rounded-lg bg-base-100 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <Search
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40 pointer-events-none z-10"
-          />
+      {!showNoSeminar && (
+        <div className="flex items-center gap-4 px-6 py-4 border-b border-base-300">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder={translate('classmates.search', 'Vyhledat...')}
+              className="input input-sm input-bordered w-full h-10 pl-9 rounded-lg bg-base-100 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40 pointer-events-none z-10"
+            />
+          </div>
         </div>
-      </div>
+      )}
       {isLoading ? (
         renderBody()
       ) : (
         <div className="flex-1 overflow-y-auto p-4">
           {renderBody()}
-          {classmatesUrl && showIsBacklink && <ISBacklink href={classmatesUrl} />}
+          {classmatesUrl && showIsBacklink && !showNoSeminar && <ISBacklink href={classmatesUrl} />}
         </div>
       )}
       <ClassmatePersonDrawer classmate={selected} onClose={() => setSelected(null)} />

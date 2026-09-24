@@ -33,7 +33,7 @@ describe('buildFallbackPlan', () => {
     expect(plan.blocks[0].groups).toHaveLength(1);
     const list = plan.blocks[0].groups[0].subjects;
     expect(list).toHaveLength(2);
-    const st = list.find(s => s.code === 'EBC-ST')!;
+    const st = list.find((s) => s.code === 'EBC-ST')!;
     expect(st.id).toBe('123456');
     expect(st.isEnrolled).toBe(true);
     expect(st.isFulfilled).toBe(false);
@@ -41,19 +41,27 @@ describe('buildFallbackPlan', () => {
   });
 
   it('picks nameEn for en and nameCs for cs', () => {
-    const en = buildFallbackPlan(subjects, 'en').blocks[0].groups[0].subjects.find(s => s.code === 'EBC-ST')!;
-    const cs = buildFallbackPlan(subjects, 'cs').blocks[0].groups[0].subjects.find(s => s.code === 'EBC-ST')!;
+    const en = buildFallbackPlan(subjects, 'en').blocks[0].groups[0].subjects.find(
+      (s) => s.code === 'EBC-ST'
+    )!;
+    const cs = buildFallbackPlan(subjects, 'cs').blocks[0].groups[0].subjects.find(
+      (s) => s.code === 'EBC-ST'
+    )!;
     expect(en.name).toBe('Statistics');
     expect(cs.name).toBe('Statistika');
   });
 
   it('falls back to displayName when the language name is missing', () => {
-    const s = buildFallbackPlan(subjects, 'en').blocks[0].groups[0].subjects.find(x => x.code === 'EBC-XX')!;
+    const s = buildFallbackPlan(subjects, 'en').blocks[0].groups[0].subjects.find(
+      (x) => x.code === 'EBC-XX'
+    )!;
     expect(s.name).toBe('Display Only');
   });
 
   it('missing subjectId maps to empty id', () => {
-    const s = buildFallbackPlan(subjects, 'cs').blocks[0].groups[0].subjects.find(x => x.code === 'EBC-XX')!;
+    const s = buildFallbackPlan(subjects, 'cs').blocks[0].groups[0].subjects.find(
+      (x) => x.code === 'EBC-XX'
+    )!;
     expect(s.id).toBe('');
   });
 

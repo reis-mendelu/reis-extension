@@ -2,9 +2,9 @@ import { ERASMUS_COUNTRIES } from '@/constants/erasmusCountries';
 import type { ErasmusConfig } from '@/types/erasmus';
 
 export function getGrantForCountryId(config: ErasmusConfig, countryId: string): number | null {
-  const country = ERASMUS_COUNTRIES.find(c => c.id === countryId);
+  const country = ERASMUS_COUNTRIES.find((c) => c.id === countryId);
   if (!country) return null;
-  const group = config.grants.find(g => g.countries.includes(country.alpha2));
+  const group = config.grants.find((g) => g.countries.includes(country.alpha2));
   return group?.eur ?? null;
 }
 

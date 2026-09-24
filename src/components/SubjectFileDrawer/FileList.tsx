@@ -35,6 +35,7 @@ export function FileList({
   onViewPdf,
   onDownloadSingle,
   openingLink,
+  downloadingLinks,
   folderUrl,
   lastVisitedAt,
   selectable = true,
@@ -56,10 +57,20 @@ export function FileList({
     <div className="p-6 space-y-6">
       {groups.map((group) => (
         <div key={group.name} className="space-y-3">
-          <div className="flex items-center gap-2 px-2 text-sm font-semibold text-base-content/50 uppercase tracking-wider">
-            <Folder size={14} />
-            {group.displayName}
-          </div>
+          {/* The folder the teacher filed these under in IS — "Kombinovaná
+              forma studia" is what tells a student "Blok 1" is not for them.
+              It was faint uppercase caption text (`/50`, tracking-wider), the
+              weakest thing in the drawer, so the files beneath it read as
+              belonging to nothing. A real heading now, sentence case (long IS
+              folder names read badly in capitals), with a hairline under it
+              and the count, so each group reads as a section. */}
+          <h3 className="flex items-center gap-2 border-b border-base-content/10 px-2 pb-1.5 text-sm font-bold text-base-content">
+            <Folder size={15} className="flex-shrink-0 text-primary" />
+            <span className="min-w-0 flex-1">{group.displayName}</span>
+            <span className="flex-shrink-0 text-xs font-medium tabular-nums text-base-content/60">
+              {group.files.length}
+            </span>
+          </h3>
           <div className="grid grid-cols-1 gap-1">
             {group.files.map((file, i) => {
               // Defensive: fetchFilesFromFolder already collapses the
@@ -89,6 +100,7 @@ export function FileList({
                       onOpenFile={onOpenFile}
                       onViewPdf={onViewPdf}
                       isOpening={openingLink === subFile.link}
+                      downloadTick={downloadingLinks?.[subFile.link] ?? null}
                       onDownloadSingle={onDownloadSingle}
                       onToggleNote={() =>
                         setExpandedLink(expandedLink === subFile.link ? null : subFile.link)

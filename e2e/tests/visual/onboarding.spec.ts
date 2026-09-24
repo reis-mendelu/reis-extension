@@ -1,5 +1,3 @@
- 
-
 import { test, expect } from '../../fixtures/extension';
 
 test.describe('Visual: Invisible Onboarding', () => {
@@ -21,13 +19,16 @@ test.describe('Visual: Invisible Onboarding', () => {
   test('Search Bar has instructional placeholder', async ({ extensionPage }) => {
     const searchInput = extensionPage.locator('input[placeholder*="Hledat předměty"]');
     await expect(searchInput).toBeVisible();
-    await expect(searchInput).toHaveAttribute('placeholder', 'Hledat předměty, učitele, akce... (Ctrl + K)');
-    
+    await expect(searchInput).toHaveAttribute(
+      'placeholder',
+      'Hledat předměty, učitele, akce... (Ctrl + K)'
+    );
+
     // Screenshot of just the header area
-    const header = extensionPage.locator('header').first(); 
+    const header = extensionPage.locator('header').first();
     // Assuming standard layout, if header tag exists. Else fallback to top.
-    if (await header.count() > 0) {
-        await expect(header).toHaveScreenshot('header-search-instruction.png');
+    if ((await header.count()) > 0) {
+      await expect(header).toHaveScreenshot('header-search-instruction.png');
     }
   });
 
@@ -35,13 +36,13 @@ test.describe('Visual: Invisible Onboarding', () => {
     // By default, test environment likely implies !isSyncEnabled unless mocked otherwise
     const connectBtn = extensionPage.getByText('Pro zobrazení Teams schůzek připojte Outlook.');
     await expect(connectBtn).toBeVisible();
-    
+
     const btn = extensionPage.getByRole('button', { name: 'Připojit' });
     await expect(btn).toBeVisible();
   });
 
   test('Legacy IS link is present in Sidebar', async ({ extensionPage }) => {
-      const legacyLink = extensionPage.getByText('Starý IS');
-      await expect(legacyLink).toBeVisible();
+    const legacyLink = extensionPage.getByText('Starý IS');
+    await expect(legacyLink).toBeVisible();
   });
 });

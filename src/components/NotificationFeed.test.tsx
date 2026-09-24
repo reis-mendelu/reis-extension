@@ -21,6 +21,16 @@ vi.mock('../hooks/useSpolkySettings', () => ({
   useSpolkySettings: vi.fn(() => ({ subscribedAssociations: [] })),
 }));
 
+// Mock IndexedDBService. This sat inside the `describe` body until vitest 5,
+// which errors on a hoisted call written below the top level rather than
+// silently lifting it — it always ran here, the indentation just said otherwise.
+vi.mock('../services/storage', () => ({
+  IndexedDBService: {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 // Mock localStorage
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
@@ -97,14 +107,6 @@ describe('NotificationFeed', () => {
     },
   ];
 
-  // Mock IndexedDBService
-  vi.mock('../services/storage', () => ({
-    IndexedDBService: {
-      get: vi.fn().mockResolvedValue(null),
-      set: vi.fn().mockResolvedValue(undefined),
-    },
-  }));
-
   beforeEach(() => {
     vi.clearAllMocks();
     (spolkyService.fetchNotifications as any).mockResolvedValue(mockNotifications);
@@ -128,7 +130,7 @@ describe('NotificationFeed', () => {
       return Promise.resolve(null);
     });
 
-    render(<NotificationFeed />);
+    render(<NotificationFeed onShowMap={vi.fn()} />);
 
     // Open dropdown
     const bellButton = screen.getByLabelText('Notifications');
@@ -165,7 +167,7 @@ describe('NotificationFeed', () => {
       },
     });
 
-    render(<NotificationFeed />);
+    render(<NotificationFeed onShowMap={vi.fn()} />);
 
     const bellButton = screen.getByLabelText('Notifications');
     await act(async () => {
@@ -188,7 +190,7 @@ describe('NotificationFeed', () => {
   });
 
   it('should track click when a notification is clicked', async () => {
-    render(<NotificationFeed />);
+    render(<NotificationFeed onShowMap={vi.fn()} />);
 
     const bellButton = screen.getByLabelText('Notifications');
     await act(async () => {

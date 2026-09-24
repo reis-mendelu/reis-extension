@@ -10,17 +10,31 @@ import { useAppStore } from '../../../store/useAppStore';
  * Exercises real useSearch + real component chrome, only stubbing executeSearch (network).
  */
 
-const person = (id: string, name: string) => ({ id, name, type: 'teacher' as const, link: `p${id}` });
-const subj = (id: string, code: string, name: string, semester: string, faculty = 'PEF') =>
-  ({ id, code, name, link: `l${id}`, faculty, facultyColor: '#fff', semester });
+const person = (id: string, name: string) => ({
+  id,
+  name,
+  type: 'teacher' as const,
+  link: `p${id}`,
+});
+const subj = (id: string, code: string, name: string, semester: string, faculty = 'PEF') => ({
+  id,
+  code,
+  name,
+  link: `l${id}`,
+  faculty,
+  facultyColor: '#fff',
+  semester,
+});
 
 function seed(
   executeSearch: ReturnType<typeof vi.fn>,
-  { language = 'cs', userFaculty = 'PEF' }: { language?: string; userFaculty?: string | null } = {},
+  { language = 'cs', userFaculty = 'PEF' }: { language?: string; userFaculty?: string | null } = {}
 ) {
   useAppStore.setState({
     language,
-    studiumId: 's1', obdobiId: 'o1', facultyId: 'f1',
+    studiumId: 's1',
+    obdobiId: 'o1',
+    facultyId: 'f1',
     userFaculty,
     userSemester: null,
     subjects: { data: {} },
@@ -32,7 +46,9 @@ function seed(
 }
 
 describe('SearchBar minimal+subjectsOnly — full render (Study Plan mount)', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('shows the subjects-only placeholder, not the generic placeholder', () => {
     seed(vi.fn());
@@ -79,15 +95,23 @@ describe('SearchBar minimal+subjectsOnly — full render (Study Plan mount)', ()
   });
 
   it('people stay absent from the DOM after widening to university scope', async () => {
-    const executeSearch = vi.fn()
+    const executeSearch = vi
+      .fn()
       .mockResolvedValueOnce({
         people: [person('p1', 'Jan Novák')],
         subjects: [subj('1', 'EBC-ST', 'Statistika', 'LS 2025/2026')],
         subjectsTruncated: false,
       })
       .mockResolvedValueOnce({
-        people: [person('p1', 'Jan Novák'), person('p2', 'Petr Svoboda'), person('p3', 'Eva Veselá')],
-        subjects: [subj('1', 'EBC-ST', 'Statistika', 'LS 2025/2026'), subj('9', 'XYZ-1', 'Statistika II', 'LS 2025/2026', 'AF')],
+        people: [
+          person('p1', 'Jan Novák'),
+          person('p2', 'Petr Svoboda'),
+          person('p3', 'Eva Veselá'),
+        ],
+        subjects: [
+          subj('1', 'EBC-ST', 'Statistika', 'LS 2025/2026'),
+          subj('9', 'XYZ-1', 'Statistika II', 'LS 2025/2026', 'AF'),
+        ],
         subjectsTruncated: false,
       });
     seed(executeSearch);
@@ -123,11 +147,15 @@ describe('SearchBar minimal+subjectsOnly — full render (Study Plan mount)', ()
 
     const widenBtn = await screen.findByText('Celá univerzita');
     await userEvent.click(widenBtn);
-    await waitFor(() => expect(executeSearch).toHaveBeenLastCalledWith('statistika', 'cz', undefined));
+    await waitFor(() =>
+      expect(executeSearch).toHaveBeenLastCalledWith('statistika', 'cz', undefined)
+    );
 
     const narrowBtn = await screen.findByText('Jen moje fakulta');
     await userEvent.click(narrowBtn);
-    await waitFor(() => expect(executeSearch).toHaveBeenLastCalledWith('statistika', 'cz', '43110'));
+    await waitFor(() =>
+      expect(executeSearch).toHaveBeenLastCalledWith('statistika', 'cz', '43110')
+    );
   });
 
   it('no widen/narrow control renders when the faculty is unknown (canScopeToFaculty=false) under subjectsOnly', async () => {

@@ -65,6 +65,7 @@ export const SubjectSuccessRateSchema = z
     stats: z.array(SemesterStatsSchema),
     lastUpdated: z.string(),
     predmetId: z.string().optional(),
+    cdnVersion: z.string().optional(),
   })
   .passthrough() as unknown as z.ZodType<SubjectSuccessRate>;
 

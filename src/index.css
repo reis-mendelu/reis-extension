@@ -241,6 +241,18 @@ body,
 
 /* Tailwind v4: Custom tokens via @theme */
 @theme {
+  /* The computed walking route.
+   *
+   * A theme TOKEN rather than a DaisyUI semantic colour, deliberately: it has
+   * to match a line drawn on the Leaflet basemap, and that basemap is always
+   * light whatever theme the app is in. A semantic colour would invert in dark
+   * mode and the card's icon would stop matching the line it names.
+   *
+   * The value and the reasoning live with ROUTE_COLOR in
+   * components/CampusMap/routeLayers.ts; the short version is that the previous
+   * blue was exactly BUILDING_STYLE.color. */
+  --color-route: #a21caf;
+
   /* Event Type Colors */
   --color-exam-border: #dc2626;
   --color-exam-bg: #fef2f2;
@@ -323,36 +335,6 @@ body,
 .clickable-link:hover {
   color: #059669; /* emerald-600 */
   text-decoration: underline;
-}
-
-/* Toast notification fixes - ensure background properly contains text */
-[data-sonner-toast] {
-  min-height: fit-content !important;
-  padding: 12px 16px !important;
-  width: auto !important;
-  max-width: fit-content !important;
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  gap: 12px !important;
-  white-space: nowrap !important;
-}
-
-[data-sonner-toast] [data-content] {
-  white-space: nowrap !important;
-  word-wrap: normal !important;
-  overflow-wrap: normal !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  width: auto !important;
-  flex-direction: row !important;
-}
-
-[data-sonner-toast] [data-icon] {
-  flex-shrink: 0 !important;
-  margin-top: 0 !important;
-  display: flex !important;
-  align-items: center !important;
 }
 
 /* Minimalist custom scrollbar for horizontal timeline */
@@ -462,4 +444,169 @@ body,
  * pins; they reappear once the user zooms in to choose a building. */
 .reis-hide-building-labels .leaflet-tooltip.building-label {
   display: none;
+}
+
+/* Room names, on their OWN switch rather than the building letters'. That one
+ * is deliberately off on a phone (labelsAtRest — the letters are the only way
+ * to tell one outline from another on a screen with no side panel), so hanging
+ * room labels on it hid nothing on the primary device.
+ *
+ * Toggled by roomLabelsHidden: a floor plan used to be seen only while the
+ * camera was on its building, so its labels were never drawn at overview
+ * scale — until a route began fitting the whole walk, which zooms out with the
+ * plan still open. Measured at that moment: fifteen room names stacked over
+ * the building the walk ends at. */
+.reis-hide-room-labels .leaflet-tooltip.room-label {
+  display: none;
+}
+
+/* A gate's name, shown on hover only — six labels ringing the campus all the
+ * time is a wall of text around a map whose dots already say "you can get in
+ * here". On a phone there is no hover, so the tap that reveals the name is the
+ * same tap that draws the walks. */
+.leaflet-tooltip.place-label {
+  background: rgb(255 255 255 / 0.92);
+  border: none;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.12);
+  border-radius: 7px;
+  padding: 1px 6px;
+  color: #334155;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.leaflet-tooltip.place-label::before {
+  display: none;
+}
+
+/* One of the botanical garden's places, carried by its own photograph. Leaflet
+ * builds this DOM from a divIcon and takes a single className, which is why
+ * this is CSS and not a Tailwind class — the same standing exception as
+ * .room-label and .place-label above.
+ *
+ * The growth is a transform, not a size change: Leaflet positions the icon by
+ * its top-left corner, so animating width/height would walk the bubble off its
+ * own place while it grows. */
+/* The icon element itself stays unstyled: Leaflet writes an inline
+ * `transform: translate3d(...)` on it to position it, and an inline transform
+ * beats any stylesheet rule — so the growth has to happen on a child. */
+.leaflet-marker-icon.garden-bubble {
+  background: none;
+  border: 0;
+}
+.garden-bubble .garden-bubble-circle {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  overflow: hidden;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgb(15 23 42 / 0.28);
+  background: #e3ebdd;
+  box-sizing: border-box;
+  transition:
+    transform 140ms ease-out,
+    box-shadow 140ms ease-out;
+}
+.garden-bubble .garden-bubble-circle img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Only where a pointer can actually hover. On a phone this rule must not apply
+ * at all, or a tap leaves the bubble stuck at 2x until something else is
+ * tapped. */
+@media (hover: hover) {
+  .garden-bubble:hover .garden-bubble-circle {
+    transform: scale(2);
+    box-shadow: 0 8px 20px rgb(15 23 42 / 0.32);
+  }
+  .garden-bubble:hover {
+    z-index: 1000 !important;
+  }
+}
+/* Zoomed out, the bubbles land on top of each other — toggled from the map by
+ * zoom, exactly like the building letters. */
+.reis-hide-garden-bubbles .leaflet-marker-icon.garden-bubble {
+  display: none;
+}
+/* The computed route's chip — the only time label on this map now that the
+ * gate fan is gone. Fuchsia, matching ROUTE_COLOR in routeLayers. Not blue:
+ * #2563eb is exactly BUILDING_STYLE.color, so the route would be drawn in the
+ * same hex as the outlines it runs between.
+ *
+ * A TOOLTIP, not a divIcon. The first version used L.divIcon, which renders
+ * `leaflet-marker-icon <class>` and so never matched a `.leaflet-tooltip`
+ * rule: it shipped as a 12x12 box with a transparent background and inherited
+ * base-content (#f3f4f6) on a basemap that is always light. Invisible, and the
+ * unit test passed because it asserted the divIcon's html, which is not the
+ * same question as whether anyone can see it. */
+/* "Najdi cestu", pinned to the room you tapped.
+ *
+ * A MARKER, so `.leaflet-marker-icon` — not `.leaflet-tooltip`. That is the
+ * whole reason this comment exists: the walk chip shipped once styled against
+ * the tooltip rule while being rendered as a divIcon, and went out invisible.
+ *
+ * Dark surface, like the search pill: this basemap is always light whatever
+ * the app theme is, and anything floating over it either carries its own
+ * background or disappears. The glyph takes the route's fuchsia so the control
+ * resembles the line it draws; the solid fuchsia belongs to the "9 min" chip,
+ * which is the answer rather than the offer.
+ *
+ * `width: 0` on the icon with the pill centred on it: the label's width is not
+ * known when the icon is built, and Leaflet would otherwise box the shadow
+ * around dead space. */
+.leaflet-marker-icon.room-route-chip {
+  width: 0 !important;
+  height: 0 !important;
+  overflow: visible;
+}
+.room-route-chip-pill {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  background: #1c2431;
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgb(15 23 42 / 0.35);
+  cursor: pointer;
+}
+.room-route-chip-pill > svg {
+  color: #d946ef;
+  flex: none;
+}
+/* The focus ring has to be visible against BOTH the pill and the light
+ * basemap it floats on, so it is drawn outside the pill rather than inside. */
+.leaflet-marker-icon.room-route-chip:focus-visible {
+  outline: none;
+}
+.leaflet-marker-icon.room-route-chip:focus-visible .room-route-chip-pill {
+  outline: 2px solid #d946ef;
+  outline-offset: 2px;
+}
+
+.leaflet-tooltip.route-chip {
+  background: #a21caf;
+  border: none;
+  box-shadow: 0 1px 3px rgb(112 26 117 / 0.35);
+  border-radius: 9px;
+  padding: 3px 8px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.leaflet-tooltip.route-chip::before {
+  border-top-color: #a21caf;
 }

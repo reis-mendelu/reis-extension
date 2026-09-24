@@ -1,5 +1,5 @@
 {
-  "_comment": "Synthetic exam-season fixture. NO real student data — fictional teachers, invented term ids. Dates are authored as dayOffset from 'now' and materialised by scripts/lib/fixtureRebase.ts, so this never rots. Serve with: REIS_FIXTURE=examSeason npm run dev:web",
+  "_comment": "Synthetic exam-season fixture. NO real student data — fictional teachers, invented term ids. Dates are authored as dayOffset from 'now' and materialised by scripts/lib/fixtureRebase.ts, so this never rots. Serve with: REIS_FIXTURE=examSeason npm run dev:web. Two registered exams in the future (Matematika in two days, Mikroekonomie in twelve) so the registered strip has something to swipe between, plus one already sat (Programování, three days ago) that the screen must hide. The Programování exam terms close registration on three different days, to show the per-term Přihlašování do. Statistika sits under Kam se přihlásit nemohu (cannotRegister) to show that group. Adds: Finanční účetnictví (registered, deregistration already over), Právo (registered far ahead, plus a closed term and one that opens later), Management (bookable / full / closed) and Marketing (nothing open yet).",
   "exams": [
     {
       "version": 1,
@@ -43,7 +43,8 @@
               "attemptTypes": ["regular"],
               "sectionForm": "písemná",
               "sectionFormCs": "písemná",
-              "sectionFormEn": "written"
+              "sectionFormEn": "written",
+              "durationMinutes": 45
             },
             {
               "id": "fx-mt-zk-t2",
@@ -62,7 +63,8 @@
               "deregDayOffset": 0,
               "deregTime": "23:59",
               "sectionForm": "písemná",
-              "sectionFormEn": "written"
+              "sectionFormEn": "written",
+              "durationMinutes": 45
             },
             {
               "id": "fx-mt-zk-t3",
@@ -78,7 +80,8 @@
               "attemptTypes": ["retake1"],
               "canRegisterNow": true,
               "sectionForm": "písemná a ústní",
-              "sectionFormEn": "written and oral"
+              "sectionFormEn": "written and oral",
+              "durationMinutes": 45
             }
           ]
         }
@@ -118,7 +121,8 @@
                 "total": 24,
                 "raw": "22/24"
               },
-              "attemptTypes": ["regular"]
+              "attemptTypes": ["regular"],
+              "durationMinutes": 45
             }
           ]
         },
@@ -146,7 +150,10 @@
               "deregDayOffset": 3,
               "deregTime": "12:00",
               "sectionForm": "e-test",
-              "sectionFormEn": "e-test"
+              "sectionFormEn": "e-test",
+              "regEndDayOffset": 3,
+              "regEndTime": "20:00",
+              "durationMinutes": 45
             },
             {
               "id": "fx-pyt-zk-t2",
@@ -161,7 +168,10 @@
               },
               "full": true,
               "attemptTypes": ["regular"],
-              "sectionForm": "e-test"
+              "sectionForm": "e-test",
+              "regEndDayOffset": 4,
+              "regEndTime": "20:00",
+              "durationMinutes": 45
             },
             {
               "id": "fx-pyt-zk-t3",
@@ -175,7 +185,13 @@
                 "raw": "1/24"
               },
               "attemptTypes": ["retake1", "retake2"],
-              "canRegisterNow": true
+              "canRegisterNow": true,
+              "regEndDayOffset": 21,
+              "sectionForm": "ústní",
+              "sectionFormCs": "ústní",
+              "sectionFormEn": "oral",
+              "regEndTime": "20:00",
+              "durationMinutes": 45
             }
           ]
         }
@@ -213,7 +229,10 @@
               "regStartDayOffset": -14,
               "regEndDayOffset": 7,
               "deregDayOffset": 7,
-              "deregTime": "23:59"
+              "deregTime": "23:59",
+              "regStartTime": "13:00",
+              "regEndTime": "20:00",
+              "durationMinutes": 45
             },
             {
               "id": "fx-aos-zk-t2",
@@ -227,7 +246,9 @@
                 "raw": "0/30"
               },
               "attemptTypes": ["retake1"],
-              "regStartDayOffset": 10
+              "regStartDayOffset": 10,
+              "regStartTime": "13:00",
+              "durationMinutes": 45
             }
           ]
         }
@@ -263,7 +284,8 @@
               "attemptTypes": ["regular"],
               "canRegisterNow": true,
               "deregDayOffset": 0,
-              "deregTime": "12:00"
+              "deregTime": "12:00",
+              "durationMinutes": 45
             },
             {
               "id": "fx-dsnd-zk-t2",
@@ -277,7 +299,8 @@
                 "raw": "9/28"
               },
               "attemptTypes": ["regular", "retake1"],
-              "canRegisterNow": true
+              "canRegisterNow": true,
+              "durationMinutes": 45
             }
           ]
         }
@@ -311,7 +334,8 @@
                 "raw": "15/20"
               },
               "attemptTypes": ["regular"],
-              "canRegisterNow": true
+              "canRegisterNow": true,
+              "durationMinutes": 45
             }
           ]
         }
@@ -348,7 +372,9 @@
               "canRegisterNow": false,
               "regStartDayOffset": 12,
               "attemptTypes": ["regular"],
-              "sectionForm": "e-test"
+              "sectionForm": "e-test",
+              "regStartTime": "13:00",
+              "durationMinutes": 45
             },
             {
               "id": "fx-ekm-pt1-t2",
@@ -365,7 +391,512 @@
               "canRegisterNow": false,
               "regStartDayOffset": 12,
               "attemptTypes": ["regular"],
-              "sectionForm": "e-test"
+              "sectionForm": "e-test",
+              "regStartTime": "13:00",
+              "durationMinutes": 45
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": 1,
+      "id": "fx-mik",
+      "code": "EBC-MIK",
+      "name": "Mikroekonomie",
+      "nameCs": "Mikroekonomie",
+      "nameEn": "Microeconomics",
+      "sections": [
+        {
+          "id": "fx-mik-zk",
+          "name": "zkouška",
+          "nameCs": "zkouška",
+          "nameEn": "exam",
+          "type": "Zkouška",
+          "status": "registered",
+          "registeredTerm": {
+            "id": "fx-mik-zk-t2",
+            "dayOffset": 12,
+            "time": "10:00",
+            "room": "Q16",
+            "roomCs": "Q16",
+            "roomEn": "Q16",
+            "teacher": "Ing. Karel Svoboda, Ph.D.",
+            "deregDayOffset": 10,
+            "deregTime": "23:59",
+            "durationMinutes": 90
+          },
+          "terms": [
+            {
+              "id": "fx-mik-zk-t1",
+              "dayOffset": 5,
+              "time": "10:00",
+              "room": "Q16",
+              "teacher": "Ing. Karel Svoboda, Ph.D.",
+              "capacity": {
+                "occupied": 60,
+                "total": 60,
+                "raw": "60/60"
+              },
+              "full": true,
+              "attemptTypes": ["regular"],
+              "sectionForm": "písemná",
+              "sectionFormCs": "písemná",
+              "sectionFormEn": "written",
+              "durationMinutes": 45
+            },
+            {
+              "id": "fx-mik-zk-t2",
+              "dayOffset": 12,
+              "time": "10:00",
+              "room": "Q16",
+              "teacher": "Ing. Karel Svoboda, Ph.D.",
+              "capacity": {
+                "occupied": 41,
+                "total": 60,
+                "raw": "41/60"
+              },
+              "full": false,
+              "attemptTypes": ["regular"],
+              "sectionForm": "písemná",
+              "sectionFormCs": "písemná",
+              "sectionFormEn": "written",
+              "canRegisterNow": true,
+              "deregDayOffset": 10,
+              "deregTime": "23:59",
+              "durationMinutes": 45
+            },
+            {
+              "id": "fx-mik-zk-t3",
+              "dayOffset": 26,
+              "time": "09:00",
+              "room": "Q13",
+              "teacher": "Ing. Karel Svoboda, Ph.D.",
+              "capacity": {
+                "occupied": 3,
+                "total": 30,
+                "raw": "3/30"
+              },
+              "full": false,
+              "attemptTypes": ["regular", "retake1", "retake2"],
+              "sectionForm": "písemná",
+              "sectionFormCs": "písemná",
+              "sectionFormEn": "written",
+              "canRegisterNow": true,
+              "durationMinutes": 45
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": 1,
+      "id": "fx-sta",
+      "code": "EBC-STA",
+      "name": "Statistika",
+      "nameCs": "Statistika",
+      "nameEn": "Statistics",
+      "sections": [
+        {
+          "id": "fx-sta-zk",
+          "name": "zkouška",
+          "nameCs": "zkouška",
+          "nameEn": "exam",
+          "type": "exam",
+          "status": "open",
+          "terms": [
+            {
+              "id": "fx-sta-zk-t1",
+              "dayOffset": 30,
+              "time": "09:00",
+              "room": "Q01",
+              "teacher": "Ing. Petr Dvořák",
+              "capacity": {
+                "occupied": 4,
+                "total": 40,
+                "raw": "4/40"
+              },
+              "full": false,
+              "attemptTypes": ["retake1"],
+              "regStartDayOffset": 10,
+              "regEndDayOffset": 29,
+              "canRegisterNow": false,
+              "cannotRegister": true,
+              "blockReasonUrl": "https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=fx-sta-zk-t1;zobraz_duvod=1;lang=cz",
+              "sectionForm": "písemná",
+              "sectionFormCs": "písemná",
+              "sectionFormEn": "written",
+              "regStartTime": "13:00",
+              "regEndTime": "20:00",
+              "durationMinutes": 90
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": 1,
+      "id": "fx-fu",
+      "code": "EBC-FU",
+      "name": "Finanční účetnictví",
+      "nameCs": "Finanční účetnictví",
+      "nameEn": "Financial Accounting",
+      "sections": [
+        {
+          "id": "fx-fu-zk",
+          "name": "zkouška",
+          "nameCs": "zkouška",
+          "nameEn": "exam",
+          "type": "exam",
+          "status": "registered",
+          "terms": [
+            {
+              "id": "fx-fu-zk-t1",
+              "dayOffset": 4,
+              "time": "08:00",
+              "room": "Q11",
+              "roomCs": "Q11",
+              "roomEn": "Q11",
+              "teacher": "Ing. Petr Dvořák",
+              "capacity": {
+                "occupied": 39,
+                "total": 40,
+                "raw": "39/40"
+              },
+              "full": false,
+              "sectionForm": "písemná",
+              "sectionFormCs": "písemná",
+              "sectionFormEn": "written",
+              "attemptTypes": ["regular"],
+              "regStartDayOffset": -20,
+              "regEndDayOffset": -1,
+              "deregDayOffset": -1,
+              "regStartTime": "13:00",
+              "regEndTime": "20:00",
+              "deregTime": "20:00",
+              "durationMinutes": 90
+            },
+            {
+              "id": "fx-fu-zk-t2",
+              "dayOffset": 18,
+              "time": "08:00",
+              "room": "Q11",
+              "roomCs": "Q11",
+              "roomEn": "Q11",
+              "teacher": "Ing. Petr Dvořák",
+              "capacity": {
+                "occupied": 12,
+                "total": 40,
+                "raw": "12/40"
+              },
+              "full": false,
+              "sectionForm": "písemná",
+              "sectionFormCs": "písemná",
+              "sectionFormEn": "written",
+              "attemptTypes": ["retake1"],
+              "canRegisterNow": true,
+              "regStartDayOffset": -20,
+              "regEndDayOffset": 16,
+              "deregDayOffset": 16,
+              "regStartTime": "13:00",
+              "regEndTime": "20:00",
+              "deregTime": "20:00",
+              "durationMinutes": 90
+            }
+          ],
+          "registeredTerm": {
+            "id": "fx-fu-zk-t1",
+            "dayOffset": 4,
+            "time": "08:00",
+            "room": "Q11",
+            "roomCs": "Q11",
+            "roomEn": "Q11",
+            "deregDayOffset": -1,
+            "deregTime": "23:59",
+            "durationMinutes": 60
+          }
+        }
+      ]
+    },
+    {
+      "version": 1,
+      "id": "fx-prv",
+      "code": "EBC-PRV",
+      "name": "Právo",
+      "nameCs": "Právo",
+      "nameEn": "Law",
+      "sections": [
+        {
+          "id": "fx-prv-zk",
+          "name": "zkouška",
+          "nameCs": "zkouška",
+          "nameEn": "exam",
+          "type": "exam",
+          "status": "registered",
+          "terms": [
+            {
+              "id": "fx-prv-zk-t1",
+              "dayOffset": 27,
+              "time": "13:00",
+              "room": "Q31",
+              "roomCs": "Q31",
+              "roomEn": "Q31",
+              "teacher": "JUDr. Eva Malá",
+              "capacity": {
+                "occupied": 22,
+                "total": 60,
+                "raw": "22/60"
+              },
+              "full": false,
+              "sectionForm": "písemná",
+              "sectionFormCs": "písemná",
+              "sectionFormEn": "written",
+              "attemptTypes": ["regular"],
+              "regStartDayOffset": -5,
+              "regEndDayOffset": 25,
+              "deregDayOffset": 25,
+              "regStartTime": "13:00",
+              "regEndTime": "20:00",
+              "deregTime": "20:00",
+              "durationMinutes": 90
+            },
+            {
+              "id": "fx-prv-zk-t2",
+              "dayOffset": 9,
+              "time": "13:00",
+              "room": "Q31",
+              "roomCs": "Q31",
+              "roomEn": "Q31",
+              "teacher": "JUDr. Eva Malá",
+              "capacity": {
+                "occupied": 18,
+                "total": 60,
+                "raw": "18/60"
+              },
+              "full": false,
+              "sectionForm": "písemná",
+              "sectionFormCs": "písemná",
+              "sectionFormEn": "written",
+              "attemptTypes": ["regular"],
+              "regStartDayOffset": -30,
+              "regEndDayOffset": -2,
+              "deregDayOffset": -2,
+              "regStartTime": "13:00",
+              "regEndTime": "20:00",
+              "deregTime": "20:00",
+              "durationMinutes": 90
+            },
+            {
+              "id": "fx-prv-zk-t3",
+              "dayOffset": 40,
+              "time": "13:00",
+              "room": "Q31",
+              "roomCs": "Q31",
+              "roomEn": "Q31",
+              "teacher": "JUDr. Eva Malá",
+              "capacity": {
+                "occupied": 0,
+                "total": 60,
+                "raw": "0/60"
+              },
+              "full": false,
+              "sectionForm": "písemná",
+              "sectionFormCs": "písemná",
+              "sectionFormEn": "written",
+              "attemptTypes": ["retake1"],
+              "regStartDayOffset": 12,
+              "regEndDayOffset": 38,
+              "deregDayOffset": 38,
+              "regStartTime": "13:00",
+              "regEndTime": "20:00",
+              "deregTime": "20:00",
+              "durationMinutes": 90
+            }
+          ],
+          "registeredTerm": {
+            "id": "fx-prv-zk-t1",
+            "dayOffset": 27,
+            "time": "13:00",
+            "room": "Q31",
+            "roomCs": "Q31",
+            "roomEn": "Q31",
+            "deregDayOffset": 25,
+            "durationMinutes": 120,
+            "deregTime": "20:00"
+          }
+        }
+      ]
+    },
+    {
+      "version": 1,
+      "id": "fx-mng",
+      "code": "EBC-MNG",
+      "name": "Management",
+      "nameCs": "Management",
+      "nameEn": "Management",
+      "sections": [
+        {
+          "id": "fx-mng-zk",
+          "name": "zkouška",
+          "nameCs": "zkouška",
+          "nameEn": "exam",
+          "type": "exam",
+          "status": "open",
+          "terms": [
+            {
+              "id": "fx-mng-zk-t1",
+              "dayOffset": 8,
+              "time": "10:00",
+              "room": "Q02",
+              "roomCs": "Q02",
+              "roomEn": "Q02",
+              "teacher": "doc. Ing. Jana Černá, Ph.D.",
+              "capacity": {
+                "occupied": 25,
+                "total": 45,
+                "raw": "25/45"
+              },
+              "full": false,
+              "sectionForm": "písemná a ústní",
+              "sectionFormCs": "písemná a ústní",
+              "sectionFormEn": "written",
+              "attemptTypes": ["regular"],
+              "canRegisterNow": true,
+              "regStartDayOffset": -3,
+              "regEndDayOffset": 6,
+              "deregDayOffset": 6,
+              "regStartTime": "13:00",
+              "regEndTime": "20:00",
+              "deregTime": "20:00",
+              "durationMinutes": 90
+            },
+            {
+              "id": "fx-mng-zk-t2",
+              "dayOffset": 15,
+              "time": "10:00",
+              "room": "Q02",
+              "roomCs": "Q02",
+              "roomEn": "Q02",
+              "teacher": "doc. Ing. Jana Černá, Ph.D.",
+              "capacity": {
+                "occupied": 45,
+                "total": 45,
+                "raw": "45/45"
+              },
+              "full": true,
+              "sectionForm": "písemná",
+              "sectionFormCs": "písemná",
+              "sectionFormEn": "written",
+              "attemptTypes": ["retake1"],
+              "canRegisterNow": false,
+              "regStartDayOffset": -3,
+              "regEndDayOffset": 13,
+              "deregDayOffset": 13,
+              "regStartTime": "13:00",
+              "regEndTime": "20:00",
+              "deregTime": "20:00",
+              "durationMinutes": 90
+            },
+            {
+              "id": "fx-mng-zk-t3",
+              "dayOffset": 3,
+              "time": "10:00",
+              "room": "Q02",
+              "roomCs": "Q02",
+              "roomEn": "Q02",
+              "teacher": "doc. Ing. Jana Černá, Ph.D.",
+              "capacity": {
+                "occupied": 30,
+                "total": 45,
+                "raw": "30/45"
+              },
+              "full": false,
+              "sectionForm": "písemná",
+              "sectionFormCs": "písemná",
+              "sectionFormEn": "written",
+              "attemptTypes": ["regular"],
+              "canRegisterNow": false,
+              "regStartDayOffset": -20,
+              "regEndDayOffset": -1,
+              "deregDayOffset": -1,
+              "regStartTime": "13:00",
+              "regEndTime": "20:00",
+              "deregTime": "20:00",
+              "durationMinutes": 90
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": 1,
+      "id": "fx-mkt",
+      "code": "EBC-MKT",
+      "name": "Marketing",
+      "nameCs": "Marketing",
+      "nameEn": "Marketing",
+      "sections": [
+        {
+          "id": "fx-mkt-zap",
+          "name": "zápočet",
+          "nameCs": "zápočet",
+          "nameEn": "credit",
+          "type": "test",
+          "status": "open",
+          "terms": [
+            {
+              "id": "fx-mkt-zap-t1",
+              "dayOffset": 22,
+              "time": "11:00",
+              "room": "Z1",
+              "roomCs": "Z1",
+              "roomEn": "Z1",
+              "teacher": "Ing. Lucie Horáková",
+              "capacity": {
+                "occupied": 0,
+                "total": 35,
+                "raw": "0/35"
+              },
+              "full": false,
+              "sectionForm": "písemná",
+              "sectionFormCs": "písemná",
+              "sectionFormEn": "written",
+              "attemptTypes": ["regular"],
+              "canRegisterNow": false,
+              "regStartDayOffset": 6,
+              "regEndDayOffset": 20,
+              "deregDayOffset": 19,
+              "regStartTime": "13:00",
+              "regEndTime": "20:00",
+              "deregTime": "20:00",
+              "durationMinutes": 45
+            },
+            {
+              "id": "fx-mkt-zap-t2",
+              "dayOffset": 29,
+              "time": "11:00",
+              "room": "Z1",
+              "roomCs": "Z1",
+              "roomEn": "Z1",
+              "teacher": "Ing. Lucie Horáková",
+              "capacity": {
+                "occupied": 0,
+                "total": 35,
+                "raw": "0/35"
+              },
+              "full": false,
+              "sectionForm": "písemná",
+              "sectionFormCs": "písemná",
+              "sectionFormEn": "written",
+              "attemptTypes": ["regular", "retake1"],
+              "canRegisterNow": false,
+              "regStartDayOffset": 6,
+              "regEndDayOffset": 27,
+              "deregDayOffset": 26,
+              "regStartTime": "13:00",
+              "regEndTime": "20:00",
+              "deregTime": "20:00",
+              "durationMinutes": 45
             }
           ]
         }

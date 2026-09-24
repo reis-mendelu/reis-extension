@@ -3,8 +3,16 @@ import { gradeForCourse } from '../gradeLookup';
 import type { CourseGrade } from '../../types/documents';
 
 const g = (over: Partial<CourseGrade>): CourseGrade => ({
-  period: 'LS 2025/2026 - PEF', predmetId: '1', courseCode: undefined, courseName: 'X',
-  examType: 'zk', attempt: 1, gradeText: '', gradeLetter: '', credits: 4, ...over,
+  period: 'LS 2025/2026 - PEF',
+  predmetId: '1',
+  courseCode: undefined,
+  courseName: 'X',
+  examType: 'zk',
+  attempt: 1,
+  gradeText: '',
+  gradeLetter: '',
+  credits: 4,
+  ...over,
 });
 
 describe('gradeForCourse (matched by predmet id)', () => {
@@ -17,7 +25,12 @@ describe('gradeForCourse (matched by predmet id)', () => {
   });
 
   it('matches by predmetId even when courseCode is undefined (real IS data shape)', () => {
-    const grade = g({ courseCode: undefined, predmetId: '162547', gradeLetter: 'A', gradeText: 'výborně (A)' });
+    const grade = g({
+      courseCode: undefined,
+      predmetId: '162547',
+      gradeLetter: 'A',
+      gradeText: 'výborně (A)',
+    });
     expect(gradeForCourse([grade], '162547')).toBe(grade);
   });
 
@@ -43,19 +56,31 @@ import { gradeBadge } from '../gradeLookup';
 
 describe('gradeBadge', () => {
   it('returns the letter for a graded exam', () => {
-    expect(gradeBadge(g({ gradeLetter: 'A', gradeText: 'výborně (A)' }))).toEqual({ kind: 'letter', text: 'A', passed: true });
+    expect(gradeBadge(g({ gradeLetter: 'A', gradeText: 'výborně (A)' }))).toEqual({
+      kind: 'letter',
+      text: 'A',
+      passed: true,
+    });
   });
 
   it('marks F as not passed', () => {
-    expect(gradeBadge(g({ gradeLetter: 'F', gradeText: 'nedostatečně (F)' }))).toEqual({ kind: 'letter', text: 'F', passed: false });
+    expect(gradeBadge(g({ gradeLetter: 'F', gradeText: 'nedostatečně (F)' }))).toEqual({
+      kind: 'letter',
+      text: 'F',
+      passed: false,
+    });
   });
 
   it('maps a zápočet (no letter) to credited', () => {
-    expect(gradeBadge(g({ gradeLetter: '', gradeText: 'započteno (zap)' }))).toEqual({ kind: 'credited' });
+    expect(gradeBadge(g({ gradeLetter: '', gradeText: 'započteno (zap)' }))).toEqual({
+      kind: 'credited',
+    });
   });
 
   it('maps a zakončení (no letter) to completed', () => {
-    expect(gradeBadge(g({ gradeLetter: '', gradeText: 'úspěšně absolvován (zak)' }))).toEqual({ kind: 'completed' });
+    expect(gradeBadge(g({ gradeLetter: '', gradeText: 'úspěšně absolvován (zak)' }))).toEqual({
+      kind: 'completed',
+    });
   });
 
   it('returns null for a null grade or an unrecognised no-letter result', () => {

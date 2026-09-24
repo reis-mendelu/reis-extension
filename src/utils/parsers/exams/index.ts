@@ -3,7 +3,7 @@ import { ExamSubjectSchema } from '../../../schemas/examSchema';
 import type { ScrapedExamSubject, ScrapedExamSection } from './types';
 import { validateHtmlStructure } from './validator';
 import { parseRegisteredTerms } from './registeredTermsParser';
-import { parseAvailableTerms } from './availableTermsParser';
+import { parseAvailableTerms, BLOCKED_TABLE } from './availableTermsParser';
 
 export function parseExamData(html: string, lang: string = 'cz'): ExamSubject[] {
     const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -60,6 +60,8 @@ export function parseExamData(html: string, lang: string = 'cz'): ExamSubject[] 
 
     parseRegisteredTerms(doc, getOrCreateSubject, getOrCreateSection, lang);
     parseAvailableTerms(doc, getOrCreateSubject, getOrCreateSection, lang);
+    // "Kam se přihlásit nemohu?" — shown to the student too, marked cannotRegister.
+    parseAvailableTerms(doc, getOrCreateSubject, getOrCreateSection, lang, BLOCKED_TABLE);
 
     return Array.from(subjectsMap.values()).map(subject => {
         const result = ExamSubjectSchema.safeParse(subject);

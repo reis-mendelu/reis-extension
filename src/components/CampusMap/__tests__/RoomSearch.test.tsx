@@ -6,7 +6,9 @@ import userEvent from '@testing-library/user-event';
 import { RoomSearch } from '../RoomSearch';
 import { useAppStore } from '../../../store/useAppStore';
 
-beforeEach(() => useAppStore.setState({ mapSearchQuery: '', mapSearchResults: [], activeBuildingId: null }));
+beforeEach(() =>
+  useAppStore.setState({ mapSearchQuery: '', mapSearchResults: [], activeBuildingId: null })
+);
 
 describe('RoomSearch', () => {
   it('shows results as the user types and focuses on click', async () => {

@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import { ensureSession, LoginCancelledError, type SessionDeps } from '../ensureSession';
+import {
+  ensureSession,
+  LoginCancelledError,
+  LoginUnreachableError,
+  type SessionDeps,
+} from '../ensureSession';
 
 const TOKEN = 'AAAAAAAAAAAAAAAAAAAAAAAA%2FBBBBBBBBBBBBBBBBBBB';
 
@@ -181,5 +186,132 @@ describe('ensureSession', () => {
       }),
     });
     await expect(ensureSession(d)).rejects.toBeInstanceOf(LoginCancelledError);
+  });
+});
+
+describe('ensureSession when the login page never loads', () => {
+  // The stall, not the error. A connection that is accepted and then answers
+  // nothing — a captive portal holding 443, an IPv6 blackhole, a home router
+  // dropping oversized packets — fires neither `onPageFinished` nor
+  // `onReceivedError` in the Android WebView for minutes.
+  //
+  // `openWebView` is called with `isPresentAfterPageLoad: true`, and the
+  // plugin shows its dialog from exactly one place: `onPageFinished`
+  // (WebViewDialog.java:6370-6377; the other show() sites are gated on
+  // `!isPresentAfterPageLoad` or driven from JS inside the loaded page). So
+  // during a stall there is nothing on screen to look at and nothing to
+  // dismiss — no `closeEvent` can arrive, because the student cannot back out
+  // of a dialog that was never presented.
+  //
+  // That left `ensureSession` with no way to settle at all, and `boot()`
+  // awaits it before `SplashScreen.hide()` under `launchAutoHide: false`:
+  // splash forever, no login WebView, no error. Exactly the two symptoms
+  // reported, from one cause.
+  it('REJECTS instead of hanging when no page load and no dismissal ever arrive', async () => {
+    vi.useFakeTimers();
+    try {
+      const d = deps({
+        // Faithful to the stall, and the detail that makes this test worth
+        // anything: `openLogin` is `await InAppBrowser.openWebView(...)`, and
+        // under `isPresentAfterPageLoad` that PluginCall resolves only in
+        // `onPageFinished` and rejects only in `onReceivedError`. Neither
+        // fires, so THE OPEN CALL ITSELF never settles either. A deadline
+        // armed after `await deps.openLogin()` would therefore never be armed
+        // at all in production — while a mock that resolved here would let
+        // that no-op pass. It must be armed before, or alongside.
+        openLogin: vi.fn(() => new Promise<void>(() => {})),
+        onDismissed: vi.fn(async () => ({ remove: vi.fn(async () => {}) })),
+        firstLoadTimeoutMs: 30_000,
+      });
+
+      const result = ensureSession(d);
+      const settled = vi.fn();
+      void result.then(settled, settled);
+
+      await vi.advanceTimersByTimeAsync(29_000);
+      expect(settled).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(2_000);
+      await expect(result).rejects.toBeInstanceOf(LoginUnreachableError);
+      // Best-effort teardown: the dialog is hidden but alive, and leaving it
+      // behind would have the next login open a second one over it.
+      expect(d.closeWebView).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('REJECTS a stall even on a host whose open call resolves promptly', async () => {
+    // The other shape of the same failure: a host that reports "presented"
+    // straight away (no `isPresentAfterPageLoad`) and then never loads.
+    vi.useFakeTimers();
+    try {
+      const d = deps({
+        openLogin: vi.fn(async () => {}),
+        onDismissed: vi.fn(async () => ({ remove: vi.fn(async () => {}) })),
+        firstLoadTimeoutMs: 30_000,
+      });
+      // Assertion attached BEFORE the clock moves: the rejection lands inside
+      // advanceTimersByTimeAsync, and a handler added afterwards makes it an
+      // unhandled rejection first, which vitest fails the run on.
+      const assertion = expect(ensureSession(d)).rejects.toBeInstanceOf(LoginUnreachableError);
+      await vi.advanceTimersByTimeAsync(31_000);
+      await assertion;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not time out a student who is slowly typing their password', async () => {
+    // The deadline is on the FIRST page load, not on the whole login. Once
+    // that arrives the WebView is on screen (same `onPageFinished` that shows
+    // it emits the event), and the student may take as long as they like.
+    vi.useFakeTimers();
+    try {
+      let fire: () => void = () => {};
+      let calls = 0;
+      const d = deps({
+        readCookies: vi.fn(async (): Promise<Record<string, string>> =>
+          ++calls >= 2 ? { UISAuth: TOKEN } : {}
+        ),
+        onPageLoaded: vi.fn(async (cb: () => void) => {
+          fire = cb;
+          return { remove: vi.fn(async () => {}) };
+        }),
+        openLogin: vi.fn(async () => {
+          fire();
+        }),
+        firstLoadTimeoutMs: 30_000,
+      });
+
+      const result = ensureSession(d);
+      await vi.advanceTimersByTimeAsync(120_000);
+      fire();
+      await vi.advanceTimersByTimeAsync(0);
+      await expect(result).resolves.toBe(TOKEN);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('clears the deadline once login succeeds, leaving no pending timer', async () => {
+    vi.useFakeTimers();
+    try {
+      let fire: () => void = () => {};
+      const d = deps({
+        onPageLoaded: vi.fn(async (cb: () => void) => {
+          fire = cb;
+          return { remove: vi.fn(async () => {}) };
+        }),
+        openLogin: vi.fn(async () => {
+          fire();
+        }),
+        firstLoadTimeoutMs: 30_000,
+      });
+      await expect(ensureSession(d)).resolves.toBe(TOKEN);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

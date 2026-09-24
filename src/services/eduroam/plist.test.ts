@@ -15,7 +15,7 @@ describe('serializePlist', () => {
         ['b', pbool(false)],
         ['d', pdata('TWFu')],
         ['a', parr([pstr('x'), pstr('y')])],
-      ]),
+      ])
     );
     expect(xml).toContain('<integer>13</integer>');
     expect(xml).toContain('<false/>');

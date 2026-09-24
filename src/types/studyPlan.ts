@@ -90,5 +90,10 @@ export interface StudyComparison {
 }
 
 export function isDualLanguageStudyPlan(val: unknown): val is DualLanguageStudyPlan {
-    return val !== null && typeof val === 'object' && 'cz' in (val as Record<string, unknown>) && 'en' in (val as Record<string, unknown>);
+  return (
+    val !== null &&
+    typeof val === 'object' &&
+    'cz' in (val as Record<string, unknown>) &&
+    'en' in (val as Record<string, unknown>)
+  );
 }

@@ -10,7 +10,7 @@ import {
   type FetchExamClassmatesResult,
 } from './exams/fetchExamClassmatesForTermin';
 import { stripGroupSignupSections } from '../../utils/exams/isGroupSignup';
-import { fetchTermNote } from '../../api/terminyInfo';
+import { fetchTermDetail } from '../../api/termDetail';
 
 const NOTE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours on success
 const NOTE_ERROR_TTL_MS = 5 * 60 * 1000; // 5 minutes after error — prevents remount-refetch storm
@@ -90,6 +90,13 @@ function clearLoadingAndError(set: SetState, terminId: string): void {
   });
 }
 
+/**
+ * Which exams refresh is the current one — see createScheduleSlice's
+ * `refreshGeneration`: a request that outlived its backstop must not end a
+ * newer refresh when it finally answers.
+ */
+let refreshGeneration = 0;
+
 export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
   exams: {
     data: [],
@@ -106,6 +113,7 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
   examNotesLoading: {},
   examNotesError: {},
   lastExamNotesFetchedAt: {},
+  examTermDurations: {},
 
   fetchExamClassmatesPriority: async (terminId) => {
     const { examClassmates, examClassmatesLoading, studiumId, obdobiId } = get();
@@ -201,12 +209,15 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
       // Always fetch CZ — teacher-authored note text isn't translated by IS,
       // and querying the EN page hides the teacher's CZ note even though the
       // student needs to read it regardless of their UI language.
-      const note = await fetchTermNote(terminId, studiumId, obdobiId, 'cz');
+      // The same page carries the term's length, which the phone shows for
+      // every term a student opens — so it is kept from this one request.
+      const { note, durationMinutes } = await fetchTermDetail(terminId, studiumId, obdobiId, 'cz');
       set((state) => {
         const nextErr = { ...state.examNotesError };
         delete nextErr[terminId];
         return {
           examNotes: { ...state.examNotes, [terminId]: note },
+          examTermDurations: { ...state.examTermDurations, [terminId]: durationMinutes },
           examNotesLoading: { ...state.examNotesLoading, [terminId]: false },
           lastExamNotesFetchedAt: { ...state.lastExamNotesFetchedAt, [terminId]: Date.now() },
           examNotesError: nextErr,
@@ -263,10 +274,20 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
   triggerExamsRefresh: () => {
     if (get().examsRefreshing) return;
     set({ examsRefreshing: true });
-    syncService.triggerExamRefresh();
-    setTimeout(() => {
-      if (get().examsRefreshing) set({ examsRefreshing: false });
-    }, 15_000);
+    // Ends on the refresh's ANSWER. Waiting for `setExams` instead meant a
+    // student with no exams this month — an empty read pushes nothing — spun
+    // for the full 15s after a lookup that took 0.6s. The timer stays as the
+    // backstop for an answer that never comes.
+    const generation = ++refreshGeneration;
+    const stop = () => {
+      if (generation === refreshGeneration && get().examsRefreshing)
+        set({ examsRefreshing: false });
+    };
+    syncService
+      .triggerExamRefresh()
+      .catch((e) => logError('ExamSlice.triggerExamsRefresh', e))
+      .finally(stop);
+    setTimeout(stop, 15_000);
   },
   setExams: (data) => {
     // A transient/failed IS fetch resolves to [] (see fetchExamData), and a

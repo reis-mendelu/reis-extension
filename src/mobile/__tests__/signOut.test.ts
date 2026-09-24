@@ -6,6 +6,7 @@ function makeDeps(over: Partial<SignOutDeps> = {}): SignOutDeps {
     clearToken: vi.fn(async () => {}),
     clearIsCookies: vi.fn(async () => {}),
     clearUserParams: vi.fn(),
+    clearAdminSession: vi.fn(async () => {}),
     clearLocalData: vi.fn(async () => {}),
     restart: vi.fn(),
     ...over,
@@ -24,6 +25,32 @@ describe('signOutMobile', () => {
     expect(deps.clearUserParams).toHaveBeenCalled();
     expect(deps.clearLocalData).toHaveBeenCalled();
     expect(deps.restart).toHaveBeenCalled();
+  });
+
+  /**
+   * The society/admin login is a second credential and supabase-js keeps it
+   * outside IndexedDB, so no wipe here reaches it. On a shared handset that
+   * means the next student inherits the previous one's admin console.
+   */
+  it('drops the society session too', async () => {
+    const deps = makeDeps();
+    await signOutMobile(deps);
+    expect(deps.clearAdminSession).toHaveBeenCalled();
+  });
+
+  /**
+   * And not when the sign-out is refused. Signed in as the student but signed
+   * out of their society console is precisely the half-torn-down state the
+   * refusal above exists to prevent.
+   */
+  it('leaves the society session alone when the sign-out is refused', async () => {
+    const deps = makeDeps({
+      clearToken: vi.fn(async () => {
+        throw new Error('keystore unavailable');
+      }),
+    });
+    await expect(signOutMobile(deps)).rejects.toThrow();
+    expect(deps.clearAdminSession).not.toHaveBeenCalled();
   });
 
   it('clears the cookies as well as the token', async () => {
@@ -80,42 +107,30 @@ describe('signOutMobile', () => {
   });
 
   /**
-   * The cookie is not a nice-to-have on the way out, it is the half that can
-   * un-do the sign-out: `ensureSession` detects a completed login by POLLING
-   * THE COOKIE JAR, so a surviving UISAuth means the next login WebView is
-   * answered with the dashboard, the poll reads the cookie straight back, and
-   * the student is silently returned to the same account without typing
-   * anything.
+   * The cookie clear reports failure on exactly the devices it matters least
+   * to: `InAppBrowser.clearCookies` only reaches an OPEN browser dialog on
+   * Android (and on iOS below 17), and the login WebView closed long before
+   * the student taps "Sign out". So on those devices it rejected every time.
    *
-   * So a failure here is a FAILED sign-out, not a partial one. It must reach
-   * the caller — which shows the error toast — rather than restart into a login
-   * that will hand the account back.
+   * By then the token is already gone, so a rejection here does not refuse
+   * anything. Letting it escape skipped the wipe, the society sign-out and the
+   * restart, and showed the error toast over an app that was in fact signed
+   * out, until the student restarted it by hand.
+   *
+   * The cookie still cannot be allowed to hand the account back. That is now
+   * enforced where it matters, when the login opens (`clearCookiesOnOpen`).
    */
-  it('fails the sign-out when the cookie jar cannot be cleared', async () => {
+  it('still wipes and restarts when the cookie clear rejects', async () => {
     const deps = makeDeps({
       clearIsCookies: vi.fn(async () => {
-        throw new Error('no plugin');
+        throw new Error('WebView is not initialized');
       }),
     });
 
-    await expect(signOutMobile(deps)).rejects.toThrow('no plugin');
-    expect(deps.restart).not.toHaveBeenCalled();
-  });
-
-  /**
-   * And it must fail BEFORE the destructive half. Wiping the student's cached
-   * grades and schedule while leaving the device able to act as them is the
-   * worst of both outcomes.
-   */
-  it('does not wipe local data when the cookie clear failed', async () => {
-    const deps = makeDeps({
-      clearIsCookies: vi.fn(async () => {
-        throw new Error('no plugin');
-      }),
-    });
-
-    await expect(signOutMobile(deps)).rejects.toThrow();
-    expect(deps.clearLocalData).not.toHaveBeenCalled();
-    expect(deps.clearUserParams).not.toHaveBeenCalled();
+    await signOutMobile(deps);
+    expect(deps.clearUserParams).toHaveBeenCalled();
+    expect(deps.clearAdminSession).toHaveBeenCalled();
+    expect(deps.clearLocalData).toHaveBeenCalled();
+    expect(deps.restart).toHaveBeenCalled();
   });
 });

@@ -15,13 +15,14 @@ export function PeopleSearchPopover({ isOpen, onClose }: PeopleSearchPopoverProp
   const { t, language } = useTranslation();
   const [query, setQuery] = useState('');
   const { sections, isLoading, studiumId, saveToHistory } = useSearch(query);
-  const people = sections.find(s => s.key === 'people')?.results ?? [];
+  const people = sections.find((s) => s.key === 'people')?.results ?? [];
 
   if (!isOpen) return null;
 
   const handlePick = (r: SearchResult) => {
     saveToHistory(r);
-    if (r.link) window.open(injectUserParams(r.link, studiumId, language === 'en' ? 'en' : 'cz'), '_blank');
+    if (r.link)
+      window.open(injectUserParams(r.link, studiumId, language === 'en' ? 'en' : 'cz'), '_blank');
   };
 
   const hasQuery = query.trim().length >= 2;
@@ -53,7 +54,7 @@ export function PeopleSearchPopover({ isOpen, onClose }: PeopleSearchPopoverProp
             <input
               type="text"
               value={query}
-              onChange={e => setQuery(e.target.value)}
+              onChange={(e) => setQuery(e.target.value)}
               placeholder={t('search.peoplePlaceholder')}
               className="w-full pl-10 pr-4 py-2.5 bg-base-200 border border-base-300 rounded-xl text-sm text-base-content placeholder-base-content/50 focus:outline-none focus:border-primary/50 transition-colors"
               autoFocus
@@ -73,12 +74,10 @@ export function PeopleSearchPopover({ isOpen, onClose }: PeopleSearchPopoverProp
             above, since the card is top-anchored rather than centered */}
         <div className="flex-1 overflow-y-auto px-5 pb-5">
           {emptyMessage ? (
-            <div className="py-8 text-center text-sm text-base-content/50">
-              {emptyMessage}
-            </div>
+            <div className="py-8 text-center text-sm text-base-content/50">{emptyMessage}</div>
           ) : (
             <div className="flex flex-col gap-1">
-              {people.map(p => (
+              {people.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => handlePick(p)}
@@ -89,7 +88,11 @@ export function PeopleSearchPopover({ isOpen, onClose }: PeopleSearchPopoverProp
                   </span>
                   <span className="min-w-0">
                     <span className="block text-sm truncate">{p.title}</span>
-                    {p.detail && <span className="block text-[11px] text-base-content/50 truncate">{p.detail}</span>}
+                    {p.detail && (
+                      <span className="block text-[11px] text-base-content/50 truncate">
+                        {p.detail}
+                      </span>
+                    )}
                   </span>
                 </button>
               ))}
