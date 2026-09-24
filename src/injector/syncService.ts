@@ -55,6 +55,11 @@ let lastPastSubjects: { cz: Record<string, unknown>; en: Record<string, unknown>
 /** The language the previous run fetched in; a change makes everything due. */
 let lastSyncLanguage: Language | null = null;
 
+/** The language the latest run fetched in — syncGate compares it after joining one. */
+export function syncedLanguage(): Language | null {
+  return lastSyncLanguage;
+}
+
 export async function syncAllData() {
   if (isSyncing) return;
 

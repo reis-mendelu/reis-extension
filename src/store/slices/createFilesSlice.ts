@@ -42,11 +42,21 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
 
     try {
       // Check IndexedDB first
+      // A record is `{ cz, en }` or a plain list stamped per file with its
+      // language (the sync and refreshFiles write lists). A list is served only
+      // when it is in the language being read; an empty one says nothing about
+      // its language, so both fall through to a fetch instead of showing none.
       const cached = await IndexedDBService.get('files', courseCode);
-      if (cached) {
-        const data = (cached as { cz?: ParsedFile[]; en?: ParsedFile[] })[currentLang] || [];
+      const cachedList = Array.isArray(cached)
+        ? cached.length > 0 && (cached as ParsedFile[]).every((f) => f.language === currentLang)
+          ? (cached as ParsedFile[])
+          : null
+        : cached
+          ? (cached as { cz?: ParsedFile[]; en?: ParsedFile[] })[currentLang] || []
+          : null;
+      if (cachedList) {
         set((state) => ({
-          files: { ...state.files, [courseCode]: data },
+          files: { ...state.files, [courseCode]: cachedList },
           filesLoading: { ...state.filesLoading, [courseCode]: false },
         }));
         return;
@@ -109,7 +119,9 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
 
       // Always persist under the language used at fetch time (correct regardless of current lang).
       const cachedFiles = await IndexedDBService.get('files', courseCode);
-      const data = (cachedFiles || { cz: [], en: [] }) as { cz: ParsedFile[]; en: ParsedFile[] };
+      const data = (
+        cachedFiles && !Array.isArray(cachedFiles) ? cachedFiles : { cz: [], en: [] }
+      ) as { cz: ParsedFile[]; en: ParsedFile[] };
       if (currentLang === 'en') data.en = fullFilesList;
       else data.cz = fullFilesList;
       await IndexedDBService.set('files', courseCode, data);

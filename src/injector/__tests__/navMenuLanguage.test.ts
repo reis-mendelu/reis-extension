@@ -59,6 +59,20 @@ describe('the nav menu is fetched in the student language only', () => {
     expect(fetchNavMenuIn).toHaveBeenCalledTimes(1);
   });
 
+  // The page load and a trigger_sync can both ask before the first answer is
+  // back; they share the one /auth/ request rather than each making it.
+  it('shares one request between overlapping asks for the same language', async () => {
+    setScrapedNavMenu({ categories: CZ, lang: 'cz' });
+    let answer!: (v: RawCategory[]) => void;
+    fetchNavMenuIn.mockReturnValueOnce(new Promise((r) => (answer = r)));
+    const a = ensureNavMenuLanguage('en', send);
+    const b = ensureNavMenuLanguage('en', send);
+    answer(EN);
+    await Promise.all([a, b]);
+    expect(fetchNavMenuIn).toHaveBeenCalledTimes(1);
+    expect(sent).toHaveLength(1);
+  });
+
   it('keeps the scraped labels when the fetch fails, and tries again next time', async () => {
     setScrapedNavMenu({ categories: CZ, lang: 'cz' });
     fetchNavMenuIn.mockResolvedValueOnce(null);

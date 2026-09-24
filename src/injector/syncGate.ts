@@ -1,4 +1,5 @@
-import { syncAllData } from './syncService';
+import { syncAllData, syncedLanguage } from './syncService';
+import { readSyncLanguage } from '../services/sync/syncLanguage';
 import { MIN_SYNC_GAP, SYNC_INTERVAL, SYNC_LOCK_NAME, SYNC_LOCK_WAIT_MS } from './config';
 import { resetSyncTtl } from './syncTtl';
 
@@ -159,7 +160,11 @@ export async function requestSync(reason: SyncReason): Promise<boolean> {
   // stacking a second one on top of it.
   if (fullCrawl) {
     await fullCrawl;
-    return false;
+    // The crawl just joined fetched in the language it read when it started.
+    // A language switch since then arrives as this request, and joining would
+    // land the old names — so a changed language gets a crawl of its own.
+    if ((await readSyncLanguage()) === syncedLanguage()) return false;
+    return trackFullCrawl(reason);
   }
 
   // Only a partial automatic run is going: let it finish, then do a real run,

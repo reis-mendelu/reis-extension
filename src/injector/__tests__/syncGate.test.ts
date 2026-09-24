@@ -13,7 +13,15 @@ function blockingSync() {
   return { gate, release: () => release() };
 }
 
-vi.mock('../syncService', () => ({ syncAllData: vi.fn(async () => {}) }));
+const syncedLanguage: 'cz' | 'en' | null = 'cz';
+let storedLanguage: 'cz' | 'en' = 'cz';
+vi.mock('../syncService', () => ({
+  syncAllData: vi.fn(async () => {}),
+  syncedLanguage: () => syncedLanguage,
+}));
+vi.mock('../../services/sync/syncLanguage', () => ({
+  readSyncLanguage: async () => storedLanguage,
+}));
 
 const mockedSync = vi.mocked(syncAllData);
 
@@ -225,6 +233,26 @@ describe('requestSync', () => {
       await expect(first).resolves.toBe(true);
       await expect(second, 'the second boot joined rather than started').resolves.toBe(false);
       expect(mockedSync).toHaveBeenCalledTimes(1);
+    });
+
+    // A language switch arrives as a 'user' request. Joining a crawl that read
+    // the old language at its start would land the old names and ask for
+    // nothing more, so a switch since then gets a crawl of its own.
+    it('runs its own crawl when the language changed during the one it joined', async () => {
+      const { gate, release } = blockingSync();
+      mockedSync.mockImplementationOnce(async () => {
+        await gate;
+      });
+
+      const first = requestSync('boot');
+      storedLanguage = 'en'; // the student switched mid-crawl
+      const second = requestSync('user');
+      release();
+
+      await expect(first).resolves.toBe(true);
+      await expect(second, 'the switch got a crawl of its own').resolves.toBe(true);
+      expect(mockedSync).toHaveBeenCalledTimes(2);
+      storedLanguage = 'cz';
     });
 
     it('drops an automatic run while one is already in flight', async () => {
