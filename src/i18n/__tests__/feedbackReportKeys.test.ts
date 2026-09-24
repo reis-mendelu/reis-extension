@@ -16,7 +16,7 @@ describe('report entry-point strings', () => {
     ['cs', cs],
     ['en', en],
   ] as const) {
-    const fb = (locale as unknown as Record<string, Record<string, unknown>>).feedback;
+    const fb = (locale as unknown as { feedback: Record<string, unknown> }).feedback;
     it(`${name} has every link/action key`, () => {
       for (const k of KEYS) expect(fb[k], k).toEqual(expect.any(String));
     });

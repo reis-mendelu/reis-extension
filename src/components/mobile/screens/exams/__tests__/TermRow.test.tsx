@@ -119,7 +119,7 @@ describe('TermRow', () => {
     render(
       <TermRow term={term} section={section} now={NOW} isProcessing={false} onRegister={vi.fn()} />
     );
-    const opts = vi.mocked(toast.error).mock.calls[0][1] as unknown as {
+    const opts = vi.mocked(toast.error).mock.calls[0]?.[1] as unknown as {
       action: { label: string; onClick: () => void };
     };
     expect(opts.action.label).toBe('Nahlásit');
