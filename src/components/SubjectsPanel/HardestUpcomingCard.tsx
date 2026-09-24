@@ -51,7 +51,7 @@ function Row({
           this card listed the name and the fail rate and left them out. */}
       {subject.credits > 0 && (
         <span className="text-[11px] font-semibold text-base-content/80 shrink-0">
-          {subject.credits} kr.
+          {subject.credits} {t('subjects.creditsShort')}
         </span>
       )}
       {/* The number alone, with the words said once per page in
