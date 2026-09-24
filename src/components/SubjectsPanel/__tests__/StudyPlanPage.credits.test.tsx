@@ -12,7 +12,7 @@ vi.mock('@/hooks/data/useSpeculativeHover', () => ({
 
 import { SemesterSection } from '../SemesterSection';
 import { HardestUpcomingCard } from '../HardestUpcomingCard';
-import type { SubjectStatus, PlanBlock } from '@/types/studyPlan';
+import type { SubjectStatus, SemesterBlock } from '@/types/studyPlan';
 
 const subject = (over: Partial<SubjectStatus> = {}): SubjectStatus => ({
   id: '1',
@@ -27,7 +27,7 @@ const subject = (over: Partial<SubjectStatus> = {}): SubjectStatus => ({
   ...over,
 });
 
-const block: PlanBlock = {
+const block: SemesterBlock = {
   title: '3. semestr',
   groups: [
     { name: 'Skupina předmětů povinných', statusDescription: '', subjects: [subject()] },
@@ -37,7 +37,7 @@ const block: PlanBlock = {
       subjects: [subject({ code: 'EBC-STA', name: 'Statistika', credits: 4 })],
     },
   ],
-} as PlanBlock;
+};
 
 const renderSection = () =>
   render(
@@ -85,8 +85,8 @@ describe('study plan — credits and group headings', () => {
         entries={[
           {
             subject: subject({ credits: 5, name: 'Ekonometrie' }),
-            stat: { rate: 23 },
-            semesters: [3],
+            stat: { rate: 23, n: 120, semesters: 3 },
+            semesters: ['3'],
           },
         ]}
         onOpenSubject={() => {}}
