@@ -34,6 +34,15 @@ describe('lookupRoomEntry', () => {
     expect(lookupRoomEntry('C02', INDEX)?.code).toBe('BA03N2051');
   });
 
+  // AF and ZF teach 77 lessons a semester in X01–X03. The floor plan draws each
+  // as a row of partitions, merged back into one room by mergedRooms.ts.
+  it('resolves the X-building classrooms IS prints as X01–X03', () => {
+    expect(lookupRoomEntry('X01', INDEX)?.code).toBe('BA25N1001');
+    expect(lookupRoomEntry('X02', INDEX)?.code).toBe('BA25N1002A');
+    expect(lookupRoomEntry('X03', INDEX)?.code).toBe('BA25N1003A');
+    expect(lookupRoomEntry('X01 (Černá Pole)', INDEX)?.code).toBe('BA25N1001');
+  });
+
   it('resolves the raw estate code', () => {
     expect(lookupRoomEntry('BA39N2056', INDEX)?.name).toBe('Q2.56');
   });
@@ -101,10 +110,9 @@ describe('lookupRoomEntry', () => {
   );
 
   it('returns null for a room the dataset does not contain', () => {
-    // Real strings off a Zahradnická fakulta timetable. Building X's index
-    // entries are all raw BA25* codes — no X02/X03 exists under any handle.
-    expect(lookupRoomEntry('X02', INDEX)).toBeNull();
-    expect(lookupRoomEntry('X03', INDEX)).toBeNull();
+    // A real string off a Zahradnická fakulta timetable: the Lednice campus has
+    // no floor plan in the map source, and never will.
+    expect(lookupRoomEntry('ZFAC1 (Led)', INDEX)).toBeNull();
     expect(lookupRoomEntry('', INDEX)).toBeNull();
   });
 

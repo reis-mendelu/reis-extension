@@ -31,7 +31,7 @@ describe('loadRoomGeometry', () => {
   });
 
   it('does nothing for a room the dataset does not carry', async () => {
-    await useAppStore.getState().loadRoomGeometry('X02');
+    await useAppStore.getState().loadRoomGeometry('ZFAC1');
     expect(fetchBuildingRooms).not.toHaveBeenCalled();
   });
 

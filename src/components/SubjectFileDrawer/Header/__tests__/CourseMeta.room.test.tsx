@@ -39,9 +39,9 @@ describe('CourseMeta room control', () => {
   it('shows an unfindable room as plain text rather than a dead button', () => {
     // A real Zahradnická fakulta timetable room. Nothing in the dataset
     // carries it, so a button would be a promise reIS cannot keep.
-    renderRoom('X02');
-    expect(screen.getByText('X02')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'X02' })).toBeNull();
+    renderRoom('ZFAC1');
+    expect(screen.getByText('ZFAC1')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'ZFAC1' })).toBeNull();
   });
 
   it('shows a virtual room as plain text too', () => {
