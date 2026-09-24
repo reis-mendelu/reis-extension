@@ -7,6 +7,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { logError } from '../../utils/reportError';
 import { feedbackErrorKey } from './feedbackErrorKey';
 import { useAppStore } from '../../store/useAppStore';
+import { desktopDialogMotion, phoneSheetMotion } from './feedbackModalMotion';
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -27,6 +28,12 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
   // blurred backdrop is a desktop idiom, and every other mobile surface here
   // rises from the bottom edge.
   const isPhone = useAppStore((s) => s.isTouch && s.isNarrow);
+  // No field is focused on a touch device: a soft keyboard raised while the
+  // sheet slides in resizes the WebView under it, and the sheet jumps. A
+  // hardware keyboard costs nothing, so desktop lands in the first empty field.
+  const isTouch = useAppStore((s) => s.isTouch);
+  const focusTitle = !isTouch && !initialTitle;
+  const focusMessage = !isTouch && !!initialTitle;
 
   const handleSubmit = async (e?: React.SyntheticEvent) => {
     if (e) e.preventDefault();
@@ -93,9 +100,7 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
           />
 
           <motion.div
-            initial={isPhone ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 10 }}
-            animate={isPhone ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
-            exit={isPhone ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 10 }}
+            {...(isPhone ? phoneSheetMotion : desktopDialogMotion)}
             className={`w-full bg-base-100 shadow-2xl border-base-300 overflow-hidden relative z-10 ${
               isPhone
                 ? 'max-w-none rounded-t-[20px] border-t max-h-[85dvh] overflow-y-auto'
@@ -175,7 +180,7 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
                       placeholder={t('feedback.subjectPlaceholder')}
                       className="input input-bordered w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors"
                       required
-                      autoFocus
+                      autoFocus={focusTitle}
                       maxLength={120}
                       onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                     />
@@ -194,6 +199,7 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
                       placeholder={t('feedback.descriptionPlaceholder')}
                       className="textarea textarea-bordered h-32 w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors leading-relaxed resize-none"
                       required
+                      autoFocus={focusMessage}
                       maxLength={2000}
                     />
                   </div>
