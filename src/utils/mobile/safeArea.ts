@@ -12,7 +12,7 @@
  * `env(safe-area-inset-bottom)` and `src/index.css` republishes it as
  * `--safe-bottom`. The top half of this was already done — `--safe-top` is
  * consumed in eight places — and the bottom was not: the only component that
- * ever read `--safe-bottom` was `MobileBottomNav`, which nothing renders.
+ * ever read `--safe-bottom` was `MobileBottomNav`, which nothing rendered and #367 deleted.
  *
  * Read as a NUMBER rather than left to CSS because one consumer is JavaScript:
  * `useMapSheetDrag` clamps the sheet's drag floor to the peek height, and a
