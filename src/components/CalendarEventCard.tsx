@@ -14,6 +14,8 @@ import { useAppStore } from '../store/useAppStore';
 import { useTimeline } from '../hooks/useTimeline';
 import { renderedBlockMinutes, MIN_VISUAL_BLOCK_MINUTES } from './WeeklyCalendar/utils';
 import { CalendarEventCardHideMenu } from './CalendarEventCardHideMenu';
+import { useTranslation } from '../hooks/useTranslation';
+import { lessonPlace } from '../utils/lessonPlace';
 
 interface CalendarEventCardProps {
   lesson: CardLesson;
@@ -27,14 +29,6 @@ function getLocalizedCourseName(lesson: CardLesson, language?: string): string {
     return lesson.courseNameEn;
   }
   return lesson.courseNameCs || lesson.courseName;
-}
-
-// Helper function to get localized room name
-function getLocalizedRoom(lesson: CardLesson, language?: string): string {
-  if (language === 'en' && lesson.roomEn) {
-    return lesson.roomEn;
-  }
-  return lesson.roomCs || lesson.room;
 }
 
 // Extract exam section name from the composite title
@@ -79,7 +73,10 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
     : nickname
       ? baseName
       : fullName;
-  const room = getLocalizedRoom(lesson, language);
+  const { t } = useTranslation();
+  const mapEvents = useAppStore((state) => state.mapEvents);
+  // The room, or where an answered society event is — which may be only a pin.
+  const room = lessonPlace(lesson, language ?? 'cz', mapEvents, t('map.venueOnMap')).label;
 
   // Determine event type and colors using workspace tokens
   const getEventStyles = () => {

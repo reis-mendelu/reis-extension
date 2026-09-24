@@ -1,10 +1,10 @@
-import type { BlockLesson } from '../../types/calendarTypes';
-import type { MapEvent } from '../../types/events';
-import type { RoomIndexEntry } from '../../types/campusMap';
-import roomsIndexJson from '../../data/map/rooms-index.json';
-import { localizedRoom } from '../localizedLesson';
-import { lookupRoomEntry } from '../rooms/lookupRoom';
-import { eventIdFromRsvpBlock } from '../rsvpBlocks';
+import type { BlockLesson } from '../types/calendarTypes';
+import type { MapEvent } from '../types/events';
+import type { RoomIndexEntry } from '../types/campusMap';
+import roomsIndexJson from '../data/map/rooms-index.json';
+import { localizedRoom } from './localizedLesson';
+import { lookupRoomEntry } from './rooms/lookupRoom';
+import { eventIdFromRsvpBlock } from './rsvpBlocks';
 
 const INDEX = roomsIndexJson as RoomIndexEntry[];
 
@@ -18,7 +18,8 @@ export interface LessonPlace {
 }
 
 /**
- * Where a calendar row is, for the phone's agenda and its "up next" card.
+ * Where a calendar row is — the phone's agenda and "up next" card, and the
+ * desktop grid's room line (which takes only the label: no map button there).
  *
  * A lesson's place is its room, and the map can show it only when the room
  * index knows it. An answered society event is different: it reaches the

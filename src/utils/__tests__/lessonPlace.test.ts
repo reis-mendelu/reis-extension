@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { lessonPlace } from '../lessonPlace';
-import { customEventToLesson } from '../../customEventLesson';
-import { rsvpBlockId } from '../../rsvpBlocks';
-import { makeLesson } from '../../../test/fixtures/lesson';
-import type { MapEvent } from '../../../types/events';
+import { customEventToLesson } from '../customEventLesson';
+import { rsvpBlockId } from '../rsvpBlocks';
+import { makeLesson } from '../../test/fixtures/lesson';
+import type { MapEvent } from '../../types/events';
 
 const ON_MAP = 'Místo na mapě';
 

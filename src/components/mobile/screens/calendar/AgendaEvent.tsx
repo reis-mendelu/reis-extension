@@ -3,7 +3,7 @@ import type { BlockLesson } from '../../../../types/calendarTypes';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useAppStore } from '../../../../store/useAppStore';
 import { localizedCourseName } from '../../../../utils/localizedLesson';
-import { lessonPlace } from '../../../../utils/mobile/lessonPlace';
+import { lessonPlace } from '../../../../utils/lessonPlace';
 
 /**
  * Colour tokens match `CalendarEventCard`'s desktop scheme exactly (same
