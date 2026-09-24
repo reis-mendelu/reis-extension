@@ -7,10 +7,10 @@ import { useTranslation } from '../../hooks/useTranslation';
 
 /**
  * `clickable` is the affordance, not the link. A notification IS a
- * `spolky_events` row, so the phone's Novinky sheet can open one on the map
- * whether or not the author set a `url` — a control that acts has to look like
- * it does. It defaults to the link, which is exactly what the desktop dropdown
- * (where a linkless notification is still inert) relied on before this prop.
+ * `spolky_events` row, so both the phone's Novinky sheet and the extension's
+ * dropdown can open one on the map whether or not the author set a `url` — a
+ * control that acts has to look like it does. Both pass it from
+ * `useOpenNotification`; the link-only default is for a caller that cannot.
  *
  * The row itself is `ExamRowCard`'s: accent rail, title over muted subtitle,
  * right column of meta. It used to be a 40px circular avatar and a single bold

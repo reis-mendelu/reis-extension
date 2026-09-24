@@ -49,6 +49,7 @@ export function AppMain({
         onToday={handleToday}
         onOpenSubject={handleOpenSubjectFromSearch}
         searchPrefillRef={searchPrefillRef}
+        onShowMap={() => setCurrentView?.('map')}
       />
       <NpsBanner />
       <div className="flex-1 pt-3 px-4 pb-1 overflow-hidden flex flex-col">

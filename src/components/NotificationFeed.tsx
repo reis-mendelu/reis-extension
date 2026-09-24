@@ -4,7 +4,13 @@ import { useNotificationFeed } from '../hooks/useNotificationFeed';
 import { useDeadlineAlerts } from '../hooks/useDeadlineAlerts';
 import { NotificationDropdown } from './Notifications/NotificationDropdown';
 
-export function NotificationFeed({ className = '' }: { className?: string }) {
+export function NotificationFeed({
+  className = '',
+  onShowMap,
+}: {
+  className?: string;
+  onShowMap: () => void;
+}) {
   const { isOpen, setIsOpen, notifications, loading, readIds, toggle, markVisible } =
     useNotificationFeed();
   const { alerts: deadlineAlerts, markAllSeen, unseenCount } = useDeadlineAlerts();
@@ -56,6 +62,7 @@ export function NotificationFeed({ className = '' }: { className?: string }) {
           loading={loading}
           onClose={() => setIsOpen(false)}
           onVisible={markVisible}
+          onShowMap={onShowMap}
           deadlineAlerts={deadlineAlerts}
         />
       )}
