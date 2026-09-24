@@ -5,7 +5,9 @@ import { loadAllClassmatesFromCache } from './classmates/fetchAllClassmates';
 import {
   fetchAndPersistClassmates,
   persistLastClassmatesFetched,
+  persistClassmatesNoSeminar,
   CLASSMATES_LAST_FETCHED_KEY,
+  CLASSMATES_NO_SEMINAR_KEY,
   type FetchClassmatesResult,
 } from './classmates/fetchClassmatesForSubject';
 
@@ -20,6 +22,10 @@ function applyFetchSuccess(
 ): void {
   const nextLast = { ...get().lastClassmatesFetchedAt, [courseCode]: result.fetchedAt };
   persistLastClassmatesFetched(nextLast);
+  const nextNoSeminar = { ...get().classmatesNoSeminar };
+  if (result.noSeminar) nextNoSeminar[courseCode] = true;
+  else delete nextNoSeminar[courseCode];
+  persistClassmatesNoSeminar(nextNoSeminar);
   set((state: AppState) => {
     const nextErr = { ...state.classmatesError };
     delete nextErr[courseCode];
@@ -28,6 +34,7 @@ function applyFetchSuccess(
       classmatesLoading: { ...state.classmatesLoading, [courseCode]: false },
       lastClassmatesFetchedAt: nextLast,
       classmatesError: nextErr,
+      classmatesNoSeminar: nextNoSeminar,
     };
   });
 }
@@ -64,6 +71,7 @@ export const createClassmatesSlice: AppSlice<ClassmatesSlice> = (set, get) => ({
   classmatesLoading: {},
   lastClassmatesFetchedAt: {},
   classmatesError: {},
+  classmatesNoSeminar: {},
 
   fetchClassmatesPriority: async (courseCode) => {
     const { classmates, classmatesLoading, subjects } = get();
@@ -133,9 +141,15 @@ export const createClassmatesSlice: AppSlice<ClassmatesSlice> = (set, get) => ({
 
   hydrateLastClassmatesFetchedAt: async () => {
     try {
-      const cached = await IndexedDBService.get('meta', CLASSMATES_LAST_FETCHED_KEY);
+      const [cached, noSeminar] = await Promise.all([
+        IndexedDBService.get('meta', CLASSMATES_LAST_FETCHED_KEY),
+        IndexedDBService.get('meta', CLASSMATES_NO_SEMINAR_KEY),
+      ]);
       if (cached && typeof cached === 'object') {
         set({ lastClassmatesFetchedAt: cached as Record<string, number> });
+      }
+      if (noSeminar && typeof noSeminar === 'object') {
+        set({ classmatesNoSeminar: noSeminar as Record<string, boolean> });
       }
     } catch (e) {
       logError('ClassmatesSlice.hydrateLastClassmatesFetchedAt', e);

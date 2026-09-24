@@ -7,6 +7,8 @@ export interface UseClassmatesResult {
   classmates: Classmate[] | null;
   isLoading: boolean;
   error: string | undefined;
+  /** The subject has no seminar group, which is the only roster we read. */
+  noSeminar: boolean;
 }
 
 const STALE_MS = 24 * 60 * 60 * 1000; // 24h — rosters don't change within a semester
@@ -20,6 +22,9 @@ export function useClassmates(courseCode: string | undefined): UseClassmatesResu
   );
   const error = useAppStore((state) =>
     courseCode ? state.classmatesError[courseCode] : undefined
+  );
+  const noSeminar = useAppStore((state) =>
+    courseCode ? !!state.classmatesNoSeminar[courseCode] : false
   );
 
   useEffect(() => {
@@ -39,5 +44,6 @@ export function useClassmates(courseCode: string | undefined): UseClassmatesResu
     classmates: classmates ?? null,
     isLoading: courseCode ? isSubjectLoading || classmates === undefined : false,
     error,
+    noSeminar,
   };
 }

@@ -12,7 +12,9 @@ vi.mock('../../../services/storage', () => ({
 vi.mock('../classmates/fetchClassmatesForSubject', () => ({
   fetchAndPersistClassmates: vi.fn(),
   persistLastClassmatesFetched: vi.fn(),
+  persistClassmatesNoSeminar: vi.fn(),
   CLASSMATES_LAST_FETCHED_KEY: 'classmates_last_fetched',
+  CLASSMATES_NO_SEMINAR_KEY: 'classmates_no_seminar',
 }));
 
 vi.mock('../classmates/fetchAllClassmates', () => ({
@@ -28,6 +30,7 @@ import { IndexedDBService } from '../../../services/storage';
 import {
   fetchAndPersistClassmates,
   persistLastClassmatesFetched,
+  persistClassmatesNoSeminar,
 } from '../classmates/fetchClassmatesForSubject';
 import { loadAllClassmatesFromCache } from '../classmates/fetchAllClassmates';
 
@@ -36,6 +39,7 @@ interface SliceState {
   classmatesLoading: Record<string, boolean>;
   lastClassmatesFetchedAt: Record<string, number>;
   classmatesError: Record<string, string>;
+  classmatesNoSeminar: Record<string, boolean>;
   subjects: { data: Record<string, { subjectId?: string }> } | null;
 }
 
@@ -47,11 +51,13 @@ describe('createClassmatesSlice', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(IndexedDBService.get).mockReset();
     state = {
       classmates: {},
       classmatesLoading: {},
       lastClassmatesFetchedAt: {},
       classmatesError: {},
+      classmatesNoSeminar: {},
       subjects: { data: { ALG: { subjectId: '162527' } } },
     };
     set = vi.fn((updater: unknown) => {
@@ -69,6 +75,7 @@ describe('createClassmatesSlice', () => {
     expect(slice.classmatesLoading).toEqual({});
     expect(slice.lastClassmatesFetchedAt).toEqual({});
     expect(slice.classmatesError).toEqual({});
+    expect(slice.classmatesNoSeminar).toEqual({});
   });
 
   it('fetchAllClassmates does NOT call set() when subjects is null (poison-empty guard)', async () => {
@@ -114,7 +121,11 @@ describe('createClassmatesSlice', () => {
   it('fetchClassmatesPriority fetches from network when no IDB cache, persists timestamp, clears error', async () => {
     vi.mocked(IndexedDBService.get).mockResolvedValueOnce(undefined);
     const data = [{ personId: 9, name: 'N', photoUrl: 'p', studyInfo: 's' }];
-    vi.mocked(fetchAndPersistClassmates).mockResolvedValueOnce({ data, fetchedAt: 12345 });
+    vi.mocked(fetchAndPersistClassmates).mockResolvedValueOnce({
+      data,
+      fetchedAt: 12345,
+      noSeminar: false,
+    });
 
     // Pre-existing error should be cleared on success
     state.classmatesError = { ALG: 'old failure' };
@@ -140,7 +151,11 @@ describe('createClassmatesSlice', () => {
 
   it('refreshClassmatesForSubject updates lastClassmatesFetchedAt', async () => {
     const data = [{ personId: 1, name: 'A', photoUrl: 'p', studyInfo: 's' }];
-    vi.mocked(fetchAndPersistClassmates).mockResolvedValueOnce({ data, fetchedAt: 99999 });
+    vi.mocked(fetchAndPersistClassmates).mockResolvedValueOnce({
+      data,
+      fetchedAt: 99999,
+      noSeminar: false,
+    });
 
     await slice.refreshClassmatesForSubject('ALG');
 
@@ -155,5 +170,47 @@ describe('createClassmatesSlice', () => {
 
     expect(IndexedDBService.get).toHaveBeenCalledWith('meta', 'classmates_last_fetched');
     expect(state.lastClassmatesFetchedAt).toEqual({ ALG: 12345 });
+  });
+
+  it('records and persists that a subject has no seminar group', async () => {
+    vi.mocked(IndexedDBService.get).mockResolvedValueOnce(undefined);
+    vi.mocked(fetchAndPersistClassmates).mockResolvedValueOnce({
+      data: [],
+      fetchedAt: 1,
+      noSeminar: true,
+    });
+
+    await slice.fetchClassmatesPriority('ALG');
+
+    expect(state.classmates.ALG).toEqual([]);
+    expect(state.classmatesNoSeminar.ALG).toBe(true);
+    expect(persistClassmatesNoSeminar).toHaveBeenCalledWith({ ALG: true });
+  });
+
+  it('clears the flag once the subject gets a seminar group', async () => {
+    state.classmatesNoSeminar = { ALG: true };
+    Object.assign(slice, { classmatesNoSeminar: { ALG: true } });
+    const data = [{ personId: 1, name: 'A', photoUrl: 'p', studyInfo: 's' }];
+    vi.mocked(fetchAndPersistClassmates).mockResolvedValueOnce({
+      data,
+      fetchedAt: 2,
+      noSeminar: false,
+    });
+
+    await slice.refreshClassmatesForSubject('ALG');
+
+    expect(state.classmatesNoSeminar.ALG).toBeUndefined();
+    expect(persistClassmatesNoSeminar).toHaveBeenCalledWith({});
+  });
+
+  it('hydrateLastClassmatesFetchedAt also restores the no-seminar flags', async () => {
+    vi.mocked(IndexedDBService.get).mockImplementation(async (_store, key) =>
+      key === 'classmates_no_seminar' ? { ALG: true } : { ALG: 12345 }
+    );
+
+    await slice.hydrateLastClassmatesFetchedAt();
+
+    expect(IndexedDBService.get).toHaveBeenCalledWith('meta', 'classmates_no_seminar');
+    expect(state.classmatesNoSeminar).toEqual({ ALG: true });
   });
 });
