@@ -34,11 +34,14 @@ import { useRefreshHold } from './useRefreshHold';
  */
 export function PullRefreshIndicator({
   scrollerRef,
+  surfaceRef,
   refreshing,
   onRefresh,
   hint = false,
 }: {
   scrollerRef: RefObject<HTMLElement | null>;
+  /** Where a pull may start, when that is more than the scroller. */
+  surfaceRef?: RefObject<HTMLElement | null>;
   refreshing: boolean;
   onRefresh: () => void;
   hint?: boolean;
@@ -52,7 +55,7 @@ export function PullRefreshIndicator({
     if (hint) markSeen();
     onRefresh();
   }, [hint, markSeen, onRefresh]);
-  usePullToRefresh({ scrollerRef, indicatorRef, onRefresh: pulled });
+  usePullToRefresh({ scrollerRef, surfaceRef, indicatorRef, onRefresh: pulled });
   usePullHint(scrollerRef, indicatorRef, hint && seen === false && !refreshing, markSeen);
   useRefreshHold(scrollerRef, refreshing);
   return (
