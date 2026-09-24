@@ -52,13 +52,15 @@ export function TermDetails({ term, section, isRegHere, now }: TermDetailsProps)
   const studiumId = useAppStore((s) => s.studiumId);
   const obdobiId = useAppStore((s) => s.obdobiId);
   const fetched = useAppStore((s) => s.examTermDurations[term.id]);
-  const { isLoading } = useExamNote(term.id);
 
   const form = (language === 'en' ? term.sectionFormEn : term.sectionFormCs) || term.sectionForm;
-  const minutes =
-    term.durationMinutes ??
-    (isRegHere ? section.registeredTerm?.durationMinutes : undefined) ??
-    fetched;
+  const synced =
+    term.durationMinutes ?? (isRegHere ? section.registeredTerm?.durationMinutes : undefined);
+  // The detail page is read for the length alone here — the phone shows no
+  // Poznámka — so a length the sync already has is not asked for again. A
+  // null one is: IS had none then, and a teacher can have filled it in since.
+  const { isLoading } = useExamNote(typeof synced === 'number' ? undefined : term.id);
+  const minutes = synced ?? fetched;
   // One line, the one the student can act on — see utils/mobile/examDeadline.
   const deadlineRow = termDeadline(term, section, isRegHere, now);
   const whoUrl = termPeopleUrl(term, studiumId, obdobiId, language);

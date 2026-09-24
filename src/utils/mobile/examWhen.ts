@@ -38,10 +38,9 @@ export function formatWhenRow(date: Date, time: string, locale: string): string 
  * Everything except the exams whose day is already over.
  *
  * IS keeps a registered exam on the list after it has been sat, until it is
- * graded. Left in, it led "Co tě čeká" with the upcoming dot, landed under
- * "Přihlášené · později" because `splitByWeek` files everything outside this
- * week there, and offered "Odhlásit" for something that had happened. Hidden
- * rather than grouped — the student's call.
+ * graded. Left in, it took a tile in the registered strip as if it were still
+ * ahead, and its card offered "Odhlásit" for something that had happened.
+ * Hidden rather than grouped — the student's call.
  *
  * By day, not by start time: on the day itself the room and time are exactly
  * what a student needs, late or not.

@@ -18,15 +18,11 @@ import { alternativeTerms } from '../../../ExamPanel/utils';
 function ClassmateLine({ term }: { term: ExamTerm }) {
   const { t, language } = useTranslation();
   const { classmates } = useExamClassmates(term.id);
-  // No "Zatím nikdo ze spolužáků": an empty list means "nobody we could name"
-  // at least as often as it means nobody is going — the classmate list is a
-  // separate IS page, and it is the student's own year, not the term's roll.
-  // Where there is nobody to name, the row says nothing and the card's terms
-  // carry IS's own "Kdo jde se mnou na termín" link.
-  // Nothing where there is nobody to name: the term's own details below carry
-  // IS's "Kdo jde se mnou na termín" link, and two of them in one card is one
-  // too many. Never "Zatím nikdo ze spolužáků" — an empty list means "nobody
-  // we could name" at least as often as it means nobody is going.
+  // Nothing where there is nobody to name — never "Zatím nikdo ze spolužáků".
+  // An empty list means "nobody we could name" at least as often as it means
+  // nobody is going: the classmate list is a separate IS page, and it is the
+  // student's own year, not the term's roll. The term's own details carry IS's
+  // "Kdo jde se mnou na termín" link, and two of them in one card is one too many.
   if (!classmates || classmates.length === 0) return null;
   return (
     <span className="flex items-center gap-1.5 text-sm text-base-content/70">

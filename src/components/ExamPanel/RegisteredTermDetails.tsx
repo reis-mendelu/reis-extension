@@ -4,6 +4,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import type { ExamSection } from '../../types/exams';
 import { useAppStore } from '../../store/useAppStore';
 import { parseRegistrationStart } from '../../utils/termUtils';
+import { TermExtras } from './TermExtras';
 
 interface RegisteredTermDetailsProps {
   section: ExamSection;
@@ -18,6 +19,12 @@ export function RegisteredTermDetails({
   const now = useAppStore((s) => s.now);
   const term = section.registeredTerm;
   if (!term) return null;
+
+  // The listed copy of this term: it carries IS's Podrobnosti link, which
+  // "Kdo jde se mnou" is built from. A term with no id cannot be addressed.
+  const mine =
+    section.terms.find((listed) => listed.id === term.id) ??
+    (term.id ? { ...term, id: term.id } : undefined);
 
   const isAfterDeadline = (() => {
     if (!term.deregistrationDeadline) return false;
@@ -46,6 +53,11 @@ export function RegisteredTermDetails({
           </span>
         )}
       </div>
+      {mine && (
+        <div className="flex items-center gap-3 flex-wrap text-[10px] font-medium">
+          <TermExtras term={mine} />
+        </div>
+      )}
       {term.deregistrationDeadline && !(isCollapsed && isAfterDeadline) && (
         <div
           className={`flex flex-wrap items-center gap-1.5 text-[10px] uppercase font-bold mt-1 ${isAfterDeadline ? 'text-base-content/30' : 'text-warning/80'}`}

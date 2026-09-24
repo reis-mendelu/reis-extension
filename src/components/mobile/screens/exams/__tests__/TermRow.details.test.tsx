@@ -155,6 +155,42 @@ describe('TermRow — details', () => {
     expect(screen.getByText('45 min')).toBeInTheDocument();
   });
 
+  // The detail page is fetched for the length alone — the phone shows no
+  // Poznámka — so a length the sync already has makes the request pointless.
+  it('do not fetch the detail page when the sync already attached the length', () => {
+    const fetchExamNotePriority = vi.fn();
+    useAppStore.setState({ fetchExamNotePriority } as never);
+    render(
+      <TermRow
+        term={{ ...term, durationMinutes: 45 }}
+        section={openSection}
+        now={NOW}
+        isProcessing={false}
+        onRegister={vi.fn()}
+      />
+    );
+    openDetails();
+    expect(fetchExamNotePriority).not.toHaveBeenCalled();
+  });
+
+  // null is "IS had none at the last sync"; a teacher can have filled it in
+  // since, and opening the term is where the student asks.
+  it.each([undefined, null])('fetch the detail page when the length is %s', (durationMinutes) => {
+    const fetchExamNotePriority = vi.fn();
+    useAppStore.setState({ fetchExamNotePriority } as never);
+    render(
+      <TermRow
+        term={{ ...term, durationMinutes }}
+        section={openSection}
+        now={NOW}
+        isProcessing={false}
+        onRegister={vi.fn()}
+      />
+    );
+    openDetails();
+    expect(fetchExamNotePriority).toHaveBeenCalledWith(term.id);
+  });
+
   // The room is already on the term's own line.
   it('do not repeat the room as a "Místo konání" row', () => {
     renderRow(openSection);

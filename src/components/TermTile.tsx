@@ -5,6 +5,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useAppStore } from '../store/useAppStore';
 import { SNIPER_WINDOW_MS } from './ExamPanel/useAutoRegistration';
 import { TermBuiltinActions, TermDetailLink } from './ExamPanel/TermBuiltinActions';
+import { TermExtras } from './ExamPanel/TermExtras';
 
 const attemptAccentClass: Record<string, string> = {
   regular: 'bg-success/50',
@@ -402,7 +403,7 @@ export function TermTile({
       </div>
 
       {/* Deadlines + IS detail link */}
-      {(term.registrationEnd || term.detailUrl) && (
+      {(term.registrationEnd || term.detailUrl || typeof term.durationMinutes === 'number') && (
         <div className="hidden md:flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 pb-2 text-[10px] font-medium border-t border-base-content/5 pt-1.5">
           {term.registrationEnd &&
             (sameDeadline ? (
@@ -424,6 +425,7 @@ export function TermTile({
                 )}
               </>
             ))}
+          <TermExtras term={term} />
           <TermDetailLink term={term} />
         </div>
       )}
