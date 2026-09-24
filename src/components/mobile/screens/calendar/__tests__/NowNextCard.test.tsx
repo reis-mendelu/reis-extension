@@ -32,14 +32,38 @@ describe('NowNextCard', () => {
   // The badge said "TEĎ BĚŽÍ" above a card that only ever renders while
   // something IS running, next to a countdown that says the same thing — three
   // ways of saying one fact, at the top of the screen.
-  // A row of its own above the title left a band of empty card; on the title's
-  // line it pushed a real course name onto two lines. It belongs beside the
-  // bar that shows the same thing.
-  it('puts the countdown beside the progress bar', () => {
+  //
+  // The countdown shares the room's line, with the bar full width beneath:
+  // the room line lost the time range and the teacher, so it has the space,
+  // and the card is one line shorter for it.
+  it('puts the countdown on the room line, with the bar beneath', () => {
     const { container } = render(<NowNextCard data={nowNext()} onRoute={() => {}} />);
     const countdown = screen.getByText(/konec za 20 min/);
-    expect(countdown.parentElement?.querySelector('.rounded-full')).toBeTruthy();
+    expect(countdown.parentElement?.textContent).toContain('cz-room');
+    expect(countdown.parentElement?.querySelector('[style*="width"]')).toBeNull();
     expect(container.querySelectorAll('[style*="width: 40%"]')).toHaveLength(1);
+  });
+
+  // The card renders only on today, and today's agenda sits right beneath it
+  // with the same lesson's row: room, time range and teacher. Repeating them
+  // made the card the wordiest line on screen (device report, Pixel 9a). The
+  // bar and the countdown already say how long it runs; the subject drawer
+  // has every teacher's full name.
+  it('leaves the time range and the teacher to the agenda row', () => {
+    const current = makeLesson({
+      courseName: 'Počítačové sítě',
+      courseNameCs: 'Počítačové sítě',
+      room: 'Q03',
+      roomCs: 'Q03',
+      startTime: '13:00',
+      endTime: '14:50',
+      teachers: [{ fullName: 'Ing. Igor Grellneth, Ph.D.', shortName: 'I. Grellneth', id: '1' }],
+    });
+    render(<NowNextCard data={nowNext({ current })} onRoute={() => {}} />);
+    const card = screen.getByTestId('now-next-card');
+    expect(card.textContent).toContain('Q03');
+    expect(card.textContent).not.toMatch(/13:00|14:50/);
+    expect(card.textContent).not.toMatch(/Grellneth/);
   });
 
   it('says nothing about what follows when nothing does', () => {
@@ -53,8 +77,10 @@ describe('NowNextCard', () => {
     expect(screen.getByText(/konec za 20 min/)).toBeInTheDocument();
   });
 
-  // "Pak:" with a bare start time left the obvious question open — until when?
-  it('heads the following lesson "Následuje", in bold, with the whole time it runs', () => {
+  // "Následuje" names what comes and when it starts. The whole range wrapped
+  // the row onto a second line at 390px, and the lesson's own row in the
+  // agenda right beneath carries it.
+  it('heads the following lesson "Následuje", in bold, with when it starts', () => {
     const next = makeLesson({
       courseName: 'Marketing 1',
       courseNameCs: 'Marketing 1',
@@ -66,7 +92,8 @@ describe('NowNextCard', () => {
     render(<NowNextCard data={nowNext({ next })} onRoute={() => {}} />);
     const label = screen.getByText('Následuje:');
     expect(label.className).toMatch(/font-bold|font-semibold/);
-    expect(screen.getByText(/Marketing 1 · A11 · 11:50 – 13:20/)).toBeInTheDocument();
+    expect(screen.getByText(/Marketing 1 · A11 · 11:50$/)).toBeInTheDocument();
+    expect(screen.queryByText(/13:20/)).not.toBeInTheDocument();
     expect(screen.queryByText(/^Pak/)).not.toBeInTheDocument();
   });
 
@@ -208,14 +235,17 @@ describe('NowNextCard, when an answered society event is next', () => {
 
   it('says where it is when it comes next', () => {
     render(<NowNextCard data={nowNext({ next: cityGame })} onRoute={() => {}} />);
-    expect(screen.getByText(/City Game · Místo na mapě · 18:30 – 20:00/)).toBeInTheDocument();
+    expect(screen.getByText(/City Game · Místo na mapě · 18:30$/)).toBeInTheDocument();
   });
 
-  it('says where it is, who runs it, and offers the way there while it runs', () => {
+  // Who runs it rode the teacher's slot, and went with it: the agenda row
+  // beneath still says "ESN".
+  it('says where it is and offers the way there while it runs', () => {
     // "Trasa →" belongs to the running entry (#409). The room index never knows
     // a venue in town, so it is the event's coordinate that makes it routable.
     render(<NowNextCard data={nowNext({ current: cityGame })} onRoute={() => {}} />);
-    expect(screen.getByText('Místo na mapě · 18:30 – 20:00 · ESN')).toBeInTheDocument();
+    expect(screen.getByText('Místo na mapě')).toBeInTheDocument();
+    expect(screen.queryByText(/ESN/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Trasa/ })).toBeInTheDocument();
   });
 });
