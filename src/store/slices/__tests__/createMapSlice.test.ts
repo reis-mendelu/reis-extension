@@ -288,6 +288,19 @@ describe('mapSlice', () => {
     expect(s.mapFocusRequest).toBe(before + 1); // list click flies → bumps focus
   });
 
+  it("focusEventById carries { reveal: 'map' } on the selection, and nothing without it", async () => {
+    // The calendar asks for WHERE; the sheet reads this off the selection to
+    // stay at peek instead of opening the card over the pin. Carried on the
+    // selection object, so the next pin tap — which builds a new one without
+    // it — opens the card as it always did.
+    await useAppStore.getState().loadMapEvents();
+    const pinned = useAppStore.getState().mapEvents.find((e) => e.coord)!;
+    useAppStore.getState().focusEventById(pinned.id, { fly: true, reveal: 'map' });
+    expect(useAppStore.getState().mapSelection).toMatchObject({ kind: 'event', reveal: 'map' });
+    useAppStore.getState().focusEventById(pinned.id);
+    expect(useAppStore.getState().mapSelection).not.toHaveProperty('reveal');
+  });
+
   it('focusEventById from a LIST click does NOT fly for an off-campus event (no coord)', async () => {
     await useAppStore.getState().loadMapEvents();
     // safe: loadMapEvents populates mapEvents (asserted non-empty elsewhere)

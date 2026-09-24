@@ -240,4 +240,6 @@ export type MapSelection =
   | { kind: 'poi'; poi: PoiProperties; coord: [number, number] }
   | { kind: 'landmark'; landmark: Landmark } // search result only; resolves to a poi selection on focus
   | { kind: 'gardenPlace'; place: GardenPlace } // one of the botanical garden's places
-  | { kind: 'event'; event: import('./events').MapEvent }; // a society event pin
+  // a society event pin. `reveal: 'map'` — focused from the calendar, which asked
+  // WHERE: the phone sheet stays at peek so the pin is not under the card.
+  | { kind: 'event'; event: import('./events').MapEvent; reveal?: 'map' };

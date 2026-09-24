@@ -97,7 +97,7 @@ describe('DayBody — tapping a custom event', () => {
     expect(pushSheet).not.toHaveBeenCalled();
     // The block id is `rsvp:<eventId>`; the map is asked for the EVENT, not for
     // the calendar block that stands in for it.
-    expect(focusEventById).toHaveBeenCalledWith('evt-1', { fly: true });
+    expect(focusEventById).toHaveBeenCalledWith('evt-1', { fly: true, reveal: 'map' });
     expect(useAppStore.getState().mobileTab).toBe('map');
   });
 
@@ -132,7 +132,7 @@ describe('DayBody — tapping a custom event', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Ukázat na mapě' }));
 
-    expect(focusEventById).toHaveBeenCalledWith('evt-1', { fly: true });
+    expect(focusEventById).toHaveBeenCalledWith('evt-1', { fly: true, reveal: 'map' });
     expect(focusRoomByCode).not.toHaveBeenCalled();
     expect(pushSheet).not.toHaveBeenCalled();
     expect(useAppStore.getState().mobileTab).toBe('map');

@@ -6,8 +6,9 @@ import { CAMPUS_NAVIGATION_ENABLED } from '../../../../utils/routing/navigationE
 import { eventIdFromRsvpBlock } from '../../../../utils/rsvpBlocks';
 
 /**
- * What "show on map" does for a calendar row: the agenda's pin and the
- * up-next card's "Trasa →" both land here, so the two cannot disagree.
+ * What "show on map" does for a calendar row: the row itself (for an event),
+ * the agenda's pin and the up-next card's "Trasa →" all land here, so they
+ * cannot disagree.
  *
  * An answered society event goes to the EVENT. Its block's "room" is a venue in
  * town, or nothing at all when the society only dropped a pin, and
@@ -26,7 +27,10 @@ export function useShowLessonOnMap(): (lesson: BlockLesson) => void {
     setMobileTab('map');
     const eventId = lesson.isCustom ? eventIdFromRsvpBlock(lesson.customEventId ?? '') : null;
     if (eventId) {
-      focusEventById(eventId, { fly: true });
+      // `reveal: 'map'`: the student already read the event in the calendar;
+      // what they came for is WHERE. The sheet opening on the card put the pin
+      // behind it — reported from a Pixel 9a — so it stays at peek instead.
+      focusEventById(eventId, { fly: true, reveal: 'map' });
       if (CAMPUS_NAVIGATION_ENABLED) suggestRoute(null);
       return;
     }
