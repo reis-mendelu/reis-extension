@@ -33,18 +33,18 @@ describe('SearchSheet', () => {
     });
   });
 
-  it('opens on Lidé and offers only Lidé and Předměty', () => {
+  it('opens on Lidé, with Předměty and Starý IS beside it', () => {
     render(<SearchSheet onClose={() => {}} />);
     expect(screen.getByRole('tab', { name: 'Lidé' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tab', { name: 'Předměty' })).toHaveAttribute('aria-selected', 'false');
-    // The IS page directory is gone from the phone tree: every one of its 95
-    // links opened the system browser, which has no IS session. It stays in the
-    // browser extension, which sits on IS and keeps the session.
+    // The IS page directory is back as a segment, not as the default: #257
+    // dropped it because its links lost the IS session, and #292 fixed that.
+    // Its own behaviour is pinned in SearchSheetPages.test.tsx.
+    expect(screen.getByRole('tab', { name: 'Starý IS' })).toHaveAttribute('aria-selected', 'false');
     expect(screen.queryByRole('tab', { name: 'Stránky IS' })).not.toBeInTheDocument();
-    expect(screen.queryByText('Všechny stránky IS')).not.toBeInTheDocument();
     // Dokumenty moved to the Profile sheet with eduroam; no shortcut card here.
     expect(screen.queryByText('Dokumenty')).not.toBeInTheDocument();
-    expect(screen.getAllByRole('tab')).toHaveLength(2);
+    expect(screen.getAllByRole('tab')).toHaveLength(3);
   });
 
   it('switching to Lidé shows recently searched people', () => {

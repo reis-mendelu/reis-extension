@@ -1,5 +1,11 @@
 # Drop the IS page directory from the phone tree — design
 
+> **Superseded, 2026-09-24.** #292 removed this spec's premise: `openExternal`
+> now opens an is.mendelu.cz link in an in-app WebView that carries the IS
+> session, and the session survives navigation inside the page. The directory
+> returned to the phone as the **Starý IS** segment of the search sheet in
+> #416. What follows is the original reasoning, kept for the record.
+
 **Date:** 2026-09-01 · **Ships in:** 5.0.7 (iOS / Android) · **Status:** approved
 
 ## Why

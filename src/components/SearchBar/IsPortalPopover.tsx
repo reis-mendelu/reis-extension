@@ -19,7 +19,9 @@ import {
   Search,
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { pagesData, injectUserParams } from '../../data/pages';
+import { pagesData } from '../../data/pages';
+import { injectUserParams } from '../../data/pages/types';
+import { filterPageCategories, normalizePageQuery } from '../../data/pages/filterPages';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 
@@ -50,32 +52,12 @@ export function IsPortalPopover({ isOpen, onClose }: IsPortalPopoverProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState('');
 
-  const strip = (s: string) =>
-    s
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
-  const normalizedFilter = strip(filter.trim());
-
-  const filteredCategories = useMemo(() => {
-    if (!normalizedFilter) return pagesData;
-
-    return pagesData
-      .map((category) => {
-        const catLabel = strip(
-          language === 'en' && category.labelEn ? category.labelEn : category.label
-        );
-        const matchingChildren = category.children.filter((item) => {
-          const itemLabel = strip(language === 'en' && item.labelEn ? item.labelEn : item.label);
-          return itemLabel.includes(normalizedFilter);
-        });
-
-        if (catLabel.includes(normalizedFilter)) return category;
-        if (matchingChildren.length > 0) return { ...category, children: matchingChildren };
-        return null;
-      })
-      .filter(Boolean) as typeof pagesData;
-  }, [normalizedFilter, language]);
+  // Shared with the phone's "Starý IS" segment, so both trees match the same way.
+  const normalizedFilter = normalizePageQuery(filter);
+  const filteredCategories = useMemo(
+    () => filterPageCategories(pagesData, filter, language),
+    [filter, language]
+  );
 
   if (!isOpen) return null;
 

@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../../store/useAppStore';
-import { nextSelectedIndex } from '../../../utils/mobile/listNavigation';
 import type { MobileSheet } from '../../../store/types';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useSearch } from '../../SearchBar/useSearch';
@@ -8,6 +7,10 @@ import type { SearchResult } from '../../SearchBar/types';
 import { Sheet } from '../primitives/Sheet';
 import { SearchSubjectResults } from './search/SearchSubjectResults';
 import { SearchPeopleResults } from './search/SearchPeopleResults';
+import { SearchPageResults } from './search/SearchPageResults';
+import { usePageDirectory } from './search/usePageDirectory';
+import { useListCursor } from './search/useListCursor';
+import type { PageItem } from '../../../data/pages/types';
 import { SheetHeader } from '../primitives/SheetHeader';
 import { StudentSearch, type StudentMode } from '../screens/student/StudentSearch';
 
@@ -21,7 +24,8 @@ export interface SearchSheetProps {
 }
 
 /**
- * People and the subject catalogue, opened from the header's search icon.
+ * People, the subject catalogue and IS's own page directory ("Starý IS"),
+ * opened from the header's search icon.
  *
  * This was the "Student" TAB — a fifth of the phone's primary navigation spent
  * on a text field, on a screen whose whole content was that field and its
@@ -62,7 +66,9 @@ export function SearchSheet({ sheet, onClose }: SearchSheetProps) {
     canScopeToFaculty,
     widenToUniversity,
     narrowToFaculty,
-  } = useSearch(query);
+    // Starý IS filters a local list; typing there must not search IS for people.
+  } = useSearch(mode === 'pages' ? '' : query);
+  const pages = usePageDirectory(mode === 'pages' ? query : '');
   const peopleResults = sections.find((s) => s.key === 'people')?.results ?? [];
   // The section useSearch has always produced and this screen used to discard,
   // which is why a subject could be looked up on the desktop and nowhere on a
@@ -112,66 +118,41 @@ export function SearchSheet({ sheet, onClose }: SearchSheetProps) {
     pushSheet({ kind: 'person', personId: result.id, personName: result.title });
   };
 
+  const openPage = (item: PageItem) => {
+    dismissKeyboard();
+    pages.open(item);
+  };
+
   const noResultsText = t('mobile.student.noResults');
 
-  /**
-   * Keyboard navigation for the list, which the mobile sheet never had: it
-   * rendered the same `role="option"` rows as the desktop dropdown and wired
-   * none of the combobox behaviour, so on an iPad with a keyboard you could
-   * type a search and then not pick a result.
-   *
-   * The cursor lives HERE rather than in the rows, and the rows stay
-   * unfocusable — that is the combobox contract the desktop already follows:
-   * focus never leaves the input, and `aria-activedescendant` names the row a
-   * screen reader should announce.
-   */
+  // The rows the keyboard cursor walks (see useListCursor). Starý IS has its
+  // own flat list of the rows actually shown, from the same call that renders them.
   const activeList: SearchResult[] =
     mode === 'subjects'
       ? hasQuery
         ? subjectResults
         : shownSubjects
-      : hasQuery
-        ? peopleResults
-        : shownPeople;
-  /**
-   * The cursor is keyed to the list it belongs to, and reset by DERIVING rather
-   * than by an effect: any change of mode, query or length is a new set of
-   * rows, and an index held over from the old one points at whatever happens to
-   * occupy that position now. An effect would also have set state during render
-   * — which the repo lints against, correctly.
-   */
-  const listKey = `${mode}|${trimmedQuery}|${activeList.length}`;
-  const [cursor, setCursor] = useState({ key: listKey, index: -1 });
-  const selected = cursor.key === listKey ? cursor.index : -1;
-  const setSelected = (index: number) => setCursor({ key: listKey, index });
+      : mode === 'people'
+        ? hasQuery
+          ? peopleResults
+          : shownPeople
+        : [];
+  const listLength = mode === 'pages' ? pages.rows.length : activeList.length;
+  const listKey = `${mode}|${trimmedQuery}|${listLength}|${pages.expandedKey}`;
 
   const openAt = (index: number) => {
+    if (mode === 'pages') {
+      const page = pages.rows[index];
+      if (page) openPage(page);
+      return;
+    }
     const item = activeList[index];
     if (!item) return;
     if (mode === 'subjects') openSubject(item);
     else openPerson(item);
   };
 
-  const onNavigate = (e: React.KeyboardEvent<HTMLInputElement>): boolean => {
-    const moved = nextSelectedIndex(selected, activeList.length, e.key);
-    if (moved !== null) {
-      setSelected(moved);
-      // The browser would otherwise run the caret to the end of the query.
-      e.preventDefault();
-      return true;
-    }
-    if (e.key === 'Enter' && selected >= 0) {
-      openAt(selected);
-      e.preventDefault();
-      return true;
-    }
-    if (e.key === 'Escape' && selected >= 0) {
-      setSelected(-1);
-      e.preventDefault();
-      return true;
-    }
-    return false;
-  };
+  const { selected, onNavigate } = useListCursor(listKey, listLength, openAt);
 
   const optionId = (i: number) => `mobile-search-option-${i}`;
 
@@ -228,6 +209,17 @@ export function SearchSheet({ sheet, onClose }: SearchSheetProps) {
               selectedIndex={selected}
               optionId={optionId}
               openPerson={openPerson}
+              noResultsText={noResultsText}
+            />
+          )}
+
+          {mode === 'pages' && (
+            <SearchPageResults
+              groups={pages.groups}
+              openPage={openPage}
+              onToggle={pages.toggle}
+              selectedIndex={selected}
+              optionId={optionId}
               noResultsText={noResultsText}
             />
           )}
