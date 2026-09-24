@@ -4,6 +4,7 @@ import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
 import { TeacherList } from './TeacherList';
 import { SubjectDrawerTabs } from './SubjectDrawerTabs';
+import { SubjectDrawerScroller } from './SubjectDrawerScroller';
 import { DrawerTabBody } from '../../SubjectFileDrawer/DrawerTabBody';
 import { groupAndSortFiles } from '../../SubjectFileDrawer/utils/groupFiles';
 import type { DrawerTab } from '../../SubjectFileDrawer/types';
@@ -124,17 +125,24 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
 
   return (
     <Sheet size="full" variant="screen" onClose={onClose}>
-      <SheetHeader eyebrow={courseCode} title={courseName || courseCode} onBack={onClose} />
-      {/* Below the header, not inside it: the header is `touch-none` so the
-          sheet can be dragged by it, and this is a list of things to tap. */}
-      <TeacherList teachers={syllabusResult.syllabus?.courseInfo?.teachers} />
-      <SubjectDrawerTabs
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        disabledTabs={disabledTabs}
-        counts={counts}
-      />
-      <div className="relative flex-1 overflow-y-auto">
+      <SubjectDrawerScroller
+        courseCode={courseCode}
+        pullable={activeTab === 'files'}
+        top={
+          <>
+            <SheetHeader eyebrow={courseCode} title={courseName || courseCode} onBack={onClose} />
+            {/* Below the header, not inside it: the header is `touch-none` so the
+                sheet can be dragged by it, and this is a list of things to tap. */}
+            <TeacherList teachers={syllabusResult.syllabus?.courseInfo?.teachers} />
+            <SubjectDrawerTabs
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              disabledTabs={disabledTabs}
+              counts={counts}
+            />
+          </>
+        }
+      >
         <DrawerTabBody
           tab={activeTab}
           lesson={lesson}
@@ -178,7 +186,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
           // The programme line only ever rendered clipped mid-word on a phone.
           showStudyInfo={false}
         />
-      </div>
+      </SubjectDrawerScroller>
       {previewUrl && (
         // Over the whole screen, not inside the tab body: a phone/tablet has no
         // room for the desktop's side-by-side drawer, and the reader needs every
