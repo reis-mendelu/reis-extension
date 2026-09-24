@@ -36,23 +36,27 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
           course name onto two lines at 390px. Beside the bar it says the same
           thing the bar shows, in the words a student wants. */}
       {/* The button sits with the lesson it routes to. On the "Následuje" row
-          it read as a promise about the lesson after. */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="font-display text-lg font-bold tracking-tight">{currentName}</span>
-          <span className="text-sm text-base-content/70">
-            {currentRoom} · {current.startTime} – {current.endTime}
-            {teacher && ` · ${teacher}`}
+          it read as a promise about the lesson after. It shares the title's
+          line only: beside the whole block it narrowed the room/teacher line
+          too, and that wrapped at 390. */}
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-start justify-between gap-2">
+          <span className="min-w-0 flex-1 font-display text-lg font-bold tracking-tight">
+            {currentName}
           </span>
+          {routable && (
+            <button
+              onClick={onRoute}
+              className="flex-shrink-0 whitespace-nowrap pl-3 pt-1 text-sm font-semibold text-primary"
+            >
+              {t('mobile.calendar.route')}
+            </button>
+          )}
         </div>
-        {routable && (
-          <button
-            onClick={onRoute}
-            className="flex-shrink-0 whitespace-nowrap pl-3 pt-1 text-sm font-semibold text-primary"
-          >
-            {t('mobile.calendar.route')}
-          </button>
-        )}
+        <span className="text-sm text-base-content/70">
+          {currentRoom} · {current.startTime} – {current.endTime}
+          {teacher && ` · ${teacher}`}
+        </span>
       </div>
       <div className="flex items-center gap-2.5">
         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-base-300">
