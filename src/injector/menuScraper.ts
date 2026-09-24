@@ -19,7 +19,7 @@ const ICON_MAP: Record<string, string> = {
   favorite: 'Star',
 };
 
-interface RawCategory {
+export interface RawCategory {
   id: string;
   label: string;
   icon: string;
@@ -133,10 +133,11 @@ export function scrapeNavMenu(
   return { categories, lang };
 }
 
-export async function fetchOtherLanguage(currentLang: 'cz' | 'en'): Promise<RawCategory[] | null> {
-  const otherLang = currentLang === 'cz' ? 'en' : 'cz';
+/** The menu off the IS dashboard in `lang` — the student's language, when the
+ *  page the extension runs on is in the other one (see navMenuLanguage.ts). */
+export async function fetchNavMenuIn(lang: 'cz' | 'en'): Promise<RawCategory[] | null> {
   try {
-    const res = await fetch(`${BASE_URL}/auth/?lang=${otherLang}`, { credentials: 'include' });
+    const res = await fetch(`${BASE_URL}/auth/?lang=${lang}`, { credentials: 'include' });
     if (!res.ok) return null;
     const html = await res.text();
     const doc = new DOMParser().parseFromString(html, 'text/html');

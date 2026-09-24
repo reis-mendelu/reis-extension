@@ -2,12 +2,12 @@ import { IFRAME_ID } from './config';
 import { injectIframe } from './iframeManager';
 import { handleMessage } from './messageHandler';
 import { startSyncService } from './syncGate';
-import { scrapeNavMenu, fetchOtherLanguage, mergeDual } from './menuScraper';
+import { scrapeNavMenu } from './menuScraper';
 import { sendToIframe } from './iframeManager';
 import { Messages } from '../types/messages';
-import type { PageCategory } from '../data/pages/types';
+import { setScrapedNavMenu, ensureNavMenuLanguage } from './navMenuLanguage';
+import { readSyncLanguage } from '../services/sync/syncLanguage';
 
-export let scrapedNavMenu: PageCategory[] | null = null;
 let messageHandlerRegistered = false;
 
 export function startInjection() {
@@ -47,14 +47,12 @@ function injectAndInitialize() {
 
     const scraped = scrapeNavMenu(document);
     if (scraped) {
-      // Send single-language version immediately so iframe doesn't wait
-      scrapedNavMenu = mergeDual(scraped.categories, scraped.lang, null);
-
-      // Fetch other language in background, update when ready
-      fetchOtherLanguage(scraped.lang).then((other) => {
-        scrapedNavMenu = mergeDual(scraped.categories, scraped.lang, other);
-        sendToIframe(Messages.navMenu(scrapedNavMenu));
-      });
+      // The page's own labels go out at once; the student's language is
+      // fetched only if the page is in the other one.
+      setScrapedNavMenu(scraped);
+      void readSyncLanguage().then((lang) =>
+        ensureNavMenuLanguage(lang, (menu) => sendToIframe(Messages.navMenu(menu)))
+      );
     }
 
     injectIframe();

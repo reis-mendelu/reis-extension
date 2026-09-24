@@ -27,7 +27,10 @@ vi.mock('../api/exams', () => ({
   unregisterExam: vi.fn(),
 }));
 vi.mock('../api/subjects', () => ({ fetchSubjects: vi.fn() }));
-vi.mock('./sniper', () => ({ scrapedNavMenu: null }));
+vi.mock('./navMenuLanguage', () => ({
+  getNavMenu: () => null,
+  ensureNavMenuLanguage: async () => {},
+}));
 vi.mock('./documentDownloader', () => ({ downloadDocumentInPage: vi.fn() }));
 vi.mock('./hostSignOut', () => ({ signOutFromHostPage: vi.fn() }));
 

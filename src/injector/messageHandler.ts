@@ -7,7 +7,7 @@ import { readSyncLanguage } from '../services/sync/syncLanguage';
 import { fetchExamData, registerExam, unregisterExam } from '../api/exams';
 import { fetchSubjects } from '../api/subjects';
 import type { DataRequestType } from '../types/messages';
-import { scrapedNavMenu } from './sniper';
+import { getNavMenu, ensureNavMenuLanguage } from './navMenuLanguage';
 import { downloadDocumentInPage } from './documentDownloader';
 import { isIsMendeluUrl } from './isMendeluUrl';
 import { signOutFromHostPage } from './hostSignOut';
@@ -25,13 +25,15 @@ export async function handleMessage(event: MessageEvent) {
   if (!isIframeMessage(data)) return;
 
   switch (data.type) {
-    case 'REIS_READY':
+    case 'REIS_READY': {
       // Flush any messages queued before the iframe was ready
       markIframeReady();
       // Send current state as a guarantee (may duplicate queued data, which is safe)
       sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing }));
-      if (scrapedNavMenu) sendToIframe(Messages.navMenu(scrapedNavMenu));
+      const navMenu = getNavMenu();
+      if (navMenu) sendToIframe(Messages.navMenu(navMenu));
       break;
+    }
     case 'REIS_REQUEST_DATA':
       await handleDataRequest(data.dataType);
       break;
@@ -166,6 +168,11 @@ async function handleAction(id: string, action: string, payload: unknown) {
         break;
       }
       case 'trigger_sync':
+        // A language switch arrives as this, so the nav menu follows too — a
+        // no-op unless it lacks the language (navMenuLanguage.ts).
+        void readSyncLanguage().then((lang) =>
+          ensureNavMenuLanguage(lang, (menu) => sendToIframe(Messages.navMenu(menu)))
+        );
         // The student asked, so this bypasses the foreground gate and the
         // minimum gap, and clears every freshness stamp first.
         await requestSync('user');
