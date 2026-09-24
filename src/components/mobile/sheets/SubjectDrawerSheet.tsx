@@ -39,7 +39,7 @@ export interface SubjectDrawerSheetProps {
 
 /**
  * Full-size sheet for a single subject: header, five-tab icon bar, the
- * shared `DrawerTabBody` beneath, and a persistent "open in IS" footer.
+ * shared `DrawerTabBody` beneath. No IS footer since #341 — see below.
  *
  * Selection/drag props passed to `DrawerTabBody` are mouse-only concerns
  * (rubber-band rectangle select) that don't translate to touch, so this sheet
@@ -159,9 +159,11 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
           syllabusResult={syllabusResult}
           folderUrl={subjectInfo?.folderUrl}
           selectable={false}
-          // The pinned 'Otevrit v IS MENDELU' footer below is this sheet's single
-          // IS link. Left on, every tab also rendered its own 'IS MENDELU' at the
-          // end of its content — two identical-looking links to the same place.
+          // Off since this sheet pinned an 'Otevřít v IS MENDELU' footer, which
+          // made every tab show two identical links. #341 dropped that footer
+          // (it opened the file structure whatever the tab), so the tabs here
+          // carry no IS link. The one exception is the classmates tab's
+          // no-cvičení state, which links IS because that link is its answer.
           showIsBacklink={false}
           // A classmate tap reaches the same PersonSheet the Lidé search
           // opens. Without this it landed in ClassmatePersonDrawer — a second

@@ -108,6 +108,15 @@ describe('the exams pull', () => {
     expect(full).not.toHaveBeenCalled();
   });
 
+  it('pulls from the header too, not only the list under it', () => {
+    // The same dead top half the calendar had: the listeners sat on the list.
+    const exams = vi.spyOn(syncService, 'triggerExamRefresh').mockResolvedValue(undefined);
+    spies.push(exams);
+    render(<ExamsScreen />);
+    pull(screen.getByTestId('exams-screen').firstElementChild as HTMLElement);
+    expect(exams).toHaveBeenCalledTimes(1);
+  });
+
   it('has no visible refresh row any more, only the screen-reader button', () => {
     spies.push(vi.spyOn(syncService, 'triggerExamRefresh').mockResolvedValue(undefined));
     render(<ExamsScreen />);

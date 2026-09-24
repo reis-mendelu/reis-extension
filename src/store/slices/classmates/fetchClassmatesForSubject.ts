@@ -6,6 +6,8 @@ import type { ClassmatesData } from '../../../types/classmates';
 import type { SubjectsData } from '../../../types/documents';
 
 export const CLASSMATES_LAST_FETCHED_KEY = 'classmates_last_fetched';
+/** courseCode → true for subjects with no seminar group (lecture-only). */
+export const CLASSMATES_NO_SEMINAR_KEY = 'classmates_no_seminar';
 
 interface FetchInput {
   courseCode: string;
@@ -15,6 +17,11 @@ interface FetchInput {
 export interface FetchClassmatesResult {
   data: ClassmatesData;
   fetchedAt: number;
+  /**
+   * The subject has no seminar group, so `data` is empty for want of a cvičení
+   * to list — not because nobody takes the subject.
+   */
+  noSeminar: boolean;
 }
 
 /** Returns null when there's nothing to fetch (no subjectId or no userParams). */
@@ -39,12 +46,12 @@ export async function fetchAndPersistClassmates({
     // Not enrolled in a seminar group — persist [] so the SWR window starts.
     const empty: ClassmatesData = [];
     await IndexedDBService.set('classmates', courseCode, empty);
-    return { data: empty, fetchedAt: Date.now() };
+    return { data: empty, fetchedAt: Date.now(), noSeminar: true };
   }
 
   const roster = await fetchClassmates(subjectId, studiumId, obdobi, skupinaId);
   await IndexedDBService.set('classmates', courseCode, roster);
-  return { data: roster, fetchedAt: Date.now() };
+  return { data: roster, fetchedAt: Date.now(), noSeminar: false };
 }
 
 export async function persistLastClassmatesFetched(map: Record<string, number>): Promise<void> {
@@ -52,5 +59,13 @@ export async function persistLastClassmatesFetched(map: Record<string, number>):
     await IndexedDBService.set('meta', CLASSMATES_LAST_FETCHED_KEY, map);
   } catch (e) {
     logError('ClassmatesSlice.persistLastFetched', e);
+  }
+}
+
+export async function persistClassmatesNoSeminar(map: Record<string, boolean>): Promise<void> {
+  try {
+    await IndexedDBService.set('meta', CLASSMATES_NO_SEMINAR_KEY, map);
+  } catch (e) {
+    logError('ClassmatesSlice.persistNoSeminar', e);
   }
 }

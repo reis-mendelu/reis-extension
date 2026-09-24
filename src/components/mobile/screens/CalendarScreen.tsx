@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { useAppStore } from '../../../store/useAppStore';
 import { ScreenError } from '../primitives/ScreenError';
 import { RefreshButton } from '../primitives/RefreshButton';
@@ -42,6 +42,7 @@ export function CalendarScreen() {
   const customEvents = useAppStore((s) => s.customEvents);
   const scheduleRefreshing = useAppStore((s) => s.scheduleRefreshing);
   const triggerScheduleRefresh = useAppStore((s) => s.triggerScheduleRefresh);
+  const screenRef = useRef<HTMLDivElement>(null);
 
   // The vývěska is no longer mounted here. It was a portal owned by this one
   // screen while the button that opens it ships with every screen's header, so
@@ -113,7 +114,12 @@ export function CalendarScreen() {
   const shell = (body: ReactNode) => (
     // `relative` anchors the floating Dnes pill; it renders in every state,
     // skeleton and error included, because the day strip works in all of them.
-    <div data-testid="calendar-screen" className="relative flex flex-1 flex-col overflow-hidden">
+    // The ref is where a pull to refresh may start (DayBody).
+    <div
+      ref={screenRef}
+      data-testid="calendar-screen"
+      className="relative flex flex-1 flex-col overflow-hidden"
+    >
       {chrome}
       {body}
       <TodayPill selectedIso={selectedIso} defaultIso={defaultIso} />
@@ -222,6 +228,7 @@ export function CalendarScreen() {
         outsideTeaching={outsideTeaching}
         teachingStartsOn={teachingStartsOn}
         onSelectDay={setMobileSelectedDay}
+        pullSurfaceRef={screenRef}
       />
     </>
   );

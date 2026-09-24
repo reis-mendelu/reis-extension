@@ -125,6 +125,8 @@ export interface ClassmatesSlice {
   classmatesLoading: Record<string, boolean>;
   lastClassmatesFetchedAt: Record<string, number>;
   classmatesError: Record<string, string>;
+  /** courseCode → true when the subject has no seminar group (lecture-only). */
+  classmatesNoSeminar: Record<string, boolean>;
   fetchClassmatesPriority: (courseCode: string) => Promise<void>;
   fetchAllClassmates: () => Promise<void>;
   refreshClassmatesForSubject: (courseCode: string) => Promise<void>;

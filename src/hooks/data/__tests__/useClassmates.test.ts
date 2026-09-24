@@ -6,6 +6,7 @@ interface StoreShape {
   classmatesLoading: Record<string, boolean>;
   lastClassmatesFetchedAt: Record<string, number>;
   classmatesError: Record<string, string>;
+  classmatesNoSeminar: Record<string, boolean>;
   syncStatus: { lastSync: number };
   fetchClassmatesPriority: ReturnType<typeof vi.fn>;
   refreshClassmatesForSubject: ReturnType<typeof vi.fn>;
@@ -17,6 +18,7 @@ vi.mock('../../../store/useAppStore', () => {
     classmatesLoading: {},
     lastClassmatesFetchedAt: {},
     classmatesError: {},
+    classmatesNoSeminar: {},
     syncStatus: { lastSync: 0 },
     fetchClassmatesPriority: vi.fn(),
     refreshClassmatesForSubject: vi.fn(),
@@ -40,9 +42,19 @@ describe('useClassmates', () => {
     store.classmatesLoading = {};
     store.lastClassmatesFetchedAt = {};
     store.classmatesError = {};
+    store.classmatesNoSeminar = {};
     store.syncStatus = { lastSync: 0 };
     store.fetchClassmatesPriority.mockReset();
     store.refreshClassmatesForSubject.mockReset();
+  });
+
+  it('exposes whether the subject has no seminar group', () => {
+    store.classmates = { MNG: [] };
+    store.lastClassmatesFetchedAt = { MNG: Date.now() };
+    store.classmatesNoSeminar = { MNG: true };
+    const { result } = renderHook(() => useClassmates('MNG'));
+    expect(result.current.noSeminar).toBe(true);
+    expect(renderHook(() => useClassmates('ALG')).result.current.noSeminar).toBe(false);
   });
 
   it('returns classmates: null when courseCode unknown to store', () => {

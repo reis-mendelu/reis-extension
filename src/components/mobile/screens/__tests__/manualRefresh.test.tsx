@@ -105,6 +105,37 @@ describe('the calendar refresh', () => {
     expect(trigger).toHaveBeenCalledTimes(1);
   });
 
+  // The listeners sat on the day's scroller alone, so the top half of the
+  // screen — date, Now/Next card, the week strip — was dead to a pull, and that
+  // half is exactly where a finger reaching for "refresh" starts.
+  it('pulling down on the date header refreshes', () => {
+    render(<CalendarScreen />);
+    drag(screen.getByTestId('calendar-screen').firstElementChild as HTMLElement, 0, FAR);
+    expect(trigger).toHaveBeenCalledTimes(1);
+  });
+
+  it('pulling down on the week strip refreshes', () => {
+    render(<CalendarScreen />);
+    drag(screen.getByTestId('day-strip'), 0, FAR);
+    expect(trigger).toHaveBeenCalledTimes(1);
+  });
+
+  it('a sideways swipe on the week strip changes the week and does not refresh', () => {
+    render(<CalendarScreen />);
+    drag(screen.getByTestId('day-strip'), -FAR * 2, 10);
+    expect(trigger).not.toHaveBeenCalled();
+  });
+
+  it('a pull from the header still waits for the day to be at its top', () => {
+    // The list is held down with the spinner in the gap while it refreshes;
+    // doing that to a list scrolled halfway down would jump it.
+    render(<CalendarScreen />);
+    const body = screen.getByTestId('day-body');
+    Object.defineProperty(body, 'scrollTop', { configurable: true, value: 120 });
+    drag(screen.getByTestId('calendar-screen').firstElementChild as HTMLElement, 0, FAR);
+    expect(trigger).not.toHaveBeenCalled();
+  });
+
   it('never runs the full sync — the calendar asks for the timetable only', () => {
     render(<CalendarScreen />);
     drag(screen.getByTestId('day-body'), 0, FAR);

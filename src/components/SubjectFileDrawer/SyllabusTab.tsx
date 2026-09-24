@@ -9,7 +9,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { ISBacklink } from './ISBacklink';
 
 interface SyllabusTabProps {
-  /** Off for the phone sheet, which pins its own IS MENDELU footer. */
+  /** Off for the phone sheet — see `showIsBacklink` in DrawerTabBody. */
   showIsBacklink?: boolean;
   courseCode: string;
   courseId?: string;
