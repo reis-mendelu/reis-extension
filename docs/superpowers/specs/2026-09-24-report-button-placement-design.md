@@ -34,7 +34,7 @@ bug reports, and the entry points go where "this looks wrong" appears.
 
 Today the form's open state is `useState` in `hooks/useAppLogic.ts:61`,
 threaded as `onOpenFeedback` through `App → Sidebar → BottomActions →
-ProfilePopup` and `MobileBottomNav → MobileProfileSheet`. The phone tree mounts
+ProfilePopup`. The phone tree mounts
 a **second, local** `<FeedbackModal>` inside `ProfileScreen`. Nothing outside
 those menus can open it, and the phone tree (which iPad also runs) has no
 global instance.
@@ -63,12 +63,15 @@ already mounts its own `Toaster`.
 - **Phone:** `mobile/MobileApp.tsx` renders the same `<FeedbackModal />`.
   Delete the local instance and `feedbackOpen` state from `ProfileScreen`.
 - **Existing menu rows** call `openReport()` directly. The `onOpenFeedback`
-  prop chain through `Sidebar`, `BottomActions`, `ProfilePopup`,
-  `MobileBottomNav` and `MobileProfileSheet` is removed. `ProfilePopup` and
-  `MobileProfileSheet` keep closing themselves before opening the form, as
-  they do now.
+  prop chain through `Sidebar`, `BottomActions` and `ProfilePopup`
+  is removed. `ProfilePopup` keeps closing itself before opening the form.
+  `MobileBottomNav` and `MobileProfileSheet` are **not touched**: nothing
+  imports `MobileBottomNav`, so both are dead code.
 
-**`FeedbackModal`** takes no props. Each open starts fresh: type `bug` and
+**`FeedbackModal`** gains one optional prop, `initialTitle`. A new
+`FeedbackModalHost` reads the store and renders it, so the modal's existing
+tests stay valid. `openReport` is a no-op while the form is already open, so a
+toast's action cannot wipe a draft. Each open starts fresh: type `bug` and
 title `reportPrefill?.title ?? ''`. Body and contact start empty. The simplest
 way is to remount on open (`key={reportSeq}` on the modal's form body), so the
 form's local `useState` needs no reset effect. The student can edit or clear
@@ -84,7 +87,7 @@ the prefilled title.
 | 4 | No subjects | phone | `mobile/screens/SubjectsScreen.tsx:37` | `feedback.prefill.subjectsEmpty` |
 | 5 | Syllabus empty | both (shared) | `SubjectFileDrawer/SyllabusTab.tsx:48` | `feedback.prefill.syllabusEmpty` |
 | 6 | Záznamník empty | both (shared) | `SubjectFileDrawer/ZaznamnikTab.tsx:84,120` | `feedback.prefill.zaznamnikEmpty` |
-| 7 | Exam action failed | desktop | `ExamPanel/useExamActions.ts` | `feedback.prefill.examActionFailed` |
+| 7 | Exam action failed | both (shared hook) | `ExamPanel/useExamActions.ts` | `feedback.prefill.examActionFailed` |
 | 8 | Watchdog failed | phone | `mobile/screens/exams/TermRow.tsx:34` | `feedback.prefill.examActionFailed` |
 
 **Empty states (1–6):** below the existing text, add a quiet link-styled
@@ -136,11 +139,12 @@ measurement matches on both language variants.
 
 ## Measurement
 
-Each entry point prefills a distinct title prefix. After release, compare the
-prefix counts against the baseline of 15 reports in 5 weeks:
+Each entry point prefills a distinct title. Grouping is on the **exact title**,
+not a prefix, because `examsEmpty` and `examActionFailed` both start with
+"Zkoušky:". After release, compare against the baseline of 15 reports in 5 weeks:
 
 ```sql
-select split_part(title, ':', 1) as entry, type, count(*)
+select title, type, count(*)
 from suggestions where created_at >= '<release date>'
 group by 1, 2 order by 3 desc;
 ```
@@ -191,8 +195,7 @@ Write the tests first, per repo convention:
   - `Sidebar.tsx`
   - `Sidebar/BottomActions.tsx`
   - `Sidebar/ProfilePopup.tsx`
-  - `MobileNav/MobileBottomNav.tsx`
-  - `MobileNav/MobileProfileSheet.tsx`
+- **Shared pieces (new):** `Feedback/FeedbackModalHost.tsx`, `Feedback/ReportMissingLink.tsx`, `Feedback/reportPrefill.ts`
 - **Entry points:** the 8 files in the table above.
 - **Strings:** `i18n/locales/cs.json` and `en.json`.
 
