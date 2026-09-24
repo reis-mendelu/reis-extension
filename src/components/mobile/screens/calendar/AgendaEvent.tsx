@@ -1,12 +1,9 @@
 import { MapPin } from 'lucide-react';
 import type { BlockLesson } from '../../../../types/calendarTypes';
 import { useTranslation } from '../../../../hooks/useTranslation';
-import { localizedCourseName, localizedRoom } from '../../../../utils/localizedLesson';
-import roomsIndexJson from '../../../../data/map/rooms-index.json';
-import type { RoomIndexEntry } from '../../../../types/campusMap';
-import { lookupRoomEntry } from '../../../../utils/rooms/lookupRoom';
-
-const INDEX = roomsIndexJson as RoomIndexEntry[];
+import { useAppStore } from '../../../../store/useAppStore';
+import { localizedCourseName } from '../../../../utils/localizedLesson';
+import { lessonPlace } from '../../../../utils/lessonPlace';
 
 /**
  * Colour tokens match `CalendarEventCard`'s desktop scheme exactly (same
@@ -67,14 +64,14 @@ export interface AgendaEventProps {
 export function AgendaEvent({ lesson, onOpenSubject, onShowOnMap }: AgendaEventProps) {
   const { t, language } = useTranslation();
   const courseName = localizedCourseName(lesson, language);
-  const room = localizedRoom(lesson, language);
-  // `lesson.room` and not the localized string: it is what the handler
-  // eventually hands the map, so it is what has to be findable.
-  const findable = !!lookupRoomEntry(lesson.room, INDEX);
+  const mapEvents = useAppStore((s) => s.mapEvents);
+  // A room the index knows, or the society event an answered block stands for.
+  const place = lessonPlace(lesson, language, mapEvents, t('map.venueOnMap'));
   // Surname only ("Melicharová"), not the full titled name — that is what
   // lets room, time and teacher share one line at 390px without clipping.
   // Every teacher's full name is in the subject drawer's header.
-  const teacher = lesson.teachers[0]?.shortName || lesson.teachers[0]?.fullName;
+  // An answered society event has no teacher; who runs it goes there instead.
+  const teacher = lesson.teachers[0]?.shortName || lesson.teachers[0]?.fullName || place.host;
   const styles = eventStyles(lesson);
 
   return (
@@ -97,14 +94,15 @@ export function AgendaEvent({ lesson, onOpenSubject, onShowOnMap }: AgendaEventP
           )}
         </div>
         <span className="truncate text-2sm leading-snug text-content-secondary">
-          {room} · {lesson.startTime} – {lesson.endTime}
-          {teacher && ` · ${teacher}`}
+          {[place.label, `${lesson.startTime} – ${lesson.endTime}`, teacher]
+            .filter(Boolean)
+            .join(' · ')}
         </span>
       </button>
       {/* A split button, not a decoration: the hairline and the filled circle
           are what tell a thumb this is its own control. On the device the bare
           glyph read as part of the card and nobody would have found the map. */}
-      {findable && (
+      {place.onMap && (
         <button
           type="button"
           aria-label={t('mobile.sheet.showOnMap')}

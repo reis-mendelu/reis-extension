@@ -43,15 +43,37 @@ describe('DayBody — tapping a custom event', () => {
   });
 
   let focusEventById: ReturnType<typeof vi.fn>;
+  let focusRoomByCode: ReturnType<typeof vi.fn>;
   let pushSheet: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     focusEventById = vi.fn();
+    focusRoomByCode = vi.fn();
     pushSheet = vi.fn();
     useAppStore.setState({
+      language: 'cz',
       mobileTab: 'calendar',
       focusEventById,
+      focusRoomByCode,
       pushSheet,
+      mapEvents: [
+        {
+          id: 'evt-1',
+          title: 'ESN Welcome Party',
+          url: '',
+          date: '2026-04-20',
+          endDate: null,
+          time: '19:00',
+          location: 'Klub Fléda',
+          imageUrl: null,
+          organizerKey: 'mendelu',
+          societyId: 'esn',
+          coord: [16.6077, 49.1976],
+          roomCode: null,
+          venueKind: 'offcampus',
+          category: 'party',
+        },
+      ],
     } as never);
   });
 
@@ -101,5 +123,18 @@ describe('DayBody — tapping a custom event', () => {
       expect.objectContaining({ kind: 'subjectDrawer', courseCode: 'MT' })
     );
     expect(focusEventById).not.toHaveBeenCalled();
+  });
+
+  it("sends the pin to the event, not to a room called by the venue's name", () => {
+    // `focusRoomByCode('Klub Fléda')` finds nothing and leaves the student on
+    // an unfocused campus overview; the event knows its own coordinate.
+    renderRow(party);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ukázat na mapě' }));
+
+    expect(focusEventById).toHaveBeenCalledWith('evt-1', { fly: true });
+    expect(focusRoomByCode).not.toHaveBeenCalled();
+    expect(pushSheet).not.toHaveBeenCalled();
+    expect(useAppStore.getState().mobileTab).toBe('map');
   });
 });

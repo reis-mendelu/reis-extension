@@ -67,7 +67,7 @@ describe('CalendarScreen → map route suggestion', () => {
     expect(useAppStore.getState().mobileTab).toBe('map');
   });
 
-  it('suggests the next lesson when the hero hands over to the map', () => {
+  it('suggests the RUNNING lesson when the hero hands over to the map', () => {
     useAppStore.setState({
       schedule: {
         data: [
@@ -81,9 +81,32 @@ describe('CalendarScreen → map route suggestion', () => {
 
     fireEvent.click(screen.getByText('Trasa →'));
 
-    // The hero's button names the NEXT lesson in its own copy, so that is the
-    // one it has to offer — it said "B11" on the way over.
-    expect(useAppStore.getState().routeSuggestion?.roomLabel).toBe('B11');
+    // The hero is about the lesson on now, and a student who opens it mid-lesson
+    // is the one who is late for it. Walking them to the lesson after — a room
+    // they have hours to find — answered a question nobody asked.
+    expect(useAppStore.getState().routeSuggestion?.roomLabel).toBe('Q01');
+  });
+
+  it("focuses the running lesson's room while navigation is parked", () => {
+    nav.on = false;
+    useAppStore.setState({
+      routeSuggestion: null,
+      mapSelection: null,
+      schedule: {
+        data: [
+          lesson({ id: 'now', room: 'Q01' }),
+          lesson({ id: 'next', room: 'B11', startTime: '11:00', endTime: '12:50' }),
+        ],
+        status: 'success',
+      } as never,
+    });
+    render(<CalendarScreen />);
+
+    fireEvent.click(screen.getByText('Trasa →'));
+
+    const sel = useAppStore.getState().mapSelection;
+    expect(useAppStore.getState().mobileTab).toBe('map');
+    expect(sel?.kind === 'roomRef' && sel.entry.name).toBe('Q01');
   });
 
   it('offers nothing while navigation is parked — the pin only focuses the room', () => {

@@ -1,8 +1,10 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { NowNextCard } from '../NowNextCard';
 import { useAppStore } from '../../../../../store/useAppStore';
 import { makeLesson } from '../../../../../test/fixtures/lesson';
+import { customEventToLesson } from '../../../../../utils/customEventLesson';
+import { rsvpBlockId } from '../../../../../utils/rsvpBlocks';
 import type { NowNext } from '../../../../../utils/mobile/nowNext';
 
 function nowNext(over: Partial<NowNext> = {}): NowNext {
@@ -43,7 +45,6 @@ describe('NowNextCard', () => {
   it('says nothing about what follows when nothing does', () => {
     render(<NowNextCard data={nowNext({ next: null })} onRoute={() => {}} />);
     expect(screen.queryByText(/Následuje/)).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Trasa/ })).not.toBeInTheDocument();
   });
 
   it('does not label the card "Teď běží"', () => {
@@ -119,25 +120,102 @@ describe('NowNextCard', () => {
 });
 
 /**
- * "Kam jít" is a promise to point at a place. It used to render for every
- * next lesson, so a room the dataset does not carry sent the student to the
- * Map tab and showed them nothing — the same dead control the agenda pin had.
+ * "Kam jít" is a promise to point at a place, and the place is the RUNNING
+ * lesson's — the one the card is about. It used to route to the next lesson,
+ * so a student late for the lecture on now was walked to the one after.
+ *
+ * It is offered only for a room the map can show: a room the dataset does not
+ * carry would send the student to the Map tab and show them nothing.
  */
 describe('NowNextCard route button', () => {
   beforeEach(() => {
     useAppStore.setState({ language: 'cz' } as never);
   });
 
-  const withNextRoom = (room: string) =>
-    nowNext({ next: makeLesson({ courseName: 'Next', room, roomCs: room, roomEn: room }) });
+  const lessonIn = (room: string, courseName = 'Now') =>
+    makeLesson({ courseName, courseNameCs: courseName, room, roomCs: room, roomEn: room });
+  const withCurrentRoom = (room: string) => nowNext({ current: lessonIn(room), next: null });
 
-  it.each(['A01', 'Q01'])('offers the route for %s', (room) => {
-    render(<NowNextCard data={withNextRoom(room)} onRoute={() => {}} />);
-    expect(screen.getByRole('button')).toBeInTheDocument();
+  it.each(['A01', 'Q01'])('offers the route for a running lesson in %s', (room) => {
+    render(<NowNextCard data={withCurrentRoom(room)} onRoute={() => {}} />);
+    expect(screen.getByRole('button', { name: /Trasa/ })).toBeInTheDocument();
   });
 
-  it.each(['X02', 'B Virtuální 6'])('withholds the route for %s', (room) => {
-    render(<NowNextCard data={withNextRoom(room)} onRoute={() => {}} />);
+  it.each(['X02', 'B Virtuální 6'])('withholds the route for a running lesson in %s', (room) => {
+    render(<NowNextCard data={withCurrentRoom(room)} onRoute={() => {}} />);
     expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  // The next lesson's room is not what the button answers for, so a routable
+  // next lesson must not conjure the button over an unroutable running one.
+  it("ignores the next lesson's room", () => {
+    const data = nowNext({ current: lessonIn('X02'), next: lessonIn('Q01', 'Next') });
+    render(<NowNextCard data={data} onRoute={() => {}} />);
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  // Beside the lesson it routes to, never on the "Následuje" row, where it
+  // would read as a promise about the lesson after.
+  it('sits with the running lesson, not on the "Následuje" row', () => {
+    const data = nowNext({ current: lessonIn('Q01'), next: lessonIn('A01', 'Next') });
+    render(<NowNextCard data={data} onRoute={() => {}} />);
+    const button = screen.getByRole('button', { name: /Trasa/ });
+    const nextRow = screen.getByText('Následuje:').closest('div');
+    expect(nextRow?.contains(button)).toBe(false);
+  });
+
+  it('hands the tap to onRoute', () => {
+    const onRoute = vi.fn();
+    render(<NowNextCard data={withCurrentRoom('Q01')} onRoute={onRoute} />);
+    fireEvent.click(screen.getByRole('button', { name: /Trasa/ }));
+    expect(onRoute).toHaveBeenCalledOnce();
+  });
+});
+
+/** The same gap one card higher: an answered event is often what comes next. */
+describe('NowNextCard, when an answered society event is next', () => {
+  beforeEach(() => {
+    useAppStore.setState({
+      language: 'cz',
+      mapEvents: [
+        {
+          id: 'evt-1',
+          title: 'City Game',
+          url: '',
+          date: '2026-09-24',
+          endDate: null,
+          time: '18:30',
+          location: null,
+          imageUrl: null,
+          organizerKey: 'mendelu',
+          societyId: 'esn',
+          coord: [16.6077, 49.1976],
+          roomCode: null,
+          venueKind: 'offcampus',
+          category: 'other',
+        },
+      ],
+    } as never);
+  });
+
+  const cityGame = customEventToLesson({
+    id: rsvpBlockId('evt-1'),
+    title: 'City Game',
+    date: '20260924',
+    startTime: '18:30',
+    endTime: '20:00',
+  });
+
+  it('says where it is when it comes next', () => {
+    render(<NowNextCard data={nowNext({ next: cityGame })} onRoute={() => {}} />);
+    expect(screen.getByText(/City Game · Místo na mapě · 18:30 – 20:00/)).toBeInTheDocument();
+  });
+
+  it('says where it is, who runs it, and offers the way there while it runs', () => {
+    // "Trasa →" belongs to the running entry (#409). The room index never knows
+    // a venue in town, so it is the event's coordinate that makes it routable.
+    render(<NowNextCard data={nowNext({ current: cityGame })} onRoute={() => {}} />);
+    expect(screen.getByText('Místo na mapě · 18:30 – 20:00 · ESN')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Trasa/ })).toBeInTheDocument();
   });
 });
