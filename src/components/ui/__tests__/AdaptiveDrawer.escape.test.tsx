@@ -95,4 +95,43 @@ describe('Escape on the side drawer', () => {
     expect(form).toHaveBeenCalledTimes(1);
     expect(drawer).not.toHaveBeenCalled();
   });
+
+  it('on a phone, the vaul drawer leaves Escape to the feedback form above it', () => {
+    // Radix answers Escape in the CAPTURE phase, before any layer: without the
+    // guard it dismissed the drawer under the form and left the form open.
+    useAppStore.setState({ isTouch: true, isNarrow: true } as never);
+    const drawer = vi.fn();
+    const form = vi.fn();
+    const { rerender } = render(
+      <>
+        <AdaptiveDrawer open onClose={drawer}>
+          <p>subject</p>
+        </AdaptiveDrawer>
+        <FeedbackModal isOpen={false} onClose={form} />
+      </>
+    );
+    rerender(
+      <>
+        <AdaptiveDrawer open onClose={drawer}>
+          <p>subject</p>
+        </AdaptiveDrawer>
+        <FeedbackModal isOpen onClose={form} />
+      </>
+    );
+    escape();
+    expect(form).toHaveBeenCalledTimes(1);
+    expect(drawer).not.toHaveBeenCalled();
+  });
+
+  it('on a phone, the vaul drawer still closes on Escape when nothing is above it', () => {
+    useAppStore.setState({ isTouch: true, isNarrow: true } as never);
+    const drawer = vi.fn();
+    render(
+      <AdaptiveDrawer open onClose={drawer}>
+        <p>subject</p>
+      </AdaptiveDrawer>
+    );
+    escape();
+    expect(drawer).toHaveBeenCalledTimes(1);
+  });
 });

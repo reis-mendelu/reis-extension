@@ -12,13 +12,29 @@ import { useEffect, useLayoutEffect, useRef } from 'react';
  * (an inline title editor, a picker's open list) runs first through React's
  * root listener and keeps the key by calling `preventDefault`. vaul's phone
  * drawer is not a layer here: Radix handles its Escape in the capture phase and
- * prevents the default itself.
+ * prevents the default itself — which is why it has to hand the key over
+ * through `closeTopEscapeLayer` when a layer is open above it.
  */
-const stack: symbol[] = [];
+interface Layer {
+  id: symbol;
+  close: { current: () => void };
+}
+const stack: Layer[] = [];
 
 /** Whether any layer is open — the phone's sheet stack yields to it. */
 export function hasOpenEscapeLayer(): boolean {
   return stack.length > 0;
+}
+
+/**
+ * Closes the topmost layer, for a handler that must consume the Escape before
+ * the layers can see it (vaul's Radix listener runs in the capture phase).
+ */
+export function closeTopEscapeLayer(): boolean {
+  const top = stack[stack.length - 1];
+  if (!top) return false;
+  top.close.current();
+  return true;
 }
 
 export function useEscapeLayer(open: boolean, onClose: () => void): void {
@@ -32,17 +48,17 @@ export function useEscapeLayer(open: boolean, onClose: () => void): void {
   useEffect(() => {
     if (!open) return;
     const id = Symbol('escape-layer');
-    stack.push(id);
+    stack.push({ id, close });
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented || e.isComposing) return;
-      if (stack[stack.length - 1] !== id) return;
+      if (stack[stack.length - 1]?.id !== id) return;
       e.preventDefault();
       close.current();
     };
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
-      const at = stack.indexOf(id);
+      const at = stack.findIndex((layer) => layer.id === id);
       if (at !== -1) stack.splice(at, 1);
     };
   }, [open]);
