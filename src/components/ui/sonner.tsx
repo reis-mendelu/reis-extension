@@ -4,6 +4,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { Check, CircleAlert, Info, TriangleAlert } from 'lucide-react';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 import { useAppStore } from '../../store/useAppStore';
+import { dismissTappedToast } from './toastTap';
 
 /*
  * Sonner injects its stylesheet unlayered, and Tailwind v4 puts every utility
@@ -78,23 +79,33 @@ const ICONS: ToasterProps['icons'] = {
   ),
 };
 
+const SWIPE: ToasterProps['swipeDirections'] = ['top', 'left', 'right'];
+
 const Toaster = ({ ...props }: ToasterProps) => {
   // The app's theme, not the OS's: `system` put a black toast on the light theme.
   const theme = useAppStore((s) => s.theme) === 'mendelu' ? 'light' : 'dark';
   return (
-    <Sonner
-      theme={theme}
-      visibleToasts={1}
-      icons={ICONS}
-      style={SURFACE}
-      toastOptions={{
-        style: TOAST_STYLE,
-        // Sonner's icon slot is a fixed 16px box; the chip is 28px. Trailing
-        // `!` because a plain utility loses to sonner's unlayered rule.
-        classNames: { icon: 'size-7! m-0!', title: 'leading-snug!' },
-      }}
-      {...props}
-    />
+    // `contents`: a click target that takes no box of its own.
+    <div className="contents" onClick={dismissTappedToast}>
+      <Sonner
+        theme={theme}
+        visibleToasts={1}
+        icons={ICONS}
+        style={SURFACE}
+        // Sonner derives these from `position`, and `top-center` gives
+        // ['top', 'center'] — `center` is not a direction, so only an upward
+        // flick dismissed and the sideways swipe people actually try did
+        // nothing (Pixel 9a report). Both trees mount top-center.
+        swipeDirections={SWIPE}
+        toastOptions={{
+          style: TOAST_STYLE,
+          // Sonner's icon slot is a fixed 16px box; the chip is 28px. Trailing
+          // `!` because a plain utility loses to sonner's unlayered rule.
+          classNames: { icon: 'size-7! m-0!', title: 'leading-snug!' },
+        }}
+        {...props}
+      />
+    </div>
   );
 };
 
