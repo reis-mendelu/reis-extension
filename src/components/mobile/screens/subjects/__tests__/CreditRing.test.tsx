@@ -27,12 +27,20 @@ describe('CreditRing — last two semesters', () => {
 
   it('reads as fine at or above the minimum', () => {
     render(<CreditRing earned={147} total={180} lastTwoPeriods={40} />);
-    expect(screen.getByText('Posl. 2 semestry: 40/40').className).toContain('text-success');
+    // The tone token, not bare `text-success`: #22c55e-ish on white is under
+    // AA at text-xs. The tone is the same hue darkened in light, unchanged in dark.
+    expect(screen.getByText('Posl. 2 semestry: 40/40').className).toContain(
+      'text-[var(--tone-success)]'
+    );
   });
 
   it('warns below the minimum', () => {
     render(<CreditRing earned={60} total={180} lastTwoPeriods={32} />);
-    expect(screen.getByText('Posl. 2 semestry: 32/40').className).toContain('text-warning');
+    // Bare `text-warning` (#f59e0b) measured 2.15:1 on the light card.
+    // The warning tone is darker in light and slightly lighter in dark.
+    expect(screen.getByText('Posl. 2 semestry: 32/40').className).toContain(
+      'text-[var(--tone-warning)]'
+    );
   });
 
   it('says nothing when IS has not reported the figure', () => {

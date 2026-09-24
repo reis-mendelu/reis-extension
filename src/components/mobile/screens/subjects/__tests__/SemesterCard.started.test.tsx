@@ -47,6 +47,16 @@ describe('SemesterCard — enrolled count', () => {
     expect(screen.getByText('7 zapsaných předmětů')).toBeInTheDocument();
   });
 
+  it('sets the done count in the primary tone, which reads on the light card', () => {
+    // Bare `text-primary` on `bg-primary/15` measured 2.03:1 in the light theme.
+    render(
+      <SemesterCard enrolled={enrolledOf(['A', 'B'])} semester={5} onOpenSubject={() => {}} />
+    );
+    const badge = screen.getByText(/hotovo/);
+    expect(badge.className).toContain('text-[var(--tone-primary)]');
+    expect(badge.className).not.toMatch(/(^|\s)text-primary(\s|$)/);
+  });
+
   it('uses the few-form for two to four', () => {
     render(
       <SemesterCard enrolled={enrolledOf(['A', 'B', 'C'])} semester={5} onOpenSubject={() => {}} />

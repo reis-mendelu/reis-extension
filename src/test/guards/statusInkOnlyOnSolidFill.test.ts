@@ -34,10 +34,34 @@ function sourcesUnder(dir: string): string[] {
   });
 }
 
-/** String and template literals, with comments stripped first. */
+/** A template's static text, each `${…}` removed (brace depth counted). */
+function staticText(template: string): string {
+  let out = '';
+  let depth = 0;
+  for (let i = 0; i < template.length; i++) {
+    if (depth === 0 && template[i] === '$' && template[i + 1] === '{') {
+      depth = 1;
+      i++;
+    } else if (depth > 0) {
+      if (template[i] === '{') depth++;
+      else if (template[i] === '}') depth--;
+    } else out += template[i];
+  }
+  return out;
+}
+
+/**
+ * Every class string, each on its own. Quoted strings are matched across the
+ * whole source, so the branches of a ternary inside a template are checked
+ * separately — otherwise a solid `bg-warning` in one branch would excuse
+ * `text-warning-content` on a tint in the other. A template's own static text
+ * is checked with its `${…}` removed, for the same reason.
+ */
 function literals(src: string): string[] {
   const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-  return [...code.matchAll(/'[^'\n]*'|"[^"\n]*"|`[^`]*`/g)].map((m) => m[0]);
+  const quoted = [...code.matchAll(/'[^'\n]*'|"[^"\n]*"/g)].map((m) => m[0]);
+  const templates = [...code.matchAll(/`[^`]*`/g)].map((m) => staticText(m[0]));
+  return [...quoted, ...templates];
 }
 
 export function inkOffSolidFill(src: string): string[] {
@@ -57,6 +81,13 @@ describe('status ink only on a solid status fill', () => {
     expect(inkOffSolidFill(`'bg-warning/15 text-warning-content'`)).toHaveLength(1);
     expect(inkOffSolidFill(`"text-xs text-warning-content/80"`)).toHaveLength(1);
     expect(inkOffSolidFill(`'bg-error/10 text-error-content'`)).toHaveLength(1);
+    // One branch solid, the other a tint: the solid one must not excuse it.
+    expect(
+      inkOffSolidFill(
+        "`px-1 ${a ? 'bg-warning text-warning-content' : 'bg-warning/15 text-warning-content'}`"
+      )
+    ).toHaveLength(1);
+    expect(inkOffSolidFill('`bg-warning/15 text-warning-content ${x}`')).toHaveLength(1);
     expect(inkOffSolidFill(`'bg-warning text-warning-content border-warning/20'`)).toEqual([]);
     expect(inkOffSolidFill(`'hover:bg-warning/25 bg-warning text-warning-content'`)).toEqual([]);
     expect(inkOffSolidFill(`// text-warning-content on bg-warning/15 was invisible`)).toEqual([]);

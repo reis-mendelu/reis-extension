@@ -199,7 +199,7 @@ export function SemesterCard({ enrolled, semester, onOpenSubject }: SemesterCard
           </span>
           <span className="text-xs text-base-content/60">{subtitle}</span>
         </div>
-        <span className="flex-shrink-0 rounded-md bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
+        <span className="flex-shrink-0 rounded-md bg-primary/15 px-2 py-0.5 text-xs font-semibold text-[var(--tone-primary)]">
           {t('mobile.subjects.doneOf', { done: doneCount, total: subjects.length })}
         </span>
       </div>
