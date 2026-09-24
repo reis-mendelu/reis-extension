@@ -4,7 +4,7 @@ import { OUTLOOK_ICON_PATH, TEAMS_ICON_PATH } from '../../constants/icons';
 import { ProfilePopup } from './ProfilePopup';
 import { useTranslation } from '../../hooks/useTranslation';
 
-export function BottomActions({ onOpenFeedback }: { onOpenFeedback?: () => void }) {
+export function BottomActions() {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -65,10 +65,6 @@ export function BottomActions({ onOpenFeedback }: { onOpenFeedback?: () => void 
         <div onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
           <ProfilePopup
             isOpen={isOpen}
-            onOpenFeedback={() => {
-              setIsOpen(false);
-              onOpenFeedback?.();
-            }}
             onClose={() => setIsOpen(false)}
           />
         </div>

@@ -61,7 +61,6 @@ function App() {
       <Sidebar
         currentView={s.currentView}
         onViewChange={s.setCurrentView}
-        onOpenFeedback={() => s.setIsFeedbackOpen(true)}
         onOpenSubject={s.handleOpenSubjectFromSearch}
       />
 
@@ -80,8 +79,6 @@ function App() {
       <AppOverlays
         selectedSubject={s.selectedSubject}
         setSelectedSubject={s.setSelectedSubject}
-        isFeedbackOpen={s.isFeedbackOpen}
-        setIsFeedbackOpen={s.setIsFeedbackOpen}
       />
     </div>
   );

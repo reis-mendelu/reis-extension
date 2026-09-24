@@ -124,4 +124,13 @@ describe('the profile tab', () => {
     render(<BottomNav />);
     expect(screen.getAllByRole('button')).toHaveLength(5);
   });
+
+  it('opens the one shared report form, not a local copy', () => {
+    useAppStore.setState({ reportOpen: false, reportPrefill: null } as never);
+    render(<ProfileScreen />);
+    fireEvent.click(screen.getByRole('button', { name: /Nahlásit chybu/ }));
+    expect(useAppStore.getState().reportOpen).toBe(true);
+    // The form itself is mounted by MobileApp, not by this screen.
+    expect(screen.queryByPlaceholderText(/Stručně popiš/)).toBeNull();
+  });
 });

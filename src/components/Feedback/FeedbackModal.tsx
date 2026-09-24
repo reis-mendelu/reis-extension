@@ -11,11 +11,13 @@ import { useAppStore } from '../../store/useAppStore';
 interface FeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Our own prefill (an entry point's key), never IS text. Read once per mount. */
+  initialTitle?: string;
 }
 
-export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
+export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalProps) {
   const [type, setType] = useState<'bug' | 'idea' | 'other'>('bug');
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(initialTitle ?? '');
   const [message, setMessage] = useState('');
   const [contact, setContact] = useState('');
   const [isSending, setIsSending] = useState(false);

@@ -9,7 +9,6 @@ import type { MenuItem } from './menuConfig';
 interface SidebarProps {
   currentView: AppView;
   onViewChange: (v: AppView) => void;
-  onOpenFeedback?: () => void;
   onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string) => void;
   items?: MenuItem[];
 }
@@ -17,7 +16,6 @@ interface SidebarProps {
 export const Sidebar = ({
   currentView,
   onViewChange,
-  onOpenFeedback,
   onOpenSubject,
   items,
 }: SidebarProps) => {
@@ -90,7 +88,7 @@ export const Sidebar = ({
         })}
       </div>
       <div className="flex-1" />
-      <BottomActions onOpenFeedback={onOpenFeedback} />
+      <BottomActions />
     </aside>
   );
 };
