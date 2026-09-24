@@ -3,6 +3,23 @@ import { normalizeDateString } from './utils';
 import { iconSysids, ATTEMPT_BY_SYSID, type AttemptType } from './attemptIcons';
 import { absoluteIsUrl } from './isUrl';
 
+/**
+ * A cell's text, one entry per `<br>`-separated line.
+ *
+ * Walks the nodes rather than splitting innerHTML and stripping tags with a
+ * regex: the same three lines, and it cannot be fooled by markup inside a line
+ * (CodeQL reads tag-stripping as sanitisation and flags it, rightly — it is not
+ * one). "21.09.2026 13:00 <br> 08.11.2026 20:00 <br> 08.11.2026 20:00".
+ */
+function linesOf(cell: Element): string[] {
+  const lines: string[] = [''];
+  cell.childNodes.forEach((node) => {
+    if (node.nodeType === 1 && (node as Element).tagName === 'BR') lines.push('');
+    else lines[lines.length - 1] += node.textContent ?? '';
+  });
+  return lines.map((line) => line.trim());
+}
+
 export function parseRegisteredTerms(
   doc: Document,
   getOrCreateSubject: (c: string, n: string) => ScrapedExamSubject,
@@ -63,7 +80,7 @@ export function parseRegisteredTerms(
       deregistrationDeadline: string | undefined;
     for (let i = 0; i < cols.length; i++) {
       // @ts-ignore -- nuia: parser load-bearing (see CLAUDE.md Parser Rules)
-      const parts = cols[i].innerHTML.split(/<br\s*\/?>/i).map((x) => x.replace(/<[^>]*>/g, '').trim());
+      const parts = linesOf(cols[i]);
       if (parts.length >= 3) {
         const at = (raw: string | undefined) =>
           raw && raw !== '--' && raw.match(/\d{2}[./]\d{2}[./]\d{4}/)
