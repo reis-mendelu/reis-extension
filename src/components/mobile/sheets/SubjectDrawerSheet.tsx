@@ -125,17 +125,24 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
 
   return (
     <Sheet size="full" variant="screen" onClose={onClose}>
-      <SheetHeader eyebrow={courseCode} title={courseName || courseCode} onBack={onClose} />
-      {/* Below the header, not inside it: the header is `touch-none` so the
-          sheet can be dragged by it, and this is a list of things to tap. */}
-      <TeacherList teachers={syllabusResult.syllabus?.courseInfo?.teachers} />
-      <SubjectDrawerTabs
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        disabledTabs={disabledTabs}
-        counts={counts}
-      />
-      <SubjectDrawerScroller courseCode={courseCode} pullable={activeTab === 'files'}>
+      <SubjectDrawerScroller
+        courseCode={courseCode}
+        pullable={activeTab === 'files'}
+        top={
+          <>
+            <SheetHeader eyebrow={courseCode} title={courseName || courseCode} onBack={onClose} />
+            {/* Below the header, not inside it: the header is `touch-none` so the
+                sheet can be dragged by it, and this is a list of things to tap. */}
+            <TeacherList teachers={syllabusResult.syllabus?.courseInfo?.teachers} />
+            <SubjectDrawerTabs
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              disabledTabs={disabledTabs}
+              counts={counts}
+            />
+          </>
+        }
+      >
         <DrawerTabBody
           tab={activeTab}
           lesson={lesson}

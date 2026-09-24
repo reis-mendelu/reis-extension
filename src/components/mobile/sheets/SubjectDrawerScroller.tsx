@@ -15,6 +15,13 @@ import { PullRefreshIndicator } from '../primitives/PullRefreshIndicator';
  * refresh to its owner, and a sheet opened on stale files is already
  * refreshing when the finger arrives.
  *
+ * A pull may START anywhere on the sheet but the PDF reader: on `top` (the
+ * header, teachers and tab bar) as well as the list, the same fix the calendar
+ * and exams got. The at-top gate is still the list's, so a pull from the
+ * header does nothing once the list is scrolled down. The reader overlay is
+ * the sheet's sibling of this, so a pull at the top of a PDF's pages never
+ * turns into a files refresh.
+ *
  * Files only. The other tabs have their own data and no refresh of their own
  * to hand it, so a pull there would spin for files the student is not looking
  * at. The empty and skeleton states are held pullable too (AlwaysScrollable):
@@ -23,12 +30,16 @@ import { PullRefreshIndicator } from '../primitives/PullRefreshIndicator';
 export function SubjectDrawerScroller({
   courseCode,
   pullable,
+  top,
   children,
 }: {
   courseCode: string;
   pullable: boolean;
+  /** Everything above the list; part of where a pull may start. */
+  top: ReactNode;
   children: ReactNode;
 }) {
+  const surfaceRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   // Spins only over a list. With none on screen the tab shows its skeleton and
   // "Načítání souborů…" bar (DrawerTabBody's own isEmpty test), which already
@@ -41,20 +52,24 @@ export function SubjectDrawerScroller({
     if (!state.filesLoading[courseCode]) void state.refreshFilesForSubject(courseCode);
   }, [courseCode]);
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col">
-      {pullable && (
-        <PullRefreshIndicator
-          scrollerRef={scrollerRef}
-          refreshing={refreshing}
-          onRefresh={refresh}
-        />
-      )}
-      <div
-        ref={scrollerRef}
-        data-testid="subject-drawer-scroller"
-        className="relative flex-1 overflow-y-auto"
-      >
-        {pullable ? <AlwaysScrollable>{children}</AlwaysScrollable> : children}
+    <div ref={surfaceRef} className="flex min-h-0 flex-1 flex-col">
+      {top}
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        {pullable && (
+          <PullRefreshIndicator
+            scrollerRef={scrollerRef}
+            surfaceRef={surfaceRef}
+            refreshing={refreshing}
+            onRefresh={refresh}
+          />
+        )}
+        <div
+          ref={scrollerRef}
+          data-testid="subject-drawer-scroller"
+          className="relative flex-1 overflow-y-auto"
+        >
+          {pullable ? <AlwaysScrollable>{children}</AlwaysScrollable> : children}
+        </div>
       </div>
     </div>
   );

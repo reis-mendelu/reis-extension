@@ -103,12 +103,30 @@ describe('pulling a subject’s Files tab', () => {
     );
   });
 
+  // The same fix the calendar and exams got (#399): the top of the screen —
+  // header, teachers, tab bar — is where a thumb lands, and it was dead.
+  it('pulls from the header and the tab bar above the list too', () => {
+    renderSheet();
+    pull(screen.getByText('Algoritmizace'));
+    expect(refresh).toHaveBeenCalledTimes(1);
+    pull(screen.getAllByRole('button').find((b) => b.textContent.includes('Soubory'))!);
+    expect(refresh).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not pull from the header once the list is scrolled down', () => {
+    renderSheet();
+    screen.getByTestId('subject-drawer-scroller').scrollTop = 200;
+    pull(screen.getByText('Algoritmizace'));
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
   it('is the Files tab’s gesture only', () => {
     renderSheet();
     const statsTab = screen.getAllByRole('button').find((b) => b.textContent.includes('Úspěšnost'));
     fireEvent.click(statsTab!);
     expect(screen.queryByTestId('pull-refresh-indicator')).toBeNull();
     pull(screen.getByTestId('subject-drawer-scroller'));
+    pull(screen.getByText('Algoritmizace'));
     expect(refresh).not.toHaveBeenCalled();
   });
 });
