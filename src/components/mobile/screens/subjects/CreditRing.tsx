@@ -50,7 +50,9 @@ export function CreditRing({ earned, total, lastTwoPeriods }: CreditRingProps) {
         {lastTwoPeriods != null && lastTwoPeriods > 0 && (
           <span
             className={`text-xs ${
-              lastTwoPeriods >= MIN_CREDITS_LAST_TWO_PERIODS ? 'text-success' : 'text-warning'
+              lastTwoPeriods >= MIN_CREDITS_LAST_TWO_PERIODS
+                ? 'text-[var(--tone-success)]'
+                : 'text-[var(--tone-warning)]'
             }`}
           >
             {`${t('subjects.creditsLastTwo')}: ${lastTwoPeriods}/${MIN_CREDITS_LAST_TWO_PERIODS}`}
