@@ -76,6 +76,8 @@ export interface ExamSlice {
   examNotesLoading: Record<string, boolean>;
   examNotesError: Record<string, string>;
   lastExamNotesFetchedAt: Record<string, number>;
+  /** terminId → "Délka trvání akce" in minutes, read by the same request as the note. null = page had none. */
+  examTermDurations: Record<string, number | null>;
   fetchExamNotePriority: (terminId: string) => Promise<void>;
 }
 

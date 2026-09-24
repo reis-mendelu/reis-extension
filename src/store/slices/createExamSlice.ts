@@ -10,7 +10,7 @@ import {
   type FetchExamClassmatesResult,
 } from './exams/fetchExamClassmatesForTermin';
 import { stripGroupSignupSections } from '../../utils/exams/isGroupSignup';
-import { fetchTermNote } from '../../api/terminyInfo';
+import { fetchTermDetail } from '../../api/termDetail';
 
 const NOTE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours on success
 const NOTE_ERROR_TTL_MS = 5 * 60 * 1000; // 5 minutes after error — prevents remount-refetch storm
@@ -113,6 +113,7 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
   examNotesLoading: {},
   examNotesError: {},
   lastExamNotesFetchedAt: {},
+  examTermDurations: {},
 
   fetchExamClassmatesPriority: async (terminId) => {
     const { examClassmates, examClassmatesLoading, studiumId, obdobiId } = get();
@@ -208,12 +209,15 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
       // Always fetch CZ — teacher-authored note text isn't translated by IS,
       // and querying the EN page hides the teacher's CZ note even though the
       // student needs to read it regardless of their UI language.
-      const note = await fetchTermNote(terminId, studiumId, obdobiId, 'cz');
+      // The same page carries the term's length, which the phone shows for
+      // every term a student opens — so it is kept from this one request.
+      const { note, durationMinutes } = await fetchTermDetail(terminId, studiumId, obdobiId, 'cz');
       set((state) => {
         const nextErr = { ...state.examNotesError };
         delete nextErr[terminId];
         return {
           examNotes: { ...state.examNotes, [terminId]: note },
+          examTermDurations: { ...state.examTermDurations, [terminId]: durationMinutes },
           examNotesLoading: { ...state.examNotesLoading, [terminId]: false },
           lastExamNotesFetchedAt: { ...state.lastExamNotesFetchedAt, [terminId]: Date.now() },
           examNotesError: nextErr,

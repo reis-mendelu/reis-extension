@@ -164,29 +164,3 @@ export async function fetchExamClassmates(
     throw e;
   }
 }
-
-/**
- * Fetch the teacher's Poznámka for a single exam term. Throws if the page
- * doesn't look like a real detail page (e.g. session expired → login redirect)
- * so the caller knows not to cache the result. Returns null when the page
- * loaded fine but no note is set on this term.
- */
-export async function fetchTermNote(
-  terminId: string,
-  studiumId: string,
-  obdobiId: string,
-  lang: 'cz' | 'en' = 'cz'
-): Promise<TermNote | null> {
-  const url = `${BASE_URL}/auth/student/terminy_info.pl?termin=${terminId};studium=${studiumId};obdobi=${obdobiId};lang=${lang}`;
-  try {
-    const res = await fetchWithAuth(url);
-    const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
-    if (!isTermDetailPage(doc)) {
-      throw new Error('terminy_info.pl did not return a detail page (likely auth redirect)');
-    }
-    return parseTermNotePage(doc);
-  } catch (e) {
-    logError('Api.fetchTermNote', e, { terminId });
-    throw e;
-  }
-}

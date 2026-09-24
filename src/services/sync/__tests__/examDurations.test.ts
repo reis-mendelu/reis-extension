@@ -63,9 +63,34 @@ describe('enrichExamsWithDurations', () => {
     expect(result[0]!.sections[0]!.registeredTerm?.durationMinutes).toBe(45);
   });
 
-  it('skips sections that are not registered', async () => {
-    await enrichExamsWithDurations([subject('A')], [], '111', '222');
+  // Every listed term, not only the registered ones: the phone shows each
+  // term's length under it. Registered terms go first, so the budget spends
+  // itself on the calendar's blocks before anything else.
+  it('also attaches durations to the terms a section lists, registered one first', async () => {
+    vi.mocked(fetchTermDuration).mockImplementation(async (id) => (id === '1' ? 90 : 25));
+    const s = subject('A', { id: '1' });
+    s.sections[0]!.terms = [
+      { id: '2', date: '01.07.2026', time: '09:00' },
+      { id: '1', date: '24.06.2026', time: '09:45' },
+    ];
+    const result = await enrichExamsWithDurations([s], [], '111', '222');
+    expect(vi.mocked(fetchTermDuration).mock.calls.map((c) => c[0])).toEqual(['1', '2']);
+    const terms = result[0]!.sections[0]!.terms;
+    expect(terms.find((t) => t.id === '2')?.durationMinutes).toBe(25);
+    expect(terms.find((t) => t.id === '1')?.durationMinutes).toBe(90);
+    expect(result[0]!.sections[0]!.registeredTerm?.durationMinutes).toBe(90);
+  });
+
+  it('reuses a cached duration of a listed term instead of refetching', async () => {
+    const cached = subject('A');
+    cached.sections[0]!.terms = [
+      { id: '7', date: '01.07.2026', time: '09:00', durationMinutes: 30 },
+    ];
+    const fresh = subject('A');
+    fresh.sections[0]!.terms = [{ id: '7', date: '01.07.2026', time: '09:00' }];
+    const result = await enrichExamsWithDurations([fresh], [cached], '111', '222');
     expect(fetchTermDuration).not.toHaveBeenCalled();
+    expect(result[0]!.sections[0]!.terms[0]!.durationMinutes).toBe(30);
   });
 
   it('skips registered terms with no term id', async () => {
