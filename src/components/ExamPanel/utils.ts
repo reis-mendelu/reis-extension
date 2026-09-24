@@ -22,7 +22,10 @@ export function getSectionState(section: ExamSection, now: Date): SectionState {
   ).length;
   if (openCount > 0) return { type: 'open', openCount };
 
+  // A term from "Kam se přihlásit nemohu?" keeps IS's dates, but they never
+  // open for this student — its start is not an "opens on".
   const futureDates = section.terms
+    .filter((t) => !t.cannotRegister)
     .map((t) => (t.registrationStart ? parseRegistrationStart(t.registrationStart) : null))
     .filter((d): d is Date => d !== null && d > now)
     .sort((a, b) => a.getTime() - b.getTime());

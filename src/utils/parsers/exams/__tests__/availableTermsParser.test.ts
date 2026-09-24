@@ -192,3 +192,88 @@ describe('availableTermsParser — IS Mendelu built-in action links', () => {
     );
   });
 });
+
+// Real table_2 row (IS Mendelu, captured 2026-09-22) in the icon markup IS
+// serves now: every icon is a <span class="uf-icon" data-sysid="…"> wrapping an
+// inline SVG, where it used to be an <img sysid="…">. The SVGs are dropped and
+// the teacher, study and period ids replaced with placeholders; everything else
+// is verbatim — including the new leading "Vhodný termín" column.
+const modernRow = (typeCell: string) =>
+  `<tr class=" uis-hl-table lbn" ><td class="odsazena" align="right">1.</td><td class="odsazena" align="center"><span class="uf-icon xxs" role="img" data-sysid="termin-vhodny" data-id="2544" aria-label="Vhodný termín" alt="Vhodný termín" title="Vhodný termín" >  </span></td><td class="odsazena" align="left">EBC-EKM</td><td class="odsazena" align="left"><a href="/auth/katalog/syllabus.pl?predmet=163979;zpet=/auth/student/terminy_seznam.pl?;lang=cz" target="_blank">Ekonometrie 1</a><span class="uf-icon xs" role="img" data-sysid="hvezda-nesvitici" data-id="2500" style="cursor: pointer;vertical-align: middle;" aria-label="Oblíbený předmět" alt="Oblíbený předmět" title="Oblíbený předmět" >  </span></td><td class="odsazena" align="left" nowrap="1">ZS 2026/2027 - PEF</td><td class="odsazena" align="left" nowrap="1">09.11.2026 10:25 (po)</td><td class="odsazena" align="left" nowrap="1"><a href="/auth/mistnosti/index.pl?zobrazit_mistnost=659;zpet=/auth/student/terminy_seznam.pl?;lang=cz">Studovna PEF (ČP)</a></td><td class="odsazena" align="left" nowrap="1">průběžný test 1<br />(e-test)</td><td class="odsazena" nowrap="nowrap" align="left"><a href="/auth/lide/clovek.pl?id=12345;lang=cz" target="_blank">J. Novák</a></td><td class="odsazena" align="center" nowrap="1">48/66</td><td class="odsazena" align="center" nowrap="1">${typeCell}</td><td class="odsazena" align="center" nowrap="1">21.09.2026 13:00<br />08.11.2026 20:00<br />08.11.2026 20:00</td><td class="odsazena" align="left" nowrap="1"><a href="terminy_info.pl?termin=343994;studium=149707;obdobi=812;lang=cz"><span class="uf-icon sm" role="img" data-sysid="prohlizeni-info" data-id="1146" aria-label="Podrobnosti" alt="Podrobnosti" title="Podrobnosti" >  </span></a></td><td class="odsazena" align="center"><a href="terminy_prihlaseni.pl?termin=343994;studium=149707;obdobi=812;lang=cz"><span class="uf-icon xs" role="img" data-sysid="base-op" data-id="294" aria-label="Přejít do aplikace Přihlášení na termín" alt="Přejít do aplikace Přihlášení na termín" title="Přejít do aplikace Přihlášení na termín" >  </span></a>&nbsp;<a href="terminy_seznam.pl?termin=343994;studium=149707;obdobi=812;prihlasit_ihned=1;lang=cz"><span class="uf-icon xs" role="img" data-sysid="small-arrow-right-double" data-id="445" aria-label="Ihned se přihlásit na termín" alt="Ihned se přihlásit na termín" title="Ihned se přihlásit na termín" >  </span></a></td></tr>`;
+
+const typeIcon = (sysid: string, label: string) =>
+  `<span class="uf-icon xs" role="img" data-sysid="${sysid}" data-id="2227" aria-label="${label}" alt="${label}" title="${label}" >  </span>`;
+
+describe('availableTermsParser — the icon markup IS serves now (span[data-sysid])', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const parseOne = (typeCell: string) => {
+    const result = parseExamData(wrapInPage(modernRow(typeCell)), 'cz');
+    const terms = result.flatMap((s) => s.sections.flatMap((sec) => sec.terms));
+    expect(terms).toHaveLength(1);
+    return terms[0]!; // safe: length asserted above
+  };
+
+  it('reads the attempt type from a data-sysid icon', () => {
+    expect(parseOne(typeIcon('termin-radny', 'řádný')).attemptTypes).toEqual(['regular']);
+  });
+
+  it('reads every attempt a term counts as, in order', () => {
+    const cell =
+      typeIcon('termin-radny', 'řádný') +
+      typeIcon('termin-opravny-1', '1. opravný') +
+      typeIcon('termin-opravny-2', '2. opravný');
+    expect(parseOne(cell).attemptTypes).toEqual(['regular', 'retake1', 'retake2']);
+  });
+
+  it('does not read the "Vhodný termín" marker as an attempt', () => {
+    expect(parseOne('').attemptTypes).toBeUndefined();
+  });
+
+  it('still finds the Podrobnosti link behind a data-sysid icon', () => {
+    expect(parseOne(typeIcon('termin-radny', 'řádný')).detailUrl).toBe(
+      'https://is.mendelu.cz/auth/student/terminy_info.pl?termin=343994;studium=149707;obdobi=812;lang=cz'
+    );
+  });
+});
+
+// Real table_3 row ("Kam se přihlásit nemohu?", captured 2026-09-22): the
+// terms a student is shown but cannot sign up for. No "Stav" column, so the
+// code and name sit one cell further left than in table_2, and no Přihlásit
+// cell — only Podrobnosti and "Zobrazit důvod". Teacher and ids replaced.
+const BLOCKED_ROW = `<tr class=" uis-hl-table lbn" ><td class="odsazena" align="right">1.</td><td class="odsazena" align="left">EBC-EKM</td><td class="odsazena" align="left"><a href="/auth/katalog/syllabus.pl?predmet=163979;zpet=/auth/student/terminy_seznam.pl?;lang=cz" target="_blank">Ekonometrie 1</a><span class="uf-icon xs" role="img" data-sysid="hvezda-nesvitici" data-id="2500" style="cursor: pointer;vertical-align: middle;" aria-label="Oblíbený předmět" alt="Oblíbený předmět" title="Oblíbený předmět" >  </span></td><td class="odsazena" align="left" nowrap="1">ZS 2026/2027 - PEF</td><td class="odsazena" align="left" nowrap="1">14.12.2026 11:00 (po)</td><td class="odsazena" align="left" nowrap="1"><a href="/auth/mistnosti/index.pl?zobrazit_mistnost=659;zpet=/auth/student/terminy_seznam.pl?;lang=cz">Studovna PEF (ČP)</a></td><td class="odsazena" align="left" nowrap="1">průběžný test 1<br />(e-test)</td><td class="odsazena" nowrap="nowrap" align="left"><a href="/auth/lide/clovek.pl?id=12345;lang=cz" target="_blank">J. Novák</a></td><td class="odsazena" align="center" nowrap="1">0/74</td><td class="odsazena" align="center" nowrap="1"><span class="uf-icon xs" role="img" data-sysid="termin-opravny-1" data-id="2230" aria-label="1. opravný" alt="1. opravný" title="1. opravný" >  </span></td><td class="odsazena" align="center" nowrap="1">09.11.2026 15:00<br />13.12.2026 20:00<br />13.12.2026 20:00</td><td class="odsazena" align="left" nowrap="1"><a href="terminy_info.pl?termin=343998;studium=149707;obdobi=812;lang=cz"><span class="uf-icon sm" role="img" data-sysid="prohlizeni-info" data-id="1146" aria-label="Podrobnosti" alt="Podrobnosti" title="Podrobnosti" >  </span></a><a href="/auth/student/terminy_seznam.pl?termin=343998;studium=149707;obdobi=812;zobraz_duvod=1;lang=cz"><span class="uf-icon sm" role="img" data-sysid="studevid-nesplnene-povinnosti" data-id="2139" aria-label="Zobrazit důvod" alt="Zobrazit důvod" title="Zobrazit důvod" >  </span></a></td></tr>`;
+
+const withBlockedTable = (rows: string) =>
+  wrapInPage('').replace(
+    '</body>',
+    `<table id="table_3"><thead><tr class="zahlavi"><th>Poř.</th><th>Kód</th><th>Předmět</th><th>Období</th><th>Datum termínu</th><th>Kde</th><th>Druh (forma)</th><th>Vypsal</th><th>Přihlášeno</th><th>Typ termínu</th><th>Přihlašování od<br>do<br>Odhlášení do</th><th>Operace</th></tr></thead><tbody>${rows}</tbody></table></body>`
+  );
+
+describe('availableTermsParser — terms the student cannot sign up for (table_3)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('lists them, under the right subject and section, marked as not registrable', () => {
+    const result = parseExamData(withBlockedTable(BLOCKED_ROW), 'cz');
+    expect(result).toHaveLength(1);
+    const subject = result[0]!; // safe: length asserted above
+    expect(subject.code).toBe('EBC-EKM');
+    expect(subject.name).toBe('Ekonometrie 1');
+    const section = subject.sections[0]!;
+    expect(section.name).toBe('Průběžný test 1');
+    const term = section.terms[0]!;
+    expect(term.id).toBe('343998');
+    expect(term.date).toBe('14.12.2026');
+    expect(term.cannotRegister).toBe(true);
+    expect(term.canRegisterNow).toBe(false);
+    expect(term.attemptTypes).toEqual(['retake1']);
+    expect(term.registrationEnd).toBe('13.12.2026 20:00');
+    expect(term.blockReasonUrl).toBe(
+      'https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=343998;studium=149707;obdobi=812;zobraz_duvod=1;lang=cz'
+    );
+  });
+
+  it('does not mark the terms of table_2 as blocked', () => {
+    const result = parseExamData(wrapInPage(modernRow(typeIcon('termin-radny', 'řádný'))), 'cz');
+    expect(result[0]!.sections[0]!.terms[0]!.cannotRegister).toBeUndefined();
+  });
+});

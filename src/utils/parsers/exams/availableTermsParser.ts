@@ -1,30 +1,17 @@
 import type { ScrapedExamSubject, ScrapedExamSection } from './types';
 import { normalizeDateString } from './utils';
+import { iconSysids, ATTEMPT_BY_SYSID } from './attemptIcons';
+import { absoluteIsUrl } from './isUrl';
 import { logError } from '../../reportError';
 
-const IS_BASE = 'https://is.mendelu.cz';
-
-function absoluteIsUrl(href: string | null | undefined): string | undefined {
-  if (!href) return undefined;
-  if (href.startsWith('http')) return href;
-  if (href.startsWith('/')) return `${IS_BASE}${href}`;
-  // Operace-cell anchors (Podrobnosti) emit bare-relative hrefs like
-  // "terminy_info.pl?termin=…" — the source page lives at /auth/student/,
-  // which is where the browser would resolve them. Anchor explicitly there
-  // rather than at the IS root (which 404s).
-  return `${IS_BASE}/auth/student/${href}`;
-}
-
 function findActionHref(row: Element, sysid: string): string | undefined {
-  // Iterate all img[sysid] anchors in the row and match by attribute value.
-  // Mirrors the attempt-type icon iteration pattern below (lines ~70) which
-  // is known to work under happy-dom; querySelector with attribute-value
-  // selectors plus .closest() proved unreliable.
+  // Iterate the row's anchors and match their icon by id — querySelector with
+  // attribute-value selectors plus .closest() proved unreliable under
+  // happy-dom.
   const anchors = row.querySelectorAll('a');
   for (let i = 0; i < anchors.length; i++) {
     // @ts-ignore -- nuia: parser load-bearing (see CLAUDE.md Parser Rules)
-    const img = anchors[i].querySelector('img[sysid]');
-    if (img && img.getAttribute('sysid') === sysid) {
+    if (iconSysids(anchors[i]).includes(sysid)) {
       // @ts-ignore -- nuia: parser load-bearing (see CLAUDE.md Parser Rules)
       return absoluteIsUrl(anchors[i].getAttribute('href'));
     }
@@ -40,14 +27,29 @@ function findWatchdogHref(row: Element): string | undefined {
   return absoluteIsUrl(anchor?.getAttribute('href') ?? undefined);
 }
 
+/**
+ * Which terms table to read. table_2 lists what the student can sign up for;
+ * table_3 ("Kam se přihlásit nemohu?") lists the terms they are shown but
+ * cannot sign up for, with the same columns minus "Stav" — so the code and
+ * name sit one cell further left (verified on a real page, 2026-09-22).
+ */
+export interface TermTable {
+  selector: string;
+  codeCol: number;
+  blocked: boolean;
+}
+export const AVAILABLE_TABLE: TermTable = { selector: '#table_2', codeCol: 2, blocked: false };
+export const BLOCKED_TABLE: TermTable = { selector: '#table_3', codeCol: 1, blocked: true };
+
 export function parseAvailableTerms(
   doc: Document,
   getOrCreateSubject: (c: string, n: string) => ScrapedExamSubject,
   getOrCreateSection: (s: ScrapedExamSubject, n: string) => ScrapedExamSection,
-  lang: string = 'cz'
+  lang: string = 'cz',
+  table: TermTable = AVAILABLE_TABLE
 ) {
   const isEn = lang === 'en';
-  const table2 = doc.querySelector('#table_2');
+  const table2 = doc.querySelector(table.selector);
   if (!table2) return;
 
   table2.querySelectorAll('tbody tr').forEach((row) => {
@@ -65,9 +67,9 @@ export function parseAvailableTerms(
     if (dateIndex === -1) return;
 
     // @ts-ignore -- nuia: parser load-bearing (see CLAUDE.md Parser Rules)
-    const code = cols[2].textContent?.trim() || '';
+    const code = cols[table.codeCol].textContent?.trim() || '';
     // @ts-ignore -- nuia: parser load-bearing (see CLAUDE.md Parser Rules)
-    const name = cols[3].textContent?.trim() || '';
+    const name = cols[table.codeCol + 1].textContent?.trim() || '';
     // @ts-ignore -- nuia: parser load-bearing (see CLAUDE.md Parser Rules)
     const dateStr = cols[dateIndex].textContent?.trim() || '';
     const room = cols[dateIndex + 1]?.textContent?.trim() || '';
@@ -145,18 +147,13 @@ export function parseAvailableTerms(
     }
 
     // A single term can serve multiple attempt types (e.g. both řádný and 1. opravný).
-    // IS Mendelu uses sysid="termin-radny" / "termin-opravny-1" etc. on <img> tags in the Typ termínu cell.
+    // IS Mendelu marks them with icon ids "termin-radny" / "termin-opravny-1" etc.
+    // in the Typ termínu cell — see iconSysids for the two markups.
     const attemptTypes: ('regular' | 'retake1' | 'retake2' | 'retake3')[] = [];
-    const sysidMap: Record<string, 'regular' | 'retake1' | 'retake2' | 'retake3'> = {
-      'termin-radny': 'regular',
-      'termin-opravny-1': 'retake1',
-      'termin-opravny-2': 'retake2',
-      'termin-opravny-3': 'retake3',
-    };
     for (let i = 0; i < cols.length; i++) {
       // @ts-ignore -- nuia: parser load-bearing (see CLAUDE.md Parser Rules)
-      cols[i].querySelectorAll('img[sysid]').forEach((img) => {
-        const mapped = sysidMap[img.getAttribute('sysid') || ''];
+      iconSysids(cols[i]).forEach((id) => {
+        const mapped = ATTEMPT_BY_SYSID[id];
         if (mapped && !attemptTypes.includes(mapped)) attemptTypes.push(mapped);
       });
       if (attemptTypes.length > 0) break;
@@ -177,6 +174,10 @@ export function parseAvailableTerms(
 
     const subject = getOrCreateSubject(code, name);
     const section = getOrCreateSection(subject, sectionName);
+    // The term the student is registered on is already there, pushed from
+    // table_1 — IS can list the same id in two tables, and a card showing it
+    // twice is worse than either.
+    if (section.terms.some((t) => t.id === termId)) return;
     section.terms.push({
       id: termId,
       date: datePart,
@@ -199,6 +200,7 @@ export function parseAvailableTerms(
       watchdogUrl,
       blockReasonUrl,
       detailUrl,
+      cannotRegister: table.blocked || undefined,
     });
   });
 }
