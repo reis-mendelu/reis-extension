@@ -3,6 +3,7 @@ import { UIS_AUTH_COOKIE, buildRestoreScript, isPlausibleToken } from '../platfo
 import { logError } from '../utils/reportError';
 import { DemoModeError, isDemoMode } from '../errors/demoMode';
 import { useAppStore } from '../store/useAppStore';
+import { BROWSING_TOOLBAR, armOpenInBrowser, type HandoffBrowser } from './openInBrowser';
 
 /**
  * Opening external links without escaping to the system browser.
@@ -237,9 +238,15 @@ export async function openExternal(url: string): Promise<void> {
     const token = isSecure ? await loadStoredToken().catch(() => '') : '';
 
     // Registered first: the page can load before the open call even returns.
+    // The handoff is the toolbar's "open in browser" button — see openInBrowser.
+    const handoff = await armOpenInBrowser(
+      InAppBrowser as unknown as HandoffBrowser,
+      target,
+      validateExternalUrl
+    );
     const shown = await presentation(InAppBrowser as unknown as Parameters<typeof presentation>[0]);
 
-    await InAppBrowser.openWebView({
+    const opened = await InAppBrowser.openWebView({
       url: target,
       // The host, not a fixed string: the student should be able to see where
       // a link took them.
@@ -276,7 +283,14 @@ export async function openExternal(url: string): Promise<void> {
             preShowScriptInjectionTime: 'documentStart' as const,
           }
         : {}),
+      // Reload, Android back through history, and the button out to a real
+      // browser. No toolbarType: buttonNearDone is rejected with any but the default.
+      ...BROWSING_TOOLBAR,
+    }).catch((e: unknown) => {
+      handoff.dispose();
+      throw e;
     });
+    handoff.bind(opened?.id);
     // The open call is done; the BROWSER is not. Hold the flag until it is.
     await shown.done;
   } catch (e) {
