@@ -154,6 +154,18 @@ describe('Sheet variant="screen"', () => {
     expect(screen.getByTestId('sheet-panel').className).toContain('var(--safe-top');
   });
 
+  // inset-0 reaches the physical bottom edge, which edge-to-edge Android puts
+  // under the 3-button bar: on a Galaxy A57 the subject drawer's Sylabus table
+  // could never scroll its last row out from under the buttons.
+  it('insets its content above the system navigation bar', () => {
+    render(
+      <Sheet size="full" variant="screen" onClose={() => {}}>
+        x
+      </Sheet>
+    );
+    expect(screen.getByTestId('sheet-panel').className).toContain('pb-[var(--safe-bottom');
+  });
+
   // No dimmed layer: there is nothing behind a screen to see through to.
   it('renders no backdrop', () => {
     render(
