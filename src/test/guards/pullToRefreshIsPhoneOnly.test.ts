@@ -13,6 +13,11 @@ import { describe, expect, it } from 'vitest';
  * `triggerExamsRefresh`. The desktop calendar has no manual refresh at all —
  * that is a known gap, not a choice made here.
  *
+ * The phone tree meets a mouse too: the iPad app on a Mac reports
+ * `pointer: fine` and no pull reaches it, so there `RefreshButton` is a visible
+ * circle among the header actions instead of `sr-only`. That is the same
+ * answer the desktop gives — a control, not a gesture — inside the phone tree.
+ *
  * A subject's Files tab pulls too (SubjectDrawerScroller). Its desktop twin is
  * FilesFreshness, the refresh circle in the drawer header, and both call the
  * same `refreshFilesForSubject` — so what a refresh keeps and adds is one rule
