@@ -1,3 +1,7 @@
+---
+description: Cut a reIS release — version bump on test, the test→main release PR, the vX.Y.Z tag, and the iOS build. The extension store publish is a separate manual step.
+---
+
 # /release
 
 Ships a release off `test`: version bump → release PR into `main` → merge tags

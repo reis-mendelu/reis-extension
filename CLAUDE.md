@@ -35,8 +35,8 @@ returns true on `isNativeApp` before any width test, so "the iPad version"
 always means `src/components/mobile/`. An iPad is 834pt wide and would
 otherwise get the desktop layout, which is never exercised on a device.
 `useWideViewport` is the only tablet-vs-phone branch **in JS** — but the layout
-also branches in CSS: 56 `md:`/`lg:` utilities across 5 files in the mobile
-tree. So implementing on the phone tree gives you the iPad, but **verify the
+also branches in CSS, through the `md:`/`lg:` utilities in the mobile tree.
+So implementing on the phone tree gives you the iPad, but **verify the
 tablet width too** (the `verify-ui` skill).
 
 ### The rule
@@ -77,13 +77,13 @@ capability" is a valid answer that ends the turn.
 
 ## Multi-Repo Organization
 
-Five repos live as siblings under `../`: **reis-extension** (this repo), **reis-scraper**, **reis-data**, **reis-admin**, **reis-page**.
+Four repos sit side by side, next to the **main checkout**: **reis-extension** (this repo), **reis-scraper**, **reis-data**, **reis-page**. The admin console is not a sibling repo; it lives here, in `src/components/AdminConsole/`. `../` in this file and in `/repos` means relative to the main checkout. From a worktree, `../` is inside `.claude/worktrees/`, so resolve a sibling as `"$(git rev-parse --path-format=absolute --git-common-dir)/../../reis-scraper"`.
 
 **Subject difficulty pipeline:** `reis-scraper` crawls IS Mendelu → exports JSON → committed to `reis-data` → served via jsDelivr CDN → extension fetches at runtime (`src/api/successRate.ts`, `src/api/erasmus.ts`).
 
 **Supabase** is separate — the extension uses it directly for notifications. Not related to scraper or reis-data.
 
-When a task involves IS Mendelu data, a new scraper, or the CDN data shape: read `../reis-scraper/scripts/` for patterns and `../reis-scraper/db/schema.sql` for the data model before designing anything. Scraper tasks run via a dedicated sub-agent. Use `/repos` for full detail.
+When a task involves IS Mendelu data, a new scraper, or the CDN data shape: read `../reis-scraper/scripts/` for patterns and `../reis-scraper/db/schema.sql` for the data model before designing anything. Use `/repos` for full detail.
 
 ## Local dev, release, and commands
 
@@ -129,27 +129,27 @@ vitest's worker handshake times out before a test file loads; `--no-file-paralle
 
 `.claude/hooks/worktree-bootstrap.sh` gives each worktree its own `node_modules`
 by APFS-cloning the main checkout's (copy-on-write: instant, and near-zero disk
-until the trees diverge). **So `npm ci` in a worktree is safe** — it touches
-nothing but that worktree.
+until the trees diverge). A cloned `node_modules` belongs to the worktree, so
+`npm ci` there touches nothing else.
 
-It used to symlink instead, and that is a trap worth remembering: sharing one
-install is fine while every session only reads it, and destroys every session at
-once the moment one runs `npm ci`, because that deletes and rebuilds the whole
-tree. Two sessions doing it concurrently leave every worktree half-installed and
-npm dying on `ENOTEMPTY`. If the hook ever reports `node_modules is SHARED`
-(clonefile unavailable), believe it and do not install from the worktree.
+Check `test -L node_modules` before installing. A symlink means the install is
+shared with the main checkout, either because clonefile was unavailable (the
+hook then prints `node_modules is SHARED`) or because the worktree predates
+cloning (the hook leaves a working symlink alone, silently). Do not install
+through a symlink: a shared install is rebuilt under every session at once, and
+two concurrent installs leave every worktree half-installed, with npm failing on
+`ENOTEMPTY`.
 
 The dev snapshot and `.env` are still symlinks, deliberately: they are read and
 never rewritten, so a fresh scrape in the main checkout reaches every worktree.
 
 ### Secrets
 
-Local secrets live in `.env` (gitignored; `.env.example` is the template).
-**Infisical is no longer used** — the `with-secrets.mjs` wrapper and
-`.infisical.json` are gone, and every consumer now reads `.env` itself:
-`dev/adminSessionPlugin.ts` and `scripts/scrape-real-data.ts` via `dotenv/config`,
-`scripts/release-ios.ts` explicitly, and the Vite builds through `envDir` for
-`VITE_*`. So: **just run the npm script**, with no wrapper in front of it.
+Local secrets live in `.env` (gitignored; `.env.example` is the template), and
+every consumer reads it itself: `dev/adminSessionPlugin.ts` and
+`scripts/scrape-real-data.ts` via `dotenv/config`, `scripts/release-ios.ts`
+explicitly, and the Vite builds through `envDir` for `VITE_*`. There is no
+secrets wrapper, so run the npm script directly.
 
 Testing the admin console against real Supabase needs exactly two keys in
 `.env`: `REIS_ADMIN_EMAIL` and `REIS_ADMIN_PASSWORD` (`dev/adminSessionPlugin.ts`).
@@ -252,7 +252,7 @@ In the extension, reIS injects **one** host, `is.mendelu.cz`, over a
 **content script** (runs on the host page, has auth cookies) and the **iframe
 app** (chrome-extension:// origin, no auth cookies). Data always flows content script → iframe, never the reverse. File/role tables: `src/injector/CLAUDE.md`.
 
-A second host (WebISKAM, `webiskam.mendelu.cz`) existed until the integration was removed. If you add another host, `src/injector/CLAUDE.md` has the checklist and the isolation rules it has to satisfy — a separate store, a `<HOST>_*` message family, and its origin added to `utils/trustedOrigin.ts`.
+If you add a second host, `src/injector/CLAUDE.md` has the checklist and the isolation rules it has to satisfy — a separate store, a `<HOST>_*` message family, and its origin added to `utils/trustedOrigin.ts`.
 
 ## Error Reporting & Privacy
 
@@ -262,11 +262,10 @@ service, no opt-out toggle (nothing to opt out of), and no Supabase table or RPC
 behind it — `error_reports`, `error_groups`, `report_error` and
 `report_error_v2` were all dropped in `supabase/migrations/20260904120000_drop_error_telemetry.sql`.
 
-`logError(context, err, extra?)` (`src/utils/reportError.ts`) is still the single
-funnel for non-fatal errors, and is still worth calling — it is now purely a
-local `console.error` with the stack and any `extra`. Context naming convention
-is unchanged: `Slice.method`, `Api.fetchX`, `Sync.stepY`, `Parser.parseX`,
-`useHookName.action`.
+`logError(context, err, extra?)` (`src/utils/reportError.ts`) is the single
+funnel for non-fatal errors. It writes a local `console.error` with the stack and
+any `extra`. Context naming: `Slice.method`, `Api.fetchX`, `Sync.stepY`,
+`Parser.parseX`, `useHookName.action`.
 
 **Do not reintroduce transmission.** `src/test/guards/noStudentDataLeaves.test.ts`
 fails on `sendTelemetry`, `initTelemetry`, `report_error` or `report_error_v2`
