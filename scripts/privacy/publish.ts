@@ -67,7 +67,10 @@ function publishPlay(): void {
 
 // Both writes need ElijaahInverted: it owns the gist, and the work account is an
 // EMU that cannot dispatch workflows on this repo. Always switched back.
-const previous = run('gh', ['api', 'user', '--jq', '.login']);
+// The active account is read from gh's local config, not `gh api user`: the
+// work account is often over its API rate limit, and that call then aborted the
+// publish before the switch (release 5.3.0).
+const previous = run('gh', ['config', 'get', '-h', 'github.com', 'user']);
 try {
   run('gh', ['auth', 'switch', '--user', 'ElijaahInverted']);
   if (!has('--skip-gist')) publishGist();
