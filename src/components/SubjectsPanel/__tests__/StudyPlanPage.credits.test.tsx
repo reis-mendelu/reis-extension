@@ -69,7 +69,6 @@ describe('study plan — credits and group headings', () => {
 
   it('prints each subject credits legibly, not as faint filler', () => {
     renderSection();
-    // Both copies — under the name on a phone, the column from `md` up.
     for (const credits of screen.getAllByText('6 kr.')) {
       expect(credits.className).toMatch(/font-semibold/);
       expect(credits.className).not.toMatch(/text-base-content\/70/);

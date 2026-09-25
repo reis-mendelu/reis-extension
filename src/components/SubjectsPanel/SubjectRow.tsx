@@ -12,6 +12,7 @@ import { isZameraniCode } from './utils';
 import { resolvePredmetId } from './resolvePredmetId';
 import { failRateTone } from './failRateTone';
 import { FailRatePill } from './FailRatePill';
+import { SubjectCredits } from './SubjectCredits';
 
 interface SubjectRowProps {
   subject: SubjectStatus;
@@ -43,17 +44,6 @@ function zameraniAcronym(norm: string): string {
     .join('');
 }
 
-// IS Mendelu uses 999 as a sentinel "credits unknown / pass-through" value.
-const isSentinelCredits = (credits: number) => credits >= 999;
-
-// Credits go under the name on a phone and in their own column from `md` up.
-// At the end of the row, 320px cost every name 33px and clipped seven more of
-// them ("Management", "Počítačové sítě"); a second line costs 13px of height.
-const creditsLineCls =
-  'md:hidden text-[11px] leading-none font-semibold text-base-content/80 mt-0.5';
-const creditsColumnCls =
-  'hidden md:inline text-xs font-semibold text-base-content/80 shrink-0 whitespace-nowrap';
-
 export function SubjectRow({
   subject,
   compact,
@@ -78,8 +68,6 @@ export function SubjectRow({
   const displayName = useCourseName(subject.code, subject.name);
   const timeline = useTimeline(subject.code);
   const isZamerani = isZameraniCode(subject.code);
-  const showCredits = !isSentinelCredits(subject.credits) && !isZamerani;
-  const creditsLabel = `${subject.credits} ${t('subjects.creditsShort')}`;
   const typeLabel = subject.type?.trim();
   const zameraniMembership = subjectToZameranis?.get(subject.code);
   const zameraniTag = zameraniMembership?.length ? zameraniAcronym(zameraniMembership[0]) : null;
@@ -148,7 +136,7 @@ export function SubjectRow({
         >
           <span className="flex-1 min-w-0 flex flex-col">
             <span className="text-sm font-medium truncate">{displayName}</span>
-            {showCredits && <span className={creditsLineCls}>{creditsLabel}</span>}
+            {!isZamerani && <SubjectCredits credits={subject.credits} />}
           </span>
           {timeline && (
             <span className="text-[9px] font-bold text-[var(--tone-primary)] shrink-0">
@@ -157,7 +145,6 @@ export function SubjectRow({
           )}
           {badgeEl}
           {typeEl}
-          {showCredits && <span className={creditsColumnCls}>{creditsLabel}</span>}
           <span className="flex items-center gap-1 shrink-0">
             {subject.isFulfilled ? (
               <>
@@ -258,7 +245,7 @@ export function SubjectRow({
       >
         <div className="flex-1 min-w-0 flex flex-col">
           <span className="text-sm truncate font-medium">{displayName}</span>
-          {showCredits && <span className={creditsLineCls}>{creditsLabel}</span>}
+          {!isZamerani && <SubjectCredits credits={subject.credits} />}
           {timeline && (
             <div className="flex items-center gap-1 text-[10px] font-bold text-[var(--tone-primary)] mt-0.5">
               <Timer size={10} />
@@ -282,7 +269,6 @@ export function SubjectRow({
             {zameraniTag}
           </span>
         )}
-        {showCredits && <span className={creditsColumnCls}>{creditsLabel}</span>}
         {subject.isFulfilled && subject.fulfillmentDate ? (
           <span className="flex items-center gap-1.5 text-[11px] shrink-0">
             <CheckCircle2 className="w-4 h-4 text-success/50" />
