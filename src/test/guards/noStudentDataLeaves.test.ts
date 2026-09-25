@@ -56,6 +56,15 @@ const SUPABASE_CALLERS = new Set([
   // the submit-suggestion edge function. Only the transport changed (fetch ->
   // supabase.rpc), which is why the guard newly matches it; the privacy posture
   // is unchanged.
+  //
+  // Since September 2026 (submit_suggestion_v2) a report may also carry what
+  // the STUDENT chose to attach: a screenshot they picked, re-encoded on the
+  // device (no EXIF/GPS), and — only if they tick an unticked-by-default box —
+  // the cleaned diagnostic log they were shown and could prune line by line.
+  // The file receives both as arguments; it does not gather them, and no
+  // Supabase caller may import the diagnostic log (see the test below).
+  // Disclosed in PRIVACY.md section 4 and docs/privacy-policy-app.md BEFORE
+  // this note was written. No install id is sent with a report.
   'src/api/suggestions.ts',
   // Random install id only. Reads take no identity argument at all.
   'src/api/eventRsvp.ts',
@@ -293,6 +302,41 @@ describe('no student data leaves the device', () => {
         `this test:\n` +
         offenders.join('\n')
     ).toEqual([]);
+  });
+
+  // The one sanctioned exception to "nothing about a failure leaves": the
+  // student attaches it to a report themselves. These two tests keep it the
+  // ONLY path. Diagnostics may reach Supabase through submit_suggestion_v2 and
+  // nowhere else, and no file that talks to Supabase may read the log itself —
+  // so it can only ever arrive as what the report form was handed.
+  it('sends diagnostics only through the report form, as the student chose', () => {
+    const offenders: string[] = [];
+    for (const f of files) {
+      if (f.path === 'src/api/suggestions.ts') continue;
+      if (/submit_suggestion_v2|p_diagnostics|p_screenshot/.test(f.text)) {
+        offenders.push(`${f.path} → names the attachment RPC`);
+      }
+    }
+    for (const f of files) {
+      if (!SUPABASE_CALLERS.has(f.path)) continue;
+      if (/from\s+['"][^'"]*utils\/diagnostics\//.test(f.text)) {
+        offenders.push(`${f.path} → imports the diagnostic log`);
+      }
+    }
+    expect(
+      offenders,
+      `Diagnostics are leaving by a path the student did not choose. The only ` +
+        `sanctioned route is FeedbackModal → submitSuggestion(draft, attachments) ` +
+        `→ submit_suggestion_v2, and only after the student ticks the box:\n` +
+        offenders.join('\n')
+    ).toEqual([]);
+  });
+
+  it('never keeps a stack or logError extras in the diagnostic log', () => {
+    const src = readFileSync(join(SRC, 'utils/diagnostics/diagnosticLog.ts'), 'utf-8');
+    const entry = src.slice(src.indexOf('export interface DiagnosticEntry'));
+    const body = entry.slice(0, entry.indexOf('}'));
+    expect(body).not.toMatch(/\bstack\b|\bextra\b/);
   });
 
   /**

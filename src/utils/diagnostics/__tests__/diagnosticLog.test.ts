@@ -91,4 +91,11 @@ describe('diagnostic log', () => {
     recordDiagnostic({ level: 'warn', ctx: null, msg: 'a' });
     expect('status' in getDiagnostics()[0]!).toBe(false);
   });
+
+  it('keeps only the documented fields, never a stack', () => {
+    recordDiagnostic({ level: 'error', ctx: 'X', msg: new Error('e'), status: 500 });
+    expect(Object.keys(getDiagnostics()[0]!).sort()).toEqual(
+      ['ctx', 'level', 'msg', 'source', 'status', 't'].sort()
+    );
+  });
 });

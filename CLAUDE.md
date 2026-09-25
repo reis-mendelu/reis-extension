@@ -256,15 +256,18 @@ If you add a second host, `src/injector/CLAUDE.md` has the checklist and the iso
 
 ## Error Reporting & Privacy
 
-**reIS transmits nothing about a failure.** No error type, message, stack, file
-path or session id leaves a device, on any platform. There is no error-reporting
-service, no opt-out toggle (nothing to opt out of), and no Supabase table or RPC
-behind it — `error_reports`, `error_groups`, `report_error` and
+**reIS transmits nothing about a failure on its own.** No error type, message,
+stack, file path or session id leaves a device unless the student attaches it to
+a report (item 6 below). There is no error-reporting service, no background
+collection, and no Supabase table or RPC behind one — `error_reports`, `error_groups`, `report_error` and
 `report_error_v2` were all dropped in `supabase/migrations/20260904120000_drop_error_telemetry.sql`.
 
 `logError(context, err, extra?)` (`src/utils/reportError.ts`) is the single
 funnel for non-fatal errors. It writes a local `console.error` with the stack and
-any `extra`. Context naming: `Slice.method`, `Api.fetchX`, `Sync.stepY`,
+any `extra`, and keeps a cleaned copy (context, status, first line of the
+message — never the stack or `extra`) in the in-memory ring buffer
+`src/utils/diagnostics/diagnosticLog.ts`. That file **imports nothing**: it is in
+the content script's graph (`contentScriptGraph.test.ts` enforces it). Context naming: `Slice.method`, `Api.fetchX`, `Sync.stepY`,
 `Parser.parseX`, `useHookName.action`.
 
 **Do not reintroduce transmission.** `src/test/guards/noStudentDataLeaves.test.ts`
@@ -294,6 +297,13 @@ Only these, all disclosed in `docs/privacy-policy-app.md`:
 5. **Map views per event** (same file) — a society event's row id and *no* identifier at all,
    rolled up per event per day in `event_map_views`, kept clear of the Novinky `view_count`.
    The server stamps the date; the request carries only the event id.
+
+6. **Report attachments** (`submit_suggestion_v2`, September 2026) — only what the student
+   adds to a report: a screenshot they pick (re-encoded to JPEG on device, no EXIF/GPS) and,
+   if they tick an unticked-by-default box, the cleaned diagnostic log they were shown and
+   could prune. No install id. Deleted after 90 days or on `done` (pg_cron + a trigger).
+   The guard allows diagnostics to reach Supabase through `src/api/suggestions.ts` only, and
+   no Supabase caller may import `utils/diagnostics/`.
 
 4 and 5 are deliberately **unjoinable**: nothing records which event a given install looked
 at, because that pairing would be a behavioural profile. Keep it that way.
