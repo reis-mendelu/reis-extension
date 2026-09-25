@@ -39,6 +39,10 @@ yourself — see *Report attachments* below.
 | eduroam network configured | the app itself saves the eduroam network (phone) | the random install identifier and the fixed `eduroam_wifi_configured` label |
 | eduroam profile handed over | a profile is prepared for you to install (Mac, Windows) | the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it |
 
+In the Firefox extension each of these is optional and Firefox asks you for it:
+the usage count and counters follow the technical-data switch in `about:addons`,
+and a report asks for consent when you press send.
+
 Nothing else. Feedback is read by the developers and passed to nobody. Report
 attachments are deleted **90 days** after the report, or as soon as it is
 resolved, whichever comes first.

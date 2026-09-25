@@ -272,7 +272,8 @@
     "screenshotFailed": "Tenhle obrázek se nepodařilo zpracovat.",
     "screenshotDropped": "Zpráva odešla, ale snímek se nepodařilo uložit.",
     "attachDiagnostics": "Přiložit technické údaje",
-    "diagnosticsHint": "Chyby a varování z této relace, bez odkazů, e-mailů, dlouhých čísel a souřadnic. Pomůže nám to najít příčinu."
+    "diagnosticsHint": "Chyby a varování z této relace, bez odkazů, e-mailů, dlouhých čísel a souřadnic. Pomůže nám to najít příčinu.",
+    "consentDeclined": "Firefox odeslání nepovolil, takže zpráva neodešla. Souhlas můžeš dát při dalším pokusu."
   },
   "course": {
     "setNickname": "Nastavit přezdívku",
