@@ -1,4 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+const logError = vi.fn();
+vi.mock('../../reportError', () => ({ logError: (...a: unknown[]) => logError(...a) }));
+
 import { encodeScreenshot, SCREENSHOT_MAX_BYTES, type ScreenshotCodec } from '../encodeScreenshot';
 
 function codec(sizes: (w: number, q: number) => number, dims = { width: 4000, height: 3000 }) {
@@ -51,5 +54,37 @@ describe('encodeScreenshot', () => {
       render: vi.fn(),
     };
     expect(await encodeScreenshot(file, c)).toBeNull();
+  });
+
+  describe('decoder fallback', () => {
+    beforeEach(() => logError.mockReset());
+
+    const failing: ScreenshotCodec = {
+      measure: async () => {
+        throw new Error('The source image could not be decoded.');
+      },
+      render: vi.fn(),
+    };
+
+    it('falls back to the next decoder when one throws, and logs why', async () => {
+      const { c } = codec(() => 1000);
+      const out = await encodeScreenshot(file, [failing, c]);
+      expect(out?.bytes).toBe(1000);
+      expect(logError).toHaveBeenCalledTimes(1);
+      expect(logError.mock.calls[0]![0]).toBe('encodeScreenshot');
+    });
+
+    it('logs every failed decoder and returns null when none works', async () => {
+      expect(await encodeScreenshot(file, [failing, failing])).toBeNull();
+      expect(logError).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not try another decoder just because the image cannot be made small enough', async () => {
+      const big = codec(() => SCREENSHOT_MAX_BYTES + 1);
+      const spare = codec(() => 10);
+      expect(await encodeScreenshot(file, [big.c, spare.c])).toBeNull();
+      expect(spare.c.measure).not.toHaveBeenCalled();
+      expect(logError).not.toHaveBeenCalled();
+    });
   });
 });
