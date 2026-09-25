@@ -82,6 +82,7 @@ describe('DayBody — tapping a custom event', () => {
       <DayBody
         agenda={[{ type: 'event', lesson }]}
         selectedIso={DAY}
+        lessonDates={new Set()}
         holiday={null}
         outsideTeaching={false}
         teachingStartsOn={null}

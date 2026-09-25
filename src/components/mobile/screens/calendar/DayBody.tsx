@@ -3,7 +3,7 @@ import type { AgendaRow } from '../../../../utils/mobile/dayAgenda';
 import { useAppStore } from '../../../../store/useAppStore';
 import { subjectSheetFor } from '../../../../utils/mobile/lessonActions';
 import { eventIdFromRsvpBlock } from '../../../../utils/rsvpBlocks';
-import { shiftIso } from '../../../../utils/mobile/weekDays';
+import { stepDay } from '../../../../utils/mobile/weekDays';
 import { DayAgenda } from './DayAgenda';
 import { CalendarEmptyDay } from './CalendarEmptyDay';
 import { RecentFilesStrip } from './RecentFilesStrip';
@@ -16,6 +16,8 @@ import { PullRefreshIndicator } from '../../primitives/PullRefreshIndicator';
 export interface DayBodyProps {
   agenda: AgendaRow[];
   selectedIso: string;
+  /** The same set the strip gets, so a swipe lands only on days it shows. */
+  lessonDates: ReadonlySet<string>;
   holiday: string | null;
   outsideTeaching: boolean;
   teachingStartsOn: Date | null;
@@ -60,6 +62,7 @@ export interface DayBodyProps {
 export function DayBody({
   agenda,
   selectedIso,
+  lessonDates,
   holiday,
   outsideTeaching,
   teachingStartsOn,
@@ -99,7 +102,9 @@ export function DayBody({
     onEnd: (steps) => {
       setOffset(null);
       // ONE day, not seven: the unit is the caller's, and this is the day view.
-      if (steps !== 0) onSelectDay(shiftIso(selectedIso, steps));
+      // A day the strip shows, so a weekend the student is never taught on is
+      // stepped over rather than landed on.
+      if (steps !== 0) onSelectDay(stepDay(selectedIso, steps, lessonDates));
     },
     onCancel: () => setOffset(null),
   });

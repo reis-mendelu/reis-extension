@@ -223,6 +223,7 @@ export function CalendarScreen() {
       <DayBody
         agenda={agenda}
         selectedIso={selectedIso}
+        lessonDates={lessonDates}
         holiday={holiday}
         outsideTeaching={outsideTeaching}
         teachingStartsOn={teachingStartsOn}

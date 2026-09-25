@@ -77,3 +77,21 @@ export function weekDays(selectedIso: string, lessonDates: ReadonlySet<string>):
     return date;
   }).filter((_, i) => i < 5 || (i === 5 && saturday) || (i === 6 && sunday));
 }
+
+/**
+ * One swipe of the agenda: the next (or previous) day the strip SHOWS.
+ *
+ * Plain `shiftIso(iso, ±1)` walked a full-time student from Friday onto an
+ * empty Saturday and Sunday that the strip above has no chip for. Asking
+ * `weekDays` for each candidate keeps the swipe and the strip one rule — and
+ * works from a hidden day too, since the calendar can open on a Saturday.
+ * Seven tries always suffice: Monday–Friday are shown in every week.
+ */
+export function stepDay(iso: string, steps: -1 | 1, lessonDates: ReadonlySet<string>): string {
+  let candidate = iso;
+  for (let i = 0; i < 7; i++) {
+    candidate = shiftIso(candidate, steps);
+    if (weekDays(candidate, lessonDates).some((d) => toIso(d) === candidate)) return candidate;
+  }
+  return shiftIso(iso, steps);
+}
