@@ -1,7 +1,7 @@
 import type { BlockLesson } from '../../../../types/calendarTypes';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
-import { roomCodeFor, routeSuggestionFor } from '../../../../utils/mobile/lessonActions';
+import { routeSuggestionFor } from '../../../../utils/mobile/lessonActions';
 import { CAMPUS_NAVIGATION_ENABLED } from '../../../../utils/routing/navigationEnabled';
 import { eventIdFromRsvpBlock } from '../../../../utils/rsvpBlocks';
 
@@ -34,7 +34,10 @@ export function useShowLessonOnMap(): (lesson: BlockLesson) => void {
       if (CAMPUS_NAVIGATION_ENABLED) suggestRoute(null);
       return;
     }
-    focusRoomByCode(roomCodeFor(lesson));
+    // The room exactly as IS printed it, campus and all: "ZFAC1 (Led)" is how
+    // a room with no floor plan finds its campus (lookupRoomPlace); the room
+    // lookup strips the bracket itself.
+    focusRoomByCode(lesson.room);
     // The camera move alone was the whole of this handler, and it left the
     // student looking at the right room with no way to be walked to it: the
     // map's own button asks the timetable what is next TODAY, which on a

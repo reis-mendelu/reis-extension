@@ -878,6 +878,8 @@
     "title": "Mapa",
     "searchPlaceholder": "Hledat místnost nebo místo…",
     "noFloorPlan": "Žádný plán podlaží není k dispozici.",
+    "noFloorPlanShort": "bez plánku podlaží",
+    "buildingNamed": "Budova {name}",
     "seats": "Míst",
     "projector": "Projektor",
     "whiteboard": "Tabule",

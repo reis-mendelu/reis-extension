@@ -26,7 +26,7 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
   // room MENDELU's map does not publish, would otherwise take the student to
   // an empty campus overview. An answered society event has one whenever it
   // has a coordinate.
-  const routable = currentPlace.onMap;
+  const routable = currentPlace.routable;
 
   return (
     <div

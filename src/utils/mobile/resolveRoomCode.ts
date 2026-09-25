@@ -1,6 +1,7 @@
 import roomsIndex from '../../data/map/rooms-index.json';
 import type { RoomIndexEntry } from '../../types/campusMap';
 import { lookupRoomEntry } from '../rooms/lookupRoom';
+import { isLabelForCode } from '../../data/map/isRoomLabels';
 
 const INDEX = roomsIndex as RoomIndexEntry[];
 
@@ -31,9 +32,13 @@ export function resolveRoomCode(candidates: (string | null | undefined)[]): Reso
   for (const raw of candidates) {
     const entry = lookupRoomEntry(raw, INDEX);
     if (entry) {
-      // The friendliest name the room has: a nickname ("A01") beats the
-      // printed name ("Q2.56"), which beats the estate code.
-      return { code: entry.code, label: entry.nickname || entry.name || entry.code };
+      // The friendliest name the room has: what IS prints for it ("B05 –
+      // Strojový sál"), then a nickname ("A01"), then the printed name
+      // ("Q2.56"), then the estate code.
+      return {
+        code: entry.code,
+        label: isLabelForCode(entry.code) || entry.nickname || entry.name || entry.code,
+      };
     }
   }
   return null;

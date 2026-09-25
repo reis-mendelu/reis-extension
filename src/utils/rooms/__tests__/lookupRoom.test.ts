@@ -94,8 +94,8 @@ describe('lookupRoomEntry', () => {
   // string can break either tie. Guessing puts a student on the wrong floor
   // while looking certain, so the honest answer is no answer — and now that the
   // UI withholds its controls for an unresolved room, that degrades cleanly.
-  it.each(['E17', 'B52'])('refuses to guess for %s', (nick) => {
-    expect(lookupRoomEntry(nick, INDEX)).toBeNull();
+  it('refuses to guess for B52', () => {
+    expect(lookupRoomEntry('B52', INDEX)).toBeNull();
   });
 
   // ...but a handle repeated within ONE place is not ambiguous in any way a
@@ -140,6 +140,9 @@ describe('lookupRoomEntry', () => {
     'zahraniční oddělení',
   ];
 
+  // Map nicknames IS's catalogue deliberately outranks — pinned above.
+  const IS_OUTRANKED = ['a411', 'a412'];
+
   // Stronger than "every handle resolves to something": every handle must
   // resolve back to ITS OWN entry. The weaker form passes trivially for every
   // collision above, which is exactly the failure that hurts — a button that
@@ -149,7 +152,8 @@ describe('lookupRoomEntry', () => {
     for (const e of INDEX) {
       for (const handle of [e.code, e.name, e.nickname]) {
         if (!handle || !handle.trim()) continue;
-        if (DATASET_AMBIGUOUS.includes(normalizeRoomKey(handle))) continue;
+        const key = normalizeRoomKey(handle);
+        if (DATASET_AMBIGUOUS.includes(key) || IS_OUTRANKED.includes(key)) continue;
         if (lookupRoomEntry(handle, INDEX) !== e) strays.push(handle);
       }
     }

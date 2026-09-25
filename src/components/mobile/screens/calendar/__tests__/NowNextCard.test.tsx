@@ -168,10 +168,14 @@ describe('NowNextCard route button', () => {
     expect(screen.getByRole('button', { name: /Trasa/ })).toBeInTheDocument();
   });
 
-  it.each(['ZFAC1', 'B Virtuální 6'])('withholds the route for a running lesson in %s', (room) => {
-    render(<NowNextCard data={withCurrentRoom(room)} onRoute={() => {}} />);
-    expect(screen.queryByRole('button')).toBeNull();
-  });
+  // T18 and ZFAC1 have a building on the map but no walk to them.
+  it.each(['T18', 'ZFAC1', 'B Virtuální 6', 'ucebna_utechov (Sob)'])(
+    'withholds the route for a running lesson in %s',
+    (room) => {
+      render(<NowNextCard data={withCurrentRoom(room)} onRoute={() => {}} />);
+      expect(screen.queryByRole('button')).toBeNull();
+    }
+  );
 
   // The next lesson's room is not what the button answers for, so a routable
   // next lesson must not conjure the button over an unroutable running one.

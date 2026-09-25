@@ -192,7 +192,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
         // room for the desktop's side-by-side drawer, and the reader needs every
         // pixel. Back closes the reader first, the drawer second.
         <div
-          className="absolute inset-0 z-20 flex flex-col bg-base-100 pt-[var(--safe-top,0px)]"
+          className="absolute inset-0 z-20 flex flex-col bg-base-100 pb-[var(--safe-bottom,0px)] pt-[var(--safe-top,0px)]"
           data-testid="mobile-pdf-preview-overlay"
         >
           {/* min-h-0 so the viewer's own scroll container can shrink inside

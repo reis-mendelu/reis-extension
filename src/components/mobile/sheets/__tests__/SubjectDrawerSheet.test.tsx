@@ -300,6 +300,18 @@ describe('SubjectDrawerSheet — previewing a file before downloading it', () =>
     expect(await screen.findByTestId('mobile-pdf-preview')).toBeInTheDocument();
   });
 
+  // The overlay is absolute inset-0 inside the panel, so it fills the panel's
+  // padding box: the panel's safe-area padding does not reach it, and it has to
+  // carry both insets itself or the reader's bottom sits under the nav bar.
+  it('keeps the previewed PDF clear of the system bars', async () => {
+    renderSheet();
+    fireEvent.click(screen.getByText('Prednaska01.pdf'));
+    await screen.findByTestId('mobile-pdf-preview');
+    const overlay = screen.getByTestId('mobile-pdf-preview-overlay');
+    expect(overlay.className).toContain('pt-[var(--safe-top');
+    expect(overlay.className).toContain('pb-[var(--safe-bottom');
+  });
+
   it('still downloads a file it cannot preview', () => {
     renderSheet();
     fireEvent.click(screen.getByText('Data.xlsx'));
