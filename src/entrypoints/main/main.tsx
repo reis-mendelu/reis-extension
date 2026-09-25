@@ -13,6 +13,7 @@ import '@/utils/devFeatures'; // Register window.toggleDevFeatures
 import App from '@/App.tsx';
 import { AppShell } from '@/components/AppShell';
 import { installExternalLinkHandler } from '@/mobile/openExternal';
+import { installConsoleCapture } from '@/utils/diagnostics/consoleCapture';
 
 // At module load, before the first render, because a `target="_blank"` anchor
 // does NOTHING on its own inside the Capacitor WebView: there is no tab to open
@@ -25,6 +26,11 @@ import { installExternalLinkHandler } from '@/mobile/openExternal';
 // Not in an effect: MobileBulletinOverlay portals to document.body, outside the
 // React tree, and its links are among the first things a student can tap.
 installExternalLinkHandler();
+
+// Keeps recent console warnings and errors in memory for the report form, which
+// sends them only if the student ticks "Přiložit technické údaje". This entry
+// runs on every host (extension iframe, Capacitor, dev webapp).
+installConsoleCapture();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

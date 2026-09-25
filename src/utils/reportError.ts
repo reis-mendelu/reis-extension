@@ -14,6 +14,11 @@
 // Supabase RPC; that path is gone, along with the tables behind it. If you are
 // adding transmission back, `src/test/guards/noStudentDataLeaves.test.ts` is
 // where the decision is enforced, and it will fail first.
+//
+// It does keep a cleaned copy in `diagnostics/diagnosticLog` — memory only —
+// which the report form attaches when, and only when, the student opts in.
+
+import { recordDiagnostic, asLogErrorConsoleCall } from './diagnostics/diagnosticLog';
 
 /**
  * Returns true when it has handled the error and logError should stop.
@@ -57,5 +62,14 @@ export function logError(context: string, err: unknown, extra?: Record<string, u
   const payload: Record<string, unknown> = { context, msg };
   if (stack) payload.stack = stack;
   if (extra) Object.assign(payload, extra);
-  console.error(`[reIS:error] ${context}: ${msg}`, payload);
+  // Kept in memory for the report form, which sends it only if the student
+  // ticks "Přiložit technické údaje". Context, message and status only — the
+  // stack and `extra` stay in the console.
+  recordDiagnostic({ level: 'error', ctx: context, msg: err, status: statusOf(err) });
+  asLogErrorConsoleCall(() => console.error(`[reIS:error] ${context}: ${msg}`, payload));
+}
+
+function statusOf(err: unknown): number | undefined {
+  const s = (err as { status?: unknown } | null)?.status;
+  return typeof s === 'number' ? s : undefined;
 }
