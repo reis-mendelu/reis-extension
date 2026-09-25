@@ -16,7 +16,8 @@ import { GIST_ID, sameContent } from './gate';
 
 const args = process.argv.slice(2);
 const has = (f: string) => args.includes(f);
-const refArg = args[args.indexOf('--ref') + 1];
+const refAt = args.indexOf('--ref');
+const refArg = refAt === -1 ? undefined : args[refAt + 1];
 
 const run = (cmd: string, a: string[]) =>
   execFileSync(cmd, a, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'inherit'] }).trim();
