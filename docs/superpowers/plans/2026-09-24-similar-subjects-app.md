@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** When a subject has no success rates, the Úspěšnost tab says so honestly. If reis-data has `similar/<CODE>.json`, it lists up to three similar old subjects with the reasons they were offered, and lets the student preview one under a banner naming the other subject.
+**Goal:** When a subject has no success rates, the Úspěšnost tab says so honestly. If reis-data has `similar/<CODE>.json`, it lists up to three similar old subjects as rows like Předměty (the reasons in one phrase, and the old subject's fail-rate chip), and lets the student preview one under a line naming the other subject. The look is design A, approved 2026-09-25.
 
 **Architecture:**
 - **Data.** A schema and a fetcher in `src/api/`. A new Zustand slice, persisted in the IndexedDB `meta` store and stamped with the reis-data version like success rates. The success-rate slice triggers it when a subject comes back without stats.
@@ -28,17 +28,23 @@
   - each file under 200 lines;
   - direct imports.
 - **The nuia ratchet is per file.** `SuccessRateTab.tsx` is in `nuia-baseline.json`, and moving its body out makes it clean, so it must leave the baseline in the same commit. The new `SuccessRateView.tsx` must be clean, hence `stats[sIdx]!`.
-- **Copy (Czech):**
-  - "Zatím bez výsledků" / "Pro tento předmět zatím nemáme žádné výsledky." It must never claim "new subject": the app only knows that the file is missing.
-  - "Podobné předměty z minulých let"; "Náhled jiného předmětu"; "dříve zápočet, nyní zkouška" / "dříve zkouška, nyní zápočet"; "naposledy {year}".
+- **Copy (Czech, "ty" as elsewhere in reIS):**
+  - "Zatím bez výsledků", then either "reIS pro tento předmět zatím nemá žádné výsledky." or "Podívej se, jak dopadly podobné předměty z minulých let." It must never claim "new subject": the app only knows that the file is missing.
+  - "Podobné předměty" / "% neúspěšnost"; "Všechny: {note}"; "stejný {list}", where the list is "název, garant a vyučující"; "dříve zápočet, nyní zkouška" / "dříve zkouška, nyní zápočet"; "naposledy {year}"; "Výsledky jiného předmětu"; "Zpět".
+- **Design A:** reuse, don't invent.
+  - Rows as in Předměty, and the fail-rate chip from `computeFailRate` + `failRateTone`.
+  - The empty state as in "Zatím žádné předměty", with the icon disc only when there are no suggestions.
+  - The completion change as `text-[var(--tone-warning)]` text, said once when all suggestions share it.
+  - The list capped at `max-w-xl` and centred.
+  - No pills, no cards, no warning triangle.
 - **Locally:** run the touched tests and `npm run typecheck`. Leave repo-wide lint, format and the full test run to CI (CLAUDE.md). Exception: this plan changes `nuia-baseline.json`, so run `npm run nuia:gate` too.
 
 ## Proven 2026-09-24
 
 Every code block below ran in a throwaway worktree at `11c896d3`, and was then re-applied from this plan's text to a fresh checkout and run again:
-- 15 new tests green, alongside the existing `successRateFreshness` and `studyPlanSuccessRates` tests;
+- 17 new tests green, alongside the existing `successRateFreshness` and `studyPlanSuccessRates` tests;
 - `npm run typecheck`, `nuia:gate`, and ESLint `--max-warnings=0` clean, and Prettier clean on every touched file;
-- rendered on the phone tree with the scraper's real output for a B-RASZ first-year's 7 subjects (screenshots in the session).
+- rendered at 390 px (both themes) and 834 px (iPad) with the scraper's real output for a B-RASZ first-year's subjects (screenshots in the session).
 
 The tests were also broken on purpose: removing the store trigger fails "asks for similar subjects when the subject has no stats".
 
@@ -48,14 +54,14 @@ The tests were also broken on purpose: removing the store trigger fails "asks fo
 |---|---|
 | `src/types/schemas/similarSubjects.schema.ts` | zod schema and the `SimilarSuggestion` type. Structural: unknown reasons are kept. |
 | `src/api/similarSubjects.ts` | `fetchSimilarSubjects(code)`: a 404 gives `[]`, a malformed file throws. |
-| `src/store/slices/createSimilarSubjectsSlice.ts` | State, IndexedDB persistence, version stamping, errors routed to `logError`. |
+| `src/store/slices/createSimilarSubjectsSlice.ts` | State, IndexedDB persistence, version stamping, errors routed to `logError`; loads the suggested subjects' own stats for the chips. |
 | `src/store/slices/createSuccessRateSlice.ts` | Modify: the trigger on no stats. |
 | `src/store/types.ts`, `src/store/useAppStore.ts`, `src/services/storage/keys.ts` | Modify: slice type, composition, storage key. |
 | `src/components/SuccessRate/SuccessRateView.tsx` | Today's chart body, moved and taking `semesters` as a prop. |
-| `src/components/SuccessRate/similarLabels.ts` | Pure label logic: known reasons, the completion-change key, the stale year. |
-| `src/components/SuccessRate/SimilarSubjectsList.tsx` | The suggestion cards. |
-| `src/components/SuccessRate/PreviewBanner.tsx` | The banner above a preview. |
-| `src/components/SuccessRateTab.tsx` | The three-state router, plus the internal `SimilarPreview`. |
+| `src/components/SuccessRate/similarLabels.ts` | Pure label logic: known reasons, the reason phrase, the completion-change note (and whether it is shared), the stale year. |
+| `src/components/SuccessRate/SimilarSubjectsList.tsx` | The suggestion rows and their fail-rate chip. |
+| `src/components/SuccessRate/PreviewBanner.tsx` | The one line above a preview. |
+| `src/components/SuccessRateTab.tsx` | The three-state router, plus the internal `NoResults` and `SimilarPreview`. |
 | `src/i18n/locales/{cs,en}.json` | New `successRate.*` keys. |
 | `nuia-baseline.json` | Drop `src/components/SuccessRateTab.tsx`. |
 
@@ -216,7 +222,7 @@ git commit -m "feat(success-rate): schema and fetcher for reis-data similar/<COD
   - `IndexedDBService`, `logError`.
 - Produces:
   - store state `similarSubjects: Record<string, SimilarSuggestion[]>`: absent means not asked yet, `[]` means nothing to suggest;
-  - action `fetchSimilarSubjects(courseCode): Promise<void>`;
+  - action `fetchSimilarSubjects(courseCode): Promise<void>`, which also calls the existing `fetchSuccessRateBatch(codes)` for the suggested old subjects, so the rows' chips have stats;
   - storage key `STORAGE_KEYS.SIMILAR_SUBJECTS = 'reis_similar_subjects'` in the `meta` store. It's a generic key-value store; the `success_rates` store would drop this shape, because its schema is fail-closed.
 
 - [ ] **Step 1: Write the failing test**
@@ -282,6 +288,14 @@ describe('fetchSimilarSubjects', () => {
     expect(await IndexedDBService.get('meta', STORAGE_KEYS.SIMILAR_SUBJECTS)).toEqual({
       EKOE1: { suggestions: [EKO1R], cdnVersion: V1 },
     });
+  });
+
+  it("loads the suggested subjects' own stats, for their fail-rate chips", async () => {
+    serve({ 'similar/EKOE1': { courseCode: 'EKOE1', suggestions: [EKO1R] } });
+    const batch = vi.fn(async () => {});
+    useAppStore.setState({ fetchSuccessRateBatch: batch } as never);
+    await useAppStore.getState().fetchSimilarSubjects('EKOE1');
+    expect(batch).toHaveBeenCalledWith(['EKO1R']);
   });
 
   it('treats a 404 as nothing to suggest', async () => {
@@ -411,10 +425,14 @@ export const createSimilarSubjectsSlice: AppSlice<SimilarSubjectsSlice> = (set, 
   fetchSimilarSubjects: async (courseCode) => {
     if (inFlight.has(courseCode)) return;
     inFlight.add(courseCode);
-    const show = (suggestions: SimilarSuggestion[]) =>
+    const show = (suggestions: SimilarSuggestion[]) => {
       set((state) => ({
         similarSubjects: { ...state.similarSubjects, [courseCode]: suggestions },
       }));
+      // Each row shows the old subject's fail rate, so its stats load now,
+      // under its own code, through the path the Předměty list already uses.
+      if (suggestions.length) void get().fetchSuccessRateBatch(suggestions.map((x) => x.code));
+    };
     try {
       const hit = (await readCache())[courseCode];
       if (hit) show(hit.suggestions);
@@ -474,7 +492,7 @@ Do **not** add this trigger to `fetchSuccessRateBatch`. That path serves list ba
 - [ ] **Step 8: Run the new tests and the neighbours**
 
 Run: `npx vitest run src/store/slices/__tests__/similarSubjects.test.ts src/store/slices/__tests__/successRateFreshness.test.ts src/store/slices/__tests__/studyPlanSuccessRates.test.ts && npm run typecheck`
-Expected: all pass (6 new); typecheck is silent.
+Expected: all pass (7 new); typecheck is silent.
 
 - [ ] **Step 9: Prove the trigger test can fail**
 
@@ -502,9 +520,9 @@ git commit -m "feat(success-rate): fetch similar subjects when a subject has no 
   - `SimilarSuggestion`.
 - Produces:
   - `SuccessRateView({ semesters, facultyCode?, showIsBacklink })`;
-  - `SimilarSubjectsList({ suggestions, onPick })`;
+  - `SimilarSubjectsList({ suggestions, onPick })`, which reads `successRates[oldCode]` for its chips;
   - `PreviewBanner({ suggestion, onBack })`;
-  - `knownReasons`, `completionChangeKey`, `staleYear` from `similarLabels.ts`.
+  - `knownReasons`, `reasonPhrase`, `changeNote`, `sharedChangeNote`, `staleYear`, `displayName` from `similarLabels.ts`.
   - `SuccessRateTab`'s props are unchanged, so `DrawerTabBody` needs no edit.
 
 - [ ] **Step 1: Write the failing test**
@@ -516,7 +534,7 @@ import { SuccessRateTab } from './SuccessRateTab';
 import { useAppStore } from '../store/useAppStore';
 import type { SubjectSuccessRate } from '../types/documents';
 
-const rate = (courseCode: string, type: 'exam' | 'credit' = 'credit'): SubjectSuccessRate => ({
+const rate = (courseCode: string, pass: number, fail: number): SubjectSuccessRate => ({
   courseCode,
   lastUpdated: '2026-09-22T12:17:27.977Z',
   stats: [
@@ -524,17 +542,17 @@ const rate = (courseCode: string, type: 'exam' | 'credit' = 'credit'): SubjectSu
       semesterName: 'ZS 2025/2026 - ZF',
       semesterId: '794',
       year: 2025,
-      totalPass: 65,
-      totalFail: 2,
+      totalPass: pass,
+      totalFail: fail,
       sourceUrl: 'https://is.mendelu.cz/x',
-      type,
+      type: 'credit',
       terms: [
         {
           term: 'Všechny termíny',
           grades: { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, FN: 0 },
-          pass: 65,
-          fail: 2,
-          creditGrades: { zap: 65, nezap: 2, zapNedost: 0 },
+          pass,
+          fail,
+          creditGrades: { zap: pass, nezap: fail, zapNedost: 0 },
         },
       ],
     },
@@ -549,6 +567,7 @@ const EKO1R = {
   completionChanged: true,
   lastYear: 2025,
 };
+const EK1 = { ...EKO1R, code: 'EK1', nameCs: 'Ekologie I', lastYear: 2020 };
 const KLI = {
   code: 'KLI',
   nameCs: 'Klimatologie',
@@ -575,42 +594,60 @@ describe('SuccessRateTab', () => {
   beforeEach(() => seed({}));
 
   it("shows the subject's own stats when it has them", () => {
-    seed({ successRates: { TVKA1: rate('TVKA1') } });
+    seed({ successRates: { TVKA1: rate('TVKA1', 65, 2) } });
     render(<SuccessRateTab courseCode="TVKA1" />);
     expect(screen.getByText(/67 studentů/)).toBeTruthy();
-    expect(screen.queryByText('Podobné předměty z minulých let')).toBeNull();
+    expect(screen.queryByText('Podobné předměty')).toBeNull();
   });
 
   it('says there are no results yet, and offers nothing, without suggestions', () => {
     seed({ similarSubjects: { ZZZ1: [] } });
     render(<SuccessRateTab courseCode="ZZZ1" />);
     expect(screen.getByText('Zatím bez výsledků')).toBeTruthy();
-    expect(screen.queryByText('Podobné předměty z minulých let')).toBeNull();
+    expect(screen.getByText('reIS pro tento předmět zatím nemá žádné výsledky.')).toBeTruthy();
+    expect(screen.queryByText('Podobné předměty')).toBeNull();
   });
 
-  it('lists suggestions with their reasons, the completion change and a stale year', () => {
-    seed({ similarSubjects: { EKOE1: [EKO1R, KLI] } });
+  it('lists suggestions as rows: reasons in one phrase, the fail rate, a stale year', () => {
+    seed({
+      similarSubjects: { EKOE1: [EKO1R, KLI] },
+      successRates: { EKO1R: rate('EKO1R', 88, 12) },
+    });
     render(<SuccessRateTab courseCode="EKOE1" />);
-    expect(screen.getByText('Podobné předměty z minulých let')).toBeTruthy();
-    expect(screen.getAllByText('stejný garant')).toHaveLength(2);
-    expect(screen.getByText('stejný název')).toBeTruthy();
+    expect(screen.getByText('Podobné předměty')).toBeTruthy();
+    expect(screen.getByText('EKO1R, stejný název a garant')).toBeTruthy();
+    expect(screen.getByText('KLI, stejný garant, naposledy 2020/21')).toBeTruthy();
+    expect(screen.getByText('12%')).toBeTruthy();
+    // Only one of the two changed type, so the note sits on that row.
     expect(screen.getByText('dříve zápočet, nyní zkouška')).toBeTruthy();
-    expect(screen.getByText('naposledy 2020/21')).toBeTruthy();
+    expect(screen.queryByText(/Všechny:/)).toBeNull();
     expect(screen.queryByText(/someFutureReason/)).toBeNull();
   });
 
-  it('previews a suggestion under a banner, without giving the new subject its numbers', () => {
-    seed({ similarSubjects: { EKOE1: [EKO1R] }, successRates: { EKO1R: rate('EKO1R') } });
+  it('says a completion change once when every suggestion shares it', () => {
+    seed({ similarSubjects: { EKOE1: [EKO1R, EK1] } });
     render(<SuccessRateTab courseCode="EKOE1" />);
-    fireEvent.click(screen.getByRole('button', { name: /EKO1R/ }));
-    expect(screen.getByRole('status').textContent).toContain('Náhled jiného předmětu');
-    expect(screen.getByRole('status').textContent).toContain('EKO1R');
+    expect(screen.getByText('Všechny: dříve zápočet, nyní zkouška')).toBeTruthy();
+    expect(screen.queryByText('dříve zápočet, nyní zkouška')).toBeNull();
+  });
+
+  it('previews a suggestion under a line naming it, without giving the new subject its numbers', () => {
+    seed({
+      similarSubjects: { EKOE1: [EKO1R] },
+      successRates: { EKO1R: rate('EKO1R', 65, 2) },
+    });
+    render(<SuccessRateTab courseCode="EKOE1" />);
+    fireEvent.click(screen.getByRole('button', { name: /Ekologie I \(RSZ\)/ }));
+    const line = screen.getByRole('status').textContent ?? '';
+    expect(line).toContain('Výsledky jiného předmětu');
+    expect(line).toContain('EKO1R');
+    expect(line).toContain('dříve zápočet, nyní zkouška');
     expect(screen.getByText(/67 studentů/)).toBeTruthy();
     expect(useAppStore.getState().successRates.EKOE1).toBeUndefined();
 
-    fireEvent.click(screen.getByRole('button', { name: /Zpět/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Zpět' }));
     expect(screen.queryByRole('status')).toBeNull();
-    expect(screen.getByText('Podobné předměty z minulých let')).toBeTruthy();
+    expect(screen.getByText('Podobné předměty')).toBeTruthy();
   });
 
   it('does not carry a preview over to another subject that offers the same one', () => {
@@ -618,15 +655,15 @@ describe('SuccessRateTab', () => {
     // ZABAH and ZABIHY both offer KLI; the second must open on its list.
     seed({
       similarSubjects: { ZABAH: [KLI], ZABIHY: [KLI] },
-      successRates: { KLI: rate('KLI', 'exam') },
+      successRates: { KLI: rate('KLI', 40, 5) },
     });
     const { rerender } = render(<SuccessRateTab courseCode="ZABAH" />);
-    fireEvent.click(screen.getByRole('button', { name: /KLI/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Klimatologie/ }));
     expect(screen.getByRole('status')).toBeTruthy();
 
     rerender(<SuccessRateTab courseCode="ZABIHY" />);
     expect(screen.queryByRole('status')).toBeNull();
-    expect(screen.getByText('Podobné předměty z minulých let')).toBeTruthy();
+    expect(screen.getByText('Podobné předměty')).toBeTruthy();
   });
 });
 ```
@@ -634,7 +671,7 @@ describe('SuccessRateTab', () => {
 - [ ] **Step 2: Run it and watch it fail**
 
 Run: `npx vitest run src/components/SuccessRateTab.test.tsx`
-Expected: the "own stats" test passes against today's tab; the other four fail on missing text ("Zatím bez výsledků" and the rest).
+Expected: the "own stats" test passes against today's tab; the other five fail on missing text ("Zatím bez výsledků" and the rest).
 
 - [ ] **Step 3: Add the copy**
 
@@ -643,18 +680,23 @@ Merge into the `successRate` object of `src/i18n/locales/cs.json`, after `allTer
 ```json
 {
   "noResultsTitle": "Zatím bez výsledků",
-  "noResultsBody": "Pro tento předmět zatím nemáme žádné výsledky.",
-  "similarHeading": "Podobné předměty z minulých let",
-  "reason": {
-    "sameName": "stejný název",
-    "sameGuarantor": "stejný garant",
-    "sameTeachers": "stejní vyučující",
-    "sameLiterature": "společná literatura"
+  "noResultsBody": "reIS pro tento předmět zatím nemá žádné výsledky.",
+  "noResultsSimilar": "Podívej se, jak dopadly podobné předměty z minulých let.",
+  "similarHeading": "Podobné předměty",
+  "failRateColumn": "% neúspěšnost",
+  "allOfThem": "Všechny: {note}",
+  "same": "stejný {list}",
+  "and": " a ",
+  "reasonNoun": {
+    "sameName": "název",
+    "sameGuarantor": "garant",
+    "sameTeachers": "vyučující",
+    "sameLiterature": "literatura"
   },
   "wasCredit": "dříve zápočet, nyní zkouška",
   "wasExam": "dříve zkouška, nyní zápočet",
   "lastTaught": "naposledy {year}",
-  "previewOf": "Náhled jiného předmětu",
+  "previewOf": "Výsledky jiného předmětu",
   "back": "Zpět"
 }
 ```
@@ -664,18 +706,23 @@ Merge into the `successRate` object of `src/i18n/locales/cs.json`, after `allTer
 ```json
 {
   "noResultsTitle": "No results yet",
-  "noResultsBody": "We don't have any results for this subject yet.",
-  "similarHeading": "Similar subjects from past years",
-  "reason": {
-    "sameName": "same name",
-    "sameGuarantor": "same guarantor",
-    "sameTeachers": "same teachers",
-    "sameLiterature": "shared literature"
+  "noResultsBody": "reIS has no results for this subject yet.",
+  "noResultsSimilar": "See how similar subjects went in past years.",
+  "similarHeading": "Similar subjects",
+  "failRateColumn": "% failed",
+  "allOfThem": "All of them: {note}",
+  "same": "same {list}",
+  "and": " and ",
+  "reasonNoun": {
+    "sameName": "name",
+    "sameGuarantor": "guarantor",
+    "sameTeachers": "teachers",
+    "sameLiterature": "literature"
   },
   "wasCredit": "was a credit, now an exam",
   "wasExam": "was an exam, now a credit",
   "lastTaught": "last taught {year}",
-  "previewOf": "Preview of another subject",
+  "previewOf": "Results of another subject",
   "back": "Back"
 }
 ```
@@ -785,6 +832,8 @@ export function SuccessRateView({
 ```ts
 import type { SimilarSuggestion } from '../../types/schemas/similarSubjects.schema';
 
+type T = (key: string, params?: Record<string, string | number>) => string;
+
 /** Reasons the UI knows how to say; an unknown one from a newer file is skipped. */
 export const KNOWN_REASONS = [
   'sameName',
@@ -796,13 +845,29 @@ export const KNOWN_REASONS = [
 export const knownReasons = (s: SimilarSuggestion) =>
   KNOWN_REASONS.filter((r) => s.reasons.includes(r));
 
-/** i18n key for a completion change, from the OLD subject's type. */
-export const completionChangeKey = (s: SimilarSuggestion): string | null =>
-  !s.completionChanged || !s.completion
-    ? null
-    : s.completion === 'credit'
-      ? 'successRate.wasCredit'
-      : 'successRate.wasExam';
+/** "stejný název, garant a vyučující": one phrase instead of a pill per reason. */
+export function reasonPhrase(s: SimilarSuggestion, t: T): string {
+  const nouns = knownReasons(s).map((r) => t(`successRate.reasonNoun.${r}`));
+  if (!nouns.length) return '';
+  const list =
+    nouns.length === 1
+      ? nouns[0]!
+      : `${nouns.slice(0, -1).join(', ')}${t('successRate.and')}${nouns[nouns.length - 1]!}`;
+  return t('successRate.same', { list });
+}
+
+/** The completion change, from the OLD subject's type: "dříve zápočet, nyní zkouška". */
+export function changeNote(s: SimilarSuggestion, t: T): string | null {
+  if (!s.completionChanged || !s.completion) return null;
+  return t(s.completion === 'credit' ? 'successRate.wasCredit' : 'successRate.wasExam');
+}
+
+/** Said once above the list when every suggestion carries the same change. */
+export function sharedChangeNote(list: SimilarSuggestion[], t: T): string | null {
+  const notes = list.map((s) => changeNote(s, t));
+  const first = notes[0];
+  return list.length > 1 && first && notes.every((n) => n === first) ? first : null;
+}
 
 /** "2020/21" when the old subject last ran before last academic year, else null. */
 export function staleYear(lastYear: number | null, now = new Date()): string | null {
@@ -811,17 +876,43 @@ export function staleYear(lastYear: number | null, now = new Date()): string | n
   if (lastYear >= currentStart - 1) return null;
   return `${lastYear}/${String((lastYear + 1) % 100).padStart(2, '0')}`;
 }
+
+export const displayName = (s: SimilarSuggestion, language: string) =>
+  language === 'en' && s.nameEn ? s.nameEn : s.nameCs;
 ```
 
-- [ ] **Step 6: The cards**
+- [ ] **Step 6: The rows**
 
 ```tsx
+import { ChevronRight } from 'lucide-react';
 import type { SimilarSuggestion } from '../../types/schemas/similarSubjects.schema';
+import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { completionChangeKey, knownReasons, staleYear } from './similarLabels';
+import { computeFailRate } from '../SubjectsPanel/computeFailRate';
+import { failRateTone } from '../SubjectsPanel/failRateTone';
+import {
+  changeNote,
+  displayName,
+  reasonPhrase,
+  sharedChangeNote,
+  staleYear,
+} from './similarLabels';
 
-/** Old subjects a student can preview. Facts only — the reasons reIS offered
- * each one — never a claim that it is this subject's predecessor. */
+/** The old subject's fail rate, as the same chip the Předměty list shows. */
+function FailChip({ code }: { code: string }) {
+  const rate = computeFailRate(useAppStore((s) => s.successRates[code]));
+  if (rate == null) return null;
+  return (
+    <span
+      className={`flex-shrink-0 rounded px-1.5 py-0.5 text-xs font-medium tabular-nums ${failRateTone(rate)}`}
+    >
+      {rate}%
+    </span>
+  );
+}
+
+/** Old subjects a student can preview, as rows like Předměty. Each says why it
+ * was offered — facts, never a claim that it is this subject's predecessor. */
 export function SimilarSubjectsList({
   suggestions,
   onPick,
@@ -830,41 +921,45 @@ export function SimilarSubjectsList({
   onPick: (code: string) => void;
 }) {
   const { t, language } = useTranslation();
+  const shared = sharedChangeNote(suggestions, t);
   return (
-    <section className="w-full max-w-md" aria-label={t('successRate.similarHeading')}>
-      <h3 className="text-sm font-semibold text-base-content/70 mb-2">
-        {t('successRate.similarHeading')}
-      </h3>
-      <ul className="flex flex-col gap-2">
+    <section className="mx-auto w-full max-w-xl px-3" aria-label={t('successRate.similarHeading')}>
+      <div className="flex items-baseline justify-between px-2 pb-1">
+        <h3 className="text-sm font-semibold text-base-content/70">
+          {t('successRate.similarHeading')}
+        </h3>
+        <span className="text-xs text-base-content/60">{t('successRate.failRateColumn')}</span>
+      </div>
+      {shared && (
+        <p className="px-2 pb-1 text-xs text-[var(--tone-warning)]">
+          {t('successRate.allOfThem', { note: shared })}
+        </p>
+      )}
+      <ul className="divide-y divide-base-content/10">
         {suggestions.map((s) => {
-          const change = completionChangeKey(s);
           const year = staleYear(s.lastYear);
+          const note = shared ? null : changeNote(s, t);
+          const meta = [s.code, reasonPhrase(s, t), year && t('successRate.lastTaught', { year })]
+            .filter(Boolean)
+            .join(', ');
           return (
             <li key={s.code}>
               <button
                 type="button"
                 onClick={() => onPick(s.code)}
-                className="w-full text-left rounded-box bg-base-200 hover:bg-base-300 px-4 py-3 flex flex-col gap-1.5"
+                className="flex w-full items-start gap-2.5 rounded-lg px-2 py-2.5 text-left hover:bg-base-200 active:bg-base-200"
               >
-                <span className="text-sm">
-                  <span className="font-mono text-xs text-base-content/70 mr-2">{s.code}</span>
-                  <span className="font-medium">
-                    {language === 'en' && s.nameEn ? s.nameEn : s.nameCs}
+                <span className="min-w-0 flex-1">
+                  <span className="block break-words text-md font-medium">
+                    {displayName(s, language)}
                   </span>
-                </span>
-                <span className="flex flex-wrap gap-1">
-                  {knownReasons(s).map((r) => (
-                    <span key={r} className="badge badge-ghost badge-sm">
-                      {t(`successRate.reason.${r}`)}
-                    </span>
-                  ))}
-                  {change && <span className="badge badge-warning badge-sm">{t(change)}</span>}
-                  {year && (
-                    <span className="badge badge-ghost badge-sm">
-                      {t('successRate.lastTaught', { year })}
-                    </span>
+                  <span className="mt-0.5 block text-xs text-base-content/60">{meta}</span>
+                  {note && (
+                    <span className="mt-0.5 block text-xs text-[var(--tone-warning)]">{note}</span>
                   )}
                 </span>
+                <FailChip code={s.code} />
+                <ChevronRight size={18} className="mt-0.5 flex-shrink-0 text-base-content/40" />
               </button>
             </li>
           );
@@ -875,18 +970,18 @@ export function SimilarSubjectsList({
 }
 ```
 
-- [ ] **Step 7: The banner**
+- [ ] **Step 7: The preview line**
 
 It sits *above* the scrolling chart, not inside it, which is what "can't scroll away" means here.
 
 ```tsx
-import { ArrowLeft } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import type { SimilarSuggestion } from '../../types/schemas/similarSubjects.schema';
 import { useTranslation } from '../../hooks/useTranslation';
-import { completionChangeKey } from './similarLabels';
+import { changeNote, displayName } from './similarLabels';
 
-/** Sits above the scrolling chart, never inside it, so no screenshot of a
- * preview can be mistaken for the subject's own numbers. */
+/** One quiet line above the chart — outside its scroll area, so no screenshot
+ * of a preview can be mistaken for the subject's own numbers. */
 export function PreviewBanner({
   suggestion,
   onBack,
@@ -895,26 +990,28 @@ export function PreviewBanner({
   onBack: () => void;
 }) {
   const { t, language } = useTranslation();
-  const change = completionChangeKey(suggestion);
+  const note = changeNote(suggestion, t);
   return (
     <div
       role="status"
-      className="shrink-0 flex items-start gap-2 px-4 py-2 bg-base-200 border-b border-base-300"
+      className="flex shrink-0 items-center gap-1 border-b border-base-content/10 px-2 py-2"
     >
-      <button type="button" onClick={onBack} className="btn btn-ghost btn-xs gap-1 shrink-0">
-        <ArrowLeft className="w-3.5 h-3.5" />
-        {t('successRate.back')}
+      <button
+        type="button"
+        onClick={onBack}
+        aria-label={t('successRate.back')}
+        className="btn btn-square btn-ghost btn-sm"
+      >
+        <ChevronLeft size={20} />
       </button>
-      <p className="text-xs leading-5 min-w-0">
-        <span className="text-base-content/70">{t('successRate.previewOf')}: </span>
-        <span className="font-mono">{suggestion.code}</span>{' '}
-        <span className="font-medium">
-          {language === 'en' && suggestion.nameEn ? suggestion.nameEn : suggestion.nameCs}
-        </span>
-        {change && (
-          <span className="badge badge-warning badge-sm ml-2 align-middle">{t(change)}</span>
-        )}
-      </p>
+      <div className="min-w-0">
+        <div className="text-xs text-base-content/60">{t('successRate.previewOf')}</div>
+        <div className="truncate text-sm font-medium">
+          {displayName(suggestion, language)}{' '}
+          <span className="font-normal text-base-content/60">{suggestion.code}</span>
+        </div>
+        {note && <div className="text-xs text-[var(--tone-warning)]">{note}</div>}
+      </div>
     </div>
   );
 }
@@ -924,7 +1021,7 @@ export function PreviewBanner({
 
 ```tsx
 import { useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 import { useSuccessRate } from '../hooks/data/useSuccessRate';
 import { useAppStore } from '../store/useAppStore';
 import { useTranslation } from '../hooks/useTranslation';
@@ -960,7 +1057,6 @@ export function SuccessRateTab({
   // component across subjects, and two new subjects can offer the same old one.
   const [preview, setPreview] = useState<{ course: string; code: string } | null>(null);
   const previewCode = preview?.course === courseCode ? preview.code : null;
-  const { t } = useTranslation();
 
   if (loading) return <Spinner />;
   if (data?.stats?.length)
@@ -983,19 +1079,37 @@ export function SuccessRateTab({
       />
     );
 
+  const hasSuggestions = !!suggestions?.length;
   return (
-    <div className="flex flex-col items-center h-full px-4 pt-12 pb-4 gap-6 overflow-y-auto">
-      <div className="flex flex-col items-center text-center">
-        <AlertTriangle className="w-8 h-8 opacity-40 mb-3" />
-        <p className="text-sm font-medium">{t('successRate.noResultsTitle')}</p>
-        <p className="text-xs text-base-content/70 mt-1">{t('successRate.noResultsBody')}</p>
-      </div>
-      {suggestions && suggestions.length > 0 && (
+    <div
+      className={`flex h-full flex-col overflow-y-auto pb-4 ${hasSuggestions ? 'gap-5 pt-6' : 'gap-8 pt-12'}`}
+    >
+      <NoResults hasSuggestions={hasSuggestions} />
+      {hasSuggestions && (
         <SimilarSubjectsList
-          suggestions={suggestions}
+          suggestions={suggestions!}
           onPick={(code) => setPreview({ course: courseCode, code })}
         />
       )}
+    </div>
+  );
+}
+
+/** The empty state reIS uses elsewhere ("Zatím žádné předměty"). The icon only
+ * when there is nothing below it; with suggestions, the list is the content. */
+function NoResults({ hasSuggestions }: { hasSuggestions: boolean }) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col items-center gap-3 px-6 text-center">
+      {!hasSuggestions && (
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <BarChart3 size={28} />
+        </div>
+      )}
+      <div className="font-display text-lg font-bold">{t('successRate.noResultsTitle')}</div>
+      <div className="max-w-60 text-xs text-base-content/60">
+        {t(hasSuggestions ? 'successRate.noResultsSimilar' : 'successRate.noResultsBody')}
+      </div>
     </div>
   );
 }
@@ -1045,7 +1159,7 @@ Delete the line `"src/components/SuccessRateTab.tsx",` from `nuia-baseline.json`
 - [ ] **Step 10: Run the tests and the gates**
 
 Run: `npx vitest run src/components/SuccessRateTab.test.tsx src/store/slices/__tests__/similarSubjects.test.ts && npm run typecheck && npm run nuia:gate`
-Expected: 11 pass; typecheck is silent; `✅ nuia ratchet ok`.
+Expected: 13 pass; typecheck is silent; `✅ nuia ratchet ok`.
 Run: `npx prettier --write` on every file this plan created or touched, then `npx eslint --max-warnings=0` on the same list.
 Expected: no findings.
 
@@ -1079,7 +1193,7 @@ The maintainer's own account has none of the new codes, and reis-data has no `si
 
 Use the verify-ui skill. Run the phone set, the tablet set (`--widths 834,1024,1194 --url …/?mobile=1`) and the desktop drawer (`?mobile=0`, then open a subject from Rozvrh), each in `--theme dark` and `--theme light`. Every run must show:
 - no `overflow` / `collision` errors;
-- no `contrast-*` warnings on the new elements: the badges, the banner, and the `/70` muted text.
+- no `contrast-*` warnings on the new elements: the fail-rate chips (their tones already pass on Předměty), the `--tone-warning` note, the `/60` muted lines and the row dividers.
 
 At `1024`, check the list with three cards and the preview: `#root` clips, it doesn't scroll.
 

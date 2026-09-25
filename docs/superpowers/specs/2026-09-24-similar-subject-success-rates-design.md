@@ -155,8 +155,14 @@ Written only when at least one candidate qualifies.
   `fetchSuccessRate(oldCode)`, so the stats land under the old code.
   `successRates[newCode]` stays empty. That keeps the non-goal about badges and
   insights true by construction.
+- **The rows' fail-rate chips** need each suggested old subject's stats. When
+  suggestions are shown, the slice asks for them through the existing
+  `fetchSuccessRateBatch`, which stores them under their own codes, as the
+  Předměty list does.
 - **Privacy:** one new public CDN request, keyed by a subject code that is
-  already sent for `subjects/<code>.json`. No new Supabase caller, and
+  already sent for `subjects/<code>.json`, plus `subjects/<oldCode>.json` for
+  the suggestions: public files, keyed by public codes, the same kind of request
+  the app already makes. No new Supabase caller, and
   `src/test/guards/noStudentDataLeaves.test.ts` passes unmodified.
 
 ## 3. UI: `SuccessRateTab` (both trees)
@@ -165,37 +171,57 @@ Written only when at least one candidate qualifies.
 (`SubjectDrawerSheet` / `SubjectDrawerScroller`), which the iPad also runs. One
 change covers all three, and nothing needs pinning in `src/test/guards/`.
 
-It has three states, replacing today's single "Data nejsou k dispozici":
+It has three states, replacing today's single "Data nejsou k dispozici". The
+look (design A, chosen 2026-09-25 over a "one suggestion up front" variant) reuses
+what reIS already draws elsewhere instead of inventing a component: the Předměty
+list's rows and fail-rate chip, and the "Zatím žádné předměty" empty state.
 
-1. **No data, no suggestions.** "Zatím bez výsledků", with a one-line subtext
-   saying reIS has no results for this subject yet. It doesn't claim "new
-   subject", because the app only knows that the file is missing.
-2. **No data, with suggestions.** The same heading, then "Podobné předměty z
-   minulých let" and up to three `bg-base-200` cards. Each card has:
-   - the code and name (`nameEn` in English);
-   - the reasons as badges: *stejný název · stejný garant · stejní vyučující ·
-     společná literatura*;
-   - a warning badge when `completionChanged`: *dříve zápočet, nyní zkouška* (or
-     the reverse);
-   - *naposledy <year>* when `lastYear` is older than last year.
+1. **No data, no suggestions.** The reIS empty state: a `bg-primary/10` icon
+   disc, "Zatím bez výsledků" in `font-display` bold, and "reIS pro tento
+   předmět zatím nemá žádné výsledky." It doesn't claim "new subject", because
+   the app only knows that the file is missing.
+2. **No data, with suggestions.** The same title without the icon disc (the list
+   is the content), then "Podívej se, jak dopadly podobné předměty z minulých
+   let." and a list headed "Podobné předměty", with "% neúspěšnost" as the
+   column label on the right. Each suggestion is a row like Předměty:
+   - the name, in `font-medium` (`nameEn` in English);
+   - one muted line: the code, the reasons as one phrase ("stejný název, garant
+     a vyučující"), and *naposledy <year>* when `lastYear` is older than last
+     year;
+   - the old subject's **fail-rate chip**, `computeFailRate` + `failRateTone`,
+     exactly as Předměty shows it. It's the one loud element on the screen;
+   - a chevron.
 
-   Tapping a card opens the preview.
-3. **Preview.** A sticky banner that can't scroll away: "Náhled jiného
-   předmětu: <code> <name>", the type-change warning again when it applies, and
-   **Zpět** back to the list. Below it are the normal chart, semester picker and
-   IS backlink for the old code. The banner is sticky so that a screenshot of the
-   chart can't be mistaken for the new subject's numbers.
+   The completion change is warning-toned text (`--tone-warning`), not a pill.
+   When every suggestion shares it, it's said once under the heading ("Všechny:
+   dříve zápočet, nyní zkouška"); otherwise it goes on its own row. At tablet
+   width the list is capped at `max-w-xl` and centred. Tapping a row opens the
+   preview.
+3. **Preview.** One quiet line above the chart, outside its scroll area, so it
+   can't scroll away: a back chevron (labelled "Zpět"), then "Výsledky jiného
+   předmětu", then `<name> <code>`, plus the completion change when it applies.
+   Below it are the normal chart, semester picker and IS backlink for the old
+   code. A screenshot of the chart therefore can't be mistaken for the new
+   subject's numbers.
+
+The chip shows the same three-semester **average** the Předměty list does, so it
+won't match the single semester the preview opens on (EKO1R: 12 % in the list,
+27 % for ZS 25/26). That is the existing Předměty behaviour, deliberately kept
+the same rather than inventing a second meaning for the same chip.
 
 **Files:**
-- `src/components/SuccessRateTab.tsx`: picks the state.
+- `src/components/SuccessRateTab.tsx`: picks the state, and holds the empty
+  state.
 - `src/components/SuccessRate/SuccessRateView.tsx`: today's chart body, moved
-  and taking `stats` as a prop so the preview reuses it.
-- `src/components/SuccessRate/SimilarSubjectsList.tsx` and
-  `src/components/SuccessRate/PreviewBanner.tsx`.
+  and taking `semesters` as a prop so the preview reuses it.
+- `src/components/SuccessRate/SimilarSubjectsList.tsx`: the rows and the chip.
+- `src/components/SuccessRate/PreviewBanner.tsx`: the preview line.
+- `src/components/SuccessRate/similarLabels.ts`: the reason phrase, the change
+  note, the stale year.
 - New `successRate.*` keys in `src/i18n/locales/cs.json` and `en.json`.
 
-Styling is DaisyUI only: `bg-base-200` cards, `badge` / `badge-warning`, and
-text contrast per the desktop-tree rules (ink on tints, `/70` muted text).
+Styling is DaisyUI and existing tokens only: no pills, no cards, and no warning
+triangle, because an empty subject is not an error.
 
 ## 4. Errors, testing, rollout
 
