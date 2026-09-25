@@ -67,15 +67,16 @@ else.
 
 **Android:** internet; notifications (so a download can say it finished); Wi-Fi
 state, only for optional one-tap eduroam, where Android's own dialog saves the
-network. **iOS:** the camera, only if you choose to take a photo to attach to a problem report — iOS asks you first, and the photo goes into the report form like any other picture. **Neither app requests location** — the campus map shows
+network. **iOS:** the camera, only if you choose to take a photo to attach to a
+problem report — iOS asks you first, and the photo goes into the report form
+like any other picture. **Neither app requests location** — the campus map shows
 the campus, not you.
 
 ## Your control
 
 Sign out to delete the token and cookies. Uninstall to delete everything local.
 For feedback you sent, and anything attached to it, write to the address below
-and we will delete it; the
-daily-count rows hold nothing that identifies you.
+and we will delete it; the daily-count rows hold nothing that identifies you.
 
 ## Changes
 
