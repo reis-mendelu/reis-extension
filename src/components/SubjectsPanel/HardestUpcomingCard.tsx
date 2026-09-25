@@ -4,6 +4,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useCourseName } from '@/hooks/ui/useCourseName';
 import type { HardestEntry } from './insights';
 import { failRateTone } from './failRateTone';
+import { SubjectCredits } from './SubjectCredits';
 
 interface Props {
   entries: HardestEntry[];
@@ -46,14 +47,11 @@ function Row({
           {semesters.join('·')}.<span className="hidden md:inline"> sem.</span>
         </span>
       )}
-      <span className="flex-1 text-sm truncate">{displayName}</span>
-      {/* Credits belong beside a subject you are deciding whether to take —
-          this card listed the name and the fail rate and left them out. */}
-      {subject.credits > 0 && (
-        <span className="text-[11px] font-semibold text-base-content/80 shrink-0">
-          {subject.credits} {t('subjects.creditsShort')}
-        </span>
-      )}
+      {/* Under the name, as in the study-plan rows below — `SubjectCredits`. */}
+      <span className="flex-1 min-w-0 flex flex-col">
+        <span className="text-sm truncate">{displayName}</span>
+        <SubjectCredits credits={subject.credits} />
+      </span>
       {/* The number alone, with the words said once per page in
           `FailRateLegend` — the arrangement the semester rows below already
           use. This card spelled them out on every row instead, which at 320px
