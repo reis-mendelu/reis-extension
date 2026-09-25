@@ -77,7 +77,6 @@
   "src/components/SubjectsPanel/__tests__/buildFallbackPlan.test.ts",
   "src/components/SubjectsPanel/utils.ts",
   "src/components/SuccessRate/TermBreakdown.tsx",
-  "src/components/SuccessRateTab.tsx",
   "src/components/WeeklyCalendar/WeeklyCalendarDay.tsx",
   "src/components/WeeklyCalendar/WeeklyCalendarHeader.tsx",
   "src/components/WeeklyCalendar/__tests__/useCalendarData.test.ts",

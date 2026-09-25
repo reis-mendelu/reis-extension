@@ -23,6 +23,8 @@ import { fetchMapEvents, toMapEvent } from '../../api/mapEvents';
 import { logError } from '../../utils/reportError';
 import { createBuildingGeometryActions } from './buildingGeometryActions';
 import { lookupRoomEntry, isNonPhysicalRoom } from '../../utils/rooms/lookupRoom';
+import { lookupRoomPlace } from '../../utils/rooms/lookupRoomPlace';
+import { focusRoomPlace } from './focusRoomPlace';
 
 const META = buildingsJson as BuildingsMeta;
 const INDEX = roomsIndexJson as RoomIndexEntry[];
@@ -101,6 +103,16 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   focusRoomByCode: (code) => {
     const entry = lookupRoomEntry(code, INDEX);
     if (!entry) {
+      // No floor plan, but a building or campus the map can show (T18 → T).
+      const place = lookupRoomPlace(code);
+      if (place) {
+        focusRoomPlace(place, get(), (forRoom) =>
+          set((st) =>
+            st.mapSelection?.kind === 'poi' ? { mapSelection: { ...st.mapSelection, forRoom } } : {}
+          )
+        );
+        return;
+      }
       // A lesson held online has no place to fly to; that is the timetable
       // being honest, not a lookup we got wrong, so it is not worth a log line.
       if (!isNonPhysicalRoom(code)) {

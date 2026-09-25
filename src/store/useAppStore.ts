@@ -13,6 +13,7 @@ import { createSyncSlice } from './slices/createSyncSlice';
 import { createThemeSlice } from './slices/createThemeSlice';
 import { createI18nSlice } from './slices/createI18nSlice';
 import { createSuccessRateSlice } from './slices/createSuccessRateSlice';
+import { createSimilarSubjectsSlice } from './slices/createSimilarSubjectsSlice';
 import { createEduroamSlice } from './slices/createEduroamSlice';
 import { createDocumentsSlice } from './slices/createDocumentsSlice';
 import { createFeedbackSlice } from './slices/createFeedbackSlice';
@@ -62,6 +63,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createThemeSlice(...a),
   ...createI18nSlice(...a),
   ...createSuccessRateSlice(...a),
+  ...createSimilarSubjectsSlice(...a),
   ...createEduroamSlice(...a),
   ...createDocumentsSlice(...a),
   ...createFeedbackSlice(...a),

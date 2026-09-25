@@ -411,7 +411,26 @@
     "retake2": "2. opravný",
     "retake3": "3. opravný",
     "passed": "Prošlo",
-    "allTerms": "Všechny termíny"
+    "allTerms": "Všechny termíny",
+    "noResultsTitle": "Zatím bez výsledků",
+    "noResultsBody": "reIS pro tento předmět zatím nemá žádné výsledky.",
+    "noResultsSimilar": "Podívej se, jak dopadly podobné předměty z minulých let.",
+    "similarHeading": "Podobné předměty",
+    "failRateColumn": "% neúspěšnost",
+    "allOfThem": "Všechny: {note}",
+    "same": "stejný {list}",
+    "and": " a ",
+    "reasonNoun": {
+      "sameName": "název",
+      "sameGuarantor": "garant",
+      "sameTeachers": "vyučující",
+      "sameLiterature": "literatura"
+    },
+    "wasCredit": "dříve zápočet, nyní zkouška",
+    "wasExam": "dříve zkouška, nyní zápočet",
+    "lastTaught": "naposledy {year}",
+    "previewOf": "Výsledky jiného předmětu",
+    "back": "Zpět"
   },
   "assessment": {
     "noData": "Zatím žádné hodnocení",
@@ -871,6 +890,8 @@
     "title": "Mapa",
     "searchPlaceholder": "Hledat místnost nebo místo…",
     "noFloorPlan": "Žádný plán podlaží není k dispozici.",
+    "noFloorPlanShort": "bez plánku podlaží",
+    "buildingNamed": "Budova {name}",
     "seats": "Míst",
     "projector": "Projektor",
     "whiteboard": "Tabule",

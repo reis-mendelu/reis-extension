@@ -14,11 +14,6 @@ export function subjectSheetFor(
   return { kind: 'subjectDrawer', courseCode: lesson.courseCode, courseName: lesson.courseName };
 }
 
-/** The room as the map knows it: IS appends " (Campus)" that `focusRoomByCode` does not want. */
-export function roomCodeFor(lesson: BlockLesson): string {
-  return lesson.room.replace(/\s*\([^)]*\)\s*$/, '').trim();
-}
-
 /**
  * The walk this lesson would be, or `null` when the map cannot place its room.
  *
@@ -35,8 +30,8 @@ export function roomCodeFor(lesson: BlockLesson): string {
 export function routeSuggestionFor(lesson: BlockLesson, language: string): RouteTarget | null {
   const target = lessonTarget(lesson);
   if (!target) return null;
-  // The printed room minus the campus in brackets — the same trim `roomCodeFor`
-  // does, applied to the localized string rather than the raw one.
+  // The printed room minus the campus in brackets, applied to the localized
+  // string rather than the raw one.
   const printed = localizedRoom(lesson, language)
     .replace(/\s*\([^)]*\)\s*$/, '')
     .trim();

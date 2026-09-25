@@ -182,6 +182,16 @@ export function planLabel(label: string): string {
   return label.split(/\s[–-]\s|,\s/)[0] || label;
 }
 
+// A building pin is named by its letter alone ("T"). That reads fine on the pin,
+// not as the line under a room name, so a bare letter is spelled out as
+// "Budova T"; a real name ("Zahradnická fakulta – Lednice") is left as it is.
+export function placeTitle(
+  name: string,
+  t: (key: string, params?: Record<string, string>) => string
+): string {
+  return /^[A-Z]$/.test(name) ? t('map.buildingNamed', { name }) : name;
+}
+
 export function lonLatToLatLng(c: [number, number]): [number, number] {
   return [c[1], c[0]];
 }

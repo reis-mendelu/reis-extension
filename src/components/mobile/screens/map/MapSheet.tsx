@@ -156,6 +156,13 @@ export function MapSheet() {
     if (routeSuggestion) setSheetState('peek');
   }, [routeSuggestion, setSheetState]);
 
+  // A lesson in a room with no floor plan lands on its building, and the peek
+  // row is what says so ("T18 · Budova T · bez plánku podlaží"). Same reflex.
+  const forRoom = selection?.kind === 'poi' ? selection.forRoom : undefined;
+  useEffect(() => {
+    if (forRoom) setSheetState('peek');
+  }, [selection, forRoom, setSheetState]);
+
   /**
    * A single event card is ~300px of content. Pinning the sheet to a detent
    * for it meant 70vh of sheet holding 300px of card — on an 812px phone that

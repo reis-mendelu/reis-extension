@@ -1,3 +1,4 @@
+import type { SimilarSuggestion } from '../types/schemas/similarSubjects.schema';
 import type { StateCreator } from 'zustand';
 import type { BlockLesson, HiddenItems, CalendarCustomEvent } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
@@ -193,6 +194,13 @@ export interface SuccessRateSlice {
   successRatesGlobalLoaded: boolean;
   fetchSuccessRate: (courseCode: string) => Promise<void>;
   fetchSuccessRateBatch: (courseCodes: string[]) => Promise<void>;
+}
+
+export interface SimilarSubjectsSlice {
+  /** Old subjects offered to preview for a course code with no stats of its
+   * own. Absent = not asked yet; [] = nothing to suggest. */
+  similarSubjects: Record<string, SimilarSuggestion[]>;
+  fetchSimilarSubjects: (courseCode: string) => Promise<void>;
 }
 
 export interface EduroamSlice {
@@ -637,6 +645,7 @@ export type AppState = ScheduleSlice &
   ThemeSlice &
   I18nSlice &
   SuccessRateSlice &
+  SimilarSubjectsSlice &
   EduroamSlice &
   DocumentsSlice &
   FeedbackSlice &

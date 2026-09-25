@@ -85,15 +85,20 @@ describe('bundled map data', () => {
     expect(buildings.buildings.some((b) => b.id === 0 && b.name === 'Q')).toBe(true);
   });
 
-  it('remote places: 5 sites with unique ids, closed footprints in South Moravia, and a url', () => {
+  // Nine since 2026-09-25 (the Útěchov wood-science centre); eight since
+  // 2026-09-24, when Karlov, SLŠ Hranice and VOŠ Boskovice joined as the
+  // IS "areály" with classrooms that had no pin. Karlov (Jeseníky, Silesia) and
+  // Hranice (Olomouc region) are why the box below is Moravia-Silesia, not
+  // South Moravia, and Karlov has no website of its own.
+  it('remote places: 9 sites with unique ids, closed footprints in Moravia-Silesia, url https or none', () => {
     const places = (remotePlaces as { places: RemotePlace[] }).places;
-    expect(places).toHaveLength(5);
-    expect(new Set(places.map((p) => p.id)).size).toBe(5);
+    expect(places).toHaveLength(9);
+    expect(new Set(places.map((p) => p.id)).size).toBe(9);
     for (const p of places) {
       expect(p.id).toBeLessThan(0); // synthetic, never collides with real ids
       expect(p.name.length).toBeGreaterThan(0);
       expect(p.shortName.length).toBeGreaterThan(0);
-      expect(p.url).toMatch(/^https:\/\//);
+      if (p.url !== null) expect(p.url).toMatch(/^https:\/\//);
       // Optional grounds boundary (arboretum garden) is a closed ring.
       if (p.area) {
         const a = p.area.coordinates[0]!; // safe: GeoJSON Polygon always has >=1 ring
@@ -120,11 +125,11 @@ describe('bundled map data', () => {
           n++;
         }
       }
-      // Overall footprint centre lands in South Moravia (lon ~16, lat ~48–50).
+      // Overall footprint centre lands in Moravia-Silesia (lon 16–18, lat 48–50.3).
       expect(sx / n).toBeGreaterThanOrEqual(16);
-      expect(sx / n).toBeLessThanOrEqual(17);
+      expect(sx / n).toBeLessThanOrEqual(18);
       expect(sy / n).toBeGreaterThanOrEqual(48);
-      expect(sy / n).toBeLessThanOrEqual(50);
+      expect(sy / n).toBeLessThanOrEqual(50.3);
       // Optional inner-map detail (arboretum): footpaths are polylines, POIs are
       // named points in the same region.
       if (p.paths) for (const path of p.paths) expect(path.length).toBeGreaterThanOrEqual(2);
