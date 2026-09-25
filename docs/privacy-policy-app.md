@@ -27,6 +27,7 @@ yourself — see *Report attachments* below.
 
 ## What we do send
 
+<!-- BEGIN generated:flows (npm run privacy:generate) -->
 | what | when | what it carries |
 |---|---|---|
 | Daily count | once a day | a random install identifier — a UUID unrelated to you. Counts **installs, not people**, plus faculty and platform as group labels. |
@@ -38,6 +39,7 @@ yourself — see *Report attachments* below.
 | Map used for 3 seconds | at most once a day, after three seconds on the map | the random install identifier and the fixed `map_dwell_3s` label |
 | eduroam network configured | the app itself saves the eduroam network (phone) | the random install identifier and the fixed `eduroam_wifi_configured` label |
 | eduroam profile handed over | a profile is prepared for you to install (Mac, Windows) | the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it |
+<!-- END generated:flows -->
 
 In the Firefox extension each of these is optional and Firefox asks you for it:
 the usage count and counters follow the technical-data switch in `about:addons`,

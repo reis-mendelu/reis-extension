@@ -26,9 +26,24 @@ extension is NOT part of this — see "Publishing the extension" at the bottom.
    - Commit `chore: bump to X.Y.Z - <description>`, PR into `test`, merge it
 
 4. **Open the release PR** `test` → `main`. `release-checklist.yml` injects the
-   checklist; `release-gate.yml` requires CI's *Build web preview* to have passed
-   for that exact SHA. Walk the checklist — the device item is the one that
-   actually catches things.
+   checklist **and a generated privacy block**; `release-gate.yml` requires CI's
+   *Build web preview* to have passed for that exact SHA. Walk the checklist —
+   the device item is the one that actually catches things.
+
+4b. **Privacy disclosures — do them, don't ask** (memory
+   `claude-does-store-disclosures`). The privacy block lists only the store
+   declarations that changed in `privacy/disclosures.ts` since the last tag:
+   - `npm run privacy:publish` — republishes the policy gist (as
+     ElijaahInverted, read back) and dispatches `play-data-safety.yml` to push
+     `privacy/play-data-safety.csv`. Then open Play Console → Publishing
+     overview in Chrome and **Send for review** if the change is waiting there.
+   - App Store label items: App Store Connect → App Privacy in Chrome MCP, add
+     or remove exactly the listed types with the listed purpose/linked/tracking,
+     **Publish**. If ASC asks for a sign-in, ask Dominik to sign in, then continue.
+   - Chrome Web Store items: Chrome blocks every extension from the Web Store
+     dashboard, so give Dominik the exact ticks and let him do it.
+   - Tick each item in the PR body as it is done. The Release gate re-runs on
+     the edit and passes only when all are ticked and the live gist matches.
 
 5. **Merge it.** `release-tag.yml` pushes `vX.Y.Z` and stops. Nothing is
    submitted to any store by any workflow.

@@ -51,6 +51,9 @@ jobs:
       # workflow's check runs needs its own scope.
       checks: read
       actions: read
+      # Read the live PR body for the privacy block (the event payload is a
+      # snapshot from before any box was ticked).
+      pull-requests: read
     timeout-minutes: 10
     steps:
       - name: Check this PR's path into main
@@ -93,3 +96,29 @@ jobs:
 
           echo "::error::'$CHECK_NAME' concluded '$conclusion' for $HEAD_SHA, not success. The app did not build or did not pass the browser health check, so this commit must not be released."
           exit 1
+
+      # Privacy disclosures (privacy/disclosures.ts). The published policy gist
+      # must match the repo at this commit, and every generated store item in
+      # the PR's privacy block must be ticked. `edited` is a trigger, so ticking
+      # the last box re-runs this and unlocks the merge.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          # The gate regenerates the expected privacy items from the diff since
+          # the last v* tag, so it needs history and tags.
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Privacy disclosures are live
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --quiet
+          export BASE_TAG="$(git tag --list 'v*' --sort=-v:refname | head -1)"
+          export PR_BODY="$(gh pr view "$PR_NUMBER" --json body --jq '.body // ""')"
+          npx --yes tsx@4 scripts/privacy/gate.ts

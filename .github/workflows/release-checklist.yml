@@ -13,7 +13,9 @@ on:
     # checklist. Safe to add: the job below is idempotent (it checks the
     # BEGIN marker and exits early), so a second run on the same PR — e.g. an
     # unrelated title edit — cannot append a duplicate block.
-    types: [opened, edited, reopened]
+    # `synchronize`: the privacy block below is regenerated when `test` moves
+    # while the release PR is open; ticks on unchanged items are kept.
+    types: [opened, edited, reopened, synchronize]
     branches:
       - main
 
@@ -86,3 +88,46 @@ jobs:
 
           gh pr edit "$PR_NUMBER" --body-file new_body.md
           echo "Injected the release checklist into PR #$PR_NUMBER."
+
+  # The privacy block: which store declarations changed since the last v* tag,
+  # generated from privacy/disclosures.ts (scripts/privacy/). After the checklist
+  # job, because both rewrite the PR body and must not race.
+  inject-privacy:
+    name: Inject privacy disclosures
+    needs: inject-checklist
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    if: >-
+      github.head_ref == 'test' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Place or refresh the privacy block
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --quiet
+          # By version, not `git describe`: the v* tags sit on main's merge
+          # commits, which test does not contain.
+          export BASE_TAG="$(git tag --list 'v*' --sort=-v:refname | head -1)"
+          export PR_BODY="$(gh pr view "$PR_NUMBER" --json body --jq '.body // ""')"
+          export HEAD_REF=HEAD
+          npx --yes tsx@4 scripts/privacy/inject.ts > new_body.md
+          if [ "$(cat new_body.md)" = "$PR_BODY" ]; then
+            echo "Privacy block already current."
+            exit 0
+          fi
+          gh pr edit "$PR_NUMBER" --body-file new_body.md
+          echo "Privacy block placed against ${BASE_TAG:-no earlier tag}."
