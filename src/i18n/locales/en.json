@@ -226,7 +226,7 @@
     "screenshotFailed": "Couldn't process that image.",
     "screenshotDropped": "Report sent, but the screenshot couldn't be stored.",
     "attachDiagnostics": "Attach technical details",
-    "diagnosticsHint": "Errors and warnings from this session, none of your IS data. You can review them before sending.",
+    "diagnosticsHint": "Errors and warnings from this session, with links, emails, long numbers and coordinates blanked out. Review them before sending and remove anything.",
     "showDiagnostics": "Show ({count})",
     "hideDiagnostics": "Hide",
     "noDiagnostics": "No errors or warnings. Only the environment and sync state will be attached.",

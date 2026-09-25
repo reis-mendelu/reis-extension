@@ -272,7 +272,7 @@
     "screenshotFailed": "Tenhle obrázek se nepodařilo zpracovat.",
     "screenshotDropped": "Zpráva odešla, ale snímek se nepodařilo uložit.",
     "attachDiagnostics": "Přiložit technické údaje",
-    "diagnosticsHint": "Chyby a varování z této relace, bez tvých dat z IS. Před odesláním si je můžeš prohlédnout.",
+    "diagnosticsHint": "Chyby a varování z této relace. Odkazy, e-maily, dlouhá čísla a souřadnice v nich skryjeme — před odesláním si je projdi a cokoli smaž.",
     "showDiagnostics": "Zobrazit ({count})",
     "hideDiagnostics": "Skrýt",
     "noDiagnostics": "Žádné chyby ani varování. Přiložíme jen prostředí a stav synchronizace.",
