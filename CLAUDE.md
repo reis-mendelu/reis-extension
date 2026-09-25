@@ -254,6 +254,17 @@ app** (chrome-extension:// origin, no auth cookies). Data always flows content s
 
 If you add a second host, `src/injector/CLAUDE.md` has the checklist and the isolation rules it has to satisfy — a separate store, a `<HOST>_*` message family, and its origin added to `utils/trustedOrigin.ts`.
 
+## Privacy disclosures
+
+`privacy/disclosures.ts` is the one source of what reIS sends and how every store
+declares it (Apple label, Play Data safety, Chrome Web Store, Firefox manifest,
+iOS/Android permissions, the policy table). `scripts/lib/__tests__/privacyDisclosures.test.ts`
+fails any PR where the code disagrees with it; the release PR's privacy block is
+generated from its diff and gates the merge. **Change a data flow → change that
+file in the same PR** (the `disclosure-drift` Stop hook asks if you forget), then
+`npm run privacy:generate` for the policy table. At release, Claude runs
+`npm run privacy:publish` and does the store forms itself — see `/release`.
+
 ## Error Reporting & Privacy
 
 **reIS transmits nothing about a failure on its own.** No error type, message,
