@@ -28,6 +28,7 @@ export const expectedItems = (block: string) => itemsOf(block, /^\s*- \[[ xX]\]\
  */
 export function gateFindings(i: {
   liveGist: string | null;
+  gistReason?: string;
   repoPolicy: string;
   prBody: string;
   expected: string[];
@@ -35,7 +36,7 @@ export function gateFindings(i: {
   const out: string[] = [];
   if (i.liveGist === null) {
     out.push(
-      `Could not read the published policy gist ${GIST_ID}; refusing to assume it is current.`
+      `Could not read the published policy gist ${GIST_ID}${i.gistReason ? ` (${i.gistReason})` : ''}; refusing to assume it is current.`
     );
   } else if (!sameContent(i.liveGist, i.repoPolicy)) {
     out.push(
@@ -53,20 +54,33 @@ export function gateFindings(i: {
   return out;
 }
 
-async function main(): Promise<void> {
-  let liveGist: string | null = null;
+/**
+ * The published policy, read with NO credentials. The gist is public, and the
+ * gists API rejects the GitHub App installation token Actions provides as
+ * GITHUB_TOKEN, so sending it made every CI read fail (release 5.3.0).
+ */
+export async function readLiveGist(
+  fetchImpl: typeof fetch = fetch
+): Promise<{ content: string | null; reason?: string }> {
   try {
-    const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-      headers: process.env.GH_TOKEN ? { Authorization: `Bearer ${process.env.GH_TOKEN}` } : {},
+    const res = await fetchImpl(`https://api.github.com/gists/${GIST_ID}`, {
+      headers: { Accept: 'application/vnd.github+json' },
     });
+    if (!res.ok) return { content: null, reason: `HTTP ${res.status}` };
     const json = (await res.json()) as { files?: Record<string, { content?: string }> };
-    liveGist = json.files?.['privacy.md']?.content ?? null;
-  } catch {
-    liveGist = null;
+    const content = json.files?.['privacy.md']?.content;
+    return content == null ? { content: null, reason: 'no privacy.md in the gist' } : { content };
+  } catch (err) {
+    return { content: null, reason: err instanceof Error ? err.message : String(err) };
   }
+}
+
+async function main(): Promise<void> {
+  const gist = await readLiveGist();
   const block = await buildBlock(process.env.BASE_TAG ?? '', 'HEAD');
   const findings = gateFindings({
-    liveGist,
+    liveGist: gist.content,
+    gistReason: gist.reason,
     repoPolicy: readFileSync('docs/privacy-policy-app.md', 'utf-8'),
     prBody: process.env.PR_BODY ?? '',
     expected: expectedItems(block),

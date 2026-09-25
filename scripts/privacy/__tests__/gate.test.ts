@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sameContent, gateFindings } from '../gate';
+import { sameContent, gateFindings, readLiveGist, GIST_ID } from '../gate';
 import { BEGIN, END } from '../checklist';
 
 describe('sameContent', () => {
@@ -65,5 +65,34 @@ describe('gateFindings', () => {
     expect(
       gateFindings({ liveGist: null, repoPolicy: 'p', prBody: body(''), expected: [] }).join('\n')
     ).toMatch(/could not read/i);
+  });
+});
+
+describe('readLiveGist', () => {
+  const ok = (content: string) =>
+    new Response(JSON.stringify({ files: { 'privacy.md': { content } } }), { status: 200 });
+
+  // Actions' GITHUB_TOKEN is an App installation token, which the gists API
+  // rejects; the gist is public, so the gate reads it with no credentials.
+  it('reads the public gist without an Authorization header', async () => {
+    let headers: HeadersInit | undefined;
+    const got = await readLiveGist(async (url, init) => {
+      expect(String(url)).toBe(`https://api.github.com/gists/${GIST_ID}`);
+      headers = init?.headers;
+      return ok('policy');
+    });
+    expect(got).toEqual({ content: 'policy' });
+    expect(new Headers(headers).has('authorization')).toBe(false);
+  });
+
+  it('says why when the read fails', async () => {
+    const got = await readLiveGist(async () => new Response('{"message":"nope"}', { status: 403 }));
+    expect(got).toEqual({ content: null, reason: 'HTTP 403' });
+  });
+
+  it('says why when the gist has no privacy.md', async () => {
+    const got = await readLiveGist(async () => new Response('{"files":{}}', { status: 200 }));
+    expect(got.content).toBeNull();
+    expect(got.reason).toMatch(/privacy\.md/);
   });
 });
