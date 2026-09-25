@@ -1,4 +1,4 @@
-import { ChevronLeft, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { ChevronLeft, PanelRightClose } from 'lucide-react';
 import { useEffect } from 'react';
 import { useAppStore } from '../../../../store/useAppStore';
 import { RouteDismiss } from '../../../CampusMap/RouteDismiss';
@@ -12,6 +12,9 @@ import { useTranslation } from '../../../../hooks/useTranslation';
 import { useRailResize } from './useRailResize';
 import { RAIL_MIN_PX, RAIL_MAX_PX } from '../../../../utils/mapRail';
 import { MapPanelBody } from './MapPanelBody';
+import { MapRailOpenButton } from './MapRailOpenButton';
+import { RoomPlaceNote } from './RoomPlaceNote';
+import { useForRoomSelection } from './useForRoomSelection';
 
 /**
  * The map panel on a tablet: a sidebar, not a sheet.
@@ -55,29 +58,22 @@ export function MapRail() {
   // it visible at all.
   const selectedGardenPlace = selection?.kind === 'gardenPlace' ? selection.place : null;
   const selectedCard = selectedEvent || selectedGardenPlace;
+  const forRoom = useForRoomSelection();
 
   // Picking a pin while the rail is closed has to bring it back — otherwise the
   // pin highlights and the answer to the tap is somewhere the student cannot
   // see. This is the only thing that opens the rail on the student's behalf.
+  // A lesson shown at its building (a room with no floor plan) counts too: the
+  // note saying so lives in here. Keyed on the selection OBJECT, which is stable
+  // until the next selection — `forRoom` is rebuilt every render, and as a
+  // dependency it reopened the rail the moment the student closed it.
+  const showsRoomNote = !!forRoom;
   useEffect(() => {
-    if (selectedEvent || selectedGardenPlace) setOpen(true);
-  }, [selectedEvent, selectedGardenPlace, setOpen]);
+    if (selectedEvent || selectedGardenPlace || showsRoomNote) setOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `selection` is the trigger; see above
+  }, [selectedEvent, selectedGardenPlace, selection, setOpen]);
 
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label={t('mobile.map.railOpen')}
-        aria-expanded={false}
-        // The one thing left behind when the rail is away: a pill at the edge
-        // it went into, so the way back is where it left from.
-        className="absolute right-4 top-[calc(5rem_+_var(--safe-top,0px))] z-[1000] flex h-11 w-11 items-center justify-center rounded-2xl border border-base-content/10 bg-base-100 shadow-drawer"
-      >
-        <PanelRightOpen size={18} className="text-base-content/70" />
-      </button>
-    );
-  }
+  if (!open) return <MapRailOpenButton onOpen={() => setOpen(true)} />;
 
   return (
     <aside
@@ -182,6 +178,12 @@ export function MapRail() {
           <PanelRightClose size={18} className="text-base-content/50" />
         </button>
       </div>
+
+      {forRoom && (
+        <div className="flex flex-shrink-0 border-b border-base-content/10 px-6 pb-3">
+          <RoomPlaceNote />
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto pb-4 pl-1">
         <MapPanelBody

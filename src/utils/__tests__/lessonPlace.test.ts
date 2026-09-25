@@ -53,6 +53,7 @@ describe('lessonPlace', () => {
       label: ON_MAP,
       eventId: 'evt-1',
       onMap: true,
+      routable: true,
       host: 'ESN',
     });
   });
@@ -64,7 +65,13 @@ describe('lessonPlace', () => {
       [mapEvent({ location: 'Klub Fléda' })],
       ON_MAP
     );
-    expect(place).toEqual({ label: 'Klub Fléda', eventId: 'evt-1', onMap: true, host: 'ESN' });
+    expect(place).toEqual({
+      label: 'Klub Fléda',
+      eventId: 'evt-1',
+      onMap: true,
+      routable: true,
+      host: 'ESN',
+    });
   });
 
   it('falls back to the block when the events have not loaded yet', () => {
@@ -74,13 +81,14 @@ describe('lessonPlace', () => {
       label: 'Klub Fléda',
       eventId: null,
       onMap: false,
+      routable: false,
       host: null,
     });
   });
 
   it('offers no map for an event with no coordinate', () => {
     const place = lessonPlace(block(), 'cz', [mapEvent({ coord: null })], ON_MAP);
-    expect(place).toEqual({ label: '', eventId: null, onMap: false, host: 'ESN' });
+    expect(place).toEqual({ label: '', eventId: null, onMap: false, routable: false, host: 'ESN' });
   });
 
   it('leaves a lesson to the room index', () => {
@@ -88,9 +96,30 @@ describe('lessonPlace', () => {
       label: 'Q01',
       eventId: null,
       onMap: true,
+      routable: true,
       host: null,
     });
-    expect(lessonPlace(makeLesson({ room: 'ZFAC1' }), 'cz', [], ON_MAP).onMap).toBe(false);
+    expect(lessonPlace(makeLesson({ room: 'ucebna_utechov (Sob)' }), 'cz', [], ON_MAP).onMap).toBe(
+      false
+    );
+  });
+
+  // No floor plan, but the building or campus is on the map (isRoomPlaces.json).
+  it.each([
+    ['T18', true],
+    ['ZFAC1 (Led)', true],
+    ['ucebna_utechov (Sob)', false], // held until the site is confirmed
+  ])('offers the map for %s: %s', (room, onMap) => {
+    expect(lessonPlace(makeLesson({ room }), 'cz', [], ON_MAP).onMap).toBe(onMap);
+  });
+
+  // The routing graph reaches only rooms the map draws; "Trasa" over a building
+  // pin would be a walk that does not exist.
+  it.each([
+    ['Q01', true],
+    ['T18', false],
+  ])('%s is routable: %s', (room, routable) => {
+    expect(lessonPlace(makeLesson({ room }), 'cz', [], ON_MAP).routable).toBe(routable);
   });
 
   it('says nothing about an entry the student typed in without a room', () => {
@@ -105,6 +134,7 @@ describe('lessonPlace', () => {
       label: '',
       eventId: null,
       onMap: false,
+      routable: false,
       host: null,
     });
   });

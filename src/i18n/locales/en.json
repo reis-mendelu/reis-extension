@@ -859,6 +859,8 @@
     "title": "Map",
     "searchPlaceholder": "Search a room or place…",
     "noFloorPlan": "No floor plan available.",
+    "noFloorPlanShort": "no floor plan",
+    "buildingNamed": "Building {name}",
     "seats": "Seats",
     "projector": "Projector",
     "whiteboard": "Whiteboard",

@@ -3,7 +3,7 @@ import type { MapEvent } from '../types/events';
 import type { RoomIndexEntry } from '../types/campusMap';
 import roomsIndexJson from '../data/map/rooms-index.json';
 import { localizedRoom } from './localizedLesson';
-import { lookupRoomEntry } from './rooms/lookupRoom';
+import { lookupRoomTarget } from './rooms/lookupRoomPlace';
 import { eventIdFromRsvpBlock } from './rsvpBlocks';
 import { SOCIETIES } from '../data/societies';
 
@@ -16,6 +16,12 @@ export interface LessonPlace {
   eventId: string | null;
   /** Whether "show on map" has anywhere to go. */
   onMap: boolean;
+  /**
+   * Whether there is a walk behind it. A room with no floor plan still has
+   * `onMap` (the map shows its building), but the routing graph only reaches
+   * rooms the map draws, so "Trasa" must not appear for one.
+   */
+  routable: boolean;
   /**
    * The society running an answered event ("ESN"), for the slot a lesson gives
    * its teacher. Read from the catalogue rather than `societyById`, which falls
@@ -50,20 +56,25 @@ export function lessonPlace(
   const room = localizedRoom(lesson, language);
   const eventId = lesson.isCustom ? eventIdFromRsvpBlock(lesson.customEventId ?? '') : null;
   if (eventId === null) {
+    // The room itself, or the building/campus it is in when there is no floor
+    // plan (T18 → building T) — either way the map has somewhere to go.
+    const target = lookupRoomTarget(lesson.room, INDEX);
     return {
       label: room,
       eventId: null,
-      onMap: !!lookupRoomEntry(lesson.room, INDEX),
+      onMap: !!target,
+      routable: target?.kind === 'room',
       host: null,
     };
   }
 
   const event = events.find((e) => e.id === eventId);
   // Cold start: the blocks come back from IndexedDB before the events do.
-  if (!event) return { label: room, eventId: null, onMap: false, host: null };
+  if (!event) return { label: room, eventId: null, onMap: false, routable: false, host: null };
 
   const host = SOCIETIES[event.societyId]?.shortName ?? null;
   const named = event.location?.trim();
-  if (!event.coord) return { label: named || room, eventId: null, onMap: false, host };
-  return { label: named || onMapLabel, eventId: event.id, onMap: true, host };
+  if (!event.coord)
+    return { label: named || room, eventId: null, onMap: false, routable: false, host };
+  return { label: named || onMapLabel, eventId: event.id, onMap: true, routable: true, host };
 }

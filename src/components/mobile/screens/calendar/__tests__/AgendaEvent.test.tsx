@@ -64,6 +64,8 @@ describe('AgendaEvent pin, for a room the map cannot find', () => {
   it.each([
     ['A01', 'a hall the index knows only by nickname'],
     ['Q01', 'a PEF hall'],
+    ['T18', 'a room with no floor plan, whose building T is on the map'],
+    ['ZFAC1 (Led)', 'a room on the Lednice campus'],
   ])('offers the pin for %s (%s)', (room) => {
     render(
       <AgendaEvent lesson={makeLesson({ room })} onOpenSubject={vi.fn()} onShowOnMap={vi.fn()} />
@@ -72,7 +74,7 @@ describe('AgendaEvent pin, for a room the map cannot find', () => {
   });
 
   it.each([
-    ['ZFAC1', 'a room absent from the dataset'],
+    ['ucebna_utechov (Sob)', 'a room whose site has no pin yet'],
     ['B Virtuální 6', 'a lesson held online'],
   ])('withholds the pin for %s (%s)', (room) => {
     render(

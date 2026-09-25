@@ -237,7 +237,9 @@ export interface RoomIndexEntry {
 export type MapSelection =
   | { kind: 'room'; room: RoomProperties }
   | { kind: 'roomRef'; entry: RoomIndexEntry } // from search/deep-link before geometry loads
-  | { kind: 'poi'; poi: PoiProperties; coord: [number, number] }
+  // `forRoom`: the timetable room this place was shown FOR — a room with no
+  // floor plan, so the map shows its building ("T18" → pin T). See focusRoomPlace.
+  | { kind: 'poi'; poi: PoiProperties; coord: [number, number]; forRoom?: string }
   | { kind: 'landmark'; landmark: Landmark } // search result only; resolves to a poi selection on focus
   | { kind: 'gardenPlace'; place: GardenPlace } // one of the botanical garden's places
   // a society event pin. `reveal: 'map'` — focused from the calendar, which asked

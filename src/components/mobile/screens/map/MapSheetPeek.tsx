@@ -3,6 +3,8 @@ import { relativeDayLabel, sortByDate } from '../../../CampusMap/eventHelpers';
 import { useVisibleMapEvents } from '../../../../hooks/useVisibleMapEvents';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useAppStore } from '../../../../store/useAppStore';
+import { RoomPlaceNote } from './RoomPlaceNote';
+import { useForRoomSelection } from './useForRoomSelection';
 
 /**
  * What the map sheet shows while it is closed: the next thing happening.
@@ -27,7 +29,11 @@ export function MapSheetPeek() {
   const { t, language } = useTranslation();
   const events = useVisibleMapEvents();
   const selection = useAppStore((s) => s.mapSelection);
+  const forRoom = useForRoomSelection();
   const next = selection?.kind === 'event' ? selection.event : sortByDate(events)[0];
+
+  // A lesson sent here for a room with no floor plan: say which, and where.
+  if (forRoom) return <RoomPlaceNote />;
 
   if (!next) {
     // Not "no events": the band is the only place this sheet says what it is
