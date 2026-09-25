@@ -48,6 +48,16 @@ export const createSuggestionsSlice: AppSlice<SuggestionsSlice> = (set, get) => 
     if (current && current !== 'error') return;
     set({ suggestionAttachments: { ...get().suggestionAttachments, [id]: 'loading' } });
     const a = await getSuggestionAttachments(id);
+    // The report may have been resolved while this read was in flight. The
+    // server's trigger has deleted its attachments by then, so keeping the
+    // late bytes would hold deleted data in memory.
+    const row = get().suggestions.find((r) => r.id === id);
+    if (!row || row.status === 'done' || !row.attachments) {
+      const { [id]: _stale, ...rest } = get().suggestionAttachments;
+      void _stale;
+      set({ suggestionAttachments: rest });
+      return;
+    }
     set({ suggestionAttachments: { ...get().suggestionAttachments, [id]: a ?? 'error' } });
   },
 

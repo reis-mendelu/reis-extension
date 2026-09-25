@@ -1,4 +1,5 @@
 import { adminAuthClient } from '@/services/admin/authClient';
+import { parseDiagnostics } from '@/types/schemas/diagnostics.schema';
 import { logError } from '@/utils/reportError';
 import { DEV_SOCIETY } from '@/utils/mock/devSociety';
 import { devSuggestionsStore } from '@/utils/mock/devSuggestions';
@@ -84,7 +85,7 @@ export async function getSuggestionAttachments(id: number): Promise<SuggestionAt
     screenshot: row.screenshot
       ? `data:image/jpeg;base64,${bytesToBase64(hexToBytes(row.screenshot))}`
       : null,
-    diagnostics: row.diagnostics,
+    diagnostics: parseDiagnostics(row.diagnostics),
   };
 }
 

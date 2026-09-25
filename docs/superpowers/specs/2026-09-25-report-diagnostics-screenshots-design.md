@@ -22,7 +22,10 @@ iPad) gains two blocks below the message:
    it fits) — this strips EXIF/GPS. reIS never captures the screen itself.
 2. **Přiložit technické údaje** — a checkbox, **unchecked by default** on every
    report type (a pre-ticked box is not valid consent — CJEU Planet49).
-   "Zobrazit (N)" expands the exact list that will be sent; each line has ✕.
+   Beside it, a one-line hint says what the log contains and what is blanked
+   out. **The log is not listed in the form** — it was, with per-line ✕, until
+   Dominik removed it on 25 Sep 2026 ("nobody cares about it"). It is collected
+   at Send. Record-time cleaning is therefore the only safeguard.
 
 Offered for every report type, not just `bug`.
 
@@ -180,6 +183,6 @@ and the three results.
 - image re-encode: output JPEG, ≤ 1600 px, ≤ 600 KB
 - `buildSuggestionPayload` / `submitSuggestion` v2 mapping of the three results
 - form: checkbox unchecked by default; unchecked → no diagnostics sent;
-  removed lines not sent; screenshot ✕ removes it
+  no log listed in the form; collected only at Send when ticked; screenshot ✕ removes it
 - inbox: badges from embedded counts, attachments loaded only on demand
 - verify-ui: form and inbox at 320/390/430 + tablet, both themes, both trees

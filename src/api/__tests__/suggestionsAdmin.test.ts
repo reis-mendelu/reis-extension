@@ -143,14 +143,42 @@ describe('suggestionsAdmin attachments', () => {
 
   it('decodes a PostgREST bytea into a JPEG data URL', async () => {
     maybeSingle.mockResolvedValue({
-      data: { screenshot: '\\xffd8ff00', diagnostics: { entries: [] } },
+      data: { screenshot: '\\xffd8ff00', diagnostics: null },
       error: null,
     });
     const a = await getSuggestionAttachments(7);
     expect(from).toHaveBeenCalledWith('suggestion_attachments');
     expect(selectEq).toHaveBeenCalledWith('suggestion_id', 7);
     expect(a?.screenshot).toBe('data:image/jpeg;base64,/9j/AA==');
-    expect(a?.diagnostics).toEqual({ entries: [] });
+    expect(a?.diagnostics).toBeNull();
+  });
+
+  it('drops diagnostics that do not match the shape, keeping the screenshot', async () => {
+    maybeSingle.mockResolvedValue({
+      data: { screenshot: '\\xffd8ff00', diagnostics: { entries: [{ msg: 1 }], env: null } },
+      error: null,
+    });
+    const a = await getSuggestionAttachments(7);
+    expect(a?.diagnostics).toBeNull();
+    expect(a?.screenshot).toBe('data:image/jpeg;base64,/9j/AA==');
+  });
+
+  it('keeps well-formed diagnostics', async () => {
+    const diagnostics = {
+      entries: [{ t: 1, level: 'error', source: 'app', ctx: null, msg: 'm' }],
+      env: { platform: 'ios', os: 'iOS 26', lang: 'cz', online: true, uptimeS: 3 },
+      sync: {
+        lastSync: null,
+        isSyncing: false,
+        schedule: 'success',
+        exams: 'idle',
+        scheduleCount: 0,
+        examsCount: 0,
+        examsFetchedAt: null,
+      },
+    };
+    maybeSingle.mockResolvedValue({ data: { screenshot: null, diagnostics }, error: null });
+    expect((await getSuggestionAttachments(7))?.diagnostics).toEqual(diagnostics);
   });
 
   it('returns null when the read fails', async () => {

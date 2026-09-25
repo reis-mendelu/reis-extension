@@ -1,5 +1,6 @@
 -- Report attachments: a screenshot the student picked and, only if they ticked
--- "Přiložit technické údaje", the cleaned diagnostics they were shown.
+-- "Přiložit technické údaje", the cleaned diagnostic log (collected at Send;
+-- the form does not list it).
 --
 -- Nothing here is collected in the background. The client sends an attachment
 -- only when the student adds it and presses Send; see src/api/suggestions.ts

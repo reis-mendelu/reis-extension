@@ -60,4 +60,15 @@ describe('suggestion attachments in the store', () => {
     expect(useAppStore.getState().suggestions[0]!.attachments).toBeNull();
     expect(useAppStore.getState().suggestionAttachments[1]).toBeUndefined();
   });
+
+  it('drops an attachment read that lands after the report was marked done', async () => {
+    let finish: (v: unknown) => void = () => {};
+    getSuggestionAttachments.mockImplementation(() => new Promise((r) => (finish = r)));
+    setSuggestionStatus.mockResolvedValue(true);
+    const loading = useAppStore.getState().loadSuggestionAttachments(1);
+    await useAppStore.getState().updateSuggestionStatus(1, 'done');
+    finish({ screenshot: 'data:image/jpeg;base64,/9j/', diagnostics: null });
+    await loading;
+    expect(useAppStore.getState().suggestionAttachments[1]).toBeUndefined();
+  });
 });

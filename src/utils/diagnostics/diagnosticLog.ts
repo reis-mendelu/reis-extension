@@ -39,19 +39,25 @@ export function setDiagnosticSource(s: DiagnosticSource): void {
 }
 
 /**
- * Order matters: URLs first (their query holds the ids), then emails, then
+ * Order matters: URLs and any other query string first (they hold the ids), then emails, then
  * decimals (a coordinate would otherwise survive as `49.‹#›`), then long digit
  * runs — IS student, person and file ids are 5–7 digits, HTTP statuses 3.
  */
 export function cleanMessage(raw: unknown): string {
   const text = raw instanceof Error ? raw.message : String(raw);
   const firstLine = text.split('\n', 1)[0] ?? '';
-  return firstLine
-    .replace(/\b(https?:\/\/[^\s?#"'<>]*)[?#][^\s"'<>]*/gi, '$1')
-    .replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '‹email›')
-    .replace(/\d+\.\d{3,}/g, '‹n›')
-    .replace(/\d{5,}/g, '‹#›')
-    .slice(0, MSG_MAX);
+  return (
+    firstLine
+      .replace(/\b(https?:\/\/[^\s?#"'<>]*)[?#][^\s"'<>]*/gi, '$1')
+      // A relative link or a bare script name carries the same ids
+      // (`terminy_seznam.pl?studium=…`). A `?` followed by a `key=` is a query
+      // string wherever it appears; a `?` in prose has no `=` and is kept.
+      .replace(/\?[^\s"'<>?]*=[^\s"'<>]*/g, '')
+      .replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '‹email›')
+      .replace(/\d+\.\d{3,}/g, '‹n›')
+      .replace(/\d{5,}/g, '‹#›')
+      .slice(0, MSG_MAX)
+  );
 }
 
 export function recordDiagnostic(e: {

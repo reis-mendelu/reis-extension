@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { FeedbackModal } from '../FeedbackModal';
 
@@ -123,6 +123,43 @@ describe('report attachments', () => {
       target: { files: [png()] },
     });
     expect(await screen.findByText(/Couldn't process that image/i)).toBeInTheDocument();
+    fillAndSend();
+    await waitFor(() => expect(submitSuggestion).toHaveBeenCalledTimes(1));
+    expect(submitSuggestion.mock.calls[0]![1].screenshotBase64).toBeNull();
+  });
+
+  it('a slow encode that finishes late does not replace a newer pick', async () => {
+    let finishFirst: (v: unknown) => void = () => {};
+    encodeScreenshot
+      .mockImplementationOnce(() => new Promise((r) => (finishFirst = r)))
+      .mockResolvedValueOnce({ base64: 'NEWER', bytes: 2048, blob: new Blob(['n']) });
+    render(<FeedbackModal isOpen onClose={vi.fn()} />);
+    const input = screen.getByLabelText(/Attach a screenshot/i);
+    fireEvent.change(input, { target: { files: [png()] } });
+    fireEvent.change(input, { target: { files: [png()] } });
+    await screen.findByText('2 kB');
+    await act(async () => finishFirst({ base64: 'OLDER', bytes: 1024, blob: new Blob(['o']) }));
+    fillAndSend();
+    await waitFor(() => expect(submitSuggestion).toHaveBeenCalledTimes(1));
+    expect(submitSuggestion.mock.calls[0]![1].screenshotBase64).toBe('NEWER');
+  });
+
+  it('removing a screenshot while it encodes keeps it removed', async () => {
+    let finish: (v: unknown) => void = () => {};
+    encodeScreenshot
+      .mockResolvedValueOnce({ base64: 'FIRST', bytes: 1024, blob: new Blob(['f']) })
+      .mockImplementationOnce(() => new Promise((r) => (finish = r)));
+    render(<FeedbackModal isOpen onClose={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText(/Attach a screenshot/i), { target: { files: [png()] } });
+    await screen.findByRole('img', { name: /Attached screenshot/i });
+    // A paste starts a second encode while the first image is shown…
+    fireEvent.paste(screen.getByPlaceholderText(/What happened/i), {
+      clipboardData: { files: [png()], items: [] },
+    });
+    // …and the student removes the screenshot before it finishes.
+    fireEvent.click(screen.getByRole('button', { name: /Remove screenshot/i }));
+    await act(async () => finish({ base64: 'LATE', bytes: 1024, blob: new Blob(['l']) }));
+    expect(screen.queryByRole('img', { name: /Attached screenshot/i })).not.toBeInTheDocument();
     fillAndSend();
     await waitFor(() => expect(submitSuggestion).toHaveBeenCalledTimes(1));
     expect(submitSuggestion.mock.calls[0]![1].screenshotBase64).toBeNull();

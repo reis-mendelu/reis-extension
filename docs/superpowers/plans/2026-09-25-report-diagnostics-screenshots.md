@@ -4,7 +4,7 @@
 
 **Goal:** A report from "Nahlásit chybu / Nápad" can carry a student-picked screenshot and, when the student ticks it, a cleaned log of the session's errors and warnings plus environment/sync flags.
 
-**Architecture:** A dependency-free ring buffer in `src/utils/diagnostics/` is fed by `logError` and an explicitly installed console wrapper, in both the iframe app and the extension content script. The form collects, previews and prunes the payload and sends it with a re-encoded JPEG through a new `submit_suggestion_v2` RPC into a `suggestion_attachments` table with 90-day / on-done retention. The admin inbox shows badges and loads attachments on demand.
+**Architecture:** A dependency-free ring buffer in `src/utils/diagnostics/` is fed by `logError` and an explicitly installed console wrapper, in both the iframe app and the extension content script. When the box is ticked, the form collects the log at Send and sends it with a re-encoded JPEG through a new `submit_suggestion_v2` RPC into a `suggestion_attachments` table with 90-day / on-done retention. The admin inbox shows badges and loads attachments on demand.
 
 **Tech Stack:** React 19 + DaisyUI, Zustand, vitest + jsdom, Supabase (Postgres 15, PostgREST, pg_cron 1.6.4).
 
@@ -120,11 +120,11 @@ Calls `submit_suggestion_v2` with v1 params + `p_diagnostics`, `p_screenshot`. `
 ### Task 6: Form UI
 
 **Files:**
-- Create: `src/components/Feedback/ReportAttachments.tsx` (screenshot picker/paste/thumbnail + diagnostics checkbox/preview/per-line ✕), `src/components/Feedback/useReportAttachments.ts` (state + collect on open)
+- Create: `src/components/Feedback/ReportAttachments.tsx` (screenshot picker/paste/thumbnail + diagnostics checkbox and hint — no log list, see the spec), `src/components/Feedback/useReportAttachments.ts` (state + collect at Send)
 - Modify: `src/components/Feedback/FeedbackModal.tsx` (render block, pass to submit, desktop `max-h-[90dvh] overflow-y-auto`, toast when screenshot dropped), `src/i18n/locales/cs.json`, `en.json`
 - Test: `src/components/Feedback/__tests__/ReportAttachments.test.tsx`, extend FeedbackModal test
 
-- [ ] Tests: checkbox unchecked on open; unchecked → submit gets `diagnostics: null`; checked → gets entries minus removed ones; "Zobrazit (N)" shows count; screenshot ✕ clears; paste of image file sets screenshot; encode failure shows error text and sends none.
+- [ ] Tests: checkbox unchecked on open; unchecked → submit gets `diagnostics: null`; checked → gets the collected entries; no log list rendered; screenshot ✕ clears; paste of image file sets screenshot; encode failure shows error text and sends none.
 - [ ] Implement; commit.
 
 ### Task 7: Migration + local verification

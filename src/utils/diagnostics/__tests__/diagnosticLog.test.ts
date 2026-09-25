@@ -17,6 +17,17 @@ describe('cleanMessage', () => {
     ).toBe('GET https://is.mendelu.cz/auth/student/terminy_seznam.pl failed');
   });
 
+  it('drops a query string that is not part of an absolute URL', () => {
+    expect(cleanMessage('GET /api/rpc?token=secret failed')).toBe('GET /api/rpc failed');
+    expect(cleanMessage('terminy_seznam.pl?studium=123456;obdobi=789 -> 500')).toBe(
+      'terminy_seznam.pl -> 500'
+    );
+  });
+
+  it('leaves a question mark in prose alone', () => {
+    expect(cleanMessage('Why? Nobody knows')).toBe('Why? Nobody knows');
+  });
+
   it('masks email addresses', () => {
     expect(cleanMessage('no match for a.b@mendelu.cz here')).toBe('no match for ‹email› here');
   });

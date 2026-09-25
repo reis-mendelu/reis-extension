@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { collectDiagnostics } from '../../utils/diagnostics/collectDiagnostics';
 import { encodeScreenshot } from '../../utils/diagnostics/encodeScreenshot';
 import type { SuggestionAttachmentsDraft } from '../../types/suggestions';
@@ -32,11 +32,19 @@ export function useReportAttachments() {
     };
   }, [screenshot]);
 
+  // Every pick, paste and removal takes a new number; an encode that finishes
+  // under an old number is stale. The picker stays enabled while encoding, so
+  // without this a slow first image could replace a newer one, or bring back a
+  // screenshot the student had just removed.
+  const latest = useRef(0);
+
   const attachFile = useCallback(async (file: Blob | undefined | null) => {
     if (!file || !file.type.startsWith('image/')) return;
+    const mine = ++latest.current;
     setEncoding(true);
     setEncodeFailed(false);
     const out = await encodeScreenshot(file);
+    if (mine !== latest.current) return;
     setEncoding(false);
     if (!out) {
       setScreenshot(null);
@@ -74,7 +82,11 @@ export function useReportAttachments() {
     encoding,
     encodeFailed,
     attachFile,
-    removeScreenshot: () => setScreenshot(null),
+    removeScreenshot: () => {
+      latest.current++;
+      setEncoding(false);
+      setScreenshot(null);
+    },
     onPaste,
     includeDiagnostics,
     setIncludeDiagnostics,
