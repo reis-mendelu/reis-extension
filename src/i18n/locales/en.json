@@ -1051,7 +1051,7 @@
     },
     "attachments": "Attachments",
     "screenshotBadge": "📎 screenshot",
-    "entriesBadge": "{count} entries",
+    "entriesBadge": "Log entries: {count}",
     "screenshotAlt": "Screenshot from the report",
     "attachmentsLoading": "Loading…",
     "attachmentsError": "Couldn't load the attachments.",

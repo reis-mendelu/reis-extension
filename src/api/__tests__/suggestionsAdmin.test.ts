@@ -141,7 +141,7 @@ describe('suggestionsAdmin attachments', () => {
     expect(result?.[0]).not.toHaveProperty('suggestion_attachments');
   });
 
-  it('decodes a PostgREST bytea into a JPEG blob', async () => {
+  it('decodes a PostgREST bytea into a JPEG data URL', async () => {
     maybeSingle.mockResolvedValue({
       data: { screenshot: '\\xffd8ff00', diagnostics: { entries: [] } },
       error: null,
@@ -149,8 +149,7 @@ describe('suggestionsAdmin attachments', () => {
     const a = await getSuggestionAttachments(7);
     expect(from).toHaveBeenCalledWith('suggestion_attachments');
     expect(selectEq).toHaveBeenCalledWith('suggestion_id', 7);
-    expect(a?.screenshot?.type).toBe('image/jpeg');
-    expect(a?.screenshot?.size).toBe(4);
+    expect(a?.screenshot).toBe('data:image/jpeg;base64,/9j/AA==');
     expect(a?.diagnostics).toEqual({ entries: [] });
   });
 

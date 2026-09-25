@@ -60,7 +60,10 @@ describe('report attachments', () => {
     expect(box).not.toBeChecked();
     fillAndSend();
     await waitFor(() => expect(submitSuggestion).toHaveBeenCalledTimes(1));
-    expect(submitSuggestion.mock.calls[0]![1]).toEqual({ diagnostics: null, screenshotBase64: null });
+    expect(submitSuggestion.mock.calls[0]![1]).toEqual({
+      diagnostics: null,
+      screenshotBase64: null,
+    });
     expect(collectDiagnostics).not.toHaveBeenCalled();
   });
 

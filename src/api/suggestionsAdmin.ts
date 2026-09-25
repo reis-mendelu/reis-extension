@@ -57,6 +57,12 @@ export function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
   return out;
 }
 
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!); // safe: i < length
+  return btoa(binary);
+}
+
 /** One report's screenshot and diagnostics. Null when the read fails. */
 export async function getSuggestionAttachments(id: number): Promise<SuggestionAttachment | null> {
   if (DEV_SOCIETY) return devSuggestionsStore.attachments(id);
@@ -69,11 +75,14 @@ export async function getSuggestionAttachments(id: number): Promise<SuggestionAt
     logError('Api.getSuggestionAttachments', error);
     return null;
   }
-  const row = data as { screenshot: string | null; diagnostics: SuggestionAttachment['diagnostics'] } | null;
+  const row = data as {
+    screenshot: string | null;
+    diagnostics: SuggestionAttachment['diagnostics'];
+  } | null;
   if (!row) return { screenshot: null, diagnostics: null };
   return {
     screenshot: row.screenshot
-      ? new Blob([hexToBytes(row.screenshot)], { type: 'image/jpeg' })
+      ? `data:image/jpeg;base64,${bytesToBase64(hexToBytes(row.screenshot))}`
       : null,
     diagnostics: row.diagnostics,
   };

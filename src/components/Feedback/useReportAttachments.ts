@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { collectDiagnostics, type DiagnosticsPayload } from '../../utils/diagnostics/collectDiagnostics';
+import {
+  collectDiagnostics,
+  type DiagnosticsPayload,
+} from '../../utils/diagnostics/collectDiagnostics';
 import { encodeScreenshot } from '../../utils/diagnostics/encodeScreenshot';
 import type { SuggestionAttachmentsDraft } from '../../types/suggestions';
 
@@ -42,12 +45,18 @@ export function useReportAttachments() {
       setEncodeFailed(true);
       return;
     }
-    setScreenshot({ base64: out.base64, bytes: out.bytes, previewUrl: URL.createObjectURL(out.blob) });
+    setScreenshot({
+      base64: out.base64,
+      bytes: out.bytes,
+      previewUrl: URL.createObjectURL(out.blob),
+    });
   }, []);
 
   const onPaste = useCallback(
     (e: React.ClipboardEvent) => {
-      const file = Array.from(e.clipboardData?.files ?? []).find((f) => f.type.startsWith('image/'));
+      const file = Array.from(e.clipboardData?.files ?? []).find((f) =>
+        f.type.startsWith('image/')
+      );
       if (!file) return;
       e.preventDefault();
       void attachFile(file);
@@ -55,10 +64,13 @@ export function useReportAttachments() {
     [attachFile]
   );
 
-  const toggleDiagnostics = useCallback(async (on: boolean) => {
-    setIncludeDiagnostics(on);
-    if (on && !diagnostics) setDiagnostics(await collectDiagnostics());
-  }, [diagnostics]);
+  const toggleDiagnostics = useCallback(
+    async (on: boolean) => {
+      setIncludeDiagnostics(on);
+      if (on && !diagnostics) setDiagnostics(await collectDiagnostics());
+    },
+    [diagnostics]
+  );
 
   const removeEntry = useCallback((index: number) => {
     setDiagnostics((d) => (d ? { ...d, entries: d.entries.filter((_, i) => i !== index) } : d));

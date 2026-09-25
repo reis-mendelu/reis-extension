@@ -10,7 +10,11 @@ interface Props {
 }
 
 function time(t: number): string {
-  return new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return new Date(t).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
 }
 
 export function ReportAttachments({ state, showPasteHint }: Props) {
@@ -20,7 +24,7 @@ export function ReportAttachments({ state, showPasteHint }: Props) {
   const listLabel = t('feedback.attachDiagnostics') as string;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" data-testid="report-attachments">
       {/* Screenshot */}
       <div className="flex flex-wrap items-center gap-2">
         {state.screenshot ? (
@@ -44,7 +48,11 @@ export function ReportAttachments({ state, showPasteHint }: Props) {
           </div>
         ) : (
           <label className="btn btn-sm border-0 bg-base-200 text-base-content/75 hover:bg-base-300 hover:text-base-content gap-2">
-            {state.encoding ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
+            {state.encoding ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <ImagePlus className="w-4 h-4" />
+            )}
             {t('feedback.attachScreenshot')}
             <input
               type="file"
@@ -79,23 +87,27 @@ export function ReportAttachments({ state, showPasteHint }: Props) {
           />
           <span className="text-sm text-base-content">
             {t('feedback.attachDiagnostics')}
-            <span className="block text-xs text-base-content/70">{t('feedback.diagnosticsHint')}</span>
+            <span className="block text-xs text-base-content/70">
+              {t('feedback.diagnosticsHint')}
+            </span>
           </span>
         </label>
         {state.includeDiagnostics && d && (
           <div className="mt-2 ml-7">
             <button
               type="button"
-              className="btn btn-xs btn-ghost px-1 text-primary"
+              className="btn btn-xs btn-ghost px-1 text-base-content underline underline-offset-2"
               onClick={() => setExpanded((v) => !v)}
             >
-              {expanded ? t('feedback.hideDiagnostics') : t('feedback.showDiagnostics', { count: d.entries.length })}
+              {expanded
+                ? t('feedback.hideDiagnostics')
+                : t('feedback.showDiagnostics', { count: d.entries.length })}
             </button>
             {expanded && (
               <div className="mt-1 rounded-lg bg-base-200 p-2 text-[11px] leading-snug text-base-content/80">
                 <p className="break-words">
-                  {d.env.platform} · {d.env.os} · {d.env.lang} · {d.env.online ? 'online' : 'offline'} ·
-                  {' '}sync {d.sync.schedule}/{d.sync.exams}
+                  {d.env.platform} · {d.env.os} · {d.env.lang} ·{' '}
+                  {d.env.online ? 'online' : 'offline'} · sync {d.sync.schedule}/{d.sync.exams}
                 </p>
                 {d.entries.length === 0 ? (
                   <p className="mt-1">{t('feedback.noDiagnostics')}</p>
@@ -104,10 +116,16 @@ export function ReportAttachments({ state, showPasteHint }: Props) {
                     {d.entries.map((e, i) => (
                       <li key={`${e.t}-${i}`} className="flex items-start gap-1">
                         <span className="min-w-0 flex-1 break-words font-mono">
-                          <span className={e.level === 'error' ? 'font-semibold text-error' : 'font-semibold'}>
-                            {e.level}
-                          </span>{' '}
-                          {time(e.t)} {e.source} {e.ctx ?? ''} {e.status ?? ''} {e.msg}
+                          {/* The dot carries the colour: red text on base-200 fails AA in the
+                              light theme, and the word must stay readable. */}
+                          <span
+                            aria-hidden="true"
+                            className={`inline-block w-1.5 h-1.5 rounded-full align-middle mr-1 ${
+                              e.level === 'error' ? 'bg-error' : 'bg-warning'
+                            }`}
+                          />
+                          <span className="font-semibold">{e.level}</span> {time(e.t)} {e.source}{' '}
+                          {e.ctx ?? ''} {e.status ?? ''} {e.msg}
                         </span>
                         <button
                           type="button"

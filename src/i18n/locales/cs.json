@@ -1051,7 +1051,7 @@
     },
     "attachments": "Přílohy",
     "screenshotBadge": "📎 snímek",
-    "entriesBadge": "{count} záznamů",
+    "entriesBadge": "Záznamy: {count}",
     "screenshotAlt": "Snímek z hlášení",
     "attachmentsLoading": "Načítám…",
     "attachmentsError": "Přílohy se nepodařilo načíst.",

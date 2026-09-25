@@ -95,7 +95,7 @@ describe('SuggestionsInbox', () => {
     });
     render(<SuggestionsInbox />);
     expect(screen.getByText(/screenshot/i)).toBeInTheDocument();
-    expect(screen.getByText(/4 entries/i)).toBeInTheDocument();
+    expect(screen.getByText(/Log entries: 4/i)).toBeInTheDocument();
     expect(load).not.toHaveBeenCalled();
   });
 
@@ -107,8 +107,6 @@ describe('SuggestionsInbox', () => {
 
   it('loads attachments on demand and shows the screenshot and log', () => {
     const load = vi.fn();
-    URL.createObjectURL = vi.fn(() => 'blob:shot');
-    URL.revokeObjectURL = vi.fn();
     useAppStore.setState({
       suggestions: [{ ...row, attachments: { has_screenshot: true, diagnostics_count: 1 } }],
       loadSuggestionAttachments: load,
@@ -118,31 +116,40 @@ describe('SuggestionsInbox', () => {
     fireEvent.click(screen.getByRole('button', { name: /Attachments/i }));
     expect(load).toHaveBeenCalledWith(1);
 
-    act(() => useAppStore.setState({
-      suggestionAttachments: {
-        1: {
-          screenshot: new Blob(['j'], { type: 'image/jpeg' }),
-          diagnostics: {
-            entries: [
-              { t: 0, level: 'error', source: 'content', ctx: 'Api.fetchExams', status: 503, msg: 'boom' },
-            ],
-            env: { platform: 'ios', os: 'iOS 26', lang: 'cz', online: true, uptimeS: 5 },
-            sync: {
-              lastSync: null,
-              isSyncing: false,
-              schedule: 'success',
-              exams: 'error',
-              scheduleCount: 1,
-              examsCount: 0,
-              examsFetchedAt: null,
+    act(() =>
+      useAppStore.setState({
+        suggestionAttachments: {
+          1: {
+            screenshot: 'data:image/jpeg;base64,/9j/AA==',
+            diagnostics: {
+              entries: [
+                {
+                  t: 0,
+                  level: 'error',
+                  source: 'content',
+                  ctx: 'Api.fetchExams',
+                  status: 503,
+                  msg: 'boom',
+                },
+              ],
+              env: { platform: 'ios', os: 'iOS 26', lang: 'cz', online: true, uptimeS: 5 },
+              sync: {
+                lastSync: null,
+                isSyncing: false,
+                schedule: 'success',
+                exams: 'error',
+                scheduleCount: 1,
+                examsCount: 0,
+                examsFetchedAt: null,
+              },
             },
           },
         },
-      },
-    }));
+      })
+    );
     expect(screen.getByRole('img', { name: /Screenshot from the report/i })).toHaveAttribute(
       'src',
-      'blob:shot'
+      'data:image/jpeg;base64,/9j/AA=='
     );
     expect(screen.getByText(/Api.fetchExams/)).toBeInTheDocument();
     expect(screen.getByText(/iOS 26/)).toBeInTheDocument();

@@ -46,7 +46,8 @@ export interface SuggestionAttachmentSummary {
 
 /** One report's attachments, loaded when an admin opens them. */
 export interface SuggestionAttachment {
-  screenshot: Blob | null;
+  /** A `data:` URL — no object URL to revoke, and at ≤ 600 KB it is cheap to hold. */
+  screenshot: string | null;
   diagnostics: DiagnosticsPayload | null;
 }
 

@@ -59,7 +59,9 @@ async function contentEntries(
   // Only the extension has a content script. Elsewhere nothing would answer and
   // the form would wait out the timeout for nothing.
   if (getPlatform().kind !== 'extension') return [];
-  const timeout = new Promise<DiagnosticEntry[]>((resolve) => setTimeout(() => resolve([]), timeoutMs));
+  const timeout = new Promise<DiagnosticEntry[]>((resolve) =>
+    setTimeout(() => resolve([]), timeoutMs)
+  );
   try {
     return await Promise.race([fetchContent(), timeout]);
   } catch {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Paperclip } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -61,21 +61,19 @@ function Loaded({ value }: { value: SuggestionAttachment | 'loading' | 'error' |
   }
   return (
     <div className="mt-2 space-y-2">
-      {value.screenshot && <Screenshot blob={value.screenshot} />}
+      {value.screenshot && <Screenshot src={value.screenshot} />}
       {value.diagnostics && <DiagnosticsTable d={value.diagnostics} />}
     </div>
   );
 }
 
-function Screenshot({ blob }: { blob: Blob }) {
+function Screenshot({ src }: { src: string }) {
   const { t } = useTranslation();
   const [full, setFull] = useState(false);
-  const url = useMemo(() => URL.createObjectURL(blob), [blob]);
-  useEffect(() => () => URL.revokeObjectURL(url), [url]);
   return (
     <button type="button" onClick={() => setFull((v) => !v)} className="block">
       <img
-        src={url}
+        src={src}
         alt={t('admin.screenshotAlt') as string}
         className={`rounded-md border border-base-300 ${full ? 'w-full h-auto' : 'h-40 w-auto'}`}
       />
@@ -98,10 +96,16 @@ function DiagnosticsTable({ d }: { d: NonNullable<SuggestionAttachment['diagnost
       <ul className="mt-1 max-h-56 overflow-y-auto space-y-1">
         {d.entries.map((e, i) => (
           <li key={`${e.t}-${i}`} className="break-words">
-            <span className={e.level === 'error' ? 'font-semibold text-error' : 'font-semibold'}>
-              {e.level}
-            </span>{' '}
-            {time(e.t)} {e.source} {e.ctx ?? ''} {e.status ?? ''} {e.msg}
+            {/* The dot carries the colour: red text on base-200 fails AA in the
+                light theme, and the word must stay readable. */}
+            <span
+              aria-hidden="true"
+              className={`inline-block w-1.5 h-1.5 rounded-full align-middle mr-1 ${
+                e.level === 'error' ? 'bg-error' : 'bg-warning'
+              }`}
+            />
+            <span className="font-semibold">{e.level}</span> {time(e.t)} {e.source} {e.ctx ?? ''}{' '}
+            {e.status ?? ''} {e.msg}
           </li>
         ))}
       </ul>

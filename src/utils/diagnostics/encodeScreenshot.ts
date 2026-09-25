@@ -41,7 +41,9 @@ const canvasCodec: ScreenshotCodec = {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, w, h);
       ctx.drawImage(bmp, 0, 0, w, h);
-      return await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+      return await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, 'image/jpeg', quality)
+      );
     } finally {
       bmp.close();
     }

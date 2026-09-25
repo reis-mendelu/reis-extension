@@ -232,7 +232,9 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
                     <button
                       type="button"
                       onClick={handleSubmit}
-                      disabled={isSending || attachments.encoding || !title.trim() || !message.trim()}
+                      disabled={
+                        isSending || attachments.encoding || !title.trim() || !message.trim()
+                      }
                       className="btn btn-primary w-full gap-2 font-semibold no-animation"
                     >
                       {isSending ? (

@@ -123,7 +123,7 @@ export const devSuggestionsStore = {
     if (!row?.attachments) return { screenshot: null, diagnostics: null };
     return {
       screenshot: row.attachments.has_screenshot
-        ? new Blob([SHOT_SVG], { type: 'image/svg+xml' })
+        ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(SHOT_SVG)}`
         : null,
       diagnostics: attachments[id]?.diagnostics ?? null,
     };
