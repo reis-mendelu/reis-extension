@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import type { Flow, Exempt } from '../../privacy/disclosures';
 import { renderPolicyTable, readGenerated } from './policyTable';
@@ -138,11 +138,12 @@ export function checkDisclosures(s: RepoSnapshot, m: Model): string[] {
 }
 
 function walk(dir: string, root: string, out: Record<string, string>): void {
-  for (const name of readdirSync(dir)) {
-    const full = join(dir, name);
-    if (statSync(full).isDirectory()) {
-      if (name !== 'node_modules') walk(full, root, out);
-    } else if (/\.tsx?$/.test(name)) {
+  // Entries carry their type, so there is no separate stat to race against.
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name !== 'node_modules') walk(full, root, out);
+    } else if (entry.isFile() && /\.tsx?$/.test(entry.name)) {
       out[relative(root, full)] = readFileSync(full, 'utf-8');
     }
   }
