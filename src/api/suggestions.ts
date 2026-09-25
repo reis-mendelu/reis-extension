@@ -4,7 +4,12 @@ import { getBrowserInfo } from '@/utils/browserInfo';
 import { getAppVersion } from '@/utils/appIdentity';
 import { IndexedDBService } from '@/services/storage';
 import { isAppView, type AppView } from '@/types/app';
-import type { SuggestionDraft, SuggestionPayload, SubmitResult } from '@/types/suggestions';
+import type {
+  SuggestionDraft,
+  SuggestionPayload,
+  SubmitResult,
+  SuggestionAttachmentsDraft,
+} from '@/types/suggestions';
 
 // The host URL is deliberately NOT sent: on IS it carries
 // studium=/obdobi=/predmet=/termin=, which sanitize.ts redacts wholesale for
@@ -40,30 +45,35 @@ async function currentScreen(): Promise<AppView> {
 }
 
 /**
- * Writes a suggestion through the `submit_suggestion` RPC: a SECURITY DEFINER
- * function granted to `anon`, because an anonymous write needs no shared
- * secret. This is now the ONLY thing reIS sends that a student composed — the
- * error-telemetry path that once used the same shape has been removed
- * entirely, along with its tables.
+ * Writes a suggestion through the `submit_suggestion_v2` RPC: a SECURITY
+ * DEFINER function granted to `anon`, because an anonymous write needs no
+ * shared secret. This is the ONLY thing reIS sends that a student composed.
+ * v1 (`submit_suggestion`) stays deployed for builds that have not updated.
  *
- * There is deliberately no client credential here. The old edge function gated
- * on `x-reis-extension-secret`, a value that shipped inside the bundle — so
- * anyone could unzip the extension and read it. A string every client carries
- * is an identifier, not a credential, and on a write-only insert it protected
- * nothing. Authorization is still enforced server-side and is unchanged:
- * `suggestions` is deny-all RLS with no insert grant to `anon`, so the RPC is
- * the only way a row can be written.
+ * `attachments` is what the student chose to add: a screenshot they picked and,
+ * only if they ticked the box, the cleaned diagnostics they were shown. Neither
+ * is ever gathered here on its own initiative. The install id is deliberately
+ * not sent, so a report cannot be joined to the daily-usage rows.
  *
- * The RPC returns false for both a validation failure and the flood guard, so
- * the two are no longer distinguishable from here — the old function's 400 vs
- * 429 split is gone. The client enforces the same limits with `maxLength`, so
- * an invalid payload from the real UI is not reachable; 'rate_limited' is the
- * honest guess for a false, and it is what the copy already tells the student.
+ * There is deliberately no client credential here. A string every client
+ * carries is an identifier, not a credential. Authorization is enforced
+ * server-side: `suggestions` and `suggestion_attachments` are deny-all RLS with
+ * no insert grant to `anon`, so the RPC is the only way a row can be written.
+ *
+ * The RPC answers `ok`, `ok_without_screenshot` (the text and diagnostics were
+ * kept but the image was refused — malformed, oversized, not a JPEG, or the
+ * hourly screenshot budget is spent) or `rejected` (validation or the flood
+ * guard — not distinguishable from here; 'rate_limited' is the honest guess,
+ * and it is what the copy already tells the student).
  */
-export async function submitSuggestion(draft: SuggestionDraft): Promise<SubmitResult> {
+export async function submitSuggestion(
+  draft: SuggestionDraft,
+  attachments: SuggestionAttachmentsDraft = {}
+): Promise<SubmitResult> {
   try {
     const payload = buildSuggestionPayload(draft, await currentScreen());
-    const { data, error } = await supabase.rpc('submit_suggestion', {
+    const screenshot = attachments.screenshotBase64 ?? null;
+    const { data, error } = await supabase.rpc('submit_suggestion_v2', {
       p_type: payload.type,
       p_title: payload.title,
       p_body: payload.body,
@@ -73,12 +83,18 @@ export async function submitSuggestion(draft: SuggestionDraft): Promise<SubmitRe
       p_browser_name: payload.browser_name,
       p_browser_version: payload.browser_version,
       p_viewport: payload.viewport,
+      p_diagnostics: attachments.diagnostics ?? null,
+      p_screenshot: screenshot,
     });
     if (error) {
       logError('Api.submitSuggestion', error);
       return { ok: false, error: 'upstream' };
     }
-    return data === true ? { ok: true } : { ok: false, error: 'rate_limited' };
+    if (data === 'ok') return { ok: true };
+    if (data === 'ok_without_screenshot') {
+      return screenshot ? { ok: true, screenshotDropped: true } : { ok: true };
+    }
+    return { ok: false, error: 'rate_limited' };
   } catch (err) {
     logError('Api.submitSuggestion', err);
     return { ok: false, error: 'offline' };

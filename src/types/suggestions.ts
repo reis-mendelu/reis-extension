@@ -1,4 +1,5 @@
 import type { AppView } from './app';
+import type { DiagnosticsPayload } from '../utils/diagnostics/collectDiagnostics';
 
 export type SuggestionType = 'bug' | 'idea' | 'other';
 export type SuggestionStatus = 'new' | 'triaged' | 'done';
@@ -36,5 +37,13 @@ export interface SuggestionRow {
   created_at: string;
 }
 
+/** What the student chose to attach. Both absent unless they acted. */
+export interface SuggestionAttachmentsDraft {
+  diagnostics?: DiagnosticsPayload | null;
+  /** JPEG bytes as base64, no `data:` prefix — see utils/diagnostics/encodeScreenshot. */
+  screenshotBase64?: string | null;
+}
+
 export type SubmitResult =
-  { ok: true } | { ok: false; error: 'rate_limited' | 'invalid' | 'upstream' | 'offline' };
+  | { ok: true; screenshotDropped?: true }
+  | { ok: false; error: 'rate_limited' | 'invalid' | 'upstream' | 'offline' };
