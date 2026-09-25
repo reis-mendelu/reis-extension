@@ -1,6 +1,14 @@
 import type { AppSlice } from '../types';
-import { listSuggestions, setSuggestionStatus as apiSetStatus } from '../../api/suggestionsAdmin';
-import type { SuggestionRow, SuggestionStatus } from '../../types/suggestions';
+import {
+  listSuggestions,
+  setSuggestionStatus as apiSetStatus,
+  getSuggestionAttachments,
+} from '../../api/suggestionsAdmin';
+import type {
+  SuggestionAttachment,
+  SuggestionRow,
+  SuggestionStatus,
+} from '../../types/suggestions';
 
 export interface SuggestionsSlice {
   suggestions: SuggestionRow[];
@@ -9,7 +17,10 @@ export interface SuggestionsSlice {
    *  so without this a fast triaged→done pair can complete out of order and
    *  leave the store disagreeing with the database. */
   suggestionsPending: number[];
+  /** Opened attachments by report id. Loaded on demand, never with the list. */
+  suggestionAttachments: Record<number, SuggestionAttachment | 'loading' | 'error'>;
   loadSuggestions: () => Promise<void>;
+  loadSuggestionAttachments: (id: number) => Promise<void>;
   updateSuggestionStatus: (id: number, status: SuggestionStatus) => Promise<void>;
 }
 
@@ -21,6 +32,7 @@ export const createSuggestionsSlice: AppSlice<SuggestionsSlice> = (set, get) => 
   suggestions: [],
   suggestionsUnread: 0,
   suggestionsPending: [],
+  suggestionAttachments: {},
 
   loadSuggestions: async () => {
     const rows = await listSuggestions();
@@ -31,6 +43,14 @@ export const createSuggestionsSlice: AppSlice<SuggestionsSlice> = (set, get) => 
     set({ suggestions: rows, suggestionsUnread: unread(rows) });
   },
 
+  loadSuggestionAttachments: async (id) => {
+    const current = get().suggestionAttachments[id];
+    if (current && current !== 'error') return;
+    set({ suggestionAttachments: { ...get().suggestionAttachments, [id]: 'loading' } });
+    const a = await getSuggestionAttachments(id);
+    set({ suggestionAttachments: { ...get().suggestionAttachments, [id]: a ?? 'error' } });
+  },
+
   updateSuggestionStatus: async (id, status) => {
     const target = get().suggestions.find((r) => r.id === id);
     if (!target) return;
@@ -39,8 +59,11 @@ export const createSuggestionsSlice: AppSlice<SuggestionsSlice> = (set, get) => 
     // last wins, and a failure on the first would resync away the second.
     if (get().suggestionsPending.includes(id)) return;
 
-    // Optimistic: triaging should feel instant.
-    const after = get().suggestions.map((r) => (r.id === id ? { ...r, status } : r));
+    // Optimistic: triaging should feel instant. `done` also clears the
+    // attachments locally, because the server's trigger deletes them.
+    const after = get().suggestions.map((r) =>
+      r.id === id ? { ...r, status, ...(status === 'done' ? { attachments: null } : {}) } : r
+    );
     set({
       suggestions: after,
       suggestionsUnread: unread(after),
@@ -52,6 +75,11 @@ export const createSuggestionsSlice: AppSlice<SuggestionsSlice> = (set, get) => 
       ok = await apiSetStatus(id, status);
     } finally {
       set({ suggestionsPending: get().suggestionsPending.filter((p) => p !== id) });
+    }
+    if (ok && status === 'done') {
+      const { [id]: _dropped, ...rest } = get().suggestionAttachments;
+      void _dropped;
+      set({ suggestionAttachments: rest });
     }
     if (!ok) {
       // Do not try to reconstruct the previous state locally — with two

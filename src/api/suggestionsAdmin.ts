@@ -2,7 +2,12 @@ import { adminAuthClient } from '@/services/admin/authClient';
 import { logError } from '@/utils/reportError';
 import { DEV_SOCIETY } from '@/utils/mock/devSociety';
 import { devSuggestionsStore } from '@/utils/mock/devSuggestions';
-import type { SuggestionRow, SuggestionStatus } from '@/types/suggestions';
+import type {
+  SuggestionRow,
+  SuggestionStatus,
+  SuggestionAttachment,
+  SuggestionAttachmentSummary,
+} from '@/types/suggestions';
 
 // Reads run under the admin session, so RLS ("Admin read suggestions") is the
 // gate — no service-role key is ever in the client. In dev:web the seeded
@@ -14,16 +19,64 @@ import type { SuggestionRow, SuggestionStatus } from '@/types/suggestions';
 // genuine, authoritative result.
 export async function listSuggestions(): Promise<SuggestionRow[] | null> {
   if (DEV_SOCIETY) return devSuggestionsStore.list();
+  // The embed carries the attachment COUNTS only. The bytes stay on the server
+  // until an admin opens a report — 200 rows of screenshots would be ~100 MB.
   const { data, error } = await adminAuthClient
     .from('suggestions')
-    .select('*')
+    .select('*, suggestion_attachments(has_screenshot,diagnostics_count)')
     .order('created_at', { ascending: false })
     .limit(200);
   if (error) {
     logError('Api.listSuggestions', error);
     return null;
   }
-  return (data ?? []) as SuggestionRow[];
+  return ((data ?? []) as RawRow[]).map(({ suggestion_attachments, ...r }) => ({
+    ...r,
+    attachments: flattenEmbed(suggestion_attachments),
+  }));
+}
+
+type RawRow = Omit<SuggestionRow, 'attachments'> & {
+  suggestion_attachments?: SuggestionAttachmentSummary | SuggestionAttachmentSummary[] | null;
+};
+
+// PostgREST embeds a one-to-one relation as an object, but older versions and
+// some query shapes give an array. Accept both; no row means no attachments.
+function flattenEmbed(
+  e: SuggestionAttachmentSummary | SuggestionAttachmentSummary[] | null | undefined
+): SuggestionAttachmentSummary | null {
+  const one = Array.isArray(e) ? e[0] : e;
+  return one ?? null;
+}
+
+/** PostgREST returns bytea as `\x` followed by hex. */
+export function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
+  const body = hex.startsWith('\\x') ? hex.slice(2) : hex;
+  const out = new Uint8Array(new ArrayBuffer(body.length / 2));
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(body.slice(i * 2, i * 2 + 2), 16);
+  return out;
+}
+
+/** One report's screenshot and diagnostics. Null when the read fails. */
+export async function getSuggestionAttachments(id: number): Promise<SuggestionAttachment | null> {
+  if (DEV_SOCIETY) return devSuggestionsStore.attachments(id);
+  const { data, error } = await adminAuthClient
+    .from('suggestion_attachments')
+    .select('screenshot, diagnostics')
+    .eq('suggestion_id', id)
+    .maybeSingle();
+  if (error) {
+    logError('Api.getSuggestionAttachments', error);
+    return null;
+  }
+  const row = data as { screenshot: string | null; diagnostics: SuggestionAttachment['diagnostics'] } | null;
+  if (!row) return { screenshot: null, diagnostics: null };
+  return {
+    screenshot: row.screenshot
+      ? new Blob([hexToBytes(row.screenshot)], { type: 'image/jpeg' })
+      : null,
+    diagnostics: row.diagnostics,
+  };
 }
 
 // Only `status` is grantable to authenticated (see the migration), so any other

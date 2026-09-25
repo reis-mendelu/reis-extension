@@ -35,6 +35,19 @@ export interface SuggestionRow {
   viewport: string;
   status: SuggestionStatus;
   created_at: string;
+  /** Counts only — the bytes load on demand. Null when the report has none. */
+  attachments?: SuggestionAttachmentSummary | null;
+}
+
+export interface SuggestionAttachmentSummary {
+  has_screenshot: boolean;
+  diagnostics_count: number;
+}
+
+/** One report's attachments, loaded when an admin opens them. */
+export interface SuggestionAttachment {
+  screenshot: Blob | null;
+  diagnostics: DiagnosticsPayload | null;
 }
 
 /** What the student chose to attach. Both absent unless they acted. */

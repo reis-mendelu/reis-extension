@@ -1048,7 +1048,14 @@
       "faculty": "Only {faculty} students",
       "erasmus": "Erasmus students only",
       "followers": "Followers only"
-    }
+    },
+    "attachments": "Attachments",
+    "screenshotBadge": "📎 screenshot",
+    "entriesBadge": "{count} entries",
+    "screenshotAlt": "Screenshot from the report",
+    "attachmentsLoading": "Loading…",
+    "attachmentsError": "Couldn't load the attachments.",
+    "attachmentsGone": "The attachments have been deleted."
   },
   "mobile": {
     "header": {

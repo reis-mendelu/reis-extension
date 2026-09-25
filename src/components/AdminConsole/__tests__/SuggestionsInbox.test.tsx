@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { SuggestionsInbox } from '../SuggestionsInbox';
 import type { SuggestionRow } from '../../../types/suggestions';
@@ -85,5 +85,66 @@ describe('SuggestionsInbox', () => {
     const reply = screen.getByRole('link', { name: /Reply/i });
     expect(reply.getAttribute('href')).toMatch(/^mailto:student@mendelu\.cz\?/);
     expect(reply).not.toHaveAttribute('target');
+  });
+
+  it('shows attachment badges from the counts, without loading anything', () => {
+    const load = vi.fn();
+    useAppStore.setState({
+      suggestions: [{ ...row, attachments: { has_screenshot: true, diagnostics_count: 4 } }],
+      loadSuggestionAttachments: load,
+    });
+    render(<SuggestionsInbox />);
+    expect(screen.getByText(/screenshot/i)).toBeInTheDocument();
+    expect(screen.getByText(/4 entries/i)).toBeInTheDocument();
+    expect(load).not.toHaveBeenCalled();
+  });
+
+  it('offers no attachments button when a report has none', () => {
+    useAppStore.setState({ suggestions: [{ ...row, attachments: null }] });
+    render(<SuggestionsInbox />);
+    expect(screen.queryByRole('button', { name: /Attachments/i })).not.toBeInTheDocument();
+  });
+
+  it('loads attachments on demand and shows the screenshot and log', () => {
+    const load = vi.fn();
+    URL.createObjectURL = vi.fn(() => 'blob:shot');
+    URL.revokeObjectURL = vi.fn();
+    useAppStore.setState({
+      suggestions: [{ ...row, attachments: { has_screenshot: true, diagnostics_count: 1 } }],
+      loadSuggestionAttachments: load,
+      suggestionAttachments: {},
+    });
+    render(<SuggestionsInbox />);
+    fireEvent.click(screen.getByRole('button', { name: /Attachments/i }));
+    expect(load).toHaveBeenCalledWith(1);
+
+    act(() => useAppStore.setState({
+      suggestionAttachments: {
+        1: {
+          screenshot: new Blob(['j'], { type: 'image/jpeg' }),
+          diagnostics: {
+            entries: [
+              { t: 0, level: 'error', source: 'content', ctx: 'Api.fetchExams', status: 503, msg: 'boom' },
+            ],
+            env: { platform: 'ios', os: 'iOS 26', lang: 'cz', online: true, uptimeS: 5 },
+            sync: {
+              lastSync: null,
+              isSyncing: false,
+              schedule: 'success',
+              exams: 'error',
+              scheduleCount: 1,
+              examsCount: 0,
+              examsFetchedAt: null,
+            },
+          },
+        },
+      },
+    }));
+    expect(screen.getByRole('img', { name: /Screenshot from the report/i })).toHaveAttribute(
+      'src',
+      'blob:shot'
+    );
+    expect(screen.getByText(/Api.fetchExams/)).toBeInTheDocument();
+    expect(screen.getByText(/iOS 26/)).toBeInTheDocument();
   });
 });

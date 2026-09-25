@@ -1048,7 +1048,14 @@
       "faculty": "Jen studenti {faculty}",
       "erasmus": "Jen erasmáci",
       "followers": "Jen naši"
-    }
+    },
+    "attachments": "Přílohy",
+    "screenshotBadge": "📎 snímek",
+    "entriesBadge": "{count} záznamů",
+    "screenshotAlt": "Snímek z hlášení",
+    "attachmentsLoading": "Načítám…",
+    "attachmentsError": "Přílohy se nepodařilo načíst.",
+    "attachmentsGone": "Přílohy už byly smazány."
   },
   "mobile": {
     "header": {

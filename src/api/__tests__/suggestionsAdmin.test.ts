@@ -2,7 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const limit = vi.fn();
 const order = vi.fn(() => ({ limit }));
-const select = vi.fn(() => ({ order }));
+const maybeSingle = vi.fn();
+const selectEq = vi.fn(() => ({ maybeSingle }));
+const select = vi.fn((...args: unknown[]) => {
+  void args;
+  return { order, eq: selectEq };
+});
 const updateSelect = vi.fn();
 const eq = vi.fn(() => ({ select: updateSelect }));
 const update = vi.fn(() => ({ eq }));
@@ -19,7 +24,12 @@ vi.mock('@/utils/reportError', () => ({
   logError: vi.fn(),
 }));
 
-import { listSuggestions, setSuggestionStatus } from '../suggestionsAdmin';
+import {
+  listSuggestions,
+  setSuggestionStatus,
+  getSuggestionAttachments,
+  hexToBytes,
+} from '../suggestionsAdmin';
 import { logError } from '@/utils/reportError';
 
 function row(id: number) {
@@ -103,5 +113,53 @@ describe('suggestionsAdmin.setSuggestionStatus', () => {
     expect(ok).toBe(false);
     expect(logError).toHaveBeenCalledTimes(1);
     expect(vi.mocked(logError).mock.calls[0]?.[0]).toBe('Api.setSuggestionStatus');
+  });
+});
+
+describe('suggestionsAdmin attachments', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('lists only the attachment counts, never the bytes, and flattens the embed', async () => {
+    limit.mockResolvedValue({
+      data: [
+        { ...row(1), suggestion_attachments: { has_screenshot: true, diagnostics_count: 3 } },
+        { ...row(2), suggestion_attachments: [] },
+        { ...row(3), suggestion_attachments: null },
+      ],
+      error: null,
+    });
+    const result = await listSuggestions();
+    const cols = String(vi.mocked(select).mock.calls[0]![0]);
+    expect(cols).toBe('*, suggestion_attachments(has_screenshot,diagnostics_count)');
+    expect(result?.map((r) => r.attachments)).toEqual([
+      { has_screenshot: true, diagnostics_count: 3 },
+      null,
+      null,
+    ]);
+    expect(result?.[0]).not.toHaveProperty('suggestion_attachments');
+  });
+
+  it('decodes a PostgREST bytea into a JPEG blob', async () => {
+    maybeSingle.mockResolvedValue({
+      data: { screenshot: '\\xffd8ff00', diagnostics: { entries: [] } },
+      error: null,
+    });
+    const a = await getSuggestionAttachments(7);
+    expect(from).toHaveBeenCalledWith('suggestion_attachments');
+    expect(selectEq).toHaveBeenCalledWith('suggestion_id', 7);
+    expect(a?.screenshot?.type).toBe('image/jpeg');
+    expect(a?.screenshot?.size).toBe(4);
+    expect(a?.diagnostics).toEqual({ entries: [] });
+  });
+
+  it('returns null when the read fails', async () => {
+    maybeSingle.mockResolvedValue({ data: null, error: { message: 'x' } });
+    expect(await getSuggestionAttachments(7)).toBeNull();
+  });
+
+  it('hexToBytes reads the \\x form', () => {
+    expect([...hexToBytes('\\xff00a1')]).toEqual([255, 0, 161]);
   });
 });
