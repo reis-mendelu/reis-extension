@@ -39,10 +39,13 @@ export function RegisteredStrip({
   const selected = rows.find((r) => r.section.id === selectedId);
   return (
     <div className="flex flex-col gap-2.5">
-      {/* Edge to edge, so the next tile peeking in at the right says "swipe". */}
+      {/* Edge to edge, so the next tile peeking in at the right says "swipe".
+          A fixed 178px tile made exactly two fit at 390px, with nothing
+          peeking — so 42vw at most, which leaves a peek at every phone width.
+          Snapped, so a swipe moves one whole exam. */}
       <div
         data-testid="registered-strip"
-        className="-mx-4 flex items-stretch gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="-mx-4 flex snap-x snap-mandatory scroll-px-4 items-stretch gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {rows.map((row) => {
           const today = sameDay(row.date, now);
@@ -58,7 +61,7 @@ export function RegisteredStrip({
               type="button"
               aria-pressed={isSelected}
               onClick={() => onSelect(row)}
-              className={`flex w-[178px] flex-shrink-0 flex-col gap-0.5 rounded-2xl border px-3.5 py-2.5 text-left ${look}`}
+              className={`flex w-[min(178px,42vw)] flex-shrink-0 snap-start flex-col gap-0.5 rounded-2xl border px-3.5 py-2.5 text-left ${look}`}
             >
               <span
                 className={`truncate text-xs font-bold ${today ? 'text-[var(--tone-error)]' : 'text-[var(--tone-success)]'}`}

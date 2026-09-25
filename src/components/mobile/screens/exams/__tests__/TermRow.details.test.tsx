@@ -191,11 +191,32 @@ describe('TermRow — details', () => {
     expect(fetchExamNotePriority).toHaveBeenCalledWith(term.id);
   });
 
-  // The room is already on the term's own line.
-  it('do not repeat the room as a "Místo konání" row', () => {
+  // The room moved here from the term's line: date, time, room, seats, badges
+  // and the chip were one line too many on a phone.
+  it('show the room as a "Místnost" row, and leave it off the term line', () => {
     renderRow(openSection);
+    expect(screen.queryByText(/Q01/)).not.toBeInTheDocument();
     openDetails();
-    expect(screen.queryByText('Místo konání')).not.toBeInTheDocument();
+    const details = within(screen.getByTestId('term-details'));
+    expect(details.getByText('Místnost')).toBeInTheDocument();
+    expect(details.getByText('Q01')).toBeInTheDocument();
+  });
+
+  it('show the English room name in English', () => {
+    useAppStore.setState({ language: 'en' } as never);
+    render(
+      <TermRow
+        term={{ ...term, roomCs: 'Studovna PEF', roomEn: 'PEF study room' }}
+        section={openSection}
+        now={NOW}
+        isProcessing={false}
+        onRegister={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole('button', { expanded: false }));
+    const details = within(screen.getByTestId('term-details'));
+    expect(details.getByText('Room')).toBeInTheDocument();
+    expect(details.getByText('PEF study room')).toBeInTheDocument();
   });
 
   it('show the length read on demand for a term the sync did not enrich', () => {

@@ -44,8 +44,9 @@ function deadline(raw: string): string {
  * (`examDurations`); a term it has not reached yet is fetched when opened —
  * the same request that reads the teacher's Poznámka.
  *
- * No "Místo konání" row and no map button: the room is already on the term's
- * own line, and the map is the map tab's job.
+ * The room lives here, not on the term's line: date, time, room, seats,
+ * attempt badges and the chip were too much for one phone row. No map button —
+ * the map is the map tab's job.
  */
 export function TermDetails({ term, section, isRegHere, now }: TermDetailsProps) {
   const { t, language } = useTranslation();
@@ -54,6 +55,7 @@ export function TermDetails({ term, section, isRegHere, now }: TermDetailsProps)
   const fetched = useAppStore((s) => s.examTermDurations[term.id]);
 
   const form = (language === 'en' ? term.sectionFormEn : term.sectionFormCs) || term.sectionForm;
+  const room = (language === 'en' ? term.roomEn : term.roomCs) || term.room;
   const synced =
     term.durationMinutes ?? (isRegHere ? section.registeredTerm?.durationMinutes : undefined);
   // The detail page is read for the length alone here — the phone shows no
@@ -68,6 +70,7 @@ export function TermDetails({ term, section, isRegHere, now }: TermDetailsProps)
   return (
     <div data-testid="term-details" className="flex flex-col gap-2 border-t border-base-300 pt-2">
       <dl className="flex flex-col gap-1">
+        {room && <Fact label={t('mobile.exams.detailRoom')}>{room}</Fact>}
         {form && <Fact label={t('mobile.exams.detailForm')}>{form}</Fact>}
         {(minutes != null || isLoading) && (
           <Fact label={t('mobile.exams.detailDuration')}>
