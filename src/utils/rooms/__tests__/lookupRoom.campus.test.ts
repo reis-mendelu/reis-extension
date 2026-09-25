@@ -50,12 +50,12 @@ describe('lookupRoomTarget for FRRMS’s Aula', () => {
   });
 });
 
-// resolveRoomCode walks a lesson's room strings in turn. If IS hands the
-// structured name without its campus ("Aula"), the next string must not undo
-// what the campus in the first one ruled out.
+// resolveRoomCode walks candidates that can be DIFFERENT rooms (a profile's
+// office, then a room the person teaches in). An off-map room is no reason to
+// skip the next one; lessonTarget, whose strings are one room, stops itself.
 describe('resolveRoomCode', () => {
-  it('stops at a room on an off-map campus instead of trying the next string', () => {
-    expect(resolveRoomCode(['Aula (ČP II.)', 'Aula'])).toBeNull();
+  it('moves past a room on an off-map campus to the next candidate', () => {
+    expect(resolveRoomCode(['Z25 (ČP II.)', 'Q31'])?.label).toBe('Q31');
   });
 
   it('still falls through an unknown room to the next string', () => {

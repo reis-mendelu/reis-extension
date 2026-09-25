@@ -1,7 +1,6 @@
 import roomsIndex from '../../data/map/rooms-index.json';
 import type { RoomIndexEntry } from '../../types/campusMap';
 import { lookupRoomEntry } from '../rooms/lookupRoom';
-import { offMapCampus } from '../rooms/roomCampus';
 import { isLabelForCode } from '../../data/map/isRoomLabels';
 
 const INDEX = roomsIndex as RoomIndexEntry[];
@@ -31,9 +30,6 @@ export interface ResolvedRoom {
  */
 export function resolveRoomCode(candidates: (string | null | undefined)[]): ResolvedRoom | null {
   for (const raw of candidates) {
-    // A campus off the map settles it: a later string without the campus
-    // ("Aula") must not resolve to a same-named room on Černá Pole.
-    if (offMapCampus(raw)) return null;
     const entry = lookupRoomEntry(raw, INDEX);
     if (entry) {
       // The friendliest name the room has: what IS prints for it ("B05 –

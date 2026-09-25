@@ -12,7 +12,8 @@ import isRoomPlacesJson from '../../data/map/isRoomPlaces.json';
  *
  * Only IS's own campus codes count (every one `isRoomPlaces.json` carries), so
  * a bracket that is not a campus — a staff profile's "BA39N2056 (Q2.56)" —
- * decides nothing.
+ * decides nothing. A campus with no placed room (ŠLP) is missing from that
+ * set; harmless while its one label names no map room.
  */
 const MAP_CAMPUS = 'ČP';
 
