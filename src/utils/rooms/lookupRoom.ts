@@ -1,4 +1,5 @@
 import type { RoomIndexEntry } from '../../types/campusMap';
+import { IS_ROOM_LABELS } from '../../data/map/isRoomLabels';
 
 /**
  * One room string off IS → the index entry the map can actually show.
@@ -134,6 +135,15 @@ const FIELDS: ((e: RoomIndexEntry) => string | null | undefined)[] = [
   (e) => e.nickname,
 ];
 
+/**
+ * IS's own answer: timetable label → passport code, from IS's room catalogue
+ * (see `data/map/isRoomLabels.ts`). Consulted before anything the map says,
+ * because the room string being resolved IS an IS label. It settles ties the
+ * map cannot (E17), agrees with every `PREFERRED_ROOM` entry, and outranks two
+ * map nicknames that sit a floor below IS's rooms (A411, A412).
+ */
+const IS_CODE_BY_LABEL = new Map(IS_ROOM_LABELS.map((l) => [normalizeRoomKey(l.label), l.code]));
+
 /** The first entry any of `raw`'s candidate strings names, or null. */
 export function lookupRoomEntry(
   raw: string | null | undefined,
@@ -143,6 +153,12 @@ export function lookupRoomEntry(
   for (const candidate of candidates(raw)) {
     const needle = normalizeRoomKey(candidate);
     if (!needle) continue;
+    // Only when the index at hand has that room — a stub index falls through.
+    const isCode = IS_CODE_BY_LABEL.get(needle);
+    if (isCode) {
+      const hit = index.find((e) => e.code === isCode);
+      if (hit) return hit;
+    }
     const preferred = PREFERRED_ROOM[needle];
     if (preferred) {
       const pick = index.find((e) => e.code === preferred);

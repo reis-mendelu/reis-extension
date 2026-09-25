@@ -1,0 +1,742 @@
+[
+  {
+    "code": "BA01N1018",
+    "label": "A04"
+  },
+  {
+    "code": "BA01N1026",
+    "label": "A06"
+  },
+  {
+    "code": "BA01N1052",
+    "label": "A01"
+  },
+  {
+    "code": "BA01N1085",
+    "label": "A103"
+  },
+  {
+    "code": "BA01N2015",
+    "label": "A12"
+  },
+  {
+    "code": "BA01N2070",
+    "label": "A13"
+  },
+  {
+    "code": "BA01N3015",
+    "label": "A22"
+  },
+  {
+    "code": "BA01N3016",
+    "label": "A24"
+  },
+  {
+    "code": "BA01N3017",
+    "label": "A26"
+  },
+  {
+    "code": "BA01N3054",
+    "label": "Aula"
+  },
+  {
+    "code": "BA01N3077",
+    "label": "A25"
+  },
+  {
+    "code": "BA01N3078",
+    "label": "A27"
+  },
+  {
+    "code": "BA01N3082",
+    "label": "A29"
+  },
+  {
+    "code": "BA01N3087",
+    "label": "A23"
+  },
+  {
+    "code": "BA01N3097",
+    "label": "A334"
+  },
+  {
+    "code": "BA01N4002",
+    "label": "A32a"
+  },
+  {
+    "code": "BA01N4003",
+    "label": "A32b"
+  },
+  {
+    "code": "BA01N4015",
+    "label": "A34"
+  },
+  {
+    "code": "BA01N4016",
+    "label": "A36"
+  },
+  {
+    "code": "BA01N4033",
+    "label": "A38"
+  },
+  {
+    "code": "BA01N4097",
+    "label": "A33"
+  },
+  {
+    "code": "BA01N4102",
+    "label": "A31"
+  },
+  {
+    "code": "BA01N4104",
+    "label": "A35"
+  },
+  {
+    "code": "BA01N5002",
+    "label": "A46"
+  },
+  {
+    "code": "BA01N5003",
+    "label": "A410"
+  },
+  {
+    "code": "BA01N5005",
+    "label": "A414"
+  },
+  {
+    "code": "BA01N5006",
+    "label": "A418a"
+  },
+  {
+    "code": "BA01N5008",
+    "label": "A416"
+  },
+  {
+    "code": "BA01N5009",
+    "label": "A418"
+  },
+  {
+    "code": "BA01N5036",
+    "label": "A412"
+  },
+  {
+    "code": "BA01N5071",
+    "label": "A49"
+  },
+  {
+    "code": "BA01N5072",
+    "label": "A411"
+  },
+  {
+    "code": "BA01N5075",
+    "label": "A47"
+  },
+  {
+    "code": "BA01N5081",
+    "label": "A43"
+  },
+  {
+    "code": "BA01N5089",
+    "label": "A44"
+  },
+  {
+    "code": "BA01P1041",
+    "label": "A009"
+  },
+  {
+    "code": "BA01P1042",
+    "label": "AS02"
+  },
+  {
+    "code": "BA01P1047",
+    "label": "AS01"
+  },
+  {
+    "code": "BA01P1049",
+    "label": "Týmová studovna 1"
+  },
+  {
+    "code": "BA01P1051",
+    "label": "Indiv. studovna 2"
+  },
+  {
+    "code": "BA01P1052",
+    "label": "Indiv. studovna 1"
+  },
+  {
+    "code": "BA01P1053",
+    "label": "Týmová studovna 2"
+  },
+  {
+    "code": "BA03N1021",
+    "label": "C04"
+  },
+  {
+    "code": "BA03N2044",
+    "label": "C12"
+  },
+  {
+    "code": "BA03N2045",
+    "label": "C11"
+  },
+  {
+    "code": "BA03N2051",
+    "label": "C02"
+  },
+  {
+    "code": "BA03N2055",
+    "label": "C01"
+  },
+  {
+    "code": "BA03N3021",
+    "label": "C23"
+  },
+  {
+    "code": "BA03N3041",
+    "label": "C22"
+  },
+  {
+    "code": "BA03N3042",
+    "label": "C21"
+  },
+  {
+    "code": "BA03N4040",
+    "label": "C32"
+  },
+  {
+    "code": "BA03N4041",
+    "label": "C31"
+  },
+  {
+    "code": "BA03N5043",
+    "label": "C42"
+  },
+  {
+    "code": "BA03N5044",
+    "label": "C41"
+  },
+  {
+    "code": "BA03N6035",
+    "label": "C53"
+  },
+  {
+    "code": "BA03N6045",
+    "label": "C52"
+  },
+  {
+    "code": "BA03N6046",
+    "label": "C51"
+  },
+  {
+    "code": "BA03P1060",
+    "label": "C03"
+  },
+  {
+    "code": "BA04N1010",
+    "label": "B02"
+  },
+  {
+    "code": "BA04N1024",
+    "label": "B04"
+  },
+  {
+    "code": "BA04N1029",
+    "label": "B06"
+  },
+  {
+    "code": "BA04N1059",
+    "label": "B03"
+  },
+  {
+    "code": "BA04N1065",
+    "label": "B05 – Strojový sál"
+  },
+  {
+    "code": "BA04N1067",
+    "label": "B01"
+  },
+  {
+    "code": "BA04N2005",
+    "label": "B106, zasedačka LDF"
+  },
+  {
+    "code": "BA04N2011",
+    "label": "B12"
+  },
+  {
+    "code": "BA04N2012",
+    "label": "BZ121"
+  },
+  {
+    "code": "BA04N2027",
+    "label": "BZ122"
+  },
+  {
+    "code": "BA04N2056",
+    "label": "KN413"
+  },
+  {
+    "code": "BA04N2057",
+    "label": "B11"
+  },
+  {
+    "code": "BA04N3022",
+    "label": "B22"
+  },
+  {
+    "code": "BA04N3034",
+    "label": "B23"
+  },
+  {
+    "code": "BA04N3038",
+    "label": "B237"
+  },
+  {
+    "code": "BA04N3047",
+    "label": "B21"
+  },
+  {
+    "code": "BA04N3050",
+    "label": "B20"
+  },
+  {
+    "code": "BA04N4017",
+    "label": "B32"
+  },
+  {
+    "code": "BA04N4019",
+    "label": "B36"
+  },
+  {
+    "code": "BA04N4021",
+    "label": "B34"
+  },
+  {
+    "code": "BA04N4036",
+    "label": "B35"
+  },
+  {
+    "code": "BA04N4053",
+    "label": "B328"
+  },
+  {
+    "code": "BA04N5020",
+    "label": "B42"
+  },
+  {
+    "code": "BA04N5024",
+    "label": "B46"
+  },
+  {
+    "code": "BA04N5026",
+    "label": "B44"
+  },
+  {
+    "code": "BA04N5038",
+    "label": "B45"
+  },
+  {
+    "code": "BA04N5039",
+    "label": "B43"
+  },
+  {
+    "code": "BA04N5050",
+    "label": "B41"
+  },
+  {
+    "code": "BA04N6008",
+    "label": "B51"
+  },
+  {
+    "code": "BA04N6029",
+    "label": "B514"
+  },
+  {
+    "code": "BA04N6064",
+    "label": "KN414"
+  },
+  {
+    "code": "BA05N1002",
+    "label": "E04"
+  },
+  {
+    "code": "BA05N1012",
+    "label": "E02"
+  },
+  {
+    "code": "BA05N1013",
+    "label": "E01"
+  },
+  {
+    "code": "BA05N2011",
+    "label": "E16"
+  },
+  {
+    "code": "BA05N2018",
+    "label": "E17"
+  },
+  {
+    "code": "BA05N2026",
+    "label": "E15"
+  },
+  {
+    "code": "BA05N3009",
+    "label": "E25"
+  },
+  {
+    "code": "BA05N3010",
+    "label": "E21"
+  },
+  {
+    "code": "BA05N3011",
+    "label": "E22"
+  },
+  {
+    "code": "BA05N3013",
+    "label": "E23"
+  },
+  {
+    "code": "BA05N3014",
+    "label": "E24"
+  },
+  {
+    "code": "BA05P1053",
+    "label": "E91"
+  },
+  {
+    "code": "BA27N1023",
+    "label": "M1.08"
+  },
+  {
+    "code": "BA27N1036",
+    "label": "M1.10"
+  },
+  {
+    "code": "BA27N1043",
+    "label": "M1.09"
+  },
+  {
+    "code": "BA27N2001",
+    "label": "M2.11"
+  },
+  {
+    "code": "BA27N2002",
+    "label": "M2.12"
+  },
+  {
+    "code": "BA27N2010",
+    "label": "M2.14"
+  },
+  {
+    "code": "BA27N2031",
+    "label": "M2.13"
+  },
+  {
+    "code": "BA27P1011",
+    "label": "M01.03"
+  },
+  {
+    "code": "BA27P1019",
+    "label": "M01.19"
+  },
+  {
+    "code": "BA27P1025",
+    "label": "M01.02"
+  },
+  {
+    "code": "BA27P1044",
+    "label": "M01.05"
+  },
+  {
+    "code": "BA27P1046",
+    "label": "M01.01"
+  },
+  {
+    "code": "BA27P2005",
+    "label": "M02.02"
+  },
+  {
+    "code": "BA27P2012",
+    "label": "M02.01"
+  },
+  {
+    "code": "BA39N1007",
+    "label": "Q1.07"
+  },
+  {
+    "code": "BA39N1009",
+    "label": "Q01"
+  },
+  {
+    "code": "BA39N1010",
+    "label": "Q02"
+  },
+  {
+    "code": "BA39N1011",
+    "label": "Q03"
+  },
+  {
+    "code": "BA39N1028",
+    "label": "Q09"
+  },
+  {
+    "code": "BA39N1031",
+    "label": "Q08"
+  },
+  {
+    "code": "BA39N1037",
+    "label": "Q07"
+  },
+  {
+    "code": "BA39N1044",
+    "label": "Q06"
+  },
+  {
+    "code": "BA39N1050",
+    "label": "Q05"
+  },
+  {
+    "code": "BA39N1051",
+    "label": "Q-LCNA"
+  },
+  {
+    "code": "BA39N1084",
+    "label": "Q1.84"
+  },
+  {
+    "code": "BA39N2001",
+    "label": "Q112"
+  },
+  {
+    "code": "BA39N2002",
+    "label": "Q113"
+  },
+  {
+    "code": "BA39N2007",
+    "label": "Q111"
+  },
+  {
+    "code": "BA39N2014",
+    "label": "Q13"
+  },
+  {
+    "code": "BA39N2015",
+    "label": "Q14"
+  },
+  {
+    "code": "BA39N2016",
+    "label": "Q110"
+  },
+  {
+    "code": "BA39N2017",
+    "label": "Q17"
+  },
+  {
+    "code": "BA39N2018",
+    "label": "Q12"
+  },
+  {
+    "code": "BA39N2020",
+    "label": "Q15"
+  },
+  {
+    "code": "BA39N2027",
+    "label": "Q19"
+  },
+  {
+    "code": "BA39N2028",
+    "label": "Q18"
+  },
+  {
+    "code": "BA39N2029",
+    "label": "Q11"
+  },
+  {
+    "code": "BA39N2030",
+    "label": "Q16"
+  },
+  {
+    "code": "BA39N2032",
+    "label": "Q2.32"
+  },
+  {
+    "code": "BA39N2051",
+    "label": "Q2.51"
+  },
+  {
+    "code": "BA39N3018",
+    "label": "Q24"
+  },
+  {
+    "code": "BA39N3021",
+    "label": "Q25"
+  },
+  {
+    "code": "BA39N3029",
+    "label": "Q23"
+  },
+  {
+    "code": "BA39N3031",
+    "label": "Q26"
+  },
+  {
+    "code": "BA39N3044",
+    "label": "Q22"
+  },
+  {
+    "code": "BA39N3046",
+    "label": "Q27"
+  },
+  {
+    "code": "BA39N3053",
+    "label": "Q21"
+  },
+  {
+    "code": "BA39N3054",
+    "label": "Q28"
+  },
+  {
+    "code": "BA39N3057",
+    "label": "Q3.57"
+  },
+  {
+    "code": "BA39N3076",
+    "label": "Q3.76"
+  },
+  {
+    "code": "BA39N4016",
+    "label": "Q34"
+  },
+  {
+    "code": "BA39N4019",
+    "label": "Q35"
+  },
+  {
+    "code": "BA39N4027",
+    "label": "Q33"
+  },
+  {
+    "code": "BA39N4029",
+    "label": "Q36"
+  },
+  {
+    "code": "BA39N4042",
+    "label": "Q32"
+  },
+  {
+    "code": "BA39N4044",
+    "label": "Q37"
+  },
+  {
+    "code": "BA39N4049",
+    "label": "Q4.49"
+  },
+  {
+    "code": "BA39N4051",
+    "label": "Q31"
+  },
+  {
+    "code": "BA39N4052",
+    "label": "Q38"
+  },
+  {
+    "code": "BA39N4055",
+    "label": "Q4.55"
+  },
+  {
+    "code": "BA39N4074",
+    "label": "Q4.74"
+  },
+  {
+    "code": "BA39N5001",
+    "label": "Q44"
+  },
+  {
+    "code": "BA39N5003",
+    "label": "Q45"
+  },
+  {
+    "code": "BA39N5004",
+    "label": "Q43"
+  },
+  {
+    "code": "BA39N5006",
+    "label": "Q46"
+  },
+  {
+    "code": "BA39N5010",
+    "label": "Q42"
+  },
+  {
+    "code": "BA39N5012",
+    "label": "Q47"
+  },
+  {
+    "code": "BA39N5013",
+    "label": "Q41"
+  },
+  {
+    "code": "BA39N5014",
+    "label": "Q48"
+  },
+  {
+    "code": "BA39N5016",
+    "label": "Q5.16"
+  },
+  {
+    "code": "BA39N5035",
+    "label": "Q5.35"
+  },
+  {
+    "code": "BA39N6001",
+    "label": "Q6.01"
+  },
+  {
+    "code": "BA39N6019",
+    "label": "Q6.19"
+  },
+  {
+    "code": "BA39P1001",
+    "label": "Q01.01"
+  },
+  {
+    "code": "BA39P1002",
+    "label": "Q01.02"
+  },
+  {
+    "code": "BA39P1006",
+    "label": "Q01.06"
+  },
+  {
+    "code": "BA39P1029",
+    "label": "Q01.29"
+  },
+  {
+    "code": "BA39P1039",
+    "label": "Q01.39"
+  },
+  {
+    "code": "BA39P1043",
+    "label": "Q01.43"
+  },
+  {
+    "code": "BA39P1048",
+    "label": "Q01.48"
+  },
+  {
+    "code": "BA39P1053",
+    "label": "Q01.53"
+  },
+  {
+    "code": "BA39P1066",
+    "label": "Q01.66"
+  },
+  {
+    "code": "BA39P1070",
+    "label": "Q01.70"
+  },
+  {
+    "code": "BA39P1084",
+    "label": "Q01.84"
+  }
+]

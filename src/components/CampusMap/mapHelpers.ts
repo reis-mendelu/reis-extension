@@ -9,6 +9,7 @@ import type {
   RemotePlace,
 } from '../../types/campusMap';
 import { lookupRoomEntry } from '../../utils/rooms/lookupRoom';
+import { isLabelForCode, isLabelOfAnotherRoom } from '../../data/map/isRoomLabels';
 
 export interface RoomStyle {
   fill: string;
@@ -151,18 +152,34 @@ export function shortLabel(name: string): string {
 // stripping the building prefix off the raw code (old behaviour). `rawCode` is
 // the passport code — `passportNumber` on a geojson feature, `code` on an index
 // entry. Verified against the MENDELU map API: BA01N1052 → nickname "A01".
+// Above all of that sits IS's own label (data/map/isRoomLabels.ts): the string a
+// timetable prints, and the one search matches — so the plan never calls a room
+// "B40" after a search for "B06" found it.
 export function roomLabel(
   name: string,
   rawCode: string | null | undefined,
   nickname: string | null | undefined
 ): string {
+  const isLabel = isLabelForCode(rawCode);
+  if (isLabel) return isLabel;
   // Only treat `name` as already-friendly when we can prove it differs from a
   // known raw code. With a null/undefined `rawCode` (e.g. building B rooms carry
   // a nickname but no passportNumber) we can't tell, so we must not short-circuit
   // here — otherwise a raw-code-shaped `name` would win over a real nickname.
   if (name && rawCode != null && name !== rawCode) return name; // PEF: name is friendly
-  if (nickname) return nickname; // A/C/E/M (and B): friendly code lives in nickname
+  // A/C/E/M (and B): friendly code lives in nickname — unless IS gives that
+  // name to another room (the map's stale "A412" on BA01N4082).
+  if (nickname && !isLabelOfAnotherRoom(nickname, rawCode)) return nickname;
   return shortLabel(name || rawCode || ''); // fallback: strip the prefix
+}
+
+// A permanent floor-plan label has to fit inside the room's outline, so it
+// keeps only the code in front of IS's description: "B05 – Strojový sál" and
+// "B106, zasedačka LDF" become "B05" and "B106". Search, the detail card and
+// the hover tooltip keep the full name. A spaced dash or a comma is the
+// separator; "Q-LCNA" has neither.
+export function planLabel(label: string): string {
+  return label.split(/\s[–-]\s|,\s/)[0] || label;
 }
 
 export function lonLatToLatLng(c: [number, number]): [number, number] {
@@ -319,11 +336,15 @@ const BARE_HALL = /^[a-z]\d{1,3}$/;
 // `nickname` is included so the friendly hall label counts for matching/ranking
 // even when it lives outside `name` — building A's "A01" is a nickname, not a
 // name, and a student typing "A01" must still find room BA01N1052.
+// IS's label (isRoomLabels) is a field too: B05 has no other name a student knows.
 function matchRank(q: string, name: string, code: string, nickname = ''): number {
-  const fields = [name.toLowerCase(), code.toLowerCase(), nickname.toLowerCase()].filter(Boolean);
+  const isLabel = (isLabelForCode(code) ?? '').toLowerCase();
+  const fields = [name.toLowerCase(), code.toLowerCase(), nickname.toLowerCase(), isLabel].filter(
+    Boolean
+  );
   const exact = fields.some((f) => f === q);
   const prefix = fields.some((f) => f.startsWith(q));
-  const hall = BARE_HALL.test(name.toLowerCase()) || BARE_HALL.test(nickname.toLowerCase());
+  const hall = [name, nickname, isLabel].some((f) => BARE_HALL.test(f.toLowerCase()));
   if (exact) return 0;
   if (prefix && hall) return 1;
   if (prefix) return 2;
@@ -335,14 +356,18 @@ function matchRank(q: string, name: string, code: string, nickname = ''): number
 // top-left map search and the composer's room picker so both order hits the
 // same way (exact "Q01" beats the dotted Q01.NN offices listed earlier).
 function rankedRooms(q: string, index: RoomIndexEntry[]) {
+  // A nickname IS gives to another room is not this room's name (roomLabel).
+  const nick = (e: RoomIndexEntry) =>
+    isLabelOfAnotherRoom(e.nickname, e.code) ? '' : (e.nickname ?? '');
   return index
     .filter(
       (e) =>
         e.code.toLowerCase().includes(q) ||
         e.name.toLowerCase().includes(q) ||
-        (e.nickname ?? '').toLowerCase().includes(q)
+        nick(e).toLowerCase().includes(q) ||
+        (isLabelForCode(e.code) ?? '').toLowerCase().includes(q)
     )
-    .map((entry) => ({ entry, rank: matchRank(q, entry.name, entry.code, entry.nickname ?? '') }));
+    .map((entry) => ({ entry, rank: matchRank(q, entry.name, entry.code, nick(entry)) }));
 }
 
 export function searchRooms(query: string, index: RoomIndexEntry[], limit = 6): RoomIndexEntry[] {
