@@ -23,6 +23,12 @@ describe('lookupRoomPlace', () => {
     expect(lookupRoomPlace('ZFAC1 (Led)')?.label).toBe('ZFAC1');
   });
 
+  // IS's own label here is a technical handle; the timetable prints it, so it
+  // still matches, but the map card shows a name.
+  it('shows a display name for a technical IS label', () => {
+    expect(lookupRoomPlace('ucebna_utechov (Sob)')?.label).toBe('Učebna Útěchov');
+  });
+
   it.each(['Mimo areál CSA (TAK)', 'B Virtuální 6', 'Virtuální učebna'])(
     'gives %s no place',
     (raw) => {

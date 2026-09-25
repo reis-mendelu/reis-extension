@@ -357,7 +357,8 @@
     "label": "ucebna_utechov",
     "campus": "Sob",
     "kind": "remote",
-    "id": -106
+    "id": -106,
+    "display": "Učebna Útěchov"
   },
   {
     "label": "Velká zasedačka PEF",
