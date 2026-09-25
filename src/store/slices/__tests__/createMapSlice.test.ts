@@ -160,8 +160,8 @@ describe('mapSlice', () => {
   it('focusRoomByCode leaves the map alone for a room it cannot place at all', () => {
     useAppStore.getState().focusCampus();
     const before = useAppStore.getState().mapFocusRequest;
-    // Útěchov is held until its site is confirmed, so IS's room has no place.
-    useAppStore.getState().focusRoomByCode('ucebna_utechov (Sob)');
+    // IS files this room under two places at once, so it has none.
+    useAppStore.getState().focusRoomByCode('Lesní škola Jezírko (ŠLP)');
     expect(useAppStore.getState().mapFocusRequest).toBe(before);
   });
 

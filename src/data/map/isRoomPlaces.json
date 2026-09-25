@@ -240,6 +240,12 @@
     "id": 1609
   },
   {
+    "label": "PL001",
+    "campus": "Sob",
+    "kind": "remote",
+    "id": -105
+  },
+  {
     "label": "Q-LVR",
     "campus": "ČP",
     "kind": "building",
@@ -346,6 +352,12 @@
     "campus": "ČP",
     "kind": "poi",
     "id": 1572
+  },
+  {
+    "label": "ucebna_utechov",
+    "campus": "Sob",
+    "kind": "remote",
+    "id": -106
   },
   {
     "label": "Velká zasedačka PEF",
