@@ -12,6 +12,7 @@
 // polygon (mirrors the project's "needs real evidence" rule for parsers).
 
 import { readFileSync, writeFileSync } from 'node:fs';
+import { parseOnlyIds } from './lib/onlyIds.mjs';
 
 const OVERPASS = 'https://overpass-api.de/api/interpreter';
 
@@ -115,11 +116,10 @@ const LANDMARKS = [
   },
 ];
 
-const only = process.argv
-  .find((a) => a.startsWith('--only='))
-  ?.slice('--only='.length)
-  .split(',')
-  .map(Number);
+const only = parseOnlyIds(
+  process.argv.slice(2),
+  LANDMARKS.map((x) => x.id)
+);
 
 const ringCentroid = (ring) => {
   let lon = 0,

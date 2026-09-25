@@ -35,6 +35,12 @@ describe('lookupRoomPlace', () => {
     expect(lookupRoomPlace('ucebna_utechov (Sob)')).toBeNull();
   });
 
+  // IS files "Lesní škola Jezírko" under ŠLP (Křtiny), but it is the Jezírko
+  // forest site by Soběšice — held with it, not pinned to Křtiny château.
+  it('leaves the ŠLP Jezírko forest school unplaced too', () => {
+    expect(lookupRoomPlace('Lesní škola Jezírko (ŠLP)')).toBeNull();
+  });
+
   it('refuses a room on the wrong campus', () => {
     expect(lookupRoomPlace('T18 (Led)')).toBeNull();
   });

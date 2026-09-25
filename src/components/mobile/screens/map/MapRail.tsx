@@ -1,4 +1,4 @@
-import { ChevronLeft, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { ChevronLeft, PanelRightClose } from 'lucide-react';
 import { useEffect } from 'react';
 import { useAppStore } from '../../../../store/useAppStore';
 import { RouteDismiss } from '../../../CampusMap/RouteDismiss';
@@ -12,6 +12,7 @@ import { useTranslation } from '../../../../hooks/useTranslation';
 import { useRailResize } from './useRailResize';
 import { RAIL_MIN_PX, RAIL_MAX_PX } from '../../../../utils/mapRail';
 import { MapPanelBody } from './MapPanelBody';
+import { MapRailOpenButton } from './MapRailOpenButton';
 import { RoomPlaceNote } from './RoomPlaceNote';
 import { useForRoomSelection } from './useForRoomSelection';
 
@@ -72,21 +73,7 @@ export function MapRail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `selection` is the trigger; see above
   }, [selectedEvent, selectedGardenPlace, selection, setOpen]);
 
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label={t('mobile.map.railOpen')}
-        aria-expanded={false}
-        // The one thing left behind when the rail is away: a pill at the edge
-        // it went into, so the way back is where it left from.
-        className="absolute right-4 top-[calc(5rem_+_var(--safe-top,0px))] z-[1000] flex h-11 w-11 items-center justify-center rounded-2xl border border-base-content/10 bg-base-100 shadow-drawer"
-      >
-        <PanelRightOpen size={18} className="text-base-content/70" />
-      </button>
-    );
-  }
+  if (!open) return <MapRailOpenButton onOpen={() => setOpen(true)} />;
 
   return (
     <aside

@@ -27,6 +27,7 @@ import {
   ringContaining,
 } from './lib/osmRings.mjs';
 import { overpass } from './lib/overpass.mjs';
+import { parseOnlyIds } from './lib/onlyIds.mjs';
 
 // Site shapes:
 //  - wayId          → one Polygon outline (a single areal / building)
@@ -116,11 +117,10 @@ const SITES = [
   },
 ];
 
-const only = process.argv
-  .find((a) => a.startsWith('--only='))
-  ?.slice('--only='.length)
-  .split(',')
-  .map(Number);
+const only = parseOnlyIds(
+  process.argv.slice(2),
+  SITES.map((x) => x.id)
+);
 
 // A single way → one closed ring.
 async function fetchWay(wayId) {
