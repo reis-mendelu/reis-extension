@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sameContent, gateFindings, readLiveGist, GIST_ID } from '../gate';
+import { sameContent, gateFindings, readLiveGist, GIST_ID, GIST_RAW_URL } from '../gate';
 import { BEGIN, END } from '../checklist';
 
 describe('sameContent', () => {
@@ -69,30 +69,32 @@ describe('gateFindings', () => {
 });
 
 describe('readLiveGist', () => {
-  const ok = (content: string) =>
-    new Response(JSON.stringify({ files: { 'privacy.md': { content } } }), { status: 200 });
-
-  // Actions' GITHUB_TOKEN is an App installation token, which the gists API
-  // rejects; the gist is public, so the gate reads it with no credentials.
-  it('reads the public gist without an Authorization header', async () => {
-    let headers: HeadersInit | undefined;
-    const got = await readLiveGist(async (url, init) => {
-      expect(String(url)).toBe(`https://api.github.com/gists/${GIST_ID}`);
-      headers = init?.headers;
-      return ok('policy');
-    });
+  // From a runner the REST API fails with or without GITHUB_TOKEN, so the gate
+  // reads the raw URL, with no credentials, past the CDN's 5-minute cache.
+  it('reads the raw gist, uncached and without credentials', async () => {
+    let seen: { url: string; init?: RequestInit } | undefined;
+    const got = await readLiveGist(
+      async (url, init) => {
+        seen = { url: String(url), init };
+        return new Response('policy', { status: 200 });
+      },
+      () => 42
+    );
     expect(got).toEqual({ content: 'policy' });
-    expect(new Headers(headers).has('authorization')).toBe(false);
+    expect(seen?.url).toBe(`${GIST_RAW_URL}?t=42`);
+    expect(GIST_RAW_URL).toContain(GIST_ID);
+    expect(new Headers(seen?.init?.headers).has('authorization')).toBe(false);
   });
 
   it('says why when the read fails', async () => {
-    const got = await readLiveGist(async () => new Response('{"message":"nope"}', { status: 403 }));
+    const got = await readLiveGist(async () => new Response('nope', { status: 403 }));
     expect(got).toEqual({ content: null, reason: 'HTTP 403' });
   });
 
-  it('says why when the gist has no privacy.md', async () => {
-    const got = await readLiveGist(async () => new Response('{"files":{}}', { status: 200 }));
-    expect(got.content).toBeNull();
-    expect(got.reason).toMatch(/privacy\.md/);
+  it('says why when the network fails', async () => {
+    const got = await readLiveGist(async () => {
+      throw new Error('ENOTFOUND');
+    });
+    expect(got).toEqual({ content: null, reason: 'ENOTFOUND' });
   });
 });

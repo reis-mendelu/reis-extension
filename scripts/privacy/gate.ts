@@ -54,22 +54,25 @@ export function gateFindings(i: {
   return out;
 }
 
+export const GIST_OWNER = 'ElijaahInverted';
+export const GIST_RAW_URL = `https://gist.githubusercontent.com/${GIST_OWNER}/${GIST_ID}/raw/privacy.md`;
+
 /**
- * The published policy, read with NO credentials. The gist is public, and the
- * gists API rejects the GitHub App installation token Actions provides as
- * GITHUB_TOKEN, so sending it made every CI read fail (release 5.3.0).
+ * The published policy, read from the gist's raw URL — not the REST API. From an
+ * Actions runner the API fails both ways: GITHUB_TOKEN (an App installation
+ * token) is not accepted for gists, and without it the runner's shared IP hits
+ * the anonymous rate limit and gets 403 (both seen on the 5.3.0 release PR).
+ * The raw host is not rate-limited that way. Its CDN caches for 5 minutes; the
+ * query string bypasses that, so a just-published policy is seen at once.
  */
 export async function readLiveGist(
-  fetchImpl: typeof fetch = fetch
+  fetchImpl: typeof fetch = fetch,
+  now: () => number = Date.now
 ): Promise<{ content: string | null; reason?: string }> {
   try {
-    const res = await fetchImpl(`https://api.github.com/gists/${GIST_ID}`, {
-      headers: { Accept: 'application/vnd.github+json' },
-    });
+    const res = await fetchImpl(`${GIST_RAW_URL}?t=${now()}`);
     if (!res.ok) return { content: null, reason: `HTTP ${res.status}` };
-    const json = (await res.json()) as { files?: Record<string, { content?: string }> };
-    const content = json.files?.['privacy.md']?.content;
-    return content == null ? { content: null, reason: 'no privacy.md in the gist' } : { content };
+    return { content: await res.text() };
   } catch (err) {
     return { content: null, reason: err instanceof Error ? err.message : String(err) };
   }
