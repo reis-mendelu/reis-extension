@@ -4,14 +4,14 @@ import { installConsoleCapture, uninstallConsoleCaptureForTests } from '../conso
 import { logError } from '../../reportError';
 
 describe('console capture', () => {
-  let warn: ReturnType<typeof vi.fn>;
-  let error: ReturnType<typeof vi.fn>;
+  let warn: ReturnType<typeof vi.fn<(...args: unknown[]) => void>>;
+  let error: ReturnType<typeof vi.fn<(...args: unknown[]) => void>>;
   const realWarn = console.warn;
   const realError = console.error;
 
   beforeEach(() => {
-    warn = vi.fn();
-    error = vi.fn();
+    warn = vi.fn<(...args: unknown[]) => void>();
+    error = vi.fn<(...args: unknown[]) => void>();
     console.warn = warn;
     console.error = error;
     clearDiagnostics();

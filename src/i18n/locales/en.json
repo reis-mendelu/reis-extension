@@ -218,7 +218,19 @@
       "syllabusEmpty": "Syllabus: no data",
       "zaznamnikEmpty": "Records: no data",
       "examActionFailed": "Exams: action failed"
-    }
+    },
+    "attachScreenshot": "Attach a screenshot",
+    "screenshotPasteHint": "or paste it here (Ctrl+V)",
+    "screenshotAlt": "Attached screenshot",
+    "removeScreenshot": "Remove screenshot",
+    "screenshotFailed": "Couldn't process that image.",
+    "screenshotDropped": "Report sent, but the screenshot couldn't be stored.",
+    "attachDiagnostics": "Attach technical details",
+    "diagnosticsHint": "Errors and warnings from this session, none of your IS data. You can review them before sending.",
+    "showDiagnostics": "Show ({count})",
+    "hideDiagnostics": "Hide",
+    "noDiagnostics": "No errors or warnings. Only the environment and sync state will be attached.",
+    "removeLine": "Remove line"
   },
   "common": {
     "loading": "Loading...",

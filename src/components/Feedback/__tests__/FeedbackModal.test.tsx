@@ -37,12 +37,10 @@ describe('FeedbackModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /Send feedback/i }));
 
     await waitFor(() => expect(submitSuggestion).toHaveBeenCalledTimes(1));
-    expect(submitSuggestion).toHaveBeenCalledWith({
-      type: 'bug',
-      title: 'Exams empty',
-      body: 'Panel stayed empty',
-      contact: '',
-    });
+    expect(submitSuggestion).toHaveBeenCalledWith(
+      { type: 'bug', title: 'Exams empty', body: 'Panel stayed empty', contact: '' },
+      { diagnostics: null, screenshotBase64: null }
+    );
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 

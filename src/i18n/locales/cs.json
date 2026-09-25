@@ -264,7 +264,19 @@
       "syllabusEmpty": "Sylabus: chybí data",
       "zaznamnikEmpty": "Záznamník: chybí data",
       "examActionFailed": "Zkoušky: akce selhala"
-    }
+    },
+    "attachScreenshot": "Přiložit snímek obrazovky",
+    "screenshotPasteHint": "nebo ho sem vlož (Ctrl+V)",
+    "screenshotAlt": "Přiložený snímek obrazovky",
+    "removeScreenshot": "Odebrat snímek",
+    "screenshotFailed": "Tenhle obrázek se nepodařilo zpracovat.",
+    "screenshotDropped": "Zpráva odešla, ale snímek se nepodařilo uložit.",
+    "attachDiagnostics": "Přiložit technické údaje",
+    "diagnosticsHint": "Chyby a varování z této relace, bez tvých dat z IS. Před odesláním si je můžeš prohlédnout.",
+    "showDiagnostics": "Zobrazit ({count})",
+    "hideDiagnostics": "Skrýt",
+    "noDiagnostics": "Žádné chyby ani varování. Přiložíme jen prostředí a stav synchronizace.",
+    "removeLine": "Odebrat řádek"
   },
   "course": {
     "setNickname": "Nastavit přezdívku",
