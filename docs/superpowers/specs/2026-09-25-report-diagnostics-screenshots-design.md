@@ -92,8 +92,9 @@ text, `logError`'s `extra` object.
 - Content-script entries reach the iframe through a new `get_diagnostics`
   action on the existing `REIS_ACTION` / `REIS_ACTION_RESULT` request–reply
   (same shape as `refresh_exams`). The collector races it against 1.5 s and
-  falls back to app-only entries. Capacitor's `actionHandler` answers
-  `get_diagnostics` with `{ entries: [] }` — there is no content script.
+  falls back to app-only entries. It is only sent when
+  `getPlatform().kind === 'extension'`; Capacitor and the dev webapp have no
+  content script, so nothing is asked there.
 
 ## Server (one migration)
 
