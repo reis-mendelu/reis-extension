@@ -23,6 +23,12 @@ describe('lookupRoomPlace', () => {
     expect(lookupRoomPlace('ZFAC1 (Led)')?.label).toBe('ZFAC1');
   });
 
+  // IS's own label here is a technical handle; the timetable prints it, so it
+  // still matches, but the map card shows a name.
+  it('shows a display name for a technical IS label', () => {
+    expect(lookupRoomPlace('ucebna_utechov (Sob)')?.label).toBe('Učebna Útěchov');
+  });
+
   it.each(['Mimo areál CSA (TAK)', 'B Virtuální 6', 'Virtuální učebna'])(
     'gives %s no place',
     (raw) => {
@@ -30,14 +36,19 @@ describe('lookupRoomPlace', () => {
     }
   );
 
-  // Útěchov and Jezírko are held until the two sites are confirmed.
-  it('leaves the Soběšice rooms unplaced for now', () => {
-    expect(lookupRoomPlace('ucebna_utechov (Sob)')).toBeNull();
+  // IS's "Brno - Soběšice" campus is two unrelated buildings: the wood-science
+  // centre in Areál Útěchov, and PL001, which IS's own syllabus puts at the
+  // Panská lícha riding hall.
+  it.each([
+    ['ucebna_utechov (Sob)', -106],
+    ['PL001 (Sob)', -105],
+  ])('places %s on its site', (raw, id) => {
+    expect(lookupRoomPlace(raw)).toMatchObject({ kind: 'remote', id });
   });
 
-  // IS files "Lesní škola Jezírko" under ŠLP (Křtiny), but it is the Jezírko
-  // forest site by Soběšice — held with it, not pinned to Křtiny château.
-  it('leaves the ŠLP Jezírko forest school unplaced too', () => {
+  // IS files "Lesní škola Jezírko" under ŠLP's Hubertka cabin (Křtiny), but the
+  // name is the Lipka-run forest school by Soběšice — no place rather than a guess.
+  it('leaves the ŠLP Jezírko forest school unplaced', () => {
     expect(lookupRoomPlace('Lesní škola Jezírko (ŠLP)')).toBeNull();
   });
 
@@ -74,6 +85,6 @@ describe('lookupRoomTarget', () => {
   });
 
   it('is null when there is neither', () => {
-    expect(lookupRoomTarget('ucebna_utechov (Sob)', INDEX)).toBeNull();
+    expect(lookupRoomTarget('Lesní škola Jezírko (ŠLP)', INDEX)).toBeNull();
   });
 });

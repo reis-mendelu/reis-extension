@@ -45,11 +45,11 @@ describe('CourseMeta room control', () => {
   });
 
   it('shows a room the map cannot place at all as plain text rather than a dead button', () => {
-    // Útěchov is held until the site is confirmed; a button would be a
+    // IS files this room under two places at once, so it gets none; a button would be a
     // promise reIS cannot keep.
-    renderRoom('ucebna_utechov (Sob)');
-    expect(screen.getByText('ucebna_utechov (Sob)')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'ucebna_utechov (Sob)' })).toBeNull();
+    renderRoom('Lesní škola Jezírko (ŠLP)');
+    expect(screen.getByText('Lesní škola Jezírko (ŠLP)')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Lesní škola Jezírko (ŠLP)' })).toBeNull();
   });
 
   it('shows a virtual room as plain text too', () => {

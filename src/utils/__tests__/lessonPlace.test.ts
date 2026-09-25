@@ -99,16 +99,17 @@ describe('lessonPlace', () => {
       routable: true,
       host: null,
     });
-    expect(lessonPlace(makeLesson({ room: 'ucebna_utechov (Sob)' }), 'cz', [], ON_MAP).onMap).toBe(
-      false
-    );
+    expect(
+      lessonPlace(makeLesson({ room: 'Lesní škola Jezírko (ŠLP)' }), 'cz', [], ON_MAP).onMap
+    ).toBe(false);
   });
 
   // No floor plan, but the building or campus is on the map (isRoomPlaces.json).
   it.each([
     ['T18', true],
     ['ZFAC1 (Led)', true],
-    ['ucebna_utechov (Sob)', false], // held until the site is confirmed
+    ['ucebna_utechov (Sob)', true], // Areál Útěchov
+    ['Lesní škola Jezírko (ŠLP)', false], // a self-contradicting IS record
   ])('offers the map for %s: %s', (room, onMap) => {
     expect(lessonPlace(makeLesson({ room }), 'cz', [], ON_MAP).onMap).toBe(onMap);
   });

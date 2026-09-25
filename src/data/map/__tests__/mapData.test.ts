@@ -85,14 +85,15 @@ describe('bundled map data', () => {
     expect(buildings.buildings.some((b) => b.id === 0 && b.name === 'Q')).toBe(true);
   });
 
-  // Eight since 2026-09-24: Karlov, SLŠ Hranice and VOŠ Boskovice joined as the
+  // Nine since 2026-09-25 (the Útěchov wood-science centre); eight since
+  // 2026-09-24, when Karlov, SLŠ Hranice and VOŠ Boskovice joined as the
   // IS "areály" with classrooms that had no pin. Karlov (Jeseníky, Silesia) and
   // Hranice (Olomouc region) are why the box below is Moravia-Silesia, not
   // South Moravia, and Karlov has no website of its own.
-  it('remote places: 8 sites with unique ids, closed footprints in Moravia-Silesia, url https or none', () => {
+  it('remote places: 9 sites with unique ids, closed footprints in Moravia-Silesia, url https or none', () => {
     const places = (remotePlaces as { places: RemotePlace[] }).places;
-    expect(places).toHaveLength(8);
-    expect(new Set(places.map((p) => p.id)).size).toBe(8);
+    expect(places).toHaveLength(9);
+    expect(new Set(places.map((p) => p.id)).size).toBe(9);
     for (const p of places) {
       expect(p.id).toBeLessThan(0); // synthetic, never collides with real ids
       expect(p.name.length).toBeGreaterThan(0);

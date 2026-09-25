@@ -20,6 +20,8 @@ export interface RoomPlaceEntry {
   campus: string;
   kind: 'poi' | 'landmark' | 'remote' | 'building';
   id: number;
+  /** A readable name when IS's label is a technical handle ("ucebna_utechov"). */
+  display?: string;
 }
 
 export type RoomPlace = Pick<RoomPlaceEntry, 'kind' | 'id' | 'label'>;
@@ -41,7 +43,9 @@ export function makeRoomPlaceLookup(entries: readonly RoomPlaceEntry[]) {
     const distinct = new Set(hits.map((e) => `${e.kind}:${e.id}`));
     const hit = hits[0];
     if (!hit || distinct.size !== 1) return null;
-    return { kind: hit.kind, id: hit.id, label: hit.label };
+    // `label` is what the map card names the room: the display name when IS's
+    // own label is a technical handle. Matching above always uses IS's label.
+    return { kind: hit.kind, id: hit.id, label: hit.display ?? hit.label };
   };
 }
 

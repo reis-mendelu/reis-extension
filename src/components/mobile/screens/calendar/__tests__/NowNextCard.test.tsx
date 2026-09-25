@@ -169,7 +169,7 @@ describe('NowNextCard route button', () => {
   });
 
   // T18 and ZFAC1 have a building on the map but no walk to them.
-  it.each(['T18', 'ZFAC1', 'B Virtuální 6', 'ucebna_utechov (Sob)'])(
+  it.each(['T18', 'ZFAC1', 'B Virtuální 6', 'Lesní škola Jezírko (ŠLP)'])(
     'withholds the route for a running lesson in %s',
     (room) => {
       render(<NowNextCard data={withCurrentRoom(room)} onRoute={() => {}} />);

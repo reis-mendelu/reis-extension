@@ -74,7 +74,7 @@ describe('AgendaEvent pin, for a room the map cannot find', () => {
   });
 
   it.each([
-    ['ucebna_utechov (Sob)', 'a room whose site has no pin yet'],
+    ['Lesní škola Jezírko (ŠLP)', 'a room IS files in two places at once'],
     ['B Virtuální 6', 'a lesson held online'],
   ])('withholds the pin for %s (%s)', (room) => {
     render(

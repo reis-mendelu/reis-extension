@@ -89,6 +89,20 @@ const SITES = [
   // and no pin until 2026-09-24. Each wayId is the one OSM building at the
   // address IS or the school itself publishes.
   {
+    // IS Sob-03 "Panel.dřevostavba", room ucebna_utechov: LDF's wood-science
+    // field centre (Výzkumné centrum Josefa Ressela) in MENDELU's Areál Útěchov,
+    // k.ú. Vranov u Brna — 2013 design report (zakazky.mendelu.cz document 4965),
+    // the property list (st. 282, 293–300) and RÚIAN agree. The grounds way
+    // collects every building on the site, as for Lednice; which one holds the
+    // classroom is not public, so the site is the pin.
+    groundsWayId: 85070884,
+    id: -106,
+    name: 'Výzkumné centrum Josefa Ressela – Útěchov',
+    shortName: 'VCJR Útěchov',
+    url: 'https://ldf.mendelu.cz/vyzkumna-infrastruktura/',
+    address: 'Areál Útěchov, Vranov č.p. 238',
+  },
+  {
     // IS Kar-01 "Zděná budova Karlov", Karlov 35, Malá Morávka.
     wayId: 253778949,
     id: -108,
