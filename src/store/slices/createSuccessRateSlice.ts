@@ -109,7 +109,10 @@ export const createSuccessRateSlice: AppSlice<SuccessRateSlice> = (set, get) => 
       // Shown already if it was current as far as we knew; the check may
       // still find a newer version and send us past the cache.
       const version = await ensureSuccessRateVersion();
-      if (cached && !isStaleForVersion(cached, version)) return;
+      if (cached && !isStaleForVersion(cached, version)) {
+        if (cached.stats.length === 0) void get().fetchSimilarSubjects(courseCode);
+        return;
+      }
 
       const result = await fetchSubjectSuccessRates([courseCode], version);
       set((state) => ({
@@ -119,6 +122,8 @@ export const createSuccessRateSlice: AppSlice<SuccessRateSlice> = (set, get) => 
         },
         successRatesLoading: { ...state.successRatesLoading, [courseCode]: false },
       }));
+      // No stats of its own: look for similar subjects to offer instead.
+      if (!result.data[courseCode]?.stats.length) void get().fetchSimilarSubjects(courseCode);
     } catch (err) {
       loggers.ui.error('[SuccessRateSlice] Fetch failed:', err);
       set((state) => ({
