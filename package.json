@@ -124,7 +124,7 @@
     "@wxt-dev/module-react": "^1.1.5",
     "baseline-browser-mapping": "^2.11.25",
     "concurrently": "^10.0.5",
-    "dotenv": "^17.2.3",
+    "dotenv": "^18.0.2",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
