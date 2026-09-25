@@ -2,12 +2,14 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAppStore } from '../../store/useAppStore';
+import { drawRoute, drawPosition } from './routeLayers';
 import { usePhoneViewport } from '../../hooks/ui/usePhoneViewport';
-import { railOffsetPx } from '../../utils/mapRail';
+import { railOffsetPx, railPaddingPx } from '../../utils/mapRail';
 import buildingsJson from '../../data/map/buildings.json';
 import {
   ringToLatLng,
   roomLabel,
+  planLabel,
   categoryStyle,
   remotePlaceBounds,
   ringContains,
@@ -16,16 +18,17 @@ import {
   BUILDING_STYLE,
   SIBLING_STYLE,
 } from './mapHelpers';
-import {
-  initLeafletMap,
-  flyAndReveal,
-  drawLandmarks,
-  drawRemotePlaces,
-  REMOTE,
-  REMOTE_IDS,
-} from './mapLayers';
+import { initLeafletMap, flyAndReveal, drawLandmarks } from './mapLayers';
+import { drawRemotePlaces, REMOTE, REMOTE_IDS } from './remoteLayers';
+import { drawCampusPaths } from './pathLayers';
+import { roomLabelsHidden } from './roomLabels';
+import { drawRoomRouteChip, chipShown, clampRoomChip } from './roomRouteChip';
+import { translate } from '../../i18n/translate';
+import { CAMPUS_NAVIGATION_ENABLED } from '../../utils/routing/navigationEnabled';
 import { setMapInstance } from './mapInstance';
+import { LABELS_PANE } from './mapPanes';
 import { roomFocusView } from './focusBounds';
+import { panPinClearOfSheet } from './sheetClearance';
 import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
 
 const META = buildingsJson as BuildingsMeta;
@@ -81,6 +84,15 @@ export function MapCanvas() {
   // Live room polygons keyed by placeId, with their unselected base style — lets
   // a plain map click re-highlight in place without a full redraw or camera move.
   const roomPolysRef = useRef<Map<number, { poly: L.Polygon; base: L.PathOptions }>>(new Map());
+  /** The "Najdi cestu" pill pinned to the selected room. Its own group, so a
+   *  selection change never redraws the plan — a redraw moves the camera. */
+  const roomChipRef = useRef<L.LayerGroup>(L.layerGroup());
+  /** The open floor plan's building, so the label rule can be re-asked on every
+   *  camera settle without re-running the effect that owns the camera. */
+  const planBoundsRef = useRef<L.LatLngBounds | null>(null);
+  /** The campus building outlines, kept so a restyle never needs a redraw
+   *  (a redraw moves the camera). */
+  const buildingPolysRef = useRef<Map<string, L.Polygon>>(new Map());
 
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const activeFloorId = useAppStore((s) => s.activeFloorId);
@@ -93,6 +105,23 @@ export function MapCanvas() {
   const draftCoord = useAppStore((s) => s.draftCoord);
   const focusTarget = useAppStore((s) => s.mapFocusTarget);
   const mapSelection = useAppStore((s) => s.mapSelection);
+  // The route chip says how long the walk takes, so it has to be written in the
+  // student's language. Read here rather than inside the Leaflet layer, which is
+  // not a component and has no hooks.
+  // The computed route lives in its OWN layer group, added straight to the map
+  // rather than to `layerRef`. The heavy effect below clears and rebuilds that
+  // group whenever the building or floor changes, and a route drawn into it
+  // would vanish on any of those — including the camera move that follows a
+  // route being drawn in the first place.
+  const routeLayerRef = useRef<L.LayerGroup>(L.layerGroup());
+  /** "You are here", independent of whether a route exists. */
+  const positionLayerRef = useRef<L.LayerGroup>(L.layerGroup());
+  const routeWalk = useAppStore((s) => s.routeWalk);
+  const routeSuggestion = useAppStore((s) => s.routeSuggestion);
+  const routeStatus = useAppStore((s) => s.routeStatus);
+  const canRouteFromHere = useAppStore((s) => s.canRouteFromHere);
+  const routeFrom = useAppStore((s) => s.routeFrom);
+  const language = useAppStore((s) => s.language);
   // Same "latest ref" trick, same reason: moving the draft pin (picking a
   // different room) must not re-fly the camera. Only an explicit request does,
   // and that arrives as a change to draftFocusReq.
@@ -110,9 +139,36 @@ export function MapCanvas() {
       isPhone
     );
     layerRef.current.addTo(map);
+    // Added AFTER the main layer, so the route paints over the campus rather
+    // than under it. Its own group, for the reason its ref documents: the main
+    // one is cleared and rebuilt on every building and floor change.
+    positionLayerRef.current.addTo(map);
+    routeLayerRef.current.addTo(map);
+    roomChipRef.current.addTo(map);
     mapRef.current = map;
     setMapInstance(map);
+    // Room names are only worth drawing while the plan is close enough to read.
+    // On every camera settle rather than on a state change: the route fit is
+    // what zooms out from under an open plan, and it moves the camera without
+    // touching the floor the student chose. See roomLabels.
+    const syncRoomLabels = () => {
+      map
+        .getContainer()
+        .classList.toggle('reis-hide-room-labels', roomLabelsHidden(map, planBoundsRef.current));
+      // The pill is anchored to the room and the rail overlays the right of
+      // the canvas, so a room near that edge puts its offer on top of the
+      // panel. Re-asked on every settle, because the student can pan the room
+      // there afterwards and the rail can be dragged wider under it.
+      clampRoomChip(
+        roomChipRef.current,
+        map,
+        railPaddingPx(map.getSize().x, isPhone, railRef.current.width, railRef.current.open)
+      );
+    };
+    syncRoomLabels();
+    map.on('moveend zoomend resize', syncRoomLabels);
     return () => {
+      map.off('moveend zoomend resize', syncRoomLabels);
       setMapInstance(null);
       map.remove();
       mapRef.current = null;
@@ -141,25 +197,29 @@ export function MapCanvas() {
     }
 
     if (activeBuildingId === null) {
+      planBoundsRef.current = null;
+      // Paths first: the building outlines and the event pins belong on top of
+      // them. A selected route lifts itself back above with bringToFront.
+      drawCampusPaths(layer);
+      buildingPolysRef.current = new Map();
       for (const b of META.buildings) {
-        L.polygon(ringToLatLng(b.outline.coordinates[0]), BUILDING_STYLE)
+        const poly = L.polygon(ringToLatLng(b.outline.coordinates[0]), BUILDING_STYLE)
+          // Tapping a building opens its floor plan, and that is the only
+          // thing it does. It used to mean something else while a gate was
+          // chosen — "this is where I am going" — so the same tap drilled in or
+          // answered a question depending on state the student could not see.
           .on('click', () => select.setMapBuilding(b.id))
           .bindTooltip(b.name, {
             permanent: true,
             direction: 'center',
             className: 'building-label',
+            pane: LABELS_PANE,
           })
           .addTo(layer);
+        buildingPolysRef.current.set(b.name, poly);
       }
       drawLandmarks(layer, select, BUILDING_STYLE);
-      // A remote site is "drilled in" when it is the selected poi — then its inner
-      // map (paths / buildings / collections) is revealed instead of just the
-      // collapsed garden outline.
-      const drilledRemoteId =
-        select.mapSelection?.kind === 'poi' && REMOTE_IDS.has(select.mapSelection.poi.id)
-          ? select.mapSelection.poi.id
-          : null;
-      drawRemotePlaces(layer, select, drilledRemoteId);
+      drawRemotePlaces(layer, select);
       // Clicking the bare basemap (not a building outline or an event pin) clears
       // the current selection — same "click away to dismiss" as floor-view's exit.
       // Building outlines are Leaflet layers (their click doesn't reach the map);
@@ -233,6 +293,8 @@ export function MapCanvas() {
             railRef.current.open
           );
           if (dx) map.panBy([dx, 0], { animate: false });
+          // And the sheet covers its bottom on a phone. See sheetClearance.ts.
+          if (isPhone) panPinClearOfSheet(map, [lat, lon]);
         });
       } else if (cameFromMapTap) {
         // Left floor-view by tapping the basemap: drop the floor plan but leave
@@ -267,8 +329,12 @@ export function MapCanvas() {
       return;
     }
 
+    // Floor-view is indoors: the outdoor walkways are not drawn there.
+    buildingPolysRef.current = new Map();
+
     const fc = roomsByBuilding[activeBuildingId];
     const b = META.buildings.find((x) => x.id === activeBuildingId);
+    planBoundsRef.current = b ? L.latLngBounds(b.bounds as L.LatLngBoundsLiteral) : null;
     if (!fc) {
       // geometry still loading — show the building while we wait
       if (b)
@@ -291,6 +357,7 @@ export function MapCanvas() {
           permanent: true,
           direction: 'center',
           className: 'building-label',
+          pane: LABELS_PANE,
         })
         .addTo(layer);
     }
@@ -321,7 +388,7 @@ export function MapCanvas() {
       const p = f.properties,
         struct = p.category === 'structure';
       const isSel = p.id === selectedId;
-      const st = categoryStyle(p.category);
+      const st = categoryStyle(p.category, p.type);
       const base: L.PathOptions = struct
         ? STRUCTURE_STYLE
         : {
@@ -346,11 +413,22 @@ export function MapCanvas() {
           const pb = poly.getBounds();
           const big = pb.getNorthEast().distanceTo(pb.getSouthWest()) > 12;
           const label = roomLabel(p.name, p.passportNumber, p.nickname);
-          poly.bindTooltip(label, {
+          const shown = big ? planLabel(label) : label;
+          poly.bindTooltip(shown, {
             permanent: big,
             direction: 'center',
             className: big ? 'room-label' : '',
+            // A permanent number is annotation and belongs under whatever is
+            // drawn on top of the map; the hover one was asked for, so it stays
+            // on top.
+            pane: big ? LABELS_PANE : 'tooltipPane',
           });
+          // The permanent label keeps only the code ("B05"); hovering the room
+          // shows IS's full name ("B05 – Strojový sál").
+          if (shown !== label) {
+            poly.on('mouseover', () => poly.setTooltipContent(label));
+            poly.on('mouseout', () => poly.setTooltipContent(shown));
+          }
         }
       }
       poly.addTo(layer);
@@ -390,13 +468,128 @@ export function MapCanvas() {
         : mapSelection?.kind === 'roomRef'
           ? mapSelection.entry.placeId
           : null;
+    let selected: L.Polygon | null = null;
     for (const [id, { poly, base }] of roomPolysRef.current) {
       if (id === selId) {
         poly.setStyle(SELECTED_STYLE);
         poly.bringToFront();
+        selected = poly;
       } else poly.setStyle(base);
     }
-  }, [mapSelection]);
+    // The offer belongs where the question was asked, and ONLY when the
+    // question came from the timetable. `routeSuggestion` is set by the pin
+    // beside a lesson and by nothing else, so a student browsing the floor
+    // plan — tapping rooms to see what is where — is not asked whether they
+    // want walking directions to each one. Drawn here rather than in the heavy
+    // effect so a selection change re-pins without rebuilding the floor.
+    const building =
+      routeSuggestion?.buildingName ??
+      META.buildings.find((x) => x.id === activeBuildingId)?.name ??
+      null;
+    drawRoomRouteChip(
+      roomChipRef.current,
+      // Never while navigation is parked: this chip is the only control that
+      // can start a walk.
+      CAMPUS_NAVIGATION_ENABLED &&
+        chipShown(routeSuggestion, routeStatus, canRouteFromHere) &&
+        building
+        ? selected
+        : null,
+      translate(language, 'map.routeTakeMeThere'),
+      () => {
+        if (building) void useAppStore.getState().routeTo(building);
+      }
+    );
+    const map = mapRef.current;
+    if (map)
+      clampRoomChip(
+        roomChipRef.current,
+        map,
+        railPaddingPx(map.getSize().x, isPhone, railRef.current.width, railRef.current.open)
+      );
+    // `roomsByBuilding` is a dependency because the polygons this reads are
+    // built by the heavy effect, and on the way in from a lesson pin the
+    // selection lands BEFORE they exist: the map arrived on the right room
+    // with no chip on it, because there was no polygon to pin one to yet.
+    // Re-running when the floor arrives is free — this effect restyles and
+    // never touches the camera.
+  }, [
+    mapSelection,
+    activeBuildingId,
+    language,
+    roomsByBuilding,
+    routeSuggestion,
+    routeStatus,
+    canRouteFromHere,
+    // Read by the pill's clamp, through railPaddingPx. Stable for the life of
+    // a device but it flips on a browser resize, and re-running is free here:
+    // this effect restyles and re-pins, and never touches the camera.
+    isPhone,
+  ]);
+
+  // Drawing the route is a restyle of its own layer, never a redraw of the map
+  // — the heavy effect owns the layers, and re-running it here would throw away
+  // the floor the student is looking at.
+  //
+  // The CAMERA does move, though, and it has to. The route is the answer to a
+  // question the student just asked, and the first version of this drew it
+  // wherever it happened to fall: walking to Q from the main gate put the whole
+  // line south of the viewport, behind the sheet, with only the card to say it
+  // had worked at all. So the map fits the walk. Bottom padding clears the
+  // sheet, which owns roughly the lower third of a phone screen; without it the
+  // fit is honest about the bounds and still hides half the line.
+  useEffect(() => {
+    drawRoute(routeLayerRef.current, routeWalk, language);
+    drawPosition(positionLayerRef.current, routeFrom);
+    const map = mapRef.current;
+    if (!map) return;
+    // No walk, but we know where they are: put THEM on screen. Saying "the
+    // garden is shut" over a map centred on nothing was the version that shipped.
+    if (!routeWalk || routeWalk.coords.length < 2) {
+      if (routeFrom) map.setView(L.latLng(routeFrom[1], routeFrom[0]), Math.max(map.getZoom(), 16));
+      return;
+    }
+    const shown = routeWalk;
+    // Padding measured off the real chrome, not guessed. The first version
+    // padded the top by 96 for a card whose bottom is at 263 — so the route's
+    // own start dot sat behind it — and the bottom by 0.4 of the viewport for a
+    // sheet that was 45% of it. Both were wrong in the direction that hides the
+    // thing the student just asked for.
+    //
+    // Read from the DOM rather than recomputed: the sheet animates between
+    // three detents and drags to arbitrary heights, so its class is not the
+    // authority on how tall it is right now.
+    const sheetEl = document.querySelector('[data-testid="map-sheet"]');
+    const sheetH = sheetEl ? Math.round(sheetEl.getBoundingClientRect().height) : 0;
+    const searchEl = ref.current?.parentElement?.querySelector('label');
+    const topChrome = searchEl
+      ? Math.round(
+          searchEl.getBoundingClientRect().bottom - (ref.current?.getBoundingClientRect().top ?? 0)
+        )
+      : 78;
+    // The rail overlays the RIGHT of the map in landscape, so the destination
+    // and its time chip finish underneath it unless its width is reserved.
+    //
+    // Through the same tested rule the camera shift uses, not off the store.
+    // `mapRailOpen` defaults to true and `mapRailWidth` to 340 on every device,
+    // including the phones that never render a rail — so this reserved 368px of
+    // a 390px map, left Leaflet nothing to fit into, and the camera never
+    // moved. See railPaddingPx.
+    const rail = railPaddingPx(
+      map.getSize().x,
+      isPhone,
+      railRef.current.width,
+      railRef.current.open
+    );
+    map.fitBounds(L.latLngBounds(shown.coords.map(([lon, lat]) => L.latLng(lat, lon))), {
+      paddingTopLeft: [28, topChrome + 12],
+      paddingBottomRight: [28 + rail, sheetH + 12],
+      // A 1.3 km walk and a 160 m one both deserve to fill the frame, but not
+      // past the point where the basemap stops carrying street names.
+      maxZoom: 18,
+      animate: true,
+    });
+  }, [routeWalk, routeFrom, language, isPhone]);
 
   return <div ref={ref} className="absolute inset-0" />;
 }

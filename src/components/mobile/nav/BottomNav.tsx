@@ -24,6 +24,10 @@ const TABS: { id: MobileTab; icon: typeof Calendar; labelKey: string }[] = [
  * Below 360px the horizontal padding tightens: the widest active label
  * ("Předměty") pushes the pill to 325px, which overflows a 320px viewport
  * outright. Wider phones keep the roomier spacing.
+ *
+ * The active entry is --tone-primary, not raw primary: raw green on its own
+ * /15 tint measured 2.03:1 in the light theme. Dark resolves the token to raw
+ * primary, so only light changes.
  */
 export function BottomNav() {
   const activeTab = useAppStore((s) => s.mobileTab);
@@ -36,7 +40,13 @@ export function BottomNav() {
   return (
     <nav
       aria-label={t('mobile.nav.label')}
-      className="absolute bottom-[18px] left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 rounded-full border border-base-300 bg-base-100 p-1.5 shadow-drawer max-[359px]:gap-0.5 max-[359px]:p-1"
+      // bottom carries --safe-bottom because targetSdk 36 draws the app
+      // edge-to-edge on Android 15+: the window extends UNDER the system
+      // navigation bar, so a flat 18px is measured from below it and a
+      // 48dp button bar covered 30 of this pill's 58px. Reported as
+      // "prekrývajú sa mi spodné tlačidlá". Everything that clears this
+      // pill carries the same inset — see utils/mobile/safeArea.ts.
+      className="absolute bottom-[calc(18px_+_var(--safe-bottom,0px))] left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 rounded-full border border-base-300 bg-base-100 p-1.5 shadow-drawer max-[359px]:gap-0.5 max-[359px]:p-1"
     >
       {TABS.map(({ id, icon: Icon, labelKey }) => {
         const active = id === activeTab;
@@ -47,7 +57,7 @@ export function BottomNav() {
             aria-label={t(labelKey)}
             onClick={() => setMobileTab(id)}
             className={`flex min-h-11 min-w-11 items-center gap-1.5 rounded-full px-3 transition-colors max-[359px]:px-2 ${
-              active ? 'bg-primary/15 text-primary' : 'text-base-content/60'
+              active ? 'bg-primary/15 text-[var(--tone-primary)]' : 'text-base-content/60'
             }`}
           >
             <Icon className="h-[19px] w-[19px]" />

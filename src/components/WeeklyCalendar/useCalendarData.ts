@@ -5,6 +5,7 @@ import { getCzechHoliday } from '../../utils/holidays';
 import { parseDate } from '../../utils/date';
 import { getWeekForDate } from '../../api/teachingWeek';
 import { isLessonHidden } from '../../utils/hiddenLessons';
+import { customEventToLesson } from '../../utils/customEventLesson';
 import type { BlockLesson, DateInfo } from '../../types/calendarTypes';
 
 /** Used only when IS Mendelu doesn't publish a length for the term. */
@@ -117,35 +118,7 @@ export function useCalendarData(initialDate: Date) {
 
     const mappedCustomEvents = customEvents
       .filter((e) => weekDateStrings.includes(e.date))
-      .map(
-        (e) =>
-          ({
-            id: e.id,
-            date: e.date,
-            startTime: e.startTime,
-            endTime: e.endTime,
-            courseNameCs: e.title,
-            courseNameEn: e.title,
-            courseCode: '',
-            roomCs: e.room || '',
-            roomEn: e.room || '',
-            teachers: [],
-            isExam: false,
-            isCustom: true,
-            customEventId: e.id,
-            isConsultation: 'false',
-            studyId: '',
-            facultyCode: '',
-            isDefaultCampus: 'true',
-            courseId: '',
-            campus: '',
-            isSeminar: 'false',
-            periodId: '',
-            courseName: e.title,
-            room: e.room || '',
-            roomStructured: { name: e.room || '', id: '' },
-          }) as BlockLesson
-      );
+      .map(customEventToLesson);
 
     return [...lessons, ...weekExams, ...mappedCustomEvents];
   }, [storedSchedule, examLessons, customEvents, weekDateStrings, hiddenItems]);

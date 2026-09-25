@@ -1,11 +1,16 @@
 import { User, Map as MapIcon, Clock, ChevronDown, ChevronUp } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
 import type { BlockLesson } from '../../../types/calendarTypes';
 import type { CourseMetadata } from '../../../types/documents';
 import { PersonHoverCard } from '../../PersonHoverCard';
 import { MapHoverCard } from '../../MapHoverCard';
+import roomsIndexJson from '../../../data/map/rooms-index.json';
+import type { RoomIndexEntry } from '../../../types/campusMap';
+import { lookupRoomTarget } from '../../../utils/rooms/lookupRoomPlace';
+
+const INDEX = roomsIndexJson as RoomIndexEntry[];
 export function CourseMeta({
   lesson,
   courseInfo,
@@ -17,6 +22,7 @@ export function CourseMeta({
 }) {
   const [expanded, setExpanded] = useState(false);
   const { t, language } = useTranslation();
+  const target = useMemo(() => lookupRoomTarget(lesson?.room, INDEX), [lesson?.room]);
 
   if (!isSearchContext) {
     return (
@@ -48,8 +54,14 @@ export function CourseMeta({
               )}
             </span>
           )}
-          {lesson?.room?.startsWith('Q') && (
-            <MapHoverCard roomName={lesson.room} className="flex items-center">
+          {lesson?.room && target && (
+            // The room code is the control, and every room the map can find
+            // gets the same one. This used to branch on `startsWith('Q')` —
+            // building Q is PEF — which gave a PEF student a hover card and
+            // everyone else a bare button over a lookup that then failed.
+            // A room with no floor plan still gets the button (the map shows
+            // its building), but not the floor-plan hover card it has no plan for.
+            <RoomButtonFrame room={lesson.room} withPlan={target.kind === 'room'}>
               <button
                 onClick={() => useAppStore.getState().focusRoomByCode(lesson.room)}
                 className="flex items-center gap-1 hover:text-success transition-colors"
@@ -57,20 +69,16 @@ export function CourseMeta({
                 <MapIcon size={14} />
                 <span>{lesson.room}</span>
               </button>
-            </MapHoverCard>
+            </RoomButtonFrame>
           )}
-          {lesson?.room && !lesson.room.startsWith('Q') && (
-            // Same shape as the Q-room branch above: the room code is the
-            // control. A room outside Q has no thumbnail to hover, but it
-            // should not therefore get a differently-shaped button labelled
-            // with a whole sentence.
-            <button
-              onClick={() => useAppStore.getState().focusRoomByCode(lesson.room)}
-              className="flex items-center gap-1 hover:text-success transition-colors"
-            >
+          {lesson?.room && !target && (
+            // Nothing in the dataset carries this room or its building — a
+            // lesson held online, or a site with no pin yet. Still say where
+            // the lesson is; just don't offer to show a place we cannot point at.
+            <span className="flex items-center gap-1">
               <MapIcon size={14} />
               <span>{lesson.room}</span>
-            </button>
+            </span>
           )}
           {lesson?.startTime && (
             <span className="flex items-center gap-1">
@@ -166,5 +174,24 @@ export function CourseMeta({
         </div>
       )}
     </div>
+  );
+}
+
+/** The floor-plan hover card around the room control, only when there is a plan. */
+function RoomButtonFrame({
+  room,
+  withPlan,
+  children,
+}: {
+  room: string;
+  withPlan: boolean;
+  children: ReactNode;
+}) {
+  return withPlan ? (
+    <MapHoverCard roomName={room} className="flex items-center">
+      {children}
+    </MapHoverCard>
+  ) : (
+    <span className="flex items-center">{children}</span>
   );
 }

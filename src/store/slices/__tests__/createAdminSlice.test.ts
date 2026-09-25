@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Mock } from 'vitest';
 
 const signIn = vi.fn();
 const getSession = vi.fn();
@@ -75,8 +76,8 @@ import { listSocietyAccounts } from '../../../api/societyAccounts';
 
 describe('createAdminSlice', () => {
   let state: AdminSlice;
-  let set: ReturnType<typeof vi.fn>;
-  let get: ReturnType<typeof vi.fn>;
+  let set: Mock & Parameters<typeof createAdminSlice>[0];
+  let get: Mock & Parameters<typeof createAdminSlice>[1];
   beforeEach(() => {
     signIn.mockReset();
     getSession.mockReset();
@@ -90,7 +91,7 @@ describe('createAdminSlice', () => {
     set = vi.fn((u) => {
       state = { ...state, ...(typeof u === 'function' ? u(state) : u) };
     });
-    get = vi.fn(() => state);
+    get = vi.fn(() => state) as unknown as typeof get;
     state = {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...createAdminSlice(set, get, {} as any),

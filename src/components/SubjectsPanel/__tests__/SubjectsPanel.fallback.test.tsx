@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 import type { StudyPlan } from '@/types/studyPlan';
 import type { SubjectsData } from '@/types/documents';
 
@@ -8,15 +8,19 @@ import type { SubjectsData } from '@/types/documents';
 vi.mock('../EnrolledNowSection', () => ({
   EnrolledNowSection: ({ plan }: { plan: StudyPlan }) => (
     <div data-testid="enrolled-now">
-      {plan.blocks.flatMap(b => b.groups.flatMap(g => g.subjects.map(s => s.code))).join(',')}
+      {plan.blocks.flatMap((b) => b.groups.flatMap((g) => g.subjects.map((s) => s.code))).join(',')}
     </div>
   ),
 }));
 // Avoid the success-rate batch fetch effect inside useSubjectsData.
 vi.mock('../useSubjectsData', () => ({
   useSubjectsData: () => ({
-    zameraniLookup: new Map(), subjectSemesters: new Map(), subjectToZameranis: new Map(),
-    zameraniProgress: new Map(), failRates: {}, enrolledCredits: 0,
+    zameraniLookup: new Map(),
+    subjectSemesters: new Map(),
+    subjectToZameranis: new Map(),
+    zameraniProgress: new Map(),
+    failRates: {},
+    enrolledCredits: 0,
   }),
 }));
 
@@ -28,25 +32,42 @@ const subjects: SubjectsData = {
   lastUpdated: '2026-07-02T00:00:00.000Z',
   data: {
     'EBC-ST': {
-      displayName: 'Statistika', fullName: 'EBC-ST Statistika', nameCs: 'Statistika', nameEn: 'Statistics',
-      subjectCode: 'EBC-ST', subjectId: '123456',
-      folderUrl: 'https://is.mendelu.cz/auth/dok_server/slozka.pl?id=1', fetchedAt: '',
+      displayName: 'Statistika',
+      fullName: 'EBC-ST Statistika',
+      nameCs: 'Statistika',
+      nameEn: 'Statistics',
+      subjectCode: 'EBC-ST',
+      subjectId: '123456',
+      folderUrl: 'https://is.mendelu.cz/auth/dok_server/slozka.pl?id=1',
+      fetchedAt: '',
     },
   },
 };
 
 const emptyPlan: StudyPlan = {
-  title: 'Empty', isFulfilled: false, creditsAcquired: 0, creditsRequired: 0,
+  title: 'Empty',
+  isFulfilled: false,
+  creditsAcquired: 0,
+  creditsRequired: 0,
   blocks: [{ title: '1. semestr', groups: [{ name: 'G', statusDescription: '', subjects: [] }] }],
 };
 
-function setStore(overrides: { plan?: StudyPlan | null; subjects?: SubjectsData | null; studyPlanLoaded?: boolean }) {
+function setStore(overrides: {
+  plan?: StudyPlan | null;
+  subjects?: SubjectsData | null;
+  studyPlanLoaded?: boolean;
+}) {
   useAppStore.setState({
     language: 'en',
     studyPlanDual: overrides.plan ? { cz: overrides.plan, en: overrides.plan } : null,
     studyPlanLoaded: overrides.studyPlanLoaded ?? true,
     subjects: overrides.subjects ?? null,
-    syncStatus: { ...useAppStore.getState().syncStatus, handshakeDone: true, handshakeTimedOut: false, isSyncing: false },
+    syncStatus: {
+      ...useAppStore.getState().syncStatus,
+      handshakeDone: true,
+      handshakeTimedOut: false,
+      isSyncing: false,
+    },
   });
 }
 
@@ -85,6 +106,14 @@ describe('SubjectsPanel Erasmus fallback', () => {
     renderPanel();
     expect(screen.getByText('No study plan data')).toBeTruthy();
     expect(screen.queryByTestId('enrolled-now')).toBeNull();
+  });
+
+  it('offers to report the missing study plan from the noData state', () => {
+    setStore({ plan: null, subjects: null });
+    useAppStore.setState({ reportOpen: false, reportPrefill: null });
+    renderPanel();
+    fireEvent.click(screen.getByRole('button', { name: 'Something missing? Report it' }));
+    expect(useAppStore.getState().reportPrefill).toEqual({ title: 'Subjects: list is empty' });
   });
 
   it('renders the skeleton, not the fallback, when subjects are present but the plan has not settled yet', () => {

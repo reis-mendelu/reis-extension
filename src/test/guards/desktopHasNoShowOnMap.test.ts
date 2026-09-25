@@ -34,6 +34,37 @@ describe('showOnMap placement', () => {
     expect(read(file)).toContain('showOnMap');
   });
 
+  /**
+   * Where a calendar event lands on the map is phone/iPad only, for the same
+   * reason: the desktop calendar has no path from an event to the map at all.
+   *
+   * On the phone, the row, its pin and "Trasa →" send an answered society event
+   * to the map with `reveal: 'map'`, and the sheet stays at peek so the PIN is
+   * what the student sees — the card had covered it (Pixel 9a, #418). The
+   * desktop has no bottom sheet: DetailPanel floats beside the map there, so
+   * the defect had nowhere to happen, and there is no tap to fix.
+   */
+  it.each([
+    'components/mobile/screens/calendar/DayBody.tsx',
+    'components/mobile/screens/calendar/useShowLessonOnMap.ts',
+  ])('%s sends an answered event to the map', (file) => {
+    expect(read(file)).toMatch(/eventIdFromRsvpBlock|showOnMap\(lesson\)/);
+  });
+
+  it('the phone asks for the pin, and its sheet and peek row honour it', () => {
+    expect(read('components/mobile/screens/calendar/useShowLessonOnMap.ts')).toContain(
+      "reveal: 'map'"
+    );
+    expect(read('components/mobile/screens/map/MapSheet.tsx')).toContain("reveal === 'map'");
+    expect(read('components/mobile/screens/map/MapSheetPeek.tsx')).toContain('mapSelection');
+  });
+
+  it('the desktop calendar has no event-to-map path to carry it', () => {
+    const card = read('components/CalendarEventCard.tsx');
+    expect(card).not.toContain('eventIdFromRsvpBlock');
+    expect(card).not.toContain('focusEventById');
+  });
+
   it('keeps the translation key, since the surfaces that stayed still use it', () => {
     const cs = JSON.parse(read('i18n/locales/cs.json')) as Record<string, Record<string, string>>;
     expect(cs['map']?.['showOnMap']).toBe('Ukázat na mapě');

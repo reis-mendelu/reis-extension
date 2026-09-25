@@ -7,9 +7,10 @@ import { SubjectTimeline } from './Syllabus/SubjectTimeline';
 import type { SyllabusRequirements } from '../../types/documents';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ISBacklink } from './ISBacklink';
+import { ReportMissingLink } from '../Feedback/ReportMissingLink';
 
 interface SyllabusTabProps {
-  /** Off for the phone sheet, which pins its own IS MENDELU footer. */
+  /** Off for the phone sheet — see `showIsBacklink` in DrawerTabBody. */
   showIsBacklink?: boolean;
   courseCode: string;
   courseId?: string;
@@ -43,9 +44,12 @@ export function SyllabusTab({
     );
   if (!syllabus || (!syllabus.requirementsText && !syllabus.requirementsTable.length))
     return (
-      <div className="flex flex-col items-center justify-center h-full p-6 opacity-40 text-center">
-        <BookOpen className="w-12 h-12 mb-3" />
-        <p className="text-sm">{t('syllabus.noData')}</p>
+      <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+        <div className="flex flex-col items-center opacity-40">
+          <BookOpen className="w-12 h-12 mb-3" />
+          <p className="text-sm">{t('syllabus.noData')}</p>
+        </div>
+        <ReportMissingLink prefill="syllabusEmpty" className="mt-2" />
       </div>
     );
 

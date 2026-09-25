@@ -56,6 +56,17 @@ const SUPABASE_CALLERS = new Set([
   // the submit-suggestion edge function. Only the transport changed (fetch ->
   // supabase.rpc), which is why the guard newly matches it; the privacy posture
   // is unchanged.
+  //
+  // Since September 2026 (submit_suggestion_v2) a report may also carry what
+  // the STUDENT chose to attach: a screenshot they picked, re-encoded on the
+  // device (no EXIF/GPS), and — only if they tick an unticked-by-default box —
+  // the cleaned diagnostic log, collected at Send. The log is not listed in the
+  // form, so the record-time cleaning in utils/diagnostics/diagnosticLog is the
+  // whole of what keeps it safe; do not loosen it on the grounds of consent.
+  // The file receives both as arguments; it does not gather them, and no
+  // Supabase caller may import the diagnostic log (see the test below).
+  // Disclosed in PRIVACY.md section 4 and docs/privacy-policy-app.md BEFORE
+  // this note was written. No install id is sent with a report.
   'src/api/suggestions.ts',
   // Random install id only. Reads take no identity argument at all.
   'src/api/eventRsvp.ts',
@@ -68,6 +79,23 @@ const SUPABASE_CALLERS = new Set([
   'src/services/spolky/spolkyService.ts',
   // Reads the public society events feed. No student data in either direction.
   'src/api/mapEvents.ts',
+  // Two feature counters, added September 2026, both disclosed in PRIVACY.md
+  // section 2 and docs/privacy-policy-app.md BEFORE this entry was added.
+  //
+  // `track_feature_usage` sends the random per-install UUID and one label from
+  // a three-value whitelist enforced in the database ('map_dwell_3s',
+  // 'eduroam_wifi_configured', 'eduroam_profile_delivered'). Same identifier
+  // and same posture as `feedback.ts`: it counts INSTALLS, not people.
+  //
+  // `increment_event_map_view` sends a society event's row id and NO
+  // identifier whatsoever — the same shape `increment_post_view` has always
+  // had in spolkyService.ts.
+  //
+  // What makes this safe to allow is that the two are deliberately kept
+  // unjoinable: nothing anywhere records which event a given install looked
+  // at. That pairing would be a behavioural profile, and no payload here can
+  // express it.
+  'src/api/featureUsage.ts',
 ]);
 
 /**
@@ -248,7 +276,13 @@ describe('no student data leaves the device', () => {
   // error reporter reintroduced under a different name still trips this if it
   // reaches for the old RPCs, and the RPCs are gone from the database anyway,
   // so a reintroduction has to be a conscious, visible act.
-  it('sends no error, stack or file path anywhere', () => {
+  // 20s, not vitest's default 5: this one reads EVERY file under src/ and
+  // greps four strings through each, and on a loaded machine it sat right on
+  // the 5s line — failing a run, passing the next. A privacy guard that flakes
+  // is worse than a slow one: the failure looks like noise, so the next person
+  // re-runs instead of reading it, and the run where it fails for a real
+  // reason looks exactly the same.
+  it('sends no error, stack or file path anywhere', { timeout: 20_000 }, () => {
     const offenders: string[] = [];
     for (const file of walk(SRC)) {
       const rel = relative(ROOT, file);
@@ -268,6 +302,102 @@ describe('no student data leaves the device', () => {
         `If the project has genuinely changed its mind, update PRIVACY.md, ` +
         `docs/privacy-policy-app.md and the published policy gist FIRST, then ` +
         `this test:\n` +
+        offenders.join('\n')
+    ).toEqual([]);
+  });
+
+  // The one sanctioned exception to "nothing about a failure leaves": the
+  // student attaches it to a report themselves. These two tests keep it the
+  // ONLY path. Diagnostics may reach Supabase through submit_suggestion_v2 and
+  // nowhere else, and no file that talks to Supabase may read the log itself —
+  // so it can only ever arrive as what the report form was handed.
+  it('sends diagnostics only through the report form, as the student chose', () => {
+    const offenders: string[] = [];
+    for (const f of files) {
+      if (f.path === 'src/api/suggestions.ts') continue;
+      if (/submit_suggestion_v2|p_diagnostics|p_screenshot/.test(f.text)) {
+        offenders.push(`${f.path} → names the attachment RPC`);
+      }
+    }
+    for (const f of files) {
+      if (!SUPABASE_CALLERS.has(f.path)) continue;
+      if (/from\s+['"][^'"]*utils\/diagnostics\//.test(f.text)) {
+        offenders.push(`${f.path} → imports the diagnostic log`);
+      }
+    }
+    expect(
+      offenders,
+      `Diagnostics are leaving by a path the student did not choose. The only ` +
+        `sanctioned route is FeedbackModal → submitSuggestion(draft, attachments) ` +
+        `→ submit_suggestion_v2, and only after the student ticks the box:\n` +
+        offenders.join('\n')
+    ).toEqual([]);
+  });
+
+  // Firefox 140+ enforces the manifest's data_collection_permissions as consent,
+  // and the daily count, feature counters and NPS are "technicalAndInteraction"
+  // data there. A background sender that skips the check sends on Firefox after
+  // the student switched it off. RSVP is absent on purpose: it sends only when
+  // the student taps Going / Interested, and the count is the feature itself.
+  it('background senders of the install id honour Firefox consent', () => {
+    for (const path of ['src/api/feedback.ts', 'src/api/featureUsage.ts']) {
+      const src = readFileSync(join(ROOT, path), 'utf-8');
+      expect(src, `${path} must check hasDataConsent before sending`).toMatch(
+        /hasDataConsent\('technicalAndInteraction'\)/
+      );
+    }
+    const manifest = readFileSync(join(ROOT, 'wxt.config.ts'), 'utf-8');
+    expect(manifest).toMatch(/optional:\s*\[[^\]]*'technicalAndInteraction'/);
+  });
+
+  it('never keeps a stack or logError extras in the diagnostic log', () => {
+    const src = readFileSync(join(SRC, 'utils/diagnostics/diagnosticLog.ts'), 'utf-8');
+    const entry = src.slice(src.indexOf('export interface DiagnosticEntry'));
+    const body = entry.slice(0, entry.indexOf('}'));
+    expect(body).not.toMatch(/\bstack\b|\bextra\b/);
+  });
+
+  /**
+   * The routing module learns where the student is physically standing. That is
+   * the most sensitive thing reIS has ever held, and the only defensible reason
+   * to hold it is that it never goes anywhere.
+   *
+   * A guard rather than a policy sentence, because "we don't send it" is the
+   * kind of claim that stays in a document while a convenience call gets added
+   * to a file nobody re-reads.
+   */
+  it('never sends a coordinate off the device', () => {
+    const offenders: string[] = [];
+    const reach = [
+      { pattern: /\bfetch\s*\(/, what: 'fetch(' },
+      { pattern: /\bXMLHttpRequest\b/, what: 'XMLHttpRequest' },
+      { pattern: /navigator\.sendBeacon/, what: 'sendBeacon' },
+      { pattern: /supabase/i, what: 'supabase' },
+      { pattern: /\bWebSocket\b/, what: 'WebSocket' },
+    ];
+    for (const file of walk(join(SRC, 'utils/routing'))) {
+      const rel = relative(ROOT, file);
+      if (rel.includes('__tests__')) continue;
+      const src = readFileSync(file, 'utf-8');
+      for (const { pattern, what } of reach) {
+        if (pattern.test(src)) offenders.push(`${rel} → ${what}`);
+      }
+    }
+    // The slice that drives it is held to the same rule.
+    const slice = relative(ROOT, join(SRC, 'store/slices/createRouteSlice.ts'));
+    const sliceSrc = readFileSync(join(SRC, 'store/slices/createRouteSlice.ts'), 'utf-8');
+    for (const { pattern, what } of reach) {
+      if (pattern.test(sliceSrc)) offenders.push(`${slice} → ${what}`);
+    }
+
+    expect(
+      offenders,
+      `Something in the routing path can reach the network. A student's ` +
+        `position is derived, used and discarded on the device — it is never ` +
+        `transmitted, never persisted to Supabase, and never attached to a ` +
+        `suggestion or an install count. The store of record for this promise ` +
+        `is docs/privacy-policy-app.md; change that FIRST if the project has ` +
+        `genuinely changed its mind:\n` +
         offenders.join('\n')
     ).toEqual([]);
   });

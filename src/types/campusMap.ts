@@ -106,6 +106,123 @@ export interface RemotePlace {
   pois?: { name: string; lon: number; lat: number }[];
 }
 
+// A place INSIDE the botanical garden that is worth walking to — one of the
+// twelve carried by its own photograph, as opposed to the nineteen that stay
+// plain dots in `RemotePlace.pois`. Hand-authored in
+// `src/data/map/gardenPlaces.json`; no script generates or touches it.
+//
+// The curation line is "somewhere you would send a friend to sit", which is
+// what `why` has to earn — not a description of the plants.
+export interface GardenPlace {
+  /** Stable slug, and the stem of the bundled thumb: `public/garden/<id>.webp`. */
+  id: string;
+  /**
+   * The garden's own published numbering, e.g. "2.6" for Rokle — when the place
+   * is on the official plan at all.
+   *
+   * Optional, because the best places are not always on it. The minotaur, the
+   * ponds and the little wood are things that are actually there and worth
+   * walking to; the plan's five sections are a taxonomy of plant collections
+   * and simply do not name them. A place earns its spot by being worth sitting
+   * in, not by having a number.
+   */
+  number?: string;
+  /** 1 Okolí správní budovy … 5 Botanický systém — the first half of `number`. */
+  section?: 1 | 2 | 3 | 4 | 5;
+  name: { cz: string; en: string };
+  /**
+   * ONE line: the reason to walk there.
+   *
+   * Nothing renders it today — the card is the photograph alone, because a
+   * caption under a picture is the part nobody reads. Kept optional so the
+   * words can come back without a migration.
+   */
+  why?: { cz: string; en: string };
+  lon: number;
+  lat: number;
+  /**
+   * The large photo's filename under `public/garden/`, e.g. `jezirka-full.jpg`.
+   * The 96px bubble thumb is `<id>.jpg` beside it.
+   *
+   * Both are BUNDLED rather than fetched from the CDN. At three places that is
+   * ~320 KB and buys offline-in-the-garden for free; if the set grows past a
+   * dozen, move the large ones to reis-data and give them a content hash,
+   * because jsDelivr caches `@main` mutably.
+   *
+   * Optional: a place without one is a plain dot, not a bubble.
+   */
+  photo?: string;
+  /** Author + licence; rendered under the photo only when set. */
+  credit?: string;
+}
+
+// One walk across the Brno campus: the route from one campus place to the next
+// one you reach, built at build time from the OSM way network
+// (scripts/fetch-campus-paths.mjs). Routes connect — `to` of one is `from` of
+// others — so following them end to end gets you anywhere on campus.
+//
+// `from`/`to` are never null: a route that does not run between two named
+// places is not emitted, because a line ending in open ground is not something
+// anyone would tap. It is the shortest walk along the paths OSM has MAPPED,
+// which is not the same as the shortest walk on the ground wherever OSM is
+// incomplete.
+// A way ONTO the campus: one of the gates, or the tram stop you get off at.
+// These are the only points the map marks. Buildings already draw their own
+// letters, and a point in the middle of the campus (the cafeteria in building
+// O) answered nothing — you do not arrive there.
+export interface CampusEntrance {
+  name: string;
+  kind: 'gate' | 'stop' | 'other';
+  lon: number;
+  lat: number;
+}
+
+// The walking network as a graph, for routing from an arbitrary point.
+//
+// `routes` below answers "walk from this gate to that building", which is what
+// the entrance fan draws. It cannot answer "walk from where I am standing" —
+// that needs adjacency, and adjacency cannot be recovered from `network`, whose
+// strokes are deduplicated RENDERING geometry merged for drawing. Rebuilding it
+// from them would mean matching coordinates by proximity, which is exactly the
+// invented connection `scripts/lib/remoteCorridor.mjs` exists to refuse. So the
+// graph is emitted explicitly at build time (`scripts/lib/graphExport.mjs`).
+export interface CampusGraph {
+  /** [lon, lat] per node, 6 dp — the same rounding as every other geometry. */
+  nodes: number[][];
+  /**
+   * `[fromIndex, toIndex, lengthM]`, or `[fromIndex, toIndex, lengthM, gateId]`
+   * when the stretch is only walkable while something is open. Undirected; each
+   * pair appears exactly once.
+   *
+   * Typed loosely rather than as a union of tuples for the reason
+   * `CampusPath.coords` gives: this comes straight out of a JSON import, whose
+   * inferred element type is not a tuple, and asserting one needs a cast
+   * through `unknown` that buys nothing the shape tests do not already check at
+   * runtime. Read it through `edgeLength` / `edgeGate`, never by index at a
+   * call site.
+   */
+  edges: (number | string)[][];
+  /** Building letter → the node indices that count as having arrived there. */
+  buildings: Record<string, number[]>;
+}
+
+export interface CampusPath {
+  id: number;
+  from: string;
+  to: string;
+  lengthM: number;
+  /**
+   * [lon, lat] pairs, matching every other geometry in this file.
+   *
+   * Typed as `number[][]` rather than as a tuple because this comes straight
+   * out of a JSON import, whose inferred element type is `number[]`; asserting
+   * the tuple there needs a cast through `unknown`, which buys nothing that the
+   * shape tests in `__tests__/pathLayers.test.ts` do not already check at
+   * runtime.
+   */
+  coords: number[][];
+}
+
 export interface RoomIndexEntry {
   code: string;
   name: string;
@@ -120,6 +237,11 @@ export interface RoomIndexEntry {
 export type MapSelection =
   | { kind: 'room'; room: RoomProperties }
   | { kind: 'roomRef'; entry: RoomIndexEntry } // from search/deep-link before geometry loads
-  | { kind: 'poi'; poi: PoiProperties; coord: [number, number] }
+  // `forRoom`: the timetable room this place was shown FOR — a room with no
+  // floor plan, so the map shows its building ("T18" → pin T). See focusRoomPlace.
+  | { kind: 'poi'; poi: PoiProperties; coord: [number, number]; forRoom?: string }
   | { kind: 'landmark'; landmark: Landmark } // search result only; resolves to a poi selection on focus
-  | { kind: 'event'; event: import('./events').MapEvent }; // a society event pin
+  | { kind: 'gardenPlace'; place: GardenPlace } // one of the botanical garden's places
+  // a society event pin. `reveal: 'map'` — focused from the calendar, which asked
+  // WHERE: the phone sheet stays at peek so the pin is not under the card.
+  | { kind: 'event'; event: import('./events').MapEvent; reveal?: 'map' };

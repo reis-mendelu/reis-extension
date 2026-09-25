@@ -2,15 +2,15 @@ import { Component, type ReactNode } from 'react';
 import { logError } from '../../utils/reportError';
 
 interface ErrorBoundaryProps {
-    /** Rendered instead of children when a descendant throws (incl. a failed lazy import). */
-    fallback: ReactNode;
-    /** When this value changes, the boundary clears its error and re-renders children. */
-    resetKey?: unknown;
-    children: ReactNode;
+  /** Rendered instead of children when a descendant throws (incl. a failed lazy import). */
+  fallback: ReactNode;
+  /** When this value changes, the boundary clears its error and re-renders children. */
+  resetKey?: unknown;
+  children: ReactNode;
 }
 
 interface ErrorBoundaryState {
-    hasError: boolean;
+  hasError: boolean;
 }
 
 /**
@@ -19,23 +19,23 @@ interface ErrorBoundaryState {
  * failure) from blanking the whole iframe app, and to offer an escape hatch.
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-    state: ErrorBoundaryState = { hasError: false };
+  state: ErrorBoundaryState = { hasError: false };
 
-    static getDerivedStateFromError(): ErrorBoundaryState {
-        return { hasError: true };
-    }
+  static getDerivedStateFromError(): ErrorBoundaryState {
+    return { hasError: true };
+  }
 
-    componentDidCatch(error: unknown) {
-        logError('ErrorBoundary', error);
-    }
+  componentDidCatch(error: unknown) {
+    logError('ErrorBoundary', error);
+  }
 
-    componentDidUpdate(prevProps: ErrorBoundaryProps) {
-        if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
-            this.setState({ hasError: false });
-        }
+  componentDidUpdate(prevProps: ErrorBoundaryProps) {
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false });
     }
+  }
 
-    render() {
-        return this.state.hasError ? this.props.fallback : this.props.children;
-    }
+  render() {
+    return this.state.hasError ? this.props.fallback : this.props.children;
+  }
 }

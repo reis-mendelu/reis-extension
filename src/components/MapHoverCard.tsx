@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { RoomThumbnail } from './CampusMap/RoomThumbnail';
+import { useAppStore } from '../store/useAppStore';
 
 interface MapHoverCardProps {
   roomName: string;
@@ -39,6 +40,7 @@ function computePosition(anchor: DOMRect): CardPosition {
 export function MapHoverCard({ roomName, children, className }: MapHoverCardProps) {
   const [visible, setVisible] = useState(false);
   const [pos, setPos] = useState<CardPosition | null>(null);
+  const loadRoomGeometry = useAppStore((s) => s.loadRoomGeometry);
 
   const anchorRef = useRef<HTMLSpanElement>(null);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -56,8 +58,13 @@ export function MapHoverCard({ roomName, children, className }: MapHoverCardProp
       const rect = anchorRef.current.getBoundingClientRect();
       setPos(computePosition(rect));
       setVisible(true);
+      // The card is what needs the floor plan, so it is what asks for it. The
+      // store resolves the room string and skips a building already loaded, so
+      // this is safe to call on every reveal. Deliberately NOT on mouseEnter:
+      // a pointer crossing a room name on its way elsewhere should not fetch.
+      void loadRoomGeometry(roomName);
     }, HOVER_DELAY_MS);
-  }, []);
+  }, [roomName, loadRoomGeometry]);
 
   const handleMouseLeave = useCallback(() => {
     cancelTimers();

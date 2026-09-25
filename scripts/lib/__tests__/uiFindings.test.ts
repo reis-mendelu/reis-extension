@@ -88,6 +88,68 @@ describe('analyzeProbe — horizontal overflow', () => {
     expect(kinds(f)).not.toContain('overflow-element');
   });
 
+  // A marker's position is a map coordinate, so Leaflet parks the icon off the
+  // viewport the same way it parks a tile. The icon is excused — but only the
+  // icon, and only its contents while they stay inside it.
+  it('ignores a Leaflet marker icon parked off the viewport', () => {
+    const f = analyzeProbe(
+      probe(
+        [
+          el({
+            sel: 'div.leaflet-marker-icon.garden-bubble',
+            rect: { x: -24, y: 100, w: 28, h: 28 },
+            isLeafletMarker: true,
+          }),
+        ],
+        { width: 320, docScrollWidth: 320, docClientWidth: 320 }
+      )
+    );
+    expect(kinds(f)).not.toContain('overflow-element');
+  });
+
+  it("ignores a marker's own contents, whose displacement is inherited", () => {
+    const f = analyzeProbe(
+      probe(
+        [
+          el({
+            sel: 'div.leaflet-marker-icon.garden-bubble',
+            rect: { x: -24, y: 100, w: 28, h: 28 },
+            isLeafletMarker: true,
+          }),
+          el({
+            sel: 'span.garden-bubble-circle',
+            rect: { x: -24, y: 100, w: 28, h: 28 },
+            leafletMarkerIdx: 0,
+          }),
+        ],
+        { width: 320, docScrollWidth: 320, docClientWidth: 320 }
+      )
+    );
+    expect(kinds(f)).not.toContain('overflow-element');
+  });
+
+  it('STILL reports app-owned marker contents that overflow their own icon', () => {
+    const f = analyzeProbe(
+      probe(
+        [
+          el({
+            sel: 'div.leaflet-marker-icon.garden-bubble',
+            rect: { x: 10, y: 100, w: 28, h: 28 },
+            isLeafletMarker: true,
+          }),
+          // 400px of photo inside a 28px bubble: the app's bug, not Leaflet's.
+          el({
+            sel: 'img.oversized',
+            rect: { x: 10, y: 100, w: 400, h: 28 },
+            leafletMarkerIdx: 0,
+          }),
+        ],
+        { width: 320, docScrollWidth: 320, docClientWidth: 320 }
+      )
+    );
+    expect(f.some((x) => x.kind === 'overflow-element' && x.sel === 'img.oversized')).toBe(true);
+  });
+
   it('reports an element hanging off the LEFT edge', () => {
     const f = analyzeProbe(
       probe([el({ sel: 'div.pinned', rect: { x: -20, y: 100, w: 100, h: 40 } })], {
@@ -137,6 +199,39 @@ describe('analyzeProbe — horizontal overflow', () => {
   it('ignores sub-pixel overflow from rounding', () => {
     const f = analyzeProbe(probe([], { docScrollWidth: 390.4, docClientWidth: 390 }));
     expect(kinds(f)).not.toContain('overflow');
+  });
+
+  /**
+   * A swipeable row — the registered-exam carousel — parks its later slides
+   * past the viewport on purpose, inside a container that scrolls sideways.
+   * Those slides are reachable by a swipe, which is exactly what "clipped" is
+   * not. Excused only within the scroller's scrollable range: an element that
+   * runs past even that range is still unreachable, and still reported.
+   */
+  it('excuses a slide a horizontal scroller can bring into view', () => {
+    const f = analyzeProbe(
+      probe([
+        el({
+          sel: 'div.slide-2',
+          rect: { x: 390, y: 100, w: 360, h: 60 },
+          hScrollRange: { left: 15, right: 750 },
+        }),
+      ])
+    );
+    expect(kinds(f)).not.toContain('overflow-element');
+  });
+
+  it('still reports what runs past the end of the scroller as well', () => {
+    const f = analyzeProbe(
+      probe([
+        el({
+          sel: 'div.too-wide',
+          rect: { x: 390, y: 100, w: 500, h: 60 },
+          hScrollRange: { left: 15, right: 750 },
+        }),
+      ])
+    );
+    expect(f.some((x) => x.kind === 'overflow-element' && x.sel === 'div.too-wide')).toBe(true);
   });
 
   it('names the element that sticks out past the viewport', () => {

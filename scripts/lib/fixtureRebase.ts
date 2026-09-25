@@ -30,6 +30,12 @@ export function formatCompactIsDate(d: Date): string {
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}`;
 }
 
+/** "13:15" — the clock an IS lesson carries. */
+function formatClock(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function shift(now: Date, days: number): Date {
   const d = new Date(now.getTime());
   d.setDate(d.getDate() + days);
@@ -39,8 +45,8 @@ function shift(now: Date, days: number): Date {
 /** Offset authoring key → the absolute field it produces. */
 const DATE_FIELDS: { offset: string; target: string; timeKey?: string }[] = [
   { offset: 'dayOffset', target: 'date' },
-  { offset: 'regStartDayOffset', target: 'registrationStart' },
-  { offset: 'regEndDayOffset', target: 'registrationEnd' },
+  { offset: 'regStartDayOffset', target: 'registrationStart', timeKey: 'regStartTime' },
+  { offset: 'regEndDayOffset', target: 'registrationEnd', timeKey: 'regEndTime' },
   { offset: 'deregDayOffset', target: 'deregistrationDeadline', timeKey: 'deregTime' },
 ];
 
@@ -96,6 +102,19 @@ export function rebaseFixture(fixture: unknown, now: Date): Json {
       if (typeof raw !== 'number') return lesson;
       const l: Json = { ...lesson, date: formatCompactIsDate(shift(now, raw)) };
       delete l['dayOffset'];
+      // Minutes from `now`, for the lesson that has to be RUNNING while you
+      // look at it: "TEĎ BĚŽÍ", its countdown and the "Pak:" line are otherwise
+      // only reachable by opening the app at the hour the fixture happens to
+      // name. Authored per lesson, so the rest keep their plain clock.
+      for (const [key, target] of [
+        ['startMinutesFromNow', 'startTime'],
+        ['endMinutesFromNow', 'endTime'],
+      ] as const) {
+        const mins = l[key];
+        if (typeof mins !== 'number') continue;
+        l[target] = formatClock(new Date(now.getTime() + mins * 60_000));
+        delete l[key];
+      }
       return l;
     });
   }

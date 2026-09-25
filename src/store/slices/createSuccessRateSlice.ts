@@ -1,8 +1,23 @@
 import type { SuccessRateSlice, AppSlice } from '../types';
-import { getStoredSuccessRates, fetchSubjectSuccessRates } from '../../api/successRate';
+import type { SubjectSuccessRate } from '../../types/documents';
+import {
+  getStoredSuccessRates,
+  fetchSubjectSuccessRates,
+  isStaleForVersion,
+} from '../../api/successRate';
+import { ensureSuccessRateVersion, getKnownSuccessRateVersion } from '../../api/successRateVersion';
 import { loggers } from '../../utils/logger';
 
 const batchInFlight = new Set<string>();
+
+// Stamped too, so a subject the CDN has no file for is asked once per version
+// rather than on every batch.
+const placeholder = (courseCode: string, version: string | null): SubjectSuccessRate => ({
+  courseCode,
+  stats: [],
+  lastUpdated: '',
+  ...(version === null ? {} : { cdnVersion: version }),
+});
 
 export const createSuccessRateSlice: AppSlice<SuccessRateSlice> = (set, get) => ({
   successRates: {},
@@ -10,18 +25,21 @@ export const createSuccessRateSlice: AppSlice<SuccessRateSlice> = (set, get) => 
   successRatesGlobalLoaded: false,
   fetchSuccessRateBatch: async (courseCodes) => {
     const missing = courseCodes.filter((c) => !get().successRates[c] && !batchInFlight.has(c));
-    if (missing.length === 0) return;
-
+    const claimed = new Set(missing);
     for (const c of missing) batchInFlight.add(c);
 
     try {
-      const stored = await getStoredSuccessRates();
+      const [stored, known] = await Promise.all([
+        getStoredSuccessRates(),
+        getKnownSuccessRateVersion(),
+      ]);
       if (stored) set({ successRatesGlobalLoaded: true });
 
-      const fromCache: Record<string, import('../../types/documents').SubjectSuccessRate> = {};
+      const fromCache: Record<string, SubjectSuccessRate> = {};
       const toFetch: string[] = [];
       for (const code of missing) {
-        if (stored?.data[code]) fromCache[code] = stored.data[code];
+        const cached = stored?.data[code];
+        if (cached && !isStaleForVersion(cached, known)) fromCache[code] = cached;
         else toFetch.push(code);
       }
 
@@ -29,18 +47,37 @@ export const createSuccessRateSlice: AppSlice<SuccessRateSlice> = (set, get) => 
         set((state) => ({ successRates: { ...state.successRates, ...fromCache } }));
       }
 
-      if (toFetch.length > 0) {
-        const result = await fetchSubjectSuccessRates(toFetch);
-        const updates: Record<string, import('../../types/documents').SubjectSuccessRate> = {};
-        for (const code of toFetch) {
-          updates[code] = result.data[code] ?? { courseCode: code, stats: [], lastUpdated: '' };
-        }
-        set((state) => ({ successRates: { ...state.successRates, ...updates } }));
+      // Cached entries are shown first; the version check (at most one request
+      // every few hours) then decides whether anything on screen — from this
+      // batch or an earlier one — predates the current reis-data version.
+      const version = await ensureSuccessRateVersion();
+      const shown = get().successRates;
+      const stale = Object.keys(shown).filter(
+        (c) => (claimed.has(c) || !batchInFlight.has(c)) && isStaleForVersion(shown[c]!, version)
+      );
+      for (const c of stale) {
+        claimed.add(c);
+        batchInFlight.add(c);
       }
+
+      if (toFetch.length === 0 && stale.length === 0) return;
+
+      const result = await fetchSubjectSuccessRates([...toFetch, ...stale], version);
+      const updates: Record<string, SubjectSuccessRate> = {};
+      for (const code of toFetch) {
+        updates[code] = result.data[code] ?? placeholder(code, version);
+      }
+      for (const code of stale) {
+        // A failed re-fetch leaves the old entry in `result`; keep showing it.
+        const next = result.data[code];
+        if (next) updates[code] = next;
+        else if (shown[code]!.stats.length === 0) updates[code] = placeholder(code, version);
+      }
+      set((state) => ({ successRates: { ...state.successRates, ...updates } }));
     } catch (err) {
       loggers.ui.error('[SuccessRateSlice] Batch fetch failed:', err);
     } finally {
-      for (const c of missing) batchInFlight.delete(c);
+      for (const c of claimed) batchInFlight.delete(c);
     }
   },
   fetchSuccessRate: async (courseCode) => {
@@ -53,21 +90,31 @@ export const createSuccessRateSlice: AppSlice<SuccessRateSlice> = (set, get) => 
     }
 
     try {
-      const stored = await getStoredSuccessRates();
+      const [stored, known] = await Promise.all([
+        getStoredSuccessRates(),
+        getKnownSuccessRateVersion(),
+      ]);
       if (stored) {
         set({ successRatesGlobalLoaded: true });
       }
 
-      const successRate = stored?.data[courseCode];
-      if (successRate) {
+      const cached = stored?.data[courseCode];
+      if (cached && !isStaleForVersion(cached, known)) {
         set((state) => ({
-          successRates: { ...state.successRates, [courseCode]: successRate },
+          successRates: { ...state.successRates, [courseCode]: cached },
           successRatesLoading: { ...state.successRatesLoading, [courseCode]: false },
         }));
+      }
+
+      // Shown already if it was current as far as we knew; the check may
+      // still find a newer version and send us past the cache.
+      const version = await ensureSuccessRateVersion();
+      if (cached && !isStaleForVersion(cached, version)) {
+        if (cached.stats.length === 0) void get().fetchSimilarSubjects(courseCode);
         return;
       }
 
-      const result = await fetchSubjectSuccessRates([courseCode]);
+      const result = await fetchSubjectSuccessRates([courseCode], version);
       set((state) => ({
         successRates: {
           ...state.successRates,
@@ -75,6 +122,8 @@ export const createSuccessRateSlice: AppSlice<SuccessRateSlice> = (set, get) => 
         },
         successRatesLoading: { ...state.successRatesLoading, [courseCode]: false },
       }));
+      // No stats of its own: look for similar subjects to offer instead.
+      if (!result.data[courseCode]?.stats.length) void get().fetchSimilarSubjects(courseCode);
     } catch (err) {
       loggers.ui.error('[SuccessRateSlice] Fetch failed:', err);
       set((state) => ({

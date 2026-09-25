@@ -8,6 +8,8 @@ import type {
   Landmark,
   RemotePlace,
 } from '../../types/campusMap';
+import { lookupRoomEntry } from '../../utils/rooms/lookupRoom';
+import { isLabelForCode, isLabelOfAnotherRoom } from '../../data/map/isRoomLabels';
 
 export interface RoomStyle {
   fill: string;
@@ -23,12 +25,10 @@ export function roomCodeToCoord(
   index: RoomIndexEntry[],
   buildings: BuildingsMeta
 ): [number, number] | null {
-  // Room code is free text in the authoring UI, so normalize both sides —
-  // a stray case/whitespace difference must not silently drop the pin.
-  const needle = code.trim().toLowerCase();
-  const entry = index.find(
-    (e) => e.code.toLowerCase() === needle || e.name.toLowerCase() === needle
-  );
+  // Room code is free text in the authoring UI, so share the app's one
+  // resolver — a stray case difference, a bracketed campus, or a hall known
+  // only by its nickname must not silently drop the pin.
+  const entry = lookupRoomEntry(code, index);
   if (!entry) return null;
   const b = buildings.buildings.find((x) => x.id === entry.buildingId);
   if (!b) return null;
@@ -37,14 +37,11 @@ export function roomCodeToCoord(
 
 // Events persist only the IS-internal room code (e.g. "BA39N1009"); the
 // human-readable hall name ("Q01") lives in the rooms index. Resolve code →
-// name for display. Normalizes like roomCodeToCoord and also matches on name,
-// so a legacy row that stored the name already stays a name. Falls back to the
-// given string for an unknown code so the user still sees something.
+// name for display. Resolves like roomCodeToCoord, so a legacy row that stored
+// the name (or a nickname) already still resolves. Falls back to the given
+// string for an unknown code so the user still sees something.
 export function roomCodeToName(code: string, index: RoomIndexEntry[]): string {
-  const needle = code.trim().toLowerCase();
-  const entry = index.find(
-    (e) => e.code.toLowerCase() === needle || e.name.toLowerCase() === needle
-  );
+  const entry = lookupRoomEntry(code, index);
   return entry ? roomLabel(entry.name, entry.code, entry.nickname) : code;
 }
 
@@ -124,8 +121,22 @@ const CATEGORY_STYLE: Record<RoomCategory, RoomStyle> = {
   other: { fill: '#e8edf2', stroke: '#c2c8d0' },
 };
 
-export function categoryStyle(c: RoomCategory): RoomStyle {
-  return CATEGORY_STYLE[c] ?? CATEGORY_STYLE.other;
+// Room types that must not look like their category. Measured over the real
+// backdrop (fill at 0.6 on the #d7d7d7 building footprint), CIEDE2000 to the
+// nearest existing fill / to the selected orange, and contrast of the label
+// ink #1f2937 and the route #a21caf on it:
+//   amber  #fcd34d  14.9 (teaching) / 21.4   label 10.1  route 4.35  ← chosen
+//   teal   #8fd9cd  13.9 (teaching) / 37.1   label  9.4  route 4.06
+//   violet #c4b5fd  12.2 (service)  / 38.3   label  8.8  route 3.80
+//   rose   #ff819d  16.7 (service)  / 28.2   label  7.4  route 3.18  (MyMENDELU's bistro)
+// MyMENDELU has no shop type to copy. Only reIS's MENDELU Shop is typed `shop`
+// (mergedRooms.ts); the API's wine shop and bistro keep their category colour.
+const TYPE_STYLE: Record<string, RoomStyle> = {
+  shop: { fill: '#fcd34d', stroke: '#ca8a04' },
+};
+
+export function categoryStyle(c: RoomCategory, type?: string): RoomStyle {
+  return (type && TYPE_STYLE[type]) || CATEGORY_STYLE[c] || CATEGORY_STYLE.other;
 }
 
 export function shortLabel(name: string): string {
@@ -141,18 +152,44 @@ export function shortLabel(name: string): string {
 // stripping the building prefix off the raw code (old behaviour). `rawCode` is
 // the passport code — `passportNumber` on a geojson feature, `code` on an index
 // entry. Verified against the MENDELU map API: BA01N1052 → nickname "A01".
+// Above all of that sits IS's own label (data/map/isRoomLabels.ts): the string a
+// timetable prints, and the one search matches — so the plan never calls a room
+// "B40" after a search for "B06" found it.
 export function roomLabel(
   name: string,
   rawCode: string | null | undefined,
   nickname: string | null | undefined
 ): string {
+  const isLabel = isLabelForCode(rawCode);
+  if (isLabel) return isLabel;
   // Only treat `name` as already-friendly when we can prove it differs from a
   // known raw code. With a null/undefined `rawCode` (e.g. building B rooms carry
   // a nickname but no passportNumber) we can't tell, so we must not short-circuit
   // here — otherwise a raw-code-shaped `name` would win over a real nickname.
   if (name && rawCode != null && name !== rawCode) return name; // PEF: name is friendly
-  if (nickname) return nickname; // A/C/E/M (and B): friendly code lives in nickname
+  // A/C/E/M (and B): friendly code lives in nickname — unless IS gives that
+  // name to another room (the map's stale "A412" on BA01N4082).
+  if (nickname && !isLabelOfAnotherRoom(nickname, rawCode)) return nickname;
   return shortLabel(name || rawCode || ''); // fallback: strip the prefix
+}
+
+// A permanent floor-plan label has to fit inside the room's outline, so it
+// keeps only the code in front of IS's description: "B05 – Strojový sál" and
+// "B106, zasedačka LDF" become "B05" and "B106". Search, the detail card and
+// the hover tooltip keep the full name. A spaced dash or a comma is the
+// separator; "Q-LCNA" has neither.
+export function planLabel(label: string): string {
+  return label.split(/\s[–-]\s|,\s/)[0] || label;
+}
+
+// A building pin is named by its letter alone ("T"). That reads fine on the pin,
+// not as the line under a room name, so a bare letter is spelled out as
+// "Budova T"; a real name ("Zahradnická fakulta – Lednice") is left as it is.
+export function placeTitle(
+  name: string,
+  t: (key: string, params?: Record<string, string>) => string
+): string {
+  return /^[A-Z]$/.test(name) ? t('map.buildingNamed', { name }) : name;
 }
 
 export function lonLatToLatLng(c: [number, number]): [number, number] {
@@ -309,11 +346,15 @@ const BARE_HALL = /^[a-z]\d{1,3}$/;
 // `nickname` is included so the friendly hall label counts for matching/ranking
 // even when it lives outside `name` — building A's "A01" is a nickname, not a
 // name, and a student typing "A01" must still find room BA01N1052.
+// IS's label (isRoomLabels) is a field too: B05 has no other name a student knows.
 function matchRank(q: string, name: string, code: string, nickname = ''): number {
-  const fields = [name.toLowerCase(), code.toLowerCase(), nickname.toLowerCase()].filter(Boolean);
+  const isLabel = (isLabelForCode(code) ?? '').toLowerCase();
+  const fields = [name.toLowerCase(), code.toLowerCase(), nickname.toLowerCase(), isLabel].filter(
+    Boolean
+  );
   const exact = fields.some((f) => f === q);
   const prefix = fields.some((f) => f.startsWith(q));
-  const hall = BARE_HALL.test(name.toLowerCase()) || BARE_HALL.test(nickname.toLowerCase());
+  const hall = [name, nickname, isLabel].some((f) => BARE_HALL.test(f.toLowerCase()));
   if (exact) return 0;
   if (prefix && hall) return 1;
   if (prefix) return 2;
@@ -325,14 +366,18 @@ function matchRank(q: string, name: string, code: string, nickname = ''): number
 // top-left map search and the composer's room picker so both order hits the
 // same way (exact "Q01" beats the dotted Q01.NN offices listed earlier).
 function rankedRooms(q: string, index: RoomIndexEntry[]) {
+  // A nickname IS gives to another room is not this room's name (roomLabel).
+  const nick = (e: RoomIndexEntry) =>
+    isLabelOfAnotherRoom(e.nickname, e.code) ? '' : (e.nickname ?? '');
   return index
     .filter(
       (e) =>
         e.code.toLowerCase().includes(q) ||
         e.name.toLowerCase().includes(q) ||
-        (e.nickname ?? '').toLowerCase().includes(q)
+        nick(e).toLowerCase().includes(q) ||
+        (isLabelForCode(e.code) ?? '').toLowerCase().includes(q)
     )
-    .map((entry) => ({ entry, rank: matchRank(q, entry.name, entry.code, entry.nickname ?? '') }));
+    .map((entry) => ({ entry, rank: matchRank(q, entry.name, entry.code, nick(entry)) }));
 }
 
 export function searchRooms(query: string, index: RoomIndexEntry[], limit = 6): RoomIndexEntry[] {

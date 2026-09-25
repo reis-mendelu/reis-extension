@@ -1,7 +1,8 @@
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { landmarkGroupLabels, roomLabel } from './mapHelpers';
+import { landmarkGroupLabels, placeTitle, roomLabel } from './mapHelpers';
 import { EventDetailCard } from './EventDetailCard';
+import { GardenPlaceCard } from './GardenPlaceCard';
 import landmarksJson from '../../data/map/landmarks.json';
 import type { Landmark } from '../../types/campusMap';
 
@@ -27,12 +28,17 @@ export function DetailPanel() {
 
   if (sel.kind === 'event') return <EventDetailCard event={sel.event} />;
 
+  if (sel.kind === 'gardenPlace') return <GardenPlaceCard place={sel.place} />;
+
   if (sel.kind === 'poi') {
     const p = sel.poi;
     const alsoHere = COLOCATED.get(p.id) ?? [];
     return (
       <div className="p-4 bg-base-100 border border-base-300 rounded-lg space-y-1">
-        <h3 className="font-bold text-base-content">{p.name}</h3>
+        {/* Shown for a timetable room with no floor plan: the room heads the
+            card and the building it is in sits under it (focusRoomPlace). */}
+        <h3 className="font-bold text-base-content">{sel.forRoom ?? p.name}</h3>
+        {sel.forRoom && <p className="text-sm text-base-content/70">{placeTitle(p.name, t)}</p>}
         <p className="text-sm text-base-content/60">{p.type}</p>
         {alsoHere.length > 0 && (
           <p className="text-sm text-base-content/70">

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { Mock } from 'vitest';
 import { createTeachingWeekSlice } from '../createTeachingWeekSlice';
 import type { TeachingWeekSlice } from '../../types';
 import { IndexedDBService } from '../../../services/storage/IndexedDBService';
@@ -40,18 +41,18 @@ const STALE = {
  */
 describe('createTeachingWeekSlice', () => {
   let state: TeachingWeekSlice;
-  let set: ReturnType<typeof vi.fn>;
-  let get: ReturnType<typeof vi.fn>;
+  let set: Mock & Parameters<typeof createTeachingWeekSlice>[0];
+  let get: Mock & Parameters<typeof createTeachingWeekSlice>[1];
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-09-16T10:00:00'));
-    set = vi.fn((updater) => {
+    set = vi.fn((updater: unknown) => {
       const patch = typeof updater === 'function' ? updater(state) : updater;
       state = { ...state, ...patch };
     });
-    get = vi.fn(() => state);
+    get = vi.fn(() => state) as unknown as typeof get;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     state = createTeachingWeekSlice(set, get, {} as any);
   });

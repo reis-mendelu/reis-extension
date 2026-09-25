@@ -81,7 +81,7 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
   // Was h-9 w-7 — 36x28, under the 44pt touch minimum on both axes. Same
   // place, same look, bigger target and a slightly bigger glyph.
   const arrowClass =
-    'flex h-11 w-8 flex-shrink-0 items-center justify-center rounded-full text-base-content/60 active:bg-base-200 active:text-primary';
+    'flex h-11 w-8 flex-shrink-0 items-center justify-center rounded-full text-base-content/60 active:bg-base-200 active:text-[var(--tone-primary)]';
 
   return (
     <div className="flex flex-shrink-0 items-center gap-1 px-2 pb-2.5 pt-4">
@@ -145,7 +145,7 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
               // the semester start, so the failing state was never on screen.
               className={`flex-1 whitespace-nowrap rounded-full py-2 text-center text-sm transition-colors max-[359px]:text-[11px] ${
                 isSelected
-                  ? 'bg-primary/15 font-semibold text-primary'
+                  ? 'bg-primary/15 font-semibold text-[var(--tone-primary)]'
                   : 'font-medium text-base-content/70'
               }`}
             >

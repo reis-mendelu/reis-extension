@@ -12,20 +12,26 @@ interface IsSearchTriggersProps {
   buttonClassName: string;
 }
 
-/** The "IS stránky" + "Lidé" trigger rows shown in the IS flyout (desktop sidebar and mobile sheet). */
+/** The "Starý IS" + "Lidé" trigger rows shown in the IS flyout (desktop sidebar and mobile sheet). */
 export function IsSearchTriggers({ onOpen, buttonClassName }: IsSearchTriggersProps) {
   const { t } = useTranslation();
   return (
     <>
       <button
-        onClick={(e) => { e.stopPropagation(); onOpen('pages'); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onOpen('pages');
+        }}
         className={buttonClassName}
       >
         <Search className="w-4 h-4" />
         <span>{t('sidebar.isPages')}</span>
       </button>
       <button
-        onClick={(e) => { e.stopPropagation(); onOpen('people'); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onOpen('people');
+        }}
         className={buttonClassName}
       >
         <UserSearch className="w-4 h-4" />

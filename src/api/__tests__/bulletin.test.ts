@@ -3,30 +3,63 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseBulletinHtml } from '../bulletin';
 
-const FIXTURE = readFileSync(
-    join(__dirname, 'fixtures', 'vyveska.html'),
-    'utf-8',
-);
+const FIXTURE = readFileSync(join(__dirname, 'fixtures', 'vyveska.html'), 'utf-8');
+const SINGLE_CZ = readFileSync(join(__dirname, 'fixtures', 'vyveska-single.cz.html'), 'utf-8');
+const SINGLE_EN = readFileSync(join(__dirname, 'fixtures', 'vyveska-single.en.html'), 'utf-8');
 
 describe('parseBulletinHtml', () => {
-    it('returns empty for missing or malformed input', () => {
-        expect(parseBulletinHtml('')).toEqual([]);
-        expect(parseBulletinHtml('<html><body><p>no table</p></body></html>')).toEqual([]);
-    });
+  it('returns empty for missing or malformed input', () => {
+    expect(parseBulletinHtml('')).toEqual([]);
+    expect(parseBulletinHtml('<html><body><p>no table</p></body></html>')).toEqual([]);
+  });
 
-    it('parses contributions from a real nove_prispevky fixture', () => {
-        const posts = parseBulletinHtml(FIXTURE);
-        expect(posts.length).toBeGreaterThanOrEqual(5);
-        expect(posts.length).toBeLessThanOrEqual(10);
+  it('parses contributions from a real nove_prispevky fixture', () => {
+    const posts = parseBulletinHtml(FIXTURE);
+    expect(posts.length).toBeGreaterThanOrEqual(5);
+    expect(posts.length).toBeLessThanOrEqual(10);
 
-        const first = posts[0];
-        expect(first.title.length).toBeGreaterThan(0);
-        expect(first.url).toMatch(/slozka\.pl\?/);
-        expect(first.categories.length).toBeGreaterThan(0);
-    });
+    const first = posts[0];
+    expect(first.title.length).toBeGreaterThan(0);
+    expect(first.url).toMatch(/slozka\.pl\?/);
+    expect(first.categories.length).toBeGreaterThan(0);
+  });
 
-    it('caps results at 10 posts even if more rows exist', () => {
-        const rows = Array.from({ length: 20 }, (_, i) => `
+  // IS attaches its table manager — and with it id="tmtab_1" — only to a list of
+  // more than one post. With a single new post the table is a bare <table>, and
+  // requiring the id made the vývěska show "no posts" while IS had one.
+  it.each([
+    ['cz', SINGLE_CZ],
+    ['en', SINGLE_EN],
+  ])('parses the one post of a real single-row page without tmtab_1 (%s)', (_lang, html) => {
+    expect(new DOMParser().parseFromString(html, 'text/html').getElementById('tmtab_1')).toBeNull();
+    const posts = parseBulletinHtml(html);
+    expect(posts).toHaveLength(1);
+    expect(posts).toMatchObject([
+      {
+        title: 'CITACE A\u00a0CITOVÁNÍ – webinář pro studenty, 30. 9. od 14:00',
+        categories: ['Inzerce', 'Ostatní'],
+        url: expect.stringContaining('klic=36828') as unknown,
+      },
+    ]);
+  });
+
+  it('prefers tmtab_1 over an earlier bare table that also links a post', () => {
+    const row = (title: string, klic: number) => `<tr>
+            <td><input name="oznacene" value="${klic}"></td>
+            <td>${title}<br><font size="-2"><a href="slozka.pl?id=1">Cat</a></font></td>
+            <td><a href="slozka.pl?zobrazeni=1;klic=${klic}"><img></a></td>
+        </tr>`;
+    const html = `<html><body>
+            <table><tbody>${row('Decoy', 1)}</tbody></table>
+            <table id="tmtab_1"><tbody>${row('Real', 2)}</tbody></table>
+        </body></html>`;
+    expect(parseBulletinHtml(html).map((p) => p.title)).toEqual(['Real']);
+  });
+
+  it('caps results at 10 posts even if more rows exist', () => {
+    const rows = Array.from(
+      { length: 20 },
+      (_, i) => `
             <tr>
                 <td><small></small></td>
                 <td><input name="oznacene" value="${1000 + i}"></td>
@@ -35,44 +68,61 @@ describe('parseBulletinHtml', () => {
                 <td><a href="/auth/lide/clovek.pl?id=1">A. B.</a></td>
                 <td>01/01/2026</td>
                 <td><a href="slozka.pl?zobrazeni=1;klic=${1000 + i}"><img></a></td>
-            </tr>`).join('');
-        const html = `<html><body><table id="tmtab_1"><tbody>${rows}</tbody></table></body></html>`;
-        const posts = parseBulletinHtml(html);
-        expect(posts).toHaveLength(10);
-        expect(posts[0].title).toBe('Title 0');
-        expect(posts[0].categories).toEqual(['Inzerce', 'Nabízím']);
-        expect(posts[0].url).toMatch(/klic=1000/);
-    });
+            </tr>`
+    ).join('');
+    const html = `<html><body><table id="tmtab_1"><tbody>${rows}</tbody></table></body></html>`;
+    const posts = parseBulletinHtml(html);
+    expect(posts).toHaveLength(10);
+    expect(posts[0].title).toBe('Title 0');
+    expect(posts[0].categories).toEqual(['Inzerce', 'Nabízím']);
+    expect(posts[0].url).toMatch(/klic=1000/);
+  });
 
-    it('resolves absolute, protocol-relative, and page-relative hrefs without doubling the path', () => {
-        const rows = [
-            { href: 'slozka.pl?zobrazeni=1;klic=1', expectStart: 'https://is.mendelu.cz/auth/vyveska/slozka.pl' },
-            { href: '/auth/vyveska/slozka.pl?zobrazeni=1;klic=2', expectStart: 'https://is.mendelu.cz/auth/vyveska/slozka.pl' },
-            { href: '//is.mendelu.cz/auth/vyveska/slozka.pl?zobrazeni=1;klic=3', expectStart: 'https://is.mendelu.cz/auth/vyveska/slozka.pl' },
-            { href: 'https://is.mendelu.cz/auth/vyveska/slozka.pl?zobrazeni=1;klic=4', expectStart: 'https://is.mendelu.cz/auth/vyveska/slozka.pl' },
-        ].map(({ href }, i) => `<tr>
+  it('resolves absolute, protocol-relative, and page-relative hrefs without doubling the path', () => {
+    const rows = [
+      {
+        href: 'slozka.pl?zobrazeni=1;klic=1',
+        expectStart: 'https://is.mendelu.cz/auth/vyveska/slozka.pl',
+      },
+      {
+        href: '/auth/vyveska/slozka.pl?zobrazeni=1;klic=2',
+        expectStart: 'https://is.mendelu.cz/auth/vyveska/slozka.pl',
+      },
+      {
+        href: '//is.mendelu.cz/auth/vyveska/slozka.pl?zobrazeni=1;klic=3',
+        expectStart: 'https://is.mendelu.cz/auth/vyveska/slozka.pl',
+      },
+      {
+        href: 'https://is.mendelu.cz/auth/vyveska/slozka.pl?zobrazeni=1;klic=4',
+        expectStart: 'https://is.mendelu.cz/auth/vyveska/slozka.pl',
+      },
+    ]
+      .map(
+        ({ href }, i) => `<tr>
             <td><input name="oznacene" value="${i}"></td>
             <td><img></td>
             <td>Title ${i}<br><font size="-2"><a href="slozka.pl?id=1">Cat</a></font></td>
             <td><a href="/auth/lide/clovek.pl?id=1">A</a></td>
             <td>01/01/2026</td>
             <td><a href="${href}"><img></a></td>
-        </tr>`).join('');
-        const html = `<html><body><table id="tmtab_1"><tbody>${rows}</tbody></table></body></html>`;
-        const posts = parseBulletinHtml(html);
-        expect(posts).toHaveLength(4);
-        expect(posts.map(p => p.url)).toEqual([
-            'https://is.mendelu.cz/auth/vyveska/slozka.pl?zobrazeni=1;klic=1',
-            'https://is.mendelu.cz/auth/vyveska/slozka.pl?zobrazeni=1;klic=2',
-            'https://is.mendelu.cz/auth/vyveska/slozka.pl?zobrazeni=1;klic=3',
-            'https://is.mendelu.cz/auth/vyveska/slozka.pl?zobrazeni=1;klic=4',
-        ]);
-    });
+        </tr>`
+      )
+      .join('');
+    const html = `<html><body><table id="tmtab_1"><tbody>${rows}</tbody></table></body></html>`;
+    const posts = parseBulletinHtml(html);
+    expect(posts).toHaveLength(4);
+    expect(posts.map((p) => p.url)).toEqual([
+      'https://is.mendelu.cz/auth/vyveska/slozka.pl?zobrazeni=1;klic=1',
+      'https://is.mendelu.cz/auth/vyveska/slozka.pl?zobrazeni=1;klic=2',
+      'https://is.mendelu.cz/auth/vyveska/slozka.pl?zobrazeni=1;klic=3',
+      'https://is.mendelu.cz/auth/vyveska/slozka.pl?zobrazeni=1;klic=4',
+    ]);
+  });
 
-    it('ignores stray <font> in unrelated cells and locks onto breadcrumb-bearing cell', () => {
-        // An earlier cell has a <font> badge ("Nové") that is NOT the breadcrumb;
-        // the parser must skip it and land on the cell whose <font> wraps slozka.pl?id= anchors.
-        const row = `<tr>
+  it('ignores stray <font> in unrelated cells and locks onto breadcrumb-bearing cell', () => {
+    // An earlier cell has a <font> badge ("Nové") that is NOT the breadcrumb;
+    // the parser must skip it and land on the cell whose <font> wraps slozka.pl?id= anchors.
+    const row = `<tr>
             <td><input name="oznacene" value="1"></td>
             <td><font size="-2">Nové</font></td>
             <td>The Real Title<br><font size="-2"><a href="slozka.pl?id=17">Inzerce</a> / <a href="slozka.pl?id=78">Ubytování</a></font></td>
@@ -80,16 +130,16 @@ describe('parseBulletinHtml', () => {
             <td>21.05.2026</td>
             <td><a href="slozka.pl?zobrazeni=1;klic=1"><img></a></td>
         </tr>`;
-        const html = `<html><body><table id="tmtab_1"><tbody>${row}</tbody></table></body></html>`;
-        const posts = parseBulletinHtml(html);
-        expect(posts).toHaveLength(1);
-        expect(posts[0].title).toBe('The Real Title');
-        expect(posts[0].categories).toEqual(['Inzerce', 'Ubytování']);
-    });
+    const html = `<html><body><table id="tmtab_1"><tbody>${row}</tbody></table></body></html>`;
+    const posts = parseBulletinHtml(html);
+    expect(posts).toHaveLength(1);
+    expect(posts[0].title).toBe('The Real Title');
+    expect(posts[0].categories).toEqual(['Inzerce', 'Ubytování']);
+  });
 
-    it('parses CZ-locale rows that omit the leading ordinal column (6 cells)', () => {
-        // Real row markup pulled from a CZ-locale browser session.
-        const row = `<tr class=" uis-hl-table lbn">
+  it('parses CZ-locale rows that omit the leading ordinal column (6 cells)', () => {
+    // Real row markup pulled from a CZ-locale browser session.
+    const row = `<tr class=" uis-hl-table lbn">
             <td class="odsazena" align="center"><input type="checkbox" name="oznacene" value="36737"></td>
             <td class="odsazena" align="center"><img src="/img.pl?unid=20555" alt="" sysid="informace-normalni"></td>
             <td class="odsazena" align="left">Hledám parťáka k&nbsp;sobě do pokoje<br><font size="-2"><a href="slozka.pl?id=17">Inzerce</a> / <a href="slozka.pl?id=78">Ubytování</a> / <a href="slozka.pl?id=81">Nabízím</a></font></td>
@@ -97,29 +147,29 @@ describe('parseBulletinHtml', () => {
             <td class="odsazena" align="center" nowrap="1">21.05.2026</td>
             <td class="odsazena" align="center"><a href="slozka.pl?zobrazeni=1;id=81;zalozka=1;klic=36737;nove=1"><img src="/img.pl?unid=71073"></a></td>
         </tr>`;
-        const html = `<html><body><table id="tmtab_1"><tbody>${row}</tbody></table></body></html>`;
-        const posts = parseBulletinHtml(html);
-        expect(posts).toHaveLength(1);
-        expect(posts[0].title).toBe('Hledám parťáka k sobě do pokoje');
-        expect(posts[0].categories).toEqual(['Inzerce', 'Ubytování', 'Nabízím']);
-        expect(posts[0].url).toMatch(/klic=36737/);
-    });
+    const html = `<html><body><table id="tmtab_1"><tbody>${row}</tbody></table></body></html>`;
+    const posts = parseBulletinHtml(html);
+    expect(posts).toHaveLength(1);
+    expect(posts[0].title).toBe('Hledám parťáka k sobě do pokoje');
+    expect(posts[0].categories).toEqual(['Inzerce', 'Ubytování', 'Nabízím']);
+    expect(posts[0].url).toMatch(/klic=36737/);
+  });
 
-    it('skips rows with fewer than 7 cells', () => {
-        const html = `<html><body><table id="tmtab_1"><tbody>
+  it('skips rows with fewer than 7 cells', () => {
+    const html = `<html><body><table id="tmtab_1"><tbody>
             <tr><td>1</td><td>2</td><td>3</td></tr>
         </tbody></table></body></html>`;
-        expect(parseBulletinHtml(html)).toEqual([]);
-    });
+    expect(parseBulletinHtml(html)).toEqual([]);
+  });
 
-    it('skips rows with empty title or no view link', () => {
-        const html = `<html><body><table id="tmtab_1"><tbody>
+  it('skips rows with empty title or no view link', () => {
+    const html = `<html><body><table id="tmtab_1"><tbody>
             <tr>
                 <td></td><td></td><td></td>
                 <td><br><font><a href="slozka.pl?id=1">Cat</a></font></td>
                 <td></td><td></td><td></td>
             </tr>
         </tbody></table></body></html>`;
-        expect(parseBulletinHtml(html)).toEqual([]);
-    });
+    expect(parseBulletinHtml(html)).toEqual([]);
+  });
 });

@@ -8,33 +8,27 @@
  */
 
 import { MapPin, Timer } from 'lucide-react';
-import type { LessonWithRow } from '../types/calendarTypes';
+import type { CardLesson } from '../types/calendarTypes';
 import { useCourseName } from '../hooks/ui/useCourseName';
 import { useAppStore } from '../store/useAppStore';
 import { useTimeline } from '../hooks/useTimeline';
 import { renderedBlockMinutes, MIN_VISUAL_BLOCK_MINUTES } from './WeeklyCalendar/utils';
 import { CalendarEventCardHideMenu } from './CalendarEventCardHideMenu';
+import { useTranslation } from '../hooks/useTranslation';
+import { lessonPlace } from '../utils/lessonPlace';
 
 interface CalendarEventCardProps {
-  lesson: LessonWithRow;
+  lesson: CardLesson;
   onClick?: (e: React.MouseEvent<HTMLElement>) => void;
   language?: string; // Language for localization
 }
 
 // Helper function to get localized course name
-function getLocalizedCourseName(lesson: LessonWithRow, language?: string): string {
+function getLocalizedCourseName(lesson: CardLesson, language?: string): string {
   if (language === 'en' && lesson.courseNameEn) {
     return lesson.courseNameEn;
   }
   return lesson.courseNameCs || lesson.courseName;
-}
-
-// Helper function to get localized room name
-function getLocalizedRoom(lesson: LessonWithRow, language?: string): string {
-  if (language === 'en' && lesson.roomEn) {
-    return lesson.roomEn;
-  }
-  return lesson.roomCs || lesson.room;
 }
 
 // Extract exam section name from the composite title
@@ -79,7 +73,10 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
     : nickname
       ? baseName
       : fullName;
-  const room = getLocalizedRoom(lesson, language);
+  const { t } = useTranslation();
+  const mapEvents = useAppStore((state) => state.mapEvents);
+  // The room, or where an answered society event is — which may be only a pin.
+  const room = lessonPlace(lesson, language ?? 'cz', mapEvents, t('map.venueOnMap')).label;
 
   // Determine event type and colors using workspace tokens
   const getEventStyles = () => {

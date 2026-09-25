@@ -1,6 +1,6 @@
 import type { StudyPlan, SubjectStatus } from '@/types/studyPlan';
 import type { SubjectSuccessRate } from '@/types/documents';
-import { isRealCredits } from './utils';
+import { isRealCredits, isSubjectVisible } from './utils';
 import { resolvePredmetId } from './resolvePredmetId';
 
 const MIN_SAMPLE = 30;
@@ -39,11 +39,19 @@ export interface HardestEntry {
   semesters: string[]; // plan semester numbers
 }
 
-/** Top hardest upcoming subjects in the plan. Skips fulfilled, already attempted, and low-sample. */
+/**
+ * Top hardest upcoming subjects in the plan. Skips fulfilled, already attempted,
+ * and low-sample — and, by the semester list's own rule, the subjects of every
+ * zaměření the student has not picked. The plan lists all of them and IS does
+ * not say which ones the student takes, so without that rule the card warned
+ * about subjects the student will never have.
+ */
 export function topHardestUpcoming(
   plan: StudyPlan,
   successRates: Record<string, SubjectSuccessRate>,
   subjectSemesters: Map<string, string[]>,
+  subjectToZameranis: Map<string, string[]>,
+  pickedZameranis: Set<string>,
   limit = 5
 ): HardestEntry[] {
   const seen = new Set<string>();
@@ -54,6 +62,7 @@ export function topHardestUpcoming(
         if (seen.has(s.code)) continue;
         seen.add(s.code);
         if (s.isFulfilled || s.enrollmentCount > 0) continue;
+        if (!isSubjectVisible(s, subjectToZameranis, pickedZameranis)) continue;
         const stat = subjectStat(successRates[s.code]);
         if (!stat || stat.n < MIN_SAMPLE) continue;
         entries.push({ subject: s, stat, semesters: subjectSemesters.get(s.code) ?? [] });

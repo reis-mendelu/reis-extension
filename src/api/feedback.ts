@@ -5,6 +5,7 @@ import { getPlatform } from '../platform';
 import { getUserParams } from '../utils/userParams';
 import { usagePlatform, type UsagePlatform } from '../utils/usagePlatform';
 import { isHarnessEnabled } from '../utils/harnessEnabled';
+import { hasDataConsent } from '../utils/firefoxDataConsent';
 
 /**
  * Both writes here identify the DEVICE, never the student.
@@ -30,6 +31,13 @@ export async function submitFeedback(
 ): Promise<boolean> {
   // Demo mode is a fabricated student; its feedback would pollute real rows.
   if (isDemoMode()) return false;
+  // Same reason as trackDailyUsage below: `dev:web` and the preview are not
+  // students, and the NPS prompt is plain buttons any click-through will hit.
+  if (isHarnessEnabled(import.meta.env)) return false;
+  // Firefox: an NPS rating on the install id is "extension usage" data, which
+  // the student can switch off at install or in about:addons. Always true
+  // elsewhere — see utils/firefoxDataConsent.
+  if (!(await hasDataConsent('technicalAndInteraction'))) return false;
 
   const { error } = await supabase.rpc('submit_feedback', {
     p_student_id: await getInstallId(),
@@ -99,6 +107,14 @@ export function trackDailyUsage(): Promise<void> {
 }
 
 async function writeDailyUsage(): Promise<void> {
+  // Firefox: the daily count is the "technical and interaction" data its
+  // install-time toggle governs. Off means this install is not counted — so
+  // Firefox figures are a lower bound. The memo is released rather than kept,
+  // so switching the toggle back on counts this session at the next call.
+  if (!(await hasDataConsent('technicalAndInteraction'))) {
+    inFlight = null;
+    return;
+  }
   const faculty = (await getUserParams())?.facultyLabel ?? null;
   const kind = getPlatform().kind;
   // @capacitor/core imported lazily, and only on the capacitor branch, so the

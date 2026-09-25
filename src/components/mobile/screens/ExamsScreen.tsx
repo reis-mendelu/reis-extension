@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Calendar } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
@@ -13,16 +13,19 @@ import {
   type RegisteredExam,
   type OpenExam,
 } from '../../../utils/mobile/examRows';
-import { splitByWeek } from '../../../utils/mobile/examWhen';
+import { dropFinished } from '../../../utils/mobile/examWhen';
 import { splitByRegistrationOpen } from '../../../utils/mobile/examOpening';
 import { pluralSuffix } from '../../../utils/plural';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { ExamGroup } from './exams/ExamGroup';
-import { NextUpStrip } from './exams/NextUpStrip';
+import { RegisteredStrip } from './exams/RegisteredStrip';
 import { NotYetOpenCard } from './exams/NotYetOpenCard';
 import { RegisteredCard } from './exams/RegisteredCard';
 import { OpenCard } from './exams/OpenCard';
+import { ExamsPullArea } from './exams/ExamsPullArea';
+import { RefreshButton } from '../primitives/RefreshButton';
 import { ConfirmSheet } from '../sheets/ConfirmSheet';
+import { ReportMissingLink } from '../../Feedback/ReportMissingLink';
 
 function ExamsSkeleton() {
   const { t } = useTranslation();
@@ -57,7 +60,10 @@ export function ExamsScreen() {
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
   const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
   const syncLoaded = useAppStore((s) => s.syncLoaded);
+  const examsRefreshing = useAppStore((s) => s.examsRefreshing);
+  const triggerExamsRefresh = useAppStore((s) => s.triggerExamsRefresh);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const screenRef = useRef<HTMLDivElement>(null);
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
 
   const {
@@ -69,18 +75,28 @@ export function ExamsScreen() {
     handleConfirmAction,
   } = useExamActions({ exams, setExpandedSectionId: setExpandedId });
 
-  const registered = useMemo(() => buildRegisteredExams(exams, language), [exams, language]);
-  const open = useMemo(() => buildOpenExams(exams, language), [exams, language]);
-  const { thisWeek, later } = useMemo(
-    () => splitByWeek(registered, (r) => r.date, now),
-    [registered, now]
+  // Only what is still to come. IS keeps a registered exam listed after it has
+  // been sat, until it is graded — see `dropFinished` for why it is hidden
+  // rather than grouped, and why "finished" means the day is over. Filtered
+  // here, once, so the strip, the groups and the count all agree.
+  const registered = useMemo(
+    () => dropFinished(buildRegisteredExams(exams, language), (r) => r.date, now),
+    [exams, language, now]
   );
+  const open = useMemo(() => buildOpenExams(exams, language), [exams, language]);
   // "Otevřené termíny 2" has to mean two things that can be booked. A section
   // whose registration opens in December is not one of them — see
   // utils/mobile/examOpening.
+  // Sections whose every term sits under "Kam se přihlásit nemohu?" are their
+  // own group: nothing to book, and nothing that opens later either.
+  const { blocked, joinable } = useMemo(() => {
+    const onlyBlocked = (r: OpenExam) =>
+      r.section.terms.length > 0 && r.section.terms.every((term) => term.cannotRegister);
+    return { blocked: open.filter(onlyBlocked), joinable: open.filter((r) => !onlyBlocked(r)) };
+  }, [open]);
   const { notYetOpen, open: bookable } = useMemo(
-    () => splitByRegistrationOpen(open, now),
-    [open, now]
+    () => splitByRegistrationOpen(joinable, now),
+    [joinable, now]
   );
 
   // No "Zkouškové" label: it sat directly above a title reading "Zkoušky" and
@@ -96,6 +112,7 @@ export function ExamsScreen() {
       key={row.section.id}
       row={row}
       locale={locale}
+      now={now}
       expanded={expandedId === row.section.id}
       onToggle={() => toggle(row.section.id)}
       isProcessing={processingSectionId === row.section.id}
@@ -130,7 +147,7 @@ export function ExamsScreen() {
   // "Přihlášen na 3 zkoušky" next to the actions overflows 320px.
   const registeredPill =
     registered.length > 0 ? (
-      <span className="w-fit whitespace-nowrap rounded-full bg-info/15 px-3 py-1.5 text-sm font-semibold text-info">
+      <span className="w-fit whitespace-nowrap rounded-full bg-success/15 px-3 py-1.5 text-sm font-semibold text-[var(--tone-success)]">
         {t(`mobile.exams.registeredCount${pluralSuffix(language, registered.length)}`, {
           count: registered.length,
         })}
@@ -141,9 +158,31 @@ export function ExamsScreen() {
   // a bare skeleton or error in its place left two of the four tabs with no
   // route to the vývěska, search or notifications for as long as a crawl took —
   // the same hole CalendarScreen had, caught in review on this PR.
+  // Refreshing is a pull on the list (ExamsPullArea), so the row under the
+  // title is back to carrying only the registered pill, and only when there is
+  // one. The sr-only button is the screen-reader route to the same refresh and
+  // takes no layout.
+  // Where a pull to refresh may start: anywhere on the screen (ExamsPullArea).
   const shell = (body: ReactNode) => (
-    <div data-testid="exams-screen" className="flex flex-1 flex-col overflow-hidden">
-      <ScreenHeader eyebrow={eyebrow} title={t('mobile.exams.title')} below={registeredPill} />
+    <div
+      ref={screenRef}
+      data-testid="exams-screen"
+      className="flex flex-1 flex-col overflow-hidden"
+    >
+      <ScreenHeader
+        eyebrow={eyebrow}
+        title={t('mobile.exams.title')}
+        below={
+          <>
+            {registeredPill}
+            <RefreshButton
+              label={t('mobile.exams.refresh')}
+              refreshing={examsRefreshing}
+              onRefresh={triggerExamsRefresh}
+            />
+          </>
+        }
+      />
       {body}
     </div>
   );
@@ -164,47 +203,51 @@ export function ExamsScreen() {
   return shell(
     <>
       {exams.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <ExamsPullArea
+          surfaceRef={screenRef}
+          className="items-center justify-center gap-3 px-6 text-center"
+        >
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-[var(--tone-primary)]">
             <Calendar size={28} />
           </div>
           <div className="font-display text-lg font-bold">{t('mobile.exams.emptyTitle')}</div>
           <div className="max-w-56 text-sm text-base-content/60">{t('mobile.exams.emptyBody')}</div>
-        </div>
+          <ReportMissingLink prefill="examsEmpty" />
+        </ExamsPullArea>
       ) : (
         <>
-          <NextUpStrip
-            items={registered}
-            now={now}
-            locale={locale}
-            t={t}
-            onOpen={(item) => setExpandedId(item.section.id)}
-          />
-          <div
-            data-testid="exam-list"
-            className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-24 pt-3"
+          <ExamsPullArea
+            surfaceRef={screenRef}
+            className="gap-4 px-4 pb-[calc(6rem_+_var(--safe-bottom,0px))] pt-3"
           >
-            {thisWeek.length > 0 && (
-              <ExamGroup title={t('mobile.exams.groupThisWeek')} count={thisWeek.length}>
-                {thisWeek.map(registeredCard)}
-              </ExamGroup>
-            )}
-            {later.length > 0 && (
-              <ExamGroup title={t('mobile.exams.groupLater')} count={later.length}>
-                {later.map(registeredCard)}
+            {/* The one place a registered exam appears — see RegisteredStrip.
+                First, because these are the exams the student is committed to. */}
+            {registered.length > 0 && (
+              <ExamGroup title={t('mobile.exams.groupRegistered')} tone="registered">
+                <RegisteredStrip
+                  rows={registered}
+                  now={now}
+                  locale={locale}
+                  selectedId={expandedId}
+                  onSelect={(row) => toggle(row.section.id)}
+                  renderDetail={registeredCard}
+                />
               </ExamGroup>
             )}
             {/* Above the bookable ones: a term that has not opened is the
-                thing a student is waiting on, and burying it under the list
-                they have already decided about hides the date they came for. */}
+              thing a student is waiting on, and burying it under the list
+              they have already decided about hides the date they came for. */}
             {notYetOpen.length > 0 && (
-              <ExamGroup title={t('mobile.exams.groupNotYetOpen')} count={notYetOpen.length}>
-                {notYetOpen.map(({ row, earliest }) => (
+              <ExamGroup
+                title={t('mobile.exams.groupNotYetOpen')}
+                count={notYetOpen.length}
+                tone="notYetOpen"
+              >
+                {notYetOpen.map(({ row }) => (
                   <NotYetOpenCard
                     key={row.section.id}
                     row={row}
-                    earliest={earliest}
-                    locale={locale}
+                    now={now}
                     expanded={expandedId === row.section.id}
                     onToggle={() => toggle(row.section.id)}
                     isProcessing={processingSectionId === row.section.id}
@@ -214,11 +257,31 @@ export function ExamsScreen() {
               </ExamGroup>
             )}
             {bookable.length > 0 && (
-              <ExamGroup title={t('mobile.exams.groupOpen')} count={bookable.length}>
+              <ExamGroup title={t('mobile.exams.groupOpen')} count={bookable.length} tone="open">
                 {bookable.map(openCard)}
               </ExamGroup>
             )}
-          </div>
+            {blocked.length > 0 && (
+              <ExamGroup
+                title={t('mobile.exams.groupBlocked')}
+                count={blocked.length}
+                tone="blocked"
+              >
+                {blocked.map((row) => (
+                  <OpenCard
+                    key={row.section.id}
+                    row={row}
+                    now={now}
+                    accent="neutral"
+                    expanded={expandedId === row.section.id}
+                    onToggle={() => toggle(row.section.id)}
+                    isProcessing={processingSectionId === row.section.id}
+                    onRegister={handleRegisterRequest}
+                  />
+                ))}
+              </ExamGroup>
+            )}
+          </ExamsPullArea>
         </>
       )}
 

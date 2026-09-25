@@ -1,11 +1,13 @@
 /**
  * Tests for useExamActions - Optimistic Updates
- * 
+ *
  * Tests the exam registration/unregistration logic with optimistic UI updates
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Mock } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
+import { toast } from 'sonner';
 import { useExamActions } from '../useExamActions';
 import * as examsAPI from '../../../api/exams';
 import { IndexedDBService } from '../../../services/storage';
@@ -24,7 +26,7 @@ vi.mock('../../../services/storage', () => ({
   STORAGE_KEYS: {
     EXAMS_DATA: 'exams_data',
     EXAMS_LAST_MODIFIED: 'exams_last_modified',
-  }
+  },
 }));
 vi.mock('sonner', () => ({
   toast: {
@@ -33,22 +35,31 @@ vi.mock('sonner', () => ({
   },
 }));
 
-const { mockSetExams, mockFetchExams, mockTriggerExamsRefresh } = vi.hoisted(() => ({
-  mockSetExams: vi.fn((data) => {
-    IndexedDBService.set('exams', 'current', data);
-    IndexedDBService.set('meta', 'exams_modified', Date.now());
-  }),
-  mockFetchExams: vi.fn(),
-  mockTriggerExamsRefresh: vi.fn(),
-}));
+const { mockSetExams, mockFetchExams, mockTriggerExamsRefresh, mockOpenReport } = vi.hoisted(
+  () => ({
+    mockSetExams: vi.fn((data) => {
+      IndexedDBService.set('exams', 'current', data);
+      IndexedDBService.set('meta', 'exams_modified', Date.now());
+    }),
+    mockFetchExams: vi.fn(),
+    mockTriggerExamsRefresh: vi.fn(),
+    mockOpenReport: vi.fn(),
+  })
+);
 
 vi.mock('../../../store/useAppStore', () => {
   const mockState = {
     setExams: mockSetExams,
     fetchExams: mockFetchExams,
     triggerExamsRefresh: mockTriggerExamsRefresh,
+    language: 'en',
+    openReport: mockOpenReport,
   };
-  const mockUseAppStore = vi.fn((selector: (s: typeof mockState) => unknown) => selector(mockState)) as unknown as ((selector: (s: typeof mockState) => unknown) => unknown) & { getState: () => typeof mockState };
+  const mockUseAppStore = vi.fn((selector: (s: typeof mockState) => unknown) =>
+    selector(mockState)
+  ) as unknown as ((selector: (s: typeof mockState) => unknown) => unknown) & {
+    getState: () => typeof mockState;
+  };
   mockUseAppStore.getState = () => mockState;
   return {
     useAppStore: mockUseAppStore,
@@ -77,18 +88,17 @@ function createMockSection(overrides: Partial<ExamSection> = {}): ExamSection {
     name: 'zkouška',
     type: 'exam',
     status: 'available',
-    terms: [
-      createMockTerm('term-1'),
-      createMockTerm('term-2'),
-      createMockTerm('term-3'),
-    ],
+    terms: [createMockTerm('term-1'), createMockTerm('term-2'), createMockTerm('term-3')],
     ...overrides,
   } as ExamSection;
 }
 
-function createMockExams(subjectOverrides: Partial<ExamSubject> = {}, sectionOverrides: Partial<ExamSection> = {}): ExamSubject[] {
+function createMockExams(
+  subjectOverrides: Partial<ExamSubject> = {},
+  sectionOverrides: Partial<ExamSection> = {}
+): ExamSubject[] {
   const sections = subjectOverrides.sections || [createMockSection(sectionOverrides)];
-  
+
   return [
     {
       version: 1 as const,
@@ -102,7 +112,7 @@ function createMockExams(subjectOverrides: Partial<ExamSubject> = {}, sectionOve
 }
 
 describe('useExamActions - Optimistic Updates', () => {
-  let mockSetExpandedSectionId: ReturnType<typeof vi.fn>;
+  let mockSetExpandedSectionId: Mock<(id: string | null) => void>;
   let mockExams: ExamSubject[];
 
   beforeEach(() => {
@@ -187,9 +197,7 @@ describe('useExamActions - Optimistic Updates', () => {
           'current',
           expect.arrayContaining([
             expect.objectContaining({
-              sections: expect.arrayContaining([
-                expect.objectContaining({ status: 'registered' }),
-              ]),
+              sections: expect.arrayContaining([expect.objectContaining({ status: 'registered' })]),
             }),
           ])
         );
@@ -205,15 +213,18 @@ describe('useExamActions - Optimistic Updates', () => {
 
     it('should handle term change (unregister + register) atomically', async () => {
       // Start with registered section
-      const registeredExams = createMockExams({}, {
-        status: 'registered',
-        registeredTerm: {
-          id: 'term-1',
-          date: '20.01.2026',
-          time: '09:00',
-          room: 'Q01',
-        },
-      });
+      const registeredExams = createMockExams(
+        {},
+        {
+          status: 'registered',
+          registeredTerm: {
+            id: 'term-1',
+            date: '20.01.2026',
+            time: '09:00',
+            room: 'Q01',
+          },
+        }
+      );
 
       const { result } = renderHook(() =>
         useExamActions({
@@ -250,15 +261,18 @@ describe('useExamActions - Optimistic Updates', () => {
 
   describe('Unregistration', () => {
     it('should immediately update local state on successful unregistration', async () => {
-      const registeredExams = createMockExams({}, {
-        status: 'registered',
-        registeredTerm: {
-          id: 'term-1',
-          date: '20.01.2026',
-          time: '09:00',
-          room: 'Q01',
-        },
-      });
+      const registeredExams = createMockExams(
+        {},
+        {
+          status: 'registered',
+          registeredTerm: {
+            id: 'term-1',
+            date: '20.01.2026',
+            time: '09:00',
+            room: 'Q01',
+          },
+        }
+      );
 
       const { result } = renderHook(() =>
         useExamActions({
@@ -295,6 +309,45 @@ describe('useExamActions - Optimistic Updates', () => {
   });
 
   describe('Error Handling', () => {
+    it('offers Report on a failed registration, prefilled with our title, never the IS text', async () => {
+      vi.mocked(examsAPI.registerExam).mockResolvedValue({
+        success: false,
+        error: 'Termín EBC-ALG studium=123 je plný',
+      });
+      const { result } = renderHook(() =>
+        useExamActions({ exams: mockExams, setExpandedSectionId: mockSetExpandedSectionId })
+      );
+      await act(async () => {
+        await result.current.handleRegisterDirect(mockExams[0].sections[0], 'term-1');
+      });
+
+      const [text, opts] = vi.mocked(toast.error).mock.calls[0] as unknown as [
+        string,
+        { duration: number; action: { label: string; onClick: () => void } },
+      ];
+      expect(text).toBe('Termín EBC-ALG studium=123 je plný');
+      expect(opts.duration).toBe(10_000);
+      expect(opts.action.label).toBe('Report');
+      opts.action.onClick();
+      expect(mockOpenReport).toHaveBeenCalledWith({ title: 'Exams: action failed' });
+    });
+
+    it('offers Report when unregistering has no term id', async () => {
+      const { result } = renderHook(() =>
+        useExamActions({ exams: mockExams, setExpandedSectionId: mockSetExpandedSectionId })
+      );
+      act(() => {
+        result.current.handleUnregisterRequest({
+          ...mockExams[0].sections[0],
+          registeredTerm: undefined,
+        });
+      });
+      await act(async () => {
+        await result.current.handleConfirmAction();
+      });
+      expect(vi.mocked(toast.error).mock.calls[0][1]).toMatchObject({ duration: 10_000 });
+    });
+
     it('should rollback optimistic update on API failure', async () => {
       // Mock API failure
       vi.mocked(examsAPI.registerExam).mockResolvedValue({

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { ZaznamnikTab } from '../ZaznamnikTab';
 import { useAppStore } from '../../../store/useAppStore';
 
@@ -31,5 +31,36 @@ describe('ZaznamnikTab IS backlinks', () => {
   it('renders none when the host pins its own IS link', () => {
     render(<ZaznamnikTab courseCode="EBC" showIsBacklink={false} />);
     expect(screen.queryAllByRole('link')).toHaveLength(0);
+  });
+});
+
+describe('ZaznamnikTab report link', () => {
+  beforeEach(() => {
+    useAppStore.setState({
+      language: 'cz',
+      studiumId: '123',
+      obdobiId: '456',
+      zaznamnikHydrated: true,
+      reportOpen: false,
+      reportPrefill: null,
+    } as never);
+  });
+  afterEach(cleanup);
+
+  it('offers to report when a subject with assessment has no records', () => {
+    useAppStore.setState({
+      subjects: { data: { EBC: { hasPrubezne: true, hasTest: true, subjectId: '789' } } },
+    } as never);
+    render(<ZaznamnikTab courseCode="EBC" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Chybí tu něco? Nahlásit' }));
+    expect(useAppStore.getState().reportPrefill).toEqual({ title: 'Záznamník: chybí data' });
+  });
+
+  it('stays quiet for a subject that has no assessment at all', () => {
+    useAppStore.setState({
+      subjects: { data: { EBC: { hasPrubezne: false, hasTest: false, subjectId: '789' } } },
+    } as never);
+    render(<ZaznamnikTab courseCode="EBC" />);
+    expect(screen.queryByRole('button', { name: 'Chybí tu něco? Nahlásit' })).toBeNull();
   });
 });

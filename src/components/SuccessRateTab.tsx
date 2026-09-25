@@ -1,24 +1,24 @@
 import { useState } from 'react';
+import { BarChart3 } from 'lucide-react';
 import { useSuccessRate } from '../hooks/data/useSuccessRate';
-import { AlertTriangle } from 'lucide-react';
-import { sortSemesters } from '../utils/semesterSort';
-import { pickFacultyStats } from './SuccessRate/pickFacultyStats';
-import { GradeBarChart } from './SuccessRate/GradeBarChart';
-import { SemesterSelector } from './SuccessRate/SemesterSelector';
-import { TermBreakdown } from './SuccessRate/TermBreakdown';
+import { useAppStore } from '../store/useAppStore';
 import { useTranslation } from '../hooks/useTranslation';
-import { ISBacklink } from './SubjectFileDrawer/ISBacklink';
+import type { SimilarSuggestion } from '../types/schemas/similarSubjects.schema';
+import { SuccessRateView } from './SuccessRate/SuccessRateView';
+import { SimilarSubjectsList } from './SuccessRate/SimilarSubjectsList';
+import { PreviewBanner } from './SuccessRate/PreviewBanner';
 
-const COLORS: Record<string, string> = {
-  A: 'var(--color-grade-a)',
-  B: 'var(--color-grade-b)',
-  C: 'var(--color-grade-c)',
-  D: 'var(--color-grade-d)',
-  E: 'var(--color-grade-e)',
-  F: 'var(--color-grade-f)',
-  FN: 'var(--color-grade-fn)',
-};
+const Spinner = () => (
+  <div className="flex items-center justify-center h-full">
+    <span className="loading loading-spinner text-primary" />
+  </div>
+);
 
+/**
+ * Úspěšnost, on both trees (DrawerTabBody mounts it for the extension drawer
+ * and the phone sheet). Three states: the subject's own stats; no stats, with
+ * or without similar subjects to offer; and a preview of one of them.
+ */
 export function SuccessRateTab({
   courseCode,
   facultyCode,
@@ -26,79 +26,105 @@ export function SuccessRateTab({
 }: {
   courseCode: string;
   facultyCode?: string;
-  /** Off for the phone sheet, which pins its own IS MENDELU footer. */
+  /** Off for the phone sheet — see `showIsBacklink` in DrawerTabBody. */
   showIsBacklink?: boolean;
 }) {
   const { stats: data, loading } = useSuccessRate(courseCode);
-  const [idx, setIdx] = useState(0);
-  const { t } = useTranslation();
+  const suggestions = useAppStore((s) => s.similarSubjects[courseCode]);
+  // Which subject the preview was opened FOR: the desktop drawer reuses this
+  // component across subjects, and two new subjects can offer the same old one.
+  const [preview, setPreview] = useState<{ course: string; code: string } | null>(null);
+  const previewCode = preview?.course === courseCode ? preview.code : null;
 
-  if (loading)
+  if (loading) return <Spinner />;
+  if (data?.stats?.length)
     return (
-      <div className="flex items-center justify-center h-full">
-        <span className="loading loading-spinner text-primary" />
-      </div>
+      <SuccessRateView
+        semesters={data.stats}
+        facultyCode={facultyCode}
+        showIsBacklink={showIsBacklink}
+      />
     );
-  if (!data?.stats?.length)
+
+  const picked = suggestions?.find((s) => s.code === previewCode);
+  if (picked)
     return (
-      <div className="flex flex-col items-center justify-center h-full pt-16">
-        <AlertTriangle className="w-8 h-8 opacity-40 mb-3" />
-        <p className="text-sm opacity-60">{t('successRate.noData')}</p>
-      </div>
+      <SimilarPreview
+        suggestion={picked}
+        facultyCode={facultyCode}
+        showIsBacklink={showIsBacklink}
+        onBack={() => setPreview(null)}
+      />
     );
 
-  const allStats = sortSemesters(data.stats);
-  const filtered = pickFacultyStats(allStats, facultyCode);
-  if (filtered.length === 0)
-    return (
-      <div className="flex flex-col items-center justify-center h-full pt-16">
-        <AlertTriangle className="w-8 h-8 opacity-40 mb-3" />
-        <p className="text-sm opacity-60">{t('successRate.noData')}</p>
-      </div>
-    );
-  const stats = filtered.slice(0, 5),
-    sIdx = Math.min(idx, stats.length - 1),
-    current = stats[sIdx];
-  const isCredit = current.type === 'credit',
-    total = current.totalPass + current.totalFail;
-  const order = isCredit ? ['zap', 'nezap'] : ['A', 'B', 'C', 'D', 'E', 'F', 'FN'];
-  const colors = isCredit ? { zap: 'var(--color-success)', nezap: 'var(--color-error)' } : COLORS;
-
-  // Use "Všechny termíny" aggregate if available, otherwise sum all terms (legacy data)
-  const aggregate = current.terms.find((t) => t.term === 'Všechny termíny');
-  const grades = aggregate
-    ? isCredit && aggregate.creditGrades
-      ? {
-          zap: aggregate.creditGrades.zap,
-          nezap: aggregate.creditGrades.nezap + (aggregate.creditGrades.zapNedost || 0),
-        }
-      : (aggregate.grades as unknown as Record<string, number>)
-    : current.terms.reduce((acc: Record<string, number>, tRes) => {
-        if (isCredit && tRes.creditGrades) {
-          acc.zap = (acc.zap || 0) + (tRes.creditGrades.zap || 0);
-          acc.nezap =
-            (acc.nezap || 0) + (tRes.creditGrades.nezap || 0) + (tRes.creditGrades.zapNedost || 0);
-        } else if (tRes.grades) {
-          Object.entries(tRes.grades).forEach(([g, c]) => (acc[g] = (acc[g] || 0) + c));
-        }
-        return acc;
-      }, {});
-
-  const max = Math.max(...order.map((g) => grades[g] || 0), 1);
-  const individualTerms = current.terms.filter((t) => t.term !== 'Všechny termíny');
-
+  const hasSuggestions = !!suggestions?.length;
   return (
-    <div className="flex flex-col h-full px-4 py-3 select-none font-inter overflow-y-auto">
-      <div className="text-center mb-6 flex items-center justify-center gap-2">
-        <span className="text-xs sm:text-sm opacity-50 font-bold uppercase tracking-wider">
-          {total} {t('successRate.students')}{' '}
-          {isCredit ? ` (${t('successRate.credit')})` : ` (${t('successRate.exam')})`}
-        </span>
+    <div
+      className={`flex h-full flex-col overflow-y-auto pb-4 ${hasSuggestions ? 'gap-5 pt-6' : 'gap-8 pt-12'}`}
+    >
+      <NoResults hasSuggestions={hasSuggestions} />
+      {hasSuggestions && (
+        <SimilarSubjectsList
+          suggestions={suggestions!}
+          onPick={(code) => setPreview({ course: courseCode, code })}
+        />
+      )}
+    </div>
+  );
+}
+
+/** The empty state reIS uses elsewhere ("Zatím žádné předměty"). The icon only
+ * when there is nothing below it; with suggestions, the list is the content. */
+function NoResults({ hasSuggestions }: { hasSuggestions: boolean }) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col items-center gap-3 px-6 text-center">
+      {!hasSuggestions && (
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <BarChart3 size={28} />
+        </div>
+      )}
+      <div className="font-display text-lg font-bold">{t('successRate.noResultsTitle')}</div>
+      <div className="max-w-60 text-xs text-base-content/60">
+        {t(hasSuggestions ? 'successRate.noResultsSimilar' : 'successRate.noResultsBody')}
       </div>
-      <GradeBarChart grades={grades} order={order} colors={colors} max={max} />
-      {individualTerms.length > 0 && <TermBreakdown terms={individualTerms} isCredit={isCredit} />}
-      <SemesterSelector stats={stats} activeIndex={sIdx} onSelect={setIdx} />
-      {current.sourceUrl && showIsBacklink && <ISBacklink href={current.sourceUrl} />}
+    </div>
+  );
+}
+
+function SimilarPreview({
+  suggestion,
+  facultyCode,
+  showIsBacklink,
+  onBack,
+}: {
+  suggestion: SimilarSuggestion;
+  facultyCode?: string;
+  showIsBacklink: boolean;
+  onBack: () => void;
+}) {
+  // Loads under the OLD code, where these stats belong; the new code's entry
+  // stays empty, so list badges and insights never show borrowed numbers.
+  const { stats, loading } = useSuccessRate(suggestion.code);
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col h-full">
+      <PreviewBanner suggestion={suggestion} onBack={onBack} />
+      <div className="flex-1 min-h-0">
+        {loading ? (
+          <Spinner />
+        ) : stats?.stats?.length ? (
+          <SuccessRateView
+            semesters={stats.stats}
+            facultyCode={facultyCode}
+            showIsBacklink={showIsBacklink}
+          />
+        ) : (
+          <p className="text-sm text-base-content/70 text-center pt-16">
+            {t('successRate.noData')}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

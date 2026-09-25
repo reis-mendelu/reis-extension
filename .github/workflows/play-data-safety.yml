@@ -1,0 +1,40 @@
+name: Play Data safety
+
+# Pushes privacy/play-data-safety.csv to Google Play's Data safety form through
+# the Play Developer API (applications.dataSafety). Dispatched by
+# `npm run privacy:publish` before a release PR merges; never on its own.
+#
+# Credentials: the Google Cloud service account the Chrome Web Store publish
+# already uses (CHROME_SERVICE_ACCOUNT_*), added in Play Console → Users and
+# permissions for cz.reis.app. No separate key exists for this.
+#
+# workflow_dispatch workflows can only be dispatched once the file is on the
+# default branch (main), so this becomes runnable after the release that adds it.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: play-data-safety
+  cancel-in-progress: false
+
+jobs:
+  push:
+    name: Push Data safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Push privacy/play-data-safety.csv
+        run: npx --yes tsx@4 scripts/privacy/play-push.ts
+        env:
+          SA_EMAIL: ${{ secrets.CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL }}
+          SA_PRIVATE_KEY: ${{ secrets.CHROME_SERVICE_ACCOUNT_PRIVATE_KEY }}

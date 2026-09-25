@@ -30,6 +30,7 @@ describe('DayBody — swiping to change day', () => {
       <DayBody
         agenda={[]}
         selectedIso={THU}
+        lessonDates={new Set()}
         holiday={null}
         outsideTeaching={false}
         teachingStartsOn={null}
@@ -76,12 +77,13 @@ describe('DayBody — swiping to change day', () => {
     expect(onSelectDay).not.toHaveBeenCalled();
   });
 
-  it('crosses the weekend into the next week', () => {
+  const fromFriday = (lessonDates: ReadonlySet<string>) => {
     const onSelectDay = vi.fn();
     render(
       <DayBody
         agenda={[]}
         selectedIso="2026-09-11"
+        lessonDates={lessonDates}
         holiday={null}
         outsideTeaching={false}
         teachingStartsOn={null}
@@ -90,6 +92,14 @@ describe('DayBody — swiping to change day', () => {
     );
     const bodies = screen.getAllByTestId('day-body');
     swipe(bodies[bodies.length - 1]!, -120);
-    expect(onSelectDay).toHaveBeenCalledWith('2026-09-12');
+    return onSelectDay;
+  };
+
+  it('skips a weekend the student is never taught on, as the strip does', () => {
+    expect(fromFriday(new Set(['20260911']))).toHaveBeenCalledWith('2026-09-14');
+  });
+
+  it('stops on Saturday for a student who has Saturday lessons', () => {
+    expect(fromFriday(new Set(['20260911', '20261010']))).toHaveBeenCalledWith('2026-09-12');
   });
 });

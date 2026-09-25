@@ -21,6 +21,9 @@ vi.mock('@/api/studyComparison', () => ({ fetchStudyComparison: vi.fn(async () =
 vi.mock('@/services/sync/syncCvicneTests', () => ({ syncCvicneTests: vi.fn(async () => null) }));
 vi.mock('@/services/sync/syncOdevzdavarny', () => ({ syncOdevzdavarny: vi.fn(async () => null) }));
 vi.mock('@/services/sync/mergePastSubjects', () => ({ mergePastSubjects: vi.fn() }));
+vi.mock('@/services/sync/examDurations', () => ({
+  enrichExamsWithDurations: vi.fn(async (exams: unknown) => exams),
+}));
 
 import { collectRealData } from '../collectRealData';
 

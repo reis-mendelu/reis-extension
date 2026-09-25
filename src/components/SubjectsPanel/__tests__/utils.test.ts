@@ -21,7 +21,9 @@ describe('SubjectsPanel utils', () => {
     });
 
     it('strips trailing min constraints correctly', () => {
-      expect(cleanGroupName('Skupina předmětů povinně volitelných (min. 2 př.)')).toBe('Povinně volitelné');
+      expect(cleanGroupName('Skupina předmětů povinně volitelných (min. 2 př.)')).toBe(
+        'Povinně volitelné'
+      );
       expect(cleanGroupName('Skupina: Oborové (min. 12 kr.)')).toBe('Oborové');
       expect(cleanGroupName('Group: Core (min 3 courses)')).toBe('Core');
     });

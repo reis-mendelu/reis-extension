@@ -1,12 +1,11 @@
 import { ChevronDown, CheckCircle2, BookOpen, Clock, Layers } from 'lucide-react';
-import type { SemesterBlock, Zamerani, SubjectStatus } from '@/types/studyPlan';
+import type { SemesterBlock, Zamerani } from '@/types/studyPlan';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { ZameraniProgress } from './SubjectsPanelHeader';
 import { SubjectRow } from './SubjectRow';
 import {
   getSemesterState,
-  isRealCredits,
-  isZameraniCode,
+  isSubjectVisible,
   normalizeZameraniName,
   type SemesterState,
   cleanGroupName,
@@ -33,21 +32,6 @@ interface SemesterSectionProps {
     isFulfilled?: boolean
   ) => void;
   onSearchSubject: (name: string) => void;
-}
-
-// A subject is "always visible" if it's not affiliated with any zaměření
-// (mandatory / general elective). Affiliated subjects show only when at least
-// one of their zaměření is picked. Hides the noise of unchosen zaměření paths.
-function isSubjectVisible(
-  s: SubjectStatus,
-  subjectToZameranis?: Map<string, string[]>,
-  picked?: Set<string>
-): boolean {
-  if (isZameraniCode(s.code)) return false;
-  const memberOf = subjectToZameranis?.get(s.code);
-  if (!memberOf || memberOf.length === 0) return true;
-  if (!picked || picked.size === 0) return false;
-  return memberOf.some((z) => picked.has(z));
 }
 
 const stateConfig: Record<
@@ -113,9 +97,6 @@ export function SemesterSection({
     .filter((s) => isSubjectVisible(s, subjectToZameranis, pickedZameranis));
   const fulfilledCount = allSubjects.filter((s) => s.isFulfilled).length;
   const totalCount = allSubjects.length;
-  const totalCredits = allSubjects
-    .filter((s) => isRealCredits(s.credits))
-    .reduce((a, s) => a + s.credits, 0);
   const isPast = state === 'past';
 
   const visibleByGroup = block.groups.map((g) =>
@@ -147,12 +128,9 @@ export function SemesterSection({
       >
         <div className={`w-1 h-8 rounded-full ${cfg.indicator} shrink-0`} />
         <span className="text-sm font-semibold flex-1 text-left">{cleanTitle}</span>
-        {totalCredits > 0 && (state !== 'future' || open) && (
-          <span className="text-[11px] text-base-content/70 shrink-0">
-            {totalCredits}
-            <span className="hidden md:inline"> kr.</span>
-          </span>
-        )}
+        {/* No credit total here: it summed every subject the plan lists,
+            optional ones included, so it was never the number of credits the
+            student will actually take. */}
         <span className={cfg.badgeCls}>
           {fulfilledCount}/{totalCount}
         </span>
@@ -191,7 +169,7 @@ export function SemesterSection({
                 {(block.groups.length > 1 || statusText) && (
                   <div className="px-3 py-1.5 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 border-b border-base-300/30">
                     <span
-                      className="text-[11px] text-base-content/70 font-medium uppercase tracking-wider truncate max-w-[65%] md:max-w-none"
+                      className="text-[11px] md:text-xs font-bold uppercase tracking-wider text-base-content/90 truncate max-w-[65%] md:max-w-none"
                       title={group.name}
                     >
                       {displayGroupName}

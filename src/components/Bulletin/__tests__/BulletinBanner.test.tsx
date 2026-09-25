@@ -12,7 +12,11 @@ describe('BulletinBanner', () => {
       isNarrow: false,
       bulletinPosts: [
         { title: 'Test Post 1', categories: ['Inzerce'], url: 'https://example.com/1' },
-        { title: 'Test Post 2', categories: ['Ubytování', 'Ostatní'], url: 'https://example.com/2' }
+        {
+          title: 'Test Post 2',
+          categories: ['Ubytování', 'Ostatní'],
+          url: 'https://example.com/2',
+        },
       ],
       bulletinExpanded: false,
       bulletinLoading: false,
@@ -32,7 +36,7 @@ describe('BulletinBanner', () => {
 
     it('should render collapsed button by default when inline is true', () => {
       render(<BulletinBanner inline />);
-      
+
       const expandBtn = screen.getByLabelText('Expand bulletin board');
       expect(expandBtn).toBeInTheDocument();
       expect(screen.queryByText('Test Post 1')).not.toBeInTheDocument();
@@ -48,7 +52,7 @@ describe('BulletinBanner', () => {
 
     it('should expand on collapsed button click', () => {
       render(<BulletinBanner inline />);
-      
+
       const expandBtn = screen.getByLabelText('Expand bulletin board');
       fireEvent.click(expandBtn);
 
@@ -83,10 +87,10 @@ describe('BulletinBanner', () => {
 
       // The header button should still be present
       expect(screen.getByLabelText('Expand bulletin board')).toBeInTheDocument();
-      
+
       // Fullscreen overlay title is present
       expect(screen.getByRole('heading', { name: 'Bulletin Board' })).toBeInTheDocument();
-      
+
       // Post items should be present inside the overlay
       expect(screen.getByText('Test Post 1')).toBeInTheDocument();
       expect(screen.getByText('Test Post 2')).toBeInTheDocument();

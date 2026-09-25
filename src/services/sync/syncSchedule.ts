@@ -31,8 +31,10 @@ export async function syncSchedule(): Promise<void> {
   }
 
   const data = await fetchDualLanguageSchedule({ start, end });
+  // null is a failed read, not an empty timetable — keep what is stored.
+  if (data === null) return;
 
-  if (data && data.length > 0) {
+  if (data.length > 0) {
     await IndexedDBService.set('schedule', 'current', data);
   } else {
     await IndexedDBService.delete('schedule', 'current');

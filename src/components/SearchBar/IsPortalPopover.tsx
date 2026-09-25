@@ -16,10 +16,12 @@ import {
   X,
   ChevronDown,
   ChevronUp,
-  Search
+  Search,
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { pagesData, injectUserParams } from '../../data/pages';
+import { pagesData } from '../../data/pages';
+import { injectUserParams } from '../../data/pages/types';
+import { filterPageCategories, normalizePageQuery } from '../../data/pages/filterPages';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 
@@ -32,49 +34,35 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   'portal-info': Info,
   'moje-studium': GraduationCap,
   'veda-vyzkum': Microscope,
-  'elearning': Monitor,
+  elearning: Monitor,
   'osobni-management': Calendar,
   'e-agenda': FileText,
-  'technologie': Cpu,
+  technologie: Cpu,
   'sprava-is': Database,
-  'dokumentace': BookOpen,
-  'herna': Gamepad2,
-  'personalizace': User,
+  dokumentace: BookOpen,
+  herna: Gamepad2,
+  personalizace: User,
   'nastaveni-is': Settings,
   'ochrana-udaju': ShieldCheck,
 };
 
 export function IsPortalPopover({ isOpen, onClose }: IsPortalPopoverProps) {
   const { t, language } = useTranslation();
-  const studiumId = useAppStore(s => s.studiumId);
+  const studiumId = useAppStore((s) => s.studiumId);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState('');
 
-  const strip = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const normalizedFilter = strip(filter.trim());
-
-  const filteredCategories = useMemo(() => {
-    if (!normalizedFilter) return pagesData;
-
-    return pagesData
-      .map(category => {
-        const catLabel = strip((language === 'en' && category.labelEn) ? category.labelEn : category.label);
-        const matchingChildren = category.children.filter(item => {
-          const itemLabel = strip((language === 'en' && item.labelEn) ? item.labelEn : item.label);
-          return itemLabel.includes(normalizedFilter);
-        });
-
-        if (catLabel.includes(normalizedFilter)) return category;
-        if (matchingChildren.length > 0) return { ...category, children: matchingChildren };
-        return null;
-      })
-      .filter(Boolean) as typeof pagesData;
-  }, [normalizedFilter, language]);
+  // Shared with the phone's "Starý IS" segment, so both trees match the same way.
+  const normalizedFilter = normalizePageQuery(filter);
+  const filteredCategories = useMemo(
+    () => filterPageCategories(pagesData, filter, language),
+    [filter, language]
+  );
 
   if (!isOpen) return null;
 
   const toggleCategory = (id: string) => {
-    setExpandedCategories(prev => {
+    setExpandedCategories((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -104,7 +92,7 @@ export function IsPortalPopover({ isOpen, onClose }: IsPortalPopoverProps) {
             <input
               type="text"
               value={filter}
-              onChange={e => setFilter(e.target.value)}
+              onChange={(e) => setFilter(e.target.value)}
               placeholder={t('search.filterPlaceholder')}
               className="w-full pl-10 pr-4 py-2.5 bg-base-200 border border-base-300 rounded-xl text-sm text-base-content placeholder-base-content/50 focus:outline-none focus:border-primary/50 transition-colors"
               autoFocus
@@ -127,16 +115,20 @@ export function IsPortalPopover({ isOpen, onClose }: IsPortalPopoverProps) {
               </div>
             )}
 
-            {filteredCategories.map(category => {
+            {filteredCategories.map((category) => {
               const Icon = ICON_MAP[category.id] || Info;
-              const title = (language === 'en' && category.labelEn) ? category.labelEn : category.label;
+              const title =
+                language === 'en' && category.labelEn ? category.labelEn : category.label;
               const isFiltering = normalizedFilter.length > 0;
               const showAll = isFiltering || expandedCategories.has(category.id);
               const visibleChildren = showAll ? category.children : category.children.slice(0, 5);
               const hiddenCount = category.children.length - 5;
 
               return (
-                <div key={category.id} className="card bg-base-200/30 border border-base-300 overflow-hidden">
+                <div
+                  key={category.id}
+                  className="card bg-base-200/30 border border-base-300 overflow-hidden"
+                >
                   {/* Category header — mimics IS grey bar */}
                   <div className="flex items-center gap-3 px-4 py-3 bg-base-200">
                     <Icon className="w-5 h-5 text-base-content/70" />
@@ -145,8 +137,9 @@ export function IsPortalPopover({ isOpen, onClose }: IsPortalPopoverProps) {
 
                   {/* Child links */}
                   <ul className="px-4 py-3 flex flex-col gap-1.5">
-                    {visibleChildren.map(item => {
-                      const itemLabel = (language === 'en' && item.labelEn) ? item.labelEn : item.label;
+                    {visibleChildren.map((item) => {
+                      const itemLabel =
+                        language === 'en' && item.labelEn ? item.labelEn : item.label;
                       const isBold = itemLabel.includes('<b>') || itemLabel.includes('<strong>');
                       const cleanLabel = itemLabel.replace(/<\/?[bi]>|<\/?[strong]>/g, '');
 
@@ -156,7 +149,7 @@ export function IsPortalPopover({ isOpen, onClose }: IsPortalPopoverProps) {
                             onClick={() => handleLinkClick(item.href)}
                             className={`text-sm text-left w-full hover:text-primary hover:underline decoration-primary/30 underline-offset-4 transition-colors ${isBold ? 'font-semibold text-base-content' : 'text-base-content/70'}`}
                           >
-                            &bull;  {cleanLabel}
+                            &bull; {cleanLabel}
                           </button>
                         </li>
                       );
@@ -175,7 +168,9 @@ export function IsPortalPopover({ isOpen, onClose }: IsPortalPopoverProps) {
                         </>
                       ) : (
                         <>
-                          {language === 'en' ? `Show ${hiddenCount} more` : `Zobrazit dalších ${hiddenCount}`}
+                          {language === 'en'
+                            ? `Show ${hiddenCount} more`
+                            : `Zobrazit dalších ${hiddenCount}`}
                           <ChevronDown className="w-3 h-3" />
                         </>
                       )}

@@ -45,13 +45,19 @@ export function Sheet({ size, onClose, children, elevated, variant = 'sheet' }: 
   // and would silently drop the stacking order, so `elevated` needs an
   // arbitrary value. z-50 is on-scale and stays as-is.
   const layerZ = elevated ? 'z-[60]' : 'z-50';
-  // A screen covers everything and carries its own status-bar inset; the sheet
-  // sizes leave the strip above them visible on purpose.
+  // A screen covers everything and carries its own status-bar AND
+  // navigation-bar insets: inset-0 reaches the physical bottom edge, which
+  // edge-to-edge Android puts under the 3-button bar, so without the pb the
+  // last row of a scrolled screen could never come out from under it. The
+  // sheet sizes leave the strip above them visible on purpose.
   const panelPosition = isScreen
-    ? 'inset-0 pt-[var(--safe-top,0px)]'
+    ? 'inset-0 pt-[var(--safe-top,0px)] pb-[var(--safe-bottom,0px)]'
     : size === 'full'
       ? 'top-[70px] bottom-0'
-      : 'bottom-0 max-h-[85dvh]';
+      : // pb carries --safe-bottom for the same reason `isScreen` above
+        // carries --safe-top: edge-to-edge means this panel's bottom edge is
+        // under the system navigation bar, so its last control was too.
+        'bottom-0 max-h-[85dvh] pb-[var(--safe-bottom,0px)]';
 
   const panelRef = useRef<HTMLDivElement>(null);
   /**

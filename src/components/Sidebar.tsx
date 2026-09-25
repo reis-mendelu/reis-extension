@@ -9,18 +9,11 @@ import type { MenuItem } from './menuConfig';
 interface SidebarProps {
   currentView: AppView;
   onViewChange: (v: AppView) => void;
-  onOpenFeedback?: () => void;
   onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string) => void;
   items?: MenuItem[];
 }
 
-export const Sidebar = ({
-  currentView,
-  onViewChange,
-  onOpenFeedback,
-  onOpenSubject,
-  items,
-}: SidebarProps) => {
+export const Sidebar = ({ currentView, onViewChange, onOpenSubject, items }: SidebarProps) => {
   const [hovered, setHovered] = useState<string | null>(null);
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hookItems = useMenuItems();
@@ -90,7 +83,7 @@ export const Sidebar = ({
         })}
       </div>
       <div className="flex-1" />
-      <BottomActions onOpenFeedback={onOpenFeedback} />
+      <BottomActions />
     </aside>
   );
 };

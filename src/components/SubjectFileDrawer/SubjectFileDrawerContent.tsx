@@ -3,6 +3,7 @@ import type { FileGroup, DrawerTab, PdfRowMeta } from './types';
 import type { SyllabusRequirements, ParsedFile } from '../../types/documents';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { SelectedSubject } from '../../types/app';
+import type { DownloadTick } from '../../hooks/ui/readBlobWithProgress';
 
 interface SubjectFileDrawerContentProps {
   activeTab: DrawerTab;
@@ -22,6 +23,7 @@ interface SubjectFileDrawerContentProps {
   openFile: (link: string) => void;
   onViewPdf?: (link: string, meta: PdfRowMeta) => void;
   openingLink?: string | null;
+  downloadingLinks?: Record<string, DownloadTick>;
   onDownloadSingle?: (link: string) => void;
   resolvedCourseId: string;
   syllabusResult: { syllabus: SyllabusRequirements | null; isLoading: boolean };
@@ -46,6 +48,7 @@ export function SubjectFileDrawerContent({
   openFile,
   onViewPdf,
   openingLink,
+  downloadingLinks,
   onDownloadSingle,
   resolvedCourseId,
   syllabusResult,
@@ -70,6 +73,7 @@ export function SubjectFileDrawerContent({
       openFile={openFile}
       onViewPdf={onViewPdf}
       openingLink={openingLink}
+      downloadingLinks={downloadingLinks}
       onDownloadSingle={onDownloadSingle}
       resolvedCourseId={resolvedCourseId}
       syllabusResult={syllabusResult}

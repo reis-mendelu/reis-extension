@@ -9,11 +9,13 @@ import { FloorSwitcher } from './map/FloorSwitcher';
 import { MapSheet } from './map/MapSheet';
 import { MapRail } from './map/MapRail';
 import { useWideViewport } from '../../../hooks/ui/useWideViewport';
+import { useMapDwell } from '../../../hooks/useMapDwell';
 
 function resultLabel(m: MapSelection): string {
   if (m.kind === 'poi') return m.poi.name;
   if (m.kind === 'roomRef') return roomLabel(m.entry.name, m.entry.code, m.entry.nickname);
   if (m.kind === 'landmark') return m.landmark.name;
+  if (m.kind === 'gardenPlace') return m.place.name.cz;
   return '';
 }
 
@@ -39,6 +41,10 @@ function resultLabel(m: MapSelection): string {
  */
 export function MapScreen() {
   const isRail = useWideViewport();
+  // Same three-second dwell counter the desktop map mounts. Both surfaces need
+  // it: they are independent components over the same MapCanvas, so counting
+  // in one place would have made the number silently desktop-only.
+  useMapDwell();
   const { t } = useTranslation();
   const query = useAppStore((s) => s.mapSearchQuery);
   const results = useAppStore((s) => s.mapSearchResults);
@@ -88,7 +94,13 @@ export function MapScreen() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('mobile.map.searchPlaceholder')}
             aria-label={t('mobile.map.searchPlaceholder')}
-            className="w-full flex-1 select-text bg-transparent text-[13.5px] outline-none"
+            // Never under 16px: WebKit zooms the page onto a smaller focused
+            // field, and with Capacitor's pinch switched off the student cannot
+            // zoom back out until they restart the app. DaisyUI's .input and
+            // .textarea bump themselves to 1rem on iOS focus; this bare field
+            // gets no such help. Exactly 16, not text-base (17): at 17 the
+            // Czech placeholder fills a 320px phone's field to within 0.1px.
+            className="w-full flex-1 select-text bg-transparent text-[16px] outline-none"
             style={{ color: '#f3f4f6' }}
           />
         </label>

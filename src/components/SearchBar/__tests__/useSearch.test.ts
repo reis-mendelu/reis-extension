@@ -46,7 +46,9 @@ describe('useSearch — faculty scope + language wiring', () => {
     expect(mockExecuteSearch).toHaveBeenLastCalledWith('marketing', 'cz', '43110');
 
     act(() => result.current.widenToUniversity());
-    await waitFor(() => expect(mockExecuteSearch).toHaveBeenLastCalledWith('marketing', 'cz', undefined));
+    await waitFor(() =>
+      expect(mockExecuteSearch).toHaveBeenLastCalledWith('marketing', 'cz', undefined)
+    );
     expect(result.current.scope).toBe('all');
   });
 
@@ -61,23 +63,37 @@ describe('useSearch — faculty scope + language wiring', () => {
   it('does not hit the network for queries shorter than 2 chars', async () => {
     setup();
     renderHook(() => useSearch('a'));
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise((r) => setTimeout(r, 300));
     expect(mockExecuteSearch).not.toHaveBeenCalled();
   });
 
-  const subj = (id: string, code: string, name: string, semester: string, faculty = 'PEF') =>
-    ({ id, code, name, link: `l${id}`, faculty, facultyColor: '#fff', semester });
+  const subj = (id: string, code: string, name: string, semester: string, faculty = 'PEF') => ({
+    id,
+    code,
+    name,
+    link: `l${id}`,
+    faculty,
+    facultyColor: '#fff',
+    semester,
+  });
 
   it('collapses same-code subjects across semesters to the latest one', async () => {
     setup({ language: 'cz', userFaculty: 'PEF' });
     mockExecuteSearch.mockResolvedValue({
       people: [],
-      subjects: [subj('1', 'EBC-ST', 'Statistika', 'ZS 2025/2026'), subj('2', 'EBC-ST', 'Statistika', 'LS 2025/2026')],
+      subjects: [
+        subj('1', 'EBC-ST', 'Statistika', 'ZS 2025/2026'),
+        subj('2', 'EBC-ST', 'Statistika', 'LS 2025/2026'),
+      ],
       subjectsTruncated: false,
     });
     const { result } = renderHook(() => useSearch('statistika'));
-    await waitFor(() => expect(result.current.sections.find(s => s.key === 'subjects')?.results.length).toBe(1));
-    expect(result.current.sections.find(s => s.key === 'subjects')!.results[0].semester).toBe('LS 2025/2026');
+    await waitFor(() =>
+      expect(result.current.sections.find((s) => s.key === 'subjects')?.results.length).toBe(1)
+    );
+    expect(result.current.sections.find((s) => s.key === 'subjects')!.results[0].semester).toBe(
+      'LS 2025/2026'
+    );
   });
 
   it('omits the people section when subjectsOnly is set', async () => {
@@ -88,8 +104,10 @@ describe('useSearch — faculty scope + language wiring', () => {
       subjectsTruncated: false,
     });
     const { result } = renderHook(() => useSearch('statistika', true));
-    await waitFor(() => expect(result.current.sections.find(s => s.key === 'subjects')?.results.length).toBe(1));
-    expect(result.current.sections.find(s => s.key === 'people')).toBeUndefined();
+    await waitFor(() =>
+      expect(result.current.sections.find((s) => s.key === 'subjects')?.results.length).toBe(1)
+    );
+    expect(result.current.sections.find((s) => s.key === 'people')).toBeUndefined();
   });
 
   it('keeps the people section by default (subjectsOnly off)', async () => {
@@ -100,19 +118,26 @@ describe('useSearch — faculty scope + language wiring', () => {
       subjectsTruncated: false,
     });
     const { result } = renderHook(() => useSearch('statistika'));
-    await waitFor(() => expect(result.current.sections.find(s => s.key === 'people')?.results.length).toBe(1));
+    await waitFor(() =>
+      expect(result.current.sections.find((s) => s.key === 'people')?.results.length).toBe(1)
+    );
   });
 
   it('ranks the English-taught (v AJ) variant first in EN mode', async () => {
     setup({ language: 'en', userFaculty: 'PEF' });
     mockExecuteSearch.mockResolvedValue({
       people: [],
-      subjects: [subj('1', 'EBC-ST', 'Statistics', 'SS 2025/2026', 'FBE'), subj('2', 'EBA-ST', 'Statistics', 'SS 2025/2026', 'FBE')],
+      subjects: [
+        subj('1', 'EBC-ST', 'Statistics', 'SS 2025/2026', 'FBE'),
+        subj('2', 'EBA-ST', 'Statistics', 'SS 2025/2026', 'FBE'),
+      ],
       subjectsTruncated: false,
     });
     const { result } = renderHook(() => useSearch('statistics'));
-    await waitFor(() => expect(result.current.sections.find(s => s.key === 'subjects')?.results.length).toBe(2));
-    const subjects = result.current.sections.find(s => s.key === 'subjects')!.results;
+    await waitFor(() =>
+      expect(result.current.sections.find((s) => s.key === 'subjects')?.results.length).toBe(2)
+    );
+    const subjects = result.current.sections.find((s) => s.key === 'subjects')!.results;
     expect(subjects[0].subjectCode).toBe('EBA-ST');
     expect(subjects[0].isEnglishVariant).toBe(true);
   });

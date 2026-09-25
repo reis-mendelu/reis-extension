@@ -5,6 +5,7 @@ import { useAppStore } from '../../../../../store/useAppStore';
 import type { SubjectStatus } from '../../../../../types/studyPlan';
 import type { EnrolledSubject } from '../../../../../utils/mobile/enrolledSubjects';
 import type { SubjectSuccessRate } from '../../../../../types/documents';
+import { failRateTone } from '../../../../SubjectsPanel/failRateTone';
 
 function subj(over: Partial<SubjectStatus> = {}): SubjectStatus {
   return {
@@ -74,12 +75,22 @@ describe('SemesterCard fail rate', () => {
     } as never);
   });
 
-  it('reads "Neúspěšnost: 28 %", so the number needs no legend', () => {
+  it('shows the bare number and explains it once, in a legend over the list', () => {
     // 28 of 100 fail.
     seedRate('EBC-PSI', 72, 28);
     render(<SemesterCard enrolled={[enrolledOf(subj())]} semester={3} onOpenSubject={() => {}} />);
-    // The whole label, not a bare number: "Neúspěšnost: 28 %".
-    expect(screen.getByTestId('subject-fail-rate')).toHaveTextContent(/Neúspěšnost:\s*28\s*%/i);
+    // The words used to ride on every row — "Prům. neúspěšnost: 28 %" — which
+    // at 320px was most of the row, and described the same figure differently
+    // from the study plan. The plan's bargain applies here too: number on the
+    // row, words once above it.
+    expect(screen.getByTestId('subject-fail-rate')).toHaveTextContent(/^\s*28\s*%\s*$/);
+    expect(screen.getByTestId('fail-rate-legend')).toBeInTheDocument();
+    expect(screen.getByLabelText(/Prům. neúspěšnost:\s*28\s*%/i)).toBeInTheDocument();
+  });
+
+  it('leaves the legend out when no row carries a number to explain', () => {
+    render(<SemesterCard enrolled={[enrolledOf(subj())]} semester={3} onOpenSubject={() => {}} />);
+    expect(screen.queryByTestId('fail-rate-legend')).not.toBeInTheDocument();
   });
 
   it('shows nothing where there is no data for the subject', () => {
@@ -99,6 +110,28 @@ describe('SemesterCard fail rate', () => {
       />
     );
     expect(screen.queryByTestId('subject-fail-rate')).not.toBeInTheDocument();
+  });
+
+  it('colours the chip with the same band as the study plan, not with ink meant for a solid fill', () => {
+    // v5.2.5 on a phone, dark theme: "Management" at 20 % rendered
+    // `text-warning-content` (#111827) on `bg-warning/15` over #1f2937, dark
+    // ink on a dark tint, invisible. The desktop pill had the same drift three
+    // times and was fixed with `failRateTone`; the phone never adopted it.
+    for (const [fail, band] of [
+      [22, 'text-[var(--tone-warning)]'],
+      [28, 'text-[var(--tone-error)]'],
+    ] as const) {
+      seedRate('EBC-PSI', 100 - fail, fail);
+      const { unmount } = render(
+        <SemesterCard enrolled={[enrolledOf(subj())]} semester={3} onOpenSubject={() => {}} />
+      );
+      const chip = screen.getByTestId('subject-fail-rate');
+      expect(chip.className).toContain(failRateTone(fail));
+      expect(chip.className).toContain(band);
+      expect(chip.className).not.toContain('text-warning-content');
+      expect(chip.className).not.toMatch(/(^|\s)text-error(\s|$)/);
+      unmount();
+    }
   });
 
   it('suppresses a rate computed from too few students', () => {

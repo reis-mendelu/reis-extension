@@ -15,16 +15,24 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
   mobileTab: 'calendar',
   mobileSelectedDayIso: null,
   mobileSheets: [],
-  // Opens at the middle stop so the campus events are visible without a drag:
-  // the peek band showed a title and blank space, and reaching the events meant
-  // pulling the sheet up over the map every time.
-  mapSheetState: 'half',
+  // Opens at the PEEK stop.
+  //
+  // It was 'half' — 45vh, 365px of a 375x812 phone — chosen when the Mapa tab
+  // was a place to browse society events and the map was scenery. It is now
+  // also how a student gets to a lecture, and at 'half' the sheet covered the
+  // bottom of every route drawn under it while showing, in the measured case,
+  // one 60px event row above 270px of nothing.
+  //
+  // Peek returns 199px — a quarter of the screen — and takes the unobstructed
+  // map from 47% to 72%. The reason 'half' was chosen still holds and is still
+  // one tap away: the peek row names what is underneath and expands on touch.
+  mapSheetState: 'peek',
   mapRailWidth: RAIL_PX,
   mapRailOpen: true,
-  preferredMapApp: null,
   devPhoneOverride: null,
   welcomeSeen: null,
   externalOpening: false,
+  pullHintSeen: null,
 
   // Read once at boot, before the root renders (capacitor/main.capacitor.tsx).
   // Same key as the desktop WelcomeModal: a device that dismissed it there has
@@ -45,12 +53,45 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
     await IndexedDBService.set('meta', 'welcome_dismissed', true);
   },
 
+  // Read once at boot beside the welcome flag. Demo mode counts as seen: a
+  // pull there answers "not available in demo", so teaching it teaches a dead
+  // end — and the reviewer's first screen should not move on its own.
+  hydratePullHint: async ({ demo }) => {
+    if (demo) {
+      set({ pullHintSeen: true });
+      return;
+    }
+    const seen = await IndexedDBService.get('meta', 'pull_hint_seen');
+    set({ pullHintSeen: seen === true });
+  },
+  // Once, ever: marked when the hint plays, or when the student pulls first.
+  markPullHintSeen: () => {
+    if (get().pullHintSeen === true) return;
+    set({ pullHintSeen: true });
+    IndexedDBService.set('meta', 'pull_hint_seen', true).catch(() => {});
+  },
+
   // Switching tabs closes sheets: a sheet belongs to the screen that opened it.
   setMobileTab: (tab) => {
-    set({ mobileTab: tab, mobileSheets: [] });
+    // And leaving the map drops the lesson's route offer, which belongs to one
+    // arrival from the timetable rather than to the room it points at —
+    // otherwise coming back for something else re-asks "Najdi cestu" about a
+    // room the student already walked away from.
+    //
+    // Here rather than as an unmount cleanup in MapScreen, which is what it
+    // looks like it should be: this app runs under StrictMode, so effects are
+    // double-invoked and that cleanup ran milliseconds after the pin set the
+    // suggestion. The chip never appeared at all.
+    set({ mobileTab: tab, mobileSheets: [], ...(tab === 'map' ? {} : { routeSuggestion: null }) });
     // A file opened from the Subjects tab should be in the calendar's
     // "recently opened" strip by the time the student gets there.
     if (tab === 'calendar') void get().refreshRecentPdfs();
+    // Exams are fetched fresh on every visit: registration moves by the minute,
+    // and a list that could be an hour old is the one screen where that costs a
+    // student a slot. Exam terms only (~0.6s), never the full crawl, and the
+    // refresh is visible — the list holds down with the spinner until it
+    // answers. Not in demo, where it could only say "not available".
+    if (tab === 'exams' && !get().demoMode) get().triggerExamsRefresh();
   },
   setMobileSelectedDay: (iso) => set({ mobileSelectedDayIso: iso }),
 
@@ -80,18 +121,5 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
   setMapRailWidth: (px) => set({ mapRailWidth: clampRailWidth(px, window.innerWidth) }),
   setMapRailOpen: (open) => set({ mapRailOpen: open }),
 
-  // Read at boot, like the theme and the language. A venue tap is a one-tap
-  // action; asking it to await IndexedDB would put a frame of "ask" in front of
-  // a student who had already answered.
-  loadPreferredMapApp: async () => {
-    const saved = await IndexedDBService.get('meta', 'preferred_map_app');
-    if (saved === 'apple' || saved === 'google') set({ preferredMapApp: saved });
-  },
-  // State first, storage second: the sheet must close on the tap, and a failed
-  // write costs the student one extra ask next time rather than the journey.
-  setPreferredMapApp: async (app) => {
-    set({ preferredMapApp: app });
-    await IndexedDBService.set('meta', 'preferred_map_app', app);
-  },
   setDevPhoneOverride: (value) => set({ devPhoneOverride: value }),
 });

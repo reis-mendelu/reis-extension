@@ -12,15 +12,7 @@ import { logout } from '../../api/proxyClient';
 import { HiddenItemsSection } from './Profile/HiddenItemsSection';
 import { desktopEduroamTarget } from '../../utils/desktopEduroamTarget';
 
-export function ProfilePopup({
-  isOpen,
-  onOpenFeedback,
-  onClose,
-}: {
-  isOpen: boolean;
-  onOpenFeedback?: () => void;
-  onClose?: () => void;
-}) {
+export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: () => void }) {
   const { isDark, isLoading: tLoading, toggle: tTheme } = useTheme(),
     { isSubscribed, toggleAssociation } = useSpolkySettings(),
     [spolkyOpen, setSpolkyOpen] = useState(false);
@@ -29,6 +21,7 @@ export function ProfilePopup({
   const setLanguage = useAppStore((state) => state.setLanguage);
   const openEduroamFor = useAppStore((state) => state.openEduroamFor);
   const setIsEduroamOpen = useAppStore((state) => state.setIsEduroamOpen);
+  const openReport = useAppStore((state) => state.openReport);
   const { params } = useUserParams();
 
   if (!isOpen) return null;
@@ -139,15 +132,16 @@ export function ProfilePopup({
 
         {/* Support Section */}
         <div className="py-1">
-          {onOpenFeedback && (
-            <button
-              onClick={onOpenFeedback}
-              className="w-full flex items-center gap-3 px-1 py-1.5 hover:bg-base-200 rounded-lg transition-colors"
-            >
-              <MessageSquarePlus size={16} className="text-base-content/50" />
-              <span className="text-xs font-medium opacity-70">{t('settings.reportBug')}</span>
-            </button>
-          )}
+          <button
+            onClick={() => {
+              onClose?.();
+              openReport();
+            }}
+            className="w-full flex items-center gap-3 px-1 py-1.5 hover:bg-base-200 rounded-lg transition-colors"
+          >
+            <MessageSquarePlus size={16} className="text-base-content/50" />
+            <span className="text-xs font-medium opacity-70">{t('settings.reportBug')}</span>
+          </button>
 
           <div className="flex items-center gap-3 px-1 py-1.5 text-base-content/60">
             <LogOut size={16} className="text-base-content/30" />

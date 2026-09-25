@@ -45,7 +45,7 @@ npm run verify:ui -- <label> --view exams --url http://localhost:<port>
 | `--view` | current | Seeded into IndexedDB (`meta.reis_current_view`), then reloaded. |
 | `--theme` | dark | `dark` \| `light`. Seeds `meta.reis_theme`, mapped to the theme names the store accepts. |
 | `--click` | — | Text to click after load, e.g. opening a drawer or driving a flow into its error state. |
-| `--onboarding` | off | Force the desktop welcome modal by seeding `welcome_dismissed: false`. Off by default (it blocks the whole page) — and it has to seed rather than skip the key, because any earlier run in the same profile already wrote `true`, so a flag that only skipped it photographed the page behind a modal that never appeared. **Needs a desktop viewport** — see below. |
+| `--onboarding` | off | Force the desktop welcome modal by seeding `welcome_dismissed: false`. Off by default (it blocks the whole page). **Needs a desktop viewport** — see below. |
 | `--wait` | 600 | ms to settle after navigation. |
 
 ### Widths
@@ -117,11 +117,6 @@ Occluded elements are skipped, so findings describe what is actually on screen.
   DEV-only, in `src/mobile/eduroamNative.ts`) so the real screen is reachable.
   Where no such override exists, **say the screen was not measured** rather than
   reporting the run clean, and treat the device build as the gate.
-- **`--theme light` used to be a silent no-op** — it seeded the literal string
-  `light`, and `createThemeSlice` accepts only `mendelu` / `mendelu-dark` and
-  falls back to dark for anything else, so the "light" run measured the dark
-  theme. Fixed in `scripts/shot.ts`; a light run is now real. Sanity-check the
-  first one by eye anyway.
 - **The first run after an edit can capture the pre-edit module.** Three
   consecutive runs once photographed a button style that had already been
   replaced, and the finding was chased as a real one. Confirm the change is
@@ -148,15 +143,18 @@ Occluded elements are skipped, so findings describe what is actually on screen.
 - Real exam data is seasonal and usually absent from the snapshot — a July
   scrape leaves the Exams screen permanently empty. Serve the exam fixture for a
   populated screen instead of hand-editing `public/dev-real-data.json`.
-  `REIS_FIXTURE` is read from the process env at server start, so this one needs
-  a background Bash server — there is no launch config for it:
+  `REIS_FIXTURE` is read from the process env at server start, so it has to be
+  the server's own config rather than a flag on the run — which is what
+  `reis-webapp-exams` in `.claude/launch.json` is. Start it the same way as any
+  other preview, and pass the port it reports:
 
-  ```bash
-  npm run dev:web:exams
+  ```text
+  preview_start { name: "reis-webapp-exams" }
   ```
 
-  This is the documented exception to "never start the dev webapp with Bash";
-  every other run uses the `reis-webapp` preview config.
+  There is no Bash exception here: every dev webapp run, fixture or not, goes
+  through `preview_start`. `.claude/launch.json` also carries `reis-webapp-mock`,
+  `reis-webapp-admin` and `reis-webapp-reis-admin` for the other seeded states.
 
 ## Fixtures
 

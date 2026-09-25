@@ -24,12 +24,14 @@ The snapshot only contains what IS was serving when it was scraped. A July scrap
 npm run dev:web:exams    # REIS_FIXTURE=examSeason
 ```
 
+`.claude/launch.json` wraps this as `reis-webapp-exams`, so a Claude session starts it with `preview_start` like any other preview rather than through Bash — same for `reis-webapp-mock`, `reis-webapp-admin` and `reis-webapp-reis-admin`.
+
 `REIS_FIXTURE=<name>` makes `dev/snapshotPlugin.ts` serve `dev/fixtures/<name>.json` **overlaid on** the real snapshot, so synthetic exams sit alongside real subjects and files, and the real snapshot is never modified. Fixtures are synthetic and committed; dates are authored as `dayOffset` from today and materialised to IS `DD.MM.YYYY` at serve time by `scripts/lib/fixtureRebase.ts`, so they never rot. Term offset keys: `dayOffset`, `regStartDayOffset`, `regEndDayOffset`, `deregDayOffset` (+ `deregTime`). Add a fixture by dropping a JSON file in `dev/fixtures/` — no plumbing needed. A fixture is never treated as stale, so no background scrape is triggered.
 
 ## Working in a worktree
 
 A fresh worktree contains only tracked files, so `node_modules`, `public/dev-real-data.json` and `.env` are all absent — and each fails *quietly* rather than loudly: Vite 403s on `@fontsource/inter` and the app renders in a fallback typeface, and a missing snapshot makes `dev:web` serve `index.html`, so the UI silently falls back to stale IndexedDB (a real mix of real and mock data).
 
-The `SessionStart` hook `.claude/hooks/worktree-bootstrap.sh` links all three from the main checkout automatically. It resolves the worktree root via `git rev-parse --show-toplevel`, not the cwd, so a persisted working directory can't scatter links into a subdirectory. It shares `node_modules` with the main checkout — run `npm ci` in the worktree if that branch changes dependencies.
+The `SessionStart` hook `.claude/hooks/worktree-bootstrap.sh` restores each of the three from the main checkout when the main checkout has it, and prints what it did (including a note to run `npm ci` when there is no usable `node_modules` to copy). It resolves the worktree root via `git rev-parse --show-toplevel`, not the cwd, so a persisted working directory can't scatter them into a subdirectory. Before running `npm ci` in a worktree, check `test -L node_modules`. A symlink means the install is shared, so don't install through it. See CLAUDE.md → *Worktrees own their node_modules*.
 
 `vite.web.config.ts` honours `PORT`, so concurrent worktree sessions don't fight over `:3000`.

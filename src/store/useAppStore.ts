@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { AppState } from './types';
+import { watchSignedInStudent } from '../services/identity/watchSignedInStudent';
 import { createScheduleSlice } from './slices/createScheduleSlice';
 import { createExamSlice } from './slices/createExamSlice';
 import { createSyllabusSlice } from './slices/createSyllabusSlice';
@@ -12,6 +13,7 @@ import { createSyncSlice } from './slices/createSyncSlice';
 import { createThemeSlice } from './slices/createThemeSlice';
 import { createI18nSlice } from './slices/createI18nSlice';
 import { createSuccessRateSlice } from './slices/createSuccessRateSlice';
+import { createSimilarSubjectsSlice } from './slices/createSimilarSubjectsSlice';
 import { createEduroamSlice } from './slices/createEduroamSlice';
 import { createDocumentsSlice } from './slices/createDocumentsSlice';
 import { createFeedbackSlice } from './slices/createFeedbackSlice';
@@ -38,13 +40,15 @@ import { createAdminSlice } from './slices/createAdminSlice';
 import { createAdminStatsSlice } from './slices/createAdminStatsSlice';
 import { createSuggestionsSlice } from './slices/createSuggestionsSlice';
 import { createDemoSlice } from './slices/createDemoSlice';
+import { createReportSlice } from './slices/createReportSlice';
+import { createRouteSlice } from './slices/createRouteSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 import { resetRealDataStores } from '../services/loadRealDataSnapshot';
 import { devAdminSeed } from '../utils/mock/devSociety';
 import type { Session } from '@supabase/supabase-js';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
-import { setDemoModeFlag } from '../errors/demoMode';
+import { setDemoModeFlag, isDemoMode } from '../errors/demoMode';
 
 export const useAppStore = create<AppState>()((...a) => ({
   ...createScheduleSlice(...a),
@@ -59,6 +63,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createThemeSlice(...a),
   ...createI18nSlice(...a),
   ...createSuccessRateSlice(...a),
+  ...createSimilarSubjectsSlice(...a),
   ...createEduroamSlice(...a),
   ...createDocumentsSlice(...a),
   ...createFeedbackSlice(...a),
@@ -84,7 +89,9 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createAdminSlice(...a),
   ...createAdminStatsSlice(...a),
   ...createSuggestionsSlice(...a),
+  ...createRouteSlice(...a),
   ...createDemoSlice(...a),
+  ...createReportSlice(...a),
 }));
 
 // Initialize store and subscribe to sync updates
@@ -109,6 +116,16 @@ export const initializeStore = async () => {
 
   const s = useAppStore.getState();
 
+  // Who is signed in is confirmed against IS once per session, and the app
+  // restarts if it turns out to be somebody else — see watchSignedInStudent.
+  //
+  // Not in demo mode. `fetchWithAuth` would refuse the request anyway
+  // (DemoModeError), but asking at all means a logged failure on every demo
+  // boot, and demo mode is the build a store reviewer runs — the one boot that
+  // is supposed to reach nothing.
+  const demo = import.meta.env.VITE_USE_MOCK_DATA === 'true' || isDemoMode();
+  const offIdentityWatch = demo ? () => {} : watchSignedInStudent();
+
   // Start global pulse
   const pulseInterval = setInterval(() => {
     useAppStore.getState().updatePulse();
@@ -116,7 +133,6 @@ export const initializeStore = async () => {
 
   // Tier 1: User-visible data — load immediately
   s.loadNotificationState();
-  s.loadPreferredMapApp();
   s.fetchNotifications();
   s.fetchSchedule();
   s.fetchExams();
@@ -270,6 +286,7 @@ export const initializeStore = async () => {
 
   return () => {
     clearInterval(pulseInterval);
+    offIdentityWatch();
     unsubscribe();
     bcTheme.close();
     bcLang.close();

@@ -14,9 +14,13 @@ export function FloorStack() {
   return (
     <div className="flex flex-col gap-1 p-1 bg-base-200 rounded-lg">
       {b.floors.map((f) => (
-        <button key={f.id}
+        <button
+          key={f.id}
           className={`btn btn-xs ${activeFloorId === f.id ? 'btn-primary' : 'btn-ghost'}`}
-          onClick={() => setMapFloor(f.id)}>{f.name ?? f.level}</button>
+          onClick={() => setMapFloor(f.id)}
+        >
+          {f.name ?? f.level}
+        </button>
       ))}
     </div>
   );

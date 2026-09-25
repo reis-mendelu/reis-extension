@@ -1,6 +1,6 @@
 import { Messages, isIframeMessage } from '../types/messages';
 import { iframeElement, sendToIframe, markIframeReady } from './iframeManager';
-import { cachedData, isSyncing, refreshExams } from './syncService';
+import { cachedData, isSyncing, refreshExams, refreshSchedule } from './syncService';
 import { requestSync } from './syncGate';
 import { fetchFullSemesterSchedule } from './dataFetchers';
 import { fetchExamData, registerExam, unregisterExam } from '../api/exams';
@@ -9,6 +9,10 @@ import type { DataRequestType } from '../types/messages';
 import { scrapedNavMenu } from './sniper';
 import { downloadDocumentInPage } from './documentDownloader';
 import { isIsMendeluUrl } from './isMendeluUrl';
+import { signOutFromHostPage } from './hostSignOut';
+import { readBytesBody } from './readBytesBody';
+import { fetchFileForIframe } from './fetchFileForIframe';
+import { getDiagnostics } from '../utils/diagnostics/diagnosticLog';
 
 let topUpPopupRef: Window | null = null;
 
@@ -84,10 +88,18 @@ async function handleFetchRequest(
     method?: string;
     headers?: Record<string, string>;
     body?: string;
-    responseType?: 'text' | 'image';
+    responseType?: 'text' | 'image' | 'bytes' | 'file';
   }
 ) {
   try {
+    if (options?.responseType === 'file') {
+      // Its own path — no login redirect on 403. See fetchFileForIframe.
+      const payload = await fetchFileForIframe(url, (tick) =>
+        sendToIframe(Messages.fetchProgress(id, tick))
+      );
+      sendToIframe(Messages.fetchResult(id, true, payload));
+      return;
+    }
     let text: string;
     if (isIsMendeluUrl(url)) {
       const response = await fetch(url, {
@@ -110,6 +122,11 @@ async function handleFetchRequest(
         const contentType = response.headers.get('content-type') ?? '';
         if (!contentType.startsWith('image/')) throw new Error(`Not an image (${contentType})`);
         text = await blobToDataUrl(await response.blob());
+      } else if (options?.responseType === 'bytes') {
+        // fetchAuthedBytes from the iframe (eduroam root CA + p12). Same
+        // reason as photos: the iframe's own fetch loses UISAuth wherever
+        // third-party cookies are blocked, and IS answers that with 403.
+        text = await readBytesBody(response);
       } else {
         text = await response.text();
       }
@@ -157,6 +174,15 @@ async function handleAction(id: string, action: string, payload: unknown) {
       case 'refresh_exams':
         await refreshExams();
         result = { success: true };
+        break;
+      case 'refresh_schedule':
+        await refreshSchedule();
+        result = { success: true };
+        break;
+      case 'get_diagnostics':
+        // The report form asks for this context's recent errors, already
+        // cleaned at record time. Sent on only if the student opts in.
+        result = { entries: getDiagnostics() };
         break;
       case 'download_document':
         // First-party fetch on is.mendelu.cz so the SameSite cookie rides
@@ -206,42 +232,9 @@ async function handleAction(id: string, action: string, payload: unknown) {
         break;
       }
       case 'logout': {
-        if (!window.location.pathname.includes('/auth/')) {
-          console.warn('Not in an authenticated session. No need to log out.');
-          result = { success: false, reason: 'not_authenticated' };
-          break;
-        }
-
-        const existingForm = document.querySelector(
-          'form[action="/auth/system/logout.pl"]'
-        ) as HTMLFormElement;
-        if (existingForm) {
-          const logoutButton = existingForm.querySelector(
-            'input[name="odhlaseni"]'
-          ) as HTMLInputElement;
-          if (logoutButton) {
-            logoutButton.click();
-          } else {
-            existingForm.submit();
-          }
-          result = { success: true };
-          break;
-        }
-
-        const dynamicForm = document.createElement('form');
-        dynamicForm.method = 'POST';
-        dynamicForm.action = '/auth/system/logout.pl';
-        dynamicForm.style.display = 'none';
-
-        const payloadInput = document.createElement('input');
-        payloadInput.type = 'hidden';
-        payloadInput.name = 'odhlaseni';
-        payloadInput.value = 'Log out';
-
-        dynamicForm.appendChild(payloadInput);
-        document.body.appendChild(dynamicForm);
-        dynamicForm.submit();
-        result = { success: true };
+        // Host-page half of the sign-out — the logout form AND the host-origin
+        // database, which no other context can reach. See hostSignOut.ts.
+        result = await signOutFromHostPage();
         break;
       }
       default:

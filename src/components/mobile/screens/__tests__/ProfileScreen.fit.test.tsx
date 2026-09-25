@@ -40,16 +40,18 @@ describe('ProfileScreen fits its text', () => {
     } as never);
   });
 
-  it('keeps the programme out of the header, where the buttons squeeze it', () => {
+  it('keeps the identity out of the header, where the buttons squeeze it', () => {
     render(<ProfileScreen />);
     const header = screen.getByText('Profil').closest('[class*="pt-["]');
     expect(header).not.toBeNull();
-    expect(header!.textContent).not.toContain(PROGRAMME);
+    expect(header!.textContent).not.toContain('ID 123456');
+    // Nor the plan title that used to ride there, anywhere on the screen.
+    expect(screen.queryByText(PROGRAMME)).not.toBeInTheDocument();
   });
 
-  it('still shows the programme, on its own full-width row', () => {
+  it('shows the student ID on its own full-width row', () => {
     render(<ProfileScreen />);
-    expect(screen.getByText(PROGRAMME)).toBeInTheDocument();
+    expect(screen.getByText('ID 123456')).toBeInTheDocument();
   });
 
   it('lets a long name wrap instead of cutting it off', () => {

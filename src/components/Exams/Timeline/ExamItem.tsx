@@ -28,8 +28,8 @@ const urgencyBorder = {
 
 const urgencyBadge = {
   none: null,
-  warning: 'bg-warning/10 text-warning border-warning/20',
-  critical: 'bg-error/10 text-error border-error/20 animate-pulse',
+  warning: 'bg-warning/10 text-[var(--tone-warning)] border-warning/20',
+  critical: 'bg-error/10 text-[var(--tone-error)] border-error/20 animate-pulse',
   expired: null,
 };
 
@@ -45,9 +45,22 @@ interface ContentBoxProps {
   language?: string;
 }
 
-const ContentBox: React.FC<ContentBoxProps> = ({ subjectName, sectionName, term, deadline, isHorizontal, isSelected, onClick, t, language }) => {
+const ContentBox: React.FC<ContentBoxProps> = ({
+  subjectName,
+  sectionName,
+  term,
+  deadline,
+  isHorizontal,
+  isSelected,
+  onClick,
+  t,
+  language,
+}) => {
   const urgency = getDeadlineUrgency(deadline);
-  const countdown = deadline && urgency !== 'none' && urgency !== 'expired' ? formatDeadlineCountdown(deadline) : null;
+  const countdown =
+    deadline && urgency !== 'none' && urgency !== 'expired'
+      ? formatDeadlineCountdown(deadline)
+      : null;
   const badgeClass = urgencyBadge[urgency];
 
   return (
@@ -68,20 +81,31 @@ const ContentBox: React.FC<ContentBoxProps> = ({ subjectName, sectionName, term,
             {subjectName}
           </div>
           {sectionName && (
-            <div className="text-[10px] font-medium text-base-content/45 uppercase tracking-wide leading-none">
+            <div className="text-[10px] font-medium text-base-content/70 uppercase tracking-wide leading-none">
               {sectionName}
             </div>
           )}
         </div>
-        <div className="text-[12px] font-bold text-primary flex items-center gap-1 mt-0.5 whitespace-nowrap">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+        <div className="text-[12px] font-bold text-[var(--tone-primary)] flex items-center gap-1 mt-0.5 whitespace-nowrap">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-3 w-3"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+              clipRule="evenodd"
+            />
           </svg>
-          {language === 'en' && term.roomEn ? term.roomEn : (term.roomCs || term.room) || t('common.loading')}
+          {language === 'en' && term.roomEn
+            ? term.roomEn
+            : term.roomCs || term.room || t('common.loading')}
         </div>
       </div>
       <div className="flex items-center justify-between gap-2">
-        <div className="text-[11px] font-mono font-extrabold tracking-widest uppercase text-primary">
+        <div className="text-[11px] font-mono font-extrabold tracking-widest uppercase text-[var(--tone-primary)]">
           {term.date} • {term.time}
         </div>
         {countdown && badgeClass && (
@@ -91,10 +115,10 @@ const ContentBox: React.FC<ContentBoxProps> = ({ subjectName, sectionName, term,
         )}
       </div>
       {onClick && (
-        <div className={`flex items-center justify-center mt-2 pt-1.5 border-t transition-colors ${isSelected ? 'border-primary/20 text-primary' : 'border-base-content/8 text-base-content/25 hover:text-base-content/50'}`}>
-          {isSelected
-            ? <ChevronUp size={13} />
-            : <ChevronDown size={13} />}
+        <div
+          className={`flex items-center justify-center mt-2 pt-1.5 border-t transition-colors ${isSelected ? 'border-primary/20 text-[var(--tone-primary)]' : 'border-base-content/8 text-base-content/50 hover:text-base-content/70'}`}
+        >
+          {isSelected ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
         </div>
       )}
     </div>
@@ -110,13 +134,21 @@ interface CompactCardProps {
   onClick?: () => void;
 }
 
-const CompactCard: React.FC<CompactCardProps> = ({ subjectName, sectionName, sectionType, term, isSelected, onClick }) => {
+const CompactCard: React.FC<CompactCardProps> = ({
+  subjectName,
+  sectionName,
+  sectionType,
+  term,
+  isSelected,
+  onClick,
+}) => {
   const typeLower = sectionType?.toLowerCase() ?? '';
-  const accentClass = typeLower.includes('zkouška') || typeLower.includes('exam')
-    ? 'border-l-warning/60'
-    : typeLower.includes('zápočet') || typeLower.includes('credit')
-    ? 'border-l-success/60'
-    : 'border-l-base-content/10';
+  const accentClass =
+    typeLower.includes('zkouška') || typeLower.includes('exam')
+      ? 'border-l-warning/60'
+      : typeLower.includes('zápočet') || typeLower.includes('credit')
+        ? 'border-l-success/60'
+        : 'border-l-base-content/10';
 
   return (
     <div
@@ -128,12 +160,16 @@ const CompactCard: React.FC<CompactCardProps> = ({ subjectName, sectionName, sec
       `}
       onClick={onClick}
     >
-      <div className="font-black text-xs leading-tight truncate text-base-content">{subjectName}</div>
+      <div className="font-black text-xs leading-tight truncate text-base-content">
+        {subjectName}
+      </div>
       {sectionName && (
-        <div className="text-[10px] font-medium text-base-content/40 uppercase tracking-wide truncate leading-none mt-0.5">{sectionName}</div>
+        <div className="text-[10px] font-medium text-base-content/70 uppercase tracking-wide truncate leading-none mt-0.5">
+          {sectionName}
+        </div>
       )}
       <div className="flex items-center gap-1.5 mt-1.5">
-        <div className="text-[11px] font-mono text-primary/80 leading-none whitespace-nowrap">
+        <div className="text-[11px] font-mono text-[var(--tone-primary)] leading-none whitespace-nowrap">
           {term.date} · {term.time}
         </div>
       </div>
@@ -141,7 +177,20 @@ const CompactCard: React.FC<CompactCardProps> = ({ subjectName, sectionName, sec
   );
 };
 
-const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, sectionName, sectionType, deadline, isSelected, isFirst, isLast, isNext, isPast, orientation = 'vertical', onClick }) => {
+const ExamItem: React.FC<ExamItemProps> = ({
+  term,
+  subjectName,
+  sectionName,
+  sectionType,
+  deadline,
+  isSelected,
+  isFirst,
+  isLast,
+  isNext,
+  isPast,
+  orientation = 'vertical',
+  onClick,
+}) => {
   const { t, language } = useTranslation();
   const isHorizontal = orientation === 'horizontal';
   const hrClass = 'bg-base-300 opacity-30 hidden';
@@ -151,15 +200,24 @@ const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, sectionName, sec
     const dotClass = isSelected
       ? 'bg-primary ring-2 ring-primary/30 scale-110'
       : isPast
-      ? 'bg-transparent border border-base-content/25'
-      : isNext
-      ? 'bg-error'
-      : 'bg-base-content/30';
+        ? 'bg-transparent border border-base-content/25'
+        : isNext
+          ? 'bg-error'
+          : 'bg-base-content/30';
 
     return (
-      <div className={`flex-shrink-0 flex flex-col items-center w-48 ${isPast ? 'opacity-50' : ''}`}>
+      <div
+        className={`flex-shrink-0 flex flex-col items-center w-48 ${isPast ? 'opacity-50' : ''}`}
+      >
         <div className="px-1.5 w-full">
-          <CompactCard subjectName={subjectName} sectionName={sectionName} sectionType={sectionType} term={term} isSelected={isSelected} onClick={onClick} />
+          <CompactCard
+            subjectName={subjectName}
+            sectionName={sectionName}
+            sectionType={sectionType}
+            term={term}
+            isSelected={isSelected}
+            onClick={onClick}
+          />
         </div>
         <div className="w-px flex-1 min-h-[10px] bg-base-content/15" />
         <div className="h-2 flex items-center justify-center shrink-0">
@@ -173,11 +231,30 @@ const ExamItem: React.FC<ExamItemProps> = ({ term, subjectName, sectionName, sec
     <li>
       {!isFirst && <hr className={hrClass} />}
       <div className="timeline-start md:text-end mb-10 px-4">
-        <ContentBox subjectName={subjectName} sectionName={sectionName} term={term} deadline={deadline} isHorizontal={false} isSelected={isSelected} onClick={onClick} t={t} language={language} />
+        <ContentBox
+          subjectName={subjectName}
+          sectionName={sectionName}
+          term={term}
+          deadline={deadline}
+          isHorizontal={false}
+          isSelected={isSelected}
+          onClick={onClick}
+          t={t}
+          language={language}
+        />
       </div>
       <div className="timeline-middle">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`${iconClass} h-5 w-5`}>
-          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          className={`${iconClass} h-5 w-5`}
+        >
+          <path
+            fillRule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+            clipRule="evenodd"
+          />
         </svg>
       </div>
       {!isLast && <hr className={hrClass} />}

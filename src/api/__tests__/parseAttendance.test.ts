@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('../../services/storage/IndexedDBService', () => ({
-    IndexedDBService: {}
+  IndexedDBService: {},
 }));
 
 import { parseAttendance } from '../subjects';
@@ -44,31 +44,32 @@ const FIXTURE = `
 `;
 
 describe('parseAttendance', () => {
-    it('parses attendance from sub-rows grouped by subject code', () => {
-        const result = parseAttendance(FIXTURE);
+  it('parses attendance from sub-rows grouped by subject code', () => {
+    const result = parseAttendance(FIXTURE);
 
-        expect(result['EBC-AOS']).toBeDefined();
-        expect(result['EBC-AOS']).toHaveLength(1);
-        expect(result['EBC-AOS'][0].label).toContain('Cv');
-        expect(result['EBC-AOS'][0].label).toContain('Q47');
-        expect(result['EBC-AOS'][0].records).toHaveLength(4);
-        expect(result['EBC-AOS'][0].records[0]).toEqual({
-            date: '26. 2. 2026',
-            time: '11.00-12.50',
-            room: 'Q47',
-            status: 'present',
-        });
-        expect(result['EBC-AOS'][0].records[2].status).toBe('absent');
-        expect(result['EBC-AOS'][0].records[3].status).toBe('excused');
+    expect(result['EBC-AOS']).toBeDefined();
+    expect(result['EBC-AOS']).toHaveLength(1);
+    expect(result['EBC-AOS'][0].label).toContain('Cv');
+    expect(result['EBC-AOS'][0].label).toContain('Q47');
+    expect(result['EBC-AOS'][0].records).toHaveLength(4);
+    expect(result['EBC-AOS'][0].records[0]).toEqual({
+      date: '26. 2. 2026',
+      time: '11.00-12.50',
+      room: 'Q47',
+      status: 'present',
     });
+    expect(result['EBC-AOS'][0].records[2].status).toBe('absent');
+    expect(result['EBC-AOS'][0].records[3].status).toBe('excused');
+  });
 
-    it('returns empty object for no attendance data', () => {
-        const html = '<table id="tmtab_1"><tr class="uis-hl-table"><td></td><td><a href="/auth/katalog/syllabus.pl?predmet=1">X Test</a></td></tr></table>';
-        expect(parseAttendance(html)).toEqual({});
-    });
+  it('returns empty object for no attendance data', () => {
+    const html =
+      '<table id="tmtab_1"><tr class="uis-hl-table"><td></td><td><a href="/auth/katalog/syllabus.pl?predmet=1">X Test</a></td></tr></table>';
+    expect(parseAttendance(html)).toEqual({});
+  });
 
-    it('skips subjects with no sub-rows', () => {
-        const result = parseAttendance(FIXTURE);
-        expect(result['EBC-MT']).toBeUndefined();
-    });
+  it('skips subjects with no sub-rows', () => {
+    const result = parseAttendance(FIXTURE);
+    expect(result['EBC-MT']).toBeUndefined();
+  });
 });

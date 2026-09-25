@@ -20,7 +20,7 @@ export function FloorSwitcher() {
   if (activeBuildingId === null) return null;
 
   return (
-    <div className="absolute bottom-[190px] right-3 z-[1000]">
+    <div className="absolute bottom-[calc(190px_+_var(--safe-bottom,0px))] right-3 z-[1000]">
       <FloorStack />
     </div>
   );

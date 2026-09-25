@@ -25,13 +25,59 @@ const classmates = [
   },
 ];
 
+const hook = vi.hoisted(() => ({
+  result: { classmates: [] as unknown[], isLoading: false, error: null, noSeminar: false },
+}));
+
 vi.mock('../../../hooks/data/useClassmates', () => ({
-  useClassmates: () => ({ classmates, isLoading: false, error: null }),
+  useClassmates: () => hook.result,
 }));
 
 describe('ClassmatesTab', () => {
   beforeEach(() => {
-    useAppStore.setState({ studiumId: '1', obdobiId: '2' } as never);
+    useAppStore.setState({ studiumId: '1', obdobiId: '2', language: 'cz' } as never);
+    hook.result = { classmates, isLoading: false, error: null, noSeminar: false };
+  });
+
+  /**
+   * The roster is the seminar group only. Without saying so, a student reads
+   * "24" as everyone taking the subject.
+   */
+  it('says the list is the seminar group, with its size', () => {
+    render(<ClassmatesTab courseCode="EBC-IV" />);
+    expect(screen.getByText(/Spolužáci z tvého cvičení/)).toHaveTextContent('· 1');
+  });
+
+  /**
+   * A lecture-only subject (EBC-MNG in the real snapshot) has no seminar group,
+   * so there is no roster to show — but "no classmates found" claims the
+   * lecture is empty. Say why instead, and point at IS's full list.
+   */
+  it('explains a subject without cvičení instead of claiming nobody is enrolled', () => {
+    hook.result = { classmates: [], isLoading: false, error: null, noSeminar: true };
+    render(<ClassmatesTab courseCode="EBC-MNG" />);
+    expect(screen.getByText('Tento předmět nemá cvičení')).toBeInTheDocument();
+    expect(screen.queryByText('Žádní spolužáci nenalezeni')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Spolužáci z tvého cvičení/)).not.toBeInTheDocument();
+  });
+
+  it('still links IS for a subject without cvičení on the phone, which hides the end-of-list link', () => {
+    hook.result = { classmates: [], isLoading: false, error: null, noSeminar: true };
+    useAppStore.setState({
+      subjects: { data: { 'EBC-MNG': { subjectId: '160001' } } },
+    } as never);
+    render(<ClassmatesTab courseCode="EBC-MNG" showIsBacklink={false} />);
+    expect(screen.getByRole('link', { name: /IS MENDELU/ })).toHaveAttribute(
+      'href',
+      expect.stringContaining('spoluzaci.pl?predmet=160001;;studium=1;obdobi=2')
+    );
+  });
+
+  it('keeps the generic empty state when a seminar group exists but lists nobody', () => {
+    hook.result = { classmates: [], isLoading: false, error: null, noSeminar: false };
+    render(<ClassmatesTab courseCode="EBC-IV" />);
+    expect(screen.getByText('Žádní spolužáci nenalezeni')).toBeInTheDocument();
+    expect(screen.queryByText('Tento předmět nemá cvičení')).not.toBeInTheDocument();
   });
 
   it('shows the study programme on desktop, where there is room for it', () => {

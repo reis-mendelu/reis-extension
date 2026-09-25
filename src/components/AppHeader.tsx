@@ -17,6 +17,7 @@ interface AppHeaderProps {
   onToday: () => void;
   onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string) => void;
   searchPrefillRef?: React.MutableRefObject<((query: string) => void) | null>;
+  onShowMap: () => void;
 }
 
 export function AppHeader({
@@ -28,6 +29,7 @@ export function AppHeader({
   onToday,
   onOpenSubject,
   searchPrefillRef,
+  onShowMap,
 }: AppHeaderProps) {
   const { t } = useTranslation();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -132,7 +134,7 @@ export function AppHeader({
             </button>
 
             <div className="flex items-center gap-1">
-              <NotificationFeed />
+              <NotificationFeed onShowMap={onShowMap} />
             </div>
           </div>
         </div>

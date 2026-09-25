@@ -25,6 +25,20 @@ export interface ProbeElement {
    * everything with a clipping ancestor excuses most of the app.
    */
   insideInnerClip?: boolean;
+  /**
+   * The x-range the nearest sideways-scrolling ancestor can bring into view —
+   * its left edge minus how far it is scrolled, out to its scroll width. Set
+   * only for an ancestor whose `overflow-x` is auto/scroll AND that actually
+   * overflows. A swipeable row's later slides sit past the viewport on purpose
+   * and are one swipe away; that is not the unreachable content this rule is
+   * for. Deliberately not "any clipping ancestor": vertical scrollers are the
+   * whole app, and excusing them killed this check once already.
+   */
+  hScrollRange?: { left: number; right: number } | null;
+  /** The element IS a Leaflet marker icon — positioned in map coordinates. */
+  isLeafletMarker?: boolean;
+  /** Index of the marker icon this element sits inside, if any. */
+  leafletMarkerIdx?: number | null;
   /** Stable index within the probe, used to express ancestry. */
   idx: number;
   /** Indices of this element's ancestors, nearest-first. */
@@ -147,6 +161,13 @@ function overflowFindings(p: ProbeResult): Finding[] {
     });
   }
 
+  /** Is `r` inside `host`, allowing the same slack the overflow rule uses? */
+  const withinHost = (r: Rect, host: Rect): boolean =>
+    r.x >= host.x - PX_SLACK &&
+    r.y >= host.y - PX_SLACK &&
+    r.x + r.w <= host.x + host.w + PX_SLACK &&
+    r.y + r.h <= host.y + host.h + PX_SLACK;
+
   // Per-element, and deliberately NOT nested inside the document-scroll check
   // above. reIS clips at #root, so the document never scrolls horizontally —
   // which meant this whole rule could never fire in this app, in shot.ts or in
@@ -163,6 +184,26 @@ function overflowFindings(p: ProbeResult): Finding[] {
     // Leaflet lays its tiles beyond the map pane on purpose and clips them;
     // measuring those produced 26 failures, enough to fail every PR.
     if (e.insideInnerClip) continue;
+    // Same for a marker icon: its position is a map coordinate, so one at the
+    // western edge of the botanical garden sits left of a 320px viewport for
+    // exactly the reason a tile does, and there is no layout fix for it.
+    if (e.isLeafletMarker) continue;
+    // A marker's CONTENTS are the app's, though. They are excused only while
+    // they sit inside the icon's own box — that displacement is inherited. A
+    // child bigger than its icon is a real finding and still reported.
+    if (e.leafletMarkerIdx != null) {
+      const host = p.elements[e.leafletMarkerIdx];
+      if (host && withinHost(e.rect, host.rect)) continue;
+    }
+    // Reachable by swiping its row sideways — see `hScrollRange`. Only while it
+    // lies inside that range: something wider than even the scrolled row is
+    // still cut off, and still reported.
+    if (
+      e.hScrollRange &&
+      e.rect.x >= e.hScrollRange.left - PX_SLACK &&
+      e.rect.x + e.rect.w <= e.hScrollRange.right + PX_SLACK
+    )
+      continue;
     // BOTH edges. Measuring only the right one let an element at x:-20 sit
     // half off the left of the screen and report nothing — clipped by #root
     // and just as unreachable as one running off the right.

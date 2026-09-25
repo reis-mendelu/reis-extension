@@ -3,6 +3,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useCourseName } from '@/hooks/ui/useCourseName';
 import { isCompulsoryGroup, isCoreElectiveGroup, isElectiveGroup } from '@/utils/studyPlanUtils';
 import { isTransferableCourse } from './isTransferableCourse';
+import { failRateTone } from '@/components/SubjectsPanel/failRateTone';
 import type { SemesterBlock, SubjectStatus } from '@/types/studyPlan';
 
 interface Props {
@@ -60,13 +61,7 @@ function SelectableRow({
       <div className="flex items-center gap-2 shrink-0">
         {failRate != null && !isRecognized && (
           <span
-            className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
-              failRate >= 25
-                ? 'bg-error/10 text-error'
-                : failRate >= 20
-                  ? 'bg-warning/15 text-warning-content'
-                  : 'bg-base-content/5 text-base-content/70'
-            }`}
+            className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${failRateTone(failRate)}`}
           >
             {failRate}%
           </span>

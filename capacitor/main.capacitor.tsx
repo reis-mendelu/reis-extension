@@ -3,6 +3,7 @@ import './installCapacitorPlatform';
 
 import { SplashScreen } from '@capacitor/splash-screen';
 import { App as CapApp } from '@capacitor/app';
+import { Capacitor, SystemBars, SystemBarsStyle } from '@capacitor/core';
 // Static on purpose, unlike the `@/entrypoints/main/main` import inside
 // `startApp`: that module renders the React root on evaluation, which is why IT
 // stays dynamic. A stylesheet has no such side effect — it only affects paint —
@@ -30,6 +31,18 @@ import { purgePlaintextToken, loadStoredToken, clearStoredToken } from '@/platfo
 import { useAppStore } from '@/store/useAppStore';
 import { startApp } from './startApp';
 import { showLoginGate, showFatalError } from './bootScreens';
+import { syncSystemBarsToTheme } from '@/mobile/systemBarsTheme';
+
+// Android only: the status bar sits transparent over the app there (see
+// MainActivity), so its icons must follow the reIS theme, not the system one.
+// iOS is left on its current behaviour.
+if (Capacitor.getPlatform() === 'android') {
+  syncSystemBarsToTheme(document.documentElement, (style) => {
+    void SystemBars.setStyle({
+      style: style === 'DARK' ? SystemBarsStyle.Dark : SystemBarsStyle.Light,
+    });
+  });
+}
 
 /**
  * Android's hardware back unwinds the sheet stack, then the tab, before

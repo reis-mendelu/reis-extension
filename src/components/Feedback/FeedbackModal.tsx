@@ -7,24 +7,34 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { logError } from '../../utils/reportError';
 import { feedbackErrorKey } from './feedbackErrorKey';
 import { useAppStore } from '../../store/useAppStore';
+import { desktopDialogMotion, phoneSheetMotion } from './feedbackModalMotion';
+import { useReportAttachments } from './useReportAttachments';
+import { ReportAttachments } from './ReportAttachments';
+import { requestDataConsent, reportConsentCategories } from '../../utils/firefoxDataConsent';
 
 interface FeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Our own prefill (an entry point's key), never IS text. Read once per mount. */
+  initialTitle?: string;
 }
 
-export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
+export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalProps) {
   const [type, setType] = useState<'bug' | 'idea' | 'other'>('bug');
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(initialTitle ?? '');
   const [message, setMessage] = useState('');
   const [contact, setContact] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const { t } = useTranslation();
+  const attachments = useReportAttachments();
   // Phones get a bottom sheet, not a centred dialog: a floating card with a
   // blurred backdrop is a desktop idiom, and every other mobile surface here
   // rises from the bottom edge.
   const isPhone = useAppStore((s) => s.isTouch && s.isNarrow);
+  // No field is focused on open, on any device. The student first picks
+  // Chyba/Nápad/Jiné, and on a phone a focused field raised the soft keyboard
+  // mid-slide, resized the WebView and made the sheet jump.
 
   const handleSubmit = async (e?: React.SyntheticEvent) => {
     if (e) e.preventDefault();
@@ -33,7 +43,17 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
     // on a half-filled form posts an empty body, the function 400s it, and the
     // student sees the generic failure toast for input the UI should have
     // caught. Trimmed, so whitespace does not count as filled in either.
-    if (isSending || !title.trim() || !message.trim()) return;
+    if (isSending || attachments.encoding || !title.trim() || !message.trim()) return;
+    // Firefox only (a no-op everywhere else): consent for exactly what this
+    // report carries. Called BEFORE any await — Firefox honours
+    // permissions.request only while it is handling the click.
+    const consent = requestDataConsent(
+      reportConsentCategories({
+        contact,
+        screenshot: attachments.screenshot !== null,
+        diagnostics: attachments.includeDiagnostics,
+      })
+    );
     setIsSending(true);
 
     // Context (screen, version, browser, viewport) is assembled in the API
@@ -46,11 +66,19 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
     // ever breaks, an unexpected rejection must not leave the Send button
     // stuck on "Sending…" with the user's text trapped behind it.
     try {
-      const result = await submitSuggestion({ type, title, body: message, contact });
+      if (!(await consent)) {
+        toast.error(t('feedback.consentDeclined'));
+        return;
+      }
+      const result = await submitSuggestion(
+        { type, title, body: message, contact },
+        await attachments.draft()
+      );
 
       if (result.ok) {
         setIsSuccess(true);
         toast.success(t('feedback.toastSuccess'));
+        if (result.screenshotDropped) toast.warning(t('feedback.screenshotDropped'));
       } else {
         toast.error(t(feedbackErrorKey(result.error)));
       }
@@ -91,13 +119,11 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
           />
 
           <motion.div
-            initial={isPhone ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 10 }}
-            animate={isPhone ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
-            exit={isPhone ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 10 }}
+            {...(isPhone ? phoneSheetMotion : desktopDialogMotion)}
             className={`w-full bg-base-100 shadow-2xl border-base-300 overflow-hidden relative z-10 ${
               isPhone
                 ? 'max-w-none rounded-t-[20px] border-t max-h-[85dvh] overflow-y-auto'
-                : 'max-w-md rounded-2xl border'
+                : 'max-w-md rounded-2xl border max-h-[90dvh] overflow-y-auto'
             }`}
           >
             {/* Header */}
@@ -128,7 +154,9 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                   </button>
                 </div>
               ) : (
-                <div className="space-y-4">
+                // onPaste on the whole form: a screenshot pasted into any field
+                // is attached rather than dropped as text.
+                <div className="space-y-4" onPaste={attachments.onPaste}>
                   {/* Type Selection */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium text-base-content/60 ml-1">
@@ -173,7 +201,6 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                       placeholder={t('feedback.subjectPlaceholder')}
                       className="input input-bordered w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors"
                       required
-                      autoFocus
                       maxLength={120}
                       onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                     />
@@ -213,12 +240,16 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     />
                   </div>
 
+                  <ReportAttachments state={attachments} showPasteHint={!isPhone} />
+
                   {/* Submit Button */}
                   <div className="pt-2">
                     <button
                       type="button"
                       onClick={handleSubmit}
-                      disabled={isSending || !title.trim() || !message.trim()}
+                      disabled={
+                        isSending || attachments.encoding || !title.trim() || !message.trim()
+                      }
                       className="btn btn-primary w-full gap-2 font-semibold no-animation"
                     >
                       {isSending ? (

@@ -4,6 +4,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useCourseName } from '@/hooks/ui/useCourseName';
 import type { HardestEntry } from './insights';
 import { failRateTone } from './failRateTone';
+import { SubjectCredits } from './SubjectCredits';
 
 interface Props {
   entries: HardestEntry[];
@@ -35,6 +36,7 @@ function Row({
       onOpen(subject.code, subject.name, subject.id, undefined, 'stats', subject.isFulfilled);
     else onSearch(subject.code);
   };
+  const rateLabel = `${t('subjects.failRateLabel')} ${stat.rate} %`;
   return (
     <button
       onClick={handleClick}
@@ -45,16 +47,23 @@ function Row({
           {semesters.join('·')}.<span className="hidden md:inline"> sem.</span>
         </span>
       )}
-      <span className="flex-1 text-sm truncate">{displayName}</span>
+      {/* Under the name, as in the study-plan rows below — `SubjectCredits`. */}
+      <span className="flex-1 min-w-0 flex flex-col">
+        <span className="text-sm truncate">{displayName}</span>
+        <SubjectCredits credits={subject.credits} />
+      </span>
+      {/* The number alone, with the words said once per page in
+          `FailRateLegend` — the arrangement the semester rows below already
+          use. This card spelled them out on every row instead, which at 320px
+          was most of the row and made one screen describe the same figure two
+          different ways. `title`/`aria-label` keep the sentence for a pointer
+          and a screen reader; unlike the hover-only label #265 removed, the
+          legend is visible to a thumb. */}
       <span
-        className={`group/fail flex items-center justify-center h-5 px-1.5 rounded text-[10px] font-medium shrink-0 ${failRateTone(stat.rate)}`}
+        title={rateLabel}
+        aria-label={rateLabel}
+        className={`group/fail flex items-center justify-center h-5 px-1.5 rounded text-[10px] font-medium tabular-nums shrink-0 ${failRateTone(stat.rate)}`}
       >
-        {/* Always shown, never hover-revealed — the same fix #265 made to
-            SubjectRow, which this card was missed out of. It was
-            max-w-0/opacity-0 until :hover, and a touch screen has no hover, so
-            the iPad showed five bare colour-coded numbers while every row in
-            the semester lists below named itself in full. */}
-        <span className="mr-1 whitespace-nowrap">{t('subjects.failRateLabel')}</span>
         {stat.rate}%
       </span>
     </button>

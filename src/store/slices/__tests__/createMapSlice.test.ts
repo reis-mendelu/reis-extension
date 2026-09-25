@@ -139,6 +139,62 @@ describe('mapSlice', () => {
     expect(s.mapFocusRequest).toBe(before + 1);
   });
 
+  // The regression students outside PEF actually hit. Building A prints its
+  // hall code in `nickname` ("A01"), not `name` — a timetable gives the button
+  // that string and nothing else, so matching code/name alone left the button
+  // dead for every faculty but PEF.
+  it('focusRoomByCode resolves a hall known only by its nickname', () => {
+    const before = useAppStore.getState().mapFocusRequest;
+    useAppStore.getState().focusRoomByCode('A01'); // BA01N1052, building 54678
+    const s = useAppStore.getState();
+    expect(s.activeBuildingId).toBe(54678);
+    expect(s.mapSelection?.kind).toBe('roomRef');
+    expect(s.mapFocusRequest).toBe(before + 1);
+  });
+
+  it('focusRoomByCode ignores the campus a timetable brackets after the room', () => {
+    useAppStore.getState().focusRoomByCode('Q01 (Poříčí)');
+    expect(useAppStore.getState().activeBuildingId).toBe(0);
+  });
+
+  it('focusRoomByCode leaves the map alone for a room it cannot place at all', () => {
+    useAppStore.getState().focusCampus();
+    const before = useAppStore.getState().mapFocusRequest;
+    // IS files this room under two places at once, so it has none.
+    useAppStore.getState().focusRoomByCode('Lesní škola Jezírko (ŠLP)');
+    expect(useAppStore.getState().mapFocusRequest).toBe(before);
+  });
+
+  // A room the map has no floor plan for still has a building or campus the map
+  // can show (isRoomPlaces.json). The selection names the room it was asked for.
+  it.each([
+    ['T18', 1572, 'T18'], // building T's pin
+    ['ZFAC1 (Led)', -102, 'ZFAC1'], // the Lednice campus
+    ['Z11 (ČP II.)', 1587, 'Z11'], // FRRMS, Černá Pole II
+  ])('focusRoomByCode shows the building for %s', (raw, id, forRoom) => {
+    const before = useAppStore.getState().mapFocusRequest;
+    useAppStore.getState().focusRoomByCode(raw);
+    const s = useAppStore.getState();
+    expect(s.mapSelection).toMatchObject({ kind: 'poi', poi: { id }, forRoom });
+    expect(s.activeBuildingId).toBeNull();
+    expect(s.mapFocusRequest).toBe(before + 1);
+  });
+
+  it('focusRoomByCode points a room in a mapped building the map does not draw at that building', () => {
+    useAppStore.getState().focusRoomByCode('Velká zasedačka PEF');
+    expect(useAppStore.getState().mapSelection).toMatchObject({
+      kind: 'poi',
+      poi: { name: 'Q' },
+      forRoom: 'Velká zasedačka PEF',
+    });
+  });
+
+  it('a later plain selection drops the room name', () => {
+    useAppStore.getState().focusRoomByCode('T18');
+    useAppStore.getState().focusPoiById(1572);
+    expect(useAppStore.getState().mapSelection).not.toHaveProperty('forRoom');
+  });
+
   it('focusCampus returns to overview and bumps the focus request', () => {
     useAppStore.getState().setMapBuilding(54678);
     const before = useAppStore.getState().mapFocusRequest;
@@ -259,6 +315,19 @@ describe('mapSlice', () => {
     const s = useAppStore.getState();
     expect(s.mapSelection).toMatchObject({ kind: 'event', event: { id: pinned.id } });
     expect(s.mapFocusRequest).toBe(before + 1); // list click flies → bumps focus
+  });
+
+  it("focusEventById carries { reveal: 'map' } on the selection, and nothing without it", async () => {
+    // The calendar asks for WHERE; the sheet reads this off the selection to
+    // stay at peek instead of opening the card over the pin. Carried on the
+    // selection object, so the next pin tap — which builds a new one without
+    // it — opens the card as it always did.
+    await useAppStore.getState().loadMapEvents();
+    const pinned = useAppStore.getState().mapEvents.find((e) => e.coord)!;
+    useAppStore.getState().focusEventById(pinned.id, { fly: true, reveal: 'map' });
+    expect(useAppStore.getState().mapSelection).toMatchObject({ kind: 'event', reveal: 'map' });
+    useAppStore.getState().focusEventById(pinned.id);
+    expect(useAppStore.getState().mapSelection).not.toHaveProperty('reveal');
   });
 
   it('focusEventById from a LIST click does NOT fly for an off-campus event (no coord)', async () => {
@@ -533,5 +602,17 @@ describe('mapFocusTarget', () => {
     useAppStore.getState().closeComposer();
     expect(useAppStore.getState().draftCoord).toBeNull();
     expect(useAppStore.getState().mapFocusTarget).toBe('campus');
+  });
+});
+
+describe('tapping a room by hand', () => {
+  it('retires the lesson offer, because the student moved on from it', () => {
+    // The chip is the timetable's question, pinned to the room the timetable
+    // sent them to. Tapping a DIFFERENT room is a different question: without
+    // this, the offer followed the selection onto a room it was never about
+    // and still routed to the lecture's building.
+    useAppStore.getState().suggestRoute({ buildingName: 'Q', roomLabel: 'Q01' });
+    useAppStore.getState().selectMapRoom({ id: 42, name: 'B11' } as never);
+    expect(useAppStore.getState().routeSuggestion).toBeNull();
   });
 });

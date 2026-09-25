@@ -4,6 +4,7 @@ import pois from '../pois.json';
 import index from '../rooms-index.json';
 import remotePlaces from '../remotePlaces.json';
 import type { RemotePlace } from '../../../types/campusMap';
+import { pointInRing } from './pointInRing';
 
 /** Mean of a ring's vertices — good enough for a convex-ish building footprint. */
 function centroid(ring: number[][]): number[] {
@@ -14,21 +15,6 @@ function centroid(ring: number[][]): number[] {
     y += p[1]!;
   }
   return [x / ring.length, y / ring.length];
-}
-
-/** Ray casting, mirroring the selection the fetch script makes. */
-function pointInRing(point: number[], ring: number[][]): boolean {
-  const px = point[0]!;
-  const py = point[1]!;
-  let inside = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const xi = ring[i]![0]!;
-    const yi = ring[i]![1]!;
-    const xj = ring[j]![0]!;
-    const yj = ring[j]![1]!;
-    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside;
-  }
-  return inside;
 }
 
 describe('bundled map data', () => {
@@ -99,15 +85,20 @@ describe('bundled map data', () => {
     expect(buildings.buildings.some((b) => b.id === 0 && b.name === 'Q')).toBe(true);
   });
 
-  it('remote places: 5 sites with unique ids, closed footprints in South Moravia, and a url', () => {
+  // Nine since 2026-09-25 (the Útěchov wood-science centre); eight since
+  // 2026-09-24, when Karlov, SLŠ Hranice and VOŠ Boskovice joined as the
+  // IS "areály" with classrooms that had no pin. Karlov (Jeseníky, Silesia) and
+  // Hranice (Olomouc region) are why the box below is Moravia-Silesia, not
+  // South Moravia, and Karlov has no website of its own.
+  it('remote places: 9 sites with unique ids, closed footprints in Moravia-Silesia, url https or none', () => {
     const places = (remotePlaces as { places: RemotePlace[] }).places;
-    expect(places).toHaveLength(5);
-    expect(new Set(places.map((p) => p.id)).size).toBe(5);
+    expect(places).toHaveLength(9);
+    expect(new Set(places.map((p) => p.id)).size).toBe(9);
     for (const p of places) {
       expect(p.id).toBeLessThan(0); // synthetic, never collides with real ids
       expect(p.name.length).toBeGreaterThan(0);
       expect(p.shortName.length).toBeGreaterThan(0);
-      expect(p.url).toMatch(/^https:\/\//);
+      if (p.url !== null) expect(p.url).toMatch(/^https:\/\//);
       // Optional grounds boundary (arboretum garden) is a closed ring.
       if (p.area) {
         const a = p.area.coordinates[0]!; // safe: GeoJSON Polygon always has >=1 ring
@@ -134,11 +125,11 @@ describe('bundled map data', () => {
           n++;
         }
       }
-      // Overall footprint centre lands in South Moravia (lon ~16, lat ~48–50).
+      // Overall footprint centre lands in Moravia-Silesia (lon 16–18, lat 48–50.3).
       expect(sx / n).toBeGreaterThanOrEqual(16);
-      expect(sx / n).toBeLessThanOrEqual(17);
+      expect(sx / n).toBeLessThanOrEqual(18);
       expect(sy / n).toBeGreaterThanOrEqual(48);
-      expect(sy / n).toBeLessThanOrEqual(50);
+      expect(sy / n).toBeLessThanOrEqual(50.3);
       // Optional inner-map detail (arboretum): footpaths are polylines, POIs are
       // named points in the same region.
       if (p.paths) for (const path of p.paths) expect(path.length).toBeGreaterThanOrEqual(2);
@@ -151,5 +142,26 @@ describe('bundled map data', () => {
           expect(poi.lat).toBeLessThanOrEqual(50);
         }
     }
+  });
+});
+
+describe('room index: the two building-M ghosts stay out', () => {
+  const rows = index as { code: string; name: string; nickname: string | null }[];
+
+  // Regenerated upstream from IS Mendelu, so IS will keep handing these back;
+  // this is what catches them coming home with the next refresh.
+  it("has no BA27N1074 / BA27N1075 — open air between M's wings, not rooms", () => {
+    expect(rows.filter((e) => e.code === 'BA27N1074' || e.code === 'BA27N1075')).toEqual([]);
+  });
+
+  it('keeps the real N1074/N1075 halls in A and B', () => {
+    const kept = rows.filter((e) => e.code.endsWith('N1074') || e.code.endsWith('N1075'));
+    expect(kept.map((e) => e.code).sort()).toEqual([
+      'BA01N1074',
+      'BA01N1075',
+      'BA04N1074',
+      'BA04N1075',
+    ]);
+    expect(kept.map((e) => e.nickname).sort()).toEqual(['A121', 'B4', 'B5', null]);
   });
 });

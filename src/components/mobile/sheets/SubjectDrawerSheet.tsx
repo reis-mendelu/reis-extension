@@ -2,7 +2,9 @@ import { lazy, Suspense, useRef, useState } from 'react';
 import type { SyntheticEvent } from 'react';
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
+import { TeacherList } from './TeacherList';
 import { SubjectDrawerTabs } from './SubjectDrawerTabs';
+import { SubjectDrawerScroller } from './SubjectDrawerScroller';
 import { DrawerTabBody } from '../../SubjectFileDrawer/DrawerTabBody';
 import { groupAndSortFiles } from '../../SubjectFileDrawer/utils/groupFiles';
 import type { DrawerTab } from '../../SubjectFileDrawer/types';
@@ -37,7 +39,7 @@ export interface SubjectDrawerSheetProps {
 
 /**
  * Full-size sheet for a single subject: header, five-tab icon bar, the
- * shared `DrawerTabBody` beneath, and a persistent "open in IS" footer.
+ * shared `DrawerTabBody` beneath. No IS footer since #341 — see below.
  *
  * Selection/drag props passed to `DrawerTabBody` are mouse-only concerns
  * (rubber-band rectangle select) that don't translate to touch, so this sheet
@@ -77,11 +79,18 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
   // The course keys the iPad reader's ink and PDF cache, and its PDFs fill the
   // reader's sidebar so a student can switch files without coming back here —
   // in the drawer's grouped order, so both lists read the same.
-  const { previewUrl, viewPdf, closePreview, openFile, downloadSingle, openingLink } =
-    usePdfPreview(courseCode, {
-      title: courseName || courseCode,
-      files: listSubjectPdfs(groupedFiles.flatMap((g) => g.files)),
-    });
+  const {
+    previewUrl,
+    viewPdf,
+    closePreview,
+    openFile,
+    downloadSingle,
+    openingLink,
+    activeDownloads,
+  } = usePdfPreview(courseCode, {
+    title: courseName || courseCode,
+    files: listSubjectPdfs(groupedFiles.flatMap((g) => g.files)),
+  });
   const { classmates } = useClassmates(courseCode);
   const pushSheet = useAppStore((s) => s.pushSheet);
   const { data: zaznamnikData } = useZaznamnik(courseCode);
@@ -101,9 +110,6 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
   };
 
   const disabledTabs = subjectInfo?.subjectId ? [] : NO_ID_DISABLED;
-  const teacherLine = syllabusResult.syllabus?.courseInfo?.teachers
-    ?.map((teacher) => teacher.name)
-    .join(', ');
 
   const toggleSelect = (id: string, e: SyntheticEvent) => {
     e.stopPropagation();
@@ -119,19 +125,24 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
 
   return (
     <Sheet size="full" variant="screen" onClose={onClose}>
-      <SheetHeader
-        eyebrow={courseCode}
-        title={courseName || courseCode}
-        subtitle={teacherLine}
-        onBack={onClose}
-      />
-      <SubjectDrawerTabs
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        disabledTabs={disabledTabs}
-        counts={counts}
-      />
-      <div className="relative flex-1 overflow-y-auto">
+      <SubjectDrawerScroller
+        courseCode={courseCode}
+        pullable={activeTab === 'files'}
+        top={
+          <>
+            <SheetHeader eyebrow={courseCode} title={courseName || courseCode} onBack={onClose} />
+            {/* Below the header, not inside it: the header is `touch-none` so the
+                sheet can be dragged by it, and this is a list of things to tap. */}
+            <TeacherList teachers={syllabusResult.syllabus?.courseInfo?.teachers} />
+            <SubjectDrawerTabs
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              disabledTabs={disabledTabs}
+              counts={counts}
+            />
+          </>
+        }
+      >
         <DrawerTabBody
           tab={activeTab}
           lesson={lesson}
@@ -149,14 +160,17 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
           openFile={openFile}
           onViewPdf={viewPdf}
           openingLink={openingLink}
+          downloadingLinks={activeDownloads}
           onDownloadSingle={downloadSingle}
           resolvedCourseId={resolvedCourseId}
           syllabusResult={syllabusResult}
           folderUrl={subjectInfo?.folderUrl}
           selectable={false}
-          // The pinned 'Otevrit v IS MENDELU' footer below is this sheet's single
-          // IS link. Left on, every tab also rendered its own 'IS MENDELU' at the
-          // end of its content — two identical-looking links to the same place.
+          // Off since this sheet pinned an 'Otevřít v IS MENDELU' footer, which
+          // made every tab show two identical links. #341 dropped that footer
+          // (it opened the file structure whatever the tab), so the tabs here
+          // carry no IS link. The one exception is the classmates tab's
+          // no-cvičení state, which links IS because that link is its answer.
           showIsBacklink={false}
           // A classmate tap reaches the same PersonSheet the Lidé search
           // opens. Without this it landed in ClassmatePersonDrawer — a second
@@ -172,13 +186,13 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
           // The programme line only ever rendered clipped mid-word on a phone.
           showStudyInfo={false}
         />
-      </div>
+      </SubjectDrawerScroller>
       {previewUrl && (
         // Over the whole screen, not inside the tab body: a phone/tablet has no
         // room for the desktop's side-by-side drawer, and the reader needs every
         // pixel. Back closes the reader first, the drawer second.
         <div
-          className="absolute inset-0 z-20 flex flex-col bg-base-100 pt-[var(--safe-top,0px)]"
+          className="absolute inset-0 z-20 flex flex-col bg-base-100 pb-[var(--safe-bottom,0px)] pt-[var(--safe-top,0px)]"
           data-testid="mobile-pdf-preview-overlay"
         >
           {/* min-h-0 so the viewer's own scroll container can shrink inside

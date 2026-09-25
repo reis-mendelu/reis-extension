@@ -3,8 +3,9 @@ import { useAppStore } from '../../store/useAppStore';
 
 // Hoisted so the vi.mock factories below (which vitest hoists above these
 // imports) can close over it without a temporal-dead-zone error.
-const { rpc, getUserParams, isHarnessEnabled } = vi.hoisted(() => ({
+const { hasDataConsent, rpc, getUserParams, isHarnessEnabled } = vi.hoisted(() => ({
   isHarnessEnabled: vi.fn<(...args: unknown[]) => boolean>(() => false),
+  hasDataConsent: vi.fn<(...args: unknown[]) => Promise<boolean>>(async () => true),
   rpc: vi.fn<(...args: unknown[]) => Promise<{ error: { message: string } | null }>>(async () => ({
     error: null,
   })),
@@ -33,6 +34,11 @@ vi.mock('../../utils/userParams', () => ({
 // stubbed through `import.meta.env`, because vitest itself runs with DEV true —
 // so without this every test in this file would exercise the harness branch and
 // assert nothing about what reIS actually sends.
+// Firefox's data-consent toggle. Granted unless a test says otherwise, which is
+// also what every non-Firefox browser and the apps answer.
+vi.mock('../../utils/firefoxDataConsent', () => ({
+  hasDataConsent: (...a: unknown[]) => hasDataConsent(...a),
+}));
 vi.mock('../../utils/harnessEnabled', () => ({
   isHarnessEnabled: (...a: unknown[]) => isHarnessEnabled(...a),
 }));
@@ -43,6 +49,7 @@ describe('feedback', () => {
   beforeEach(() => {
     __resetUsageTrackedForTests();
     isHarnessEnabled.mockReturnValue(false);
+    hasDataConsent.mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -60,6 +67,18 @@ describe('feedback', () => {
     await expect(submitFeedback('nps', '9', 'ZS2026')).resolves.toBe(false);
 
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  // The desktop NPS prompt is a row of plain buttons, so anything that clicks
+  // through the dev webapp — a verify-ui --click, an exploratory Playwright
+  // run — filed a real rating against production. Caught on 2026-09-24 by a
+  // click-through that blocked the POST before it left.
+  it('does not submit feedback from a development or preview build', async () => {
+    isHarnessEnabled.mockReturnValue(true);
+
+    await expect(submitFeedback('nps', '9', 'ZS2026')).resolves.toBe(false);
+
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it('does not track usage in demo mode', async () => {
@@ -148,5 +167,20 @@ describe('feedback — no student identity leaves the device', () => {
     expect(trackDailyUsage.length).toBe(0);
     // type, value, semester, reason — none of which identify the student.
     expect(submitFeedback.length).toBe(4);
+  });
+
+  it('does not count this install on Firefox while the technical-data toggle is off', async () => {
+    // This describe block does not reset the once-per-session memo.
+    __resetUsageTrackedForTests();
+    hasDataConsent.mockResolvedValue(false);
+    await trackDailyUsage();
+    expect(hasDataConsent).toHaveBeenCalledWith('technicalAndInteraction');
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('does not file an NPS rating on Firefox while the technical-data toggle is off', async () => {
+    hasDataConsent.mockResolvedValue(false);
+    await expect(submitFeedback('nps', '9', 'ZS2026')).resolves.toBe(false);
+    expect(rpc).not.toHaveBeenCalled();
   });
 });

@@ -2,7 +2,9 @@
 
 - [ ] Version bumped in **both** `package.json` and `wxt.config.ts`, to the same value. The tag job refuses to tag on a mismatch.
 - [ ] The app was opened **on a device or simulator** at this commit — CI green is not evidence the iPad build works; the transport it uses is not exercised by any browser check.
-- [ ] "What's New" describes what actually changed, and nothing removed in this release is still advertised in the App Store listing or the privacy policy.
+- [ ] "What's New" describes what actually changed, and nothing removed in this release is still advertised in the App Store listing.
+
+The privacy block below this checklist is generated from `privacy/disclosures.ts` — which store declarations changed since the last tag, and who does each. The Release gate will not pass until every item in it is ticked and the published policy gist matches the repo.
 - [ ] The reviewer's demo path in the App Review notes still exists in this build.
 - [ ] No new `VITE_*` variable was added to the Vercel project.
 

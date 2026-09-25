@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Mock } from 'vitest';
 import { createMobileUiSlice } from '../createMobileUiSlice';
 import type { MobileUiSlice } from '../../types';
 import { IndexedDBService } from '../../../services/storage';
@@ -9,17 +10,19 @@ vi.mock('../../../services/storage', () => ({
 
 describe('createMobileUiSlice', () => {
   let state: MobileUiSlice;
-  let set: ReturnType<typeof vi.fn>;
-  let get: ReturnType<typeof vi.fn>;
+  let set: Mock & Parameters<typeof createMobileUiSlice>[0];
+  let get: Mock & Parameters<typeof createMobileUiSlice>[1];
 
   beforeEach(() => {
-    set = vi.fn((updater) => {
+    set = vi.fn((updater: unknown) => {
       const patch = typeof updater === 'function' ? updater(state) : updater;
       state = { ...state, ...patch };
     });
-    get = vi.fn(() => state);
+    get = vi.fn(() => state) as unknown as typeof get;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     state = createMobileUiSlice(set, get, {} as any);
+    // Cross-slice actions setMobileTab calls: switching to exams refreshes them.
+    Object.assign(state, { triggerExamsRefresh: vi.fn(), demoMode: false });
   });
 
   it('defaults to the calendar tab with no sheets open', () => {
@@ -27,7 +30,7 @@ describe('createMobileUiSlice', () => {
     expect(state.mobileSheets).toEqual([]);
     // The middle stop: the map sheet opens with the campus events already
     // visible, instead of a blank peek band the student had to drag up.
-    expect(state.mapSheetState).toBe('half');
+    expect(state.mapSheetState).toBe('peek');
     expect(state.devPhoneOverride).toBeNull();
   });
 
@@ -144,5 +147,31 @@ describe('createMobileUiSlice', () => {
       expect(state.welcomeSeen).toBe(true);
       expect(IndexedDBService.set).toHaveBeenCalledWith('meta', 'welcome_dismissed', true);
     });
+  });
+});
+
+describe('leaving the map tab', () => {
+  it('drops the lesson offer, so coming back does not re-ask', () => {
+    // The chip belongs to ONE arrival from the timetable. Expressed in the
+    // store and not as an unmount cleanup in MapScreen, which is what it looks
+    // like it should be: this app runs under StrictMode, which double-invokes
+    // effects, so that cleanup ran milliseconds after the pin set the
+    // suggestion and the chip never appeared at all. Measured, then moved.
+    const patches: Record<string, unknown>[] = [];
+    const set = ((updater: unknown) => {
+      patches.push(
+        (typeof updater === 'function' ? updater({}) : updater) as Record<string, unknown>
+      );
+    }) as unknown as Parameters<typeof createMobileUiSlice>[0];
+    const get = (() => ({ refreshRecentPdfs: () => Promise.resolve() })) as unknown as Parameters<
+      typeof createMobileUiSlice
+    >[1];
+    const slice = createMobileUiSlice(set, get, {} as never);
+
+    slice.setMobileTab('map');
+    expect(patches.at(-1)).not.toHaveProperty('routeSuggestion');
+
+    slice.setMobileTab('calendar');
+    expect(patches.at(-1)).toMatchObject({ routeSuggestion: null });
   });
 });

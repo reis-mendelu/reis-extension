@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('../../services/storage/IndexedDBService', () => ({
-    IndexedDBService: {}
+  IndexedDBService: {},
 }));
 
 import { parseTeachingWeeks, getWeekForDate } from '../teachingWeek';
@@ -21,57 +21,60 @@ const SAMPLE_HTML = `
 </table>`;
 
 describe('parseTeachingWeeks', () => {
-    it('parses all week rows with date ranges', () => {
-        const result = parseTeachingWeeks(SAMPLE_HTML);
-        expect(result).not.toBeNull();
-        expect(result!.total).toBe(6);
-        expect(result!.weeks[0]).toEqual({ week: 1, from: '2026-02-16', to: '2026-02-22' });
-        expect(result!.weeks[2]).toEqual({ week: 7, from: '2026-03-30', to: '2026-04-05' });
-    });
+  it('parses all week rows with date ranges', () => {
+    const result = parseTeachingWeeks(SAMPLE_HTML);
+    expect(result).not.toBeNull();
+    expect(result!.total).toBe(6);
+    expect(result!.weeks[0]).toEqual({ week: 1, from: '2026-02-16', to: '2026-02-22' });
+    expect(result!.weeks[2]).toEqual({ week: 7, from: '2026-03-30', to: '2026-04-05' });
+  });
 
-    it('reads currentWeek from the bold-highlighted row IS already provides', () => {
-        const result = parseTeachingWeeks(SAMPLE_HTML)!;
-        expect(result.currentWeek).toBe(7);
-    });
+  it('reads currentWeek from the bold-highlighted row IS already provides', () => {
+    const result = parseTeachingWeeks(SAMPLE_HTML)!;
+    expect(result.currentWeek).toBe(7);
+  });
 
-    it('returns currentWeek null when no row is highlighted', () => {
-        const noHighlight = SAMPLE_HTML.replace('<b>7. týden</b>', '7. týden').replace('<b>30.03.2026</b>', '30.03.2026').replace('<b>05.04.2026</b>', '05.04.2026').replace('<b>sudý</b>', 'sudý');
-        expect(parseTeachingWeeks(noHighlight)!.currentWeek).toBeNull();
-    });
+  it('returns currentWeek null when no row is highlighted', () => {
+    const noHighlight = SAMPLE_HTML.replace('<b>7. týden</b>', '7. týden')
+      .replace('<b>30.03.2026</b>', '30.03.2026')
+      .replace('<b>05.04.2026</b>', '05.04.2026')
+      .replace('<b>sudý</b>', 'sudý');
+    expect(parseTeachingWeeks(noHighlight)!.currentWeek).toBeNull();
+  });
 
-    it('returns null for empty/login page', () => {
-        expect(parseTeachingWeeks('<html><title>Přihlášení</title></html>')).toBeNull();
-    });
+  it('returns null for empty/login page', () => {
+    expect(parseTeachingWeeks('<html><title>Přihlášení</title></html>')).toBeNull();
+  });
 });
 
 describe('getWeekForDate', () => {
-    const data = parseTeachingWeeks(SAMPLE_HTML)!;
+  const data = parseTeachingWeeks(SAMPLE_HTML)!;
 
-    it('returns week number for a date within a week range', () => {
-        expect(getWeekForDate(data, new Date('2026-03-31'))).toBe(7);
-    });
+  it('returns week number for a date within a week range', () => {
+    expect(getWeekForDate(data, new Date('2026-03-31'))).toBe(7);
+  });
 
-    it('returns week number for range start date', () => {
-        expect(getWeekForDate(data, new Date('2026-02-16'))).toBe(1);
-    });
+  it('returns week number for range start date', () => {
+    expect(getWeekForDate(data, new Date('2026-02-16'))).toBe(1);
+  });
 
-    it('returns week number for range end date', () => {
-        expect(getWeekForDate(data, new Date('2026-02-22'))).toBe(1);
-    });
+  it('returns week number for range end date', () => {
+    expect(getWeekForDate(data, new Date('2026-02-22'))).toBe(1);
+  });
 
-    it('returns null for a date outside any teaching week', () => {
-        expect(getWeekForDate(data, new Date('2026-01-01'))).toBeNull();
-    });
+  it('returns null for a date outside any teaching week', () => {
+    expect(getWeekForDate(data, new Date('2026-01-01'))).toBeNull();
+  });
 
-    it('returns null for a gap between weeks', () => {
-        // March 1 is between week 1 (ends Feb 22) and week 6 (starts March 23)
-        expect(getWeekForDate(data, new Date('2026-03-01'))).toBeNull();
-    });
+  it('returns null for a gap between weeks', () => {
+    // March 1 is between week 1 (ends Feb 22) and week 6 (starts March 23)
+    expect(getWeekForDate(data, new Date('2026-03-01'))).toBeNull();
+  });
 
-    it('uses local date so Monday-midnight in UTC+2 is not shifted to Sunday (week boundary regression)', () => {
-        // new Date(2026, 3, 20) = April 20 midnight LOCAL — first day of week 10.
-        // toISOString() in UTC+2 gives April 19 → old code returned week 9.
-        const mondayMidnightLocal = new Date(2026, 3, 20); // April 20
-        expect(getWeekForDate(data, mondayMidnightLocal)).toBe(10);
-    });
+  it('uses local date so Monday-midnight in UTC+2 is not shifted to Sunday (week boundary regression)', () => {
+    // new Date(2026, 3, 20) = April 20 midnight LOCAL — first day of week 10.
+    // toISOString() in UTC+2 gives April 19 → old code returned week 9.
+    const mondayMidnightLocal = new Date(2026, 3, 20); // April 20
+    expect(getWeekForDate(data, mondayMidnightLocal)).toBe(10);
+  });
 });

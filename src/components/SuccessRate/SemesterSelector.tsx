@@ -18,8 +18,13 @@ export function SemesterSelector({ stats, activeIndex, onSelect }: SemesterSelec
   // `overflow-x-auto` still catches an unusually long history. `mt-4` rather
   // than `mt-auto` on a phone — pinning them to the bottom of the panel left
   // a void between the statistics and the chips. Desktop keeps both.
+  // `max-w-20` stops `flex-1` handing a lone semester the whole row, and
+  // `justify-center-safe` centres the few that stay narrow while still
+  // letting an overflowing row scroll from its first chip. The active ring is
+  // `ring-inset` because that scrolling row also clips vertically and has no
+  // vertical padding, so an outer ring lost its top and bottom edges.
   return (
-    <div className="flex flex-nowrap sm:flex-wrap justify-start sm:justify-center gap-1 sm:gap-2 mt-4 sm:mt-auto overflow-x-auto sm:overflow-visible snap-x scrollbar-thin -mx-1 px-1">
+    <div className="flex flex-nowrap sm:flex-wrap justify-center-safe sm:justify-center gap-1 sm:gap-2 mt-4 sm:mt-auto overflow-x-auto sm:overflow-visible snap-x scrollbar-thin -mx-1 px-1">
       {stats.map((s, i) => {
         const total = s.totalPass + s.totalFail,
           rate = Math.round((s.totalPass / total) * 100) || 0,
@@ -28,7 +33,7 @@ export function SemesterSelector({ stats, activeIndex, onSelect }: SemesterSelec
           <button
             key={`${s.year}-${s.semesterName}`}
             onClick={() => onSelect(i)}
-            className={`flex-1 min-w-[52px] sm:flex-none snap-start flex flex-col items-center gap-1.5 sm:gap-2 px-1 sm:px-3 py-2 rounded-xl transition-all ${active ? 'bg-primary/10 ring-1 ring-primary/30' : 'text-base-content/40 hover:bg-base-200'}`}
+            className={`flex-1 min-w-[52px] max-w-20 sm:flex-none sm:max-w-none snap-start flex flex-col items-center gap-1.5 sm:gap-2 px-1 sm:px-3 py-2 rounded-xl transition-all ${active ? 'bg-primary/10 ring-1 ring-inset ring-primary/30' : 'text-base-content/40 hover:bg-base-200'}`}
           >
             <div className="relative w-12 h-12 flex items-center justify-center">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 32 32">

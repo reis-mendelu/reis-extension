@@ -15,19 +15,19 @@
  * (lowest-index) contiguous block in view and leave the rest as placeholders.
  */
 export function computeRenderWindow(
-    visible: Set<number>,
-    numPages: number,
-    buffer: number,
-    maxRendered = Infinity,
+  visible: Set<number>,
+  numPages: number,
+  buffer: number,
+  maxRendered = Infinity
 ): Set<number> {
-    const anchors = visible.size > 0 ? visible : new Set([0]);
-    const window = new Set<number>();
-    for (const idx of anchors) {
-        for (let i = idx - buffer; i <= idx + buffer; i++) {
-            if (i >= 0 && i < numPages) window.add(i);
-        }
+  const anchors = visible.size > 0 ? visible : new Set([0]);
+  const window = new Set<number>();
+  for (const idx of anchors) {
+    for (let i = idx - buffer; i <= idx + buffer; i++) {
+      if (i >= 0 && i < numPages) window.add(i);
     }
-    if (window.size <= maxRendered) return window;
-    const kept = [...window].sort((a, b) => a - b).slice(0, maxRendered);
-    return new Set(kept);
+  }
+  if (window.size <= maxRendered) return window;
+  const kept = [...window].sort((a, b) => a - b).slice(0, maxRendered);
+  return new Set(kept);
 }

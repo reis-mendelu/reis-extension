@@ -20,10 +20,12 @@ function parseEventsFromHtml(html: string): MendeluEvent[] {
     const href = card.getAttribute('href') ?? '';
 
     const infoItems = card.querySelectorAll('.event-card__info-item');
-    const texts = Array.from(infoItems).map(el => el.textContent?.replace(/\s+/g, ' ').trim() ?? '');
+    const texts = Array.from(infoItems).map(
+      (el) => el.textContent?.replace(/\s+/g, ' ').trim() ?? ''
+    );
 
     const rawDate = texts[0] ?? '';
-    const dateParts = rawDate.split('–').map(s => s.replace(/\u00a0/g, ' ').trim());
+    const dateParts = rawDate.split('–').map((s) => s.replace(/\u00a0/g, ' ').trim());
     const date = dateParts[0] ?? '';
     const endDate = dateParts[1] || null;
 
@@ -52,9 +54,18 @@ function parseEventsFromHtml(html: string): MendeluEvent[] {
   return events;
 }
 
-async function fetchEventPage(lang: string, page: number, categories: readonly number[], limit: number): Promise<string> {
+async function fetchEventPage(
+  lang: string,
+  page: number,
+  categories: readonly number[],
+  limit: number
+): Promise<string> {
   const body = JSON.stringify({ page, limit, categories: [...categories], faculties: [], lang });
-  const raw = await fetchViaProxy(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
+  const raw = await fetchViaProxy(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+  });
   const json = JSON.parse(raw) as { html: string };
   return json.html;
 }

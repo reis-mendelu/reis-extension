@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: September 6, 2026**
+**Last Updated: September 25, 2026**
 
 ## Introduction
 reIS ("we", "our", or "us") is a Chrome extension designed to modernize and enhance the user experience of the Mendel University Information System (IS Mendelu). We are committed to protecting your privacy and ensuring the security of your data.
@@ -21,7 +21,9 @@ There is no longer any exception to that. Library study-room booking — the one
 ### 2. Anonymous Usage Analytics
 We collect anonymous usage data to improve the extension:
 - **Interaction Data**: Clicks on notifications and views of the notification feed.
-- **Purpose**: To rank relevance of student association notifications.
+- **Map Event Views**: When you open a society event on the campus map, a counter on that event is incremented. The request carries **the event's id and nothing else** — no identifier of yours, not even the random install identifier described in section 3.
+- **Feature Counters**: Two things are counted, each as one labelled event per installation per day carrying the random install identifier from section 3 and nothing else: that you spent **at least three seconds** on the campus map, and that you **completed the eduroam Wi-Fi setup** (recorded separately for "the app configured the network itself" and "the profile was handed over for you to install"). No event ids, no room or building names, no timings beyond the three-second threshold, and nothing about what you were looking at.
+- **Purpose**: To rank relevance of student association notifications, and to know whether the map and the eduroam setup are actually used.
 - **Privacy**: This data is **not linked** to your identity, IS credentials, or personal content.
 
 ### 3. Daily Usage & NPS Feedback
@@ -37,8 +39,15 @@ To understand how actively reIS is used, we record:
 If you use the built-in "Report Bug / Feedback" feature, the following data is sent to our support channel:
 - **Content**: The subject/title, the category you select (bug, idea, or other), the message, and contact details you explicitly provide.
 - **Technical Context**: Extension version, browser name and version, viewport size, and the current in-app screen (e.g. `calendar`, `exams`, `settings` — an app view name, not a URL or page address) to help debug issues.
+- **Attachments (Optional, only what you add)**: You may attach a **screenshot you pick yourself**. It is re-encoded on your device before sending, which removes photo metadata including location. You may also tick **"Attach technical details"** — it is unticked by default — to include the recent reIS errors and warnings from this session; the text next to the box says what they contain. They are cleaned before they are even kept in memory: link parameters, email addresses, runs of five or more digits and coordinates are blanked out, only the first line of each message is kept, and no stack trace is included. The details also carry the platform, operating system version, app language, whether you were online, and the sync status of your timetable and exams as flags and counts — never their content. Attachments are **not linked** to the random install identifier from section 3. Nothing about an error is ever sent unless you add it to a report and press send.
+- **Attachment retention**: Attachments are deleted **90 days** after the report, or as soon as we mark the report resolved, whichever comes first. The lawful basis for them is your consent (GDPR Art. 6(1)(a)), which you give by adding them and can withdraw by writing to us.
 - **Storage**: Suggestions are stored in reIS's own Supabase project. Read access is restricted by a database policy to signed-in accounts holding the `reis_admin` role — in practice the small maintainer team. No other account, and no anonymous visitor, can read them.
-- **Abuse Prevention**: To limit abuse of the suggestion form, a salted SHA-256 hash of the sending IP address is kept only to rate-limit further submissions. It is used for at most one hour, and is deleted as soon as the next suggestion is submitted (submissions are infrequent, so in practice a hash can persist longer than an hour before that cleanup runs — it is simply never *used* past the one-hour window). The raw IP is never stored.
+- **Abuse Prevention**: Current versions write straight to the database, which cannot see your network address, so none is recorded; the form is rate-limited by browser name and version instead. Versions released before September 2026 keep a salted SHA-256 hash of the sending IP address for up to an hour to rate-limit the form — never the raw address, and never beside your message. That path goes when those versions do.
+
+### 5. Firefox: consent for each kind of data
+Firefox asks you directly about everything above. Nothing is **required** to use reIS, and each item is optional:
+- **Technical and interaction data** covers the daily usage count, the feature counters, the NPS rating and a report's error log. Firefox shows it as a switch when you install reIS and in `about:addons` → reIS → *Permissions and data*. While it is off, reIS sends none of them from Firefox.
+- **Personal communications** (the text of a report), **personally identifying information** (the optional contact email) and **website content** (an attached screenshot) are asked for when you press Send on a report, and only for what that report contains. If you decline, the report is not sent.
 
 ## Data Storage & Security
 - **Local Storage**: Your sensitive academic data and credentials remain on your device.
@@ -51,7 +60,7 @@ reIS contacts the following services. **IS Mendelu is the only one that receives
 
 **Always:**
 1. **IS Mendelu** (`is.mendelu.cz`) — fetches your academic data, authenticated by you.
-2. **Supabase** (`*.supabase.co`) — reIS's own backend: public notifications, society events and their attendance counts, anonymous usage events, and feedback you submit. Different records carry different keys. The daily usage count, the in-app survey and event RSVPs use the random installation identifier described above; society view/click counters carry only a post row id. A submitted suggestion carries no identifier we generate — but if you fill in the optional contact field, it carries whatever you typed there, because asking us to reply is what that field is for.
+2. **Supabase** (`*.supabase.co`) — reIS's own backend: public notifications, society events and their attendance counts, anonymous usage events, and feedback you submit, with any attachment you added to it. Different records carry different keys. The daily usage count, the in-app survey and event RSVPs use the random installation identifier described above; society view/click counters carry only a post row id. A submitted suggestion carries no identifier we generate — but if you fill in the optional contact field, it carries whatever you typed there, because asking us to reply is what that field is for.
 3. **jsDelivr** (`cdn.jsdelivr.net`) — static subject-difficulty data. No identifier is sent, but the set of subjects requested does reveal to the CDN which courses you are enrolled in.
 4. **OpenStreetMap** — campus map tiles. The request identifies reIS by name, which their tile usage policy requires; it carries nothing about you.
 
