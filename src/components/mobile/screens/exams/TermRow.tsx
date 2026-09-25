@@ -57,9 +57,9 @@ export function TermRow({ term, section, now, isProcessing, onRegister }: TermRo
   }, [feedback]);
 
   const isRegHere = section.registeredTerm?.id === term.id;
-  const room = language === 'en' && term.roomEn ? term.roomEn : term.roomCs || term.room;
 
-  // "po 3. 8. · 14:00 · Q08", with the seats left beneath. Falls back to the
+  // "po 3. 8. · 14:00", with the seats left beneath; the room is under Více
+  // (TermDetails). Falls back to the
   // raw IS strings when the date does not parse, so a placeholder value
   // never blanks out the row.
   const parsed = parseCzechDateTime(term.date, term.time);
@@ -92,9 +92,7 @@ export function TermRow({ term, section, now, isProcessing, onRegister }: TermRo
           onClick={() => setOpen((v) => !v)}
           className="flex min-w-0 flex-1 flex-col gap-0.5 text-left"
         >
-          <span className="truncate text-md font-semibold text-base-content">
-            {[when, room].filter(Boolean).join(' · ')}
-          </span>
+          <span className="truncate text-md font-semibold text-base-content">{when}</span>
           <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-2sm">
             {/* Wraps rather than squeezes: a term counting as all three attempts
                 needs three badges, which at 320px run into the Přihlásit button.
