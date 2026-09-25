@@ -334,6 +334,22 @@ describe('no student data leaves the device', () => {
     ).toEqual([]);
   });
 
+  // Firefox 140+ enforces the manifest's data_collection_permissions as consent,
+  // and the daily count, feature counters and NPS are "technicalAndInteraction"
+  // data there. A background sender that skips the check sends on Firefox after
+  // the student switched it off. RSVP is absent on purpose: it sends only when
+  // the student taps Going / Interested, and the count is the feature itself.
+  it('background senders of the install id honour Firefox consent', () => {
+    for (const path of ['src/api/feedback.ts', 'src/api/featureUsage.ts']) {
+      const src = readFileSync(join(ROOT, path), 'utf-8');
+      expect(src, `${path} must check hasDataConsent before sending`).toMatch(
+        /hasDataConsent\('technicalAndInteraction'\)/
+      );
+    }
+    const manifest = readFileSync(join(ROOT, 'wxt.config.ts'), 'utf-8');
+    expect(manifest).toMatch(/optional:\s*\[[^\]]*'technicalAndInteraction'/);
+  });
+
   it('never keeps a stack or logError extras in the diagnostic log', () => {
     const src = readFileSync(join(SRC, 'utils/diagnostics/diagnosticLog.ts'), 'utf-8');
     const entry = src.slice(src.indexOf('export interface DiagnosticEntry'));

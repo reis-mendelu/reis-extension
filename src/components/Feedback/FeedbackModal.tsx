@@ -10,6 +10,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { desktopDialogMotion, phoneSheetMotion } from './feedbackModalMotion';
 import { useReportAttachments } from './useReportAttachments';
 import { ReportAttachments } from './ReportAttachments';
+import { requestDataConsent, reportConsentCategories } from '../../utils/firefoxDataConsent';
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -43,6 +44,16 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
     // student sees the generic failure toast for input the UI should have
     // caught. Trimmed, so whitespace does not count as filled in either.
     if (isSending || attachments.encoding || !title.trim() || !message.trim()) return;
+    // Firefox only (a no-op everywhere else): consent for exactly what this
+    // report carries. Called BEFORE any await — Firefox honours
+    // permissions.request only while it is handling the click.
+    const consent = requestDataConsent(
+      reportConsentCategories({
+        contact,
+        screenshot: attachments.screenshot !== null,
+        diagnostics: attachments.includeDiagnostics,
+      })
+    );
     setIsSending(true);
 
     // Context (screen, version, browser, viewport) is assembled in the API
@@ -55,6 +66,10 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
     // ever breaks, an unexpected rejection must not leave the Send button
     // stuck on "Sending…" with the user's text trapped behind it.
     try {
+      if (!(await consent)) {
+        toast.error(t('feedback.consentDeclined'));
+        return;
+      }
       const result = await submitSuggestion(
         { type, title, body: message, contact },
         await attachments.draft()

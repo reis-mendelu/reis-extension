@@ -44,6 +44,11 @@ If you use the built-in "Report Bug / Feedback" feature, the following data is s
 - **Storage**: Suggestions are stored in reIS's own Supabase project. Read access is restricted by a database policy to signed-in accounts holding the `reis_admin` role — in practice the small maintainer team. No other account, and no anonymous visitor, can read them.
 - **Abuse Prevention**: Current versions write straight to the database, which cannot see your network address, so none is recorded; the form is rate-limited by browser name and version instead. Versions released before September 2026 keep a salted SHA-256 hash of the sending IP address for up to an hour to rate-limit the form — never the raw address, and never beside your message. That path goes when those versions do.
 
+### 5. Firefox: consent for each kind of data
+Firefox asks you directly about everything above. Nothing is **required** to use reIS, and each item is optional:
+- **Technical and interaction data** covers the daily usage count, the feature counters, the NPS rating and a report's error log. Firefox shows it as a switch when you install reIS and in `about:addons` → reIS → *Permissions and data*. While it is off, reIS sends none of them from Firefox.
+- **Personal communications** (the text of a report), **personally identifying information** (the optional contact email) and **website content** (an attached screenshot) are asked for when you press Send on a report, and only for what that report contains. If you decline, the report is not sent.
+
 ## Data Storage & Security
 - **Local Storage**: Your sensitive academic data and credentials remain on your device.
 - **Encryption**: Data stored locally is encrypted where supported by the browser.

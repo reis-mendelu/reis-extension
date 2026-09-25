@@ -226,7 +226,8 @@
     "screenshotFailed": "Couldn't process that image.",
     "screenshotDropped": "Report sent, but the screenshot couldn't be stored.",
     "attachDiagnostics": "Attach technical details",
-    "diagnosticsHint": "Errors and warnings from this session, without links, emails, long numbers or coordinates. It helps us find the cause."
+    "diagnosticsHint": "Errors and warnings from this session, without links, emails, long numbers or coordinates. It helps us find the cause.",
+    "consentDeclined": "Firefox didn't allow it, so the report wasn't sent. You can give consent when you try again."
   },
   "common": {
     "loading": "Loading...",

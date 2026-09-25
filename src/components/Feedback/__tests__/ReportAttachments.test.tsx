@@ -29,6 +29,12 @@ vi.mock('../../../utils/diagnostics/collectDiagnostics', () => ({
   collectDiagnostics: () => collectDiagnostics(),
 }));
 
+const requestDataConsent = vi.fn();
+vi.mock('../../../utils/firefoxDataConsent', async (orig) => ({
+  ...(await orig<typeof import('../../../utils/firefoxDataConsent')>()),
+  requestDataConsent: (c: unknown) => requestDataConsent(c),
+}));
+
 const encodeScreenshot = vi.fn();
 vi.mock('../../../utils/diagnostics/encodeScreenshot', () => ({
   encodeScreenshot: (f: Blob) => encodeScreenshot(f),
@@ -45,6 +51,7 @@ const png = () => new File(['x'], 'shot.png', { type: 'image/png' });
 describe('report attachments', () => {
   beforeEach(() => {
     submitSuggestion.mockReset().mockResolvedValue({ ok: true });
+    requestDataConsent.mockReset().mockResolvedValue(true);
     collectDiagnostics.mockReset().mockResolvedValue(structuredClone(payload));
     encodeScreenshot
       .mockReset()
@@ -163,5 +170,34 @@ describe('report attachments', () => {
     fillAndSend();
     await waitFor(() => expect(submitSuggestion).toHaveBeenCalledTimes(1));
     expect(submitSuggestion.mock.calls[0]![1].screenshotBase64).toBeNull();
+  });
+
+  it('asks Firefox for exactly what the report carries, before sending', async () => {
+    render(<FeedbackModal isOpen onClose={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText(/Attach a screenshot/i), { target: { files: [png()] } });
+    await screen.findByRole('img', { name: /Attached screenshot/i });
+    fireEvent.click(screen.getByRole('checkbox', { name: /Attach technical details/i }));
+    fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'a@b.cz' } });
+    fillAndSend();
+    await waitFor(() => expect(submitSuggestion).toHaveBeenCalledTimes(1));
+    expect(requestDataConsent).toHaveBeenCalledWith([
+      'personalCommunications',
+      'personallyIdentifyingInfo',
+      'websiteContent',
+      'technicalAndInteraction',
+    ]);
+  });
+
+  it('sends nothing when Firefox consent is declined, and says why', async () => {
+    requestDataConsent.mockResolvedValue(false);
+    render(<FeedbackModal isOpen onClose={vi.fn()} />);
+    fillAndSend();
+    await waitFor(() =>
+      expect(requestDataConsent).toHaveBeenCalledWith(['personalCommunications'])
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    expect(submitSuggestion).not.toHaveBeenCalled();
+    expect(collectDiagnostics).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /Send feedback/i })).toBeEnabled();
   });
 });

@@ -14,6 +14,7 @@ import App from '@/App.tsx';
 import { AppShell } from '@/components/AppShell';
 import { installExternalLinkHandler } from '@/mobile/openExternal';
 import { installConsoleCapture } from '@/utils/diagnostics/consoleCapture';
+import { initDataConsent } from '@/utils/firefoxDataConsent';
 
 // At module load, before the first render, because a `target="_blank"` anchor
 // does NOTHING on its own inside the Capacitor WebView: there is no tab to open
@@ -31,6 +32,11 @@ installExternalLinkHandler();
 // sends them only if the student ticks "Přiložit technické údaje". This entry
 // runs on every host (extension iframe, Capacitor, dev webapp).
 installConsoleCapture();
+
+// Firefox's data-consent API has to be known before the first click: the report
+// form asks for consent inside the click, where an extra await would cost
+// Firefox's user-action status. Resolves to "no such API" everywhere else.
+void initDataConsent();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

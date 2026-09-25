@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useAppStore } from '../../store/useAppStore';
 
-const { rpc, isHarnessEnabled } = vi.hoisted(() => ({
+const { hasDataConsent, rpc, isHarnessEnabled } = vi.hoisted(() => ({
   isHarnessEnabled: vi.fn<(...args: unknown[]) => boolean>(() => false),
+  hasDataConsent: vi.fn<(...args: unknown[]) => Promise<boolean>>(async () => true),
   rpc: vi.fn<(...args: unknown[]) => Promise<{ error: { message: string } | null }>>(async () => ({
     error: null,
   })),
@@ -17,6 +18,11 @@ vi.mock('../../services/identity/installId', () => ({
 // A real student's build unless a test says otherwise — vitest itself runs with
 // DEV true, so without this every assertion below would exercise the harness
 // branch and prove nothing about what reIS actually sends.
+// Firefox's data-consent toggle. Granted unless a test says otherwise, which is
+// also what every non-Firefox browser and the apps answer.
+vi.mock('../../utils/firefoxDataConsent', () => ({
+  hasDataConsent: (...a: unknown[]) => hasDataConsent(...a),
+}));
 vi.mock('../../utils/harnessEnabled', () => ({
   isHarnessEnabled: (...a: unknown[]) => isHarnessEnabled(...a),
 }));
@@ -31,6 +37,7 @@ describe('featureUsage', () => {
   beforeEach(() => {
     __resetFeatureSignalsForTests();
     isHarnessEnabled.mockReturnValue(false);
+    hasDataConsent.mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -125,5 +132,16 @@ describe('featureUsage', () => {
     await trackMapEventView('event-1');
 
     expect(rpc).toHaveBeenCalledTimes(2);
+  });
+
+  it('sends no signal on Firefox while the technical-data toggle is off', async () => {
+    hasDataConsent.mockResolvedValue(false);
+    await trackFeatureSignal('map_dwell_3s');
+    expect(hasDataConsent).toHaveBeenCalledWith('technicalAndInteraction');
+    expect(rpc).not.toHaveBeenCalled();
+    // …and does not latch, so turning the toggle back on counts this session.
+    hasDataConsent.mockResolvedValue(true);
+    await trackFeatureSignal('map_dwell_3s');
+    expect(rpc).toHaveBeenCalledTimes(1);
   });
 });

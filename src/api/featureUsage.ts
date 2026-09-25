@@ -3,6 +3,7 @@ import { isDemoMode } from '../errors/demoMode';
 import { getInstallId } from '../services/identity/installId';
 import { isHarnessEnabled } from '../utils/harnessEnabled';
 import { logError } from '../utils/reportError';
+import { hasDataConsent } from '../utils/firefoxDataConsent';
 
 /**
  * The three counters reIS keeps about its own features, and the per-event map
@@ -71,6 +72,12 @@ export async function trackFeatureSignal(signal: FeatureSignal): Promise<void> {
   if (!writesAllowed()) return;
   if (sentSignals.has(signal)) return;
   sentSignals.add(signal);
+  // Latched before the await so two concurrent calls cannot both send; released
+  // when Firefox's technical-data toggle is off, so turning it on counts again.
+  if (!(await hasDataConsent('technicalAndInteraction'))) {
+    sentSignals.delete(signal);
+    return;
+  }
   try {
     const { error } = await supabase.rpc('track_feature_usage', {
       p_install_id: await getInstallId(),
