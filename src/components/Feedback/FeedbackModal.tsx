@@ -57,7 +57,7 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
     try {
       const result = await submitSuggestion(
         { type, title, body: message, contact },
-        attachments.draft()
+        await attachments.draft()
       );
 
       if (result.ok) {

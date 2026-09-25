@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  collectDiagnostics,
-  type DiagnosticsPayload,
-} from '../../utils/diagnostics/collectDiagnostics';
+import { collectDiagnostics } from '../../utils/diagnostics/collectDiagnostics';
 import { encodeScreenshot } from '../../utils/diagnostics/encodeScreenshot';
 import type { SuggestionAttachmentsDraft } from '../../types/suggestions';
 
@@ -14,16 +11,17 @@ export interface Screenshot {
 
 /**
  * The report form's two optional attachments. Nothing is gathered until the
- * student acts: diagnostics are collected when they tick the box, not when the
- * form opens, so an untouched form holds nothing and sends nothing. What is
- * sent is exactly the list they were shown, minus the lines they removed.
+ * student acts: the diagnostic log is collected at Send, and only if the box is
+ * ticked — so an untouched form holds nothing and sends nothing. The log itself
+ * is not listed in the form (Dominik, 25 Sep 2026: "nobody cares about it");
+ * the hint beside the box says what it contains, and the cleaning in
+ * utils/diagnostics/diagnosticLog is what keeps it safe to send unread.
  */
 export function useReportAttachments() {
   const [screenshot, setScreenshot] = useState<Screenshot | null>(null);
   const [encoding, setEncoding] = useState(false);
   const [encodeFailed, setEncodeFailed] = useState(false);
   const [includeDiagnostics, setIncludeDiagnostics] = useState(false);
-  const [diagnostics, setDiagnostics] = useState<DiagnosticsPayload | null>(null);
 
   // Object URLs are not garbage-collected; release the preview when it changes
   // or the form unmounts.
@@ -64,20 +62,10 @@ export function useReportAttachments() {
     [attachFile]
   );
 
-  const toggleDiagnostics = useCallback(
-    async (on: boolean) => {
-      setIncludeDiagnostics(on);
-      if (on && !diagnostics) setDiagnostics(await collectDiagnostics());
-    },
-    [diagnostics]
-  );
-
-  const removeEntry = useCallback((index: number) => {
-    setDiagnostics((d) => (d ? { ...d, entries: d.entries.filter((_, i) => i !== index) } : d));
-  }, []);
-
-  const draft = (): SuggestionAttachmentsDraft => ({
-    diagnostics: includeDiagnostics ? diagnostics : null,
+  // Collected at Send rather than on tick: the newest entries are the ones
+  // closest to what went wrong, and nothing is held while the box sits ticked.
+  const draft = async (): Promise<SuggestionAttachmentsDraft> => ({
+    diagnostics: includeDiagnostics ? await collectDiagnostics() : null,
     screenshotBase64: screenshot?.base64 ?? null,
   });
 
@@ -89,9 +77,7 @@ export function useReportAttachments() {
     removeScreenshot: () => setScreenshot(null),
     onPaste,
     includeDiagnostics,
-    diagnostics,
-    toggleDiagnostics,
-    removeEntry,
+    setIncludeDiagnostics,
     draft,
   };
 }

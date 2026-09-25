@@ -226,11 +226,7 @@
     "screenshotFailed": "Couldn't process that image.",
     "screenshotDropped": "Report sent, but the screenshot couldn't be stored.",
     "attachDiagnostics": "Attach technical details",
-    "diagnosticsHint": "Errors and warnings from this session, with links, emails, long numbers and coordinates blanked out. Review them before sending and remove anything.",
-    "showDiagnostics": "Show ({count})",
-    "hideDiagnostics": "Hide",
-    "noDiagnostics": "No errors or warnings. Only the environment and sync state will be attached.",
-    "removeLine": "Remove line"
+    "diagnosticsHint": "Errors and warnings from this session, without links, emails, long numbers or coordinates. It helps us find the cause."
   },
   "common": {
     "loading": "Loading...",

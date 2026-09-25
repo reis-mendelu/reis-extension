@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { FeedbackModal } from '../FeedbackModal';
 
@@ -67,30 +67,29 @@ describe('report attachments', () => {
     expect(collectDiagnostics).not.toHaveBeenCalled();
   });
 
-  it('sends the diagnostics shown, minus the lines the student removed', async () => {
+  it('ticked, sends the collected diagnostics without listing them in the form', async () => {
     render(<FeedbackModal isOpen onClose={vi.fn()} />);
     fireEvent.click(screen.getByRole('checkbox', { name: /Attach technical details/i }));
-    fireEvent.click(await screen.findByRole('button', { name: /Show \(2\)/i }));
-    const list = screen.getByRole('list', { name: /Attach technical details/i });
-    expect(within(list).getByText(/boom/)).toBeInTheDocument();
-    fireEvent.click(within(list).getAllByRole('button', { name: /Remove line/i })[0]!);
-    expect(within(list).queryByText(/boom/)).not.toBeInTheDocument();
+    // The log is not shown: students do not read it, and it cost the form height.
+    expect(screen.queryByText(/boom/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Show/i })).not.toBeInTheDocument();
     fillAndSend();
     await waitFor(() => expect(submitSuggestion).toHaveBeenCalledTimes(1));
+    expect(collectDiagnostics).toHaveBeenCalledTimes(1);
     const sent = submitSuggestion.mock.calls[0]![1].diagnostics;
-    expect(sent.entries.map((e: { msg: string }) => e.msg)).toEqual(['careful']);
+    expect(sent.entries.map((e: { msg: string }) => e.msg)).toEqual(['boom', 'careful']);
     expect(sent.env.os).toBe('macOS');
   });
 
-  it('unticking after reviewing sends no diagnostics', async () => {
+  it('unticking before sending sends no diagnostics and collects none', async () => {
     render(<FeedbackModal isOpen onClose={vi.fn()} />);
     const box = screen.getByRole('checkbox', { name: /Attach technical details/i });
     fireEvent.click(box);
-    await screen.findByRole('button', { name: /Show \(2\)/i });
     fireEvent.click(box);
     fillAndSend();
     await waitFor(() => expect(submitSuggestion).toHaveBeenCalledTimes(1));
     expect(submitSuggestion.mock.calls[0]![1].diagnostics).toBeNull();
+    expect(collectDiagnostics).not.toHaveBeenCalled();
   });
 
   it('attaches a picked screenshot and can remove it', async () => {

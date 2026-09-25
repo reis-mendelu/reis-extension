@@ -300,8 +300,8 @@ Only these, all disclosed in `docs/privacy-policy-app.md`:
 
 6. **Report attachments** (`submit_suggestion_v2`, September 2026) — only what the student
    adds to a report: a screenshot they pick (re-encoded to JPEG on device, no EXIF/GPS) and,
-   if they tick an unticked-by-default box, the cleaned diagnostic log they were shown and
-   could prune. No install id. Deleted after 90 days or on `done` (pg_cron + a trigger).
+   if they tick an unticked-by-default box, the cleaned diagnostic log (collected at Send, not
+   listed in the form — the cleaning is what makes it safe to send unread). No install id. Deleted after 90 days or on `done` (pg_cron + a trigger).
    The guard allows diagnostics to reach Supabase through `src/api/suggestions.ts` only, and
    no Supabase caller may import `utils/diagnostics/`.
 
