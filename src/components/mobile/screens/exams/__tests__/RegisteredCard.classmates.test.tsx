@@ -97,12 +97,16 @@ describe('RegisteredCard — classmates', () => {
     expect(links[0]!.getAttribute('href')).toContain('spoluzaci=1');
   });
 
-  it('still says how many classmates it knows about', () => {
+  // The count duplicated the "Kdo jde se mnou" button under Více, which opens
+  // IS's full list of the people on the term. The button is the one answer.
+  it('does not print a classmate count — the Více button is the way to the list', () => {
     useAppStore.setState({
       examClassmates: { '343995': [{ name: 'A' }, { name: 'B' }] },
     } as never);
     renderCard();
-    expect(screen.getByText(/2 spolužáci/)).toBeInTheDocument();
+    expect(screen.queryByText(/spolužá/)).not.toBeInTheDocument();
+    openMine();
+    expect(screen.getAllByRole('link', { name: /Kdo jde se mnou/ })).toHaveLength(1);
   });
 
   /**
@@ -127,6 +131,29 @@ describe('RegisteredCard — classmates', () => {
     expect(details).toHaveTextContent('25 min');
     expect(details).toHaveTextContent('Odhlášení do');
     expect(details).toHaveTextContent('8. 11. 20:00');
+  });
+
+  // One place for the room, the same as every term row: under Více. The tile
+  // in the strip above still carries it at a glance.
+  it('keeps the room out of the header and puts it under Více', () => {
+    renderCard();
+    const header = screen.getByRole('button', { name: /Ekonometrie 1/, expanded: true });
+    expect(header).not.toHaveTextContent('Q13');
+    openMine();
+    const details = screen.getAllByTestId('term-details')[0]!;
+    expect(details).toHaveTextContent('Místnost');
+    expect(details).toHaveTextContent('Q13');
+  });
+
+  // The "Více" chip sat 8px above a full-width Odhlásit: a thumb reaching for
+  // the details could deregister instead. The way out goes last.
+  it('puts Odhlásit after the other terms, away from the "Více" chip', () => {
+    renderCard();
+    const unregister = screen.getByRole('button', { name: 'Odhlásit' });
+    const otherRow = screen.getByRole('button', { name: /Podrobnosti termínu.*10:25/ });
+    expect(
+      otherRow.compareDocumentPosition(unregister) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
   });
 
   it('builds the people link from the term’s own IS link, not the stored ids', () => {
