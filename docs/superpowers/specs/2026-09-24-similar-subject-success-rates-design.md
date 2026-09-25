@@ -89,13 +89,18 @@ that chain never exports `dist-data/`.
 
    **"Similar name"** means a character-sequence ratio of at least 0.5
    (`difflib.SequenceMatcher`, or its TypeScript equivalent) between the
-   stripped, lower-cased, accent-free names. The acceptance case ZABAH →
-   KLI sits at exactly 0.50. The §4 eval is what moves this threshold, never a
-   single case.
+   stripped, lower-cased, accent-free names. ZABAH → KLI sits at exactly 0.50,
+   which is why the ratio has to match difflib exactly. The §4 eval is what
+   moves this threshold, never a single case.
 
    **The numbering guard:** when both names end in a number (I/II/1/2), the
    numbers must match. The stress test ranked "Fytopatologie II" above
    "Fytopatologie I" without it.
+   **The student floor:** an old subject is a candidate only with at least 10
+   students (pass + fail, "Všechny termíny") over its newest 3 semesters. That's
+   the floor below which the app's `computeFailRate` shows no rate at all, and a
+   row without a number tells the student nothing. Added 2026-09-25, after EK1
+   (1 student in 2020/21) showed up as a chip-less row for EKOE1.
 4. **Rank** by strength of evidence: same name, then same guarantor, then same
    teachers, then shared literature (ISBN or author). Keep **at most 3**.
 
@@ -242,20 +247,24 @@ triangle, because an empty subject is not an error.
   reis-data (parser rules).
 - **An eval over the 57 subjects both reviewers agreed on**, pinned at the
   baseline measured on 2026-09-24 by simulating these rules:
-  - the true predecessor is in the top 3 for **at least 32 of the 34** "same
-    course" and "type changed" subjects. The known misses are ZLZG → LZE and
-    2DCD → SYCAD, whose name ratio is below 0.5;
-  - `completionChanged` is set for the five genuine credit ↔ exam changes the
-    rules find: OZPS, GEODZ, EKOE1, UVDEK and ZABIHY. The other three "type
-    changed" verdicts (BOTKA, ABOBC, ZABAH) were changes of content or
-    guarantor, which no flag expresses; the student sees only the reasons;
+  - the true predecessor is in the top 3 for **at least 30 of the 34** "same
+    course" and "type changed" subjects. The known misses are:
+    - ZLZG → LZE and 2DCD → SYCAD, whose name ratio is below 0.5;
+    - ZABAH → KLI and ZABIHY → KLI, because KLI had one student a semester,
+      below the student floor;
+  - `completionChanged` is set for the four genuine credit ↔ exam changes the
+    rules find: EKOE1, GEODZ, OZPS and UVDEK. The other "type changed" verdicts
+    (BOTKA, ABOBC, ZABAH) were changes of content or guarantor, which no flag
+    expresses; the student sees only the reasons;
+  - no suggestion has fewer than 10 recent students;
   - **at most 2 of the 14** "no predecessor" subjects get any suggestion (PRKO
     and EBC-VZ do today).
 
   The eval runs over a frozen fixture (`audit/fixtures/similar/eval.json`):
   the 57 labels plus, for each new subject, every same-faculty old subject with
-  stats whose name ratio is at least 0.5 (1,031 entries). The Python reference
-  implementation beside it produced these numbers.
+  stats whose name ratio is at least 0.5 (1,031 entries, each carrying its
+  `recentStudents`). The Python reference implementation beside it produced
+  these numbers.
 
   A change that lowers either number fails the eval. Raising the recall is
   fine, but the noise bound still has to hold. The labels are an eval, not
@@ -288,7 +297,8 @@ triangle, because an empty subject is not an error.
    - EKOE1 offers EKO1R with the type-change warning;
    - BOTAZ offers BOTAR;
    - PRVS offers PRVES;
-   - ZABAH offers KLI with *naposledy 2020/21*.
+   - ZABAH shows the plain empty state: its only related subject, KLI, had one
+     student a semester.
 
    Reproducing this in the dev webapp needs a seeded subject without data,
    because the maintainer's own account has none of these codes.
