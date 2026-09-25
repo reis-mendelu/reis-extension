@@ -12,6 +12,7 @@ import { isIsMendeluUrl } from './isMendeluUrl';
 import { signOutFromHostPage } from './hostSignOut';
 import { readBytesBody } from './readBytesBody';
 import { fetchFileForIframe } from './fetchFileForIframe';
+import { getDiagnostics } from '../utils/diagnostics/diagnosticLog';
 
 let topUpPopupRef: Window | null = null;
 
@@ -177,6 +178,11 @@ async function handleAction(id: string, action: string, payload: unknown) {
       case 'refresh_schedule':
         await refreshSchedule();
         result = { success: true };
+        break;
+      case 'get_diagnostics':
+        // The report form asks for this context's recent errors, already
+        // cleaned at record time. Sent on only if the student opts in.
+        result = { entries: getDiagnostics() };
         break;
       case 'download_document':
         // First-party fetch on is.mendelu.cz so the SameSite cookie rides

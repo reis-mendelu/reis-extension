@@ -1,4 +1,5 @@
 import type { AppView } from './app';
+import type { DiagnosticsPayload } from '../utils/diagnostics/collectDiagnostics';
 
 export type SuggestionType = 'bug' | 'idea' | 'other';
 export type SuggestionStatus = 'new' | 'triaged' | 'done';
@@ -34,7 +35,29 @@ export interface SuggestionRow {
   viewport: string;
   status: SuggestionStatus;
   created_at: string;
+  /** Counts only — the bytes load on demand. Null when the report has none. */
+  attachments?: SuggestionAttachmentSummary | null;
+}
+
+export interface SuggestionAttachmentSummary {
+  has_screenshot: boolean;
+  diagnostics_count: number;
+}
+
+/** One report's attachments, loaded when an admin opens them. */
+export interface SuggestionAttachment {
+  /** A `data:` URL — no object URL to revoke, and at ≤ 600 KB it is cheap to hold. */
+  screenshot: string | null;
+  diagnostics: DiagnosticsPayload | null;
+}
+
+/** What the student chose to attach. Both absent unless they acted. */
+export interface SuggestionAttachmentsDraft {
+  diagnostics?: DiagnosticsPayload | null;
+  /** JPEG bytes as base64, no `data:` prefix — see utils/diagnostics/encodeScreenshot. */
+  screenshotBase64?: string | null;
 }
 
 export type SubmitResult =
-  { ok: true } | { ok: false; error: 'rate_limited' | 'invalid' | 'upstream' | 'offline' };
+  | { ok: true; screenshotDropped?: true }
+  | { ok: false; error: 'rate_limited' | 'invalid' | 'upstream' | 'offline' };

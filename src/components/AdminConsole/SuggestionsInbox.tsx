@@ -4,6 +4,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import type { SuggestionRow } from '../../types/suggestions';
 import { getPlatform } from '../../platform';
 import { buildReplyHref } from '../../utils/suggestionReply';
+import { SuggestionAttachments } from './SuggestionAttachments';
 
 const TYPE_BADGE: Record<SuggestionRow['type'], string> = {
   bug: 'badge-error',
@@ -55,6 +56,7 @@ export function SuggestionsInbox() {
               <span>{new Date(s.created_at).toLocaleDateString()}</span>
               {s.contact && <span className="break-all">{s.contact}</span>}
             </div>
+            {s.attachments && <SuggestionAttachments id={s.id} summary={s.attachments} />}
             <div className="flex gap-2 mt-2">
               {replyHref && (
                 // Native: no target, so installExternalLinkHandler leaves the

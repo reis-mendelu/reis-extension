@@ -28,6 +28,8 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>reIS uses the camera only if you choose to take a photo to attach to a problem report. / reIS použije fotoaparát jen tehdy, když se rozhodneš vyfotit snímek k hlášení problému.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -8,6 +8,8 @@ import { logError } from '../../utils/reportError';
 import { feedbackErrorKey } from './feedbackErrorKey';
 import { useAppStore } from '../../store/useAppStore';
 import { desktopDialogMotion, phoneSheetMotion } from './feedbackModalMotion';
+import { useReportAttachments } from './useReportAttachments';
+import { ReportAttachments } from './ReportAttachments';
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -24,6 +26,7 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
   const [isSending, setIsSending] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const { t } = useTranslation();
+  const attachments = useReportAttachments();
   // Phones get a bottom sheet, not a centred dialog: a floating card with a
   // blurred backdrop is a desktop idiom, and every other mobile surface here
   // rises from the bottom edge.
@@ -39,7 +42,7 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
     // on a half-filled form posts an empty body, the function 400s it, and the
     // student sees the generic failure toast for input the UI should have
     // caught. Trimmed, so whitespace does not count as filled in either.
-    if (isSending || !title.trim() || !message.trim()) return;
+    if (isSending || attachments.encoding || !title.trim() || !message.trim()) return;
     setIsSending(true);
 
     // Context (screen, version, browser, viewport) is assembled in the API
@@ -52,11 +55,15 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
     // ever breaks, an unexpected rejection must not leave the Send button
     // stuck on "Sending…" with the user's text trapped behind it.
     try {
-      const result = await submitSuggestion({ type, title, body: message, contact });
+      const result = await submitSuggestion(
+        { type, title, body: message, contact },
+        await attachments.draft()
+      );
 
       if (result.ok) {
         setIsSuccess(true);
         toast.success(t('feedback.toastSuccess'));
+        if (result.screenshotDropped) toast.warning(t('feedback.screenshotDropped'));
       } else {
         toast.error(t(feedbackErrorKey(result.error)));
       }
@@ -101,7 +108,7 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
             className={`w-full bg-base-100 shadow-2xl border-base-300 overflow-hidden relative z-10 ${
               isPhone
                 ? 'max-w-none rounded-t-[20px] border-t max-h-[85dvh] overflow-y-auto'
-                : 'max-w-md rounded-2xl border'
+                : 'max-w-md rounded-2xl border max-h-[90dvh] overflow-y-auto'
             }`}
           >
             {/* Header */}
@@ -132,7 +139,9 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
                   </button>
                 </div>
               ) : (
-                <div className="space-y-4">
+                // onPaste on the whole form: a screenshot pasted into any field
+                // is attached rather than dropped as text.
+                <div className="space-y-4" onPaste={attachments.onPaste}>
                   {/* Type Selection */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium text-base-content/60 ml-1">
@@ -216,12 +225,16 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
                     />
                   </div>
 
+                  <ReportAttachments state={attachments} showPasteHint={!isPhone} />
+
                   {/* Submit Button */}
                   <div className="pt-2">
                     <button
                       type="button"
                       onClick={handleSubmit}
-                      disabled={isSending || !title.trim() || !message.trim()}
+                      disabled={
+                        isSending || attachments.encoding || !title.trim() || !message.trim()
+                      }
                       className="btn btn-primary w-full gap-2 font-semibold no-animation"
                     >
                       {isSending ? (

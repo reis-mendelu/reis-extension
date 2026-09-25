@@ -264,7 +264,15 @@
       "syllabusEmpty": "Sylabus: chybí data",
       "zaznamnikEmpty": "Záznamník: chybí data",
       "examActionFailed": "Zkoušky: akce selhala"
-    }
+    },
+    "attachScreenshot": "Přiložit snímek obrazovky",
+    "screenshotPasteHint": "nebo ho sem vlož (Ctrl+V)",
+    "screenshotAlt": "Přiložený snímek obrazovky",
+    "removeScreenshot": "Odebrat snímek",
+    "screenshotFailed": "Tenhle obrázek se nepodařilo zpracovat.",
+    "screenshotDropped": "Zpráva odešla, ale snímek se nepodařilo uložit.",
+    "attachDiagnostics": "Přiložit technické údaje",
+    "diagnosticsHint": "Chyby a varování z této relace, bez odkazů, e-mailů, dlouhých čísel a souřadnic. Pomůže nám to najít příčinu."
   },
   "course": {
     "setNickname": "Nastavit přezdívku",
@@ -1057,7 +1065,14 @@
       "faculty": "Jen studenti {faculty}",
       "erasmus": "Jen erasmáci",
       "followers": "Jen naši"
-    }
+    },
+    "attachments": "Přílohy",
+    "screenshotBadge": "📎 snímek",
+    "entriesBadge": "Záznamy: {count}",
+    "screenshotAlt": "Snímek z hlášení",
+    "attachmentsLoading": "Načítám…",
+    "attachmentsError": "Přílohy se nepodařilo načíst.",
+    "attachmentsGone": "Přílohy už byly smazány."
   },
   "mobile": {
     "header": {

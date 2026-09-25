@@ -47,14 +47,20 @@ describe('submitSuggestion', () => {
   // is deny-all RLS with no insert grant to anon, so the SECURITY DEFINER RPC is
   // the only path to a row.
   it('writes through the RPC with no client credential', async () => {
-    vi.mocked(supabase.rpc).mockResolvedValue({ data: true, error: null } as never);
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: 'ok', error: null } as never);
 
     const r = await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
 
     expect(r).toEqual({ ok: true });
     const [fn, args] = vi.mocked(supabase.rpc).mock.calls[0]!;
-    expect(fn).toBe('submit_suggestion');
-    expect(args).toMatchObject({ p_type: 'bug', p_title: 'T', p_body: 'B' });
+    expect(fn).toBe('submit_suggestion_v2');
+    expect(args).toMatchObject({
+      p_type: 'bug',
+      p_title: 'T',
+      p_body: 'B',
+      p_diagnostics: null,
+      p_screenshot: null,
+    });
     // Nothing secret-shaped may travel with the payload.
     expect(JSON.stringify(args)).not.toMatch(/secret/i);
   });
@@ -63,8 +69,8 @@ describe('submitSuggestion', () => {
   // the old 400-vs-429 split is not recoverable here. The client enforces the
   // same limits with maxLength, so an invalid payload from the real UI is
   // unreachable; 'rate_limited' is the honest reading and matches the copy.
-  it('maps a false result to rate_limited', async () => {
-    vi.mocked(supabase.rpc).mockResolvedValue({ data: false, error: null } as never);
+  it('maps a rejected result to rate_limited', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: 'rejected', error: null } as never);
     const r = await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
     expect(r).toEqual({ ok: false, error: 'rate_limited' });
   });
@@ -82,5 +88,37 @@ describe('submitSuggestion', () => {
     vi.mocked(supabase.rpc).mockRejectedValue(new Error('down') as never);
     const r = await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
     expect(r).toEqual({ ok: false, error: 'offline' });
+  });
+
+  it('sends the attachments the student chose', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: 'ok', error: null } as never);
+    const diagnostics = { entries: [], env: {}, sync: {} } as never;
+    await submitSuggestion(
+      { type: 'bug', title: 'T', body: 'B' },
+      { diagnostics, screenshotBase64: '/9j/AAAA' }
+    );
+    const [, args] = vi.mocked(supabase.rpc).mock.calls[0]!;
+    expect(args).toMatchObject({ p_diagnostics: diagnostics, p_screenshot: '/9j/AAAA' });
+  });
+
+  it('says so when the server kept the report but not the screenshot', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: 'ok_without_screenshot',
+      error: null,
+    } as never);
+    const r = await submitSuggestion(
+      { type: 'bug', title: 'T', body: 'B' },
+      { screenshotBase64: '/9j/AAAA' }
+    );
+    expect(r).toEqual({ ok: true, screenshotDropped: true });
+  });
+
+  it('does not report a dropped screenshot when none was sent', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: 'ok_without_screenshot',
+      error: null,
+    } as never);
+    const r = await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
+    expect(r).toEqual({ ok: true });
   });
 });

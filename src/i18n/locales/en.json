@@ -218,7 +218,15 @@
       "syllabusEmpty": "Syllabus: no data",
       "zaznamnikEmpty": "Records: no data",
       "examActionFailed": "Exams: action failed"
-    }
+    },
+    "attachScreenshot": "Attach a screenshot",
+    "screenshotPasteHint": "or paste it here (Ctrl+V)",
+    "screenshotAlt": "Attached screenshot",
+    "removeScreenshot": "Remove screenshot",
+    "screenshotFailed": "Couldn't process that image.",
+    "screenshotDropped": "Report sent, but the screenshot couldn't be stored.",
+    "attachDiagnostics": "Attach technical details",
+    "diagnosticsHint": "Errors and warnings from this session, without links, emails, long numbers or coordinates. It helps us find the cause."
   },
   "common": {
     "loading": "Loading...",
@@ -1057,7 +1065,14 @@
       "faculty": "Only {faculty} students",
       "erasmus": "Erasmus students only",
       "followers": "Followers only"
-    }
+    },
+    "attachments": "Attachments",
+    "screenshotBadge": "📎 screenshot",
+    "entriesBadge": "Log entries: {count}",
+    "screenshotAlt": "Screenshot from the report",
+    "attachmentsLoading": "Loading…",
+    "attachmentsError": "Couldn't load the attachments.",
+    "attachmentsGone": "The attachments have been deleted."
   },
   "mobile": {
     "header": {
