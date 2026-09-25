@@ -31,10 +31,16 @@ async function flowsAt(ref: string): Promise<Flow[] | null> {
   return mod.FLOWS;
 }
 
-const [base = '', head = 'HEAD'] = process.argv.slice(2);
-const after = await flowsAt(head);
-if (!after) throw new Error(`privacy/disclosures.ts not found at ${head}`);
-const diff = diffStores(await flowsAt(base), after);
-diff.playCsvChanged =
-  show(base, 'privacy/play-data-safety.csv') !== show(head, 'privacy/play-data-safety.csv');
-process.stdout.write(renderChecklist(diff, base || '(no earlier tag)') + '\n');
+export async function buildBlock(base: string, head: string): Promise<string> {
+  const after = await flowsAt(head);
+  if (!after) throw new Error(`privacy/disclosures.ts not found at ${head}`);
+  const diff = diffStores(await flowsAt(base), after);
+  diff.playCsvChanged =
+    show(base, 'privacy/play-data-safety.csv') !== show(head, 'privacy/play-data-safety.csv');
+  return renderChecklist(diff, base || '(no earlier tag)');
+}
+
+if (process.argv[1]?.endsWith('checklist-cli.ts')) {
+  const [base = '', head = 'HEAD'] = process.argv.slice(2);
+  process.stdout.write((await buildBlock(base, head)) + '\n');
+}

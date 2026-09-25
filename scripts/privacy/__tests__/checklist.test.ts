@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { Flow } from '../../../privacy/disclosures';
 import { diffStores } from '../diff';
-import { renderChecklist, uncheckedItems, BEGIN, END } from '../checklist';
+import { renderChecklist, uncheckedItems, placeBlock, BEGIN, END } from '../checklist';
 
 const flow = (
   over: Partial<Flow['stores']> = {},
@@ -95,5 +95,19 @@ describe('uncheckedItems', () => {
 
   it('a body without the block has nothing unchecked', () => {
     expect(uncheckedItems('- [ ] something')).toEqual([]);
+  });
+});
+
+describe('placeBlock', () => {
+  const block = (items: string) => `${BEGIN}\n${items}\n${END}`;
+
+  it('appends the block below the author summary', () => {
+    expect(placeBlock('summary', block('- [ ] a'))).toBe(`summary\n\n${block('- [ ] a')}\n`);
+  });
+
+  it('replaces an old block and keeps ticks on items that survive', () => {
+    const body = `summary\n${block('- [x] a\n- [ ] b')}\nfooter`;
+    const out = placeBlock(body, block('- [ ] a\n- [ ] c'));
+    expect(out).toBe(`summary\n${block('- [x] a\n- [ ] c')}\nfooter`);
   });
 });

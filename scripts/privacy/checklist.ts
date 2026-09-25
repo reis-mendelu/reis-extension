@@ -59,3 +59,29 @@ export function uncheckedItems(prBody: string): string[] {
     .filter((x): x is string => Boolean(x))
     .map((x) => x.trim());
 }
+
+/**
+ * Puts `block` into `body`: replaces an existing privacy block or appends one.
+ * An item already ticked keeps its tick when the same item is regenerated, so
+ * a refresh after `test` moves never undoes work already done.
+ */
+export function placeBlock(body: string, block: string): string {
+  const b = body.indexOf(BEGIN);
+  const e = body.indexOf(END);
+  if (b === -1 || e === -1) return body ? `${body}\n\n${block}\n` : `${block}\n`;
+  const old = body.slice(b, e + END.length);
+  const ticked = new Set(
+    old
+      .split(/\r?\n/)
+      .map((l) => /^\s*- \[[xX]\]\s+(.*)$/.exec(l)?.[1]?.trim())
+      .filter((x): x is string => Boolean(x))
+  );
+  const merged = block
+    .split('\n')
+    .map((l) => {
+      const item = /^- \[ \]\s+(.*)$/.exec(l)?.[1]?.trim();
+      return item && ticked.has(item) ? `- [x] ${item}` : l;
+    })
+    .join('\n');
+  return body.slice(0, b) + merged + body.slice(e + END.length);
+}
