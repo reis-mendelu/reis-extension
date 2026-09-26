@@ -164,6 +164,7 @@ export function createBuildingScene(canvas: HTMLCanvasElement, input: SceneInput
       render();
     },
     (err) => {
+      if (disposed) return; // a card already gone has nothing to fall back
       canvas.dataset.ready = 'failed';
       input.onFailure?.(err instanceof Error ? err : new Error(String(err)));
     }

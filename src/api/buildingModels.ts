@@ -1,6 +1,7 @@
 import { IndexedDBService } from '../services/storage';
 import { logError } from '../utils/reportError';
 import { buildingModelFile } from '../data/map/buildingModels';
+import { BuildingModelSchema } from '../types/schemas/mapModels.schema';
 import type { BuildingModel, BuildingModelMeta } from '../types/buildingModel';
 
 // The same CDN and repository as the room outlines (campusMap.ts) — no new
@@ -19,7 +20,11 @@ async function download(file: string): Promise<BuildingModel> {
     glbRes.arrayBuffer(),
     metaRes.json() as Promise<BuildingModelMeta>,
   ]);
-  return { glb, meta, fetchedAt: Date.now() };
+  // Checked against the same schema the cache enforces: a malformed Q.json must
+  // not reach the renderer. Throwing lets the caller fall back to the stale copy.
+  const model = BuildingModelSchema.safeParse({ glb, meta, fetchedAt: Date.now() });
+  if (!model.success) throw new Error(`meta invalid: ${model.error.issues[0]?.path.join('.')}`);
+  return model.data;
 }
 
 /**

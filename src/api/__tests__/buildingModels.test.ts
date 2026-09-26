@@ -62,6 +62,22 @@ describe('fetchBuildingModel', () => {
     expect(f).not.toHaveBeenCalled();
   });
 
+  it('rejects metadata that is missing what the renderer needs, keeping the stale copy', async () => {
+    const stale: BuildingModel = { glb: glb(), meta: META, fetchedAt: Date.now() - 90 * 86400_000 };
+    await IndexedDBService.set('map_models', '0', stale);
+    const { storeys: _dropped, ...broken } = META;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.endsWith('.glb')
+          ? ({ ok: true, arrayBuffer: async () => glb() } as Response)
+          : ({ ok: true, json: async () => broken } as Response)
+      )
+    );
+    expect((await fetchBuildingModel(0))?.fetchedAt).toBe(stale.fetchedAt);
+    expect((await IndexedDBService.get('map_models', '0'))?.fetchedAt).toBe(stale.fetchedAt);
+  });
+
   it('falls back to a stale copy when the CDN fails, and to null with no copy at all', async () => {
     vi.stubGlobal('fetch', cdn(false));
     expect(await fetchBuildingModel(0)).toBeNull();
