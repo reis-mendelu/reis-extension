@@ -9,6 +9,7 @@ import { relativeDayLabel } from '../CampusMap/eventHelpers';
 import { deletePost } from '../../api/societyPosts';
 import { EventRow } from '../CampusMap/EventRow';
 import { EventComposer } from '../CampusMap/EventComposer';
+import { EventStats, EventStatsNote } from './EventStats';
 import type { MapEvent } from '../../types/events';
 
 // The console's list column: the active society's events grouped by lifecycle,
@@ -139,6 +140,7 @@ export function AdminEventList() {
             subline={subline?.(e)}
             onClick={() => focusEvent(e.id, { fly: true })}
             actions={rowActions(e)}
+            footer={<EventStats eventId={e.id} />}
           />
         ))}
       </div>
@@ -181,6 +183,7 @@ export function AdminEventList() {
             {section(t('map.liveNow'), live, finishedNote)}
             {section(t('map.scheduled'), scheduled, goLive)}
             {section(t('map.past'), past)}
+            <EventStatsNote eventIds={events.map((e) => e.id)} />
             {events.length === 0 && (
               <p className="px-3 py-6 text-center text-sm text-base-content/60">
                 {t('map.noOwnEvents') as string}

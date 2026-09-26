@@ -42,6 +42,10 @@ export interface SpolkyEventRow {
   created_by: string | null;
   visible_from: string | null;
   subscribers_only: boolean;
+  /** Novinky rows that scrolled into view, once per device (markNotificationViewed). */
+  view_count?: number;
+  /** Taps on the Novinky row, every tap (useOpenNotification). */
+  click_count?: number;
 }
 
 // Pure camelCase → snake_case mapping, unit-testable without the network.
