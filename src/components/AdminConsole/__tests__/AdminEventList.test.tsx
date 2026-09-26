@@ -111,6 +111,16 @@ describe('AdminEventList — rows, inline composer, delete', () => {
     vi.clearAllMocks();
   });
 
+  // A repeat event (Deskovky every week) starts from the last one rather than
+  // from an empty form.
+  it('offers to duplicate each event', () => {
+    const duplicateEvent = vi.fn();
+    useAppStore.setState({ duplicateEvent });
+    render(<AdminEventList />);
+    fireEvent.click(screen.getByRole('button', { name: 'Duplikovat' }));
+    expect(duplicateEvent).toHaveBeenCalledWith('e1');
+  });
+
   it('renders own events as rich rows with the thumbnail', () => {
     render(<AdminEventList />);
     expect(screen.getByText('Spring Party')).toBeInTheDocument();

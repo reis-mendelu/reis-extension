@@ -18,6 +18,7 @@ interface SpolkyEventRow {
   coord_lat: number | null;
   location: string | null;
   url: string | null;
+  body?: string | null;
   subscribers_only?: boolean | null;
 }
 
@@ -30,6 +31,9 @@ export function toMapEvent(row: SpolkyEventRow, societies: Record<string, Societ
   return {
     id: row.id,
     title: row.title,
+    // '' on every row the old composer wrote, null on older ones: neither is
+    // a description, so both read as none.
+    description: row.body?.trim() || null,
     url: row.url ?? '',
     date: row.date,
     endDate: row.end_date,

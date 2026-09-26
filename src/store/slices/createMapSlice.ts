@@ -73,6 +73,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   mapFocusTarget: 'campus',
   composerOpen: false,
   editEventId: null,
+  duplicateEventId: null,
 
   setMapBuilding: (id) => {
     const b = buildingById(id);
@@ -284,12 +285,27 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
 
   openComposer: (editId) => {
     const ev = editId ? get().societyMapEvents.find((e) => e.id === editId) : null;
-    set({ composerOpen: true, editEventId: editId ?? null, draftCoord: ev?.coord ?? null });
+    set({
+      composerOpen: true,
+      editEventId: editId ?? null,
+      duplicateEventId: null,
+      draftCoord: ev?.coord ?? null,
+    });
+  },
+  duplicateEvent: (id) => {
+    const ev = get().societyMapEvents.find((e) => e.id === id);
+    set({
+      composerOpen: true,
+      editEventId: null,
+      duplicateEventId: id,
+      draftCoord: ev?.coord ?? null,
+    });
   },
   closeComposer: () =>
     set({
       composerOpen: false,
       editEventId: null,
+      duplicateEventId: null,
       placingEvent: false,
       draftCoord: null,
       // The draft is gone, so the camera has nothing to point at any more.

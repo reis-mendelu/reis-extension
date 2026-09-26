@@ -45,6 +45,21 @@ describe('EventDetailCard', () => {
     expect(screen.queryByRole('button', { name: /edit|upravit/i })).toBeNull();
   });
 
+  // The composer's optional description, shown to students on the card both
+  // trees render (the desktop DetailPanel and the phone's map sheet). Line
+  // breaks the society typed are kept.
+  it('shows the description the society wrote, line breaks kept', () => {
+    render(<EventDetailCard event={{ ...ev, description: 'Sraz u Q.\nVezměte propisku.' }} />);
+    const p = screen.getByText(/Sraz u Q\./);
+    expect(p.textContent).toBe('Sraz u Q.\nVezměte propisku.');
+    expect(p.className).toContain('whitespace-pre-line');
+  });
+
+  it('draws no description block when there is none', () => {
+    const { container } = render(<EventDetailCard event={{ ...ev, description: null }} />);
+    expect(container.querySelector('.whitespace-pre-line')).toBeNull();
+  });
+
   it('links an off-campus venue to Google Maps at its coordinates (lat,lng)', () => {
     const offEvent: MapEvent = {
       ...ev,

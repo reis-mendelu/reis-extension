@@ -620,7 +620,11 @@ export interface MapSlice {
   composerOpen: boolean;
   /** Id of the societyMapEvents entry being edited, or null when composing a new event. */
   editEventId: string | null;
+  /** Id of the event a NEW composer was seeded from ("Duplikovat"), or null. */
+  duplicateEventId: string | null;
   openComposer: (editId?: string) => void;
+  /** Open a composer that creates a new event prefilled from `id` (all but the date). */
+  duplicateEvent: (id: string) => void;
   closeComposer: () => void;
 }
 

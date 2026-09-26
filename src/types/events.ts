@@ -96,6 +96,9 @@ export interface MapEvent extends MendeluEvent {
   roomCode: string | null;
   venueKind: 'campus' | 'online' | 'offcampus';
   category: EventCategory;
+  /** The society's optional description (spolky_events.body), trimmed; null
+   *  when there is none. Optional so hand-built fixtures need not carry it. */
+  description?: string | null;
   /** Show only to students who follow this society. Noise control, not access
    *  control — see utils/eventAudience. Absent on rows written before the
    *  column existed, which are open to everyone. */

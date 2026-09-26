@@ -97,6 +97,14 @@ export function EventDetailCard({ event, flush = false }: { event: MapEvent; flu
           </div>
         </div>
 
+        {/* The society's own words, when it wrote any. pre-line keeps the
+            line breaks it typed without letting them widen the card. */}
+        {event.description && (
+          <p className="whitespace-pre-line break-words text-sm text-base-content/80">
+            {event.description}
+          </p>
+        )}
+
         {/* the facts */}
         <div className="space-y-1.5">
           <div className="flex items-center gap-1.5 text-sm text-base-content/70">

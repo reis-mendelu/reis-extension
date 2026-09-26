@@ -1,4 +1,3 @@
-import { Globe } from 'lucide-react';
 import { audienceHint, audienceLabelKey } from '../../utils/eventAudience';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
@@ -11,16 +10,16 @@ export interface ComposerAudienceFieldProps {
 }
 
 /**
- * Who the event is for: everyone's map, or only the maps of the students who
- * follow this society.
+ * Who the event is for, as one opt-in: "Jen studenti PEF", off by default.
  *
- * A field of the composer, split out for the same reason as ComposerTimeField
- * and ComposerRoomSearch beside it — the composer is a long form and each
- * question it asks is its own cohesive thing.
+ * It was two equal buttons ("Všichni" / the restricted option) under its own
+ * heading — a question every society had to read on every event, answered
+ * "everyone" by nearly all of them (1 of 6 prod events restricted, Sep 2026).
+ * A checkbox keeps the choice one tap away without asking it.
  *
  * "Jen odběratelé" was the mechanism talking. A society thinks in terms of who
  * the event is FOR — its faculty's students, or the Erasmus crowd — so the
- * button says that instead, resolved per society by `audienceLabelKey`.
+ * label says that instead, resolved per society by `audienceLabelKey`.
  */
 export function ComposerAudienceField({ societyId, value, onChange }: ComposerAudienceFieldProps) {
   const { t } = useTranslation();
@@ -30,35 +29,25 @@ export function ComposerAudienceField({ societyId, value, onChange }: ComposerAu
   const hint = audienceHint(society);
 
   return (
-    <>
-      <label className="mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60">
-        {t('map.audienceLabel')}
+    <div className="mt-3">
+      <label className="flex cursor-pointer items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          className="checkbox checkbox-sm checkbox-primary"
+          checked={value}
+          onChange={(e) => onChange(e.target.checked)}
+        />
+        <span>{t(audience.key, audience.faculty ? { faculty: audience.faculty } : undefined)}</span>
       </label>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          className={`btn btn-sm flex-1 gap-1 ${!value ? 'btn-primary' : 'btn-ghost border border-base-content/15'}`}
-          onClick={() => onChange(false)}
-        >
-          <Globe size={13} /> {t('map.audienceEveryone')}
-        </button>
-        <button
-          type="button"
-          className={`btn btn-sm flex-1 gap-1 ${value ? 'btn-primary' : 'btn-ghost border border-base-content/15'}`}
-          onClick={() => onChange(true)}
-        >
-          {t(audience.key, audience.faculty ? { faculty: audience.faculty } : undefined)}
-        </button>
-      </div>
-      {/* The button names the audience the society recognises; this line keeps
+      {/* The label names the audience the society recognises; this line keeps
           the promise honest. The filter runs on SUBSCRIPTIONS — a faculty only
           seeds the default — so "students of PEF" is an approximation, and a
           society choosing who sees its event deserves to know by what. */}
       {value && (
-        <p className="mt-1 text-[11px] leading-snug text-base-content/70">
+        <p className="mt-1 pl-7 text-[11px] leading-snug text-base-content/70">
           {t(hint.key, hint.society ? { society: hint.society } : undefined)}
         </p>
       )}
-    </>
+    </div>
   );
 }

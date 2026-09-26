@@ -152,8 +152,6 @@ describe('the audience copy resolves, in both languages', () => {
     // `translate` returns the KEY when it cannot find a string, so a missing
     // translation is silent on screen — it just looks like a dotted id.
     for (const key of [
-      'map.audienceLabel',
-      'map.audienceEveryone',
       'map.audienceHintGeneric',
       'admin.audience.erasmus',
       'admin.audience.followers',
