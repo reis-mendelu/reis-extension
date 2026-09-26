@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { targetFromSelection } from '../roomTarget';
@@ -58,10 +58,19 @@ function TiltLayer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selection]);
 
+  // A new room while tilted rebuilds the scene (keyed below) straight into the
+  // tilted frame; only the scene an entry started with does the handover glide.
+  const sceneKey = `${level}:${roomId}`;
+  const [entryKey, setEntryKey] = useState<string | null>(null);
+  if (phase === 'flat' && entryKey !== null) setEntryKey(null);
+  if (phase !== 'flat' && entryKey === null) setEntryKey(sceneKey);
+
   if (phase === 'flat' || !view || !model || model === 'failed') return null;
   return (
     <Suspense fallback={null}>
       <TiltCanvas
+        key={sceneKey}
+        startTilted={entryKey !== null && entryKey !== sceneKey}
         view={view}
         model={model}
         rooms={floorRooms}

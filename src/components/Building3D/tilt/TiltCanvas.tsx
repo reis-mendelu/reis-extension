@@ -16,6 +16,9 @@ export interface TiltCanvasProps {
   /** "Q32 · 3. patro" — null when no room is selected, and then no pin. */
   pinText: string | null;
   leaving: boolean;
+  /** Already tilted when this scene was built (a new room chosen in 3D): skip
+   *  the fade and the glide, and appear framed straight away. */
+  startTilted: boolean;
   onRequestLeave: () => void;
   onClosed: () => void;
 }
@@ -49,6 +52,7 @@ export default function TiltCanvas(props: TiltCanvasProps) {
     targetRoomId,
     pinText,
     leaving,
+    startTilted,
     onRequestLeave,
     onClosed,
   } = props;
@@ -108,6 +112,11 @@ export default function TiltCanvas(props: TiltCanvasProps) {
       // but for its room labels and hairline strokes; faded, those dissolve
       // instead of popping.
       host.classList.remove('invisible');
+      if (startTilted) {
+        host.classList.remove('transition-opacity', 'opacity-0');
+        scene.enter(() => (canvas.dataset.ready = 'true'), true);
+        return;
+      }
       requestAnimationFrame(() => host.classList.remove('opacity-0'));
       canvas.dataset.ready = 'flat';
       // SPIKE: `?map3d=hold` stops on the handover frame, to diff it against Leaflet.

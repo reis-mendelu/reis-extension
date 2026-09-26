@@ -139,9 +139,10 @@ export function createTiltScene(input: TiltSceneInput) {
     renderFlat: render,
     /** The camera state and a ground probe, for the drag test and debugging. */
     debug: { get: () => cam, camera, groundY },
-    enter(done?: () => void) {
+    /** `instant`: already tilted (a new room chosen while in 3D) — no glide. */
+    enter(done?: () => void, instant = false) {
       animate(
-        950,
+        instant ? 1 : 950,
         (t) => {
           cam = mixTilt(flat, framed, t);
           rise = t;
