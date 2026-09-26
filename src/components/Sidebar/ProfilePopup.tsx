@@ -1,5 +1,13 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Moon, MessageSquarePlus, Languages, LogOut, Wifi, ChevronRight } from 'lucide-react';
+import {
+  Moon,
+  MessageSquarePlus,
+  Languages,
+  LogOut,
+  Wifi,
+  ChevronRight,
+  UserCog,
+} from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from '../../hooks/useTheme';
 import { useSpolkySettings } from '../../hooks/useSpolkySettings';
@@ -22,6 +30,8 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
   const openEduroamFor = useAppStore((state) => state.openEduroamFor);
   const setIsEduroamOpen = useAppStore((state) => state.setIsEduroamOpen);
   const openReport = useAppStore((state) => state.openReport);
+  const isReisAdmin = useAppStore((state) => state.adminRole === 'reis_admin');
+  const openImpersonationPicker = useAppStore((state) => state.openImpersonationPicker);
   const { params } = useUserParams();
 
   if (!isOpen) return null;
@@ -128,6 +138,18 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
             onToggleAssoc={toggleAssociation}
             onNavigate={onClose}
           />
+          {isReisAdmin && (
+            <button
+              onClick={() => {
+                openImpersonationPicker();
+                onClose?.();
+              }}
+              className="w-full flex items-center gap-2 px-1 py-2 hover:bg-base-200 rounded-lg transition-colors"
+            >
+              <UserCog size={16} className="text-base-content/50" />
+              <span className="text-xs opacity-70">{t('impersonation.entry')}</span>
+            </button>
+          )}
         </div>
 
         {/* Support Section */}

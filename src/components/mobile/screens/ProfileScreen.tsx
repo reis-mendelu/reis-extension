@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Wifi, FileText, MessageSquarePlus, LogOut, User } from 'lucide-react';
+import { Wifi, FileText, MessageSquarePlus, LogOut, User, UserCog } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useSpolkySettings } from '../../../hooks/useSpolkySettings';
 import { useTranslation } from '../../../hooks/useTranslation';
@@ -45,6 +45,8 @@ export function ProfileScreen() {
   const [signOutOpen, setSignOutOpen] = useState(false);
 
   const studentId = useAppStore((s) => s.studentId);
+  const isReisAdmin = useAppStore((s) => s.adminRole === 'reis_admin');
+  const loadImpersonationOptions = useAppStore((s) => s.loadImpersonationOptions);
 
   const name = fullName ?? '';
 
@@ -133,6 +135,19 @@ export function ProfileScreen() {
             sublabel={t('mobile.student.documentsSub')}
             onClick={() => pushSheet({ kind: 'docs' })}
           />
+
+          {/* reIS admins only. Options load from the tap, never from an effect. */}
+          {isReisAdmin && (
+            <NavRow
+              icon={UserCog}
+              label={t('impersonation.entry')}
+              sublabel={t('impersonation.entrySub')}
+              onClick={() => {
+                void loadImpersonationOptions();
+                pushSheet({ kind: 'impersonation' });
+              }}
+            />
+          )}
 
           <HiddenItemsSection />
 

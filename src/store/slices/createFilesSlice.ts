@@ -12,11 +12,14 @@ import { prefetchTodaySubjectsImpl } from './files/prefetchTodaySubjects';
 import { speculativeRefreshFilesImpl } from './files/speculativeRefreshFiles';
 import { broadcastFilesUpdate } from './files/broadcastFilesSync';
 
+// Inert while impersonating: these hit IS and write IndexedDB per subject code,
+// and the store then holds another programme's subjects (createImpersonationSlice).
 export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
   files: {},
   filesLoading: {},
   lastFilesFetchedAt: {},
   fetchFiles: async (courseCode) => {
+    if (get().impersonation) return;
     const { files, filesLoading } = get();
 
     if (filesLoading[courseCode] || files[courseCode] !== undefined) {
@@ -30,6 +33,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
     await get().refreshFiles(courseCode);
   },
   fetchFilesPriority: async (courseCode) => {
+    if (get().impersonation) return;
     const { files, filesLoading, language: currentLang } = get();
 
     if (filesLoading[courseCode] || files[courseCode] !== undefined) {
@@ -135,6 +139,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
     }
   },
   refreshFiles: async (courseCode) => {
+    if (get().impersonation) return;
     const { language: currentLang, files } = get();
 
     if (!files[courseCode]) {
@@ -198,6 +203,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
     }
   },
   refreshFilesForSubject: async (courseCode) => {
+    if (get().impersonation) return;
     const { language: currentLang, subjects } = get();
     set((state) => ({ filesLoading: { ...state.filesLoading, [courseCode]: true } }));
     try {
@@ -244,6 +250,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
     }
   },
   fetchAllFiles: async () => {
+    if (get().impersonation) return;
     const files = await loadAllFilesFromCache({
       language: get().language,
       subjects: get().subjects,
@@ -251,6 +258,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
     set({ files });
   },
   prefetchTodaySubjects: () => {
+    if (get().impersonation) return;
     const { schedule, lastFilesFetchedAt } = get();
     prefetchTodaySubjectsImpl({
       schedule: schedule.data,
@@ -259,6 +267,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
     });
   },
   speculativeRefreshFiles: (courseCode) => {
+    if (get().impersonation) return;
     const { lastFilesFetchedAt, filesLoading } = get();
     speculativeRefreshFilesImpl({
       courseCode,

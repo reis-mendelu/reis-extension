@@ -467,6 +467,8 @@ export type MobileSheet =
   | { kind: 'personPhoto'; personId: string; name: string }
   | { kind: 'eduroam' }
   | { kind: 'docs' }
+  // reIS admins only: "view as a student" of another programme.
+  | { kind: 'impersonation' }
   | { kind: 'menu'; dayIso: string }
   | {
       kind: 'venue';
@@ -674,6 +676,7 @@ export type AppState = ScheduleSlice &
   import('./slices/createSuggestionsSlice').SuggestionsSlice &
   import('./slices/createRouteSlice').RouteSlice &
   import('./slices/createReportSlice').ReportSlice &
+  import('./slices/createImpersonationSlice').ImpersonationSlice &
   DemoSlice;
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;
