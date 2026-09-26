@@ -196,3 +196,23 @@ The new `src/store/slices/createImpersonationSlice.ts` holds `impersonation: {se
   of the *signed-in admin* on lessons the admin is enrolled in (seen 2026-09-26). `readTimetableAnswer`
   overwrites both with `''` on every lesson, pinned by a test, so the admin's studium never rides
   into an impersonated timetable or the `syncService` studium fallback.
+
+## Live check across all five faculties (2026-09-26)
+
+14 profiles (a year-1-with-group bachelor, a year-2 bachelor and a year-1 master per faculty) run
+through the real data layer against live IS; 234 requests.
+
+- **The year filter is PEF-only in practice.** `rocnik=N` matches only events whose restriction
+  names the year. AF, FRRMS, ZF and most masters tag none, so it answered empty for subjects with
+  24–48 lessons. Now: every plan subject the year-1 programme query did not cover is fetched on
+  its own, `rocnik` first and without it when that is empty.
+- **ZF labels groups as ranges and lists** (`1b-chp1-3`, `1b-chp5,6`, `1b-chp1,2,6`, plus a real
+  group 99). The group reader expands them.
+- **Outgoing programmes have no plan.** PEF B-EAM (intake 2025) and N-EAM (intake 2026) are still
+  in the timetable's programme list, but IS says "Nejsou definovány žádné formy studia pro zvolené
+  podmínky". `noPlan` is the honest answer; the successors are B-EM / N-EM.
+- **Known gaps after the fixes:** a subject taught in another faculty's timetable (ZF B-CHP
+  DZKLIM, listed only in AF's) and subjects IS schedules no events for (ZF INTEX, the N-KA praxe
+  PRA26ZS) stay in the plan with no lessons. The year-1 programme query also brings in a few
+  subjects outside the chosen semester's list (e.g. FRRMS RRSOC, LDF CEAS); they are kept, as a
+  real first-year may attend them.
