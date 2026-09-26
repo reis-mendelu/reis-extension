@@ -25,6 +25,8 @@ export interface SceneInput {
   targetLevel: number | null;
   targetRoomId: number | null;
   colors: SlabColors & { ground: string };
+  /** The model could not be parsed: the card falls back to the flat plan. */
+  onFailure?: (err: Error) => void;
 }
 
 export interface BuildingScene {
@@ -161,8 +163,9 @@ export function createBuildingScene(canvas: HTMLCanvasElement, input: SceneInput
       canvas.dataset.ready = 'true';
       render();
     },
-    () => {
+    (err) => {
       canvas.dataset.ready = 'failed';
+      input.onFailure?.(err instanceof Error ? err : new Error(String(err)));
     }
   );
   const detach = attachOrbit(canvas, home, (next) => {

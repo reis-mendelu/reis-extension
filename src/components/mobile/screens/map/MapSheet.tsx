@@ -147,10 +147,12 @@ export function MapSheet() {
     setSheetState(selection.kind === 'event' && selection.reveal === 'map' ? 'peek' : 'half');
   }, [selection, setSheetState]);
 
-  // A Q room opens the sheet on its 3D card, at `half` so the map above still
-  // shows where the building is. Keyed on the selection object: every room tap
-  // is a new one, so a room reopens after the sheet was collapsed.
-  const opensRoom3D = !!selectedRoom3D;
+  // A Q room someone came LOOKING for — a lesson's pin, or search, both of
+  // which focus it as a `roomRef` — opens the sheet on its 3D card, at `half`
+  // so the map above still shows where the building is. A room tapped while
+  // exploring the floor does not: yanking the sheet over the plan you are
+  // reading answers a question nobody asked. Its card is there on expand.
+  const opensRoom3D = !!selectedRoom3D && selection?.kind === 'roomRef';
   useEffect(() => {
     if (opensRoom3D) setSheetState('half');
   }, [selection, opensRoom3D, setSheetState]);

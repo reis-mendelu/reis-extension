@@ -48,11 +48,14 @@ export default function Building3DCanvas({
     canvas.setAttribute('aria-label', ariaLabel);
     canvas.dataset.testid = 'building-3d-canvas';
     host.appendChild(canvas);
-    const fail = (err: Error) => {
+    // Only a renderer that cannot be BUILT turns 3D off for the session. A lost
+    // context is routine on iOS — backgrounding, memory pressure, the per-page
+    // context cap — so it fails this card alone and the next one tries again.
+    const unusable = (err: Error) => {
       markWebGL2Unavailable();
       setFailure(err);
     };
-    const onLost = () => fail(new Error('WebGL context lost'));
+    const onLost = () => setFailure(new Error('WebGL context lost'));
     canvas.addEventListener('webglcontextlost', onLost);
     let scene: ReturnType<typeof createBuildingScene>;
     try {
@@ -61,6 +64,7 @@ export default function Building3DCanvas({
         rooms,
         targetLevel,
         targetRoomId,
+        onFailure: setFailure,
         colors: {
           room: resolveThemeColor(host, 'bg-base-300', '#d4d4d4'),
           target: resolveThemeColor(host, 'bg-primary', '#16a34a'),
@@ -70,7 +74,7 @@ export default function Building3DCanvas({
       });
     } catch (err) {
       canvas.remove();
-      fail(err instanceof Error ? err : new Error(String(err)));
+      unusable(err instanceof Error ? err : new Error(String(err)));
       return;
     }
     const observer = new ResizeObserver(([entry]) => {

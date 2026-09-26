@@ -70,8 +70,11 @@ export function MapRail() {
   // until the next selection — `forRoom` is rebuilt every render, and as a
   // dependency it reopened the rail the moment the student closed it.
   const showsRoomNote = !!forRoom;
+  // A Q room opens the rail only when it was focused (a lesson's pin, search),
+  // not when tapped on the plan — the same rule as the phone sheet.
+  const focusedRoom3D = !!selectedRoom3D && selection?.kind === 'roomRef';
   useEffect(() => {
-    if (selectedEvent || selectedGardenPlace || showsRoomNote) setOpen(true);
+    if (selectedEvent || selectedGardenPlace || showsRoomNote || focusedRoom3D) setOpen(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `selection` is the trigger; see above
   }, [selectedEvent, selectedGardenPlace, selection, setOpen]);
 

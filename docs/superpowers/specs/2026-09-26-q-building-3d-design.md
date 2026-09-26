@@ -27,11 +27,17 @@ the pilot: built properly, shipped, then B/A/Z decided from real use.
   sloping terrain is drawn, so floors −1/−2 read as underground on the east
   side and exposed on the west, as they are. A label reads
   "Q · <n>. patro · <room>". Drag to spin; it springs back to the default view.
-- **Credit:** "3D: © Statutární město Brno, CC BY 4.0" on the card and in the
-  credits.
+- **Credit:** "3D: © Statutární město Brno, CC BY 4.0, upraveno" on the card
+  (CC BY 4.0 requires saying the work was modified) and in the README.
+
+**What opens the card:** a room someone came looking for — a lesson's map pin,
+or search, which focus it the same way (`roomRef`) — opens the phone sheet /
+tablet rail on it. A room tapped while exploring the plan does not move the
+sheet; its card is there when the sheet is expanded. Desktop shows it in the
+detail panel for any selected Q room, and in the hover card.
 
 Out of scope for the pilot: interiors beyond room outlines, other buildings,
-events/search as triggers, free-browse mode, photo textures.
+events as triggers, a free-browse mode, photo textures.
 
 ## Data (reis-data)
 
