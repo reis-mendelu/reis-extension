@@ -240,6 +240,20 @@ describe('searchPlaces', () => {
   it('returns [] for empty query', () => {
     expect(searchPlaces('  ', index, pois, landmarks)).toEqual([]);
   });
+  it('finds a room that has only a building pin, exact match first', () => {
+    const placed = [
+      { label: 'D04', display: 'D04' },
+      { label: 'D05', display: 'D05' },
+    ];
+    const r = searchPlaces('d05', index, pois, landmarks, placed);
+    expect(r).toEqual([{ kind: 'placedRoom', label: 'D05', display: 'D05' }]);
+    expect(searchPlaces('D0', index, pois, landmarks, placed)).toHaveLength(2);
+  });
+  it('finds a placed room by its readable name', () => {
+    const placed = [{ label: 'ucebna_utechov', display: 'Učebna Útěchov' }];
+    const r = searchPlaces('útěchov', index, pois, landmarks, placed);
+    expect(r[0]).toMatchObject({ kind: 'placedRoom', label: 'ucebna_utechov' });
+  });
   it('finds a landmark by name', () => {
     const r = searchPlaces('tauferovy', index, pois, landmarks);
     expect(r.some((m) => m.kind === 'landmark' && m.landmark.name === 'Tauferovy koleje')).toBe(

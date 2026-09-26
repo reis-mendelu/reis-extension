@@ -29,7 +29,9 @@ export function RoomSearch() {
                   ? roomLabel(m.entry.name, m.entry.code, m.entry.nickname)
                   : m.kind === 'landmark'
                     ? m.landmark.name
-                    : '';
+                    : m.kind === 'placedRoom'
+                      ? m.display
+                      : '';
             return (
               <li key={i}>
                 <button
@@ -38,6 +40,7 @@ export function RoomSearch() {
                     if (m.kind === 'poi') focusPoiById(m.poi.id);
                     else if (m.kind === 'roomRef') focusRoomByCode(m.entry.code);
                     else if (m.kind === 'landmark') focusLandmarkById(m.landmark.id);
+                    else if (m.kind === 'placedRoom') focusRoomByCode(m.label);
                     setQuery('');
                   }}
                 >
