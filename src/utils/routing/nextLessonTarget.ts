@@ -1,6 +1,7 @@
 import roomsIndex from '../../data/map/rooms-index.json';
 import buildingsJson from '../../data/map/buildings.json';
 import { resolveRoomCode } from '../mobile/resolveRoomCode';
+import { offMapCampus } from '../rooms/roomCampus';
 import type { BlockLesson } from '../../types/schedule';
 import type { BuildingsMeta, RoomIndexEntry } from '../../types/campusMap';
 
@@ -94,6 +95,10 @@ export function nextLessonTarget(lessons: BlockLesson[], now: Date): LessonTarge
  * would be a button that looks fine and does nothing.
  */
 export function lessonTarget(lesson: BlockLesson): RouteTarget | null {
+  // Both strings name the same room, so a campus off the map in the first one
+  // settles it: the structured name may come without it ("Aula"), and must not
+  // resolve to building A's Aula when the lesson is at FRRMS ("Aula (ČP II.)").
+  if (offMapCampus(lesson.room)) return null;
   const resolved = resolveRoomCode([lesson.room, lesson.roomStructured?.name]);
   if (!resolved) return null;
   const entry = INDEX.find((e) => e.code === resolved.code);

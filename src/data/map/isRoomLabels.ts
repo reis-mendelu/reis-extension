@@ -34,6 +34,11 @@ export function isLabelForCode(code: string | null | undefined): string | undefi
 const fold = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
 const CODE_BY_LABEL = new Map(IS_ROOM_LABELS.map((l) => [fold(l.label), l.code]));
 
+/** Whether IS gives `name` to a room the map draws (all of them on Černá Pole). */
+export function isMapRoomLabel(name: string | null | undefined): boolean {
+  return !!name && CODE_BY_LABEL.has(fold(name));
+}
+
 /**
  * Whether IS gives `name` to a DIFFERENT room than `code`. The map nicknames
  * BA01N4082 "A412", but IS's A412 is BA01N5036 a floor up; showing or matching

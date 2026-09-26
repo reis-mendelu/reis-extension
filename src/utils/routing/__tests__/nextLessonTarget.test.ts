@@ -148,4 +148,20 @@ describe('lessonTarget', () => {
   it('reads through the campus suffix IS prints on a schedule', () => {
     expect(lessonTarget(lesson('20260921', '09:00', 'Q31 (Poříčí)'))?.buildingName).toBe('Q');
   });
+
+  // FRRMS's aula shares its name with building A's. The campus in the brackets
+  // is what says which one — no route to A, even if the structured name comes
+  // without it.
+  it('does not route FRRMS’s Aula to building A', () => {
+    const aula = {
+      ...lesson('20260921', '13:00', 'Aula (ČP II.)'),
+      roomStructured: { name: 'Aula', id: '11264' },
+    };
+    expect(lessonTarget(aula)).toBeNull();
+    expect(nextLessonTarget([aula], MON_10)).toBeNull();
+  });
+
+  it('still routes building A’s Aula', () => {
+    expect(lessonTarget(lesson('20260921', '09:00', 'Aula'))?.buildingName).toBe('A');
+  });
 });
