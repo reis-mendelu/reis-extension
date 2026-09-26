@@ -159,8 +159,8 @@ describe('lessonPlace', () => {
   });
 
   it('names no host rather than the wrong one for a society it does not know', () => {
-    // `societyById` falls back to ESN; a row must not credit ESN with someone
-    // else's event.
+    // An id missing from the catalog must not credit anyone (least of all the
+    // raw id or ESN) with someone else's event.
     const place = lessonPlace(
       block(),
       'cz',

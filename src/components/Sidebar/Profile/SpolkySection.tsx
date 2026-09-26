@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { Users, ChevronDown, ChevronRight, Shield } from 'lucide-react';
-import { ASSOCIATION_PROFILES } from '../../../services/spolky/config';
+import { useListedSocieties } from '../../../hooks/useSociety';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
 
@@ -14,7 +14,8 @@ interface SpolkySectionProps {
   /**
    * Let the list grow to its full height instead of scrolling inside itself.
    *
-   * Set on the phone's profile TAB. There are seven societies and the cap holds
+   * Set on the phone's profile TAB. The list is every active society in the
+   * catalog and the cap holds
    * about four, so the list scrolled inside a screen that already scrolls — and
    * on a touch device the outer page stops moving the moment a finger lands on
    * the inner scroller. The desktop sidebar popup leaves it off: that is a small
@@ -32,6 +33,7 @@ export function SpolkySection({
   expandFully = false,
 }: SpolkySectionProps) {
   const { t } = useTranslation();
+  const societies = useListedSocieties();
   const openSocietyAdmin = useAppStore((s) => s.openSocietyAdmin);
   // The single gate into the admin console, for both roles and whether or not a
   // session exists — the console renders its own login screen when logged out,
@@ -67,7 +69,7 @@ export function SpolkySection({
                 expandFully ? '' : 'max-h-40 overflow-y-auto custom-scrollbar'
               }`}
             >
-              {Object.values(ASSOCIATION_PROFILES).map((p) => (
+              {societies.map((p) => (
                 <label
                   key={p.id}
                   className="flex items-center justify-between px-2 py-1.5 hover:bg-base-200 rounded-md cursor-pointer"

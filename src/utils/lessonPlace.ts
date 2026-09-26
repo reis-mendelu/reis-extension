@@ -23,8 +23,8 @@ export interface LessonPlace {
   routable: boolean;
   /**
    * The society running an answered event ("ESN"), for the slot a lesson gives
-   * its teacher. Read from the catalogue rather than `societyById`, which falls
-   * back to ESN: an unknown id names no host rather than the wrong one.
+   * its teacher. Read from the catalog directly rather than `resolveSociety`,
+   * whose neutral fallback would print the raw id: an unknown id names no host.
    */
   host: string | null;
 }

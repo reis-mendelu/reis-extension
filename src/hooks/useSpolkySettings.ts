@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { IndexedDBService } from '../services/storage';
-import { FACULTY_TO_ASSOCIATION } from '../services/spolky/config';
+import { useAppStore } from '../store/useAppStore';
+import { autoFollowSocietyFor } from '../utils/societies/resolveSociety';
+import { FACULTY_LABEL_TO_KEY } from '../types/events';
 import { migrateAssociationIds } from '../services/spolky/renamedAssociations';
 import { getUserParams } from '../utils/userParams';
 import { logError } from '../utils/reportError';
@@ -73,9 +75,13 @@ export function useSpolkySettings() {
           const facultyLabel = userParams.facultyLabel;
           const erasmus = userParams.isErasmus;
 
-          if (facultyLabel && FACULTY_TO_ASSOCIATION[facultyLabel] && !erasmus) {
-            defaults.push(FACULTY_TO_ASSOCIATION[facultyLabel]);
-          }
+          // The faculty's default society comes from the catalog, which is
+          // never empty (bundled seed), so this cannot run "before" it.
+          const facultyKey = facultyLabel ? FACULTY_LABEL_TO_KEY[facultyLabel] : undefined;
+          const facultyDefault = facultyKey
+            ? autoFollowSocietyFor(useAppStore.getState().societies, facultyKey)
+            : null;
+          if (facultyDefault && !erasmus) defaults.push(facultyDefault);
 
           if (erasmus) {
             defaults.push('esn');
