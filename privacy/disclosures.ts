@@ -214,6 +214,11 @@ export const EXEMPT: Exempt[] = [
     why: 'Public society feed reads; writes are by a signed-in society, not a student.',
   },
   {
+    call: 'societies',
+    files: ['src/api/societies.ts'],
+    why: 'Public society catalog read (names, colours, logo paths); writes are by a signed-in reis_admin, not a student.',
+  },
+  {
     call: 'usage_stats',
     files: ['src/api/usageStats.ts'],
     why: 'Admin console read, signed-in reis_admin.',
