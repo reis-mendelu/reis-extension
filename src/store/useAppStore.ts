@@ -41,6 +41,9 @@ import { createAdminSlice } from './slices/createAdminSlice';
 import { createAdminStatsSlice } from './slices/createAdminStatsSlice';
 import { createSuggestionsSlice } from './slices/createSuggestionsSlice';
 import { createDemoSlice } from './slices/createDemoSlice';
+import { overlayGuard } from './overlay/overlayGuard';
+import { logError } from '../utils/reportError';
+import { createImpersonationSlice } from './slices/createImpersonationSlice';
 import { createReportSlice } from './slices/createReportSlice';
 import { createRouteSlice } from './slices/createRouteSlice';
 import { syncService } from '../services/sync';
@@ -51,50 +54,53 @@ import type { Session } from '@supabase/supabase-js';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
 import { setDemoModeFlag, isDemoMode } from '../errors/demoMode';
 
-export const useAppStore = create<AppState>()((...a) => ({
-  ...createScheduleSlice(...a),
-  ...createExamSlice(...a),
-  ...createSyllabusSlice(...a),
-  ...createZaznamnikSlice(...a),
-  ...createFilesSlice(...a),
-  ...createNotesSlice(...a),
-  ...createClassmatesSlice(...a),
-  ...createSubjectsSlice(...a),
-  ...createSyncSlice(...a),
-  ...createThemeSlice(...a),
-  ...createI18nSlice(...a),
-  ...createSuccessRateSlice(...a),
-  ...createSimilarSubjectsSlice(...a),
-  ...createEduroamSlice(...a),
-  ...createDocumentsSlice(...a),
-  ...createFeedbackSlice(...a),
-  ...createStudyPlanSlice(...a),
-  ...createCvicneTestsSlice(...a),
-  ...createErasmusSlice(...a),
-  ...createMenuSlice(...a),
-  ...createHiddenItemsSlice(...a),
-  ...createTeachingWeekSlice(...a),
-  ...createNavPagesSlice(...a),
-  ...createContextSlice(...a),
-  ...createPulseSlice(...a),
-  ...createCustomEventsSlice(...a),
-  ...createNotificationSlice(...a),
-  ...createSearchSlice(...a),
-  ...createRecentPdfsSlice(...a),
-  ...createPersonProfileSlice(...a),
-  ...createBulletinSlice(...a),
-  ...createViewportSlice(...a),
-  ...createMobileUiSlice(...a),
-  ...createMapSlice(...a),
-  ...createSocietiesSlice(...a),
-  ...createRsvpSlice(...a),
-  ...createAdminSlice(...a),
-  ...createAdminStatsSlice(...a),
-  ...createSuggestionsSlice(...a),
-  ...createRouteSlice(...a),
-  ...createDemoSlice(...a),
-  ...createReportSlice(...a),
-}));
+export const useAppStore = create<AppState>()(
+  overlayGuard((...a) => ({
+    ...createScheduleSlice(...a),
+    ...createExamSlice(...a),
+    ...createSyllabusSlice(...a),
+    ...createZaznamnikSlice(...a),
+    ...createFilesSlice(...a),
+    ...createNotesSlice(...a),
+    ...createClassmatesSlice(...a),
+    ...createSubjectsSlice(...a),
+    ...createSyncSlice(...a),
+    ...createThemeSlice(...a),
+    ...createI18nSlice(...a),
+    ...createSuccessRateSlice(...a),
+    ...createSimilarSubjectsSlice(...a),
+    ...createEduroamSlice(...a),
+    ...createDocumentsSlice(...a),
+    ...createFeedbackSlice(...a),
+    ...createStudyPlanSlice(...a),
+    ...createCvicneTestsSlice(...a),
+    ...createErasmusSlice(...a),
+    ...createMenuSlice(...a),
+    ...createHiddenItemsSlice(...a),
+    ...createTeachingWeekSlice(...a),
+    ...createNavPagesSlice(...a),
+    ...createContextSlice(...a),
+    ...createPulseSlice(...a),
+    ...createCustomEventsSlice(...a),
+    ...createNotificationSlice(...a),
+    ...createSearchSlice(...a),
+    ...createRecentPdfsSlice(...a),
+    ...createPersonProfileSlice(...a),
+    ...createBulletinSlice(...a),
+    ...createViewportSlice(...a),
+    ...createMobileUiSlice(...a),
+    ...createMapSlice(...a),
+    ...createSocietiesSlice(...a),
+    ...createRsvpSlice(...a),
+    ...createAdminSlice(...a),
+    ...createAdminStatsSlice(...a),
+    ...createSuggestionsSlice(...a),
+    ...createRouteSlice(...a),
+    ...createDemoSlice(...a),
+    ...createImpersonationSlice(...a),
+    ...createReportSlice(...a),
+  }))
+);
 
 // Initialize store and subscribe to sync updates
 export const initializeStore = async () => {
@@ -162,9 +168,15 @@ export const initializeStore = async () => {
       adminSession: { user: { email: devSeed.email } } as unknown as Session,
     });
     if (devSeed.adminRole === 'reis_admin') void s.loadSuggestions();
+    void s.restoreImpersonation();
     void s.loadSocietyPosts();
   } else {
-    s.loadAdminSession();
+    // Restore after the admin session settles, and even if loading it failed:
+    // restoreImpersonation decides whether a saved impersonation still applies.
+    void s
+      .loadAdminSession()
+      .catch((e) => logError('Boot.loadAdminSession', e))
+      .then(() => useAppStore.getState().restoreImpersonation());
   }
 
   // Tier 2: Background data — deferred to avoid thundering-herd on IDB at startup

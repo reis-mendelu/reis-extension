@@ -18,7 +18,7 @@ const SCHEDULE_URL = `${BASE_URL}/auth/katalog/rozvrhy_view.pl`;
  * Measured against live IS on 2026-09-21, same empty window, same session.
  * The English grammar is IS's own; do not "correct" it.
  */
-const NO_RESULTS_MARKERS = [
+export const NO_RESULTS_MARKERS = [
   'nevyhovuje žádná rozvrhová akce',
   'No class match the selected criteria',
 ] as const;
@@ -117,6 +117,31 @@ export async function fetchWeekSchedule(
 }
 
 /**
+ * CZ lessons as the base, EN names and rooms joined on id + date + start time
+ * (IS reuses a lesson id across the weeks it repeats). Falls back to the CZ text
+ * where the EN leg has no match. Shared with the impersonation fetch.
+ */
+export function mergeDualLanguageLessons(
+  czLessons: BlockLesson[],
+  enLessons: BlockLesson[]
+): BlockLesson[] {
+  const enMap = new Map<string, BlockLesson>();
+  for (const lesson of enLessons) {
+    enMap.set(`${lesson.id}_${lesson.date}_${lesson.startTime}`, lesson);
+  }
+  return czLessons.map((czLesson) => {
+    const enLesson = enMap.get(`${czLesson.id}_${czLesson.date}_${czLesson.startTime}`);
+    return {
+      ...czLesson,
+      courseNameCs: czLesson.courseName,
+      courseNameEn: enLesson?.courseName || czLesson.courseName,
+      roomCs: czLesson.room,
+      roomEn: enLesson?.room || czLesson.room,
+    };
+  });
+}
+
+/**
  * Fetches schedule in both Czech and English and merges them.
  * Each lesson will have both courseNameCs/courseNameEn and roomCs/roomEn populated.
  *
@@ -139,28 +164,7 @@ export async function fetchDualLanguageSchedule(dateRange: {
 
     if (!czLessons || !enLessons) return null;
 
-    // Create a map of EN lessons by unique key (id + date + startTime)
-    const enMap = new Map<string, BlockLesson>();
-    for (const lesson of enLessons) {
-      const key = `${lesson.id}_${lesson.date}_${lesson.startTime}`;
-      enMap.set(key, lesson);
-    }
-
-    // Merge: use CZ as base, add EN names
-    const merged = czLessons.map((czLesson) => {
-      const key = `${czLesson.id}_${czLesson.date}_${czLesson.startTime}`;
-      const enLesson = enMap.get(key);
-
-      return {
-        ...czLesson,
-        courseNameCs: czLesson.courseName,
-        courseNameEn: enLesson?.courseName || czLesson.courseName, // Fallback to CZ if EN not found
-        roomCs: czLesson.room,
-        roomEn: enLesson?.room || czLesson.room,
-      };
-    });
-
-    return merged;
+    return mergeDualLanguageLessons(czLessons, enLessons);
   } catch (error) {
     logError('Api.fetchDualLanguageSchedule', error);
     return null;

@@ -1,0 +1,236 @@
+
+        <!DOCTYPE html>
+        <html>
+            <head>
+                <title>Presentation of study programmes</title>
+                <meta http-equiv="Content-Language" content="en" />
+                <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+                <meta name="description" content="University information system MENDELU" />
+                <meta name="lang" content="en" />
+                <meta name="charset" content="UTF-8" />
+        <link rel="icon" href="/favicon/fav-prod.ico" sizes="32x32" />
+        <link rel="icon" href="/favicon/fav-prod.svg" type="image/svg+xml" />
+    <meta name="robots" content="noindex,nofollow" /><script type="text/javascript">var defaultClass = ''; </script><style type="text/css">
+        .hider-spinning { display:inline-block; animation: hider-spin .5s linear infinite; }
+        @keyframes hider-spin { to { transform: rotate(360deg); } }
+    
+
+        .hider-spinning { display:inline-block; animation: hider-spin .5s linear infinite; }
+        @keyframes hider-spin { to { transform: rotate(360deg); } }
+    </style><link rel="stylesheet" type="text/css" href="/css/base.css?1789391938" /><link rel="stylesheet" type="text/css" href="/css/local.css?1673252855" /><link rel="stylesheet" type="text/css" href="/img.pl?css=72554" /><link rel="stylesheet" type="text/css" href="/js/jquery/ui/ui-1.14.2/jquery-ui.min.css?1780903455" /><script type="text/javascript" src="/js/jquery/jquery/jquery-3.7.1/jquery-3.7.1.min.js"></script><script type="text/javascript" src="/js/jquery/jquery/jquery-3.7.1/jquery-migrate-3.6.0.min.js"></script><script>jQuery.uiBackCompat = true;</script><script type="text/javascript" src="/js/common.js?1515155616"></script><script type="text/javascript" src="/js/uisplugins/uis.js?1789128063"></script><script type="text/javascript" src="/js/translate.js?1777892588"></script><script type="text/javascript" src="/js/icons.js?1784896059"></script><script type="text/javascript" src="/js/js.cookie.min.js"></script><script type="text/javascript">uis.translator.setLang('EN');</script><script type="text/javascript" src="/js/pseudostrap.js?1789112839"></script><script type="text/javascript">uis.params.transport.add("lang","en");</script><script type="text/javascript" src="/js/jquery/ui/ui-1.14.2/jquery-ui.min.js?1780903455"></script><script type="text/javascript" src="/js/jquery/ui/corrector.js?1638201715"></script><script type="text/javascript" src="/js/help.js?1758176588"></script><script type="text/javascript">
+<!--
+
+        $(document).ready(function() {
+            let scriptUrl = "https://is.mendelu.cz/auth/skryt_skup_conf.pl";
+            let groupSysid = "9833";
+            let hiderTimeout;
+            let clickedTimes = 0;
+
+            $(`#hider_a_${groupSysid}`).on("click", function(event) {
+                event.preventDefault();
+                if (!$(this).data().hasOwnProperty("sysid")) { return; }
+                clickedTimes++;
+
+                let sysid = $(this).data().sysid;
+                let co_ovladat = `#skryt_div_${sysid}`;
+                let cim_ovladat = `#switch_div_${sysid}`;
+
+                let visible = $(co_ovladat).is(":visible");
+                $(cim_ovladat).toggleClass("hider-open", visible);
+                $(`#nazev_skryti_${sysid}`).css({"opacity": visible ? 1 : 0});
+                slideBool($(co_ovladat), visible);
+
+                if (clickedTimes > 10) {
+                    $(`${cim_ovladat} > a > span`).addClass("hider-spinning");
+                }
+
+                clearTimeout(hiderTimeout);
+                hiderTimeout = setTimeout(function() {
+                    $.post(scriptUrl, { sysid: sysid, skryt: visible ? 1 : 0 });
+                    clickedTimes = 0;
+                    setTimeout(function() { $(`${cim_ovladat} > a > span`).removeClass("hider-spinning"); }, 4000);
+                    $(co_ovladat).stop(true, true);
+                    slideBool($(co_ovladat), visible);
+                }, 500);
+            });
+
+            function slideBool(what, visible) {
+                if (visible) { what.slideUp(); } else { what.slideDown(); }
+            };
+
+            let switch_div = $(`#switch_div_${groupSysid}`);
+            let skryt_div = $(`#skryt_div_${groupSysid}`);
+
+            // Chceme, aby skryvaci sipka mela spravnou sirku
+            function switchWidth() { switch_div.width(skryt_div.outerWidth() + 21); };
+            
+            switchWidth();
+            let switchElement = document.getElementById(`skryt_div_${groupSysid}`);
+            new ResizeObserver(switchWidth).observe(switchElement);
+
+        });
+    
+        $(document).ready(function() {
+            let scriptUrl = "https://is.mendelu.cz/auth/skryt_skup_conf.pl";
+            let groupSysid = "9834";
+            let hiderTimeout;
+            let clickedTimes = 0;
+
+            $(`#hider_a_${groupSysid}`).on("click", function(event) {
+                event.preventDefault();
+                if (!$(this).data().hasOwnProperty("sysid")) { return; }
+                clickedTimes++;
+
+                let sysid = $(this).data().sysid;
+                let co_ovladat = `#skryt_div_${sysid}`;
+                let cim_ovladat = `#switch_div_${sysid}`;
+
+                let visible = $(co_ovladat).is(":visible");
+                $(cim_ovladat).toggleClass("hider-open", visible);
+                $(`#nazev_skryti_${sysid}`).css({"opacity": visible ? 1 : 0});
+                slideBool($(co_ovladat), visible);
+
+                if (clickedTimes > 10) {
+                    $(`${cim_ovladat} > a > span`).addClass("hider-spinning");
+                }
+
+                clearTimeout(hiderTimeout);
+                hiderTimeout = setTimeout(function() {
+                    $.post(scriptUrl, { sysid: sysid, skryt: visible ? 1 : 0 });
+                    clickedTimes = 0;
+                    setTimeout(function() { $(`${cim_ovladat} > a > span`).removeClass("hider-spinning"); }, 4000);
+                    $(co_ovladat).stop(true, true);
+                    slideBool($(co_ovladat), visible);
+                }, 500);
+            });
+
+            function slideBool(what, visible) {
+                if (visible) { what.slideUp(); } else { what.slideDown(); }
+            };
+
+            let switch_div = $(`#switch_div_${groupSysid}`);
+            let skryt_div = $(`#skryt_div_${groupSysid}`);
+
+            // Chceme, aby skryvaci sipka mela spravnou sirku
+            function switchWidth() { switch_div.width(skryt_div.outerWidth() + 21); };
+            
+            switchWidth();
+            let switchElement = document.getElementById(`skryt_div_${groupSysid}`);
+            new ResizeObserver(switchWidth).observe(switchElement);
+
+        });
+    
+// --></script>
+            </head>
+            <body>
+        
+
+
+
+
+<div id="hlavicka">
+	<table border="0"> <!-- kvuli IE to udelam tabulkou -->
+    	<tr>
+        	<td id="logo"><a href="http://www.mendelu.cz/"><img class="in-header" src="/img.pl?unid=70775" /></a></td>
+            <td>
+            <table>
+            	<tr>
+                <td id="dekor-obr">&nbsp;</td>
+                <td id="fakulty">
+                    <div id="af"><a href="http://www.af.mendelu.cz/"><img class="in-header" src="/img.pl?unid=68012" /></a></div>
+                    <div id="ldf"><a href="http://www.ldf.mendelu.cz/"><img class="in-header" src="/img.pl?unid=49429" /></a></div>
+                    <div id="pef"><a href="http://www.pef.mendelu.cz/"><img class="in-header" src="/img.pl?unid=49430" /></a></div>
+                    <div id="zf"><a href="http://www.zf.mendelu.cz/"><img class="in-header" src="/img.pl?unid=49431" /></a></div>
+                    <div id="frrms"><a href="http://www.frrms.mendelu.cz/"><img class="in-header" src="/img.pl?unid=66764" /></a></div>
+                    <div id="icv"><a href="http://www.icv.mendelu.cz/"><img class="in-header" src="/img.pl?unid=49432" /></a></div>
+                </td>
+                </tr>
+            </table>
+            <td id="navigace1">
+                <ul>
+                    <li>Sep 26, 2026 &nbsp; 3:24 a.m.</li>
+                    <li>Andrea</li>
+                    <li id="posledni">
+                          
+                          
+<a href="https://is.mendelu.cz/katalog/plany.pl?fakulta=2;poc_obdobi=801;misto_vyuky=;typ_ss=;typ_studia=1;program=1889;obor=-2;specializace=-2;new_spec=-2;podprogram=;forma=1;stud_plan=12490;lang=cz" title="">česky</a>
+
+
+<a href="https://is.mendelu.cz/katalog/plany.pl?fakulta=2;poc_obdobi=801;misto_vyuky=;typ_ss=;typ_studia=1;program=1889;obor=-2;specializace=-2;new_spec=-2;podprogram=;forma=1;stud_plan=12490;lang=sk" title="">slovensky</a>
+                   </li>
+                </ul>
+            </td>
+         </tr>
+    </table>
+</div>
+
+<div id="horni-navigace">
+	<table border="0">
+    	<tr><td id="prihlasen">
+               &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+
+</td>
+        <td>
+&nbsp;
+<span id="navbar-info-text">&nbsp;</span>
+&nbsp;&nbsp;&nbsp;&nbsp;
+<span id="navbar-info-text">&nbsp;</span>
+&nbsp;&nbsp;&nbsp;&nbsp;
+<span id="navbar-info-text">&nbsp;</span>
+        </td>
+        <td id="ikonky">
+ 
+ 
+ 
+ 
+
+       </td>
+    </tr>
+    </table>
+</div>
+
+<div class="wholepage">
+
+<div id="content">
+
+
+
+
+<div class="mainpage">
+<div><div><div><div><div><div><div><div><nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="/?lang=en" title=""><span class="uf-icon xs" role="img" data-sysid="base-home" data-id="2016" aria-label="Personal administration" alt="Personal administration" title="University information system" > <svg style="--_left: 0px;--_top: 0px;--_width: 48px;--_height: 48px;z-index: 5;" data-size-sysid="fullsize" aria-hidden="true" role="img" ><use xlink:href="/icons.svg?1772024892#uc-glyph1481" /></svg> </span></a></li><li class="breadcrumb-item"><a href="/katalog/plany.pl?lang=en" title="Presentation of study programmes">Presentation of study programm...</a></li><li class="breadcrumb-item"><a href="/katalog/plany.pl?fakulta=2;lang=en" title="">FBE</a></li><li class="breadcrumb-item"><a href="/katalog/plany.pl?fakulta=2;poc_obdobi=801;typ_ss=;lang=en" title="">ZS 2025/2026</a></li><li class="breadcrumb-item"><a href="/katalog/plany.pl?fakulta=2;poc_obdobi=801;typ_ss=;typ_studia=1;lang=en" title="">Bachelor</a></li><li class="breadcrumb-item"><a href="/katalog/plany.pl?fakulta=2;poc_obdobi=801;typ_studia=1;typ_ss=;program=1889;lang=en" title="">B-F Finances</a></li><li class="breadcrumb-item active" aria-current="page"><span >Full-time</span></li></ol><div class="helpinbreadcrumbs"><a href="/help.pl?page=8778;lang=en" class="context-help-invoke" target="_blank" title="View application help" data-contextHelpPage="8778"><span class="uf-icon xs" role="img" data-sysid="base-help" data-id="1035" aria-label="" alt="" title="" > <svg style="--uc-fill-inner:#FFFFFF;--_left: 0px;--_top: 0px;--_width: 48px;--_height: 48px;z-index: 20;" data-size-sysid="fullsize" aria-hidden="true" role="img" ><use xlink:href="/icons.svg?1772024892#uc-glyph1218" /></svg><svg style="--uc-fill-inner:#231f20;--_left: 0px;--_top: 0px;--_width: 48px;--_height: 48px;z-index: 5;" data-size-sysid="fullsize" aria-hidden="true" role="img" ><use xlink:href="/icons.svg?1772024892#uc-glyph1021" /></svg> </span></a></div></nav><div class="small"><span class="small">This application displays a&nbsp;study plan, i.e. an overview of all courses within the selected field of study.</span></div><br /><table><tbody ><tr class="" ><td class="odsazena" align="left"><b>Faculty: </b></td><td class="odsazena" align="left">Faculty of Business and Economics</td></tr><tr class="" ><td class="odsazena" align="left"><b>Initial period: </b></td><td class="odsazena" align="left">WS 2025/2026 - FBE</td></tr><tr class="" ><td class="odsazena" align="left"><b>Type of study: </b></td><td class="odsazena" align="left">Bachelor</td></tr><tr class="" ><td class="odsazena" align="left"><b>Programme: </b></td><td class="odsazena" align="left">B0412A050009 B-F Finances</td></tr><tr class="" ><td class="odsazena" align="left"><b>Form of study: </b></td><td class="odsazena" align="left">full-time</td></tr><tr class="" ><td class="odsazena" align="left"><b>Study duration: </b></td><td class="odsazena" align="left">3 years</td></tr></tbody></table><p></p><div class="small"><span class="small">The study plan is further subdivided into study periods - semesters. To accomplish your study plan successfully it is necessary to pass all duties stipulated in the Study and Examination Code.</span></div><br /><div><div class="hider-nazev-skryti" id="nazev_skryti_9833" style="opacity: 0; transition: opacity .2s ease-in-out 0s;"><i>Hidden: Comment on study plan&nbsp;B-F pres - WS 2025/2026</i></div><div class="hider" id="switch_div_9833"><a href="#" id="hider_a_9833" data-sysid="9833"><span></span></a></div><div id="skryt_div_9833" style="width: fit-content; display: block"><table width="850"><tbody ><tr class="" ><td class="odsazena" align="left"><h4>Cíle studia ve studijním programu</h4>
+<p>Cílem bakalářského akademicky zaměřeného studijního programu <strong>Finance</strong>   je připravit absolventy pro samostatnou i&nbsp;týmovou práci při výkonu   svého povolání v&nbsp;podnikatelských subjektech či finančních institucích. Absolvent programu Finance je schopen získávat, zpracovávat, kriticky   vyhodnocovat a&nbsp;správně interpretovat informace a&nbsp;data z&nbsp;oblasti   ekonomiky, finančního trhu a&nbsp;podnikových financí, účetnictví a&nbsp;daní.   Absolvováním profilujícího základu studijního programu je student   schopen použít nástroje ekonomické analýzy a&nbsp;pracovat s&nbsp;informacemi a&nbsp;ekonomickými daty v&nbsp;odpovídajícím kontextu problémové situace vyžadující   kompetentní rozhodnutí v&nbsp;oblasti financí. Absolvent je schopen řešit   finanční vztahy s&nbsp;bankami a&nbsp;dalšími finančními institucemi. Je vybaven   rovněž znalostmi týkajícími se fungování finančních trhů, jejich   institucí a&nbsp;instrumentů a&nbsp;možnostmi jejich využití v&nbsp;praxi, znalostmi   metod účetního zachycení hospodářských transakcí a&nbsp;možnostmi jejich   efektivního využívání, znalostmi týkajícími se financování podniků,   znalostmi daňových zásad, výpočtu daňových povinností a&nbsp;fungování správy   daní.</p>
+<h4>Profil absolventa studijního programu</h4>
+<p>Absolvent programu je primárně připravován na pokračování v&nbsp;navazujícím magisterském studiu. Je schopen odborně zajistit veškeré   finanční vztahy podniku vůči bankám a&nbsp;dalším finančním institucím,   včetně účetní a&nbsp;daňové problematiky. Je schopen vést účetní agendu nebo   tuto činnost koordinovat či řídit, analyzovat a&nbsp;využívat účetní data ve   výrobních firmách či podnicích poskytující služby nebo v&nbsp;daňových a&nbsp;účetních kancelářích. Dokáže využívat své znalosti z&nbsp;oblasti přímého a&nbsp;nepřímého zdanění a&nbsp;fungování správy daní, bankovních produktů a&nbsp;služeb,   úvěrového procesu, finančního plánovaní a&nbsp;zajištění pojistné ochrany.</p>
+<ul>
+    <li><strong>znalosti</strong>: fungování finančních trhů a&nbsp;jejich   segmentů a&nbsp;institucí, znalost finančních operací podniku včetně daňových   dopadů, jejich zachycování a&nbsp;vykazování při znalosti současného stavu   poznání v&nbsp;oblasti ekonomických a&nbsp;manažerských disciplín;</li>
+    <li><strong>dovednosti</strong>: samostatná orientace na finančních   trzích a&nbsp;v&nbsp;oblasti podnikových financí, příprava a&nbsp;zpracování účetní   evidence a&nbsp;daňových přiznání, jejich využití pro rozhodování, schopnost   používat potřebné softwarové vybavení;</li>
+    <li><strong>kompetence</strong>: samostatné řízení finančních   operací a&nbsp;procesů v&nbsp;malých a&nbsp;středních podnicích, řádné evidenci   finančních transakcí, interpretace dopadů rozhodnutí na konkrétní   subjekt.</li>
+</ul>
+<p>Uplatnění naleznou absolventi zejména na následujících pozicích:   účetní metodik, samostatný pracovník finanční a&nbsp;daňové správy,   samostatný pracovník prodeje v&nbsp;pojišťovnictví, asistent riskmanažera v&nbsp;pojišťovnictví, pojistný matematik asistent apod.</p>
+<h4>Struktura studijního plánu</h4>
+<p>Student studijního programu Finance musí získat alespoň 180 kreditů v&nbsp;předepsané struktuře předmětů a&nbsp;poté se musí přihlásit ke státní   bakalářské zkoušce, která zahrnuje i&nbsp;obhajobu bakalářského projektu. Pokud je součet kreditů povinných a&nbsp;povinně volitelných předmětů za celé studium nižší než výše uvedené minimum, zbývající kredity student získává za předměty dle svého výběru z&nbsp;celouniverzitní nabídky.</p></td></tr></tbody></table><p></p></div></div><table><tbody ><tr class="" ><td class="odsazena" align="center" colspan="4">&nbsp;</td></tr><tr class="" ><td class="odsazena" align="center" colspan="4"><b><font size="+1">1st semester WS 2025/2026 - FBE</font></b></td></tr><tr class="" ><td class="odsazena" align="center" colspan="4">&nbsp;</td></tr><tr class=" zahlavi" ><td class="odsazena" align="left"><a name="38769"></a>Code</td><td class="odsazena" align="left">Course title</td><td class="odsazena" align="left">Mode of completion</td><td class="odsazena" align="center">Credits</td></tr><tr class="" ><td class="odsazena" align="center">&nbsp;</td><td class="odsazena" align="left" colspan="3"><b>A group of required courses</b></td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P1 uis-hl-table" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=157994;lang=en" target="_blank">EBC-PE</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=157994;lang=en" target="_blank">Business Economics 1</a></td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">6</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P1 uis-hl-table sudy" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=158216;lang=en" target="_blank">EBC-KOM</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=158216;lang=en" target="_blank">Communications</a></td><td class="odsazena" align="center">Pass credit</td><td class="odsazena" align="center">2</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P1 uis-hl-table" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=158903;lang=en" target="_blank">EBA-AJ1</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=158903;lang=en" target="_blank">English Language 1</a></td><td class="odsazena" align="center">Pass credit</td><td class="odsazena" align="center">4</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P1 uis-hl-table sudy" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=157996;lang=en" target="_blank">EBC-UDE</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=157996;lang=en" target="_blank">Introduction to Economics</a></td><td class="odsazena" align="center">Pass credit</td><td class="odsazena" align="center">3</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P1 uis-hl-table" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=158572;lang=en" target="_blank">EBC-P</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=158572;lang=en" target="_blank">Law</a></td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">4</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P1 uis-hl-table sudy" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=157993;lang=en" target="_blank">EBC-MT</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=157993;lang=en" target="_blank">Mathematics</a></td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">6</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P1 uis-hl-table" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=158904;lang=en" target="_blank">EBC-DS</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=158904;lang=en" target="_blank">Tax System</a></td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">5</td></tr><tr class="" ><td class="odsazena" align="center" colspan="4">&nbsp;</td></tr><tr class="" ><td class="odsazena" align="center" colspan="4"><b><font size="+1">2nd semester SS 2025/2026 - FBE</font></b></td></tr><tr class="" ><td class="odsazena" align="center" colspan="4">&nbsp;</td></tr><tr class=" zahlavi" ><td class="odsazena" align="left"><a name="39967"></a>Code</td><td class="odsazena" align="left">Course title</td><td class="odsazena" align="left">Mode of completion</td><td class="odsazena" align="center">Credits</td></tr><tr class="" ><td class="odsazena" align="center">&nbsp;</td><td class="odsazena" align="left" colspan="3"><b>A group of required courses</b></td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P2 uis-hl-table" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=162536;lang=en" target="_blank">EBC-PF</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=162536;lang=en" target="_blank">Business Finance</a></td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">5</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P2 uis-hl-table sudy" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=162535;lang=en" target="_blank">EBC-AVD</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=162535;lang=en" target="_blank">Data analysis and visualisation</a></td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">6</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P2 uis-hl-table" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=162553;lang=en" target="_blank">EBA-AJ2</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=162553;lang=en" target="_blank">English Language 2</a></td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">4</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P2 uis-hl-table sudy" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=162551;lang=en" target="_blank">EBC-EIG</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=162551;lang=en" target="_blank">European Integration and Globalization</a></td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">4</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P2 uis-hl-table" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=162537;lang=en" target="_blank">EBC-MI</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=162537;lang=en" target="_blank">Microeconomics 1</a></td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">6</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P2 uis-hl-table sudy" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=162552;lang=en" target="_blank">EBC-ST</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=162552;lang=en" target="_blank">Statistics</a></td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">6</td></tr><tr class="" ><td class="odsazena" align="center" colspan="4">&nbsp;</td></tr><tr class="" ><td class="odsazena" align="center" colspan="4"><b><font size="+1">3rd semester WS 2026/2027 - FBE</font></b></td></tr><tr class="" ><td class="odsazena" align="center" colspan="4">&nbsp;</td></tr><tr class=" zahlavi" ><td class="odsazena" align="left"><a name="40423"></a>Code</td><td class="odsazena" align="left">Course title</td><td class="odsazena" align="left">Mode of completion</td><td class="odsazena" align="center">Credits</td></tr><tr class="" ><td class="odsazena" align="center">&nbsp;</td><td class="odsazena" align="left" colspan="3"><b>A group of required courses</b></td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P3 uis-hl-table" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=162664;lang=en" target="_blank">EBC-AZD</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=162664;lang=en" target="_blank">Automatic Data Processing</a></td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">5</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P3 uis-hl-table sudy" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=164067;lang=en" target="_blank">EBC-FU</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=164067;lang=en" target="_blank">Financial Accounting 1</a></td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">5</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P3 uis-hl-table" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=164066;lang=en" target="_blank">EBC-FT</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=164066;lang=en" target="_blank">Financial Markets</a></td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">5</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P3 uis-hl-table sudy" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=162667;lang=en" target="_blank">EBC-MA</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=162667;lang=en" target="_blank">Macroeconomics 1</a></td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">6</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P3 uis-hl-table" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=164004;lang=en" target="_blank">EBC-MAR</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=164004;lang=en" target="_blank">Marketing 1</a></td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">6</td></tr><tr class="" ><td class="odsazena" align="center" colspan="4">&nbsp;</td></tr><tr class=" zahlavi" ><td class="odsazena" align="left"><a name="40424"></a>Code</td><td class="odsazena" align="left">Course title</td><td class="odsazena" align="left">Mode of completion</td><td class="odsazena" align="center">Credits</td></tr><tr class="" ><td class="odsazena" align="center">&nbsp;</td><td class="odsazena" align="left" colspan="3"><b>A group of elective courses (min. 2 crd.)</b></td></tr><tr class=" predmety_vse predmety_vse_B-F prez  - ZS 2025/2026 - PEF uis-hl-table" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=164068;lang=en" target="_blank">EBA-OTF</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=164068;lang=en" target="_blank">English Terminology: Finance</a></td><td class="odsazena" align="center">Pass credit</td><td class="odsazena" align="center">2</td></tr><tr class=" predmety_vse predmety_vse_B-F prez  - ZS 2025/2026 - PEF uis-hl-table sudy" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=164069;lang=en" target="_blank">EBA-OTDU</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=164069;lang=en" target="_blank">English Terminology: Taxes and Accounting</a></td><td class="odsazena" align="center">Pass credit</td><td class="odsazena" align="center">2</td></tr><tr class="" ><td class="odsazena" align="center" colspan="4">&nbsp;</td></tr><tr class="" ><td class="odsazena" align="center" colspan="4"><b><font size="+1">4th semester SS 2026/2027 - FBE</font></b></td></tr><tr class="" ><td class="odsazena" align="center" colspan="4">&nbsp;</td></tr><tr class=" zahlavi" ><td class="odsazena" align="left"><a name="41429"></a>Code</td><td class="odsazena" align="left">Course title</td><td class="odsazena" align="left">Mode of completion</td><td class="odsazena" align="center">Credits</td></tr><tr class="" ><td class="odsazena" align="center">&nbsp;</td><td class="odsazena" align="left" colspan="3"><b>A group of required courses</b></td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P4 uis-hl-table" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=166920;lang=en" target="_blank">EBC-BA</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=166920;lang=en" target="_blank">Banking 1</a></td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">4</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P4 uis-hl-table sudy" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=164114;lang=en" target="_blank">EBC-EKM</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=164114;lang=en" target="_blank">Econometrics 1</a></td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">6</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P4 uis-hl-table" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=167299;lang=en" target="_blank">EBC-HPO</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=167299;lang=en" target="_blank">Economic Policy</a></td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">8</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P4 uis-hl-table sudy" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=167298;lang=en" target="_blank">EBC-ND</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=167298;lang=en" target="_blank">Indirect Taxes</a></td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">5</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P4 uis-hl-table" ><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=166924;lang=en" target="_blank">EBC-MAN</a></td><td class="odsazena" align="left"><a href="../katalog/syllabus.pl?predmet=166924;lang=en" target="_blank">Management</a></td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">6</td></tr><tr class="" ><td class="odsazena" align="center" colspan="4">&nbsp;</td></tr><tr class="" ><td class="odsazena" align="center" colspan="4"><b><font size="+1">5th semester (has not been activated)</font></b></td></tr><tr class="" ><td class="odsazena" align="center" colspan="4">&nbsp;</td></tr><tr class=" zahlavi" ><td class="odsazena" align="left"><a name="38773"></a>Code</td><td class="odsazena" align="left">Course title</td><td class="odsazena" align="left">Mode of completion</td><td class="odsazena" align="center">Credits</td></tr><tr class="" ><td class="odsazena" align="center">&nbsp;</td><td class="odsazena" align="left" colspan="3"><b>A group of required courses</b></td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P5 uis-hl-table" ><td class="odsazena" align="left">EBC-BS</td><td class="odsazena" align="left">Bachelor's Thesis Seminar</td><td class="odsazena" align="center">Pass credit</td><td class="odsazena" align="center">2</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P5 uis-hl-table sudy" ><td class="odsazena" align="left">EBC-PD</td><td class="odsazena" align="left">Direct Taxes</td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">5</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P5 uis-hl-table" ><td class="odsazena" align="left">EBC-VF</td><td class="odsazena" align="left">Public Finance 1</td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">4</td></tr><tr class="" ><td class="odsazena" align="center" colspan="4">&nbsp;</td></tr><tr class=" zahlavi" ><td class="odsazena" align="left"><a name="38800"></a>Code</td><td class="odsazena" align="left">Course title</td><td class="odsazena" align="left">Mode of completion</td><td class="odsazena" align="center">Credits</td></tr><tr class="" ><td class="odsazena" align="center">&nbsp;</td><td class="odsazena" align="left" colspan="3"><b>A group of elective courses (min. 6 crd.)</b></td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-PV2 uis-hl-table" ><td class="odsazena" align="left">EBC-FAP</td><td class="odsazena" align="left">Financial Analysis</td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">5</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-PV2 uis-hl-table sudy" ><td class="odsazena" align="left">EBC-ZP</td><td class="odsazena" align="left">Introduction to Human Resources</td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">3</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-PV2 uis-hl-table" ><td class="odsazena" align="left">EBC-SMD</td><td class="odsazena" align="left">Management Skills Seminar</td><td class="odsazena" align="center">Pass credit</td><td class="odsazena" align="center">6</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-PV2 uis-hl-table sudy" ><td class="odsazena" align="left">EBC-ORF</td><td class="odsazena" align="left">Personal and Family Finance</td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">4</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-PV2 uis-hl-table" ><td class="odsazena" align="left">EBC-VS</td><td class="odsazena" align="left">Public Administration</td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">5</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-PV2 uis-hl-table sudy" ><td class="odsazena" align="left">EXA-UP01</td><td class="odsazena" align="left">Recognized International Mobility Course 1</td><td class="odsazena" align="center">Pass credit</td><td class="odsazena" align="center">999</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-PV2 uis-hl-table" ><td class="odsazena" align="left">EXA-UP02</td><td class="odsazena" align="left">Recognized International Mobility Course 2</td><td class="odsazena" align="center">Pass credit</td><td class="odsazena" align="center">999</td></tr><tr class="" ><td class="odsazena" align="center" colspan="4">&nbsp;</td></tr><tr class="" ><td class="odsazena" align="center" colspan="4"><b><font size="+1">6th semester (has not been activated)</font></b></td></tr><tr class="" ><td class="odsazena" align="center" colspan="4">&nbsp;</td></tr><tr class=" zahlavi" ><td class="odsazena" align="left"><a name="38774"></a>Code</td><td class="odsazena" align="left">Course title</td><td class="odsazena" align="left">Mode of completion</td><td class="odsazena" align="center">Credits</td></tr><tr class="" ><td class="odsazena" align="center">&nbsp;</td><td class="odsazena" align="left" colspan="3"><b>A group of required courses</b></td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P6 uis-hl-table" ><td class="odsazena" align="left">EBC-BPR</td><td class="odsazena" align="left">Bachelor project</td><td class="odsazena" align="center">Pass credit</td><td class="odsazena" align="center">10</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P6 uis-hl-table sudy" ><td class="odsazena" align="left">EBC-OP1</td><td class="odsazena" align="left">Business Law 1</td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">4</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P6 uis-hl-table" ><td class="odsazena" align="left">EBC-PO</td><td class="odsazena" align="left">Insurance 1</td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">4</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-P6 uis-hl-table sudy" ><td class="odsazena" align="left">EBC-SBZ</td><td class="odsazena" align="left">State Final Examination</td><td class="odsazena" align="center">B.Sc. exam</td><td class="odsazena" align="center">0</td></tr><tr class="" ><td class="odsazena" align="center" colspan="4">&nbsp;</td></tr><tr class=" zahlavi" ><td class="odsazena" align="left"><a name="38801"></a>Code</td><td class="odsazena" align="left">Course title</td><td class="odsazena" align="left">Mode of completion</td><td class="odsazena" align="center">Credits</td></tr><tr class="" ><td class="odsazena" align="center">&nbsp;</td><td class="odsazena" align="left" colspan="3"><b>A group of elective courses (min. 6 crd.)</b></td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-PV3 uis-hl-table" ><td class="odsazena" align="left">EBC-US</td><td class="odsazena" align="left">Accounting Software</td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">5</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-PV3 uis-hl-table sudy" ><td class="odsazena" align="left">EBC-SPR</td><td class="odsazena" align="left">Decision Support Systems</td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">6</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-PV3 uis-hl-table" ><td class="odsazena" align="left">EBC-PVN</td><td class="odsazena" align="left">Legal Regulations on Real Estate Property</td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">4</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-PV3 uis-hl-table sudy" ><td class="odsazena" align="left">EBC-MAAN</td><td class="odsazena" align="left">Macroeconomic Analysis</td><td class="odsazena" align="center">Exam</td><td class="odsazena" align="center">4</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-PV3 uis-hl-table" ><td class="odsazena" align="left">EXA-UP03</td><td class="odsazena" align="left">Recognized International Mobility Course 3</td><td class="odsazena" align="center">Pass credit</td><td class="odsazena" align="center">999</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-PV3 uis-hl-table sudy" ><td class="odsazena" align="left">EXA-UP04</td><td class="odsazena" align="left">Recognized International Mobility Course 4</td><td class="odsazena" align="center">Pass credit</td><td class="odsazena" align="center">999</td></tr><tr class=" predmety_vse predmety_vse_B-F prez-ZS 2025/2026-PEF-PV3 uis-hl-table" ><td class="odsazena" align="left">EXA-UP05</td><td class="odsazena" align="left">Recognized International Mobility Course 5</td><td class="odsazena" align="center">Pass credit</td><td class="odsazena" align="center">999</td></tr></tbody></table><p></p><div><div class="hider-nazev-skryti" id="nazev_skryti_9834" style="opacity: 0; transition: opacity .2s ease-in-out 0s;"><i>Hidden: Comment on study plan&nbsp;B-F pres - WS 2025/2026</i></div><div class="hider" id="switch_div_9834"><a href="#" id="hider_a_9834" data-sysid="9834"><span></span></a></div><div id="skryt_div_9834" style="width: fit-content; display: block"><table width="850"><tbody ><tr class="" ><td class="odsazena" align="left"><p><a href="https://www.pef.mendelu.cz/studijni-zadosti" style="color:#0046A0;">Potřebuji podat žádost související se studiem</a></p>
+<h4>Specializace</h4>
+<p>Studijní program nemá specializace.</p>
+<h4>Student si v&nbsp;pátem semestru&#160; volí téma bakalářského projektu</h4>
+<p><a href="https://is.mendelu.cz/pracoviste/prehled_temat.pl?pracoviste=2;zpet=0;id=2" style="color:#0046A0;">Vypsaná témata závěrečných prací na PEF</a></p>
+<h4>Zahraniční mobility</h4>
+<p>Nejvhodnějším obdobím na uskutečnění celosemestrální zahraniční mobility na programu Finance je <strong>5. nebo 6. semestr</strong>. Nejvhodnějším obdobím na uskutečnění zahraniční stáže v&nbsp;rozsahu alespoň 2 měsíců je období <strong>mezi 2. a&nbsp;3. semestrem</strong>. (<a href="https://www.pef.mendelu.cz/zahranicni-mobility" style="color:#0046A0;">Informace k&nbsp;zahraničním mobilitám</a>)</p>
+<h4>Státní bakalářská zkouška</h4>
+<ul>
+    <li>Obhajoba bakalářského projektu</li>
+    <li>okruh Hospodářská politika a</li>
+    <li>okruh Finance.</li>
+</ul>
+<p></p>
+<p></p></td></tr></tbody></table><p></p></div></div><div class="pseudostrap-activated"></div></div></div></div></div></div></div></div></div>
+</div>
+
+
+</div>
+</div>
+
+<script async src="//www.googletagmanager.com/gtag/js?id=G-ZLP1PT1EZ8"></script><script>
+window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments)};gtag('js', new Date());
+gtag('consent', 'default', {'ad_storage': 'denied', 'analytics_storage': 'denied' });
+gtag('config','G-ZLP1PT1EZ8', {'lang':'en-US','transaction_id':'2373148370'});</script><div id="uis-control-data" data-nove_ikonky="1" data-uis_ang_lokalizace="US" data-stat_tel_predvolba="+420" data-cookie_cooperation="" data-module_cookiebar="0"></div></body></html>

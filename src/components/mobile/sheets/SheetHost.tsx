@@ -10,6 +10,7 @@ import { SearchSheet } from './SearchSheet';
 import { BulletinSheet } from './BulletinSheet';
 import { MenuSheet } from './MenuSheet';
 import { VenueSheet } from './VenueSheet';
+import { ImpersonationSheet } from './ImpersonationSheet';
 
 /**
  * Renders the phone UI's sheet stack, in order, each in its own `Sheet`.
@@ -50,6 +51,8 @@ export function SheetHost() {
             return <MenuSheet key={index} dayIso={sheet.dayIso} onClose={popSheet} />;
           case 'search':
             return <SearchSheet key={index} sheet={sheet} onClose={popSheet} />;
+          case 'impersonation':
+            return <ImpersonationSheet key={index} onClose={popSheet} />;
           default:
             return null;
         }

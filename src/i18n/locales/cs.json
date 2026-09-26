@@ -506,6 +506,7 @@
     "noPlanExchange": "Studijní plán není pro výměnná studia dostupný — zobrazujeme tvoje zapsané předměty.",
     "loading": "Načítání...",
     "fulfilled": "Splněno",
+    "enrolled": "Zapsáno",
     "notFulfilled": "Nesplněno",
     "searchToOpen": "Kliknutím vyhledáš",
     "semester": "semestr",
@@ -1315,5 +1316,30 @@
     "partnersLabel": "Spolupracujeme s firmami",
     "partnersBody": "Vybíráme si je sami, podle oborů, které se tu studují. Jde nám o stáže a akce. Nevidí žádná data z tvého ISu.",
     "eyBody": "Díky nim reIS běží."
+  },
+  "impersonation": {
+    "entry": "Zobrazit jako student…",
+    "entrySub": "Plán a rozvrh jiného oboru",
+    "title": "Zobrazit jako student",
+    "faculty": "Fakulta",
+    "programme": "Obor",
+    "year": "Ročník",
+    "yearN": "{n}. ročník",
+    "group": "Studijní skupina",
+    "groupN": "{n}. skupina",
+    "groupAll": "Všechny skupiny",
+    "groupsLoading": "Načítám skupiny…",
+    "start": "Zobrazit",
+    "loading": "Načítám obory z IS…",
+    "scopeNote": "Jen prezenční studium se zimním nástupem. Od 2. ročníku rozvrh bere první paralelku každého předmětu.",
+    "errorOptions": "IS nevrátil seznam oborů.",
+    "errorTimetable": "IS nevrátil rozvrh.",
+    "errorNoPlan": "Pro tento obor a ročník IS nemá studijní plán.",
+    "errorNoSemester": "Plán tohoto oboru nemá semestr pro zvolený ročník.",
+    "errorNotAdmin": "Jen pro správce reIS.",
+    "expired": "Zobrazení jako student skončilo s koncem semestru.",
+    "bannerLabel": "Zobrazuješ jako {programme} · {year}. ročník",
+    "bannerExit": "Ukončit",
+    "close": "Zavřít"
   }
 }
