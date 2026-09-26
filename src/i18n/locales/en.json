@@ -506,6 +506,7 @@
     "noPlanExchange": "Study plan isn't available for exchange studies — showing your enrolled subjects instead.",
     "loading": "Loading...",
     "fulfilled": "Fulfilled",
+    "enrolled": "Enrolled",
     "notFulfilled": "Not fulfilled",
     "searchToOpen": "Click to search",
     "semester": "semester",

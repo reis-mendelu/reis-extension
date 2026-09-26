@@ -46,6 +46,23 @@ const codeOf = (e: unknown): ImpersonationErrorCode =>
   e instanceof ImpersonationError ? e.code : 'timetable';
 
 /**
+ * Every subject in the impersonated plan, not only this semester's.
+ *
+ * The study plan shows a fail rate on each row, and the overlay guard keeps
+ * `fetchStudyPlan` — which asks for the whole real plan — from running, so this
+ * slice is the only thing that can ask for the impersonated one. Asking for
+ * `subjects` alone left semesters 2+ bare until each row was tapped open. Asked
+ * on restore too: a relaunch starts with no rates in memory. The batch skips
+ * codes it already has or has in flight.
+ */
+function failRateCodes(result: ImpersonationResult): string[] {
+  const inPlan = result.plan.cz.blocks.flatMap((b) =>
+    b.groups.flatMap((g) => g.subjects.map((s) => s.code))
+  );
+  return [...new Set([...Object.keys(result.subjects.data), ...inPlan])];
+}
+
+/**
  * "View as a student" for reIS admins: another programme's plan, subjects and
  * timetable, fetched live from IS through the admin's own session and laid over
  * the store. The overlay guard keeps every other writer off those keys while
@@ -115,11 +132,9 @@ export const createImpersonationSlice: AppSlice<ImpersonationSlice> = (set, get)
           impersonationPickerOpen: false,
         })
       );
-      const codes = Object.keys(result.subjects.data);
-      if (codes.length)
-        void get()
-          .fetchSuccessRateBatch(codes)
-          .catch(() => {});
+      void get()
+        .fetchSuccessRateBatch(failRateCodes(result))
+        .catch(() => {});
       return true;
     } catch (e) {
       logError('Impersonation.start', e, { year: req.year });
@@ -161,6 +176,9 @@ export const createImpersonationSlice: AppSlice<ImpersonationSlice> = (set, get)
     const role = get().adminRole;
     if (role === 'reis_admin') {
       set(overlayWrite({ impersonation: saved, ...overlayState(saved.result) }));
+      void get()
+        .fetchSuccessRateBatch(failRateCodes(saved.result))
+        .catch(() => {});
       return;
     }
     if (role !== null || !(await hasAdminSession())) return drop();
