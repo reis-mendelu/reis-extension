@@ -4,6 +4,7 @@ import { filterNotificationsByFaculty } from '../services/spolky';
 // Rule in CLAUDE.md forbids adding to a re-export, and `services/spolky/index`
 // is one. The pre-existing entries stay where they are.
 import { dropPastEvents, localDayIso } from '../services/spolky/spolkyService';
+import { dropScheduledEvents } from '../services/spolky/dropScheduledEvents';
 import { useSpolkySettings } from '../hooks/useSpolkySettings';
 import { useAppStore } from '../store/useAppStore';
 
@@ -25,17 +26,22 @@ export function useNotificationFeed() {
   // does not rebuild the list (and re-render every consumer) on every tick.
   const todayIso = localDayIso();
 
-  // Two questions, and the feed has only ever asked the first: is this society
-  // one the student follows, and has the event already happened? The list can
-  // come from `notifications_cache` in IndexedDB, which is written whenever a
-  // fetch lands and is never re-examined, so without the second question a past
-  // event stays in the feed unread and highlighted — "deskovky notification
-  // still shows and highlights even a day after they happened".
+  // Three questions: is this society one the student follows, has the event
+  // already happened, and has it gone live yet? The list can come from
+  // `notifications_cache` in IndexedDB, which is written whenever a fetch lands
+  // and is never re-examined, so without the second question a past event
+  // stays in the feed unread and highlighted — "deskovky notification still
+  // shows and highlights even a day after they happened". Without the third, an
+  // event the console lists as "Naplánované — zveřejní se …" reached Novinky
+  // (and its view/click counts) the moment it was published. Both trees read
+  // this list, so the badge, the rows and the view counter all follow it.
   const notifications = useMemo(
     () =>
-      dropPastEvents(
-        filterNotificationsByFaculty(allNotifications, subscribedAssociations),
-        todayIso
+      dropScheduledEvents(
+        dropPastEvents(
+          filterNotificationsByFaculty(allNotifications, subscribedAssociations),
+          todayIso
+        )
       ),
     [allNotifications, subscribedAssociations, todayIso]
   );
