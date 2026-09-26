@@ -5,6 +5,7 @@ import {
   LineBasicMaterial,
   LineSegments,
   Mesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   Shape,
   ShapeGeometry,
@@ -19,6 +20,14 @@ export interface SlabColors {
   edge: string;
 }
 
+/** How one room looks: the card's own palette, or the 2D map's (tilted map). */
+export interface RoomLook {
+  fill: string;
+  edge: string;
+  /** Unlit and translucent, the way Leaflet paints the same polygon. */
+  flatOpacity?: number;
+}
+
 interface SlabInput {
   rooms: RoomFeature[];
   project: Projector;
@@ -26,6 +35,8 @@ interface SlabInput {
   storeyHeight: number;
   targetRoomId: number | null;
   colors: SlabColors;
+  /** Override the look per room — the tilted map matches the flat map's colours. */
+  lookOf?: (room: RoomFeature, isTarget: boolean) => RoomLook;
 }
 
 // Just above the storey's own floor, so the rooms never z-fight with it.
@@ -55,13 +66,9 @@ export function buildFloorSlab({
   storeyHeight,
   targetRoomId,
   colors,
+  lookOf,
 }: SlabInput): Group {
   const group = new Group();
-  const edgeMaterial = new LineBasicMaterial({
-    color: colors.edge,
-    transparent: true,
-    opacity: 0.6,
-  });
   for (const room of rooms) {
     const ring = room.geometry.coordinates[0];
     if (!ring || ring.length < 4) continue;
@@ -74,16 +81,29 @@ export function buildFloorSlab({
         })
       : new ShapeGeometry(shape);
     geometry.rotateX(-Math.PI / 2);
-    const material = new MeshStandardMaterial({
-      color: isTarget ? colors.target : colors.room,
-      emissive: isTarget ? colors.target : '#000000',
-      emissiveIntensity: isTarget ? 0.35 : 0,
-      roughness: 0.8,
-    });
+    const look = lookOf?.(room, isTarget);
+    const material = look?.flatOpacity
+      ? new MeshBasicMaterial({
+          color: look.fill,
+          transparent: true,
+          opacity: look.flatOpacity,
+          toneMapped: false,
+        })
+      : new MeshStandardMaterial({
+          color: look?.fill ?? (isTarget ? colors.target : colors.room),
+          emissive: isTarget ? (look?.fill ?? colors.target) : '#000000',
+          emissiveIntensity: isTarget ? 0.35 : 0,
+          roughness: 0.8,
+        });
     const mesh = new Mesh(geometry, material);
     mesh.position.y = elevation + LIFT_OFF_FLOOR;
     mesh.userData.roomId = room.properties.id;
     group.add(mesh);
+    const edgeMaterial = new LineBasicMaterial({
+      color: look?.edge ?? colors.edge,
+      transparent: true,
+      opacity: look ? 1 : 0.6,
+    });
     const edges = new LineSegments(new EdgesGeometry(geometry), edgeMaterial);
     edges.position.y = mesh.position.y + 0.01;
     group.add(edges);

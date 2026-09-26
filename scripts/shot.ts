@@ -605,6 +605,20 @@ async function run(): Promise<number> {
         await seedAndHold(page, opts.seedStore, SEED_SETTLE_MS);
       }
 
+      // Calls BEFORE clicks: an intent (focus a room) sets up the screen a click
+      // then acts on (open its 3D view).
+      for (const call of opts.calls) {
+        await page.evaluate(({ action, arg }) => {
+          const store = (
+            window as unknown as { __reisStore?: { getState: () => Record<string, unknown> } }
+          ).__reisStore;
+          const fn = store?.getState()[action];
+          if (typeof fn !== 'function')
+            throw new Error(`--call: the store has no action "${action}"`);
+          return (fn as (a?: unknown) => unknown)(arg);
+        }, call);
+        await page.waitForTimeout(250);
+      }
       for (const click of opts.clicks) {
         await clickByTextOrLabel(page, click, hasTouch);
         // Settle between steps: each click may mount the surface the next one
@@ -619,18 +633,6 @@ async function run(): Promise<number> {
       if (opts.hover) {
         await page.getByText(opts.hover, { exact: true }).last().hover();
         await page.waitForTimeout(900); // hover-intent delay + the card's entrance
-      }
-      for (const call of opts.calls) {
-        await page.evaluate(({ action, arg }) => {
-          const store = (
-            window as unknown as { __reisStore?: { getState: () => Record<string, unknown> } }
-          ).__reisStore;
-          const fn = store?.getState()[action];
-          if (typeof fn !== 'function')
-            throw new Error(`--call: the store has no action "${action}"`);
-          return (fn as (a?: unknown) => unknown)(arg);
-        }, call);
-        await page.waitForTimeout(250);
       }
       if (opts.waitFor) {
         const found = await page

@@ -1,0 +1,35 @@
+import { describe, expect, it } from 'vitest';
+import { PerspectiveCamera, Vector3 } from 'three';
+import { cameraPosition, flatDistance, localMetresPerPixel, FLAT_PITCH } from '../tiltCamera';
+
+const LAT = 49.2096;
+
+describe('tiltCamera', () => {
+  it('matches Leaflet: at zoom 18 in Brno a CSS pixel is ~0.39 m', () => {
+    const mpp = localMetresPerPixel(LAT, 18);
+    expect(mpp.x).toBeCloseTo(0.3906, 3);
+    expect(mpp.y).toBeCloseTo(0.3906, 2);
+    expect(localMetresPerPixel(LAT, 19).y).toBeCloseTo(mpp.y / 2, 6);
+  });
+
+  it('frames exactly the map a straight-down camera replaces, edge to edge', () => {
+    const [w, h, fov] = [390, 844, 40];
+    const mpp = localMetresPerPixel(LAT, 18);
+    const cam = new PerspectiveCamera(fov, w / h, 1, 5000);
+    cam.position.set(...cameraPosition([0, 0], flatDistance(h, mpp.y, fov), 180, FLAT_PITCH));
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld();
+    // The ground point at the top edge of the viewport: h/2 pixels north (−z).
+    const top = new Vector3(0, 0, -(h / 2) * mpp.y).project(cam);
+    const right = new Vector3((w / 2) * mpp.x, 0, 0).project(cam);
+    expect(top.y).toBeCloseTo(1, 2); // top of the screen
+    expect(right.x).toBeCloseTo(1, 2); // right edge: same scale both ways
+  });
+
+  it('puts the camera south of the target for bearing 180, so north stays up', () => {
+    const [x, y, z] = cameraPosition([10, 20], 100, 180, 45);
+    expect(x).toBeCloseTo(10, 6);
+    expect(z).toBeGreaterThan(20);
+    expect(y).toBeCloseTo(100 * Math.sin(Math.PI / 4), 6);
+  });
+});
