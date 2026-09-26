@@ -37,7 +37,13 @@ export function SocietyLogo({ society, className, fit = 'cover' }: SocietyLogoPr
           onError={() => setFailedUrl(society.logo ?? null)}
         />
       ) : (
-        <span className="font-extrabold">{society.glyph}</span>
+        // Four-letter glyphs (USAF, reIS) shrink so they fit the smallest tiles
+        // (24px chip, 32px list row) instead of being clipped by overflow-hidden.
+        <span
+          className={`font-extrabold leading-none ${society.glyph.length > 3 ? 'text-[0.75em]' : ''}`}
+        >
+          {society.glyph}
+        </span>
       )}
     </span>
   );

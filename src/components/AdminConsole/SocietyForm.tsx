@@ -80,10 +80,13 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
 
   return (
     <div className="flex flex-col gap-3">
+      <h3 className="font-bold">
+        {isNew ? t('admin.societies.add') : `${t('admin.societies.edit')}: ${society.name}`}
+      </h3>
       <label className={field}>
         <span className="opacity-70">{t('admin.societies.id')}</span>
         <input
-          className="input input-bordered"
+          className="input input-bordered w-full"
           value={id}
           disabled={!isNew}
           onChange={(e) => setId(e.target.value.trim())}
@@ -93,7 +96,7 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
       <label className={field}>
         <span className="opacity-70">{t('admin.societies.name')}</span>
         <input
-          className="input input-bordered"
+          className="input input-bordered w-full"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
@@ -101,7 +104,7 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
       <label className={field}>
         <span className="opacity-70">{t('admin.societies.shortName')}</span>
         <input
-          className="input input-bordered"
+          className="input input-bordered w-full"
           value={shortName}
           maxLength={24}
           onChange={(e) => setShortName(e.target.value)}
@@ -119,7 +122,7 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
       <label className={field}>
         <span className="opacity-70">{t('admin.societies.faculty')}</span>
         <select
-          className="select select-bordered"
+          className="select select-bordered w-full"
           value={facultyKey}
           onChange={(e) => setFacultyKey(e.target.value as FacultyKey)}
         >
@@ -152,7 +155,7 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
         <input
           type="file"
           accept="image/png,image/jpeg,image/webp"
-          className="file-input file-input-bordered file-input-sm"
+          className="file-input file-input-bordered file-input-sm w-full"
           onChange={(e) => setLogo(e.target.files?.[0] ?? null)}
         />
       </label>
