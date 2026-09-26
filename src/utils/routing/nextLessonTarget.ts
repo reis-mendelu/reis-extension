@@ -1,7 +1,8 @@
 import roomsIndex from '../../data/map/rooms-index.json';
 import buildingsJson from '../../data/map/buildings.json';
 import { resolveRoomCode } from '../mobile/resolveRoomCode';
-import { offMapCampus } from '../rooms/roomCampus';
+import { bracketCampus, offMapCampus } from '../rooms/roomCampus';
+import { MAP_CAMPUS } from '../../data/map/isRoomLabels';
 import type { BlockLesson } from '../../types/schedule';
 import type { BuildingsMeta, RoomIndexEntry } from '../../types/campusMap';
 
@@ -99,7 +100,12 @@ export function lessonTarget(lesson: BlockLesson): RouteTarget | null {
   // settles it: the structured name may come without it ("Aula"), and must not
   // resolve to building A's Aula when the lesson is at FRRMS ("Aula (ČP II.)").
   if (offMapCampus(lesson.room)) return null;
-  const resolved = resolveRoomCode([lesson.room, lesson.roomStructured?.name]);
+  // Off Černá Pole the printed room is the only string to trust: its structured
+  // name ("K01", "Aula") would be read as a Černá Pole room.
+  const offCernaPole = (bracketCampus(lesson.room) ?? MAP_CAMPUS) !== MAP_CAMPUS;
+  const resolved = resolveRoomCode(
+    offCernaPole ? [lesson.room] : [lesson.room, lesson.roomStructured?.name]
+  );
   if (!resolved) return null;
   const entry = INDEX.find((e) => e.code === resolved.code);
   // `buildingId === 0` is building Q — a real building. Compare against

@@ -170,7 +170,6 @@ describe('mapSlice', () => {
   it.each([
     ['T18', 1572, 'T18'], // building T's pin
     ['ZFAC1 (Led)', -102, 'ZFAC1'], // the Lednice campus
-    ['Z11 (ČP II.)', 1587, 'Z11'], // FRRMS, Černá Pole II
   ])('focusRoomByCode shows the building for %s', (raw, id, forRoom) => {
     const before = useAppStore.getState().mapFocusRequest;
     useAppStore.getState().focusRoomByCode(raw);
@@ -178,6 +177,22 @@ describe('mapSlice', () => {
     expect(s.mapSelection).toMatchObject({ kind: 'poi', poi: { id }, forRoom });
     expect(s.activeBuildingId).toBeNull();
     expect(s.mapFocusRequest).toBe(before + 1);
+  });
+
+  it('focusRoomByCode opens an FRRMS room on its floor in budova Z', () => {
+    useAppStore.getState().focusRoomByCode('Z11 (ČP II.)');
+    const s = useAppStore.getState();
+    expect(s.activeBuildingId).toBe(9000001);
+    expect(s.activeFloorId).toBe(9000011);
+  });
+
+  it('focusRoomByCode points Budova K (no plan, ČP II.) at building Z', () => {
+    useAppStore.getState().focusRoomByCode('K01 (ČP II.)');
+    expect(useAppStore.getState().mapSelection).toMatchObject({
+      kind: 'poi',
+      poi: { name: 'Z' },
+      forRoom: 'K01',
+    });
   });
 
   it('focusRoomByCode points a room in a mapped building the map does not draw at that building', () => {
