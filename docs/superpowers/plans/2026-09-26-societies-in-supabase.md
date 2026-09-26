@@ -21,6 +21,7 @@
 - Local runs: the touched tests via `npx vitest run <pattern>` and `npm run typecheck`. Leave repo-wide lint, format and the full suite to CI. If vitest workers time out under load, add `--no-file-parallelism --maxWorkers=1`.
 - Never `npx supabase db push`. Nothing in this plan applies SQL to production. Task 9 writes the runbook for Dominik to approve and run.
 - Commit messages end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- **Tasks 2–6 are ONE review gate.** Task 2 removes `societyById` / `SOCIETIES` / `ALL_SOCIETIES`, and consumers compile again only at the end of Task 6. Commit per task (there is no pre-commit hook: checked, no `.husky/` or `lint-staged`), but a reviewer judges 2–6 together, and `npm run typecheck` is required green at the end of Task 6, not before. Each task's own vitest files must pass on their own.
 
 ## File map
 
@@ -80,6 +81,9 @@
 -- foreign key from spolky_accounts.association_id. An old client build against
 -- this database is unaffected.
 --
+-- Dollar quotes are tagged ($fn$, $chk$) so the whole file can be wrapped in a
+-- `do $dry$ … $dry$` block for the prod dry-run (runbook step 2).
+--
 -- APPLY BY HAND (no CI applies migrations):
 --   npx supabase db query --linked -f supabase/migrations/20260926120000_societies_catalog.sql
 
@@ -107,14 +111,14 @@ create unique index societies_one_auto_follow_per_faculty
 -- posts against. Renaming it is a four-table operation
 -- (20260915120000_rename_af_society_to_usaf.sql), never an edit here.
 create function public.societies_guard() returns trigger
-language plpgsql set search_path = public as $$
+language plpgsql set search_path = public as $fn$
 begin
   if new.id <> old.id then
     raise exception 'societies.id is immutable: it is the society login';
   end if;
   new.updated_at := now();
   return new;
-end $$;
+end $fn$;
 
 create trigger societies_guard before update on public.societies
   for each row execute function public.societies_guard();
@@ -152,7 +156,7 @@ values
 
 -- Every account must name a society that exists. Checked, not assumed:
 -- verified 2026-09-26 that prod holds exactly the eight ids above.
-do $$
+do $chk$
 declare orphans text;
 begin
   select string_agg(a.association_id, ', ') into orphans
@@ -161,7 +165,7 @@ begin
   if orphans is not null then
     raise exception 'aborting: spolky_accounts rows with no society: %', orphans;
   end if;
-end $$;
+end $chk$;
 
 alter table public.spolky_accounts
   add constraint spolky_accounts_association_id_fkey
@@ -320,6 +324,21 @@ Run: `docker exec -i reis-societies-sql psql -U postgres < "$SCRATCH/societies-c
 Expected: the last line prints `ALL CLAIMS HOLD`, with no `FAIL:`. If a claim fails, fix the migration, then `docker rm -f reis-societies-sql` and repeat from Step 2.
 
 Note on claim 3: PostgreSQL raises `insufficient_privilege` for a failed RLS `with check` on insert. An update that no policy allows touches 0 rows instead of erroring. That is why the two are checked differently.
+
+- [ ] **Step 4b: Prove the dry-run wrapper on the stub**
+
+This is the exact wrapper the runbook uses against prod. Proving it here first shows that it runs and that it unwinds. Start from a fresh stub (`docker rm -f reis-societies-sql`, then Steps 2–3 without applying the migration), then:
+
+```bash
+{ echo 'do $dry$ begin';
+  sed -e '/^begin;$/d' -e '/^commit;$/d' supabase/migrations/20260926120000_societies_catalog.sql;
+  echo "raise exception 'DRY RUN OK >> societies=% fk=% logo_policies=%', (select count(*) from public.societies), (select count(*) from pg_constraint where conname = 'spolky_accounts_association_id_fkey'), (select count(*) from pg_policies where schemaname = 'storage' and policyname like 'society_logos_%');";
+  echo 'end $dry$;'; } > "$SCRATCH/societies-dryrun.sql"
+docker exec -i reis-societies-sql psql -U postgres < "$SCRATCH/societies-dryrun.sql"
+docker exec reis-societies-sql psql -U postgres -tAc "select to_regclass('public.societies')"
+```
+
+Expected: `ERROR:  DRY RUN OK >> societies=8 fk=1 logo_policies=4`, and the second command prints an empty line (the table was unwound). The migration has no early `return`, so the raise is always reached. Check that again if the migration ever gains one: an early return commits everything done so far (memory `migrations-do-not-self-apply`).
 
 - [ ] **Step 5: Record the recipe**
 
@@ -2304,7 +2323,7 @@ Expected: eight PNGs in a temp dir and eight `update` lines printed. Open each P
 `docs/runbooks/societies-catalog-rollout.md`, with these steps in order:
 
 1. Merge the PR into `test`. Nothing is applied by the merge.
-2. Dry-run the migration against prod with the self-unwinding `DO` block pattern from memory `migrations-do-not-self-apply`. Wrap the body and end with `raise exception 'DRY RUN OK >> societies=% fk=%', (select count(*) from public.societies), (select count(*) from pg_constraint where conname = 'spolky_accounts_association_id_fkey');`. The body has no early `return`, so the raise is always reached. The `create policy` statements on `storage.objects` also unwind.
+2. Dry-run the migration against prod: build `$SCRATCH/societies-dryrun.sql` with the exact wrapper from Task 1 Step 4b, then run `npx supabase db query --linked -f "$SCRATCH/societies-dryrun.sql"`. Expect an error reading `DRY RUN OK >> societies=8 fk=1 logo_policies=4`. Then `npx supabase db query --linked "select to_regclass('public.societies')"` must return null. This is the only step that proves the CLI's prod role may `create policy on storage.objects`; the stub cannot. Precheck already done on 2026-09-26: `public.societies` does not exist, and `spolky_accounts.association_id` is `text`, so the new foreign key's type matches.
 3. Apply: `npx supabase db query --linked -f supabase/migrations/20260926120000_societies_catalog.sql`.
 4. Verify through the public API with the shipped publishable key, not as the superuser the CLI connects as:
    - `curl -s "$SUPABASE_URL/rest/v1/societies?select=id" -H "apikey: $KEY"` returns 8 ids
@@ -2333,7 +2352,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - [ ] **Step 1: Local gates**
 
 Run: `npm run typecheck`, then
-`npx vitest run src/utils/societies src/data src/api/__tests__/societies src/api/__tests__/societiesAdmin src/api/__tests__/mapEvents src/store/slices/__tests__/createSocietiesSlice src/store/slices/__tests__/createMapSlice src/components/AdminConsole src/components/CampusMap src/components/Notifications src/components/Sidebar src/hooks src/utils/__tests__ src/test/guards scripts/lib/__tests__/privacyDisclosures`
+`npx vitest run src/utils/societies src/data src/api/__tests__/societies src/api/__tests__/societiesAdmin src/api/__tests__/mapEvents src/store/slices/__tests__/createSocietiesSlice src/store/slices/__tests__/createMapSlice src/components/AdminConsole src/components/CampusMap src/components/Notifications src/components/Sidebar src/hooks src/utils/__tests__ src/test/guards scripts/lib/__tests__/privacyDisclosures scripts/lib/__tests__/contentScriptGraph`
 Expected: exit 0 for both. Paste the summary lines into the PR.
 
 - [ ] **Step 2: Tree parity check**
@@ -2351,6 +2370,14 @@ Invoke the `verify-ui` skill and follow it for:
 - the **event detail card** and **Novinky row** with a logo, and with a failed logo (point one society's `logo` at a 404 via `useAppStore.setState` in the page).
 
 Take before/after PNGs and send them with `SendUserFile` before claiming done (memory `verifying-ui-work`).
+
+- [ ] **Step 3b: Remote images actually load in every host**
+
+Logos now come from `https://zvbpgkmnrqyprtkyxkwn.supabase.co`. Checked 2026-09-26: no HTML entry carries a meta CSP, and the extension's manifest CSP sets only `script-src` / `object-src`. Prove it anyway, because a blocked image falls back to the glyph tile silently:
+- **Extension iframe:** build (`npm run build`), load it unpacked in the browser pane or Brave (memory `stale-worktree-builds-in-brave`: confirm the loaded path is this worktree), open IS Mendelu, and in the iframe's console run `await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i.naturalWidth); i.onerror = no; i.src = 'https://zvbpgkmnrqyprtkyxkwn.supabase.co/storage/v1/object/public/tutorial-images/1a60f3a9-0c36-47e8-a0ca-4a29cef5e546/slide-2-1768827840093.webp'; })`. It should resolve to a width > 0.
+- **iOS simulator:** the same snippet in the WebView through Safari Web Inspector, on a release build (memory `ios-simulator-launch`).
+
+That object sits in an existing public bucket, so this needs nothing seeded.
 
 - [ ] **Step 4: State the verification gap in the PR**
 
