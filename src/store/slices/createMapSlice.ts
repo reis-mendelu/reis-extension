@@ -23,7 +23,9 @@ import { fetchMapEvents, toMapEvent } from '../../api/mapEvents';
 import { logError } from '../../utils/reportError';
 import { createBuildingGeometryActions } from './buildingGeometryActions';
 import { lookupRoomEntry, isNonPhysicalRoom } from '../../utils/rooms/lookupRoom';
-import { lookupRoomPlace } from '../../utils/rooms/lookupRoomPlace';
+import { lookupRoomPlace, type RoomPlaceEntry } from '../../utils/rooms/lookupRoomPlace';
+import { placedRooms } from '../../utils/rooms/placedRooms';
+import isRoomPlacesJson from '../../data/map/isRoomPlaces.json';
 import { focusRoomPlace } from './focusRoomPlace';
 import { buildingSharingOutline } from '../../components/CampusMap/landmarkBuilding';
 
@@ -32,6 +34,11 @@ const INDEX = roomsIndexJson as RoomIndexEntry[];
 const POIS = (poisJson as unknown as { features: PoiFeature[] }).features;
 const LANDMARKS = (landmarksJson as { landmarks: Landmark[] }).landmarks;
 const REMOTE = (remotePlacesJson as { places: RemotePlace[] }).places;
+// Rooms with no floor plan that search can still fly to (D05 → building D).
+const PLACED = placedRooms(isRoomPlacesJson as RoomPlaceEntry[], INDEX, [
+  ...POIS.map((f) => f.properties.name),
+  ...LANDMARKS.map((l) => l.name),
+]);
 
 const buildingById = (id: number) => META.buildings.find((b) => b.id === id) ?? null;
 
@@ -99,7 +106,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   selectGardenPlace: (place) => set({ mapSelection: { kind: 'gardenPlace', place } }),
 
   setMapSearchQuery: (q) =>
-    set({ mapSearchQuery: q, mapSearchResults: searchPlaces(q, INDEX, POIS, LANDMARKS) }),
+    set({ mapSearchQuery: q, mapSearchResults: searchPlaces(q, INDEX, POIS, LANDMARKS, PLACED) }),
 
   focusRoomByCode: (code) => {
     const entry = lookupRoomEntry(code, INDEX);

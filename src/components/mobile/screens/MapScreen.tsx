@@ -15,6 +15,7 @@ function resultLabel(m: MapSelection): string {
   if (m.kind === 'poi') return m.poi.name;
   if (m.kind === 'roomRef') return roomLabel(m.entry.name, m.entry.code, m.entry.nickname);
   if (m.kind === 'landmark') return m.landmark.name;
+  if (m.kind === 'placedRoom') return m.display;
   if (m.kind === 'gardenPlace') return m.place.name.cz;
   return '';
 }
@@ -57,6 +58,7 @@ export function MapScreen() {
     if (m.kind === 'poi') focusPoiById(m.poi.id);
     else if (m.kind === 'roomRef') focusRoomByCode(m.entry.code);
     else if (m.kind === 'landmark') focusLandmarkById(m.landmark.id);
+    else if (m.kind === 'placedRoom') focusRoomByCode(m.label);
     setQuery('');
   };
 
