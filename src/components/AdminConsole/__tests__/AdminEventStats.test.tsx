@@ -89,18 +89,18 @@ describe('AdminEventList — views and clicks per event', () => {
     expect(within(old).getByText('8 clicks')).toBeInTheDocument();
   });
 
-  // "Scheduled" is off the MAP only. Novinky lists every event from today on
-  // (fetchNotifications: date >= today, visible_from null on every prod row),
-  // so a scheduled event collects real views — the earliest numbers a society
-  // gets, and the ones it most wants.
-  it('shows a scheduled event its numbers too', () => {
+  // Students see a scheduled event nowhere yet — not on the map, not in Novinky
+  // (#459, dropScheduledEvents) — so its counters are not a result. A row
+  // moved later after going live may still carry numbers; they would read as
+  // this event's reach while nobody can see it, so they stay hidden too.
+  it('shows no numbers on a scheduled event', () => {
     useAppStore.setState({
       societyPosts: [row('sched', useAppStore.getState().societyMapEvents[2]!.date, 7, 2)],
     });
     render(<AdminEventList />);
     const sched = rowOf('E-sched');
-    expect(within(sched).getByText('7 views')).toBeInTheDocument();
-    expect(within(sched).getByText('2 clicks')).toBeInTheDocument();
+    expect(within(sched).queryByText(/views/)).toBeNull();
+    expect(within(sched).queryByText(/clicks/)).toBeNull();
   });
 
   it('says one view is one device, not one person', () => {
