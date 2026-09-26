@@ -5,6 +5,8 @@ import { BUNDLED_SOCIETIES } from '../../data/societies';
 import { toSocietyRecord } from '../../utils/societies/resolveSociety';
 import { IndexedDBService } from '../../services/storage';
 import { logError } from '../../utils/reportError';
+import type { SocietyInput } from '../../api/societiesAdmin';
+import { saveSociety, setSocietyActive, type SaveSocietyError } from './societies/saveSociety';
 
 export const SOCIETIES_CACHE_KEY = 'societies_catalog';
 
@@ -16,6 +18,14 @@ export interface SocietiesSlice {
   loadSocieties: () => Promise<void>;
   /** After an admin save: show it now, without waiting for the next fetch. */
   putSociety: (society: Society) => Promise<void>;
+  /** Admin console, reis_admin only (RLS enforces it). `logo` is the picked file. */
+  saveSociety: (
+    input: SocietyInput,
+    logo: Blob | null,
+    isNew: boolean
+  ) => Promise<{ error?: SaveSocietyError }>;
+  /** Hide or show; hidden societies still resolve for their old events. */
+  setSocietyActive: (id: string, active: boolean) => Promise<boolean>;
 }
 
 function isSociety(value: unknown): value is Society {
@@ -70,4 +80,10 @@ export const createSocietiesSlice: AppSlice<SocietiesSlice> = (set, get) => ({
       logError('SocietiesSlice.writeCache', err);
     }
   },
+
+  saveSociety: (input, logo, isNew) =>
+    saveSociety({ societies: () => get().societies, put: get().putSociety }, input, logo, isNew),
+
+  setSocietyActive: (id, active) =>
+    setSocietyActive({ societies: () => get().societies, put: get().putSociety }, id, active),
 });

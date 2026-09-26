@@ -215,7 +215,7 @@ export const EXEMPT: Exempt[] = [
   },
   {
     call: 'societies',
-    files: ['src/api/societies.ts'],
+    files: ['src/api/societies.ts', 'src/api/societiesAdmin.ts'],
     why: 'Public society catalog read (names, colours, logo paths); writes are by a signed-in reis_admin, not a student.',
   },
   {

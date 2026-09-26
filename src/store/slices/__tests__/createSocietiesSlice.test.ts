@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { create } from 'zustand';
 
 const fetchSocieties = vi.fn();
-vi.mock('../../../api/societies', () => ({ fetchSocieties: () => fetchSocieties() }));
+vi.mock('../../../api/societies', () => ({
+  fetchSocieties: () => fetchSocieties(),
+  SOCIETY_LOGO_BUCKET: 'society-logos',
+}));
 const idb = new Map<string, unknown>();
 vi.mock('../../../services/storage', () => ({
   IndexedDBService: {
