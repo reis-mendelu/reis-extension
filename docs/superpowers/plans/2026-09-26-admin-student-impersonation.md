@@ -89,6 +89,7 @@ The raw IS samples are at `/Users/Dominik.Holek/Documents/reis/.is-samples/2026-
 - Create: `src/api/impersonation/__tests__/fixtures/` with:
   - `catalog-periods-pef.html`
   - `catalog-programme-bf-801.html`
+  - `catalog-programme-bf-801.auth.html`
   - `catalog-plan-bf-801.cz.html`
   - `catalog-plan-bf-801.en.html`
   - `rozvrh-index.html`
@@ -165,8 +166,16 @@ def scrub_json(src, dst, first_days=None):
     (OUT / dst).write_text(json.dumps(d, ensure_ascii=False))
 scrub_json('tt-BF-r1-s2-sem-cz.json', 'rozvrh-bf-y1-g2.cz.json', first_days='20260927')
 scrub_json('tt-BF-r1-s2-sem-en.json', 'rozvrh-bf-y1-g2.en.json', first_days='20260927')
-scrub_json('tt-FT-dated-cz.json', 'rozvrh-predmet-ft.cz.json')
-scrub_json('tt-FT-dated-en.json', 'rozvrh-predmet-ft.en.json')
+# rocnik=2 per-subject query (probe 6): only year-eligible slots, 36 lessons.
+scrub_json('tt-FT-r2-dated-cz.json', 'rozvrh-predmet-ft.cz.json')
+scrub_json('tt-FT-r2-dated-en.json', 'rozvrh-predmet-ft.en.json')
+
+# The app fetches /auth/katalog/plany.pl (Capacitor rejects HTML without logout.pl).
+# Its row structure equals the public page's (verified 61/61 rows); keep only the
+# leaf anchors so no logged-in chrome is committed.
+auth = (SRC / 'auth-plany-BF-801-programme.html').read_text()
+anchors = re.findall(r'<a href="(/auth/katalog/plany\.pl\?[^"]*(?:stud_plan|predmety_sz)=[^"]*)"', auth)
+(OUT / 'catalog-programme-bf-801.auth.html').write_text(page('\n'.join(f'<a href="{h}">plan</a>' for h in anchors)))
 print('ok')
 ```
 
@@ -190,7 +199,27 @@ grep -rniE "holek|149707|logout\.pl|Portál studenta|Zapsané termíny" src/api/
 grep -rnE "Stachoň|Plecitá|Otavová|Říhová|Janová|Melicharová" src/api/impersonation/__tests__/fixtures
 ```
 
-If a teacher name survives in `rozvrh-list-bf-y1.html` (the regex scrub is positional), open the file and replace every Vyučující cell by hand with `Učitel`.
+Then assert the scrub **structurally**. The grep above only knows six names, and the positional regex silently does nothing if IS puts whitespace between cells:
+
+```bash
+python3 - <<'PY'
+import json, re, html, pathlib
+F = pathlib.Path('src/api/impersonation/__tests__/fixtures')
+s = (F / 'rozvrh-list-bf-y1.html').read_text()
+trs = re.findall(r'(?s)<tr[^>]*>.*?</tr>', s)
+head = [re.sub(r'<[^>]+>', '', c).strip() for c in re.findall(r'(?s)<t[hd][^>]*>(.*?)</t[hd]>', trs[0])]
+col = head.index('Vyučující')
+for tr in trs[1:]:
+    cells = [html.unescape(re.sub(r'<[^>]+>', '', c)).strip() for c in re.findall(r'(?s)<td[^>]*>(.*?)</td>', tr)]
+    assert cells[col] == 'Učitel', cells[col]
+for f in F.glob('*.json'):
+    for l in json.loads(f.read_text())['blockLessons']:
+        assert all(re.fullmatch(r'Učitel \d+', t['fullName']) for t in l['teachers']), f
+print('scrub ok')
+PY
+```
+
+Expected output: `scrub ok`. If it fails, fix the scrub script and re-run it. Don't hand-edit around it.
 
 - [ ] **Step 3: Checkpoint: Dominik reviews the fixture diff**
 
@@ -220,6 +249,19 @@ Append this section to the spec:
   picker rather than listed disabled; a scope note under the selects says what v1 covers.
 - **Empty timetable.** A no-results answer applies the plan with no lessons; the calendar's own
   empty state is the note.
+- **Authenticated catalogue.** The plan is fetched from `/auth/katalog/plany.pl`, not the public
+  `/katalog/` path: the Capacitor transport treats HTML without `logout.pl` as an expired session,
+  and the public page has none. Row structure is identical (verified 2026-09-26, 61/61 rows).
+- **Year filter on per-subject queries.** `predmet=<id>; rocnik=<year>` returns only the slots open to
+  that year (EBC-FT: 36 lessons instead of 60, other programmes' first-year slots gone).
+- **Options cache.** The programme list is cached in memory for the app session, not per period in
+  IndexedDB; it is one small crawl per picker session.
+- **Side effects gated.** While impersonating, the files and classmates fetchers (which hit IS and
+  write IndexedDB per subject code) return early, so no foreign subject reaches the real stores.
+- **Offline restart.** Restore clears the cache only when there is definitively no admin session, or
+  the account is not a reis_admin. An admin whose role lookup failed (offline) keeps it for the next
+  boot. `loadAdminSession` no longer signs the admin out when the lookup *errors*, only when the
+  account row is absent.
 ```
 
 - [ ] **Step 5: Commit**
@@ -744,9 +786,13 @@ describe('catalogue navigation (real PEF catalogue pages, 2026-09-26)', () => {
     expect(url).toMatch(/^https:\/\/is\.mendelu\.cz\/katalog\/plany\.pl\?/);
     expect(url).not.toContain('predmety_sz');
   });
+  it('keeps the /auth/ path the authenticated programme page links to', () => {
+    const url = findLeafUrl(fx('catalog-programme-bf-801.auth.html'));
+    expect(url).toMatch(/^https:\/\/is\.mendelu\.cz\/auth\/katalog\/plany\.pl\?.*stud_plan=12490/);
+  });
   it('builds the programme URL IS expects', () => {
     expect(programmeUrl('2', '801', '1', '1889')).toBe(
-      'https://is.mendelu.cz/katalog/plany.pl?fakulta=2;poc_obdobi=801;typ_ss=;typ_studia=1;program=1889;misto_vyuky=;lang=cz'
+      'https://is.mendelu.cz/auth/katalog/plany.pl?fakulta=2;poc_obdobi=801;typ_ss=;typ_studia=1;program=1889;misto_vyuky=;lang=cz'
     );
   });
   it('maps short codes to study types (v1: B- and N- only)', () => {
@@ -812,7 +858,12 @@ Expected: FAIL, unresolved imports.
 import { BASE_URL } from '../client';
 import { txt } from './text';
 
-export const CATALOG_URL = `${BASE_URL}/katalog/plany.pl`;
+/**
+ * `/auth/`, not the public `/katalog/`: the same pages render for a guest with no
+ * `logout.pl` in them, and the Capacitor transport reads HTML without it as an
+ * expired session. The row structure is identical (verified 2026-09-26).
+ */
+export const CATALOG_URL = `${BASE_URL}/auth/katalog/plany.pl`;
 
 /** Catalogue `fakulta=` ids by the timetable's Pracoviště short name (reis-scraper FACULTIES). */
 export const FACULTY_IDS: Record<string, string> = {
@@ -1077,8 +1128,8 @@ import { describe, it, expect } from 'vitest';
 import { firstSlotOnly } from '../pickSlots';
 import { readTimetableAnswer } from '../timetableQuery';
 
-// Real EBC-FT dated timetable, all parallels (predmet=164066), ZS 2026/27.
-// 60 lessons: lectures Thu 09:00 Q02 (12) and seminars in four slots.
+// Real EBC-FT dated timetable for year 2 (predmet=164066; rocnik=2), ZS 2026/27.
+// 36 lessons: lecture Thu 09:00 Q02 (12), seminars Tue 09:00 Q31 (12) and Tue 13:00 Q31 (12).
 const a = readTimetableAnswer(
   readFileSync(resolve(process.cwd(), 'src/api/impersonation/__tests__/fixtures/rozvrh-predmet-ft.cz.json'), 'utf8')
 );
@@ -1086,10 +1137,11 @@ const a = readTimetableAnswer(
 describe('firstSlotOnly', () => {
   it('keeps the lecture slot and the earliest seminar slot only', () => {
     if (a.kind !== 'lessons') throw new Error('fixture');
-    expect(a.lessons).toHaveLength(60);
+    expect(a.lessons).toHaveLength(36);
     const kept = firstSlotOnly(a.lessons);
     const slots = new Set(kept.map((l) => `${l.isSeminar}|${l.startTime}|${l.room}`));
     expect(slots).toEqual(new Set(['false|09:00|Q02', 'true|09:00|Q31']));
+    expect(kept).toHaveLength(24);
     expect(kept.every((l) => new Date(`${l.date.slice(0, 4)}-${l.date.slice(4, 6)}-${l.date.slice(6)}`).getUTCDay() === (l.isSeminar === 'true' ? 2 : 4))).toBe(true);
   });
   it('returns [] for []', () => expect(firstSlotOnly([])).toEqual([]));
@@ -1277,13 +1329,13 @@ function route(url: string, init?: RequestInit): string {
   if (url.includes('rozvrhy_view.pl?konf=1;z=')) return raw('rozvrh-range.html');
   if (url.includes('rozvrhy_view.pl') && !body.has('format')) return raw('rozvrh-criteria.html');
   if (body.get('format') === 'list') return raw('rozvrh-list-bf-y1.html');
-  if (body.get('format') === 'json' && body.get('predmet') === '164066')
+  if (body.get('format') === 'json' && body.get('predmet') === '164066' && body.get('rocnik') === '2')
     return raw(`rozvrh-predmet-ft.${body.get('lang')}.json`);
   if (body.get('format') === 'json' && body.get('skupina') === '2')
     return raw(`rozvrh-bf-y1-g2.${body.get('lang')}.json`);
   if (body.get('format') === 'json') return noResults;
   if (url.includes('plany.pl?fakulta=2;lang=cz')) return raw('catalog-periods-pef.html');
-  if (url.includes('program=1889') && !url.includes('stud_plan')) return raw('catalog-programme-bf-801.html');
+  if (url.includes('program=1889') && !url.includes('stud_plan')) return raw('catalog-programme-bf-801.auth.html');
   if (url.includes('stud_plan=12490') && url.includes('lang=en')) return raw('catalog-plan-bf-801.en.html');
   if (url.includes('stud_plan=12490')) return raw('catalog-plan-bf-801.cz.html');
   throw new Error(`unrouted ${url}`);
@@ -1461,7 +1513,8 @@ export async function fetchImpersonation(sel: ImpersonationSelection, now = new 
     schedule = await lessonsFor(sel, { program: sel.programId, rocnik: 1, skupina: sel.group ?? 0 }, false);
   } else {
     const withId = attend.filter((r): r is CatalogRow & { predmetId: string } => r.predmetId !== null);
-    schedule = (await mapLimit(withId, 3, (r) => lessonsFor(sel, { predmet: r.predmetId }, true))).flat();
+    // rocnik narrows a subject to the slots open to this year (probe 6: EBC-FT 60 → 36).
+    schedule = (await mapLimit(withId, 3, (r) => lessonsFor(sel, { predmet: r.predmetId, rocnik: sel.year }, true))).flat();
   }
 
   const title = `${sel.shortCode} ${sel.name} · ${intakeLabel(sel.year, now)}`;
@@ -1663,9 +1716,12 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify:
   - `src/store/types.ts`: add `import('./slices/createImpersonationSlice').ImpersonationSlice &` to `AppState`, and `| { kind: 'impersonation' }` to `MobileSheet`
   - `src/store/useAppStore.ts`: `...createImpersonationSlice(...a),`, plus the restore wiring
-  - `src/store/slices/createAdminSlice.ts`: the `adminLogout` exit
+  - `src/store/slices/createAdminSlice.ts`: the `adminLogout` exit; `resolveAccount` reports a failed lookup; `loadAdminSession` no longer signs out on one
   - `src/store/slices/createDemoSlice.ts`: `IS_DERIVED_META_KEYS`
-- Test: `src/store/slices/__tests__/createImpersonationSlice.test.ts`
+  - `src/store/slices/createFilesSlice.ts`: early return while impersonating in `fetchFiles`, `fetchFilesPriority`, `refreshFiles`, `refreshFilesForSubject`, `fetchAllFiles`, `prefetchTodaySubjects`, `speculativeRefreshFiles`
+  - `src/store/slices/createClassmatesSlice.ts`: early return while impersonating in `fetchClassmatesPriority`, `refreshClassmatesForSubject`, `fetchAllClassmates`
+- Create: `src/services/admin/hasAdminSession.ts`
+- Test: `src/store/slices/__tests__/createImpersonationSlice.test.ts`, `src/store/slices/__tests__/impersonationSideEffects.test.ts`
 
 **Interfaces:**
 - Consumes: `fetchImpersonation`, `loadOptions`, `loadYear1Groups`, the types, `overlayWrite`, `currentPeriod`, `periodLabel`.
@@ -1694,6 +1750,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const fetchImpersonation = vi.fn();
+const hasAdminSession = vi.fn(async () => false);
+vi.mock('../../../services/admin/hasAdminSession', () => ({ hasAdminSession: () => hasAdminSession() }));
 vi.mock('../../../api/impersonation/fetchImpersonation', () => ({
   fetchImpersonation: (...a: unknown[]) => fetchImpersonation(...a),
   loadOptions: vi.fn(async () => []),
@@ -1725,6 +1783,7 @@ beforeEach(async () => {
   // guard would otherwise strip this reset of `schedule`.
   useAppStore.setState(overlayWrite({ impersonation: null, adminRole: 'reis_admin', demoMode: false, schedule: { data: [lesson('REAL-1')] as never, status: 'success' as const } }));
   fetchImpersonation.mockResolvedValue(RESULT);
+  hasAdminSession.mockResolvedValue(false);
 });
 
 describe('impersonation slice', () => {
@@ -1763,12 +1822,22 @@ describe('impersonation slice', () => {
     expect(fetchImpersonation).not.toHaveBeenCalled();
   });
 
-  it('restore drops it when the admin session is gone (admin logout, IS logout, identity change)', async () => {
+  it('restore drops it when there is no admin session at all (admin logout, IS logout, identity change)', async () => {
     await useAppStore.getState().startImpersonation(REQ);
     useAppStore.setState({ impersonation: null, adminRole: null });
     await useAppStore.getState().restoreImpersonation();
     expect(useAppStore.getState().impersonation).toBeNull();
     expect(await IndexedDBService.get('meta', 'impersonation')).toBeUndefined();
+  });
+
+  it('restore keeps (but does not apply) the cache when the role could not be resolved', async () => {
+    // Offline boot: a stored admin session exists, the role lookup failed.
+    hasAdminSession.mockResolvedValue(true);
+    await useAppStore.getState().startImpersonation(REQ);
+    useAppStore.setState(overlayWrite({ impersonation: null, adminRole: null }));
+    await useAppStore.getState().restoreImpersonation();
+    expect(useAppStore.getState().impersonation).toBeNull();
+    expect(await IndexedDBService.get('meta', 'impersonation')).toBeDefined();
   });
 
   it('restore drops a cache from another period and says so', async () => {
@@ -1797,7 +1866,51 @@ describe('impersonation slice', () => {
 });
 ```
 
-Before running it, check how other slice tests set up IndexedDB (e.g. `fake-indexeddb` in `src/test/setup*`) and match that. If `adminLogout` calls Supabase, mock `../../../services/admin/authClient` the same way `createAdminSlice` tests do. Search for them with `grep -rl "adminLogout" src/store/slices/__tests__`.
+`src/store/slices/__tests__/impersonationSideEffects.test.ts` pins the gated fetchers. While impersonating, no per-subject IS fetch runs, so nothing is written under a foreign code:
+
+```ts
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+const fetchWithAuth = vi.fn();
+vi.mock('../../../api/client', async (orig) => ({
+  ...(await orig<typeof import('../../../api/client')>()),
+  fetchWithAuth: (...a: unknown[]) => fetchWithAuth(...a),
+}));
+
+import { useAppStore } from '../../useAppStore';
+import { overlayWrite } from '../../overlay/overlayGuard';
+
+const active = {
+  selection: { programId: '1889', shortCode: 'B-F', name: 'Finance', faculty: 'PEF', year: 1, group: 2, periodLabel: 'ZS 2026/2027', rozvrh: {} as never },
+  result: { plan: {} as never, schedule: [], subjects: { version: 1, lastUpdated: '', data: { 'EBC-MT': { displayName: 'Matematika', fullName: 'EBC-MT Matematika', subjectCode: 'EBC-MT', folderUrl: '', fetchedAt: '' } } }, fetchedAt: 0 },
+};
+
+beforeEach(() => {
+  fetchWithAuth.mockReset();
+  useAppStore.setState(overlayWrite({ impersonation: active, subjects: active.result.subjects, syncStatus: { ...useAppStore.getState().syncStatus, handshakeDone: true } }));
+});
+
+describe('per-subject fetchers are inert while impersonating', () => {
+  it.each([
+    ['fetchFiles', (s: ReturnType<typeof useAppStore.getState>) => s.fetchFiles('EBC-MT')],
+    ['fetchFilesPriority', (s: ReturnType<typeof useAppStore.getState>) => s.fetchFilesPriority('EBC-MT')],
+    ['refreshFiles', (s: ReturnType<typeof useAppStore.getState>) => s.refreshFiles('EBC-MT')],
+    ['refreshFilesForSubject', (s: ReturnType<typeof useAppStore.getState>) => s.refreshFilesForSubject('EBC-MT')],
+    ['fetchAllFiles', (s: ReturnType<typeof useAppStore.getState>) => s.fetchAllFiles()],
+    ['fetchClassmatesPriority', (s: ReturnType<typeof useAppStore.getState>) => s.fetchClassmatesPriority('EBC-MT')],
+    ['refreshClassmatesForSubject', (s: ReturnType<typeof useAppStore.getState>) => s.refreshClassmatesForSubject('EBC-MT')],
+    ['fetchAllClassmates', (s: ReturnType<typeof useAppStore.getState>) => s.fetchAllClassmates()],
+  ])('%s makes no IS request', async (_name, run) => {
+    await run(useAppStore.getState());
+    expect(fetchWithAuth).not.toHaveBeenCalled();
+    expect(useAppStore.getState().files?.['EBC-MT']).toBeUndefined();
+  });
+});
+```
+
+Adapt the `files` read on the last line to the files slice's actual field name (see `FilesSlice` in `src/store/types.ts`). If a fetcher reaches IS through a module other than `api/client`, mock that module instead. The assertion that matters is "no request, no write".
+
+Before running either test, check how other slice tests set up IndexedDB (e.g. `fake-indexeddb` in `src/test/setup*`) and match that. If `adminLogout` calls Supabase, mock `../../../services/admin/authClient` the same way `createAdminSlice` tests do. Search for them with `grep -rl "adminLogout" src/store/slices/__tests__`.
 
 - [ ] **Step 2: Run it and check that it fails**
 
@@ -1875,6 +1988,7 @@ import { overlayWrite } from '../overlay/overlayGuard';
 import { overlayState, blankOverlayState } from '../overlay/overlayState';
 import { saveImpersonation, loadImpersonation, clearImpersonation } from './impersonation/impersonationStorage';
 import { logError } from '../../utils/reportError';
+import { hasAdminSession } from '../../services/admin/hasAdminSession';
 
 export interface ActiveImpersonation {
   selection: ImpersonationSelection;
@@ -1971,18 +2085,23 @@ export const createImpersonationSlice: AppSlice<ImpersonationSlice> = (set, get)
     ]);
   },
 
-  // Boot: after loadAdminSession. One check covers admin logout, IS logout and a
-  // changed student — each of those leaves no reis_admin session behind.
+  // Boot: after loadAdminSession settles. Admin logout, IS logout and a changed
+  // student all leave NO admin session behind — that, or a non-admin role, clears
+  // it. A session whose role lookup failed (offline) keeps it for the next boot.
   restoreImpersonation: async () => {
     const saved = await loadImpersonation().catch(() => null);
     if (!saved) return;
-    const expired = saved.selection.periodLabel !== periodLabel(currentPeriod(new Date()));
-    if (get().adminRole !== 'reis_admin' || expired) {
+    const drop = async (why?: 'expired') => {
       await clearImpersonation().catch(() => {});
-      if (expired) set({ impersonationError: 'expired' });
+      if (why) set({ impersonationError: why });
+    };
+    if (saved.selection.periodLabel !== periodLabel(currentPeriod(new Date()))) return drop('expired');
+    const role = get().adminRole;
+    if (role === 'reis_admin') {
+      set(overlayWrite({ impersonation: saved, ...overlayState(saved.result) }));
       return;
     }
-    set(overlayWrite({ impersonation: saved, ...overlayState(saved.result) }));
+    if (role !== null || !(await hasAdminSession())) return drop();
   },
 });
 ```
@@ -1994,11 +2113,16 @@ Wiring:
 - **`src/store/types.ts`:** add `import('./slices/createImpersonationSlice').ImpersonationSlice &` before `DemoSlice;` in `AppState`, and `| { kind: 'impersonation' }` to `MobileSheet`.
 - **`src/store/useAppStore.ts`:**
   - Add the import and `...createImpersonationSlice(...a),` after `...createDemoSlice(...a),`.
-  - Replace `s.loadAdminSession();` with:
+  - Replace `s.loadAdminSession();` with the following. `.catch` first, so a failing admin load still restores (and decides) rather than skipping:
 
     ```ts
-    void s.loadAdminSession().then(() => useAppStore.getState().restoreImpersonation());
+    void s
+      .loadAdminSession()
+      .catch((e) => logError('Boot.loadAdminSession', e))
+      .then(() => useAppStore.getState().restoreImpersonation());
     ```
+
+    Add `import { logError } from '../utils/reportError';` if the file lacks it.
 
   - In the dev-seed branch, after `useAppStore.setState({...})`, add `void s.restoreImpersonation();`.
 - **`src/store/slices/createAdminSlice.ts`:** make the first line of `adminLogout`:
@@ -2008,6 +2132,35 @@ Wiring:
   ```
 
 - **`src/store/slices/createDemoSlice.ts`:** change `IS_DERIVED_META_KEYS` to `['study_stats', 'study_comparison', 'impersonation'] as const`.
+- **`src/services/admin/hasAdminSession.ts`** (new). It reads the locally stored session and makes no network call, so it answers offline:
+
+  ```ts
+  import { adminAuthClient } from './authClient';
+
+  /** A stored admin session exists. Local read only: answers offline. */
+  export async function hasAdminSession(): Promise<boolean> {
+    try {
+      const { data } = await adminAuthClient.auth.getSession();
+      return data.session !== null;
+    } catch {
+      return false;
+    }
+  }
+  ```
+
+- **`createAdminSlice.ts`, the offline sign-out (behaviour change, agreed with Dominik before Task 8 starts).** `resolveAccount` currently maps a lookup *error* to `role: null`, and `loadAdminSession` then signs the admin out. So a phone that boots offline loses its admin login, and with it the impersonation. The fix:
+  - `resolveAccount` returns `{ role, associationId, failed: boolean }`, with `failed = !!error`.
+  - `loadAdminSession` calls `signOut()` only when `role === null && !failed`, meaning the account row is genuinely absent.
+  - On `failed`, it returns without setting state. The next boot retries.
+  - Add a test to the existing admin-slice tests: a lookup error does not call `signOut`.
+- **Gates in files/classmates.** Make this the first line of each action listed under Files above:
+
+  ```ts
+  if (get().impersonation) return;
+  ```
+
+  Use the action's own return type if it isn't `void`/`Promise<void>`: return `undefined` or the cached value, per its signature. Add one comment at the top of each slice: "Inert while impersonating: these hit IS and write IndexedDB per subject code, and the store holds another programme's subjects."
+
 
 - [ ] **Step 4: Run the tests and check that they pass**
 
@@ -2017,7 +2170,7 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/store
+git add src/store src/services/admin/hasAdminSession.ts
 git commit -m "feat(impersonation): overlay slice with restart restore and exit paths
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -2292,7 +2445,7 @@ export function ImpersonationPicker({ onStarted }: { onStarted?: () => void }) {
     <div className="flex flex-col gap-3 p-4">
       <label className="flex flex-col gap-1 text-xs text-base-content/70">
         {t('impersonation.faculty')}
-        <select className={field} value={faculty} onChange={(e) => { setFaculty(e.target.value); setProgramId(''); }}>
+        <select className={field} value={faculty} onChange={(e) => { setFaculty(e.target.value); setProgramId(''); setYear(1); setGroup(null); }}>
           <option value="" disabled>—</option>
           {options?.map((f) => <option key={f.faculty} value={f.faculty}>{f.faculty}</option>)}
         </select>
@@ -2555,16 +2708,25 @@ Invoke the `verify-ui` skill. Seed an active impersonation in the dev webapp (`n
 
 Send the before/after PNGs to Dominik with SendUserFile, unasked (memory: verifying-ui-work).
 
-- [ ] **Step 4: Live check against real IS (the tests cannot prove this)**
+- [ ] **Step 4: Live check against real IS (the tests cannot prove this). Needs Dominik**
 
-On the dev webapp signed in as reis_admin (`npm run dev:web:reis-admin` plus an IS session):
+The dev webapp **cannot** do this. It has no IS proxy (`vite.web.config.ts` has no `server.proxy`), and IS denies CORS to every origin. Its screenshots in Step 3 prove layout, not the IS path. Two real sessions exist, and both need Dominik's hands. Claude never types his MENDELU password, and the iPad takes no taps from Claude.
 
-1. Impersonate PEF · B-F · year 1 · group 2. Expect the timetable to match the probe: Tue 07:00 EBC-PE Q01, Tue 09:00 EBC-MT Q01, Mon 09:00 EBC-DS seminar Q48, and so on. Expect the plan to show 6 semesters with semester 1 marked enrolled.
-2. Impersonate B-F · year 2. Expect semester 3 subjects with one lecture and one seminar slot each. Record how many IS requests went out.
-3. Reload. Impersonation must persist without new IS timetable requests.
-4. Click Ukončit. The real timetable and plan must return.
+1. **Extension, in Dominik's Brave** (the transport the extension ships).
+   - Build this worktree with `npm run build`.
+   - Tell Dominik the exact output path to load unpacked. Ask him to confirm on `brave://extensions` that the loaded path is this worktree's, because Brave pins another worktree's build (memory: stale-worktree-builds-in-brave).
+   - Ask him to sign in to IS, open reIS, sign in as reis_admin, then:
+     1. Impersonate PEF · B-F · year 1 · group 2. Expect Tue 07:00 EBC-PE Q01, Tue 09:00 EBC-MT Q01, Mon 09:00 EBC-DS seminar Q48 (even weeks), and a plan with 6 semesters and semester 1 marked enrolled.
+     2. Impersonate B-F · year 2. Expect semester 3 with one lecture and one seminar slot per subject; EBC-FT is Thu 09:00 Q02 plus Tue 09:00 Q31.
+     3. Reload. Impersonation persists, and the Network panel shows no new `rozvrhy_view.pl` POSTs.
+     4. Click Ukončit. His own timetable and plan return.
+   - Ask for a screenshot of each step, then read them yourself. The pane screenshot reaches only you.
+2. **iPad** (the Capacitor transport).
+   - Build and install the **release** build on the cabled iPad (memories: ipad-device, device-tests-use-the-real-release-build).
+   - Ask Dominik to repeat step 1.1 there.
+   - Take the headless screenshot yourself.
 
-Then on the iPad (memory: ipad-device), build and install the real release build and repeat step 1. Report each step as observed, with screenshots.
+Report each step exactly as observed. A step Dominik didn't run is reported as not run, not as passed.
 
 - [ ] **Step 5: Privacy disclosure check**
 
