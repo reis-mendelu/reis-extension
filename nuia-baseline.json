@@ -40,7 +40,6 @@
   "src/components/CampusMap/LandmarkPicker.tsx",
   "src/components/CampusMap/MapCanvas.tsx",
   "src/components/CampusMap/RoomThumbnail.tsx",
-  "src/components/CampusMap/__tests__/ComposerRoomSearch.test.tsx",
   "src/components/CampusMap/__tests__/EventComposer.test.tsx",
   "src/components/CampusMap/__tests__/EventLayer.test.tsx",
   "src/components/CampusMap/__tests__/RoomSearch.test.tsx",
