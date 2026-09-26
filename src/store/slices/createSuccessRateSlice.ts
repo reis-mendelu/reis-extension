@@ -126,8 +126,13 @@ export const createSuccessRateSlice: AppSlice<SuccessRateSlice> = (set, get) => 
       if (!result.data[courseCode]?.stats.length) void get().fetchSimilarSubjects(courseCode);
     } catch (err) {
       loggers.ui.error('[SuccessRateSlice] Fetch failed:', err);
+      // Úspěšnost waits for similarSubjects[code]; with no lookup coming, settle
+      // it as nothing to suggest so the tab falls back to its empty state.
       set((state) => ({
         successRatesLoading: { ...state.successRatesLoading, [courseCode]: false },
+        ...(state.similarSubjects[courseCode]
+          ? {}
+          : { similarSubjects: { ...state.similarSubjects, [courseCode]: [] } }),
       }));
     }
   },
