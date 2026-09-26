@@ -30,8 +30,9 @@ const GRAPH = (campusPaths as unknown as { graph: CampusGraph }).graph;
  * this rule exists to prevent. So it runs the router: is there a walk from
  * here to the building this lesson is in?
  *
- * Per BUILDING, not per position, for the same reason. Budova Z has no nodes,
- * so no walk to it exists from anywhere, and asking about the student's own
+ * Per BUILDING, not per position, for the same reason. Budova Z has a floor
+ * plan but no nodes, so no walk to it exists from anywhere — and that holds even
+ * with no fix, which is why it is answered first. Asking about the student's own
  * lecture keeps the offer honest rather than merely plausible.
  *
  * The garden's hours count here exactly as they do in `routeTo`: a gate that
@@ -45,10 +46,15 @@ const GRAPH = (campusPaths as unknown as { graph: CampusGraph }).graph;
  * someone standing on the campus.
  */
 export function canRouteFrom(at: [number, number] | null, buildingName: string): boolean {
+  // A building with no nodes has no walk from anywhere — budova Z, which has a
+  // floor plan but is not in the routing graph (v1). Checked before the no-fix
+  // branch, which would otherwise offer a press that draws nothing.
+  const targets = GRAPH.buildings[buildingName] ?? [];
+  if (targets.length === 0) return false;
   if (!at) return true;
   const snap = snapToGraph(GRAPH, at);
   if (!snap) return false;
   const now = devForcedNow() ?? new Date();
   const isOpen = (gate: string) => isGateOpen(gate, now);
-  return shortestWalk(GRAPH, snap, GRAPH.buildings[buildingName] ?? [], isOpen) !== null;
+  return shortestWalk(GRAPH, snap, targets, isOpen) !== null;
 }

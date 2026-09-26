@@ -84,3 +84,13 @@ describe('canRouteFrom', () => {
     expect(canRouteFrom(null, 'Q')).toBe(true);
   });
 });
+
+describe('canRouteFrom, for a building with no graph nodes', () => {
+  it('offers no walk to budova Z, even with no position fix — Z has no graph nodes in v1', () => {
+    expect(canRouteFrom(null, 'Z')).toBe(false);
+  });
+
+  it('still offers a walk to a graph building when the position is unknown', () => {
+    expect(canRouteFrom(null, 'Q')).toBe(true);
+  });
+});
