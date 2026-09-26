@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { User, X } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { usePersonProfile } from '../../hooks/data/usePersonProfile';
@@ -17,14 +16,8 @@ export function ClassmatePersonDrawer({ classmate, onClose }: ClassmatePersonDra
   const { t } = useTranslation();
   const { profile, isLoading } = usePersonProfile(classmate?.personId);
 
-  useEffect(() => {
-    if (!classmate) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [classmate, onClose]);
+  // Escape is AdaptiveDrawer's (useEscapeLayer). A window listener of its own
+  // here closed this drawer AND the subject drawer under it on one press.
 
   const profileUrl = classmate
     ? `https://is.mendelu.cz/auth/lide/clovek.pl?id=${classmate.personId};lang=cz`

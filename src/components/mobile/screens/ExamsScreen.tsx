@@ -160,8 +160,8 @@ export function ExamsScreen() {
   // the same hole CalendarScreen had, caught in review on this PR.
   // Refreshing is a pull on the list (ExamsPullArea), so the row under the
   // title is back to carrying only the registered pill, and only when there is
-  // one. The sr-only button is the screen-reader route to the same refresh and
-  // takes no layout.
+  // one. The refresh button sits among the header actions: sr-only on a touch
+  // screen, a visible circle on a Mac, where nothing can pull.
   // Where a pull to refresh may start: anywhere on the screen (ExamsPullArea).
   const shell = (body: ReactNode) => (
     <div
@@ -172,15 +172,13 @@ export function ExamsScreen() {
       <ScreenHeader
         eyebrow={eyebrow}
         title={t('mobile.exams.title')}
-        below={
-          <>
-            {registeredPill}
-            <RefreshButton
-              label={t('mobile.exams.refresh')}
-              refreshing={examsRefreshing}
-              onRefresh={triggerExamsRefresh}
-            />
-          </>
+        below={registeredPill}
+        action={
+          <RefreshButton
+            label={t('mobile.exams.refresh')}
+            refreshing={examsRefreshing}
+            onRefresh={triggerExamsRefresh}
+          />
         }
       />
       {body}

@@ -125,7 +125,9 @@ export function ComposerTimeField({
       e.preventDefault();
       if (open && active >= 0 && options[active]) commit(options[active]);
       else if (isCompleteTime(text)) commit(text);
-    } else if (e.key === 'Escape') {
+    } else if (e.key === 'Escape' && open) {
+      // Kept while the list is open: it closes the list, not the panel.
+      e.preventDefault();
       close();
     }
   };

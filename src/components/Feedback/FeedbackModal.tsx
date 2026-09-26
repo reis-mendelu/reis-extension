@@ -7,6 +7,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { logError } from '../../utils/reportError';
 import { feedbackErrorKey } from './feedbackErrorKey';
 import { useAppStore } from '../../store/useAppStore';
+import { useEscapeLayer } from '../../hooks/ui/useEscapeLayer';
 import { desktopDialogMotion, phoneSheetMotion } from './feedbackModalMotion';
 import { useReportAttachments } from './useReportAttachments';
 import { ReportAttachments } from './ReportAttachments';
@@ -101,6 +102,9 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
       setType('bug');
     }, 300);
   };
+  // Escape closes it like the ✕, on both trees. It opens over a sheet or a
+  // drawer, and as the topmost layer it is the only one the key closes.
+  useEscapeLayer(isOpen, handleClose);
 
   return (
     <AnimatePresence>

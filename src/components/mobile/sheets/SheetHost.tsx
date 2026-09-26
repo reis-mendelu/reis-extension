@@ -10,6 +10,7 @@ import { SearchSheet } from './SearchSheet';
 import { BulletinSheet } from './BulletinSheet';
 import { MenuSheet } from './MenuSheet';
 import { VenueSheet } from './VenueSheet';
+import { useEscapeClosesSheet } from './useEscapeClosesSheet';
 
 /**
  * Renders the phone UI's sheet stack, in order, each in its own `Sheet`.
@@ -23,6 +24,7 @@ import { VenueSheet } from './VenueSheet';
 export function SheetHost() {
   const sheets = useAppStore((s) => s.mobileSheets);
   const popSheet = useAppStore((s) => s.popSheet);
+  useEscapeClosesSheet();
 
   return (
     <>

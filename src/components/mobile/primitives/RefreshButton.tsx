@@ -1,6 +1,16 @@
+import { RefreshCw } from 'lucide-react';
+import { useAppStore } from '../../../store/useAppStore';
+
 /**
- * A screen's refresh for whoever cannot pull: screen-reader only. The calendar
- * and exams each pass their own label, action and flag.
+ * A screen's refresh for whoever cannot pull. The calendar and exams each pass
+ * their own label, action and flag.
+ *
+ * On a touch screen that is only a screen-reader user, so it is `sr-only`. On a
+ * Mac it is everyone: the iPad app on Apple Silicon reports `pointer: fine`,
+ * and neither a mouse drag nor a two-finger trackpad scroll delivers the touch
+ * events the pull listens for. There it is a visible 40px circle beside the
+ * pin, search and bell — the header row has room for a fifth at any width a
+ * Mac window reaches, and on a phone it is never drawn.
  *
  * Sighted students refresh by pulling the day down (PullRefreshIndicator). That
  * gesture is unreachable from VoiceOver and TalkBack, whose swipes move focus
@@ -30,6 +40,21 @@ export function RefreshButton({
   refreshing: boolean;
   onRefresh: () => void;
 }) {
+  const isTouch = useAppStore((s) => s.isTouch);
+  if (!isTouch) {
+    return (
+      <button
+        type="button"
+        onClick={() => onRefresh()}
+        disabled={refreshing}
+        aria-label={label}
+        title={label}
+        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-base-300 bg-base-100 disabled:opacity-60"
+      >
+        <RefreshCw size={18} className={refreshing ? 'animate-spin' : undefined} />
+      </button>
+    );
+  }
   return (
     <button
       type="button"

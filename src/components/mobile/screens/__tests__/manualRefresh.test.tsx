@@ -56,6 +56,8 @@ function examWithTerm(): ExamSubject {
 function baseState(overrides: Record<string, unknown> = {}) {
   useAppStore.setState({
     language: 'cz',
+    // A phone: the pull is the visible refresh there. A Mac is `isTouch: false`.
+    isTouch: true,
     mobileSelectedDayIso: '2026-04-20',
     mobileSheets: [],
     firstSyncSettled: true,
@@ -254,6 +256,22 @@ describe('the calendar refresh', () => {
     render(<CalendarScreen />);
     expect(screen.getByTestId('calendar-error')).toBeInTheDocument();
     expect(screen.getByLabelText(REFRESH)).toBeInTheDocument();
+  });
+
+  // The iPad app on a Mac reports `pointer: fine`, and neither a mouse drag nor
+  // a two-finger trackpad scroll produces the touch events the pull listens
+  // for. Without a visible button a Mac student could not refresh at all.
+  it('on a Mac, is a visible action in the header row rather than a row of its own', () => {
+    baseState({ isTouch: false });
+    render(<CalendarScreen />);
+    const button = screen.getByLabelText(REFRESH);
+    expect(button.className).not.toContain('sr-only');
+    const search = screen.getByLabelText('Hledat');
+    // Same row as the header actions, so the header is no taller than any
+    // other tab's.
+    expect(button.closest('.justify-between')).toBe(search.closest('.justify-between'));
+    fireEvent.click(button);
+    expect(trigger).toHaveBeenCalledTimes(1);
   });
 
   it('does not put the calendar refresh on the exams screen', () => {
