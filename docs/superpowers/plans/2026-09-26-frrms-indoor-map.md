@@ -1182,3 +1182,39 @@ EOF
 ```
 
 - [ ] **Step 3: Enable Auto-fix and bind the PR** (the ccd_pr tools `get_status` / `bind_pr`).
+
+---
+
+## Execution notes (2026-09-26, inline run)
+
+Rulings made while executing, each with what it costs if wrong:
+
+1. **IS labels are campus-aware.**
+   - What changed: #450 (the Aula fix) made every non-ČP bracket "no map room", which
+     would have hidden all of Z. Instead, labels carry `campus`, and a bracketed campus
+     off Černá Pole resolves only through that campus's IS labels (`codeForLabel`). A
+     bare label falls back to another campus only when it is unique ("Z14"; "Aula" stays
+     building A's).
+   - If wrong: a bare FRRMS label resolving to Z where someone meant nothing. Guarded by
+     `lookupRoom.campus.test.ts`.
+2. **`placeIsRooms` skips paired labels per campus + label** (`pairedKey`). This
+   generalises reis-data#6.
+   - If wrong: a one-line conflict with #6, to be resolved toward `pairedKey`.
+3. **Z's printed names are `label`, not `nickname`.**
+   - Why: "Sklad", "Chodba" and "Terasa" repeat, and the lookup invariants treat a
+     nickname as a unique handle. Only the coworking room keeps a nickname.
+   - If wrong: search does not find "Knihovna" by name. The room card still shows it.
+4. **The 1.NP hatch filter** is a multi-angle rule (≥ 50 lines, ≥ 70 % in three 2°
+   bins, width ≤ 0.45), not the plan's single-angle one, because the hatch is one
+   348-line path. 4 of the 6 corridor codes now land inside spaces. N1074/N1076 are
+   sealed by luminaire symbols on this lighting plan, which is within the plan's
+   tolerance of 2 misses.
+5. **Room focus pads for the tablet rail** (`roomFocusView(…, railPx)`).
+   - Why: Z is a long crescent, and its north-east end (Z11) sat under the Akce rail at
+     1024. This is shared code, so every building's focused room now centres in the free
+     area, not only Z's.
+6. **The extension branch is stacked on #450** (`claude/aula-cp2-campus`). After #450
+   squash-merges, merge `origin/test` in; the identical changes merge cleanly.
+7. **E4 verification served `rooms-9000001.geojson` from the reis-data PR branch**
+   through Playwright request interception, because reis-data#7 is not merged. No app
+   code was changed for this.
