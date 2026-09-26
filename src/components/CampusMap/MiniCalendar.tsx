@@ -56,12 +56,15 @@ export function MiniCalendar({
     const n = new Date();
     return toISO(n.getFullYear(), n.getMonth(), n.getDate());
   }, []);
-  const label = value
-    ? new Date(`${value}T00:00:00`).toLocaleDateString(locale, {
+  // The year only when it is not this one: "čt 19. listopadu 2026" overran a
+  // half-width field, and this year's dates are the common case.
+  const picked = value ? new Date(`${value}T00:00:00`) : null;
+  const label = picked
+    ? picked.toLocaleDateString(locale, {
         weekday: 'short',
         day: 'numeric',
         month: 'long',
-        year: 'numeric',
+        year: picked.getFullYear() === new Date().getFullYear() ? undefined : 'numeric',
       })
     : placeholder;
   const monthName = new Date(view.y, view.m0, 1).toLocaleDateString(locale, { month: 'long' });

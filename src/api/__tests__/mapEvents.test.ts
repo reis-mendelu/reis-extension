@@ -3,6 +3,36 @@ import { toMapEvent, fetchMapEvents } from '../mapEvents';
 import { isPublicEvent } from '../../components/CampusMap/eventWindow';
 import { BUNDLED_SOCIETIES } from '../../data/societies';
 
+describe('toMapEvent — the description', () => {
+  const base = {
+    id: 'd',
+    association_id: 'esn',
+    title: 'City Game',
+    category: 'culture',
+    date: '2026-07-10',
+    end_date: null,
+    time: '18:00',
+    venue_kind: 'offcampus',
+    room_code: null,
+    coord_lng: 16.6,
+    coord_lat: 49.2,
+    location: null,
+    url: null,
+  };
+  it('carries what the society wrote, trimmed', () => {
+    expect(toMapEvent({ ...base, body: '  Bring a pen.\n' }, BUNDLED_SOCIETIES).description).toBe(
+      'Bring a pen.'
+    );
+  });
+  // Every event before the composer had a description field saved body '' —
+  // and older rows null. Neither is a description.
+  it('reads an empty or whitespace body as no description', () => {
+    expect(toMapEvent({ ...base, body: '' }, BUNDLED_SOCIETIES).description).toBeNull();
+    expect(toMapEvent({ ...base, body: '   ' }, BUNDLED_SOCIETIES).description).toBeNull();
+    expect(toMapEvent({ ...base, body: null }, BUNDLED_SOCIETIES).description).toBeNull();
+  });
+});
+
 describe('toMapEvent', () => {
   it('maps a campus-room row into a MapEvent with a resolved building coord', () => {
     const row = {
@@ -23,6 +53,7 @@ describe('toMapEvent', () => {
     expect(toMapEvent(row, BUNDLED_SOCIETIES)).toEqual({
       id: 'abc',
       title: 'PEF Kvíz',
+      description: null,
       url: '',
       date: '2026-07-10',
       endDate: null,
@@ -60,6 +91,7 @@ describe('toMapEvent', () => {
     expect(toMapEvent(row, BUNDLED_SOCIETIES)).toEqual({
       id: 'def',
       title: 'Tram Party',
+      description: null,
       url: 'https://www.instagram.com/esnmendelubrno/',
       date: '2026-07-17',
       endDate: null,

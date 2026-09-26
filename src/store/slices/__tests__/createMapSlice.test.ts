@@ -513,6 +513,46 @@ describe('composer open/close', () => {
   });
 });
 
+describe('duplicateEvent', () => {
+  const src = {
+    id: 's1',
+    title: 'Deskovky',
+    url: '',
+    date: '2026-07-08',
+    endDate: null,
+    time: '18:00',
+    location: null,
+    imageUrl: null,
+    organizerKey: 'pef' as const,
+    societyId: 'supef',
+    coord: [16.6, 49.2] as [number, number],
+    roomCode: null,
+    venueKind: 'offcampus' as const,
+    category: 'boardgames' as const,
+  };
+
+  it('opens a NEW composer seeded from the event, with its pin on the map', () => {
+    useAppStore.setState({ societyMapEvents: [src], editEventId: 'other', draftCoord: null });
+    useAppStore.getState().duplicateEvent('s1');
+    const st = useAppStore.getState();
+    expect(st.composerOpen).toBe(true);
+    expect(st.duplicateEventId).toBe('s1');
+    // Not an edit: saving must create, never overwrite the original.
+    expect(st.editEventId).toBeNull();
+    expect(st.draftCoord).toEqual([16.6, 49.2]);
+  });
+
+  it('is forgotten by openComposer and closeComposer', () => {
+    useAppStore.setState({ societyMapEvents: [src] });
+    useAppStore.getState().duplicateEvent('s1');
+    useAppStore.getState().openComposer();
+    expect(useAppStore.getState().duplicateEventId).toBeNull();
+    useAppStore.getState().duplicateEvent('s1');
+    useAppStore.getState().closeComposer();
+    expect(useAppStore.getState().duplicateEventId).toBeNull();
+  });
+});
+
 /**
  * Sprint 08: the camera move for "Ukázat na mapě".
  *

@@ -54,6 +54,8 @@ describe('toMapEvent against a real production row', () => {
     // 'reis' resolves through the society catalog rather than falling back to
     // ESN, which is what an unknown association_id would silently do.
     expect(event.organizerKey).toBe('mendelu');
+    // `body: null` — the row predates the description field.
+    expect(event.description).toBeNull();
   });
 
   it('hides this row from students — it is in the past', () => {

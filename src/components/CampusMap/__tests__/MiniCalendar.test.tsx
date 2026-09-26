@@ -5,6 +5,27 @@ import { MiniCalendar } from '../MiniCalendar';
 const t = (k: string) => k;
 
 describe('MiniCalendar', () => {
+  // "čt 19. listopadu 2026" did not fit a half-width field in the desktop
+  // console's column; this year's dates are the common case and read fine
+  // without it. Next January still says which year it means.
+  it('drops the year from a date in the current year, keeps it otherwise', () => {
+    const y = new Date().getFullYear();
+    const { rerender } = render(
+      <MiniCalendar value={`${y}-11-19`} onChange={() => {}} placeholder="-" t={t} locale="cs-CZ" />
+    );
+    expect(screen.getByText(/listopadu/).textContent).not.toContain(String(y));
+    rerender(
+      <MiniCalendar
+        value={`${y + 1}-01-14`}
+        onChange={() => {}}
+        placeholder="-"
+        t={t}
+        locale="cs-CZ"
+      />
+    );
+    expect(screen.getByText(/ledna/).textContent).toContain(String(y + 1));
+  });
+
   it('shows the placeholder when empty and opens a grid', () => {
     render(
       <MiniCalendar
@@ -31,9 +52,7 @@ describe('MiniCalendar', () => {
         locale="cs-CZ"
       />
     );
-    fireEvent.click(
-      screen.getByRole('button', { name: /2026-07-01|1\. .*2026|Datum|Pick/i }).closest('button')!
-    );
+    fireEvent.click(screen.getByRole('button', { name: /července/ }).closest('button')!);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     expect(onChange).toHaveBeenCalledWith('2026-07-15');
   });
@@ -132,7 +151,7 @@ describe('MiniCalendar', () => {
         isDisabled={(iso) => iso !== '2026-07-15'}
       />
     );
-    fireEvent.click(screen.getByText(/2026/).closest('button')!);
+    fireEvent.click(screen.getByText(/July/).closest('button')!);
     const other = screen.getByRole('button', { name: '16' });
     expect(other).toBeDisabled();
     fireEvent.click(other);
@@ -151,7 +170,7 @@ describe('MiniCalendar', () => {
         maxDate="2026-09-16"
       />
     );
-    fireEvent.click(screen.getByText(/2026/).closest('button')!);
+    fireEvent.click(screen.getByText(/July/).closest('button')!);
     // Viewing July (the min month): can't page back, can page forward toward Sept.
     expect(screen.getByRole('button', { name: 'map.prevMonth' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'map.nextMonth' })).toBeEnabled();
