@@ -10,6 +10,8 @@ import type { MapEvent } from '../../types/events';
 // "goes live" countdown for scheduled events instead. `actions` renders
 // row-level controls (edit/delete) as siblings of the clickable body: the
 // body stays a single <button>, so the controls can't nest inside it.
+// `footer` is a last line under the venue — the console's views/clicks. The
+// public Events tab never passes it.
 export function EventRow({
   event,
   locale,
@@ -18,6 +20,7 @@ export function EventRow({
   onClick,
   subline,
   actions,
+  footer,
 }: {
   event: MapEvent;
   locale: string;
@@ -26,6 +29,7 @@ export function EventRow({
   onClick: () => void;
   subline?: string;
   actions?: ReactNode;
+  footer?: ReactNode;
 }) {
   const day =
     subline ?? `${relativeDayLabel(event.date, locale, t)}${event.time ? ` · ${event.time}` : ''}`;
@@ -70,6 +74,7 @@ export function EventRow({
               <span className="truncate">{event.location ?? t('map.venueOnMap')}</span>
             </span>
           )}
+          {footer}
         </span>
       </button>
       {actions && <div className="flex flex-shrink-0 items-center gap-0.5 pr-1.5">{actions}</div>}
