@@ -159,3 +159,40 @@ The new `src/store/slices/createImpersonationSlice.ts` holds `impersonation: {se
 - Choosing seminar slots per subject.
 - Fake exams or grades.
 - Impersonating a real named student.
+
+## Amendments from implementation planning (2026-09-26)
+
+- **No new action.** `fetchWithAuth` already reaches IS from the extension iframe (the content
+  script's `REIS_FETCH` proxy carries the cookies), natively on Capacitor, and directly on the dev
+  webapp. The impersonation fetch runs in the iframe/app like the syllabus fetch; nothing changes
+  in `src/injector/` or `src/mobile/actionHandler.ts`. Because the proxy labels every response
+  `text/html`, JSON is detected from the body, not the content-type.
+- **One IDB key.** Selection and result live together in `meta.impersonation` (no new object store,
+  so no IndexedDB version bump). `createDemoSlice` clears it with the other IS-derived meta keys.
+- **Year 2+ slot key.** A per-subject dated query merges parallels that share a slot, so the key is
+  weekday + start time + room; a biweekly parallel therefore shows weekly. Known v1 limitation.
+- **Enrolled marks.** Target-semester subjects the timetable was built from are `isEnrolled: true`,
+  so the plan reads like a real student's current semester.
+- **Expired cache.** A cached impersonation from another period ends silently at boot and the picker
+  shows "Zobrazení jako student skončilo s koncem semestru." the next time it opens.
+- **Excluded programmes.** Kombinovaná rozvrhy and non-B-/N- programmes are filtered out of the
+  picker rather than listed disabled; a scope note under the selects says what v1 covers.
+- **Empty timetable.** A no-results answer applies the plan with no lessons; the calendar's own
+  empty state is the note.
+- **Authenticated catalogue.** The plan is fetched from `/auth/katalog/plany.pl`, not the public
+  `/katalog/` path: the Capacitor transport treats HTML without `logout.pl` as an expired session,
+  and the public page has none. Row structure is identical (verified 2026-09-26, 61/61 rows).
+- **Year filter on per-subject queries.** `predmet=<id>; rocnik=<year>` returns only the slots open to
+  that year (EBC-FT: 36 lessons instead of 60, other programmes' first-year slots gone).
+- **Options cache.** The programme list is cached in memory for the app session, not per period in
+  IndexedDB; it is one small crawl per picker session.
+- **Side effects gated.** While impersonating, the files and classmates fetchers (which hit IS and
+  write IndexedDB per subject code) return early, so no foreign subject reaches the real stores.
+- **Offline restart.** Restore clears the cache only when there is definitively no admin session, or
+  the account is not a reis_admin. An admin whose role lookup failed (offline) keeps it for the next
+  boot. `loadAdminSession` no longer signs the admin out when the lookup *errors*, only when the
+  account row is absent.
+- **IS stamps the viewer's studium.** A programme/subject timetable query returns `studyId`/`periodId`
+  of the *signed-in admin* on lessons the admin is enrolled in (seen 2026-09-26). `readTimetableAnswer`
+  overwrites both with `''` on every lesson, pinned by a test, so the admin's studium never rides
+  into an impersonated timetable or the `syncService` studium fallback.
