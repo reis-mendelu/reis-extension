@@ -15,6 +15,7 @@ import { MapPanelBody } from './MapPanelBody';
 import { MapRailOpenButton } from './MapRailOpenButton';
 import { RoomPlaceNote } from './RoomPlaceNote';
 import { useForRoomSelection } from './useForRoomSelection';
+import { useRoom3DTarget } from '../../../Building3D/useRoom3DTarget';
 
 /**
  * The map panel on a tablet: a sidebar, not a sheet.
@@ -57,7 +58,8 @@ export function MapRail() {
   // event pin: the card replaces the list, and opening the rail is what makes
   // it visible at all.
   const selectedGardenPlace = selection?.kind === 'gardenPlace' ? selection.place : null;
-  const selectedCard = selectedEvent || selectedGardenPlace;
+  const selectedRoom3D = useRoom3DTarget();
+  const selectedCard = selectedEvent || selectedGardenPlace || selectedRoom3D;
   const forRoom = useForRoomSelection();
 
   // Picking a pin while the rail is closed has to bring it back — otherwise the
@@ -189,6 +191,7 @@ export function MapRail() {
         <MapPanelBody
           selectedEvent={selectedEvent}
           selectedGardenPlace={selectedGardenPlace}
+          selectedRoom3D={selectedRoom3D}
           flush
         />
       </div>

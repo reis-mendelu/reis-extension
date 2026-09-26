@@ -572,6 +572,14 @@ export interface MapSlice {
   loadMapBuilding: (id: number) => Promise<void>;
   /** Geometry for whatever room a room STRING names — resolves, then loads. */
   loadRoomGeometry: (roomName: string) => Promise<void>;
+  /**
+   * 3D models for the building card, by building id. `'failed'` is remembered for
+   * the session so a building whose model cannot be had shows its flat plan
+   * without re-asking the CDN on every hover.
+   */
+  buildingModels: Record<number, import('../types/buildingModel').BuildingModel | 'failed'>;
+  /** Load a building's 3D model if it has one. `loadMapBuilding` calls it. */
+  loadBuildingModel: (id: number) => Promise<void>;
   // --- Society events on the map ---
   mapEvents: MapEvent[];
   mapEventsLoaded: boolean;

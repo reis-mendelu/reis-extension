@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('../../../api/campusMap', () => ({ fetchBuildingRooms: vi.fn() }));
+// Q (building 0) has a 3D model, and loading its floor plan also asks for it.
+vi.mock('../../../api/buildingModels', () => ({
+  fetchBuildingModel: vi.fn().mockResolvedValue(null),
+}));
 // reloadMapEvents fetches the societies catalog beside the events; keep it off the network.
 vi.mock('../../../api/societies', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../api/societies')>()),

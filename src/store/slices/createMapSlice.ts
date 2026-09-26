@@ -59,6 +59,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   activeFloorId: null,
   mapSelection: null,
   roomsByBuilding: {},
+  buildingModels: {},
   mapLoadingBuilding: null,
   mapSearchQuery: '',
   mapSearchResults: [],

@@ -14,6 +14,7 @@ import { ErasmusCountryDataSchema } from './schemas/erasmus.schema';
 import { DocumentNoteSchema } from './schemas/documentNotes.schema';
 import { SyllabusSchema } from './schemas/syllabus.schema';
 import { RoomsCollectionSchema } from './schemas/mapRooms.schema';
+import { BuildingModelSchema } from './schemas/mapModels.schema';
 import type { CalendarCustomEvent } from '../types/calendarTypes';
 import type { SubjectZaznamnik } from './zaznamnik';
 
@@ -131,6 +132,7 @@ export const StoreSchemas = {
   note_images: NoteImageSchema,
   zaznamnik: ZaznamnikSchema,
   map_rooms: RoomsCollectionSchema,
+  map_models: BuildingModelSchema,
 };
 
 export type StoreName = keyof typeof StoreSchemas;

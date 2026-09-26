@@ -93,3 +93,29 @@ events/search as triggers, free-browse mode, photo textures.
   room, a floor −1 room, the desktop hover card, and the fallback. Assert the
   canvas exists and the lifted storeys sit above the target, not just a
   screenshot.
+
+## Decided during implementation
+
+- **Floor wording follows the students, not the map level.** Q4.03 is on level 3,
+  which Czech calls "3. patro" (4.NP on the door); "podlaží 3" would contradict
+  the room's own name. Level 0 is "přízemí", negatives "N. podzemní podlaží".
+- **Default view from the south (azimuth 195°).** The phone shows the card under
+  a north-up map; from the south the east wing is on the right in both.
+- **The phone sheet opens at `half` for a Q room** and the map pans the room above
+  it (`panPinClearOfSheet`, the helper event pins already use) — otherwise the
+  room was centred behind the card that described it.
+- **A fresh canvas per scene.** Disposing forces the context lost (prompt GPU
+  release, which iOS needs), and a canvas keeps returning its lost context — a
+  reused one broke StrictMode and any re-render on a new room.
+- **A renderer that fails never takes the app down.** The throw is routed to an
+  ErrorBoundary that shows the flat plan, and WebGL is marked unavailable for the
+  session. Found in an embedded browser that advertised WebGL2 and failed.
+- **A floor counts as underground if the ground rises above it anywhere** under
+  the building, not just at the centre — Q's −1 opens west and is buried east.
+  The lid hides its floor slabs, which otherwise stack into milk over a basement.
+- **Main chunk: +2.6 KB gzip** (card shell, store action, API, schema, strings —
+  what decides whether to load the 3D chunk at all). `three` is 169 KB gzip in
+  the lazy `Building3DCanvas` chunk only; none in main or the content script.
+- **Harness:** `scripts/shot.ts` gained `--route`, `--call`, `--wait-for`,
+  `--hover`, `--no-webgl`, and launches with SwiftShader so headless runs can draw
+  WebGL at all.

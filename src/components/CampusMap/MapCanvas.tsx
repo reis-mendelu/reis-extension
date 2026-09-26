@@ -453,9 +453,13 @@ export function MapCanvas() {
     );
     if (view) {
       const { bounds, maxZoom, paddingTopLeft, paddingBottomRight } = view;
-      flyAndReveal(map, () =>
-        map.fitBounds(bounds, { maxZoom, paddingTopLeft, paddingBottomRight, animate: false })
-      );
+      const room = targetBounds;
+      flyAndReveal(map, () => {
+        map.fitBounds(bounds, { maxZoom, paddingTopLeft, paddingBottomRight, animate: false });
+        // A Q room opens the sheet on its 3D card, which covers the bottom of
+        // the map — keep the room itself above it, as an event pin is kept.
+        if (isPhone && room) panPinClearOfSheet(map, room.getCenter());
+      });
     }
     // isPhone joins the deps because the rail offset reads it. It is stable
     // for the life of a device, but it flips on a browser resize, and this

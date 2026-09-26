@@ -1,6 +1,8 @@
 import { EventDetailCard } from '../../../CampusMap/EventDetailCard';
 import { GardenPlaceCard } from '../../../CampusMap/GardenPlaceCard';
 import { MapEventsSection } from '../../../CampusMap/MapEventsSection';
+import { Building3DCard } from '../../../Building3D/Building3DCard';
+import type { RoomTarget } from '../../../Building3D/roomTarget';
 import type { MapEvent } from '../../../../types/events';
 import type { GardenPlace } from '../../../../types/campusMap';
 
@@ -9,6 +11,8 @@ export interface MapPanelBodyProps {
   /** One of the botanical garden's places, tapped on the map. Optional so the
    *  shells that never show one (and their tests) need not pass it. */
   selectedGardenPlace?: GardenPlace | null;
+  /** A room in a building with a 3D model (Q), shown cut open at its floor. */
+  selectedRoom3D?: RoomTarget | null;
   /** The rail frames its own content, so the card inside it renders flush. */
   flush?: boolean;
 }
@@ -32,12 +36,26 @@ export interface MapPanelBodyProps {
 export function MapPanelBody({
   selectedEvent,
   selectedGardenPlace = null,
+  selectedRoom3D = null,
   flush = false,
 }: MapPanelBodyProps) {
   if (selectedEvent) {
     return (
       <div className={flush ? 'px-5' : 'px-4'}>
         <EventDetailCard event={selectedEvent} flush={flush} />
+      </div>
+    );
+  }
+  if (selectedRoom3D) {
+    return (
+      <div className={flush ? 'px-5' : 'px-4'}>
+        <Building3DCard
+          target={selectedRoom3D}
+          // Loading: hold the card's place so the sheet does not jump when it lands.
+          fallback={
+            <div className="skeleton h-[min(14rem,28vh)] w-full rounded-xl" aria-hidden="true" />
+          }
+        />
       </div>
     );
   }

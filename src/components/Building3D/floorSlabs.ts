@@ -1,0 +1,92 @@
+import {
+  EdgesGeometry,
+  ExtrudeGeometry,
+  Group,
+  LineBasicMaterial,
+  LineSegments,
+  Mesh,
+  MeshStandardMaterial,
+  Shape,
+  ShapeGeometry,
+  type BufferGeometry,
+} from 'three';
+import type { RoomFeature } from '../../types/campusMap';
+import type { Projector } from './projection';
+
+export interface SlabColors {
+  room: string;
+  target: string;
+  edge: string;
+}
+
+interface SlabInput {
+  rooms: RoomFeature[];
+  project: Projector;
+  elevation: number;
+  storeyHeight: number;
+  targetRoomId: number | null;
+  colors: SlabColors;
+}
+
+// Just above the storey's own floor, so the rooms never z-fight with it.
+const LIFT_OFF_FLOOR = 0.06;
+
+/**
+ * Shape points are (x, -z): a Shape lives in the XY plane, and rotating it
+ * -90° about X sends (x, y) to (x, 0, -y) — back to the model's z.
+ */
+function roomShape(ring: number[][], project: Projector): Shape {
+  const pts = ring.map((p) => project(p));
+  const shape = new Shape();
+  pts.forEach(([x, z], i) => (i === 0 ? shape.moveTo(x, -z) : shape.lineTo(x, -z)));
+  return shape;
+}
+
+/**
+ * One floor's rooms, drawn inside the cut-open storey: every room a flat tile,
+ * the lesson's room raised into a block of the brand colour so it reads as a
+ * place, not a highlight. Built from the room outlines the app already caches —
+ * the model itself is only the shell.
+ */
+export function buildFloorSlab({
+  rooms,
+  project,
+  elevation,
+  storeyHeight,
+  targetRoomId,
+  colors,
+}: SlabInput): Group {
+  const group = new Group();
+  const edgeMaterial = new LineBasicMaterial({
+    color: colors.edge,
+    transparent: true,
+    opacity: 0.6,
+  });
+  for (const room of rooms) {
+    const ring = room.geometry.coordinates[0];
+    if (!ring || ring.length < 4) continue;
+    const isTarget = room.properties.id === targetRoomId;
+    const shape = roomShape(ring, project);
+    const geometry: BufferGeometry = isTarget
+      ? new ExtrudeGeometry(shape, {
+          depth: Math.min(2.8, storeyHeight - 0.4),
+          bevelEnabled: false,
+        })
+      : new ShapeGeometry(shape);
+    geometry.rotateX(-Math.PI / 2);
+    const material = new MeshStandardMaterial({
+      color: isTarget ? colors.target : colors.room,
+      emissive: isTarget ? colors.target : '#000000',
+      emissiveIntensity: isTarget ? 0.35 : 0,
+      roughness: 0.8,
+    });
+    const mesh = new Mesh(geometry, material);
+    mesh.position.y = elevation + LIFT_OFF_FLOOR;
+    mesh.userData.roomId = room.properties.id;
+    group.add(mesh);
+    const edges = new LineSegments(new EdgesGeometry(geometry), edgeMaterial);
+    edges.position.y = mesh.position.y + 0.01;
+    group.add(edges);
+  }
+  return group;
+}

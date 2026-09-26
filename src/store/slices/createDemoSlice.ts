@@ -18,7 +18,7 @@ import { demoContext } from '../../utils/mock/data/demo';
  * CDN, identical for every student, so wiping it only forces a needless
  * refetch with no privacy benefit.
  *
- * `erasmus` and `map_rooms` are also CDN reference data, not personal, and
+ * `erasmus`, `map_rooms` and `map_models` are also CDN reference data, not personal, and
  * were never in the demo's write set to begin with.
  *
  * `hidden_items`, `custom_events`, `document_notes`, `note_images`, and
