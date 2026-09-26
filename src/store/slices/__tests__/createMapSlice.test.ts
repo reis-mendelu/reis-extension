@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('../../../api/campusMap', () => ({ fetchBuildingRooms: vi.fn() }));
+// reloadMapEvents fetches the societies catalog beside the events; keep it off the network.
+vi.mock('../../../api/societies', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../api/societies')>()),
+  fetchSocieties: vi.fn(async () => null),
+}));
 vi.mock('../../../api/mapEvents', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../api/mapEvents')>();
   return { ...actual, fetchMapEvents: vi.fn() };
@@ -170,7 +175,6 @@ describe('mapSlice', () => {
   it.each([
     ['T18', 1572, 'T18'], // building T's pin
     ['ZFAC1 (Led)', -102, 'ZFAC1'], // the Lednice campus
-    ['Z11 (ČP II.)', 1587, 'Z11'], // FRRMS, Černá Pole II
   ])('focusRoomByCode shows the building for %s', (raw, id, forRoom) => {
     const before = useAppStore.getState().mapFocusRequest;
     useAppStore.getState().focusRoomByCode(raw);
@@ -178,6 +182,33 @@ describe('mapSlice', () => {
     expect(s.mapSelection).toMatchObject({ kind: 'poi', poi: { id }, forRoom });
     expect(s.activeBuildingId).toBeNull();
     expect(s.mapFocusRequest).toBe(before + 1);
+  });
+
+  it('focusing the FRRMS landmark opens budova Z instead of a no-floor-plan card', () => {
+    useAppStore.getState().focusLandmarkById(1587);
+    const s = useAppStore.getState();
+    expect(s.activeBuildingId).toBe(9000001);
+    expect(s.mapSelection?.kind).not.toBe('poi');
+  });
+
+  it('Kolej Akademie keeps its card (it is the dormitory, not the faculty)', () => {
+    useAppStore.getState().focusLandmarkById(1616);
+    const s = useAppStore.getState();
+    expect(s.mapSelection?.kind === 'poi' && s.mapSelection.poi.id).toBe(1616);
+  });
+
+  it('focusRoomByCode opens an FRRMS room on its floor in budova Z', () => {
+    useAppStore.getState().focusRoomByCode('Z11 (ČP II.)');
+    const s = useAppStore.getState();
+    expect(s.activeBuildingId).toBe(9000001);
+    expect(s.activeFloorId).toBe(9000011);
+  });
+
+  it('focusRoomByCode shows nothing for Budova K, which the map has no place for', () => {
+    useAppStore.setState({ mapSelection: null, activeBuildingId: null });
+    useAppStore.getState().focusRoomByCode('K01 (ČP II.)');
+    expect(useAppStore.getState().mapSelection).toBeNull();
+    expect(useAppStore.getState().activeBuildingId).toBeNull();
   });
 
   it('focusRoomByCode points a room in a mapped building the map does not draw at that building', () => {

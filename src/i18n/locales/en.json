@@ -1073,7 +1073,37 @@
     "screenshotAlt": "Screenshot from the report",
     "attachmentsLoading": "Loading…",
     "attachmentsError": "Couldn't load the attachments.",
-    "attachmentsGone": "The attachments have been deleted."
+    "attachmentsGone": "The attachments have been deleted.",
+    "societies": {
+      "title": "Societies",
+      "add": "Add society",
+      "edit": "Edit",
+      "hide": "Hide",
+      "show": "Show",
+      "hidden": "Hidden",
+      "id": "Login name",
+      "idHint": "Lowercase letters, digits, _ or -. Cannot be changed later.",
+      "name": "Name",
+      "shortName": "Short name",
+      "color": "Pin colour",
+      "faculty": "Faculty",
+      "wholeMendelu": "All of MENDELU",
+      "autoFollow": "New students of this faculty follow it automatically",
+      "autoFollowMoves": "Automatic following moves from {from}.",
+      "logo": "Logo",
+      "save": "Save",
+      "cancel": "Cancel",
+      "errors": {
+        "id": "The login name may contain only lowercase letters, digits, _ and -.",
+        "idTaken": "A society with this name already exists.",
+        "required": "Fill in the name and the short name.",
+        "color": "This colour disappears on the light map. Pick a darker one.",
+        "logo_required": "Upload a logo.",
+        "upload_failed": "The logo could not be uploaded.",
+        "save_failed": "The society could not be saved.",
+        "account_failed": "The society is saved, but its account could not be created. Create it below."
+      }
+    }
   },
   "mobile": {
     "header": {

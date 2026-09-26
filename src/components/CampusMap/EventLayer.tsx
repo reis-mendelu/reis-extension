@@ -9,7 +9,7 @@ import { subscribeMapInstance } from './mapInstance';
 import { EVENTS_PANE, ensurePane } from './mapPanes';
 import { EventPin } from './EventPin';
 import { DraftPin } from './DraftPin';
-import { societyById } from '../../data/societies';
+import { useSociety } from '../../hooks/useSociety';
 import { isScheduledEvent } from './eventWindow';
 import { trackMapEventView } from '../../api/featureUsage';
 
@@ -78,7 +78,8 @@ export function EventLayer() {
     if (!authoring) void trackMapEventView(id);
     focusEvent(id);
   };
-  const draftColor = (assocId ? societyById(assocId)?.color : null) ?? '#0046a0';
+  const draftSociety = useSociety(assocId);
+  const draftColor = draftSociety?.color ?? '#0046a0';
   // Events are loaded by the store (initializeStore + language handlers), not a
   // fetch-in-useEffect here — this layer stays presentational over store state.
 

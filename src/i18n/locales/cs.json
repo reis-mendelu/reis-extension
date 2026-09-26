@@ -1073,7 +1073,37 @@
     "screenshotAlt": "Snímek z hlášení",
     "attachmentsLoading": "Načítám…",
     "attachmentsError": "Přílohy se nepodařilo načíst.",
-    "attachmentsGone": "Přílohy už byly smazány."
+    "attachmentsGone": "Přílohy už byly smazány.",
+    "societies": {
+      "title": "Spolky",
+      "add": "Přidat spolek",
+      "edit": "Upravit",
+      "hide": "Skrýt",
+      "show": "Zobrazit",
+      "hidden": "Skrytý",
+      "id": "Přihlašovací jméno",
+      "idHint": "Malá písmena, číslice, _ nebo -. Později nejde změnit.",
+      "name": "Název",
+      "shortName": "Zkratka",
+      "color": "Barva špendlíku",
+      "faculty": "Fakulta",
+      "wholeMendelu": "Celá MENDELU",
+      "autoFollow": "Noví studenti této fakulty ho automaticky odebírají",
+      "autoFollowMoves": "Automatické odebírání se přesune ze spolku {from}.",
+      "logo": "Logo",
+      "save": "Uložit",
+      "cancel": "Zrušit",
+      "errors": {
+        "id": "Přihlašovací jméno smí obsahovat jen malá písmena, číslice, _ a -.",
+        "idTaken": "Spolek s tímto jménem už existuje.",
+        "required": "Vyplňte název i zkratku.",
+        "color": "Tahle barva na světlé mapě zanikne. Zvolte tmavší.",
+        "logo_required": "Nahrajte logo.",
+        "upload_failed": "Logo se nepodařilo nahrát.",
+        "save_failed": "Spolek se nepodařilo uložit.",
+        "account_failed": "Spolek je uložený, ale účet se nepodařilo vytvořit. Vytvořte ho níže."
+      }
+    }
   },
   "mobile": {
     "header": {

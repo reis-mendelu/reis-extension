@@ -118,5 +118,7 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // absence still syncs.
   void CapApp.addListener('resume', () => {
     void requestSync('resume');
+    // Fetch-once-at-startup is stale forever in a long-lived Capacitor process.
+    void useAppStore.getState().loadSocieties();
   });
 }

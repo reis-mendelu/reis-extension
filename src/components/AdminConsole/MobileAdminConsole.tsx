@@ -5,6 +5,7 @@ import { AdminConsoleHeader } from './AdminConsoleHeader';
 import { AdminEventList } from './AdminEventList';
 import { SuggestionsInbox } from './SuggestionsInbox';
 import { SocietyAccountsPanel } from './SocietyAccountsPanel';
+import { SocietiesPanel } from './SocietiesPanel';
 import { ChangeMyPasswordForm } from './ChangeMyPasswordForm';
 import { AdminConsoleMap } from './AdminConsoleMap';
 import { AdminStatsPanel } from './AdminStatsPanel';
@@ -112,6 +113,7 @@ export function MobileAdminConsole() {
         {showAccounts && (
           <div className="h-full overflow-y-auto bg-base-100 p-3">
             <div className="flex flex-col gap-6">
+              {isReisAdmin && <SocietiesPanel />}
               {isReisAdmin && <SocietyAccountsPanel />}
               <ChangeMyPasswordForm />
             </div>

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { visibleToStudent, audienceLabelKey, audienceHint } from '../eventAudience';
 import { translate } from '../../i18n/translate';
 import type { MapEvent } from '../../types/events';
+import { BUNDLED_SOCIETIES } from '../../data/societies';
 
 /**
  * Who a society event is for.
@@ -75,32 +76,51 @@ describe('visibleToStudent', () => {
 });
 
 describe('audienceLabelKey', () => {
-  it('names the faculty for a society that has exactly one', () => {
-    expect(audienceLabelKey('supef')).toEqual({ key: 'admin.audience.faculty', faculty: 'PEF' });
-    expect(audienceLabelKey('usaf')).toEqual({ key: 'admin.audience.faculty', faculty: 'AF' });
+  it('names the faculty for the society its students follow by default', () => {
+    expect(audienceLabelKey(BUNDLED_SOCIETIES.supef)).toEqual({
+      key: 'admin.audience.faculty',
+      faculty: 'PEF',
+    });
+    expect(audienceLabelKey(BUNDLED_SOCIETIES.usaf)).toEqual({
+      key: 'admin.audience.faculty',
+      faculty: 'AF',
+    });
+    expect(audienceLabelKey(BUNDLED_SOCIETIES.au_frrms)).toEqual({
+      key: 'admin.audience.faculty',
+      faculty: 'FRRMS',
+    });
   });
 
   it('uses the society’s own audience when it is not one faculty', () => {
-    // ESN is cross-faculty (`facultyIds: []`) and its audience is the Erasmus
-    // students, which no faculty code can express.
-    expect(audienceLabelKey('esn')).toEqual({ key: 'admin.audience.erasmus' });
+    // ESN is campus-wide and its audience is the Erasmus students, which no
+    // faculty code can express.
+    expect(audienceLabelKey(BUNDLED_SOCIETIES.esn)).toEqual({ key: 'admin.audience.erasmus' });
+  });
+
+  it('does not promise a faculty to a society that faculty does not follow by default', () => {
+    // EY is filed under PEF, but PEF students are not auto-subscribed to it:
+    // "Jen studenti PEF" would describe people who never see the event.
+    expect(audienceLabelKey(BUNDLED_SOCIETIES.ey)).toEqual({ key: 'admin.audience.followers' });
+    expect(audienceLabelKey(BUNDLED_SOCIETIES.reis)).toEqual({ key: 'admin.audience.followers' });
   });
 
   it('falls back to something true for a society it does not know', () => {
-    expect(audienceLabelKey('brand_new_spolek')).toEqual({ key: 'admin.audience.followers' });
+    expect(audienceLabelKey(undefined)).toEqual({ key: 'admin.audience.followers' });
   });
 });
 
 describe('audienceHint', () => {
   it('names the society when there is a name to print', () => {
-    expect(audienceHint('supef')).toEqual({ key: 'map.audienceHint', society: 'SUPEF' });
+    expect(audienceHint(BUNDLED_SOCIETIES.supef)).toEqual({
+      key: 'map.audienceHint',
+      society: 'SU PEF',
+    });
   });
 
   it('uses a sentence with no hole in it when there is not', () => {
-    // The reis_admin super-admin and the dev session both carry ids that are
-    // not associations. Interpolating the empty name rendered "Uvidí studenti,
-    // kteří odebírají ." on screen.
-    expect(audienceHint('reis')).toEqual({ key: 'map.audienceHintGeneric' });
+    // A session whose id is not in the catalog has no name. Interpolating the
+    // empty name rendered "Uvidí studenti, kteří odebírají ." on screen.
+    expect(audienceHint(undefined)).toEqual({ key: 'map.audienceHintGeneric' });
   });
 });
 
@@ -115,14 +135,14 @@ describe('audienceHint', () => {
  */
 describe('the audience copy resolves, in both languages', () => {
   it.each(['cz', 'en'])('leaves no braces behind in the hint (%s)', (lang) => {
-    const hint = audienceHint('supef');
+    const hint = audienceHint(BUNDLED_SOCIETIES.supef);
     const text = translate(lang, hint.key, hint.society ? { society: hint.society } : undefined);
-    expect(text).toContain('SUPEF');
+    expect(text).toContain('SU PEF');
     expect(text).not.toMatch(/[{}]/);
   });
 
   it.each(['cz', 'en'])('leaves no braces behind in the faculty label (%s)', (lang) => {
-    const label = audienceLabelKey('supef');
+    const label = audienceLabelKey(BUNDLED_SOCIETIES.supef);
     const text = translate(lang, label.key, label.faculty ? { faculty: label.faculty } : undefined);
     expect(text).toContain('PEF');
     expect(text).not.toMatch(/[{}]/);

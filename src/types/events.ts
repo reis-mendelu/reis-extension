@@ -61,20 +61,29 @@ export const COLOR_TO_FACULTY: Record<string, FacultyKey> = Object.fromEntries(
 export const ALL_FACULTY_KEYS: FacultyKey[] = ['mendelu', 'pef', 'af', 'ldf', 'zf', 'frrms'];
 
 // A student society/union that authors map events (ESN, SU PEF, AU FRRMS). The
-// pin ring + list dot use `color`; `glyph` is the short logo fallback shown when
-// an event has no poster image. `facultyKey` drives the "My faculty" filter.
+// catalog lives in the Supabase `societies` table and reaches the app through
+// the societies slice; `src/data/societies.ts` is only the first-launch seed.
+// The pin ring + list dot use `color`; `glyph` is the tile fallback for a
+// missing logo. `facultyKey` drives first-run auto-follow and the audience label.
 export interface Society {
   id: string;
   name: string;
-  /** Short label for compact UI (filter chips, host line) — e.g. "ESN" vs "ESN MENDELU". */
+  /** Short label for compact UI (host line, chips): "SUPEF" vs "SU PEF". */
   shortName: string;
   color: string;
-  glyph: string; // short text fallback when the logo image is unavailable
-  /** Runtime path to the shipped logo (/spolky/<id>.jpg). Optional: every call
-   *  site already branches on it and falls back to `glyph` on `color`, so a
-   *  society may ship without an asset rather than 404 on a missing file. */
+  /** Text shown on the colour tile when there is no logo, derived from shortName. */
+  glyph: string;
+  /** Public URL of the logo in the society-logos bucket. Absent until one is
+   *  uploaded, and in the bundled seed; every call site falls back to `glyph`. */
   logo?: string;
   facultyKey: FacultyKey;
+  /** New students of `facultyKey` follow this society on first run. */
+  autoFollowFaculty: boolean;
+  /** Who the society is for when no faculty says it (ESN: the Erasmus students). */
+  audienceLabel: 'erasmus' | null;
+  sortOrder: number;
+  /** Hidden societies still resolve for their old events; they leave lists. */
+  isActive: boolean;
 }
 
 // An event placed on the campus map. Extends the bell-feed event with an

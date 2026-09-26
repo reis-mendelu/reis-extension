@@ -1,5 +1,4 @@
-import { ASSOCIATION_PROFILES } from '../services/spolky/config';
-import type { MapEvent } from '../types/events';
+import type { MapEvent, Society } from '../types/events';
 
 /**
  * Who a society event is for.
@@ -49,22 +48,23 @@ export interface AudienceLabel {
  *
  * "Jen odběratelé" is the mechanism talking. A society thinks in terms of who
  * the event is for — its faculty's students, or the Erasmus crowd — so the
- * button says that instead, from `facultyIds`.
+ * button says that instead.
  *
- * It is approximate, deliberately: the filter runs on subscriptions, and a
- * faculty only seeds the default. A PEF student who unsubscribed from SUPEF
+ * "Students of X" only for the society X's students follow BY DEFAULT
+ * (`autoFollowFaculty`): the filter runs on subscriptions, and a faculty only
+ * seeds the default. EY is filed under PEF, but PEF students are not
+ * auto-subscribed to it, so it gets the generic wording.
+ *
+ * Still approximate, deliberately: a PEF student who unsubscribed from SUPEF
  * will not see "Jen studenti PEF", and an AF student who subscribed will. The
  * form carries a line under the control saying so, which is where the exactness
  * belongs — the button is for recognising the audience, not defining it.
  */
-export function audienceLabelKey(societyId: string): AudienceLabel {
-  const profile = ASSOCIATION_PROFILES[societyId];
-  if (profile?.audienceLabelKey === 'erasmus') return { key: 'admin.audience.erasmus' };
-  const faculties = profile?.facultyIds ?? [];
-  // Exactly one: "students of X" is only true when there is a single X. A
-  // society spanning two faculties gets the generic wording rather than a list
-  // that would not fit the button anyway.
-  if (faculties.length === 1) return { key: 'admin.audience.faculty', faculty: faculties[0] };
+export function audienceLabelKey(society: Society | undefined): AudienceLabel {
+  if (society?.audienceLabel === 'erasmus') return { key: 'admin.audience.erasmus' };
+  if (society?.autoFollowFaculty && society.facultyKey !== 'mendelu') {
+    return { key: 'admin.audience.faculty', faculty: society.facultyKey.toUpperCase() };
+  }
   return { key: 'admin.audience.followers' };
 }
 
@@ -77,14 +77,13 @@ export interface AudienceHint {
 /**
  * The line that keeps the button's promise honest.
  *
- * Named when we know the name. A session whose society is not in
- * `ASSOCIATION_PROFILES` — the reis_admin super-admin, and the dev session,
- * which both carry ids that are not associations — has no name to print, and
- * the first version of this interpolated the empty string into the sentence
- * and rendered "Uvidí studenti, kteří odebírají ." So the nameless case gets
- * its own sentence rather than a hole in this one.
+ * Named when we know the name. A session whose society is not in the catalog
+ * has no name to print, and the first version of this interpolated the empty
+ * string into the sentence and rendered "Uvidí studenti, kteří odebírají ." So
+ * the nameless case gets its own sentence rather than a hole in this one.
  */
-export function audienceHint(societyId: string): AudienceHint {
-  const name = ASSOCIATION_PROFILES[societyId]?.name;
-  return name ? { key: 'map.audienceHint', society: name } : { key: 'map.audienceHintGeneric' };
+export function audienceHint(society: Society | undefined): AudienceHint {
+  return society
+    ? { key: 'map.audienceHint', society: society.name }
+    : { key: 'map.audienceHintGeneric' };
 }

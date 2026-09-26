@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import type { SpolekNotification, AssociationProfile } from './types';
-import { FACULTY_TO_ASSOCIATION, ASSOCIATION_PROFILES } from './config';
+import type { SpolekNotification } from './types';
 import { supabase } from './supabaseClient';
 import { logError } from '../../utils/reportError';
 
@@ -99,20 +98,6 @@ export async function fetchNotifications(): Promise<SpolekNotification[] | null>
     logError('Spolky.fetchNotifications', err);
     return null;
   }
-}
-
-/**
- * Determine user's association based on their faculty
- * @param facultyId - User's faculty ID (e.g., 'PEF')
- * @returns AssociationProfile or null if not found
- */
-export function getUserAssociation(facultyId: string | null): AssociationProfile | null {
-  if (!facultyId) return null;
-
-  const associationId = FACULTY_TO_ASSOCIATION[facultyId as keyof typeof FACULTY_TO_ASSOCIATION];
-  if (!associationId) return null;
-
-  return ASSOCIATION_PROFILES[associationId] || null;
 }
 
 /**

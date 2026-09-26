@@ -25,6 +25,7 @@ import { createBuildingGeometryActions } from './buildingGeometryActions';
 import { lookupRoomEntry, isNonPhysicalRoom } from '../../utils/rooms/lookupRoom';
 import { lookupRoomPlace } from '../../utils/rooms/lookupRoomPlace';
 import { focusRoomPlace } from './focusRoomPlace';
+import { buildingSharingOutline } from '../../components/CampusMap/landmarkBuilding';
 
 const META = buildingsJson as BuildingsMeta;
 const INDEX = roomsIndexJson as RoomIndexEntry[];
@@ -152,6 +153,13 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
       logError('MapSlice.focusLandmarkById', new Error(`unknown landmark ${id}`));
       return;
     }
+    // FRRMS is budova Z, which has a floor plan: open it. Kolej Akademie shares
+    // the outline but is the dormitory, so it keeps its own card.
+    const building = l.type === 'building' ? buildingSharingOutline(l, META.buildings) : undefined;
+    if (building) {
+      get().setMapBuilding(building.id);
+      return;
+    }
     const coord = polygonCentroid(l.outline.coordinates[0]!); // safe: GeoJSON Polygon always has >=1 ring
     set({
       activeBuildingId: null,
@@ -224,7 +232,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
 
   refreshSocietyMapEvents: () => {
     const rows = get().societyPosts;
-    set({ societyMapEvents: rows.map((r) => locateEvent(toMapEvent(r))) });
+    set({ societyMapEvents: rows.map((r) => locateEvent(toMapEvent(r, get().societies))) });
   },
 
   beginPlacing: () =>
@@ -292,7 +300,10 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   // public map/"Akce" tab until a full reload — call this after those mutations.
   reloadMapEvents: async () => {
     try {
-      const events = await fetchMapEvents();
+      // The catalog is refetched beside every events load, in parallel, so an
+      // event can never be newer than the catalog that names its society. The
+      // mapping uses whatever catalog is in hand; display resolves reactively.
+      const [events] = await Promise.all([fetchMapEvents(get().societies), get().loadSocieties()]);
       set({ mapEvents: events.map(locateEvent), mapEventsLoaded: true });
       // Attendance is loaded here, with the events, rather than by the cards:
       // one RPC covers every visible event, and components do not fetch.

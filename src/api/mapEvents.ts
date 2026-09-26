@@ -1,5 +1,5 @@
-import type { MapEvent, EventCategory } from '../types/events';
-import { societyById } from '../data/societies';
+import type { MapEvent, EventCategory, Society } from '../types/events';
+import { resolveSociety } from '../utils/societies/resolveSociety';
 import { supabase } from '../services/spolky/supabaseClient';
 import { logError } from '../utils/reportError';
 import { isPublicEvent } from '../components/CampusMap/eventWindow';
@@ -23,8 +23,8 @@ interface SpolkyEventRow {
 
 // Pure row -> MapEvent mapping, kept separate from the network call so it's
 // directly unit-testable without hitting Supabase.
-export function toMapEvent(row: SpolkyEventRow): MapEvent {
-  const soc = societyById(row.association_id);
+export function toMapEvent(row: SpolkyEventRow, societies: Record<string, Society>): MapEvent {
+  const soc = resolveSociety(societies, row.association_id);
   const coord: [number, number] | null =
     row.coord_lng != null && row.coord_lat != null ? [row.coord_lng, row.coord_lat] : null;
   return {
@@ -36,6 +36,8 @@ export function toMapEvent(row: SpolkyEventRow): MapEvent {
     time: row.time,
     location: row.location,
     imageUrl: null,
+    // Unread for map events (the map's faculty filter is gone); display
+    // resolves the society reactively through useSociety.
     organizerKey: soc.facultyKey,
     societyId: row.association_id,
     coord,
@@ -49,7 +51,7 @@ export function toMapEvent(row: SpolkyEventRow): MapEvent {
   };
 }
 
-export async function fetchMapEvents(): Promise<MapEvent[]> {
+export async function fetchMapEvents(societies: Record<string, Society>): Promise<MapEvent[]> {
   const { data, error } = await supabase
     .from('spolky_events')
     .select('*')
@@ -63,5 +65,5 @@ export async function fetchMapEvents(): Promise<MapEvent[]> {
   return (data ?? [])
     .map((row) => row as SpolkyEventRow)
     .filter((row) => isPublicEvent(row.date)) // hide past + far-future from the public map/feed
-    .map(toMapEvent);
+    .map((row) => toMapEvent(row, societies));
 }

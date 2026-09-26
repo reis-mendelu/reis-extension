@@ -738,5 +738,105 @@
   {
     "code": "BA39P1084",
     "label": "Q01.84"
+  },
+  {
+    "code": "BZ00N1000",
+    "label": "Aula",
+    "campus": "ČP II."
+  },
+  {
+    "code": "BZ00N2008",
+    "label": "Z2",
+    "campus": "ČP II."
+  },
+  {
+    "code": "BZ00N2009",
+    "label": "Z3",
+    "campus": "ČP II."
+  },
+  {
+    "code": "BZ00N2010",
+    "label": "Z4",
+    "campus": "ČP II."
+  },
+  {
+    "code": "BZ00N2011",
+    "label": "Z1",
+    "campus": "ČP II."
+  },
+  {
+    "code": "BZ00N2012",
+    "label": "Z13",
+    "campus": "ČP II."
+  },
+  {
+    "code": "BZ00N2013",
+    "label": "Z5",
+    "campus": "ČP II."
+  },
+  {
+    "code": "BZ00N2014",
+    "label": "Z6",
+    "campus": "ČP II."
+  },
+  {
+    "code": "BZ00N2015",
+    "label": "Z7",
+    "campus": "ČP II."
+  },
+  {
+    "code": "BZ00N2024",
+    "label": "Z14",
+    "campus": "ČP II."
+  },
+  {
+    "code": "BZ00N2025",
+    "label": "Z8",
+    "campus": "ČP II."
+  },
+  {
+    "code": "BZ00N2027",
+    "label": "Z9",
+    "campus": "ČP II."
+  },
+  {
+    "code": "BZ00N2028",
+    "label": "Z15",
+    "campus": "ČP II."
+  },
+  {
+    "code": "BZ00N2029",
+    "label": "Z10",
+    "campus": "ČP II."
+  },
+  {
+    "code": "BZ00N2031",
+    "label": "Z11",
+    "campus": "ČP II."
+  },
+  {
+    "code": "BZ00N2081",
+    "label": "Z26",
+    "campus": "ČP II."
+  },
+  {
+    "code": "BZ00N2084",
+    "label": "Z24",
+    "campus": "ČP II."
+  },
+  {
+    "code": "BZ00N2085",
+    "label": "Z28",
+    "campus": "ČP II."
+  },
+  {
+    "code": "BZ00N2086",
+    "label": "Z25",
+    "campus": "ČP II."
+  },
+  {
+    "code": "BZ00N4002",
+    "label": "Zasedačka FRRMS 4NP",
+    "campus": "ČP II."
   }
 ]

@@ -8,8 +8,9 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
   const { t, language } = useTranslation();
   const { current, next, elapsedPct, minutesLeft } = data;
   const mapEvents = useAppStore((s) => s.mapEvents);
+  const societies = useAppStore((s) => s.societies);
   const onMapLabel = t('map.venueOnMap');
-  const currentPlace = lessonPlace(current, language, mapEvents, onMapLabel);
+  const currentPlace = lessonPlace(current, language, mapEvents, onMapLabel, societies);
   const currentName = localizedCourseName(current, language);
   // The agenda row's rule (AgendaEvent): the short name, so no titles; an
   // answered society event has no teacher, and who runs it goes there instead.
@@ -17,7 +18,7 @@ export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => v
     current.teachers[0]?.shortName || current.teachers[0]?.fullName || currentPlace.host;
   const currentLine = [currentPlace.label, teacher].filter(Boolean).join(' · ');
   const nextName = next ? localizedCourseName(next, language) : '';
-  const nextPlace = next ? lessonPlace(next, language, mapEvents, onMapLabel) : null;
+  const nextPlace = next ? lessonPlace(next, language, mapEvents, onMapLabel, societies) : null;
   // "Kam jít" points at the RUNNING lesson's room — the lesson this card is
   // about. It used to point at the next one, so a student opening the app
   // late for the lecture on now was walked to the one after it instead.
