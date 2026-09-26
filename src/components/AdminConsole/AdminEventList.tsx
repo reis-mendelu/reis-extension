@@ -13,8 +13,9 @@ import type { MapEvent } from '../../types/events';
 
 // The console's list column: the active society's events grouped by lifecycle,
 // the Create entry point, and an inline composer that takes the column over
-// while open. Live = on the public map now; Scheduled = still hidden from
-// students (goes live ~2 weeks out); Past = aged off the map but kept for the
+// while open. Live = on the public map and in Novinky now; Scheduled = still
+// hidden from students on both (goes live ~2 weeks out — eventWindow, and
+// dropScheduledEvents for Novinky); Past = aged off the map but kept for the
 // society. Rows fly the console's map to the event.
 //
 // Was MyEventsPanel, which lived inside the student map's side panel. The
