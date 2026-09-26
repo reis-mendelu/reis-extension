@@ -1,6 +1,7 @@
 import roomsIndex from '../../data/map/rooms-index.json';
 import buildingsJson from '../../data/map/buildings.json';
 import { resolveRoomCode } from '../mobile/resolveRoomCode';
+import { bracketCampus, offMapCampus } from '../rooms/roomCampus';
 import type { BlockLesson } from '../../types/schedule';
 import type { BuildingsMeta, RoomIndexEntry } from '../../types/campusMap';
 
@@ -54,10 +55,9 @@ const sameDay = (a: Date, b: Date) =>
  *
  * Returns `null` when the room does not resolve, which is the same contract the
  * rest of the app uses: callers offer the button only when this returns, because
- * `focusRoomByCode` on an unknown room does nothing visible. Today that branch
- * catches every FRRMS lesson — budova Z is not in the My MENDELU survey, so its
- * rooms have no geometry and no building. That is the floor-plan work, not a
- * bug here, and a button that looks fine and does nothing would be worse.
+ * `focusRoomByCode` on an unknown room does nothing visible. FRRMS lessons do
+ * resolve (budova Z has a floor plan since 2026-09); whether a WALK there is
+ * offered is `canRouteFrom`'s call, and Z has no graph nodes yet.
  */
 export function nextLessonTarget(lessons: BlockLesson[], now: Date): LessonTarget | null {
   const candidates = lessons
@@ -68,7 +68,7 @@ export function nextLessonTarget(lessons: BlockLesson[], now: Date): LessonTarge
 
   // The EARLIEST remaining lesson, and only that one. Walking the list until
   // something resolves looks helpful and is not: a student whose 11:00 is at
-  // FRRMS (budova Z, no floor plan, does not resolve) and whose 13:00 is in Q31
+  // Lednice (no floor plan, does not resolve) and whose 13:00 is in Q31
   // would be walked to Q while their actual next class is somewhere else
   // entirely. Withholding the route is the honest answer — the picker is still
   // one tap away, and it does not lie about which lesson it is taking them to.
@@ -88,13 +88,20 @@ export function nextLessonTarget(lessons: BlockLesson[], now: Date): LessonTarge
  * on a specific day, so refusing to route to Thursday would be refusing the
  * thing they asked for.
  *
- * Still `null` for a room the map cannot place — every building reachable from
- * rooms-index.json (A, B, C, E, M, Q, X) is in the routing graph, so a target
- * that resolves here always has somewhere to walk to, and one that does not
- * would be a button that looks fine and does nothing.
+ * Still `null` for a room the map cannot place. Every surveyed building (A, B,
+ * C, E, M, Q, X) is in the routing graph; budova Z resolves here too but has no
+ * nodes yet, and `canRouteFrom` withholds the walk for it.
  */
 export function lessonTarget(lesson: BlockLesson): RouteTarget | null {
-  const resolved = resolveRoomCode([lesson.room, lesson.roomStructured?.name]);
+  // Both strings name the same room, so a campus off the map in the first one
+  // settles it ("ZFAC1 (Led)"): there is no room to find under either name.
+  if (offMapCampus(lesson.room)) return null;
+  // A printed campus makes the printed room the only string to trust: its
+  // structured name ("K01", "Aula", "Z14") drops the campus and would be read
+  // as a different room — on Černá Pole, or by the bare-label fallback.
+  const resolved = resolveRoomCode(
+    bracketCampus(lesson.room) ? [lesson.room] : [lesson.room, lesson.roomStructured?.name]
+  );
   if (!resolved) return null;
   const entry = INDEX.find((e) => e.code === resolved.code);
   // `buildingId === 0` is building Q — a real building. Compare against

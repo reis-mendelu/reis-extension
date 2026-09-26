@@ -1,21 +1,23 @@
 import L from 'leaflet';
 import { useAppStore } from '../../store/useAppStore';
 import landmarksJson from '../../data/map/landmarks.json';
+import buildingsJson from '../../data/map/buildings.json';
+import { buildingSharingOutline } from './landmarkBuilding';
 import { ringToLatLng, landmarkGroupLabels } from './mapHelpers';
 import { REMOTE } from './remoteLayers';
 import { GARDEN_PLACE_ID, bubblesHidden } from './gardenBubbleLayer';
-import { LABELS_PANE, TOOLTIP_CARVE_OUTS, ensureReisPanes } from './mapPanes';
-import type { Landmark } from '../../types/campusMap';
+import { TOOLTIP_CARVE_OUTS, ensureReisPanes } from './mapPanes';
+import type { BuildingsMeta, Landmark } from '../../types/campusMap';
 
 const LANDMARKS = (landmarksJson as { landmarks: Landmark[] }).landmarks;
 // FRRMS + Kolej Akademie are one building under two names → a combined "A / B"
 // tooltip. (Adjacent-but-separate places like Tauferovy/sports centre are NOT
 // merged — see landmarkGroupLabels.)
 const LANDMARK_LABELS = landmarkGroupLabels(LANDMARKS);
-// A few landmarks are official lettered campus buildings — FRRMS is "Z" on the
-// MENDELU map — and get a permanent centre letter like the drillable buildings
-// instead of the hover name. The Místa picker still carries the full pair name.
-const LANDMARK_LETTERS: Record<number, string> = { 1587: 'Z' };
+// FRRMS used to be the lettered landmark "Z". It is budova Z now, a drillable
+// building with the same outline, labelled like the others; landmarks sharing a
+// building's outline are not drawn again (see landmarkBuilding.ts).
+const BUILDINGS = (buildingsJson as BuildingsMeta).buildings;
 
 // OpenStreetMap's own tiles, desaturated to the grey the overlays were drawn
 // against.
@@ -136,6 +138,7 @@ export function drawLandmarks(
   style: L.PathOptions
 ) {
   for (const l of LANDMARKS) {
+    if (buildingSharingOutline(l, BUILDINGS)) continue;
     const poly = L.polygon(ringToLatLng(l.outline.coordinates[0]), style);
     poly.on('click', () => {
       const c = poly.getBounds().getCenter();
@@ -144,15 +147,7 @@ export function drawLandmarks(
         [c.lng, c.lat]
       );
     });
-    const letter = LANDMARK_LETTERS[l.id];
-    if (letter)
-      poly.bindTooltip(letter, {
-        permanent: true,
-        direction: 'center',
-        className: 'building-label',
-        pane: LABELS_PANE,
-      });
-    else poly.bindTooltip(LANDMARK_LABELS.get(l.id) ?? l.name);
+    poly.bindTooltip(LANDMARK_LABELS.get(l.id) ?? l.name);
     poly.addTo(layer);
   }
 }

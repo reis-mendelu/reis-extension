@@ -2,7 +2,8 @@
 export interface FocusView<B> {
   bounds: B;
   maxZoom: number;
-  padding: [number, number];
+  paddingTopLeft: [number, number];
+  paddingBottomRight: [number, number];
 }
 
 /**
@@ -20,15 +21,26 @@ export interface FocusView<B> {
  *
  * The room's own bounds remain the fallback for a room whose building has no
  * footprint in the data — better a close view than none.
+ *
+ * `railPx` is the width the tablet's Akce rail covers on the right
+ * (`railPaddingPx`, 0 on the phone and the desktop tree). The frame keeps clear
+ * of it like every other camera move does: a long building — budova Z's
+ * crescent — otherwise ends under the panel, and so does its end room.
  */
 export function roomFocusView<B>(
   roomBounds: B | null,
-  buildingBounds: B | null
+  buildingBounds: B | null,
+  railPx = 0
 ): FocusView<B> | null {
-  if (buildingBounds)
-    // Generous padding: the point is context, and a building that touches the
-    // viewport edge reads as "cut off" rather than "all of it".
-    return { bounds: buildingBounds, maxZoom: 19, padding: [60, 60] };
-  if (roomBounds) return { bounds: roomBounds, maxZoom: 21, padding: [120, 120] };
+  const view = (bounds: B, maxZoom: number, pad: number): FocusView<B> => ({
+    bounds,
+    maxZoom,
+    paddingTopLeft: [pad, pad],
+    paddingBottomRight: [pad + railPx, pad],
+  });
+  // Generous padding: the point is context, and a building that touches the
+  // viewport edge reads as "cut off" rather than "all of it".
+  if (buildingBounds) return view(buildingBounds, 19, 60);
+  if (roomBounds) return view(roomBounds, 21, 120);
   return null;
 }

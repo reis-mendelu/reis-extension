@@ -25,6 +25,7 @@ import { createBuildingGeometryActions } from './buildingGeometryActions';
 import { lookupRoomEntry, isNonPhysicalRoom } from '../../utils/rooms/lookupRoom';
 import { lookupRoomPlace } from '../../utils/rooms/lookupRoomPlace';
 import { focusRoomPlace } from './focusRoomPlace';
+import { buildingSharingOutline } from '../../components/CampusMap/landmarkBuilding';
 
 const META = buildingsJson as BuildingsMeta;
 const INDEX = roomsIndexJson as RoomIndexEntry[];
@@ -150,6 +151,13 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
     const l = LANDMARKS.find((x) => x.id === id);
     if (!l) {
       logError('MapSlice.focusLandmarkById', new Error(`unknown landmark ${id}`));
+      return;
+    }
+    // FRRMS is budova Z, which has a floor plan: open it. Kolej Akademie shares
+    // the outline but is the dormitory, so it keeps its own card.
+    const building = l.type === 'building' ? buildingSharingOutline(l, META.buildings) : undefined;
+    if (building) {
+      get().setMapBuilding(building.id);
       return;
     }
     const coord = polygonCentroid(l.outline.coordinates[0]!); // safe: GeoJSON Polygon always has >=1 ring
