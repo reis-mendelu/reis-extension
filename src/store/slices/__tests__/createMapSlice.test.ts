@@ -179,6 +179,19 @@ describe('mapSlice', () => {
     expect(s.mapFocusRequest).toBe(before + 1);
   });
 
+  it('focusing the FRRMS landmark opens budova Z instead of a no-floor-plan card', () => {
+    useAppStore.getState().focusLandmarkById(1587);
+    const s = useAppStore.getState();
+    expect(s.activeBuildingId).toBe(9000001);
+    expect(s.mapSelection?.kind).not.toBe('poi');
+  });
+
+  it('Kolej Akademie keeps its card (it is the dormitory, not the faculty)', () => {
+    useAppStore.getState().focusLandmarkById(1616);
+    const s = useAppStore.getState();
+    expect(s.mapSelection?.kind === 'poi' && s.mapSelection.poi.id).toBe(1616);
+  });
+
   it('focusRoomByCode opens an FRRMS room on its floor in budova Z', () => {
     useAppStore.getState().focusRoomByCode('Z11 (ČP II.)');
     const s = useAppStore.getState();
