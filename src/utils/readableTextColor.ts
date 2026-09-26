@@ -20,6 +20,12 @@ function luminance(hex: string): number {
   return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
 }
 
+/** WCAG contrast ratio between two #rrggbb colours, 1–21. */
+export function contrastRatio(a: string, b: string): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
 /** Returns '#ffffff' or '#111827' — whichever has higher contrast on `hex`. */
 export function readableTextColor(hex: string): string {
   const L = luminance(hex);

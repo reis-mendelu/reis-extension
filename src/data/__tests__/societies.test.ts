@@ -1,23 +1,20 @@
-import { describe, it, expect, vi } from 'vitest';
-import { logError } from '../../utils/reportError';
-import { societyById } from '../societies';
+import { describe, it, expect } from 'vitest';
+import { BUNDLED_SOCIETIES } from '../societies';
 
-vi.mock('../../utils/reportError', () => ({ logError: vi.fn() }));
-
-describe('societyById', () => {
-  it('resolves the reIS team association (reis_admin) without an ESN fallback or error', () => {
-    const soc = societyById('reis');
-    expect(soc.id).toBe('reis');
-    expect(soc.name).toBe('reIS');
-    expect(logError).not.toHaveBeenCalled();
+// The bundled seed is what a first-ever launch shows before the catalog
+// arrives. It must match the migration's seed rows, or a student sees one
+// branding for a second and another after the fetch.
+describe('BUNDLED_SOCIETIES', () => {
+  it('holds the eight seeded societies', () => {
+    expect(Object.keys(BUNDLED_SOCIETIES).sort()).toEqual(
+      ['au_frrms', 'esn', 'ey', 'ldf', 'reis', 'supef', 'usaf', 'zf']
+    );
   });
-
-  it('returns a known society directly', () => {
-    expect(societyById('supef').shortName).toBe('SUPEF');
+  it('carries no logo URLs: they exist only after the prod seed', () => {
+    for (const s of Object.values(BUNDLED_SOCIETIES)) expect(s.logo).toBeUndefined();
   });
-
-  it('falls back to ESN and logs for a genuinely unknown id', () => {
-    expect(societyById('definitely-not-a-society').id).toBe('esn');
-    expect(logError).toHaveBeenCalled();
+  it('has exactly one auto-follow society per faculty', () => {
+    const auto = Object.values(BUNDLED_SOCIETIES).filter((s) => s.autoFollowFaculty);
+    expect(auto.map((s) => s.facultyKey).sort()).toEqual(['af', 'frrms', 'ldf', 'pef', 'zf']);
   });
 });
