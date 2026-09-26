@@ -45,12 +45,19 @@ const GRAPH = (campusPaths as unknown as { graph: CampusGraph }).graph;
  * location, and hiding the offer on a guess would take the feature away from
  * someone standing on the campus.
  */
+/**
+ * Whether the routing graph reaches `buildingName` at all. Budova Z has a floor
+ * plan but no nodes in v1, so no walk to it exists from anywhere — no offer, no
+ * press that asks for the position and then fails.
+ */
+export function hasWalksTo(buildingName: string): boolean {
+  return (GRAPH.buildings[buildingName] ?? []).length > 0;
+}
+
 export function canRouteFrom(at: [number, number] | null, buildingName: string): boolean {
-  // A building with no nodes has no walk from anywhere — budova Z, which has a
-  // floor plan but is not in the routing graph (v1). Checked before the no-fix
-  // branch, which would otherwise offer a press that draws nothing.
-  const targets = GRAPH.buildings[buildingName] ?? [];
-  if (targets.length === 0) return false;
+  // Before the no-fix branch, which would otherwise offer a press that draws nothing.
+  if (!hasWalksTo(buildingName)) return false;
+  const targets = GRAPH.buildings[buildingName]!;
   if (!at) return true;
   const snap = snapToGraph(GRAPH, at);
   if (!snap) return false;

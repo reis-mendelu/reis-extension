@@ -44,6 +44,22 @@ describe('RouteButton with a lesson suggestion', () => {
     expect(screen.getByRole('button').textContent).toContain('Q31');
   });
 
+  // Budova Z has a floor plan but no routing-graph nodes (v1): a press that
+  // asked for the position and then failed "no walk to Z" would be a dead end.
+  // With no walk to offer, the picker opens, as it did before Z had a plan.
+  it('opens the picker, not a walk, when the next lesson is in budova Z', () => {
+    const routeTo = vi.fn().mockResolvedValue(undefined);
+    useAppStore.setState({
+      routeTo,
+      schedule: { data: [lessonLaterToday('Z14 (ČP II.)')] },
+    } as never);
+    render(<RouteButton />);
+    fireEvent.click(screen.getByRole('button'));
+    expect(routeTo).not.toHaveBeenCalled();
+    expect(useAppStore.getState().routePickerOpen).toBe(true);
+    useAppStore.getState().setRoutePickerOpen(false);
+  });
+
   it('falls back to the generic label with no suggestion', () => {
     render(<RouteButton />);
     expect(screen.getByRole('button').textContent).toContain('Najdi cestu');

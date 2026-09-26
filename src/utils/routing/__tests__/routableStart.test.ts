@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { canRouteFrom } from '../routableStart';
+import { canRouteFrom, hasWalksTo } from '../routableStart';
 
 // The answer reads the garden's hours, so the clock is pinned to a weekday
 // morning (garden open) unless a test says otherwise.
@@ -92,5 +92,15 @@ describe('canRouteFrom, for a building with no graph nodes', () => {
 
   it('still offers a walk to a graph building when the position is unknown', () => {
     expect(canRouteFrom(null, 'Q')).toBe(true);
+  });
+});
+
+describe('hasWalksTo', () => {
+  it('is false for budova Z, which has a floor plan but no graph nodes (v1)', () => {
+    expect(hasWalksTo('Z')).toBe(false);
+  });
+
+  it('is true for a surveyed building', () => {
+    expect(hasWalksTo('Q')).toBe(true);
   });
 });
