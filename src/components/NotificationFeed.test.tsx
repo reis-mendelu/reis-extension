@@ -207,4 +207,35 @@ describe('NotificationFeed', () => {
 
     expect(spolkyService.trackNotificationClick).toHaveBeenCalledWith('1');
   });
+
+  it('holds back an event the console still lists as scheduled', async () => {
+    // Same window as the map: 14+ days out is "Naplánované — zveřejní se …" in
+    // the console, so it must not be in Novinky (or collect views) yet. The
+    // phone's NotificationsSheet reads the same useNotificationFeed list.
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    useAppStore.setState({
+      notifications: {
+        data: [
+          ...mockNotifications,
+          { ...mockNotifications[1]!, id: '3', title: 'Ples', startsAt: day, expiresAt: day },
+        ],
+        readIds: new Set(),
+        viewedIds: new Set(),
+        seenDeadlineAlertIds: new Set(),
+        status: 'success',
+      },
+    });
+
+    render(<NotificationFeed onShowMap={vi.fn()} />);
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Notifications'));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Notification 1')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Ples')).not.toBeInTheDocument();
+  });
 });

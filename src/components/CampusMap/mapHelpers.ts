@@ -10,6 +10,7 @@ import type {
 } from '../../types/campusMap';
 import { lookupRoomEntry } from '../../utils/rooms/lookupRoom';
 import { isLabelForCode, isLabelOfAnotherRoom } from '../../data/map/isRoomLabels';
+import type { PlacedRoom } from '../../utils/rooms/placedRooms';
 
 export interface RoomStyle {
   fill: string;
@@ -394,6 +395,7 @@ export function searchPlaces(
   index: RoomIndexEntry[],
   pois: PoiFeature[],
   landmarks: Landmark[],
+  placed: readonly PlacedRoom[] = [],
   limit = 12
 ): MapSelection[] {
   const q = query.trim().toLowerCase();
@@ -414,8 +416,15 @@ export function searchPlaces(
       sel: { kind: 'landmark', landmark: l } as MapSelection,
       rank: matchRank(q, l.name, ''),
     }));
+  // Rooms with only a building pin (D05) — ranked like a drawn room's name.
+  const pinned = placed
+    .filter((p) => p.display.toLowerCase().includes(q) || p.label.toLowerCase().includes(q))
+    .map((p) => ({
+      sel: { kind: 'placedRoom', label: p.label, display: p.display } as MapSelection,
+      rank: matchRank(q, p.display, p.label),
+    }));
   // Array.prototype.sort is stable, so equal-rank items keep their source order.
-  return [...rooms, ...places, ...lands]
+  return [...rooms, ...pinned, ...places, ...lands]
     .sort((a, b) => a.rank - b.rank)
     .map((x) => x.sel)
     .slice(0, limit);

@@ -93,6 +93,7 @@ describe('fetchNotifications (repointed to spolky_events)', () => {
         link: 'http://x',
         createdAt: '2026-07-01T00:00:00Z',
         expiresAt: '2026-07-10',
+        startsAt: '2026-07-10',
         priority: 'normal',
       },
       {
@@ -103,6 +104,7 @@ describe('fetchNotifications (repointed to spolky_events)', () => {
         link: undefined,
         createdAt: '2026-07-02T00:00:00Z',
         expiresAt: '2026-07-11',
+        startsAt: '2026-07-11',
         priority: 'normal',
       },
     ]);

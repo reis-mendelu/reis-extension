@@ -241,6 +241,9 @@ export type MapSelection =
   // floor plan, so the map shows its building ("T18" → pin T). See focusRoomPlace.
   | { kind: 'poi'; poi: PoiProperties; coord: [number, number]; forRoom?: string }
   | { kind: 'landmark'; landmark: Landmark } // search result only; resolves to a poi selection on focus
+  // search result only: a room with no floor plan (D05), focused through
+  // focusRoomByCode so the card names the room over its building
+  | { kind: 'placedRoom'; label: string; display: string }
   | { kind: 'gardenPlace'; place: GardenPlace } // one of the botanical garden's places
   // a society event pin. `reveal: 'map'` — focused from the calendar, which asked
   // WHERE: the phone sheet stays at peek so the pin is not under the card.

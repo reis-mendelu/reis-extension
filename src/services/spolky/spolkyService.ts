@@ -92,6 +92,7 @@ export async function fetchNotifications(): Promise<SpolekNotification[] | null>
       link: n.url || undefined,
       createdAt: n.created_at,
       expiresAt: n.end_date || n.date, // events use their date as natural expiry
+      startsAt: n.date, // decides go-live, see dropScheduledEvents
       priority: 'normal' as const,
     }));
   } catch (err) {
