@@ -25,7 +25,14 @@ import {
   readTimetableAnswer,
   type TimetableFilter,
 } from './timetableQuery';
-import { CATALOG_URL, FACULTY_IDS, typStudiaFor, findPeriodPoc, programmeUrl, findLeafUrl } from './catalogNav';
+import {
+  CATALOG_URL,
+  FACULTY_IDS,
+  typStudiaFor,
+  findPeriodPoc,
+  programmeUrl,
+  findLeafUrl,
+} from './catalogNav';
 import { parseCatalogPlan, subjectsToAttend, toStudyPlan, type CatalogRow } from './catalogPlan';
 import { firstSlotOnly } from './pickSlots';
 
@@ -76,7 +83,9 @@ export async function loadOptions(now = new Date()): Promise<FacultyOptions[]> {
 
 /** Year-1 study groups: only the list format names them (the JSON has no group field). */
 export async function loadYear1Groups(p: ProgrammeOption): Promise<number[]> {
-  const html = await post(timetableBody(p.rozvrh, { program: p.programId, rocnik: 1 }, 'cz', 'list'));
+  const html = await post(
+    timetableBody(p.rozvrh, { program: p.programId, rocnik: 1 }, 'cz', 'list')
+  );
   return parseGroupNumbers(parseDoc(html), 1);
 }
 
@@ -98,6 +107,21 @@ async function lessonsFor(
   return mergeDualLanguageLessons(pickFirst ? firstSlotOnly(czL) : czL, enL);
 }
 
+/**
+ * One subject, one parallel. `rocnik` narrows it to the slots open to this
+ * year where IS tags events with years (PEF: EBC-FT 60 → 36), but at AF, FRRMS,
+ * ZF and in most masters nothing is tagged, and rocnik=N answers empty while the
+ * unfiltered subject has 24–48 lessons (live check, 2026-09-26). Empty with the
+ * filter → ask again without it.
+ */
+async function subjectLessons(
+  sel: ImpersonationSelection,
+  predmet: string
+): Promise<BlockLesson[]> {
+  const narrowed = await lessonsFor(sel, { predmet, rocnik: sel.year }, true);
+  return narrowed.length ? narrowed : lessonsFor(sel, { predmet }, true);
+}
+
 async function fetchPlanLeaf(sel: ImpersonationSelection, now: Date): Promise<string> {
   const fakulta = FACULTY_IDS[sel.faculty];
   const typ = typStudiaFor(sel.shortCode);
@@ -116,26 +140,30 @@ export async function fetchImpersonation(
 ): Promise<ImpersonationResult> {
   const leaf = await fetchPlanLeaf(sel, now);
   const [czSems, enSems] = await Promise.all(
-    [leaf, leaf.replace('lang=cz', 'lang=en')].map(async (u) => parseCatalogPlan(parseDoc(await text(u))))
+    [leaf, leaf.replace('lang=cz', 'lang=en')].map(async (u) =>
+      parseCatalogPlan(parseDoc(await text(u)))
+    )
   );
   const target = targetSemester(sel.year, now);
   const semester = czSems?.find((s) => s.number === target);
   if (!czSems || !enSems || !semester) throw new ImpersonationError('noSemester');
   const attend = subjectsToAttend(semester);
 
-  let schedule: BlockLesson[];
+  // Year 1: the programme + group query, which knows the student's group. It
+  // misses subjects that hang off no programme (AF OTAJAE; every subject of some
+  // N- programmes), and from year 2 on IS answers it with no results at all —
+  // so every plan subject it did not cover is asked for on its own.
+  let schedule: BlockLesson[] = [];
   if (sel.year === 1) {
     const f = { program: sel.programId, rocnik: 1, skupina: sel.group ?? 0 };
     schedule = await lessonsFor(sel, f, false);
-  } else {
-    // No programme filter from year 2 on (IS answers it with no results), so per
-    // plan subject; rocnik narrows each to the slots open to this year (EBC-FT 60 → 36).
-    const withId = attend.filter((r): r is CatalogRow & { predmetId: string } => r.predmetId !== null);
-    const per = await mapLimit(withId, 3, (r) =>
-      lessonsFor(sel, { predmet: r.predmetId, rocnik: sel.year }, true)
-    );
-    schedule = per.flat();
   }
+  const covered = new Set(schedule.map((l) => l.courseCode));
+  const missing = attend.filter(
+    (r): r is CatalogRow & { predmetId: string } => r.predmetId !== null && !covered.has(r.code)
+  );
+  const per = await mapLimit(missing, 3, (r) => subjectLessons(sel, r.predmetId));
+  schedule = schedule.concat(per.flat());
 
   const title = `${sel.shortCode} ${sel.name} · ${intakeLabel(sel.year, now)}`;
   const enrolled = { semester: target, codes: new Set(attend.map((r) => r.code)) };

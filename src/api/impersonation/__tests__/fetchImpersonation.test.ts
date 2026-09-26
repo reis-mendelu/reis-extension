@@ -27,6 +27,10 @@ function route(url: string, init?: RequestInit): string {
   if (body.get('format') === 'list') return raw('rozvrh-list-bf-y1.html');
   if (body.get('format') === 'json' && body.get('predmet') === '164066' && body.get('rocnik') === '2')
     return raw(`rozvrh-predmet-ft.${body.get('lang')}.json`);
+  // EBC-AZD (162664) behaves like AF/FRRMS/ZF subjects live: nothing under
+  // rocnik=2, a full timetable without the year filter (observed 2026-09-26).
+  if (body.get('format') === 'json' && body.get('predmet') === '162664' && body.get('rocnik') === '0')
+    return raw(`rozvrh-predmet-ft.${body.get('lang')}.json`).replaceAll('EBC-FT', 'EBC-AZD');
   if (body.get('format') === 'json' && body.get('skupina') === '2')
     return raw(`rozvrh-bf-y1-g2.${body.get('lang')}.json`);
   if (body.get('format') === 'json') return noResults;
@@ -103,11 +107,31 @@ describe('fetchImpersonation', () => {
     const enrolled = r.plan.cz.blocks[2]!.groups.flatMap((g) => g.subjects).filter((s) => s.isEnrolled);
     expect(enrolled.map((s) => s.code)).toContain('EBC-FT');
     // Only EBC-FT has a routed timetable; the rest answer no-results = no lessons, not failure.
-    expect(new Set(r.schedule.map((l) => l.courseCode))).toEqual(new Set(['EBC-FT']));
-    expect(r.schedule).toHaveLength(24);
-    expect(r.schedule.every((l) => l.courseNameEn === 'Financial Markets' && l.studyId === '')).toBe(true);
+    expect(new Set(r.schedule.map((l) => l.courseCode))).toEqual(new Set(['EBC-FT', 'EBC-AZD']));
+    const ft = r.schedule.filter((l) => l.courseCode === 'EBC-FT');
+    expect(ft).toHaveLength(24);
+    expect(ft.every((l) => l.courseNameEn === 'Financial Markets' && l.studyId === '')).toBe(true);
     expect(Object.keys(r.subjects.data)).toContain('EBC-FT');
     expect(r.subjects.data['EBC-FT']!.nameEn).toBe('Financial Markets');
+  });
+
+  it('falls back to no year filter when rocnik finds nothing for a subject', async () => {
+    const r = await fetchImpersonation(await bfSelection(2), SEPT);
+    expect(r.schedule.filter((l) => l.courseCode === 'EBC-AZD')).toHaveLength(24);
+    // EBC-FT answered under rocnik=2, so it is never asked again without it.
+    const bodies = fetchWithAuth.mock.calls.map(([, init]) => new URLSearchParams(String(init?.body ?? '')));
+    const ftNoYear = bodies.filter((b) => b.get('predmet') === '164066' && b.get('rocnik') === '0');
+    expect(ftNoYear).toHaveLength(0);
+  });
+
+  it('year 1: a plan subject the programme query missed is fetched on its own', async () => {
+    // The real first-week B-F group-2 answer has no EBC-KOM lesson.
+    await fetchImpersonation(await bfSelection(1), SEPT);
+    const perSubject = fetchWithAuth.mock.calls
+      .map(([, init]) => new URLSearchParams(String(init?.body ?? '')))
+      .filter((b) => b.get('format') === 'json' && b.get('predmet') !== '0');
+    const kom = perSubject.filter((b) => b.get('lang') === 'cz' && b.get('rocnik') === '1');
+    expect(kom.length).toBe(1);
   });
 
   it('a failed timetable leg fails the whole fetch (never half-applied)', async () => {
