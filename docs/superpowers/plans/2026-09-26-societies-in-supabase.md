@@ -81,8 +81,9 @@
 -- foreign key from spolky_accounts.association_id. An old client build against
 -- this database is unaffected.
 --
--- Dollar quotes are tagged ($fn$, $chk$) so the whole file can be wrapped in a
--- `do $dry$ … $dry$` block for the prod dry-run (runbook step 2).
+-- Dollar quotes carry their own tags (fn, chk) so the whole file can be wrapped
+-- in one DO block for the prod dry-run (runbook step 2). Never write that
+-- block's tag in this file: a comment containing it ends the wrapper early.
 --
 -- APPLY BY HAND (no CI applies migrations):
 --   npx supabase db query --linked -f supabase/migrations/20260926120000_societies_catalog.sql
