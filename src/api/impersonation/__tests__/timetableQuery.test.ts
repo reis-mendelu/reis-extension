@@ -74,8 +74,12 @@ describe('readTimetableAnswer', () => {
     expect(a.lessons.every((l) => l.studyId === '' && l.periodId === '')).toBe(true);
   });
   it('treats the real no-results page as empty, in either language', () => {
-    expect(readTimetableAnswer(raw('src/api/__tests__/fixtures/is-rozvrh-no-results.html')).kind).toBe('empty');
-    expect(readTimetableAnswer(raw('src/api/__tests__/fixtures/is-rozvrh-no-results-en.html')).kind).toBe('empty');
+    expect(
+      readTimetableAnswer(raw('src/api/__tests__/fixtures/is-rozvrh-no-results.html')).kind
+    ).toBe('empty');
+    expect(
+      readTimetableAnswer(raw('src/api/__tests__/fixtures/is-rozvrh-no-results-en.html')).kind
+    ).toBe('empty');
   });
   it('treats anything else (login page, error) as failed — never as empty', () => {
     expect(readTimetableAnswer('<html>login</html>').kind).toBe('failed');
@@ -88,7 +92,9 @@ describe('mergeDualLanguageLessons', () => {
     const cz = readTimetableAnswer(raw(FX + 'rozvrh-bf-y1-g2.cz.json'));
     const en = readTimetableAnswer(raw(FX + 'rozvrh-bf-y1-g2.en.json'));
     if (cz.kind !== 'lessons' || en.kind !== 'lessons') throw new Error('fixture');
-    const mt = mergeDualLanguageLessons(cz.lessons, en.lessons).find((l) => l.courseCode === 'EBC-MT')!;
+    const mt = mergeDualLanguageLessons(cz.lessons, en.lessons).find(
+      (l) => l.courseCode === 'EBC-MT'
+    )!;
     expect(mt.courseNameCs).toBe('Matematika');
     expect(mt.courseNameEn).toBe('Mathematics');
   });

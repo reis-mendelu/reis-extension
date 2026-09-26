@@ -53,12 +53,7 @@ export interface ImpersonationResult {
 }
 
 export type ImpersonationErrorCode =
-  | 'options'
-  | 'timetable'
-  | 'noPlan'
-  | 'noSemester'
-  | 'expired'
-  | 'notAdmin';
+  'options' | 'timetable' | 'noPlan' | 'noSemester' | 'expired' | 'notAdmin';
 
 export class ImpersonationError extends Error {
   readonly code: ImpersonationErrorCode;

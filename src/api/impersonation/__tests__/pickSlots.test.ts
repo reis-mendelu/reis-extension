@@ -12,7 +12,8 @@ const a = readTimetableAnswer(
     'utf8'
   )
 );
-const weekday = (d: string) => new Date(`${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}`).getUTCDay();
+const weekday = (d: string) =>
+  new Date(`${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}`).getUTCDay();
 
 describe('firstSlotOnly', () => {
   it('keeps the lecture slot and the earliest seminar slot only', () => {

@@ -65,9 +65,7 @@ export function timetableBody(
 }
 
 export type TimetableAnswer =
-  | { kind: 'lessons'; lessons: BlockLesson[] }
-  | { kind: 'empty' }
-  | { kind: 'failed' };
+  { kind: 'lessons'; lessons: BlockLesson[] } | { kind: 'empty' } | { kind: 'failed' };
 
 /**
  * By BODY, not content-type: the extension's proxy labels every response

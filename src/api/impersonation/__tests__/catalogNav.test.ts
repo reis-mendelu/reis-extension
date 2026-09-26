@@ -5,7 +5,9 @@ import { findPeriodPoc, findLeafUrl, programmeUrl, typStudiaFor } from '../catal
 import { parseDoc } from '../text';
 
 const fx = (n: string) =>
-  parseDoc(readFileSync(resolve(process.cwd(), 'src/api/impersonation/__tests__/fixtures', n), 'utf8'));
+  parseDoc(
+    readFileSync(resolve(process.cwd(), 'src/api/impersonation/__tests__/fixtures', n), 'utf8')
+  );
 
 describe('catalogue navigation (real PEF catalogue pages, 2026-09-26)', () => {
   it('finds the intake period id by its exact label', () => {

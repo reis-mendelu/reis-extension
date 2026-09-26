@@ -5,7 +5,9 @@ import { parseCatalogPlan, subjectsToAttend, toStudyPlan } from '../catalogPlan'
 import { parseDoc } from '../text';
 
 const fx = (n: string) =>
-  parseDoc(readFileSync(resolve(process.cwd(), 'src/api/impersonation/__tests__/fixtures', n), 'utf8'));
+  parseDoc(
+    readFileSync(resolve(process.cwd(), 'src/api/impersonation/__tests__/fixtures', n), 'utf8')
+  );
 
 // Real B-F Finance leaf, intake ZS 2025/2026 (stud_plan 12490), fetched 2026-09-26.
 describe('parseCatalogPlan', () => {

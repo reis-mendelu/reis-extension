@@ -25,11 +25,19 @@ function route(url: string, init?: RequestInit): string {
   if (url.includes('rozvrhy_view.pl?konf=1;z=')) return raw('rozvrh-range.html');
   if (url.includes('rozvrhy_view.pl') && !body.has('format')) return raw('rozvrh-criteria.html');
   if (body.get('format') === 'list') return raw('rozvrh-list-bf-y1.html');
-  if (body.get('format') === 'json' && body.get('predmet') === '164066' && body.get('rocnik') === '2')
+  if (
+    body.get('format') === 'json' &&
+    body.get('predmet') === '164066' &&
+    body.get('rocnik') === '2'
+  )
     return raw(`rozvrh-predmet-ft.${body.get('lang')}.json`);
   // EBC-AZD (162664) behaves like AF/FRRMS/ZF subjects live: nothing under
   // rocnik=2, a full timetable without the year filter (observed 2026-09-26).
-  if (body.get('format') === 'json' && body.get('predmet') === '162664' && body.get('rocnik') === '0')
+  if (
+    body.get('format') === 'json' &&
+    body.get('predmet') === '162664' &&
+    body.get('rocnik') === '0'
+  )
     return raw(`rozvrh-predmet-ft.${body.get('lang')}.json`).replaceAll('EBC-FT', 'EBC-AZD');
   if (body.get('format') === 'json' && body.get('skupina') === '2')
     return raw(`rozvrh-bf-y1-g2.${body.get('lang')}.json`);
@@ -71,7 +79,9 @@ async function bfSelection(year: number): Promise<ImpersonationSelection> {
 describe('loadOptions', () => {
   it('lists prezenční programmes of the current rozvrhy, B-/N- only', async () => {
     const opts = await loadOptions(SEPT);
-    const bf = opts.find((f) => f.faculty === 'PEF')!.programmes.find((p) => p.shortCode === 'B-F')!;
+    const bf = opts
+      .find((f) => f.faculty === 'PEF')!
+      .programmes.find((p) => p.shortCode === 'B-F')!;
     expect(bf).toMatchObject({ programId: '1889', name: 'Finance', years: [1, 2, 3] });
     expect(bf.rozvrh.id).toBe('5769');
     expect(opts.every((f) => f.programmes.every((p) => /^[BN]-/.test(p.shortCode)))).toBe(true);
@@ -84,9 +94,7 @@ describe('loadOptions', () => {
 describe('loadYear1Groups', () => {
   it('asks for groups in the list format', async () => {
     const sel = await bfSelection(1);
-    await expect(
-      loadYear1Groups({ ...sel, years: [1, 2, 3] })
-    ).resolves.toEqual([1, 2, 3, 4, 5]);
+    await expect(loadYear1Groups({ ...sel, years: [1, 2, 3] })).resolves.toEqual([1, 2, 3, 4, 5]);
   });
 });
 
@@ -104,7 +112,9 @@ describe('fetchImpersonation', () => {
     const r = await fetchImpersonation(await bfSelection(2), SEPT);
     expect(r.plan.cz.blocks).toHaveLength(6);
     expect(r.plan.en.blocks).toHaveLength(6);
-    const enrolled = r.plan.cz.blocks[2]!.groups.flatMap((g) => g.subjects).filter((s) => s.isEnrolled);
+    const enrolled = r.plan.cz.blocks[2]!.groups.flatMap((g) => g.subjects).filter(
+      (s) => s.isEnrolled
+    );
     expect(enrolled.map((s) => s.code)).toContain('EBC-FT');
     // Only EBC-FT has a routed timetable; the rest answer no-results = no lessons, not failure.
     expect(new Set(r.schedule.map((l) => l.courseCode))).toEqual(new Set(['EBC-FT', 'EBC-AZD']));
@@ -119,7 +129,9 @@ describe('fetchImpersonation', () => {
     const r = await fetchImpersonation(await bfSelection(2), SEPT);
     expect(r.schedule.filter((l) => l.courseCode === 'EBC-AZD')).toHaveLength(24);
     // EBC-FT answered under rocnik=2, so it is never asked again without it.
-    const bodies = fetchWithAuth.mock.calls.map(([, init]) => new URLSearchParams(String(init?.body ?? '')));
+    const bodies = fetchWithAuth.mock.calls.map(
+      ([, init]) => new URLSearchParams(String(init?.body ?? ''))
+    );
     const ftNoYear = bodies.filter((b) => b.get('predmet') === '164066' && b.get('rocnik') === '0');
     expect(ftNoYear).toHaveLength(0);
   });
