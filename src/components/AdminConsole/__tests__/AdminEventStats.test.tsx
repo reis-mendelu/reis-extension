@@ -108,6 +108,15 @@ describe('AdminEventList — views and clicks per event', () => {
     expect(screen.getByText(/device/i)).toBeInTheDocument();
   });
 
+  it('shows no note when no row carries both counters', () => {
+    useAppStore.setState({
+      societyPosts: [{ ...row('live', iso(2), 60, 0), click_count: undefined }],
+    });
+    render(<AdminEventList />);
+    expect(within(rowOf('E-live')).queryByText(/views/)).toBeNull();
+    expect(screen.queryByText(/device/i)).toBeNull();
+  });
+
   it('shows no numbers when the row carries none (dev store, stale cache)', () => {
     useAppStore.setState({ societyPosts: [] });
     render(<AdminEventList />);

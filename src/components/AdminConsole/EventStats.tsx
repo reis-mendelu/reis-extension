@@ -16,11 +16,17 @@ import type { SpolkyEventRow } from '../../api/societyPosts';
 
 const byId = (posts: SpolkyEventRow[], id: string) => posts.find((p) => p.id === id);
 
+/** One rule for the row and the note: both counters, or nothing. */
+const hasCounts = (
+  post: SpolkyEventRow | undefined
+): post is SpolkyEventRow & { view_count: number; click_count: number } =>
+  typeof post?.view_count === 'number' && typeof post.click_count === 'number';
+
 /** The counts line for one row, or nothing when the row has no counts. */
 export function EventStats({ eventId }: { eventId: string }) {
   const { t } = useTranslation();
   const post = useAppStore((s) => byId(s.societyPosts, eventId));
-  if (typeof post?.view_count !== 'number' || typeof post.click_count !== 'number') return null;
+  if (!hasCounts(post)) return null;
   const views = post.view_count;
   const clicks = post.click_count;
   return (
@@ -44,9 +50,7 @@ export function EventStats({ eventId }: { eventId: string }) {
 /** The one-line key to the numbers, shown only when some listed row has them. */
 export function EventStatsNote({ eventIds }: { eventIds: string[] }) {
   const { t } = useTranslation();
-  const any = useAppStore((s) =>
-    eventIds.some((id) => typeof byId(s.societyPosts, id)?.view_count === 'number')
-  );
+  const any = useAppStore((s) => eventIds.some((id) => hasCounts(byId(s.societyPosts, id))));
   if (!any) return null;
   return (
     <p className="px-3 pb-4 pt-3 text-[11px] text-base-content/70">{t('admin.eventStatsNote')}</p>
