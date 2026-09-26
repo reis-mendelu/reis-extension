@@ -16,6 +16,7 @@ const active = {
     rozvrh: {} as never,
   },
   result: {
+    resolved: { programId: '1889', shortCode: 'B-F', rozvrh: {} as never },
     plan: {} as never,
     schedule: [],
     subjects: { version: 1, lastUpdated: '', data: {} },

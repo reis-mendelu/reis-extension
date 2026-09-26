@@ -15,7 +15,8 @@ vi.mock('../../client', () => ({
   BASE_URL: 'https://is.mendelu.cz',
 }));
 
-import { loadOptions, loadYear1Groups, fetchImpersonation } from '../fetchImpersonation';
+import { fetchImpersonation } from '../fetchImpersonation';
+import { loadOptions, loadYear1Groups } from '../options';
 import type { ImpersonationSelection } from '../types';
 
 /** Answers each request with the real IS page that request got on 2026-09-26. */
@@ -43,6 +44,9 @@ function route(url: string, init?: RequestInit): string {
     return raw(`rozvrh-bf-y1-g2.${body.get('lang')}.json`);
   if (body.get('format') === 'json') return noResults;
   if (url.includes('plany.pl?fakulta=2;lang=cz')) return raw('catalog-periods-pef.html');
+  // An outgoing programme version: IS's own "no forms of study" page.
+  if (url.includes('program=9999') && !url.includes('stud_plan'))
+    return raw('catalog-programme-no-forms.html');
   if (url.includes('program=1889') && !url.includes('stud_plan'))
     return raw('catalog-programme-bf-801.auth.html');
   if (url.includes('stud_plan=12490') && url.includes('lang=en'))
@@ -65,6 +69,7 @@ async function bfSelection(year: number): Promise<ImpersonationSelection> {
     .find((f) => f.faculty === 'PEF')!
     .programmes.find((p) => p.shortCode === 'B-F')!;
   return {
+    variants: bf.variants,
     programId: bf.programId,
     shortCode: bf.shortCode,
     name: bf.name,
@@ -86,6 +91,21 @@ describe('loadOptions', () => {
     expect(bf.rozvrh.id).toBe('5769');
     expect(opts.every((f) => f.programmes.every((p) => /^[BN]-/.test(p.shortCode)))).toBe(true);
   });
+  it('merges the versions of one programme into one entry (real PEF form: B-EAM 1892, B-EM 3066)', async () => {
+    const pef = (await loadOptions(SEPT)).find((f) => f.faculty === 'PEF')!;
+    const eam = pef.programmes.filter((p) => p.name === 'Ekonomika a management');
+    expect(eam).toHaveLength(1);
+    expect(eam[0]!.variants.map((v) => v.shortCode)).toEqual(['B-EAM', 'B-EM']);
+    const bf = pef.programmes.find((p) => p.shortCode === 'B-F')!;
+    expect(bf.variants.map((v) => v.programId)).toEqual(['1889']);
+  });
+  it('keeps same-named bachelor and master programmes apart', async () => {
+    const pef = (await loadOptions(SEPT)).find((f) => f.faculty === 'PEF')!;
+    expect(pef.programmes.filter((p) => p.name === 'Finance').map((p) => p.shortCode)).toEqual([
+      'B-F',
+      'N-F',
+    ]);
+  });
   it('fails as "options" when no validity range covers today', async () => {
     await expect(loadOptions(new Date(2027, 5, 1))).rejects.toMatchObject({ code: 'options' });
   });
@@ -93,8 +113,10 @@ describe('loadOptions', () => {
 
 describe('loadYear1Groups', () => {
   it('asks for groups in the list format', async () => {
-    const sel = await bfSelection(1);
-    await expect(loadYear1Groups({ ...sel, years: [1, 2, 3] })).resolves.toEqual([1, 2, 3, 4, 5]);
+    const bf = (await loadOptions(SEPT))
+      .find((f) => f.faculty === 'PEF')!
+      .programmes.find((p) => p.shortCode === 'B-F')!;
+    await expect(loadYear1Groups(bf)).resolves.toEqual([1, 2, 3, 4, 5]);
   });
 });
 
@@ -144,6 +166,18 @@ describe('fetchImpersonation', () => {
       .filter((b) => b.get('format') === 'json' && b.get('predmet') !== '0');
     const kom = perSubject.filter((b) => b.get('lang') === 'cz' && b.get('rocnik') === '1');
     expect(kom.length).toBe(1);
+  });
+
+  it('uses the programme version that has a plan for the intake, and says which', async () => {
+    // Real case: B-RSZ (years 2-3) and B-RASZ (year 1) are one programme in two
+    // IS versions; only one has a plan for a given intake. 9999 answers with
+    // IS's real "no forms of study" page.
+    const sel = await bfSelection(2);
+    const current = sel.variants ?? [];
+    const outgoing = { ...current[0]!, programId: '9999', shortCode: 'B-OLD' };
+    const r = await fetchImpersonation({ ...sel, variants: [outgoing, ...current] }, SEPT);
+    expect(r.resolved).toMatchObject({ programId: '1889', shortCode: 'B-F' });
+    expect(r.plan.cz.blocks).toHaveLength(6);
   });
 
   it('a failed timetable leg fails the whole fetch (never half-applied)', async () => {

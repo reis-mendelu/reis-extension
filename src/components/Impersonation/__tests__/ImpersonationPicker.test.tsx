@@ -14,19 +14,32 @@ const rozvrh = {
   start: '',
   end: '',
 };
+const bfVariant = { programId: '1889', shortCode: 'B-F', rozvrh };
 const bf = {
-  programId: '1889',
-  shortCode: 'B-F',
+  ...bfVariant,
   name: 'Finance',
+  faculty: 'PEF',
+  years: [1, 2, 3],
+  variants: [bfVariant],
+};
+// Real pair from the PEF criteria form: one programme, two IS versions.
+const eam = {
+  programId: '1892',
+  shortCode: 'B-EAM',
+  name: 'Ekonomika a management',
   faculty: 'PEF',
   rozvrh,
   years: [1, 2, 3],
+  variants: [
+    { programId: '1892', shortCode: 'B-EAM', rozvrh },
+    { programId: '3066', shortCode: 'B-EM', rozvrh },
+  ],
 };
 
 beforeEach(() =>
   useAppStore.setState({
     language: 'cz',
-    impersonationOptions: [{ faculty: 'PEF', programmes: [bf] }],
+    impersonationOptions: [{ faculty: 'PEF', programmes: [bf, eam] }],
     impersonationOptionsStatus: 'idle',
     impersonationGroups: { '1889': [1, 2] },
     impersonationStarting: false,
@@ -53,7 +66,16 @@ describe('ImpersonationPicker', () => {
       year: 1,
       group: 2,
       rozvrh,
+      variants: [bfVariant],
     });
+  });
+  it('shows a programme with two IS versions once, by name only', () => {
+    render(<ImpersonationPicker />);
+    fireEvent.change(screen.getByLabelText('Fakulta'), { target: { value: 'PEF' } });
+    const obor = screen.getByLabelText('Obor') as HTMLSelectElement;
+    const labels = Array.from(obor.options).map((o) => o.text);
+    expect(labels).toContain('Ekonomika a management');
+    expect(labels).toContain('B-F Finance');
   });
   it('hides the group select from year 2', () => {
     render(<ImpersonationPicker />);

@@ -43,7 +43,13 @@ const active = {
     periodLabel: 'ZS 2026/2027',
     rozvrh: {} as never,
   },
-  result: { plan: {} as never, schedule: [], subjects, fetchedAt: 0 },
+  result: {
+    resolved: { programId: '1889', shortCode: 'B-F', rozvrh: {} as never },
+    plan: {} as never,
+    schedule: [],
+    subjects,
+    fetchedAt: 0,
+  },
 };
 
 beforeEach(() => {

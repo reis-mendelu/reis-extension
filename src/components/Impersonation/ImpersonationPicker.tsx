@@ -64,7 +64,7 @@ export function ImpersonationPicker({ onStarted }: { onStarted?: () => void }) {
   };
   const submit = async () => {
     if (!programme) return;
-    const { programId: pid, shortCode, name, rozvrh } = programme;
+    const { programId: pid, shortCode, name, rozvrh, variants } = programme;
     const req = {
       programId: pid,
       shortCode,
@@ -73,6 +73,7 @@ export function ImpersonationPicker({ onStarted }: { onStarted?: () => void }) {
       year,
       group: year === 1 ? group : null,
       rozvrh,
+      variants,
     };
     if (await start(req)) onStarted?.();
   };
@@ -111,7 +112,11 @@ export function ImpersonationPicker({ onStarted }: { onStarted?: () => void }) {
               —
             </option>
             {programmes.map((p) => (
-              <option key={p.programId} value={p.programId}>{`${p.shortCode} ${p.name}`}</option>
+              // A programme with two IS versions (B-RSZ / B-RASZ) is one entry, by
+              // name: the code depends on the year, and the banner names it.
+              <option key={p.programId} value={p.programId}>
+                {p.variants.length > 1 ? p.name : `${p.shortCode} ${p.name}`}
+              </option>
             ))}
           </select>
         )}

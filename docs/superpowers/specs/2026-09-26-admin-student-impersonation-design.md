@@ -216,3 +216,9 @@ through the real data layer against live IS; 234 requests.
   PRA26ZS) stay in the plan with no lessons. The year-1 programme query also brings in a few
   subjects outside the chosen semester's list (e.g. FRRMS RRSOC, LDF CEAS); they are kept, as a
   real first-year may attend them.
+- **One picker entry per programme, not per IS id.** A re-accredited programme has two ids while the
+  old one is taught out, and the timetable lists both: ZF B-RSZ/B-RASZ, B-KA/B-KRAA, B-FLT/B-FLOA,
+  PEF B-EAM/B-EM and N-EAM/N-EM. Each has plans only for its own intakes. Same faculty, name and
+  study type → one entry shown by name; the fetch tries each version for the intake and the banner
+  names the code it used. Live (2026-09-26): year 1 → B-RASZ / B-KRAA / B-EM, year 2 → B-RSZ /
+  B-KA / B-EM, every enrolled subject with lessons.

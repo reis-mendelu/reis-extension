@@ -7,6 +7,8 @@ vi.mock('../../../services/admin/hasAdminSession', () => ({
 }));
 vi.mock('../../../api/impersonation/fetchImpersonation', () => ({
   fetchImpersonation: (...a: unknown[]) => fetchImpersonation(...a),
+}));
+vi.mock('../../../api/impersonation/options', () => ({
   loadOptions: vi.fn(async () => []),
   loadYear1Groups: vi.fn(async () => [1, 2]),
 }));
@@ -48,6 +50,21 @@ const plan = {
   blocks: [],
 };
 const RESULT: ImpersonationResult = {
+  resolved: {
+    programId: '1889',
+    shortCode: 'B-F',
+    rozvrh: {
+      id: '5769',
+      z: '20260921',
+      k: '20261213',
+      label: '',
+      period: 'ZS 2026/2027',
+      faculty: 'PEF',
+      form: 'prezenční',
+      start: '21.09.2026',
+      end: '20.12.2026',
+    },
+  },
   plan: { cz: plan, en: plan },
   schedule: [lesson('EBC-MT')],
   subjects: { version: 1, lastUpdated: 'x', data: {} },
@@ -111,6 +128,21 @@ describe('impersonation slice', () => {
     expect(useAppStore.getState().exams.data).toEqual([]);
     expect(useAppStore.getState().studyStats).toBeNull();
     expect(useAppStore.getState().impersonation?.selection.periodLabel).toBe('ZS 2026/2027');
+  });
+
+  it('names the programme version the plan came from', async () => {
+    // Asked for the merged entry under B-RASZ; IS had the plan under B-RSZ.
+    fetchImpersonation.mockResolvedValue({
+      ...RESULT,
+      resolved: { ...RESULT.resolved, programId: '1832', shortCode: 'B-RSZ' },
+    });
+    await useAppStore
+      .getState()
+      .startImpersonation({ ...REQ, programId: '3226', shortCode: 'B-RASZ' });
+    expect(useAppStore.getState().impersonation?.selection).toMatchObject({
+      programId: '1832',
+      shortCode: 'B-RSZ',
+    });
   });
 
   it('never writes the real stores; exit re-reads them', async () => {

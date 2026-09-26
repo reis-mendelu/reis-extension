@@ -7,11 +7,8 @@ import {
   type ImpersonationSelection,
   type ProgrammeOption,
 } from '../../api/impersonation/types';
-import {
-  fetchImpersonation,
-  loadOptions,
-  loadYear1Groups,
-} from '../../api/impersonation/fetchImpersonation';
+import { fetchImpersonation } from '../../api/impersonation/fetchImpersonation';
+import { loadOptions, loadYear1Groups } from '../../api/impersonation/options';
 import { currentPeriod, periodLabel } from '../../api/impersonation/intake';
 import { overlayWrite } from '../overlay/overlayGuard';
 import { overlayState, blankOverlayState } from '../overlay/overlayState';
@@ -106,7 +103,9 @@ export const createImpersonationSlice: AppSlice<ImpersonationSlice> = (set, get)
     };
     try {
       const result = await fetchImpersonation(selection);
-      const active = { selection, result };
+      // The programme version that actually had the plan (B-RSZ vs B-RASZ): the
+      // banner names the code the timetable came from.
+      const active = { selection: { ...selection, ...result.resolved }, result };
       await saveImpersonation(active);
       set(
         overlayWrite({

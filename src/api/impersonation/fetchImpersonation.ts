@@ -1,30 +1,15 @@
-import { fetchWithAuth } from '../client';
 import { mergeDualLanguageLessons } from '../schedule';
 import type { BlockLesson } from '../../types/schedule';
 import type { SubjectInfo } from '../../types/documents';
 import {
   ImpersonationError,
-  type FacultyOptions,
   type ImpersonationResult,
   type ImpersonationSelection,
-  type ProgrammeOption,
+  type ProgrammeVariant,
 } from './types';
 import { parseDoc } from './text';
 import { intakeLabel, targetSemester } from './intake';
-import {
-  parseRanges,
-  pickCurrentRange,
-  parseRozvrhRows,
-  parseCriteria,
-  parseGroupNumbers,
-} from './timetableForm';
-import {
-  TIMETABLE_URL,
-  criteriaBody,
-  timetableBody,
-  readTimetableAnswer,
-  type TimetableFilter,
-} from './timetableQuery';
+import { timetableBody, readTimetableAnswer, type TimetableFilter } from './timetableQuery';
 import {
   CATALOG_URL,
   FACULTY_IDS,
@@ -35,59 +20,7 @@ import {
 } from './catalogNav';
 import { parseCatalogPlan, subjectsToAttend, toStudyPlan, type CatalogRow } from './catalogPlan';
 import { firstSlotOnly } from './pickSlots';
-
-/**
- * Everything here goes through `fetchWithAuth`, which already reaches IS from
- * every host: the extension iframe via the content script's REIS_FETCH proxy,
- * Capacitor natively, the content script directly.
- */
-const text = async (url: string, init?: RequestInit) => (await fetchWithAuth(url, init)).text();
-const post = (body: string) => text(TIMETABLE_URL, { method: 'POST', body });
-
-/** Timetable POSTs are expensive for IS (reis-scraper keeps its crawl at 3). */
-async function mapLimit<T, R>(items: T[], limit: number, fn: (t: T) => Promise<R>): Promise<R[]> {
-  const out: R[] = new Array(items.length);
-  let next = 0;
-  await Promise.all(
-    Array.from({ length: Math.min(limit, items.length) }, async () => {
-      while (next < items.length) {
-        const i = next++;
-        out[i] = await fn(items[i]!);
-      }
-    })
-  );
-  return out;
-}
-
-/** Programmes of the current prezenční rozvrhy, one criteria form per rozvrh. */
-export async function loadOptions(now = new Date()): Promise<FacultyOptions[]> {
-  const index = parseDoc(await text(`${TIMETABLE_URL}?konf=1;lang=cz`));
-  const range = pickCurrentRange(parseRanges(index), now);
-  if (!range) throw new ImpersonationError('options');
-  const rangePage = await text(`${TIMETABLE_URL}?konf=1;z=${range.z};k=${range.k};lang=cz`);
-  const rozvrhy = parseRozvrhRows(parseDoc(rangePage), range).filter(
-    (r) => r.form === 'prezenční' && r.faculty in FACULTY_IDS
-  );
-  const byFaculty = new Map<string, ProgrammeOption[]>();
-  for (const r of rozvrhy) {
-    const form = parseCriteria(parseDoc(await post(criteriaBody(r))));
-    const list = byFaculty.get(r.faculty) ?? [];
-    for (const p of form.programmes) {
-      if (!typStudiaFor(p.shortCode) || list.some((x) => x.programId === p.programId)) continue;
-      list.push({ ...p, faculty: r.faculty, rozvrh: r, years: form.years });
-    }
-    byFaculty.set(r.faculty, list);
-  }
-  return [...byFaculty].map(([faculty, programmes]) => ({ faculty, programmes }));
-}
-
-/** Year-1 study groups: only the list format names them (the JSON has no group field). */
-export async function loadYear1Groups(p: ProgrammeOption): Promise<number[]> {
-  const html = await post(
-    timetableBody(p.rozvrh, { program: p.programId, rocnik: 1 }, 'cz', 'list')
-  );
-  return parseGroupNumbers(parseDoc(html), 1);
-}
+import { text, post, mapLimit } from './transport';
 
 /** Both languages or failure — a half-fetched timetable is never applied. */
 async function lessonsFor(
@@ -122,23 +55,40 @@ async function subjectLessons(
   return narrowed.length ? narrowed : lessonsFor(sel, { predmet }, true);
 }
 
-async function fetchPlanLeaf(sel: ImpersonationSelection, now: Date): Promise<string> {
+/**
+ * The plan leaf of the first programme version that has one for this intake.
+ * An outgoing version answers "Nejsou definovány žádné formy studia" for the
+ * new intake, a new one for the old intakes (real IS, 2026-09-26).
+ */
+async function fetchPlanLeaf(
+  sel: ImpersonationSelection,
+  now: Date
+): Promise<{ leaf: string; variant: ProgrammeVariant }> {
   const fakulta = FACULTY_IDS[sel.faculty];
-  const typ = typStudiaFor(sel.shortCode);
-  if (!fakulta || !typ) throw new ImpersonationError('noPlan');
+  if (!fakulta) throw new ImpersonationError('noPlan');
   const periods = parseDoc(await text(`${CATALOG_URL}?fakulta=${fakulta};lang=cz`));
   const poc = findPeriodPoc(periods, intakeLabel(sel.year, now));
   if (!poc) throw new ImpersonationError('noPlan');
-  const leaf = findLeafUrl(parseDoc(await text(programmeUrl(fakulta, poc, typ, sel.programId))));
-  if (!leaf) throw new ImpersonationError('noPlan');
-  return leaf;
+  const variants = sel.variants?.length
+    ? sel.variants
+    : [{ programId: sel.programId, shortCode: sel.shortCode, rozvrh: sel.rozvrh }];
+  for (const variant of variants) {
+    const typ = typStudiaFor(variant.shortCode);
+    if (!typ) continue;
+    const page = await text(programmeUrl(fakulta, poc, typ, variant.programId));
+    const leaf = findLeafUrl(parseDoc(page));
+    if (leaf) return { leaf, variant };
+  }
+  throw new ImpersonationError('noPlan');
 }
 
 export async function fetchImpersonation(
-  sel: ImpersonationSelection,
+  requested: ImpersonationSelection,
   now = new Date()
 ): Promise<ImpersonationResult> {
-  const leaf = await fetchPlanLeaf(sel, now);
+  const { leaf, variant } = await fetchPlanLeaf(requested, now);
+  // From here on, the version that has the plan: its id drives the timetable.
+  const sel = { ...requested, ...variant };
   const [czSems, enSems] = await Promise.all(
     [leaf, leaf.replace('lang=cz', 'lang=en')].map(async (u) =>
       parseCatalogPlan(parseDoc(await text(u)))
@@ -185,6 +135,7 @@ export async function fetchImpersonation(
     };
   }
   return {
+    resolved: variant,
     plan: { cz: toStudyPlan(czSems, title, enrolled), en: toStudyPlan(enSems, title, enrolled) },
     schedule,
     subjects: { version: 1, lastUpdated: fetchedAt, data },
