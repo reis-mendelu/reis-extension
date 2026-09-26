@@ -39,7 +39,12 @@ interface SlabInput {
   /** Override the look per room — the tilted map matches the flat map's colours. */
   lookOf?: (room: RoomFeature, isTarget: boolean) => RoomLook;
   /** Build a room's outline from its edge set (the tilted map draws real widths). */
-  makeEdges?: (edges: BufferGeometry, color: string, opacity: number) => Object3D;
+  makeEdges?: (
+    edges: BufferGeometry,
+    color: string,
+    opacity: number,
+    isTarget: boolean
+  ) => Object3D;
 }
 
 // Just above the storey's own floor, so the rooms never z-fight with it.
@@ -100,13 +105,15 @@ export function buildFloorSlab({
           roughness: 0.8,
         });
     const mesh = new Mesh(geometry, material);
-    mesh.position.y = elevation + LIFT_OFF_FLOOR;
+    // The lit room sits a hair higher, so its outline wins over the neighbours'
+    // outlines along the walls they share.
+    mesh.position.y = elevation + LIFT_OFF_FLOOR + (isTarget ? 0.08 : 0);
     mesh.userData.roomId = room.properties.id;
     group.add(mesh);
     const edgeColor = look?.edge ?? colors.edge;
     const edgeOpacity = look ? 1 : 0.6;
     const edges = makeEdges
-      ? makeEdges(new EdgesGeometry(geometry), edgeColor, edgeOpacity)
+      ? makeEdges(new EdgesGeometry(geometry), edgeColor, edgeOpacity, isTarget)
       : new LineSegments(
           new EdgesGeometry(geometry),
           new LineBasicMaterial({ color: edgeColor, transparent: true, opacity: edgeOpacity })

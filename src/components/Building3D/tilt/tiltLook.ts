@@ -35,7 +35,10 @@ export const LOOK = {
   roomEdge: '#475569',
   roomEdgeOpacity: 0.75,
   target: '#c2410c',
-  targetEdge: '#7c2d12',
+  /** A white halo, not a darker edge: the block sits among dark room outlines
+   *  and light floor, and no one colour clears 3:1 against both — a light rim
+   *  separates it from every neighbour. */
+  targetEdge: '#ffffff',
 } as const;
 
 const HIDDEN = new Set(['window', 'slab', 'floor']);

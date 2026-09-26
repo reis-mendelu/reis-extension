@@ -1,5 +1,5 @@
 import {
-  Box3,
+  Mesh,
   BufferGeometry,
   Float32BufferAttribute,
   Vector3,
@@ -71,8 +71,9 @@ export function addTiltContent(
   const building = loadBuildingGroup({
     ...input,
     cutaway: false,
-    // Leaflet strokes rooms 1 px wide; so does the handover frame.
-    makeEdges: (edges, color, opacity) => fatSegments(edges, fatMaterial(color, 1, opacity)),
+    // Leaflet strokes rooms 1 px wide; the lit room's halo is wider.
+    makeEdges: (edges, color, opacity, isTarget) =>
+      fatSegments(edges, fatMaterial(color, isTarget ? 2.5 : 1, opacity)),
   }).then((parts) => {
     content.shell = parts.shell;
     content.slab = parts.slab;
@@ -82,20 +83,40 @@ export function addTiltContent(
     if (!parts.slab) return;
     scene.add(parts.slab);
     content.fade = roomFade(parts.slab, input.targetRoomId);
+    // The lit room draws after the glass: three.js draws opaque things first, so
+    // as an opaque block it sat UNDER every translucent storey above it and came
+    // out washed pale. Last in the transparent pass, at full opacity, it stays
+    // its own colour; its halo draws after it, the stem last.
+    parts.slab.traverse((o) => {
+      if (o.userData.roomId !== input.targetRoomId) return;
+      o.renderOrder = o instanceof Mesh ? 10 : 11;
+    });
     // The pin rises from the lit room to clear the roof, so the label is never
     // behind the building it names.
     const room = parts.slab.children.find((c) => c.userData.roomId === input.targetRoomId);
     if (!room) return;
-    const box = new Box3().setFromObject(room);
+    // Measured in the slab's own frame, not the world's: at load the rooms still
+    // lie flat on the ground, 14 m below their floor, and a world-space box put
+    // the stem's foot there — it showed through the floor plan as a pale dash.
+    const mesh = room as Mesh;
+    mesh.geometry.computeBoundingBox();
+    const box = mesh.geometry.boundingBox!.clone().translate(mesh.position);
     const c = box.getCenter(new Vector3());
-    const top = parts.slabElevation + (box.max.y - box.min.y) + 0.1;
+    const top = box.max.y + 0.15;
     content.pin = new Vector3(c.x, model.meta.height + PIN_ABOVE_ROOF, c.z);
     const g = new BufferGeometry();
     g.setAttribute(
       'position',
       new Float32BufferAttribute([c.x, top, c.z, c.x, content.pin.y, c.z], 3)
     );
-    content.stem = fatSegments(g, fatMaterial(LOOK.target, 2));
+    const stemMaterial = fatMaterial(LOOK.target, 2);
+    // Drawn last, on top: as an opaque line it went into three.js's opaque pass,
+    // BEFORE the glass, and every storey it rises through washed it pale — all
+    // but one stretch, which read as a stray dash on the room.
+    stemMaterial.transparent = true;
+    stemMaterial.depthTest = false;
+    content.stem = fatSegments(g, stemMaterial);
+    content.stem.renderOrder = 12;
     scene.add(content.stem);
   });
   const ready = Promise.all([

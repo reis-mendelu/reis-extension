@@ -18,7 +18,8 @@ export interface BuildingGroupInput {
   makeEdges?: (
     edges: import('three').BufferGeometry,
     color: string,
-    opacity: number
+    opacity: number,
+    isTarget: boolean
   ) => import('three').Object3D;
   /** Lift the storeys above the target (the card). The tilted map's glass needs no lid. */
   cutaway?: boolean;
