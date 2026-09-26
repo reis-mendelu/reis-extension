@@ -1,5 +1,6 @@
 import type { RoomIndexEntry } from '../../types/campusMap';
 import { IS_ROOM_LABELS } from '../../data/map/isRoomLabels';
+import { offMapCampus } from './roomCampus';
 
 /**
  * One room string off IS → the index entry the map can actually show.
@@ -149,7 +150,8 @@ export function lookupRoomEntry(
   raw: string | null | undefined,
   index: RoomIndexEntry[]
 ): RoomIndexEntry | null {
-  if (!raw) return null;
+  // "Aula (ČP II.)" is FRRMS's aula, not building A's — no map room at all.
+  if (!raw || offMapCampus(raw)) return null;
   for (const candidate of candidates(raw)) {
     const needle = normalizeRoomKey(candidate);
     if (!needle) continue;
