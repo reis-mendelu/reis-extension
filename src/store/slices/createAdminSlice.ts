@@ -44,14 +44,19 @@ export interface AdminSlice {
 
 async function resolveAccount(
   userId: string
-): Promise<{ role: AdminRole | null; associationId: string | null }> {
+): Promise<{ role: AdminRole | null; associationId: string | null; failed: boolean }> {
   const { data, error } = await adminAuthClient
     .from('spolky_accounts')
     .select('role, association_id')
     .eq('user_id', userId)
     .maybeSingle();
   if (error) logError('Admin.resolveAccount', error);
-  return { role: (data?.role as AdminRole) ?? null, associationId: data?.association_id ?? null };
+  return {
+    role: (data?.role as AdminRole) ?? null,
+    associationId: data?.association_id ?? null,
+    // A failed lookup (offline, Supabase down) is not "no account".
+    failed: !!error,
+  };
 }
 
 // The society/admin auth session. Separate from IS-Mendelu data; hydrated at
@@ -160,6 +165,7 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     return {};
   },
   adminLogout: async () => {
+    if (get().impersonation) await get().stopImpersonation();
     try {
       await adminAuthClient.auth.signOut();
     } catch (e) {
@@ -182,7 +188,11 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   loadAdminSession: async () => {
     const { data } = await adminAuthClient.auth.getSession();
     if (!data.session) return;
-    const { role, associationId } = await resolveAccount(data.session.user.id);
+    const { role, associationId, failed } = await resolveAccount(data.session.user.id);
+    // Could not ask (offline, Supabase down): keep the stored session and let the
+    // next boot retry. Signing out here logged an admin out on every boot
+    // without network — and dropped any active impersonation with it.
+    if (failed) return;
     if (role === null) {
       try {
         await adminAuthClient.auth.signOut();

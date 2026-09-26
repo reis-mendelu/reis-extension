@@ -41,6 +41,8 @@ import { createAdminStatsSlice } from './slices/createAdminStatsSlice';
 import { createSuggestionsSlice } from './slices/createSuggestionsSlice';
 import { createDemoSlice } from './slices/createDemoSlice';
 import { overlayGuard } from './overlay/overlayGuard';
+import { logError } from '../utils/reportError';
+import { createImpersonationSlice } from './slices/createImpersonationSlice';
 import { createReportSlice } from './slices/createReportSlice';
 import { createRouteSlice } from './slices/createRouteSlice';
 import { syncService } from '../services/sync';
@@ -93,6 +95,7 @@ export const useAppStore = create<AppState>()(
     ...createSuggestionsSlice(...a),
     ...createRouteSlice(...a),
     ...createDemoSlice(...a),
+    ...createImpersonationSlice(...a),
     ...createReportSlice(...a),
   }))
 );
@@ -163,9 +166,15 @@ export const initializeStore = async () => {
       adminSession: { user: { email: devSeed.email } } as unknown as Session,
     });
     if (devSeed.adminRole === 'reis_admin') void s.loadSuggestions();
+    void s.restoreImpersonation();
     void s.loadSocietyPosts();
   } else {
-    s.loadAdminSession();
+    // Restore after the admin session settles, and even if loading it failed:
+    // restoreImpersonation decides whether a saved impersonation still applies.
+    void s
+      .loadAdminSession()
+      .catch((e) => logError('Boot.loadAdminSession', e))
+      .then(() => useAppStore.getState().restoreImpersonation());
   }
 
   // Tier 2: Background data — deferred to avoid thundering-herd on IDB at startup

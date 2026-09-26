@@ -47,7 +47,7 @@ const IS_DERIVED_STORES = [
  * clearing the store to tidy up the demo would reset a student's privacy
  * choice. Delete by key or not at all.
  */
-const IS_DERIVED_META_KEYS = ['study_stats', 'study_comparison'] as const;
+const IS_DERIVED_META_KEYS = ['study_stats', 'study_comparison', 'impersonation'] as const;
 
 async function wipeSeeded(): Promise<void> {
   for (const store of IS_DERIVED_STORES) {

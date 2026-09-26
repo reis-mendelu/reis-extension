@@ -270,6 +270,16 @@ describe('createAdminSlice', () => {
     expect(signOut).toHaveBeenCalledTimes(1);
   });
 
+  it('loadAdminSession keeps the session when the account lookup errors (offline boot)', async () => {
+    // A failed lookup is not "no account": signing out here cost an admin their
+    // login (and an active impersonation) on every boot without network.
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u1' } } } });
+    maybeSingle.mockResolvedValue({ data: null, error: { message: 'Failed to fetch' } });
+    await state.loadAdminSession();
+    expect(signOut).not.toHaveBeenCalled();
+    expect(state.adminRole).toBeNull();
+  });
+
   it('signs in with the synthetic address built from a username', async () => {
     signIn.mockResolvedValueOnce({
       data: { session: { user: { id: 'u1', email: 'supef@societies.invalid' } } },
