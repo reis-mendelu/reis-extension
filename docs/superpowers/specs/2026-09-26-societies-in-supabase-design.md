@@ -180,3 +180,36 @@ Test-first, per the repo's rules:
 `REIS_ADMIN_EMAIL`/`REIS_ADMIN_PASSWORD` in `.env`, which are missing. Without
 them the write path is proven only against the local stub, and the PR says so.
 `npm run dev:web` routes writes to an in-memory store and is not evidence.
+
+## Amendments from planning (2026-09-26)
+
+Found while reading the code for the plan. They replace the matching lines above.
+
+1. **The bundled seed carries no logos.** Its logo URLs would depend on content
+   hashes that exist only after the seed script runs against prod. A first-ever
+   launch shows the glyph tiles until the first fetch (about a second, or until
+   online). The cached catalog covers every later launch. `public/spolky/` moves
+   to `scripts/society-logos/` (not shipped), where the seed script reads it.
+2. **No `societiesLoaded` gate.** The bundled seed means the catalog is never
+   empty, and it already carries the five auto-follow societies. So
+   `useSpolkySettings` reads the catalog directly.
+3. **No refetch triggered by an unknown id.** The catalog is refetched with
+   every events load, in parallel, so an event cannot be newer than the catalog
+   fetched beside it.
+4. **`MapEvent.organizerKey` stays filled at fetch time.** Nothing reads it for map
+   events: the map's faculty filter is gone, and the only reader,
+   `useEventsFeed`, handles the separate bell feed. Checked by grep. Display
+   lookups go through `useSociety`, which re-renders when the catalog changes.
+5. **The Novinky subscription list shows every active society**, EY and reIS
+   included. Today it lists six, so EY's and reIS's Novinky posts reach nobody
+   (`filterNotificationsByFaculty` needs a subscription). Listing them fixes that.
+6. **The audience label follows `auto_follow_faculty`.** "Jen studenti PEF"
+   appears only for a society that PEF students follow by default. EY is also
+   filed under PEF, but it keeps the generic wording it has today.
+7. **The pin colour rule is contrast ≥ 2:1 against white.** WCAG's 3:1 would
+   reject ESN's existing cyan (2.5:1). 2:1 still rejects EY yellow (#FFE600,
+   1.3:1) and near-whites. The glyph tile's text colour now comes from
+   `readableTextColor` instead of always white.
+8. **Only `reis_admin` accounts can be created, for societies that exist.** The
+   new foreign key makes `society-accounts` fail for an id with no `societies`
+   row. So the form saves the row before it creates the account.
