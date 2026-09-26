@@ -6,9 +6,16 @@ import { BUNDLED_SOCIETIES } from '../societies';
 // branding for a second and another after the fetch.
 describe('BUNDLED_SOCIETIES', () => {
   it('holds the eight seeded societies', () => {
-    expect(Object.keys(BUNDLED_SOCIETIES).sort()).toEqual(
-      ['au_frrms', 'esn', 'ey', 'ldf', 'reis', 'supef', 'usaf', 'zf']
-    );
+    expect(Object.keys(BUNDLED_SOCIETIES).sort()).toEqual([
+      'au_frrms',
+      'esn',
+      'ey',
+      'ldf',
+      'reis',
+      'supef',
+      'usaf',
+      'zf',
+    ]);
   });
   it('carries no logo URLs: they exist only after the prod seed', () => {
     for (const s of Object.values(BUNDLED_SOCIETIES)) expect(s.logo).toBeUndefined();

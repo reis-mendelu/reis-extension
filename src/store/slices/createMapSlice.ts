@@ -295,10 +295,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
       // The catalog is refetched beside every events load, in parallel, so an
       // event can never be newer than the catalog that names its society. The
       // mapping uses whatever catalog is in hand; display resolves reactively.
-      const [events] = await Promise.all([
-        fetchMapEvents(get().societies),
-        get().loadSocieties(),
-      ]);
+      const [events] = await Promise.all([fetchMapEvents(get().societies), get().loadSocieties()]);
       set({ mapEvents: events.map(locateEvent), mapEventsLoaded: true });
       // Attendance is loaded here, with the events, rather than by the cards:
       // one RPC covers every visible event, and components do not fetch.
