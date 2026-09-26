@@ -4,6 +4,7 @@ import { customEventToLesson } from '../customEventLesson';
 import { rsvpBlockId } from '../rsvpBlocks';
 import { makeLesson } from '../../test/fixtures/lesson';
 import type { MapEvent } from '../../types/events';
+import { BUNDLED_SOCIETIES } from '../../data/societies';
 
 const ON_MAP = 'Místo na mapě';
 
@@ -49,7 +50,7 @@ const block = (room?: string) =>
  */
 describe('lessonPlace', () => {
   it('names a pin-only event the way the map list does, and points at the event', () => {
-    expect(lessonPlace(block(), 'cz', [mapEvent()], ON_MAP)).toEqual({
+    expect(lessonPlace(block(), 'cz', [mapEvent()], ON_MAP, BUNDLED_SOCIETIES)).toEqual({
       label: ON_MAP,
       eventId: 'evt-1',
       onMap: true,
@@ -63,7 +64,8 @@ describe('lessonPlace', () => {
       block('Klub Fléda'),
       'cz',
       [mapEvent({ location: 'Klub Fléda' })],
-      ON_MAP
+      ON_MAP,
+      BUNDLED_SOCIETIES
     );
     expect(place).toEqual({
       label: 'Klub Fléda',
@@ -77,7 +79,7 @@ describe('lessonPlace', () => {
   it('falls back to the block when the events have not loaded yet', () => {
     // Cold start: blocks come from IndexedDB before the event fetch lands. No
     // event to fly to, so no pin — and no crash.
-    expect(lessonPlace(block('Klub Fléda'), 'cz', [], ON_MAP)).toEqual({
+    expect(lessonPlace(block('Klub Fléda'), 'cz', [], ON_MAP, BUNDLED_SOCIETIES)).toEqual({
       label: 'Klub Fléda',
       eventId: null,
       onMap: false,
@@ -87,12 +89,18 @@ describe('lessonPlace', () => {
   });
 
   it('offers no map for an event with no coordinate', () => {
-    const place = lessonPlace(block(), 'cz', [mapEvent({ coord: null })], ON_MAP);
+    const place = lessonPlace(
+      block(),
+      'cz',
+      [mapEvent({ coord: null })],
+      ON_MAP,
+      BUNDLED_SOCIETIES
+    );
     expect(place).toEqual({ label: '', eventId: null, onMap: false, routable: false, host: 'ESN' });
   });
 
   it('leaves a lesson to the room index', () => {
-    expect(lessonPlace(makeLesson({ room: 'Q01' }), 'cz', [], ON_MAP)).toEqual({
+    expect(lessonPlace(makeLesson({ room: 'Q01' }), 'cz', [], ON_MAP, BUNDLED_SOCIETIES)).toEqual({
       label: 'Q01',
       eventId: null,
       onMap: true,
@@ -100,7 +108,13 @@ describe('lessonPlace', () => {
       host: null,
     });
     expect(
-      lessonPlace(makeLesson({ room: 'Lesní škola Jezírko (ŠLP)' }), 'cz', [], ON_MAP).onMap
+      lessonPlace(
+        makeLesson({ room: 'Lesní škola Jezírko (ŠLP)' }),
+        'cz',
+        [],
+        ON_MAP,
+        BUNDLED_SOCIETIES
+      ).onMap
     ).toBe(false);
   });
 
@@ -111,7 +125,9 @@ describe('lessonPlace', () => {
     ['ucebna_utechov (Sob)', true], // Areál Útěchov
     ['Lesní škola Jezírko (ŠLP)', false], // a self-contradicting IS record
   ])('offers the map for %s: %s', (room, onMap) => {
-    expect(lessonPlace(makeLesson({ room }), 'cz', [], ON_MAP).onMap).toBe(onMap);
+    expect(lessonPlace(makeLesson({ room }), 'cz', [], ON_MAP, BUNDLED_SOCIETIES).onMap).toBe(
+      onMap
+    );
   });
 
   // The routing graph reaches only rooms the map draws; "Trasa" over a building
@@ -120,7 +136,9 @@ describe('lessonPlace', () => {
     ['Q01', true],
     ['T18', false],
   ])('%s is routable: %s', (room, routable) => {
-    expect(lessonPlace(makeLesson({ room }), 'cz', [], ON_MAP).routable).toBe(routable);
+    expect(lessonPlace(makeLesson({ room }), 'cz', [], ON_MAP, BUNDLED_SOCIETIES).routable).toBe(
+      routable
+    );
   });
 
   it('says nothing about an entry the student typed in without a room', () => {
@@ -131,7 +149,7 @@ describe('lessonPlace', () => {
       startTime: '08:00',
       endTime: '09:00',
     });
-    expect(lessonPlace(own, 'cz', [mapEvent()], ON_MAP)).toEqual({
+    expect(lessonPlace(own, 'cz', [mapEvent()], ON_MAP, BUNDLED_SOCIETIES)).toEqual({
       label: '',
       eventId: null,
       onMap: false,
@@ -143,7 +161,13 @@ describe('lessonPlace', () => {
   it('names no host rather than the wrong one for a society it does not know', () => {
     // `societyById` falls back to ESN; a row must not credit ESN with someone
     // else's event.
-    const place = lessonPlace(block(), 'cz', [mapEvent({ societyId: 'nobody' })], ON_MAP);
+    const place = lessonPlace(
+      block(),
+      'cz',
+      [mapEvent({ societyId: 'nobody' })],
+      ON_MAP,
+      BUNDLED_SOCIETIES
+    );
     expect(place.host).toBeNull();
   });
 });

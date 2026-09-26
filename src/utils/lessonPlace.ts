@@ -1,11 +1,10 @@
 import type { BlockLesson } from '../types/calendarTypes';
-import type { MapEvent } from '../types/events';
+import type { MapEvent, Society } from '../types/events';
 import type { RoomIndexEntry } from '../types/campusMap';
 import roomsIndexJson from '../data/map/rooms-index.json';
 import { localizedRoom } from './localizedLesson';
 import { lookupRoomTarget } from './rooms/lookupRoomPlace';
 import { eventIdFromRsvpBlock } from './rsvpBlocks';
-import { SOCIETIES } from '../data/societies';
 
 const INDEX = roomsIndexJson as RoomIndexEntry[];
 
@@ -51,7 +50,8 @@ export function lessonPlace(
   lesson: BlockLesson,
   language: string,
   events: readonly MapEvent[],
-  onMapLabel: string
+  onMapLabel: string,
+  societies: Record<string, Society>
 ): LessonPlace {
   const room = localizedRoom(lesson, language);
   const eventId = lesson.isCustom ? eventIdFromRsvpBlock(lesson.customEventId ?? '') : null;
@@ -72,7 +72,7 @@ export function lessonPlace(
   // Cold start: the blocks come back from IndexedDB before the events do.
   if (!event) return { label: room, eventId: null, onMap: false, routable: false, host: null };
 
-  const host = SOCIETIES[event.societyId]?.shortName ?? null;
+  const host = societies[event.societyId]?.shortName ?? null;
   const named = event.location?.trim();
   if (!event.coord)
     return { label: named || room, eventId: null, onMap: false, routable: false, host };

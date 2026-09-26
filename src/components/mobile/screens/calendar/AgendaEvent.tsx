@@ -65,8 +65,9 @@ export function AgendaEvent({ lesson, onOpenSubject, onShowOnMap }: AgendaEventP
   const { t, language } = useTranslation();
   const courseName = localizedCourseName(lesson, language);
   const mapEvents = useAppStore((s) => s.mapEvents);
+  const societies = useAppStore((s) => s.societies);
   // A room the index knows, or the society event an answered block stands for.
-  const place = lessonPlace(lesson, language, mapEvents, t('map.venueOnMap'));
+  const place = lessonPlace(lesson, language, mapEvents, t('map.venueOnMap'), societies);
   // Surname only ("Melicharová"), not the full titled name — that is what
   // lets room, time and teacher share one line at 390px without clipping.
   // Every teacher's full name is in the subject drawer's header.

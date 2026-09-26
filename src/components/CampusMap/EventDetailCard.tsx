@@ -2,7 +2,8 @@ import { MapPin, Navigation, ExternalLink, Clock } from 'lucide-react';
 import { CATEGORY_EMOJI_SRC } from '../../data/eventCategories';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { societyById } from '../../data/societies';
+import { useSociety } from '../../hooks/useSociety';
+import { SocietyLogo } from '../SocietyLogo';
 import roomsIndexJson from '../../data/map/rooms-index.json';
 import { roomCodeToName } from './mapHelpers';
 import type { RoomIndexEntry } from '../../types/campusMap';
@@ -51,7 +52,8 @@ function openInApp(e: React.MouseEvent<HTMLAnchorElement>) {
 export function EventDetailCard({ event, flush = false }: { event: MapEvent; flush?: boolean }) {
   const focusRoom = useAppStore((s) => s.focusRoomByCode);
   const { t, language } = useTranslation();
-  const soc = societyById(event.societyId);
+  // A non-empty id always resolves: unknown ids get the neutral society.
+  const soc = useSociety(event.societyId)!;
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
   const dateLabel = parseEventDate(event.date).toLocaleDateString(locale, {
     weekday: 'short',
@@ -81,16 +83,10 @@ export function EventDetailCard({ event, flush = false }: { event: MapEvent; flu
       <div className="space-y-3 p-3">
         {/* identity: avatar + title + host */}
         <div className="flex items-center gap-3">
-          <span
-            className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1 ring-base-300"
-            style={{ backgroundColor: soc.color }}
-          >
-            {soc.logo ? (
-              <img src={soc.logo} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <span className="text-sm font-extrabold text-white">{soc.glyph}</span>
-            )}
-          </span>
+          <SocietyLogo
+            society={soc}
+            className="h-11 w-11 rounded-full ring-1 ring-base-300 text-sm"
+          />
           <div className="min-w-0">
             <h3 className="line-clamp-2 font-bold leading-tight text-base-content">
               {event.title}

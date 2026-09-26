@@ -75,8 +75,15 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
       : fullName;
   const { t } = useTranslation();
   const mapEvents = useAppStore((state) => state.mapEvents);
+  const societies = useAppStore((state) => state.societies);
   // The room, or where an answered society event is — which may be only a pin.
-  const room = lessonPlace(lesson, language ?? 'cz', mapEvents, t('map.venueOnMap')).label;
+  const room = lessonPlace(
+    lesson,
+    language ?? 'cz',
+    mapEvents,
+    t('map.venueOnMap'),
+    societies
+  ).label;
 
   // Determine event type and colors using workspace tokens
   const getEventStyles = () => {
