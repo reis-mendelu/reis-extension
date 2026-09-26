@@ -9,12 +9,14 @@ vi.mock('../../../api/societyAccounts', () => ({
 import { createSocietyAccount } from '../../../api/societyAccounts';
 import { SocietyForm } from '../SocietyForm';
 
-const saveSociety = vi.fn(async () => ({}));
+const saveSociety = vi.fn(async (..._args: unknown[]) => ({}));
+const loadSocietyAccounts = vi.fn(async () => {});
 
 beforeEach(() => {
   saveSociety.mockClear();
+  loadSocietyAccounts.mockClear();
   vi.mocked(createSocietyAccount).mockClear();
-  useAppStore.setState({ societies: BUNDLED_SOCIETIES, saveSociety } as never);
+  useAppStore.setState({ societies: BUNDLED_SOCIETIES, saveSociety, loadSocietyAccounts } as never);
 });
 
 const fill = (label: RegExp, value: string) =>
@@ -65,6 +67,26 @@ describe('SocietyForm (new)', () => {
     );
     await waitFor(() => expect(createSocietyAccount).toHaveBeenCalledWith('kino', 'Kino'));
     expect(await screen.findByText('generated-pw-123')).toBeInTheDocument();
+    // The accounts panel below must list the new login, or it keeps offering to create it.
+    expect(loadSocietyAccounts).toHaveBeenCalled();
+  });
+
+  it('releases auto-follow from a HIDDEN holder too: the unique index ignores is_active', async () => {
+    useAppStore.setState({
+      societies: { ...BUNDLED_SOCIETIES, zf: { ...BUNDLED_SOCIETIES.zf!, isActive: false } },
+    });
+    render(<SocietyForm onDone={() => {}} />);
+    fill(/login name|přihlašovací jméno/i, 'zfnew');
+    fill(/^name$|^název$/i, 'ZF Nový');
+    fill(/short name|zkratka/i, 'ZFN');
+    fill(/pin colou?r|barva/i, '#123456');
+    fireEvent.change(screen.getByLabelText(/faculty|fakulta/i), { target: { value: 'zf' } });
+    fireEvent.click(screen.getByLabelText(/automati/i));
+    fireEvent.change(screen.getByLabelText(/^logo$/i), { target: { files: [logoFile] } });
+    fireEvent.click(screen.getByRole('button', { name: /save|uložit/i }));
+    await waitFor(() => expect(saveSociety).toHaveBeenCalledTimes(2));
+    expect(saveSociety.mock.calls[0]![0]).toMatchObject({ id: 'zf', autoFollowFaculty: false });
+    expect(saveSociety.mock.calls[1]![0]).toMatchObject({ id: 'zfnew', autoFollowFaculty: true });
   });
 });
 

@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { createSocietyAccount } from '../../api/societyAccounts';
 import { ORGANIZERS, type FacultyKey, type Society } from '../../types/events';
 import { isUsablePinColor } from '../../utils/societies/pinColor';
 import { GeneratedPasswordDialog } from './GeneratedPasswordDialog';
+import { LogoPreview } from './LogoPreview';
 
 const ID_RE = /^[a-z0-9][a-z0-9_-]*$/;
 const FACULTIES = Object.keys(ORGANIZERS) as FacultyKey[];
@@ -14,6 +15,7 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
   const { t, language } = useTranslation();
   const catalog = useAppStore((s) => s.societies);
   const saveSociety = useAppStore((s) => s.saveSociety);
+  const loadSocietyAccounts = useAppStore((s) => s.loadSocietyAccounts);
   const isNew = !society;
   const [id, setId] = useState(society?.id ?? '');
   const [name, setName] = useState(society?.name ?? '');
@@ -26,8 +28,10 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
   const [busy, setBusy] = useState(false);
   const [password, setPassword] = useState<string | null>(null);
 
+  // Hidden societies count: the database's one-per-faculty index ignores
+  // is_active, so a hidden holder still blocks the new default until released.
   const holder = Object.values(catalog).find(
-    (s) => s.autoFollowFaculty && s.facultyKey === facultyKey && s.id !== id && s.isActive
+    (s) => s.autoFollowFaculty && s.facultyKey === facultyKey && s.id !== id
   );
 
   const validate = (): string | null => {
@@ -65,8 +69,12 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
     }
     if (isNew) {
       const account = await createSocietyAccount(id, name.trim());
-      if (account.password) setPassword(account.password);
-      else setError('errors.account_failed');
+      if (account.password) {
+        setPassword(account.password);
+        // The accounts panel below reads the store; without this it keeps
+        // offering to create the account that now exists.
+        await loadSocietyAccounts();
+      } else setError('errors.account_failed');
     }
     setBusy(false);
     if (!isNew) onDone();
@@ -184,14 +192,5 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
         />
       )}
     </div>
-  );
-}
-
-/** Square preview of the picked file; the object URL is revoked when it changes. */
-function LogoPreview({ file }: { file: File }) {
-  const url = useMemo(() => URL.createObjectURL(file), [file]);
-  useEffect(() => () => URL.revokeObjectURL(url), [url]);
-  return (
-    <img src={url} alt="" className="h-16 w-16 rounded-md object-cover ring-1 ring-base-300" />
   );
 }
