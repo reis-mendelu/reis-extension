@@ -204,15 +204,22 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       </label>
 
       <label className={LABEL}>{t('map.eventWhen')}</label>
-      <div className="grid grid-cols-2 gap-2">
-        <MiniCalendar
-          value={date || null}
-          onChange={setDate}
-          placeholder={t('map.selectDate')}
-          t={t}
-          locale={locale}
-        />
-        <ComposerTimeField value={time} onChange={setTime} t={t} />
+      {/* One row when both fit, stacked when not: a picked date reads
+          "čt 15. listopadu", which a half-width field in the desktop column
+          (or a 320px phone) would cut off. Wrapping goes by the bases. */}
+      <div className="flex flex-wrap gap-2">
+        <div className="min-w-0 grow-[3] basis-48">
+          <MiniCalendar
+            value={date || null}
+            onChange={setDate}
+            placeholder={t('map.selectDate')}
+            t={t}
+            locale={locale}
+          />
+        </div>
+        <div className="min-w-0 grow basis-32">
+          <ComposerTimeField value={time} onChange={setTime} t={t} />
+        </div>
       </div>
       {scheduled && (
         <p className="mt-1.5 text-[11px] text-warning">
