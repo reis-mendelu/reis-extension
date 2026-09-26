@@ -32,8 +32,14 @@ describe('lookupRoomEntry, through the IS room catalogue', () => {
     expect(lookupRoomEntry(label, INDEX)?.code).toBe(code);
   });
 
-  it('resolves every IS label to the room IS pairs it with', () => {
-    const strays = IS_ROOM_LABELS.filter((l) => lookupRoomEntry(l.label, INDEX)?.code !== l.code);
+  // As a timetable prints it: bare on Černá Pole, with the campus elsewhere
+  // ("Aula (ČP II.)"), since IS reuses a label across campuses.
+  it('resolves every IS label, as a timetable prints it, to the room IS pairs it with', () => {
+    const printed = (l: { label: string; campus?: string }) =>
+      l.campus ? `${l.label} (${l.campus})` : l.label;
+    const strays = IS_ROOM_LABELS.filter(
+      (l) => lookupRoomEntry(printed(l), INDEX)?.code !== l.code
+    );
     expect(strays).toEqual([]);
   });
 
