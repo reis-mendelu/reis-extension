@@ -506,6 +506,7 @@
     "noPlanExchange": "Studijní plán není pro výměnná studia dostupný — zobrazujeme tvoje zapsané předměty.",
     "loading": "Načítání...",
     "fulfilled": "Splněno",
+    "enrolled": "Zapsáno",
     "notFulfilled": "Nesplněno",
     "searchToOpen": "Kliknutím vyhledáš",
     "semester": "semestr",
