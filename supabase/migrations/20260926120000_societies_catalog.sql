@@ -109,7 +109,14 @@ alter table public.spolky_accounts
 -- students. PNG only. An SVG opened directly on the Supabase origin can run script.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('society-logos', 'society-logos', true, 262144, array['image/png'])
-on conflict (id) do nothing;
+-- Enforce the limits even if a bucket of this name already exists: a broader
+-- pre-existing one would let a reis_admin upload non-PNG files into a public
+-- bucket. (Prod had no such bucket when this was applied on 2026-09-26, and
+-- its settings were read back as exactly these values.)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 
 create policy society_logos_admin_select on storage.objects
   for select to authenticated

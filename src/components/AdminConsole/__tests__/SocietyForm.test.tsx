@@ -90,6 +90,40 @@ describe('SocietyForm (new)', () => {
   });
 });
 
+describe('SocietyForm (failures)', () => {
+  const fillNew = (id: string, faculty?: string) => {
+    fill(/login name|přihlašovací jméno/i, id);
+    fill(/^name$|^název$/i, 'Nový');
+    fill(/short name|zkratka/i, 'NEW');
+    fill(/pin colou?r|barva/i, '#123456');
+    if (faculty) {
+      fireEvent.change(screen.getByLabelText(/faculty|fakulta/i), { target: { value: faculty } });
+      fireEvent.click(screen.getByLabelText(/automati/i));
+    }
+    fireEvent.change(screen.getByLabelText(/^logo$/i), { target: { files: [logoFile] } });
+    fireEvent.click(screen.getByRole('button', { name: /save|uložit/i }));
+  };
+
+  it('re-enables Save and says so when a save step throws', async () => {
+    saveSociety.mockRejectedValueOnce(new Error('createImageBitmap: unreadable'));
+    render(<SocietyForm onDone={() => {}} />);
+    fillNew('kino');
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /save|uložit/i })).toBeEnabled();
+  });
+
+  it('gives auto-follow back to the holder when the replacement fails to save', async () => {
+    saveSociety
+      .mockResolvedValueOnce({}) // holder released
+      .mockResolvedValueOnce({ error: 'save_failed' }); // replacement fails
+    render(<SocietyForm onDone={() => {}} />);
+    fillNew('zfnew', 'zf');
+    await waitFor(() => expect(saveSociety).toHaveBeenCalledTimes(3));
+    expect(saveSociety.mock.calls[2]![0]).toMatchObject({ id: 'zf', autoFollowFaculty: true });
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+  });
+});
+
 describe('SocietyForm (edit)', () => {
   it('locks the id and saves without requiring a new logo', async () => {
     render(<SocietyForm society={BUNDLED_SOCIETIES.zf} onDone={() => {}} />);

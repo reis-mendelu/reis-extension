@@ -66,6 +66,18 @@ describe('createSocietiesSlice', () => {
     expect(store.getState().societies.supef).toBeDefined();
   });
 
+  it('rejects a cached record missing a field the UI reads', async () => {
+    // A cache from an older shape must not replace the seed: SocietyLogo reads
+    // glyph.length and listedSocieties sorts on sortOrder.
+    const { glyph: _g, ...noGlyph } = newcomer;
+    idb.set('societies_catalog', [noGlyph]);
+    fetchSocieties.mockResolvedValue(null);
+    const store = makeStore();
+    await store.getState().loadSocieties();
+    expect(store.getState().societies.kino).toBeUndefined();
+    expect(store.getState().societies.supef).toBeDefined();
+  });
+
   it('putSociety upserts into state and cache', async () => {
     const store = makeStore();
     await store.getState().putSociety(newcomer);

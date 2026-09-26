@@ -3,11 +3,10 @@ import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { createSocietyAccount } from '../../api/societyAccounts';
 import { ORGANIZERS, type FacultyKey, type Society } from '../../types/events';
-import { isUsablePinColor } from '../../utils/societies/pinColor';
+import { autoFollowHolder, validateSocietyDraft } from './societyFormRules';
 import { GeneratedPasswordDialog } from './GeneratedPasswordDialog';
 import { LogoPreview } from './LogoPreview';
 
-const ID_RE = /^[a-z0-9][a-z0-9_-]*$/;
 const FACULTIES = Object.keys(ORGANIZERS) as FacultyKey[];
 
 /** Add (no `society`) or edit one society. reis_admin only; RLS is the real gate. */
@@ -28,35 +27,38 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
   const [busy, setBusy] = useState(false);
   const [password, setPassword] = useState<string | null>(null);
 
-  // Hidden societies count: the database's one-per-faculty index ignores
-  // is_active, so a hidden holder still blocks the new default until released.
-  const holder = Object.values(catalog).find(
-    (s) => s.autoFollowFaculty && s.facultyKey === facultyKey && s.id !== id
-  );
-
-  const validate = (): string | null => {
-    if (isNew && !ID_RE.test(id)) return 'errors.id';
-    if (isNew && catalog[id]) return 'errors.idTaken';
-    if (!name.trim() || !shortName.trim()) return 'errors.required';
-    if (!isUsablePinColor(color)) return 'errors.color';
-    if (isNew && !logo) return 'errors.logo_required';
-    return null;
-  };
+  const holder = autoFollowHolder(catalog, facultyKey, id);
 
   const submit = async () => {
     if (busy) return;
-    const invalid = validate();
+    const invalid = validateSocietyDraft(
+      { id, name, shortName, color, hasLogo: Boolean(logo) },
+      isNew,
+      catalog
+    );
     if (invalid) return setError(invalid);
     setBusy(true);
     setError(null);
-    const autoFollowFaculty = autoFollow && facultyKey !== 'mendelu';
-    // The database allows one default per faculty: release it from the holder first.
-    if (autoFollowFaculty && holder) {
-      const moved = await saveSociety({ ...holder, autoFollowFaculty: false }, null, false);
-      if (moved.error) {
-        setBusy(false);
-        return setError(`errors.${moved.error}`);
-      }
+    try {
+      const failure = await persist(autoFollow && facultyKey !== 'mendelu');
+      if (failure) setError(failure);
+      else if (!isNew) onDone();
+    } catch {
+      // The encoder rejects an unreadable image; the button must come back.
+      setError('errors.save_failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Returns an i18n error key, or null when everything saved. */
+  const persist = async (autoFollowFaculty: boolean): Promise<string | null> => {
+    // One default per faculty: release it from the holder first, and give it
+    // back if the replacement fails, so the faculty is never left without one.
+    const released = autoFollowFaculty && holder ? holder : null;
+    if (released) {
+      const moved = await saveSociety({ ...released, autoFollowFaculty: false }, null, false);
+      if (moved.error) return `errors.${moved.error}`;
     }
     const res = await saveSociety(
       { id, name, shortName, color, facultyKey, autoFollowFaculty },
@@ -64,20 +66,17 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
       isNew
     );
     if (res.error) {
-      setBusy(false);
-      return setError(`errors.${res.error}`);
+      if (released) await saveSociety({ ...released, autoFollowFaculty: true }, null, false);
+      return `errors.${res.error}`;
     }
-    if (isNew) {
-      const account = await createSocietyAccount(id, name.trim());
-      if (account.password) {
-        setPassword(account.password);
-        // The accounts panel below reads the store; without this it keeps
-        // offering to create the account that now exists.
-        await loadSocietyAccounts();
-      } else setError('errors.account_failed');
-    }
-    setBusy(false);
-    if (!isNew) onDone();
+    if (!isNew) return null;
+    const account = await createSocietyAccount(id, name.trim());
+    if (!account.password) return 'errors.account_failed';
+    setPassword(account.password);
+    // The accounts panel below reads the store; without this it keeps
+    // offering to create the account that now exists.
+    await loadSocietyAccounts();
+    return null;
   };
 
   const field = 'flex flex-col gap-1 text-sm';

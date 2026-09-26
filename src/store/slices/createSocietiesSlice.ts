@@ -37,7 +37,10 @@ function isSociety(value: unknown): value is Society {
     typeof s.name === 'string' &&
     typeof s.shortName === 'string' &&
     typeof s.color === 'string' &&
+    typeof s.glyph === 'string' &&
     typeof s.facultyKey === 'string' &&
+    typeof s.autoFollowFaculty === 'boolean' &&
+    typeof s.sortOrder === 'number' &&
     typeof s.isActive === 'boolean'
   );
 }

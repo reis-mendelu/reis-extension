@@ -5,18 +5,20 @@ Postgres 15, because this project's migration history cannot be replayed from
 scratch (see the header of `20260907130000_usage_dimensions.sql`), and prod is
 not a test rig.
 
-**The migration is not applied by this check.** Applying it is a hand step,
-owned by `docs/runbooks/societies-catalog-rollout.md`.
+**Applied to production on 2026-09-26** via the runbook
+(`docs/runbooks/societies-catalog-rollout.md`); this check is what preceded it.
 
 ## Recipe
 
 ```bash
 docker run -d --name reis-societies-sql -e POSTGRES_PASSWORD=pw -p 55434:5432 postgres:15
-docker exec -i reis-societies-sql psql -U postgres -v ON_ERROR_STOP=1 < prereq.sql
+docker exec -i reis-societies-sql psql -U postgres -v ON_ERROR_STOP=1 < docs/verify/societies-catalog/prereq.sql
 docker exec -i reis-societies-sql psql -U postgres -v ON_ERROR_STOP=1 < supabase/migrations/20260926120000_societies_catalog.sql
-docker exec -i reis-societies-sql psql -U postgres < claims.sql   # last line: ALL CLAIMS HOLD
+docker exec -i reis-societies-sql psql -U postgres < docs/verify/societies-catalog/claims.sql   # last line: ALL CLAIMS HOLD
 docker rm -f reis-societies-sql
 ```
+
+Both files are committed beside this doc, in `docs/verify/societies-catalog/`.
 
 `prereq.sql` creates only what the migration touches:
 - the `anon` and `authenticated` roles
@@ -24,7 +26,7 @@ docker rm -f reis-societies-sql
 - `spolky_accounts` holding the eight prod ids
 - a `get_my_role()` stub that reads the session setting `test.role`, so each check can choose a role
 
-`claims.sql` runs one `DO` block per claim below. Each raises `FAIL:` if its claim breaks. Both files are reproduced in full in Task 1 of `docs/superpowers/plans/2026-09-26-societies-in-supabase.md`.
+`claims.sql` runs one `DO` block per claim below. Each raises `FAIL:` if its claim breaks.
 
 The role claim is set with `set_config(..., false)`, which lasts for the session. The transaction-local form (`true`) would be gone by the next psql statement.
 
