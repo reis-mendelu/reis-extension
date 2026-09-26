@@ -210,6 +210,6 @@ Found while reading the code for the plan. They replace the matching lines above
    reject ESN's existing cyan (2.5:1). 2:1 still rejects EY yellow (#FFE600,
    1.3:1) and near-whites. The glyph tile's text colour now comes from
    `readableTextColor` instead of always white.
-8. **Only `reis_admin` accounts can be created, for societies that exist.** The
+8. **An account can only be created for a society that exists.** The
    new foreign key makes `society-accounts` fail for an id with no `societies`
    row. So the form saves the row before it creates the account.
