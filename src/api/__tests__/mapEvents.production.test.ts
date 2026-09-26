@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { toMapEvent } from '../mapEvents';
 import { isPublicEvent } from '../../components/CampusMap/eventWindow';
+import { BUNDLED_SOCIETIES } from '../../data/societies';
 
 /**
  * A REAL row, copied verbatim from production `spolky_events` on 2026-08-11 via
@@ -38,7 +39,7 @@ const PRODUCTION_ROW = {
 
 describe('toMapEvent against a real production row', () => {
   it('maps every field the map renders', () => {
-    const event = toMapEvent(PRODUCTION_ROW);
+    const event = toMapEvent(PRODUCTION_ROW, BUNDLED_SOCIETIES);
 
     expect(event.id).toBe('5f74debd-8bed-463c-9098-2a18ac5c954a');
     expect(event.title).toBe('Deskovky - test');

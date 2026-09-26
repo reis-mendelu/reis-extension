@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useSpolkySettings } from '../useSpolkySettings';
+import { useAppStore } from '../../store/useAppStore';
+import { BUNDLED_SOCIETIES } from '../../data/societies';
 
 const mockGetUserParams = vi.fn();
 const mockIDBGet = vi.fn();
@@ -17,16 +19,8 @@ vi.mock('../../services/storage', () => ({
   },
 }));
 
-// FACULTY_TO_ASSOCIATION: '1'->usaf, '2'->supef, '3'->au_frrms, '4'->zf, '5'->ldf
-vi.mock('../../services/spolky/config', () => ({
-  FACULTY_TO_ASSOCIATION: {
-    AF: 'usaf',
-    PEF: 'supef',
-    FRRMS: 'au_frrms',
-    ZF: 'zf',
-    LDF: 'ldf',
-  },
-}));
+// Faculty defaults come from the societies catalog in the store, which starts
+// as the bundled seed: AF->usaf, PEF->supef, FRRMS->au_frrms, ZF->zf, LDF->ldf.
 
 function makeUser(facultyLabel: string | null, isErasmus: boolean) {
   return facultyLabel
@@ -55,6 +49,7 @@ function makeUser(facultyLabel: string | null, isErasmus: boolean) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockIDBSet.mockResolvedValue(undefined);
+  useAppStore.setState({ societies: BUNDLED_SOCIETIES });
 });
 
 // ---------------------------------------------------------------------------
@@ -79,6 +74,25 @@ describe('fresh user — faculty auto-subscription', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     expect(result.current.subscribedAssociations).toEqual([expected]);
+  });
+
+  // The default is whatever the catalog says, not a list compiled into the app:
+  // a faculty union added or replaced in the admin console becomes the default
+  // for new students without a release.
+  it('follows the catalog when the faculty default changes', async () => {
+    useAppStore.setState({
+      societies: {
+        ...BUNDLED_SOCIETIES,
+        supef: { ...BUNDLED_SOCIETIES.supef!, autoFollowFaculty: false },
+        kino: { ...BUNDLED_SOCIETIES.supef!, id: 'kino', name: 'Kino' },
+      },
+    });
+    mockGetUserParams.mockResolvedValue(makeUser('PEF', false));
+
+    const { result } = renderHook(() => useSpolkySettings());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.subscribedAssociations).toEqual(['kino']);
   });
 
   it('Erasmus with a faculty ID → ESN only, no faculty association', async () => {

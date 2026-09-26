@@ -12,7 +12,6 @@ vi.mock('../services/spolky', () => ({
   trackNotificationsViewed: vi.fn(),
   trackNotificationClick: vi.fn(),
   filterNotificationsByFaculty: vi.fn((notifications) => notifications),
-  getUserAssociation: vi.fn(),
   useSpolkySettings: vi.fn(() => ({ subscribedAssociations: [] })),
 }));
 

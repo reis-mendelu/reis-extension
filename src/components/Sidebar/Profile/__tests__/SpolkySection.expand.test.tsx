@@ -39,7 +39,7 @@ describe('SpolkySection height', () => {
 
   it('still lists every society either way', () => {
     render(<SpolkySection {...props} expandFully />);
-    expect(screen.getByText('SUPEF')).toBeInTheDocument();
-    expect(screen.getByText('ESN Mendelu')).toBeInTheDocument();
+    expect(screen.getByText('SU PEF')).toBeInTheDocument();
+    expect(screen.getByText('ESN MENDELU')).toBeInTheDocument();
   });
 });

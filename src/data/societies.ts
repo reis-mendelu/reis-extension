@@ -1,105 +1,103 @@
 import type { Society } from '../types/events';
-import { logError } from '../utils/reportError';
 
-// Static catalog of the student societies that author campus-map events. Ids +
-// logos reuse the existing spolky system (src/services/spolky/config.ts, logos
-// shipped at public/spolky/<id>.jpg). Brand colours: ESN cyan, SU PEF the PEF
-// blue, AU FRRMS the FRRMS magenta. Each maps to a faculty so the map's "My
-// faculty" filter can include/exclude it (ESN is MENDELU-wide → always shown).
-export const SOCIETIES: Record<string, Society> = {
-  esn: {
+// The catalog a first-ever launch starts from, before the societies table
+// (supabase/migrations/20260926120000_societies_catalog.sql) has been fetched.
+// It must match that migration's seed rows. After the first fetch the cached
+// catalog replaces it, so editing a society here changes nothing for students:
+// edit it in the admin console instead.
+//
+// No logos on purpose: logo URLs are content-hashed storage paths that exist
+// only once scripts/seed-society-logos.ts has run against prod. Until the first
+// fetch the glyph tile shows, which is what every logo slot falls back to.
+const seed = (s: Omit<Society, 'isActive'>): Society => ({ ...s, isActive: true });
+
+export const BUNDLED_SOCIETIES: Record<string, Society> = {
+  esn: seed({
     id: 'esn',
     name: 'ESN MENDELU',
     shortName: 'ESN',
     color: '#00AEEF',
-    glyph: '✷',
-    logo: '/spolky/esn.jpg',
+    glyph: 'ESN',
     facultyKey: 'mendelu',
-  },
-  supef: {
+    autoFollowFaculty: false,
+    audienceLabel: 'erasmus',
+    sortOrder: 10,
+  }),
+  supef: seed({
     id: 'supef',
     name: 'SU PEF',
     shortName: 'SUPEF',
     color: '#0046a0',
     glyph: 'SU',
-    logo: '/spolky/supef.jpg',
     facultyKey: 'pef',
-  },
-  au_frrms: {
+    autoFollowFaculty: true,
+    audienceLabel: null,
+    sortOrder: 20,
+  }),
+  au_frrms: seed({
     id: 'au_frrms',
     name: 'AU FRRMS',
     shortName: 'AU FRRMS',
     color: '#c32897',
     glyph: 'AU',
-    logo: '/spolky/au_frrms.jpg',
     facultyKey: 'frrms',
-  },
-  // `facultyKey` stays 'af' — that is the Agronomická fakulta, which did not
-  // rename; only the society did ('af' → 'usaf', 2026-09-15). The pin colour
-  // is still the faculty orange rather than anything from the new mark, whose
-  // artwork is black on white and unusable as a pin against the light basemap.
-  usaf: {
+    autoFollowFaculty: true,
+    audienceLabel: null,
+    sortOrder: 30,
+  }),
+  usaf: seed({
     id: 'usaf',
     name: 'USAF',
     shortName: 'USAF',
     color: '#c87800',
     glyph: 'USAF',
-    logo: '/spolky/usaf.jpg',
     facultyKey: 'af',
-  },
-  ldf: {
+    autoFollowFaculty: true,
+    audienceLabel: null,
+    sortOrder: 40,
+  }),
+  ldf: seed({
     id: 'ldf',
     name: 'LDF Spolek',
     shortName: 'LDF',
     color: '#0a5028',
     glyph: 'LDF',
-    logo: '/spolky/ldf.jpg',
     facultyKey: 'ldf',
-  },
-  zf: {
+    autoFollowFaculty: true,
+    audienceLabel: null,
+    sortOrder: 50,
+  }),
+  zf: seed({
     id: 'zf',
     name: 'ZF Spolek',
     shortName: 'ZF',
     color: '#8c0a00',
     glyph: 'ZF',
-    logo: '/spolky/zf.jpg',
     facultyKey: 'zf',
-  },
-  // EY: a partner company rather than a faculty union, but its reach is PEF —
-  // it recruits business students, so its events belong to that faculty's
-  // filter, not campus-wide. Pin colour is EY's navy rather than its yellow —
-  // the campus basemap is always light, and #FFE600 on it is unreadable. Logo
-  // is SVG rather than JPG (see public/spolky/ey.svg for provenance); `logo` is
-  // just a path, so the mix is fine — reIS's own entry already points at an SVG.
-  ey: {
+    autoFollowFaculty: true,
+    audienceLabel: null,
+    sortOrder: 60,
+  }),
+  ey: seed({
     id: 'ey',
     name: 'EY',
     shortName: 'EY',
     color: '#2E2E38',
     glyph: 'EY',
-    logo: '/spolky/ey.svg',
     facultyKey: 'pef',
-  },
-  // The reIS team itself (reis_admin role). Campus-wide like ESN. Uses the app's
-  // own logo (served at the extension root, like /spolky/*).
-  reis: {
+    autoFollowFaculty: false,
+    audienceLabel: null,
+    sortOrder: 70,
+  }),
+  reis: seed({
     id: 'reis',
     name: 'reIS',
     shortName: 'reIS',
     color: '#79be15',
     glyph: 'reIS',
-    logo: '/reIS_logo.svg',
     facultyKey: 'mendelu',
-  },
+    autoFollowFaculty: false,
+    audienceLabel: null,
+    sortOrder: 80,
+  }),
 };
-
-export const ALL_SOCIETIES: Society[] = Object.values(SOCIETIES);
-
-// Unknown ids fall back to ESN so the UI never crashes on a bad event, but we
-// log it — a missing catalog entry is bad data, not something to swallow silently.
-export function societyById(id: string): Society {
-  const society = SOCIETIES[id];
-  if (society) return society;
-  logError('societies.societyById', new Error(`unknown society id "${id}" — falling back to ESN`));
-  return SOCIETIES.esn!; // safe: 'esn' is a static catalog key defined above
-}

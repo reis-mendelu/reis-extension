@@ -79,6 +79,10 @@ const SUPABASE_CALLERS = new Set([
   'src/services/spolky/spolkyService.ts',
   // Reads the public society events feed. No student data in either direction.
   'src/api/mapEvents.ts',
+  // The societies catalog (September 2026): an anonymous select of public
+  // branding (name, colour, faculty, logo path). No identity, no student data,
+  // nothing written. Logos then load as plain <img> GETs from the same project.
+  'src/api/societies.ts',
   // Two feature counters, added September 2026, both disclosed in PRIVACY.md
   // section 2 and docs/privacy-policy-app.md BEFORE this entry was added.
   //

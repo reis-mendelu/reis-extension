@@ -1,4 +1,4 @@
-import { ALL_SOCIETIES } from '../../data/societies';
+import { useListedSocieties } from '../../hooks/useSociety';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -9,6 +9,7 @@ export function SocietyPicker() {
   const active = useAppStore((s) => s.adminActiveAssociationId);
   const setActive = useAppStore((s) => s.setActiveAssociation);
   const { t } = useTranslation();
+  const societies = useListedSocieties();
 
   return (
     <select
@@ -20,7 +21,7 @@ export function SocietyPicker() {
       <option value="" disabled>
         {t('admin.pickSociety') as string}
       </option>
-      {ALL_SOCIETIES.map((s) => (
+      {societies.map((s) => (
         <option key={s.id} value={s.id}>
           {s.name}
         </option>

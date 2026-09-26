@@ -63,7 +63,7 @@ export const CATEGORY_COLOR: Record<EventCategory, string> = {
 
 // One REAL full-colour emoji per category, shown inside the white map pin
 // (EventPin) — Google-Maps place-marker style. We ship the Twemoji SVGs from
-// public/emoji/<codepoint>.svg (served at the extension root, like /spolky/*)
+// public/emoji/<codepoint>.svg (served at the extension root)
 // instead of rendering the OS emoji font: a fixed modern multicolour set that
 // looks identical on every device (an old Android/Windows OS emoji is what read
 // as "outdated" before). Confetti is multicolour, the brain pink, the globe

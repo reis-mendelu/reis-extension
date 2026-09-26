@@ -153,6 +153,8 @@ secrets wrapper, so run the npm script directly.
 
 Testing the admin console against real Supabase needs exactly two keys in
 `.env`: `REIS_ADMIN_EMAIL` and `REIS_ADMIN_PASSWORD` (`dev/adminSessionPlugin.ts`).
+Despite its name, `REIS_ADMIN_EMAIL` holds the console **login** (`reis`), not an
+email; the harness maps it to the auth address the way the console does.
 The Supabase URL and publishable key are **not** env vars — they are hardcoded in
 `src/services/supabase/config.ts`. Signing in as one society instead reads
 `REIS_SOCIETY_<ID>_EMAIL` / `_PASSWORD`, uppercased. Missing credentials leave the

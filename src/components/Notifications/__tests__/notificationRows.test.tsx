@@ -26,7 +26,7 @@ describe('notification rows', () => {
   // and both kinds line up on one left edge.
   it('names the society that sent the notification', () => {
     render(<NotificationItem notification={notification} onClick={vi.fn()} />);
-    expect(screen.getByText('ESN Mendelu')).toBeInTheDocument();
+    expect(screen.getByText('ESN MENDELU')).toBeInTheDocument();
   });
 
   // The only way into an assignment was a 14px icon in the corner — under half

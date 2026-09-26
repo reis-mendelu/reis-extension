@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { toMapEvent, fetchMapEvents } from '../mapEvents';
 import { isPublicEvent } from '../../components/CampusMap/eventWindow';
+import { BUNDLED_SOCIETIES } from '../../data/societies';
 
 describe('toMapEvent', () => {
   it('maps a campus-room row into a MapEvent with a resolved building coord', () => {
@@ -19,7 +20,7 @@ describe('toMapEvent', () => {
       location: null,
       url: null,
     };
-    expect(toMapEvent(row)).toEqual({
+    expect(toMapEvent(row, BUNDLED_SOCIETIES)).toEqual({
       id: 'abc',
       title: 'PEF Kvíz',
       url: '',
@@ -56,7 +57,7 @@ describe('toMapEvent', () => {
       location: 'Česká (sraz)',
       url: 'https://www.instagram.com/esnmendelubrno/',
     };
-    expect(toMapEvent(row)).toEqual({
+    expect(toMapEvent(row, BUNDLED_SOCIETIES)).toEqual({
       id: 'def',
       title: 'Tram Party',
       url: 'https://www.instagram.com/esnmendelubrno/',
@@ -93,7 +94,7 @@ describe('toMapEvent', () => {
       location: 'TBD',
       url: null,
     };
-    expect(toMapEvent(row).coord).toBeNull();
+    expect(toMapEvent(row, BUNDLED_SOCIETIES).coord).toBeNull();
   });
 
   it('isPublicEvent gates past and far-future dates out', () => {
@@ -137,7 +138,7 @@ vi.mock('../../services/spolky/supabaseClient', () => {
 
 describe('fetchMapEvents public window filter', () => {
   it('fetchMapEvents returns only events inside the public window', async () => {
-    const events = await fetchMapEvents();
+    const events = await fetchMapEvents(BUNDLED_SOCIETIES);
     expect(events.map((e) => e.id)).toEqual(['live']); // past + far-future filtered out
   });
 });

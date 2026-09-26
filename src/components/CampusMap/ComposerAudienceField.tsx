@@ -1,6 +1,7 @@
 import { Globe } from 'lucide-react';
 import { audienceHint, audienceLabelKey } from '../../utils/eventAudience';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useAppStore } from '../../store/useAppStore';
 
 export interface ComposerAudienceFieldProps {
   /** The society authoring this event — what the restricted option is named after. */
@@ -23,8 +24,10 @@ export interface ComposerAudienceFieldProps {
  */
 export function ComposerAudienceField({ societyId, value, onChange }: ComposerAudienceFieldProps) {
   const { t } = useTranslation();
-  const audience = audienceLabelKey(societyId);
-  const hint = audienceHint(societyId);
+  // '' (no society) reads undefined, which is the generic wording.
+  const society = useAppStore((s) => s.societies[societyId]);
+  const audience = audienceLabelKey(society);
+  const hint = audienceHint(society);
 
   return (
     <>
