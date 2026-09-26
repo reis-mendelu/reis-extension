@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('../../../api/campusMap', () => ({ fetchBuildingRooms: vi.fn() }));
+// reloadMapEvents fetches the societies catalog beside the events; keep it off the network.
+vi.mock('../../../api/societies', () => ({ fetchSocieties: vi.fn(async () => null) }));
 vi.mock('../../../api/mapEvents', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../api/mapEvents')>();
   return { ...actual, fetchMapEvents: vi.fn() };

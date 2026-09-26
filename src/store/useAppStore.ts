@@ -35,6 +35,7 @@ import { createBulletinSlice } from './slices/createBulletinSlice';
 import { createViewportSlice } from './slices/createViewportSlice';
 import { createMobileUiSlice } from './slices/createMobileUiSlice';
 import { createMapSlice } from './slices/createMapSlice';
+import { createSocietiesSlice } from './slices/createSocietiesSlice';
 import { createRsvpSlice } from './slices/createRsvpSlice';
 import { createAdminSlice } from './slices/createAdminSlice';
 import { createAdminStatsSlice } from './slices/createAdminStatsSlice';
@@ -85,6 +86,7 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createViewportSlice(...a),
   ...createMobileUiSlice(...a),
   ...createMapSlice(...a),
+  ...createSocietiesSlice(...a),
   ...createRsvpSlice(...a),
   ...createAdminSlice(...a),
   ...createAdminStatsSlice(...a),
