@@ -442,11 +442,14 @@ export function MapCanvas() {
     // See focusBounds.roomFocusView.
     const view = roomFocusView<L.LatLngBoundsExpression>(
       targetBounds ?? null,
-      (b?.bounds as L.LatLngBoundsExpression | undefined) ?? null
+      (b?.bounds as L.LatLngBoundsExpression | undefined) ?? null,
+      railPaddingPx(map.getSize().x, isPhone, railRef.current.width, railRef.current.open)
     );
     if (view) {
-      const { bounds, maxZoom, padding } = view;
-      flyAndReveal(map, () => map.fitBounds(bounds, { maxZoom, padding, animate: false }));
+      const { bounds, maxZoom, paddingTopLeft, paddingBottomRight } = view;
+      flyAndReveal(map, () =>
+        map.fitBounds(bounds, { maxZoom, paddingTopLeft, paddingBottomRight, animate: false })
+      );
     }
     // isPhone joins the deps because the rail offset reads it. It is stable
     // for the life of a device, but it flips on a browser resize, and this
