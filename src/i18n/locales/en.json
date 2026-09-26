@@ -1285,5 +1285,30 @@
     "partnersLabel": "Companies we work with",
     "partnersBody": "We pick them ourselves, for the subjects people study here. It is about internships and events. They see nothing from your IS.",
     "eyBody": "They keep reIS running."
+  },
+  "impersonation": {
+    "entry": "View as a student…",
+    "entrySub": "Another programme's plan and timetable",
+    "title": "View as a student",
+    "faculty": "Faculty",
+    "programme": "Programme",
+    "year": "Year",
+    "yearN": "Year {n}",
+    "group": "Study group",
+    "groupN": "Group {n}",
+    "groupAll": "All groups",
+    "groupsLoading": "Loading groups…",
+    "start": "View",
+    "loading": "Loading programmes from IS…",
+    "scopeNote": "Full-time programmes with a winter intake only. From year 2 on, the timetable takes each subject's first parallel.",
+    "errorOptions": "IS did not return the programme list.",
+    "errorTimetable": "IS did not return the timetable.",
+    "errorNoPlan": "IS has no study plan for this programme and year.",
+    "errorNoSemester": "This programme's plan has no semester for that year.",
+    "errorNotAdmin": "reIS admins only.",
+    "expired": "Viewing as a student ended with the semester.",
+    "bannerLabel": "Viewing as {programme} · year {year}",
+    "bannerExit": "Exit",
+    "close": "Close"
   }
 }
