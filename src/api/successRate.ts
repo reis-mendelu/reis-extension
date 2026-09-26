@@ -85,8 +85,6 @@ export async function fetchSubjectSuccessRates(
   targetCodes: string[],
   version: string | null = null
 ): Promise<SuccessRateData> {
-  // loggers.api.info('[SuccessRate] Fetching from CDN...', targetCodes.length, targetCodes);
-
   // 1. Check cache for each code
   const existing = await getStoredSuccessRates();
   const results: Record<string, SubjectSuccessRate> = { ...(existing?.data || {}) };
@@ -115,16 +113,12 @@ export async function fetchSubjectSuccessRates(
   const codesToFetch = fetchDecisions.filter((c): c is string => c !== null);
 
   if (codesToFetch.length === 0) {
-    // loggers.api.info('[SuccessRate] All codes found in valid cache');
     return { lastUpdated: existing?.lastUpdated || new Date().toISOString(), data: results };
   }
-
-  // loggers.api.info('[SuccessRate] Fetching codes from CDN:', codesToFetch.length);
 
   // 2. Fetch each course from CDN (parallel)
   const fetchPromises = codesToFetch.map(async (code) => {
     const url = `${CDN_BASE_URL}/subjects/${code}.json`;
-    // loggers.api.info('[SuccessRate] Fetching URL:', url);
     try {
       // jsDelivr sends max-age=604800, so a plain fetch can hand back a week-old
       // browser copy of a file that was just refreshed. 'no-cache' revalidates
@@ -150,30 +144,36 @@ export async function fetchSubjectSuccessRates(
 
   const fetchedData = await Promise.all(fetchPromises);
 
-  // 3. Merge with existing cache
-  const successfulCodes: string[] = [];
+  // 3. Keep what was fetched
+  const fetched: Record<string, SubjectSuccessRate> = {};
   codesToFetch.forEach((code, i) => {
-    if (fetchedData[i]) {
-      results[code] = fetchedData[i]!;
-      successfulCodes.push(code);
-    }
+    if (fetchedData[i]) fetched[code] = fetchedData[i]!;
   });
 
-  // 4. Mark fetched codes as synced
-  if (successfulCodes.length > 0) {
-    await markAsSynced(successfulCodes);
-  }
+  // 4. Mark fetched codes as synced and save
+  return persistFetched(fetched);
+}
 
-  const finalResult: SuccessRateData = {
-    lastUpdated: new Date().toISOString(),
-    data: results,
-  };
+// Saves run one at a time, each merging only its own fetches onto what is
+// stored *now*. Two batches run at once after every sync (`fetchSubjects` and
+// `fetchStudyPlan`); writing back the snapshot each started from let the last
+// one drop the other's codes, or put back a stale copy the other had replaced.
+let persistChain: Promise<unknown> = Promise.resolve();
 
-  // 5. Save to storage
-  await saveSuccessRates(finalResult);
-  // loggers.api.info('[SuccessRate] Cached courses from CDN:', successfulCodes.length, '/', codesToFetch.length);
-
-  return finalResult;
+function persistFetched(fetched: Record<string, SubjectSuccessRate>): Promise<SuccessRateData> {
+  const run = persistChain.then(async () => {
+    const codes = Object.keys(fetched);
+    if (codes.length > 0) await markAsSynced(codes);
+    const latest = await getStoredSuccessRates();
+    const merged: SuccessRateData = {
+      lastUpdated: new Date().toISOString(),
+      data: { ...(latest?.data || {}), ...fetched },
+    };
+    await saveSuccessRates(merged);
+    return merged;
+  });
+  persistChain = run.catch(() => {});
+  return run;
 }
 
 /**
