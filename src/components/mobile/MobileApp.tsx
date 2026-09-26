@@ -3,6 +3,7 @@ import { ExternalLinkOverlay } from './ExternalLinkOverlay';
 import { toastOffset } from './toastOffset';
 import { useAppStore } from '../../store/useAppStore';
 import { DemoBanner } from './DemoBanner';
+import { ImpersonationBanner } from '../Impersonation/ImpersonationBanner';
 import { BottomNav } from './nav/BottomNav';
 import { CalendarScreen } from './screens/CalendarScreen';
 import { ExamsScreen } from './screens/ExamsScreen';
@@ -31,8 +32,11 @@ import { WelcomeScreen } from './WelcomeScreen';
 export function MobileApp() {
   const tab = useAppStore((s) => s.mobileTab);
   const demoMode = useAppStore((s) => s.demoMode);
+  const impersonating = useAppStore((s) => s.impersonation !== null);
+  // Either banner takes the top strip and spends --safe-top itself.
+  const topBanner = demoMode || impersonating;
   const welcomeSeen = useAppStore((s) => s.welcomeSeen);
-  const offset = toastOffset(demoMode);
+  const offset = toastOffset(topBanner);
 
   // First run owns the whole screen, the way LoginGate does before login.
   // Strictly `false`: `null` means nobody hydrated the flag (the extension's
@@ -61,6 +65,7 @@ export function MobileApp() {
           is a no-op for every real student and for the Chrome extension
           tree, which never mounts MobileApp at all. */}
       <DemoBanner />
+      <ImpersonationBanner variant="row" />
       {/* Offset by the safe-area inset: a top-center toast otherwise lands on
           top of the status bar under targetSdk 36's forced edge-to-edge, with
           the clock showing through the "Saved to Downloads" confirmation.
@@ -82,8 +87,11 @@ export function MobileApp() {
           property, not a stylesheet: it compiles to the same var() the rest
           of the mobile UI already reads. Off (demoMode false, the common
           case), this is a no-op and every screen keeps reading the real
-          inset exactly as before. */}
-      <div className={`flex flex-1 flex-col overflow-hidden${demoMode ? ' [--safe-top:0px]' : ''}`}>
+          inset exactly as before. ImpersonationBanner takes the same top strip, so it
+          counts too. */}
+      <div
+        className={`flex flex-1 flex-col overflow-hidden${topBanner ? ' [--safe-top:0px]' : ''}`}
+      >
         {tab === 'calendar' && <CalendarScreen />}
         {tab === 'exams' && <ExamsScreen />}
         {tab === 'subjects' && <SubjectsScreen />}
