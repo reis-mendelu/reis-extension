@@ -123,8 +123,7 @@ export function AdminEventList() {
   const section = (
     label: string,
     rows: MapEvent[],
-    subline?: (e: MapEvent) => string | undefined,
-    stats = true // off for Scheduled: students cannot see those yet, so 0 is not a result
+    subline?: (e: MapEvent) => string | undefined
   ) =>
     rows.length > 0 && (
       <div>
@@ -141,7 +140,7 @@ export function AdminEventList() {
             subline={subline?.(e)}
             onClick={() => focusEvent(e.id, { fly: true })}
             actions={rowActions(e)}
-            footer={stats ? <EventStats eventId={e.id} /> : undefined}
+            footer={<EventStats eventId={e.id} />}
           />
         ))}
       </div>
@@ -182,9 +181,9 @@ export function AdminEventList() {
         ) : (
           <>
             {section(t('map.liveNow'), live, finishedNote)}
-            {section(t('map.scheduled'), scheduled, goLive, false)}
+            {section(t('map.scheduled'), scheduled, goLive)}
             {section(t('map.past'), past)}
-            <EventStatsNote eventIds={[...live, ...past].map((e) => e.id)} />
+            <EventStatsNote eventIds={events.map((e) => e.id)} />
             {events.length === 0 && (
               <p className="px-3 py-6 text-center text-sm text-base-content/60">
                 {t('map.noOwnEvents') as string}
