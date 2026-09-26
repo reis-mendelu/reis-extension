@@ -44,4 +44,9 @@ describe('timetable app pages (real, trimmed, 2026-09-26)', () => {
     expect(parseGroupNumbers(fx('rozvrh-list-bf-y1.html'), 1)).toEqual([1, 2, 3, 4, 5]);
     expect(parseGroupNumbers(fx('rozvrh-list-bf-y1.html'), 2)).toEqual([]);
   });
+  it('expands the ranged and listed labels ZF uses (real B-CHP year 1, 2026-09-26)', () => {
+    // 1b-chp1-3, 1b-chp5,6, 1b-chp1,2,6 … and a real group 99 (it is in IS's own
+    // skupina select). Reading only "1b-chp<N>" gave [1, 99], and the picker offered 99.
+    expect(parseGroupNumbers(fx('rozvrh-list-zf-chp-y1.html'), 1)).toEqual([1, 2, 3, 4, 5, 6, 99]);
+  });
 });

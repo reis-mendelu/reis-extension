@@ -88,8 +88,14 @@ export function parseGroupNumbers(doc: Document, year: number): number[] {
       .map((c) => txt(c))
       .indexOf('Omezení');
     for (const tr of trs.slice(headIdx + 1)) {
-      const m = /^(\d+)[a-z]*-[a-z]+(\d+)$/i.exec(txt(tr.querySelectorAll('td')[col]));
-      if (m && Number(m[1]) === year) groups.add(Number(m[2]));
+      // "1b-f2", and at ZF also ranges and lists: "1b-chp1-3", "1b-chp1,2,6".
+      const m = /^(\d+)[a-z]*-[a-z]+([\d,-]+)$/i.exec(txt(tr.querySelectorAll('td')[col]));
+      if (!m || Number(m[1]) !== year) continue;
+      for (const part of m[2]!.split(',')) {
+        const [from, to] = part.split('-').map(Number);
+        if (!from) continue;
+        for (let g = from; g <= (to ?? from); g++) groups.add(g);
+      }
     }
   }
   return [...groups].sort((a, b) => a - b);
