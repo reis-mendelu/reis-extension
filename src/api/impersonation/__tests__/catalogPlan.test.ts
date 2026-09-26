@@ -67,6 +67,8 @@ describe('toStudyPlan', () => {
     expect(all.filter((s) => s.isEnrolled).map((s) => s.code)).toEqual(['EBC-FT']);
     expect(all.every((s) => !s.isFulfilled && s.enrollmentCount === 0)).toBe(true);
     expect(plan.blocks[2]!.groups[1]!.minCredits).toBe(2);
-    expect(plan.creditsRequired).toBeGreaterThan(0);
+    // The ECTS norm, not the plan's own sum: required credits plus elective
+    // minimums come to 160 for B-F, and the rest are free electives.
+    expect(plan.creditsRequired).toBe(180);
   });
 });

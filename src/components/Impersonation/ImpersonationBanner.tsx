@@ -7,7 +7,8 @@ import { logError } from '../../utils/reportError';
 /**
  * Not dismissible, on both trees: an admin must never mistake another
  * programme's timetable for their own. `row` sits above the phone's screens and
- * carries --safe-top itself (like DemoBanner); `floating` overlays the desktop.
+ * carries --safe-top itself (like DemoBanner); `floating` overlays the desktop at
+ * the bottom, clear of the top-centre toasts (SuggestionsToast, the Toaster).
  */
 export function ImpersonationBanner({ variant }: { variant: 'row' | 'floating' }) {
   const { t } = useTranslation();
@@ -33,7 +34,7 @@ export function ImpersonationBanner({ variant }: { variant: 'row' | 'floating' }
   const cls =
     variant === 'row'
       ? 'flex flex-shrink-0 items-center justify-center gap-3 bg-info/20 px-4 pb-1 pt-[calc(0.25rem_+_var(--safe-top,0px))] text-xs text-base-content'
-      : 'fixed left-1/2 top-2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border border-info/40 bg-base-100 px-4 py-1 text-xs text-base-content shadow';
+      : 'fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border border-info/40 bg-base-100 px-4 py-1 text-xs text-base-content shadow';
 
   return (
     <div className={cls} role="status">

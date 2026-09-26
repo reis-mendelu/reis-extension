@@ -32,6 +32,13 @@ describe('ImpersonationBanner', () => {
     const { container } = render(<ImpersonationBanner variant="floating" />);
     expect(container).toBeEmptyDOMElement();
   });
+  it('floats at the bottom on desktop, clear of the top-centre toasts', () => {
+    // SuggestionsToast and the Toaster both sit top-centre for a reis_admin.
+    useAppStore.setState(overlayWrite({ impersonation: active }));
+    render(<ImpersonationBanner variant="floating" />);
+    expect(screen.getByRole('status').className).toMatch(/\bbottom-4\b/);
+    expect(screen.getByRole('status').className).not.toMatch(/\btop-/);
+  });
   it('names programme, year and group, and exits on click', () => {
     const stop = vi.fn(async () => {});
     useAppStore.setState(overlayWrite({ impersonation: active, stopImpersonation: stop }));

@@ -106,40 +106,38 @@ export function subjectsToAttend(sem: CatalogSemester): CatalogRow[] {
   return out;
 }
 
-function groupCredits(g: CatalogGroup): number {
-  if (g.minCredits !== undefined) return g.minCredits;
-  if (OPTIONAL_RE.test(g.name)) return 0;
-  return g.rows.filter((r) => r.credits < PLACEHOLDER_CREDITS).reduce((a, r) => a + r.credits, 0);
-}
+/**
+ * ECTS: 30 credits a semester, so 180 for a 6-semester bachelor. The plan's own
+ * sum is lower (B-F: 160) — required credits plus elective minimums — because
+ * students fill the rest with free electives outside the plan.
+ */
+const CREDITS_PER_SEMESTER = 30;
 
 export function toStudyPlan(
   semesters: CatalogSemester[],
   title: string,
   enrolled: { semester: number; codes: Set<string> }
 ): StudyPlan {
-  let creditsRequired = 0;
   const blocks: SemesterBlock[] = semesters.map((s) => ({
     title: s.title,
-    groups: s.groups.map((g): SubjectGroup => {
-      creditsRequired += groupCredits(g);
-      return {
-        name: g.name,
-        statusDescription: '',
-        ...(g.minCount !== undefined ? { minCount: g.minCount } : {}),
-        ...(g.minCredits !== undefined ? { minCredits: g.minCredits } : {}),
-        subjects: g.rows.map((r) => ({
-          id: r.predmetId ?? r.code,
-          code: r.code,
-          name: r.name,
-          credits: r.credits,
-          type: r.completion,
-          isEnrolled: s.number === enrolled.semester && enrolled.codes.has(r.code),
-          isFulfilled: false,
-          enrollmentCount: 0,
-          rawStatusText: '',
-        })),
-      };
-    }),
+    groups: s.groups.map((g): SubjectGroup => ({
+      name: g.name,
+      statusDescription: '',
+      ...(g.minCount !== undefined ? { minCount: g.minCount } : {}),
+      ...(g.minCredits !== undefined ? { minCredits: g.minCredits } : {}),
+      subjects: g.rows.map((r) => ({
+        id: r.predmetId ?? r.code,
+        code: r.code,
+        name: r.name,
+        credits: r.credits,
+        type: r.completion,
+        isEnrolled: s.number === enrolled.semester && enrolled.codes.has(r.code),
+        isFulfilled: false,
+        enrollmentCount: 0,
+        rawStatusText: '',
+      })),
+    })),
   }));
+  const creditsRequired = CREDITS_PER_SEMESTER * semesters.length;
   return { title, isFulfilled: false, creditsAcquired: 0, creditsRequired, blocks };
 }
