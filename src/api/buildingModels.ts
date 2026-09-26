@@ -6,7 +6,11 @@ import type { BuildingModel, BuildingModelMeta } from '../types/buildingModel';
 
 // The same CDN and repository as the room outlines (campusMap.ts) — no new
 // host, so nothing changes in privacy/disclosures.ts.
-const CDN_BASE_URL = 'https://cdn.jsdelivr.net/gh/reis-mendelu/reis-data@main';
+// SPIKE (#462): a device build can pin the model to a reis-data commit that is
+// not on main yet (`VITE_BUILDING_MODEL_REF=<sha>`), since a phone has no way to
+// intercept requests the way the verify harness does.
+const MODEL_REF = import.meta.env?.VITE_BUILDING_MODEL_REF || 'main';
+const CDN_BASE_URL = `https://cdn.jsdelivr.net/gh/reis-mendelu/reis-data@${MODEL_REF}`;
 const CACHE_EXPIRY = 30 * 24 * 60 * 60 * 1000; // 30 days, like the room outlines
 
 async function download(file: string): Promise<BuildingModel> {

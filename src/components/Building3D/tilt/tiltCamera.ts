@@ -45,3 +45,74 @@ export function cameraPosition(
     target[1] - distance * Math.cos(p) * Math.cos(a),
   ];
 }
+
+/** The tilted map's camera, as numbers: where it looks, from how far, how steep. */
+export interface TiltCamera {
+  target: [number, number, number];
+  distance: number;
+  pitch: number;
+  /** Pixels to shift the view centre down (negative: up), so the target sits
+   *  mid-way through the band the sheet and search bar leave visible. */
+  offsetY: number;
+}
+
+export interface Band {
+  /** Canvas pixels: the visible band between the top chrome and the sheet. */
+  top: number;
+  bottom: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Frame a building of footprint `radius` and `height` (metres, local frame)
+ * inside the visible band, at `pitch`. The whole bounding sphere fits the band
+ * with `pad` to spare, whatever zoom the flat map was at.
+ */
+export function frameBuilding(
+  radius: number,
+  height: number,
+  fovDeg: number,
+  pitch: number,
+  band: Band,
+  pad = 1.12
+): TiltCamera {
+  const half = (fovDeg * Math.PI) / 360;
+  const bandHalf = Math.atan(Math.tan(half) * ((band.bottom - band.top) / band.height));
+  const widthHalf = Math.atan(Math.tan(half) * (band.width / band.height));
+  const sphere = Math.hypot(radius, height / 2);
+  return {
+    target: [0, height / 2, 0],
+    distance: (sphere / Math.sin(Math.min(bandHalf, widthHalf))) * pad,
+    pitch,
+    offsetY: (band.top + band.bottom) / 2 - band.height / 2,
+  };
+}
+
+/** Zoom and pan limits that keep the building in view. */
+export function clampTilt(cam: TiltCamera, framed: TiltCamera, radius: number): TiltCamera {
+  const distance = Math.min(framed.distance * 1.5, Math.max(framed.distance * 0.4, cam.distance));
+  const [x, y, z] = cam.target;
+  const off = Math.hypot(x - framed.target[0], z - framed.target[2]);
+  const k = off > radius * 1.5 ? (radius * 1.5) / off : 1;
+  return {
+    ...cam,
+    distance,
+    target: [
+      framed.target[0] + (x - framed.target[0]) * k,
+      y,
+      framed.target[2] + (z - framed.target[2]) * k,
+    ],
+  };
+}
+
+/** Straight interpolation between two camera states (the handover animation). */
+export function mixTilt(a: TiltCamera, b: TiltCamera, t: number): TiltCamera {
+  const m = (p: number, q: number) => p + (q - p) * t;
+  return {
+    target: [m(a.target[0], b.target[0]), m(a.target[1], b.target[1]), m(a.target[2], b.target[2])],
+    distance: m(a.distance, b.distance),
+    pitch: m(a.pitch, b.pitch),
+    offsetY: m(a.offsetY, b.offsetY),
+  };
+}

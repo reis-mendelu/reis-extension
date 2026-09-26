@@ -106,6 +106,7 @@ export function buildFloorSlab({
     });
     const edges = new LineSegments(new EdgesGeometry(geometry), edgeMaterial);
     edges.position.y = mesh.position.y + 0.01;
+    edges.userData.roomId = room.properties.id;
     group.add(edges);
   }
   return group;

@@ -14,6 +14,8 @@ export interface BuildingGroupInput {
   targetRoomId: number | null;
   colors: SlabColors;
   lookOf?: (room: RoomFeature, isTarget: boolean) => RoomLook;
+  /** Lift the storeys above the target (the card). The tilted map's glass needs no lid. */
+  cutaway?: boolean;
 }
 
 /** Everything a storey node needs to look like its role in the cutaway. */
@@ -49,7 +51,7 @@ function applyCutaway(root: Object3D, input: BuildingGroupInput) {
 export async function loadBuildingGroup(input: BuildingGroupInput): Promise<BuildingParts> {
   const { meta } = input.model;
   const gltf = await new GLTFLoader().parseAsync(input.model.glb, '');
-  applyCutaway(gltf.scene, input);
+  if (input.cutaway !== false) applyCutaway(gltf.scene, input);
   const target = meta.storeys.find((s) => s.level === input.targetLevel);
   const slab =
     target && input.rooms.length > 0
