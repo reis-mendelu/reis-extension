@@ -12,11 +12,14 @@ describe('lookupRoomPlace', () => {
     ['T18', 'poi', 1572], // building T pin, Černá Pole
     ['D03', 'poi', 1592], // IS calls the building "D_old"
     ['ZFAC1 (Led)', 'remote', -102], // Lednice campus
-    ['K01 (ČP II.)', 'building', 9000001], // Budova K, no plan: building Z's outline
     ['B1 CSA (TAK)', 'landmark', 1623], // CSA Hala B
     ['Design lab MENDELU', 'landmark', -201],
   ])('places %s on the map', (raw, kind, id) => {
     expect(lookupRoomPlace(raw)).toMatchObject({ kind, id });
+  });
+
+  it('leaves Budova K (Černá Pole II., no place on the map) unplaced', () => {
+    expect(lookupRoomPlace('K01 (ČP II.)')).toBeNull();
   });
 
   it('carries the room name without the campus', () => {

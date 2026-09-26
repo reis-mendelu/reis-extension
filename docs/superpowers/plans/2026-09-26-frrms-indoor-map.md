@@ -1218,3 +1218,14 @@ Rulings made while executing, each with what it costs if wrong:
 7. **E4 verification served `rooms-9000001.geojson` from the reis-data PR branch**
    through Playwright request interception, because reis-data#7 is not merged. No app
    code was changed for this.
+8. **Reversed after review (CodeRabbit on #451): K01–K03 are unplaced**, not pointed at building
+   Z. Plan amendment 4 had them on Z's outline as "no regression", but Budova K is a different
+   building, and the spec's order (a Budova K place, else a campus place, else unplaced) lands
+   on unplaced, because the map has neither. The cost is that a K01 lesson shows no map button,
+   which is better than naming the wrong building.
+9. **A printed campus is taken at its word, Černá Pole included.** "Z14 (ČP)" resolves to
+   nothing, and `lessonTarget` never retries the structured name when the printed room carries
+   a campus. Only a truly bare label may use the unique-campus fallback. (CodeRabbit on #451.)
+10. **`hasWalksTo` gates every route offer.** The first CI run caught that "Kam jdeš?" would
+    route to a Z lesson and fail "no walk to Z". It now opens the picker, as it did before Z
+    had a plan.

@@ -2,7 +2,6 @@ import roomsIndex from '../../data/map/rooms-index.json';
 import buildingsJson from '../../data/map/buildings.json';
 import { resolveRoomCode } from '../mobile/resolveRoomCode';
 import { bracketCampus, offMapCampus } from '../rooms/roomCampus';
-import { MAP_CAMPUS } from '../../data/map/isRoomLabels';
 import type { BlockLesson } from '../../types/schedule';
 import type { BuildingsMeta, RoomIndexEntry } from '../../types/campusMap';
 
@@ -97,11 +96,11 @@ export function lessonTarget(lesson: BlockLesson): RouteTarget | null {
   // Both strings name the same room, so a campus off the map in the first one
   // settles it ("ZFAC1 (Led)"): there is no room to find under either name.
   if (offMapCampus(lesson.room)) return null;
-  // Off Černá Pole the printed room is the only string to trust: its structured
-  // name ("K01", "Aula") would be read as a Černá Pole room.
-  const offCernaPole = (bracketCampus(lesson.room) ?? MAP_CAMPUS) !== MAP_CAMPUS;
+  // A printed campus makes the printed room the only string to trust: its
+  // structured name ("K01", "Aula", "Z14") drops the campus and would be read
+  // as a different room — on Černá Pole, or by the bare-label fallback.
   const resolved = resolveRoomCode(
-    offCernaPole ? [lesson.room] : [lesson.room, lesson.roomStructured?.name]
+    bracketCampus(lesson.room) ? [lesson.room] : [lesson.room, lesson.roomStructured?.name]
   );
   if (!resolved) return null;
   const entry = INDEX.find((e) => e.code === resolved.code);

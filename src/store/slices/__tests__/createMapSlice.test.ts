@@ -199,13 +199,11 @@ describe('mapSlice', () => {
     expect(s.activeFloorId).toBe(9000011);
   });
 
-  it('focusRoomByCode points Budova K (no plan, ČP II.) at building Z', () => {
+  it('focusRoomByCode shows nothing for Budova K, which the map has no place for', () => {
+    useAppStore.setState({ mapSelection: null, activeBuildingId: null });
     useAppStore.getState().focusRoomByCode('K01 (ČP II.)');
-    expect(useAppStore.getState().mapSelection).toMatchObject({
-      kind: 'poi',
-      poi: { name: 'Z' },
-      forRoom: 'K01',
-    });
+    expect(useAppStore.getState().mapSelection).toBeNull();
+    expect(useAppStore.getState().activeBuildingId).toBeNull();
   });
 
   it('focusRoomByCode points a room in a mapped building the map does not draw at that building', () => {

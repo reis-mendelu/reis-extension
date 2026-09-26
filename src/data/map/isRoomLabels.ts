@@ -60,13 +60,16 @@ for (const l of IS_ROOM_LABELS) {
 }
 
 /**
- * The map room IS gives `name` on `campus`. With no campus printed the room is on
- * Černá Pole — or, when IS uses that label on one other campus only ("Z14"), on
- * that one: a bare label that names one room anywhere is not ambiguous.
+ * The map room IS gives `name` on `campus`. A campus that was printed is taken
+ * at its word, Černá Pole included ("Z14 (ČP)" is no room). With none printed
+ * the room is on Černá Pole — or, when IS uses that label on one other campus
+ * only ("Z14"), on that one: a bare label that names one room anywhere is not
+ * ambiguous.
  */
-export function codeForLabel(name: string, campus: string = MAP_CAMPUS): string | undefined {
-  const exact = CODE_BY_LABEL.get(key(name, campus));
-  if (exact || campus !== MAP_CAMPUS) return exact;
+export function codeForLabel(name: string, campus?: string): string | undefined {
+  if (campus !== undefined) return CODE_BY_LABEL.get(key(name, campus));
+  const exact = CODE_BY_LABEL.get(key(name, MAP_CAMPUS));
+  if (exact) return exact;
   const only = CAMPUSES_BY_LABEL.get(fold(name));
   return only?.size === 1 ? CODE_BY_LABEL.get(key(name, [...only][0]!)) : undefined;
 }

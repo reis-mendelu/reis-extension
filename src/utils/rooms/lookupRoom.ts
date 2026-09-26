@@ -154,7 +154,8 @@ export function lookupRoomEntry(
   // Any other campus but Černá Pole ("Aula (ČP II.)"): its map rooms are exactly
   // the ones IS labels there — budova Z's — never a Černá Pole name or nickname,
   // which is how FRRMS's Aula stays out of building A.
-  const campus = bracketCampus(raw) ?? MAP_CAMPUS;
+  const printed = bracketCampus(raw);
+  const campus = printed ?? MAP_CAMPUS;
   if (campus !== MAP_CAMPUS) {
     for (const candidate of candidates(raw)) {
       const code = codeForLabel(candidate, campus);
@@ -167,7 +168,8 @@ export function lookupRoomEntry(
     const needle = normalizeRoomKey(candidate);
     if (!needle) continue;
     // Only when the index at hand has that room — a stub index falls through.
-    const isCode = codeForLabel(candidate);
+    // A printed "(ČP)" is taken at its word; only a bare label may fall back.
+    const isCode = codeForLabel(candidate, printed ?? undefined);
     if (isCode) {
       const hit = index.find((e) => e.code === isCode);
       if (hit) return hit;

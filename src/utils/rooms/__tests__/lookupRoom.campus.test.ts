@@ -41,6 +41,11 @@ describe('lookupRoomEntry, with a campus in the brackets', () => {
     expect(lookupRoomEntry('K01 (ČP II.)', INDEX)).toBeNull();
   });
 
+  // Naming Černá Pole explicitly is not a bare label: no fallback to ČP II.
+  it('an explicit Černá Pole campus never falls back to building Z', () => {
+    expect(lookupRoomEntry('Z14 (ČP)', INDEX)).toBeNull();
+  });
+
   it.each(['Aula', 'Aula (ČP)'])('still finds building A’s Aula for %s', (raw) => {
     expect(lookupRoomEntry(raw, INDEX)?.code).toBe('BA01N3054');
   });
@@ -64,11 +69,10 @@ describe('lookupRoomTarget for FRRMS’s Aula', () => {
     });
   });
 
-  it('shows Budova K (no plan) on building Z’s outline', () => {
-    expect(lookupRoomTarget('K01 (ČP II.)', INDEX)).toEqual({
-      kind: 'place',
-      place: { kind: 'building', id: 9000001, label: 'K01' },
-    });
+  // Budova K is another building on Černá Pole II. that the map has no place
+  // for; building Z would name the wrong one.
+  it('shows nothing for Budova K rather than the wrong building', () => {
+    expect(lookupRoomTarget('K01 (ČP II.)', INDEX)).toBeNull();
   });
 
   // Without a bracket the room is on Černá Pole, and that Aula is a map room.

@@ -168,6 +168,15 @@ describe('lessonTarget', () => {
     expect(nextLessonTarget([aula], MON_10)?.buildingName).toBe('Z');
   });
 
+  it('does not retry the structured name when the printed room names Černá Pole', () => {
+    // "Z14 (ČP)" is no room; its structured "Z14" would be FRRMS's on ČP II.
+    const z = {
+      ...lesson('20260921', '13:00', 'Z14 (ČP)'),
+      roomStructured: { name: 'Z14', id: '1' },
+    };
+    expect(lessonTarget(z)).toBeNull();
+  });
+
   it('never falls back to the bare structured name for a ČP II. room', () => {
     // K01 (Budova K) has no plan; its structured name must not be tried as a
     // Černá Pole room.
