@@ -7,6 +7,14 @@ import { metresPerDegree } from '../projection';
  * then does it tilt. Frames are the model's local one: x east, z SOUTH, metres.
  */
 
+/** The flat map's view at the moment it hands over. */
+export interface MapView {
+  center: [number, number]; // [lng, lat]
+  zoom: number;
+  width: number;
+  height: number;
+}
+
 /** "Straight down", short of 90° so the camera's up vector stays defined. */
 export const FLAT_PITCH = 89.9;
 

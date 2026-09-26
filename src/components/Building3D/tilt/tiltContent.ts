@@ -13,7 +13,7 @@ import type { Projector } from '../projection';
 import { buildingOutlines } from './mapOverlays';
 import { buildTileGround } from './tileGround';
 import { glassShell, LOOK, roomFade } from './tiltLook';
-import type { MapView } from './tiltScene';
+import type { MapView } from './tiltCamera';
 
 const PIN_ABOVE_ROOF = 16; // metres: the stem rises clear of the roofline, so the label never sits on the building
 

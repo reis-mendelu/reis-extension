@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { createTiltScene, type MapView, type TiltScene } from './tiltScene';
+import { createTiltScene, type TiltScene } from './tiltScene';
 import { resolveThemeColor } from '../themeColor';
 import { flatMapLook } from './mapOverlays';
 import { applyTilt, groundAt, screenOf } from './cameraRig';
-import type { Band } from './tiltCamera';
+import type { Band, MapView } from './tiltCamera';
 import type { BuildingModel } from '../../../types/buildingModel';
 import type { RoomFeature } from '../../../types/campusMap';
 

@@ -615,7 +615,7 @@ export function MapCanvas() {
     <>
       <div ref={ref} className="absolute inset-0" />
       {/* SPIKE behind ?map3d=1: the map tilts into 3D around building Q. */}
-      <TiltToggle isPhone={isPhone} />
+      <TiltToggle />
     </>
   );
 }

@@ -580,6 +580,15 @@ export interface MapSlice {
   buildingModels: Record<number, import('../types/buildingModel').BuildingModel | 'failed'>;
   /** Load a building's 3D model if it has one. `loadMapBuilding` calls it. */
   loadBuildingModel: (id: number) => Promise<void>;
+  /**
+   * SPIKE (#462): the map tilted into 3D around a building. `view` is the flat
+   * map's view at the handover, which the tilted scene starts from.
+   */
+  mapTilt: {
+    phase: 'flat' | '3d' | 'leaving';
+    view: import('../components/Building3D/tilt/tiltCamera').MapView | null;
+  };
+  setMapTilt: (next: MapSlice['mapTilt']) => void;
   // --- Society events on the map ---
   mapEvents: MapEvent[];
   mapEventsLoaded: boolean;

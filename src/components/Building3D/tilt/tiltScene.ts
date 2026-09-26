@@ -20,15 +20,11 @@ import {
   localMetresPerPixel,
   mixTilt,
   type Band,
+  type MapView,
   type TiltCamera,
 } from './tiltCamera';
 
-export interface MapView {
-  center: [number, number]; // [lng, lat]
-  zoom: number;
-  width: number;
-  height: number;
-}
+export type { MapView };
 
 export interface TiltSceneInput extends BuildingGroupInput {
   canvas: HTMLCanvasElement;
