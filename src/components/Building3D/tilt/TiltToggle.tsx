@@ -1,10 +1,11 @@
-import { lazy, Suspense, useMemo } from 'react';
+import { lazy, Suspense, useEffect, useMemo } from 'react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { targetFromSelection } from '../roomTarget';
 import { floorText } from '../floorText';
 import { TILT_SPIKE } from './tiltFlag';
-import { leaveTilt, tiltClosed } from './tiltActions';
+import { enterTilt, leaveTilt, tiltClosed } from './tiltActions';
+import { getMapInstance } from '../../CampusMap/mapInstance';
 
 const TiltCanvas = lazy(() => import('./TiltCanvas'));
 
@@ -19,7 +20,8 @@ function TiltLayer() {
   const building = useAppStore((s) => s.activeBuildingId);
   const model = useAppStore((s) => (building === null ? undefined : s.buildingModels[building]));
   const rooms = useAppStore((s) => (building === null ? undefined : s.roomsByBuilding[building]));
-  const target = targetFromSelection(useAppStore((s) => s.mapSelection));
+  const selection = useAppStore((s) => s.mapSelection);
+  const target = targetFromSelection(selection);
   const here = target !== null && target.buildingId === building;
   const level = here ? target.floorLevel : null;
   const roomId = here ? target.roomId : null;
@@ -28,6 +30,34 @@ function TiltLayer() {
     () => (rooms ? rooms.features.filter((f) => f.properties.floorLevel === level) : []),
     [rooms, level]
   );
+  // Selecting a room in the building (a tap, search, a lesson's pin) tilts the
+  // map straight into it — the room lit in the glass building, no card. Waits
+  // for the map to finish flying there, since the tilt starts from its view.
+  useEffect(() => {
+    if (!here || useAppStore.getState().mapTilt.phase !== 'flat') return;
+    // SPIKE: `?map3d=hold` diffs the handover against Leaflet, so it tilts on the button only.
+    if (new URLSearchParams(window.location.search).get('map3d') === 'hold') return;
+    const map = getMapInstance();
+    if (!map) return;
+    let done = false;
+    const go = () => {
+      if (done) return;
+      done = true;
+      void enterTilt({ load: false });
+    };
+    const fallback = setTimeout(go, 900);
+    const onMoved = () => setTimeout(go, 250);
+    map.once('moveend', onMoved);
+    return () => {
+      done = true;
+      clearTimeout(fallback);
+      map.off('moveend', onMoved);
+    };
+    // Keyed on the selection object: each new selection tilts once; leaving to
+    // 2D keeps the same object and so does not bounce straight back.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selection]);
+
   if (phase === 'flat' || !view || !model || model === 'failed') return null;
   return (
     <Suspense fallback={null}>

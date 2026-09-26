@@ -20,6 +20,8 @@ export interface TiltCanvasProps {
   onClosed: () => void;
 }
 
+const FADE_MS = 300; // the cross-fade from Leaflet, matched to duration-300 below
+
 /**
  * The part of the canvas the map's own chrome leaves visible: under the search
  * bar, above the phone's sheet. Read from the DOM, as panPinClearOfSheet does —
@@ -102,11 +104,15 @@ export default function TiltCanvas(props: TiltCanvasProps) {
     };
     (window as unknown as { __reisTilt?: typeof probe }).__reisTilt = probe;
     void scene.ready.then(() => {
+      // Fade in while still flat, then tilt. The flat frame matches Leaflet's
+      // but for its room labels and hairline strokes; faded, those dissolve
+      // instead of popping.
       host.classList.remove('invisible');
+      requestAnimationFrame(() => host.classList.remove('opacity-0'));
       canvas.dataset.ready = 'flat';
       // SPIKE: `?map3d=hold` stops on the handover frame, to diff it against Leaflet.
       if (new URLSearchParams(window.location.search).get('map3d') === 'hold') return;
-      scene.enter(() => (canvas.dataset.ready = 'true'));
+      setTimeout(() => scene.enter(() => (canvas.dataset.ready = 'true')), FADE_MS);
     });
     return () => {
       scene.dispose();
@@ -123,7 +129,10 @@ export default function TiltCanvas(props: TiltCanvasProps) {
   }, [leaving, onClosed]);
 
   return (
-    <div ref={ref} className="invisible absolute inset-0 z-[450] overflow-hidden">
+    <div
+      ref={ref}
+      className="invisible absolute inset-0 z-[450] overflow-hidden opacity-0 transition-opacity duration-300"
+    >
       {pinText && (
         // Floats over the always-light basemap, so it carries the search bar's own
         // dark surface. Positioned by the scene every frame; no React re-render.

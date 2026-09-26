@@ -3,14 +3,13 @@ import {
   Color,
   EdgesGeometry,
   Float32BufferAttribute,
-  LineBasicMaterial,
-  LineSegments,
   Mesh,
   MeshBasicMaterial,
   type Group,
   type Material,
   type Object3D,
 } from 'three';
+import { fatMaterial, fatSegments, LineMaterial } from './fatLines';
 
 /**
  * The tilted map's look: Q as glass with crisp edges, its target floor as quiet
@@ -24,16 +23,17 @@ export const LOOK = {
   roofOpacity: 0.34,
   edge: '#1e293b',
   /** Corner lines: the building's shape, too faint to form a cage. */
-  edgeOpacity: 0.3,
+  edgeOpacity: 0.22,
   /** The target storey's ring, in the room's colour. */
-  ringOpacity: 0.85,
+  ringOpacity: 0.7,
   /** The roofline carries the building's outline. */
-  roofEdgeOpacity: 0.6,
-  room: '#ffffff',
-  roomOpacity: 0.22,
-  roomEdge: '#94a3b8',
-  /** The floor's other rooms: there if you look, never first. */
-  roomEdgeOpacity: 0.4,
+  roofEdgeOpacity: 0.45,
+  /** The floor's other rooms: a clear light plan to place the lit room against —
+   *  readable, but uncoloured, so the room is still the only colour on it. */
+  room: '#f8fafc',
+  roomOpacity: 0.88,
+  roomEdge: '#475569',
+  roomEdgeOpacity: 0.75,
   target: '#c2410c',
   targetEdge: '#7c2d12',
 } as const;
@@ -83,20 +83,9 @@ export function glassShell(root: Object3D, targetLevel: number | null) {
   });
   const roof = wall.clone();
   roof.opacity = LOOK.roofOpacity;
-  const edge = new LineBasicMaterial({
-    color: LOOK.edge,
-    transparent: true,
-    opacity: LOOK.edgeOpacity,
-    toneMapped: false,
-  });
-  const roofEdge = edge.clone();
-  roofEdge.opacity = LOOK.roofEdgeOpacity;
-  const ring = new LineBasicMaterial({
-    color: LOOK.target,
-    transparent: true,
-    opacity: LOOK.ringOpacity,
-    toneMapped: false,
-  });
+  const edge = fatMaterial(LOOK.edge, 1, LOOK.edgeOpacity);
+  const roofEdge = fatMaterial(LOOK.edge, 1.25, LOOK.roofEdgeOpacity);
+  const ring = fatMaterial(LOOK.target, 1.5, LOOK.ringOpacity);
   const meshes: Mesh[] = [];
   root.traverse((o) => o instanceof Mesh && meshes.push(o));
   for (const mesh of meshes) {
@@ -110,19 +99,19 @@ export function glassShell(root: Object3D, targetLevel: number | null) {
     const isRoof = ROOFS.has(name);
     mesh.material = isRoof ? roof : wall;
     if (isRoof) {
-      mesh.add(new LineSegments(new EdgesGeometry(mesh.geometry, 25), roofEdge));
+      mesh.add(fatSegments(new EdgesGeometry(mesh.geometry, 25), roofEdge));
       continue;
     }
     // Storey lines on every face, front and back through the glass, made a cage;
     // only the corners stay, plus the target storey's ring.
-    mesh.add(new LineSegments(edgesWhere(mesh.geometry, 'vertical'), edge));
+    mesh.add(fatSegments(edgesWhere(mesh.geometry, 'vertical'), edge));
     if (targetLevel !== null && levelOf(mesh) === targetLevel)
-      mesh.add(new LineSegments(edgesWhere(mesh.geometry, 'horizontal'), ring));
+      mesh.add(fatSegments(edgesWhere(mesh.geometry, 'horizontal'), ring));
   }
 }
 
 interface Fade {
-  material: MeshBasicMaterial | LineBasicMaterial;
+  material: MeshBasicMaterial | LineMaterial;
   from: { color: Color; opacity: number };
   to: { color: Color; opacity: number };
 }
@@ -147,8 +136,9 @@ export function roomFade(slab: Group, targetRoomId: number | null) {
           opacity: isTarget ? 1 : LOOK.roomOpacity,
         },
       });
-    } else if (o instanceof LineSegments && o.material instanceof LineBasicMaterial) {
-      const m = o.material;
+    } else if ((o as { material?: unknown }).material instanceof LineMaterial) {
+      const m = (o as unknown as { material: LineMaterial }).material;
+      m.transparent = true;
       fades.push({
         material: m,
         from: { color: m.color.clone(), opacity: m.opacity },

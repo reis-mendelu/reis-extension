@@ -10,6 +10,7 @@ import {
   Shape,
   ShapeGeometry,
   type BufferGeometry,
+  type Object3D,
 } from 'three';
 import type { RoomFeature } from '../../types/campusMap';
 import type { Projector } from './projection';
@@ -37,6 +38,8 @@ interface SlabInput {
   colors: SlabColors;
   /** Override the look per room — the tilted map matches the flat map's colours. */
   lookOf?: (room: RoomFeature, isTarget: boolean) => RoomLook;
+  /** Build a room's outline from its edge set (the tilted map draws real widths). */
+  makeEdges?: (edges: BufferGeometry, color: string, opacity: number) => Object3D;
 }
 
 // Just above the storey's own floor, so the rooms never z-fight with it.
@@ -67,6 +70,7 @@ export function buildFloorSlab({
   targetRoomId,
   colors,
   lookOf,
+  makeEdges,
 }: SlabInput): Group {
   const group = new Group();
   for (const room of rooms) {
@@ -99,12 +103,14 @@ export function buildFloorSlab({
     mesh.position.y = elevation + LIFT_OFF_FLOOR;
     mesh.userData.roomId = room.properties.id;
     group.add(mesh);
-    const edgeMaterial = new LineBasicMaterial({
-      color: look?.edge ?? colors.edge,
-      transparent: true,
-      opacity: look ? 1 : 0.6,
-    });
-    const edges = new LineSegments(new EdgesGeometry(geometry), edgeMaterial);
+    const edgeColor = look?.edge ?? colors.edge;
+    const edgeOpacity = look ? 1 : 0.6;
+    const edges = makeEdges
+      ? makeEdges(new EdgesGeometry(geometry), edgeColor, edgeOpacity)
+      : new LineSegments(
+          new EdgesGeometry(geometry),
+          new LineBasicMaterial({ color: edgeColor, transparent: true, opacity: edgeOpacity })
+        );
     edges.position.y = mesh.position.y + 0.01;
     edges.userData.roomId = room.properties.id;
     group.add(edges);

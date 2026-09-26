@@ -5,6 +5,7 @@ import { EventDetailCard } from './EventDetailCard';
 import { GardenPlaceCard } from './GardenPlaceCard';
 import { Building3DCard } from '../Building3D/Building3DCard';
 import { targetFromSelection } from '../Building3D/roomTarget';
+import { TILT_SPIKE } from '../Building3D/tilt/tiltFlag';
 import landmarksJson from '../../data/map/landmarks.json';
 import type { Landmark } from '../../types/campusMap';
 
@@ -75,7 +76,8 @@ export function DetailPanel() {
       {/* Q leads with the building cut open at this floor; other rooms, and
           devices that cannot draw it, get nothing extra (the map shows the floor). */}
       <div className="empty:hidden pb-2">
-        <Building3DCard target={targetFromSelection(sel)} />
+        {/* SPIKE (#462): the map itself tilts into the building instead. */}
+        <Building3DCard target={TILT_SPIKE ? null : targetFromSelection(sel)} />
       </div>
       <h3 className="font-bold text-base-content">{name}</h3>
       {r && <p className="text-sm text-base-content/60">{r.label}</p>}

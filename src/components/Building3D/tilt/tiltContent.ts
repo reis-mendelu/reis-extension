@@ -2,12 +2,12 @@ import {
   Box3,
   BufferGeometry,
   Float32BufferAttribute,
-  Line,
-  LineBasicMaterial,
   Vector3,
   type Group,
+  type Object3D,
   type Scene,
 } from 'three';
+import { fatMaterial, fatSegments } from './fatLines';
 import { loadBuildingGroup, type BuildingGroupInput } from '../buildingGroup';
 import type { Projector } from '../projection';
 import { buildingOutlines } from './mapOverlays';
@@ -23,7 +23,7 @@ export interface TiltContent {
   slab: Group | null;
   slabElevation: number;
   fade: ((k: number) => void) | null;
-  stem: Line | null;
+  stem: Object3D | null;
   /** The label pin's anchor, above the roof over the lit room. */
   pin: Vector3 | null;
 }
@@ -68,7 +68,12 @@ export function addTiltContent(
   });
   scene.add(near.group, far.group, buildingOutlines(project, groundY + 0.1, model.meta.buildingId));
 
-  const building = loadBuildingGroup({ ...input, cutaway: false }).then((parts) => {
+  const building = loadBuildingGroup({
+    ...input,
+    cutaway: false,
+    // Leaflet strokes rooms 1 px wide; so does the handover frame.
+    makeEdges: (edges, color, opacity) => fatSegments(edges, fatMaterial(color, 1, opacity)),
+  }).then((parts) => {
     content.shell = parts.shell;
     content.slab = parts.slab;
     content.slabElevation = parts.slabElevation;
@@ -90,7 +95,7 @@ export function addTiltContent(
       'position',
       new Float32BufferAttribute([c.x, top, c.z, c.x, content.pin.y, c.z], 3)
     );
-    content.stem = new Line(g, new LineBasicMaterial({ color: LOOK.target, toneMapped: false }));
+    content.stem = fatSegments(g, fatMaterial(LOOK.target, 2));
     scene.add(content.stem);
   });
   const ready = Promise.all([

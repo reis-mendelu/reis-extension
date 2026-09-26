@@ -14,6 +14,12 @@ export interface BuildingGroupInput {
   targetRoomId: number | null;
   colors: SlabColors;
   lookOf?: (room: RoomFeature, isTarget: boolean) => RoomLook;
+  /** Room outlines with a real width (the tilted map); thin lines otherwise. */
+  makeEdges?: (
+    edges: import('three').BufferGeometry,
+    color: string,
+    opacity: number
+  ) => import('three').Object3D;
   /** Lift the storeys above the target (the card). The tilted map's glass needs no lid. */
   cutaway?: boolean;
 }
@@ -63,6 +69,7 @@ export async function loadBuildingGroup(input: BuildingGroupInput): Promise<Buil
           targetRoomId: input.targetRoomId,
           colors: input.colors,
           lookOf: input.lookOf,
+          makeEdges: input.makeEdges,
         })
       : null;
   return { shell: gltf.scene, slab, slabElevation: target?.elevation ?? 0 };

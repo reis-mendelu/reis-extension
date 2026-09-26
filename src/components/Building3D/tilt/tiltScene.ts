@@ -11,6 +11,7 @@ import type { BuildingGroupInput } from '../buildingGroup';
 import { makeProjector } from '../projection';
 import { applyTilt, screenOf } from './cameraRig';
 import { addTiltContent } from './tiltContent';
+import { sizeFatLines } from './fatLines';
 import { attachTiltGestures } from './tiltGestures';
 import {
   clampTilt,
@@ -114,7 +115,10 @@ export function createTiltScene(input: TiltSceneInput) {
   };
 
   const { content, ready: loaded } = addTiltContent(scene, input, project, groundY, () => render());
-  const ready = loaded.then(() => render());
+  const ready = loaded.then(() => {
+    sizeFatLines(scene, view.width, view.height);
+    render();
+  });
 
   const animate = (ms: number, step: (t: number) => void, done?: () => void) => {
     cancelAnimationFrame(frame);

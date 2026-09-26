@@ -12,14 +12,41 @@ function showLeafletControls(show: boolean) {
     ?.classList.toggle('invisible', !show);
 }
 
-/** Tilt the map into 3D around the building it is showing. */
-export async function enterTilt() {
+/** Resolves once the building's model and floor plan are in the store (or never). */
+function whenLoaded(building: number): Promise<boolean> {
+  const ready = () => {
+    const s = useAppStore.getState();
+    const model = s.buildingModels[building];
+    if (model === 'failed') return false;
+    return model && s.roomsByBuilding[building] ? true : null;
+  };
+  return new Promise((resolve) => {
+    const now = ready();
+    if (now !== null) return resolve(now);
+    const stop = useAppStore.subscribe(() => {
+      const r = ready();
+      if (r === null) return;
+      stop();
+      resolve(r);
+    });
+  });
+}
+
+/**
+ * Tilt the map into 3D around the building it is showing. `load` is for the
+ * button, an intent that may arrive before anything is loaded; the automatic
+ * tilt on a room selection only waits for what the selection already loads.
+ */
+export async function enterTilt({ load = true }: { load?: boolean } = {}) {
   const map = getMapInstance();
   const building = useAppStore.getState().activeBuildingId;
   if (!map || building === null || !hasBuildingModel(building) || !hasWebGL2()) return;
-  // The intent loads what the 3D map needs, the way a hover loads the card's.
-  await useAppStore.getState().loadMapBuilding(building);
-  await useAppStore.getState().loadBuildingModel(building);
+  if (load) {
+    await useAppStore.getState().loadMapBuilding(building);
+    await useAppStore.getState().loadBuildingModel(building);
+  }
+  if (!(await whenLoaded(building))) return;
+  if (useAppStore.getState().mapTilt.phase !== 'flat') return;
   const c = map.getCenter();
   const size = map.getSize();
   showLeafletControls(false);

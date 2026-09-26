@@ -2,8 +2,6 @@ import {
   BufferGeometry,
   Float32BufferAttribute,
   Group,
-  LineLoop,
-  LineBasicMaterial,
   Mesh,
   MeshBasicMaterial,
   Shape,
@@ -19,6 +17,7 @@ import {
 import type { BuildingsMeta, RoomFeature } from '../../../types/campusMap';
 import type { RoomLook } from '../floorSlabs';
 import type { Projector } from '../projection';
+import { fatMaterial, fatSegments } from './fatLines';
 
 const META = buildingsJson as BuildingsMeta;
 
@@ -55,7 +54,8 @@ export function buildingOutlines(project: Projector, y: number, exceptId: number
     depthWrite: false,
     toneMapped: false,
   });
-  const line = new LineBasicMaterial({ color: BUILDING_STYLE.color, toneMapped: false });
+  // Leaflet strokes these 2 px wide (BUILDING_STYLE.weight).
+  const line = fatMaterial(BUILDING_STYLE.color!, BUILDING_STYLE.weight ?? 2);
   for (const b of META.buildings) {
     if (b.id === exceptId) continue;
     const ring = b.outline.coordinates[0]?.map((p) => project(p));
@@ -67,14 +67,12 @@ export function buildingOutlines(project: Projector, y: number, exceptId: number
     const mesh = new Mesh(geometry, fill);
     mesh.position.y = y;
     const edge = new BufferGeometry();
-    edge.setAttribute(
-      'position',
-      new Float32BufferAttribute(
-        ring.flatMap(([x, z]) => [x, y + 0.02, z]),
-        3
-      )
-    );
-    group.add(mesh, new LineLoop(edge, line));
+    const loop = ring.flatMap(([x, z], i) => {
+      const [nx, nz] = ring[(i + 1) % ring.length]!;
+      return [x, y + 0.02, z, nx, y + 0.02, nz];
+    });
+    edge.setAttribute('position', new Float32BufferAttribute(loop, 3));
+    group.add(mesh, fatSegments(edge, line));
   }
   return group;
 }
