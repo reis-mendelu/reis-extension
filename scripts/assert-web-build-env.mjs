@@ -14,7 +14,14 @@
 // (PATH, HOME, CI, ...) is left alone, since only VITE_* is what Vite inlines
 // and rejecting anything broader would break the build on every machine.
 
-const ALLOWED_VITE_VARS = ['VITE_DEV_SOCIETY', 'VITE_PREVIEW_BUILD', 'VITE_PREVIEW_DATA'];
+// VITE_MAP3D is the 3D map's on-switch (src/data/map/buildingModels.ts) — a flag, set on
+// the Vercel project so the test preview shows the Q tilt; it carries no credential.
+const ALLOWED_VITE_VARS = [
+  'VITE_DEV_SOCIETY',
+  'VITE_PREVIEW_BUILD',
+  'VITE_PREVIEW_DATA',
+  'VITE_MAP3D',
+];
 
 // Vercel injects its own build metadata under this prefix and there is no
 // setting that fully stops it: turning off "Automatically expose System
