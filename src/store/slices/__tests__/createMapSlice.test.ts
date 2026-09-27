@@ -95,6 +95,7 @@ beforeEach(() => {
     mapFocusRequest: 0,
     mapEvents: [],
     mapEventsLoaded: false,
+    mapEventsFetchedAt: null,
     mapPanelTab: 'places',
     placingEvent: false,
     draftCoord: null,
@@ -318,6 +319,32 @@ describe('mapSlice', () => {
     expect(vi.mocked(fetchMapEvents)).toHaveBeenCalledTimes(1);
     expect(useAppStore.getState().mapEvents.length).toBe(MOCK_EVENTS.length);
     expect(useAppStore.getState().mapEventsLoaded).toBe(true);
+  });
+
+  it('reloadMapEvents keeps the last list and loaded flag when a reload fails', async () => {
+    useAppStore.setState({ mapEvents: MOCK_EVENTS, mapEventsLoaded: true });
+    vi.mocked(fetchMapEvents).mockResolvedValueOnce(null);
+    await useAppStore.getState().reloadMapEvents();
+    expect(useAppStore.getState().mapEvents).toEqual(MOCK_EVENTS);
+    expect(useAppStore.getState().mapEventsLoaded).toBe(true);
+  });
+
+  describe('refreshMapEventsIfStale', () => {
+    it('refetches only after the gap has passed', async () => {
+      useAppStore.setState({ mapEventsFetchedAt: Date.now() });
+      await useAppStore.getState().refreshMapEventsIfStale(60_000);
+      expect(vi.mocked(fetchMapEvents)).not.toHaveBeenCalled();
+
+      useAppStore.setState({ mapEventsFetchedAt: Date.now() - 61_000 });
+      await useAppStore.getState().refreshMapEventsIfStale(60_000);
+      expect(vi.mocked(fetchMapEvents)).toHaveBeenCalledTimes(1);
+    });
+
+    it('always refetches when nothing has ever been fetched', async () => {
+      useAppStore.setState({ mapEventsFetchedAt: null });
+      await useAppStore.getState().refreshMapEventsIfStale(60_000);
+      expect(vi.mocked(fetchMapEvents)).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('focusEventById from a PIN click (no opts) selects without moving the camera', async () => {

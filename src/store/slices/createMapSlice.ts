@@ -68,6 +68,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   mapFocusRequest: 0,
   mapEvents: [],
   mapEventsLoaded: false,
+  mapEventsFetchedAt: null,
   mapPanelTab: 'events',
   societyMapEvents: [],
   placingEvent: false,
@@ -330,7 +331,14 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
       // event can never be newer than the catalog that names its society. The
       // mapping uses whatever catalog is in hand; display resolves reactively.
       const [events] = await Promise.all([fetchMapEvents(get().societies), get().loadSocieties()]);
-      set({ mapEvents: events.map(locateEvent), mapEventsLoaded: true });
+      // A failed fetch keeps whatever is on screen: wiping it would show "no
+      // events" on every network blip, and the resume refresh makes blips common.
+      if (events === null) return;
+      set({
+        mapEvents: events.map(locateEvent),
+        mapEventsLoaded: true,
+        mapEventsFetchedAt: Date.now(),
+      });
       // Attendance is loaded here, with the events, rather than by the cards:
       // one RPC covers every visible event, and components do not fetch.
       // Detached on purpose — a card renders with 0/0 while this is in flight,
@@ -339,6 +347,15 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
     } catch (err) {
       logError('MapSlice.reloadMapEvents', err);
     }
+  },
+
+  // For a long-lived Capacitor process: the boot snapshot never refreshes on its
+  // own, so resume calls this. The gap stops a quick tab-away-and-back from
+  // refetching every time.
+  refreshMapEventsIfStale: async (minGapMs) => {
+    const at = get().mapEventsFetchedAt;
+    if (at !== null && Date.now() - at < minGapMs) return;
+    await get().reloadMapEvents();
   },
 
   focusEventById: (id, opts) => {

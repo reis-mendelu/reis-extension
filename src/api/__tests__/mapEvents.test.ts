@@ -1,24 +1,31 @@
 import { describe, it, expect, vi } from 'vitest';
 import { toMapEvent, fetchMapEvents } from '../mapEvents';
-import { isPublicEvent } from '../../components/CampusMap/eventWindow';
+import { isFinishedEvent } from '../../components/CampusMap/eventWindow';
 import { BUNDLED_SOCIETIES } from '../../data/societies';
+import { supabase } from '../../services/spolky/supabaseClient';
+
+vi.mock('../../services/spolky/supabaseClient', () => ({
+  supabase: { from: vi.fn() },
+}));
+
+// Shared row fixture for the catalog-fetch tests below.
+const base = {
+  id: 'd',
+  association_id: 'esn',
+  title: 'City Game',
+  category: 'culture',
+  date: '2026-07-10',
+  end_date: null,
+  time: '18:00',
+  venue_kind: 'offcampus',
+  room_code: null,
+  coord_lng: 16.6,
+  coord_lat: 49.2,
+  location: null,
+  url: null,
+};
 
 describe('toMapEvent — the description', () => {
-  const base = {
-    id: 'd',
-    association_id: 'esn',
-    title: 'City Game',
-    category: 'culture',
-    date: '2026-07-10',
-    end_date: null,
-    time: '18:00',
-    venue_kind: 'offcampus',
-    room_code: null,
-    coord_lng: 16.6,
-    coord_lat: 49.2,
-    location: null,
-    url: null,
-  };
   it('carries what the society wrote, trimmed', () => {
     expect(toMapEvent({ ...base, body: '  Bring a pen.\n' }, BUNDLED_SOCIETIES).description).toBe(
       'Bring a pen.'
@@ -129,49 +136,13 @@ describe('toMapEvent', () => {
     expect(toMapEvent(row, BUNDLED_SOCIETIES).coord).toBeNull();
   });
 
-  it('isPublicEvent gates past and far-future dates out', () => {
+  // The catalog has no upper bound any more (Task 4) — only a finished event is
+  // ever excluded, never a merely far-future one.
+  it('isFinishedEvent gates past dates out, not far-future ones', () => {
     const now = new Date('2026-07-06T09:00:00');
-    expect(isPublicEvent('2026-07-01', now)).toBe(false); // past
-    expect(isPublicEvent('2026-07-10', now)).toBe(true); // in window
-    expect(isPublicEvent('2026-08-30', now)).toBe(false); // far future
-  });
-});
-
-vi.mock('../../services/spolky/supabaseClient', () => {
-  const iso = (d: number) => {
-    const t = new Date();
-    t.setDate(t.getDate() + d);
-    return t.toISOString().slice(0, 10);
-  };
-  const mk = (id: string, date: string) => ({
-    id,
-    association_id: 'supef',
-    title: id,
-    category: 'party',
-    date,
-    end_date: null,
-    time: null,
-    venue_kind: 'offcampus',
-    room_code: null,
-    coord_lng: 16.6,
-    coord_lat: 49.2,
-    location: null,
-    url: null,
-  });
-  const rows = [mk('past', iso(-5)), mk('live', iso(3)), mk('future', iso(40))];
-  return {
-    supabase: {
-      from: () => ({
-        select: () => ({ order: () => Promise.resolve({ data: rows, error: null }) }),
-      }),
-    },
-  };
-});
-
-describe('fetchMapEvents public window filter', () => {
-  it('fetchMapEvents returns only events inside the public window', async () => {
-    const events = await fetchMapEvents(BUNDLED_SOCIETIES);
-    expect(events.map((e) => e.id)).toEqual(['live']); // past + far-future filtered out
+    expect(isFinishedEvent({ date: '2026-07-01', endDate: null }, now)).toBe(true); // past
+    expect(isFinishedEvent({ date: '2026-07-10', endDate: null }, now)).toBe(false); // upcoming
+    expect(isFinishedEvent({ date: '2026-08-30', endDate: null }, now)).toBe(false); // far future — no longer excluded
   });
 });
 
@@ -197,5 +168,60 @@ describe('toMapEvent — a place-TBA row', () => {
     );
     expect(e.venueKind).toBe('tba');
     expect(e.coord).toBeNull();
+  });
+});
+
+describe('fetchMapEvents — the catalog', () => {
+  it('bounds the query to events not finished yet, and keeps far-future rows', async () => {
+    const or = vi.fn().mockReturnThis();
+    const order = vi.fn().mockResolvedValue({
+      data: [
+        {
+          ...base,
+          id: 'far',
+          date: '2099-11-23',
+          end_date: '2099-11-29',
+          venue_kind: 'tba',
+          coord_lng: null,
+          coord_lat: null,
+          time: null,
+        },
+      ],
+      error: null,
+    });
+    vi.mocked(supabase.from).mockReturnValue({ select: () => ({ or, order }) } as never);
+    const events = await fetchMapEvents(BUNDLED_SOCIETIES);
+    expect(or).toHaveBeenCalledWith(
+      expect.stringMatching(/^date\.gte\.\d{4}-\d{2}-\d{2},end_date\.gte\.\d{4}-\d{2}-\d{2}$/)
+    );
+    expect(events?.map((e) => e.id)).toEqual(['far']);
+  });
+
+  it('returns null — not [] — when the request fails', async () => {
+    vi.mocked(supabase.from).mockReturnValue({
+      select: () => ({
+        or: () => ({ order: () => Promise.resolve({ data: null, error: { message: 'x' } }) }),
+      }),
+    } as never);
+    expect(await fetchMapEvents(BUNDLED_SOCIETIES)).toBeNull();
+  });
+
+  // Replaces the old "public window" assertion: the catalog has no upper
+  // bound any more, so a far-future row is kept, but a finished one is still
+  // dropped client-side (the server bound is coarse — see fetchMapEvents).
+  it('drops finished events and keeps far-future ones', async () => {
+    const now = new Date();
+    const iso = (d: number) => {
+      const t = new Date(now);
+      t.setDate(t.getDate() + d);
+      return t.toISOString().slice(0, 10);
+    };
+    const mk = (id: string, date: string) => ({ ...base, id, date });
+    const rows = [mk('past', iso(-5)), mk('live', iso(3)), mk('future', iso(400))];
+    const or = vi.fn().mockReturnThis();
+    const order = vi.fn().mockResolvedValue({ data: rows, error: null });
+    vi.mocked(supabase.from).mockReturnValue({ select: () => ({ or, order }) } as never);
+    const events = await fetchMapEvents(BUNDLED_SOCIETIES);
+    expect(events?.map((e) => e.id)).toEqual(['live', 'future']);
   });
 });
