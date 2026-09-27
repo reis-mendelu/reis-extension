@@ -54,6 +54,19 @@ describe('shippedAndroidPermissions', () => {
     expect(shippedAndroidPermissions(app, [])).toEqual(['INTERNET']);
   });
 
+  it('reads single-quoted android:name and tools:node attributes', () => {
+    const app = manifest(`
+      <uses-permission android:name='android.permission.INTERNET' />
+      <uses-permission android:name='android.permission.CAMERA' tools:node='remove' />`);
+    const plugin = manifest(`<uses-permission android:name='android.permission.CAMERA'/>`);
+    expect(shippedAndroidPermissions(app, [plugin])).toEqual(['INTERNET']);
+  });
+
+  it('throws on a uses-permission whose name it cannot read', () => {
+    const plugin = manifest(`<uses-permission android:maxSdkVersion="28" />`);
+    expect(() => shippedAndroidPermissions(manifest(''), [plugin])).toThrow(/cannot read/);
+  });
+
   it('treats an unterminated comment as running to the end of the file', () => {
     const app = manifest(`
       <uses-permission android:name="android.permission.INTERNET" />

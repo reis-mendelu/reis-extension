@@ -19,8 +19,9 @@ import { join, resolve } from 'node:path';
 // `apkanalyzer manifest permissions` on the release APK.
 
 const USES = /<uses-permission(?:-sdk-23)?\b[^>]*>/g;
-const NAME = /\bandroid:name\s*=\s*"([^"]+)"/;
-const REMOVE = /\btools:node\s*=\s*"remove"/;
+// XML allows either quote style; the backreference makes the closing one match.
+const NAME = /\bandroid:name\s*=\s*(["'])(.+?)\1/;
+const REMOVE = /\btools:node\s*=\s*(["'])remove\1/;
 const PREFIX = 'android.permission.';
 
 interface Declared {
@@ -47,9 +48,11 @@ function usesPermissions(xml: string): Declared {
     // Skipped by position rather than stripped from the string, so a comment
     // can never recombine into markup around it.
     if (comments.some(([s, e]) => index >= s && index < e)) continue;
-    const name = NAME.exec(el)?.[1];
+    const name = NAME.exec(el)?.[2];
+    // An element this parser cannot read must fail the check, not vanish from it.
+    if (!name) throw new Error(`privacy:check: cannot read the permission name in ${el}`);
     // `${applicationId}.…` is the app's own permission, not one it asks for.
-    if (!name || name.startsWith('${')) continue;
+    if (name.startsWith('${')) continue;
     const short = name.startsWith(PREFIX) ? name.slice(PREFIX.length) : name;
     (REMOVE.test(el) ? out.remove : out.add).push(short);
   }
