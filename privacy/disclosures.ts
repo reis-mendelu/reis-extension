@@ -146,7 +146,7 @@ export const FLOWS: Flow[] = [
     files: ['src/services/spolky/spolkyService.ts'],
     calls: ['increment_post_view', 'increment_post_click'],
     policyRows: [['Society post view or click', 'you open one', 'a post id']],
-    stores: { apple: [], play: [], firefox: [], cws: [] },
+    stores: { apple: [], play: [], firefox: ['technicalAndInteraction'], cws: [] },
   },
   {
     id: 'map_event_views',
@@ -162,7 +162,7 @@ export const FLOWS: Flow[] = [
         "that event's id and nothing else — a counter on the event, with no identifier of yours attached",
       ],
     ],
-    stores: { apple: [], play: [], firefox: [], cws: [] },
+    stores: { apple: [], play: [], firefox: ['technicalAndInteraction'], cws: [] },
   },
   {
     id: 'feature_counters',

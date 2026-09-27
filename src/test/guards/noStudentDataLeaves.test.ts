@@ -338,17 +338,37 @@ describe('no student data leaves the device', () => {
     ).toEqual([]);
   });
 
-  // Firefox 140+ enforces the manifest's data_collection_permissions as consent,
-  // and the daily count, feature counters and NPS are "technicalAndInteraction"
-  // data there. A background sender that skips the check sends on Firefox after
-  // the student switched it off. RSVP is absent on purpose: it sends only when
-  // the student taps Going / Interested, and the count is the feature itself.
-  it('background senders of the install id honour Firefox consent', () => {
-    for (const path of ['src/api/feedback.ts', 'src/api/featureUsage.ts']) {
+  // Firefox 140+ enforces the manifest's data_collection_permissions as consent.
+  // Mozilla's add-on policy defines user interaction data as "how the user
+  // interacts with Firefox and the installed add-ons, metrics for product
+  // improvement" — with no carve-out for data that carries no identifier. So
+  // the daily count, feature counters and NPS are "technicalAndInteraction"
+  // data, and so are the identifier-free post view/click and map-event view
+  // counters: a post id is not a person, but the count is still a metric.
+  //
+  // The only way out is Mozilla's implicit consent, for a send that is "a
+  // direct, immediate consequence of a single, deliberate user command". RSVP
+  // qualifies and is absent on purpose: the student taps Going / Interested
+  // and the count IS the feature. A view counter does not: the student opened
+  // a post or a card, which works without the counter. "It has no identifier"
+  // is therefore not a reason to drop a gate here.
+  // https://extensionworkshop.com/documentation/publish/add-on-policies/
+  it('senders of interaction data honour Firefox consent', () => {
+    const gated: Array<[string, number]> = [
+      // trackDailyUsage and the NPS answer.
+      ['src/api/feedback.ts', 2],
+      // trackFeatureSignal and trackMapEventView, one check each.
+      ['src/api/featureUsage.ts', 2],
+      // trackNotificationsViewed and trackNotificationClick.
+      ['src/services/spolky/spolkyService.ts', 2],
+    ];
+    for (const [path, senders] of gated) {
       const src = readFileSync(join(ROOT, path), 'utf-8');
-      expect(src, `${path} must check hasDataConsent before sending`).toMatch(
-        /hasDataConsent\('technicalAndInteraction'\)/
-      );
+      const checks = src.match(/hasDataConsent\('technicalAndInteraction'\)/g) ?? [];
+      expect(
+        checks.length,
+        `${path} must check hasDataConsent before each send`
+      ).toBeGreaterThanOrEqual(senders);
     }
     const manifest = readFileSync(join(ROOT, 'wxt.config.ts'), 'utf-8');
     expect(manifest).toMatch(/optional:\s*\[[^\]]*'technicalAndInteraction'/);

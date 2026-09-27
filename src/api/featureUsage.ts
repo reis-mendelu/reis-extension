@@ -107,6 +107,13 @@ export async function trackMapEventView(eventId: string): Promise<void> {
   if (!writesAllowed()) return;
   if (viewedEvents.has(eventId)) return;
   viewedEvents.add(eventId);
+  // Gated although it carries no identifier: Mozilla counts interaction metrics
+  // as technicalAndInteraction data, and the student opened a card, not a
+  // counter — the card works without it, so this is no implicit-consent send.
+  if (!(await hasDataConsent('technicalAndInteraction'))) {
+    viewedEvents.delete(eventId);
+    return;
+  }
   try {
     const { error } = await supabase.rpc('increment_event_map_view', { row_id: eventId });
     if (error) {
