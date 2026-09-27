@@ -49,7 +49,7 @@ describe('cutawayPlan', () => {
 
 describe('storeyCeiling', () => {
   it("is the top of the room's storey: what the cut view draws", () => {
-    expect(storeyCeiling(storeys, 1, 99)).toBe(storeys[3].elevation + 3.5);
+    expect(storeyCeiling(storeys, 1, 99)).toBe(storeys[3]!.elevation + 3.5);
   });
 
   it('falls back to the whole building for an unknown floor', () => {
