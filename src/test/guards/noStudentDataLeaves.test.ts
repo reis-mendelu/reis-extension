@@ -354,21 +354,24 @@ describe('no student data leaves the device', () => {
   // is therefore not a reason to drop a gate here.
   // https://extensionworkshop.com/documentation/publish/add-on-policies/
   it('senders of interaction data honour Firefox consent', () => {
-    const gated: Array<[string, number]> = [
-      // trackDailyUsage and the NPS answer.
-      ['src/api/feedback.ts', 2],
-      // trackFeatureSignal and trackMapEventView, one check each.
-      ['src/api/featureUsage.ts', 2],
-      // trackNotificationsViewed and trackNotificationClick.
-      ['src/services/spolky/spolkyService.ts', 2],
+    // Every Supabase RPC in these files is an interaction-data send, so each
+    // needs its own gate: a new counter added without one fails here. Comments
+    // are stripped first so a mention of either string cannot pad the count.
+    const gated = [
+      'src/api/feedback.ts', // trackDailyUsage and the NPS answer
+      'src/api/featureUsage.ts', // trackFeatureSignal and trackMapEventView
+      'src/services/spolky/spolkyService.ts', // post views and clicks
     ];
-    for (const [path, senders] of gated) {
-      const src = readFileSync(join(ROOT, path), 'utf-8');
-      const checks = src.match(/hasDataConsent\('technicalAndInteraction'\)/g) ?? [];
-      expect(
-        checks.length,
-        `${path} must check hasDataConsent before each send`
-      ).toBeGreaterThanOrEqual(senders);
+    for (const path of gated) {
+      const code = readFileSync(join(ROOT, path), 'utf-8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/(^|\s)\/\/.*$/gm, '$1');
+      const sends = code.match(/\.rpc\(/g)?.length ?? 0;
+      const checks = code.match(/hasDataConsent\('technicalAndInteraction'\)/g)?.length ?? 0;
+      expect(sends, `${path} no longer sends anything — drop it from this list`).toBeGreaterThan(0);
+      expect(checks, `${path} must check hasDataConsent before each of its ${sends} sends`).toBe(
+        sends
+      );
     }
     const manifest = readFileSync(join(ROOT, 'wxt.config.ts'), 'utf-8');
     expect(manifest).toMatch(/optional:\s*\[[^\]]*'technicalAndInteraction'/);
