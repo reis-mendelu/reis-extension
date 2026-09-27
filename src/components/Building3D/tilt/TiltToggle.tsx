@@ -5,7 +5,7 @@ import { targetFromSelection } from '../roomTarget';
 import { floorText } from '../floorText';
 import { TILT_SPIKE } from './tiltFlag';
 import { enterTilt, leaveTilt, tiltClosed } from './tiltActions';
-import { getMapInstance } from '../../CampusMap/mapInstance';
+import { getMapInstance, subscribeMapInstance } from '../../CampusMap/mapInstance';
 
 const TiltCanvas = lazy(() => import('./TiltCanvas'));
 
@@ -37,21 +37,29 @@ function TiltLayer() {
     if (!here || useAppStore.getState().mapTilt.phase !== 'flat') return;
     // SPIKE: `?map3d=hold` diffs the handover against Leaflet, so it tilts on the button only.
     if (new URLSearchParams(window.location.search).get('map3d') === 'hold') return;
-    const map = getMapInstance();
-    if (!map) return;
+    // A lesson's map pin mounts the map tab and selects the room in one go, and
+    // React runs this (child) effect before MapCanvas creates the Leaflet map —
+    // so wait for the instance rather than giving up on a null one.
     let done = false;
+    let fallback: ReturnType<typeof setTimeout> | undefined;
+    let map: ReturnType<typeof getMapInstance> = null;
     const go = () => {
       if (done) return;
       done = true;
       void enterTilt({ load: false });
     };
-    const fallback = setTimeout(go, 900);
     const onMoved = () => setTimeout(go, 250);
-    map.once('moveend', onMoved);
+    const stop = subscribeMapInstance((m) => {
+      if (!m || map) return;
+      map = m;
+      fallback = setTimeout(go, 900);
+      m.once('moveend', onMoved);
+    });
     return () => {
       done = true;
+      stop();
       clearTimeout(fallback);
-      map.off('moveend', onMoved);
+      map?.off('moveend', onMoved);
     };
     // Keyed on the selection object: each new selection tilts once; leaving to
     // 2D keeps the same object and so does not bounce straight back.
