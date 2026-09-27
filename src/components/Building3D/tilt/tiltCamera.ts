@@ -124,3 +124,19 @@ export function mixTilt(a: TiltCamera, b: TiltCamera, t: number): TiltCamera {
     offsetY: m(a.offsetY, b.offsetY),
   };
 }
+
+/** Keeps a label's gutter from the view's edges. */
+export const LABEL_GUTTER = 16;
+
+/**
+ * Where to centre a label `labelWidth` wide that the scene placed at `x`, so it
+ * stays whole inside a view `viewWidth` wide: a room on the building's edge put
+ * its label half off screen. A label too wide to fit is centred.
+ */
+export function clampLabelX(x: number, labelWidth: number, viewWidth: number): number {
+  const half = labelWidth / 2;
+  const min = LABEL_GUTTER + half;
+  const max = viewWidth - LABEL_GUTTER - half;
+  if (min > max) return viewWidth / 2;
+  return Math.min(max, Math.max(min, x));
+}

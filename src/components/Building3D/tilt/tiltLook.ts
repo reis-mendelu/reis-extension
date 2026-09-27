@@ -8,30 +8,28 @@ import {
   type Object3D,
 } from 'three';
 import { fatMaterial, fatSegments } from './fatLines';
+import { cutawayPlan, type StoreyRole } from '../cutaway';
+import type { BuildingModelStorey } from '../../../types/buildingModel';
 
 /**
- * The tilted map's look: Q as glass with crisp edges, its target floor as quiet
- * outlines, and one room that is not quiet at all. The room colour is orange-700
- * rather than the flat map's orange-600: 600 is 2.9:1 against the light
- * basemap, 700 is 4.2:1 — the room must read at a glance.
+ * The tilted map's look: Q cut open at the room's storey. Everything above it is
+ * removed — ghosted storeys in front of a room weaken the depth cues and turn the
+ * view into a cage of lines, and no indoor map or BIM viewer draws them — the
+ * room's storey is glass on a solid floor, everything below one plain solid, so
+ * the building's height says which floor it is. Orange belongs to the room alone.
+ * The room colour is orange-700 rather than the flat map's orange-600: 600 is
+ * 2.9:1 against the light basemap, 700 is 4.2:1 — the room must read at a glance.
  */
 export const LOOK = {
   glass: '#ffffff',
   glassOpacity: 0.2,
   roofOpacity: 0.34,
   edge: '#1e293b',
-  /** Corner lines: the building's shape, too faint to form a cage. */
+  /** Corner lines of the room's storey: its shape, too faint to form a cage. */
   edgeOpacity: 0.22,
-  /** The target storey's ring, in the room's colour. */
-  ringOpacity: 0.7,
-  /** The roofline carries the building's outline. */
-  roofEdgeOpacity: 0.45,
-  /** The floor's other rooms: a clear light plan to place the lit room against —
-   *  readable, but uncoloured, so the room is still the only colour on it. */
-  room: '#f8fafc',
-  roomOpacity: 0.88,
-  roomEdge: '#475569',
-  roomEdgeOpacity: 0.75,
+  /** The storeys below the room: one plain solid, slate-200. */
+  below: '#e2e8f0',
+  /** The room's floor, a solid plate: the rooms sit on white, not on grey. */
   plate: '#f8fafc',
   plateOpacity: 0.94,
   target: '#c2410c',
@@ -43,24 +41,22 @@ export const LOOK = {
   targetEdge: '#ffffff',
 } as const;
 
-const HIDDEN = new Set(['window', 'slab', 'floor']);
 const ROOFS = new Set(['gravel', 'silver', 'glassRoof']);
 
-/** Keep an edge set's vertical segments, or its horizontal ones. */
-function edgesWhere(geometry: BufferGeometry, keep: 'vertical' | 'horizontal'): BufferGeometry {
+/** Keep an edge set's vertical segments. */
+function verticalEdges(geometry: BufferGeometry): BufferGeometry {
   const all = new EdgesGeometry(geometry, 25).getAttribute('position');
   const out: number[] = [];
   for (let i = 0; i < all.count; i += 2) {
-    const vertical = Math.abs(all.getY(i) - all.getY(i + 1)) > 0.01;
-    if (vertical === (keep === 'vertical'))
-      out.push(
-        all.getX(i),
-        all.getY(i),
-        all.getZ(i),
-        all.getX(i + 1),
-        all.getY(i + 1),
-        all.getZ(i + 1)
-      );
+    if (Math.abs(all.getY(i) - all.getY(i + 1)) <= 0.01) continue;
+    out.push(
+      all.getX(i),
+      all.getY(i),
+      all.getZ(i),
+      all.getX(i + 1),
+      all.getY(i + 1),
+      all.getZ(i + 1)
+    );
   }
   const g = new BufferGeometry();
   g.setAttribute('position', new Float32BufferAttribute(out, 3));
@@ -73,27 +69,25 @@ const levelOf = (o: Object3D): number | undefined => {
   return undefined;
 };
 
-/**
- * Turn the modelled facades into glass: one translucent skin, its corners and
- * roofline drawn — and the target storey ringed in the room's colour, so the
- * floor reads from the outside before the room does.
- */
-export function glassShell(root: Object3D, targetLevel: number | null) {
-  const wall = new MeshBasicMaterial({
-    color: LOOK.glass,
-    transparent: true,
-    opacity: LOOK.glassOpacity,
-    depthWrite: false,
-    toneMapped: false,
-  });
-  const roof = wall.clone();
-  roof.opacity = LOOK.roofOpacity;
-  const edge = fatMaterial(LOOK.edge, 1, LOOK.edgeOpacity);
-  const roofEdge = fatMaterial(LOOK.edge, 1.25, LOOK.roofEdgeOpacity);
-  const ring = fatMaterial(LOOK.target, 1.5, LOOK.ringOpacity);
-  // The target storey's floor is a solid light plate: the room sits on white
-  // instead of the basemap's grey footprint seen through glass, and the plate
-  // traces the whole floor at its height — the floor reads before the room does.
+/** Cut the modelled building open at `targetLevel` (see LOOK). */
+export function cutShell(
+  root: Object3D,
+  targetLevel: number | null,
+  storeys: BuildingModelStorey[]
+) {
+  const roles = new Map<number, StoreyRole>(
+    cutawayPlan(storeys, targetLevel).map((p) => [p.level, p.role])
+  );
+  const glass = (opacity: number) =>
+    new MeshBasicMaterial({
+      color: LOOK.glass,
+      transparent: true,
+      opacity,
+      depthWrite: false,
+      toneMapped: false,
+    });
+  const wall = glass(LOOK.glassOpacity);
+  const roof = glass(LOOK.roofOpacity);
   const plate = new MeshBasicMaterial({
     color: LOOK.plate,
     transparent: true,
@@ -101,30 +95,33 @@ export function glassShell(root: Object3D, targetLevel: number | null) {
     depthWrite: false,
     toneMapped: false,
   });
+  const below = new MeshBasicMaterial({ color: LOOK.below, toneMapped: false });
+  const edge = fatMaterial(LOOK.edge, 1, LOOK.edgeOpacity);
   const meshes: Mesh[] = [];
   root.traverse((o) => o instanceof Mesh && meshes.push(o));
   for (const mesh of meshes) {
     const name = (mesh.material as Material).name;
-    if (name === 'floor' && targetLevel !== null && levelOf(mesh) === targetLevel) {
-      mesh.material = plate;
+    const level = levelOf(mesh);
+    const role = level === undefined ? 'below' : (roles.get(level) ?? 'below');
+    if (role === 'lifted') {
+      mesh.visible = false;
       continue;
     }
-    // Windows and slab bands are detail that competes with the room; floor caps
-    // stack into milk. Storey lines come from the wall edges instead.
-    if (HIDDEN.has(name)) {
+    // Windows and slab bands are detail that competes with the room.
+    if (name === 'window' || name === 'slab') {
       mesh.visible = false;
+      continue;
+    }
+    if (role === 'below') {
+      mesh.material = below;
+      continue;
+    }
+    if (name === 'floor') {
+      mesh.material = plate;
       continue;
     }
     const isRoof = ROOFS.has(name);
     mesh.material = isRoof ? roof : wall;
-    if (isRoof) {
-      mesh.add(fatSegments(new EdgesGeometry(mesh.geometry, 25), roofEdge));
-      continue;
-    }
-    // Storey lines on every face, front and back through the glass, made a cage;
-    // only the corners stay, plus the target storey's ring.
-    mesh.add(fatSegments(edgesWhere(mesh.geometry, 'vertical'), edge));
-    if (targetLevel !== null && levelOf(mesh) === targetLevel)
-      mesh.add(fatSegments(edgesWhere(mesh.geometry, 'horizontal'), ring));
+    if (!isRoof) mesh.add(fatSegments(verticalEdges(mesh.geometry), edge));
   }
 }

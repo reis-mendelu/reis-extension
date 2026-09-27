@@ -5,7 +5,9 @@ import { flatMapLook } from './mapOverlays';
 import { applyTilt, groundAt, screenOf } from './cameraRig';
 import { markWebGL2Unavailable } from '../webgl';
 import { logError } from '../../../utils/reportError';
-import type { Band, MapView } from './tiltCamera';
+import { clampLabelX, type Band, type MapView } from './tiltCamera';
+import { createLabelLayer } from './roomLabelLayer';
+import type { ScreenBox } from './roomLabels';
 import type { BuildingModel } from '../../../types/buildingModel';
 import type { RoomFeature } from '../../../types/campusMap';
 
@@ -65,6 +67,8 @@ export default function TiltCanvas(props: TiltCanvasProps) {
   useEffect(() => {
     const host = ref.current;
     if (!host) return;
+    const roomLabels = createLabelLayer(host);
+    let pinBox: ScreenBox | null = null;
     const buildScene = (canvas: HTMLCanvasElement, host: HTMLElement) =>
       createTiltScene({
         canvas,
@@ -80,8 +84,20 @@ export default function TiltCanvas(props: TiltCanvasProps) {
           const pin = pinRef.current;
           if (!pin) return;
           pin.classList.toggle('opacity-0', !at);
-          if (at) pin.style.transform = `translate(${at.x}px, ${at.y}px) translate(-50%, -100%)`;
+          pinBox = null;
+          // Kept whole on screen: a room on the building's edge put it half off.
+          if (at) {
+            const [w, h] = [pin.offsetWidth, pin.offsetHeight];
+            const x = clampLabelX(at.x, w, view.width);
+            pin.style.transform = `translate(${x}px, ${at.y}px) translate(-50%, -100%)`;
+            pinBox = { x, y: at.y - h / 2, w, h };
+          }
         },
+        onRoomLabels: (labels, room) =>
+          roomLabels(
+            labels,
+            [pinBox, room].filter((b): b is ScreenBox => b !== null)
+          ),
         colors: {
           room: resolveThemeColor(host, 'bg-base-300', '#d4d4d4'),
           target: resolveThemeColor(host, 'bg-primary', '#16a34a'),

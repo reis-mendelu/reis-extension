@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { PerspectiveCamera, Vector3 } from 'three';
-import { cameraPosition, flatDistance, localMetresPerPixel, FLAT_PITCH } from '../tiltCamera';
+import {
+  cameraPosition,
+  clampLabelX,
+  flatDistance,
+  localMetresPerPixel,
+  FLAT_PITCH,
+} from '../tiltCamera';
 
 const LAT = 49.2096;
 
@@ -31,5 +37,21 @@ describe('tiltCamera', () => {
     expect(x).toBeCloseTo(10, 6);
     expect(z).toBeGreaterThan(20);
     expect(y).toBeCloseTo(100 * Math.sin(Math.PI / 4), 6);
+  });
+});
+
+describe('clampLabelX', () => {
+  // Q39 sits on Q's west edge: framed on the building, its label ran off screen.
+  it('keeps a label whole inside the view, with a gutter', () => {
+    expect(clampLabelX(10, 120, 390)).toBe(16 + 60);
+    expect(clampLabelX(385, 120, 390)).toBe(390 - 16 - 60);
+  });
+
+  it('leaves a label that fits where the scene put it', () => {
+    expect(clampLabelX(200, 120, 390)).toBe(200);
+  });
+
+  it('centres a label wider than the view', () => {
+    expect(clampLabelX(10, 500, 390)).toBe(195);
   });
 });

@@ -40,19 +40,13 @@ function whenLoaded(building: number): Promise<boolean> {
   });
 }
 
-/**
- * Tilt the map into 3D around the building it is showing. `load` is for the
- * button, an intent that may arrive before anything is loaded; the automatic
- * tilt on a room selection only waits for what the selection already loads.
- */
-export async function enterTilt({ load = true }: { load?: boolean } = {}) {
+/** Tilt the map into 3D around the building it is showing (the 3D button). */
+export async function enterTilt() {
   const map = getMapInstance();
   const building = useAppStore.getState().activeBuildingId;
   if (!map || building === null || !hasBuildingModel(building) || !hasWebGL2()) return;
-  if (load) {
-    await useAppStore.getState().loadMapBuilding(building);
-    await useAppStore.getState().loadBuildingModel(building);
-  }
+  await useAppStore.getState().loadMapBuilding(building);
+  await useAppStore.getState().loadBuildingModel(building);
   if (!(await whenLoaded(building))) return;
   if (useAppStore.getState().mapTilt.phase !== 'flat') return;
   const c = map.getCenter();

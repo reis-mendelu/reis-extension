@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cutawayPlan, LIFT_M } from '../cutaway';
+import { cutawayPlan, isUnderground, LIFT_M, storeyCeiling } from '../cutaway';
 
 const storeys = [-2, -1, 0, 1, 2, 3, 4, 5].map((level, i) => ({
   level,
@@ -44,5 +44,29 @@ describe('cutawayPlan', () => {
     const plan = cutawayPlan(storeys, 5);
     expect(plan.some((p) => p.role === 'lifted')).toBe(false);
     expect(plan.find((p) => p.level === 5)?.role).toBe('target');
+  });
+});
+
+describe('storeyCeiling', () => {
+  it("is the top of the room's storey: what the cut view draws", () => {
+    expect(storeyCeiling(storeys, 1, 99)).toBe(storeys[3].elevation + 3.5);
+  });
+
+  it('falls back to the whole building for an unknown floor', () => {
+    expect(storeyCeiling(storeys, null, 28)).toBe(28);
+    expect(storeyCeiling(storeys, 9, 28)).toBe(28);
+  });
+});
+
+describe('isUnderground', () => {
+  // Q: level -1's ceiling is at 8.2 m, the ground at 4.57 m — its floor is below it.
+  it('is true when the storey floor is below the ground', () => {
+    expect(isUnderground(storeys, -1, 4.57)).toBe(true);
+    expect(isUnderground(storeys, -2, 4.57)).toBe(true);
+  });
+
+  it('is false for a storey standing on or above the ground', () => {
+    expect(isUnderground(storeys, 0, 4.57)).toBe(false);
+    expect(isUnderground(storeys, null, 4.57)).toBe(false);
   });
 });

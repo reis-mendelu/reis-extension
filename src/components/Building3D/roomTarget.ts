@@ -31,3 +31,18 @@ export function targetFromSelection(sel: MapSelection | null): RoomTarget | null
   }
   return null;
 }
+
+/**
+ * Where the tilted map cuts the building, and which room it lights: the floor
+ * the floor column shows (tapped while tilted, it moves the cut), the room only
+ * when it is on that floor of this building.
+ */
+export function cutTarget(
+  target: RoomTarget | null,
+  buildingId: number | null,
+  floorLevel: number | null
+): { level: number | null; room: RoomTarget | null } {
+  const here = target !== null && target.buildingId === buildingId ? target : null;
+  const level = floorLevel ?? here?.floorLevel ?? null;
+  return { level, room: here && here.floorLevel === level ? here : null };
+}
