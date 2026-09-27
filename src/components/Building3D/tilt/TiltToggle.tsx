@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { targetFromSelection } from '../roomTarget';
-import { floorText } from '../floorText';
+import { floorText } from '../../CampusMap/floorText';
 import { map3dEnabled } from '../../../data/map/buildingModels';
 import { enterTilt, leaveTilt, tiltClosed } from './tiltActions';
 import { getMapInstance, subscribeMapInstance } from '../../CampusMap/mapInstance';

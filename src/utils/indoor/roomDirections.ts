@@ -71,10 +71,12 @@ interface Stack {
 function stack(shapes: RoomFeature[]): Stack[] {
   const stacks: Stack[] = [];
   for (const f of shapes) {
+    const level = f.properties.floorLevel;
+    if (level === null) continue;
     const c = centre(f);
     const s = stacks.find((x) => metres(x.at, c) <= STACK_M);
-    if (s) s.levels.add(f.properties.floorLevel);
-    else stacks.push({ at: c, levels: new Set([f.properties.floorLevel]) });
+    if (s) s.levels.add(level);
+    else stacks.push({ at: c, levels: new Set([level]) });
   }
   return stacks;
 }
@@ -109,6 +111,7 @@ export function roomDirections(
 ): Step[] | null {
   const mid = middle(rooms);
   const level = target.properties.floorLevel;
+  if (level === null) return null;
   const room = centre(target);
   const enter: Step = { kind: 'enter', side: sideOf(entrance.at, mid), level: entrance.level };
   if (level === entrance.level)

@@ -987,7 +987,22 @@
     "walkMinutes": "{n} min",
     "routeToRoom": "Doveď mě do {room}",
     "routeTakeMeThere": "Najdi cestu",
-    "routePickBuilding": "Kam jdeš?"
+    "routePickBuilding": "Kam jdeš?",
+    "directions": {
+      "title": "Cesta",
+      "enter": "{side} vchod",
+      "stairs": "{side} schodiště",
+      "stairsOrLift": "{side} schodiště nebo výtah",
+      "up": "↑ {floor}",
+      "down": "↓ {floor}",
+      "byStairs": "hned u schodiště",
+      "side": {
+        "north": "severní",
+        "south": "jižní",
+        "east": "východní",
+        "west": "západní"
+      }
+    }
   },
   "admin": {
     "email": "E-mail",

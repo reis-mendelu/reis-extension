@@ -14,6 +14,8 @@ import { hasBuildingModel, map3dEnabled } from '../../data/map/buildingModels';
 import { useAppStore } from '../../store/useAppStore';
 import { TiltToggle } from '../../components/Building3D/tilt/TiltToggle';
 import { TiltButton } from '../../components/Building3D/tilt/TiltButton';
+import { RoomDirections } from '../../components/CampusMap/RoomDirections';
+import { RoomDirectionsNote } from '../../components/mobile/screens/map/RoomDirectionsNote';
 
 /**
  * The 3D map (a room in building Q tilts the map into the building) is merged
@@ -25,6 +27,10 @@ import { TiltButton } from '../../components/Building3D/tilt/TiltButton';
  * no layer over the map (src/components/CampusMap/MapCanvas.tsx), and no three.js
  * chunk. Those two CampusMap files are shared, so the extension and the phone
  * get the same answer.
+ *
+ * Room directions (floor first: the entrance, the staircase, the room) ride the
+ * same flag, in the detail panel, the phone's sheet and the tablet's rail. Off,
+ * a selected room shows what it showed before: no steps, no note.
  *
  * The earlier design, a 3D card in the map sheet, rail, detail panel and hover
  * card, was rejected and removed; the last test keeps it from creeping back in
@@ -60,6 +66,20 @@ describe('the 3D map is dormant', () => {
       createElement('div', null, createElement(TiltButton), createElement(TiltToggle))
     );
     expect(container.innerHTML).toBe('<div></div>');
+  });
+
+  it('shows no room directions, on any shell, for a selected room in Q', () => {
+    useAppStore.setState({
+      mapSelection: {
+        kind: 'roomRef',
+        entry: { buildingId: Q, placeId: 171, floorLevel: 3, name: 'Q39' },
+      } as never,
+    });
+    const { container } = render(
+      createElement('div', null, createElement(RoomDirections), createElement(RoomDirectionsNote))
+    );
+    expect(container.innerHTML).toBe('<div></div>');
+    useAppStore.setState({ mapSelection: null });
   });
 
   it('is reached only through the map, never a panel or card', () => {
