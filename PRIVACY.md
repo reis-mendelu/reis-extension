@@ -46,7 +46,7 @@ If you use the built-in "Report Bug / Feedback" feature, the following data is s
 
 ### 5. Firefox: consent for each kind of data
 Firefox asks you directly about everything above. Nothing is **required** to use reIS, and each item is optional:
-- **Technical and interaction data** covers the daily usage count, the feature counters, the NPS rating and a report's error log. Firefox shows it as a switch when you install reIS and in `about:addons` → reIS → *Permissions and data*. While it is off, reIS sends none of them from Firefox.
+- **Technical and interaction data** covers the daily usage count, the feature counters, the view and click counters on society posts, the view counter on map events, the NPS rating and a report's error log. Firefox shows it as a switch when you install reIS and in `about:addons` → reIS → *Permissions and data*. While it is off, reIS sends none of them from Firefox.
 - **Personal communications** (the text of a report), **personally identifying information** (the optional contact email) and **website content** (an attached screenshot) are asked for when you press Send on a report, and only for what that report contains. If you decline, the report is not sent.
 
 ## Data Storage & Security

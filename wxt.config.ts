@@ -124,8 +124,9 @@ export default defineConfig({
         // src/utils/firefoxDataConsent.ts. Nothing is REQUIRED to use reIS.
         // Optional, and only ever sent once granted:
         //  - technicalAndInteraction: the daily install count, feature
-        //    counters, NPS rating, and a report's error log. Firefox shows it
-        //    as a toggle at install and in about:addons.
+        //    counters, the society post and map-event view/click counters,
+        //    NPS rating, and a report's error log. Firefox shows it as a
+        //    toggle at install and in about:addons.
         //  - personalCommunications: the text of a report (Nahlásit chybu).
         //  - personallyIdentifyingInfo: the optional contact email on it.
         //  - websiteContent: a screenshot attached to it.

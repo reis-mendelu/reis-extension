@@ -2,6 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { trackNotificationsViewed, trackNotificationClick } from './spolkyService';
 import { supabase } from './supabaseClient';
 
+const { hasDataConsent } = vi.hoisted(() => ({
+  hasDataConsent: vi.fn<(...args: unknown[]) => Promise<boolean>>(async () => true),
+}));
+
+// Firefox's data-consent toggle. Granted unless a test says otherwise, which is
+// also what every non-Firefox browser and the apps answer.
+vi.mock('../../utils/firefoxDataConsent', () => ({
+  hasDataConsent: (...a: unknown[]) => hasDataConsent(...a),
+}));
+
 // Mock the supabase client
 vi.mock('./supabaseClient', () => ({
   supabase: {
@@ -12,6 +22,30 @@ vi.mock('./supabaseClient', () => ({
 describe('spolkyService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    hasDataConsent.mockResolvedValue(true);
+  });
+
+  // A post id is not an identifier, but a view or click count is interaction
+  // data in Mozilla's terms, and opening a post works without it.
+  describe('on Firefox with the technical-data toggle off', () => {
+    beforeEach(() => hasDataConsent.mockResolvedValue(false));
+
+    it('sends no view counter', async () => {
+      await trackNotificationsViewed(['id1', 'id2']);
+      expect(hasDataConsent).toHaveBeenCalledWith('technicalAndInteraction');
+      expect(supabase.rpc).not.toHaveBeenCalled();
+    });
+
+    it('sends no click counter', async () => {
+      await trackNotificationClick('id1');
+      expect(hasDataConsent).toHaveBeenCalledWith('technicalAndInteraction');
+      expect(supabase.rpc).not.toHaveBeenCalled();
+    });
+
+    it('asks once for a batch of views, not once per post', async () => {
+      await trackNotificationsViewed(['id1', 'id2', 'id3']);
+      expect(hasDataConsent).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('trackNotificationsViewed', () => {

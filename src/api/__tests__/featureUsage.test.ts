@@ -144,4 +144,16 @@ describe('featureUsage', () => {
     await trackFeatureSignal('map_dwell_3s');
     expect(rpc).toHaveBeenCalledTimes(1);
   });
+
+  // No identifier does not make it exempt: Mozilla counts interaction metrics as
+  // technicalAndInteraction data, and the student opened a card, not a counter.
+  it('bumps no map-view counter on Firefox while the technical-data toggle is off', async () => {
+    hasDataConsent.mockResolvedValue(false);
+    await trackMapEventView('event-1');
+    expect(hasDataConsent).toHaveBeenCalledWith('technicalAndInteraction');
+    expect(rpc).not.toHaveBeenCalled();
+    hasDataConsent.mockResolvedValue(true);
+    await trackMapEventView('event-1');
+    expect(rpc).toHaveBeenCalledTimes(1);
+  });
 });

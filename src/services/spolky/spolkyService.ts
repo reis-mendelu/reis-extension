@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { SpolekNotification } from './types';
 import { supabase } from './supabaseClient';
 import { logError } from '../../utils/reportError';
+import { hasDataConsent } from '../../utils/firefoxDataConsent';
 
 // Runtime shape of a `spolky_events` row used by the notification feed. Supabase
 // results are `any`-typed, so we validate before rendering user-facing content
@@ -23,6 +24,9 @@ const NotificationRowSchema = z.object({
  */
 export async function trackNotificationsViewed(notificationIds: string[]): Promise<void> {
   if (!notificationIds || notificationIds.length === 0) return;
+  // A post id is no identifier, but a view count is interaction data to
+  // Mozilla, and opening the feed works without it — Firefox's toggle decides.
+  if (!(await hasDataConsent('technicalAndInteraction'))) return;
 
   try {
     // Call Supabase RPC to increment view counts for each notification
@@ -41,6 +45,7 @@ export async function trackNotificationsViewed(notificationIds: string[]): Promi
  */
 export async function trackNotificationClick(notificationId: string): Promise<void> {
   if (!notificationId) return;
+  if (!(await hasDataConsent('technicalAndInteraction'))) return;
 
   try {
     await supabase.rpc('increment_post_click', { row_id: notificationId });
