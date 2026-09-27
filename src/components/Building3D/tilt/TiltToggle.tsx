@@ -3,7 +3,7 @@ import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { targetFromSelection } from '../roomTarget';
 import { floorText } from '../floorText';
-import { TILT_SPIKE } from './tiltFlag';
+import { map3dEnabled } from '../../../data/map/buildingModels';
 import { enterTilt, leaveTilt, tiltClosed } from './tiltActions';
 import { getMapInstance, subscribeMapInstance } from '../../CampusMap/mapInstance';
 
@@ -11,7 +11,7 @@ const TiltCanvas = lazy(() => import('./TiltCanvas'));
 
 /** The tilted map, mounted over Leaflet while `mapTilt` says so. */
 export function TiltToggle() {
-  return TILT_SPIKE ? <TiltLayer /> : null;
+  return map3dEnabled() ? <TiltLayer /> : null;
 }
 
 function TiltLayer() {
@@ -35,8 +35,9 @@ function TiltLayer() {
   // for the map to finish flying there, since the tilt starts from its view.
   useEffect(() => {
     if (!here || useAppStore.getState().mapTilt.phase !== 'flat') return;
-    // SPIKE: `?map3d=hold` diffs the handover against Leaflet, so it tilts on the button only.
-    if (new URLSearchParams(window.location.search).get('map3d') === 'hold') return;
+    // Dev only: `?map3d=hold` diffs the handover against Leaflet, so it tilts on the button only.
+    if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('map3d') === 'hold')
+      return;
     // A lesson's map pin mounts the map tab and selects the room in one go, and
     // React runs this (child) effect before MapCanvas creates the Leaflet map —
     // so wait for the instance rather than giving up on a null one.

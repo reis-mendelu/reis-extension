@@ -454,13 +454,9 @@ export function MapCanvas() {
     );
     if (view) {
       const { bounds, maxZoom, paddingTopLeft, paddingBottomRight } = view;
-      const room = targetBounds;
-      flyAndReveal(map, () => {
-        map.fitBounds(bounds, { maxZoom, paddingTopLeft, paddingBottomRight, animate: false });
-        // A Q room opens the sheet on its 3D card, which covers the bottom of
-        // the map — keep the room itself above it, as an event pin is kept.
-        if (isPhone && room) panPinClearOfSheet(map, room.getCenter());
-      });
+      flyAndReveal(map, () =>
+        map.fitBounds(bounds, { maxZoom, paddingTopLeft, paddingBottomRight, animate: false })
+      );
     }
     // isPhone joins the deps because the rail offset reads it. It is stable
     // for the life of a device, but it flips on a browser resize, and this
@@ -614,7 +610,7 @@ export function MapCanvas() {
   return (
     <>
       <div ref={ref} className="absolute inset-0" />
-      {/* SPIKE behind ?map3d=1: the map tilts into 3D around building Q. */}
+      {/* Off unless VITE_MAP3D=1: a room in Q tilts the map into the building. */}
       <TiltToggle />
     </>
   );

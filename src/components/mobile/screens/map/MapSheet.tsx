@@ -11,7 +11,6 @@ import { RoutePicker } from '../../../CampusMap/RoutePicker';
 import { CAMPUS_NAVIGATION_ENABLED } from '../../../../utils/routing/navigationEnabled';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { MapPanelBody } from './MapPanelBody';
-import { useRoom3DTarget } from '../../../Building3D/useRoom3DTarget';
 import { MapSheetPeek } from './MapSheetPeek';
 import { MapSheetHeader } from './MapSheetHeader';
 import { useSafeBottom } from '../../../../hooks/ui/useSafeBottom';
@@ -54,10 +53,7 @@ export function MapSheet() {
   // pin is: the card IS the answer to the tap, so it replaces the list and the
   // sheet hugs it rather than sitting at a detent.
   const selectedGardenPlace = selection?.kind === 'gardenPlace' ? selection.place : null;
-  // A room in Q leads the sheet in 3D, cut open at its floor — the same way an
-  // event leads it with its card.
-  const selectedRoom3D = useRoom3DTarget();
-  const selectedCard = selectedEvent || selectedGardenPlace || selectedRoom3D;
+  const selectedCard = selectedEvent || selectedGardenPlace;
 
   // `peek` is the only stop that hides the LIST. It is no longer blank — it
   // shows the next event (`MapSheetPeek`) — but one row is not the week, which
@@ -83,10 +79,7 @@ export function MapSheet() {
   // and a tap on that row reaches here first as a zero-travel drag settling on
   // `peek` — clearing then turned "open this event's card" into "open the list".
   const goToDetent = (next: Detent) => {
-    // Not for a room: its selection is also the highlight on the map, and a new
-    // room object arrives with every tap, so reopening it needs no clearing.
-    if (next === 'peek' && sheetState !== 'peek' && (selectedEvent || selectedGardenPlace))
-      clearMapSelection();
+    if (next === 'peek' && sheetState !== 'peek' && selectedCard) clearMapSelection();
     setSheetState(next);
   };
 
@@ -146,16 +139,6 @@ export function MapSheet() {
     // peek row out of the way so the card can render at all.
     setSheetState(selection.kind === 'event' && selection.reveal === 'map' ? 'peek' : 'half');
   }, [selection, setSheetState]);
-
-  // A Q room someone came LOOKING for — a lesson's pin, or search, both of
-  // which focus it as a `roomRef` — opens the sheet on its 3D card, at `half`
-  // so the map above still shows where the building is. A room tapped while
-  // exploring the floor does not: yanking the sheet over the plan you are
-  // reading answers a question nobody asked. Its card is there on expand.
-  const opensRoom3D = !!selectedRoom3D && selection?.kind === 'roomRef';
-  useEffect(() => {
-    if (opensRoom3D) setSheetState('half');
-  }, [selection, opensRoom3D, setSheetState]);
 
   // A drawn route is an answer, and the sheet is 45% of the screen in front of
   // it. Whatever the student had open, the map wins the moment directions
@@ -312,11 +295,7 @@ export function MapSheet() {
           {/* pb-24 clears the floating BottomNav, which is positioned against
               the SCREEN and draws over the sheet. */}
           <div className="flex-1 overflow-y-auto pb-[calc(6rem_+_var(--safe-bottom,0px))] pt-2">
-            <MapPanelBody
-              selectedEvent={selectedEvent}
-              selectedGardenPlace={selectedGardenPlace}
-              selectedRoom3D={selectedRoom3D}
-            />
+            <MapPanelBody selectedEvent={selectedEvent} selectedGardenPlace={selectedGardenPlace} />
           </div>
         </>
       )}

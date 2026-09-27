@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../../api/campusMap', () => ({ fetchBuildingRooms: vi.fn() }));
 vi.mock('../../../api/buildingModels', () => ({ fetchBuildingModel: vi.fn() }));
@@ -15,12 +15,15 @@ const MODEL = {
 } as unknown as BuildingModel;
 
 beforeEach(() => {
+  vi.stubEnv('VITE_MAP3D', '1'); // off by default; see map3dIsDormant
   vi.mocked(fetchBuildingRooms)
     .mockReset()
     .mockResolvedValue({ type: 'FeatureCollection', features: [] });
   vi.mocked(fetchBuildingModel).mockReset().mockResolvedValue(MODEL);
   useAppStore.setState({ roomsByBuilding: {}, buildingModels: {} });
 });
+
+afterEach(() => vi.unstubAllEnvs());
 
 describe('loadBuildingModel', () => {
   it('rides along with every floor-plan load of a building that has a model', async () => {

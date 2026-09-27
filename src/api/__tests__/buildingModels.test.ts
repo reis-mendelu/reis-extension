@@ -28,6 +28,8 @@ function cdn(ok = true) {
 beforeEach(async () => {
   await IndexedDBService.clear('map_models');
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+  vi.stubEnv('VITE_MAP3D', '1'); // off by default; see map3dIsDormant
 });
 
 describe('fetchBuildingModel', () => {

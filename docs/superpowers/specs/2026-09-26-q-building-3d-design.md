@@ -1,5 +1,7 @@
 # Building Q in 3D — pilot design
 
+> **Superseded (2026-09-27).** The 3D card this spec describes was built (#461) and rejected: a card in the sheet read as clutter. What shipped instead is the map itself tilting into building Q (#462), off unless `VITE_MAP3D=1`. The data and model sections still hold.
+
 Date: 2026-09-26 · Status: approved in brainstorming, pilot for one building
 
 ## Why

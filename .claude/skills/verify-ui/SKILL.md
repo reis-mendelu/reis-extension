@@ -180,14 +180,16 @@ Add a fixture by dropping a JSON file in `dev/fixtures/` — no plumbing needed.
 zsh does not word-split an unquoted variable: `R="--route a=b"; … $R` passes ONE argument
 and the route silently never registers. Write the flags out.
 
-The 3D building card, end to end:
+The tilted 3D map, end to end. It is off unless `VITE_MAP3D=1`; the dev server
+also takes `?map3d` in the URL:
 
 ```bash
-G=../reis-data/map/3d   # or the reis-data worktree holding the model
 npm run verify:ui -- q3d --view map --call 'focusRoomByCode:"Q32"' \
-  --route "map/3d/Q.glb=$G/Q.glb" --route "map/3d/Q.json=$G/Q.json" \
-  --wait-for '[data-testid="building-3d-canvas"][data-ready="true"]' --url http://localhost:<port>
+  --wait-for '[data-testid="tilt-canvas"][data-ready="true"]' --url 'http://localhost:<port>/?map3d'
 ```
+
+Add `--route "map/3d/Q.glb=<file>" --route "map/3d/Q.json=<file>"` to test a model
+that is not on jsDelivr yet.
 
 ## Extending it
 

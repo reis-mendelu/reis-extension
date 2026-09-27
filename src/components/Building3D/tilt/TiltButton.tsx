@@ -1,6 +1,5 @@
 import { useAppStore } from '../../../store/useAppStore';
 import { hasBuildingModel } from '../../../data/map/buildingModels';
-import { TILT_SPIKE } from './tiltFlag';
 import { enterTilt, leaveTilt } from './tiltActions';
 
 /**
@@ -12,7 +11,7 @@ import { enterTilt, leaveTilt } from './tiltActions';
 export function TiltButton() {
   const building = useAppStore((s) => s.activeBuildingId);
   const phase = useAppStore((s) => s.mapTilt.phase);
-  if (!TILT_SPIKE || building === null || !hasBuildingModel(building)) return null;
+  if (building === null || !hasBuildingModel(building)) return null;
   const flat = phase === 'flat';
   return (
     <button

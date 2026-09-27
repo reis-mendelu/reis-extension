@@ -29,9 +29,9 @@ export const createBuildingGeometryActions: AppSlice<
 
   return {
     loadMapBuilding: async (id) => {
-      // The 3D card wants the model whenever it wants the floor plan, so every
-      // hover and map selection that loads one asks for the other. Not awaited:
-      // the flat plan must never wait on the model.
+      // The tilted map wants the model whenever the map wants the floor plan, so
+      // every map selection that loads one asks for the other (a no-op while the
+      // 3D map is off). Not awaited: the flat plan must never wait on the model.
       void get().loadBuildingModel(id);
       if (get().roomsByBuilding[id]) return; // already in memory
       // ...and if it is already on its way, wait for THAT rather than starting

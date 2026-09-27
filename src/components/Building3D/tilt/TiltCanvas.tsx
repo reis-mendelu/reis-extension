@@ -3,6 +3,8 @@ import { createTiltScene, type TiltScene } from './tiltScene';
 import { resolveThemeColor } from '../themeColor';
 import { flatMapLook } from './mapOverlays';
 import { applyTilt, groundAt, screenOf } from './cameraRig';
+import { markWebGL2Unavailable } from '../webgl';
+import { logError } from '../../../utils/reportError';
 import type { Band, MapView } from './tiltCamera';
 import type { BuildingModel } from '../../../types/buildingModel';
 import type { RoomFeature } from '../../../types/campusMap';
@@ -63,37 +65,54 @@ export default function TiltCanvas(props: TiltCanvasProps) {
   useEffect(() => {
     const host = ref.current;
     if (!host) return;
-    // A fresh canvas per scene — see Building3DCanvas for why a reused one breaks.
+    const buildScene = (canvas: HTMLCanvasElement, host: HTMLElement) =>
+      createTiltScene({
+        canvas,
+        view,
+        band: visibleBand(host),
+        model,
+        rooms,
+        targetLevel,
+        targetRoomId,
+        lookOf: flatMapLook,
+        onRequestLeave,
+        onLabel: (at) => {
+          const pin = pinRef.current;
+          if (!pin) return;
+          pin.classList.toggle('opacity-0', !at);
+          if (at) pin.style.transform = `translate(${at.x}px, ${at.y}px) translate(-50%, -100%)`;
+        },
+        colors: {
+          room: resolveThemeColor(host, 'bg-base-300', '#d4d4d4'),
+          target: resolveThemeColor(host, 'bg-primary', '#16a34a'),
+          edge: '#6b7280',
+        },
+      });
+    // A fresh canvas per scene: a canvas whose context was lost or disposed
+    // cannot hand a new renderer a working one.
     const canvas = document.createElement('canvas');
     canvas.className = 'block touch-none';
     canvas.dataset.testid = 'tilt-canvas';
     host.prepend(canvas);
-    const scene = createTiltScene({
-      canvas,
-      view,
-      band: visibleBand(host),
-      model,
-      rooms,
-      targetLevel,
-      targetRoomId,
-      lookOf: flatMapLook,
-      onRequestLeave,
-      onLabel: (at) => {
-        const pin = pinRef.current;
-        if (!pin) return;
-        pin.classList.toggle('opacity-0', !at);
-        if (at) pin.style.transform = `translate(${at.x}px, ${at.y}px) translate(-50%, -100%)`;
-      },
-      colors: {
-        room: resolveThemeColor(host, 'bg-base-300', '#d4d4d4'),
-        target: resolveThemeColor(host, 'bg-primary', '#16a34a'),
-        edge: '#6b7280',
-      },
-    });
+    let scene: TiltScene;
+    try {
+      scene = buildScene(canvas, host);
+    } catch (err) {
+      // A device can advertise WebGL2 and still fail to build a renderer (seen
+      // in an embedded browser). The flat map is still there under this layer.
+      logError('TiltCanvas.createScene', err);
+      markWebGL2Unavailable();
+      canvas.remove();
+      onClosed();
+      return;
+    }
+    // Routine on iOS (backgrounding, memory pressure): back to the flat map,
+    // and the next room may try again.
+    canvas.addEventListener('webglcontextlost', onClosed, { once: true });
     sceneRef.current = scene;
-    // SPIKE: a probe for the drag test — where a pixel's ground point is, and
-    // where a ground point is on screen, under the live camera.
-    const probe = {
+    // Dev only: a probe for the drag test — where a pixel's ground point is,
+    // and where a ground point is on screen, under the live camera.
+    const probe = import.meta.env.DEV && {
       groundAt: (x: number, y: number) => {
         applyTilt(scene.debug.camera, scene.debug.get(), view.width, view.height);
         const g = groundAt(scene.debug.camera, x, y, view.width, view.height, scene.debug.groundY);
@@ -106,7 +125,7 @@ export default function TiltCanvas(props: TiltCanvasProps) {
       },
       camera: () => scene.debug.get(),
     };
-    (window as unknown as { __reisTilt?: typeof probe }).__reisTilt = probe;
+    if (probe) (window as unknown as { __reisTilt?: typeof probe }).__reisTilt = probe;
     void scene.ready.then(() => {
       // Fade in while still flat, then tilt. The flat frame matches Leaflet's
       // but for its room labels and hairline strokes; faded, those dissolve
@@ -119,11 +138,13 @@ export default function TiltCanvas(props: TiltCanvasProps) {
       }
       requestAnimationFrame(() => host.classList.remove('opacity-0'));
       canvas.dataset.ready = 'flat';
-      // SPIKE: `?map3d=hold` stops on the handover frame, to diff it against Leaflet.
-      if (new URLSearchParams(window.location.search).get('map3d') === 'hold') return;
+      // Dev only: `?map3d=hold` stops on the handover frame, to diff it against Leaflet.
+      const hold = new URLSearchParams(window.location.search).get('map3d') === 'hold';
+      if (import.meta.env.DEV && hold) return;
       setTimeout(() => scene.enter(() => (canvas.dataset.ready = 'true')), FADE_MS);
     });
     return () => {
+      canvas.removeEventListener('webglcontextlost', onClosed);
       scene.dispose();
       sceneRef.current = null;
       canvas.remove();

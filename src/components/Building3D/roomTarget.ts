@@ -1,28 +1,12 @@
-import roomsIndexJson from '../../data/map/rooms-index.json';
-import { lookupRoomEntry } from '../../utils/rooms/lookupRoom';
 import { roomLabel } from '../CampusMap/mapHelpers';
-import type { MapSelection, RoomIndexEntry } from '../../types/campusMap';
+import type { MapSelection } from '../../types/campusMap';
 
-const INDEX = roomsIndexJson as RoomIndexEntry[];
-
-/** What the building card needs to know about the room it is showing. */
+/** What the tilted map needs to know about the room it lights. */
 export interface RoomTarget {
   buildingId: number;
   floorLevel: number | null;
   roomId: number | null;
   label: string;
-}
-
-/** From a room string as a timetable prints it ("Q01", "Q01 (Poříčí)"). */
-export function targetFromRoomName(roomName: string): RoomTarget | null {
-  const entry = lookupRoomEntry(roomName, INDEX);
-  if (!entry) return null;
-  return {
-    buildingId: entry.buildingId,
-    floorLevel: entry.floorLevel,
-    roomId: entry.placeId,
-    label: roomName,
-  };
 }
 
 /** From a map selection, when it is a room. */

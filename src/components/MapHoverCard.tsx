@@ -2,8 +2,6 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { RoomThumbnail } from './CampusMap/RoomThumbnail';
-import { Building3DCard } from './Building3D/Building3DCard';
-import { targetFromRoomName } from './Building3D/roomTarget';
 import { useAppStore } from '../store/useAppStore';
 
 interface MapHoverCardProps {
@@ -104,13 +102,7 @@ export function MapHoverCard({ roomName, children, className }: MapHoverCardProp
           className="bg-base-100 border border-base-300 rounded-xl shadow-popover-heavy overflow-hidden flex flex-col"
         >
           <div className="flex-1 bg-base-200 relative flex">
-            {/* Q in 3D, cut at the room's floor; every other building, and any
-                device that cannot draw it, keeps the flat floor plan. */}
-            <Building3DCard
-              target={targetFromRoomName(normalizedRoom)}
-              fallback={<RoomThumbnail roomName={normalizedRoom} />}
-              variant="fill"
-            />
+            <RoomThumbnail roomName={normalizedRoom} />
           </div>
           <div className="px-3 py-2 bg-base-100 border-t border-base-300 flex items-center justify-between">
             <span className="text-xs font-bold text-base-content/70 flex items-center gap-1.5">

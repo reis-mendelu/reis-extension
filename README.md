@@ -105,7 +105,7 @@ npm run build
 - **3D building model (budova Q):** modified from the 3D model budov LOD2 of
   © Statutární město Brno, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
   (storeys sliced, facades and the north front added), with terrain from ČÚZK DMR 5G. Built in [reis-data](https://github.com/reis-mendelu/reis-data)
-  (`source/3d/Q/`); the building card shows the credit wherever the model is drawn.
+  (`source/3d/Q/`); the map's attribution carries the credit whenever the model is drawn.
 
 ## License
 

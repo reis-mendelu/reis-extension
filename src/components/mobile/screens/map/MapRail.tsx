@@ -15,7 +15,6 @@ import { MapPanelBody } from './MapPanelBody';
 import { MapRailOpenButton } from './MapRailOpenButton';
 import { RoomPlaceNote } from './RoomPlaceNote';
 import { useForRoomSelection } from './useForRoomSelection';
-import { useRoom3DTarget } from '../../../Building3D/useRoom3DTarget';
 
 /**
  * The map panel on a tablet: a sidebar, not a sheet.
@@ -58,8 +57,7 @@ export function MapRail() {
   // event pin: the card replaces the list, and opening the rail is what makes
   // it visible at all.
   const selectedGardenPlace = selection?.kind === 'gardenPlace' ? selection.place : null;
-  const selectedRoom3D = useRoom3DTarget();
-  const selectedCard = selectedEvent || selectedGardenPlace || selectedRoom3D;
+  const selectedCard = selectedEvent || selectedGardenPlace;
   const forRoom = useForRoomSelection();
 
   // Picking a pin while the rail is closed has to bring it back — otherwise the
@@ -70,11 +68,8 @@ export function MapRail() {
   // until the next selection — `forRoom` is rebuilt every render, and as a
   // dependency it reopened the rail the moment the student closed it.
   const showsRoomNote = !!forRoom;
-  // A Q room opens the rail only when it was focused (a lesson's pin, search),
-  // not when tapped on the plan — the same rule as the phone sheet.
-  const focusedRoom3D = !!selectedRoom3D && selection?.kind === 'roomRef';
   useEffect(() => {
-    if (selectedEvent || selectedGardenPlace || showsRoomNote || focusedRoom3D) setOpen(true);
+    if (selectedEvent || selectedGardenPlace || showsRoomNote) setOpen(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `selection` is the trigger; see above
   }, [selectedEvent, selectedGardenPlace, selection, setOpen]);
 
@@ -194,7 +189,6 @@ export function MapRail() {
         <MapPanelBody
           selectedEvent={selectedEvent}
           selectedGardenPlace={selectedGardenPlace}
-          selectedRoom3D={selectedRoom3D}
           flush
         />
       </div>
