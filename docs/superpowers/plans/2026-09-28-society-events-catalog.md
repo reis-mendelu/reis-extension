@@ -135,7 +135,7 @@ export type VenueKind = 'campus' | 'online' | 'offcampus' | 'tba';
 -- lists (title + date) long before they know venues. A 'tba' row has no room and
 -- no coordinates; it is list-only on the map until the society adds a place.
 -- Spec: docs/superpowers/specs/2026-09-28-society-events-catalog-design.md
-alter table public.spolky_events drop constraint spolky_events_venue_kind_check;
+alter table public.spolky_events drop constraint if exists spolky_events_venue_kind_check;
 alter table public.spolky_events add constraint spolky_events_venue_kind_check
   check (venue_kind = any (array['campus','online','offcampus','tba']));
 
@@ -150,16 +150,18 @@ comment on column public.societies.instagram is
 notify pgrst, 'reload schema';
 ```
 
+A follow-up migration, `20260928130000_spolky_events_tba_has_no_place.sql`, adds the rule that a `tba` row carries no room and no coordinates (added from review on #471).
+
 - [ ] **Step 5: Dry-run against production.** The `DO` block raises at the end, so nothing is kept.
 
 ```bash
 npx supabase db query --linked "do \$\$ begin
-  alter table public.spolky_events drop constraint spolky_events_venue_kind_check;
+  alter table public.spolky_events drop constraint if exists spolky_events_venue_kind_check;
   alter table public.spolky_events add constraint spolky_events_venue_kind_check check (venue_kind = any (array['campus','online','offcampus','tba']));
   alter table public.societies add column if not exists instagram text check (instagram is null or instagram ~ '^[A-Za-z0-9._]{1,30}\$');
   insert into public.spolky_events (association_id,title,category,date,venue_kind,body) values ('esn','dry-run','quiz','2026-12-01','tba','');
   begin insert into public.spolky_events (association_id,title,category,date,venue_kind,body) values ('esn','dry-run','quiz','2026-12-01','foo',''); raise exception 'foo accepted'; exception when check_violation then null; end;
-  begin update public.societies set instagram='a/b' where id='esn'; raise exception 'a/b accepted'; exception when check_violation then null; end;
+  begin update public.societies set instagram='a/b' where id='esn'; if not found then raise exception 'esn row missing: constraint not exercised'; end if; raise exception 'a/b accepted'; exception when check_violation then null; end;
   raise exception 'DRY RUN OK';
 end \$\$;"
 ```
@@ -796,7 +798,7 @@ export function eventDetailsLink(
 - [ ] **Step 4: Implement `EventVenueLine.tsx`.**
   - Move `EventDetailCard.tsx` lines 121–173 (the `event.roomCode ? … : event.coord ? … : venueName ? … : null` block) into this component verbatim, together with the `venueName` computation and its comment, and the imports it uses: `MapPin`, `Navigation`, `useAppStore` (for `focusRoomByCode`), `roomsIndexJson`, `roomCodeToName`, `getPlatform`, `openVenue`, `openExternal`, `logError`, `venueMapUrl`.
   - Replace the final `: null` branch with the code below.
-  - Export `function EventVenueLine({ event, societyShortName }: { event: MapEvent; societyShortName: string })`.
+  - Export `function EventVenueLine({ event, societyShortName }: { event: MapEvent; societyShortName: string })`, and inside it call `const { t } = useTranslation();` (import from `../../hooks/useTranslation`). The TBA branch below uses `t`.
 
 ```tsx
           ) : event.venueKind === 'tba' ? (
@@ -937,7 +939,10 @@ export function isComposerReady(d: { title: string; date: string; endDate: strin
   return !d.endDate || d.endDate >= d.date;
 }
 
-export function deriveVenue(room: { code: string } | null, coord: [number, number] | null) {
+export function deriveVenue(
+  room: { code: string } | null,
+  coord: [number, number] | null
+): 'campus' | 'offcampus' | 'tba' {
   return room ? 'campus' : coord ? 'offcampus' : 'tba';
 }
 

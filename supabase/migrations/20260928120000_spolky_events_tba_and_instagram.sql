@@ -2,7 +2,7 @@
 -- lists (title + date) long before they know venues. A 'tba' row has no room and
 -- no coordinates; it is list-only on the map until the society adds a place.
 -- Spec: docs/superpowers/specs/2026-09-28-society-events-catalog-design.md
-alter table public.spolky_events drop constraint spolky_events_venue_kind_check;
+alter table public.spolky_events drop constraint if exists spolky_events_venue_kind_check;
 alter table public.spolky_events add constraint spolky_events_venue_kind_check
   check (venue_kind = any (array['campus','online','offcampus','tba']));
 
