@@ -28,9 +28,25 @@ interface Declared {
   remove: string[];
 }
 
+/** [start, end) of every `<!-- … -->`; an unterminated one runs to the end. */
+function commentRanges(xml: string): [number, number][] {
+  const out: [number, number][] = [];
+  for (let at = xml.indexOf('<!--'); at !== -1;) {
+    const close = xml.indexOf('-->', at + 4);
+    const end = close === -1 ? xml.length : close + 3;
+    out.push([at, end]);
+    at = xml.indexOf('<!--', end);
+  }
+  return out;
+}
+
 function usesPermissions(xml: string): Declared {
   const out: Declared = { add: [], remove: [] };
-  for (const [el] of xml.replace(/<!--[\s\S]*?-->/g, '').matchAll(USES)) {
+  const comments = commentRanges(xml);
+  for (const { 0: el, index } of xml.matchAll(USES)) {
+    // Skipped by position rather than stripped from the string, so a comment
+    // can never recombine into markup around it.
+    if (comments.some(([s, e]) => index >= s && index < e)) continue;
     const name = NAME.exec(el)?.[1];
     // `${applicationId}.…` is the app's own permission, not one it asks for.
     if (!name || name.startsWith('${')) continue;

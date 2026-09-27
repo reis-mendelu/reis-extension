@@ -54,6 +54,13 @@ describe('shippedAndroidPermissions', () => {
     expect(shippedAndroidPermissions(app, [])).toEqual(['INTERNET']);
   });
 
+  it('treats an unterminated comment as running to the end of the file', () => {
+    const app = manifest(`
+      <uses-permission android:name="android.permission.INTERNET" />
+      <!-- <uses-permission android:name="android.permission.CAMERA" />`);
+    expect(shippedAndroidPermissions(app, [])).toEqual(['INTERNET']);
+  });
+
   it('keeps a non-android permission fully qualified', () => {
     const plugin = manifest(
       `<uses-permission android:name="com.google.android.gms.permission.AD_ID" />`
