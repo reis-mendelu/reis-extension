@@ -8,7 +8,7 @@
 - **Phase 1 (Tasks 1–2)** is database-only and reaches every installed app with no release:
   - `venue_kind = 'tba'` and `societies.instagram`
   - a reviewed bulk insert of ESN's semester
-- **Phase 2 (Tasks 3–13)** is one client PR on shared code, so it lands on both trees:
+- **Phase 2 (Tasks 3–14)** is one client PR on shared code, so it lands on both trees:
   - the catalog shows the whole semester, while pins and Novinky keep a 14-day "soon" horizon
   - a TBA venue line and the Instagram fallback button
   - a composer that accepts a missing place and time, plus an end date
@@ -79,11 +79,27 @@
 **Interfaces:**
 - Produces: `type VenueKind = 'campus' | 'online' | 'offcampus' | 'tba'`, and `MapEvent['venueKind']` equal to the same union.
 
+- [ ] **Step 0: Branch from `test`.** This worktree was cut from `main` for another task, so start a clean branch and bring the spec and plan along:
+
+```bash
+git fetch origin
+git switch -c claude/events-tba-migration origin/test
+git cherry-pick <spec and plan commits>   # the docs(spec)/docs(plan) commits on claude/student-events-data-strategy-74396b
+```
+
 - [ ] **Step 1: Write the failing test** (append to `src/api/__tests__/mapEvents.test.ts`)
 
 ```ts
-describe('toMapEvent — a place-TBA row', () => {
-  it('keeps venueKind tba, no coordinate, no time', () => {
+import { toRow, type PostInput } from '../societyPosts';
+
+describe('a place-TBA event', () => {
+  it('is a valid PostInput and maps to a tba row with no place', () => {
+    const input = {
+      title: 'Pub Quiz', body: '', category: 'quiz', date: '2026-10-13', venueKind: 'tba',
+    } satisfies PostInput;
+    expect(toRow(input, 'esn', 'x')).toMatchObject({ venue_kind: 'tba', coord_lng: null, room_code: null, time: null });
+  });
+  it('maps back to a MapEvent with no coordinate', () => {
     const e = toMapEvent(
       {
         id: 't1', association_id: 'esn', title: 'Pub Quiz', category: 'quiz',
@@ -92,15 +108,13 @@ describe('toMapEvent — a place-TBA row', () => {
       },
       BUNDLED_SOCIETIES
     );
-    const kind: 'campus' | 'online' | 'offcampus' | 'tba' = e.venueKind;
-    expect(kind).toBe('tba');
+    expect(e.venueKind).toBe('tba');
     expect(e.coord).toBeNull();
-    expect(e.time).toBeNull();
   });
 });
 ```
 
-- [ ] **Step 2: Run it.** `npx vitest run src/api/__tests__/mapEvents.test.ts`. The assertion passes at runtime, because `toMapEvent` only casts. The failure to confirm is the **type** error: run `npm run typecheck`, expecting `Type '"tba"' is not assignable` on the `kind` line.
+- [ ] **Step 2: Run `npm run typecheck`.** Expected: FAIL. The `satisfies PostInput` line reports `Type '"tba"' is not assignable to type 'VenueKind'`.
 
 - [ ] **Step 3: Widen the types**
 
@@ -208,13 +222,19 @@ npx supabase db query --linked "update public.societies set instagram = v.h from
 - [ ] **Step 5: Verify**
 
 ```bash
-npx supabase db query --linked "select count(*), min(date), max(date), count(*) filter (where extract(isodow from date) not between 1 and 7) as bad from public.spolky_events where created_by='import:2026-09-28'"
+npx supabase db query --linked "select to_char(date,'DD.MM.') as d, to_char(date,'Dy') as dow, end_date, title, category from public.spolky_events where created_by='import:2026-09-28' order by date, title"
 npx supabase db query --linked "select id, instagram from public.societies order by id"
 ```
 
 Expected:
-- The count equals the number of rows in `esn.md`, `bad = 0`, and `max = 2026-12-15`.
+- Diff the first result row by row against `esn.md`. Each date, weekday (`Mon`↔`Mo`, `Tue`↔`Tu`, and so on), end date, title and category must match, and the row counts must be equal.
 - The five handles are set.
+
+- [ ] **Step 6: The Novinky limit, until phase 2 ships.** Current clients take the 50 soonest rows across all societies before keeping only followed ones. Before importing any further society, check this and stop if the count is ≥ 50:
+
+```bash
+npx supabase db query --linked "select count(*) from public.spolky_events where date between current_date and current_date + 13"
+```
 
 ---
 
@@ -239,10 +259,10 @@ git fetch origin && git switch -c claude/society-events-catalog origin/test
   - `isFinishedEvent(e: { date: string; endDate: string | null }, now?: Date): boolean`
   - `isSoonEvent(e: { date: string; endDate: string | null }, now?: Date): boolean`
   - `isBeyondSoon(iso: string, now?: Date): boolean`
-- Keeps: `daysUntilEvent`, `isPastEvent`, `hasFinished`
-- Removes: `PUBLIC_WINDOW_DAYS`, `isPublicEvent`, `isScheduledEvent`, `goLiveDate`. Later tasks replace every caller: Tasks 4, 5, 9, 10 and 11.
+- Keeps: `daysUntilEvent`, `isPastEvent`, `hasFinished`, and **for now** `PUBLIC_WINDOW_DAYS`, `isPublicEvent`, `isScheduledEvent`, `goLiveDate`.
+- Each later task migrates its own callers and commits green: Task 4 (`mapEvents.ts` + its two tests), Task 5 (`EventLayer`), Task 9 (`EventComposer`), Task 10 (`AdminEventList`), Task 11 (`dropScheduledEvents` + its test). Task 14 deletes the old exports once no caller is left.
 
-- [ ] **Step 1: Write the failing tests.** Replace the `PUBLIC_WINDOW_DAYS` / `isPublicEvent` / `isScheduledEvent` / `goLiveDate` cases in `eventWindow.test.ts`.
+- [ ] **Step 1: Write the failing tests.** Add a new `describe` block to `eventWindow.test.ts`, leaving the existing cases in place; Task 14 removes them.
 
 ```ts
 import {
@@ -286,9 +306,7 @@ describe('eventWindow — soon horizon and finished', () => {
 
 - [ ] **Step 2: Run.** `npx vitest run src/components/CampusMap/__tests__/eventWindow.test.ts`. Expected: FAIL, because `SOON_WINDOW_DAYS` and the new functions are not exported.
 
-- [ ] **Step 3: Implement.** In `eventWindow.ts`:
-  - Replace the `PUBLIC_WINDOW_DAYS` block and the three functions `isPublicEvent`, `isScheduledEvent` and `goLiveDate` with the code below.
-  - Keep `startOfDay`, `daysUntilEvent`, `isPastEvent` and `hasFinished` unchanged.
+- [ ] **Step 3: Implement.** In `eventWindow.ts`, add the code below after `hasFinished`. Change nothing else yet.
 
 ```ts
 // The "soon" horizon: map pins and Novinky show events starting within it
@@ -320,9 +338,16 @@ export function isBeyondSoon(iso: string, now: Date = new Date()): boolean {
 }
 ```
 
-Also update the file's top comment. It currently says "How far ahead the PUBLIC map/feed shows events". Change it to describe the soon horizon as above.
+- [ ] **Step 4: Run the test and typecheck.** `npx vitest run src/components/CampusMap/__tests__/eventWindow && npm run typecheck`. Expected: PASS.
 
-- [ ] **Step 4: Run the test.** Expected: PASS. `npm run typecheck` now fails at the old callers; Tasks 4, 5, 9, 10 and 11 fix them. Do not commit this task on its own: commit it together with Task 4, so the tree typechecks at each commit.
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/components/CampusMap/eventWindow.ts src/components/CampusMap/__tests__/eventWindow.test.ts
+git commit -m "feat(events): soon horizon and end-date-aware finished check
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
 
 ### Task 4: `fetchMapEvents` returns the whole upcoming catalog, and `null` on error
 
@@ -458,7 +483,16 @@ Replace the `isPublicEvent` import with `import { isFinishedEvent, localTodayIso
 
 - [ ] **Step 5: Fix `mapEvents.production.test.ts`.** Replace its `isPublicEvent` usage with `isFinishedEvent({ date, endDate })`, and keep the assertion's intent: the production row maps, and a past row is finished.
 
-- [ ] **Step 6: Run the tests.** `npx vitest run src/api/__tests__/mapEvents src/store/slices/__tests__/createMapSlice src/components/CampusMap/__tests__/eventWindow`. Expected: PASS. Typecheck still fails in EventLayer, EventComposer, AdminEventList and dropScheduledEvents; Tasks 5, 9, 10 and 11 fix those.
+- [ ] **Step 6: Run the tests and typecheck.** `npx vitest run src/api/__tests__/mapEvents src/store/slices/__tests__/createMapSlice && npm run typecheck`. Expected: PASS. Callers of `fetchMapEvents` other than the slice: grep `fetchMapEvents(`; each must handle `null`.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add src/api/mapEvents.ts src/api/__tests__ src/store
+git commit -m "feat(events): catalog fetch keeps future events; a failed fetch keeps the list
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
 
 ### Task 5: Pins only for soon events; remove the "scheduled" pin marker
 
@@ -485,7 +519,16 @@ Replace the `isPublicEvent` import with `import { isFinishedEvent, localTodayIso
 - Delete the `scheduled={...}` prop at line 205 and the `isScheduledEvent` import.
 - In `EventPin.tsx`, delete the `scheduled` prop, its default, `data-scheduled`, and the two style ternaries (use `opacity: 1` and `border: '1px solid rgba(0,0,0,0.12)'`).
 
-- [ ] **Step 4: Run the tests.** Expected: PASS.
+- [ ] **Step 4: Run the tests and typecheck.** Expected: PASS.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/components/CampusMap/EventLayer.tsx src/components/CampusMap/EventPin.tsx src/components/CampusMap/__tests__
+git commit -m "feat(map): pins show only events in the next 14 days
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
 
 ### Task 6: A "Později (N)" section in the events list
 
@@ -549,13 +592,14 @@ A multi-day event that started before today sits in `thisWeek`, because its date
 In `relativeDayLabel`, add this before the final `return`:
 
 ```ts
+  // Beyond two weeks a weekday alone says nothing; the locale orders the parts
+  // ("Čt 19. 11." in Czech, "Thu, 11/19" in English for the Erasmus students).
   if (days >= 14) {
-    const wd = cap(date.toLocaleDateString(locale, { weekday: 'short' }));
-    return `${wd} ${date.getDate()}. ${date.getMonth() + 1}.`;
+    return cap(date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'numeric' }));
   }
 ```
 
-For `en-US` this yields "Thu 19. 11."; that is acceptable and matches the app's Czech date style. If an existing test asserts a different English format for days ≥ 14, keep that test and branch on `locale.startsWith('cs')`.
+Add a second assertion to the Step 1 test: `expect(relativeDayLabel('2026-11-19', 'en-US', (k) => k, now)).toBe('Thu, 11/19')`. If the Node ICU output differs (for example a narrow no-break space), assert `toMatch(/^Thu,?\s11\/19$/)` instead.
 
 - [ ] **Step 4: Slice state.** Add `mapLaterExpanded: boolean` and `toggleMapLater: () => void` to `MapSlice`. In `createMapSlice`, add `mapLaterExpanded: false` and `toggleMapLater: () => set((s) => ({ mapLaterExpanded: !s.mapLaterExpanded }))`.
 
@@ -587,7 +631,16 @@ Read the state with `const laterExpanded = useAppStore((s) => s.mapLaterExpanded
 
 - [ ] **Step 6: i18n.** Add `"later": "Později"` to `cs.json` under `map`, and `"later": "Later"` to `en.json`.
 
-- [ ] **Step 7: Run the tests.** Expected: PASS.
+- [ ] **Step 7: Run the tests and typecheck.** Expected: PASS.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add src/components/CampusMap src/store src/i18n
+git commit -m "feat(events): collapsible Later section holds the rest of the semester
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
 
 ### Task 7: The society's Instagram handle, read and edited
 
@@ -665,16 +718,15 @@ export function normalizeInstagram(raw: string): string | null | 'invalid' {
 
 - [ ] **Step 5: Run the tests.** `npx vitest run src/api/__tests__/societies src/components/AdminConsole/__tests__/societyForm`. Expected: PASS.
 
-- [ ] **Step 6: Commit Tasks 3–7**
+- [ ] **Step 6: Typecheck and commit**
 
 ```bash
-git add -A src/components/CampusMap src/api src/store src/components/AdminConsole src/types src/i18n
-git commit -m "feat(events): whole-semester catalog, soon-only pins, society Instagram
+npm run typecheck
+git add src/types/events.ts src/api/societies.ts src/api/societiesAdmin.ts src/api/__tests__ src/store/slices/societies src/components/AdminConsole src/i18n
+git commit -m "feat(admin): a society's Instagram handle
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
-
-(Typecheck may still fail on Tasks 9–11 callers. If it does, finish Task 9 before this commit.)
 
 ### Task 8: "Místo upřesní …" and the Instagram button on the row and the card
 
@@ -1039,7 +1091,16 @@ Import `Users` from `lucide-react`. Update the header comment to list the third 
 
 - [ ] **Step 6: i18n.** Add the three keys. Then grep for `map.liveNow`, `map.scheduled`, `map.goesLive` and `map.toastScheduled`, and delete any key with no remaining reader from both locales.
 
-- [ ] **Step 7: Run the tests.** Expected: PASS.
+- [ ] **Step 7: Run the tests and typecheck.** Expected: PASS.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add src/components/AdminConsole src/store src/i18n
+git commit -m "feat(admin): Upcoming and Past only; 'Bez místa'; interest count
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
 
 ### Task 11: Novinky, a bounded query with a limit of 200, keeping trips that are still running
 
@@ -1070,19 +1131,37 @@ Import `Users` from `lucide-react`. Update the header comment to list the third 
     const today = localTodayIso();
     const horizon = new Date();
     horizon.setDate(horizon.getDate() + SOON_WINDOW_DAYS - 1);
+    const now = new Date().toISOString();
+    // ONE .or() with nested and(): whether PostgREST ANDs two separate `or`
+    // params was not verified, so the whole condition is written unambiguously.
+    const visible = `or(visible_from.is.null,visible_from.lte.${now})`;
     const { data, error } = await supabase
       .from('spolky_events')
       .select('id, association_id, title, body, url, created_at, date, end_date')
-      .or(`date.gte.${today},end_date.gte.${today}`)
       .lte('date', localTodayIso(horizon))
-      .or('visible_from.is.null,visible_from.lte.' + new Date().toISOString())
+      .or(`and(date.gte.${today},${visible}),and(end_date.gte.${today},${visible})`)
       .order('date', { ascending: true })
       .limit(200);
 ```
 
-Two `.or()` calls in PostgREST combine with AND, which is what we want here. In `dropScheduledEvents.ts`, change the import to `isBeyondSoon` and use `return !isBeyondSoon(day, now);`, and update the comment: the 14-day rule is now Novinky's own horizon, not "goes live".
+Update the Step 1 assertion to match: one `.or()` call with that string, plus `.lte('date', …)`. Then run it once read-only against production to confirm that PostgREST accepts the nested syntax and that it returns rows:
 
-- [ ] **Step 4: Run the tests.** Expected: PASS.
+```bash
+curl -s "<SUPABASE_URL from src/services/supabase/config.ts>/rest/v1/spolky_events?select=id,date&date=lte.<today+13>&or=(and(date.gte.<today>,or(visible_from.is.null,visible_from.lte.<now>)),and(end_date.gte.<today>,or(visible_from.is.null,visible_from.lte.<now>)))" -H "apikey: <publishable key from src/services/supabase/config.ts>"
+```
+
+Expected: a JSON array, not a PGRST error. The publishable key is public by design. In `dropScheduledEvents.ts`, change the import to `isBeyondSoon` and use `return !isBeyondSoon(day, now);`, and update the comment: the 14-day rule is now Novinky's own horizon, not "goes live".
+
+- [ ] **Step 4: Run the tests and typecheck.** Expected: PASS.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/services/spolky
+git commit -m "fix(novinky): bound the feed to the soon horizon before the follow filter
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
 
 ### Task 12: A Novinky tap opens the event card, with the link as fallback
 
@@ -1144,11 +1223,11 @@ Update the hook's doc comment: the paragraph "The link keeps priority where it e
 
 - [ ] **Step 4: Run the tests.** Expected: PASS.
 
-- [ ] **Step 5: Commit Tasks 10–12**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add src/components/AdminConsole src/store src/services/spolky src/hooks src/components/NotificationFeed.test.tsx src/components/mobile/sheets src/i18n
-git commit -m "feat(events): console interest count, Novinky soon bounds, tap opens the card
+git add src/hooks/useOpenNotification.ts src/components/NotificationFeed.test.tsx src/components/mobile/sheets
+git commit -m "fix(novinky): a tap opens the event card; the link is the fallback
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
@@ -1205,11 +1284,37 @@ describe('events refresh on resume is Capacitor-only, on purpose', () => {
   - Run its overflow, collision and contrast assertions in both themes.
   - Send the before/after PNGs to Dominik with SendUserFile before calling this done.
 
-- [ ] **Step 6: Commit and open the PR**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add capacitor/startApp.ts src/test/guards/eventsResumeRefreshIsCapacitorOnly.test.ts
 git commit -m "feat(events): refresh events on app resume
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
+
+### Task 14: Delete the old window exports; open the PR
+
+**Files:**
+- Modify: `src/components/CampusMap/eventWindow.ts`, `src/components/CampusMap/__tests__/eventWindow.test.ts`
+
+- [ ] **Step 1: Confirm no caller is left.** Include tests in the search:
+
+```bash
+grep -rn "isPublicEvent\|isScheduledEvent\|goLiveDate\|PUBLIC_WINDOW_DAYS" src capacitor
+```
+
+Expected: only `eventWindow.ts` and the old cases in `eventWindow.test.ts`. Any other hit belongs to the task that owns that file; fix it there first.
+
+- [ ] **Step 2: Delete** `PUBLIC_WINDOW_DAYS`, `isPublicEvent`, `isScheduledEvent` and `goLiveDate` from `eventWindow.ts`, along with their test cases. Rewrite the file's top comment: "the soon horizon (pins, Novinky) is SOON_WINDOW_DAYS; the catalog list has no upper bound".
+
+- [ ] **Step 3: Run and typecheck.** `npx vitest run src/components/CampusMap src/api src/services/spolky src/components/AdminConsole && npm run typecheck`. Expected: PASS.
+
+- [ ] **Step 4: Commit and open the PR**
+
+```bash
+git add src/components/CampusMap/eventWindow.ts src/components/CampusMap/__tests__/eventWindow.test.ts
+git commit -m "refactor(events): drop the 14-day public window helpers
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 git push -u personal HEAD
