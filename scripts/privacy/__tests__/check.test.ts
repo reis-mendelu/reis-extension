@@ -90,10 +90,14 @@ describe('checkDisclosures', () => {
     const s = clean();
     s.androidPermissions = ['CAMERA'];
     const out = checkDisclosures(s, model);
-    expect(out.find((l) => l.includes('"CAMERA"'))).toMatch(/tools:node="remove"/);
-    const absent = out.find((l) => l.includes('"INTERNET"'));
-    expect(absent).toMatch(/Remove it from PLATFORM_PERMISSIONS\.android/);
-    expect(absent).not.toMatch(/tools:node/);
+    expect(out).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/"CAMERA" is present but not declared\..*tools:node="remove"/),
+        expect.stringMatching(
+          /"INTERNET" is declared but not present\. Remove it from PLATFORM_PERMISSIONS\.android\.$/
+        ),
+      ])
+    );
   });
 
   it('4. flags a platform permission the source does not declare', () => {
