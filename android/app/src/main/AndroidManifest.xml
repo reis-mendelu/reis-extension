@@ -66,4 +66,19 @@
          dialog via ACTION_WIFI_ADD_NETWORKS, not by us. -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+
+    <!-- Plugin manifests merge their own permissions in; privacy:check reads them
+         (scripts/privacy/androidPermissions.ts). @capacitor/local-notifications
+         adds RECEIVE_BOOT_COMPLETED (reschedules reminders after a restart) and
+         WAKE_LOCK, both kept. The two below are stripped:
+         - SCHEDULE_EXACT_ALARM (local-notifications): reminders are inexact with
+           allowWhileIdle (src/services/eventReminders/sync.ts), which needs no
+           permission. Declaring it only put an "Alarms & reminders" switch in
+           Settings for a capability reIS never uses.
+         - CAMERA (@capgo/capacitor-inappbrowser): the in-app browser only shows
+           the IS sign-in and external links. The report screenshot input has no
+           `capture`, and with CAMERA undeclared a camera intent needs no
+           permission at all — declared-but-denied is what would break it. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />
+    <uses-permission android:name="android.permission.CAMERA" tools:node="remove" />
 </manifest>

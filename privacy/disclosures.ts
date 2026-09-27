@@ -248,6 +248,17 @@ export const EXEMPT: Exempt[] = [
 export const PLATFORM_PERMISSIONS = {
   /** Info.plist NS*UsageDescription keys. */
   ios: ['NSCameraUsageDescription'],
-  /** AndroidManifest uses-permission names, without the android.permission. prefix. */
-  android: ['INTERNET', 'POST_NOTIFICATIONS', 'ACCESS_WIFI_STATE', 'CHANGE_WIFI_STATE'],
+  /**
+   * What the merged release manifest requests (app manifest + every Capacitor
+   * plugin's, minus tools:node="remove"), without the android.permission. prefix.
+   * RECEIVE_BOOT_COMPLETED and WAKE_LOCK come from @capacitor/local-notifications.
+   */
+  android: [
+    'INTERNET',
+    'POST_NOTIFICATIONS',
+    'ACCESS_WIFI_STATE',
+    'CHANGE_WIFI_STATE',
+    'RECEIVE_BOOT_COMPLETED',
+    'WAKE_LOCK',
+  ],
 };

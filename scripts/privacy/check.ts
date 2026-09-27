@@ -2,6 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import type { Flow, Exempt } from '../../privacy/disclosures';
 import { renderPolicyTable, readGenerated } from './policyTable';
+import { readShippedAndroidPermissions } from './androidPermissions';
 
 // privacy:check — the six rules that keep privacy/disclosures.ts true.
 // Pure over a RepoSnapshot so every rule is unit-tested; readRepoSnapshot is
@@ -20,6 +21,7 @@ export interface RepoSnapshot {
   supabaseCallers: string[];
   firefoxOptional: string[];
   iosUsageKeys: string[];
+  /** What the release APK requests: app manifest ∪ plugin manifests − tools:node="remove". */
   androidPermissions: string[];
   policyMd: string;
   playCsv: string;
@@ -107,10 +109,10 @@ export function checkDisclosures(s: RepoSnapshot, m: Model): string[] {
       `Update PLATFORM_PERMISSIONS.ios.`
     ),
     ...setDiff(
-      'Android uses-permission',
+      'Android permission in the merged release manifest',
       s.androidPermissions,
       m.permissions.android,
-      `Update PLATFORM_PERMISSIONS.android.`
+      `Update PLATFORM_PERMISSIONS.android, or strip it in android/app/src/main/AndroidManifest.xml with tools:node="remove".`
     )
   );
 
@@ -173,9 +175,7 @@ export function readRepoSnapshot(root: string): RepoSnapshot {
     iosUsageKeys: [
       ...read('ios/App/App/Info.plist').matchAll(/<key>(NS\w+UsageDescription)<\/key>/g),
     ].map((x) => x[1] ?? ''),
-    androidPermissions: [
-      ...read('android/app/src/main/AndroidManifest.xml').matchAll(/android\.permission\.(\w+)/g),
-    ].map((x) => x[1] ?? ''),
+    androidPermissions: readShippedAndroidPermissions(root),
     policyMd: read('docs/privacy-policy-app.md'),
     playCsv: read('privacy/play-data-safety.csv'),
   };
