@@ -68,6 +68,34 @@ export function hasFinished(
   return now.getTime() > start.getTime();
 }
 
+// The "soon" horizon: map pins and Novinky show events starting within it
+// (today .. today+13). The catalog list (MapEventsSection) has no upper bound —
+// a semester imported in September is visible in September.
+export const SOON_WINDOW_DAYS = 14;
+
+/** Local calendar day as YYYY-MM-DD — never toISOString(), which is UTC. */
+export function localTodayIso(now: Date = new Date()): string {
+  const d = startOfDay(now);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+type Dated = { date: string; endDate: string | null };
+
+/** Over once its LAST day has passed — a five-day trip stays up all five days. */
+export function isFinishedEvent(e: Dated, now: Date = new Date()): boolean {
+  return daysUntilEvent(e.endDate ?? e.date, now) < 0;
+}
+
+/** Still on, and starting inside the soon horizon (a running trip counts). */
+export function isSoonEvent(e: Dated, now: Date = new Date()): boolean {
+  return !isFinishedEvent(e, now) && daysUntilEvent(e.date, now) < SOON_WINDOW_DAYS;
+}
+
+/** Starts on day 14 or later — outside what Novinky announces. */
+export function isBeyondSoon(iso: string, now: Date = new Date()): boolean {
+  return daysUntilEvent(iso, now) >= SOON_WINDOW_DAYS;
+}
+
 // today .. today+13 inclusive.
 export function isPublicEvent(iso: string, now: Date = new Date()): boolean {
   const d = daysUntilEvent(iso, now);
