@@ -51,8 +51,10 @@ function usesPermissions(xml: string): Declared {
     const name = NAME.exec(el)?.[2];
     // An element this parser cannot read must fail the check, not vanish from it.
     if (!name) throw new Error(`privacy:check: cannot read the permission name in ${el}`);
-    // `${applicationId}.…` is the app's own permission, not one it asks for.
-    if (name.startsWith('${')) continue;
+    // `${applicationId}.…` is the app's own permission, not one it asks for. Any
+    // other placeholder resolves at merge time to a name this cannot know.
+    if (name.startsWith('${applicationId}.')) continue;
+    if (name.includes('${')) throw new Error(`privacy:check: unresolved placeholder in ${el}`);
     const short = name.startsWith(PREFIX) ? name.slice(PREFIX.length) : name;
     (REMOVE.test(el) ? out.remove : out.add).push(short);
   }
@@ -67,6 +69,9 @@ function usesPermissions(xml: string): Declared {
  */
 export function shippedAndroidPermissions(appManifest: string, libManifests: string[]): string[] {
   const app = usesPermissions(appManifest);
+  // Only the app's removes count: a library's tools:node="remove" applies inside
+  // its own merge, so it cannot strip what the app or a sibling library adds.
+  // Ignoring those errs toward over-reporting, the safe side for this check.
   const removed = new Set(app.remove);
   const all = new Set([...app.add, ...libManifests.flatMap((m) => usesPermissions(m).add)]);
   return [...all].filter((p) => !removed.has(p)).sort();

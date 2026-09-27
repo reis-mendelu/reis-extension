@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { afterEach, describe, it, expect } from 'vitest';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -74,6 +74,18 @@ describe('shippedAndroidPermissions', () => {
     expect(shippedAndroidPermissions(app, [])).toEqual(['INTERNET']);
   });
 
+  it("skips the app's own ${applicationId}.… permission", () => {
+    const lib = manifest(
+      `<uses-permission android:name="\${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />`
+    );
+    expect(shippedAndroidPermissions(manifest(''), [lib])).toEqual([]);
+  });
+
+  it('throws on any other placeholder, which resolves to a name it cannot know', () => {
+    const lib = manifest(`<uses-permission android:name="\${pluginPermission}" />`);
+    expect(() => shippedAndroidPermissions(manifest(''), [lib])).toThrow(/placeholder/);
+  });
+
   it('keeps a non-android permission fully qualified', () => {
     const plugin = manifest(
       `<uses-permission android:name="com.google.android.gms.permission.AD_ID" />`
@@ -101,30 +113,48 @@ project(':capgo-capacitor-inappbrowser').projectDir = new File('../node_modules/
 });
 
 describe('readShippedAndroidPermissions', () => {
-  it('follows an absolute projectDir, as cap sync sometimes writes one', () => {
+  const roots: string[] = [];
+  afterEach(() => {
+    for (const r of roots.splice(0)) rmSync(r, { recursive: true, force: true });
+  });
+
+  /** A checkout with an app manifest and the given capacitor.settings.gradle. */
+  function checkout(gradle: (root: string) => string): string {
     const root = mkdtempSync(join(tmpdir(), 'reis-perm-'));
-    const plugin = join(root, 'elsewhere/plugin/android');
-    mkdirSync(join(plugin, 'src/main'), { recursive: true });
+    roots.push(root);
     mkdirSync(join(root, 'android/app/src/main'), { recursive: true });
+    writeFileSync(join(root, 'android/app/src/main/AndroidManifest.xml'), manifest(''));
+    writeFileSync(join(root, 'android/capacitor.settings.gradle'), gradle(root));
+    return root;
+  }
+
+  function plugin(dir: string): void {
+    mkdirSync(join(dir, 'src/main'), { recursive: true });
     writeFileSync(
-      join(plugin, 'src/main/AndroidManifest.xml'),
+      join(dir, 'src/main/AndroidManifest.xml'),
       manifest(`<uses-permission android:name="android.permission.WAKE_LOCK"/>`)
     );
-    writeFileSync(join(root, 'android/app/src/main/AndroidManifest.xml'), manifest(''));
-    writeFileSync(
-      join(root, 'android/capacitor.settings.gradle'),
-      `project(':p').projectDir = new File('${plugin}')\n`
+  }
+
+  it('follows the usual relative ../node_modules projectDir', () => {
+    const root = checkout(
+      () => `project(':p').projectDir = new File('../node_modules/p/android')\n`
     );
+    plugin(join(root, 'node_modules/p/android'));
+    expect(readShippedAndroidPermissions(root)).toEqual(['WAKE_LOCK']);
+  });
+
+  it('follows an absolute projectDir, as cap sync sometimes writes one', () => {
+    const root = checkout(
+      (r) => `project(':p').projectDir = new File('${join(r, 'elsewhere/p/android')}')\n`
+    );
+    plugin(join(root, 'elsewhere/p/android'));
     expect(readShippedAndroidPermissions(root)).toEqual(['WAKE_LOCK']);
   });
 
   it('throws rather than passing when a plugin manifest is missing', () => {
-    const root = mkdtempSync(join(tmpdir(), 'reis-perm-'));
-    mkdirSync(join(root, 'android/app/src/main'), { recursive: true });
-    writeFileSync(join(root, 'android/app/src/main/AndroidManifest.xml'), manifest(''));
-    writeFileSync(
-      join(root, 'android/capacitor.settings.gradle'),
-      `project(':p').projectDir = new File('../node_modules/missing/android')\n`
+    const root = checkout(
+      () => `project(':p').projectDir = new File('../node_modules/missing/android')\n`
     );
     expect(() => readShippedAndroidPermissions(root)).toThrow(/Run npm ci/);
   });
