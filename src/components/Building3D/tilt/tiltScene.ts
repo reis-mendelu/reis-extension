@@ -8,7 +8,10 @@ import {
   WebGLRenderer,
 } from 'three';
 import type { BuildingGroupInput } from '../buildingGroup';
+import { boxOnScreen, labelsOnScreen, type OnScreenLabel } from './roomLabelLayer';
+import type { ScreenBox } from './roomLabels';
 import { makeProjector } from '../projection';
+import { storeyCeiling } from '../cutaway';
 import { applyTilt, screenOf } from './cameraRig';
 import { addTiltContent } from './tiltContent';
 import { sizeFatLines } from './fatLines';
@@ -35,6 +38,8 @@ export interface TiltSceneInput extends BuildingGroupInput {
   band: Band;
   /** Where the room's label pin goes, in canvas pixels, or null to hide it. */
   onLabel: (at: { x: number; y: number } | null) => void;
+  /** The floor's room names on screen, and the lit room's box they keep off. */
+  onRoomLabels: (labels: OnScreenLabel[] | null, room: ScreenBox | null) => void;
   /** A gesture asked to go back to the flat map. */
   onRequestLeave: () => void;
 }
@@ -71,7 +76,10 @@ export function createTiltScene(input: TiltSceneInput) {
     pitch: FLAT_PITCH,
     offsetY: 0,
   };
-  const framed = frameBuilding(meta.radius, meta.height, FOV, TILT_PITCH, band);
+  // Framed on what is drawn — the building up to the room's storey — so the
+  // camera stays on that floor instead of backing off to the full height.
+  const drawnHeight = storeyCeiling(meta.storeys, input.targetLevel, meta.height);
+  const framed = frameBuilding(meta.radius, drawnHeight, FOV, TILT_PITCH, band);
   let cam = flat;
 
   const scene = new Scene();
@@ -115,6 +123,11 @@ export function createTiltScene(input: TiltSceneInput) {
     renderer.render(scene, camera);
     const at = c.pin && rise > 0.97 ? screenOf(camera, c.pin, view.width, view.height) : null;
     input.onLabel(at && at.inFront ? { x: at.x, y: at.y } : null);
+    const shown = rise > 0.97;
+    input.onRoomLabels(
+      shown ? labelsOnScreen(camera, c.labels, view) : null,
+      shown ? boxOnScreen(camera, c.roomCorners, view) : null
+    );
   };
 
   const { content, ready: loaded } = addTiltContent(scene, input, project, groundY, () => render());

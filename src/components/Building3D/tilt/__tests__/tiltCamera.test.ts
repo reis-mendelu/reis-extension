@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { PerspectiveCamera, Vector3 } from 'three';
-import { cameraPosition, flatDistance, localMetresPerPixel, FLAT_PITCH } from '../tiltCamera';
+import {
+  cameraPosition,
+  clampLabelX,
+  clampLabelY,
+  flatDistance,
+  localMetresPerPixel,
+  FLAT_PITCH,
+} from '../tiltCamera';
 
 const LAT = 49.2096;
 
@@ -31,5 +38,33 @@ describe('tiltCamera', () => {
     expect(x).toBeCloseTo(10, 6);
     expect(z).toBeGreaterThan(20);
     expect(y).toBeCloseTo(100 * Math.sin(Math.PI / 4), 6);
+  });
+});
+
+describe('clampLabelX', () => {
+  // Q39 sits on Q's west edge: framed on the building, its label ran off screen.
+  it('keeps a label whole inside the view, with a gutter', () => {
+    expect(clampLabelX(10, 120, 390)).toBe(16 + 60);
+    expect(clampLabelX(385, 120, 390)).toBe(390 - 16 - 60);
+  });
+
+  it('leaves a label that fits where the scene put it', () => {
+    expect(clampLabelX(200, 120, 390)).toBe(200);
+  });
+
+  it('centres a label wider than the view', () => {
+    expect(clampLabelX(10, 500, 390)).toBe(195);
+  });
+});
+
+describe('clampLabelY', () => {
+  // The pin hangs above its anchor (translate -100%): its top is y − height.
+  it('keeps the pin below the top of the view', () => {
+    expect(clampLabelY(10, 30, 0)).toBe(16 + 30);
+    expect(clampLabelY(10, 30, 60)).toBe(60 + 30);
+  });
+
+  it('leaves a pin that fits where the scene put it', () => {
+    expect(clampLabelY(300, 30, 60)).toBe(300);
   });
 });

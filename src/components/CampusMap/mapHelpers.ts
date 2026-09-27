@@ -179,6 +179,10 @@ export function roomLabel(
 // "B106, zasedačka LDF" become "B05" and "B106". Search, the detail card and
 // the hover tooltip keep the full name. A spaced dash or a comma is the
 // separator; "Q-LCNA" has neither.
+/** Rooms whose outline spans more than this (metres, corner to corner) carry a
+ *  permanent label; smaller ones only on hover. The flat plan and the tilted map share it. */
+export const LABELLED_ROOM_SPAN_M = 12;
+
 export function planLabel(label: string): string {
   return label.split(/\s[–-]\s|,\s/)[0] || label;
 }
