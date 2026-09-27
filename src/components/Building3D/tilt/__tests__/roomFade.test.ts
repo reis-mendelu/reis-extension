@@ -41,6 +41,15 @@ describe('roomFade', () => {
     expect(opacity(g, 2)).toBeGreaterThan(0.5);
   });
 
+  it('keeps the other rooms out of the depth buffer, so overlapping fills never hide each other', () => {
+    const g = slab();
+    roomFade(g, 3);
+    const m = (id: number) =>
+      (g.children.find((c) => c.userData.roomId === id) as Mesh).material as MeshBasicMaterial;
+    expect(m(1).depthWrite).toBe(false);
+    expect(m(3).depthWrite).toBe(true);
+  });
+
   it('turns only the target room orange, fully opaque', () => {
     const g = slab();
     roomFade(g, 3)(1);

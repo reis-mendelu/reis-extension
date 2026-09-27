@@ -3,6 +3,7 @@ import { PerspectiveCamera, Vector3 } from 'three';
 import {
   cameraPosition,
   clampLabelX,
+  clampLabelY,
   flatDistance,
   localMetresPerPixel,
   FLAT_PITCH,
@@ -53,5 +54,17 @@ describe('clampLabelX', () => {
 
   it('centres a label wider than the view', () => {
     expect(clampLabelX(10, 500, 390)).toBe(195);
+  });
+});
+
+describe('clampLabelY', () => {
+  // The pin hangs above its anchor (translate -100%): its top is y − height.
+  it('keeps the pin below the top of the view', () => {
+    expect(clampLabelY(10, 30, 0)).toBe(16 + 30);
+    expect(clampLabelY(10, 30, 60)).toBe(60 + 30);
+  });
+
+  it('leaves a pin that fits where the scene put it', () => {
+    expect(clampLabelY(300, 30, 60)).toBe(300);
   });
 });

@@ -17,7 +17,13 @@ interface Fade {
 export function roomFade(slab: Group, targetRoomId: number | null) {
   const fades: Fade[] = [];
   slab.traverse((o) => {
-    if (o.userData.roomId !== targetRoomId) return;
+    if (o.userData.roomId !== targetRoomId) {
+      // Translucent, coplanar fills: kept out of the depth buffer, or whichever
+      // draws first hides the part of its neighbour it overlaps.
+      if (o instanceof Mesh && o.material instanceof MeshBasicMaterial)
+        o.material.depthWrite = false;
+      return;
+    }
     if (o instanceof Mesh && Array.isArray(o.material)) {
       (o.material as MeshBasicMaterial[]).forEach((m, i) => {
         m.depthWrite = true;

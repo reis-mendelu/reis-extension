@@ -4,7 +4,13 @@ import { makeProjector } from '../../projection';
 import type { RoomFeature } from '../../../../types/campusMap';
 
 const ANCHOR: [number, number] = [16.6142, 49.2096];
-const room = (id: number, name: string, d: number, lng = 16.6142): RoomFeature => ({
+const room = (
+  id: number,
+  name: string,
+  d: number,
+  lng = 16.6142,
+  category: RoomFeature['properties']['category'] = 'teaching'
+): RoomFeature => ({
   type: 'Feature',
   geometry: {
     type: 'Polygon',
@@ -26,7 +32,7 @@ const room = (id: number, name: string, d: number, lng = 16.6142): RoomFeature =
     name,
     nickname: null,
     type: 'classroom',
-    category: 'teaching',
+    category,
     label: 'Classroom',
     passportNumber: null,
     seats: null,
@@ -46,6 +52,12 @@ describe('labelAnchors', () => {
   it('skips the lit room, which the pin already names, and unnamed rooms', () => {
     const a = labelAnchors([room(1, 'Q39', 0.0002), room(2, '', 0.0002)], project, 18.8, 1);
     expect(a).toEqual([]);
+  });
+
+  it('never labels a structural shape, which the flat plan does not either', () => {
+    expect(labelAnchors([room(1, 'Zeď', 0.0002, 16.6142, 'structure')], project, 18.8, 99)).toEqual(
+      []
+    );
   });
 
   it('sits on the floor, at the room’s centre', () => {

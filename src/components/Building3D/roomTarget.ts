@@ -46,3 +46,24 @@ export function cutTarget(
   const level = floorLevel ?? here?.floorLevel ?? null;
   return { level, room: here && here.floorLevel === level ? here : null };
 }
+
+/** The scene a tilt started with, and whether it has been rebuilt since. */
+export interface TiltEntry {
+  key: string;
+  moved: boolean;
+}
+
+/**
+ * Track one stay in 3D: only its first scene glides in from the flat map; any
+ * rebuild after that — a floor tap, even one back to the entry floor — appears
+ * already tilted. Null while the map is flat.
+ */
+export function nextTiltEntry(
+  prev: TiltEntry | null,
+  tilted: boolean,
+  key: string
+): TiltEntry | null {
+  if (!tilted) return null;
+  if (!prev) return { key, moved: false };
+  return prev.moved || prev.key === key ? prev : { ...prev, moved: true };
+}

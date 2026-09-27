@@ -9,6 +9,8 @@ export function FloorStack() {
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const activeFloorId = useAppStore((s) => s.activeFloorId);
   const setMapFloor = useAppStore((s) => s.setMapFloor);
+  // Mid-way back to 2D, a floor tap would rebuild the scene and drop its close.
+  const leaving = useAppStore((s) => s.mapTilt.phase === 'leaving');
   if (activeBuildingId === null) return null;
   const b = META.buildings.find((x) => x.id === activeBuildingId);
   if (!b) return null;
@@ -22,6 +24,7 @@ export function FloorStack() {
           key={f.id}
           className={`btn btn-xs ${activeFloorId === f.id ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => setMapFloor(f.id)}
+          disabled={leaving}
         >
           {f.name ?? f.level}
         </button>

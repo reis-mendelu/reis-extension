@@ -5,7 +5,7 @@ import { flatMapLook } from './mapOverlays';
 import { applyTilt, groundAt, screenOf } from './cameraRig';
 import { markWebGL2Unavailable } from '../webgl';
 import { logError } from '../../../utils/reportError';
-import { clampLabelX, type Band, type MapView } from './tiltCamera';
+import { clampLabelX, clampLabelY, type Band, type MapView } from './tiltCamera';
 import { createLabelLayer } from './roomLabelLayer';
 import type { ScreenBox } from './roomLabels';
 import type { BuildingModel } from '../../../types/buildingModel';
@@ -69,11 +69,12 @@ export default function TiltCanvas(props: TiltCanvasProps) {
     if (!host) return;
     const roomLabels = createLabelLayer(host);
     let pinBox: ScreenBox | null = null;
-    const buildScene = (canvas: HTMLCanvasElement, host: HTMLElement) =>
+    const band = visibleBand(host);
+    const buildScene = (canvas: HTMLCanvasElement) =>
       createTiltScene({
         canvas,
         view,
-        band: visibleBand(host),
+        band,
         model,
         rooms,
         targetLevel,
@@ -89,8 +90,9 @@ export default function TiltCanvas(props: TiltCanvasProps) {
           if (at) {
             const [w, h] = [pin.offsetWidth, pin.offsetHeight];
             const x = clampLabelX(at.x, w, view.width);
-            pin.style.transform = `translate(${x}px, ${at.y}px) translate(-50%, -100%)`;
-            pinBox = { x, y: at.y - h / 2, w, h };
+            const y = clampLabelY(at.y, h, band.top);
+            pin.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`;
+            pinBox = { x, y: y - h / 2, w, h };
           }
         },
         onRoomLabels: (labels, room) =>
@@ -112,7 +114,7 @@ export default function TiltCanvas(props: TiltCanvasProps) {
     host.prepend(canvas);
     let scene: TiltScene;
     try {
-      scene = buildScene(canvas, host);
+      scene = buildScene(canvas);
     } catch (err) {
       // A device can advertise WebGL2 and still fail to build a renderer (seen
       // in an embedded browser). The flat map is still there under this layer.

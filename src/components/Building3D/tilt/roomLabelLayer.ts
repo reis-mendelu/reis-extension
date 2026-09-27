@@ -17,6 +17,7 @@ export interface OnScreenLabel {
  */
 export function createLabelLayer(host: HTMLElement) {
   const spans: HTMLSpanElement[] = [];
+  const sizes = new WeakMap<HTMLSpanElement, { text: string; w: number; h: number }>();
   const hideAll = () => spans.forEach((s) => s.classList.add('hidden'));
   return (labels: OnScreenLabel[] | null, blocked: ScreenBox[]) => {
     if (!labels) return hideAll();
@@ -30,15 +31,21 @@ export function createLabelLayer(host: HTMLElement) {
     }
     const boxes = labels.map((l, i) => {
       const s = spans[i]!;
-      if (s.textContent !== l.text) s.textContent = l.text;
-      // Measured while shown: a hidden span has no width.
-      s.classList.remove('hidden');
-      return { x: l.x, y: l.y, w: s.offsetWidth, h: s.offsetHeight };
+      // Measured once per text, not per frame: reading a size forces layout.
+      let size = sizes.get(s);
+      if (!size || size.text !== l.text) {
+        s.textContent = l.text;
+        s.classList.remove('hidden'); // a hidden span has no width
+        size = { text: l.text, w: s.offsetWidth, h: s.offsetHeight };
+        sizes.set(s, size);
+      }
+      return { x: l.x, y: l.y, w: size.w, h: size.h };
     });
     const keep = new Set(placeLabels(boxes, host.clientWidth, host.clientHeight, blocked));
     spans.forEach((s, i) => {
       const b = boxes[i];
       if (!b || !keep.has(i)) return void s.classList.add('hidden');
+      s.classList.remove('hidden');
       s.style.transform = `translate(${b.x - b.w / 2}px, ${b.y - b.h / 2}px)`;
     });
   };

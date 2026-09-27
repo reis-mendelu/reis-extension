@@ -102,7 +102,18 @@ export function cutShell(
   for (const mesh of meshes) {
     const name = (mesh.material as Material).name;
     const level = levelOf(mesh);
-    const role = level === undefined ? 'below' : (roles.get(level) ?? 'below');
+    // No floor known: the whole building as glass, its floors hidden — a solid
+    // block would say nothing, and every floor as a plate stacks into milk.
+    if (targetLevel === null && name === 'floor') {
+      mesh.visible = false;
+      continue;
+    }
+    const role =
+      targetLevel === null
+        ? 'target'
+        : level === undefined
+          ? 'below'
+          : (roles.get(level) ?? 'below');
     if (role === 'lifted') {
       mesh.visible = false;
       continue;

@@ -1,7 +1,7 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { cutTarget, targetFromSelection } from '../roomTarget';
+import { cutTarget, nextTiltEntry, targetFromSelection, type TiltEntry } from '../roomTarget';
 import { floorText } from '../floorText';
 import { map3dEnabled } from '../../../data/map/buildingModels';
 import buildingsJson from '../../../data/map/buildings.json';
@@ -45,16 +45,16 @@ function TiltLayer() {
   // A new floor or room while tilted rebuilds the scene (keyed below) straight
   // into the tilted frame; only the scene an entry started with does the glide.
   const sceneKey = `${level}:${roomId}`;
-  const [entryKey, setEntryKey] = useState<string | null>(null);
-  if (phase === 'flat' && entryKey !== null) setEntryKey(null);
-  if (phase !== 'flat' && entryKey === null) setEntryKey(sceneKey);
+  const [entry, setEntry] = useState<TiltEntry | null>(null);
+  const next = nextTiltEntry(entry, phase !== 'flat', sceneKey);
+  if (next !== entry) setEntry(next);
 
   if (phase === 'flat' || !view || !model || model === 'failed') return null;
   return (
     <Suspense fallback={null}>
       <TiltCanvas
         key={sceneKey}
-        startTilted={entryKey !== null && entryKey !== sceneKey}
+        startTilted={next !== null && (next.moved || next.key !== sceneKey)}
         view={view}
         model={model}
         rooms={floorRooms}

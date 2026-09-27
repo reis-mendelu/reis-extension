@@ -72,4 +72,15 @@ describe('cutShell', () => {
     cutShell(root, 3, STOREYS);
     expect(mesh(root, 'facade', 3).visible).toBe(true);
   });
+
+  it('draws the whole building as glass when no floor is known, not as a solid block', () => {
+    const root = model();
+    cutShell(root, null, STOREYS);
+    for (const { level } of STOREYS) {
+      const facade = mesh(root, 'facade', level);
+      expect(facade.visible).toBe(true);
+      expect((facade.material as MeshBasicMaterial).opacity).toBe(LOOK.glassOpacity);
+      expect(mesh(root, 'floor', level).visible).toBe(false);
+    }
+  });
 });

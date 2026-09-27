@@ -140,3 +140,11 @@ export function clampLabelX(x: number, labelWidth: number, viewWidth: number): n
   if (min > max) return viewWidth / 2;
   return Math.min(max, Math.max(min, x));
 }
+
+/**
+ * Where to anchor a pin `labelHeight` tall that hangs above `y`, so its top
+ * stays clear of the view's top chrome (`top`, e.g. the search bar) and edge.
+ */
+export function clampLabelY(y: number, labelHeight: number, top: number): number {
+  return Math.max(y, Math.max(LABEL_GUTTER, top) + labelHeight);
+}

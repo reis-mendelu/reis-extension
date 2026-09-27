@@ -1,4 +1,4 @@
-import { planLabel, roomLabel } from '../../CampusMap/mapHelpers';
+import { LABELLED_ROOM_SPAN_M, planLabel, roomLabel } from '../../CampusMap/mapHelpers';
 import type { Projector } from '../projection';
 import type { RoomFeature } from '../../../types/campusMap';
 
@@ -9,9 +9,6 @@ export interface LabelAnchor {
   y: number;
   z: number;
 }
-
-/** Rooms whose outline spans more than this (metres, corner to corner) carry a label — the flat plan's rule. */
-const LABELLED_SPAN_M = 12;
 
 /**
  * The labels the tilted floor carries: the same rooms the flat plan labels
@@ -27,14 +24,14 @@ export function labelAnchors(
   const out: LabelAnchor[] = [];
   for (const room of rooms) {
     const p = room.properties;
-    if (!p.name || p.id === targetRoomId) continue;
+    if (!p.name || p.id === targetRoomId || p.category === 'structure') continue;
     const ring = room.geometry.coordinates[0] ?? [];
     const pts = ring.map((c) => project(c));
     if (pts.length === 0) continue;
     const xs = pts.map(([x]) => x);
     const zs = pts.map(([, z]) => z);
     const [x0, x1, z0, z1] = [Math.min(...xs), Math.max(...xs), Math.min(...zs), Math.max(...zs)];
-    if (Math.hypot(x1 - x0, z1 - z0) <= LABELLED_SPAN_M) continue;
+    if (Math.hypot(x1 - x0, z1 - z0) <= LABELLED_ROOM_SPAN_M) continue;
     out.push({
       text: planLabel(roomLabel(p.name, p.passportNumber, p.nickname)),
       x: (x0 + x1) / 2,
