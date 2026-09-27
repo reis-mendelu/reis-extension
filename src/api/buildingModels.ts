@@ -6,10 +6,12 @@ import type { BuildingModel, BuildingModelMeta } from '../types/buildingModel';
 
 // The same CDN and repository as the room outlines (campusMap.ts) — no new
 // host, so nothing changes in privacy/disclosures.ts.
-// SPIKE (#462): a device build can pin the model to a reis-data commit that is
-// not on main yet (`VITE_BUILDING_MODEL_REF=<sha>`), since a phone has no way to
-// intercept requests the way the verify harness does.
-const MODEL_REF = import.meta.env?.VITE_BUILDING_MODEL_REF || 'main';
+// Pinned to the reis-data commit that holds the model (reis-data#8), not `main`:
+// jsDelivr caches a branch for days, so a moving ref could swap the shipped
+// model under a released build. A new model is a new pin, in a PR.
+// `VITE_BUILDING_MODEL_REF=<sha>` tries another commit on a device build.
+const MODEL_REF =
+  import.meta.env?.VITE_BUILDING_MODEL_REF || '9d55d3293bffe0f70eeae558fda260293ace5366';
 const CDN_BASE_URL = `https://cdn.jsdelivr.net/gh/reis-mendelu/reis-data@${MODEL_REF}`;
 const CACHE_EXPIRY = 30 * 24 * 60 * 60 * 1000; // 30 days, like the room outlines
 
