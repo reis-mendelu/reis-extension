@@ -65,14 +65,18 @@ export function labelsOnScreen(
   });
 }
 
-/** The screen box around a set of points (the lit room's top), or null when behind the camera. */
+/** The screen box around a set of points (the lit room's block), or null when all are behind the camera. */
 export function boxOnScreen(
   camera: PerspectiveCamera,
   points: Vector3[],
   view: { width: number; height: number }
 ): ScreenBox | null {
-  const on = points.map((p) => screenOf(camera, p, view.width, view.height));
-  if (on.length === 0 || on.some((p) => !p.inFront)) return null;
+  // Corners behind the camera project nonsense; the ones in front still bound
+  // what is visible of the block.
+  const on = points
+    .map((p) => screenOf(camera, p, view.width, view.height))
+    .filter((p) => p.inFront);
+  if (on.length === 0) return null;
   const xs = on.map((p) => p.x);
   const ys = on.map((p) => p.y);
   const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];

@@ -60,6 +60,32 @@ describe('labelAnchors', () => {
     );
   });
 
+  // Leaflet's tooltip sits at the polygon's area centroid; for an L-shaped room
+  // the bounding box's centre can fall outside the room altogether.
+  it('sits at the room’s centroid, as the flat plan’s label does', () => {
+    const d = 0.0003;
+    const L: RoomFeature = {
+      ...room(1, 'Q-L', d),
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [16.6142, 49.2096],
+            [16.6142 + d, 49.2096],
+            [16.6142 + d, 49.2096 + d / 3],
+            [16.6142 + d / 3, 49.2096 + d / 3],
+            [16.6142 + d / 3, 49.2096 + d],
+            [16.6142, 49.2096 + d],
+            [16.6142, 49.2096],
+          ],
+        ],
+      },
+    };
+    const [a] = labelAnchors([L], project, 18.8, 99);
+    const [bx] = project([16.6142 + d / 2, 49.2096]);
+    expect(a!.x).toBeLessThan(bx); // pulled toward the L's corner, off the box centre
+  });
+
   it('sits on the floor, at the room’s centre', () => {
     const [a] = labelAnchors([room(1, 'Q38', 0.0002)], project, 18.8, 99);
     expect(a!.y).toBeGreaterThan(18.8);

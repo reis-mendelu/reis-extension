@@ -11,6 +11,26 @@ export interface LabelAnchor {
 }
 
 /**
+ * A polygon's area centroid (shoelace) — where Leaflet puts a polygon's
+ * tooltip, so the tilted label sits where the flat one did. Null when degenerate.
+ */
+function centroid(pts: [number, number][]): [number, number] | null {
+  let a = 0;
+  let cx = 0;
+  let cz = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x0, z0] = pts[i]!;
+    const [x1, z1] = pts[i + 1]!;
+    const k = x0 * z1 - x1 * z0;
+    a += k;
+    cx += (x0 + x1) * k;
+    cz += (z0 + z1) * k;
+  }
+  if (Math.abs(a) < 1e-9) return null;
+  return [cx / (3 * a), cz / (3 * a)];
+}
+
+/**
  * The labels the tilted floor carries: the same rooms the flat plan labels
  * permanently (named, and big enough), by code alone, at their centre on the
  * floor. The lit room is left out; the pin names it.
@@ -32,11 +52,12 @@ export function labelAnchors(
     const zs = pts.map(([, z]) => z);
     const [x0, x1, z0, z1] = [Math.min(...xs), Math.max(...xs), Math.min(...zs), Math.max(...zs)];
     if (Math.hypot(x1 - x0, z1 - z0) <= LABELLED_ROOM_SPAN_M) continue;
+    const [cx, cz] = centroid(pts) ?? [(x0 + x1) / 2, (z0 + z1) / 2];
     out.push({
       text: planLabel(roomLabel(p.name, p.passportNumber, p.nickname)),
-      x: (x0 + x1) / 2,
+      x: cx,
       y: elevation + 0.3,
-      z: (z0 + z1) / 2,
+      z: cz,
     });
   }
   return out;

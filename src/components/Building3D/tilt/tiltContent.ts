@@ -31,7 +31,7 @@ export interface TiltContent {
   pin: Vector3 | null;
   /** The floor's room names. */
   labels: LabelAnchor[];
-  /** The lit room's box corners: the labels keep off it. */
+  /** The lit room's block, all eight corners: the labels keep off its top and sides. */
   roomCorners: Vector3[];
 }
 
@@ -137,7 +137,7 @@ export function addTiltContent(
     const box = mesh.geometry.boundingBox!.clone().translate(mesh.position);
     const c = box.getCenter(new Vector3());
     content.roomCorners = [box.min.x, box.max.x].flatMap((x) =>
-      [box.min.z, box.max.z].map((z) => new Vector3(x, box.max.y, z))
+      [box.min.y, box.max.y].flatMap((y) => [box.min.z, box.max.z].map((z) => new Vector3(x, y, z)))
     );
     const top = box.max.y + 0.15;
     const ceiling = storeyCeiling(model.meta.storeys, input.targetLevel, model.meta.height);
