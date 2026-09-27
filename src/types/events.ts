@@ -94,7 +94,8 @@ export interface MapEvent extends MendeluEvent {
   societyId: string;
   coord: [number, number] | null; // [lng, lat]
   roomCode: string | null;
-  venueKind: 'campus' | 'online' | 'offcampus';
+  /** 'tba' = the society has not said where yet: no pin, list-only. */
+  venueKind: 'campus' | 'online' | 'offcampus' | 'tba';
   category: EventCategory;
   /** The society's optional description (spolky_events.body), trimmed; null
    *  when there is none. Optional so hand-built fixtures need not carry it. */

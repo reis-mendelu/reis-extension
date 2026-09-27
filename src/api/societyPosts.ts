@@ -2,7 +2,7 @@ import { adminAuthClient } from '@/services/admin/authClient';
 import { logError } from '@/utils/reportError';
 import { DEV_SOCIETY, devSocietyStore } from '@/utils/mock/devSociety';
 
-export type VenueKind = 'campus' | 'online' | 'offcampus';
+export type VenueKind = 'campus' | 'online' | 'offcampus' | 'tba';
 
 export interface PostInput {
   title: string;
