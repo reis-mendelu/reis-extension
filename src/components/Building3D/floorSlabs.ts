@@ -104,7 +104,10 @@ export function buildFloorSlab({
           emissiveIntensity: isTarget ? 0.35 : 0,
           roughness: 0.8,
         });
-    const mesh = new Mesh(geometry, material);
+    // The block's sides get their own material (ExtrudeGeometry: group 0 caps,
+    // group 1 sides), so the tilted map can shade them and the block reads as a
+    // volume rather than a flat patch.
+    const mesh = new Mesh(geometry, isTarget ? [material, material.clone()] : material);
     // The lit room sits a hair higher, so its outline wins over the neighbours'
     // outlines along the walls they share.
     mesh.position.y = elevation + LIFT_OFF_FLOOR + (isTarget ? 0.08 : 0);

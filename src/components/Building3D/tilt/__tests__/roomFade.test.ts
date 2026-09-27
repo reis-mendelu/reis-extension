@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { spotlight, SPOT_FAR, SPOT_NEAR } from '../tiltLook';
+import { spotlight, SPOT_FAR, SPOT_NEAR } from '../roomFade';
 
 describe('spotlight', () => {
   it('draws the lit room’s neighbours fully and fades the rest of the floor out', () => {

@@ -12,6 +12,7 @@ import { makeProjector } from '../projection';
 import { applyTilt, screenOf } from './cameraRig';
 import { addTiltContent } from './tiltContent';
 import { sizeFatLines } from './fatLines';
+import { disposeScene } from './disposeScene';
 import { attachTiltGestures } from './tiltGestures';
 import {
   clampTilt,
@@ -185,15 +186,7 @@ export function createTiltScene(input: TiltSceneInput) {
       disposed = true;
       cancelAnimationFrame(frame);
       detach?.();
-      scene.traverse((o) => {
-        const m = o as {
-          geometry?: { dispose(): void };
-          material?: { dispose(): void; map?: { dispose(): void } | null };
-        };
-        m.geometry?.dispose();
-        m.material?.map?.dispose();
-        m.material?.dispose();
-      });
+      disposeScene(scene);
       renderer.dispose();
       renderer.forceContextLoss();
     },

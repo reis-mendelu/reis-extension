@@ -46,6 +46,10 @@ const build = (targetRoomId: number | null) =>
     colors: COLORS,
   });
 
+// The lit room carries [caps, sides] materials; its colour is the caps'.
+const capOf = (m: Mesh) =>
+  (Array.isArray(m.material) ? m.material[0] : m.material) as MeshStandardMaterial;
+
 const meshes = (targetRoomId: number | null) =>
   build(targetRoomId).children.filter((c): c is Mesh => c instanceof Mesh);
 
@@ -55,9 +59,7 @@ describe('buildFloorSlab', () => {
   });
 
   it('paints the target room in the target colour and the rest in the room colour', () => {
-    const colours = meshes(2).map(
-      (m) => `#${(m.material as MeshStandardMaterial).color.getHexString()}`
-    );
+    const colours = meshes(2).map((m) => `#${capOf(m).color.getHexString()}`);
     expect(
       colours.filter((c) => c === new Color(COLORS.target).getStyle() || c === COLORS.target)
     ).toHaveLength(1);
@@ -83,9 +85,7 @@ describe('buildFloorSlab', () => {
   });
 
   it('highlights nothing when there is no target', () => {
-    const colours = meshes(null).map(
-      (m) => `#${(m.material as MeshStandardMaterial).color.getHexString()}`
-    );
+    const colours = meshes(null).map((m) => `#${capOf(m).color.getHexString()}`);
     expect(colours.every((c) => c === COLORS.room)).toBe(true);
   });
 });

@@ -12,7 +12,8 @@ import { loadBuildingGroup, type BuildingGroupInput } from '../buildingGroup';
 import type { Projector } from '../projection';
 import { buildingOutlines } from './mapOverlays';
 import { buildTileGround } from './tileGround';
-import { glassShell, LOOK, roomFade } from './tiltLook';
+import { glassShell, LOOK } from './tiltLook';
+import { roomFade } from './roomFade';
 import type { MapView } from './tiltCamera';
 
 const PIN_ABOVE_ROOF = 16; // metres: the stem rises clear of the roofline, so the label never sits on the building
@@ -73,7 +74,7 @@ export function addTiltContent(
     cutaway: false,
     // Leaflet strokes rooms 1 px wide; the lit room's halo is wider.
     makeEdges: (edges, color, opacity, isTarget) =>
-      fatSegments(edges, fatMaterial(color, isTarget ? 2.5 : 1, opacity)),
+      fatSegments(edges, fatMaterial(color, isTarget ? 6 : 1, opacity)),
   }).then((parts) => {
     content.shell = parts.shell;
     content.slab = parts.slab;
@@ -89,7 +90,17 @@ export function addTiltContent(
     // its own colour; its halo draws after it, the stem last.
     parts.slab.traverse((o) => {
       if (o.userData.roomId !== input.targetRoomId) return;
-      o.renderOrder = o instanceof Mesh ? 10 : 11;
+      // Halo first, then the block, both over everything: nothing may cut across
+      // the lit room (the rooflines above it did). The block covers every halo
+      // line inside its own silhouette, so what survives is a white rim around
+      // its outline — and its sides stay visible. Convex and back-face culled, the
+      // block shows only its front without a depth test.
+      // (LineSegments2 is itself a Mesh — tell the halo apart by its flag.)
+      const isLine = (o as { isLineSegments2?: boolean }).isLineSegments2 === true;
+      o.renderOrder = isLine ? 9 : 10;
+      const mats = (o as unknown as { material: { depthTest: boolean } | { depthTest: boolean }[] })
+        .material;
+      for (const m of Array.isArray(mats) ? mats : [mats]) m.depthTest = false;
     });
     // The pin rises from the lit room to clear the roof, so the label is never
     // behind the building it names.
