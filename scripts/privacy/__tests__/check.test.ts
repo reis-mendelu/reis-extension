@@ -86,6 +86,16 @@ describe('checkDisclosures', () => {
     expect(checkDisclosures(s, model).join('\n')).toMatch(/Firefox/);
   });
 
+  it('4. gives each Android direction the fix that actually resolves it', () => {
+    const s = clean();
+    s.androidPermissions = ['CAMERA'];
+    const out = checkDisclosures(s, model);
+    expect(out.find((l) => l.includes('"CAMERA"'))).toMatch(/tools:node="remove"/);
+    const absent = out.find((l) => l.includes('"INTERNET"'));
+    expect(absent).toMatch(/Remove it from PLATFORM_PERMISSIONS\.android/);
+    expect(absent).not.toMatch(/tools:node/);
+  });
+
   it('4. flags a platform permission the source does not declare', () => {
     const s = clean();
     s.iosUsageKeys.push('NSLocationWhenInUseUsageDescription');

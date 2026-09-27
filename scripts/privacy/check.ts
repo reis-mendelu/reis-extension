@@ -30,7 +30,14 @@ export interface RepoSnapshot {
 const CALL = /\b(?:supabase|adminAuthClient)\s*\.\s*(?:rpc|from)\(\s*'([a-z0-9_]+)'/g;
 const isTest = (p: string) => /(__tests__|\/test\/|\.test\.|\.spec\.)/.test(p);
 
-function setDiff(label: string, actual: string[], declared: string[], fix: string): string[] {
+/** `fixAbsent` is the advice for "declared but not present", when it differs. */
+function setDiff(
+  label: string,
+  actual: string[],
+  declared: string[],
+  fix: string,
+  fixAbsent = fix
+): string[] {
   const a = new Set(actual);
   const d = new Set(declared);
   return [
@@ -39,7 +46,7 @@ function setDiff(label: string, actual: string[], declared: string[], fix: strin
       .map((x) => `${label}: "${x}" is present but not declared. ${fix}`),
     ...[...d]
       .filter((x) => !a.has(x))
-      .map((x) => `${label}: "${x}" is declared but not present. ${fix}`),
+      .map((x) => `${label}: "${x}" is declared but not present. ${fixAbsent}`),
   ];
 }
 
@@ -112,7 +119,8 @@ export function checkDisclosures(s: RepoSnapshot, m: Model): string[] {
       'Android permission in the merged release manifest',
       s.androidPermissions,
       m.permissions.android,
-      `Update PLATFORM_PERMISSIONS.android, or strip it in android/app/src/main/AndroidManifest.xml with tools:node="remove".`
+      `Declare it in PLATFORM_PERMISSIONS.android, or strip it in android/app/src/main/AndroidManifest.xml with tools:node="remove".`,
+      `Remove it from PLATFORM_PERMISSIONS.android.`
     )
   );
 
