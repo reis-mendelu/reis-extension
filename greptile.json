@@ -2,12 +2,14 @@
   "$schema": "https://www.greptile.com/schema/greptile.json",
   "strictness": 2,
   "commentTypes": ["logic", "syntax", "style"],
+  "excludeAuthors": ["dependabot[bot]"],
+  "excludeBranches": ["dependabot/**"],
   "ignorePatterns": "**/node_modules/**\n**/.output/**\n**/dist/**\npackage-lock.json\n**/*.generated.*\npublic/dev-real-data.json\ne2e/**/__screenshots__/**",
   "customContext": {
     "rules": [
       {
         "id": "no-web-storage",
-        "rule": "Never use localStorage or sessionStorage. All persistent client state must go through IndexedDBService; small user settings go through the Chrome Storage API.",
+        "rule": "Never use localStorage or sessionStorage. All persistent client state must go through IndexedDBService; small user settings go through the platform storage seam (getPlatform().storage, src/platform/types.ts), never a host API called directly.",
         "severity": "high"
       },
       {
@@ -42,32 +44,20 @@
         "severity": "high"
       },
       {
-        "id": "telemetry-privacy",
-        "rule": "Error telemetry must never transmit student PII or IS data: no student name, student/staff ID (raw or hashed), session cookies, grades, schedules, or IndexedDB contents. The `extra` argument to logError is never transmitted. Route all non-fatal errors through logError (src/utils/reportError.ts); content scripts must bridge via a telemetryError message. Ensure sanitize.ts redaction stays intact.",
-        "scope": ["src/services/errorReporter/**", "src/utils/reportError.ts"],
-        "severity": "high"
-      },
-      {
-        "id": "drive-dedupe-by-hash",
-        "rule": "Google Drive backup must dedupe files ONLY by the appProperties.reisLink IS-link hash, never by filename (IS legitimately serves many files with the same display name). Folders are find-or-create by name+parent. The manifest is a cache, not the source of truth.",
-        "scope": ["src/services/drive/**", "src/api/googleDrive.ts"],
-        "severity": "high"
-      },
-      {
-        "id": "drive-scope-minimal",
-        "rule": "Google Drive integration must use the drive.file OAuth scope only. Never escalate to drive, drive.readonly, or documents scopes.",
-        "scope": ["src/api/googleAuth.ts", "src/services/drive/**"],
+        "id": "no-failure-transmission",
+        "rule": "reIS transmits nothing about a failure on its own: no error-reporting service, no background collection. Route non-fatal errors through logError (src/utils/reportError.ts), which only logs locally and keeps a cleaned copy in the in-memory diagnostic log. Flag any reintroduction of sendTelemetry, initTelemetry, report_error or report_error_v2, any new file that talks to Supabase without being added to SUPABASE_CALLERS in src/test/guards/noStudentDataLeaves.test.ts, and any imports added to src/utils/diagnostics/diagnosticLog.ts (it must import nothing). A change to what reIS sends must update privacy/disclosures.ts in the same PR.",
+        "scope": ["src/**"],
         "severity": "high"
       },
       {
         "id": "host-data-direction",
-        "rule": "Host integration is push-based: data flows content script -> iframe, never iframe -> host API. The iframe must never call the IS Mendelu or WebISKAM API directly; only the content script fetches host data.",
+        "rule": "In the browser extension, host integration is push-based: data flows content script -> iframe, never the reverse. The iframe app must never call IS Mendelu directly; only the content script fetches host data. (The Capacitor iOS/Android apps have no content script and call IS Mendelu through src/platform/ — this rule does not apply to them.)",
         "scope": ["src/injector/**", "src/entrypoints/**"],
         "severity": "high"
       },
       {
         "id": "lang-code-mapping",
-        "rule": "Internal code uses 'cs'/'en' language codes; the IS Mendelu API uses 'cz'/'en'. The cs<->cz mapping must be applied in the API layer, not leaked into UI or store code.",
+        "rule": "The app language code is 'cz'/'en' everywhere (Language in src/store/types.ts), the same values IS Mendelu's lang= takes, so store values pass to the API layer unmapped. Flag any cs->cz mapping added at a store or API call site. 'cs' is only a BCP-47 locale: it may appear only where a value is handed to Intl/toLocaleDateString or names a locale file, converted at that boundary (language === 'cz' ? 'cs' : language).",
         "severity": "medium"
       },
       {

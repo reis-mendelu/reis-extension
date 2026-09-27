@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://cubic.dev/schema/cubic-repository-config.schema.json
+
+# cubic reads this file from the DEFAULT branch only (main), so an edit here
+# takes effect at the next release, not when it merges to test.
+# CLAUDE.md is picked up automatically as background context; the agents below
+# are the rules cubic should actively flag. Order matters: past the plan's
+# agent limit, only the first N apply.
+
+version: 1
+
+reviews:
+  enabled: true
+  sensitivity: medium
+  check_drafts: false
+  custom_instructions: |
+    PRs target `test`, not `main`. One React app ships as three products: the
+    browser extension (desktop tree), and the iOS and Android apps (phone tree,
+    src/components/mobile/ and src/mobile/). The iPad runs the phone tree.
+
+  ignore:
+    files:
+      - '**/node_modules/**'
+      - '**/.output/**'
+      - '**/dist/**'
+      - package-lock.json
+      - '**/*.generated.*'
+      - public/dev-real-data.json
+      - 'e2e/**/__screenshots__/**'
+    head_branches:
+      - 'dependabot/**'
+
+  custom_rules:
+    - name: IS Mendelu parsers are frozen
+      description: >-
+        IS Mendelu HTML parsers are extremely brittle and must almost never
+        change. Flag any parser change made to fix a lint or test error (the
+        fix belongs in a lint suppression or the test fixture), any change to a
+        column-index constant, and any relaxed guard that accepts headerless
+        tables. A parser change needs a real IS Mendelu HTML sample as evidence.
+      include:
+        - src/api/documents/parser.ts
+        - src/api/cvicneTests.ts
+        - 'src/utils/parsers/**'
+
+    - name: Nothing about the student leaves the device
+      description: >-
+        reIS transmits nothing about a failure on its own. Non-fatal errors go
+        through logError (src/utils/reportError.ts), which only logs locally.
+        Flag sendTelemetry, initTelemetry, report_error or report_error_v2; any
+        new Supabase caller not listed in SUPABASE_CALLERS in
+        src/test/guards/noStudentDataLeaves.test.ts; any import added to
+        src/utils/diagnostics/diagnosticLog.ts; and any change to what reIS
+        sends that does not also update privacy/disclosures.ts.
+
+    - name: A user-facing feature lands on both UI trees
+      description: >-
+        The extension renders the desktop tree (Sidebar, AppMain, AppOverlays);
+        the iOS and Android apps render the phone tree (src/components/mobile/,
+        src/mobile/). Flag a user-facing capability added to one tree only,
+        unless a guard in src/test/guards/ records why the other tree does not
+        get it. Also flag mobile-only code reaching shared src/api/ or
+        src/utils/, which pulls it into the extension's content script.
+      include:
+        - 'src/**'
+
+    - name: Iron rules
+      description: >-
+        Flag localStorage or sessionStorage (use IndexedDBService, or
+        getPlatform().storage for small settings); re-export barrel files or
+        imports through them; data fetching inside useEffect (fetch in services
+        or the Zustand store); custom CSS outside the Leaflet label classes in
+        src/index.css (use DaisyUI semantic classes and Tailwind utilities);
+        and application state kept outside the Zustand slices in
+        src/store/slices/.
+      include:
+        - 'src/**'
+
+    - name: Language codes are cz and en
+      description: >-
+        The app language code is 'cz' or 'en' everywhere, the same values IS
+        Mendelu's lang= parameter takes, so store values reach the API layer
+        unmapped. Flag any cs-to-cz mapping at a store or API call site. 'cs' is
+        only a BCP-47 locale, allowed where a value is handed to Intl or
+        toLocaleDateString, or names a locale file.
+      include:
+        - 'src/**'
+
+pr_descriptions:
+  # PR descriptions are written by hand or by Claude; don't overwrite them.
+  generate: false
