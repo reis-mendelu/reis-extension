@@ -43,6 +43,7 @@
 | File | Change | Responsibility |
 | --- | --- | --- |
 | `supabase/migrations/20260928120000_spolky_events_tba_and_instagram.sql` | create | allow `tba`; add `societies.instagram` |
+| `supabase/migrations/20260928130000_spolky_events_tba_has_no_place.sql` | create | a `tba` row carries no room and no coordinates |
 | `src/api/societyPosts.ts` | modify | `VenueKind` gains `'tba'` |
 | `src/types/events.ts` | modify | `MapEvent.venueKind` gains `'tba'`; `Society.instagram?` |
 | `src/components/CampusMap/eventWindow.ts` | modify | `SOON_WINDOW_DAYS`, `localTodayIso`, `isFinishedEvent`, `isSoonEvent`, `isBeyondSoon`; drop `isPublicEvent`/`isScheduledEvent`/`goLiveDate`/`PUBLIC_WINDOW_DAYS` |
@@ -72,7 +73,7 @@
 ### Task 1: Migration for `tba` and `societies.instagram`, plus the type widening
 
 **Files:**
-- Create: `supabase/migrations/20260928120000_spolky_events_tba_and_instagram.sql`
+- Create: `supabase/migrations/20260928120000_spolky_events_tba_and_instagram.sql`, `supabase/migrations/20260928130000_spolky_events_tba_has_no_place.sql`
 - Modify: `src/api/societyPosts.ts:5`, `src/types/events.ts:97`
 - Test: `src/api/__tests__/mapEvents.test.ts`
 
@@ -161,6 +162,8 @@ npx supabase db query --linked "do \$\$ begin
   alter table public.societies add column if not exists instagram text check (instagram is null or instagram ~ '^[A-Za-z0-9._]{1,30}\$');
   insert into public.spolky_events (association_id,title,category,date,venue_kind,body) values ('esn','dry-run','quiz','2026-12-01','tba','');
   begin insert into public.spolky_events (association_id,title,category,date,venue_kind,body) values ('esn','dry-run','quiz','2026-12-01','foo',''); raise exception 'foo accepted'; exception when check_violation then null; end;
+  alter table public.spolky_events add constraint spolky_events_tba_no_place_chk check (venue_kind <> 'tba' or (room_code is null and coord_lng is null and coord_lat is null));
+  begin insert into public.spolky_events (association_id,title,category,date,venue_kind,body,room_code) values ('esn','dry-run','quiz','2026-12-01','tba','','Q01'); raise exception 'tba with a room accepted'; exception when check_violation then null; end;
   begin update public.societies set instagram='a/b' where id='esn'; if not found then raise exception 'esn row missing: constraint not exercised'; end if; raise exception 'a/b accepted'; exception when check_violation then null; end;
   raise exception 'DRY RUN OK';
 end \$\$;"
@@ -189,10 +192,11 @@ Then turn on Auto-fix for the PR and bind it with the ccd_pr tools.
 
 ```bash
 npx supabase db query --linked -f supabase/migrations/20260928120000_spolky_events_tba_and_instagram.sql
-npx supabase db query --linked "select pg_get_constraintdef(oid) from pg_constraint where conname='spolky_events_venue_kind_check'"
+npx supabase db query --linked -f supabase/migrations/20260928130000_spolky_events_tba_has_no_place.sql
+npx supabase db query --linked "select conname, pg_get_constraintdef(oid) from pg_constraint where conname in ('spolky_events_venue_kind_check','spolky_events_tba_no_place_chk')"
 ```
 
-Expected: the definition lists `'tba'`.
+Expected: `spolky_events_venue_kind_check` lists `'tba'`, and `spolky_events_tba_no_place_chk` exists. (Before applying the second file, check it against every deployed build's writes: released composers always write `venue_kind` together with the coordinates, so an edited `tba` event becomes `campus`/`offcampus`.)
 
 ### Task 2: Import ESN's semester and set the Instagram handles
 
