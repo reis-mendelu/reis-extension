@@ -65,7 +65,7 @@ export default function TiltCanvas(props: TiltCanvasProps) {
     if (!host) return;
     // A fresh canvas per scene — see Building3DCanvas for why a reused one breaks.
     const canvas = document.createElement('canvas');
-    canvas.className = 'block h-full w-full touch-none';
+    canvas.className = 'block touch-none';
     canvas.dataset.testid = 'tilt-canvas';
     host.prepend(canvas);
     const scene = createTiltScene({

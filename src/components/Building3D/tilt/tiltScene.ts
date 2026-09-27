@@ -56,7 +56,9 @@ export function createTiltScene(input: TiltSceneInput) {
   const { meta } = model;
   const renderer = new WebGLRenderer({ canvas, antialias: true, powerPreference: 'low-power' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setSize(view.width, view.height, false);
+  // Sizes the canvas's CSS box too: stretched to its container instead, the
+  // on-screen keyboard squashed the whole scene (and put labels off their pins).
+  renderer.setSize(view.width, view.height);
 
   const project = makeProjector(meta.anchor);
   const groundY = meta.ground.a;
