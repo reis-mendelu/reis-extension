@@ -157,7 +157,7 @@ extension already rebuilds its iframe on every IS page load.
 - **Pins stay limited to the next 14 days.** The map shows what is happening
   soon, and a semester's worth of pins would bury the campus. The filter moves
   from the fetch to `EventLayer`, and `PUBLIC_WINDOW_DAYS` is renamed
-  `PIN_WINDOW_DAYS`.
+  `SOON_WINDOW_DAYS`, the one horizon shared by pins and Novinky.
 - **Multi-day events** are judged by `end_date` for "finished", everywhere
   (list, pins, Novinky). Today a trip drops off the day after it starts.
 
