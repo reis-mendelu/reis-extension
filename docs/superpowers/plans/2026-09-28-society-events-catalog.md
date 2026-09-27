@@ -84,7 +84,7 @@
 ```bash
 git fetch origin
 git switch -c claude/events-tba-migration origin/test
-git cherry-pick <spec and plan commits>   # the docs(spec)/docs(plan) commits on claude/student-events-data-strategy-74396b
+git cherry-pick d3515253 ea6343bf 62c83d4c   # spec + plan, from claude/student-events-data-strategy-74396b (plus any later docs commit)
 ```
 
 - [ ] **Step 1: Write the failing test** (append to `src/api/__tests__/mapEvents.test.ts`)
