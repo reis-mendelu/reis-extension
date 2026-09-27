@@ -3,7 +3,6 @@
   "strictness": 2,
   "commentTypes": ["logic", "syntax", "style"],
   "excludeAuthors": ["dependabot[bot]"],
-  "excludeBranches": ["dependabot/**"],
   "ignorePatterns": "**/node_modules/**\n**/.output/**\n**/dist/**\npackage-lock.json\n**/*.generated.*\npublic/dev-real-data.json\ne2e/**/__screenshots__/**",
   "customContext": {
     "rules": [
@@ -57,7 +56,7 @@
       },
       {
         "id": "lang-code-mapping",
-        "rule": "The app language code is 'cz'/'en' everywhere (Language in src/store/types.ts), the same values IS Mendelu's lang= takes, so store values pass to the API layer unmapped. Flag any cs->cz mapping added at a store or API call site. 'cs' is only a BCP-47 locale: it may appear only where a value is handed to Intl/toLocaleDateString or names a locale file, converted at that boundary (language === 'cz' ? 'cs' : language).",
+        "rule": "The app language code is 'cz'/'en' everywhere (Language in src/store/types.ts), the same values IS Mendelu's lang= takes, so store values pass to IS Mendelu unmapped. Flag any cs<->cz mapping between the store and an IS Mendelu request. Converting 'cz' to 'cs' is correct at a boundary that wants a locale: Intl/toLocaleDateString, a locale file name, or a non-IS endpoint that takes 'cs' (e.g. the mendelu.cz WordPress API in src/api/events.ts).",
         "severity": "medium"
       },
       {

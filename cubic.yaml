@@ -78,10 +78,12 @@ reviews:
     - name: Language codes are cz and en
       description: >-
         The app language code is 'cz' or 'en' everywhere, the same values IS
-        Mendelu's lang= parameter takes, so store values reach the API layer
-        unmapped. Flag any cs-to-cz mapping at a store or API call site. 'cs' is
-        only a BCP-47 locale, allowed where a value is handed to Intl or
-        toLocaleDateString, or names a locale file.
+        Mendelu's lang= parameter takes, so store values reach IS Mendelu
+        unmapped. Flag any cs/cz mapping between the store and an IS Mendelu
+        request. Converting 'cz' to 'cs' is correct at a boundary that wants a
+        locale: Intl or toLocaleDateString, a locale file name, or a non-IS
+        endpoint that takes 'cs' (such as the mendelu.cz WordPress API in
+        src/api/events.ts).
       include:
         - 'src/**'
 
