@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 
 // The Android permissions reIS actually ships — what the manifest merger puts in
 // the release APK, not just what android/app/src/main/AndroidManifest.xml lists.
@@ -66,7 +66,9 @@ export function readShippedAndroidPermissions(root: string): string[] {
   const libs = capacitorPluginDirs(
     readFileSync(join(android, 'capacitor.settings.gradle'), 'utf-8')
   )
-    .map((dir) => join(android, dir, 'src/main/AndroidManifest.xml'))
+    // resolve, not join: `cap sync` can write absolute projectDirs (see
+    // scripts/android-release.mjs), and join would glue them onto android/.
+    .map((dir) => resolve(android, dir, 'src/main/AndroidManifest.xml'))
     .map((path) => {
       // A missing plugin manifest means node_modules is missing, not that the
       // plugin asks for nothing — never let that read as a clean result.

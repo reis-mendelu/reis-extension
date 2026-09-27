@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { capacitorPluginDirs, shippedAndroidPermissions } from '../androidPermissions';
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import {
+  capacitorPluginDirs,
+  readShippedAndroidPermissions,
+  shippedAndroidPermissions,
+} from '../androidPermissions';
 
 const manifest = (body: string) =>
   `<?xml version="1.0" encoding="utf-8"?>
@@ -70,5 +77,35 @@ project(':capgo-capacitor-inappbrowser').projectDir = new File('../node_modules/
       '../node_modules/@capacitor/android/capacitor',
       '../node_modules/@capgo/capacitor-inappbrowser/android',
     ]);
+  });
+});
+
+describe('readShippedAndroidPermissions', () => {
+  it('follows an absolute projectDir, as cap sync sometimes writes one', () => {
+    const root = mkdtempSync(join(tmpdir(), 'reis-perm-'));
+    const plugin = join(root, 'elsewhere/plugin/android');
+    mkdirSync(join(plugin, 'src/main'), { recursive: true });
+    mkdirSync(join(root, 'android/app/src/main'), { recursive: true });
+    writeFileSync(
+      join(plugin, 'src/main/AndroidManifest.xml'),
+      manifest(`<uses-permission android:name="android.permission.WAKE_LOCK"/>`)
+    );
+    writeFileSync(join(root, 'android/app/src/main/AndroidManifest.xml'), manifest(''));
+    writeFileSync(
+      join(root, 'android/capacitor.settings.gradle'),
+      `project(':p').projectDir = new File('${plugin}')\n`
+    );
+    expect(readShippedAndroidPermissions(root)).toEqual(['WAKE_LOCK']);
+  });
+
+  it('throws rather than passing when a plugin manifest is missing', () => {
+    const root = mkdtempSync(join(tmpdir(), 'reis-perm-'));
+    mkdirSync(join(root, 'android/app/src/main'), { recursive: true });
+    writeFileSync(join(root, 'android/app/src/main/AndroidManifest.xml'), manifest(''));
+    writeFileSync(
+      join(root, 'android/capacitor.settings.gradle'),
+      `project(':p').projectDir = new File('../node_modules/missing/android')\n`
+    );
+    expect(() => readShippedAndroidPermissions(root)).toThrow(/Run npm ci/);
   });
 });
