@@ -82,7 +82,7 @@ describe('findForbiddenWebBuildVars', () => {
   });
 
   // The 3D map's on-switch (src/data/map/buildingModels.ts). A flag, not a
-  // credential: it only turns the Q tilt on in the preview build.
+  // credential: it only turns the Q tilt on in a preview build.
   it('allows the 3D map flag', () => {
     expect(
       findForbiddenWebBuildVars({

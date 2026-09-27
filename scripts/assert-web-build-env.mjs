@@ -1,6 +1,6 @@
 // Vite inlines every VITE_* variable into the bundle, and this bundle is served
-// from a public URL. The preview needs exactly two variables (VITE_DEV_SOCIETY,
-// VITE_PREVIEW_BUILD); anything else carrying the VITE_ prefix must stop the
+// from a public URL. The preview takes only the variables in ALLOWED_VITE_VARS
+// below; anything else carrying the VITE_ prefix must stop the
 // build rather than be published — an allowlist, not a denylist of the
 // specific secrets we happened to think of. .env.example once named
 // VITE_GEMINI_API_KEY and VITE_GOOGLE_CLIENT_ID, neither of which a denylist
@@ -14,8 +14,9 @@
 // (PATH, HOME, CI, ...) is left alone, since only VITE_* is what Vite inlines
 // and rejecting anything broader would break the build on every machine.
 
-// VITE_MAP3D is the 3D map's on-switch (src/data/map/buildingModels.ts) — a flag, set on
-// the Vercel project so the test preview shows the Q tilt; it carries no credential.
+// VITE_MAP3D is the 3D map's on-switch (src/data/map/buildingModels.ts). A production
+// build ignores ?map3d, so `VITE_MAP3D=1 npm run preview:real` is how a preview shows
+// the Q tilt. A flag, not a credential.
 const ALLOWED_VITE_VARS = [
   'VITE_DEV_SOCIETY',
   'VITE_PREVIEW_BUILD',
