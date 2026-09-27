@@ -103,6 +103,10 @@ interface ReisDB extends DBSchema {
     key: string; // String(buildingId), e.g. "0" for Q
     value: import('../../types/campusMap').RoomsCollection;
   };
+  map_models: {
+    key: string; // String(buildingId) — the 3D building card's glb + metadata
+    value: import('../../types/buildingModel').BuildingModel;
+  };
 }
 
 // Mock/demo mode (VITE_USE_MOCK_DATA=true) uses a SEPARATE database so its
@@ -120,7 +124,7 @@ interface ReisDB extends DBSchema {
 // `npm run scrape:real` failed on every machine and the real-data snapshot
 // could never be built. Same guard as `errorReporter/reporter.ts:19`.
 const DB_NAME = import.meta.env?.VITE_USE_MOCK_DATA === 'true' ? 'reis_db_mock' : 'reis_db';
-const DB_VERSION = 22;
+const DB_VERSION = 23;
 
 /**
  * The `meta` key holding the random per-install id.
@@ -171,6 +175,7 @@ class IndexedDBServiceImpl {
             'custom_events',
             'zaznamnik',
             'map_rooms',
+            'map_models',
           ];
 
           requiredStores.forEach((store) => {

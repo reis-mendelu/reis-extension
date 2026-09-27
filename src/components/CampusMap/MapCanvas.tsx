@@ -29,6 +29,7 @@ import { setMapInstance } from './mapInstance';
 import { LABELS_PANE } from './mapPanes';
 import { roomFocusView } from './focusBounds';
 import { panPinClearOfSheet } from './sheetClearance';
+import { TiltToggle } from '../Building3D/tilt/TiltToggle';
 import { drawPoiHighlight, outlineForSelection } from './poiOutline';
 import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
 
@@ -606,5 +607,11 @@ export function MapCanvas() {
     });
   }, [routeWalk, routeFrom, language, isPhone]);
 
-  return <div ref={ref} className="absolute inset-0" />;
+  return (
+    <>
+      <div ref={ref} className="absolute inset-0" />
+      {/* Off unless VITE_MAP3D=1: a room in Q tilts the map into the building. */}
+      <TiltToggle />
+    </>
+  );
 }

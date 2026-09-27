@@ -167,6 +167,30 @@ they never rot. Supported offset keys on a term: `dayOffset`,
 
 Add a fixture by dropping a JSON file in `dev/fixtures/` — no plumbing needed.
 
+## Reaching a state no click can
+
+| Flag | What it is for |
+|------|----------------|
+| `--call 'action:"arg"'` | Invoke a store action through the dev store handle, e.g. `--call 'focusRoomByCode:"Q32"'` — the intent a tap would send. Repeatable. |
+| `--route "<url substring>=<file>"` | Answer matching requests from a local file — an asset still in review (a reis-data model not yet on jsDelivr). The run prints how often each route was hit; `never requested` means the flag did nothing. Repeatable. |
+| `--wait-for '<selector>'` | Fail unless the selector appears — the presence proof a clean run never gives. A miss saves `<label>-<w>-wait-for-miss.png` and prints the console. |
+| `--hover TEXT` | Rest the pointer on the LAST exact-text match (a drawer mounts after the calendar it covers), for hover cards. |
+| `--no-webgl` | Launch without WebGL, to photograph a 3D surface's fallback. Runs otherwise get SwiftShader, because headless Chromium has no GPU. |
+
+zsh does not word-split an unquoted variable: `R="--route a=b"; … $R` passes ONE argument
+and the route silently never registers. Write the flags out.
+
+The tilted 3D map, end to end. It is off unless `VITE_MAP3D=1`; the dev server
+also takes `?map3d` in the URL:
+
+```bash
+npm run verify:ui -- q3d --view map --call 'focusRoomByCode:"Q32"' \
+  --wait-for '[data-testid="tilt-canvas"][data-ready="true"]' --url 'http://localhost:<port>/?map3d'
+```
+
+Add `--route "map/3d/Q.glb=<file>" --route "map/3d/Q.json=<file>"` to test a model
+that is not on jsDelivr yet.
+
 ## Extending it
 
 Thresholds and judgements live in `scripts/lib/uiFindings.ts` (pure, unit

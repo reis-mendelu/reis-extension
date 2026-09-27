@@ -572,6 +572,23 @@ export interface MapSlice {
   loadMapBuilding: (id: number) => Promise<void>;
   /** Geometry for whatever room a room STRING names — resolves, then loads. */
   loadRoomGeometry: (roomName: string) => Promise<void>;
+  /**
+   * 3D models for the building card, by building id. `'failed'` is remembered for
+   * the session so a building whose model cannot be had shows its flat plan
+   * without re-asking the CDN on every hover.
+   */
+  buildingModels: Record<number, import('../types/buildingModel').BuildingModel | 'failed'>;
+  /** Load a building's 3D model if it has one. `loadMapBuilding` calls it. */
+  loadBuildingModel: (id: number) => Promise<void>;
+  /**
+   * SPIKE (#462): the map tilted into 3D around a building. `view` is the flat
+   * map's view at the handover, which the tilted scene starts from.
+   */
+  mapTilt: {
+    phase: 'flat' | '3d' | 'leaving';
+    view: import('../components/Building3D/tilt/tiltCamera').MapView | null;
+  };
+  setMapTilt: (next: MapSlice['mapTilt']) => void;
   // --- Society events on the map ---
   mapEvents: MapEvent[];
   mapEventsLoaded: boolean;
