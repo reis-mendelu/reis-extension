@@ -49,14 +49,10 @@ export function spotlight(distance: number): number {
 export function roomFade(slab: Group, targetRoomId: number | null) {
   const fades: Fade[] = [];
   const target = slab.children.find((c) => c.userData.roomId === targetRoomId && c instanceof Mesh);
-  const t = target ? boxXZ(target) : null;
-  const weight = (o: Object3D) => {
-    const b = t && boxXZ(o);
-    if (!b || !t) return 1;
-    const gx = Math.max(0, b.x0 - t.x1, t.x0 - b.x1);
-    const gz = Math.max(0, b.z0 - t.z1, t.z0 - b.z1);
-    return spotlight(Math.hypot(gx, gz));
-  };
+  void boxXZ;
+  void target;
+  // MOCK: the spotlight is off — the whole floor stays.
+  void spotlight;
   slab.traverse((o) => {
     const isTarget = o.userData.roomId === targetRoomId;
     if (o instanceof Mesh && Array.isArray(o.material)) {
@@ -71,13 +67,15 @@ export function roomFade(slab: Group, targetRoomId: number | null) {
     } else if (o instanceof Mesh && o.material instanceof MeshBasicMaterial) {
       const m = o.material;
       m.depthWrite = isTarget;
+      // MOCK (cut above): the floor keeps the flat map's colours, whole — the
+      // plan the student just saw — and only the target turns orange.
+      const from = { color: m.color.clone(), opacity: m.opacity };
       fades.push({
         material: m,
-        from: { color: m.color.clone(), opacity: m.opacity },
-        to: {
-          color: new Color(isTarget ? LOOK.target : LOOK.room),
-          opacity: isTarget ? 1 : LOOK.roomOpacity * weight(o),
-        },
+        from,
+        to: isTarget
+          ? { color: new Color(LOOK.target), opacity: 1 }
+          : { color: from.color, opacity: Math.max(from.opacity, 0.85) },
       });
     } else if ((o as { material?: unknown }).material instanceof LineMaterial) {
       const m = (o as unknown as { material: LineMaterial }).material;
@@ -85,10 +83,9 @@ export function roomFade(slab: Group, targetRoomId: number | null) {
       fades.push({
         material: m,
         from: { color: m.color.clone(), opacity: m.opacity },
-        to: {
-          color: new Color(isTarget ? LOOK.targetEdge : LOOK.roomEdge),
-          opacity: isTarget ? 1 : LOOK.roomEdgeOpacity * weight(o),
-        },
+        to: isTarget
+          ? { color: new Color(LOOK.targetEdge), opacity: 1 }
+          : { color: m.color.clone(), opacity: m.opacity },
       });
     }
   });

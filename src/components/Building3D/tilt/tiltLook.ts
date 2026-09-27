@@ -41,7 +41,17 @@ export const LOOK = {
    *  and light floor, and no one colour clears 3:1 against both — a light rim
    *  separates it from every neighbour. */
   targetEdge: '#ffffff',
+  /** MOCK (cut above): the storeys below the target, one quiet solid. */
+  below: '#e2e8f0',
+  /** MOCK (cut above, ghost variant): the storeys above, barely there. */
+  ghost: '#64748b',
+  ghostOpacity: 0.14,
 } as const;
+
+/** MOCK: `?map3d=ghost` keeps a faint silhouette of the storeys above; the default cuts them away. */
+const ghostAbove = () =>
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('map3d') === 'ghost';
 
 const HIDDEN = new Set(['window', 'slab', 'floor']);
 const ROOFS = new Set(['gravel', 'silver', 'glassRoof']);
@@ -101,30 +111,41 @@ export function glassShell(root: Object3D, targetLevel: number | null) {
     depthWrite: false,
     toneMapped: false,
   });
+  // MOCK (cut above): the storeys above the target are removed, never ghosted —
+  // nothing stands between the camera and the room, and the floor reads from the
+  // building's height. The storeys below are one quiet solid, without lines.
+  const below = new MeshBasicMaterial({ color: LOOK.below, toneMapped: false });
+  const ghost = wall.clone();
+  ghost.color.set(LOOK.ghost);
+  ghost.opacity = LOOK.ghostOpacity;
   const meshes: Mesh[] = [];
   root.traverse((o) => o instanceof Mesh && meshes.push(o));
   for (const mesh of meshes) {
     const name = (mesh.material as Material).name;
-    if (name === 'floor' && targetLevel !== null && levelOf(mesh) === targetLevel) {
+    const level = levelOf(mesh);
+    if (targetLevel !== null && level !== undefined && level > targetLevel) {
+      if (ghostAbove() && !HIDDEN.has(name)) mesh.material = ghost;
+      else mesh.visible = false;
+      continue;
+    }
+    if (targetLevel !== null && level !== undefined && level < targetLevel) {
+      if (HIDDEN.has(name) && name !== 'floor') mesh.visible = false;
+      else mesh.material = below;
+      continue;
+    }
+    if (name === 'floor' && targetLevel !== null && level === targetLevel) {
       mesh.material = plate;
       continue;
     }
-    // Windows and slab bands are detail that competes with the room; floor caps
-    // stack into milk. Storey lines come from the wall edges instead.
     if (HIDDEN.has(name)) {
       mesh.visible = false;
       continue;
     }
     const isRoof = ROOFS.has(name);
     mesh.material = isRoof ? roof : wall;
-    if (isRoof) {
-      mesh.add(fatSegments(new EdgesGeometry(mesh.geometry, 25), roofEdge));
-      continue;
-    }
-    // Storey lines on every face, front and back through the glass, made a cage;
-    // only the corners stay, plus the target storey's ring.
-    mesh.add(fatSegments(edgesWhere(mesh.geometry, 'vertical'), edge));
-    if (targetLevel !== null && levelOf(mesh) === targetLevel)
-      mesh.add(fatSegments(edgesWhere(mesh.geometry, 'horizontal'), ring));
+    // The target storey's walls: glass with corner lines only, no ring.
+    if (!isRoof) mesh.add(fatSegments(edgesWhere(mesh.geometry, 'vertical'), edge));
   }
+  void ring;
+  void roofEdge;
 }

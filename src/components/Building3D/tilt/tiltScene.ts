@@ -71,7 +71,11 @@ export function createTiltScene(input: TiltSceneInput) {
     pitch: FLAT_PITCH,
     offsetY: 0,
   };
-  const framed = frameBuilding(meta.radius, meta.height, FOV, TILT_PITCH, band);
+  // MOCK (cut above): frame what is drawn — the building up to the target storey's
+  // ceiling — so the camera stays on the room's floor instead of pulling back.
+  const storey = meta.storeys.find((st) => st.level === input.targetLevel);
+  const drawnHeight = storey ? storey.elevation + storey.height : meta.height;
+  const framed = frameBuilding(meta.radius, drawnHeight, FOV, TILT_PITCH, band, 1);
   let cam = flat;
 
   const scene = new Scene();

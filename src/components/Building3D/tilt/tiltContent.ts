@@ -114,7 +114,11 @@ export function addTiltContent(
     const box = mesh.geometry.boundingBox!.clone().translate(mesh.position);
     const c = box.getCenter(new Vector3());
     const top = box.max.y + 0.15;
-    content.pin = new Vector3(c.x, model.meta.height + PIN_ABOVE_ROOF, c.z);
+    // MOCK (cut above): nothing stands above the target storey, so the pin rises
+    // from its own ceiling, not the building's roof.
+    const storey = model.meta.storeys.find((st) => st.level === input.targetLevel);
+    const ceiling = storey ? storey.elevation + storey.height : model.meta.height;
+    content.pin = new Vector3(c.x, ceiling + PIN_ABOVE_ROOF / 2, c.z);
     const g = new BufferGeometry();
     g.setAttribute(
       'position',
