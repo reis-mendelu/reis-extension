@@ -14,8 +14,6 @@ import { RAIL_MIN_PX, RAIL_MAX_PX } from '../../../../utils/mapRail';
 import { MapPanelBody } from './MapPanelBody';
 import { MapRailOpenButton } from './MapRailOpenButton';
 import { RoomPlaceNote } from './RoomPlaceNote';
-import { RoomDirectionsNote } from './RoomDirectionsNote';
-import { useRoomDirections } from '../../../CampusMap/useRoomDirections';
 import { useForRoomSelection } from './useForRoomSelection';
 
 /**
@@ -61,7 +59,6 @@ export function MapRail() {
   const selectedGardenPlace = selection?.kind === 'gardenPlace' ? selection.place : null;
   const selectedCard = selectedEvent || selectedGardenPlace;
   const forRoom = useForRoomSelection();
-  const directions = useRoomDirections();
 
   // Picking a pin while the rail is closed has to bring it back — otherwise the
   // pin highlights and the answer to the tap is somewhere the student cannot
@@ -70,7 +67,7 @@ export function MapRail() {
   // note saying so lives in here. Keyed on the selection OBJECT, which is stable
   // until the next selection — `forRoom` is rebuilt every render, and as a
   // dependency it reopened the rail the moment the student closed it.
-  const showsRoomNote = !!forRoom || !!directions;
+  const showsRoomNote = !!forRoom;
   useEffect(() => {
     if (selectedEvent || selectedGardenPlace || showsRoomNote) setOpen(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `selection` is the trigger; see above
@@ -182,9 +179,9 @@ export function MapRail() {
         </button>
       </div>
 
-      {showsRoomNote && (
+      {forRoom && (
         <div className="flex flex-shrink-0 border-b border-base-content/10 px-6 pb-3">
-          {forRoom ? <RoomPlaceNote /> : <RoomDirectionsNote />}
+          <RoomPlaceNote />
         </div>
       )}
 
