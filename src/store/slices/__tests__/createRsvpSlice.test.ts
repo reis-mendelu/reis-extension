@@ -37,6 +37,7 @@ describe('createRsvpSlice', () => {
   // planning/syncing reminders itself — both are supplied the same way.
   let state: RsvpSlice & {
     mapEvents: MapEvent[];
+    notifyPrefs: { myEvents: boolean; followedEvents: boolean; newEvents: boolean };
     replanNotifications: Mock;
     setNotifyPermission: Mock;
   };
@@ -57,6 +58,7 @@ describe('createRsvpSlice', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...createRsvpSlice(set, get, {} as any),
       mapEvents: [],
+      notifyPrefs: { myEvents: true, followedEvents: true, newEvents: true },
       replanNotifications: vi.fn(),
       setNotifyPermission: vi.fn(),
     };
@@ -260,6 +262,41 @@ describe('createRsvpSlice', () => {
       expect(askNotificationPermission).not.toHaveBeenCalled();
     });
 
+    // A start `hoursAhead` from now, as the date and HH:MM an event carries.
+    const startingIn = (hoursAhead: number) => {
+      const d = new Date(Date.now() + hoursAhead * 60 * 60 * 1000);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      return {
+        date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+        time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+      };
+    };
+
+    // The ping fires two hours before the start: an event one hour out has
+    // no ping left to schedule, so the prompt would promise nothing.
+    it('does not ask when the reminder time has already passed', async () => {
+      state.mapEvents = [{ ...party, ...startingIn(1) }] as never;
+      await state.setRsvp('e1', 'going');
+      await flush();
+      expect(askNotificationPermission).not.toHaveBeenCalled();
+    });
+
+    it('asks when the reminder time is still ahead', async () => {
+      state.mapEvents = [{ ...party, ...startingIn(3) }] as never;
+      await state.setRsvp('e1', 'going');
+      await flush();
+      expect(askNotificationPermission).toHaveBeenCalledTimes(1);
+    });
+
+    // With "Připomínky mých akcí" off the planner schedules no ping at all.
+    it('does not ask when the student has turned RSVP reminders off', async () => {
+      state.mapEvents = [party] as never;
+      state.notifyPrefs = { myEvents: false, followedEvents: true, newEvents: true };
+      await state.setRsvp('e1', 'going');
+      await flush();
+      expect(askNotificationPermission).not.toHaveBeenCalled();
+    });
+
     it('does not ask for an event it cannot find', async () => {
       state.mapEvents = [] as never;
       await state.setRsvp('e1', 'going');
@@ -315,6 +352,7 @@ describe('createRsvpSlice — failure handling', () => {
   };
   let state: RsvpSlice & {
     mapEvents: MapEvent[];
+    notifyPrefs: { myEvents: boolean; followedEvents: boolean; newEvents: boolean };
     replanNotifications: Mock;
     setNotifyPermission: Mock;
   };
@@ -335,6 +373,7 @@ describe('createRsvpSlice — failure handling', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...createRsvpSlice(set, get, {} as any),
       mapEvents: [party] as never,
+      notifyPrefs: { myEvents: true, followedEvents: true, newEvents: true },
       replanNotifications: vi.fn(),
       setNotifyPermission: vi.fn(),
     };

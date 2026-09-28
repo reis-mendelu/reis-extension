@@ -3,7 +3,7 @@ import { fetchEventRsvps, setEventRsvp, type RsvpStatus } from '../../api/eventR
 import { createRsvpBlockSync } from './rsvpBlockSync';
 import { IndexedDBService } from '../../services/storage';
 import { askNotificationPermission } from '../../services/eventReminders/sync';
-import { eventStartsAt } from '../../services/eventReminders/plan';
+import { eventStartsAt, REMINDER_LEAD_MS } from '../../services/eventReminders/plan';
 import { logError } from '../../utils/reportError';
 
 export type { RsvpStatus };
@@ -296,10 +296,13 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       // askNotificationPermission no-ops once the student has already
       // answered the system dialog.
       //
-      // Only for an event with a readable start time: without one there is no
-      // RSVP ping to schedule, and the prompt would promise one.
+      // Only when a ping will actually be scheduled: a readable start whose
+      // two-hour warning is still ahead, with RSVP reminders switched on.
+      // Otherwise the prompt would promise a reminder that never comes.
       const event = get().mapEvents.find((e) => e.id === eventId);
-      const pingable = event !== undefined && eventStartsAt(event) !== null;
+      const starts = event ? eventStartsAt(event) : null;
+      const pingable =
+        starts !== null && starts - REMINDER_LEAD_MS > Date.now() && get().notifyPrefs.myEvents;
       if (previous === undefined && next !== undefined && pingable) {
         void askNotificationPermission().then((p) => {
           get().setNotifyPermission(p);
