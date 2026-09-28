@@ -35,7 +35,6 @@ function ev(
     time?: string | null;
     createdAt?: string | null;
     endDate?: string | null;
-    subscribersOnly?: boolean;
     title?: string;
   } = {}
 ): MapEvent {
@@ -55,7 +54,6 @@ function ev(
     venueKind: 'campus',
     category: 'party',
     createdAt: opts.createdAt ?? null,
-    subscribersOnly: opts.subscribersOnly,
   };
 }
 
@@ -119,6 +117,69 @@ describe('planNotifications — RSVP pings', () => {
       labels
     );
     expect(plan).toEqual([]);
+  });
+
+  const rsvpOnly = (over: Partial<PlanInput>) =>
+    planNotifications(
+      input({ prefs: { myEvents: true, followedEvents: false, newEvents: false }, ...over }),
+      at('2026-09-01T08:00:00'),
+      labels
+    );
+
+  it('reminds about Interested as well as Going — both mean "tell me"', () => {
+    const e = ev('e1', 'esn', '2026-09-10', { time: '19:00' });
+    expect(rsvpOnly({ events: [e], rsvp: { e1: 'interested' } })).toHaveLength(1);
+  });
+
+  it('schedules nothing for an event the student has not answered', () => {
+    const e = ev('e1', 'esn', '2026-09-10', { time: '19:00' });
+    expect(rsvpOnly({ events: [e], rsvp: {} })).toEqual([]);
+  });
+
+  // The whole point is advance warning. Firing at the moment the student opens
+  // the app two hours before would be noise, not a reminder.
+  it('skips an event whose reminder time has already passed', () => {
+    const e = ev('e1', 'esn', '2026-09-10', { time: '19:00' });
+    const late = at('2026-09-10T18:00:00');
+    const plan = planNotifications(
+      input({
+        events: [e],
+        rsvp: { e1: 'going' },
+        prefs: { myEvents: true, followedEvents: false, newEvents: false },
+      }),
+      late,
+      labels
+    );
+    expect(plan).toEqual([]);
+  });
+
+  it('skips an event that has already happened', () => {
+    const e = ev('e1', 'esn', '2026-09-10', { time: '19:00' });
+    const after = at('2026-09-11T00:00:00');
+    const plan = planNotifications(
+      input({
+        events: [e],
+        rsvp: { e1: 'going' },
+        prefs: { myEvents: true, followedEvents: false, newEvents: false },
+      }),
+      after,
+      labels
+    );
+    expect(plan).toEqual([]);
+  });
+
+  it('skips an event with no start time rather than guessing one', () => {
+    const e = ev('e1', 'esn', '2026-09-10', { time: null });
+    expect(rsvpOnly({ events: [e], rsvp: { e1: 'going' } })).toEqual([]);
+  });
+
+  it('plans across several answered events at once, one ping each', () => {
+    const e1 = ev('e1', 'esn', '2026-09-10', { time: '19:00' });
+    const e2 = ev('e2', 'esn', '2026-09-12', { time: '10:00' });
+    const plan = rsvpOnly({ events: [e1, e2], rsvp: { e1: 'going', e2: 'interested' } });
+    expect(plan.map((p) => p.at).sort()).toEqual(
+      [at('2026-09-10T17:00:00'), at('2026-09-12T08:00:00')].sort()
+    );
   });
 });
 
@@ -476,6 +537,10 @@ describe('eventStartsAt', () => {
     expect(eventStartsAt(ev('e1', 'esn', '2026-09-10', { time: '25:00' }))).toBeNull();
   });
 
+  it('rejects an impossible minute', () => {
+    expect(eventStartsAt(ev('e1', 'esn', '2026-09-10', { time: '19:99' }))).toBeNull();
+  });
+
   it('rejects a day that does not exist in that month', () => {
     expect(eventStartsAt(ev('e1', 'esn', '2026-02-30'))).toBeNull();
   });
@@ -484,9 +549,24 @@ describe('eventStartsAt', () => {
     expect(eventStartsAt(ev('e1', 'esn', '2026-09-10-extra'))).toBeNull();
   });
 
+  it('rejects a short or non-numeric date', () => {
+    expect(eventStartsAt(ev('e1', 'esn', '2026-9-10'))).toBeNull();
+    expect(eventStartsAt(ev('e1', 'esn', 'not-a-date'))).toBeNull();
+  });
+
+  it('rejects a month past December', () => {
+    expect(eventStartsAt(ev('e1', 'esn', '2026-13-01'))).toBeNull();
+  });
+
   it('still accepts a real leap day', () => {
     expect(eventStartsAt(ev('e1', 'esn', '2028-02-29', { time: '19:00' }))).toBe(
       new Date(2028, 1, 29, 19, 0, 0, 0).getTime()
+    );
+  });
+
+  it('still accepts the last minute of the day', () => {
+    expect(eventStartsAt(ev('e1', 'esn', '2026-09-10', { time: '23:59' }))).toBe(
+      new Date(2026, 8, 10, 23, 59, 0, 0).getTime()
     );
   });
 });
