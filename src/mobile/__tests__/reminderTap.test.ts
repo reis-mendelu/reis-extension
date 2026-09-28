@@ -132,6 +132,8 @@ describe('installReminderTapHandler', () => {
   });
 
   it('opens the map with sheet expanded when the digest is tapped', async () => {
+    useAppStore.setState({ mapRailOpen: false });
+
     installReminderTapHandler();
 
     const onTap = addListener.mock.calls[0]![1] as (a: unknown) => Promise<void> | void;
