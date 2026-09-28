@@ -5,6 +5,7 @@ import { useSociety } from '../../hooks/useSociety';
 import { SocietyLogo } from '../SocietyLogo';
 import { parseEventDate } from './eventHelpers';
 import { EventRsvp } from './EventRsvp';
+import { FollowChip } from './FollowChip';
 import { EventVenueLine } from './EventVenueLine';
 import { eventDetailsLink } from './eventLinks';
 import type { MapEvent } from '../../types/events';
@@ -53,13 +54,18 @@ export function EventDetailCard({ event, flush = false }: { event: MapEvent; flu
             society={soc}
             className="h-11 w-11 rounded-full ring-1 ring-base-300 text-sm"
           />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h3 className="line-clamp-2 font-bold leading-tight text-base-content">
               {event.title}
             </h3>
-            <span className="text-xs text-base-content/60">
-              {t('map.hostedBy')} {soc.shortName}
-            </span>
+            {/* the chip lives on the host line, not squeezed onto the title,
+                so it never pushes the title into wrapping at 320px */}
+            <div className="flex items-center gap-2">
+              <span className="min-w-0 truncate text-xs text-base-content/60">
+                {t('map.hostedBy')} {soc.shortName}
+              </span>
+              <FollowChip societyId={event.societyId} />
+            </div>
           </div>
         </div>
 

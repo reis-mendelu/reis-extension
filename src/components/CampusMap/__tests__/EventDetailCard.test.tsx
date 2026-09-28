@@ -203,4 +203,11 @@ describe('EventDetailCard', () => {
     render(<EventDetailCard event={{ ...ev, date: '2026-11-23', endDate: '2026-11-23' }} />);
     expect(screen.getByText(/November 23/).textContent).toBe('Mon, November 23');
   });
+
+  // The follow chip is reached one tap earlier from the event that made the
+  // student want it, rather than only from Profile's follow list.
+  it('renders a follow chip for the event society', () => {
+    render(<EventDetailCard event={ev} />);
+    expect(screen.getByRole('button', { name: 'Follow' })).toBeInTheDocument();
+  });
 });

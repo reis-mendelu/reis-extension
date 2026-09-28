@@ -1399,6 +1399,8 @@
     "newEvents": "New events",
     "denied": "Notifications are turned off in your phone's settings.",
     "mute": "Mute {name}",
-    "unmute": "Unmute {name}"
+    "unmute": "Unmute {name}",
+    "follow": "Follow",
+    "following": "Following ✓"
   }
 }

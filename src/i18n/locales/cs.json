@@ -1399,6 +1399,8 @@
     "newEvents": "Nové akce",
     "denied": "Oznámení jsou vypnutá v nastavení telefonu.",
     "mute": "Ztlumit {name}",
-    "unmute": "Zrušit ztlumení {name}"
+    "unmute": "Zrušit ztlumení {name}",
+    "follow": "Sledovat",
+    "following": "Sleduješ ✓"
   }
 }
