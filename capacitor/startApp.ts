@@ -107,6 +107,7 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // startSyncService fires an immediate boot sync and then sets the
   // SYNC_INTERVAL timer — no separate first call needed.
   const { requestSync, startSyncService } = await import('@/injector/syncGate');
+  const { MIN_SYNC_GAP } = await import('@/injector/config');
   startSyncService();
 
   // IS's session is a sliding inactivity window, so a returning student is
@@ -120,5 +121,9 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
     void requestSync('resume');
     // Fetch-once-at-startup is stale forever in a long-lived Capacitor process.
     void useAppStore.getState().loadSocieties();
+    // Same staleness, for events: a society's new, moved or cancelled event
+    // otherwise never reaches a long-lived app process. Gap-limited like the
+    // IS sync, so tabbing away and back does not refetch every time.
+    void useAppStore.getState().refreshMapEventsIfStale(MIN_SYNC_GAP);
   });
 }
