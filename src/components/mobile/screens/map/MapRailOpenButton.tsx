@@ -19,6 +19,8 @@ export function MapRailOpenButton({ onOpen }: { onOpen: () => void }) {
         className="absolute right-4 top-[calc(5rem_+_var(--safe-top,0px))] z-[1000] flex max-w-[22rem] items-center gap-3 rounded-2xl border border-base-content/10 bg-base-100 px-4 py-2.5 text-left shadow-drawer"
       >
         <RoomDirectionsNote />
+        {/* The note names the room; this says what pressing it does. */}
+        <span className="sr-only">{t('mobile.map.railOpen')}</span>
         <PanelRightOpen
           size={18}
           className="flex-shrink-0 text-base-content/70"
