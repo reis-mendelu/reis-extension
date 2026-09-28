@@ -5,7 +5,9 @@ import { flatMapLook } from './mapOverlays';
 import { applyTilt, groundAt, screenOf } from './cameraRig';
 import { markWebGL2Unavailable } from '../webgl';
 import { logError } from '../../../utils/reportError';
-import type { Band, MapView } from './tiltCamera';
+import { clampLabelX, clampLabelY, type Band, type MapView } from './tiltCamera';
+import { createLabelLayer } from './roomLabelLayer';
+import type { ScreenBox } from './roomLabels';
 import type { BuildingModel } from '../../../types/buildingModel';
 import type { RoomFeature } from '../../../types/campusMap';
 
@@ -65,11 +67,14 @@ export default function TiltCanvas(props: TiltCanvasProps) {
   useEffect(() => {
     const host = ref.current;
     if (!host) return;
-    const buildScene = (canvas: HTMLCanvasElement, host: HTMLElement) =>
+    const roomLabels = createLabelLayer(host);
+    let pinBox: ScreenBox | null = null;
+    const band = visibleBand(host);
+    const buildScene = (canvas: HTMLCanvasElement) =>
       createTiltScene({
         canvas,
         view,
-        band: visibleBand(host),
+        band,
         model,
         rooms,
         targetLevel,
@@ -80,8 +85,21 @@ export default function TiltCanvas(props: TiltCanvasProps) {
           const pin = pinRef.current;
           if (!pin) return;
           pin.classList.toggle('opacity-0', !at);
-          if (at) pin.style.transform = `translate(${at.x}px, ${at.y}px) translate(-50%, -100%)`;
+          pinBox = null;
+          // Kept whole on screen: a room on the building's edge put it half off.
+          if (at) {
+            const [w, h] = [pin.offsetWidth, pin.offsetHeight];
+            const x = clampLabelX(at.x, w, view.width);
+            const y = clampLabelY(at.y, h, band.top);
+            pin.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`;
+            pinBox = { x, y: y - h / 2, w, h };
+          }
         },
+        onRoomLabels: (labels, room) =>
+          roomLabels(
+            labels,
+            [pinBox, room].filter((b): b is ScreenBox => b !== null)
+          ),
         colors: {
           room: resolveThemeColor(host, 'bg-base-300', '#d4d4d4'),
           target: resolveThemeColor(host, 'bg-primary', '#16a34a'),
@@ -96,7 +114,7 @@ export default function TiltCanvas(props: TiltCanvasProps) {
     host.prepend(canvas);
     let scene: TiltScene;
     try {
-      scene = buildScene(canvas, host);
+      scene = buildScene(canvas);
     } catch (err) {
       // A device can advertise WebGL2 and still fail to build a renderer (seen
       // in an embedded browser). The flat map is still there under this layer.

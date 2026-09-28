@@ -9,25 +9,26 @@ export function FloorStack() {
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const activeFloorId = useAppStore((s) => s.activeFloorId);
   const setMapFloor = useAppStore((s) => s.setMapFloor);
-  const tilted = useAppStore((s) => s.mapTilt.phase !== 'flat');
+  // Mid-way back to 2D, a floor tap would rebuild the scene and drop its close.
+  const leaving = useAppStore((s) => s.mapTilt.phase === 'leaving');
   if (activeBuildingId === null) return null;
   const b = META.buildings.find((x) => x.id === activeBuildingId);
   if (!b) return null;
   return (
     <div className="flex flex-col gap-1 p-1 bg-base-200 rounded-lg">
       <TiltButton />
-      {/* While tilted the floor is the room's own, shown in 3D; the list would
-          only offer floors the tilted view does not draw. */}
-      {!tilted &&
-        b.floors.map((f) => (
-          <button
-            key={f.id}
-            className={`btn btn-xs ${activeFloorId === f.id ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setMapFloor(f.id)}
-          >
-            {f.name ?? f.level}
-          </button>
-        ))}
+      {/* Stays in 3D, where it moves the cut: the column keeps saying which
+          floor is shown, and the 3D/2D switch keeps its place at its top. */}
+      {b.floors.map((f) => (
+        <button
+          key={f.id}
+          className={`btn btn-xs ${activeFloorId === f.id ? 'btn-primary' : 'btn-ghost'}`}
+          onClick={() => setMapFloor(f.id)}
+          disabled={leaving}
+        >
+          {f.name ?? f.level}
+        </button>
+      ))}
     </div>
   );
 }

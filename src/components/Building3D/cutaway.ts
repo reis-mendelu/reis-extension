@@ -37,3 +37,27 @@ export function cutawayPlan(storeys: BuildingModelStorey[], target: number | nul
     return { level, role, offsetY: role === 'lifted' ? LIFT_M : 0, opacity: OPACITY[role] };
   });
 }
+
+/**
+ * The top of the room's storey, in metres above the model's base: with the
+ * storeys above cut away it is the top of what the tilted map draws, so the
+ * camera frames it and the pin rises from it. An unknown floor draws it all.
+ */
+export function storeyCeiling(
+  storeys: BuildingModelStorey[],
+  level: number | null,
+  buildingHeight: number
+): number {
+  const s = storeys.find((x) => x.level === level);
+  return s ? s.elevation + s.height : buildingHeight;
+}
+
+/** The storey's floor lies below the ground (`groundY`, the same frame): a basement. */
+export function isUnderground(
+  storeys: BuildingModelStorey[],
+  level: number | null,
+  groundY: number
+): boolean {
+  const s = storeys.find((x) => x.level === level);
+  return s !== undefined && s.elevation < groundY;
+}

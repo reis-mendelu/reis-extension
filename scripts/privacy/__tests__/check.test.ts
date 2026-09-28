@@ -86,6 +86,20 @@ describe('checkDisclosures', () => {
     expect(checkDisclosures(s, model).join('\n')).toMatch(/Firefox/);
   });
 
+  it('4. gives each Android direction the fix that actually resolves it', () => {
+    const s = clean();
+    s.androidPermissions = ['CAMERA'];
+    const out = checkDisclosures(s, model);
+    expect(out).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/"CAMERA" is present but not declared\..*tools:node="remove"/),
+        expect.stringMatching(
+          /"INTERNET" is declared but not present\. Remove it from PLATFORM_PERMISSIONS\.android\.$/
+        ),
+      ])
+    );
+  });
+
   it('4. flags a platform permission the source does not declare', () => {
     const s = clean();
     s.iosUsageKeys.push('NSLocationWhenInUseUsageDescription');

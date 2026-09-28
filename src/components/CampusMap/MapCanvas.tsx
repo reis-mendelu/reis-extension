@@ -10,6 +10,7 @@ import {
   ringToLatLng,
   roomLabel,
   planLabel,
+  LABELLED_ROOM_SPAN_M,
   categoryStyle,
   remotePlaceBounds,
   ringContains,
@@ -418,7 +419,7 @@ export function MapCanvas() {
           // Label sizable rooms permanently (MyMENDELU-style); tiny rooms only on
           // hover, to avoid a wall of overlapping numbers.
           const pb = poly.getBounds();
-          const big = pb.getNorthEast().distanceTo(pb.getSouthWest()) > 12;
+          const big = pb.getNorthEast().distanceTo(pb.getSouthWest()) > LABELLED_ROOM_SPAN_M;
           const label = roomLabel(p.name, p.passportNumber, p.nickname);
           const shown = big ? planLabel(label) : label;
           poly.bindTooltip(shown, {

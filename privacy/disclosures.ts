@@ -146,7 +146,7 @@ export const FLOWS: Flow[] = [
     files: ['src/services/spolky/spolkyService.ts'],
     calls: ['increment_post_view', 'increment_post_click'],
     policyRows: [['Society post view or click', 'you open one', 'a post id']],
-    stores: { apple: [], play: [], firefox: [], cws: [] },
+    stores: { apple: [], play: [], firefox: ['technicalAndInteraction'], cws: [] },
   },
   {
     id: 'map_event_views',
@@ -162,7 +162,7 @@ export const FLOWS: Flow[] = [
         "that event's id and nothing else — a counter on the event, with no identifier of yours attached",
       ],
     ],
-    stores: { apple: [], play: [], firefox: [], cws: [] },
+    stores: { apple: [], play: [], firefox: ['technicalAndInteraction'], cws: [] },
   },
   {
     id: 'feature_counters',
@@ -248,6 +248,17 @@ export const EXEMPT: Exempt[] = [
 export const PLATFORM_PERMISSIONS = {
   /** Info.plist NS*UsageDescription keys. */
   ios: ['NSCameraUsageDescription'],
-  /** AndroidManifest uses-permission names, without the android.permission. prefix. */
-  android: ['INTERNET', 'POST_NOTIFICATIONS', 'ACCESS_WIFI_STATE', 'CHANGE_WIFI_STATE'],
+  /**
+   * What the merged release manifest requests (app manifest + every Capacitor
+   * plugin's, minus tools:node="remove"), without the android.permission. prefix.
+   * RECEIVE_BOOT_COMPLETED and WAKE_LOCK come from @capacitor/local-notifications.
+   */
+  android: [
+    'INTERNET',
+    'POST_NOTIFICATIONS',
+    'ACCESS_WIFI_STATE',
+    'CHANGE_WIFI_STATE',
+    'RECEIVE_BOOT_COMPLETED',
+    'WAKE_LOCK',
+  ],
 };

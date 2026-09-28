@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: 25 September 2026**
+**Last Updated: 28 September 2026**
 
 reIS is a student-built project that simplifies the Mendel University in Brno
 Information System (IS Mendelu). It is a browser extension (Chrome, Edge,
@@ -71,12 +71,18 @@ else.
 
 ## Permissions
 
-**Android:** internet; notifications (so a download can say it finished); Wi-Fi
-state, only for optional one-tap eduroam, where Android's own dialog saves the
-network. **iOS:** the camera, only if you choose to take a photo to attach to a
-problem report — iOS asks you first, and the photo goes into the report form
-like any other picture. **Neither app requests location** — the campus map shows
-the campus, not you.
+**Android:** internet; notifications (so a download can say it finished, and for
+reminders of events you marked Going or Interested); running at startup and
+keeping the device awake briefly, only so those reminders survive a restart and
+are not held back while the phone sleeps — Android may still deliver one a few
+minutes late; Wi-Fi state, only for optional one-tap eduroam, where Android's
+own dialog saves the network.
+
+**iOS:** the camera, only if you choose to take a photo to attach to a problem
+report, where the photo goes into the report form like any other picture; and
+notifications, only for those same event reminders. iOS asks you before either.
+
+**Neither app requests location** — the campus map shows the campus, not you.
 
 ## Your control
 

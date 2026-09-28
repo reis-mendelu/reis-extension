@@ -1,15 +1,27 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { targetFromSelection } from '../roomTarget';
+import { cutTarget, nextTiltEntry, targetFromSelection, type TiltEntry } from '../roomTarget';
 import { floorText } from '../../CampusMap/floorText';
 import { map3dEnabled } from '../../../data/map/buildingModels';
-import { enterTilt, leaveTilt, tiltClosed } from './tiltActions';
-import { getMapInstance, subscribeMapInstance } from '../../CampusMap/mapInstance';
+import buildingsJson from '../../../data/map/buildings.json';
+import type { BuildingsMeta } from '../../../types/campusMap';
+import { leaveTilt, tiltClosed } from './tiltActions';
 
 const TiltCanvas = lazy(() => import('./TiltCanvas'));
+const META = buildingsJson as BuildingsMeta;
 
-/** The tilted map, mounted over Leaflet while `mapTilt` says so. */
+/** The level of the floor the floor column shows, or null. */
+function floorLevelOf(buildingId: number | null, floorId: number | null): number | null {
+  const b = META.buildings.find((x) => x.id === buildingId);
+  return b?.floors.find((f) => f.id === floorId)?.level ?? null;
+}
+
+/**
+ * The tilted map, mounted over Leaflet while `mapTilt` says so. It opens only
+ * from the 3D button: a room selection answers with the flat plan, which is the
+ * clearer answer, and the map no longer moves on its own a second later.
+ */
 export function TiltToggle() {
   return map3dEnabled() ? <TiltLayer /> : null;
 }
@@ -18,68 +30,31 @@ function TiltLayer() {
   const { t } = useTranslation();
   const { phase, view } = useAppStore((s) => s.mapTilt);
   const building = useAppStore((s) => s.activeBuildingId);
+  const floorLevel = useAppStore((s) => floorLevelOf(s.activeBuildingId, s.activeFloorId));
   const model = useAppStore((s) => (building === null ? undefined : s.buildingModels[building]));
   const rooms = useAppStore((s) => (building === null ? undefined : s.roomsByBuilding[building]));
   const selection = useAppStore((s) => s.mapSelection);
-  const target = targetFromSelection(selection);
-  const here = target !== null && target.buildingId === building;
-  const level = here ? target.floorLevel : null;
-  const roomId = here ? target.roomId : null;
-  const pinText = here ? `${target.label} · ${floorText(level, t)}` : null;
+  const { level, room } = cutTarget(targetFromSelection(selection), building, floorLevel);
+  const roomId = room?.roomId ?? null;
+  const pinText = room ? `${room.label} · ${floorText(level, t)}` : null;
   const floorRooms = useMemo(
     () => (rooms ? rooms.features.filter((f) => f.properties.floorLevel === level) : []),
     [rooms, level]
   );
-  // Selecting a room in the building (a tap, search, a lesson's pin) tilts the
-  // map straight into it — the room lit in the glass building, no card. Waits
-  // for the map to finish flying there, since the tilt starts from its view.
-  useEffect(() => {
-    if (!here || useAppStore.getState().mapTilt.phase !== 'flat') return;
-    // Dev only: `?map3d=hold` diffs the handover against Leaflet, so it tilts on the button only.
-    if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('map3d') === 'hold')
-      return;
-    // A lesson's map pin mounts the map tab and selects the room in one go, and
-    // React runs this (child) effect before MapCanvas creates the Leaflet map —
-    // so wait for the instance rather than giving up on a null one.
-    let done = false;
-    let fallback: ReturnType<typeof setTimeout> | undefined;
-    let map: ReturnType<typeof getMapInstance> = null;
-    const go = () => {
-      if (done) return;
-      done = true;
-      void enterTilt({ load: false });
-    };
-    const onMoved = () => setTimeout(go, 250);
-    const stop = subscribeMapInstance((m) => {
-      if (!m || map) return;
-      map = m;
-      fallback = setTimeout(go, 900);
-      m.once('moveend', onMoved);
-    });
-    return () => {
-      done = true;
-      stop();
-      clearTimeout(fallback);
-      map?.off('moveend', onMoved);
-    };
-    // Keyed on the selection object: each new selection tilts once; leaving to
-    // 2D keeps the same object and so does not bounce straight back.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selection]);
 
-  // A new room while tilted rebuilds the scene (keyed below) straight into the
-  // tilted frame; only the scene an entry started with does the handover glide.
+  // A new floor or room while tilted rebuilds the scene (keyed below) straight
+  // into the tilted frame; only the scene an entry started with does the glide.
   const sceneKey = `${level}:${roomId}`;
-  const [entryKey, setEntryKey] = useState<string | null>(null);
-  if (phase === 'flat' && entryKey !== null) setEntryKey(null);
-  if (phase !== 'flat' && entryKey === null) setEntryKey(sceneKey);
+  const [entry, setEntry] = useState<TiltEntry | null>(null);
+  const next = nextTiltEntry(entry, phase !== 'flat', sceneKey);
+  if (next !== entry) setEntry(next);
 
   if (phase === 'flat' || !view || !model || model === 'failed') return null;
   return (
     <Suspense fallback={null}>
       <TiltCanvas
         key={sceneKey}
-        startTilted={entryKey !== null && entryKey !== sceneKey}
+        startTilted={next !== null && (next.moved || next.key !== sceneKey)}
         view={view}
         model={model}
         rooms={floorRooms}
