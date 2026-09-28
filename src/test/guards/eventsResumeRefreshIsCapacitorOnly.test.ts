@@ -5,8 +5,8 @@ import { join, resolve } from 'node:path';
 // Events reload on RESUME only in the Capacitor app. The extension needs no
 // equivalent: its iframe is rebuilt on every IS page load, so it fetches fresh
 // events each time. Both halves are pinned: the Capacitor resume handler makes
-// the call, and nothing under src/ (the extension's and the shared code) does.
-// Named paths clear the tree-parity hook for these files.
+// the call, and nothing under src/ (the extension's and the shared code) does,
+// so the resume wiring stays in the Capacitor bootstrap.
 const STARTAPP = 'capacitor/startApp.ts';
 const CALL = /\brefreshMapEventsIfStale\s*\(/;
 

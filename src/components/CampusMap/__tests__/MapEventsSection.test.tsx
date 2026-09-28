@@ -6,6 +6,7 @@ import { MapEventsSection } from '../MapEventsSection';
 import { useAppStore } from '../../../store/useAppStore';
 import { MOCK_MAP_EVENTS } from './fixtures/mockMapEvents';
 import type { MapEvent } from '../../../types/events';
+import { localTodayIso } from '../eventWindow';
 
 // Days-from-today ISO date, for tests that need to land in a specific
 // weekSections bucket relative to the real clock (the component calls
@@ -13,7 +14,8 @@ import type { MapEvent } from '../../../types/events';
 function isoDaysFromNow(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  // Local calendar day, as weekSections reads it — not toISOString(), which is UTC.
+  return localTodayIso(d);
 }
 
 beforeEach(() => {

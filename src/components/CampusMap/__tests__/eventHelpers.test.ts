@@ -84,7 +84,9 @@ describe('eventHelpers', () => {
 
   it('labels later events with weekday and date', () => {
     const now = new Date('2026-07-06T09:00:00');
-    expect(relativeDayLabel('2026-11-19', 'cs-CZ', (k) => k, now)).toBe('Čt 19. 11.');
+    const cs = relativeDayLabel('2026-11-19', 'cs-CZ', (k) => k, now);
+    // Same ICU variance as below: the separators may be (narrow) no-break spaces.
+    if (cs !== 'Čt 19. 11.') expect(cs).toMatch(/^Čt\s19\.\s11\.$/);
     const en = relativeDayLabel('2026-11-19', 'en-US', (k) => k, now);
     // Node ICU may render the weekday/date separator as a narrow no-break space.
     if (en !== 'Thu, 11/19') expect(en).toMatch(/^Thu,?\s11\/19$/);

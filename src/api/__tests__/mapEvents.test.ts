@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { toMapEvent, fetchMapEvents } from '../mapEvents';
-import { isFinishedEvent } from '../../components/CampusMap/eventWindow';
+import { isFinishedEvent, localTodayIso } from '../../components/CampusMap/eventWindow';
 import { BUNDLED_SOCIETIES } from '../../data/societies';
 import { supabase } from '../../services/spolky/supabaseClient';
 
@@ -216,7 +216,8 @@ describe('fetchMapEvents — the catalog', () => {
     const iso = (d: number) => {
       const t = new Date(now);
       t.setDate(t.getDate() + d);
-      return t.toISOString().slice(0, 10);
+      // Local calendar day, like isFinishedEvent — not toISOString(), which is UTC.
+      return localTodayIso(t);
     };
     const mk = (id: string, date: string) => ({ ...base, id, date });
     const rows = [mk('past', iso(-5)), mk('live', iso(3)), mk('future', iso(400))];
