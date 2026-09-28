@@ -173,6 +173,7 @@ const ALLOWED_HOSTS = [
   'outlook.office.com',
   'www.geteduroam.app',
   'supef.cz',
+  'instagram.com', // a society's profile, the "details" link on an event with none
 
   // --- not destinations ---
   'localhost.that.never.exists', // CORS sentinel in capacitorTransport
