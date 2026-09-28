@@ -17,7 +17,7 @@ function ToggleRow({
       <span className="text-xs opacity-90">{label}</span>
       <input
         type="checkbox"
-        className="toggle toggle-sm"
+        className="toggle toggle-primary toggle-sm"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
       />
