@@ -15,7 +15,7 @@ export const createI18nSlice: AppSlice<I18nSlice> = (set, get) => ({
   language: DEFAULT_LANGUAGE,
   isLanguageLoading: true,
   loadLanguage: async () => {
-    let language = DEFAULT_LANGUAGE;
+    let language: Language = DEFAULT_LANGUAGE;
     try {
       const storedLang = (await IndexedDBService.get('meta', STORAGE_KEY)) as Language | undefined;
       if (storedLang === 'cz' || storedLang === 'en') language = storedLang;
