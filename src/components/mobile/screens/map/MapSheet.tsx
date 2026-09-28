@@ -13,6 +13,8 @@ import { useTranslation } from '../../../../hooks/useTranslation';
 import { MapPanelBody } from './MapPanelBody';
 import { MapSheetPeek } from './MapSheetPeek';
 import { MapSheetHeader } from './MapSheetHeader';
+import { useRoomDirections } from '../../../CampusMap/useRoomDirections';
+import { floorText } from '../../../CampusMap/floorText';
 import { useSafeBottom } from '../../../../hooks/ui/useSafeBottom';
 import { peekHeightPx } from '../../../../utils/mobile/safeArea';
 import type { Detent } from '../../primitives/sheetDrag';
@@ -48,6 +50,7 @@ export function MapSheet() {
   const selection = useAppStore((s) => s.mapSelection);
   const clearMapSelection = useAppStore((s) => s.clearMapSelection);
   const { t } = useTranslation();
+  const directions = useRoomDirections();
   const selectedEvent = selection?.kind === 'event' ? selection.event : null;
   // A bubble in the botanical garden, tapped. Treated exactly as a tapped event
   // pin is: the card IS the answer to the tap, so it replaces the list and the
@@ -289,6 +292,7 @@ export function MapSheet() {
         <>
           <MapSheetHeader
             showingCard={!!selectedCard}
+            heading={directions ? `${directions.label} · ${floorText(directions.level, t)}` : null}
             onCollapse={toggle}
             onBack={clearMapSelection}
           />

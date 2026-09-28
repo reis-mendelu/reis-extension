@@ -987,7 +987,26 @@
     "walkMinutes": "{n} min",
     "routeToRoom": "Walk me to {room}",
     "routeTakeMeThere": "Take me there",
-    "routePickBuilding": "Where are you headed?"
+    "routePickBuilding": "Where are you headed?",
+    "directions": {
+      "title": "Getting there",
+      "enter": "{side} entrance",
+      "takeStairs": "take the stairs",
+      "up": "up to {floor}",
+      "down": "down to {floor}",
+      "byStairs": "right by the stairs",
+      "side": {
+        "north": "north",
+        "south": "south",
+        "east": "east",
+        "west": "west"
+      },
+      "floorTo": {
+        "above": "floor {n}",
+        "ground": "the ground floor",
+        "below": "basement {n}"
+      }
+    }
   },
   "admin": {
     "email": "Email",

@@ -34,6 +34,8 @@ export type { MapView };
 export interface TiltSceneInput extends BuildingGroupInput {
   canvas: HTMLCanvasElement;
   view: MapView;
+  /** The route's staircase on this floor, lit in the route colour. */
+  routeRoomIds?: number[];
   /** The part of the canvas the sheet and search bar leave visible. */
   band: Band;
   /** Where the room's label pin goes, in canvas pixels, or null to hide it. */
