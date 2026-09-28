@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { digestText, digestLabels, pluralSuffix } from '../digestText';
+import { digestText, digestLabels } from '../digestText';
 import type { MapEvent } from '../../../types/events';
 
 function ev(n: number, societyId = 'esn'): MapEvent {
@@ -25,8 +25,10 @@ function ev(n: number, societyId = 'esn'): MapEvent {
 const many = (count: number) => Array.from({ length: count }, (_, i) => ev(i + 1));
 const shortName = (id: string) => id.toUpperCase();
 
-// Czech has three count forms (1 / 2–4 / 5+) and English two; one string with
-// "{n} akce" read "Zítra 5 akce" and "+ 1 nové akce" on real lock screens.
+// Czech has three count forms and English two; one string with "{n} akce"
+// read "Zítra 5 akce" and "+ 1 nové akce" on real lock screens. The forms are
+// `utils/plural.ts`'s, i.e. CLDR's `Intl.PluralRules('cs')` — 1 / 2–4 / the
+// rest, so 22 takes the many form ("22 akcí") like every other count in reIS.
 describe('digest plurals — Czech', () => {
   const cz = digestLabels('cz');
 
@@ -35,7 +37,9 @@ describe('digest plurals — Czech', () => {
     [2, '+ 2 nové akce od ESN'],
     [5, '+ 5 nových akcí od ESN'],
     [12, '+ 12 nových akcí od ESN'],
-    [22, '+ 22 nové akce od ESN'],
+    [21, '+ 21 nových akcí od ESN'],
+    [22, '+ 22 nových akcí od ESN'],
+    [24, '+ 24 nových akcí od ESN'],
     [25, '+ 25 nových akcí od ESN'],
   ])('%i new events → "%s"', (n, body) => {
     expect(digestText([ev(99)], many(n), shortName, cz)?.body).toBe(body);
@@ -64,30 +68,9 @@ describe('digest plurals — Czech', () => {
     expect(cz.tomorrowMany(5, 'X')).toBe('Zítra 5 akcí: X a další');
   });
 
-  // Compound counts ending in 2–4 take the few form too ("22 akce"), except
-  // the teens, which stay many ("12 akcí").
-  it.each([
-    [1, 'Single'],
-    [2, 'Few'],
-    [4, 'Few'],
-    [5, ''],
-    [11, ''],
-    [12, ''],
-    [13, ''],
-    [14, ''],
-    [21, ''],
-    [22, 'Few'],
-    [23, 'Few'],
-    [24, 'Few'],
-    [112, ''],
-    [134, 'Few'],
-  ])('pluralSuffix(%i) is "%s"', (n, suffix) => {
-    expect(pluralSuffix(n)).toBe(suffix);
-  });
-
-  it('tomorrow with 23 events uses the few form', () => {
+  it('tomorrow with 23 events uses the many form, as CLDR has it', () => {
     expect(digestText(many(23), [], shortName, cz)?.title).toBe(
-      'Zítra 23 akce: Akce 1, Akce 2 a další'
+      'Zítra 23 akcí: Akce 1, Akce 2 a další'
     );
   });
 

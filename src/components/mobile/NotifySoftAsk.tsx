@@ -5,7 +5,7 @@ import { useVisibleMapEvents } from '../../hooks/useVisibleMapEvents';
 import { useSociety } from '../../hooks/useSociety';
 import { isSoonEvent } from '../CampusMap/eventWindow';
 import { askNotificationPermission } from '../../services/eventReminders/sync';
-import { pluralSuffix } from '../../services/eventReminders/digestText';
+import { pluralSuffix } from '../../utils/plural';
 
 /**
  * The soft-ask card (phone/iPad tree only — see CLAUDE.md's tree-parity
@@ -28,7 +28,7 @@ export function NotifySoftAsk() {
   const markPermissionAsked = useAppStore((s) => s.markPermissionAsked);
   const setNotifyPermission = useAppStore((s) => s.setNotifyPermission);
   const replanNotifications = useAppStore((s) => s.replanNotifications);
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   // Soon events per followed, unmuted society — the only thing that can make
   // the card worth showing.
@@ -52,7 +52,7 @@ export function NotifySoftAsk() {
   const canAsk = notifyPermission === 'prompt' || notifyPermission === 'prompt-with-rationale';
   if (!canAsk || permissionAsked || total === 0) return null;
 
-  const suffix = pluralSuffix(total);
+  const suffix = pluralSuffix(language, total);
   const text = soleSocietyId
     ? t(`notify.askOne${suffix}`, { society: soleSociety?.shortName ?? soleSocietyId, n: total })
     : t(`notify.askMany${suffix}`, { n: total });

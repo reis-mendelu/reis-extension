@@ -86,6 +86,24 @@ describe('NotifySoftAsk', () => {
     expect(screen.getByRole('button', { name: 'Teď ne' })).toBeInTheDocument();
   });
 
+  // The same CLDR forms as every other count in reIS (`utils/plural.ts`).
+  it.each([
+    [1, 'ESN má 1 akci v příštích 14 dnech. Chceš večer předem připomínku?'],
+    [2, 'ESN má 2 akce v příštích 14 dnech. Chceš večer předem připomínku?'],
+    [22, 'ESN má 22 akcí v příštích 14 dnech. Chceš večer předem připomínku?'],
+  ])('%i events read "%s"', (n, text) => {
+    seed({
+      notifyPermission: 'prompt',
+      permissionAsked: false,
+      followed: ['esn'],
+      mapEvents: Array.from({ length: n }, () => soonEvent('esn')),
+    });
+
+    render(<NotifySoftAsk />);
+
+    expect(screen.getByText(text)).toBeInTheDocument();
+  });
+
   it('also shows the card for the post-refusal "prompt-with-rationale" state', () => {
     seed({
       notifyPermission: 'prompt-with-rationale',

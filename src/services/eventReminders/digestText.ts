@@ -2,33 +2,25 @@ import type { MapEvent } from '../../types/events';
 import type { Language } from '../../store/types';
 import type { DigestLabels } from './plan';
 import { translate } from '../../i18n/translate';
-
-/** Czech needs three count forms ("akce" / "akce" / "akcí", "nová" / "nové"
- *  / "nových"), so each count-bearing key has `Single` and `Few` variants
- *  beside the default. Few covers every count ending in 2–4 except the teens
- *  (2, 23, 134 — not 12–14). English only needs two, so its `Few` copy is
- *  identical to the default. Shared with `NotifySoftAsk`. Deliberately not
- *  `utils/plural.ts`: CLDR puts 22–24 in the many form. */
-export function pluralSuffix(n: number): 'Single' | 'Few' | '' {
-  if (n === 1) return 'Single';
-  const ones = n % 10;
-  const tens = n % 100;
-  if (ones >= 2 && ones <= 4 && (tens < 12 || tens > 14)) return 'Few';
-  return '';
-}
+import { pluralSuffix } from '../../utils/plural';
 
 /**
- * The digest strings in one language. `leadLabel` is the RSVP ping's body
- * prefix and must stay byte-identical: those pings are already pending on
- * devices, and a changed text would make every one of them reschedule.
+ * The digest strings in one language. Each count-bearing key has `One` /
+ * `Few` / `Other` variants, picked by `utils/plural.ts` like every other count
+ * in the app (CLDR: 1 / 2–4 / everything else, so "22 akcí").
+ *
+ * `leadLabel` is the RSVP ping's body prefix and must stay byte-identical:
+ * those pings are already pending on devices, and a changed text would make
+ * every one of them reschedule.
  */
 export function digestLabels(lang: Language): DigestLabels {
   const tr = (k: string, p?: Record<string, string | number>) => translate(lang, k, p);
   return {
     tomorrow: (titles) => tr('notify.digestTomorrow', { titles }),
-    tomorrowMany: (n, titles) => tr(`notify.digestTomorrowMany${pluralSuffix(n)}`, { n, titles }),
-    newOnly: (n, titles) => tr(`notify.digestNewOnly${pluralSuffix(n)}`, { titles }),
-    plusNew: (n, societies) => tr(`notify.digestPlusNew${pluralSuffix(n)}`, { n, societies }),
+    tomorrowMany: (n, titles) =>
+      tr(`notify.digestTomorrowMany${pluralSuffix(lang, n)}`, { n, titles }),
+    newOnly: (n, titles) => tr(`notify.digestNewOnly${pluralSuffix(lang, n)}`, { titles }),
+    plusNew: (n, societies) => tr(`notify.digestPlusNew${pluralSuffix(lang, n)}`, { n, societies }),
     leadLabel: tr('map.reminderLead'),
   };
 }
