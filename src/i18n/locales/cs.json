@@ -1377,5 +1377,9 @@
     "bannerLabel": "Zobrazuješ jako {programme} · {year}. ročník",
     "bannerExit": "Ukončit",
     "close": "Zavřít"
+  },
+  "notify": {
+    "channelRsvp": "Připomínky akcí",
+    "channelDigest": "Akce spolků"
   }
 }

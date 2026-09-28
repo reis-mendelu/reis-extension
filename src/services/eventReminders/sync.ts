@@ -1,6 +1,12 @@
 import { getPlatform } from '../../platform';
 import { logError } from '../../utils/reportError';
-import type { PlannedReminder } from './plan';
+import { translate } from '../../i18n/translate';
+import {
+  CHANNEL_RSVP,
+  CHANNEL_DIGEST,
+  type PlannedReminder,
+  type PlannedNotification,
+} from './plan';
 import type { PermissionState } from '@capacitor/core';
 
 // Capacitor's own type, imported rather than restated so the four states cannot
@@ -26,8 +32,12 @@ export interface ReminderDeps {
   isSupported(): boolean;
   checkPermission(): Promise<ReminderPermission>;
   requestPermission(): Promise<ReminderPermission>;
+  /** Android notification channels, created once before the first schedule.
+   *  A no-op off Android — iOS has no such concept and the plugin call would
+   *  reject. */
+  createChannels(): Promise<void>;
   listPending(): Promise<PendingReminder[]>;
-  schedule(reminders: PlannedReminder[]): Promise<void>;
+  schedule(reminders: PlannedReminder[] | PlannedNotification[]): Promise<void>;
   cancel(ids: number[]): Promise<void>;
 }
 
@@ -47,7 +57,7 @@ export interface ReminderDeps {
  * event load that triggered it.
  */
 export function syncReminders(
-  planned: PlannedReminder[],
+  planned: PlannedReminder[] | PlannedNotification[],
   deps: ReminderDeps = capacitorReminderDeps()
 ): Promise<void> {
   // Callers fire this with `void` on every RSVP change, so two runs can overlap
@@ -66,7 +76,10 @@ export function resetReminderQueue(): void {
   queue = Promise.resolve();
 }
 
-async function reconcile(planned: PlannedReminder[], deps: ReminderDeps): Promise<void> {
+async function reconcile(
+  planned: PlannedReminder[] | PlannedNotification[],
+  deps: ReminderDeps
+): Promise<void> {
   if (!deps.isSupported()) return;
 
   try {
@@ -86,18 +99,60 @@ async function reconcile(planned: PlannedReminder[], deps: ReminderDeps): Promis
     const toSchedule = planned.filter((r) => !alreadyGood.has(r.id));
     if (toSchedule.length === 0) return;
 
-    // The prompt is earned rather than sprung: it appears the first time the
-    // student has actually asked to be reminded of something, not on a cold
-    // boot before they have interacted with a single event.
-    let permission = await deps.checkPermission();
-    if (shouldAsk(permission)) permission = await deps.requestPermission();
+    // Asking is no longer this function's job. Plugin 8.3 prompts from inside
+    // schedule() itself, so a sync that ran requestPermission would spring the
+    // system dialog on a background reconciliation the student never touched
+    // (an app resume, a background fetch). The prompt now belongs only to
+    // explicit user actions — the soft-ask, a Profile switch, a first RSVP —
+    // via askNotificationPermission. Here we only check: if it isn't granted
+    // yet, there's nothing to schedule this pass, and the asking flow will
+    // bring reconcile back once it is.
+    const permission = await deps.checkPermission();
     if (permission !== 'granted') return;
-
+    await deps.createChannels();
     await deps.schedule(toSchedule);
   } catch (err) {
     logError('EventReminders.sync', err);
   }
 }
+
+/**
+ * Reads the current permission without ever prompting. For UI that only wants
+ * to know what to show (e.g. whether the soft-ask card is still relevant).
+ */
+export async function readNotificationPermission(
+  deps: ReminderDeps = capacitorReminderDeps()
+): Promise<ReminderPermission | 'unsupported'> {
+  if (!deps.isSupported()) return 'unsupported' as const;
+  try {
+    return await deps.checkPermission();
+  } catch (err) {
+    logError('EventReminders.readPermission', err);
+    return 'unsupported' as const;
+  }
+}
+
+/**
+ * The only place that may raise the system prompt. Called from explicit user
+ * actions — the soft-ask **Zapnout**, a Profile notification switch, a first
+ * RSVP — never from `syncReminders`, which plugin 8.3 would otherwise turn
+ * into a prompt sprung from a background reconciliation.
+ */
+export async function askNotificationPermission(
+  deps: ReminderDeps = capacitorReminderDeps()
+): Promise<ReminderPermission | 'unsupported'> {
+  if (!deps.isSupported()) return 'unsupported' as const;
+  try {
+    const p = await deps.checkPermission();
+    return shouldAsk(p) ? await deps.requestPermission() : p;
+  } catch (err) {
+    logError('EventReminders.askPermission', err);
+    return 'unsupported' as const;
+  }
+}
+
+/** Guards `createChannels` to run its plugin call at most once per process. */
+let channelsReady: Promise<void> | null = null;
 
 /** The real Capacitor plugin, imported lazily so no other host pays for it. */
 export function capacitorReminderDeps(): ReminderDeps {
@@ -111,6 +166,35 @@ export function capacitorReminderDeps(): ReminderDeps {
     requestPermission: async () => {
       const { LocalNotifications } = await load();
       return (await LocalNotifications.requestPermissions()).display as ReminderPermission;
+    },
+    createChannels: () => {
+      // Cached as a promise, not a boolean: two reconciliations racing at
+      // boot must not both hit the plugin, and a caller that awaits the
+      // second call still waits for the very creation the first kicked off.
+      if (!channelsReady) {
+        channelsReady = (async () => {
+          // iOS has no channel concept; the plugin call would reject there.
+          const { Capacitor } = await import('@capacitor/core');
+          if (Capacitor.getPlatform() !== 'android') return;
+          const { LocalNotifications } = await load();
+          // Lazy so this module never statically imports the store — that
+          // would be a require cycle (useAppStore -> createRsvpSlice -> this
+          // file) that breaks zustand's eager create().
+          const { useAppStore } = await import('../../store/useAppStore');
+          const lang = useAppStore.getState().language;
+          await LocalNotifications.createChannel({
+            id: CHANNEL_RSVP,
+            name: translate(lang, 'notify.channelRsvp'),
+            importance: 4,
+          });
+          await LocalNotifications.createChannel({
+            id: CHANNEL_DIGEST,
+            name: translate(lang, 'notify.channelDigest'),
+            importance: 3,
+          });
+        })();
+      }
+      return channelsReady;
     },
     listPending: async () => {
       const { LocalNotifications } = await load();
@@ -133,9 +217,13 @@ export function capacitorReminderDeps(): ReminderDeps {
           // it past Doze, which inexact alone would not.
           isExactNotification: false,
           schedule: { at: new Date(r.at), allowWhileIdle: true },
+          // RSVP pings and the digest ring on separate Android channels so a
+          // student can mute one without the other.
+          channelId: (r as PlannedNotification).channelId ?? CHANNEL_RSVP,
           // Round-trips the event id so a tapped notification can open the
-          // right event rather than just the app.
-          extra: { eventId: r.eventId },
+          // right event rather than just the app, plus which kind of
+          // notification this was (a digest has no single event to open).
+          extra: { eventId: r.eventId, kind: (r as PlannedNotification).kind ?? 'rsvp' },
         })),
       });
     },

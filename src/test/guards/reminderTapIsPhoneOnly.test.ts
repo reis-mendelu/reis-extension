@@ -39,7 +39,7 @@ describe('reminder tap placement', () => {
   });
 
   it('the reminder carries the event id the handler reads', () => {
-    expect(read('src/services/eventReminders/sync.ts')).toContain('extra: { eventId: r.eventId }');
+    expect(read('src/services/eventReminders/sync.ts')).toContain('extra: { eventId: r.eventId');
     expect(read('src/mobile/reminderTap.ts')).toContain('eventId');
   });
 

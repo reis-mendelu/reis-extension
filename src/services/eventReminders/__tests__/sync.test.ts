@@ -1,6 +1,49 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { syncReminders, resetReminderQueue, type ReminderDeps } from '../sync';
-import type { PlannedReminder } from '../plan';
+
+// capacitorReminderDeps talks to these lazily (dynamic import), so they must be
+// mocked before the module under test is imported — the mock factories close
+// over these fns, and stay live across `vi.resetModules()` re-imports below.
+const createChannel = vi.fn().mockResolvedValue(undefined);
+const pluginSchedule = vi.fn().mockResolvedValue(undefined);
+const checkPermissions = vi.fn().mockResolvedValue({ display: 'granted' });
+const requestPermissions = vi.fn().mockResolvedValue({ display: 'granted' });
+const getPending = vi.fn().mockResolvedValue({ notifications: [] });
+const pluginCancel = vi.fn().mockResolvedValue(undefined);
+
+vi.mock('@capacitor/local-notifications', () => ({
+  LocalNotifications: {
+    createChannel: (opts: unknown) => createChannel(opts),
+    schedule: (opts: unknown) => pluginSchedule(opts),
+    checkPermissions: () => checkPermissions(),
+    requestPermissions: () => requestPermissions(),
+    getPending: () => getPending(),
+    cancel: (opts: unknown) => pluginCancel(opts),
+  },
+}));
+
+const getPlatform = vi.fn(() => 'android');
+vi.mock('@capacitor/core', () => ({
+  Capacitor: { getPlatform: () => getPlatform() },
+}));
+
+vi.mock('../../../store/useAppStore', () => ({
+  useAppStore: { getState: () => ({ language: 'cz' }) },
+}));
+
+import {
+  syncReminders,
+  resetReminderQueue,
+  askNotificationPermission,
+  readNotificationPermission,
+  capacitorReminderDeps,
+  type ReminderDeps,
+} from '../sync';
+import {
+  CHANNEL_RSVP,
+  CHANNEL_DIGEST,
+  type PlannedReminder,
+  type PlannedNotification,
+} from '../plan';
 
 function reminder(over: Partial<PlannedReminder> = {}): PlannedReminder {
   return { id: 1, eventId: 'e1', title: 'Beánie', body: 'Q01', at: 2_000_000, ...over };
@@ -11,6 +54,7 @@ function deps(over: Partial<ReminderDeps> = {}): ReminderDeps {
     isSupported: () => true,
     checkPermission: vi.fn().mockResolvedValue('granted'),
     requestPermission: vi.fn().mockResolvedValue('granted'),
+    createChannels: vi.fn().mockResolvedValue(undefined),
     listPending: vi.fn().mockResolvedValue([]),
     schedule: vi.fn().mockResolvedValue(undefined),
     cancel: vi.fn().mockResolvedValue(undefined),
@@ -20,6 +64,7 @@ function deps(over: Partial<ReminderDeps> = {}): ReminderDeps {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  getPlatform.mockReturnValue('android');
   // Each test gets a fresh chain; otherwise one test's pending run serialises
   // into the next and the assertions race.
   resetReminderQueue();
@@ -31,6 +76,23 @@ describe('syncReminders', () => {
     await syncReminders([reminder()], d);
     expect(d.schedule).toHaveBeenCalledWith([
       expect.objectContaining({ id: 1, title: 'Beánie', at: 2_000_000 }),
+    ]);
+  });
+
+  it('accepts PlannedNotification entries carrying channelId and kind', async () => {
+    const d = deps();
+    const n: PlannedNotification = {
+      id: 9,
+      eventId: 'e9',
+      title: 'Digest',
+      body: 'B',
+      at: 3_000_000,
+      kind: 'digest',
+      channelId: CHANNEL_DIGEST,
+    };
+    await syncReminders([n], d);
+    expect(d.schedule).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 9, kind: 'digest', channelId: CHANNEL_DIGEST }),
     ]);
   });
 
@@ -65,35 +127,56 @@ describe('syncReminders', () => {
   });
 
   describe('permission', () => {
-    // The prompt is earned: it appears the first time the student asks to be
-    // reminded, not on a cold boot before they have done anything.
-    it('asks only when there is something to schedule', async () => {
+    // The core contract of this task: reconcile must never spring the system
+    // prompt. This is RED against the pre-Task-4 code, which asked here.
+    it('never requests permission itself, even with something to schedule', async () => {
       const d = deps({ checkPermission: vi.fn().mockResolvedValue('prompt') });
-      await syncReminders([], d);
+      await syncReminders([reminder()], d);
       expect(d.requestPermission).not.toHaveBeenCalled();
-    });
-
-    it('asks once there is a reminder to post', async () => {
-      const d = deps({ checkPermission: vi.fn().mockResolvedValue('prompt') });
-      await syncReminders([reminder()], d);
-      expect(d.requestPermission).toHaveBeenCalled();
-      expect(d.schedule).toHaveBeenCalled();
-    });
-
-    it('schedules nothing when the student declines', async () => {
-      const d = deps({
-        checkPermission: vi.fn().mockResolvedValue('prompt'),
-        requestPermission: vi.fn().mockResolvedValue('denied'),
-      });
-      await syncReminders([reminder()], d);
       expect(d.schedule).not.toHaveBeenCalled();
     });
 
-    it('does not re-ask a student who already said no', async () => {
+    it('does not even check permission when there is nothing to schedule', async () => {
+      const d = deps({ checkPermission: vi.fn().mockResolvedValue('prompt') });
+      await syncReminders([], d);
+      expect(d.checkPermission).not.toHaveBeenCalled();
+      expect(d.requestPermission).not.toHaveBeenCalled();
+    });
+
+    it('does not schedule while only prompt-with-rationale', async () => {
+      const d = deps({ checkPermission: vi.fn().mockResolvedValue('prompt-with-rationale') });
+      await syncReminders([reminder()], d);
+      expect(d.requestPermission).not.toHaveBeenCalled();
+      expect(d.schedule).not.toHaveBeenCalled();
+    });
+
+    it('does not schedule when the student has declined', async () => {
       const d = deps({ checkPermission: vi.fn().mockResolvedValue('denied') });
       await syncReminders([reminder()], d);
       expect(d.requestPermission).not.toHaveBeenCalled();
       expect(d.schedule).not.toHaveBeenCalled();
+    });
+
+    it('creates channels and schedules when permission is already granted', async () => {
+      const d = deps();
+      await syncReminders([reminder()], d);
+      expect(d.requestPermission).not.toHaveBeenCalled();
+      expect(d.createChannels).toHaveBeenCalledTimes(1);
+      expect(d.schedule).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })]);
+    });
+
+    it('creates channels before scheduling', async () => {
+      const order: string[] = [];
+      const d = deps({
+        createChannels: vi.fn(async () => {
+          order.push('channels');
+        }),
+        schedule: vi.fn(async () => {
+          order.push('schedule');
+        }),
+      });
+      await syncReminders([reminder()], d);
+      expect(order).toEqual(['channels', 'schedule']);
     });
 
     // Cancelling never needs permission, and a student who revoked it must
@@ -119,29 +202,6 @@ describe('syncReminders', () => {
   it('never throws when the plugin fails', async () => {
     const d = deps({ schedule: vi.fn().mockRejectedValue(new Error('no channel')) });
     await expect(syncReminders([reminder()], d)).resolves.toBeUndefined();
-  });
-});
-
-describe('syncReminders — permission states', () => {
-  // Android returns this after a first refusal. It used to be cast to the
-  // narrower union, matched no branch, and left the student never asked again.
-  it('still asks when the platform reports prompt-with-rationale', async () => {
-    const d = deps({
-      checkPermission: vi.fn().mockResolvedValue('prompt-with-rationale'),
-      requestPermission: vi.fn().mockResolvedValue('granted'),
-    });
-    await syncReminders([reminder()], d);
-    expect(d.requestPermission).toHaveBeenCalled();
-    expect(d.schedule).toHaveBeenCalled();
-  });
-
-  it('does not schedule when the student refuses at the prompt', async () => {
-    const d = deps({
-      checkPermission: vi.fn().mockResolvedValue('prompt-with-rationale'),
-      requestPermission: vi.fn().mockResolvedValue('denied'),
-    });
-    await syncReminders([reminder()], d);
-    expect(d.schedule).not.toHaveBeenCalled();
   });
 });
 
@@ -190,5 +250,139 @@ describe('syncReminders — overlapping runs', () => {
     const d = deps();
     await syncReminders([reminder()], d);
     expect(d.schedule).toHaveBeenCalled();
+  });
+});
+
+describe('askNotificationPermission', () => {
+  it('returns unsupported off a non-Capacitor host', async () => {
+    const d = deps({ isSupported: () => false });
+    await expect(askNotificationPermission(d)).resolves.toBe('unsupported');
+    expect(d.checkPermission).not.toHaveBeenCalled();
+  });
+
+  it('requests permission when the answer is prompt', async () => {
+    const d = deps({
+      checkPermission: vi.fn().mockResolvedValue('prompt'),
+      requestPermission: vi.fn().mockResolvedValue('granted'),
+    });
+    await expect(askNotificationPermission(d)).resolves.toBe('granted');
+    expect(d.requestPermission).toHaveBeenCalled();
+  });
+
+  it('requests permission when the answer is prompt-with-rationale', async () => {
+    const d = deps({
+      checkPermission: vi.fn().mockResolvedValue('prompt-with-rationale'),
+      requestPermission: vi.fn().mockResolvedValue('denied'),
+    });
+    await expect(askNotificationPermission(d)).resolves.toBe('denied');
+    expect(d.requestPermission).toHaveBeenCalled();
+  });
+
+  it('does not re-ask once already granted', async () => {
+    const d = deps({ checkPermission: vi.fn().mockResolvedValue('granted') });
+    await expect(askNotificationPermission(d)).resolves.toBe('granted');
+    expect(d.requestPermission).not.toHaveBeenCalled();
+  });
+
+  it('does not re-ask a student who already said no', async () => {
+    const d = deps({ checkPermission: vi.fn().mockResolvedValue('denied') });
+    await expect(askNotificationPermission(d)).resolves.toBe('denied');
+    expect(d.requestPermission).not.toHaveBeenCalled();
+  });
+
+  it('returns unsupported when the plugin throws', async () => {
+    const d = deps({ checkPermission: vi.fn().mockRejectedValue(new Error('boom')) });
+    await expect(askNotificationPermission(d)).resolves.toBe('unsupported');
+  });
+});
+
+describe('readNotificationPermission', () => {
+  it('returns unsupported off a non-Capacitor host', async () => {
+    const d = deps({ isSupported: () => false });
+    await expect(readNotificationPermission(d)).resolves.toBe('unsupported');
+  });
+
+  it('reads the current permission without ever asking', async () => {
+    const d = deps({ checkPermission: vi.fn().mockResolvedValue('prompt') });
+    await expect(readNotificationPermission(d)).resolves.toBe('prompt');
+    expect(d.requestPermission).not.toHaveBeenCalled();
+  });
+
+  it('returns unsupported when the plugin throws', async () => {
+    const d = deps({ checkPermission: vi.fn().mockRejectedValue(new Error('boom')) });
+    await expect(readNotificationPermission(d)).resolves.toBe('unsupported');
+  });
+});
+
+describe('capacitorReminderDeps — schedule wiring', () => {
+  it('passes a notification’s own channelId and kind through to the plugin', async () => {
+    const realDeps = capacitorReminderDeps();
+    const n: PlannedNotification = {
+      id: 42,
+      eventId: 'e9',
+      title: 'Digest',
+      body: 'B',
+      at: 5_000_000,
+      kind: 'digest',
+      channelId: CHANNEL_DIGEST,
+    };
+    await realDeps.schedule([n]);
+    expect(pluginSchedule).toHaveBeenCalledWith({
+      notifications: [
+        expect.objectContaining({
+          id: 42,
+          channelId: CHANNEL_DIGEST,
+          extra: { eventId: 'e9', kind: 'digest' },
+        }),
+      ],
+    });
+  });
+
+  it('defaults a bare PlannedReminder to the RSVP channel and kind', async () => {
+    const realDeps = capacitorReminderDeps();
+    await realDeps.schedule([reminder()]);
+    expect(pluginSchedule).toHaveBeenCalledWith({
+      notifications: [
+        expect.objectContaining({
+          channelId: CHANNEL_RSVP,
+          extra: { eventId: 'e1', kind: 'rsvp' },
+        }),
+      ],
+    });
+  });
+});
+
+describe('capacitorReminderDeps — createChannels', () => {
+  // channelsReady is module state, so each of these needs a fresh module
+  // instance — otherwise the second test would see the first's cached promise
+  // and never touch the plugin (or the platform check) at all.
+  async function freshCapacitorReminderDeps() {
+    vi.resetModules();
+    const mod = await import('../sync');
+    return mod.capacitorReminderDeps;
+  }
+
+  it('creates both channels on Android, exactly once across repeated calls', async () => {
+    getPlatform.mockReturnValue('android');
+    const factory = await freshCapacitorReminderDeps();
+    const d = factory();
+
+    await d.createChannels();
+    await d.createChannels();
+
+    expect(createChannel).toHaveBeenCalledTimes(2);
+    expect(createChannel).toHaveBeenCalledWith(
+      expect.objectContaining({ id: CHANNEL_RSVP, name: 'Připomínky akcí', importance: 4 })
+    );
+    expect(createChannel).toHaveBeenCalledWith(
+      expect.objectContaining({ id: CHANNEL_DIGEST, name: 'Akce spolků', importance: 3 })
+    );
+  });
+
+  it('creates no channel on iOS', async () => {
+    getPlatform.mockReturnValue('ios');
+    const factory = await freshCapacitorReminderDeps();
+    await factory().createChannels();
+    expect(createChannel).not.toHaveBeenCalled();
   });
 });

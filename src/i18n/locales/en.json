@@ -1377,5 +1377,9 @@
     "bannerLabel": "Viewing as {programme} · year {year}",
     "bannerExit": "Exit",
     "close": "Close"
+  },
+  "notify": {
+    "channelRsvp": "Event reminders",
+    "channelDigest": "Society events"
   }
 }
