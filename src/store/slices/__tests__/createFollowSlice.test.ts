@@ -62,6 +62,7 @@ describe('createFollowSlice', () => {
   it('initializes with empty defaults', () => {
     expect(state.followed).toEqual([]);
     expect(state.followsLoaded).toBe(false);
+    expect(state.followsResolved).toBe(false);
     expect(state.muted).toEqual([]);
     expect(state.notifyPrefs).toEqual(DEFAULT_PREFS);
     expect(state.permissionAsked).toBe(false);
@@ -174,6 +175,64 @@ describe('createFollowSlice', () => {
         newEvents: false,
       });
       expect(state.permissionAsked).toBe(true);
+    });
+
+    // The documented Capacitor boot race: loadFollows() runs once at Tier 2,
+    // before getUserParams() necessarily knows who is signed in. A `null`
+    // resolution must not be recorded as "this student follows nothing" —
+    // that is what `followsResolved` (and the retry it enables) exists for.
+    it('leaves followsResolved false when getUserParams cannot answer yet', async () => {
+      mockGetUserParams.mockResolvedValue(null);
+
+      await state.loadFollows();
+
+      expect(state.followed).toEqual([]);
+      expect(state.followsLoaded).toBe(true);
+      expect(state.followsResolved).toBe(false);
+    });
+  });
+
+  describe('retryFollowsIfUnresolved', () => {
+    it('re-runs the load once getUserParams can answer, and resolves', async () => {
+      // First pass loses the boot race, same as above.
+      mockGetUserParams.mockResolvedValue(null);
+      await state.loadFollows();
+      expect(state.followsResolved).toBe(false);
+
+      // IS has since confirmed who is signed in.
+      mockGetUserParams.mockResolvedValue(makeUser('PEF', false));
+
+      await state.retryFollowsIfUnresolved();
+
+      expect(state.followed).toEqual(['supef']);
+      expect(state.followsResolved).toBe(true);
+    });
+
+    it('does nothing once already resolved — no IndexedDB reads', async () => {
+      mockGetUserParams.mockResolvedValue(makeUser('PEF', false));
+      await state.loadFollows();
+      expect(state.followsResolved).toBe(true);
+      vi.mocked(IndexedDBService.get).mockClear();
+
+      await state.retryFollowsIfUnresolved();
+
+      expect(IndexedDBService.get).not.toHaveBeenCalled();
+    });
+
+    it('runs the load exactly once for two concurrent retries', async () => {
+      mockGetUserParams.mockResolvedValue(null);
+      await state.loadFollows(); // unresolved
+      expect(state.followsResolved).toBe(false);
+      mockGetUserParams.mockResolvedValue(makeUser('PEF', false));
+      const loadFollowsSpy = vi.spyOn(state, 'loadFollows');
+
+      const first = state.retryFollowsIfUnresolved();
+      const second = state.retryFollowsIfUnresolved();
+      await Promise.all([first, second]);
+
+      expect(loadFollowsSpy).toHaveBeenCalledTimes(1);
+      expect(state.followed).toEqual(['supef']);
+      expect(state.followsResolved).toBe(true);
     });
   });
 
