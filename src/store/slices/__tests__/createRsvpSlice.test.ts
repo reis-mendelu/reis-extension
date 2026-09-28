@@ -282,8 +282,10 @@ describe('createRsvpSlice', () => {
       expect(askNotificationPermission).not.toHaveBeenCalled();
     });
 
+    // Eight hours, not three: a wall time in the repeated hour of a clock
+    // change re-parses up to an hour off, and the margin has to absorb that.
     it('asks when the reminder time is still ahead', async () => {
-      state.mapEvents = [{ ...party, ...startingIn(3) }] as never;
+      state.mapEvents = [{ ...party, ...startingIn(8) }] as never;
       await state.setRsvp('e1', 'going');
       await flush();
       expect(askNotificationPermission).toHaveBeenCalledTimes(1);

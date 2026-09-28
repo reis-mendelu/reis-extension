@@ -112,7 +112,7 @@ describe('no desktop-tree file reaches for the phone-only notification UI', () =
   });
 
   it.each(files)('%s does not import NotifySettings or MuteBell', (file) => {
-    expect(read(file)).not.toMatch(/['"][^'"]*\bNotifySettings['"]/);
+    expect(read(file)).not.toMatch(/['"][^'"]*\b(NotifySettings|MuteBell)['"]/);
   });
 
   it.each(files)('%s does not pass `notifications` to SpolkySection', (file) => {

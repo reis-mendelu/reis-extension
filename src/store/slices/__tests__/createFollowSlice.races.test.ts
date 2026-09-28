@@ -136,8 +136,8 @@ describe('createFollowSlice races', () => {
 
   describe('a load that starts while a mutation is persisting', () => {
     // The trigger: the first load came back unresolved (getUserParams lost the
-    // boot race), the student toggles, and a sync calls
-    // retryFollowsIfUnresolved() in the gap between toggleFollow's two writes.
+    // boot race), the student toggles, and a load runs in the gap between
+    // toggleFollow's two writes.
     it('committing mid-write does not revert the toggle, and marks the list resolved', async () => {
       await state.loadFollows();
       expect(state.followsResolved).toBe(false);
@@ -160,8 +160,10 @@ describe('createFollowSlice races', () => {
 
       const toggle = state.toggleFollow('esn');
       await new Promise((r) => setTimeout(r, 0));
-      // The load runs to completion while CHOSEN_KEY is still being written.
-      await state.retryFollowsIfUnresolved();
+      // The toggle resolved the list, so a retry now short-circuits; a plain
+      // load still runs to completion while CHOSEN_KEY is being written.
+      expect(state.followsResolved).toBe(true);
+      await state.loadFollows();
       expect(state.followed).toEqual(['esn']);
 
       releaseChosen();

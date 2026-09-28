@@ -144,6 +144,17 @@ describe('openDigest', () => {
     expect(useAppStore.getState().mapSheetState).toBe('expanded');
   });
 
+  // Unlike an event tap, a digest has no one event that could be missing:
+  // the list opens even over a failed load, and shows its own empty state.
+  it('still opens the events list when the feed fails to load', async () => {
+    useAppStore.setState({ loadMapEvents: vi.fn(async () => {}), mapSheetState: 'peek' });
+
+    await openDigest();
+
+    expect(useAppStore.getState().mobileTab).toBe('map');
+    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+  });
+
   it('yields to an event tap made while it waits on the feed', async () => {
     const pending: (() => void)[] = [];
     const load = vi.fn(() => new Promise<void>((resolve) => pending.push(resolve)));
