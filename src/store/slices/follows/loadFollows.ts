@@ -33,13 +33,22 @@ export const DEFAULT_PREFS: NotifyPrefs = {
 };
 
 /**
+ * What `loadFollowedList` returns when the saved list (or its CHOSEN_KEY mark)
+ * could not be read at all. Distinct from `null`: that means the read worked
+ * and nothing resolved, so disk really holds no list to lose. This means disk
+ * holds something unknown, and a list computed without it must not be saved.
+ */
+export const FOLLOWS_READ_FAILED = Symbol('followsReadFailed');
+
+/**
  * Resolves the followed-society list, moved verbatim (with its comments) out
  * of `useSpolkySettings` so the reminder planner can read follows from the
  * store rather than from a component's local state.
  *
  * Returns the final list, or `null` when nothing resolved: no saved list and
- * `getUserParams()` returned nothing, or a read failed. A faculty that maps to
- * no default gives `[]`, which is an answer (and is not persisted).
+ * `getUserParams()` returned nothing, or a later step failed. A faculty that
+ * maps to no default gives `[]`, which is an answer (and is not persisted).
+ * A failed read of the saved list gives `FOLLOWS_READ_FAILED`.
  *
  * `canWrite` is checked immediately before each write of the list or of
  * CHOSEN_KEY. Every one of them is computed from a read made earlier in the
@@ -55,13 +64,20 @@ export const DEFAULT_PREFS: NotifyPrefs = {
 export async function loadFollowedList(
   catalog: Record<string, Society>,
   canWrite: () => boolean = () => true
-): Promise<string[] | null> {
-  let result: string[] | null = null;
+): Promise<string[] | null | typeof FOLLOWS_READ_FAILED> {
+  let saved: string[] | undefined;
+  let chosenByHand: boolean;
   try {
     // 1. Try to get new full list
-    let saved = (await IndexedDBService.get('meta', STORAGE_KEY)) as string[] | undefined;
-    const chosenByHand = Boolean(await IndexedDBService.get('meta', CHOSEN_KEY));
+    saved = (await IndexedDBService.get('meta', STORAGE_KEY)) as string[] | undefined;
+    chosenByHand = Boolean(await IndexedDBService.get('meta', CHOSEN_KEY));
+  } catch (err) {
+    logError('Follows.load', err);
+    return FOLLOWS_READ_FAILED;
+  }
 
+  let result: string[] | null = null;
+  try {
     // An empty list that nobody chose is not an answer, it is a failed
     // lookup — and `[]` is truthy, so it used to end the search for good.
     //

@@ -2,8 +2,7 @@ import type { AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
 import {
   loadFollowedList,
-  STORAGE_KEY,
-  CHOSEN_KEY,
+  FOLLOWS_READ_FAILED,
   MUTED_KEY,
   NOTIFY_PREFS_KEY,
   NOTIFY_ASKED_KEY,
@@ -12,6 +11,7 @@ import {
 } from './follows/loadFollows';
 import { loadNotifySettings } from './follows/loadNotifySettings';
 import { replanNotifications } from './follows/replanNotifications';
+import { toggleFollowAction } from './follows/toggleFollow';
 import {
   runExclusiveLoad,
   ensureLoaded,
@@ -44,6 +44,13 @@ export interface FollowSlice {
    * reproduce that without retrying forever once a real answer is in.
    */
   followsResolved: boolean;
+  /**
+   * True once a load has read the saved list from disk, whatever it found.
+   * Until then `followed` is `[]` because the read failed (or has not run),
+   * not because disk says so, and `toggleFollow` must not persist a list
+   * computed from it.
+   */
+  followsListRead: boolean;
   /** Followed society ids this student has muted from reminders. */
   muted: string[];
   /** Which kinds of notification this student wants scheduled. */
@@ -72,6 +79,7 @@ export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
   followed: [],
   followsLoaded: false,
   followsResolved: false,
+  followsListRead: false,
   muted: [],
   notifyPrefs: DEFAULT_PREFS,
   permissionAsked: false,
@@ -89,9 +97,13 @@ export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
         loadNotifySettings(),
       ]);
 
-      const followedUnchanged = isUnchangedSince('followed', versionsAtStart);
-      const patch: Partial<FollowSlice> = {
-        followsLoaded: true,
+      const patch: Partial<FollowSlice> = { followsLoaded: true };
+      // A failed read says nothing about `followed`: it, `followsResolved` and
+      // `followsListRead` stay as they were, so a transient failure neither
+      // undoes a good earlier read nor makes its `[]` look like an answer.
+      if (list !== FOLLOWS_READ_FAILED) {
+        const followedUnchanged = isUnchangedSince('followed', versionsAtStart);
+        patch.followsListRead = true;
         // `null` means loadFollowedList could not resolve anything this time
         // (getUserParams() came back empty — the boot race) rather than that
         // this student genuinely follows nothing. A toggle that landed on
@@ -99,9 +111,9 @@ export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
         // is a hand-made choice, already persisted with CHOSEN_KEY — so it
         // must not leave a later `retryFollowsIfUnresolved()` blocked
         // forever waiting for a list that will never come.
-        followsResolved: list !== null || !followedUnchanged,
-      };
-      if (followedUnchanged) patch.followed = list ?? [];
+        patch.followsResolved = list !== null || !followedUnchanged;
+        if (followedUnchanged) patch.followed = list ?? [];
+      }
       if (isUnchangedSince('muted', versionsAtStart)) patch.muted = notify.muted;
       if (isUnchangedSince('notifyPrefs', versionsAtStart)) patch.notifyPrefs = notify.prefs;
       if (isUnchangedSince('permissionAsked', versionsAtStart)) {
@@ -125,25 +137,7 @@ export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
   // exists to close. `persistField` then keeps any load that overlaps the
   // writes (a retry fired by a sync, say) from committing the value it read
   // before they landed; see `followLoadState.ts`.
-  toggleFollow: async (id) => {
-    await ensureLoaded(get);
-    const followed = get().followed.includes(id)
-      ? get().followed.filter((x) => x !== id)
-      : [...get().followed, id];
-    // A hand-made choice is a resolved list, whatever the load came back with.
-    set({ followed, followsResolved: true });
-    await persistField('followed', 'Follows.toggle', async () => {
-      // CHOSEN_KEY first, deliberately. There are two writes and no transaction
-      // across them, so one of the two orders has to be safe: marking "chosen"
-      // before the list means a crash between them leaves the OLD list marked
-      // as settled, which is merely stale. The other order leaves the new list
-      // unmarked — and if that list is empty, the next boot treats the
-      // student's deliberate choice as an unresolved lookup and undoes it.
-      await IndexedDBService.set('meta', CHOSEN_KEY, true);
-      await IndexedDBService.set('meta', STORAGE_KEY, followed);
-    });
-    get().replanNotifications();
-  },
+  toggleFollow: (id) => toggleFollowAction(id, set, get),
 
   toggleMute: async (id) => {
     await ensureLoaded(get);
