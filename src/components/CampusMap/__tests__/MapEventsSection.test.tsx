@@ -5,12 +5,23 @@ import userEvent from '@testing-library/user-event';
 import { MapEventsSection } from '../MapEventsSection';
 import { useAppStore } from '../../../store/useAppStore';
 import { MOCK_MAP_EVENTS } from './fixtures/mockMapEvents';
+import type { MapEvent } from '../../../types/events';
+
+// Days-from-today ISO date, for tests that need to land in a specific
+// weekSections bucket relative to the real clock (the component calls
+// weekSections(events) with no injected `now`).
+function isoDaysFromNow(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
 
 beforeEach(() => {
   useAppStore.setState({
     mapEvents: MOCK_MAP_EVENTS,
     mapSelection: null,
     language: 'en',
+    mapLaterExpanded: false,
   });
 });
 
@@ -38,5 +49,34 @@ describe('MapEventsSection', () => {
     // No mock event has a poster → each row shows its category emoji tile.
     // PEF Kvíz → quiz → 🧠 (1f9e0).
     expect(container.querySelector('img[src="/emoji/1f9e0.svg"]')).toBeTruthy();
+  });
+
+  it('collapses the Later bucket by default and expands it on click', async () => {
+    const soon: MapEvent = { ...MOCK_MAP_EVENTS[0], id: 'soon', title: 'Soon Event', date: isoDaysFromNow(3) };
+    const later1: MapEvent = {
+      ...MOCK_MAP_EVENTS[0],
+      id: 'later-1',
+      title: 'Later Event One',
+      date: isoDaysFromNow(30),
+    };
+    const later2: MapEvent = {
+      ...MOCK_MAP_EVENTS[0],
+      id: 'later-2',
+      title: 'Later Event Two',
+      date: isoDaysFromNow(30),
+    };
+    useAppStore.setState({ mapEvents: [soon, later1, later2] });
+
+    render(<MapEventsSection />);
+
+    const laterButton = screen.getByRole('button', { name: 'Later (2)' });
+    expect(laterButton).toBeTruthy();
+    expect(screen.queryByText('Later Event One')).toBeNull();
+    expect(screen.queryByText('Later Event Two')).toBeNull();
+
+    await userEvent.click(laterButton);
+
+    expect(screen.getByText('Later Event One')).toBeTruthy();
+    expect(screen.getByText('Later Event Two')).toBeTruthy();
   });
 });

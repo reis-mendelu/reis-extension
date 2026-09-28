@@ -594,6 +594,9 @@ export interface MapSlice {
   mapEventsLoaded: boolean;
   /** Set on every successful (re)fetch; null until the first one lands. Drives `refreshMapEventsIfStale`. */
   mapEventsFetchedAt: number | null;
+  /** Whether MapEventsSection's "Later" bucket (day 14+) is expanded. Collapsed by default. */
+  mapLaterExpanded: boolean;
+  toggleMapLater: () => void;
   /** Create a real reservation for a room + 1-hour slot; on success, force-refetch availability so the panel reflects it. Always an explicit, confirmed user action. */
   /** Which tab the top-right panel shows. */
   mapPanelTab: 'places' | 'events';

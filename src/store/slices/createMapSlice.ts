@@ -69,6 +69,8 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   mapEvents: [],
   mapEventsLoaded: false,
   mapEventsFetchedAt: null,
+  mapLaterExpanded: false,
+  toggleMapLater: () => set((s) => ({ mapLaterExpanded: !s.mapLaterExpanded })),
   mapPanelTab: 'events',
   societyMapEvents: [],
   placingEvent: false,

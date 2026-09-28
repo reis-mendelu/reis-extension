@@ -34,17 +34,32 @@ describe('eventHelpers', () => {
     expect(groupEventsByVenue([off])).toHaveLength(0);
   });
 
-  it('weekSections buckets into this week / next week (anything past this week → next week)', () => {
+  it('weekSections buckets into this week / next week / later (day 14+ → later)', () => {
     const ev = (id: string, date: string): MapEvent => ({ ...MOCK_MAP_EVENTS[0], id, date });
     const now = new Date('2026-01-05T12:00:00'); // a Monday
     const sections = weekSections(
       [ev('a', '2026-01-07'), ev('b', '2026-01-13'), ev('c', '2026-01-20')],
       now
     );
-    expect(sections.map((s) => s.key)).toEqual(['thisWeek', 'nextWeek']);
+    expect(sections.map((s) => s.key)).toEqual(['thisWeek', 'nextWeek', 'later']);
     expect(sections[0].events.map((e) => e.id)).toEqual(['a']);
-    // both the next-calendar-week and the week-after events land under "next week"
-    expect(sections[1].events.map((e) => e.id)).toEqual(['b', 'c']);
+    expect(sections[1].events.map((e) => e.id)).toEqual(['b']);
+    // 15 days out (day 14+) lands in "later", not "next week"
+    expect(sections[2].events.map((e) => e.id)).toEqual(['c']);
+  });
+
+  it('buckets day 14 and later into "later"', () => {
+    const ev = (id: string, date: string): MapEvent => ({ ...MOCK_MAP_EVENTS[0], id, date });
+    const now = new Date('2026-07-06T09:00:00');
+    const s = weekSections(
+      [ev('a', '2026-07-07'), ev('b', '2026-07-15'), ev('c', '2026-07-20'), ev('d', '2026-11-23')],
+      now
+    );
+    expect(s.map((x) => [x.key, x.events.map((e) => e.id)])).toEqual([
+      ['thisWeek', ['a']],
+      ['nextWeek', ['b']],
+      ['later', ['c', 'd']],
+    ]);
   });
 
   it('relativeDayLabel: Today / Tomorrow / this-week weekday / next-week date', () => {
@@ -59,6 +74,14 @@ describe('eventHelpers', () => {
     expect(next).toContain('Tuesday');
     expect(next).toContain('13');
     expect(next).toBe('1/13 (Tuesday)');
+  });
+
+  it('labels later events with weekday and date', () => {
+    const now = new Date('2026-07-06T09:00:00');
+    expect(relativeDayLabel('2026-11-19', 'cs-CZ', (k) => k, now)).toBe('Čt 19. 11.');
+    const en = relativeDayLabel('2026-11-19', 'en-US', (k) => k, now);
+    // Node ICU may render the weekday/date separator as a narrow no-break space.
+    if (en !== 'Thu, 11/19') expect(en).toMatch(/^Thu,?\s11\/19$/);
   });
 
   it('weekend: "tomorrow" stays in This week and is never filed under Next week', () => {
