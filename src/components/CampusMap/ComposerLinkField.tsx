@@ -1,3 +1,5 @@
+import { useId } from 'react';
+
 const LABEL = 'mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60';
 
 // The optional event URL. Split out of EventComposer.tsx to keep it under its
@@ -13,6 +15,7 @@ export function ComposerLinkField({
   urlInvalid: boolean;
   t: (k: string) => string;
 }) {
+  const errorId = useId();
   return (
     <>
       {/* `flex flex-col`, not DaisyUI 4's dead `form-control`: an inline label
@@ -24,9 +27,15 @@ export function ComposerLinkField({
           placeholder={t('admin.urlHint')}
           value={url}
           onChange={(e) => onChange(e.target.value)}
+          aria-invalid={urlInvalid || undefined}
+          aria-describedby={urlInvalid ? errorId : undefined}
         />
       </label>
-      {urlInvalid && <p className="mt-1 text-[11px] text-error">{t('admin.urlInvalid')}</p>}
+      {urlInvalid && (
+        <p id={errorId} className="mt-1 text-[11px] text-error">
+          {t('admin.urlInvalid')}
+        </p>
+      )}
     </>
   );
 }

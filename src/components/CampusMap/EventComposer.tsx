@@ -70,7 +70,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
     pickPlace,
     clearVenue,
     pickOnMap,
-  } = useVenuePicker(initialRoom(source, INDEX), initialPlaceName(source));
+  } = useVenuePicker(initialRoom(source, INDEX), initialPlaceName(source), source?.coord ?? null);
   const venueName = room?.name ?? placeName ?? (coord ? t('map.mapPoint') : null);
   // url is optional, but once something is typed it must be a URL openExternal
   // will actually open — the same rule EventDetailCard enforces on the way OUT.
