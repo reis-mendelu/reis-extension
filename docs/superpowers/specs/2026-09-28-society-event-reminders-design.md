@@ -103,8 +103,11 @@ type PlannedNotification = PlannedReminder & { kind: 'rsvp' | 'digest'; channelI
     societies that are not finished and start on D+1.
   - **New** (`prefs.newEvents`): events from followed, unmuted societies whose
     `createdAt` falls in the window from (D−1) 18:00 (exclusive) to D 18:00
-    (inclusive), local time.
-    - This is a pure time window, with no "seen" state.
+    (inclusive), local time, and that are not finished at D 18:00
+    (`isFinishedEvent`: their last day is not before D).
+    - An event published on D for that same evening is new on D; one whose
+      last day has already passed is announced by no digest.
+    - Apart from that filter it is a time window, with no "seen" state.
     - Old events never count as new, so there is no first-run burst.
     - Only the digest of day D can mention an event created in that window.
 - **Visibility.** Only events the student would see count, per
@@ -195,8 +198,10 @@ The card never returns after either answer.
 - When the OS permission is `denied`, the group instead shows *"Oznámení
   jsou vypnutá v nastavení telefonu"*. Switches that would do nothing are not
   shown.
-- When permission was never granted and the student turns a switch on, that
-  is also a moment of intent. Turning a switch on requests permission once.
+- While permission is still askable (`prompt` or `prompt-with-rationale`),
+  the group shows one **Zapnout oznámení** button instead of the switches.
+  Tapping it is the moment of intent: it requests permission, and the three
+  switches appear once it is granted.
 - Every followed society's row gets a **bell** button (`aria-pressed`) that
   mutes or unmutes it.
 - The Oznámení group and the bells render in the phone/iPad tree only.

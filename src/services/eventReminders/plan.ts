@@ -184,10 +184,9 @@ export function planNotifications(
       const fresh = input.prefs.newEvents
         ? mine.filter((e) => {
             const c = e.createdAt ? Date.parse(e.createdAt) : NaN;
-            // Dated after the digest day only: an event published for
-            // tonight, or for a day already gone, is not news at 18:00.
-            // YYYY-MM-DD compares correctly as a string.
-            return c > windowStart && c <= fire.getTime() && e.date > fireIso;
+            // Published tonight for tonight is news at 18:00; an event
+            // whose last day has already passed is not.
+            return c > windowStart && c <= fire.getTime() && !isFinishedEvent(e, fire);
           })
         : [];
       const text = digestText(tomorrow, fresh, input.shortName, labels);

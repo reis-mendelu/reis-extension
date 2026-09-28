@@ -299,17 +299,37 @@ describe('planNotifications — new-events window', () => {
     expect(plan).toEqual([]);
   });
 
-  // Ruling: "new" is news about something still ahead. An event published
-  // this afternoon for tonight (or dated in the past) is already under way or
-  // over by 18:00, so announcing it in the evening digest is noise.
-  it('does not announce a new event dated on or before the digest day', () => {
+  // Ruling: "new" is news about something not yet over. An event published
+  // this afternoon for tonight is exactly the news the 18:00 digest is for; an
+  // event whose last day has already passed is not.
+  it('announces a new event published today for tonight', () => {
     const now = at('2026-10-05T09:00:00');
-    const events = [
-      ev('today', 'esn', '2026-10-05', { createdAt: '2026-10-05T10:00:00' }),
-      ev('past', 'esn', '2026-10-01', { createdAt: '2026-10-05T10:00:00' }),
-    ];
-    const plan = planNotifications(input({ events, followed: ['esn'], prefs }), now, labels);
+    const e = ev('tonight', 'esn', '2026-10-05', {
+      time: '20:00',
+      createdAt: '2026-10-05T10:00:00',
+    });
+    const plan = planNotifications(input({ events: [e], followed: ['esn'], prefs }), now, labels);
+    expect(plan).toHaveLength(1);
+    expect(plan[0]?.at).toBe(at('2026-10-05T18:00:00'));
+    expect(plan[0]?.title).toContain('Event tonight');
+  });
+
+  it('does not announce a new event that is already over', () => {
+    const now = at('2026-10-05T09:00:00');
+    const e = ev('past', 'esn', '2026-10-04', { createdAt: '2026-10-05T10:00:00' });
+    const plan = planNotifications(input({ events: [e], followed: ['esn'], prefs }), now, labels);
     expect(plan).toEqual([]);
+  });
+
+  it('announces a new multi-day event that started yesterday and is still running', () => {
+    const now = at('2026-10-05T09:00:00');
+    const e = ev('trip', 'esn', '2026-10-04', {
+      endDate: '2026-10-06',
+      createdAt: '2026-10-05T10:00:00',
+    });
+    const plan = planNotifications(input({ events: [e], followed: ['esn'], prefs }), now, labels);
+    expect(plan).toHaveLength(1);
+    expect(plan[0]?.title).toContain('Event trip');
   });
 
   it('still announces a new event dated the day after the digest', () => {
