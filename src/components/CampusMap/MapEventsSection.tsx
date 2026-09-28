@@ -34,6 +34,13 @@ export function MapEventsSection() {
 
   const sections = weekSections(events);
   const selectedId = selection?.kind === 'event' ? selection.event.id : null;
+  // A selected event in Later (a Novinky or calendar tap can pick one months
+  // out) opens the bucket, or its pin and card show while its row stays hidden.
+  // Derived, not written: the student's own toggle is left as they set it.
+  const selectedInLater = sections.some(
+    (s) => s.key === 'later' && s.events.some((e) => e.id === selectedId)
+  );
+  const laterOpen = laterExpanded || selectedInLater;
 
   return (
     <div className="flex max-h-[60vh] flex-col">
@@ -50,10 +57,10 @@ export function MapEventsSection() {
                 <button
                   type="button"
                   onClick={toggleLater}
-                  aria-expanded={laterExpanded}
+                  aria-expanded={laterOpen}
                   className="flex w-full items-center gap-1 border-l-2 border-transparent px-3 pb-1 pt-2 text-left text-[11px] font-bold uppercase tracking-wide text-base-content/60"
                 >
-                  {laterExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                  {laterOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                   {t('map.later')} ({s.events.length})
                 </button>
               ) : (
@@ -61,7 +68,7 @@ export function MapEventsSection() {
                   {t(`map.${s.key}`)}
                 </div>
               )}
-              {(s.key !== 'later' || laterExpanded) &&
+              {(s.key !== 'later' || laterOpen) &&
                 s.events.map((e) => (
                   <EventRow
                     key={e.id}
