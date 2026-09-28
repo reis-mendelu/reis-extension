@@ -115,6 +115,13 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   },
   setActiveAssociation: (id) => {
     get().resetAuthoringState();
+    // A different society's rows go at once, not when its own load lands: a
+    // slow read otherwise shows the old society's events, with edit/delete on
+    // them, under the new society's name.
+    if (id !== get().adminActiveAssociationId) {
+      set({ societyPosts: [], societyRsvpCounts: {} });
+      get().refreshSocietyMapEvents();
+    }
     set({ adminActiveAssociationId: id });
     void get().loadSocietyPosts();
   },

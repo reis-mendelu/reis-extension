@@ -97,6 +97,25 @@ describe('choosing the society being authored', () => {
     expect(s.draftCoord).toBeNull();
   });
 
+  // The new society's read can be slow; until it lands the console must not
+  // show the previous society's rows (with edit/delete on them) under its name.
+  it("clears the previous society's rows as soon as the picker changes", () => {
+    vi.mocked(listMyPosts).mockReturnValue(new Promise(() => {}));
+    useAppStore.setState({
+      adminActiveAssociationId: 'supef',
+      societyPosts: [row('supef-1', 'supef')] as never,
+      societyRsvpCounts: { 'supef-1': { going: 1, interested: 0 } },
+    });
+    useAppStore.getState().refreshSocietyMapEvents();
+    expect(useAppStore.getState().societyMapEvents).toHaveLength(1);
+
+    useAppStore.getState().setActiveAssociation('esn');
+    const s = useAppStore.getState();
+    expect(s.societyPosts).toEqual([]);
+    expect(s.societyMapEvents).toEqual([]);
+    expect(s.societyRsvpCounts).toEqual({});
+  });
+
   // Regression: two picker changes can resolve out of order. The slower, older
   // response used to win, leaving one society's events under another's name —
   // and delete/edit act on those rows, damaging a society nobody is looking at.

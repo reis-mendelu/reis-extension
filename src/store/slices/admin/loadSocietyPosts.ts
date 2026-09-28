@@ -25,21 +25,33 @@ interface LoadSocietyPostsAccess {
  * society's events under another's name — and delete/edit act on THOSE rows,
  * so the damage is to a society nobody is looking at. The same guard covers
  * the RSVP counts fetched afterwards, which race the same way.
+ *
+ * The guard is a generation AND the id. The id alone let an A → B → A switch
+ * apply the first A request over the second; the generation alone would let a
+ * load still pending when the society was cleared repopulate the list.
+ *
+ * A failed read keeps what is on screen: after a publish, a blip must not wipe
+ * the list. A society SWITCH clears the rows up front (setActiveAssociation),
+ * so a failure there leaves an empty list, never the previous society's.
  */
+let generation = 0;
+
 export async function loadSocietyPosts(access: LoadSocietyPostsAccess): Promise<void> {
+  const mine = ++generation;
   const associationId = access.activeAssociationId();
   if (!associationId) {
     access.setPosts([]);
     access.refreshSocietyMapEvents();
     return;
   }
+  const current = () => mine === generation && access.activeAssociationId() === associationId;
   const posts = await listMyPosts(associationId);
-  if (access.activeAssociationId() !== associationId) return;
+  if (posts === null || !current()) return;
   access.setPosts(posts);
   access.refreshSocietyMapEvents();
   // Interest per event, from the same public aggregate RPC the student card
   // uses — no new data flow. Not attendance: RSVPs count installs, and free
   // events see many no-shows, which is why the label says "v reIS".
   const { counts, ok } = await fetchEventRsvps(posts.map((p) => p.id));
-  if (ok && access.activeAssociationId() === associationId) access.setRsvpCounts(counts);
+  if (ok && current()) access.setRsvpCounts(counts);
 }
