@@ -17,12 +17,12 @@ const draft = {
 
 describe('composerRules', () => {
   it('needs only a title and a date', () => {
-    expect(isComposerReady({ title: 'x', date: '2026-10-13', endDate: '', urlInvalid: false })).toBe(
-      true
-    );
-    expect(isComposerReady({ title: ' ', date: '2026-10-13', endDate: '', urlInvalid: false })).toBe(
-      false
-    );
+    expect(
+      isComposerReady({ title: 'x', date: '2026-10-13', endDate: '', urlInvalid: false })
+    ).toBe(true);
+    expect(
+      isComposerReady({ title: ' ', date: '2026-10-13', endDate: '', urlInvalid: false })
+    ).toBe(false);
     expect(isComposerReady({ title: 'x', date: '', endDate: '', urlInvalid: false })).toBe(false);
   });
 
@@ -30,9 +30,9 @@ describe('composerRules', () => {
     expect(
       isComposerReady({ title: 'x', date: '2026-10-13', endDate: '2026-10-12', urlInvalid: false })
     ).toBe(false);
-    expect(
-      isComposerReady({ title: 'x', date: '2026-10-13', endDate: '', urlInvalid: true })
-    ).toBe(false);
+    expect(isComposerReady({ title: 'x', date: '2026-10-13', endDate: '', urlInvalid: true })).toBe(
+      false
+    );
   });
 
   it('derives the venue kind', () => {

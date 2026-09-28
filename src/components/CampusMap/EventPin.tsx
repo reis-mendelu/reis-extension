@@ -19,14 +19,7 @@ interface EventPinProps {
 // label; the count/title only surface on hover. (x, y) is a Leaflet LAYER point:
 // the button centres there, and `leaflet-zoom-animated` lets that transform
 // transition with the basemap during a zoom.
-export function EventPin({
-  group,
-  x,
-  y,
-  selected,
-  locale,
-  onSelect,
-}: EventPinProps) {
+export function EventPin({ group, x, y, selected, locale, onSelect }: EventPinProps) {
   const lead = group.events[0];
   const count = group.events.length;
   const emojiSrc = CATEGORY_EMOJI_SRC[lead.category];

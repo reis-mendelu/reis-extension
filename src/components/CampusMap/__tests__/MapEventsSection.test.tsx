@@ -52,15 +52,16 @@ describe('MapEventsSection', () => {
   });
 
   it('collapses the Later bucket by default and expands it on click', async () => {
-    const soon: MapEvent = { ...MOCK_MAP_EVENTS[0], id: 'soon', title: 'Soon Event', date: isoDaysFromNow(3) };
+    const base = MOCK_MAP_EVENTS[0]!;
+    const soon: MapEvent = { ...base, id: 'soon', title: 'Soon Event', date: isoDaysFromNow(3) };
     const later1: MapEvent = {
-      ...MOCK_MAP_EVENTS[0],
+      ...base,
       id: 'later-1',
       title: 'Later Event One',
       date: isoDaysFromNow(30),
     };
     const later2: MapEvent = {
-      ...MOCK_MAP_EVENTS[0],
+      ...base,
       id: 'later-2',
       title: 'Later Event Two',
       date: isoDaysFromNow(30),
