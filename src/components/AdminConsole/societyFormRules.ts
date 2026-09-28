@@ -1,20 +1,26 @@
 import type { FacultyKey, Society } from '../../types/events';
 import { isUsablePinColor } from '../../utils/societies/pinColor';
+import { isInstagramHandle } from '../../utils/societies/instagramHandle';
 
 // The add/edit society form's rules, kept pure so they are testable without
 // rendering the form.
 
 const ID_RE = /^[a-z0-9][a-z0-9_-]*$/;
-const HANDLE_RE = /^[A-Za-z0-9._]{1,30}$/;
+// Instagram's own first path segments: a post, reel, story or account URL
+// names no profile, and its segment ("p", "reel") would pass as a handle.
+const NOT_A_PROFILE = /^(p|reel|reels|explore|accounts|stories|tv|direct)$/i;
 
-/** The handle to store, null for none, or 'invalid'. Same rule as the DB CHECK. */
+/** The handle to store, null for none, or 'invalid'. At least as strict as the DB CHECK. */
 export function normalizeInstagram(raw: string): string | null | 'invalid' {
   let s = raw.trim();
   if (!s) return null;
   const url = /^https?:\/\/(?:www\.)?instagram\.com\/([^/?#]+)/i.exec(s);
-  if (url) s = url[1]!;
+  if (url) {
+    if (NOT_A_PROFILE.test(url[1]!)) return 'invalid';
+    s = url[1]!;
+  }
   s = s.replace(/^@/, '');
-  return HANDLE_RE.test(s) ? s : 'invalid';
+  return isInstagramHandle(s) ? s : 'invalid';
 }
 
 export interface SocietyDraft {

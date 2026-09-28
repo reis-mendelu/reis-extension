@@ -1,7 +1,6 @@
 import { validateExternalUrl } from '../../mobile/openExternal';
+import { isInstagramHandle } from '../../utils/societies/instagramHandle';
 import type { MapEvent, Society } from '../../types/events';
-
-const HANDLE_RE = /^[A-Za-z0-9._]{1,30}$/;
 
 /**
  * Where "details" goes: the event's own link when it has a safe one, otherwise
@@ -14,7 +13,7 @@ export function eventDetailsLink(
   society: Pick<Society, 'instagram'>
 ): { href: string; kind: 'event' | 'instagram' } | null {
   if (event.url && validateExternalUrl(event.url)) return { href: event.url, kind: 'event' };
-  if (society.instagram && HANDLE_RE.test(society.instagram))
+  if (society.instagram && isInstagramHandle(society.instagram))
     return { href: `https://www.instagram.com/${society.instagram}/`, kind: 'instagram' };
   return null;
 }
