@@ -51,6 +51,7 @@ import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 import { resetRealDataStores } from '../services/loadRealDataSnapshot';
 import { devAdminSeed } from '../utils/mock/devSociety';
+import { devNotifyOverride } from '../mobile/devNotifyOverride';
 import type { Session } from '@supabase/supabase-js';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
 import { setDemoModeFlag, isDemoMode } from '../errors/demoMode';
@@ -125,6 +126,18 @@ export const initializeStore = async () => {
   }
 
   const s = useAppStore.getState();
+
+  // `?notify=` on the dev webapp. `capacitor/startApp.ts` is what reads the
+  // real permission at boot/resume, and it never runs here — the dev webapp
+  // has no Capacitor host to resume — so without this seed `notifyPermission`
+  // would sit at its initial `null` forever and the soft-ask card (and the
+  // override itself) would be unreachable outside a device build. DEV-only:
+  // dead-code-stripped from every shipped build by `devNotifyOverride`'s own
+  // `import.meta.env.DEV` gate.
+  if (import.meta.env.DEV) {
+    const forcedNotify = devNotifyOverride();
+    if (forcedNotify) s.setNotifyPermission(forcedNotify);
+  }
 
   // Who is signed in is confirmed against IS once per session, and the app
   // restarts if it turns out to be somebody else — see watchSignedInStudent.

@@ -1384,6 +1384,14 @@
     "digestTomorrow": "Tomorrow: {titles}",
     "digestTomorrowMany": "Tomorrow, {n} events: {titles} and more",
     "digestNewOnly": "New events: {titles}",
-    "digestPlusNew": "+ {n} new events from {societies}"
+    "digestPlusNew": "+ {n} new events from {societies}",
+    "askOneSingle": "{society} has 1 event in the next 14 days. Want a reminder the evening before?",
+    "askOneFew": "{society} has {n} events in the next 14 days. Want a reminder the evening before?",
+    "askOne": "{society} has {n} events in the next 14 days. Want a reminder the evening before?",
+    "askManySingle": "Your societies have 1 event in the next 14 days. Want a reminder the evening before?",
+    "askManyFew": "Your societies have {n} events in the next 14 days. Want a reminder the evening before?",
+    "askMany": "Your societies have {n} events in the next 14 days. Want a reminder the evening before?",
+    "enable": "Turn on",
+    "notNow": "Not now"
   }
 }

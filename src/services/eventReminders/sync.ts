@@ -1,6 +1,7 @@
 import { getPlatform } from '../../platform';
 import { logError } from '../../utils/reportError';
 import { translate } from '../../i18n/translate';
+import { devNotifyOverride } from '../../mobile/devNotifyOverride';
 import {
   CHANNEL_RSVP,
   CHANNEL_DIGEST,
@@ -123,6 +124,12 @@ async function reconcile(
 export async function readNotificationPermission(
   deps: ReminderDeps = capacitorReminderDeps()
 ): Promise<ReminderPermission | 'unsupported'> {
+  // `?notify=` on the dev webapp: no Capacitor plugin exists there to answer
+  // `deps.isSupported()`, so without this the soft-ask card could only ever
+  // see 'unsupported' outside a device build. Dead-code-stripped from every
+  // shipped build by `devNotifyOverride`'s own `import.meta.env.DEV` gate.
+  const forced = devNotifyOverride();
+  if (forced) return forced;
   if (!deps.isSupported()) return 'unsupported' as const;
   try {
     return await deps.checkPermission();
