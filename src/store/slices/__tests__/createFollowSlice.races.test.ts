@@ -173,7 +173,7 @@ describe('createFollowSlice races', () => {
       expect(state.followsResolved).toBe(true);
     });
 
-    it('a load that read the old list mid-write and commits after the write settles does not revert it', async () => {
+    it('a load that read disk before the toggle landed, and commits after the write settles, does not revert it', async () => {
       await state.loadFollows();
       expect(state.followsResolved).toBe(false);
 
@@ -192,8 +192,10 @@ describe('createFollowSlice races', () => {
           return Promise.resolve(undefined);
         }
       );
-      // The retry's read of the list sees the OLD disk value, but is held
-      // until after the toggle's writes have both finished.
+      // The load's read of the list sees disk from before the toggle's list
+      // write (nothing saved, so it resolves to null, not an older list), and
+      // is held until after the toggle's writes have both finished. Without
+      // the version skip, its commit would write `followed: []`.
       let releaseRead!: () => void;
       vi.mocked(IndexedDBService.get).mockImplementation((_store: string, key: string) => {
         const value = disk.get(key);
