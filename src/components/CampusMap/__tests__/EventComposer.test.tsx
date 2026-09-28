@@ -58,7 +58,7 @@ describe('EventComposer publish', () => {
     // translations (not raw keys), so queries below match the rendered Czech text.
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Party' } });
     // choose date through MiniCalendar
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     // A start time is required now, so every publish path sets one.
     fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
@@ -95,7 +95,7 @@ describe('EventComposer publish', () => {
     });
     render(<EventComposer onDone={() => {}} />);
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'ESN párty' } });
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     // A start time is required now, so every publish path sets one.
     fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
@@ -112,7 +112,7 @@ describe('EventComposer publish', () => {
     // Completing every field enables publish.
     useAppStore.setState({ draftCoord: [16.61, 49.21] });
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Party' } });
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     // A start time is required now, so every publish path sets one.
     fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
@@ -123,7 +123,7 @@ describe('EventComposer publish', () => {
     useAppStore.setState({ draftCoord: [16.61, 49.21] });
     render(<EventComposer onDone={() => {}} />);
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Party' } });
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     // Time: type into the reIS-native combobox — "1930" masks to 19:30.
     fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
@@ -138,7 +138,7 @@ describe('EventComposer publish', () => {
     fireEvent.change(screen.getByPlaceholderText('Název akce'), {
       target: { value: 'Kvíz večer' },
     });
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     // A start time is required now, so every publish path sets one.
     fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
@@ -290,7 +290,7 @@ const pickRoom = () => {
 };
 const fillRequired = () => {
   fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Akce' } });
-  fireEvent.click(screen.getByText('Vyberte datum'));
+  fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
   fireEvent.click(screen.getByRole('button', { name: '15' }));
   fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
 };
@@ -532,11 +532,11 @@ describe('EventComposer — duplicating an event', () => {
     } as never);
     render(<EventComposer onDone={() => {}} />);
     expect(screen.getByPlaceholderText('Název akce')).toHaveValue('Deskovky');
-    expect(screen.getByText('Vyberte datum')).toBeInTheDocument();
+    expect(screen.getAllByText('Vyberte datum')[0]).toBeInTheDocument();
     const publish = screen.getByRole('button', { name: 'Zveřejnit akci' });
     expect(publish).toBeDisabled();
 
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     fireEvent.click(publish);
 
@@ -558,29 +558,16 @@ describe('EventComposer — duplicating an event', () => {
 });
 
 /**
- * Every event gets a start time.
- *
- * Time used to be optional, which left `time: null` rows in spolky_events —
- * and an event with no start has no "two hours before", so it silently got no
- * reminder at all. Rather than inventing a default hour to notify at, the
- * composer now requires the time, which is the only source these rows have
- * (mapEvents reads spolky_events exclusively).
+ * A society publishes what it knows. A semester list has a title and a date;
+ * the place and time follow later — venue_kind 'tba', time null — rather than
+ * a start time or a venue being required up front.
  */
-describe('EventComposer — a start time is required', () => {
+describe('EventComposer — publishing without a place or time', () => {
   const fillTitleAndDate = () => {
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Kvíz' } });
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
   };
-
-  it('keeps publish disabled until a time is given', () => {
-    useAppStore.setState({ draftCoord: [16.61, 49.21] });
-    render(<EventComposer onDone={() => {}} />);
-    fillTitleAndDate();
-
-    // Title, date and venue are all present — only the time is missing.
-    expect(screen.getByRole('button', { name: 'Zveřejnit akci' })).toBeDisabled();
-  });
 
   it('enables publish once the time is set', () => {
     useAppStore.setState({ draftCoord: [16.61, 49.21] });
@@ -591,7 +578,7 @@ describe('EventComposer — a start time is required', () => {
     expect(screen.getByRole('button', { name: 'Zveřejnit akci' })).toBeEnabled();
   });
 
-  it('publishes the time rather than a null', async () => {
+  it('publishes the time rather than a null when one is set', async () => {
     useAppStore.setState({ draftCoord: [16.61, 49.21] });
     render(<EventComposer onDone={() => {}} />);
     fillTitleAndDate();
@@ -600,6 +587,21 @@ describe('EventComposer — a start time is required', () => {
 
     await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
     expect(createPost.mock.calls[0][0].time).toBe('19:30');
+  });
+
+  it('publishes with only a title and a date, as venue_kind tba with no time', async () => {
+    render(<EventComposer onDone={() => {}} />);
+    fillTitleAndDate();
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    const input = createPost.mock.calls[0][0];
+    expect(input.venueKind).toBe('tba');
+    expect(input.time).toBeNull();
+    expect(input.roomCode).toBeNull();
+    expect(input.coordLng).toBeNull();
+    expect(input.coordLat).toBeNull();
+    expect(input.location).toBeNull();
   });
 });
 
@@ -612,7 +614,7 @@ describe('EventComposer — url validation', () => {
   const fillRequired = () => {
     useAppStore.setState({ draftCoord: [16.61, 49.21] });
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Kvíz' } });
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
   };

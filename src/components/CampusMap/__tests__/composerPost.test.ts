@@ -24,6 +24,7 @@ describe('toPatch', () => {
       body: 'Hry máme.',
       category: 'boardgames',
       date: '2026-07-08',
+      end_date: null,
       time: '18:00',
       venue_kind: 'offcampus',
       room_code: null,
@@ -35,12 +36,12 @@ describe('toPatch', () => {
     });
   });
 
-  // The composer has no field for these, so an edit must not write them: a
-  // patch carrying `end_date: null` would silently cut a multi-day event down
-  // to its first day.
-  it('leaves columns the composer does not edit alone', () => {
+  // The composer now has an end-date field, so the patch writes it. It still
+  // never writes `visible_from`, which the composer has no field for: writing
+  // it would null a value the society never saw.
+  it('writes end_date but leaves visible_from and ownership columns alone', () => {
     const patch = toPatch({ ...input, endDate: '2026-07-10', visibleFrom: '2026-07-01' });
-    expect(patch).not.toHaveProperty('end_date');
+    expect(patch.end_date).toBe('2026-07-10');
     expect(patch).not.toHaveProperty('visible_from');
     expect(patch).not.toHaveProperty('association_id');
     expect(patch).not.toHaveProperty('created_by');
