@@ -104,6 +104,7 @@ describe('createRsvpSlice', () => {
       idb.set('event_rsvps_mine', { gone: 'going' });
       await state.loadRsvps([]);
       expect(fetchEventRsvps).not.toHaveBeenCalled();
+      expect(state.rsvp.gone).toBe('going');
       expect(state.rsvpLoaded).toBe(true);
       expect(state.replanNotifications).toHaveBeenCalledTimes(1);
     });

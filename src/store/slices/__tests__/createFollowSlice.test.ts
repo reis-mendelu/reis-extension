@@ -3,7 +3,7 @@ import type { Mock } from 'vitest';
 import { createFollowSlice, DEFAULT_PREFS } from '../createFollowSlice';
 import type { FollowSlice } from '../createFollowSlice';
 import { IndexedDBService } from '../../../services/storage';
-import { STORAGE_KEY, MUTED_KEY } from '../follows/loadFollows';
+import { STORAGE_KEY, MUTED_KEY, NOTIFY_PREFS_KEY } from '../follows/loadFollows';
 import { BUNDLED_SOCIETIES } from '../../../data/societies';
 import type { Society } from '../../../types/events';
 
@@ -38,14 +38,12 @@ describe('createFollowSlice', () => {
   // auto-follow default); the test supplies just that one neighbour rather
   // than the whole thing — same pattern as createRsvpSlice's test.
   //
-  // `mapEvents`/`rsvp`/`language` are supplied too: `loadFollows()` ends by
-  // calling the real `replanNotifications()`, which reads all three off this
-  // same `get()`. Left undefined, `planNotifications` would throw trying to
-  // iterate an undefined `events` array — every `loadFollows`/
-  // `retryFollowsIfUnresolved` test here would fail on that, not on anything
-  // this file is actually testing. `syncReminders` itself is left unmocked:
-  // its default deps see this as a non-Capacitor host and no-op before
-  // touching anything.
+  // `mapEvents`/`rsvp`/`language` are supplied for completeness, but they are
+  // inert here: every action ends in the real `replanNotifications()`, whose
+  // guard returns before planning unless `mapEventsLoaded` and `rsvpLoaded`
+  // are both true, and this fixture sets neither. So neither
+  // `planNotifications` nor `syncReminders` runs in these tests — the replan
+  // itself is covered by `replanNotifications*.test.ts`.
   let state: FollowSlice & {
     societies: Record<string, Society>;
     mapEvents: unknown[];
@@ -57,6 +55,9 @@ describe('createFollowSlice', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // clearAllMocks keeps implementations, so without this a test that never
+    // sets getUserParams inherits whatever the previous test resolved it to.
+    mockGetUserParams.mockReset();
     vi.mocked(IndexedDBService.get).mockResolvedValue(undefined);
     vi.mocked(IndexedDBService.set).mockResolvedValue(undefined);
     set = vi.fn((fn) => {
@@ -476,15 +477,32 @@ describe('createFollowSlice', () => {
       expect(lastWrite?.[2]).toEqual(['zf']);
     });
 
-    it('(c) setNotifyPref during a pending load of an UNRESOLVED followed list: followsResolved stays false so a later retry can still run', async () => {
+    it('(c) setNotifyPref during a pending load of an UNRESOLVED followed list: the choice survives the stale disk value, and followsResolved stays false so a later retry can still run', async () => {
+      // Disk holds a DIFFERENT myEvents than the student is about to pick,
+      // and that read is held until after the mutation has started.
+      let resolvePrefs!: (v: unknown) => void;
+      vi.mocked(IndexedDBService.get).mockImplementation((store: string, key: string) => {
+        if (store === 'meta' && key === NOTIFY_PREFS_KEY) {
+          return new Promise((resolve) => {
+            resolvePrefs = resolve;
+          });
+        }
+        return Promise.resolve(undefined);
+      });
       mockGetUserParams.mockResolvedValue(null);
 
       const bootLoad = state.loadFollows();
       const pref = state.setNotifyPref('myEvents', false);
+      resolvePrefs({ myEvents: true, followedEvents: false, newEvents: true });
       await Promise.all([bootLoad, pref]);
 
       expect(state.followsResolved).toBe(false);
-      expect(state.notifyPrefs).toEqual({ ...DEFAULT_PREFS, myEvents: false });
+      expect(state.notifyPrefs.myEvents).toBe(false);
+      const lastWrite = vi
+        .mocked(IndexedDBService.set)
+        .mock.calls.filter((c) => c[1] === NOTIFY_PREFS_KEY)
+        .pop();
+      expect((lastWrite?.[2] as { myEvents: boolean }).myEvents).toBe(false);
     });
 
     it('(d) no concurrent mutation: load commits every field exactly as before', async () => {

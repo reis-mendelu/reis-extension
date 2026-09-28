@@ -35,7 +35,8 @@ describe('notification UI is phone/iPad only', () => {
   // so there is no desktop instance of it to gate.
   it('components/mobile/sheets/NotificationsSheet.tsx renders it at the top of its scroll area', () => {
     const sheet = read('components/mobile/sheets/NotificationsSheet.tsx');
-    expect(sheet).toContain('<NotifySoftAsk');
+    // The first child of the scrolling container, ahead of every section.
+    expect(sheet).toMatch(/overflow-y-auto[^>]*>\s*<NotifySoftAsk\b/);
   });
 
   // The Oznámení group and the per-society mute bells are the shared
@@ -103,12 +104,15 @@ describe('no desktop-tree file reaches for the phone-only notification UI', () =
     expect(files).toContain('components/Sidebar/ProfilePopup.tsx');
   });
 
+  // Keyed on the module specifier, not the imported names, so a default,
+  // `import type`, `export … from`, dynamic or multi-line import is caught
+  // as well as a named one.
   it.each(files)('%s does not import NotifySoftAsk', (file) => {
-    expect(read(file)).not.toMatch(/import\s*\{[^}]*\bNotifySoftAsk\b[^}]*\}\s*from/);
+    expect(read(file)).not.toMatch(/['"][^'"]*\bNotifySoftAsk['"]/);
   });
 
   it.each(files)('%s does not import NotifySettings or MuteBell', (file) => {
-    expect(read(file)).not.toMatch(/import\s*\{[^}]*\b(NotifySettings|MuteBell)\b[^}]*\}\s*from/);
+    expect(read(file)).not.toMatch(/['"][^'"]*\bNotifySettings['"]/);
   });
 
   it.each(files)('%s does not pass `notifications` to SpolkySection', (file) => {
