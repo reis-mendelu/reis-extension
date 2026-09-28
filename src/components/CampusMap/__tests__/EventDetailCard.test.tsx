@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { EventDetailCard } from '../EventDetailCard';
+import { neutralSociety } from '../../../utils/societies/resolveSociety';
 import type { MapEvent } from '../../../types/events';
 
 const ev: MapEvent = {
@@ -139,6 +140,48 @@ describe('EventDetailCard', () => {
     expect(screen.getByRole('link', { name: /more info/i })).toHaveAttribute(
       'href',
       'https://example.com/event'
+    );
+  });
+
+  // A TBA event has no room, no coordinate, and no url: everything a society
+  // knows so far is "watch our Instagram". The venue line names the society
+  // instead of a place, and the More-info button becomes the Instagram link.
+  it('shows "Venue TBA by ESN" and links to Instagram for a TBA event with no url', () => {
+    useAppStore.setState({
+      societies: { esn: { ...neutralSociety('esn'), shortName: 'ESN', instagram: 'esnmendelubrno' } },
+    });
+    const tbaEvent: MapEvent = {
+      ...ev,
+      societyId: 'esn',
+      url: '',
+      location: null,
+      coord: null,
+      roomCode: null,
+      venueKind: 'tba',
+    };
+    render(<EventDetailCard event={tbaEvent} />);
+    expect(screen.getByText('Venue TBA by ESN')).toBeInTheDocument();
+    const link = screen.getByRole('link', { name: /more on instagram/i });
+    expect(link).toHaveAttribute('href', 'https://www.instagram.com/esnmendelubrno/');
+  });
+
+  it('prefers the event url over Instagram when both are available', () => {
+    useAppStore.setState({
+      societies: { esn: { ...neutralSociety('esn'), shortName: 'ESN', instagram: 'esnmendelubrno' } },
+    });
+    const tbaEvent: MapEvent = {
+      ...ev,
+      societyId: 'esn',
+      url: 'https://esn.cz/e',
+      location: null,
+      coord: null,
+      roomCode: null,
+      venueKind: 'tba',
+    };
+    render(<EventDetailCard event={tbaEvent} />);
+    expect(screen.getByRole('link', { name: /more info/i })).toHaveAttribute(
+      'href',
+      'https://esn.cz/e'
     );
   });
 });

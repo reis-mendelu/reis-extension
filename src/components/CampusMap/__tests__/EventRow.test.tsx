@@ -1,6 +1,8 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { useAppStore } from '../../../store/useAppStore';
 import { EventRow } from '../EventRow';
+import { neutralSociety } from '../../../utils/societies/resolveSociety';
 import type { MapEvent } from '../../../types/events';
 
 const ev: MapEvent = {
@@ -19,9 +21,14 @@ const ev: MapEvent = {
   venueKind: 'offcampus',
   category: 'party',
 };
-const t = (k: string) => k;
+const t = (k: string, p?: Record<string, string | number>) =>
+  p ? `${k} ${JSON.stringify(p)}` : k;
 
 describe('EventRow', () => {
+  beforeEach(() => {
+    useAppStore.setState({ societies: { esn: { ...neutralSociety('esn'), shortName: 'ESN' } } });
+  });
+
   it('renders the category emoji, title, and default day subline + location', () => {
     render(<EventRow event={ev} locale="cs-CZ" t={t} selected={false} onClick={() => {}} />);
     expect(screen.getByText('Spring Party')).toBeInTheDocument();
@@ -67,5 +74,21 @@ describe('EventRow', () => {
     render(<EventRow event={ev} locale="cs-CZ" t={t} selected onClick={onClick} />);
     screen.getByRole('button').click();
     expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  // Imported from a semester list: no room, no coordinate, no name — the
+  // society just hasn't said where yet. Name the society instead of the
+  // place, same wording as the detail card.
+  it('names the society instead of a place for a TBA event', () => {
+    const tbaEvent: MapEvent = {
+      ...ev,
+      societyId: 'esn',
+      location: null,
+      coord: null,
+      roomCode: null,
+      venueKind: 'tba',
+    };
+    render(<EventRow event={tbaEvent} locale="cs-CZ" t={t} selected={false} onClick={() => {}} />);
+    expect(screen.getByText('map.venueTba {"name":"ESN"}')).toBeInTheDocument();
   });
 });
