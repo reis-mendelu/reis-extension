@@ -44,6 +44,13 @@ vi.mock('../../../api/societyPosts', async (orig) => ({
   listMyPosts: vi.fn(),
 }));
 
+// loadSocietyPosts now also pulls interest counts from the same public
+// aggregate RPC the student card uses. Mocked here so these tests never hit
+// the real Supabase client.
+vi.mock('../../../api/eventRsvp', () => ({
+  fetchEventRsvps: vi.fn().mockResolvedValue({ counts: {}, ok: true }),
+}));
+
 import { listMyPosts } from '../../../api/societyPosts';
 import { useAppStore } from '../../useAppStore';
 

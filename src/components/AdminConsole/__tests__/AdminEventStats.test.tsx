@@ -89,18 +89,16 @@ describe('AdminEventList — views and clicks per event', () => {
     expect(within(old).getByText('8 clicks')).toBeInTheDocument();
   });
 
-  // Students see a scheduled event nowhere yet — not on the map, not in Novinky
-  // (#459, dropScheduledEvents) — so its counters are not a result. A row
-  // moved later after going live may still carry numbers; they would read as
-  // this event's reach while nobody can see it, so they stay hidden too.
-  it('shows no numbers on a scheduled event', () => {
+  // Task 10 removed the Scheduled bucket — a far-future event now sits in
+  // Upcoming like any other, and its stats footer is no longer suppressed.
+  it('shows views and clicks on a far-future event too (no more Scheduled bucket)', () => {
     useAppStore.setState({
       societyPosts: [row('sched', useAppStore.getState().societyMapEvents[2]!.date, 7, 2)],
     });
     render(<AdminEventList />);
     const sched = rowOf('E-sched');
-    expect(within(sched).queryByText(/views/)).toBeNull();
-    expect(within(sched).queryByText(/clicks/)).toBeNull();
+    expect(within(sched).getByText('7 views')).toBeInTheDocument();
+    expect(within(sched).getByText('2 clicks')).toBeInTheDocument();
   });
 
   it('says one view is one device, not one person', () => {
@@ -122,5 +120,27 @@ describe('AdminEventList — views and clicks per event', () => {
     render(<AdminEventList />);
     expect(within(rowOf('E-live')).queryByText(/views/)).toBeNull();
     expect(screen.queryByText(/device/i)).toBeNull();
+  });
+
+  // The interest count is the same public aggregate RPC the student card
+  // uses (going + interested), surfaced next to the existing views/clicks.
+  it('shows the interest count alongside views and clicks', () => {
+    useAppStore.setState({
+      societyPosts: [row('live', iso(2), 60, 29)],
+      societyRsvpCounts: { live: { going: 2, interested: 5 } },
+    });
+    render(<AdminEventList />);
+    expect(within(rowOf('E-live')).getByText('Interested in reIS: 7')).toBeInTheDocument();
+  });
+
+  // No RSVP data loaded for this event yet — the line must not render "0", it
+  // must not render at all.
+  it('hides the interest line for an event with no rsvp counts', () => {
+    useAppStore.setState({
+      societyPosts: [row('live', iso(2), 60, 29)],
+      societyRsvpCounts: {},
+    });
+    render(<AdminEventList />);
+    expect(within(rowOf('E-live')).queryByText(/interested in reis/i)).toBeNull();
   });
 });

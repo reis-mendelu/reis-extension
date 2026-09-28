@@ -4,6 +4,8 @@ import { adminAuthClient } from '../../services/admin/authClient';
 import { toAuthEmail } from '../../services/admin/societyLogin';
 import { listMyPosts, type SpolkyEventRow } from '../../api/societyPosts';
 import { listSocietyAccounts, type SocietyAccountRow } from '../../api/societyAccounts';
+import { fetchEventRsvps } from '../../api/eventRsvp';
+import type { RsvpCounts } from './createRsvpSlice';
 import { logError } from '../../utils/reportError';
 
 export type AdminRole = 'association' | 'reis_admin';
@@ -19,6 +21,10 @@ export interface AdminSlice {
   /** True while the admin console has taken the whole app over. */
   adminConsoleOpen: boolean;
   societyPosts: SpolkyEventRow[];
+  /** Interest (going + interested) per event, from the same public aggregate
+   *  RPC the student card uses — no new data flow. Keyed by event id; an event
+   *  with no entry has not had its counts loaded (not "zero interest"). */
+  societyRsvpCounts: Record<string, RsvpCounts>;
   /** reIS admin only: every society account, for the reset/create panel. Empty
    *  for an association login, which has no business listing the others. */
   societyAccounts: SocietyAccountRow[];
@@ -71,6 +77,7 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   adminActiveAssociationId: null,
   adminConsoleOpen: false,
   societyPosts: [],
+  societyRsvpCounts: {},
   societyAccounts: [],
   // Re-pull the inbox on open, not just when the session is established.
   //
@@ -179,6 +186,7 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
       adminActiveAssociationId: null,
       adminConsoleOpen: false,
       societyPosts: [],
+      societyRsvpCounts: {},
       societyAccounts: [],
       societyMapEvents: [],
       suggestions: [],
@@ -237,5 +245,10 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     if (get().adminActiveAssociationId !== associationId) return;
     set({ societyPosts: posts });
     get().refreshSocietyMapEvents();
+    // Interest per event, from the same public aggregate RPC the student card
+    // uses — no new data flow. Not attendance: RSVPs count installs, and free
+    // events see many no-shows, which is why the label says "v reIS".
+    const { counts, ok } = await fetchEventRsvps(posts.map((p) => p.id));
+    if (ok && get().adminActiveAssociationId === associationId) set({ societyRsvpCounts: counts });
   },
 });

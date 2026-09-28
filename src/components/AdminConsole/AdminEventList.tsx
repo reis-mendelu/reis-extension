@@ -4,7 +4,7 @@ import { Plus } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { sortByDate } from '../CampusMap/eventHelpers';
-import { isPastEvent, isScheduledEvent, goLiveDate, hasFinished } from '../CampusMap/eventWindow';
+import { isFinishedEvent, hasFinished } from '../CampusMap/eventWindow';
 import { relativeDayLabel } from '../CampusMap/eventHelpers';
 import { deletePost } from '../../api/societyPosts';
 import { EventRow } from '../CampusMap/EventRow';
@@ -15,10 +15,10 @@ import type { MapEvent } from '../../types/events';
 
 // The console's list column: the active society's events grouped by lifecycle,
 // the Create entry point, and an inline composer that takes the column over
-// while open. Live = on the public map and in Novinky now; Scheduled = still
-// hidden from students on both (goes live ~2 weeks out — eventWindow, and
-// dropScheduledEvents for Novinky); Past = aged off the map but kept for the
-// society. Rows fly the console's map to the event.
+// while open. Upcoming = everything not over, which students see in the
+// catalog; pins and Novinky show it from 14 days out. Past = its last day
+// (endDate ?? date) has passed, kept for the society. Rows fly the console's
+// map to the event.
 //
 // Was MyEventsPanel, which lived inside the student map's side panel. The
 // society identity moved to AdminConsoleHeader, which is also where the picker
@@ -81,25 +81,22 @@ export function AdminEventList() {
     />
   );
 
-  const past = sortByDate(events.filter((e) => isPastEvent(e.date))).reverse();
-  const scheduled = sortByDate(events.filter((e) => isScheduledEvent(e.date)));
-  const live = sortByDate(events.filter((e) => !isPastEvent(e.date) && !isScheduledEvent(e.date)));
-  // A Live event dated today whose time has passed: it happened, but it stays
+  const past = sortByDate(events.filter((e) => isFinishedEvent(e))).reverse();
+  const upcoming = sortByDate(events.filter((e) => !isFinishedEvent(e)));
+  // A row dated today whose time has passed: it happened, but it stays
   // publicly visible for the rest of the day, so the bucket cannot say it and
   // the row does instead. See eventWindow.hasFinished for why not the bucket.
-  const finishedNote = (e: MapEvent) =>
-    hasFinished(e)
-      ? `${relativeDayLabel(e.date, locale, t)}${e.time ? ` · ${e.time}` : ''} · ${t('map.finished')}`
-      : undefined;
-  const goLive = (e: MapEvent) =>
-    `${t('map.goesLive')} ${goLiveDate(e.date).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}`;
+  // A venue the society hasn't set yet gets the same treatment: "Bez místa"
+  // on the row rather than nothing, so an unplaced event doesn't look like one
+  // whose subline is simply missing.
+  const subline = (e: MapEvent) => {
+    const day = `${relativeDayLabel(e.date, locale, t)}${e.time ? ` · ${e.time}` : ''}`;
+    if (hasFinished(e)) return `${day} · ${t('map.finished')}`;
+    if (e.venueKind === 'tba') return `${day} · ${t('admin.noVenue')}`;
+    return undefined;
+  };
 
-  const section = (
-    label: string,
-    rows: MapEvent[],
-    subline?: (e: MapEvent) => string | undefined,
-    stats = true // off for Scheduled: students see it nowhere yet (#459)
-  ) =>
+  const section = (label: string, rows: MapEvent[], subline?: (e: MapEvent) => string | undefined) =>
     rows.length > 0 && (
       <div>
         <div className="px-3 pb-1 pt-3 text-[11px] font-bold uppercase tracking-wide text-base-content/60">
@@ -115,7 +112,7 @@ export function AdminEventList() {
             subline={subline?.(e)}
             onClick={() => focusEvent(e.id, { fly: true })}
             actions={rowActions(e)}
-            footer={stats ? <EventStats eventId={e.id} /> : undefined}
+            footer={<EventStats eventId={e.id} />}
           />
         ))}
       </div>
@@ -158,10 +155,9 @@ export function AdminEventList() {
           />
         ) : (
           <>
-            {section(t('map.liveNow'), live, finishedNote)}
-            {section(t('map.scheduled'), scheduled, goLive, false)}
+            {section(t('map.upcoming'), upcoming, subline)}
             {section(t('map.past'), past)}
-            <EventStatsNote eventIds={[...live, ...past].map((e) => e.id)} />
+            <EventStatsNote eventIds={[...upcoming, ...past].map((e) => e.id)} />
             {events.length === 0 && (
               <p className="px-3 py-6 text-center text-sm text-base-content/60">
                 {t('map.noOwnEvents') as string}
