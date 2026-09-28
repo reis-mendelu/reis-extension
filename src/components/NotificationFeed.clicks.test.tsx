@@ -5,6 +5,8 @@ import { NotificationFeed } from './NotificationFeed';
 import * as spolkyService from '../services/spolky';
 import { useAppStore } from '../store/useAppStore';
 import { openExternal } from '../mobile/openExternal';
+import { MOCK_MAP_EVENTS } from './CampusMap/__tests__/fixtures/mockMapEvents';
+import { localTodayIso } from './CampusMap/eventWindow';
 
 // What a tap on a Novinky row does: the event's card when it is on the map,
 // its link otherwise, the link straight away for an academic row. Split from
@@ -101,7 +103,9 @@ describe('NotificationFeed row taps', () => {
 
   it('opens the card, not the link, when the linked notification is on the map', async () => {
     useAppStore.setState({
-      mapEvents: [{ id: '1' } as any],
+      // A real, near event: focusEventById buckets it by date, and a dateless
+      // stub would only pass by weekSections tolerating NaN.
+      mapEvents: [{ ...MOCK_MAP_EVENTS[0]!, id: '1', date: localTodayIso(), endDate: null }],
       mapEventsLoaded: true,
     } as any);
     render(<NotificationFeed onShowMap={vi.fn()} />);
