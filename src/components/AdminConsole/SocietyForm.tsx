@@ -32,14 +32,14 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
 
   const submit = async () => {
     if (busy) return;
+    const ig = normalizeInstagram(instagram);
+    if (ig === 'invalid') return setError('errors.instagram');
     const invalid = validateSocietyDraft(
       { id, name, shortName, color, hasLogo: Boolean(logo) },
       isNew,
       catalog
     );
     if (invalid) return setError(invalid);
-    const ig = normalizeInstagram(instagram);
-    if (ig === 'invalid') return setError('errors.instagram');
     setBusy(true);
     setError(null);
     try {
@@ -55,10 +55,7 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
   };
 
   /** Returns an i18n error key, or null when everything saved. */
-  const persist = async (
-    autoFollowFaculty: boolean,
-    ig: string | null
-  ): Promise<string | null> => {
+  const persist = async (autoFollowFaculty: boolean, ig: string | null): Promise<string | null> => {
     // One default per faculty: release it from the holder first, and give it
     // back if the replacement fails, so the faculty is never left without one.
     const released = autoFollowFaculty && holder ? holder : null;

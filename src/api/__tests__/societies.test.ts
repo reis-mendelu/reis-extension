@@ -53,9 +53,7 @@ describe('rowToSociety', () => {
     expect(rowToSociety({ ...row, faculty_key: 'xyz' })).toBeNull();
   });
   it('carries the Instagram handle when set', () => {
-    expect(rowToSociety({ ...row, instagram: 'esnmendelubrno' })!.instagram).toBe(
-      'esnmendelubrno'
-    );
+    expect(rowToSociety({ ...row, instagram: 'esnmendelubrno' })!.instagram).toBe('esnmendelubrno');
   });
   it('leaves instagram undefined when the row has none', () => {
     expect(rowToSociety({ ...row, instagram: null })).not.toHaveProperty('instagram');
