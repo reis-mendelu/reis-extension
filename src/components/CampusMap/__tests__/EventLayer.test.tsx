@@ -305,6 +305,39 @@ describe('EventLayer', () => {
     expect(paneEl.querySelector('button[title="Far Event"]')).toBeNull();
   });
 
+  // The camera flies to a selected event wherever it came from — a "Později"
+  // row, a calendar RSVP block — so a far event has to be pinned while it is
+  // selected, or the fly lands on an empty map.
+  it('pins a far event while it is selected, and only then', () => {
+    const far = {
+      id: 'far-1',
+      title: 'Far Event',
+      url: '',
+      date: isoInDays(20),
+      endDate: null,
+      time: null,
+      location: null,
+      imageUrl: null,
+      organizerKey: 'pef' as const,
+      societyId: 'supef',
+      coord: [16.7, 49.3] as [number, number],
+      roomCode: null,
+      venueKind: 'offcampus' as const,
+      category: 'party' as const,
+    };
+    useAppStore.setState({ mapEvents: [far], mapSelection: null, activeBuildingId: null });
+    render(<EventLayer />);
+    expect(paneEl.querySelector('button[title="Far Event"]')).toBeNull();
+    act(() => {
+      useAppStore.setState({ mapSelection: { kind: 'event', event: far } });
+    });
+    expect(paneEl.querySelector('button[title="Far Event"]')).toBeTruthy();
+    act(() => {
+      useAppStore.setState({ mapSelection: null });
+    });
+    expect(paneEl.querySelector('button[title="Far Event"]')).toBeNull();
+  });
+
   // A society authoring in the console still sees every one of its own
   // events — soon or not — so it can tell a far-future publish worked.
   it("draws every one of a society's own events while authoring, soon or not", () => {

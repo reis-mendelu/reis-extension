@@ -51,18 +51,25 @@ export function EventLayer() {
   // its followers only, and this is where that is honoured.
   const publicEvents = useVisibleMapEvents();
   const societyEvents = useAppStore((s) => s.societyMapEvents);
+  const selection = useAppStore((s) => s.mapSelection);
+  const selectedId = selection?.kind === 'event' ? selection.event.id : null;
   // Students' pins show what is on SOON: the catalog list carries the whole
   // semester, and a semester of pins would bury the campus. A society authoring
-  // in the console still sees every one of its own events.
+  // in the console still sees every one of its own events. The SELECTED event
+  // is pinned whatever its date: a "Později" row or a calendar RSVP block flies
+  // the camera to it, and without its pin the fly lands on an empty map.
   // Memoized: `.filter()` makes a new array every call, and the `groups` memo
   // and its re-project effect below key off this reference — an unmemoized
-  // filter here reruns them every render and never settles.
+  // filter here reruns them every render and never settles. Keyed on the id,
+  // not the selection object, so selecting a room does not rebuild it.
   const events = useMemo(
-    () => (authoring ? societyEvents : publicEvents.filter((e) => isSoonEvent(e))),
-    [authoring, societyEvents, publicEvents]
+    () =>
+      authoring
+        ? societyEvents
+        : publicEvents.filter((e) => isSoonEvent(e) || e.id === selectedId),
+    [authoring, societyEvents, publicEvents, selectedId]
   );
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
-  const selection = useAppStore((s) => s.mapSelection);
   const focusEvent = useAppStore((s) => s.focusEventById);
   // The in-progress event location: only meaningful while the composer is open.
   const composerOpen = useAppStore((s) => s.composerOpen);
@@ -197,7 +204,6 @@ export function EventLayer() {
   // The draft pin can be the only thing to show (placing a first event with no
   // saved events yet), so don't bail on an empty `placed` when a draft exists.
   if (activeBuildingId !== null || !pane || (placed.length === 0 && !draftPt)) return null;
-  const selectedId = selection?.kind === 'event' ? selection.event.id : null;
 
   return createPortal(
     <>
