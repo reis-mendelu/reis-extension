@@ -63,3 +63,23 @@ describe('societyPosts.createPost', () => {
     expect((await createPost(base, 'supef', 'x')).error).toBeDefined();
   });
 });
+
+describe('a place-TBA event', () => {
+  // A semester list gives a title and a date; the society says where later.
+  it('is a valid PostInput and maps to a tba row with no place', () => {
+    const input = {
+      title: 'Pub Quiz',
+      body: '',
+      category: 'quiz',
+      date: '2026-10-13',
+      venueKind: 'tba',
+    } satisfies PostInput;
+    expect(toRow(input, 'esn', 'x')).toMatchObject({
+      venue_kind: 'tba',
+      coord_lng: null,
+      coord_lat: null,
+      room_code: null,
+      time: null,
+    });
+  });
+});

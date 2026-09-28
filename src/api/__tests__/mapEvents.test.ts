@@ -174,3 +174,28 @@ describe('fetchMapEvents public window filter', () => {
     expect(events.map((e) => e.id)).toEqual(['live']); // past + far-future filtered out
   });
 });
+
+describe('toMapEvent — a place-TBA row', () => {
+  it('keeps venueKind tba and has no coordinate to pin', () => {
+    const e = toMapEvent(
+      {
+        id: 't1',
+        association_id: 'esn',
+        title: 'Pub Quiz',
+        category: 'quiz',
+        date: '2026-10-13',
+        end_date: null,
+        time: null,
+        venue_kind: 'tba',
+        room_code: null,
+        coord_lng: null,
+        coord_lat: null,
+        location: null,
+        url: null,
+      },
+      BUNDLED_SOCIETIES
+    );
+    expect(e.venueKind).toBe('tba');
+    expect(e.coord).toBeNull();
+  });
+});
