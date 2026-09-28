@@ -22,12 +22,18 @@ function isNotifyPrefs(v: unknown): v is NotifyPrefs {
   );
 }
 
+/**
+ * What `loadNotifySettings` returns when the reads themselves failed. Not the
+ * defaults: those mean "nothing saved", and a mute or switch computed from
+ * them and persisted would overwrite the student's real settings — turning
+ * back on every notification they had switched off.
+ */
+export const NOTIFY_READ_FAILED = Symbol('notifyReadFailed');
+
 /** Mutes, notification switches and whether permission has been asked for. */
-export async function loadNotifySettings(): Promise<{
-  muted: string[];
-  prefs: NotifyPrefs;
-  asked: boolean;
-}> {
+export async function loadNotifySettings(): Promise<
+  { muted: string[]; prefs: NotifyPrefs; asked: boolean } | typeof NOTIFY_READ_FAILED
+> {
   try {
     const [mutedRaw, prefsRaw, askedRaw] = await Promise.all([
       IndexedDBService.get('meta', MUTED_KEY),
@@ -42,6 +48,6 @@ export async function loadNotifySettings(): Promise<{
     };
   } catch (err) {
     logError('Follows.loadNotifySettings', err);
-    return { muted: [], prefs: DEFAULT_PREFS, asked: false };
+    return NOTIFY_READ_FAILED;
   }
 }

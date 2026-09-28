@@ -88,6 +88,25 @@ export async function ensureLoaded(
 }
 
 /**
+ * `ensureLoaded` for a mutation of `muted`/`notifyPrefs`, whose next value is
+ * computed from the current one. If the settings read failed, that value is
+ * the defaults, not the student's: retry the read once, and return whether
+ * it has now worked — false means keep the change in memory only (no
+ * `persistField`, so the next good read replaces it with what disk holds).
+ */
+export async function ensureNotifySettingsRead(
+  get: () => {
+    followsLoaded: boolean;
+    notifySettingsRead: boolean;
+    loadFollows: () => Promise<void>;
+  }
+): Promise<boolean> {
+  await ensureLoaded(get);
+  if (!get().notifySettingsRead) await get().loadFollows();
+  return get().notifySettingsRead;
+}
+
+/**
  * Persists a mutation's new value. Call it synchronously right after the
  * mutation's `set()`, so the version moves in the same tick as memory does.
  * A failed write is logged, not thrown: memory already holds the choice.

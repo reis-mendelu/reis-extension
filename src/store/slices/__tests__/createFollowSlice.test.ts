@@ -339,9 +339,12 @@ describe('createFollowSlice', () => {
     });
   });
 
+  // Seeded memory again, so marked as a good settings read: otherwise the
+  // mutation retries the read first and replaces the seed with disk's.
   describe('toggleMute', () => {
     it('adds and persists a muted id', async () => {
       state.followsLoaded = true;
+      state.notifySettingsRead = true;
       state.muted = [];
 
       await state.toggleMute('zf');
@@ -352,6 +355,7 @@ describe('createFollowSlice', () => {
 
     it('removes an already-muted id', async () => {
       state.followsLoaded = true;
+      state.notifySettingsRead = true;
       state.muted = ['zf'];
 
       await state.toggleMute('zf');

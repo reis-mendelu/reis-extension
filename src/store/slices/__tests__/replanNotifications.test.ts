@@ -124,7 +124,12 @@ describe('replanNotifications', () => {
   });
 
   it("plans one digest notification for a followed society's event tomorrow", () => {
-    useAppStore.setState({ followsLoaded: true, followed: ['esn'], mapEvents: [ev()] });
+    useAppStore.setState({
+      followsLoaded: true,
+      notifySettingsRead: true,
+      followed: ['esn'],
+      mapEvents: [ev()],
+    });
 
     useAppStore.getState().replanNotifications();
 
@@ -135,7 +140,12 @@ describe('replanNotifications', () => {
   });
 
   it('toggleMute drops the digest on the next replan', async () => {
-    useAppStore.setState({ followsLoaded: true, followed: ['esn'], mapEvents: [ev()] });
+    useAppStore.setState({
+      followsLoaded: true,
+      notifySettingsRead: true,
+      followed: ['esn'],
+      mapEvents: [ev()],
+    });
     useAppStore.getState().replanNotifications();
     expect(syncReminders).toHaveBeenCalledTimes(1);
     syncReminders.mockClear();
@@ -150,6 +160,7 @@ describe('replanNotifications', () => {
   it('muting one of two societies changes the pending digest text', async () => {
     useAppStore.setState({
       followsLoaded: true,
+      notifySettingsRead: true,
       followed: ['esn', 'isc'],
       mapEvents: [ev(), ev({ id: 'ev-isc', title: 'Board games', societyId: 'isc' })],
     });
@@ -171,6 +182,7 @@ describe('replanNotifications', () => {
   it('setRsvp on a new answer asks for notification permission and replans', async () => {
     useAppStore.setState({
       followsLoaded: true,
+      notifySettingsRead: true,
       followed: [],
       mapEvents: [ev({ id: 'ev-2', date: '2026-09-29', time: '19:00' })],
     });
@@ -189,7 +201,12 @@ describe('replanNotifications', () => {
   });
 
   it('a successful reloadMapEvents triggers a replan', async () => {
-    useAppStore.setState({ followsLoaded: true, followed: ['esn'], mapEvents: [] });
+    useAppStore.setState({
+      followsLoaded: true,
+      notifySettingsRead: true,
+      followed: ['esn'],
+      mapEvents: [],
+    });
     fetchMapEvents.mockResolvedValue([ev()]);
     syncReminders.mockClear();
 
@@ -351,6 +368,7 @@ describe('replanNotifications', () => {
     it('builds Czech text when the app language is cz', () => {
       useAppStore.setState({
         followsLoaded: true,
+        notifySettingsRead: true,
         followed: ['esn'],
         mapEvents: [bilingualEvent],
         rsvp: { 'ev-3': 'going' },
@@ -368,6 +386,7 @@ describe('replanNotifications', () => {
     it('switching the language replans in the new language', async () => {
       useAppStore.setState({
         followsLoaded: true,
+        notifySettingsRead: true,
         followed: ['esn'],
         mapEvents: [bilingualEvent],
         rsvp: { 'ev-3': 'going' },
@@ -385,6 +404,7 @@ describe('replanNotifications', () => {
     it('a language read back from disk (another tab) replans too', async () => {
       useAppStore.setState({
         followsLoaded: true,
+        notifySettingsRead: true,
         followed: ['esn'],
         mapEvents: [bilingualEvent],
         language: 'cz',
@@ -403,6 +423,7 @@ describe('replanNotifications', () => {
     it('builds English text when the app language is en', () => {
       useAppStore.setState({
         followsLoaded: true,
+        notifySettingsRead: true,
         followed: ['esn'],
         mapEvents: [bilingualEvent],
         rsvp: { 'ev-3': 'going' },

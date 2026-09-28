@@ -2,7 +2,6 @@ import type { AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
 import {
   loadFollowedList,
-  FOLLOWS_READ_FAILED,
   MUTED_KEY,
   NOTIFY_PREFS_KEY,
   NOTIFY_ASKED_KEY,
@@ -10,11 +9,13 @@ import {
   type NotifyPrefs,
 } from './follows/loadFollows';
 import { loadNotifySettings } from './follows/loadNotifySettings';
+import { loadCommitPatch } from './follows/loadCommitPatch';
 import { replanNotifications } from './follows/replanNotifications';
 import { toggleFollowAction } from './follows/toggleFollow';
 import {
   runExclusiveLoad,
   ensureLoaded,
+  ensureNotifySettingsRead,
   persistField,
   snapshotVersions,
   isUnchangedSince,
@@ -51,6 +52,9 @@ export interface FollowSlice {
    * computed from it.
    */
   followsListRead: boolean;
+  /** The same for `muted`/`notifyPrefs`/`permissionAsked`: false until their
+   *  read has worked, and `toggleMute`/`setNotifyPref` persist only once true. */
+  notifySettingsRead: boolean;
   /** Followed society ids this student has muted from reminders. */
   muted: string[];
   /** Which kinds of notification this student wants scheduled. */
@@ -80,6 +84,7 @@ export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
   followsLoaded: false,
   followsResolved: false,
   followsListRead: false,
+  notifySettingsRead: false,
   muted: [],
   notifyPrefs: DEFAULT_PREFS,
   permissionAsked: false,
@@ -97,30 +102,7 @@ export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
         loadNotifySettings(),
       ]);
 
-      const patch: Partial<FollowSlice> = { followsLoaded: true };
-      // A failed read says nothing about `followed`: it, `followsResolved` and
-      // `followsListRead` stay as they were, so a transient failure neither
-      // undoes a good earlier read nor makes its `[]` look like an answer.
-      if (list !== FOLLOWS_READ_FAILED) {
-        const followedUnchanged = isUnchangedSince('followed', versionsAtStart);
-        patch.followsListRead = true;
-        // `null` means loadFollowedList could not resolve anything this time
-        // (getUserParams() came back empty — the boot race) rather than that
-        // this student genuinely follows nothing. A toggle that landed on
-        // `followed` during this load is just as much a resolved answer — it
-        // is a hand-made choice, already persisted with CHOSEN_KEY — so it
-        // must not leave a later `retryFollowsIfUnresolved()` blocked
-        // forever waiting for a list that will never come.
-        patch.followsResolved = list !== null || !followedUnchanged;
-        if (followedUnchanged) patch.followed = list ?? [];
-      }
-      if (isUnchangedSince('muted', versionsAtStart)) patch.muted = notify.muted;
-      if (isUnchangedSince('notifyPrefs', versionsAtStart)) patch.notifyPrefs = notify.prefs;
-      if (isUnchangedSince('permissionAsked', versionsAtStart)) {
-        patch.permissionAsked = notify.asked;
-      }
-
-      set(patch);
+      set(loadCommitPatch(list, notify, versionsAtStart));
       get().replanNotifications();
     });
   },
@@ -140,27 +122,33 @@ export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
   toggleFollow: (id) => toggleFollowAction(id, set, get),
 
   toggleMute: async (id) => {
-    await ensureLoaded(get);
+    const canPersist = await ensureNotifySettingsRead(get);
     const muted = get().muted.includes(id)
       ? get().muted.filter((x) => x !== id)
       : [...get().muted, id];
     set({ muted });
-    await persistField('muted', 'Follows.toggleMute', () =>
-      IndexedDBService.set('meta', MUTED_KEY, muted)
-    );
+    if (canPersist) {
+      await persistField('muted', 'Follows.toggleMute', () =>
+        IndexedDBService.set('meta', MUTED_KEY, muted)
+      );
+    }
     get().replanNotifications();
   },
 
   setNotifyPref: async (key, value) => {
-    await ensureLoaded(get);
+    const canPersist = await ensureNotifySettingsRead(get);
     const notifyPrefs = { ...get().notifyPrefs, [key]: value };
     set({ notifyPrefs });
-    await persistField('notifyPrefs', 'Follows.setNotifyPref', () =>
-      IndexedDBService.set('meta', NOTIFY_PREFS_KEY, notifyPrefs)
-    );
+    if (canPersist) {
+      await persistField('notifyPrefs', 'Follows.setNotifyPref', () =>
+        IndexedDBService.set('meta', NOTIFY_PREFS_KEY, notifyPrefs)
+      );
+    }
     get().replanNotifications();
   },
 
+  // Writes a constant `true`, never a value computed from the read, so a
+  // failed settings read leaves it nothing to overwrite: it always persists.
   markPermissionAsked: async () => {
     await ensureLoaded(get);
     set({ permissionAsked: true });
