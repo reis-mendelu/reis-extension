@@ -13,13 +13,13 @@ const esn = BUNDLED_SOCIETIES.esn!;
 const supef = BUNDLED_SOCIETIES.supef!;
 const catalog: Record<string, typeof esn> = { esn, supef };
 
-const renderSection = (notifications?: boolean) =>
+const renderSection = (notifications?: boolean, onToggleAssoc: (id: string) => void = () => {}) =>
   render(
     <SpolkySection
       expanded
       onToggle={() => {}}
       isSub={(id) => id === 'esn'}
-      onToggleAssoc={() => {}}
+      onToggleAssoc={onToggleAssoc}
       notifications={notifications}
     />
   );
@@ -61,7 +61,7 @@ describe('SpolkySection notification bells', () => {
     expect(screen.queryByLabelText('Ztlumit SU PEF')).toBeNull();
   });
 
-  it('the bell toggles mute and flips its label/aria-pressed', () => {
+  it('clicking the bell calls toggleMute for that society', () => {
     const toggleMute = vi.fn();
     useAppStore.setState({ toggleMute });
     renderSection(true);
@@ -69,6 +69,25 @@ describe('SpolkySection notification bells', () => {
     expect(bell.getAttribute('aria-pressed')).toBe('false');
     fireEvent.click(bell);
     expect(toggleMute).toHaveBeenCalledWith('esn');
+  });
+
+  // The label, not a wrapper around it, owns the row's padding: a tap
+  // anywhere in the padded row follows or unfollows, on both trees.
+  it.each([false, true])('the whole padded row is the follow label (notifications=%s)', (n) => {
+    const onToggleAssoc = vi.fn();
+    renderSection(n, onToggleAssoc);
+    const label = screen.getByText('ESN MENDELU').closest('label')!;
+    expect(label.className).toMatch(/\bpl-2\b/);
+    expect(label.className).toMatch(/\bpy-1\.5\b/);
+    fireEvent.click(label);
+    expect(onToggleAssoc).toHaveBeenCalledWith('esn');
+  });
+
+  it('clicking the bell mutes without touching the follow', () => {
+    const onToggleAssoc = vi.fn();
+    renderSection(true, onToggleAssoc);
+    fireEvent.click(screen.getByLabelText('Ztlumit ESN MENDELU'));
+    expect(onToggleAssoc).not.toHaveBeenCalled();
   });
 
   it('shows the unmute label once the society is muted', () => {

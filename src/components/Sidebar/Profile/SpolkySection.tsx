@@ -80,23 +80,34 @@ export function SpolkySection({
                 expandFully ? '' : 'max-h-40 overflow-y-auto custom-scrollbar'
               }`}
             >
-              {societies.map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-center justify-between px-2 py-1.5 hover:bg-base-200 rounded-md"
-                >
-                  <label className="flex flex-1 items-center justify-between cursor-pointer">
-                    <span className="text-xs opacity-90">{p.name}</span>
-                    <input
-                      type="checkbox"
-                      className="checkbox checkbox-xs checkbox-primary"
-                      checked={isSub(p.id)}
-                      onChange={() => onToggleAssoc(p.id)}
-                    />
-                  </label>
-                  {notifications && isSub(p.id) && <MuteBell id={p.id} name={p.name} />}
-                </div>
-              ))}
+              {societies.map((p) => {
+                const bell = notifications && isSub(p.id);
+                // The label owns the row's padding, so a tap anywhere in the
+                // padded row (bar the bell) follows or unfollows; the bell is
+                // its sibling, never inside it, and takes the right padding.
+                return (
+                  <div key={p.id} className="flex items-center hover:bg-base-200 rounded-md">
+                    <label
+                      className={`flex flex-1 items-center justify-between cursor-pointer pl-2 py-1.5 ${
+                        bell ? '' : 'pr-2'
+                      }`}
+                    >
+                      <span className="text-xs opacity-90">{p.name}</span>
+                      <input
+                        type="checkbox"
+                        className="checkbox checkbox-xs checkbox-primary"
+                        checked={isSub(p.id)}
+                        onChange={() => onToggleAssoc(p.id)}
+                      />
+                    </label>
+                    {bell && (
+                      <div className="flex pr-2">
+                        <MuteBell id={p.id} name={p.name} />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             <button
               onClick={manage}
