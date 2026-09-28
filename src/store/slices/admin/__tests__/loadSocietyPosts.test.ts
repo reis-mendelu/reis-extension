@@ -2,6 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../../../api/societyPosts', () => ({ listMyPosts: vi.fn() }));
 vi.mock('../../../../api/eventRsvp', () => ({ fetchEventRsvps: vi.fn() }));
+let devSociety: string | false = false;
+vi.mock('../../../../utils/mock/devSociety', () => ({
+  get DEV_SOCIETY() {
+    return devSociety;
+  },
+}));
 
 import { listMyPosts, type SpolkyEventRow } from '../../../../api/societyPosts';
 import { fetchEventRsvps } from '../../../../api/eventRsvp';
@@ -30,6 +36,7 @@ function deferred<T>() {
 }
 
 beforeEach(() => {
+  devSociety = false;
   vi.mocked(listMyPosts).mockReset();
   vi.mocked(fetchEventRsvps).mockReset();
   vi.mocked(fetchEventRsvps).mockResolvedValue({ counts: {}, ok: true });
@@ -78,6 +85,17 @@ describe('loadSocietyPosts', () => {
     await loadSocietyPosts(access);
     expect(state.posts.map((p) => p.id)).toEqual(['prev']);
     expect(access.refreshSocietyMapEvents).not.toHaveBeenCalled();
+    expect(fetchEventRsvps).not.toHaveBeenCalled();
+  });
+
+  // dev:web's in-memory store hands out `dev-N` ids, which the RSVP RPC
+  // (uuid[]) rejects: every reload logged an error and saves waited on it.
+  it('skips the RSVP fetch for the dev society store', async () => {
+    devSociety = 'reis';
+    const { state, access } = makeAccess('reis');
+    vi.mocked(listMyPosts).mockResolvedValue([post('dev-1')]);
+    await loadSocietyPosts(access);
+    expect(state.posts.map((p) => p.id)).toEqual(['dev-1']);
     expect(fetchEventRsvps).not.toHaveBeenCalled();
   });
 });

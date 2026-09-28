@@ -1,5 +1,6 @@
 import { listMyPosts, type SpolkyEventRow } from '../../../api/societyPosts';
 import { fetchEventRsvps } from '../../../api/eventRsvp';
+import { DEV_SOCIETY } from '../../../utils/mock/devSociety';
 import type { RsvpCounts } from '../createRsvpSlice';
 
 /** What loadSocietyPosts needs from the slice: reading the active society (twice —
@@ -52,6 +53,9 @@ export async function loadSocietyPosts(access: LoadSocietyPostsAccess): Promise<
   // Interest per event, from the same public aggregate RPC the student card
   // uses — no new data flow. Not attendance: RSVPs count installs, and free
   // events see many no-shows, which is why the label says "v reIS".
+  // Not for dev:web's in-memory store: its `dev-N` ids are not the uuids the
+  // RPC takes, so every reload would log a failed request for nothing.
+  if (DEV_SOCIETY) return;
   const { counts, ok } = await fetchEventRsvps(posts.map((p) => p.id));
   if (ok && current()) access.setRsvpCounts(counts);
 }
