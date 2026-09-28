@@ -28,6 +28,8 @@ export function isComposerReady(d: {
   return !d.endDate || d.endDate >= d.date;
 }
 
+// Never 'online': no producer of it exists, so editing an online row would
+// save it as 'tba'.
 export function deriveVenue(
   room: { code: string } | null,
   coord: [number, number] | null

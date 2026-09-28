@@ -44,8 +44,8 @@ type ZoomAnimMap = {
 // the exact positions. Pins only show in campus overview, not floor-view.
 export function EventLayer() {
   // One layer, two hosts: the student map draws the public feed, the admin
-  // console's map draws the active society's own events (including the ones
-  // still scheduled and hidden from students).
+  // console's map draws the active society's own events (all of them, whatever
+  // their date — the student pins keep to the soon horizon).
   const authoring = useAppStore((s) => s.adminConsoleOpen);
   // The student's own view of the public feed: a society can mark an event for
   // its followers only, and this is where that is honoured.

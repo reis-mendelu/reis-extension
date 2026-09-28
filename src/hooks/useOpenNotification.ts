@@ -22,9 +22,10 @@ import { useAppStore } from '../store/useAppStore';
  *
  * The card has priority; the link is the fallback for rows with no event
  * (academic deadlines). A notification with neither a link nor a matching
- * event (a far-future one the public map filters out) does nothing rather
- * than switching to a map with nothing selected — and is not counted as a
- * click, which is reserved for taps that actually went somewhere.
+ * event (one deleted since the feed was cached, or a map feed that failed to
+ * load) does nothing rather than switching to a map with nothing selected —
+ * and is not counted as a click, which is reserved for taps that actually
+ * went somewhere.
  */
 export function useOpenNotification({
   onClose,

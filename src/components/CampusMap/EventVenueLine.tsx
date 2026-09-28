@@ -72,7 +72,7 @@ export function EventVenueLine({
         // would leave the tap doing nothing at all. Fall back to the
         // web URL, which is what the anchor would have done.
         void openVenue(event.coord as [number, number], venueName ?? '').catch((err) => {
-          logError('EventDetailCard.openVenue', err);
+          logError('EventVenueLine.openVenue', err);
           void openExternal(venueMapUrl(event.coord!, venueName ?? '', 'web'));
         });
       }}
