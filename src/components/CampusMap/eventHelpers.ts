@@ -104,7 +104,9 @@ export function relativeDayLabel(
   // Beyond two weeks a weekday alone says nothing; the locale orders the parts
   // ("Čt 19. 11." in Czech, "Thu, 11/19" in English for the Erasmus students).
   if (days >= 14) {
-    return cap(date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'numeric' }));
+    return cap(
+      date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'numeric' })
+    );
   }
   const dm = date.toLocaleDateString(locale, { day: 'numeric', month: 'numeric' });
   return `${dm} (${weekday})`;

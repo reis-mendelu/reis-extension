@@ -100,18 +100,20 @@ describe('hasFinished (multi-day)', () => {
   const day1Evening = new Date('2026-11-23T20:00:00');
 
   it('is false on day 1 after the start of an event that runs for days', () => {
-    expect(hasFinished({ date: '2026-11-23', endDate: '2026-11-29', time: '07:30' }, day1Evening)).toBe(
-      false
-    );
+    expect(
+      hasFinished({ date: '2026-11-23', endDate: '2026-11-29', time: '07:30' }, day1Evening)
+    ).toBe(false);
   });
 
   it('still applies the same-day check when the end date is the start date', () => {
-    expect(hasFinished({ date: '2026-11-23', endDate: '2026-11-23', time: '07:30' }, day1Evening)).toBe(
-      true
-    );
+    expect(
+      hasFinished({ date: '2026-11-23', endDate: '2026-11-23', time: '07:30' }, day1Evening)
+    ).toBe(true);
   });
 
   it('still applies the same-day check when there is no end date', () => {
-    expect(hasFinished({ date: '2026-11-23', endDate: null, time: '07:30' }, day1Evening)).toBe(true);
+    expect(hasFinished({ date: '2026-11-23', endDate: null, time: '07:30' }, day1Evening)).toBe(
+      true
+    );
   });
 });

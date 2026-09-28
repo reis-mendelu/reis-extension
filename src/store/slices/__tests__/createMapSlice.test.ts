@@ -329,7 +329,11 @@ describe('mapSlice', () => {
   });
 
   it('reloadMapEvents keeps the last list and loaded flag when a reload fails', async () => {
-    useAppStore.setState({ mapEvents: MOCK_EVENTS, mapEventsLoaded: true, mapEventsFetchedAt: 123 });
+    useAppStore.setState({
+      mapEvents: MOCK_EVENTS,
+      mapEventsLoaded: true,
+      mapEventsFetchedAt: 123,
+    });
     vi.mocked(fetchMapEvents).mockResolvedValueOnce(null);
     vi.mocked(logError).mockClear();
     await useAppStore.getState().reloadMapEvents();

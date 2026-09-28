@@ -129,9 +129,9 @@ describe('eventHelpers', () => {
 
     it('labels a single-day event exactly as relativeDayLabel does', () => {
       const now = new Date('2026-01-05T12:00:00');
-      expect(eventWhenLabel({ date: '2026-01-06', endDate: null, time: '19:00' }, 'en-US', t, now)).toBe(
-        'map.tomorrow · 19:00'
-      );
+      expect(
+        eventWhenLabel({ date: '2026-01-06', endDate: null, time: '19:00' }, 'en-US', t, now)
+      ).toBe('map.tomorrow · 19:00');
     });
   });
 });

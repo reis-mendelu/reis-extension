@@ -148,7 +148,9 @@ describe('EventDetailCard', () => {
   // instead of a place, and the More-info button becomes the Instagram link.
   it('shows "Venue TBA by ESN" and links to Instagram for a TBA event with no url', () => {
     useAppStore.setState({
-      societies: { esn: { ...neutralSociety('esn'), shortName: 'ESN', instagram: 'esnmendelubrno' } },
+      societies: {
+        esn: { ...neutralSociety('esn'), shortName: 'ESN', instagram: 'esnmendelubrno' },
+      },
     });
     const tbaEvent: MapEvent = {
       ...ev,
@@ -167,7 +169,9 @@ describe('EventDetailCard', () => {
 
   it('prefers the event url over Instagram when both are available', () => {
     useAppStore.setState({
-      societies: { esn: { ...neutralSociety('esn'), shortName: 'ESN', instagram: 'esnmendelubrno' } },
+      societies: {
+        esn: { ...neutralSociety('esn'), shortName: 'ESN', instagram: 'esnmendelubrno' },
+      },
     });
     const tbaEvent: MapEvent = {
       ...ev,

@@ -96,7 +96,11 @@ export function AdminEventList() {
     return undefined;
   };
 
-  const section = (label: string, rows: MapEvent[], subline?: (e: MapEvent) => string | undefined) =>
+  const section = (
+    label: string,
+    rows: MapEvent[],
+    subline?: (e: MapEvent) => string | undefined
+  ) =>
     rows.length > 0 && (
       <div>
         <div className="px-3 pb-1 pt-3 text-[11px] font-bold uppercase tracking-wide text-base-content/60">

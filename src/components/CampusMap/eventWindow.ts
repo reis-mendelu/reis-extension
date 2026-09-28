@@ -97,5 +97,3 @@ export function isSoonEvent(e: Dated, now: Date = new Date()): boolean {
 export function isBeyondSoon(iso: string, now: Date = new Date()): boolean {
   return daysUntilEvent(iso, now) >= SOON_WINDOW_DAYS;
 }
-
-

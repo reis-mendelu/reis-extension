@@ -64,9 +64,7 @@ export function EventLayer() {
   // not the selection object, so selecting a room does not rebuild it.
   const events = useMemo(
     () =>
-      authoring
-        ? societyEvents
-        : publicEvents.filter((e) => isSoonEvent(e) || e.id === selectedId),
+      authoring ? societyEvents : publicEvents.filter((e) => isSoonEvent(e) || e.id === selectedId),
     [authoring, societyEvents, publicEvents, selectedId]
   );
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);

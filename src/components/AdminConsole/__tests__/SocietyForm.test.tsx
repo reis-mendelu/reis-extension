@@ -194,4 +194,3 @@ describe('SocietyForm (instagram)', () => {
     expect(restore).not.toHaveProperty('instagram');
   });
 });
-

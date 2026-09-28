@@ -155,7 +155,9 @@ describe('saveSociety: instagram', () => {
   it('clearing the handle reaches the store', async () => {
     updateSociety.mockResolvedValue(rowToSociety({ ...zfRow, instagram: null }));
     const store = withHandle();
-    expect(await store.getState().saveSociety({ ...zfEdit, instagram: null }, null, false)).toEqual({});
+    expect(await store.getState().saveSociety({ ...zfEdit, instagram: null }, null, false)).toEqual(
+      {}
+    );
     expect(updateSociety.mock.calls[0]![1]).toMatchObject({ instagram: null });
     expect(store.getState().societies.zf!.instagram).toBeUndefined();
   });

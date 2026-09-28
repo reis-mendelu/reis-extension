@@ -21,8 +21,7 @@ const ev: MapEvent = {
   venueKind: 'offcampus',
   category: 'party',
 };
-const t = (k: string, p?: Record<string, string | number>) =>
-  p ? `${k} ${JSON.stringify(p)}` : k;
+const t = (k: string, p?: Record<string, string | number>) => (p ? `${k} ${JSON.stringify(p)}` : k);
 
 describe('EventRow', () => {
   beforeEach(() => {
