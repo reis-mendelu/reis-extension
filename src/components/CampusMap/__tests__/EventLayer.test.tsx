@@ -11,7 +11,6 @@ import { EventLayer } from '../EventLayer';
 import { setMapInstance } from '../mapInstance';
 import { useAppStore } from '../../../store/useAppStore';
 import { MOCK_MAP_EVENTS } from './fixtures/mockMapEvents';
-import { PUBLIC_WINDOW_DAYS } from '../eventWindow';
 import { EVENTS_PANE, LABELS_PANE, LEAFLET_PANE_Z, REIS_PANE_Z } from '../mapPanes';
 
 /**
@@ -71,7 +70,10 @@ beforeEach(() => {
     off: () => {},
   };
   useAppStore.setState({
-    mapEvents: MOCK_MAP_EVENTS,
+    // Shifted onto "soon" dates (today+3): MOCK_MAP_EVENTS' own July 2026 dates
+    // are now in the past, and the student map filters pins to isSoonEvent —
+    // the pipeline tests below need at least one event to survive that filter.
+    mapEvents: MOCK_MAP_EVENTS.map((e) => ({ ...e, date: isoInDays(3), endDate: null })),
     activeBuildingId: null,
     mapSelection: null,
     language: 'en',
@@ -257,19 +259,16 @@ describe('EventLayer', () => {
     expect(paneEl.querySelector('[data-draft-pin="true"]')).toBeNull();
   });
 
-  it('marks a mixed venue group scheduled if ANY event is scheduled (admin console)', () => {
-    // Two events sharing the same coord (same venue group): one inside the public
-    // window (live), one past it (scheduled). sortByDate puts the live one first,
-    // so the old `events[0]` code would miss the scheduled flag entirely. Both
-    // dates are relative to today — the window is, too.
+  // Students' pins show what is on SOON: the catalog list carries the whole
+  // semester, and a semester of pins would bury the campus.
+  it('pins only the soon event on the student map; the far one stays off the map', () => {
     useAppStore.setState({
-      adminConsoleOpen: true,
-      societyMapEvents: [
+      mapEvents: [
         {
-          id: 's-live',
-          title: 'Live Now',
+          id: 'soon-1',
+          title: 'Soon Event',
           url: '',
-          date: isoInDays(1),
+          date: isoInDays(3),
           endDate: null,
           time: null,
           location: null,
@@ -282,10 +281,41 @@ describe('EventLayer', () => {
           category: 'party',
         },
         {
-          id: 's-future',
-          title: 'Far Future',
+          id: 'far-1',
+          title: 'Far Event',
           url: '',
-          date: isoInDays(PUBLIC_WINDOW_DAYS + 30),
+          date: isoInDays(20),
+          endDate: null,
+          time: null,
+          location: null,
+          imageUrl: null,
+          organizerKey: 'pef',
+          societyId: 'supef',
+          coord: [16.7, 49.3],
+          roomCode: null,
+          venueKind: 'offcampus',
+          category: 'party',
+        },
+      ],
+      activeBuildingId: null,
+    });
+    render(<EventLayer />);
+    expect(paneEl.querySelectorAll('button').length).toBe(1);
+    expect(paneEl.querySelector('button[title="Soon Event"]')).toBeTruthy();
+    expect(paneEl.querySelector('button[title="Far Event"]')).toBeNull();
+  });
+
+  // A society authoring in the console still sees every one of its own
+  // events — soon or not — so it can tell a far-future publish worked.
+  it("draws every one of a society's own events while authoring, soon or not", () => {
+    useAppStore.setState({
+      adminConsoleOpen: true,
+      societyMapEvents: [
+        {
+          id: 's-soon',
+          title: 'Soon Society Event',
+          url: '',
+          date: isoInDays(3),
           endDate: null,
           time: null,
           location: null,
@@ -293,6 +323,22 @@ describe('EventLayer', () => {
           organizerKey: 'pef',
           societyId: 'supef',
           coord: [16.61, 49.21],
+          roomCode: null,
+          venueKind: 'offcampus',
+          category: 'party',
+        },
+        {
+          id: 's-far',
+          title: 'Far Society Event',
+          url: '',
+          date: isoInDays(20),
+          endDate: null,
+          time: null,
+          location: null,
+          imageUrl: null,
+          organizerKey: 'pef',
+          societyId: 'supef',
+          coord: [16.7, 49.3],
           roomCode: null,
           venueKind: 'offcampus',
           category: 'party',
@@ -302,6 +348,6 @@ describe('EventLayer', () => {
       activeBuildingId: null,
     });
     render(<EventLayer />);
-    expect(paneEl.querySelector('[data-scheduled="true"]')).toBeTruthy();
+    expect(paneEl.querySelectorAll('button').length).toBe(2);
   });
 });

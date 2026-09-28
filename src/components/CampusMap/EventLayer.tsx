@@ -10,7 +10,7 @@ import { EVENTS_PANE, ensurePane } from './mapPanes';
 import { EventPin } from './EventPin';
 import { DraftPin } from './DraftPin';
 import { useSociety } from '../../hooks/useSociety';
-import { isScheduledEvent } from './eventWindow';
+import { isSoonEvent } from './eventWindow';
 import { trackMapEventView } from '../../api/featureUsage';
 
 interface Placed {
@@ -51,10 +51,16 @@ export function EventLayer() {
   // its followers only, and this is where that is honoured.
   const publicEvents = useVisibleMapEvents();
   const societyEvents = useAppStore((s) => s.societyMapEvents);
-  // NOT filtered while authoring. A society composing an event has to see the
-  // one it just marked for its followers — hiding it from its own author would
-  // read as the publish having failed.
-  const events = authoring ? societyEvents : publicEvents;
+  // Students' pins show what is on SOON: the catalog list carries the whole
+  // semester, and a semester of pins would bury the campus. A society authoring
+  // in the console still sees every one of its own events.
+  // Memoized: `.filter()` makes a new array every call, and the `groups` memo
+  // and its re-project effect below key off this reference — an unmemoized
+  // filter here reruns them every render and never settles.
+  const events = useMemo(
+    () => (authoring ? societyEvents : publicEvents.filter((e) => isSoonEvent(e))),
+    [authoring, societyEvents, publicEvents]
+  );
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const selection = useAppStore((s) => s.mapSelection);
   const focusEvent = useAppStore((s) => s.focusEventById);
@@ -202,7 +208,6 @@ export function EventLayer() {
           x={p.x}
           y={p.y}
           selected={p.group.events.some((e) => e.id === selectedId)}
-          scheduled={authoring && p.group.events.some((e) => isScheduledEvent(e.date))}
           locale={language === 'en' ? 'en-US' : 'cs-CZ'}
           onSelect={selectEvent}
         />
