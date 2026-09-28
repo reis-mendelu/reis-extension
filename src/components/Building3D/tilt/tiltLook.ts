@@ -33,6 +33,8 @@ export const LOOK = {
   plate: '#f8fafc',
   plateOpacity: 0.94,
   target: '#c2410c',
+  /** The route's staircase — the map's route colour (--color-route, fuchsia-700). */
+  route: '#a21caf',
   /** The block's sides, a step darker (orange-800): the unlit block read flat. */
   targetSide: '#9a3412',
   /** A white halo, not a darker edge: the block sits among dark room outlines

@@ -1,6 +1,7 @@
 import { EventDetailCard } from '../../../CampusMap/EventDetailCard';
 import { GardenPlaceCard } from '../../../CampusMap/GardenPlaceCard';
 import { MapEventsSection } from '../../../CampusMap/MapEventsSection';
+import { RoomDirections } from '../../../CampusMap/RoomDirections';
 import type { MapEvent } from '../../../../types/events';
 import type { GardenPlace } from '../../../../types/campusMap';
 
@@ -48,5 +49,14 @@ export function MapPanelBody({
       </div>
     );
   }
-  return <MapEventsSection />;
+  // A room's directions sit above the events; RoomDirections renders nothing
+  // when there are none.
+  return (
+    <>
+      <div className={`${flush ? 'px-5' : 'px-4'} empty:hidden pb-3`}>
+        <RoomDirections />
+      </div>
+      <MapEventsSection />
+    </>
+  );
 }

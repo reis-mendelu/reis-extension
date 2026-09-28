@@ -43,7 +43,7 @@ export interface TiltContent {
  */
 export function addTiltContent(
   scene: Scene,
-  input: BuildingGroupInput & { view: MapView },
+  input: BuildingGroupInput & { view: MapView; routeRoomIds?: number[] },
   project: Projector,
   groundY: number,
   onTile: () => void
@@ -105,7 +105,7 @@ export function addTiltContent(
     scene.add(parts.shell);
     if (!parts.slab) return;
     scene.add(parts.slab);
-    content.fade = roomFade(parts.slab, input.targetRoomId);
+    content.fade = roomFade(parts.slab, input.targetRoomId, input.routeRoomIds);
     content.labels = labelAnchors(input.rooms, project, parts.slabElevation, input.targetRoomId);
     // The lit room draws after the glass: three.js draws opaque things first, so
     // as an opaque block it sat UNDER every translucent storey above it and came

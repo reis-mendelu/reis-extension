@@ -1,3 +1,4 @@
+import { RoomDirections } from './RoomDirections';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { landmarkGroupLabels, placeTitle, roomLabel } from './mapHelpers';
@@ -82,6 +83,9 @@ export function DetailPanel() {
       )}
       {r?.hasWhiteboard && <span className="badge badge-sm badge-info">{t('map.whiteboard')}</span>}
       {r?.passportNumber && <p className="text-xs text-base-content/50 pt-1">{r.passportNumber}</p>}
+      <div className="empty:hidden border-t border-base-content/10 mt-2 pt-3">
+        <RoomDirections />
+      </div>
     </div>
   );
 }
