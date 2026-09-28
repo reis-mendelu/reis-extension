@@ -1,9 +1,6 @@
 import { parseEventDate } from './eventHelpers';
 
-// How far ahead the PUBLIC map/feed shows events: this week + next week.
-// Past events and anything further out are hidden from students; a society's own
-// far-future events surface only in the admin console as "scheduled" pins.
-export const PUBLIC_WINDOW_DAYS = 14;
+// the soon horizon (pins, Novinky) is SOON_WINDOW_DAYS; the catalog list has no upper bound
 
 function startOfDay(ref: Date): Date {
   const d = new Date(ref);
@@ -96,22 +93,4 @@ export function isBeyondSoon(iso: string, now: Date = new Date()): boolean {
   return daysUntilEvent(iso, now) >= SOON_WINDOW_DAYS;
 }
 
-// today .. today+13 inclusive.
-export function isPublicEvent(iso: string, now: Date = new Date()): boolean {
-  const d = daysUntilEvent(iso, now);
-  return d >= 0 && d < PUBLIC_WINDOW_DAYS;
-}
 
-// A society's own upcoming event still outside the public window.
-export function isScheduledEvent(iso: string, now: Date = new Date()): boolean {
-  return daysUntilEvent(iso, now) >= PUBLIC_WINDOW_DAYS;
-}
-
-// The first calendar day the event becomes public (enters the window):
-// date − (PUBLIC_WINDOW_DAYS − 1) days.
-export function goLiveDate(iso: string, now: Date = new Date()): Date {
-  void now;
-  const d = startOfDay(parseEventDate(iso));
-  d.setDate(d.getDate() - (PUBLIC_WINDOW_DAYS - 1));
-  return d;
-}
