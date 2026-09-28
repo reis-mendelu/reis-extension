@@ -130,4 +130,28 @@ describe('installReminderTapHandler', () => {
 
     expect(useAppStore.getState().mobileTab).toBe('calendar');
   });
+
+  it('opens the map with sheet expanded when the digest is tapped', async () => {
+    installReminderTapHandler();
+
+    const onTap = addListener.mock.calls[0]![1] as (a: unknown) => Promise<void> | void;
+    await onTap(tapped({ kind: 'digest', eventId: '' }));
+
+    const s = useAppStore.getState();
+    expect(s.mobileTab).toBe('map');
+    expect(s.mapSheetState).toBe('expanded');
+  });
+
+  it('behaves as today when notification has no kind (backward compat)', async () => {
+    useAppStore.setState({ mapEvents: MOCK_MAP_EVENTS, mapEventsLoaded: true });
+
+    installReminderTapHandler();
+
+    const onTap = addListener.mock.calls[0]![1] as (a: unknown) => Promise<void> | void;
+    await onTap(tapped({ eventId: EVENT.id }));
+
+    const s = useAppStore.getState();
+    expect(s.mobileTab).toBe('map');
+    expect(s.mapSelection).toMatchObject({ kind: 'event', event: { id: EVENT.id } });
+  });
 });

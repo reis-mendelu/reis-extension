@@ -3,11 +3,12 @@ import { useAppStore } from '../store/useAppStore';
 
 /**
  * What tapping an event reminder does: open that event on the map, the same
- * EventDetailCard a pin or a Novinky row opens.
+ * EventDetailCard a pin or a Novinky row opens. A digest reminder opens the
+ * events list (map tab with sheet expanded).
  *
- * `capacitorReminderDeps().schedule` has always put `extra: { eventId }` on the
- * notification for exactly this, and nothing read it back — so a tap only
- * opened the app, wherever it last was.
+ * `capacitorReminderDeps().schedule` puts `extra: { eventId, kind }` on the
+ * notification: `kind` is 'rsvp' or 'digest' (digest has empty eventId).
+ * Notifications from older builds have no `kind` — they behave as today.
  *
  * Deliberately NOT `useOpenNotification`: that is a hook (this runs outside
  * React), and it counts a Novinky click. A reminder is not a Novinky click, and
@@ -20,6 +21,12 @@ import { useAppStore } from '../store/useAppStore';
 
 /** Bumped per tap, so a tap still waiting on the feed yields to a later one. */
 let activation = 0;
+
+function openDigest(): void {
+  const s = useAppStore.getState();
+  s.setMobileTab('map');
+  s.setMapSheetState('expanded');
+}
 
 export async function openRemindedEvent(eventId: unknown): Promise<void> {
   // `extra` comes back from the OS, and a notification from an older build (or
@@ -52,7 +59,12 @@ export async function openRemindedEvent(eventId: unknown): Promise<void> {
  * does afterwards can reset the tab out from under it.
  */
 export function installReminderTapHandler(): void {
-  void LocalNotifications.addListener('localNotificationActionPerformed', (action) =>
-    openRemindedEvent((action.notification.extra as { eventId?: unknown } | undefined)?.eventId)
-  );
+  void LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
+    const extra = action.notification.extra as { eventId?: unknown; kind?: unknown } | undefined;
+    if (extra?.kind === 'digest') {
+      openDigest();
+    } else {
+      openRemindedEvent(extra?.eventId);
+    }
+  });
 }
