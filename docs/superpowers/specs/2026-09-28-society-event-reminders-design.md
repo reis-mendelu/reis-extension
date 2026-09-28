@@ -135,8 +135,11 @@ notifications.
 
 - **Permission.** Sync schedules only when permission is already `granted`.
   It never calls `requestPermissions`: plugin 8.3 would otherwise raise the
-  system dialog from inside `schedule()`. Only the soft-ask card requests
-  permission.
+  system dialog from inside `schedule()`. Only explicit student actions ask:
+  - **Zapnout** on the soft-ask card;
+  - turning a Profile switch on;
+  - a new RSVP answer. This keeps today's behaviour, where the first RSVP
+    asks.
 - **Android channels.** Created once, before the first schedule:
   - `reis-event-reminders`: "Připomínky akcí" / "Event reminders" (RSVP)
   - `reis-society-digest`: "Akce spolků" / "Society events" (digest)
