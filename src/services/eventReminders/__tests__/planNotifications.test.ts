@@ -299,6 +299,27 @@ describe('planNotifications — new-events window', () => {
     expect(plan).toEqual([]);
   });
 
+  // Ruling: "new" is news about something still ahead. An event published
+  // this afternoon for tonight (or dated in the past) is already under way or
+  // over by 18:00, so announcing it in the evening digest is noise.
+  it('does not announce a new event dated on or before the digest day', () => {
+    const now = at('2026-10-05T09:00:00');
+    const events = [
+      ev('today', 'esn', '2026-10-05', { createdAt: '2026-10-05T10:00:00' }),
+      ev('past', 'esn', '2026-10-01', { createdAt: '2026-10-05T10:00:00' }),
+    ];
+    const plan = planNotifications(input({ events, followed: ['esn'], prefs }), now, labels);
+    expect(plan).toEqual([]);
+  });
+
+  it('still announces a new event dated the day after the digest', () => {
+    const now = at('2026-10-05T09:00:00');
+    const e = ev('next', 'esn', '2026-10-06', { createdAt: '2026-10-05T10:00:00' });
+    const plan = planNotifications(input({ events: [e], followed: ['esn'], prefs }), now, labels);
+    expect(plan).toHaveLength(1);
+    expect(plan[0]?.title).toContain('Event next');
+  });
+
   it('an event created at exactly 18:00 belongs to that day, not the next', () => {
     const now = at('2026-10-05T12:00:00');
     const e = ev('e9', 'esn', '2026-11-20', { createdAt: '2026-10-05T18:00:00' });

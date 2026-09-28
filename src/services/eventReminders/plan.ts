@@ -175,6 +175,7 @@ export function planNotifications(
     for (let offset = 0; offset < DIGEST_DAYS; offset++) {
       const fire = digestAt(now, offset);
       if (fire.getTime() <= now) continue;
+      const fireIso = isoOf(fire);
       const tomorrowIso = isoOf(new Date(fire.getFullYear(), fire.getMonth(), fire.getDate() + 1));
       const windowStart = digestAt(now, offset - 1).getTime();
       const tomorrow = input.prefs.followedEvents
@@ -183,7 +184,10 @@ export function planNotifications(
       const fresh = input.prefs.newEvents
         ? mine.filter((e) => {
             const c = e.createdAt ? Date.parse(e.createdAt) : NaN;
-            return c > windowStart && c <= fire.getTime();
+            // Dated after the digest day only: an event published for
+            // tonight, or for a day already gone, is not news at 18:00.
+            // YYYY-MM-DD compares correctly as a string.
+            return c > windowStart && c <= fire.getTime() && e.date > fireIso;
           })
         : [];
       const text = digestText(tomorrow, fresh, input.shortName, labels);
@@ -191,7 +195,7 @@ export function planNotifications(
       out.push({
         kind: 'digest',
         channelId: CHANNEL_DIGEST,
-        id: digestId(isoOf(fire)),
+        id: digestId(fireIso),
         eventId: '',
         title: text.title,
         body: text.body,
