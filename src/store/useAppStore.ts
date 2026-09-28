@@ -37,6 +37,7 @@ import { createMobileUiSlice } from './slices/createMobileUiSlice';
 import { createMapSlice } from './slices/createMapSlice';
 import { createSocietiesSlice } from './slices/createSocietiesSlice';
 import { createRsvpSlice } from './slices/createRsvpSlice';
+import { createFollowSlice } from './slices/createFollowSlice';
 import { createAdminSlice } from './slices/createAdminSlice';
 import { createAdminStatsSlice } from './slices/createAdminStatsSlice';
 import { createSuggestionsSlice } from './slices/createSuggestionsSlice';
@@ -92,6 +93,7 @@ export const useAppStore = create<AppState>()(
     ...createMapSlice(...a),
     ...createSocietiesSlice(...a),
     ...createRsvpSlice(...a),
+    ...createFollowSlice(...a),
     ...createAdminSlice(...a),
     ...createAdminStatsSlice(...a),
     ...createSuggestionsSlice(...a),
@@ -202,6 +204,7 @@ export const initializeStore = async () => {
     s2.refreshRecentPdfs();
     s2.hydrateBulletin();
     s2.loadMapEvents();
+    void s2.loadFollows();
     // The jídelníček. It used to be fetched from a useEffect in each of the
     // three components that show it (the weekly header, its popover, the
     // phone's MenuCard) — three triggers for one request, and an Iron Rule

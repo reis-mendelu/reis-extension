@@ -4,7 +4,6 @@ import { getSmartWeekRange } from '../utils/calendar';
 import { IndexedDBService } from '../services/storage';
 import { syncService, syncGradeHistory } from '../services/sync';
 
-import { useSpolkySettings } from './useSpolkySettings';
 import { useAppStore, initializeStore } from '../store/useAppStore';
 import { signalReady, requestData, isInIframe } from '../api/proxyClient';
 import { loadRealDataSnapshot } from '../services/loadRealDataSnapshot';
@@ -60,7 +59,6 @@ export function useAppLogic() {
   const [weekNavCount, setWeekNavCount] = useState(0);
   const openSettingsRef = useRef<(() => void) | null>(null);
   const searchPrefillRef = useRef<((query: string) => void) | null>(null);
-  useSpolkySettings();
 
   // Deep-link bridge: switch to the map view when something requests a room
   // focus (e.g. "Show on map" buttons). Subscribe imperatively so the view

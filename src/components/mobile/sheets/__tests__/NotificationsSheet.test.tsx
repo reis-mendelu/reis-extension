@@ -29,6 +29,12 @@ describe('NotificationsSheet', () => {
       odevzdavarny: [],
       cvicneTests: [],
       now: new Date(),
+      // The mark-read effect is gated on `settingsLoading` from
+      // useSpolkySettings, which now reads `followsLoaded` off the store
+      // instead of running its own IndexedDB load — seed it directly rather
+      // than waiting on a `loadFollows()` nobody in this test triggers.
+      followed: [],
+      followsLoaded: true,
     } as never);
   });
 
