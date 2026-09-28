@@ -116,10 +116,7 @@ export async function loadFollowedList(
         const facultyDefault = facultyKey ? autoFollowSocietyFor(catalog, facultyKey) : null;
         if (facultyDefault && !erasmus) defaults.push(facultyDefault);
 
-        if (erasmus) {
-          defaults.push('esn');
-          await IndexedDBService.set('meta', ERASMUS_AUTO_KEY, true);
-        }
+        if (erasmus) defaults.push('esn');
 
         saved = defaults;
         // ...and only if they resolved to something. An empty result is the
@@ -127,6 +124,9 @@ export async function loadFollowedList(
         // boot try again.
         if (defaults.length > 0 && canWrite()) {
           await IndexedDBService.set('meta', STORAGE_KEY, saved);
+          // With the list, not before it: a skipped write leaves the flag
+          // unset too, so the back-fill below can still add ESN next boot.
+          if (erasmus) await IndexedDBService.set('meta', ERASMUS_AUTO_KEY, true);
           // The one-time part of the migration above: an install that held
           // `[]` has now had its single re-resolution, so what it ends up
           // with is a settled answer. Only a resolution that found something

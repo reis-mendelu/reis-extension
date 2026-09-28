@@ -105,6 +105,14 @@ describe('loadFollowedList', () => {
       expect(writesOf(CHOSEN_KEY)).toHaveLength(0);
     });
 
+    it('an Erasmus default writes no ESN flag either, so a later boot can still add it', async () => {
+      disk({});
+      mockGetUserParams.mockResolvedValue(makeUser('PEF', true));
+      await expect(closed()).resolves.toEqual(['esn']);
+      expect(writesOf(STORAGE_KEY)).toHaveLength(0);
+      expect(writesOf(ERASMUS_AUTO_KEY)).toHaveLength(0);
+    });
+
     it('writes no migrated list', async () => {
       disk({ [STORAGE_KEY]: ['af'] });
       mockGetUserParams.mockResolvedValue(makeUser('AF', false));
