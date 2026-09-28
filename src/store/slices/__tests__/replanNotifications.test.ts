@@ -363,6 +363,43 @@ describe('replanNotifications', () => {
       expect(rsvp?.body).toContain('Za 2 hodiny');
     });
 
+    // A pending digest keeps its id and time across a language switch, so
+    // only a replan carrying the new wording can replace it on the device.
+    it('switching the language replans in the new language', async () => {
+      useAppStore.setState({
+        followsLoaded: true,
+        followed: ['esn'],
+        mapEvents: [bilingualEvent],
+        rsvp: { 'ev-3': 'going' },
+        language: 'cz',
+      });
+      syncReminders.mockClear();
+
+      await useAppStore.getState().setLanguage('en');
+
+      const [planned] = syncReminders.mock.calls.at(-1) as [Array<{ kind: string; title: string }>];
+      expect(planned.find((n) => n.kind === 'digest')?.title).toContain('Tomorrow:');
+      await useAppStore.getState().setLanguage('cz');
+    });
+
+    it('a language read back from disk (another tab) replans too', async () => {
+      useAppStore.setState({
+        followsLoaded: true,
+        followed: ['esn'],
+        mapEvents: [bilingualEvent],
+        language: 'cz',
+      });
+      await IndexedDBService.set('meta', 'reis_language', 'en');
+      syncReminders.mockClear();
+
+      await useAppStore.getState().loadLanguage();
+
+      const [planned] = syncReminders.mock.calls.at(-1) as [Array<{ kind: string; title: string }>];
+      expect(planned.find((n) => n.kind === 'digest')?.title).toContain('Tomorrow:');
+      await IndexedDBService.set('meta', 'reis_language', 'cz');
+      useAppStore.setState({ language: 'cz' });
+    });
+
     it('builds English text when the app language is en', () => {
       useAppStore.setState({
         followsLoaded: true,
