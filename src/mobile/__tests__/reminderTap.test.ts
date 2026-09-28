@@ -7,7 +7,7 @@ vi.mock('@capacitor/local-notifications', () => ({
   LocalNotifications: { addListener: (...args: unknown[]) => addListener(...args) },
 }));
 
-import { installReminderTapHandler, openRemindedEvent } from '../reminderTap';
+import { installReminderTapHandler, openDigest, openRemindedEvent } from '../reminderTap';
 
 const EVENT = MOCK_MAP_EVENTS[1]!;
 const realLoad = useAppStore.getState().loadMapEvents;
@@ -100,6 +100,60 @@ describe('openRemindedEvent', () => {
     useAppStore.setState({ mapEvents: MOCK_MAP_EVENTS, mapEventsLoaded: true });
     pending.reverse().forEach((resolve) => resolve());
     await Promise.all([first, second]);
+
+    expect(useAppStore.getState().mapSelection).toMatchObject({ event: { id: EVENT.id } });
+  });
+});
+
+describe('openDigest', () => {
+  // Same cold start as an event tap: the list must open over a feed that has
+  // landed, not over the empty one the boot load has not filled yet.
+  it('waits for the map feed on a cold start, then opens the events list', async () => {
+    let feedLoadedWhenOpened: boolean | null = null;
+    const load = vi.fn(async () => {
+      useAppStore.setState({ mapEvents: MOCK_MAP_EVENTS, mapEventsLoaded: true });
+    });
+    const setMapSheetState = useAppStore.getState().setMapSheetState;
+    useAppStore.setState({
+      loadMapEvents: load,
+      setMapSheetState: (st) => {
+        feedLoadedWhenOpened = useAppStore.getState().mapEventsLoaded;
+        setMapSheetState(st);
+      },
+    });
+
+    await openDigest();
+
+    expect(load).toHaveBeenCalledOnce();
+    expect(feedLoadedWhenOpened).toBe(true);
+    expect(useAppStore.getState().mobileTab).toBe('map');
+    useAppStore.setState({ setMapSheetState });
+  });
+
+  it('does not reload a feed that is already there', async () => {
+    const load = vi.fn(async () => {});
+    useAppStore.setState({
+      mapEvents: MOCK_MAP_EVENTS,
+      mapEventsLoaded: true,
+      loadMapEvents: load,
+    });
+
+    await openDigest();
+
+    expect(load).not.toHaveBeenCalled();
+    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+  });
+
+  it('yields to an event tap made while it waits on the feed', async () => {
+    const pending: (() => void)[] = [];
+    const load = vi.fn(() => new Promise<void>((resolve) => pending.push(resolve)));
+    useAppStore.setState({ loadMapEvents: load, mapSheetState: 'peek' });
+
+    const digest = openDigest();
+    const event = openRemindedEvent(EVENT.id);
+    useAppStore.setState({ mapEvents: MOCK_MAP_EVENTS, mapEventsLoaded: true });
+    pending.reverse().forEach((resolve) => resolve());
+    await Promise.all([digest, event]);
 
     expect(useAppStore.getState().mapSelection).toMatchObject({ event: { id: EVENT.id } });
   });

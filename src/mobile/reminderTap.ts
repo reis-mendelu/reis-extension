@@ -22,8 +22,14 @@ import { useAppStore } from '../store/useAppStore';
 /** Bumped per tap, so a tap still waiting on the feed yields to a later one. */
 let activation = 0;
 
-function openDigest(): void {
-  activation += 1;
+export async function openDigest(): Promise<void> {
+  const mine = (activation += 1);
+  // The same cold start as `openRemindedEvent` below: open the list over the
+  // feed once it has landed, not over the empty one the boot load has yet to
+  // fill. A failed load still opens it — the list has its own empty state.
+  if (!useAppStore.getState().mapEventsLoaded) await useAppStore.getState().loadMapEvents();
+  if (activation !== mine) return;
+
   const s = useAppStore.getState();
   s.clearMapSelection();
   s.setMobileTab('map');
@@ -64,10 +70,6 @@ export async function openRemindedEvent(eventId: unknown): Promise<void> {
 export function installReminderTapHandler(): void {
   void LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
     const extra = action.notification.extra as { eventId?: unknown; kind?: unknown } | undefined;
-    if (extra?.kind === 'digest') {
-      openDigest();
-    } else {
-      openRemindedEvent(extra?.eventId);
-    }
+    return extra?.kind === 'digest' ? openDigest() : openRemindedEvent(extra?.eventId);
   });
 }
