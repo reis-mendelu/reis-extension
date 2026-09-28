@@ -47,7 +47,9 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
 
   const [title, setTitle] = useState(source?.title ?? '');
   const [description, setDescription] = useState(source?.description ?? '');
-  // A duplicate exists to get a new date — the one field it does not copy.
+  // A duplicate exists to get a new date, so the dates are the fields it does
+  // not copy: the start AND the end. A copied end date would sit before (or
+  // oddly after) whatever new start is picked; a trip is re-spanned by hand.
   const [date, setDate] = useState(duplicating ? '' : (source?.date ?? ''));
   const [endDate, setEndDate] = useState(duplicating ? '' : (source?.endDate ?? ''));
   const [time, setTime] = useState(source?.time ?? '');
