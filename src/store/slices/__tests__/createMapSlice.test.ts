@@ -337,12 +337,60 @@ describe('mapSlice', () => {
     vi.mocked(fetchMapEvents).mockResolvedValueOnce(null);
     vi.mocked(logError).mockClear();
     await useAppStore.getState().reloadMapEvents();
+    // The fetch really ran: a reload that short-circuited would also keep the list.
+    expect(vi.mocked(fetchMapEvents)).toHaveBeenCalledTimes(1);
     expect(useAppStore.getState().mapEvents).toEqual(MOCK_EVENTS);
     expect(useAppStore.getState().mapEventsLoaded).toBe(true);
     // A failed fetch is not a fresh one, and it is handled, not thrown: without
     // the null guard `events.map` throws into the catch, which logs.
     expect(useAppStore.getState().mapEventsFetchedAt).toBe(123);
     expect(logError).not.toHaveBeenCalled();
+  });
+
+  // Boot and resume (or two resumes) can both be in flight. The older, slower
+  // response used to land last and overwrite the newer catalog — and stamp
+  // mapEventsFetchedAt, so the stale list then looked fresh for the whole gap.
+  describe('overlapping reloads', () => {
+    const deferred = () => {
+      let resolve!: (v: MapEvent[] | null) => void;
+      const promise = new Promise<MapEvent[] | null>((r) => (resolve = r));
+      return { promise, resolve };
+    };
+
+    it('keeps the newer response when an older one lands after it', async () => {
+      const older = deferred();
+      const newer = deferred();
+      vi.mocked(fetchMapEvents)
+        .mockReturnValueOnce(older.promise)
+        .mockReturnValueOnce(newer.promise);
+      useAppStore.setState({ mapEvents: [], mapEventsFetchedAt: null });
+
+      const first = useAppStore.getState().reloadMapEvents();
+      const second = useAppStore.getState().reloadMapEvents();
+      newer.resolve([MOCK_EVENTS[1]!]);
+      await second;
+      const stampedByNewer = useAppStore.getState().mapEventsFetchedAt;
+      older.resolve([MOCK_EVENTS[0]!]);
+      await first;
+
+      expect(useAppStore.getState().mapEvents.map((e) => e.id)).toEqual(['ev-2']);
+      expect(useAppStore.getState().mapEventsFetchedAt).toBe(stampedByNewer);
+    });
+
+    // A publish reloads while a boot/resume reload may already be running: the
+    // post-publish request is the one that can contain the new event.
+    it('applies the reload started last, even if an earlier one is still running', async () => {
+      const running = deferred();
+      vi.mocked(fetchMapEvents)
+        .mockReturnValueOnce(running.promise)
+        .mockResolvedValueOnce([...MOCK_EVENTS]);
+      const boot = useAppStore.getState().reloadMapEvents();
+      await useAppStore.getState().reloadMapEvents(); // after a publish
+      expect(useAppStore.getState().mapEvents).toHaveLength(MOCK_EVENTS.length);
+      running.resolve([]);
+      await boot;
+      expect(useAppStore.getState().mapEvents).toHaveLength(MOCK_EVENTS.length);
+    });
   });
 
   describe('refreshMapEventsIfStale', () => {

@@ -50,6 +50,11 @@ function locateEvent(e: MapEvent): MapEvent {
     : { ...e, coord: roomCodeToCoord(e.roomCode, INDEX, META) };
 }
 
+// Which reloadMapEvents call is the latest. Boot, resume and a post-publish
+// reload can overlap; only the last one started may write, so an older, slower
+// response can neither overwrite a newer list nor stamp it as fresh.
+let mapEventsGeneration = 0;
+
 export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   // Loading a building's floor plan lives next door, so this file does not
   // carry that responsibility too — see buildingGeometryActions.ts.
@@ -328,6 +333,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   // society publishing/deleting an event would otherwise not surface on the
   // public map/"Akce" tab until a full reload — call this after those mutations.
   reloadMapEvents: async () => {
+    const mine = ++mapEventsGeneration;
     try {
       // The catalog is refetched beside every events load, in parallel, so an
       // event can never be newer than the catalog that names its society. The
@@ -335,7 +341,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
       const [events] = await Promise.all([fetchMapEvents(get().societies), get().loadSocieties()]);
       // A failed fetch keeps whatever is on screen: wiping it would show "no
       // events" on every network blip, and the resume refresh makes blips common.
-      if (events === null) return;
+      if (events === null || mine !== mapEventsGeneration) return;
       set({
         mapEvents: events.map(locateEvent),
         mapEventsLoaded: true,
