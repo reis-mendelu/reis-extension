@@ -9,6 +9,11 @@ import { LogoPreview } from './LogoPreview';
 
 const FACULTIES = Object.keys(ORGANIZERS) as FacultyKey[];
 
+function withoutInstagram(society: Society): Omit<Society, 'instagram'> {
+  const { instagram: _instagram, ...rest } = society;
+  return rest;
+}
+
 /** Add (no `society`) or edit one society. reis_admin only; RLS is the real gate. */
 export function SocietyForm({ society, onDone }: { society?: Society; onDone: () => void }) {
   const { t, language } = useTranslation();
@@ -58,27 +63,30 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
   const persist = async (autoFollowFaculty: boolean, ig: string | null): Promise<string | null> => {
     // One default per faculty: release it from the holder first, and give it
     // back if the replacement fails, so the faculty is never left without one.
-    const released = autoFollowFaculty && holder ? holder : null;
+    // The holder's instagram is left out: it is not on screen, and a stale
+    // copy of it would overwrite (or null) the stored handle.
+    const released = autoFollowFaculty && holder ? withoutInstagram(holder) : null;
     if (released) {
-      const moved = await saveSociety(
-        { ...released, autoFollowFaculty: false, instagram: released.instagram ?? null },
-        null,
-        false
-      );
+      const moved = await saveSociety({ ...released, autoFollowFaculty: false }, null, false);
       if (moved.error) return `errors.${moved.error}`;
     }
+    // Only a handle the admin actually changed is sent, for the same reason.
+    const igChanged = ig !== (society?.instagram ?? null);
     const res = await saveSociety(
-      { id, name, shortName, color, facultyKey, autoFollowFaculty, instagram: ig },
+      {
+        id,
+        name,
+        shortName,
+        color,
+        facultyKey,
+        autoFollowFaculty,
+        ...(igChanged ? { instagram: ig } : {}),
+      },
       logo,
       isNew
     );
     if (res.error) {
-      if (released)
-        await saveSociety(
-          { ...released, autoFollowFaculty: true, instagram: released.instagram ?? null },
-          null,
-          false
-        );
+      if (released) await saveSociety({ ...released, autoFollowFaculty: true }, null, false);
       return `errors.${res.error}`;
     }
     if (!isNew) return null;

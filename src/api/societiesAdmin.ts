@@ -18,7 +18,9 @@ export interface SocietyInput {
   color: string;
   facultyKey: FacultyKey;
   autoFollowFaculty: boolean;
-  instagram: string | null;
+  /** Omitted = leave the column as it is; null = clear it. An update writes
+   *  only what the admin changed, so a stale copy cannot overwrite a handle. */
+  instagram?: string | null;
 }
 
 /** Content-addressed, so a replaced logo is a new URL no CDN has cached. */
@@ -78,7 +80,7 @@ export async function insertSociety(
     auto_follow_faculty: input.autoFollowFaculty,
     logo_path: logoPath,
     sort_order: sortOrder,
-    instagram: input.instagram,
+    instagram: input.instagram ?? null,
   };
   if (DEV_SOCIETY) return devRow(row);
   const { data, error } = await adminAuthClient

@@ -55,8 +55,13 @@ describe('rowToSociety', () => {
   it('carries the Instagram handle when set', () => {
     expect(rowToSociety({ ...row, instagram: 'esnmendelubrno' })!.instagram).toBe('esnmendelubrno');
   });
-  it('leaves instagram undefined when the row has none', () => {
-    expect(rowToSociety({ ...row, instagram: null })).not.toHaveProperty('instagram');
+  // Present-but-undefined, not absent: the store merges a saved row over the
+  // cached one (`{ ...previous, ...saved }`), and an absent key kept the old
+  // handle there, so a cleared handle came back the next time the form opened.
+  it('carries an explicit undefined instagram when the row has none, so a merge clears it', () => {
+    const s = rowToSociety({ ...row, instagram: null })!;
+    expect(Object.prototype.hasOwnProperty.call(s, 'instagram')).toBe(true);
+    expect(s.instagram).toBeUndefined();
   });
 });
 

@@ -46,7 +46,9 @@ export function rowToSociety(row: SocietyRow): Society | null {
     audienceLabel: row.audience_label === 'erasmus' ? 'erasmus' : null,
     sortOrder: row.sort_order,
     isActive: row.is_active,
-    ...(row.instagram ? { instagram: row.instagram } : {}),
+    // Always present, undefined when unset: the store merges a saved row over
+    // the cached society, and an absent key would keep a cleared handle there.
+    instagram: row.instagram ?? undefined,
   };
 }
 
