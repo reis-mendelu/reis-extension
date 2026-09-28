@@ -53,13 +53,21 @@ export function useOpenNotification({
   // exactly the row a student taps twice, so this is the common case, not the
   // exotic one. The guard spans the in-flight load and nothing more.
   const openingRef = useRef(false);
+  // Which row is holding the gate. An academic row never sets this — it never
+  // reads `openingRef` at all — so it is only ever the id of the row an
+  // ordinary (card-or-fallback) activation is in flight for.
+  const openingIdRef = useRef<string | null>(null);
 
-  // ...and one activation TOTAL, not one per branch. An academic row returns
-  // before it ever reads `openingRef`, so tapping one while a linkless
-  // activation was still awaiting the map feed used to leave that first
-  // handler alive: the load lands, and it focuses the earlier event and
-  // switches to the map behind the browser the student was just handed. The
-  // later tap is the later intent, so it cancels the earlier one outright.
+  // ...and one activation per ROW, not one per branch. An academic row
+  // returns before it ever reads `openingRef`, so tapping one while a
+  // linkless activation was still awaiting the map feed used to leave that
+  // first handler alive: the load lands, and it focuses the earlier event
+  // and switches to the map behind the browser the student was just handed.
+  // A tap on a DIFFERENT row is the same situation with an ordinary row in
+  // place of an academic one — `openingIdRef` is what tells the two apart
+  // from a same-row double-tap, which must stay single-flight. Either way,
+  // the later tap is the later intent, so it cancels the earlier one
+  // outright, whichever row it landed on.
   //
   // Dismissing the surface is a supersession too — the student who closes it
   // mid-load has left, and a handler with no surface left must not drag the
@@ -87,10 +95,17 @@ export function useOpenNotification({
     if (n.link && n.associationId?.startsWith('academic_')) {
       activationRef.current += 1;
       openingRef.current = false;
+      openingIdRef.current = null;
       return openLink(n.link);
     }
-    if (openingRef.current) return;
+    // Only a second tap on the SAME row while one is in flight stays
+    // single-flight (a double-tap is one intent). A tap that lands on a
+    // DIFFERENT row while one is in flight is a new intent and supersedes it
+    // — falling through increments `activationRef` below, which is what
+    // invalidates the earlier activation once its awaited load resolves.
+    if (openingRef.current && openingIdRef.current === n.id) return;
     openingRef.current = true;
+    openingIdRef.current = n.id;
     const activation = (activationRef.current += 1);
     try {
       // `mapEventsLoaded` flips only on SUCCESS, so it is false both before
@@ -115,7 +130,10 @@ export function useOpenNotification({
     } finally {
       // Only if nothing superseded us — whoever did has already reopened the
       // gate for itself, and closing it again here would wedge the row shut.
-      if (activationRef.current === activation) openingRef.current = false;
+      if (activationRef.current === activation) {
+        openingRef.current = false;
+        openingIdRef.current = null;
+      }
     }
   };
 
