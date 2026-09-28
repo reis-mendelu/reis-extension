@@ -170,7 +170,15 @@ export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
     get().replanNotifications();
   },
 
-  setNotifyPermission: (notifyPermission) => set({ notifyPermission }),
+  setNotifyPermission: (notifyPermission) => {
+    const wasGranted = get().notifyPermission === 'granted';
+    set({ notifyPermission });
+    // A grant made in the phone's Settings reaches the store only through the
+    // resume read, and nothing else would replan then. Only on the transition:
+    // every resume re-reads the permission, and an unchanged 'granted' has
+    // nothing new to schedule.
+    if (notifyPermission === 'granted' && !wasGranted) get().replanNotifications();
+  },
 
   // Recomputes the RSVP pings and the evening digest from
   // `followed`/`muted`/`notifyPrefs`/`mapEvents`/`rsvp` and syncs them with

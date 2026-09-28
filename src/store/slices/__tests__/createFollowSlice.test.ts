@@ -377,5 +377,38 @@ describe('createFollowSlice', () => {
       expect(state.notifyPermission).toBe('granted');
       expect(IndexedDBService.set).not.toHaveBeenCalled();
     });
+
+    // A grant made in the phone's Settings is only seen by the resume read.
+    // Without a replan there, nothing was scheduled until some unrelated
+    // follow/RSVP/events change happened to trigger one.
+    it('replans when the permission becomes granted', () => {
+      const replan = vi.fn();
+      state.replanNotifications = replan;
+      state.notifyPermission = 'prompt';
+
+      state.setNotifyPermission('granted');
+
+      expect(replan).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not replan when it was already granted (every resume re-reads it)', () => {
+      const replan = vi.fn();
+      state.replanNotifications = replan;
+      state.notifyPermission = 'granted';
+
+      state.setNotifyPermission('granted');
+
+      expect(replan).not.toHaveBeenCalled();
+    });
+
+    it('does not replan on a non-granted answer', () => {
+      const replan = vi.fn();
+      state.replanNotifications = replan;
+      state.notifyPermission = 'prompt';
+
+      state.setNotifyPermission('denied');
+
+      expect(replan).not.toHaveBeenCalled();
+    });
   });
 });
