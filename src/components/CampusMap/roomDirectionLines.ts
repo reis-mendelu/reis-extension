@@ -22,12 +22,7 @@ function floorTo(level: number, t: T): string {
     : t('map.directions.floorTo.below', { n: -level });
 }
 
-function stairs(step: Extract<Step, { kind: 'core' }>, t: T): string {
-  const side = t(`map.directions.side.${step.side}`);
-  return t(step.lift ? 'map.directions.stairsOrLift' : 'map.directions.stairs', { side });
-}
-
-/** The steps in words: the entrance, the floor change by its staircase, the room. */
+/** The steps in words: the entrance, the floor change by the stairs, the room. */
 export function directionLines(steps: Step[], t: T): DirectionLine[] {
   return steps.map((step): DirectionLine => {
     if (step.kind === 'enter')
@@ -42,7 +37,9 @@ export function directionLines(steps: Step[], t: T): DirectionLine[] {
       return {
         kind: step.direction,
         primary: floorText(step.level, t),
-        secondary: stairs(step, t),
+        // No staircase is named: Q has several, and what their signs call them is
+        // not known. The floor is the instruction; the map lights the nearest stairs.
+        secondary: t('map.directions.takeStairs'),
         spoken: t(`map.directions.${step.direction}`, { floor: floorTo(step.level, t) }),
       };
     const floor = floorText(step.level, t);
@@ -54,7 +51,7 @@ export function directionLines(steps: Step[], t: T): DirectionLine[] {
   });
 }
 
-/** The way on one line, for the closed sheet: the entrance, then the staircase. */
+/** The way on one line, for the closed sheet: the entrance, then up or down the stairs. */
 export function directionSummary(steps: Step[], t: T): string {
   const [enter, next] = directionLines(steps, t);
   if (!enter) return '';

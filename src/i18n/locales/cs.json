@@ -991,8 +991,7 @@
     "directions": {
       "title": "Cesta",
       "enter": "{side} vchod",
-      "stairs": "{side} schodiště",
-      "stairsOrLift": "{side} schodiště nebo výtah",
+      "takeStairs": "po schodech",
       "up": "nahoru do {floor}",
       "down": "dolů do {floor}",
       "byStairs": "hned u schodiště",

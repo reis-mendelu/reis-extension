@@ -25,11 +25,19 @@ describe('directionLines', () => {
       {
         kind: 'up',
         primary: '3. patro',
-        secondary: 'západní schodiště nebo výtah',
+        secondary: 'po schodech',
         spoken: 'nahoru do 3. patra',
       },
       { kind: 'arrive', primary: 'Q39', secondary: '3. patro' },
     ]);
+  });
+
+  // Q has several staircases and their names on the building are not known, so
+  // no side or lift is named: the floor is the instruction, the stairs the means.
+  it('never names a staircase, its side or its lift', () => {
+    const line = directionLines(Q39, tOf(en))[1]!;
+    expect(line.secondary).toBe('take the stairs');
+    expect(line.secondary).not.toMatch(/west|lift/);
   });
 
   it('speaks the floor change in English too', () => {
@@ -44,7 +52,7 @@ describe('directionLines', () => {
     ]);
   });
 
-  it('goes down to a basement, by stairs alone, and says when the room is by them', () => {
+  it('goes down to a basement by the stairs, naming none, and says when the room is by them', () => {
     const lines = directionLines(
       [
         { kind: 'enter', side: 'east', level: 0 },
@@ -56,7 +64,7 @@ describe('directionLines', () => {
     expect(lines[1]).toEqual({
       kind: 'down',
       primary: '1. podzemní podlaží',
-      secondary: 'jižní schodiště',
+      secondary: 'po schodech',
       spoken: 'dolů do 1. podzemního podlaží',
     });
     expect(lines[2]!.secondary).toBe('1. podzemní podlaží · hned u schodiště');
@@ -65,7 +73,7 @@ describe('directionLines', () => {
 
 describe('directionSummary', () => {
   it('fits the way on one line for the closed sheet', () => {
-    expect(directionSummary(Q39, tOf(cs))).toBe('Východní vchod · ↑ západní schodiště nebo výtah');
+    expect(directionSummary(Q39, tOf(cs))).toBe('Východní vchod · ↑ po schodech');
   });
 
   it('is just the entrance for a room on the entrance floor', () => {
