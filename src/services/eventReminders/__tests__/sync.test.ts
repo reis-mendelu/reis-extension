@@ -55,7 +55,7 @@ function reminder(over: Partial<PlannedReminder> = {}): PlannedReminder {
 
 /** A pending notification as the plugin reports it; text defaults to `reminder()`'s. */
 function pending(over: Partial<PendingReminder> = {}): PendingReminder {
-  return { id: 1, at: 2_000_000, title: 'Beánie', body: 'Q01', ...over };
+  return { id: 1, at: 2_000_000, title: 'Beánie', body: 'Q01', kind: 'rsvp', ...over };
 }
 
 function deps(over: Partial<ReminderDeps> = {}): ReminderDeps {
@@ -257,7 +257,13 @@ describe('syncReminders — overlapping runs', () => {
       schedule: vi.fn(async (rs: PlannedReminder[]) => {
         device = [
           ...device,
-          ...rs.map((r) => ({ id: r.id, at: r.at, title: r.title, body: r.body })),
+          ...rs.map((r) => ({
+            id: r.id,
+            at: r.at,
+            title: r.title,
+            body: r.body,
+            kind: 'rsvp' as const,
+          })),
         ];
       }),
       cancel: vi.fn(async (ids: number[]) => {
@@ -399,9 +405,46 @@ describe('capacitorReminderDeps — listPending wiring', () => {
       ],
     });
     await expect(capacitorReminderDeps().listPending()).resolves.toEqual([
-      { id: 3, at: 4_000_000, title: 'Zítra: X', body: 'B' },
-      { id: 4, at: 5_000_000, title: 'Nové akce: Y', body: '' },
+      { id: 3, at: 4_000_000, title: 'Zítra: X', body: 'B', kind: 'rsvp' },
+      { id: 4, at: 5_000_000, title: 'Nové akce: Y', body: '', kind: 'rsvp' },
     ]);
+  });
+
+  // `keepDigests` has to tell a digest from a ping; the kind the schedule
+  // wrote into `extra` is what comes back. No extra (an older build) is a ping.
+  it('reads each pending notification’s kind back from extra', async () => {
+    getPending.mockResolvedValueOnce({
+      notifications: [
+        { id: 5, title: 'D', schedule: { at: new Date(4_000_000) }, extra: { kind: 'digest' } },
+        { id: 6, title: 'R', schedule: { at: new Date(5_000_000) }, extra: { kind: 'rsvp' } },
+        { id: 7, title: 'O', schedule: { at: new Date(6_000_000) } },
+      ],
+    });
+    const kinds = (await capacitorReminderDeps().listPending()).map((p) => p.kind);
+    expect(kinds).toEqual(['digest', 'rsvp', 'rsvp']);
+  });
+});
+
+describe('syncReminders — keepDigests', () => {
+  // While the follow list is unresolved the plan has no digests to offer, so
+  // the ones already pending are left exactly as they are.
+  it('leaves pending digests alone while still reconciling pings', async () => {
+    const d = deps({
+      listPending: vi
+        .fn()
+        .mockResolvedValue([pending({ id: 7, kind: 'digest' }), pending({ id: 8, kind: 'rsvp' })]),
+    });
+    await syncReminders([reminder({ id: 1 })], d, { keepDigests: true });
+    expect(d.cancel).toHaveBeenCalledWith([8]);
+    expect(d.schedule).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })]);
+  });
+
+  it('cancels a stale digest without the option', async () => {
+    const d = deps({
+      listPending: vi.fn().mockResolvedValue([pending({ id: 7, kind: 'digest' })]),
+    });
+    await syncReminders([], d);
+    expect(d.cancel).toHaveBeenCalledWith([7]);
   });
 });
 

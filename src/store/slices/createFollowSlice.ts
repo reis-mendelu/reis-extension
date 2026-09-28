@@ -130,7 +130,8 @@ export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
     const followed = get().followed.includes(id)
       ? get().followed.filter((x) => x !== id)
       : [...get().followed, id];
-    set({ followed });
+    // A hand-made choice is a resolved list, whatever the load came back with.
+    set({ followed, followsResolved: true });
     await persistField('followed', 'Follows.toggle', async () => {
       // CHOSEN_KEY first, deliberately. There are two writes and no transaction
       // across them, so one of the two orders has to be safe: marking "chosen"

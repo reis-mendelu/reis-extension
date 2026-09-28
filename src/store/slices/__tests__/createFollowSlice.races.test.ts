@@ -205,7 +205,10 @@ describe('createFollowSlice races', () => {
 
       const toggle = state.toggleFollow('esn');
       await new Promise((r) => setTimeout(r, 0));
-      const retry = state.retryFollowsIfUnresolved();
+      // The toggle already resolved the list, so a retry has nothing to do;
+      // a plain load still exercises the mid-write commit guard.
+      expect(state.followsResolved).toBe(true);
+      const retry = state.loadFollows();
       await new Promise((r) => setTimeout(r, 0));
 
       releaseChosen();

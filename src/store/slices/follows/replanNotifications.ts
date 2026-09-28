@@ -30,18 +30,31 @@ export function replanNotifications(get: () => AppState): void {
   if (!s.followsLoaded || !s.mapEventsLoaded || !s.rsvpLoaded) return;
   const labels = digestLabels(s.language);
   const shortName = (id: string) => s.societies[id]?.shortName ?? id;
+  const plan = planNotifications(
+    {
+      events: s.mapEvents,
+      rsvp: s.rsvp,
+      followed: s.followed,
+      muted: s.muted,
+      prefs: s.notifyPrefs,
+      shortName,
+    },
+    Date.now(),
+    labels
+  );
+  if (s.followsResolved) {
+    void syncReminders(plan);
+    return;
+  }
+  // `followsLoaded` settles even when the list could not be resolved (the boot
+  // race, a failed read), and `followed` is then `[]` rather than the
+  // student's answer. Reconciling digests from that would cancel every pending
+  // one until the retry lands; skipping the whole replan would leave RSVP
+  // pings unreconciled for a student whose list never resolves. So: the pings
+  // only, and the pending digests kept as they are.
   void syncReminders(
-    planNotifications(
-      {
-        events: s.mapEvents,
-        rsvp: s.rsvp,
-        followed: s.followed,
-        muted: s.muted,
-        prefs: s.notifyPrefs,
-        shortName,
-      },
-      Date.now(),
-      labels
-    )
+    plan.filter((n) => n.kind === 'rsvp'),
+    undefined,
+    { keepDigests: true }
   );
 }

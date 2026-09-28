@@ -30,6 +30,14 @@ export interface PendingReminder {
    *  is caught — `''` when the plugin reports none. */
   title: string;
   body: string;
+  /** From the `extra.kind` the schedule wrote; none (an older build) is a ping. */
+  kind: 'rsvp' | 'digest';
+}
+
+export interface SyncOptions {
+  /** Leave pending digests as they are: the caller's plan has none to offer
+   *  (an unresolved follow list), which is not the same as "cancel them". */
+  keepDigests?: boolean;
 }
 
 export interface ReminderDeps {
@@ -63,13 +71,14 @@ export interface ReminderDeps {
  */
 export function syncReminders(
   planned: PlannedReminder[] | PlannedNotification[],
-  deps: ReminderDeps = capacitorReminderDeps()
+  deps: ReminderDeps = capacitorReminderDeps(),
+  options: SyncOptions = {}
 ): Promise<void> {
   // Callers fire this with `void` on every RSVP change, so two runs can overlap
   // and the slower one lands last — an older plan re-scheduling a reminder the
   // newer, emptier plan had just cancelled. Chaining makes the last plan handed
   // in the last one applied, which is the only ordering that is ever correct.
-  queue = queue.then(() => reconcile(planned, deps));
+  queue = queue.then(() => reconcile(planned, deps, options));
   return queue;
 }
 
@@ -83,7 +92,8 @@ export function resetReminderQueue(): void {
 
 async function reconcile(
   planned: PlannedReminder[] | PlannedNotification[],
-  deps: ReminderDeps
+  deps: ReminderDeps,
+  options: SyncOptions
 ): Promise<void> {
   if (!deps.isSupported()) return;
 
@@ -92,6 +102,7 @@ async function reconcile(
     const wanted = new Map(planned.map((r) => [r.id, r]));
 
     const stale = pending.filter((p) => {
+      if (options.keepDigests && p.kind === 'digest') return false;
       const w = wanted.get(p.id);
       // Gone from the plan, the event moved, or the text changed — any of them
       // makes the pending one wrong, and it has to go before the replacement
@@ -223,13 +234,14 @@ export function capacitorReminderDeps(): ReminderDeps {
       const { LocalNotifications } = await load();
       const { notifications } = await LocalNotifications.getPending();
       return notifications
-        .map((n) => ({
+        .map((n): PendingReminder => ({
           id: n.id,
           at: n.schedule?.at ? new Date(n.schedule.at).getTime() : 0,
           // Normalised: a digest with nothing new has body '', and a bridge
           // that drops an empty string must not make it mismatch forever.
           title: n.title ?? '',
           body: n.body ?? '',
+          kind: (n.extra as { kind?: unknown } | undefined)?.kind === 'digest' ? 'digest' : 'rsvp',
         }))
         .filter((n) => n.at > 0);
     },
