@@ -2,10 +2,10 @@ import type { Session } from '@supabase/supabase-js';
 import type { AppSlice } from '../types';
 import { adminAuthClient } from '../../services/admin/authClient';
 import { toAuthEmail } from '../../services/admin/societyLogin';
-import { listMyPosts, type SpolkyEventRow } from '../../api/societyPosts';
+import type { SpolkyEventRow } from '../../api/societyPosts';
 import { listSocietyAccounts, type SocietyAccountRow } from '../../api/societyAccounts';
-import { fetchEventRsvps } from '../../api/eventRsvp';
 import type { RsvpCounts } from './createRsvpSlice';
+import { loadSocietyPosts } from './admin/loadSocietyPosts';
 import { logError } from '../../utils/reportError';
 
 export type AdminRole = 'association' | 'reis_admin';
@@ -21,9 +21,8 @@ export interface AdminSlice {
   /** True while the admin console has taken the whole app over. */
   adminConsoleOpen: boolean;
   societyPosts: SpolkyEventRow[];
-  /** Interest (going + interested) per event, from the same public aggregate
-   *  RPC the student card uses — no new data flow. Keyed by event id; an event
-   *  with no entry has not had its counts loaded (not "zero interest"). */
+  /** Interest (going + interested) per event, from the same public RSVP RPC —
+   *  no new data flow. No entry = not loaded yet, not "zero interest". */
   societyRsvpCounts: Record<string, RsvpCounts>;
   /** reIS admin only: every society account, for the reset/create panel. Empty
    *  for an association login, which has no business listing the others. */
@@ -230,25 +229,12 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   loadSocietyAccounts: async () => {
     set({ societyAccounts: await listSocietyAccounts() });
   },
-  loadSocietyPosts: async () => {
-    const associationId = get().adminActiveAssociationId;
-    if (!associationId) {
-      set({ societyPosts: [] });
-      get().refreshSocietyMapEvents();
-      return;
-    }
-    const posts = await listMyPosts(associationId);
-    // Two picker changes in quick succession can resolve out of order. Without
-    // this guard the slower, older response wins and the console shows one
-    // society's events under another's name — and delete/edit act on THOSE
-    // rows, so the damage is to a society nobody is looking at.
-    if (get().adminActiveAssociationId !== associationId) return;
-    set({ societyPosts: posts });
-    get().refreshSocietyMapEvents();
-    // Interest per event, from the same public aggregate RPC the student card
-    // uses — no new data flow. Not attendance: RSVPs count installs, and free
-    // events see many no-shows, which is why the label says "v reIS".
-    const { counts, ok } = await fetchEventRsvps(posts.map((p) => p.id));
-    if (ok && get().adminActiveAssociationId === associationId) set({ societyRsvpCounts: counts });
-  },
+  // Implementation lives in ./admin/loadSocietyPosts (this file's line budget).
+  loadSocietyPosts: () =>
+    loadSocietyPosts({
+      activeAssociationId: () => get().adminActiveAssociationId,
+      setPosts: (posts) => set({ societyPosts: posts }),
+      setRsvpCounts: (counts) => set({ societyRsvpCounts: counts }),
+      refreshSocietyMapEvents: () => get().refreshSocietyMapEvents(),
+    }),
 });
