@@ -1392,6 +1392,13 @@
     "askManyFew": "Your societies have {n} events in the next 14 days. Want a reminder the evening before?",
     "askMany": "Your societies have {n} events in the next 14 days. Want a reminder the evening before?",
     "enable": "Turn on",
-    "notNow": "Not now"
+    "notNow": "Not now",
+    "section": "Notifications",
+    "myEvents": "Reminders for my events",
+    "followedEvents": "Events from followed societies",
+    "newEvents": "New events",
+    "denied": "Notifications are turned off in your phone's settings.",
+    "mute": "Mute {name}",
+    "unmute": "Unmute {name}"
   }
 }

@@ -37,4 +37,21 @@ describe('notification UI is phone/iPad only', () => {
     const sheet = read('components/mobile/sheets/NotificationsSheet.tsx');
     expect(sheet).toContain('<NotifySoftAsk');
   });
+
+  // The Oznámení group and the per-society mute bells are the shared
+  // `SpolkySection`'s optional `notifications` prop (design doc §3's parity
+  // table: "no" for the extension, because it posts no notifications at all).
+  // Only the phone tab may turn it on; the desktop popup must render exactly
+  // as it did before this prop existed.
+  it('only ProfileScreen passes `notifications` to SpolkySection', () => {
+    const profileScreen = read('components/mobile/screens/ProfileScreen.tsx');
+    expect(profileScreen).toMatch(/<SpolkySection[\s\S]*?\bnotifications\b/);
+  });
+
+  it('ProfilePopup (desktop) does not pass `notifications` to SpolkySection', () => {
+    const profilePopup = read('components/Sidebar/ProfilePopup.tsx');
+    const match = profilePopup.match(/<SpolkySection[\s\S]*?\/>/);
+    expect(match).not.toBeNull();
+    expect(match![0]).not.toMatch(/\bnotifications\b/);
+  });
 });
