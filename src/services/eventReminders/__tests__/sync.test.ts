@@ -39,6 +39,7 @@ import {
   readNotificationPermission,
   capacitorReminderDeps,
   type ReminderDeps,
+  type PendingReminder,
 } from '../sync';
 import { logError } from '../../../utils/reportError';
 import {
@@ -50,6 +51,11 @@ import {
 
 function reminder(over: Partial<PlannedReminder> = {}): PlannedReminder {
   return { id: 1, eventId: 'e1', title: 'Beánie', body: 'Q01', at: 2_000_000, ...over };
+}
+
+/** A pending notification as the plugin reports it; text defaults to `reminder()`'s. */
+function pending(over: Partial<PendingReminder> = {}): PendingReminder {
+  return { id: 1, at: 2_000_000, title: 'Beánie', body: 'Q01', ...over };
 }
 
 function deps(over: Partial<ReminderDeps> = {}): ReminderDeps {
@@ -101,29 +107,52 @@ describe('syncReminders', () => {
 
   // Rescheduling every load would re-post the same notification; the plugin
   // keys on id, so an already-pending reminder is left alone.
-  it('leaves an identical pending reminder alone', async () => {
-    const d = deps({ listPending: vi.fn().mockResolvedValue([{ id: 1, at: 2_000_000 }]) });
+  it('keeps a pending notification whose id, time and text match', async () => {
+    const d = deps({ listPending: vi.fn().mockResolvedValue([pending()]) });
     await syncReminders([reminder()], d);
     expect(d.schedule).not.toHaveBeenCalled();
     expect(d.cancel).not.toHaveBeenCalled();
   });
 
   it('reschedules when the event time moved', async () => {
-    const d = deps({ listPending: vi.fn().mockResolvedValue([{ id: 1, at: 999 }]) });
+    const d = deps({ listPending: vi.fn().mockResolvedValue([pending({ at: 999 })]) });
     await syncReminders([reminder({ at: 2_000_000 })], d);
     expect(d.schedule).toHaveBeenCalledWith([expect.objectContaining({ id: 1, at: 2_000_000 })]);
+  });
+
+  // A digest keeps its id and fire time when its content changes — a new
+  // event published, a society muted, the language switched — so matching on
+  // id+at alone froze the text at whatever the first schedule said.
+  it('reschedules when the text changed', async () => {
+    const d = deps({
+      listPending: vi
+        .fn()
+        .mockResolvedValue([
+          pending({ id: 1, title: 'Zítra: Old (ESN)' }),
+          pending({ id: 2, body: '+ 1 nová akce od ESN' }),
+        ]),
+    });
+    await syncReminders(
+      [reminder({ id: 1, title: 'Zítra: New (ESN)' }), reminder({ id: 2, body: '' })],
+      d
+    );
+    expect(d.cancel).toHaveBeenCalledWith([1, 2]);
+    expect(d.schedule).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 1, title: 'Zítra: New (ESN)' }),
+      expect.objectContaining({ id: 2, body: '' }),
+    ]);
   });
 
   // Un-RSVPing has to take the notification away, or the student gets pinged
   // about something they explicitly backed out of.
   it('cancels a reminder that is no longer planned', async () => {
-    const d = deps({ listPending: vi.fn().mockResolvedValue([{ id: 7, at: 2_000_000 }]) });
+    const d = deps({ listPending: vi.fn().mockResolvedValue([pending({ id: 7 })]) });
     await syncReminders([], d);
     expect(d.cancel).toHaveBeenCalledWith([7]);
   });
 
   it('cancels and schedules in the same pass', async () => {
-    const d = deps({ listPending: vi.fn().mockResolvedValue([{ id: 7, at: 1 }]) });
+    const d = deps({ listPending: vi.fn().mockResolvedValue([pending({ id: 7, at: 1 })]) });
     await syncReminders([reminder({ id: 1 })], d);
     expect(d.cancel).toHaveBeenCalledWith([7]);
     expect(d.schedule).toHaveBeenCalledWith([expect.objectContaining({ id: 1 })]);
@@ -187,7 +216,7 @@ describe('syncReminders', () => {
     it('still cancels stale reminders without permission', async () => {
       const d = deps({
         checkPermission: vi.fn().mockResolvedValue('denied'),
-        listPending: vi.fn().mockResolvedValue([{ id: 7, at: 1 }]),
+        listPending: vi.fn().mockResolvedValue([pending({ id: 7, at: 1 })]),
       });
       await syncReminders([], d);
       expect(d.cancel).toHaveBeenCalledWith([7]);
@@ -215,7 +244,7 @@ describe('syncReminders — overlapping runs', () => {
   it('applies the newest plan last even when an older run is slower', async () => {
     // A stand-in for the device's own pending list, so the second run sees what
     // the first actually did rather than a fixed empty array.
-    let device: { id: number; at: number }[] = [];
+    let device: PendingReminder[] = [];
     let releaseFirst!: () => void;
     const gate = new Promise<void>((r) => (releaseFirst = r));
     let call = 0;
@@ -226,7 +255,10 @@ describe('syncReminders — overlapping runs', () => {
         return device;
       }),
       schedule: vi.fn(async (rs: PlannedReminder[]) => {
-        device = [...device, ...rs.map((r) => ({ id: r.id, at: r.at }))];
+        device = [
+          ...device,
+          ...rs.map((r) => ({ id: r.id, at: r.at, title: r.title, body: r.body })),
+        ];
       }),
       cancel: vi.fn(async (ids: number[]) => {
         device = device.filter((p) => !ids.includes(p.id));
@@ -352,6 +384,24 @@ describe('capacitorReminderDeps — schedule wiring', () => {
         }),
       ],
     });
+  });
+});
+
+describe('capacitorReminderDeps — listPending wiring', () => {
+  // The text is what reconcile compares to spot a changed digest, so it has
+  // to come back from the plugin — normalised, because an empty body can be
+  // dropped on the way through the bridge and must still equal ''.
+  it('returns each pending notification’s title and body', async () => {
+    getPending.mockResolvedValueOnce({
+      notifications: [
+        { id: 3, title: 'Zítra: X', body: 'B', schedule: { at: new Date(4_000_000) } },
+        { id: 4, title: 'Nové akce: Y', schedule: { at: new Date(5_000_000) } },
+      ],
+    });
+    await expect(capacitorReminderDeps().listPending()).resolves.toEqual([
+      { id: 3, at: 4_000_000, title: 'Zítra: X', body: 'B' },
+      { id: 4, at: 5_000_000, title: 'Nové akce: Y', body: '' },
+    ]);
   });
 });
 

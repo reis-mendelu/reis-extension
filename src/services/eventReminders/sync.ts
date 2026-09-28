@@ -26,6 +26,10 @@ function shouldAsk(p: ReminderPermission): boolean {
 export interface PendingReminder {
   id: number;
   at: number;
+  /** Read back so a digest whose content changed under the same id and time
+   *  is caught — `''` when the plugin reports none. */
+  title: string;
+  body: string;
 }
 
 export interface ReminderDeps {
@@ -89,9 +93,12 @@ async function reconcile(
 
     const stale = pending.filter((p) => {
       const w = wanted.get(p.id);
-      // Gone from the plan, or the event moved — either way the pending one is
-      // wrong and has to go before the replacement is posted.
-      return !w || w.at !== p.at;
+      // Gone from the plan, the event moved, or the text changed — any of them
+      // makes the pending one wrong, and it has to go before the replacement
+      // is posted. The text matters because a digest keeps its id and time
+      // when a new event lands or a society is muted; an RSVP ping's text is
+      // unchanged by an upgrade, so those are still left alone.
+      return !w || w.at !== p.at || w.title !== p.title || w.body !== p.body;
     });
     if (stale.length > 0) await deps.cancel(stale.map((p) => p.id));
 
@@ -216,7 +223,14 @@ export function capacitorReminderDeps(): ReminderDeps {
       const { LocalNotifications } = await load();
       const { notifications } = await LocalNotifications.getPending();
       return notifications
-        .map((n) => ({ id: n.id, at: n.schedule?.at ? new Date(n.schedule.at).getTime() : 0 }))
+        .map((n) => ({
+          id: n.id,
+          at: n.schedule?.at ? new Date(n.schedule.at).getTime() : 0,
+          // Normalised: a digest with nothing new has body '', and a bridge
+          // that drops an empty string must not make it mismatch forever.
+          title: n.title ?? '',
+          body: n.body ?? '',
+        }))
         .filter((n) => n.at > 0);
     },
     schedule: async (reminders) => {

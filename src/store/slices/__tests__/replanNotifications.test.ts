@@ -145,6 +145,29 @@ describe('replanNotifications', () => {
     expect(syncReminders).toHaveBeenCalledWith([]);
   });
 
+  // Same id and same fire time, different text: the reconcile can only replace
+  // the pending digest if the plan actually carries the new wording.
+  it('muting one of two societies changes the pending digest text', async () => {
+    useAppStore.setState({
+      followsLoaded: true,
+      followed: ['esn', 'isc'],
+      mapEvents: [ev(), ev({ id: 'ev-isc', title: 'Board games', societyId: 'isc' })],
+    });
+    useAppStore.getState().replanNotifications();
+    await useAppStore.getState().toggleMute('isc');
+
+    const digests = syncReminders.mock.calls.map(
+      (c) => (c[0] as Array<{ kind: string; id: number; at: number; title: string }>)[0]
+    );
+    expect(digests).toHaveLength(2);
+    const [before, after] = digests;
+    expect(after?.id).toBe(before?.id);
+    expect(after?.at).toBe(before?.at);
+    expect(before?.title).toContain('Board games');
+    expect(after?.title).not.toContain('Board games');
+    expect(after?.title).toContain('Pub Quiz');
+  });
+
   it('setRsvp on a new answer asks for notification permission and replans', async () => {
     useAppStore.setState({
       followsLoaded: true,
