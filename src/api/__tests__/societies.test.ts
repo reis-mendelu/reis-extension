@@ -6,7 +6,13 @@ vi.mock('../../services/spolky/supabaseClient', () => ({
 }));
 vi.mock('../../utils/reportError', () => ({ logError: vi.fn() }));
 
-import { rowToSociety, fetchSocieties, logoPublicUrl, type SocietyRow } from '../societies';
+import {
+  rowToSociety,
+  fetchSocieties,
+  logoPublicUrl,
+  SOCIETY_COLUMNS,
+  type SocietyRow,
+} from '../societies';
 
 const row: SocietyRow = {
   id: 'supef',
@@ -19,6 +25,7 @@ const row: SocietyRow = {
   logo_path: 'supef/0123456789abcdef0123456789abcdef.png',
   sort_order: 20,
   is_active: true,
+  instagram: null,
 };
 
 beforeEach(() => order.mockReset());
@@ -44,6 +51,20 @@ describe('rowToSociety', () => {
   });
   it('drops a row whose faculty the client does not know', () => {
     expect(rowToSociety({ ...row, faculty_key: 'xyz' })).toBeNull();
+  });
+  it('carries the Instagram handle when set', () => {
+    expect(rowToSociety({ ...row, instagram: 'esnmendelubrno' })!.instagram).toBe(
+      'esnmendelubrno'
+    );
+  });
+  it('leaves instagram undefined when the row has none', () => {
+    expect(rowToSociety({ ...row, instagram: null })).not.toHaveProperty('instagram');
+  });
+});
+
+describe('SOCIETY_COLUMNS', () => {
+  it('includes instagram', () => {
+    expect(SOCIETY_COLUMNS).toContain('instagram');
   });
 });
 

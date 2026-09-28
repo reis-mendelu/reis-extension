@@ -43,6 +43,7 @@ const input = {
   color: '#123456',
   facultyKey: 'zf' as const,
   autoFollowFaculty: false,
+  instagram: null,
 };
 const OLD_PATH = 'supef/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.png';
 const NEW_PATH = 'supef/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.png';

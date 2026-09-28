@@ -76,6 +76,7 @@ describe('insertSociety', () => {
         color: '#123456',
         facultyKey: 'zf',
         autoFollowFaculty: false,
+        instagram: null,
       },
       'kino/aa.png',
       90
@@ -93,6 +94,7 @@ describe('insertSociety', () => {
           color: '#123456',
           facultyKey: 'zf',
           autoFollowFaculty: false,
+          instagram: null,
         },
         'esn/aa.png',
         1

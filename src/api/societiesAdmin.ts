@@ -18,6 +18,7 @@ export interface SocietyInput {
   color: string;
   facultyKey: FacultyKey;
   autoFollowFaculty: boolean;
+  instagram: string | null;
 }
 
 /** Content-addressed, so a replaced logo is a new URL no CDN has cached. */
@@ -58,6 +59,7 @@ function devRow(row: Partial<SocietyRow> & { id: string }): Society | null {
     logo_path: null,
     sort_order: 0,
     is_active: true,
+    instagram: null,
     ...row,
   });
 }
@@ -76,6 +78,7 @@ export async function insertSociety(
     auto_follow_faculty: input.autoFollowFaculty,
     logo_path: logoPath,
     sort_order: sortOrder,
+    instagram: input.instagram,
   };
   if (DEV_SOCIETY) return devRow(row);
   const { data, error } = await adminAuthClient

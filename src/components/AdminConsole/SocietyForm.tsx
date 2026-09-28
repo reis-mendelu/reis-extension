@@ -3,7 +3,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { createSocietyAccount } from '../../api/societyAccounts';
 import { ORGANIZERS, type FacultyKey, type Society } from '../../types/events';
-import { autoFollowHolder, validateSocietyDraft } from './societyFormRules';
+import { autoFollowHolder, normalizeInstagram, validateSocietyDraft } from './societyFormRules';
 import { GeneratedPasswordDialog } from './GeneratedPasswordDialog';
 import { LogoPreview } from './LogoPreview';
 
@@ -22,6 +22,7 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
   const [color, setColor] = useState(society?.color ?? '#0046a0');
   const [facultyKey, setFacultyKey] = useState<FacultyKey>(society?.facultyKey ?? 'mendelu');
   const [autoFollow, setAutoFollow] = useState(society?.autoFollowFaculty ?? false);
+  const [instagram, setInstagram] = useState(society?.instagram ?? '');
   const [logo, setLogo] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -37,10 +38,12 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
       catalog
     );
     if (invalid) return setError(invalid);
+    const ig = normalizeInstagram(instagram);
+    if (ig === 'invalid') return setError('errors.instagram');
     setBusy(true);
     setError(null);
     try {
-      const failure = await persist(autoFollow && facultyKey !== 'mendelu');
+      const failure = await persist(autoFollow && facultyKey !== 'mendelu', ig);
       if (failure) setError(failure);
       else if (!isNew) onDone();
     } catch {
@@ -52,21 +55,33 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
   };
 
   /** Returns an i18n error key, or null when everything saved. */
-  const persist = async (autoFollowFaculty: boolean): Promise<string | null> => {
+  const persist = async (
+    autoFollowFaculty: boolean,
+    ig: string | null
+  ): Promise<string | null> => {
     // One default per faculty: release it from the holder first, and give it
     // back if the replacement fails, so the faculty is never left without one.
     const released = autoFollowFaculty && holder ? holder : null;
     if (released) {
-      const moved = await saveSociety({ ...released, autoFollowFaculty: false }, null, false);
+      const moved = await saveSociety(
+        { ...released, autoFollowFaculty: false, instagram: released.instagram ?? null },
+        null,
+        false
+      );
       if (moved.error) return `errors.${moved.error}`;
     }
     const res = await saveSociety(
-      { id, name, shortName, color, facultyKey, autoFollowFaculty },
+      { id, name, shortName, color, facultyKey, autoFollowFaculty, instagram: ig },
       logo,
       isNew
     );
     if (res.error) {
-      if (released) await saveSociety({ ...released, autoFollowFaculty: true }, null, false);
+      if (released)
+        await saveSociety(
+          { ...released, autoFollowFaculty: true, instagram: released.instagram ?? null },
+          null,
+          false
+        );
       return `errors.${res.error}`;
     }
     if (!isNew) return null;
@@ -116,6 +131,16 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
           maxLength={24}
           onChange={(e) => setShortName(e.target.value)}
         />
+      </label>
+      <label className={field}>
+        <span className="opacity-70">{t('admin.societies.instagram')}</span>
+        <input
+          className="input input-bordered w-full"
+          value={instagram}
+          placeholder="esnmendelubrno"
+          onChange={(e) => setInstagram(e.target.value)}
+        />
+        <span className="text-xs text-base-content/70">{t('admin.societies.instagramHint')}</span>
       </label>
       <label className={field}>
         <span className="opacity-70">{t('admin.societies.color')}</span>

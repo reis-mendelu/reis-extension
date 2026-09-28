@@ -5,6 +5,17 @@ import { isUsablePinColor } from '../../utils/societies/pinColor';
 // rendering the form.
 
 const ID_RE = /^[a-z0-9][a-z0-9_-]*$/;
+const HANDLE_RE = /^[A-Za-z0-9._]{1,30}$/;
+
+/** The handle to store, null for none, or 'invalid'. Same rule as the DB CHECK. */
+export function normalizeInstagram(raw: string): string | null | 'invalid' {
+  let s = raw.trim();
+  if (!s) return null;
+  const url = /^https?:\/\/(?:www\.)?instagram\.com\/([^/?#]+)/i.exec(s);
+  if (url) s = url[1]!;
+  s = s.replace(/^@/, '');
+  return HANDLE_RE.test(s) ? s : 'invalid';
+}
 
 export interface SocietyDraft {
   id: string;

@@ -17,10 +17,11 @@ export interface SocietyRow {
   logo_path: string | null;
   sort_order: number;
   is_active: boolean;
+  instagram: string | null;
 }
 
 export const SOCIETY_COLUMNS =
-  'id, name, short_name, color, faculty_key, auto_follow_faculty, audience_label, logo_path, sort_order, is_active';
+  'id, name, short_name, color, faculty_key, auto_follow_faculty, audience_label, logo_path, sort_order, is_active, instagram';
 
 export function logoPublicUrl(path: string): string {
   return `${SUPABASE_URL}/storage/v1/object/public/${SOCIETY_LOGO_BUCKET}/${path}`;
@@ -45,6 +46,7 @@ export function rowToSociety(row: SocietyRow): Society | null {
     audienceLabel: row.audience_label === 'erasmus' ? 'erasmus' : null,
     sortOrder: row.sort_order,
     isActive: row.is_active,
+    ...(row.instagram ? { instagram: row.instagram } : {}),
   };
 }
 
