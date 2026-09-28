@@ -194,6 +194,8 @@ describe('fetchMapEvents — the catalog', () => {
     expect(or).toHaveBeenCalledWith(
       expect.stringMatching(/^date\.gte\.\d{4}-\d{2}-\d{2},end_date\.gte\.\d{4}-\d{2}-\d{2}$/)
     );
+    // Soonest first is part of the catalog contract; the list relies on it.
+    expect(order).toHaveBeenCalledWith('date', { ascending: true });
     expect(events?.map((e) => e.id)).toEqual(['far']);
   });
 

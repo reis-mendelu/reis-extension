@@ -6,8 +6,8 @@ const sampleRow = {
   title: 'T',
   body: 'B',
   url: 'http://x',
-  created_at: '2026-07-01T00:00:00Z',
-  date: '2026-07-10',
+  created_at: '2026-09-01T00:00:00Z',
+  date: '2026-09-30',
   end_date: null,
 };
 
@@ -17,9 +17,23 @@ const fallbackRow = {
   title: 'Fallback Title',
   body: null,
   url: null,
-  created_at: '2026-07-02T00:00:00Z',
-  date: '2026-07-11',
+  created_at: '2026-09-02T00:00:00Z',
+  date: '2026-10-05',
   end_date: null,
+};
+
+// A trip that began before today and is still running: only the
+// `end_date >= today` branch of the query returns it, and its expiry is the
+// END date, not the start.
+const runningTripRow = {
+  id: 'e3',
+  association_id: 'esn',
+  title: 'Výlet do Vídně',
+  body: 'Třídenní výlet',
+  url: null,
+  created_at: '2026-09-10T00:00:00Z',
+  date: '2026-09-26',
+  end_date: '2026-09-30',
 };
 
 const from = vi.fn();
@@ -49,7 +63,7 @@ function makeBuilder() {
     },
     limit: (...args: unknown[]) => {
       limit(...args);
-      return Promise.resolve({ data: [sampleRow, fallbackRow], error: null });
+      return Promise.resolve({ data: [runningTripRow, sampleRow, fallbackRow], error: null });
     },
   };
   return builder;
@@ -105,14 +119,25 @@ describe('fetchNotifications (repointed to spolky_events)', () => {
 
     expect(result).toEqual([
       {
+        id: 'e3',
+        associationId: 'esn',
+        title: 'Výlet do Vídně',
+        body: 'Třídenní výlet',
+        link: undefined,
+        createdAt: '2026-09-10T00:00:00Z',
+        expiresAt: '2026-09-30',
+        startsAt: '2026-09-26',
+        priority: 'normal',
+      },
+      {
         id: 'e1',
         associationId: 'supef',
         title: 'T',
         body: 'B',
         link: 'http://x',
-        createdAt: '2026-07-01T00:00:00Z',
-        expiresAt: '2026-07-10',
-        startsAt: '2026-07-10',
+        createdAt: '2026-09-01T00:00:00Z',
+        expiresAt: '2026-09-30',
+        startsAt: '2026-09-30',
         priority: 'normal',
       },
       {
@@ -121,9 +146,9 @@ describe('fetchNotifications (repointed to spolky_events)', () => {
         title: 'Fallback Title',
         body: 'Fallback Title',
         link: undefined,
-        createdAt: '2026-07-02T00:00:00Z',
-        expiresAt: '2026-07-11',
-        startsAt: '2026-07-11',
+        createdAt: '2026-09-02T00:00:00Z',
+        expiresAt: '2026-10-05',
+        startsAt: '2026-10-05',
         priority: 'normal',
       },
     ]);

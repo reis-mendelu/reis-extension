@@ -87,6 +87,8 @@ const triggerIntersection = (element: Element, isIntersecting = true) => {
   }
 };
 
+const realLoadMapEvents = useAppStore.getState().loadMapEvents;
+
 describe('NotificationFeed', () => {
   const mockNotifications = [
     {
@@ -113,6 +115,9 @@ describe('NotificationFeed', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (spolkyService.fetchNotifications as any).mockResolvedValue(mockNotifications);
+    // A test below stubs the store's loader; put the real one back so the
+    // stub cannot leak into later tests through the singleton store.
+    useAppStore.setState({ loadMapEvents: realLoadMapEvents });
     (IndexedDBService.get as any).mockResolvedValue(null);
     useAppStore.setState({
       notifications: {

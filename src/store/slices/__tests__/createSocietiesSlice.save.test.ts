@@ -165,8 +165,11 @@ describe('saveSociety: instagram', () => {
   it('an input without instagram leaves the column out of the update', async () => {
     updateSociety.mockResolvedValue(rowToSociety({ ...zfRow, instagram: 'zfig' }));
     const { instagram: _omit, ...noInstagram } = zfEdit;
-    await withHandle().getState().saveSociety(noInstagram, null, false);
+    const store = withHandle();
+    await store.getState().saveSociety(noInstagram, null, false);
     expect(updateSociety.mock.calls[0]![1]).not.toHaveProperty('instagram');
+    // And the store keeps the untouched handle the database kept.
+    expect(store.getState().societies.zf!.instagram).toBe('zfig');
   });
 
   it('a new handle is written', async () => {

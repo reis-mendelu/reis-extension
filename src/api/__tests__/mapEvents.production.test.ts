@@ -72,8 +72,8 @@ describe('toMapEvent against a real production row', () => {
   it('would show it to students had it not finished yet', () => {
     // Same row, moved into the future — proves the finished check is what hides
     // it, not a mapping failure upstream. The catalog has no upper bound any
-    // more, so a far-future date is enough.
-    expect(isFinishedEvent({ date: '2026-08-14', endDate: null }, new Date('2026-08-11'))).toBe(
+    // more, so a date months out — past the old 14-day window — still shows.
+    expect(isFinishedEvent({ date: '2026-12-20', endDate: null }, new Date('2026-08-11'))).toBe(
       false
     );
   });

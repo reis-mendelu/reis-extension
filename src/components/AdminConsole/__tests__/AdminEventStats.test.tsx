@@ -64,6 +64,8 @@ describe('AdminEventList — views and clicks per event', () => {
       adminActiveAssociationId: 'supef',
       language: 'en',
       composerOpen: false,
+      // Reset like the rest: the store is a singleton and a test below sets it.
+      societyRsvpCounts: {},
       societyMapEvents: [ev('old', dates.old), ev('live', dates.live), ev('sched', dates.sched)],
       societyPosts: [
         row('old', dates.old, 13, 8),
