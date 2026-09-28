@@ -13,6 +13,13 @@ import {
   type NotifyPrefs,
 } from './follows/loadFollows';
 import { replanNotifications } from './follows/replanNotifications';
+import {
+  runExclusiveLoad,
+  awaitInFlightLoad,
+  bumpVersion,
+  snapshotVersions,
+  isUnchangedSince,
+} from './follows/followLoadState';
 
 export type { NotifyPrefs };
 export { DEFAULT_PREFS };
@@ -62,18 +69,6 @@ export interface FollowSlice {
   replanNotifications: () => void;
 }
 
-// One in-flight LOAD at a time, shared by both `loadFollows()` and
-// `retryFollowsIfUnresolved()` — module-level rather than per-slice-instance
-// state because there is exactly one store, and any two callers landing close
-// together must await the SAME load rather than each kick off its own. That
-// used to be true only of two concurrent `retryFollowsIfUnresolved()` calls;
-// the boot call site (`void loadFollows()` in useAppStore.ts) bypassed this
-// entirely, so a sync arriving mid-boot could still start a second concurrent
-// load racing it. Routing `loadFollows()` itself through this flag closes
-// that gap for every caller, not just retries. Cleared in `finally` so a
-// later, genuinely new load can still run once this one settles.
-let followsLoadInFlight: Promise<void> | null = null;
-
 export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
   followed: [],
   followsLoaded: false,
@@ -84,43 +79,59 @@ export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
   notifyPermission: null,
 
   loadFollows: async () => {
-    if (!followsLoadInFlight) {
-      followsLoadInFlight = (async () => {
-        const [list, notify] = await Promise.all([
-          loadFollowedList(get().societies),
-          loadNotifySettings(),
-        ]);
-        set({
-          followed: list ?? [],
-          followsLoaded: true,
-          // `null` means loadFollowedList could not resolve anything this time
-          // (getUserParams() came back empty — the boot race) rather than that
-          // this student genuinely follows nothing.
-          followsResolved: list !== null,
-          muted: notify.muted,
-          notifyPrefs: notify.prefs,
-          permissionAsked: notify.asked,
-        });
-        get().replanNotifications();
-      })().finally(() => {
-        followsLoadInFlight = null;
-      });
-    }
-    await followsLoadInFlight;
+    await runExclusiveLoad(async () => {
+      // Snapshot BEFORE the reads start: a mutation that lands while they're
+      // in flight bumps its field's version, and the commit below sees the
+      // mismatch and skips that field rather than overwriting it with what
+      // it read here.
+      const versionsAtStart = snapshotVersions();
+      const [list, notify] = await Promise.all([
+        loadFollowedList(get().societies),
+        loadNotifySettings(),
+      ]);
+
+      const followedUnchanged = isUnchangedSince('followed', versionsAtStart);
+      const patch: Partial<FollowSlice> = {
+        followsLoaded: true,
+        // `null` means loadFollowedList could not resolve anything this time
+        // (getUserParams() came back empty — the boot race) rather than that
+        // this student genuinely follows nothing. A toggle that landed on
+        // `followed` during this load is just as much a resolved answer — it
+        // is a hand-made choice, already persisted with CHOSEN_KEY — so it
+        // must not leave a later `retryFollowsIfUnresolved()` blocked
+        // forever waiting for a list that will never come.
+        followsResolved: list !== null || !followedUnchanged,
+      };
+      if (followedUnchanged) patch.followed = list ?? [];
+      if (isUnchangedSince('muted', versionsAtStart)) patch.muted = notify.muted;
+      if (isUnchangedSince('notifyPrefs', versionsAtStart)) patch.notifyPrefs = notify.prefs;
+      if (isUnchangedSince('permissionAsked', versionsAtStart)) {
+        patch.permissionAsked = notify.asked;
+      }
+
+      set(patch);
+      get().replanNotifications();
+    });
   },
 
   retryFollowsIfUnresolved: async () => {
     if (get().followsResolved) return;
-    // Delegates entirely to `loadFollows()`, which now does its own
-    // deduplication — see `followsLoadInFlight` above.
+    // Delegates entirely to `loadFollows()`, which dedupes via `runExclusiveLoad`.
     await get().loadFollows();
   },
 
+  // Every mutation below awaits any in-flight `loadFollows()` first — the
+  // race this file exists to close: computing from the cold-boot `[]`
+  // default and persisting a one-element list over the student's real saved
+  // follows. `bumpVersion` afterwards protects the rarer case where a load
+  // starts and reads its stale snapshot *during* this mutation's own commit.
   toggleFollow: async (id) => {
+    await awaitInFlightLoad();
     const followed = get().followed.includes(id)
       ? get().followed.filter((x) => x !== id)
       : [...get().followed, id];
     set({ followed });
+    bumpVersion('followed');
     try {
       // CHOSEN_KEY first, deliberately. There are two writes and no transaction
       // across them, so one of the two orders has to be safe: marking "chosen"
@@ -137,10 +148,12 @@ export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
   },
 
   toggleMute: async (id) => {
+    await awaitInFlightLoad();
     const muted = get().muted.includes(id)
       ? get().muted.filter((x) => x !== id)
       : [...get().muted, id];
     set({ muted });
+    bumpVersion('muted');
     try {
       await IndexedDBService.set('meta', MUTED_KEY, muted);
     } catch (err) {
@@ -150,8 +163,10 @@ export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
   },
 
   setNotifyPref: async (key, value) => {
+    await awaitInFlightLoad();
     const notifyPrefs = { ...get().notifyPrefs, [key]: value };
     set({ notifyPrefs });
+    bumpVersion('notifyPrefs');
     try {
       await IndexedDBService.set('meta', NOTIFY_PREFS_KEY, notifyPrefs);
     } catch (err) {
@@ -161,7 +176,9 @@ export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
   },
 
   markPermissionAsked: async () => {
+    await awaitInFlightLoad();
     set({ permissionAsked: true });
+    bumpVersion('permissionAsked');
     try {
       await IndexedDBService.set('meta', NOTIFY_ASKED_KEY, true);
     } catch (err) {

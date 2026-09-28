@@ -3,7 +3,7 @@ import type { Mock } from 'vitest';
 import { createFollowSlice, DEFAULT_PREFS } from '../createFollowSlice';
 import type { FollowSlice } from '../createFollowSlice';
 import { IndexedDBService } from '../../../services/storage';
-import { STORAGE_KEY } from '../follows/loadFollows';
+import { STORAGE_KEY, MUTED_KEY } from '../follows/loadFollows';
 import { BUNDLED_SOCIETIES } from '../../../data/societies';
 import type { Society } from '../../../types/events';
 
@@ -409,6 +409,98 @@ describe('createFollowSlice', () => {
       state.setNotifyPermission('denied');
 
       expect(replan).not.toHaveBeenCalled();
+    });
+  });
+
+  // CodeRabbit (PR #475, Major): loadFollows() awaits IndexedDB reads and then
+  // sets followed/muted/notifyPrefs/permissionAsked wholesale. A user action
+  // during that window — toggleFollow before the first load completes, most
+  // dangerously — used to compute from the pre-load empty defaults and PERSIST
+  // a one-element list, wiping the student's real saved follows.
+  describe('a mutation racing loadFollows()', () => {
+    it('(a) toggleFollow while the boot load is still reading: followed ends up as the saved list plus the toggle, and disk holds the merged list, not a one-element list', async () => {
+      let resolveSavedList!: (v: string[] | undefined) => void;
+      vi.mocked(IndexedDBService.get).mockImplementation((store: string, key: string) => {
+        if (store === 'meta' && key === STORAGE_KEY) {
+          return new Promise<string[] | undefined>((resolve) => {
+            resolveSavedList = resolve;
+          });
+        }
+        return Promise.resolve(undefined);
+      });
+
+      const bootLoad = state.loadFollows();
+      const toggle = state.toggleFollow('esn');
+
+      resolveSavedList(['supef']);
+      await Promise.all([bootLoad, toggle]);
+
+      expect(state.followed).toEqual(['supef', 'esn']);
+      const lastWrite = vi
+        .mocked(IndexedDBService.set)
+        .mock.calls.filter((c) => c[1] === STORAGE_KEY)
+        .pop();
+      expect(lastWrite?.[2]).toEqual(['supef', 'esn']);
+    });
+
+    it('(b) toggleMute during a pending retryFollowsIfUnresolved: the mute survives the load commit', async () => {
+      let resolveMuted!: (v: string[] | undefined) => void;
+      vi.mocked(IndexedDBService.get).mockImplementation((store: string, key: string) => {
+        if (store === 'meta' && key === MUTED_KEY) {
+          return new Promise<string[] | undefined>((resolve) => {
+            resolveMuted = resolve;
+          });
+        }
+        return Promise.resolve(undefined);
+      });
+      mockGetUserParams.mockResolvedValue(null);
+
+      const retry = state.retryFollowsIfUnresolved();
+      const toggle = state.toggleMute('zf');
+
+      resolveMuted([]);
+      await Promise.all([retry, toggle]);
+
+      expect(state.muted).toEqual(['zf']);
+      const lastWrite = vi
+        .mocked(IndexedDBService.set)
+        .mock.calls.filter((c) => c[1] === MUTED_KEY)
+        .pop();
+      expect(lastWrite?.[2]).toEqual(['zf']);
+    });
+
+    it('(c) setNotifyPref during a pending load of an UNRESOLVED followed list: followsResolved stays false so a later retry can still run', async () => {
+      mockGetUserParams.mockResolvedValue(null);
+
+      const bootLoad = state.loadFollows();
+      const pref = state.setNotifyPref('myEvents', false);
+      await Promise.all([bootLoad, pref]);
+
+      expect(state.followsResolved).toBe(false);
+      expect(state.notifyPrefs).toEqual({ ...DEFAULT_PREFS, myEvents: false });
+    });
+
+    it('(d) no concurrent mutation: load commits every field exactly as before', async () => {
+      vi.mocked(IndexedDBService.get).mockImplementation((store: string, key: string) => {
+        if (store === 'meta' && key === STORAGE_KEY) return Promise.resolve(['supef']);
+        if (store === 'meta' && key === MUTED_KEY) return Promise.resolve(['zf']);
+        if (store === 'meta' && key === 'reis_notify_prefs')
+          return Promise.resolve({ myEvents: false, followedEvents: true, newEvents: false });
+        if (store === 'meta' && key === 'reis_notify_asked') return Promise.resolve(true);
+        return Promise.resolve(undefined);
+      });
+
+      await state.loadFollows();
+
+      expect(state.followed).toEqual(['supef']);
+      expect(state.followsResolved).toBe(true);
+      expect(state.muted).toEqual(['zf']);
+      expect(state.notifyPrefs).toEqual({
+        myEvents: false,
+        followedEvents: true,
+        newEvents: false,
+      });
+      expect(state.permissionAsked).toBe(true);
     });
   });
 });
