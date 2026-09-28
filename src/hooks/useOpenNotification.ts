@@ -20,12 +20,11 @@ import { useAppStore } from '../store/useAppStore';
  * with the venue, the RSVP and the event's own URL on it. `showMap` is the only
  * part that differs per tree: a mobile tab on the phone, a view in the extension.
  *
- * The link keeps priority where it exists: an author who set a URL chose a
- * destination, and the academic feed's rows are deadlines rather than places.
- * A notification with neither a link nor a matching event (a far-future one
- * the public map filters out) does nothing rather than switching to a map with
- * nothing selected — and is not counted as a click, which is reserved for taps
- * that actually went somewhere.
+ * The card has priority; the link is the fallback for rows with no event
+ * (academic deadlines). A notification with neither a link nor a matching
+ * event (a far-future one the public map filters out) does nothing rather
+ * than switching to a map with nothing selected — and is not counted as a
+ * click, which is reserved for taps that actually went somewhere.
  */
 export function useOpenNotification({
   onClose,
@@ -55,7 +54,7 @@ export function useOpenNotification({
   // exotic one. The guard spans the in-flight load and nothing more.
   const openingRef = useRef(false);
 
-  // ...and one activation TOTAL, not one per branch. A linked row returns
+  // ...and one activation TOTAL, not one per branch. An academic row returns
   // before it ever reads `openingRef`, so tapping one while a linkless
   // activation was still awaiting the map feed used to leave that first
   // handler alive: the load lands, and it focuses the earlier event and
@@ -77,34 +76,42 @@ export function useOpenNotification({
     const track = () => {
       if (!n.associationId?.startsWith('academic_')) trackNotificationClick(n.id);
     };
-    if (n.link) {
+    const openLink = (link: string) => {
+      track();
+      // openExternal, not window.open: on Capacitor the system browser has no IS
+      // session, and a notification's URL is data from outside the app.
+      void openExternal(link);
+      onClose();
+    };
+    // Academic rows are deadlines, not places: straight to the link.
+    if (n.link && n.associationId?.startsWith('academic_')) {
       activationRef.current += 1;
       openingRef.current = false;
-      track();
-      // openExternal, not window.open: on Capacitor that hands the URL to the
-      // system browser, which has no IS session. It also validates the link —
-      // a notification's URL is data from outside the app.
-      void openExternal(n.link);
-      onClose();
-      return;
+      return openLink(n.link);
     }
-    // `mapEventsLoaded` flips only on SUCCESS, so it is false both before the
-    // feed lands and forever after a failed load. Waiting for it here — rather
-    // than reading whatever happens to be in the store at tap time — is what
-    // keeps this from being the very dead tap the fix removes, reachable
-    // through a race. loadMapEvents is a no-op once loaded, and retries when
-    // the previous attempt failed.
     if (openingRef.current) return;
     openingRef.current = true;
     const activation = (activationRef.current += 1);
     try {
+      // `mapEventsLoaded` flips only on SUCCESS, so it is false both before
+      // the feed lands and forever after a failed load. Waiting for it here —
+      // rather than reading whatever happens to be in the store at tap time —
+      // is what keeps this from being the very dead tap the fix removes,
+      // reachable through a race. loadMapEvents is a no-op once loaded, and
+      // retries when the previous attempt failed.
       if (!mapEventsLoaded) await loadMapEvents();
       if (activationRef.current !== activation) return;
-      if (!useAppStore.getState().mapEvents.some((e) => e.id === n.id)) return;
-      track();
-      focusEventById(n.id, { fly: true });
-      showMap();
-      onClose();
+      // The CARD first, even when the event has a URL: the card carries the
+      // RSVP, the venue and the reminder, and the URL is its button. Jumping
+      // straight to the link cost every linked event its RSVPs.
+      if (useAppStore.getState().mapEvents.some((e) => e.id === n.id)) {
+        track();
+        focusEventById(n.id, { fly: true });
+        showMap();
+        onClose();
+        return;
+      }
+      if (n.link) openLink(n.link);
     } finally {
       // Only if nothing superseded us — whoever did has already reopened the
       // gate for itself, and closing it again here would wedge the row shut.

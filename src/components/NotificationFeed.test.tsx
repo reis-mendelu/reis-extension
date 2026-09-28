@@ -5,6 +5,10 @@ import { NotificationFeed } from './NotificationFeed';
 import { IndexedDBService } from '../services/storage';
 import * as spolkyService from '../services/spolky';
 import { useAppStore } from '../store/useAppStore';
+import { openExternal } from '../mobile/openExternal';
+
+// The linked branch hands the URL to the system browser; a unit test has none.
+vi.mock('../mobile/openExternal', () => ({ openExternal: vi.fn() }));
 
 // Mock the services
 vi.mock('../services/spolky', () => ({
@@ -118,7 +122,12 @@ describe('NotificationFeed', () => {
         seenDeadlineAlertIds: new Set(),
         status: 'success',
       },
-    });
+      // Loaded with no events: a click on a linked-but-unmatched row (like
+      // 'Test Notification 1') takes the fallback without ever awaiting the
+      // real loadMapEvents, which would otherwise reach out from a unit test.
+      mapEvents: [],
+      mapEventsLoaded: true,
+    } as any);
   });
 
   it('should track views when notification becomes visible', async () => {
@@ -188,7 +197,10 @@ describe('NotificationFeed', () => {
     expect(spolkyService.trackNotificationsViewed).not.toHaveBeenCalled();
   });
 
-  it('should track click when a notification is clicked', async () => {
+  it('should track click and fall back to the link when no map event matches', async () => {
+    // 'Test Notification 1' has a link but its id ('1') is not in mapEvents
+    // (empty, loaded — see beforeEach), so the tap falls back to the link
+    // rather than opening a card that does not exist.
     render(<NotificationFeed onShowMap={vi.fn()} />);
 
     const bellButton = screen.getByLabelText('Notifications');
@@ -206,6 +218,89 @@ describe('NotificationFeed', () => {
     });
 
     expect(spolkyService.trackNotificationClick).toHaveBeenCalledWith('1');
+    expect(openExternal).toHaveBeenCalledWith('https://example.com');
+  });
+
+  it('opens the card, not the link, when the linked notification is on the map', async () => {
+    useAppStore.setState({
+      mapEvents: [{ id: '1' } as any],
+      mapEventsLoaded: true,
+    } as any);
+    render(<NotificationFeed onShowMap={vi.fn()} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Notifications'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Test Notification 1')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Test Notification 1'));
+    });
+
+    expect(useAppStore.getState().mapSelection).toMatchObject({
+      kind: 'event',
+      event: { id: '1' },
+    });
+    expect(openExternal).not.toHaveBeenCalled();
+  });
+
+  it('opens the link immediately for an academic row, without tracking', async () => {
+    const academicNotification = {
+      ...mockNotifications[0]!,
+      id: 'a1',
+      associationId: 'academic_deadline',
+      link: 'https://is.mendelu.cz/dp',
+    };
+    useAppStore.setState({
+      notifications: {
+        data: [academicNotification],
+        readIds: new Set(),
+        viewedIds: new Set(),
+        seenDeadlineAlertIds: new Set(),
+        status: 'success',
+      },
+      mapEvents: [],
+      mapEventsLoaded: false,
+    } as any);
+    render(<NotificationFeed onShowMap={vi.fn()} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Notifications'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Test Notification 1')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Test Notification 1'));
+    });
+
+    expect(openExternal).toHaveBeenCalledWith('https://is.mendelu.cz/dp');
+    expect(spolkyService.trackNotificationClick).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the link once the map feed loads with no matching event', async () => {
+    const loadMapEvents = vi.fn(async () => {
+      useAppStore.setState({ mapEvents: [], mapEventsLoaded: true } as any);
+    });
+    useAppStore.setState({ mapEvents: [], mapEventsLoaded: false, loadMapEvents } as any);
+    render(<NotificationFeed onShowMap={vi.fn()} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Notifications'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Test Notification 1')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Test Notification 1'));
+    });
+
+    expect(loadMapEvents).toHaveBeenCalled();
+    expect(openExternal).toHaveBeenCalledWith('https://example.com');
   });
 
   it('holds back an event the console still lists as scheduled', async () => {
