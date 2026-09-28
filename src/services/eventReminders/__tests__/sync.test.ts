@@ -55,7 +55,15 @@ function reminder(over: Partial<PlannedReminder> = {}): PlannedReminder {
 
 /** A pending notification as the plugin reports it; text defaults to `reminder()`'s. */
 function pending(over: Partial<PendingReminder> = {}): PendingReminder {
-  return { id: 1, at: 2_000_000, title: 'Beánie', body: 'Q01', kind: 'rsvp', ...over };
+  return {
+    id: 1,
+    at: 2_000_000,
+    title: 'Beánie',
+    body: 'Q01',
+    kind: 'rsvp',
+    legacy: false,
+    ...over,
+  };
 }
 
 function deps(over: Partial<ReminderDeps> = {}): ReminderDeps {
@@ -263,6 +271,7 @@ describe('syncReminders — overlapping runs', () => {
             title: r.title,
             body: r.body,
             kind: 'rsvp' as const,
+            legacy: false,
           })),
         ];
       }),
@@ -405,8 +414,8 @@ describe('capacitorReminderDeps — listPending wiring', () => {
       ],
     });
     await expect(capacitorReminderDeps().listPending()).resolves.toEqual([
-      { id: 3, at: 4_000_000, title: 'Zítra: X', body: 'B', kind: 'rsvp' },
-      { id: 4, at: 5_000_000, title: 'Nové akce: Y', body: '', kind: 'rsvp' },
+      { id: 3, at: 4_000_000, title: 'Zítra: X', body: 'B', kind: 'rsvp', legacy: true },
+      { id: 4, at: 5_000_000, title: 'Nové akce: Y', body: '', kind: 'rsvp', legacy: true },
     ]);
   });
 
@@ -422,6 +431,53 @@ describe('capacitorReminderDeps — listPending wiring', () => {
     });
     const kinds = (await capacitorReminderDeps().listPending()).map((p) => p.kind);
     expect(kinds).toEqual(['digest', 'rsvp', 'rsvp']);
+  });
+
+  // The build before channels wrote `extra: { eventId }` and no kind, on
+  // Android's default channel. That is kept apart from a ping, so reconcile
+  // can move it onto CHANNEL_RSVP.
+  it('marks a pending notification with no kind in extra as legacy', async () => {
+    getPending.mockResolvedValueOnce({
+      notifications: [
+        { id: 5, title: 'D', schedule: { at: new Date(4_000_000) }, extra: { kind: 'digest' } },
+        { id: 6, title: 'R', schedule: { at: new Date(5_000_000) }, extra: { kind: 'rsvp' } },
+        { id: 7, title: 'O', schedule: { at: new Date(6_000_000) }, extra: { eventId: 'e1' } },
+        { id: 8, title: 'N', schedule: { at: new Date(7_000_000) } },
+      ],
+    });
+    const legacy = (await capacitorReminderDeps().listPending()).map((p) => p.legacy);
+    expect(legacy).toEqual([false, false, true, true]);
+  });
+});
+
+// CodeRabbit on #475: a ping the old build scheduled has the same id, time and
+// text as the new plan's, so it used to be left pending on the default
+// channel — and a student who turned "Připomínky akcí" off still got it.
+describe('syncReminders — legacy pending notifications', () => {
+  it('cancels and reschedules an otherwise identical legacy ping, once', async () => {
+    const d = deps({ listPending: vi.fn().mockResolvedValue([pending({ legacy: true })]) });
+    await syncReminders([reminder()], d);
+    expect(d.cancel).toHaveBeenCalledWith([1]);
+    expect(d.schedule).toHaveBeenCalledWith([reminder()]);
+  });
+
+  it('cancels a legacy ping that is no longer planned', async () => {
+    const d = deps({ listPending: vi.fn().mockResolvedValue([pending({ id: 7, legacy: true })]) });
+    await syncReminders([], d);
+    expect(d.cancel).toHaveBeenCalledWith([7]);
+    expect(d.schedule).not.toHaveBeenCalled();
+  });
+
+  // A legacy entry is never a digest, so keepDigests does not shield it.
+  it('still moves a legacy ping under keepDigests', async () => {
+    const d = deps({
+      listPending: vi
+        .fn()
+        .mockResolvedValue([pending({ id: 7, kind: 'digest' }), pending({ legacy: true })]),
+    });
+    await syncReminders([reminder()], d, { keepDigests: true });
+    expect(d.cancel).toHaveBeenCalledWith([1]);
+    expect(d.schedule).toHaveBeenCalledWith([reminder()]);
   });
 });
 

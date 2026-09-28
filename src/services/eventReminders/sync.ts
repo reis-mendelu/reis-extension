@@ -8,6 +8,7 @@ import {
   type PlannedReminder,
   type PlannedNotification,
 } from './plan';
+import { toPendingReminder } from './pendingReminder';
 import type { PermissionState } from '@capacitor/core';
 
 // Capacitor's own type, imported rather than restated so the four states cannot
@@ -32,6 +33,10 @@ export interface PendingReminder {
   body: string;
   /** From the `extra.kind` the schedule wrote; none (an older build) is a ping. */
   kind: 'rsvp' | 'digest';
+  /** No kind in `extra` at all: scheduled by the build before channels, so it
+   *  sits on Android's default channel, out of reach of the student's
+   *  "Připomínky akcí" switch. Always stale; never a digest. */
+  legacy: boolean;
 }
 
 export interface SyncOptions {
@@ -103,6 +108,9 @@ async function reconcile(
 
     const stale = pending.filter((p) => {
       if (options.keepDigests && p.kind === 'digest') return false;
+      // Cancelled and, if still planned, rescheduled once on CHANNEL_RSVP —
+      // identical text and time would otherwise leave it where it is.
+      if (p.legacy) return true;
       const w = wanted.get(p.id);
       // Gone from the plan, the event moved, or the text changed — any of them
       // makes the pending one wrong, and it has to go before the replacement
@@ -233,17 +241,7 @@ export function capacitorReminderDeps(): ReminderDeps {
     listPending: async () => {
       const { LocalNotifications } = await load();
       const { notifications } = await LocalNotifications.getPending();
-      return notifications
-        .map((n): PendingReminder => ({
-          id: n.id,
-          at: n.schedule?.at ? new Date(n.schedule.at).getTime() : 0,
-          // Normalised: a digest with nothing new has body '', and a bridge
-          // that drops an empty string must not make it mismatch forever.
-          title: n.title ?? '',
-          body: n.body ?? '',
-          kind: (n.extra as { kind?: unknown } | undefined)?.kind === 'digest' ? 'digest' : 'rsvp',
-        }))
-        .filter((n) => n.at > 0);
+      return notifications.map(toPendingReminder).filter((n) => n.at > 0);
     },
     schedule: async (reminders) => {
       const { LocalNotifications } = await load();
