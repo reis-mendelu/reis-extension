@@ -246,6 +246,27 @@ describe('createRsvpSlice', () => {
       expect(state.replanNotifications).toHaveBeenCalled();
     });
 
+    // Ruling: an event with no readable start time (all-day, or a time IS
+    // wrote in some other shape) gets no RSVP ping, so answering it has
+    // nothing to earn permission for — the prompt would be a promise the
+    // app then does not keep.
+    it.each([
+      ['no time', { time: null }],
+      ['an unreadable time', { time: 'večer' }],
+    ])('does not ask on a new answer to an event with %s', async (_label, over) => {
+      state.mapEvents = [{ ...party, ...over }] as never;
+      await state.setRsvp('e1', 'going');
+      await flush();
+      expect(askNotificationPermission).not.toHaveBeenCalled();
+    });
+
+    it('does not ask for an event it cannot find', async () => {
+      state.mapEvents = [] as never;
+      await state.setRsvp('e1', 'going');
+      await flush();
+      expect(askNotificationPermission).not.toHaveBeenCalled();
+    });
+
     // Switching Going -> Interested is a CHANGE, not a new answer — the
     // student already answered the OS prompt once for this event.
     it('does not ask again when an existing answer merely changes', async () => {

@@ -3,6 +3,7 @@ import { fetchEventRsvps, setEventRsvp, type RsvpStatus } from '../../api/eventR
 import { createRsvpBlockSync } from './rsvpBlockSync';
 import { IndexedDBService } from '../../services/storage';
 import { askNotificationPermission } from '../../services/eventReminders/sync';
+import { eventStartsAt } from '../../services/eventReminders/plan';
 import { logError } from '../../utils/reportError';
 
 export type { RsvpStatus };
@@ -294,7 +295,12 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       // Safe to call on every new answer, not just the very first ever —
       // askNotificationPermission no-ops once the student has already
       // answered the system dialog.
-      if (previous === undefined && next !== undefined) {
+      //
+      // Only for an event with a readable start time: without one there is no
+      // RSVP ping to schedule, and the prompt would promise one.
+      const event = get().mapEvents.find((e) => e.id === eventId);
+      const pingable = event !== undefined && eventStartsAt(event) !== null;
+      if (previous === undefined && next !== undefined && pingable) {
         void askNotificationPermission().then((p) => {
           get().setNotifyPermission(p);
           get().replanNotifications();
