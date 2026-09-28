@@ -1,6 +1,5 @@
 import type { AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
-import { logError } from '../../utils/reportError';
 import {
   loadFollowedList,
   loadNotifySettings,
@@ -15,8 +14,8 @@ import {
 import { replanNotifications } from './follows/replanNotifications';
 import {
   runExclusiveLoad,
-  awaitInFlightLoad,
-  bumpVersion,
+  ensureLoaded,
+  persistField,
   snapshotVersions,
   isUnchangedSince,
 } from './follows/followLoadState';
@@ -120,19 +119,19 @@ export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
     await get().loadFollows();
   },
 
-  // Every mutation below awaits any in-flight `loadFollows()` first — the
-  // race this file exists to close: computing from the cold-boot `[]`
-  // default and persisting a one-element list over the student's real saved
-  // follows. `bumpVersion` afterwards protects the rarer case where a load
-  // starts and reads its stale snapshot *during* this mutation's own commit.
+  // Every mutation below first calls `ensureLoaded`: it computes from what
+  // disk holds, never from the cold-boot `[]` default — persisting a
+  // one-element list over the student's real saved follows is the race this
+  // exists to close. `persistField` then keeps any load that overlaps the
+  // writes (a retry fired by a sync, say) from committing the value it read
+  // before they landed; see `followLoadState.ts`.
   toggleFollow: async (id) => {
-    await awaitInFlightLoad();
+    await ensureLoaded(get);
     const followed = get().followed.includes(id)
       ? get().followed.filter((x) => x !== id)
       : [...get().followed, id];
     set({ followed });
-    bumpVersion('followed');
-    try {
+    await persistField('followed', 'Follows.toggle', async () => {
       // CHOSEN_KEY first, deliberately. There are two writes and no transaction
       // across them, so one of the two orders has to be safe: marking "chosen"
       // before the list means a crash between them leaves the OLD list marked
@@ -141,49 +140,38 @@ export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
       // student's deliberate choice as an unresolved lookup and undoes it.
       await IndexedDBService.set('meta', CHOSEN_KEY, true);
       await IndexedDBService.set('meta', STORAGE_KEY, followed);
-    } catch (err) {
-      logError('Follows.toggle', err);
-    }
+    });
     get().replanNotifications();
   },
 
   toggleMute: async (id) => {
-    await awaitInFlightLoad();
+    await ensureLoaded(get);
     const muted = get().muted.includes(id)
       ? get().muted.filter((x) => x !== id)
       : [...get().muted, id];
     set({ muted });
-    bumpVersion('muted');
-    try {
-      await IndexedDBService.set('meta', MUTED_KEY, muted);
-    } catch (err) {
-      logError('Follows.toggleMute', err);
-    }
+    await persistField('muted', 'Follows.toggleMute', () =>
+      IndexedDBService.set('meta', MUTED_KEY, muted)
+    );
     get().replanNotifications();
   },
 
   setNotifyPref: async (key, value) => {
-    await awaitInFlightLoad();
+    await ensureLoaded(get);
     const notifyPrefs = { ...get().notifyPrefs, [key]: value };
     set({ notifyPrefs });
-    bumpVersion('notifyPrefs');
-    try {
-      await IndexedDBService.set('meta', NOTIFY_PREFS_KEY, notifyPrefs);
-    } catch (err) {
-      logError('Follows.setNotifyPref', err);
-    }
+    await persistField('notifyPrefs', 'Follows.setNotifyPref', () =>
+      IndexedDBService.set('meta', NOTIFY_PREFS_KEY, notifyPrefs)
+    );
     get().replanNotifications();
   },
 
   markPermissionAsked: async () => {
-    await awaitInFlightLoad();
+    await ensureLoaded(get);
     set({ permissionAsked: true });
-    bumpVersion('permissionAsked');
-    try {
-      await IndexedDBService.set('meta', NOTIFY_ASKED_KEY, true);
-    } catch (err) {
-      logError('Follows.markPermissionAsked', err);
-    }
+    await persistField('permissionAsked', 'Follows.markPermissionAsked', () =>
+      IndexedDBService.set('meta', NOTIFY_ASKED_KEY, true)
+    );
     get().replanNotifications();
   },
 

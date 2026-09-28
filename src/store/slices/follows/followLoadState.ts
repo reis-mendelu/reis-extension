@@ -20,13 +20,21 @@
  * - `runExclusiveLoad`/`awaitInFlightLoad`: at most one real load body runs
  *   at a time (unchanged from before), and any mutation can await whichever
  *   one is already running instead of computing from the pre-load defaults.
- * - Per-field version counters: a mutation bumps its field's version the
- *   moment it applies. `loadFollows()` snapshots every version before its
- *   reads start and, at commit, writes only the fields whose version hasn't
- *   moved since — so a mutation that still manages to land inside the read
- *   window (the load started, then a mutation ran, all before the load's own
- *   reads resolved) is never clobbered by the stale value the load read.
+ * - `ensureLoaded`: a mutation that runs before any load has COMMITTED
+ *   (Tier 2 awaits three hydrate reads before it fires `loadFollows()`, and
+ *   nothing gates the follow chip on `followsLoaded`) starts — or joins — the
+ *   load itself rather than computing from the cold defaults.
+ * - Per-field version counters plus a pending-write count. `loadFollows()`
+ *   snapshots every version before its reads start and, at commit, writes
+ *   only the fields that no mutation touched since AND that no mutation is
+ *   still persisting. A mutation bumps its field's version both when it
+ *   applies and again once its writes settle: a load that started mid-write
+ *   read disk before the write landed, and the second bump is what tells its
+ *   commit that what it read is already stale. The pending count covers the
+ *   same load committing before the write has settled at all.
  */
+
+import { logError } from '../../../utils/reportError';
 
 let inFlight: Promise<void> | null = null;
 
@@ -58,9 +66,47 @@ const versions: Record<FollowVersionField, number> = {
   permissionAsked: 0,
 };
 
-/** Called by a user mutation right after it computes and `set()`s its next value. */
-export function bumpVersion(field: FollowVersionField): void {
+const pendingWrites: Record<FollowVersionField, number> = {
+  followed: 0,
+  muted: 0,
+  notifyPrefs: 0,
+  permissionAsked: 0,
+};
+
+/**
+ * Before a mutation computes its next value: joins the load in flight, or —
+ * when no load has committed yet — runs one. `followsLoaded` is set only by a
+ * load's commit, so it is exactly "memory holds what disk said". Once it is
+ * true an unresolved list stays `retryFollowsIfUnresolved`'s business; this
+ * never triggers a second load of its own.
+ */
+export async function ensureLoaded(
+  get: () => { followsLoaded: boolean; loadFollows: () => Promise<void> }
+): Promise<void> {
+  if (!get().followsLoaded) await get().loadFollows();
+  else await awaitInFlightLoad();
+}
+
+/**
+ * Persists a mutation's new value. Call it synchronously right after the
+ * mutation's `set()`, so the version moves in the same tick as memory does.
+ * A failed write is logged, not thrown: memory already holds the choice.
+ */
+export async function persistField(
+  field: FollowVersionField,
+  context: string,
+  write: () => Promise<unknown>
+): Promise<void> {
   versions[field] += 1;
+  pendingWrites[field] += 1;
+  try {
+    await write();
+  } catch (err) {
+    logError(context, err);
+  } finally {
+    pendingWrites[field] -= 1;
+    versions[field] += 1;
+  }
 }
 
 /** Snapshot taken by `loadFollows()` before its reads start. */
@@ -68,10 +114,10 @@ export function snapshotVersions(): Record<FollowVersionField, number> {
   return { ...versions };
 }
 
-/** True if nothing bumped `field` between `snapshot` and now. */
+/** True if no mutation touched `field` since `snapshot`, and none is still writing it. */
 export function isUnchangedSince(
   field: FollowVersionField,
   snapshot: Record<FollowVersionField, number>
 ): boolean {
-  return versions[field] === snapshot[field];
+  return versions[field] === snapshot[field] && pendingWrites[field] === 0;
 }

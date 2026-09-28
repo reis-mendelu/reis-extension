@@ -305,8 +305,12 @@ describe('createFollowSlice', () => {
     });
   });
 
+  // These seed memory directly, so they mark it as a committed load: a
+  // mutation with `followsLoaded` still false runs the load first (see the
+  // races test file) and would replace the seeded value with disk's.
   describe('toggleFollow', () => {
     it('adds an id, persists it, and writes chosen before the list', async () => {
+      state.followsLoaded = true;
       state.followed = [];
       const order: unknown[][] = [];
       vi.mocked(IndexedDBService.set).mockImplementation((...args: unknown[]) => {
@@ -322,6 +326,7 @@ describe('createFollowSlice', () => {
     });
 
     it('removes an already-followed id', async () => {
+      state.followsLoaded = true;
       state.followed = ['esn'];
 
       await state.toggleFollow('esn');
@@ -332,6 +337,7 @@ describe('createFollowSlice', () => {
 
   describe('toggleMute', () => {
     it('adds and persists a muted id', async () => {
+      state.followsLoaded = true;
       state.muted = [];
 
       await state.toggleMute('zf');
@@ -341,6 +347,7 @@ describe('createFollowSlice', () => {
     });
 
     it('removes an already-muted id', async () => {
+      state.followsLoaded = true;
       state.muted = ['zf'];
 
       await state.toggleMute('zf');
