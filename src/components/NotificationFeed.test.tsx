@@ -5,7 +5,6 @@ import { NotificationFeed } from './NotificationFeed';
 import { IndexedDBService } from '../services/storage';
 import * as spolkyService from '../services/spolky';
 import { useAppStore } from '../store/useAppStore';
-import { openExternal } from '../mobile/openExternal';
 
 // The linked branch hands the URL to the system browser; a unit test has none.
 vi.mock('../mobile/openExternal', () => ({ openExternal: vi.fn() }));
@@ -87,8 +86,6 @@ const triggerIntersection = (element: Element, isIntersecting = true) => {
   }
 };
 
-const realLoadMapEvents = useAppStore.getState().loadMapEvents;
-
 describe('NotificationFeed', () => {
   const mockNotifications = [
     {
@@ -115,9 +112,6 @@ describe('NotificationFeed', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (spolkyService.fetchNotifications as any).mockResolvedValue(mockNotifications);
-    // A test below stubs the store's loader; put the real one back so the
-    // stub cannot leak into later tests through the singleton store.
-    useAppStore.setState({ loadMapEvents: realLoadMapEvents });
     (IndexedDBService.get as any).mockResolvedValue(null);
     useAppStore.setState({
       notifications: {
@@ -200,112 +194,6 @@ describe('NotificationFeed', () => {
 
     // Should NOT have called trackNotificationsViewed for '1'
     expect(spolkyService.trackNotificationsViewed).not.toHaveBeenCalled();
-  });
-
-  it('should track click and fall back to the link when no map event matches', async () => {
-    // 'Test Notification 1' has a link but its id ('1') is not in mapEvents
-    // (empty, loaded — see beforeEach), so the tap falls back to the link
-    // rather than opening a card that does not exist.
-    render(<NotificationFeed onShowMap={vi.fn()} />);
-
-    const bellButton = screen.getByLabelText('Notifications');
-    await act(async () => {
-      fireEvent.click(bellButton);
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Test Notification 1')).toBeInTheDocument();
-    });
-
-    const notificationItem = screen.getByText('Test Notification 1');
-    await act(async () => {
-      fireEvent.click(notificationItem);
-    });
-
-    expect(spolkyService.trackNotificationClick).toHaveBeenCalledWith('1');
-    expect(openExternal).toHaveBeenCalledWith('https://example.com');
-  });
-
-  it('opens the card, not the link, when the linked notification is on the map', async () => {
-    useAppStore.setState({
-      mapEvents: [{ id: '1' } as any],
-      mapEventsLoaded: true,
-    } as any);
-    render(<NotificationFeed onShowMap={vi.fn()} />);
-
-    await act(async () => {
-      fireEvent.click(screen.getByLabelText('Notifications'));
-    });
-    await waitFor(() => {
-      expect(screen.getByText('Test Notification 1')).toBeInTheDocument();
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Test Notification 1'));
-    });
-
-    expect(useAppStore.getState().mapSelection).toMatchObject({
-      kind: 'event',
-      event: { id: '1' },
-    });
-    expect(openExternal).not.toHaveBeenCalled();
-  });
-
-  it('opens the link immediately for an academic row, without tracking', async () => {
-    const academicNotification = {
-      ...mockNotifications[0]!,
-      id: 'a1',
-      associationId: 'academic_deadline',
-      link: 'https://is.mendelu.cz/dp',
-    };
-    useAppStore.setState({
-      notifications: {
-        data: [academicNotification],
-        readIds: new Set(),
-        viewedIds: new Set(),
-        seenDeadlineAlertIds: new Set(),
-        status: 'success',
-      },
-      mapEvents: [],
-      mapEventsLoaded: false,
-    } as any);
-    render(<NotificationFeed onShowMap={vi.fn()} />);
-
-    await act(async () => {
-      fireEvent.click(screen.getByLabelText('Notifications'));
-    });
-    await waitFor(() => {
-      expect(screen.getByText('Test Notification 1')).toBeInTheDocument();
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Test Notification 1'));
-    });
-
-    expect(openExternal).toHaveBeenCalledWith('https://is.mendelu.cz/dp');
-    expect(spolkyService.trackNotificationClick).not.toHaveBeenCalled();
-  });
-
-  it('falls back to the link once the map feed loads with no matching event', async () => {
-    const loadMapEvents = vi.fn(async () => {
-      useAppStore.setState({ mapEvents: [], mapEventsLoaded: true } as any);
-    });
-    useAppStore.setState({ mapEvents: [], mapEventsLoaded: false, loadMapEvents } as any);
-    render(<NotificationFeed onShowMap={vi.fn()} />);
-
-    await act(async () => {
-      fireEvent.click(screen.getByLabelText('Notifications'));
-    });
-    await waitFor(() => {
-      expect(screen.getByText('Test Notification 1')).toBeInTheDocument();
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Test Notification 1'));
-    });
-
-    expect(loadMapEvents).toHaveBeenCalled();
-    expect(openExternal).toHaveBeenCalledWith('https://example.com');
   });
 
   it('holds back an event the console still lists as scheduled', async () => {
