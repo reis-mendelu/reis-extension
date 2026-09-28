@@ -38,15 +38,32 @@ const LIFT_M = 12;
 /** A room this close to its staircase is "by the stairs". */
 const BY_CORE_M = 15;
 
-const centre = (f: RoomFeature): [number, number] => {
-  const ring = f.geometry.coordinates[0] ?? [];
-  const pts = ring.slice(0, -1);
+/** A room's area centroid (shoelace; flat at campus scale): the vertex mean
+ *  drifts toward a concave room's busy side. */
+function centre(f: RoomFeature): [number, number] {
+  const raw = (f.geometry.coordinates[0] ?? []).map((p): [number, number] => [
+    p[0] ?? 0,
+    p[1] ?? 0,
+  ]);
+  // Relative to the first corner: products of raw degrees (~800) cancel a
+  // few-metre room away entirely in float64.
+  const [ox, oy] = raw[0] ?? [0, 0];
+  const pts = raw.map(([px, py]): [number, number] => [px - ox, py - oy]);
+  let a = 0;
+  let x = 0;
+  let y = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x0, y0] = pts[i]!;
+    const [x1, y1] = pts[i + 1]!;
+    const k = x0 * y1 - x1 * y0;
+    a += k;
+    x += (x0 + x1) * k;
+    y += (y0 + y1) * k;
+  }
+  if (Math.abs(a) > 1e-18) return [ox + x / (3 * a), oy + y / (3 * a)];
   const n = Math.max(1, pts.length);
-  return [
-    pts.reduce((s, p) => s + (p[0] ?? 0), 0) / n,
-    pts.reduce((s, p) => s + (p[1] ?? 0), 0) / n,
-  ];
-};
+  return [ox + pts.reduce((s, p) => s + p[0], 0) / n, oy + pts.reduce((s, p) => s + p[1], 0) / n];
+}
 
 /** Metres between two [lng, lat] points (campus scale, equirectangular). */
 function metres(a: readonly [number, number], b: readonly [number, number]): number {
@@ -73,6 +90,8 @@ function middle(rooms: RoomFeature[]): [number, number] {
 
 interface Stack {
   at: [number, number];
+  /** Every floor's shape centre: a dog-leg staircase drifts per landing. */
+  members: [number, number][];
   levels: Set<number>;
 }
 
@@ -82,9 +101,11 @@ function stack(shapes: RoomFeature[]): Stack[] {
     const level = f.properties.floorLevel;
     if (level === null) continue;
     const c = centre(f);
-    const s = stacks.find((x) => metres(x.at, c) <= STACK_M);
-    if (s) s.levels.add(level);
-    else stacks.push({ at: c, levels: new Set([level]) });
+    const s = stacks.find((x) => x.members.some((m) => metres(m, c) <= STACK_M));
+    if (s) {
+      s.members.push(c);
+      s.levels.add(level);
+    } else stacks.push({ at: c, members: [c], levels: new Set([level]) });
   }
   return stacks;
 }
@@ -96,10 +117,20 @@ function stack(shapes: RoomFeature[]): Stack[] {
  */
 export function stairCores(rooms: RoomFeature[]): StairCore[] {
   const mid = middle(rooms);
-  const lifts = stack(rooms.filter((f) => f.properties.type === 'elevator'));
-  return stack(rooms.filter((f) => f.properties.type === 'stairs')).map((s) => ({
+  const stairs = stack(rooms.filter((f) => f.properties.type === 'stairs'));
+  // Each lift belongs to its nearest staircase alone: a liftless staircase near
+  // another's lift must not be sent as "stairs or lift".
+  const withLift = new Set<Stack>();
+  for (const lift of stack(rooms.filter((f) => f.properties.type === 'elevator'))) {
+    const nearest = stairs
+      .map((s) => ({ s, d: metres(s.at, lift.at) }))
+      .filter((x) => x.d <= LIFT_M)
+      .sort((a, b) => a.d - b.d)[0];
+    if (nearest) withLift.add(nearest.s);
+  }
+  return stairs.map((s) => ({
     side: sideOf(s.at, mid),
-    lift: lifts.some((l) => metres(l.at, s.at) <= LIFT_M),
+    lift: withLift.has(s),
     levels: [...s.levels].sort((a, b) => a - b),
     at: s.at,
   }));
@@ -152,8 +183,13 @@ export function roomDirections(
  * lights as the route on that floor. Empty on a floor the staircase misses.
  */
 export function coreShapeIds(floorRooms: RoomFeature[], at: readonly [number, number]): number[] {
+  // Its own stairs by the stacking radius — a second staircase a few metres off
+  // stays unlit — and its lift by the lift radius.
   return floorRooms
-    .filter((f) => f.properties.type === 'stairs' || f.properties.type === 'elevator')
-    .filter((f) => metres(centre(f), at) <= LIFT_M)
+    .filter((f) => {
+      const t = f.properties.type;
+      const d = metres(centre(f), at);
+      return (t === 'stairs' && d <= STACK_M) || (t === 'elevator' && d <= LIFT_M);
+    })
     .map((f) => f.properties.id);
 }

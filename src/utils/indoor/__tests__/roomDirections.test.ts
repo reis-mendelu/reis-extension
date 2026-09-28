@@ -74,6 +74,28 @@ describe('stairCores', () => {
     });
   });
 
+  // A dog-leg staircase drifts a few metres per landing: it is still one staircase.
+  it('keeps a staircase that drifts floor by floor as one', () => {
+    const shapes = [0, 1, 2, 3].map((l) => feature(-40 + l * 6, -20, l, 'stairs', 'Stairs'));
+    const rooms = [
+      ...shapes,
+      feature(-50, -30, 0, 'office', 'Office'),
+      feature(46, 26, 0, 'office', 'Office'),
+    ];
+    expect(stairCores(rooms).map((c) => c.levels)).toEqual([[0, 1, 2, 3]]);
+  });
+
+  it('gives a lift to its nearest staircase only', () => {
+    const rooms = [
+      feature(-50, -30, 0, 'office', 'Office'),
+      feature(46, 26, 0, 'office', 'Office'),
+      feature(0, 0, 0, 'stairs', 'Stairs'),
+      feature(10, 0, 0, 'stairs', 'Stairs'),
+      feature(3, 0, 0, 'elevator', 'Elevator'), // 3 m from the first, 7 m from the second
+    ];
+    expect(stairCores(rooms).map((c) => c.lift)).toEqual([true, false]);
+  });
+
   it('leaves out the emergency stairs, which are not a way in', () => {
     expect(stairCores(building())).toHaveLength(2);
   });
@@ -96,6 +118,17 @@ describe('roomDirections', () => {
     const top = feature(-48, 14, 5, 'classroom', 'Classroom', 'Q55', 6); // west core stops at 3
     const core = roomDirections([...rooms, top], top, DOOR)?.find((s) => s.kind === 'core');
     expect(core).toMatchObject({ side: 'east', direction: 'up', level: 5 });
+  });
+
+  // A wing whose stairs do not reach the entrance floor (they start on floor 1):
+  // nearer, but not a way from the door, so the core that does reach it is taken.
+  it('passes over a nearer staircase that misses the entrance floor', () => {
+    const rooms = building();
+    for (const level of range(1, 3)) rooms.push(feature(-10, -24, level, 'stairs', 'Stairs'));
+    const room = feature(-12, -26, 3, 'classroom', 'Classroom', 'Q33', 6);
+    const core = roomDirections([...rooms, room], room, DOOR)?.find((s) => s.kind === 'core');
+    expect(core?.kind === 'core' && core.side).not.toBe('south');
+    expect(core).toMatchObject({ level: 3 });
   });
 
   it('goes down to a basement room', () => {
@@ -131,6 +164,15 @@ describe('coreShapeIds', () => {
       .filter((f) => ids.includes(f.properties.id))
       .map((f) => f.properties.type);
     expect(types.sort()).toEqual(['elevator', 'stairs']);
+  });
+
+  it('lights only its own staircase, not a second one a few metres off', () => {
+    const rooms = building();
+    rooms.push(feature(-44, 20, 0, 'stairs', 'Stairs')); // another staircase 10 m north
+    const west = stairCores(rooms).find((c) => c.side === 'west' && c.lift)!;
+    const onFloor = rooms.filter((f) => f.properties.floorLevel === 0);
+    const lit = onFloor.filter((f) => coreShapeIds(onFloor, west.at).includes(f.properties.id));
+    expect(lit.filter((f) => f.properties.type === 'stairs')).toHaveLength(1);
   });
 
   it('lights nothing on a floor the staircase does not reach', () => {

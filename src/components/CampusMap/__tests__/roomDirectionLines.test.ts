@@ -22,7 +22,12 @@ describe('directionLines', () => {
   it('reads floor-first, in Czech', () => {
     expect(directionLines(Q39, tOf(cs))).toEqual([
       { kind: 'enter', primary: 'Východní vchod', secondary: 'přízemí' },
-      { kind: 'up', primary: '↑ 3. patro', secondary: 'západní schodiště nebo výtah' },
+      {
+        kind: 'up',
+        primary: '3. patro',
+        secondary: 'západní schodiště nebo výtah',
+        spoken: 'nahoru do',
+      },
       { kind: 'arrive', primary: 'Q39', secondary: '3. patro' },
     ]);
   });
@@ -30,7 +35,7 @@ describe('directionLines', () => {
   it('reads the same in English', () => {
     expect(directionLines(Q39, tOf(en)).map((l) => l.primary)).toEqual([
       'East entrance',
-      '↑ floor 3',
+      'floor 3',
       'Q39',
     ]);
   });
@@ -46,8 +51,9 @@ describe('directionLines', () => {
     );
     expect(lines[1]).toEqual({
       kind: 'down',
-      primary: '↓ 1. podzemní podlaží',
+      primary: '1. podzemní podlaží',
       secondary: 'jižní schodiště',
+      spoken: 'dolů do',
     });
     expect(lines[2]!.secondary).toBe('1. podzemní podlaží · hned u schodiště');
   });

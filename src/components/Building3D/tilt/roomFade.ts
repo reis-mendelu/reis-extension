@@ -21,12 +21,15 @@ export function roomFade(slab: Group, targetRoomId: number | null, routeRoomIds:
     // The route's staircase on this floor fades into the route colour.
     const id = o.userData.roomId as number | undefined;
     if (id !== undefined && id !== targetRoomId && routeRoomIds.includes(id)) {
-      if (o instanceof Mesh && o.material instanceof MeshBasicMaterial)
+      if (o instanceof Mesh && o.material instanceof MeshBasicMaterial) {
+        // Coplanar with its neighbours, like every other fill: no depth writes.
+        o.material.depthWrite = false;
         fades.push({
           material: o.material,
           from: { color: o.material.color.clone(), opacity: o.material.opacity },
           to: { color: new Color(LOOK.route), opacity: 1 },
         });
+      }
       return;
     }
     if (o.userData.roomId !== targetRoomId) {

@@ -8,6 +8,8 @@ export interface DirectionLine {
   kind: 'enter' | 'up' | 'down' | 'arrive';
   primary: string;
   secondary: string;
+  /** Read before `primary` by a screen reader, where the arrow icon says it on screen. */
+  spoken?: string;
 }
 
 const capitalised = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -31,8 +33,9 @@ export function directionLines(steps: Step[], t: T): DirectionLine[] {
     if (step.kind === 'core')
       return {
         kind: step.direction,
-        primary: t(`map.directions.${step.direction}`, { floor: floorText(step.level, t) }),
+        primary: floorText(step.level, t),
         secondary: stairs(step, t),
+        spoken: t(`map.directions.${step.direction}`),
       };
     const floor = floorText(step.level, t);
     return {

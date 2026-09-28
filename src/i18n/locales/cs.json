@@ -993,8 +993,8 @@
       "enter": "{side} vchod",
       "stairs": "{side} schodiště",
       "stairsOrLift": "{side} schodiště nebo výtah",
-      "up": "↑ {floor}",
-      "down": "↓ {floor}",
+      "up": "nahoru do",
+      "down": "dolů do",
       "byStairs": "hned u schodiště",
       "side": {
         "north": "severní",

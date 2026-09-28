@@ -55,6 +55,9 @@ describe('roomFade', () => {
     roomFade(g, 3, [2])(1);
     expect(hex(g, 2)).toBe(LOOK.route);
     expect(opacity(g, 2)).toBe(1);
+    const route = (g.children.find((c) => c.userData.roomId === 2) as Mesh)
+      .material as MeshBasicMaterial;
+    expect(route.depthWrite).toBe(false);
     expect(hex(g, 1)).toBe('#86efac');
   });
 

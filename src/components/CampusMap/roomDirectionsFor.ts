@@ -43,5 +43,11 @@ export function directionsFor(
   const level = target?.properties.floorLevel;
   if (!entrance || !rooms || !target || level === null || level === undefined) return null;
   const steps = roomDirections(rooms, target, entrance);
-  return steps && { label: ref.label, level, steps };
+  if (!steps) return null;
+  // The last step names the room as the heading does (roomLabel), not by its raw plan name.
+  return {
+    label: ref.label,
+    level,
+    steps: steps.map((st) => (st.kind === 'arrive' ? { ...st, name: ref.label } : st)),
+  };
 }

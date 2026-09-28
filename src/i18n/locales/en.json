@@ -993,8 +993,8 @@
       "enter": "{side} entrance",
       "stairs": "{side} stairs",
       "stairsOrLift": "{side} stairs or lift",
-      "up": "↑ {floor}",
-      "down": "↓ {floor}",
+      "up": "up to",
+      "down": "down to",
       "byStairs": "right by the stairs",
       "side": {
         "north": "north",
