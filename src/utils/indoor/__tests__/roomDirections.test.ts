@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { roomDirections, stairCores } from '../roomDirections';
+import { coreShapeIds, roomDirections, stairCores } from '../roomDirections';
 import type { RoomFeature } from '../../../types/campusMap';
 
 // A 100 × 60 m courtyard building around (0, 0), in metres; converted to degrees.
@@ -86,7 +86,7 @@ describe('roomDirections', () => {
     const steps = roomDirections([...rooms, q39], q39, DOOR);
     expect(steps).toEqual([
       { kind: 'enter', side: 'east', level: 0 },
-      { kind: 'core', side: 'west', lift: true, direction: 'up', level: 3 },
+      { kind: 'core', side: 'west', lift: true, direction: 'up', level: 3, at: expect.any(Array) },
       { kind: 'arrive', name: 'Q39', level: 3, byCore: true },
     ]);
   });
@@ -118,5 +118,29 @@ describe('roomDirections', () => {
     const rooms = building();
     const attic = feature(-48, 14, 7, 'classroom', 'Classroom', 'Q71', 6);
     expect(roomDirections([...rooms, attic], attic, DOOR)).toBeNull();
+  });
+});
+
+describe('coreShapeIds', () => {
+  it('finds the staircase and its lift on a floor, to light them as the route', () => {
+    const rooms = building();
+    const west = stairCores(rooms).find((c) => c.side === 'west')!;
+    const onFloor = rooms.filter((f) => f.properties.floorLevel === 0);
+    const ids = coreShapeIds(onFloor, west.at);
+    const types = onFloor
+      .filter((f) => ids.includes(f.properties.id))
+      .map((f) => f.properties.type);
+    expect(types.sort()).toEqual(['elevator', 'stairs']);
+  });
+
+  it('lights nothing on a floor the staircase does not reach', () => {
+    const rooms = building();
+    const west = stairCores(rooms).find((c) => c.side === 'west')!;
+    expect(
+      coreShapeIds(
+        rooms.filter((f) => f.properties.floorLevel === 5),
+        west.at
+      )
+    ).toEqual([]);
   });
 });

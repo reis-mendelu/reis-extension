@@ -50,6 +50,14 @@ describe('roomFade', () => {
     expect(m(3).depthWrite).toBe(true);
   });
 
+  it('paints the route’s staircase in the route colour, fully opaque', () => {
+    const g = slab();
+    roomFade(g, 3, [2])(1);
+    expect(hex(g, 2)).toBe(LOOK.route);
+    expect(opacity(g, 2)).toBe(1);
+    expect(hex(g, 1)).toBe('#86efac');
+  });
+
   it('turns only the target room orange, fully opaque', () => {
     const g = slab();
     roomFade(g, 3)(1);

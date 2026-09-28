@@ -14,7 +14,7 @@ const tOf =
 
 const Q39: Step[] = [
   { kind: 'enter', side: 'east', level: 0 },
-  { kind: 'core', side: 'west', lift: true, direction: 'up', level: 3 },
+  { kind: 'core', side: 'west', lift: true, direction: 'up', level: 3, at: [0, 0] },
   { kind: 'arrive', name: 'Q39', level: 3, byCore: false },
 ];
 
@@ -39,7 +39,7 @@ describe('directionLines', () => {
     const lines = directionLines(
       [
         { kind: 'enter', side: 'east', level: 0 },
-        { kind: 'core', side: 'south', lift: false, direction: 'down', level: -1 },
+        { kind: 'core', side: 'south', lift: false, direction: 'down', level: -1, at: [0, 0] },
         { kind: 'arrive', name: 'Q01.09', level: -1, byCore: true },
       ],
       tOf(cs)

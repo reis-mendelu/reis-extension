@@ -17,6 +17,8 @@ export interface TiltCanvasProps {
   rooms: RoomFeature[];
   targetLevel: number | null;
   targetRoomId: number | null;
+  /** The route's staircase on this floor (room directions), lit in the route colour. */
+  routeRoomIds: number[];
   /** "Q32 · 3. patro" — null when no room is selected, and then no pin. */
   pinText: string | null;
   leaving: boolean;
@@ -54,6 +56,7 @@ export default function TiltCanvas(props: TiltCanvasProps) {
     rooms,
     targetLevel,
     targetRoomId,
+    routeRoomIds,
     pinText,
     leaving,
     startTilted,
@@ -79,6 +82,7 @@ export default function TiltCanvas(props: TiltCanvasProps) {
         rooms,
         targetLevel,
         targetRoomId,
+        routeRoomIds,
         lookOf: flatMapLook,
         onRequestLeave,
         onLabel: (at) => {

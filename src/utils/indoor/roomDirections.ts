@@ -20,7 +20,15 @@ export interface Entrance {
 
 export type Step =
   | { kind: 'enter'; side: Side; level: number }
-  | { kind: 'core'; side: Side; lift: boolean; direction: 'up' | 'down'; level: number }
+  | {
+      kind: 'core';
+      side: Side;
+      lift: boolean;
+      direction: 'up' | 'down';
+      level: number;
+      /** The staircase's centre, [lng, lat] — where the map lights it. */
+      at: [number, number];
+    }
   | { kind: 'arrive'; name: string; level: number; byCore: boolean };
 
 /** Shapes on different floors this close together (metres) are one staircase. */
@@ -128,6 +136,7 @@ export function roomDirections(
       lift: core.lift,
       direction: level > entrance.level ? 'up' : 'down',
       level,
+      at: core.at,
     },
     {
       kind: 'arrive',
@@ -136,4 +145,15 @@ export function roomDirections(
       byCore: metres(core.at, room) <= BY_CORE_M,
     },
   ];
+}
+
+/**
+ * The staircase (and its lift) at `at` among one floor's shapes: what the map
+ * lights as the route on that floor. Empty on a floor the staircase misses.
+ */
+export function coreShapeIds(floorRooms: RoomFeature[], at: readonly [number, number]): number[] {
+  return floorRooms
+    .filter((f) => f.properties.type === 'stairs' || f.properties.type === 'elevator')
+    .filter((f) => metres(centre(f), at) <= LIFT_M)
+    .map((f) => f.properties.id);
 }
