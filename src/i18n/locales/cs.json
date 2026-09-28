@@ -993,14 +993,19 @@
       "enter": "{side} vchod",
       "stairs": "{side} schodiště",
       "stairsOrLift": "{side} schodiště nebo výtah",
-      "up": "nahoru do",
-      "down": "dolů do",
+      "up": "nahoru do {floor}",
+      "down": "dolů do {floor}",
       "byStairs": "hned u schodiště",
       "side": {
         "north": "severní",
         "south": "jižní",
         "east": "východní",
         "west": "západní"
+      },
+      "floorTo": {
+        "above": "{n}. patra",
+        "ground": "přízemí",
+        "below": "{n}. podzemního podlaží"
       }
     }
   },

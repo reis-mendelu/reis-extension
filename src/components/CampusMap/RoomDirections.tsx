@@ -40,8 +40,8 @@ export function RoomDirections() {
               </span>
               <span className="min-w-0">
                 <span className="block text-sm font-semibold text-base-content">
-                  {line.spoken && <span className="sr-only">{`${line.spoken} `}</span>}
-                  {line.primary}
+                  {line.spoken && <span className="sr-only">{line.spoken}</span>}
+                  <span aria-hidden={line.spoken ? true : undefined}>{line.primary}</span>
                 </span>
                 <span className="block text-xs text-base-content/70">{line.secondary}</span>
               </span>

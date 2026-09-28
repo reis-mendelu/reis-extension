@@ -26,10 +26,14 @@ describe('directionLines', () => {
         kind: 'up',
         primary: '3. patro',
         secondary: 'západní schodiště nebo výtah',
-        spoken: 'nahoru do',
+        spoken: 'nahoru do 3. patra',
       },
       { kind: 'arrive', primary: 'Q39', secondary: '3. patro' },
     ]);
+  });
+
+  it('speaks the floor change in English too', () => {
+    expect(directionLines(Q39, tOf(en))[1]!.spoken).toBe('up to floor 3');
   });
 
   it('reads the same in English', () => {
@@ -53,7 +57,7 @@ describe('directionLines', () => {
       kind: 'down',
       primary: '1. podzemní podlaží',
       secondary: 'jižní schodiště',
-      spoken: 'dolů do',
+      spoken: 'dolů do 1. podzemního podlaží',
     });
     expect(lines[2]!.secondary).toBe('1. podzemní podlaží · hned u schodiště');
   });

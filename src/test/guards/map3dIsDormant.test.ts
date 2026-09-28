@@ -16,6 +16,7 @@ import { TiltToggle } from '../../components/Building3D/tilt/TiltToggle';
 import { TiltButton } from '../../components/Building3D/tilt/TiltButton';
 import { RoomDirections } from '../../components/CampusMap/RoomDirections';
 import { RoomDirectionsNote } from '../../components/mobile/screens/map/RoomDirectionsNote';
+import { q39Plan } from '../fixtures/q39Plan';
 
 /**
  * The 3D map (a room in building Q tilts the map into the building) is merged
@@ -46,42 +47,10 @@ afterEach(() => {
 /** Q39 on floor 3, with a staircase from the entrance floor up to it: a plan the
  *  directions can route, so only the flag decides whether they show. */
 function seedQ39() {
-  const at = (x: number, y: number): [number, number] => [
-    16.6142 + x / 72800,
-    49.2096 + y / 111320,
-  ];
-  const shape = (id: number, x: number, y: number, level: number, type: string, name: string) => ({
-    type: 'Feature' as const,
-    geometry: {
-      type: 'Polygon' as const,
-      coordinates: [[at(x, y), at(x + 4, y), at(x + 4, y + 4), at(x, y + 4), at(x, y)]],
-    },
-    properties: {
-      id,
-      buildingId: Q,
-      floorId: level,
-      floorLevel: level,
-      name,
-      nickname: null,
-      type,
-      category: 'teaching' as const,
-      label: type,
-      passportNumber: null,
-      seats: null,
-      hasProjector: false,
-      hasWhiteboard: false,
-      code: null,
-    },
-  });
-  const features = [
-    shape(171, -40, 10, 3, 'classroom', 'Q39'),
-    ...[0, 1, 2, 3].map((l) => shape(900 + l, -44, 10, l, 'stairs', '')),
-    shape(950, -50, -30, 0, 'office', ''),
-    shape(951, 50, 30, 0, 'office', ''),
-  ];
+  const { q39, rooms } = q39Plan();
   useAppStore.setState({
-    roomsByBuilding: { [Q]: { type: 'FeatureCollection', features } } as never,
-    mapSelection: { kind: 'room', room: features[0]!.properties } as never,
+    roomsByBuilding: { [Q]: rooms },
+    mapSelection: { kind: 'room', room: q39.properties },
   });
 }
 const directionShells = () =>

@@ -993,14 +993,19 @@
       "enter": "{side} entrance",
       "stairs": "{side} stairs",
       "stairsOrLift": "{side} stairs or lift",
-      "up": "up to",
-      "down": "down to",
+      "up": "up to {floor}",
+      "down": "down to {floor}",
       "byStairs": "right by the stairs",
       "side": {
         "north": "north",
         "south": "south",
         "east": "east",
         "west": "west"
+      },
+      "floorTo": {
+        "above": "floor {n}",
+        "ground": "the ground floor",
+        "below": "basement {n}"
       }
     }
   },

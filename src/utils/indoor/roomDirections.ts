@@ -8,8 +8,10 @@ export interface StairCore {
   lift: boolean;
   /** The floors it stops at, ascending. */
   levels: number[];
-  /** Its centre, [lng, lat]. */
+  /** Its centre on its first floor, [lng, lat]. */
   at: [number, number];
+  /** Its centre on each floor it serves: a dog-leg staircase drifts per landing. */
+  atByLevel: Record<number, [number, number]>;
 }
 
 /** A building entrance: where it is and which floor it opens onto. */
@@ -26,7 +28,7 @@ export type Step =
       lift: boolean;
       direction: 'up' | 'down';
       level: number;
-      /** The staircase's centre, [lng, lat] — where the map lights it. */
+      /** The staircase's centre on the room's floor, [lng, lat] — where the map lights it. */
       at: [number, number];
     }
   | { kind: 'arrive'; name: string; level: number; byCore: boolean };
@@ -91,7 +93,7 @@ function middle(rooms: RoomFeature[]): [number, number] {
 interface Stack {
   at: [number, number];
   /** Every floor's shape centre: a dog-leg staircase drifts per landing. */
-  members: [number, number][];
+  members: { at: [number, number]; level: number }[];
   levels: Set<number>;
 }
 
@@ -101,14 +103,24 @@ function stack(shapes: RoomFeature[]): Stack[] {
     const level = f.properties.floorLevel;
     if (level === null) continue;
     const c = centre(f);
-    const s = stacks.find((x) => x.members.some((m) => metres(m, c) <= STACK_M));
+    const s = stacks.find((x) => x.members.some((m) => metres(m.at, c) <= STACK_M));
     if (s) {
-      s.members.push(c);
+      s.members.push({ at: c, level });
       s.levels.add(level);
-    } else stacks.push({ at: c, members: [c], levels: new Set([level]) });
+    } else stacks.push({ at: c, members: [{ at: c, level }], levels: new Set([level]) });
   }
   return stacks;
 }
+
+/** The closest two stacks come on any floor they share (any floor, if none). */
+function gap(a: Stack, b: Stack): number {
+  const pairs = a.members.flatMap((m) => b.members.map((n) => ({ m, n })));
+  const same = pairs.filter((p) => p.m.level === p.n.level);
+  return Math.min(...(same.length ? same : pairs).map((p) => metres(p.m.at, p.n.at)));
+}
+
+/** A staircase's centre on `level`, or its first floor's. */
+const atOn = (core: StairCore, level: number): [number, number] => core.atByLevel[level] ?? core.at;
 
 /**
  * The building's staircases, each stacked across the floors it serves, with the
@@ -123,7 +135,7 @@ export function stairCores(rooms: RoomFeature[]): StairCore[] {
   const withLift = new Set<Stack>();
   for (const lift of stack(rooms.filter((f) => f.properties.type === 'elevator'))) {
     const nearest = stairs
-      .map((s) => ({ s, d: metres(s.at, lift.at) }))
+      .map((s) => ({ s, d: gap(s, lift) }))
       .filter((x) => x.d <= LIFT_M)
       .sort((a, b) => a.d - b.d)[0];
     if (nearest) withLift.add(nearest.s);
@@ -133,6 +145,7 @@ export function stairCores(rooms: RoomFeature[]): StairCore[] {
     lift: withLift.has(s),
     levels: [...s.levels].sort((a, b) => a - b),
     at: s.at,
+    atByLevel: Object.fromEntries(s.members.map((m) => [m.level, m.at])),
   }));
 }
 
@@ -157,7 +170,7 @@ export function roomDirections(
     return [enter, { kind: 'arrive', name: target.properties.name, level, byCore: false }];
   const core = stairCores(rooms)
     .filter((c) => c.levels.includes(level) && c.levels.includes(entrance.level))
-    .sort((a, b) => metres(a.at, room) - metres(b.at, room))[0];
+    .sort((a, b) => metres(atOn(a, level), room) - metres(atOn(b, level), room))[0];
   if (!core) return null;
   return [
     enter,
@@ -167,13 +180,13 @@ export function roomDirections(
       lift: core.lift,
       direction: level > entrance.level ? 'up' : 'down',
       level,
-      at: core.at,
+      at: atOn(core, level),
     },
     {
       kind: 'arrive',
       name: target.properties.name,
       level,
-      byCore: metres(core.at, room) <= BY_CORE_M,
+      byCore: metres(atOn(core, level), room) <= BY_CORE_M,
     },
   ];
 }

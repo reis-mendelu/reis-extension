@@ -85,6 +85,23 @@ describe('stairCores', () => {
     expect(stairCores(rooms).map((c) => c.levels)).toEqual([[0, 1, 2, 3]]);
   });
 
+  // Drifted 18 m by floor 3: the step and the map use floor 3's own landing.
+  it('carries each floor’s own landing of a drifting staircase', () => {
+    const shapes = [0, 1, 2, 3].map((l) => feature(-40 + l * 6, -20, l, 'stairs', 'Stairs'));
+    const room = feature(-20, -26, 3, 'classroom', 'Classroom', 'Q30', 4);
+    const rooms = [
+      ...shapes,
+      room,
+      feature(-50, -30, 0, 'office', 'Office'),
+      feature(46, 26, 0, 'office', 'Office'),
+    ];
+    const core = roomDirections(rooms, room, DOOR)?.find((s) => s.kind === 'core');
+    expect(core?.kind).toBe('core');
+    if (core?.kind !== 'core') return;
+    const floor3 = rooms.filter((f) => f.properties.floorLevel === 3);
+    expect(coreShapeIds(floor3, core.at)).toEqual([shapes[3]!.properties.id]);
+  });
+
   it('gives a lift to its nearest staircase only', () => {
     const rooms = [
       feature(-50, -30, 0, 'office', 'Office'),
@@ -127,8 +144,7 @@ describe('roomDirections', () => {
     for (const level of range(1, 3)) rooms.push(feature(-10, -24, level, 'stairs', 'Stairs'));
     const room = feature(-12, -26, 3, 'classroom', 'Classroom', 'Q33', 6);
     const core = roomDirections([...rooms, room], room, DOOR)?.find((s) => s.kind === 'core');
-    expect(core?.kind === 'core' && core.side).not.toBe('south');
-    expect(core).toMatchObject({ level: 3 });
+    expect(core).toMatchObject({ side: 'west', level: 3 });
   });
 
   it('goes down to a basement room', () => {

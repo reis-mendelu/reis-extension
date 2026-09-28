@@ -1,49 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { directionsFor } from '../roomDirectionsFor';
-import type { RoomFeature, RoomsCollection } from '../../../types/campusMap';
+import type { RoomsCollection } from '../../../types/campusMap';
+import { q39Plan } from '../../../test/fixtures/q39Plan';
 
-const LNG0 = 16.6142;
-const LAT0 = 49.2096;
-const M = 111320;
-const at = (x: number, y: number): [number, number] => [
-  LNG0 + x / (M * Math.cos((LAT0 * Math.PI) / 180)),
-  LAT0 + y / M,
-];
-let id = 1;
-const f = (x: number, y: number, level: number, type: string, name = ''): RoomFeature => ({
-  type: 'Feature',
-  geometry: {
-    type: 'Polygon',
-    coordinates: [[at(x, y), at(x + 4, y), at(x + 4, y + 4), at(x, y + 4), at(x, y)]],
-  },
-  properties: {
-    id: id++,
-    buildingId: 0,
-    floorId: level,
-    floorLevel: level,
-    name,
-    nickname: null,
-    type,
-    category: 'teaching',
-    label: type,
-    passportNumber: null,
-    seats: null,
-    hasProjector: false,
-    hasWhiteboard: false,
-    code: null,
-  },
-});
-
-const q39 = f(-40, 10, 3, 'classroom', 'Q39');
-const features = [
-  ...[0, 1, 2, 3].map((l) => f(-44, 10, l, 'stairs')),
-  f(-50, -30, 0, 'office'),
-  f(50, 30, 0, 'office'),
-  q39,
-];
-const rooms: Record<number, RoomsCollection> = {
-  0: { type: 'FeatureCollection', features } as RoomsCollection,
-};
+const { q39, rooms: plan } = q39Plan();
+const rooms: Record<number, RoomsCollection> = { 0: plan };
 const sel = { kind: 'room' as const, room: q39.properties };
 
 afterEach(() => vi.unstubAllEnvs());
