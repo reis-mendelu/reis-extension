@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const sampleRow = {
   id: 'e1',
@@ -24,7 +24,7 @@ const fallbackRow = {
 
 const from = vi.fn();
 const select = vi.fn();
-const gte = vi.fn();
+const lte = vi.fn();
 const or = vi.fn();
 const order = vi.fn();
 const limit = vi.fn();
@@ -35,8 +35,8 @@ function makeBuilder() {
       select(...args);
       return builder;
     },
-    gte: (...args: unknown[]) => {
-      gte(...args);
+    lte: (...args: unknown[]) => {
+      lte(...args);
       return builder;
     },
     or: (...args: unknown[]) => {
@@ -65,24 +65,43 @@ vi.mock('../supabaseClient', () => ({
 }));
 
 import { fetchNotifications } from '../spolkyService';
+import { localTodayIso } from '../../../components/CampusMap/eventWindow';
 
 describe('fetchNotifications (repointed to spolky_events)', () => {
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 28, 9, 30, 0));
     from.mockClear();
     select.mockClear();
-    gte.mockClear();
+    lte.mockClear();
     or.mockClear();
     order.mockClear();
     limit.mockClear();
   });
 
-  it('queries spolky_events with the upcoming-date filter and maps rows to notifications', async () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('queries spolky_events bounded to the soon horizon, keeping trips still running', async () => {
     const result = await fetchNotifications();
 
+    const today = localTodayIso();
+    const nowIso = new Date().toISOString();
+    const visible = `or(visible_from.is.null,visible_from.lte.${nowIso})`;
+
     expect(from).toHaveBeenCalledWith('spolky_events');
-    expect(gte).toHaveBeenCalledWith('date', expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/));
-    expect(or).toHaveBeenCalledWith(expect.stringContaining('visible_from.is.null'));
+    // Bounded to the soon horizon (today + 13 days) so an unbounded semester of
+    // events can't push a small society's next event off the 200-row cap.
+    expect(lte).toHaveBeenCalledWith('date', '2026-10-11');
+    // ONE .or() with nested and(): a trip still running (end_date >= today)
+    // stays even if it started before today.
+    expect(or).toHaveBeenCalledTimes(1);
+    expect(or).toHaveBeenCalledWith(
+      `and(date.gte.${today},${visible}),and(end_date.gte.${today},${visible})`
+    );
     expect(order).toHaveBeenCalledWith('date', { ascending: true });
+    expect(limit).toHaveBeenCalledWith(200);
 
     expect(result).toEqual([
       {

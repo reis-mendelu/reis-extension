@@ -3,6 +3,7 @@ import type { SpolekNotification } from './types';
 import { supabase } from './supabaseClient';
 import { logError } from '../../utils/reportError';
 import { hasDataConsent } from '../../utils/firefoxDataConsent';
+import { localTodayIso, SOON_WINDOW_DAYS } from '../../components/CampusMap/eventWindow';
 
 // Runtime shape of a `spolky_events` row used by the notification feed. Supabase
 // results are `any`-typed, so we validate before rendering user-facing content
@@ -70,13 +71,24 @@ export async function trackNotificationClick(notificationId: string): Promise<vo
  */
 export async function fetchNotifications(): Promise<SpolekNotification[] | null> {
   try {
+    // Bounded to the soon horizon on the SERVER: the limit is applied before the
+    // device keeps only followed societies (follows never leave the device), so
+    // an unbounded list of whole imported semesters would push a small society's
+    // next event off the end. A trip still running (end_date >= today) stays.
+    const today = localTodayIso();
+    const horizon = new Date();
+    horizon.setDate(horizon.getDate() + SOON_WINDOW_DAYS - 1);
+    const now = new Date().toISOString();
+    // ONE .or() with nested and(): whether PostgREST ANDs two separate `or`
+    // params was not verified, so the whole condition is written unambiguously.
+    const visible = `or(visible_from.is.null,visible_from.lte.${now})`;
     const { data, error } = await supabase
       .from('spolky_events')
       .select('id, association_id, title, body, url, created_at, date, end_date')
-      .gte('date', new Date().toISOString().slice(0, 10))
-      .or('visible_from.is.null,visible_from.lte.' + new Date().toISOString())
+      .lte('date', localTodayIso(horizon))
+      .or(`and(date.gte.${today},${visible}),and(end_date.gte.${today},${visible})`)
       .order('date', { ascending: true })
-      .limit(50);
+      .limit(200);
 
     if (error) {
       logError('Spolky.fetchNotifications', error);

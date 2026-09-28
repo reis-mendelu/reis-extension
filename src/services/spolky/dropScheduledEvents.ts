@@ -1,16 +1,16 @@
-import { isScheduledEvent } from '../../components/CampusMap/eventWindow';
+import { isBeyondSoon } from '../../components/CampusMap/eventWindow';
 import type { SpolekNotification } from './types';
 
 /**
- * Drops society events that have not gone live yet.
+ * Drops society events that start beyond Novinky's own soon horizon.
  *
- * The console files an event 14+ days out under "Naplánované — zveřejní se
- * <date>" and the map hides it until then (`isPublicEvent` in `mapEvents.ts`).
- * Novinky did not: the server query asks only for `date >= today`, and
- * `visible_from` is null on every row, so a subscriber saw the event — and it
- * counted views and clicks the society is shown — from the moment it was
- * published. This is the same window, asked at read time like `dropPastEvents`,
- * so the cached list is held to it as well as a fresh fetch.
+ * The 14-day cutoff is no longer "goes live" — the server query now bounds
+ * the feed to the same soon horizon itself (`SOON_WINDOW_DAYS`, see
+ * `fetchNotifications`), so a fresh fetch never carries a day-14+ row. The
+ * cached list in IndexedDB is written once and never re-examined though, so a
+ * row that was inside the horizon when cached drifts outside it as days pass.
+ * This is the same window, asked at read time like `dropPastEvents`, so the
+ * cached list is held to it as well as a fresh fetch.
  *
  * Judged on `startsAt` (the row's `date`), as the map judges it, so a multi-day
  * event goes live by its start. Local day, via `eventWindow`, so Novinky and the
@@ -27,6 +27,6 @@ export function dropScheduledEvents(
   return notifications.filter((n) => {
     const day = n.startsAt ?? '';
     if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return true;
-    return !isScheduledEvent(day, now);
+    return !isBeyondSoon(day, now);
   });
 }
