@@ -164,7 +164,10 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
     rsvpLoaded: false,
 
     loadRsvps: async (eventIds) => {
-      if (eventIds.length === 0) return;
+      // No early return for an empty feed: it is still a settled read, and
+      // returning before `rsvpLoaded` kept the replan gate shut for the whole
+      // session, so pings and digests for events that vanished still fired.
+      // Only the counts RPC is skipped — there is nothing to count.
       // Three sources of truth meet in this function, and every bug here has
       // come from blurring them. Each one has exactly one owner:
       //
@@ -223,7 +226,8 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
         }
       }
 
-      const { counts, ok } = await fetchEventRsvps(eventIds);
+      const { counts, ok } =
+        eventIds.length > 0 ? await fetchEventRsvps(eventIds) : { counts: {}, ok: false };
       set((s) => {
         // Spreading `stored` under the live map is not enough. A WITHDRAWAL that
         // settles during this load removes its event from `s.rsvp` entirely, so

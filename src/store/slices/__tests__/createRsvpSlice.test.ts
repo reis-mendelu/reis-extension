@@ -94,6 +94,17 @@ describe('createRsvpSlice', () => {
       await state.loadRsvps([]);
       expect(fetchEventRsvps).not.toHaveBeenCalled();
     });
+
+    // An empty feed (every event cancelled, or none published yet) is still a
+    // settled read. Returning before rsvpLoaded left the replan gate shut for
+    // the whole session, so pings and digests for vanished events still fired.
+    it('an empty feed still reads the device answers, opens the gate and replans', async () => {
+      idb.set('event_rsvps_mine', { gone: 'going' });
+      await state.loadRsvps([]);
+      expect(fetchEventRsvps).not.toHaveBeenCalled();
+      expect(state.rsvpLoaded).toBe(true);
+      expect(state.replanNotifications).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('answering', () => {
