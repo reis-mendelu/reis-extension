@@ -3,11 +3,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const upload = vi.fn();
 const remove = vi.fn();
 const single = vi.fn();
+const inserted = vi.fn();
 vi.mock('../../services/admin/authClient', () => ({
   adminAuthClient: {
     storage: { from: () => ({ upload, remove }) },
     from: () => ({
-      insert: () => ({ select: () => ({ single }) }),
+      insert: (row: unknown) => (inserted(row), { select: () => ({ single }) }),
       update: () => ({ eq: () => ({ select: () => ({ single }) }) }),
     }),
   },
@@ -76,11 +77,28 @@ describe('insertSociety', () => {
         color: '#123456',
         facultyKey: 'zf',
         autoFollowFaculty: false,
+        instagram: null,
       },
       'kino/aa.png',
       90
     );
     expect(s?.shortName).toBe('KINO');
+  });
+  it('writes instagram as null when the input carries none', async () => {
+    single.mockResolvedValue({ data: null, error: { message: 'x' } });
+    await insertSociety(
+      {
+        id: 'kino',
+        name: 'Kino',
+        shortName: 'KINO',
+        color: '#123456',
+        facultyKey: 'zf',
+        autoFollowFaculty: false,
+      },
+      'kino/aa.png',
+      90
+    );
+    expect(inserted).toHaveBeenLastCalledWith(expect.objectContaining({ instagram: null }));
   });
   it('returns null on error', async () => {
     single.mockResolvedValue({ data: null, error: { message: 'duplicate key' } });
@@ -93,6 +111,7 @@ describe('insertSociety', () => {
           color: '#123456',
           facultyKey: 'zf',
           autoFollowFaculty: false,
+          instagram: null,
         },
         'esn/aa.png',
         1

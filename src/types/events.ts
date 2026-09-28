@@ -84,6 +84,8 @@ export interface Society {
   sortOrder: number;
   /** Hidden societies still resolve for their old events; they leave lists. */
   isActive: boolean;
+  /** Instagram handle without @ — the "details" link on events that have none. */
+  instagram?: string;
 }
 
 // An event placed on the campus map. Extends the bell-feed event with an

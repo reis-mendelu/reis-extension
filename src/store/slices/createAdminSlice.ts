@@ -2,8 +2,10 @@ import type { Session } from '@supabase/supabase-js';
 import type { AppSlice } from '../types';
 import { adminAuthClient } from '../../services/admin/authClient';
 import { toAuthEmail } from '../../services/admin/societyLogin';
-import { listMyPosts, type SpolkyEventRow } from '../../api/societyPosts';
+import type { SpolkyEventRow } from '../../api/societyPosts';
 import { listSocietyAccounts, type SocietyAccountRow } from '../../api/societyAccounts';
+import type { RsvpCounts } from './createRsvpSlice';
+import { loadSocietyPosts } from './admin/loadSocietyPosts';
 import { logError } from '../../utils/reportError';
 
 export type AdminRole = 'association' | 'reis_admin';
@@ -19,6 +21,9 @@ export interface AdminSlice {
   /** True while the admin console has taken the whole app over. */
   adminConsoleOpen: boolean;
   societyPosts: SpolkyEventRow[];
+  /** Interest (going + interested) per event, from the same public RSVP RPC —
+   *  no new data flow. No entry = not loaded yet, not "zero interest". */
+  societyRsvpCounts: Record<string, RsvpCounts>;
   /** reIS admin only: every society account, for the reset/create panel. Empty
    *  for an association login, which has no business listing the others. */
   societyAccounts: SocietyAccountRow[];
@@ -71,6 +76,7 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   adminActiveAssociationId: null,
   adminConsoleOpen: false,
   societyPosts: [],
+  societyRsvpCounts: {},
   societyAccounts: [],
   // Re-pull the inbox on open, not just when the session is established.
   //
@@ -109,6 +115,13 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   },
   setActiveAssociation: (id) => {
     get().resetAuthoringState();
+    // A different society's rows go at once, not when its own load lands: a
+    // slow read otherwise shows the old society's events, with edit/delete on
+    // them, under the new society's name.
+    if (id !== get().adminActiveAssociationId) {
+      set({ societyPosts: [], societyRsvpCounts: {} });
+      get().refreshSocietyMapEvents();
+    }
     set({ adminActiveAssociationId: id });
     void get().loadSocietyPosts();
   },
@@ -179,6 +192,7 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
       adminActiveAssociationId: null,
       adminConsoleOpen: false,
       societyPosts: [],
+      societyRsvpCounts: {},
       societyAccounts: [],
       societyMapEvents: [],
       suggestions: [],
@@ -222,20 +236,12 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   loadSocietyAccounts: async () => {
     set({ societyAccounts: await listSocietyAccounts() });
   },
-  loadSocietyPosts: async () => {
-    const associationId = get().adminActiveAssociationId;
-    if (!associationId) {
-      set({ societyPosts: [] });
-      get().refreshSocietyMapEvents();
-      return;
-    }
-    const posts = await listMyPosts(associationId);
-    // Two picker changes in quick succession can resolve out of order. Without
-    // this guard the slower, older response wins and the console shows one
-    // society's events under another's name — and delete/edit act on THOSE
-    // rows, so the damage is to a society nobody is looking at.
-    if (get().adminActiveAssociationId !== associationId) return;
-    set({ societyPosts: posts });
-    get().refreshSocietyMapEvents();
-  },
+  // Implementation lives in ./admin/loadSocietyPosts (this file's line budget).
+  loadSocietyPosts: () =>
+    loadSocietyPosts({
+      activeAssociationId: () => get().adminActiveAssociationId,
+      setPosts: (posts) => set({ societyPosts: posts }),
+      setRsvpCounts: (counts) => set({ societyRsvpCounts: counts }),
+      refreshSocietyMapEvents: () => get().refreshSocietyMapEvents(),
+    }),
 });

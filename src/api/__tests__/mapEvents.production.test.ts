@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { toMapEvent } from '../mapEvents';
-import { isPublicEvent } from '../../components/CampusMap/eventWindow';
+import { isFinishedEvent } from '../../components/CampusMap/eventWindow';
 import { BUNDLED_SOCIETIES } from '../../data/societies';
 
 /**
@@ -58,15 +58,23 @@ describe('toMapEvent against a real production row', () => {
     expect(event.description).toBeNull();
   });
 
-  it('hides this row from students — it is in the past', () => {
+  it('is finished — it is in the past', () => {
     // The row is real and still in the table, which is exactly why the student
-    // map reads "Žádné akce": the public feed is date-filtered, not empty.
-    expect(isPublicEvent(PRODUCTION_ROW.date, new Date('2026-08-11'))).toBe(false);
+    // map does not show it: the catalog drops finished events, not empty rows.
+    expect(
+      isFinishedEvent(
+        { date: PRODUCTION_ROW.date, endDate: PRODUCTION_ROW.end_date },
+        new Date('2026-08-11')
+      )
+    ).toBe(true);
   });
 
-  it('would show it to students had it been dated inside the window', () => {
-    // Same row, moved into the 14-day window — proves the filter is what hides
-    // it, not a mapping failure upstream.
-    expect(isPublicEvent('2026-08-14', new Date('2026-08-11'))).toBe(true);
+  it('would show it to students had it not finished yet', () => {
+    // Same row, moved into the future — proves the finished check is what hides
+    // it, not a mapping failure upstream. The catalog has no upper bound any
+    // more, so a date months out — past the old 14-day window — still shows.
+    expect(isFinishedEvent({ date: '2026-12-20', endDate: null }, new Date('2026-08-11'))).toBe(
+      false
+    );
   });
 });

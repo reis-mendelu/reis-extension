@@ -4,6 +4,7 @@ import { NotificationsSheet } from '../NotificationsSheet';
 import { useAppStore } from '../../../../store/useAppStore';
 import { trackNotificationClick } from '../../../../services/spolky';
 import type { SpolekNotification } from '../../../../services/spolky';
+import { openExternal } from '../../../../mobile/openExternal';
 
 // Only the click counter is faked: the rest of the module backs the feed's own
 // faculty filter, and a real RPC here would reach Supabase from a unit test.
@@ -27,6 +28,7 @@ const notification: SpolekNotification = {
 
 beforeEach(() => {
   vi.mocked(trackNotificationClick).mockClear();
+  vi.mocked(openExternal).mockClear();
   useAppStore.setState({
     language: 'cz',
     exams: { data: [] },
@@ -190,16 +192,19 @@ describe('NotificationsSheet event notifications', () => {
 
   /**
    * The guard covered a second tap on the SAME kind of row and nothing else.
-   * A linked notification returns before ever reading `openingRef`, so tapping
-   * one while a linkless activation was still awaiting the map feed left that
+   * An academic row returns before ever reading `openingRef`, so tapping one
+   * while a linkless activation was still awaiting the map feed left that
    * first handler alive: the load lands, and it focuses the earlier event and
    * switches to the map behind the browser the student was just sent to. They
    * come back to somebody else's event instead of the tab they left.
    *
    * The later tap is the later intent, so it wins — the earlier activation is
-   * cancelled rather than merely queued behind it.
+   * cancelled rather than merely queued behind it. A non-academic linked row
+   * does NOT bypass `openingRef` any more (the card takes priority, which
+   * needs the map feed loaded first), so only an academic row can still
+   * supersede an in-flight load synchronously.
    */
-  it('cancels an in-flight activation when a linked notification supersedes it', async () => {
+  it('cancels an in-flight activation when an academic notification supersedes it', async () => {
     let release!: () => void;
     const pending = new Promise<void>((r) => {
       release = r;
@@ -208,9 +213,15 @@ describe('NotificationsSheet event notifications', () => {
       await pending;
       useAppStore.setState({ mapEvents: [event], mapEventsLoaded: true } as never);
     });
+    const academicNotification = {
+      ...notification,
+      id: 'n2',
+      title: 'ESN trip signup',
+      associationId: 'academic_deadline',
+    };
     useAppStore.setState({
       notifications: {
-        data: [linklessNotification, { ...notification, id: 'n2', title: 'ESN trip signup' }],
+        data: [linklessNotification, academicNotification],
         status: 'success',
         readIds: new Set(),
         viewedIds: new Set(),
@@ -231,9 +242,195 @@ describe('NotificationsSheet event notifications', () => {
     const state = useAppStore.getState();
     expect(state.mobileTab).toBe('calendar');
     expect(state.mapSelection).toBeNull();
-    // The link's own click is the only one that went anywhere.
+    // The academic tap went straight to its link instead.
+    expect(openExternal).toHaveBeenCalledWith(academicNotification.link);
+    // Academic rows are never tracked, and the earlier (superseded)
+    // activation never got far enough to track its own row either.
+    expect(trackNotificationClick).not.toHaveBeenCalled();
+  });
+
+  /**
+   * The guard is per ROW, not global: a tap on a DIFFERENT non-academic row
+   * while one is in flight is just as much a new intent as an academic tap
+   * is, and must supersede the same way — the later row's own effect (here,
+   * its link fallback) wins, and the earlier row's tap is dropped rather than
+   * landing after the fact. Only the row that actually fired is tracked.
+   */
+  it('supersedes an in-flight activation when a later tap lands on a different non-academic row (link)', async () => {
+    let release!: () => void;
+    const pending = new Promise<void>((r) => {
+      release = r;
+    });
+    const loadMapEvents = vi.fn(async () => {
+      await pending;
+      useAppStore.setState({ mapEvents: [event], mapEventsLoaded: true } as never);
+    });
+    // Linked, non-academic, and its id ('n3') is never in the loaded
+    // mapEvents — so its own effect is the link fallback, reached through
+    // the ordinary card-checking branch rather than the academic shortcut.
+    const otherNotification = {
+      ...notification,
+      id: 'n3',
+      title: 'ESN volunteer day',
+      link: 'https://esn.cz/volunteer',
+    };
+    useAppStore.setState({
+      notifications: {
+        data: [linklessNotification, otherNotification],
+        status: 'success',
+        readIds: new Set(),
+        viewedIds: new Set(),
+        seenDeadlineAlertIds: new Set(),
+      },
+      mapEvents: [],
+      mapEventsLoaded: false,
+      loadMapEvents,
+    } as never);
+
+    render(<NotificationsSheet onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText('ESN party tonight'));
+    fireEvent.click(screen.getByText('ESN volunteer day'));
+    release();
+    await waitFor(() => expect(openExternal).toHaveBeenCalledWith('https://esn.cz/volunteer'));
+    await Promise.resolve();
+
+    const state = useAppStore.getState();
+    // The first row's tap never got to open the map — it was superseded.
+    expect(state.mobileTab).toBe('calendar');
+    expect(state.mapSelection).toBeNull();
+    // Only the row the later tap actually landed on was tracked.
     expect(trackNotificationClick).toHaveBeenCalledTimes(1);
-    expect(trackNotificationClick).toHaveBeenCalledWith('n2');
+    expect(trackNotificationClick).toHaveBeenCalledWith('n3');
+  });
+
+  // Same as above, but the later row IS on the loaded map: the card wins for
+  // it exactly as it would for a first tap, not just the link fallback.
+  it('supersedes an in-flight activation when a later tap lands on a different non-academic row (card)', async () => {
+    let release!: () => void;
+    const pending = new Promise<void>((r) => {
+      release = r;
+    });
+    const otherEvent = { ...event, id: 'n4' };
+    const loadMapEvents = vi.fn(async () => {
+      await pending;
+      useAppStore.setState({ mapEvents: [otherEvent], mapEventsLoaded: true } as never);
+    });
+    const otherNotification = {
+      ...notification,
+      id: 'n4',
+      title: 'ESN volunteer day',
+      link: 'https://esn.cz/volunteer',
+    };
+    useAppStore.setState({
+      notifications: {
+        data: [linklessNotification, otherNotification],
+        status: 'success',
+        readIds: new Set(),
+        viewedIds: new Set(),
+        seenDeadlineAlertIds: new Set(),
+      },
+      mapEvents: [],
+      mapEventsLoaded: false,
+      loadMapEvents,
+    } as never);
+
+    render(<NotificationsSheet onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText('ESN party tonight'));
+    fireEvent.click(screen.getByText('ESN volunteer day'));
+    release();
+    await waitFor(() =>
+      expect(useAppStore.getState().mapSelection).toMatchObject({
+        kind: 'event',
+        event: { id: 'n4' },
+      })
+    );
+
+    const state = useAppStore.getState();
+    expect(state.mobileTab).toBe('map');
+    expect(openExternal).not.toHaveBeenCalled();
+    expect(trackNotificationClick).toHaveBeenCalledTimes(1);
+    expect(trackNotificationClick).toHaveBeenCalledWith('n4');
+  });
+
+  // The card carries the RSVP and the venue; the link is just its button. A
+  // linked event that IS on the map must open the card, not the link.
+  it('opens the card, not the link, for a linked event that is on the map', () => {
+    const linkedNotification = { ...linklessNotification, link: 'https://esn.cz/e' };
+    useAppStore.setState({
+      notifications: {
+        data: [linkedNotification],
+        status: 'success',
+        readIds: new Set(),
+        viewedIds: new Set(),
+        seenDeadlineAlertIds: new Set(),
+      },
+      mapEvents: [event],
+      mapEventsLoaded: true,
+    } as never);
+
+    render(<NotificationsSheet onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText('ESN party tonight'));
+
+    const state = useAppStore.getState();
+    expect(state.mobileTab).toBe('map');
+    expect(state.mapSelection).toMatchObject({ kind: 'event', event: { id: 'n1' } });
+    expect(openExternal).not.toHaveBeenCalled();
+  });
+
+  // An academic row is a deadline, not a place: straight to the link, even
+  // though the map feed has not loaded at all.
+  it('opens the link immediately for an academic row', () => {
+    const academicNotification = {
+      ...notification,
+      id: 'a1',
+      associationId: 'academic_deadline',
+      link: 'https://is.mendelu.cz/dp',
+    };
+    useAppStore.setState({
+      notifications: {
+        data: [academicNotification],
+        status: 'success',
+        readIds: new Set(),
+        viewedIds: new Set(),
+        seenDeadlineAlertIds: new Set(),
+      },
+      mapEvents: [],
+      mapEventsLoaded: false,
+    } as never);
+
+    render(<NotificationsSheet onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText('ESN party tonight'));
+
+    expect(openExternal).toHaveBeenCalledWith('https://is.mendelu.cz/dp');
+    expect(trackNotificationClick).not.toHaveBeenCalled();
+    expect(useAppStore.getState().mobileTab).toBe('calendar');
+  });
+
+  // A linked event whose id turns out not to be on the map after the feed
+  // loads — the map-less fallback the link exists for.
+  it('falls back to the link when the loaded map has no matching event', async () => {
+    const linkedNotification = { ...linklessNotification, link: 'https://esn.cz/e' };
+    const loadMapEvents = vi.fn(async () => {
+      useAppStore.setState({ mapEvents: [], mapEventsLoaded: true } as never);
+    });
+    useAppStore.setState({
+      notifications: {
+        data: [linkedNotification],
+        status: 'success',
+        readIds: new Set(),
+        viewedIds: new Set(),
+        seenDeadlineAlertIds: new Set(),
+      },
+      mapEvents: [],
+      mapEventsLoaded: false,
+      loadMapEvents,
+    } as never);
+
+    render(<NotificationsSheet onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText('ESN party tonight'));
+
+    await waitFor(() => expect(openExternal).toHaveBeenCalledWith('https://esn.cz/e'));
+    expect(useAppStore.getState().mobileTab).toBe('calendar');
   });
 
   /**

@@ -1,4 +1,4 @@
-import { CalendarOff } from 'lucide-react';
+import { CalendarOff, ChevronDown, ChevronRight } from 'lucide-react';
 import { useVisibleMapEvents } from '../../hooks/useVisibleMapEvents';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -7,8 +7,9 @@ import { EventRow } from './EventRow';
 import { trackMapEventView } from '../../api/featureUsage';
 
 // The events tab body shared by the desktop MapSidePanel and the mobile map
-// sheet's Akce tab: the upcoming events grouped into "This week" / "Next week",
-// soonest first. Rows open the bottom-left detail card on desktop (off-campus
+// sheet's Akce tab: the upcoming events grouped into This week / Next week /
+// Later, soonest first, with Later collapsed by default (it holds the rest of
+// the semester). Rows open the bottom-left detail card on desktop (off-campus
 // rows open it too but don't move the map).
 //
 // No society filter. The chips left the phone first — nine of them above a list
@@ -26,6 +27,8 @@ export function MapEventsSection() {
   const events = useVisibleMapEvents();
   const selection = useAppStore((s) => s.mapSelection);
   const focusEvent = useAppStore((s) => s.focusEventById);
+  const laterExpanded = useAppStore((s) => s.mapLaterExpanded);
+  const toggleLater = useAppStore((s) => s.toggleMapLater);
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
 
@@ -43,25 +46,38 @@ export function MapEventsSection() {
         ) : (
           sections.map((s) => (
             <div key={s.key}>
-              <div className="border-l-2 border-transparent px-3 pb-1 pt-2 text-[11px] font-bold uppercase tracking-wide text-base-content/60">
-                {t(`map.${s.key}`)}
-              </div>
-              {s.events.map((e) => (
-                <EventRow
-                  key={e.id}
-                  event={e}
-                  locale={locale}
-                  t={t}
-                  selected={e.id === selectedId}
-                  onClick={() => {
-                    // This panel is the student map's own list on both
-                    // surfaces (desktop MapSidePanel, mobile Akce tab), so a
-                    // row opened here is a map view exactly like a pin.
-                    void trackMapEventView(e.id);
-                    focusEvent(e.id, { fly: true });
-                  }}
-                />
-              ))}
+              {s.key === 'later' ? (
+                <button
+                  type="button"
+                  onClick={toggleLater}
+                  aria-expanded={laterExpanded}
+                  className="flex w-full items-center gap-1 border-l-2 border-transparent px-3 pb-1 pt-2 text-left text-[11px] font-bold uppercase tracking-wide text-base-content/60"
+                >
+                  {laterExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                  {t('map.later')} ({s.events.length})
+                </button>
+              ) : (
+                <div className="border-l-2 border-transparent px-3 pb-1 pt-2 text-[11px] font-bold uppercase tracking-wide text-base-content/60">
+                  {t(`map.${s.key}`)}
+                </div>
+              )}
+              {(s.key !== 'later' || laterExpanded) &&
+                s.events.map((e) => (
+                  <EventRow
+                    key={e.id}
+                    event={e}
+                    locale={locale}
+                    t={t}
+                    selected={e.id === selectedId}
+                    onClick={() => {
+                      // This panel is the student map's own list on both
+                      // surfaces (desktop MapSidePanel, mobile Akce tab), so a
+                      // row opened here is a map view exactly like a pin.
+                      void trackMapEventView(e.id);
+                      focusEvent(e.id, { fly: true });
+                    }}
+                  />
+                ))}
             </div>
           ))
         )}

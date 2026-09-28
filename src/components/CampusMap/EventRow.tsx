@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { MapPin } from 'lucide-react';
 import { CATEGORY_EMOJI_SRC } from '../../data/eventCategories';
-import { relativeDayLabel } from './eventHelpers';
+import { eventWhenLabel } from './eventHelpers';
+import { useSociety } from '../../hooks/useSociety';
 import type { MapEvent } from '../../types/events';
 
 // Shared list row for both the public Events tab (MapEventsSection) and the
@@ -24,15 +25,17 @@ export function EventRow({
 }: {
   event: MapEvent;
   locale: string;
-  t: (k: string) => string;
+  t: (k: string, p?: Record<string, string | number>) => string;
   selected: boolean;
   onClick: () => void;
   subline?: string;
   actions?: ReactNode;
   footer?: ReactNode;
 }) {
-  const day =
-    subline ?? `${relativeDayLabel(event.date, locale, t)}${event.time ? ` · ${event.time}` : ''}`;
+  const soc = useSociety(event.societyId);
+  const day = subline ?? eventWhenLabel(event, locale, t);
+  // Blank is none, as in EventVenueLine: "   " is not a place to show.
+  const location = event.location?.trim() || null;
   return (
     <div
       className={`flex items-stretch border-l-2 transition-colors ${
@@ -68,10 +71,15 @@ export function EventRow({
               one with no place at all, while its detail card had a working
               "open in Maps" link the whole time. The coordinate is a venue;
               only its label is missing. */}
-          {(event.location || event.coord) && (
+          {(location || event.coord) && (
             <span className="mt-0.5 flex items-center gap-1 text-[11px] text-base-content/60">
               <MapPin size={11} className="flex-shrink-0" />
-              <span className="truncate">{event.location ?? t('map.venueOnMap')}</span>
+              <span className="truncate">{location ?? t('map.venueOnMap')}</span>
+            </span>
+          )}
+          {!location && !event.coord && event.venueKind === 'tba' && soc?.shortName && (
+            <span className="mt-0.5 block truncate text-[11px] text-base-content/60">
+              {t('map.venueTba', { name: soc.shortName })}
             </span>
           )}
           {footer}

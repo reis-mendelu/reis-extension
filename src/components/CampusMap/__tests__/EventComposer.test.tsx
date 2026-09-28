@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { EventComposer } from '../EventComposer';
 import type { PostInput } from '../../../api/societyPosts';
@@ -58,7 +58,7 @@ describe('EventComposer publish', () => {
     // translations (not raw keys), so queries below match the rendered Czech text.
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Party' } });
     // choose date through MiniCalendar
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     // A start time is required now, so every publish path sets one.
     fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
@@ -95,7 +95,7 @@ describe('EventComposer publish', () => {
     });
     render(<EventComposer onDone={() => {}} />);
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'ESN párty' } });
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     // A start time is required now, so every publish path sets one.
     fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
@@ -112,7 +112,7 @@ describe('EventComposer publish', () => {
     // Completing every field enables publish.
     useAppStore.setState({ draftCoord: [16.61, 49.21] });
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Party' } });
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     // A start time is required now, so every publish path sets one.
     fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
@@ -123,7 +123,7 @@ describe('EventComposer publish', () => {
     useAppStore.setState({ draftCoord: [16.61, 49.21] });
     render(<EventComposer onDone={() => {}} />);
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Party' } });
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     // Time: type into the reIS-native combobox — "1930" masks to 19:30.
     fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
@@ -138,7 +138,7 @@ describe('EventComposer publish', () => {
     fireEvent.change(screen.getByPlaceholderText('Název akce'), {
       target: { value: 'Kvíz večer' },
     });
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     // A start time is required now, so every publish path sets one.
     fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
@@ -290,7 +290,7 @@ const pickRoom = () => {
 };
 const fillRequired = () => {
   fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Akce' } });
-  fireEvent.click(screen.getByText('Vyberte datum'));
+  fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
   fireEvent.click(screen.getByRole('button', { name: '15' }));
   fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
 };
@@ -425,6 +425,99 @@ describe('EventComposer — the venue kind follows the pick', () => {
 });
 
 /**
+ * The draft pin is clickable (EventLayer → beginPlacing) so a society can move
+ * a picked venue. That click goes straight to the store, past the composer, so
+ * the picked room or place used to survive the move: the form kept saying "Q01"
+ * and publish saved the OLD room and its coordinate, whatever the new pin said.
+ */
+describe('EventComposer — moving the draft pin replaces the pick', () => {
+  const movePin = (to: [number, number]) =>
+    act(() => {
+      useAppStore.getState().beginPlacing();
+      useAppStore.getState().placeDraftCoord(to);
+    });
+
+  it('publishes the new point, not the old room, after the pin is moved', async () => {
+    render(<EventComposer onDone={() => {}} />);
+    fillRequired();
+    pickRoom();
+    movePin([16.7, 49.3]);
+    expect(screen.getByText('Vybrané místo na mapě')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    const input = createPost.mock.calls[0][0];
+    expect(input.venueKind).toBe('offcampus');
+    expect(input.roomCode).toBeNull();
+    expect(input.location).toBeNull();
+    expect([input.coordLng, input.coordLat]).toEqual([16.7, 49.3]);
+  });
+
+  it('drops a searched place’s name once its pin is moved', async () => {
+    render(<EventComposer onDone={() => {}} />);
+    fillRequired();
+    fireEvent.change(screen.getByPlaceholderText(VENUE), { target: { value: 'bar' } });
+    fireEvent.click(await screen.findByText('Bar, který neexistuje'));
+    movePin([16.7, 49.3]);
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    const input = createPost.mock.calls[0][0];
+    expect(input.venueKind).toBe('offcampus');
+    expect(input.location).toBeNull();
+    expect([input.coordLng, input.coordLat]).toEqual([16.7, 49.3]);
+  });
+
+  it('keeps the room when placing is started and then cancelled', async () => {
+    render(<EventComposer onDone={() => {}} />);
+    fillRequired();
+    pickRoom();
+    act(() => {
+      useAppStore.getState().beginPlacing();
+      useAppStore.getState().cancelPlacing();
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    expect(createPost.mock.calls[0][0].venueKind).toBe('campus');
+    expect(createPost.mock.calls[0][0].roomCode).toBeTruthy();
+  });
+
+  // openComposer seeds draftCoord from the edited event, so an untouched
+  // campus event must still read as its room, not as a bare point.
+  it('saves an untouched campus event as campus when draftCoord mirrors it', async () => {
+    const coord: [number, number] = [16.614, 49.209];
+    useAppStore.setState({
+      editEventId: 'c1',
+      draftCoord: [...coord],
+      societyMapEvents: [
+        {
+          id: 'c1',
+          title: 'Deskovky',
+          url: '',
+          date: '2026-07-08',
+          endDate: null,
+          time: '19:30',
+          location: null,
+          imageUrl: null,
+          organizerKey: 'pef',
+          societyId: 'supef',
+          coord,
+          roomCode: 'BA39N6006',
+          venueKind: 'campus',
+          category: 'boardgames',
+        },
+      ],
+    });
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
+    await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
+    expect(updatePost.mock.calls[0][1].venue_kind).toBe('campus');
+    expect(updatePost.mock.calls[0][1].room_code).toBe('BA39N6006');
+  });
+});
+
+/**
  * Every event had only a title — the form saved `body: ''` unconditionally —
  * so societies packed the details into it: "City Game (bring a pen)", "BYO
  * Picnic (B - bring, Y - your, O - own)". The description is optional.
@@ -532,11 +625,11 @@ describe('EventComposer — duplicating an event', () => {
     } as never);
     render(<EventComposer onDone={() => {}} />);
     expect(screen.getByPlaceholderText('Název akce')).toHaveValue('Deskovky');
-    expect(screen.getByText('Vyberte datum')).toBeInTheDocument();
+    expect(screen.getAllByText('Vyberte datum')[0]).toBeInTheDocument();
     const publish = screen.getByRole('button', { name: 'Zveřejnit akci' });
     expect(publish).toBeDisabled();
 
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     fireEvent.click(publish);
 
@@ -558,40 +651,25 @@ describe('EventComposer — duplicating an event', () => {
 });
 
 /**
- * Every event gets a start time.
- *
- * Time used to be optional, which left `time: null` rows in spolky_events —
- * and an event with no start has no "two hours before", so it silently got no
- * reminder at all. Rather than inventing a default hour to notify at, the
- * composer now requires the time, which is the only source these rows have
- * (mapEvents reads spolky_events exclusively).
+ * A society publishes what it knows. A semester list has a title and a date;
+ * the place and time follow later — venue_kind 'tba', time null — rather than
+ * a start time or a venue being required up front.
  */
-describe('EventComposer — a start time is required', () => {
+describe('EventComposer — publishing without a place or time', () => {
   const fillTitleAndDate = () => {
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Kvíz' } });
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
   };
 
-  it('keeps publish disabled until a time is given', () => {
-    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+  it('enables publish with only a title and a date', () => {
     render(<EventComposer onDone={() => {}} />);
-    fillTitleAndDate();
-
-    // Title, date and venue are all present — only the time is missing.
     expect(screen.getByRole('button', { name: 'Zveřejnit akci' })).toBeDisabled();
-  });
-
-  it('enables publish once the time is set', () => {
-    useAppStore.setState({ draftCoord: [16.61, 49.21] });
-    render(<EventComposer onDone={() => {}} />);
     fillTitleAndDate();
-    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
-
     expect(screen.getByRole('button', { name: 'Zveřejnit akci' })).toBeEnabled();
   });
 
-  it('publishes the time rather than a null', async () => {
+  it('publishes the time rather than a null when one is set', async () => {
     useAppStore.setState({ draftCoord: [16.61, 49.21] });
     render(<EventComposer onDone={() => {}} />);
     fillTitleAndDate();
@@ -601,6 +679,21 @@ describe('EventComposer — a start time is required', () => {
     await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
     expect(createPost.mock.calls[0][0].time).toBe('19:30');
   });
+
+  it('publishes with only a title and a date, as venue_kind tba with no time', async () => {
+    render(<EventComposer onDone={() => {}} />);
+    fillTitleAndDate();
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    const input = createPost.mock.calls[0][0];
+    expect(input.venueKind).toBe('tba');
+    expect(input.time).toBeNull();
+    expect(input.roomCode).toBeNull();
+    expect(input.coordLng).toBeNull();
+    expect(input.coordLat).toBeNull();
+    expect(input.location).toBeNull();
+  });
 });
 
 /**
@@ -608,11 +701,23 @@ describe('EventComposer — a start time is required', () => {
  * EventDetailCard and openExternal — a `javascript:` scheme there would run
  * in the page. Only http(s) links validateExternalUrl accepts get through.
  */
+// Two identical "Vyberte datum" triggers used to be all a screen reader got:
+// each date picker is now named by its own heading.
+describe('EventComposer — the two date pickers', () => {
+  it('names each date trigger by its heading', () => {
+    render(<EventComposer onDone={() => {}} />);
+    expect(screen.getByRole('button', { name: 'Kdy Vyberte datum' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Konec (vícedenní akce) Vyberte datum' })
+    ).toBeInTheDocument();
+  });
+});
+
 describe('EventComposer — url validation', () => {
   const fillRequired = () => {
     useAppStore.setState({ draftCoord: [16.61, 49.21] });
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Kvíz' } });
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
   };
@@ -628,6 +733,16 @@ describe('EventComposer — url validation', () => {
 
     expect(screen.getByRole('button', { name: 'Zveřejnit akci' })).toBeDisabled();
     expect(screen.getByText('Zadej odkaz http:// nebo https://')).toBeInTheDocument();
+  });
+
+  // The error is not only red text: a screen reader hears it on the field.
+  it('ties the url error to its input for assistive technology', () => {
+    render(<EventComposer onDone={() => {}} />);
+    const input = screen.getByPlaceholderText('https://…');
+    expect(input).not.toHaveAttribute('aria-invalid', 'true');
+    fireEvent.change(input, { target: { value: 'javascript:alert(1)' } });
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(input).toHaveAccessibleDescription('Zadej odkaz http:// nebo https://');
   });
 
   it('leaves publish enabled when the url field is left empty', () => {

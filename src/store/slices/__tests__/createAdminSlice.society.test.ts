@@ -44,6 +44,13 @@ vi.mock('../../../api/societyPosts', async (orig) => ({
   listMyPosts: vi.fn(),
 }));
 
+// loadSocietyPosts now also pulls interest counts from the same public
+// aggregate RPC the student card uses. Mocked here so these tests never hit
+// the real Supabase client.
+vi.mock('../../../api/eventRsvp', () => ({
+  fetchEventRsvps: vi.fn().mockResolvedValue({ counts: {}, ok: true }),
+}));
+
 import { listMyPosts } from '../../../api/societyPosts';
 import { useAppStore } from '../../useAppStore';
 
@@ -88,6 +95,25 @@ describe('choosing the society being authored', () => {
     expect(s.composerOpen).toBe(false);
     expect(s.editEventId).toBeNull();
     expect(s.draftCoord).toBeNull();
+  });
+
+  // The new society's read can be slow; until it lands the console must not
+  // show the previous society's rows (with edit/delete on them) under its name.
+  it("clears the previous society's rows as soon as the picker changes", () => {
+    vi.mocked(listMyPosts).mockReturnValue(new Promise(() => {}));
+    useAppStore.setState({
+      adminActiveAssociationId: 'supef',
+      societyPosts: [row('supef-1', 'supef')] as never,
+      societyRsvpCounts: { 'supef-1': { going: 1, interested: 0 } },
+    });
+    useAppStore.getState().refreshSocietyMapEvents();
+    expect(useAppStore.getState().societyMapEvents).toHaveLength(1);
+
+    useAppStore.getState().setActiveAssociation('esn');
+    const s = useAppStore.getState();
+    expect(s.societyPosts).toEqual([]);
+    expect(s.societyMapEvents).toEqual([]);
+    expect(s.societyRsvpCounts).toEqual({});
   });
 
   // Regression: two picker changes can resolve out of order. The slower, older

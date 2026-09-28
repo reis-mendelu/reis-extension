@@ -35,12 +35,12 @@ export function groupEventsByVenue(events: MapEvent[]): VenueGroup[] {
   return [...groups.values()];
 }
 
-// The panel only ever shows this week and next week, so we section into exactly
-// those two — far easier to grasp than a date ("it's on Thursday" beats "it's on
-// the 9th"). `key` is a translation key the panel maps to a localized heading.
-// By contract no event is further out than next week, so anything past the
-// current calendar week falls under "Next week" (no third "later" bucket).
-export type WeekSectionKey = 'thisWeek' | 'nextWeek';
+// The panel sections into three buckets — far easier to grasp than a date
+// ("it's on Thursday" beats "it's on the 9th"). `key` is a translation key the
+// panel maps to a localized heading. `mapEvents` now holds the whole upcoming
+// semester (not just the next two weeks), so anything 14 days out or beyond
+// falls under a third "later" bucket instead of endlessly growing "Next week".
+export type WeekSectionKey = 'thisWeek' | 'nextWeek' | 'later';
 export interface WeekSection {
   key: WeekSectionKey;
   events: MapEvent[];
@@ -53,16 +53,24 @@ function startOfDay(ref: Date): Date {
   return d;
 }
 
-// Rolling 7-day window from today: "this week" = the next 7 days, "next week" =
-// everything after. We intentionally do NOT bucket by the calendar (Mon–Sun) —
-// a calendar boundary lets "tomorrow" fall into the next bucket on weekends, so a
-// row could read "Tomorrow" under a "Next week" heading. A rolling window keeps
-// the label (relativeDayLabel) and the section perfectly in sync, and each
-// weekday appears once in the first window so a bare weekday is unambiguous.
+// Rolling window from today: "this week" = the next 7 days, "next week" = days
+// 7–13, "later" = everything from day 14 on. We intentionally do NOT bucket by
+// the calendar (Mon–Sun) — a calendar boundary lets "tomorrow" fall into the
+// next bucket on weekends, so a row could read "Tomorrow" under a "Next week"
+// heading. A rolling window keeps the label (relativeDayLabel) and the section
+// perfectly in sync, and each weekday appears once in the first window so a
+// bare weekday is unambiguous.
 export function weekSections(events: MapEvent[], now: Date = new Date()): WeekSection[] {
-  const nextWeekStart = startOfDay(now).getTime() + 7 * 86400_000;
-  const bucketOf = (e: MapEvent): WeekSectionKey =>
-    parseEventDate(e.date).getTime() < nextWeekStart ? 'thisWeek' : 'nextWeek';
+  const day0 = startOfDay(now).getTime();
+  const bucketOf = (e: MapEvent): WeekSectionKey => {
+    // Calendar days, rounded like relativeDayLabel: a fixed 24h step is an
+    // hour short across the spring clock change, and a day-7 event slipped
+    // into "This week" while its row read as next week.
+    const days = Math.round((parseEventDate(e.date).getTime() - day0) / 86400_000);
+    if (days < 7) return 'thisWeek';
+    if (days < 14) return 'nextWeek';
+    return 'later';
+  };
 
   const buckets = new Map<WeekSectionKey, MapEvent[]>();
   for (const e of sortByDate(events)) {
@@ -71,7 +79,7 @@ export function weekSections(events: MapEvent[], now: Date = new Date()): WeekSe
     if (arr) arr.push(e);
     else buckets.set(k, [e]);
   }
-  const order: WeekSectionKey[] = ['thisWeek', 'nextWeek'];
+  const order: WeekSectionKey[] = ['thisWeek', 'nextWeek', 'later'];
   return order.filter((k) => buckets.has(k)).map((k) => ({ key: k, events: buckets.get(k)! }));
 }
 
@@ -79,7 +87,9 @@ export function weekSections(events: MapEvent[], now: Date = new Date()): WeekSe
 // weekday ("Thursday") for the rest of the rolling this-week window (each weekday
 // is unique within 7 days, so it's unambiguous). Beyond that — the "Next week"
 // bucket — a bare weekday WOULD be ambiguous, so it gets an explicit date too:
-// "13. 1. (Tuesday)". Boundary matches weekSections exactly (day 7).
+// "13. 1. (Tuesday)". Boundary matches weekSections exactly (day 7). Beyond
+// day 14 — the "Later" bucket, which can span months — even the weekday +
+// short date pair needs the locale's own ordering (see below).
 export function relativeDayLabel(
   iso: string,
   locale: string,
@@ -94,6 +104,40 @@ export function relativeDayLabel(
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const weekday = cap(date.toLocaleDateString(locale, { weekday: 'long' }));
   if (days < 7) return weekday; // this-week window — weekday is enough
+  // Beyond two weeks a weekday alone says nothing; the locale orders the parts
+  // ("Čt 19. 11." in Czech, "Thu, 11/19" in English for the Erasmus students).
+  if (days >= 14) {
+    return cap(
+      date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'numeric' })
+    );
+  }
   const dm = date.toLocaleDateString(locale, { day: 'numeric', month: 'numeric' });
   return `${dm} (${weekday})`;
+}
+
+// The row's "when" line: the day label plus the start time. A multi-day event
+// stays listed until its last day, so once it has started its start date is in
+// the past and relativeDayLabel would call it a weekday ahead ("Pondělí" on
+// the Wednesday of a Mon–Sun trip). A running one reads "Probíhá · do 29. 11."
+// instead, without the start time, which is no longer news on day three.
+// Computed here, not via eventWindow, which imports this file.
+export function eventWhenLabel(
+  e: { date: string; endDate: string | null; time: string | null },
+  locale: string,
+  t: (key: string, params?: Record<string, string | number>) => string,
+  now: Date = new Date()
+): string {
+  const day0 = startOfDay(now).getTime();
+  if (
+    e.endDate &&
+    parseEventDate(e.date).getTime() < day0 &&
+    parseEventDate(e.endDate).getTime() >= day0
+  ) {
+    const until = parseEventDate(e.endDate).toLocaleDateString(locale, {
+      day: 'numeric',
+      month: 'numeric',
+    });
+    return t('map.ongoingUntil', { date: until });
+  }
+  return `${relativeDayLabel(e.date, locale, t, now)}${e.time ? ` · ${e.time}` : ''}`;
 }

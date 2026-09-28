@@ -111,7 +111,9 @@ export async function deletePost(id: string): Promise<{ error?: string }> {
   return {};
 }
 
-export async function listMyPosts(associationId: string): Promise<SpolkyEventRow[]> {
+/** The society's own events, or null when the read failed — not [], which
+ *  would read as "this society has no events" and wipe the list on a blip. */
+export async function listMyPosts(associationId: string): Promise<SpolkyEventRow[] | null> {
   if (DEV_SOCIETY) return devSocietyStore.list(associationId);
   const { data, error } = await adminAuthClient
     .from('spolky_events')
@@ -120,7 +122,7 @@ export async function listMyPosts(associationId: string): Promise<SpolkyEventRow
     .order('date', { ascending: true });
   if (error) {
     logError('Admin.listMyPosts', error);
-    return [];
+    return null;
   }
   return (data ?? []) as SpolkyEventRow[];
 }

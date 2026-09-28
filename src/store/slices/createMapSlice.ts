@@ -28,6 +28,7 @@ import { placedRooms } from '../../utils/rooms/placedRooms';
 import isRoomPlacesJson from '../../data/map/isRoomPlaces.json';
 import { focusRoomPlace } from './focusRoomPlace';
 import { buildingSharingOutline } from '../../components/CampusMap/landmarkBuilding';
+import { weekSections } from '../../components/CampusMap/eventHelpers';
 
 const META = buildingsJson as BuildingsMeta;
 const INDEX = roomsIndexJson as RoomIndexEntry[];
@@ -50,6 +51,11 @@ function locateEvent(e: MapEvent): MapEvent {
     : { ...e, coord: roomCodeToCoord(e.roomCode, INDEX, META) };
 }
 
+// Which reloadMapEvents call is the latest. Boot, resume and a post-publish
+// reload can overlap; only the last one started may write, so an older, slower
+// response can neither overwrite a newer list nor stamp it as fresh.
+let mapEventsGeneration = 0;
+
 export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   // Loading a building's floor plan lives next door, so this file does not
   // carry that responsibility too — see buildingGeometryActions.ts.
@@ -68,6 +74,9 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   mapFocusRequest: 0,
   mapEvents: [],
   mapEventsLoaded: false,
+  mapEventsFetchedAt: null,
+  mapLaterExpanded: false,
+  toggleMapLater: () => set((s) => ({ mapLaterExpanded: !s.mapLaterExpanded })),
   mapPanelTab: 'events',
   societyMapEvents: [],
   placingEvent: false,
@@ -325,12 +334,20 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   // society publishing/deleting an event would otherwise not surface on the
   // public map/"Akce" tab until a full reload — call this after those mutations.
   reloadMapEvents: async () => {
+    const mine = ++mapEventsGeneration;
     try {
       // The catalog is refetched beside every events load, in parallel, so an
       // event can never be newer than the catalog that names its society. The
       // mapping uses whatever catalog is in hand; display resolves reactively.
       const [events] = await Promise.all([fetchMapEvents(get().societies), get().loadSocieties()]);
-      set({ mapEvents: events.map(locateEvent), mapEventsLoaded: true });
+      // A failed fetch keeps whatever is on screen: wiping it would show "no
+      // events" on every network blip, and the resume refresh makes blips common.
+      if (events === null || mine !== mapEventsGeneration) return;
+      set({
+        mapEvents: events.map(locateEvent),
+        mapEventsLoaded: true,
+        mapEventsFetchedAt: Date.now(),
+      });
       // Attendance is loaded here, with the events, rather than by the cards:
       // one RPC covers every visible event, and components do not fetch.
       // Detached on purpose — a card renders with 0/0 while this is in flight,
@@ -339,6 +356,15 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
     } catch (err) {
       logError('MapSlice.reloadMapEvents', err);
     }
+  },
+
+  // For a long-lived Capacitor process: the boot snapshot never refreshes on its
+  // own, so resume calls this. The gap stops a quick tab-away-and-back from
+  // refetching every time.
+  refreshMapEventsIfStale: async (minGapMs) => {
+    const at = get().mapEventsFetchedAt;
+    if (at !== null && Date.now() - at < minGapMs) return;
+    await get().reloadMapEvents();
   },
 
   focusEventById: (id, opts) => {
@@ -367,6 +393,11 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
       ...(fly
         ? { mapFocusRequest: get().mapFocusRequest + 1, mapFocusTarget: 'campus' as const }
         : {}),
+      // A Novinky or calendar tap can select an event months out, which the
+      // list files under the collapsed "Později". Open it by the stored toggle
+      // (never close it), so the row shows and the header still toggles.
+      // The bucket rule is weekSections' own, not a second copy of it.
+      ...(weekSections([event])[0]?.key === 'later' ? { mapLaterExpanded: true } : {}),
     });
   },
 });

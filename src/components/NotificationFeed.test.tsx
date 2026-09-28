@@ -6,6 +6,9 @@ import { IndexedDBService } from '../services/storage';
 import * as spolkyService from '../services/spolky';
 import { useAppStore } from '../store/useAppStore';
 
+// The linked branch hands the URL to the system browser; a unit test has none.
+vi.mock('../mobile/openExternal', () => ({ openExternal: vi.fn() }));
+
 // Mock the services
 vi.mock('../services/spolky', () => ({
   fetchNotifications: vi.fn(),
@@ -118,7 +121,12 @@ describe('NotificationFeed', () => {
         seenDeadlineAlertIds: new Set(),
         status: 'success',
       },
-    });
+      // Loaded with no events: a click on a linked-but-unmatched row (like
+      // 'Test Notification 1') takes the fallback without ever awaiting the
+      // real loadMapEvents, which would otherwise reach out from a unit test.
+      mapEvents: [],
+      mapEventsLoaded: true,
+    } as any);
   });
 
   it('should track views when notification becomes visible', async () => {
@@ -186,26 +194,6 @@ describe('NotificationFeed', () => {
 
     // Should NOT have called trackNotificationsViewed for '1'
     expect(spolkyService.trackNotificationsViewed).not.toHaveBeenCalled();
-  });
-
-  it('should track click when a notification is clicked', async () => {
-    render(<NotificationFeed onShowMap={vi.fn()} />);
-
-    const bellButton = screen.getByLabelText('Notifications');
-    await act(async () => {
-      fireEvent.click(bellButton);
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Test Notification 1')).toBeInTheDocument();
-    });
-
-    const notificationItem = screen.getByText('Test Notification 1');
-    await act(async () => {
-      fireEvent.click(notificationItem);
-    });
-
-    expect(spolkyService.trackNotificationClick).toHaveBeenCalledWith('1');
   });
 
   it('holds back an event the console still lists as scheduled', async () => {

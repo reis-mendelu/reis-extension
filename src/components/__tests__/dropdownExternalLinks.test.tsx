@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { useAppStore } from '../../store/useAppStore';
 import { createRef } from 'react';
 import { EventsDropdown } from '../Events/EventsDropdown';
 import { NotificationDropdown } from '../Notifications/NotificationDropdown';
@@ -71,7 +72,10 @@ describe('dropdown external links', () => {
     expect(window.open).not.toHaveBeenCalled();
   });
 
-  it('opens a notification link through openExternal, not the system browser', () => {
+  it('opens a notification link through openExternal, not the system browser', async () => {
+    // No matching map event, so the row falls back to its link (a matching
+    // event would open the card instead — see NotificationDropdownEvents).
+    useAppStore.setState({ mapEvents: [], mapEventsLoaded: true } as never);
     render(
       <NotificationDropdown
         notifications={[notification]}
@@ -84,7 +88,7 @@ describe('dropdown external links', () => {
       />
     );
     fireEvent.click(screen.getByText(notification.title));
-    expect(openExternal).toHaveBeenCalledWith(notification.link);
+    await waitFor(() => expect(openExternal).toHaveBeenCalledWith(notification.link));
     expect(window.open).not.toHaveBeenCalled();
   });
 });

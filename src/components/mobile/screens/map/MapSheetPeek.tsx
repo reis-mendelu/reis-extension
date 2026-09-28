@@ -1,5 +1,5 @@
 import { CATEGORY_EMOJI_SRC } from '../../../../data/eventCategories';
-import { relativeDayLabel, sortByDate } from '../../../CampusMap/eventHelpers';
+import { eventWhenLabel, sortByDate } from '../../../CampusMap/eventHelpers';
 import { useVisibleMapEvents } from '../../../../hooks/useVisibleMapEvents';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useAppStore } from '../../../../store/useAppStore';
@@ -51,7 +51,7 @@ export function MapSheetPeek() {
   }
 
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
-  const when = `${relativeDayLabel(next.date, locale, t)}${next.time ? ` · ${next.time}` : ''}`;
+  const when = eventWhenLabel(next, locale, t);
 
   return (
     <>

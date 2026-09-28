@@ -592,6 +592,11 @@ export interface MapSlice {
   // --- Society events on the map ---
   mapEvents: MapEvent[];
   mapEventsLoaded: boolean;
+  /** Set on every successful (re)fetch; null until the first one lands. Drives `refreshMapEventsIfStale`. */
+  mapEventsFetchedAt: number | null;
+  /** Whether MapEventsSection's "Later" bucket (day 14+) is expanded. Collapsed by default. */
+  mapLaterExpanded: boolean;
+  toggleMapLater: () => void;
   /** Create a real reservation for a room + 1-hour slot; on success, force-refetch availability so the panel reflects it. Always an explicit, confirmed user action. */
   /** Which tab the top-right panel shows. */
   mapPanelTab: 'places' | 'events';
@@ -602,6 +607,8 @@ export interface MapSlice {
   loadMapEvents: () => Promise<void>;
   /** Refetch the public feed unconditionally (bypasses the load-once guard). Call after a society create/update/delete so the public map/"Akce" tab reflects the change without a full reload. */
   reloadMapEvents: () => Promise<void>;
+  /** Refetch only if `minGapMs` has passed since the last successful fetch — for a resume hook on a long-lived Capacitor process. A stale-but-recent fetch is a no-op. */
+  refreshMapEventsIfStale: (minGapMs: number) => Promise<void>;
   /** Select an event for the detail panel. Pass `{ fly: true }` (list click) to also fly the camera to its coordinate; a pin click omits it and the camera stays put. `reveal: 'map'` (the calendar) is carried on the selection and keeps the phone sheet at peek, so the pin shows instead of the card. */
   focusEventById: (id: string, opts?: { fly?: boolean; reveal?: 'map' }) => void;
   // --- Society authoring ---

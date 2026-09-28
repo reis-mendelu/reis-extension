@@ -28,7 +28,7 @@ vi.mock('../../../api/societiesAdmin', () => ({
 
 import { createSocietiesSlice, type SocietiesSlice } from '../createSocietiesSlice';
 import { BUNDLED_SOCIETIES } from '../../../data/societies';
-import { logoPublicUrl } from '../../../api/societies';
+import { logoPublicUrl, rowToSociety } from '../../../api/societies';
 
 const makeStore = () =>
   create<SocietiesSlice>()((...a) =>
@@ -43,6 +43,7 @@ const input = {
   color: '#123456',
   facultyKey: 'zf' as const,
   autoFollowFaculty: false,
+  instagram: null,
 };
 const OLD_PATH = 'supef/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.png';
 const NEW_PATH = 'supef/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.png';
@@ -123,6 +124,60 @@ describe('saveSociety', () => {
     expect(calls).toEqual(['update']);
     expect(updateSociety.mock.calls[0]![1]).not.toHaveProperty('logo_path');
     expect(store.getState().societies.zf!.name).toBe('ZF nový');
+  });
+});
+
+describe('saveSociety: instagram', () => {
+  const zfRow = {
+    id: 'zf',
+    name: 'ZF',
+    short_name: 'ZF',
+    color: '#8c0a00',
+    faculty_key: 'zf',
+    auto_follow_faculty: true,
+    audience_label: null,
+    logo_path: null,
+    sort_order: 10,
+    is_active: true,
+    instagram: null as string | null,
+  };
+  const zfEdit = { ...input, id: 'zf', facultyKey: 'zf' as const };
+  const withHandle = () => {
+    const store = makeStore();
+    store.setState({
+      societies: { ...BUNDLED_SOCIETIES, zf: { ...BUNDLED_SOCIETIES.zf!, instagram: 'zfig' } },
+    });
+    return store;
+  };
+
+  // Through the real rowToSociety: the store merges the saved row over the
+  // cached society, so a cleared handle has to override the old one there.
+  it('clearing the handle reaches the store', async () => {
+    updateSociety.mockResolvedValue(rowToSociety({ ...zfRow, instagram: null }));
+    const store = withHandle();
+    expect(await store.getState().saveSociety({ ...zfEdit, instagram: null }, null, false)).toEqual(
+      {}
+    );
+    expect(updateSociety.mock.calls[0]![1]).toMatchObject({ instagram: null });
+    expect(store.getState().societies.zf!.instagram).toBeUndefined();
+  });
+
+  it('an input without instagram leaves the column out of the update', async () => {
+    updateSociety.mockResolvedValue(rowToSociety({ ...zfRow, instagram: 'zfig' }));
+    const { instagram: _omit, ...noInstagram } = zfEdit;
+    const store = withHandle();
+    await store.getState().saveSociety(noInstagram, null, false);
+    expect(updateSociety.mock.calls[0]![1]).not.toHaveProperty('instagram');
+    // And the store keeps the untouched handle the database kept.
+    expect(store.getState().societies.zf!.instagram).toBe('zfig');
+  });
+
+  it('a new handle is written', async () => {
+    updateSociety.mockResolvedValue(rowToSociety({ ...zfRow, instagram: 'novy' }));
+    const store = withHandle();
+    await store.getState().saveSociety({ ...zfEdit, instagram: 'novy' }, null, false);
+    expect(updateSociety.mock.calls[0]![1]).toMatchObject({ instagram: 'novy' });
+    expect(store.getState().societies.zf!.instagram).toBe('novy');
   });
 });
 

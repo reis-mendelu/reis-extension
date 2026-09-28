@@ -3,8 +3,9 @@ import { filterNotificationsByFaculty } from '../services/spolky';
 // Straight from the implementation file, not the barrel beside it: the Iron
 // Rule in CLAUDE.md forbids adding to a re-export, and `services/spolky/index`
 // is one. The pre-existing entries stay where they are.
-import { dropPastEvents, localDayIso } from '../services/spolky/spolkyService';
+import { dropPastEvents } from '../services/spolky/spolkyService';
 import { dropScheduledEvents } from '../services/spolky/dropScheduledEvents';
+import { localTodayIso } from '../components/CampusMap/eventWindow';
 import { useSpolkySettings } from '../hooks/useSpolkySettings';
 import { useAppStore } from '../store/useAppStore';
 
@@ -24,7 +25,9 @@ export function useNotificationFeed() {
 
   // A string, so it is stable across renders within a day and the memo below
   // does not rebuild the list (and re-render every consumer) on every tick.
-  const todayIso = localDayIso();
+  // The LOCAL day, never toISOString() (UTC): at 00:30 in Brno UTC still says
+  // yesterday, exactly when "is this event over?" changes its answer.
+  const todayIso = localTodayIso();
 
   // Three questions: is this society one the student follows, has the event
   // already happened, and has it gone live yet? The list can come from

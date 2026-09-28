@@ -55,6 +55,7 @@ export async function saveSociety(
           color: input.color,
           faculty_key: input.facultyKey,
           auto_follow_faculty: input.autoFollowFaculty,
+          ...(input.instagram !== undefined ? { instagram: input.instagram } : {}),
           ...(logoPath ? { logo_path: logoPath } : {}),
         });
   if (!saved) return { error: 'save_failed' };

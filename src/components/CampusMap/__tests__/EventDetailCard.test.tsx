@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { EventDetailCard } from '../EventDetailCard';
+import { neutralSociety } from '../../../utils/societies/resolveSociety';
 import type { MapEvent } from '../../../types/events';
 
 const ev: MapEvent = {
@@ -20,9 +21,17 @@ const ev: MapEvent = {
   venueKind: 'offcampus',
   category: 'party',
 };
+// The store is a singleton: each test starts from the same catalog rather
+// than whatever an earlier test left behind.
+const initialSocieties = useAppStore.getState().societies;
+
 describe('EventDetailCard', () => {
   beforeEach(() => {
     useAppStore.setState({
+      societies: {
+        ...initialSocieties,
+        esn: { ...neutralSociety('esn'), shortName: 'ESN', instagram: 'esnmendelubrno' },
+      },
       adminConsoleOpen: false,
       adminAssociationId: 'supef',
       adminActiveAssociationId: 'supef',
@@ -140,5 +149,58 @@ describe('EventDetailCard', () => {
       'href',
       'https://example.com/event'
     );
+  });
+
+  // A TBA event has no room, no coordinate, and no url: everything a society
+  // knows so far is "watch our Instagram". The venue line names the society
+  // instead of a place, and the More-info button becomes the Instagram link.
+  it('shows "Venue TBA by ESN" and links to Instagram for a TBA event with no url', () => {
+    const tbaEvent: MapEvent = {
+      ...ev,
+      societyId: 'esn',
+      url: '',
+      location: null,
+      coord: null,
+      roomCode: null,
+      venueKind: 'tba',
+    };
+    render(<EventDetailCard event={tbaEvent} />);
+    expect(screen.getByText('Venue TBA by ESN')).toBeInTheDocument();
+    const link = screen.getByRole('link', { name: /more on instagram/i });
+    expect(link).toHaveAttribute('href', 'https://www.instagram.com/esnmendelubrno/');
+  });
+
+  it('prefers the event url over Instagram when both are available', () => {
+    const tbaEvent: MapEvent = {
+      ...ev,
+      societyId: 'esn',
+      url: 'https://esn.cz/e',
+      location: null,
+      coord: null,
+      roomCode: null,
+      venueKind: 'tba',
+    };
+    render(<EventDetailCard event={tbaEvent} />);
+    expect(screen.getByRole('link', { name: /more info/i })).toHaveAttribute(
+      'href',
+      'https://esn.cz/e'
+    );
+  });
+  // A trip's card has to say how long it is: the start alone reads as a
+  // one-evening event, and the list only says "ongoing until" once it began.
+  it('shows the whole date range on one line for a multi-day event', () => {
+    render(<EventDetailCard event={{ ...ev, date: '2026-11-23', endDate: '2026-11-29' }} />);
+    const line = screen.getByText(/23.*29/);
+    expect(line.textContent).toMatch(/Mon.*November 23.*Sun.*November 29/);
+  });
+
+  it('shows a single date for a one-day event', () => {
+    render(<EventDetailCard event={{ ...ev, date: '2026-11-23', endDate: null, time: '18:00' }} />);
+    expect(screen.getByText(/November 23/).textContent).toBe('Mon, November 23 · 18:00');
+  });
+
+  it('treats an end date equal to the start as a one-day event', () => {
+    render(<EventDetailCard event={{ ...ev, date: '2026-11-23', endDate: '2026-11-23' }} />);
+    expect(screen.getByText(/November 23/).textContent).toBe('Mon, November 23');
   });
 });

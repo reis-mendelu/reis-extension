@@ -3,14 +3,11 @@ import { dropScheduledEvents } from '../dropScheduledEvents';
 import type { SpolekNotification } from '../types';
 
 /**
- * A society event reaches Novinky when it reaches the map, not before.
- *
- * The console files an event 14+ days out under "Naplánované — zveřejní se
- * <date>", and the map honours that through `isPublicEvent`. Novinky did not:
- * `fetchNotifications` only asks for `date >= today`, and `visible_from` is null
- * on every row, so a subscriber saw the event — and it collected views and
- * clicks the society is shown — from the moment it was published, while the
- * console told its author it was still hidden.
+ * Novinky announces what is on SOON: events starting inside the soon horizon
+ * (`SOON_WINDOW_DAYS`, the same one the map's pins use). The server query
+ * bounds a fresh fetch to it, but the cached list in IndexedDB is never
+ * re-examined, so a row cached inside the horizon is held to it at read time
+ * as the days pass.
  *
  * Judged on the event's START (`startsAt`), as the map judges it, so a
  * multi-day event goes live by when it begins, not when it ends.

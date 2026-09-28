@@ -2,7 +2,7 @@ import type { MapEvent, EventCategory, Society } from '../types/events';
 import { resolveSociety } from '../utils/societies/resolveSociety';
 import { supabase } from '../services/spolky/supabaseClient';
 import { logError } from '../utils/reportError';
-import { isPublicEvent } from '../components/CampusMap/eventWindow';
+import { isFinishedEvent, localTodayIso } from '../components/CampusMap/eventWindow';
 
 interface SpolkyEventRow {
   id: string;
@@ -55,19 +55,29 @@ export function toMapEvent(row: SpolkyEventRow, societies: Record<string, Societ
   };
 }
 
-export async function fetchMapEvents(societies: Record<string, Society>): Promise<MapEvent[]> {
+export async function fetchMapEvents(
+  societies: Record<string, Society>
+): Promise<MapEvent[] | null> {
+  // Bounded on the server to events not over yet (a multi-day trip counts until
+  // its end date), so a device no longer downloads every past row. No upper
+  // bound: the catalog shows the whole semester; pins and Novinky apply their
+  // own 14-day horizon (eventWindow.SOON_WINDOW_DAYS).
+  const today = localTodayIso();
   const { data, error } = await supabase
     .from('spolky_events')
     .select('*')
+    .or(`date.gte.${today},end_date.gte.${today}`)
     .order('date', { ascending: true });
 
+  // null, not []: a failed request must not read as "nothing is on" — the slice
+  // keeps the last list (the same rule fetchNotifications follows).
   if (error) {
     logError('Api.fetchMapEvents', error);
-    return [];
+    return null;
   }
 
   return (data ?? [])
     .map((row) => row as SpolkyEventRow)
-    .filter((row) => isPublicEvent(row.date)) // hide past + far-future from the public map/feed
-    .map((row) => toMapEvent(row, societies));
+    .map((row) => toMapEvent(row, societies))
+    .filter((e) => !isFinishedEvent(e)); // local day; the server bound is UTC-agnostic but coarse
 }
