@@ -20,6 +20,7 @@ interface SpolkyEventRow {
   url: string | null;
   body?: string | null;
   subscribers_only?: boolean | null;
+  created_at?: string | null;
 }
 
 // Pure row -> MapEvent mapping, kept separate from the network call so it's
@@ -52,6 +53,7 @@ export function toMapEvent(row: SpolkyEventRow, societies: Record<string, Societ
     // select happens not to return: open, which is what those rows have always
     // been. `visibleToStudent` is the only thing that reads this.
     subscribersOnly: row.subscribers_only ?? false,
+    createdAt: row.created_at ?? null,
   };
 }
 

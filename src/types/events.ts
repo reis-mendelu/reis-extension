@@ -106,6 +106,8 @@ export interface MapEvent extends MendeluEvent {
    *  control — see utils/eventAudience. Absent on rows written before the
    *  column existed, which are open to everyone. */
   subscribersOnly?: boolean;
+  /** When the society published it (ISO). Null on fixtures and unknown rows. */
+  createdAt?: string | null;
 }
 
 export const FACULTY_LABEL_TO_KEY: Record<string, FacultyKey> = {
