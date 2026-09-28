@@ -23,9 +23,12 @@ import { useAppStore } from '../store/useAppStore';
 let activation = 0;
 
 function openDigest(): void {
+  activation += 1;
   const s = useAppStore.getState();
+  s.clearMapSelection();
   s.setMobileTab('map');
   s.setMapSheetState('expanded');
+  s.setMapRailOpen(true);
 }
 
 export async function openRemindedEvent(eventId: unknown): Promise<void> {
