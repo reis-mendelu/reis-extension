@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { digestText, digestLabels } from '../digestText';
+import { digestText, digestLabels, pluralSuffix } from '../digestText';
 import type { MapEvent } from '../../../types/events';
 
 function ev(n: number, societyId = 'esn'): MapEvent {
@@ -34,6 +34,9 @@ describe('digest plurals — Czech', () => {
     [1, '+ 1 nová akce od ESN'],
     [2, '+ 2 nové akce od ESN'],
     [5, '+ 5 nových akcí od ESN'],
+    [12, '+ 12 nových akcí od ESN'],
+    [22, '+ 22 nové akce od ESN'],
+    [25, '+ 25 nových akcí od ESN'],
   ])('%i new events → "%s"', (n, body) => {
     expect(digestText([ev(99)], many(n), shortName, cz)?.body).toBe(body);
   });
@@ -59,6 +62,33 @@ describe('digest plurals — Czech', () => {
     expect(cz.tomorrowMany(1, 'X')).toBe('Zítra 1 akce: X');
     expect(cz.tomorrowMany(2, 'X')).toBe('Zítra 2 akce: X a další');
     expect(cz.tomorrowMany(5, 'X')).toBe('Zítra 5 akcí: X a další');
+  });
+
+  // Compound counts ending in 2–4 take the few form too ("22 akce"), except
+  // the teens, which stay many ("12 akcí").
+  it.each([
+    [1, 'Single'],
+    [2, 'Few'],
+    [4, 'Few'],
+    [5, ''],
+    [11, ''],
+    [12, ''],
+    [13, ''],
+    [14, ''],
+    [21, ''],
+    [22, 'Few'],
+    [23, 'Few'],
+    [24, 'Few'],
+    [112, ''],
+    [134, 'Few'],
+  ])('pluralSuffix(%i) is "%s"', (n, suffix) => {
+    expect(pluralSuffix(n)).toBe(suffix);
+  });
+
+  it('tomorrow with 23 events uses the few form', () => {
+    expect(digestText(many(23), [], shortName, cz)?.title).toBe(
+      'Zítra 23 akce: Akce 1, Akce 2 a další'
+    );
   });
 
   it('keeps the RSVP lead label byte-identical', () => {

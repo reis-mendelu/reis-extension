@@ -5,15 +5,7 @@ import { useVisibleMapEvents } from '../../hooks/useVisibleMapEvents';
 import { useSociety } from '../../hooks/useSociety';
 import { isSoonEvent } from '../CampusMap/eventWindow';
 import { askNotificationPermission } from '../../services/eventReminders/sync';
-
-/** Czech has no plural helper (see CLAUDE.md) — 1 / 2–4 / 5+ each need their
- *  own copy ("akci" / "akce" / "akcí"). English only ever needs one form, so
- *  the "Few"/"Single" keys carry identical English text to the default one. */
-function countKeySuffix(n: number): 'Single' | 'Few' | '' {
-  if (n === 1) return 'Single';
-  if (n >= 2 && n <= 4) return 'Few';
-  return '';
-}
+import { pluralSuffix } from '../../services/eventReminders/digestText';
 
 /**
  * The soft-ask card (phone/iPad tree only — see CLAUDE.md's tree-parity
@@ -60,7 +52,7 @@ export function NotifySoftAsk() {
   const canAsk = notifyPermission === 'prompt' || notifyPermission === 'prompt-with-rationale';
   if (!canAsk || permissionAsked || total === 0) return null;
 
-  const suffix = countKeySuffix(total);
+  const suffix = pluralSuffix(total);
   const text = soleSocietyId
     ? t(`notify.askOne${suffix}`, { society: soleSociety?.shortName ?? soleSocietyId, n: total })
     : t(`notify.askMany${suffix}`, { n: total });

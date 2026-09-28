@@ -3,13 +3,17 @@ import type { Language } from '../../store/types';
 import type { DigestLabels } from './plan';
 import { translate } from '../../i18n/translate';
 
-/** Czech needs three count forms (1 / 2–4 / 5+ — "akce" / "akce" / "akcí",
- *  "nová" / "nové" / "nových"), so each count-bearing key has `Single` and
- *  `Few` variants beside the default. English only needs two, so its `Few`
- *  copy is identical to the default — the same convention as NotifySoftAsk. */
+/** Czech needs three count forms ("akce" / "akce" / "akcí", "nová" / "nové"
+ *  / "nových"), so each count-bearing key has `Single` and `Few` variants
+ *  beside the default. Few covers every count ending in 2–4 except the teens
+ *  (2, 23, 134 — not 12–14). English only needs two, so its `Few` copy is
+ *  identical to the default. Shared with `NotifySoftAsk`. Deliberately not
+ *  `utils/plural.ts`: CLDR puts 22–24 in the many form. */
 export function pluralSuffix(n: number): 'Single' | 'Few' | '' {
   if (n === 1) return 'Single';
-  if (n >= 2 && n <= 4) return 'Few';
+  const ones = n % 10;
+  const tens = n % 100;
+  if (ones >= 2 && ones <= 4 && (tens < 12 || tens > 14)) return 'Few';
   return '';
 }
 
