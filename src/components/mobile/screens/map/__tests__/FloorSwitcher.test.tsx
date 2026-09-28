@@ -16,7 +16,8 @@ function setViewport(width: number, height: number) {
 describe('FloorSwitcher beside the tablet rail', () => {
   beforeEach(() => {
     useAppStore.setState({
-      activeBuildingId: 'Q',
+      // Building Q — its id in buildings.json, which is numeric.
+      activeBuildingId: 0,
       mapRailOpen: true,
       mapRailWidth: 340,
     } as never);
@@ -26,6 +27,8 @@ describe('FloorSwitcher beside the tablet rail', () => {
   it('stands left of the open rail on an iPad in landscape', () => {
     setViewport(1194, 834);
     render(<FloorSwitcher />);
+    // The real column, not an empty wrapper: Q has eight floors.
+    expect(screen.getByRole('button', { name: '5' })).toBeInTheDocument();
     expect(screen.getByTestId('floor-switcher').style.right).toBe('368px');
   });
 
