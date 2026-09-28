@@ -84,25 +84,28 @@ describe('MapEventsSection', () => {
   });
 
   // A Novinky or calendar tap can select an event months out. Its pin and card
-  // show, so its row must too — without flipping the student's own toggle.
-  it('opens Later while the selected event sits in it, leaving the toggle alone', () => {
+  // show, so its row must too — and the header must still toggle afterwards.
+  it('opens Later when a far event is selected, and the header still collapses it', async () => {
     const base = MOCK_MAP_EVENTS[0]!;
     const far: MapEvent = { ...base, id: 'far', title: 'Far Event', date: isoDaysFromNow(40) };
-    useAppStore.setState({
-      mapEvents: [far],
-      mapSelection: { kind: 'event', event: far } as never,
-    });
-    const { unmount } = render(<MapEventsSection />);
-    expect(screen.getByText('Far Event')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Later (1)' })).toHaveAttribute(
-      'aria-expanded',
-      'true'
-    );
-    expect(useAppStore.getState().mapLaterExpanded).toBe(false);
-
-    unmount();
-    useAppStore.setState({ mapSelection: null });
+    useAppStore.setState({ mapEvents: [far] });
+    useAppStore.getState().focusEventById('far', { fly: true });
     render(<MapEventsSection />);
+
+    const header = screen.getByRole('button', { name: 'Later (1)' });
+    expect(header).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Far Event')).toBeTruthy();
+
+    await userEvent.click(header);
+    expect(header).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByText('Far Event')).toBeNull();
+  });
+
+  it('leaves Later as it was when a near event is selected', () => {
+    const base = MOCK_MAP_EVENTS[0]!;
+    const near: MapEvent = { ...base, id: 'near', date: isoDaysFromNow(3) };
+    useAppStore.setState({ mapEvents: [near] });
+    useAppStore.getState().focusEventById('near', { fly: true });
+    expect(useAppStore.getState().mapLaterExpanded).toBe(false);
   });
 });

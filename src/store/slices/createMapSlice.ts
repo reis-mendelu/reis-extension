@@ -28,6 +28,7 @@ import { placedRooms } from '../../utils/rooms/placedRooms';
 import isRoomPlacesJson from '../../data/map/isRoomPlaces.json';
 import { focusRoomPlace } from './focusRoomPlace';
 import { buildingSharingOutline } from '../../components/CampusMap/landmarkBuilding';
+import { weekSections } from '../../components/CampusMap/eventHelpers';
 
 const META = buildingsJson as BuildingsMeta;
 const INDEX = roomsIndexJson as RoomIndexEntry[];
@@ -392,6 +393,11 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
       ...(fly
         ? { mapFocusRequest: get().mapFocusRequest + 1, mapFocusTarget: 'campus' as const }
         : {}),
+      // A Novinky or calendar tap can select an event months out, which the
+      // list files under the collapsed "Později". Open it by the stored toggle
+      // (never close it), so the row shows and the header still toggles.
+      // The bucket rule is weekSections' own, not a second copy of it.
+      ...(weekSections([event])[0]?.key === 'later' ? { mapLaterExpanded: true } : {}),
     });
   },
 });
