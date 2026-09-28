@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { resolve, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -53,5 +53,68 @@ describe('notification UI is phone/iPad only', () => {
     const match = profilePopup.match(/<SpolkySection[\s\S]*?\/>/);
     expect(match).not.toBeNull();
     expect(match![0]).not.toMatch(/\bnotifications\b/);
+  });
+});
+
+/**
+ * The two checks above name the files this task actually touched. This block
+ * is the general form: it walks every production file under the desktop
+ * tree's `Sidebar`, `AppMain.tsx` and `AppOverlays.tsx` — the same three roots
+ * CLAUDE.md's tree-parity hook watches — so a FUTURE desktop file that reaches
+ * for `NotifySoftAsk`, `NotifySettings`/`MuteBell`, or a `notifications` prop
+ * on `SpolkySection` fails here too, without anyone remembering to extend the
+ * named list. `SpolkySection.tsx` itself is excluded: it is the one file
+ * allowed to import `NotifySettings`/`MuteBell`, because it is where the
+ * `notifications` prop gates them. `__tests__` directories are excluded —
+ * they exercise the component in isolation, not from the desktop tree.
+ */
+const DESKTOP_ROOTS = [
+  'components/Sidebar',
+  'components/AppMain.tsx',
+  'components/AppOverlays.tsx',
+];
+const SPOLKY_SECTION_DEFINITION = 'components/Sidebar/Profile/SpolkySection.tsx';
+
+function collectProductionFiles(relPath: string): string[] {
+  const abs = resolve(process.cwd(), 'src', relPath);
+  if (statSync(abs).isFile()) {
+    return /\.tsx?$/.test(relPath) ? [relPath] : [];
+  }
+  const out: string[] = [];
+  for (const entry of readdirSync(abs, { withFileTypes: true })) {
+    if (entry.name === '__tests__') continue;
+    const childRel = join(relPath, entry.name);
+    if (entry.isDirectory()) {
+      out.push(...collectProductionFiles(childRel));
+    } else if (/\.tsx?$/.test(entry.name)) {
+      out.push(childRel);
+    }
+  }
+  return out;
+}
+
+describe('no desktop-tree file reaches for the phone-only notification UI', () => {
+  const files = DESKTOP_ROOTS.flatMap(collectProductionFiles).filter(
+    (f) => f !== SPOLKY_SECTION_DEFINITION
+  );
+
+  it('scanned at least the known desktop files', () => {
+    expect(files.length).toBeGreaterThanOrEqual(4);
+    expect(files).toContain('components/Sidebar/ProfilePopup.tsx');
+  });
+
+  it.each(files)('%s does not import NotifySoftAsk', (file) => {
+    expect(read(file)).not.toMatch(/import\s*\{[^}]*\bNotifySoftAsk\b[^}]*\}\s*from/);
+  });
+
+  it.each(files)('%s does not import NotifySettings or MuteBell', (file) => {
+    expect(read(file)).not.toMatch(/import\s*\{[^}]*\b(NotifySettings|MuteBell)\b[^}]*\}\s*from/);
+  });
+
+  it.each(files)('%s does not pass `notifications` to SpolkySection', (file) => {
+    const content = read(file);
+    const match = content.match(/<SpolkySection[\s\S]*?\/>/);
+    if (!match) return;
+    expect(match[0]).not.toMatch(/\bnotifications\b/);
   });
 });
