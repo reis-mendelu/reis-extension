@@ -63,9 +63,12 @@ function startOfDay(ref: Date): Date {
 export function weekSections(events: MapEvent[], now: Date = new Date()): WeekSection[] {
   const day0 = startOfDay(now).getTime();
   const bucketOf = (e: MapEvent): WeekSectionKey => {
-    const t = parseEventDate(e.date).getTime();
-    if (t < day0 + 7 * 86400_000) return 'thisWeek';
-    if (t < day0 + 14 * 86400_000) return 'nextWeek';
+    // Calendar days, rounded like relativeDayLabel: a fixed 24h step is an
+    // hour short across the spring clock change, and a day-7 event slipped
+    // into "This week" while its row read as next week.
+    const days = Math.round((parseEventDate(e.date).getTime() - day0) / 86400_000);
+    if (days < 7) return 'thisWeek';
+    if (days < 14) return 'nextWeek';
     return 'later';
   };
 

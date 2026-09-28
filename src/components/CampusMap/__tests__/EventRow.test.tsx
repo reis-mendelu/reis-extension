@@ -90,6 +90,24 @@ describe('EventRow', () => {
     render(<EventRow event={tbaEvent} locale="cs-CZ" t={t} selected={false} onClick={() => {}} />);
     expect(screen.getByText('map.venueTba {"name":"ESN"}')).toBeInTheDocument();
   });
+
+  // A blank location is no location: it used to suppress the TBA line and
+  // draw a pin beside nothing.
+  it('treats a whitespace-only location as none', () => {
+    const tbaEvent: MapEvent = {
+      ...ev,
+      societyId: 'esn',
+      location: '   ',
+      coord: null,
+      roomCode: null,
+      venueKind: 'tba',
+    };
+    const { container } = render(
+      <EventRow event={tbaEvent} locale="cs-CZ" t={t} selected={false} onClick={() => {}} />
+    );
+    expect(screen.getByText('map.venueTba {"name":"ESN"}')).toBeInTheDocument();
+    expect(container.querySelector('.lucide-map-pin')).toBeNull();
+  });
   // The list keeps a multi-day trip until its last day. Labelled by its start,
   // a trip two days in read as a weekday ahead.
   it('labels a trip that has already started as ongoing until its end', () => {

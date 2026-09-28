@@ -60,8 +60,10 @@ export function EventLayer() {
   // the camera to it, and without its pin the fly lands on an empty map.
   // Memoized: `.filter()` makes a new array every call, and the `groups` memo
   // and its re-project effect below key off this reference — an unmemoized
-  // filter here reruns them every render and never settles. Keyed on the id,
-  // not the selection object, so selecting a room does not rebuild it.
+  // filter here reruns them every render and never settles. Keyed on the
+  // selected EVENT's id, not the selection object: a new selection object for
+  // the same event (or a room picked with no event selected) does not rebuild
+  // it; moving off an event does, since its id stops being exempt.
   const events = useMemo(
     () =>
       authoring ? societyEvents : publicEvents.filter((e) => isSoonEvent(e) || e.id === selectedId),

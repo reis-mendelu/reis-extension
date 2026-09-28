@@ -73,7 +73,11 @@ export function EventVenueLine({
         // web URL, which is what the anchor would have done.
         void openVenue(event.coord as [number, number], venueName ?? '').catch((err) => {
           logError('EventVenueLine.openVenue', err);
-          void openExternal(venueMapUrl(event.coord!, venueName ?? '', 'web'));
+          // openExternal rejects too (DemoModeError in demo mode); route it
+          // through logError like the app-wide handler does, not unhandled.
+          void openExternal(venueMapUrl(event.coord!, venueName ?? '', 'web')).catch((e) =>
+            logError('EventVenueLine.openExternal', e)
+          );
         });
       }}
       className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"

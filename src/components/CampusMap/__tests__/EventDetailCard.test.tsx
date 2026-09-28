@@ -21,9 +21,17 @@ const ev: MapEvent = {
   venueKind: 'offcampus',
   category: 'party',
 };
+// The store is a singleton: each test starts from the same catalog rather
+// than whatever an earlier test left behind.
+const initialSocieties = useAppStore.getState().societies;
+
 describe('EventDetailCard', () => {
   beforeEach(() => {
     useAppStore.setState({
+      societies: {
+        ...initialSocieties,
+        esn: { ...neutralSociety('esn'), shortName: 'ESN', instagram: 'esnmendelubrno' },
+      },
       adminConsoleOpen: false,
       adminAssociationId: 'supef',
       adminActiveAssociationId: 'supef',
@@ -147,11 +155,6 @@ describe('EventDetailCard', () => {
   // knows so far is "watch our Instagram". The venue line names the society
   // instead of a place, and the More-info button becomes the Instagram link.
   it('shows "Venue TBA by ESN" and links to Instagram for a TBA event with no url', () => {
-    useAppStore.setState({
-      societies: {
-        esn: { ...neutralSociety('esn'), shortName: 'ESN', instagram: 'esnmendelubrno' },
-      },
-    });
     const tbaEvent: MapEvent = {
       ...ev,
       societyId: 'esn',
@@ -168,11 +171,6 @@ describe('EventDetailCard', () => {
   });
 
   it('prefers the event url over Instagram when both are available', () => {
-    useAppStore.setState({
-      societies: {
-        esn: { ...neutralSociety('esn'), shortName: 'ESN', instagram: 'esnmendelubrno' },
-      },
-    });
     const tbaEvent: MapEvent = {
       ...ev,
       societyId: 'esn',

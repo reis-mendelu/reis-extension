@@ -66,10 +66,23 @@ describe('AdminEventList', () => {
 
   it('shows "No place yet" on a row with no venue set (venueKind tba)', () => {
     useAppStore.setState({
-      societyMapEvents: [{ ...mk('tba', iso(2)), venueKind: 'tba' }],
+      societyMapEvents: [{ ...mk('tba', iso(2)), venueKind: 'tba', coord: null }],
     });
     render(<AdminEventList />);
     expect(screen.getByText(/no place yet/i)).toBeInTheDocument();
+  });
+
+  // tba only means "no room, no coordinate"; a free-text place is allowed and
+  // the row shows it, so the subline must not also say there is no place.
+  it('does not say "No place yet" on a tba row that names a place', () => {
+    useAppStore.setState({
+      societyMapEvents: [
+        { ...mk('tba', iso(2)), venueKind: 'tba', coord: null, location: 'Brno-střed' },
+      ],
+    });
+    render(<AdminEventList />);
+    expect(screen.getByText('Brno-střed')).toBeInTheDocument();
+    expect(screen.queryByText(/no place yet/i)).toBeNull();
   });
 
   // A reIS admin lands here belonging to no society. Showing an empty list would

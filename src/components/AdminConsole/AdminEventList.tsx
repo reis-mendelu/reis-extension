@@ -92,7 +92,10 @@ export function AdminEventList() {
   const subline = (e: MapEvent) => {
     const day = eventWhenLabel(e, locale, t);
     if (hasFinished(e)) return `${day} · ${t('map.finished')}`;
-    if (e.venueKind === 'tba') return `${day} · ${t('admin.noVenue')}`;
+    // Only when the row shows no place either: tba forbids a room and a
+    // coordinate, not a free-text location, and EventRow shows that one.
+    if (e.venueKind === 'tba' && !e.location?.trim() && !e.coord)
+      return `${day} · ${t('admin.noVenue')}`;
     return undefined;
   };
 

@@ -7,26 +7,7 @@ import { parseEventDate } from './eventHelpers';
 import { EventRsvp } from './EventRsvp';
 import { EventVenueLine } from './EventVenueLine';
 import { eventDetailsLink } from './eventLinks';
-import { openExternal } from '../../mobile/openExternal';
-import { getPlatform } from '../../platform';
 import type { MapEvent } from '../../types/events';
-
-/**
- * On Capacitor a `target="_blank"` anchor hands the URL to the SYSTEM browser,
- * which holds none of the app's session — see src/mobile/openExternal.ts. This
- * card became reachable on mobile when the phone map gained event pins, so both
- * of its links needed routing through the in-app browser.
- *
- * Kept as an anchor with an onClick rather than converted to a button:
- * `openExternal` no-ops off Capacitor, so the href stays the real behaviour on
- * desktop, and middle-click / "open in new tab" keep working there.
- */
-function openInApp(e: React.MouseEvent<HTMLAnchorElement>) {
-  const href = e.currentTarget.href;
-  if (getPlatform().kind !== 'capacitor') return;
-  e.preventDefault();
-  void openExternal(href);
-}
 
 // Bottom-left detail body for a selected event — a read-only preview shown to
 // students and societies alike: a small society avatar + title + host, then the
@@ -115,7 +96,9 @@ export function EventDetailCard({ event, flush = false }: { event: MapEvent; flu
             href={details.href}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={openInApp}
+            // No onClick of its own: on Capacitor installExternalLinkHandler
+            // (capture phase) already opens every target=_blank link in the
+            // in-app browser, and a second open here showed the page twice.
             className="btn btn-primary btn-sm btn-block"
           >
             {details.kind === 'instagram' ? t('map.moreOnInstagram') : t('map.moreInfo')}{' '}
