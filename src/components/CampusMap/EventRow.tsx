@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { MapPin } from 'lucide-react';
 import { CATEGORY_EMOJI_SRC } from '../../data/eventCategories';
-import { relativeDayLabel } from './eventHelpers';
+import { eventWhenLabel } from './eventHelpers';
 import { useSociety } from '../../hooks/useSociety';
 import type { MapEvent } from '../../types/events';
 
@@ -33,8 +33,7 @@ export function EventRow({
   footer?: ReactNode;
 }) {
   const soc = useSociety(event.societyId);
-  const day =
-    subline ?? `${relativeDayLabel(event.date, locale, t)}${event.time ? ` · ${event.time}` : ''}`;
+  const day = subline ?? eventWhenLabel(event, locale, t);
   return (
     <div
       className={`flex items-stretch border-l-2 transition-colors ${

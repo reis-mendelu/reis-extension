@@ -91,4 +91,17 @@ describe('EventRow', () => {
     render(<EventRow event={tbaEvent} locale="cs-CZ" t={t} selected={false} onClick={() => {}} />);
     expect(screen.getByText('map.venueTba {"name":"ESN"}')).toBeInTheDocument();
   });
+  // The list keeps a multi-day trip until its last day. Labelled by its start,
+  // a trip two days in read as a weekday ahead.
+  it('labels a trip that has already started as ongoing until its end', () => {
+    const iso = (days: number) => {
+      const d = new Date();
+      d.setHours(12, 0, 0, 0);
+      d.setDate(d.getDate() + days);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+    const trip: MapEvent = { ...ev, date: iso(-2), endDate: iso(3), time: null };
+    render(<EventRow event={trip} locale="cs-CZ" t={t} selected={false} onClick={() => {}} />);
+    expect(screen.getByText(/^map\.ongoingUntil /)).toBeInTheDocument();
+  });
 });

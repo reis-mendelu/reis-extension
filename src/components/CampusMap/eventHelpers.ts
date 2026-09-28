@@ -109,3 +109,30 @@ export function relativeDayLabel(
   const dm = date.toLocaleDateString(locale, { day: 'numeric', month: 'numeric' });
   return `${dm} (${weekday})`;
 }
+
+// The row's "when" line: the day label plus the start time. A multi-day event
+// stays listed until its last day, so once it has started its start date is in
+// the past and relativeDayLabel would call it a weekday ahead ("Pondělí" on
+// the Wednesday of a Mon–Sun trip). A running one reads "Probíhá · do 29. 11."
+// instead, without the start time, which is no longer news on day three.
+// Computed here, not via eventWindow, which imports this file.
+export function eventWhenLabel(
+  e: { date: string; endDate: string | null; time: string | null },
+  locale: string,
+  t: (key: string, params?: Record<string, string | number>) => string,
+  now: Date = new Date()
+): string {
+  const day0 = startOfDay(now).getTime();
+  if (
+    e.endDate &&
+    parseEventDate(e.date).getTime() < day0 &&
+    parseEventDate(e.endDate).getTime() >= day0
+  ) {
+    const until = parseEventDate(e.endDate).toLocaleDateString(locale, {
+      day: 'numeric',
+      month: 'numeric',
+    });
+    return t('map.ongoingUntil', { date: until });
+  }
+  return `${relativeDayLabel(e.date, locale, t, now)}${e.time ? ` · ${e.time}` : ''}`;
+}

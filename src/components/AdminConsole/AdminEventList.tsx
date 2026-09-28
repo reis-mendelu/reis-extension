@@ -5,7 +5,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { sortByDate } from '../CampusMap/eventHelpers';
 import { isFinishedEvent, hasFinished } from '../CampusMap/eventWindow';
-import { relativeDayLabel } from '../CampusMap/eventHelpers';
+import { eventWhenLabel } from '../CampusMap/eventHelpers';
 import { deletePost } from '../../api/societyPosts';
 import { EventRow } from '../CampusMap/EventRow';
 import { EventComposer } from '../CampusMap/EventComposer';
@@ -90,7 +90,7 @@ export function AdminEventList() {
   // on the row rather than nothing, so an unplaced event doesn't look like one
   // whose subline is simply missing.
   const subline = (e: MapEvent) => {
-    const day = `${relativeDayLabel(e.date, locale, t)}${e.time ? ` · ${e.time}` : ''}`;
+    const day = eventWhenLabel(e, locale, t);
     if (hasFinished(e)) return `${day} · ${t('map.finished')}`;
     if (e.venueKind === 'tba') return `${day} · ${t('admin.noVenue')}`;
     return undefined;

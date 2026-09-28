@@ -912,6 +912,7 @@
     "later": "Later",
     "today": "Today",
     "tomorrow": "Tomorrow",
+    "ongoingUntil": "Ongoing · until {date}",
     "moreHere": "more here",
     "moreInfo": "More info",
     "moreOnInstagram": "More on Instagram",

@@ -184,4 +184,21 @@ describe('EventDetailCard', () => {
       'https://esn.cz/e'
     );
   });
+  // A trip's card has to say how long it is: the start alone reads as a
+  // one-evening event, and the list only says "ongoing until" once it began.
+  it('shows the whole date range on one line for a multi-day event', () => {
+    render(<EventDetailCard event={{ ...ev, date: '2026-11-23', endDate: '2026-11-29' }} />);
+    const line = screen.getByText(/23.*29/);
+    expect(line.textContent).toMatch(/Mon.*November 23.*Sun.*November 29/);
+  });
+
+  it('shows a single date for a one-day event', () => {
+    render(<EventDetailCard event={{ ...ev, date: '2026-11-23', endDate: null, time: '18:00' }} />);
+    expect(screen.getByText(/November 23/).textContent).toBe('Mon, November 23 · 18:00');
+  });
+
+  it('treats an end date equal to the start as a one-day event', () => {
+    render(<EventDetailCard event={{ ...ev, date: '2026-11-23', endDate: '2026-11-23' }} />);
+    expect(screen.getByText(/November 23/).textContent).toBe('Mon, November 23');
+  });
 });

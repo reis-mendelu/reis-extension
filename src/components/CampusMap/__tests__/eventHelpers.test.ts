@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { sortByDate, groupEventsByVenue, weekSections, relativeDayLabel } from '../eventHelpers';
+import {
+  sortByDate,
+  groupEventsByVenue,
+  weekSections,
+  relativeDayLabel,
+  eventWhenLabel,
+} from '../eventHelpers';
 import { MOCK_MAP_EVENTS } from './fixtures/mockMapEvents';
 import type { MapEvent } from '../../../types/events';
 
@@ -93,5 +99,39 @@ describe('eventHelpers', () => {
     // …and the bucket agrees: This week, not Next week (the old calendar bug)
     const sections = weekSections([{ ...MOCK_MAP_EVENTS[0], id: 'a', date: tomorrow }], sun);
     expect(sections[0].key).toBe('thisWeek');
+  });
+  // A multi-day trip stays listed until its last day, so once it has started
+  // its START is in the past. Labelled by the start it read as a weekday in
+  // the future ("Monday" on the Wednesday of a Mon–Sun trip).
+  describe('eventWhenLabel', () => {
+    const t = (k: string, p?: Record<string, string | number>) =>
+      p ? `${k}(${Object.values(p).join(',')})` : k;
+    const trip = { date: '2026-11-23', endDate: '2026-11-29', time: null };
+
+    it('labels a running multi-day event as ongoing until its end, not by its start', () => {
+      const wed = new Date('2026-11-25T12:00:00');
+      expect(eventWhenLabel(trip, 'cs-CZ', t, wed)).toBe('map.ongoingUntil(29. 11.)');
+      expect(eventWhenLabel(trip, 'en-US', t, wed)).toBe('map.ongoingUntil(11/29)');
+      // Still ongoing on its last day; the start time is no longer the news.
+      const last = new Date('2026-11-29T09:00:00');
+      expect(eventWhenLabel({ ...trip, time: '18:00' }, 'cs-CZ', t, last)).toBe(
+        'map.ongoingUntil(29. 11.)'
+      );
+    });
+
+    it('leaves a future multi-day event on its start label, time included', () => {
+      const before = new Date('2026-11-20T12:00:00'); // Friday, trip starts Monday
+      expect(eventWhenLabel({ ...trip, time: '07:30' }, 'en-US', t, before)).toBe('Monday · 07:30');
+      // Its first day is "Today", not "ongoing".
+      const first = new Date('2026-11-23T12:00:00');
+      expect(eventWhenLabel(trip, 'en-US', t, first)).toBe('map.today');
+    });
+
+    it('labels a single-day event exactly as relativeDayLabel does', () => {
+      const now = new Date('2026-01-05T12:00:00');
+      expect(eventWhenLabel({ date: '2026-01-06', endDate: null, time: '19:00' }, 'en-US', t, now)).toBe(
+        'map.tomorrow · 19:00'
+      );
+    });
   });
 });

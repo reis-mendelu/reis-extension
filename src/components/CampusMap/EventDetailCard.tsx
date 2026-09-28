@@ -47,11 +47,20 @@ export function EventDetailCard({ event, flush = false }: { event: MapEvent; flu
   // A non-empty id always resolves: unknown ids get the neutral society.
   const soc = useSociety(event.societyId)!;
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
-  const dateLabel = parseEventDate(event.date).toLocaleDateString(locale, {
+  // A multi-day event (a trip) shows its whole span, so the card never reads as
+  // a one-evening event; formatRange keeps it one locale-ordered line
+  // ("po 23. 11. – ne 29. 11.", "Mon, November 23 – Sun, November 29"). `>`
+  // rather than `!==`: older engines throw on a reversed range.
+  const dateFormat = new Intl.DateTimeFormat(locale, {
     weekday: 'short',
     day: 'numeric',
     month: 'long',
   });
+  const start = parseEventDate(event.date);
+  const dateLabel =
+    event.endDate && event.endDate > event.date
+      ? dateFormat.formatRange(start, parseEventDate(event.endDate))
+      : dateFormat.format(start);
   const details = eventDetailsLink(event, soc);
 
   return (
