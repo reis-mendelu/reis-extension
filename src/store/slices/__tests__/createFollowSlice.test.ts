@@ -64,8 +64,8 @@ describe('createFollowSlice', () => {
       Object.assign(state, patch);
     });
     get = vi.fn(() => state) as unknown as typeof get;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     state = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...createFollowSlice(set, get, {} as any),
       // Faculty defaults come from the societies catalog: PEF->supef (same
       // fixtures useSpolkySettings' own test used before this logic moved

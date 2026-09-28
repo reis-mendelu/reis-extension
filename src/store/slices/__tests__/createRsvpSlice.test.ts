@@ -53,8 +53,8 @@ describe('createRsvpSlice', () => {
       state = { ...state, ...patch };
     });
     get = vi.fn(() => state) as unknown as typeof get;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     state = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...createRsvpSlice(set, get, {} as any),
       mapEvents: [],
       replanNotifications: vi.fn(),
@@ -331,8 +331,8 @@ describe('createRsvpSlice — failure handling', () => {
       state = { ...state, ...p };
     });
     get = vi.fn(() => state) as unknown as typeof get;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     state = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...createRsvpSlice(set, get, {} as any),
       mapEvents: [party] as never,
       replanNotifications: vi.fn(),
