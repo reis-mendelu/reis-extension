@@ -2,7 +2,6 @@ import type { AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
 import {
   loadFollowedList,
-  loadNotifySettings,
   STORAGE_KEY,
   CHOSEN_KEY,
   MUTED_KEY,
@@ -11,6 +10,7 @@ import {
   DEFAULT_PREFS,
   type NotifyPrefs,
 } from './follows/loadFollows';
+import { loadNotifySettings } from './follows/loadNotifySettings';
 import { replanNotifications } from './follows/replanNotifications';
 import {
   runExclusiveLoad,
@@ -85,7 +85,7 @@ export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
       // it read here.
       const versionsAtStart = snapshotVersions();
       const [list, notify] = await Promise.all([
-        loadFollowedList(get().societies),
+        loadFollowedList(get().societies, () => isUnchangedSince('followed', versionsAtStart)),
         loadNotifySettings(),
       ]);
 

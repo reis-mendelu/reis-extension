@@ -94,6 +94,33 @@ describe('loadFollowedList', () => {
     });
   });
 
+  describe('a closed write guard', () => {
+    const closed = () => loadFollowedList(BUNDLED_SOCIETIES, () => false);
+
+    it('writes no faculty default and no chosen mark, but still returns the default', async () => {
+      disk({ [STORAGE_KEY]: [] });
+      mockGetUserParams.mockResolvedValue(makeUser('PEF', false));
+      await expect(closed()).resolves.toEqual(['supef']);
+      expect(writesOf(STORAGE_KEY)).toHaveLength(0);
+      expect(writesOf(CHOSEN_KEY)).toHaveLength(0);
+    });
+
+    it('writes no migrated list', async () => {
+      disk({ [STORAGE_KEY]: ['af'] });
+      mockGetUserParams.mockResolvedValue(makeUser('AF', false));
+      await expect(closed()).resolves.toEqual(['usaf']);
+      expect(writesOf(STORAGE_KEY)).toHaveLength(0);
+    });
+
+    it('skips the ESN back-fill whole, flag included, so a later boot can still add it', async () => {
+      disk({ [STORAGE_KEY]: ['ldf'] });
+      mockGetUserParams.mockResolvedValue(makeUser('LDF', true));
+      await closed();
+      expect(writesOf(STORAGE_KEY)).toHaveLength(0);
+      expect(writesOf(ERASMUS_AUTO_KEY)).toHaveLength(0);
+    });
+  });
+
   describe('an unresolved faculty', () => {
     it('an unmapped faculty gives an empty list and saves nothing', async () => {
       disk({});

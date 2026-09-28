@@ -41,12 +41,21 @@ export const DEFAULT_PREFS: NotifyPrefs = {
  * `getUserParams()` returned nothing, or a read failed. A faculty that maps to
  * no default gives `[]`, which is an answer (and is not persisted).
  *
+ * `canWrite` is checked immediately before each write of the list or of
+ * CHOSEN_KEY. Every one of them is computed from a read made earlier in the
+ * load, and a toggle can land in between — the caller skips committing such a
+ * load to memory, and this skips writing it to disk, or the student's pick
+ * shows for the session and is gone at the next boot.
+ *
  * `catalog` is the societies catalog (the composed store's `societies`,
  * passed in rather than read from `useAppStore` here) — `createFollowSlice`
  * lives in the store's own composition, so importing the store back into this
  * file would be circular.
  */
-export async function loadFollowedList(catalog: Record<string, Society>): Promise<string[] | null> {
+export async function loadFollowedList(
+  catalog: Record<string, Society>,
+  canWrite: () => boolean = () => true
+): Promise<string[] | null> {
   let result: string[] | null = null;
   try {
     // 1. Try to get new full list
@@ -100,13 +109,13 @@ export async function loadFollowedList(catalog: Record<string, Society>): Promis
         // ...and only if they resolved to something. An empty result is the
         // failed lookup above; leaving IDB untouched is what lets the next
         // boot try again.
-        if (defaults.length > 0) {
+        if (defaults.length > 0 && canWrite()) {
           await IndexedDBService.set('meta', STORAGE_KEY, saved);
           // The one-time part of the migration above: an install that held
           // `[]` has now had its single re-resolution, so what it ends up
           // with is a settled answer. Only a resolution that found something
           // counts — marking a failed lookup would end the retries for good.
-          if (unresolvedEmpty) await IndexedDBService.set('meta', CHOSEN_KEY, true);
+          if (unresolvedEmpty && canWrite()) await IndexedDBService.set('meta', CHOSEN_KEY, true);
         }
       }
     }
@@ -128,7 +137,7 @@ export async function loadFollowedList(catalog: Record<string, Society>): Promis
       // harmless: the map is permanent, so the next boot migrates again.
       if (saved !== before) {
         try {
-          await IndexedDBService.set('meta', STORAGE_KEY, saved);
+          if (canWrite()) await IndexedDBService.set('meta', STORAGE_KEY, saved);
         } catch (err) {
           logError('Follows.migrateIds', err);
         }
@@ -138,7 +147,9 @@ export async function loadFollowedList(catalog: Record<string, Society>): Promis
       const userParams = await getUserParams();
       if (userParams?.isErasmus && !saved.includes('esn')) {
         const autoSubscribedFlag = await IndexedDBService.get('meta', ERASMUS_AUTO_KEY);
-        if (!autoSubscribedFlag) {
+        // Both writes or neither: a skipped back-fill leaves the flag unset,
+        // so the next boot adds ESN to whatever the student saved instead.
+        if (!autoSubscribedFlag && canWrite()) {
           const updated = [...saved, 'esn'];
           result = updated;
           await IndexedDBService.set('meta', STORAGE_KEY, updated);
@@ -150,42 +161,4 @@ export async function loadFollowedList(catalog: Record<string, Society>): Promis
     logError('Follows.load', err);
   }
   return result;
-}
-
-function isStringArray(v: unknown): v is string[] {
-  return Array.isArray(v) && v.every((x) => typeof x === 'string');
-}
-
-function isNotifyPrefs(v: unknown): v is NotifyPrefs {
-  if (!v || typeof v !== 'object') return false;
-  const p = v as Partial<NotifyPrefs>;
-  return (
-    typeof p.myEvents === 'boolean' &&
-    typeof p.followedEvents === 'boolean' &&
-    typeof p.newEvents === 'boolean'
-  );
-}
-
-/** Mutes, notification switches and whether permission has been asked for. */
-export async function loadNotifySettings(): Promise<{
-  muted: string[];
-  prefs: NotifyPrefs;
-  asked: boolean;
-}> {
-  try {
-    const [mutedRaw, prefsRaw, askedRaw] = await Promise.all([
-      IndexedDBService.get('meta', MUTED_KEY),
-      IndexedDBService.get('meta', NOTIFY_PREFS_KEY),
-      IndexedDBService.get('meta', NOTIFY_ASKED_KEY),
-    ]);
-
-    return {
-      muted: isStringArray(mutedRaw) ? mutedRaw : [],
-      prefs: isNotifyPrefs(prefsRaw) ? prefsRaw : DEFAULT_PREFS,
-      asked: askedRaw === true,
-    };
-  } catch (err) {
-    logError('Follows.loadNotifySettings', err);
-    return { muted: [], prefs: DEFAULT_PREFS, asked: false };
-  }
 }
