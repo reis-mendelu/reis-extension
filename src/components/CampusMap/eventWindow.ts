@@ -35,12 +35,17 @@ export function isPastEvent(iso: string, now: Date = new Date()): boolean {
  * to test, and assuming a start would mark an all-day event as over at
  * midnight. Earlier days are excluded because the Proběhlé bucket already says
  * it for them.
+ *
+ * Single-day only, too: a multi-day event's time is when its FIRST day starts,
+ * so a trip leaving at 07:30 would read as over from 07:31 on day 1. With no
+ * end time there is nothing to compare, so a running one claims nothing.
  */
 export function hasFinished(
-  event: { date: string; time: string | null },
+  event: { date: string; endDate?: string | null; time: string | null },
   now: Date = new Date()
 ): boolean {
   if (!event.time) return false;
+  if (event.endDate && event.endDate !== event.date) return false;
   if (daysUntilEvent(event.date, now) !== 0) return false;
   // Both halves, in range, or nothing. `Number.isFinite(h)` alone let a
   // half-parsed clock through and `(m) || 0` finished the job: '19:bad' became
