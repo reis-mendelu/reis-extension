@@ -57,6 +57,7 @@ describe('replanNotifications while the follow list is unresolved', () => {
       followed: [],
       followsLoaded: true,
       followsResolved: false,
+      notifySettingsRead: true,
       muted: [],
       notifyPrefs: DEFAULT_PREFS,
       rsvp: { 'ev-1': 'going' },

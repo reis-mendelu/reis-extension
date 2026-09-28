@@ -28,6 +28,14 @@ export function replanNotifications(get: () => AppState): void {
   // (`loadFollows`, `reloadMapEvents`, `loadRsvps`), so the first call that
   // finds all three true is the one that actually reconciles.
   if (!s.followsLoaded || !s.mapEventsLoaded || !s.rsvpLoaded) return;
+  // Nor from unread notification settings. A failed read leaves memory at the
+  // defaults — no mutes, every switch on — and a plan built from those would
+  // ring for societies the student muted and kinds they switched off. What is
+  // already pending was planned from their real settings, so leaving it
+  // alone is the safe side: missing one new RSVP ping in a session where the
+  // read keeps failing is better than ringing for a switch they turned off.
+  // `loadFollows` replans once a read commits, so the first good read lifts it.
+  if (!s.notifySettingsRead) return;
   const labels = digestLabels(s.language);
   const shortName = (id: string) => s.societies[id]?.shortName ?? id;
   const plan = planNotifications(
