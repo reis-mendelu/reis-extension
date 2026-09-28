@@ -73,6 +73,9 @@ describe('replanNotifications while the follow list is unresolved', () => {
   });
 
   it('plans the RSVP ping and keeps the pending digests', () => {
+    // A followed society with an event tomorrow, so the full plan does hold
+    // a digest: the unresolved branch has to filter it out, not just find none.
+    useAppStore.setState({ followed: ['esn'] });
     useAppStore.getState().replanNotifications();
 
     expect(syncReminders).toHaveBeenCalledTimes(1);
@@ -105,6 +108,19 @@ describe('replanNotifications while the follow list is unresolved', () => {
     expect(useAppStore.getState().followsResolved).toBe(false);
     const [, , opts] = syncReminders.mock.calls.at(-1) as Call;
     expect(opts).toEqual({ keepDigests: true });
+  });
+
+  // Both digest switches off is an explicit opt-out, not a gap in the data:
+  // the pending digests go, resolved list or not.
+  it('does not keep the pending digests once both digest switches are off', () => {
+    useAppStore.setState({
+      notifyPrefs: { myEvents: true, followedEvents: false, newEvents: false },
+    });
+
+    useAppStore.getState().replanNotifications();
+
+    const [, , opts] = syncReminders.mock.calls[0] as Call;
+    expect(opts?.keepDigests).toBeFalsy();
   });
 
   // A hand-made choice is an answer: the digests follow it from then on.

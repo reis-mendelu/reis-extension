@@ -42,7 +42,10 @@ export function replanNotifications(get: () => AppState): void {
     Date.now(),
     labels
   );
-  if (s.followsResolved) {
+  // Both digest switches off is an explicit opt-out, and the plan already has
+  // no digests: reconcile normally so the pending ones are cancelled.
+  const wantsDigests = s.notifyPrefs.followedEvents || s.notifyPrefs.newEvents;
+  if (s.followsResolved || !wantsDigests) {
     void syncReminders(plan);
     return;
   }
