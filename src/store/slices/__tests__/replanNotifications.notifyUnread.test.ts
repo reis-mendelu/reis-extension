@@ -104,4 +104,26 @@ describe('replanNotifications while the notification settings are unread', () =>
     const [planned] = syncReminders.mock.calls[0] as Call;
     expect(planned.filter((p) => p.kind === 'digest')).toEqual([]);
   });
+
+  // The follow list resolves on the first load, so an early return keyed on
+  // `followsResolved` alone would leave the settings unread — and every
+  // replan skipped — for the rest of the session.
+  it('retryFollowsIfUnresolved retries a failed settings read once the list has resolved', async () => {
+    await useAppStore.getState().loadFollows();
+    expect(useAppStore.getState().followsResolved).toBe(true);
+    expect(useAppStore.getState().notifySettingsRead).toBe(false);
+
+    failMutedRead = false;
+    await useAppStore.getState().retryFollowsIfUnresolved();
+
+    expect(useAppStore.getState().notifySettingsRead).toBe(true);
+    expect(useAppStore.getState().muted).toEqual(['esn']);
+    expect(syncReminders).toHaveBeenCalledTimes(1);
+
+    // Settled: a further retry reads nothing and replans nothing.
+    const reads = vi.mocked(IndexedDBService.get).mock.calls.length;
+    await useAppStore.getState().retryFollowsIfUnresolved();
+    expect(vi.mocked(IndexedDBService.get).mock.calls.length).toBe(reads);
+    expect(syncReminders).toHaveBeenCalledTimes(1);
+  });
 });

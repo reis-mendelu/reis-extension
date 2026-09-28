@@ -66,8 +66,9 @@ export interface FollowSlice {
   loadFollows: () => Promise<void>;
   /**
    * Re-runs `loadFollows()` if — and only if — it never actually resolved a
-   * list. A no-op once `followsResolved` is true, and concurrent calls share
-   * one in-flight load rather than each starting their own.
+   * list or never read the notification settings (a failed read leaves every
+   * replan skipped). A no-op once both are in, and concurrent calls share one
+   * in-flight load rather than each starting their own.
    */
   retryFollowsIfUnresolved: () => Promise<void>;
   toggleFollow: (id: string) => Promise<void>;
@@ -108,7 +109,7 @@ export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
   },
 
   retryFollowsIfUnresolved: async () => {
-    if (get().followsResolved) return;
+    if (get().followsResolved && get().notifySettingsRead) return;
     // Delegates entirely to `loadFollows()`, which dedupes via `runExclusiveLoad`.
     await get().loadFollows();
   },
