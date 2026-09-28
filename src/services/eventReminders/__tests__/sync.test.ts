@@ -30,6 +30,8 @@ vi.mock('../../../store/useAppStore', () => ({
   useAppStore: { getState: () => ({ language: 'cz' }) },
 }));
 
+vi.mock('../../../utils/reportError', () => ({ logError: vi.fn() }));
+
 import {
   syncReminders,
   resetReminderQueue,
@@ -38,6 +40,7 @@ import {
   capacitorReminderDeps,
   type ReminderDeps,
 } from '../sync';
+import { logError } from '../../../utils/reportError';
 import {
   CHANNEL_RSVP,
   CHANNEL_DIGEST,
@@ -384,5 +387,44 @@ describe('capacitorReminderDeps — createChannels', () => {
     const factory = await freshCapacitorReminderDeps();
     await factory().createChannels();
     expect(createChannel).not.toHaveBeenCalled();
+  });
+});
+
+describe('capacitorReminderDeps — createChannels failure recovery', () => {
+  // channelsReady is module state, so this needs its own fresh instance —
+  // otherwise an earlier test's resolved (or rejected) promise would still be
+  // cached and this one would never touch the plugin at all.
+  async function freshSyncModule() {
+    vi.resetModules();
+    return import('../sync');
+  }
+
+  // A transient createChannel failure (bridge not ready yet, plugin hiccup)
+  // used to be cached as a rejected promise forever: every later reconcile
+  // re-threw the same error and never reached schedule() again for the rest
+  // of the process. The guard must clear on rejection so the next
+  // reconciliation gets a real retry.
+  it('retries channel setup on the next reconcile after a transient failure', async () => {
+    getPlatform.mockReturnValue('android');
+    createChannel.mockRejectedValueOnce(new Error('bridge not ready'));
+
+    const mod = await freshSyncModule();
+    const realDeps = mod.capacitorReminderDeps();
+    // isSupported normally reads the installed platform seam, which nothing
+    // here installs — only the channel/schedule/permission wiring is under
+    // test, so that one check is stubbed true.
+    const testDeps: ReminderDeps = { ...realDeps, isSupported: () => true };
+
+    // First reconcile: channel creation fails, so nothing is scheduled and
+    // the failure is logged rather than silently wedging every later sync.
+    await mod.syncReminders([reminder()], testDeps);
+    expect(pluginSchedule).not.toHaveBeenCalled();
+    expect(logError).toHaveBeenCalled();
+
+    // Second reconcile: the guard was cleared on rejection, so this one
+    // retries channel creation (now succeeding) and reaches schedule().
+    await mod.syncReminders([reminder()], testDeps);
+    expect(createChannel).toHaveBeenCalledTimes(3); // 1 failed + 2 succeeded
+    expect(pluginSchedule).toHaveBeenCalled();
   });
 });

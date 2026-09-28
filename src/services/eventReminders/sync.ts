@@ -192,7 +192,16 @@ export function capacitorReminderDeps(): ReminderDeps {
             name: translate(lang, 'notify.channelDigest'),
             importance: 3,
           });
-        })();
+        })().catch((err: unknown) => {
+          // A transient failure (bridge not ready, plugin hiccup) must not be
+          // cached forever — that would leave every later reconcile re-
+          // throwing the same rejection and never reaching schedule() again
+          // for the rest of the process. Clearing the guard lets the next
+          // reconcile retry; rethrowing lets THIS one's own try/catch log it
+          // and return without scheduling, same as any other failed step.
+          channelsReady = null;
+          throw err;
+        });
       }
       return channelsReady;
     },
