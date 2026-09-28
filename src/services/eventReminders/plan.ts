@@ -83,11 +83,13 @@ export interface PlanInput {
   shortName: (societyId: string) => string;
 }
 
-/** Localised digest strings, passed in so `planNotifications` stays pure. */
+/** Localised digest strings, passed in so `planNotifications` stays pure.
+ *  Every count-bearing string takes its count, so the builder can pick the
+ *  right plural form (see `digestLabels`). */
 export interface DigestLabels {
   tomorrow: (titles: string) => string;
   tomorrowMany: (n: number, titles: string) => string;
-  newOnly: (titles: string) => string;
+  newOnly: (n: number, titles: string) => string;
   plusNew: (n: number, societies: string) => string;
   leadLabel: string;
 }

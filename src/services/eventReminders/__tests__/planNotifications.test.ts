@@ -60,7 +60,7 @@ function ev(
 const labels: DigestLabels = {
   tomorrow: (titles) => `Tomorrow: ${titles}`,
   tomorrowMany: (n, titles) => `Tomorrow: ${n} events (${titles})`,
-  newOnly: (titles) => `New: ${titles}`,
+  newOnly: (_n, titles) => `New: ${titles}`,
   plusNew: (n, societies) => `+${n} new from ${societies}`,
   leadLabel: 'In 2 hours',
 };
@@ -483,7 +483,7 @@ describe('planNotifications and digestText — wording', () => {
     const e1 = ev('t5', 'esn', '2026-10-20', { title: 'Movie Night' });
     const e2 = ev('t6', 'esn', '2026-10-21', { title: 'Trivia' });
     const text = digestText([], [e1, e2], shortName, labels);
-    expect(text?.title).toBe(labels.newOnly('Movie Night, Trivia (ESN)'));
+    expect(text?.title).toBe(labels.newOnly(2, 'Movie Night, Trivia (ESN)'));
     expect(text?.body).toBe(labels.plusNew(2, 'ESN'));
   });
 

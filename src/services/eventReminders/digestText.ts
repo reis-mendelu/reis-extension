@@ -1,5 +1,33 @@
 import type { MapEvent } from '../../types/events';
+import type { Language } from '../../store/types';
 import type { DigestLabels } from './plan';
+import { translate } from '../../i18n/translate';
+
+/** Czech needs three count forms (1 / 2–4 / 5+ — "akce" / "akce" / "akcí",
+ *  "nová" / "nové" / "nových"), so each count-bearing key has `Single` and
+ *  `Few` variants beside the default. English only needs two, so its `Few`
+ *  copy is identical to the default — the same convention as NotifySoftAsk. */
+export function pluralSuffix(n: number): 'Single' | 'Few' | '' {
+  if (n === 1) return 'Single';
+  if (n >= 2 && n <= 4) return 'Few';
+  return '';
+}
+
+/**
+ * The digest strings in one language. `leadLabel` is the RSVP ping's body
+ * prefix and must stay byte-identical: those pings are already pending on
+ * devices, and a changed text would make every one of them reschedule.
+ */
+export function digestLabels(lang: Language): DigestLabels {
+  const tr = (k: string, p?: Record<string, string | number>) => translate(lang, k, p);
+  return {
+    tomorrow: (titles) => tr('notify.digestTomorrow', { titles }),
+    tomorrowMany: (n, titles) => tr(`notify.digestTomorrowMany${pluralSuffix(n)}`, { n, titles }),
+    newOnly: (n, titles) => tr(`notify.digestNewOnly${pluralSuffix(n)}`, { titles }),
+    plusNew: (n, societies) => tr(`notify.digestPlusNew${pluralSuffix(n)}`, { n, societies }),
+    leadLabel: tr('map.reminderLead'),
+  };
+}
 
 /**
  * The title and body for one evening digest, given tomorrow's events and the
@@ -29,7 +57,7 @@ export function digestText(
       .join(', ');
   const title =
     tomorrow.length === 0
-      ? labels.newOnly(`${first2(fresh)} (${societies(fresh)})`)
+      ? labels.newOnly(fresh.length, `${first2(fresh)} (${societies(fresh)})`)
       : tomorrow.length <= 2
         ? labels.tomorrow(`${first2(tomorrow)} (${societies(tomorrow)})`)
         : labels.tomorrowMany(tomorrow.length, first2(tomorrow));

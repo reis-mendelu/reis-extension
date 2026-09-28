@@ -1,7 +1,7 @@
 import type { AppState } from '../../types';
-import { planNotifications, type DigestLabels } from '../../../services/eventReminders/plan';
+import { planNotifications } from '../../../services/eventReminders/plan';
+import { digestLabels } from '../../../services/eventReminders/digestText';
 import { syncReminders } from '../../../services/eventReminders/sync';
-import { translate } from '../../../i18n/translate';
 
 /**
  * Recomputes every RSVP ping and evening digest from the current store and
@@ -28,15 +28,7 @@ export function replanNotifications(get: () => AppState): void {
   // (`loadFollows`, `reloadMapEvents`, `loadRsvps`), so the first call that
   // finds all three true is the one that actually reconciles.
   if (!s.followsLoaded || !s.mapEventsLoaded || !s.rsvpLoaded) return;
-  const lang = s.language;
-  const tr = (k: string, p?: Record<string, string | number>) => translate(lang, k, p);
-  const labels: DigestLabels = {
-    tomorrow: (titles) => tr('notify.digestTomorrow', { titles }),
-    tomorrowMany: (n, titles) => tr('notify.digestTomorrowMany', { n, titles }),
-    newOnly: (titles) => tr('notify.digestNewOnly', { titles }),
-    plusNew: (n, societies) => tr('notify.digestPlusNew', { n, societies }),
-    leadLabel: tr('map.reminderLead'),
-  };
+  const labels = digestLabels(s.language);
   const shortName = (id: string) => s.societies[id]?.shortName ?? id;
   void syncReminders(
     planNotifications(
