@@ -127,19 +127,6 @@ export async function fetchNotifications(): Promise<SpolekNotification[] | null>
  * @returns Filtered notifications
  */
 /**
- * Today, as the STUDENT's calendar has it — not UTC.
- *
- * `toISOString().slice(0, 10)` is the obvious version and is wrong east of
- * Greenwich: at 00:30 in Brno it still answers yesterday, which is exactly the
- * window in which "is this event over?" changes its answer.
- */
-export function localDayIso(now: Date = new Date()): string {
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${now.getFullYear()}-${month}-${day}`;
-}
-
-/**
  * Drops society events that are over.
  *
  * The server query already asks for `date >= today`, so a fresh fetch never
