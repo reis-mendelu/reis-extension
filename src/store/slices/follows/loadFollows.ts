@@ -37,9 +37,9 @@ export const DEFAULT_PREFS: NotifyPrefs = {
  * of `useSpolkySettings` so the reminder planner can read follows from the
  * store rather than from a component's local state.
  *
- * Returns the final list, or `null` when nothing resolved (no saved list, and
- * either `getUserParams()` returned nothing or the faculty could not be
- * mapped to a default).
+ * Returns the final list, or `null` when nothing resolved: no saved list and
+ * `getUserParams()` returned nothing, or a read failed. A faculty that maps to
+ * no default gives `[]`, which is an answer (and is not persisted).
  *
  * `catalog` is the societies catalog (the composed store's `societies`,
  * passed in rather than read from `useAppStore` here) — `createFollowSlice`
@@ -102,12 +102,11 @@ export async function loadFollowedList(catalog: Record<string, Society>): Promis
         // boot try again.
         if (defaults.length > 0) {
           await IndexedDBService.set('meta', STORAGE_KEY, saved);
-        }
-        // The one-time part of the migration above: an install that already
-        // held `[]` has now had its single re-resolution, so record that
-        // whatever it ends up with is a settled answer.
-        if (unresolvedEmpty) {
-          await IndexedDBService.set('meta', CHOSEN_KEY, true);
+          // The one-time part of the migration above: an install that held
+          // `[]` has now had its single re-resolution, so what it ends up
+          // with is a settled answer. Only a resolution that found something
+          // counts — marking a failed lookup would end the retries for good.
+          if (unresolvedEmpty) await IndexedDBService.set('meta', CHOSEN_KEY, true);
         }
       }
     }
