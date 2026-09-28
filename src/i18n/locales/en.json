@@ -1033,7 +1033,6 @@
     "mapTab": "Map",
     "pickSociety": "Choose a society",
     "pickSocietyPrompt": "Choose a society above to manage its events.",
-    "noVenue": "No place yet",
     "eventViews": "{count} views",
     "eventViewsOne": "1 view",
     "eventClicks": "{count} clicks",

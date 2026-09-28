@@ -86,16 +86,11 @@ export function AdminEventList() {
   // A row dated today whose time has passed: it happened, but it stays
   // publicly visible for the rest of the day, so the bucket cannot say it and
   // the row does instead. See eventWindow.hasFinished for why not the bucket.
-  // A venue the society hasn't set yet gets the same treatment: "Bez místa"
-  // on the row rather than nothing, so an unplaced event doesn't look like one
-  // whose subline is simply missing.
+  // An unplaced (tba) event needs nothing here: EventRow itself says
+  // "Místo upřesní …" on both hosts, so a suffix would say it twice.
   const subline = (e: MapEvent) => {
     const day = eventWhenLabel(e, locale, t);
     if (hasFinished(e)) return `${day} · ${t('map.finished')}`;
-    // Only when the row shows no place either: tba forbids a room and a
-    // coordinate, not a free-text location, and EventRow shows that one.
-    if (e.venueKind === 'tba' && !e.location?.trim() && !e.coord)
-      return `${day} · ${t('admin.noVenue')}`;
     return undefined;
   };
 

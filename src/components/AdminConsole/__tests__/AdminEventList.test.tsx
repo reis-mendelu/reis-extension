@@ -64,12 +64,15 @@ describe('AdminEventList', () => {
     expect(within(pastSection).queryByText('E-sched')).toBeNull();
   });
 
-  it('shows "No place yet" on a row with no venue set (venueKind tba)', () => {
+  // The shared row already says "Venue TBA by …" for an unplaced event; a
+  // second "· No place yet" on the subline said the same thing twice.
+  it('says once that a tba row has no place yet', () => {
     useAppStore.setState({
       societyMapEvents: [{ ...mk('tba', iso(2)), venueKind: 'tba', coord: null }],
     });
     render(<AdminEventList />);
-    expect(screen.getByText(/no place yet/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/^venue tba by /i)).toHaveLength(1);
+    expect(screen.queryByText(/no place yet/i)).toBeNull();
   });
 
   // tba only means "no room, no coordinate"; a free-text place is allowed and
