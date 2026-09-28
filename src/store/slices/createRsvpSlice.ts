@@ -259,17 +259,20 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
           rsvpLoaded: s.rsvpLoaded || stored !== null,
         };
       });
-      // Both of these must not run from an UNREAD `stored`: that is an empty
+      // Neither of these may run from an UNREAD `stored`: that is an empty
       // plan, and reconciling against it cancels every reminder and deletes
       // every calendar block for events the student is still going to.
       //
-      // They part company on `ok`, which says only whether the server's COUNTS
-      // arrived. The blocks are planned from the answers and the events, and
-      // neither is a count — so a load where the disk succeeded and the count
-      // request failed can still reconcile them, and gating it on `ok` left
-      // them stale until the next answer. Raised in review by CodeRabbit.
+      // Both gate on `stored` alone, never on `ok`. `ok` says only whether the
+      // server's COUNTS arrived, and neither the calendar blocks nor the
+      // reminder plan is built from a count — both come from the answers and
+      // the events. The blocks were fixed to this first (raised in review by
+      // CodeRabbit); the reminder replan used to still gate on `ok && stored`,
+      // which left a session whose counts request happened to fail without
+      // its digest ever getting scheduled, even though the answers had
+      // loaded fine — fixed in the same way in fix round 1.
       if (stored) refreshRsvpBlocks();
-      if (ok && stored) get().replanNotifications();
+      if (stored) get().replanNotifications();
     },
 
     setRsvp: async (eventId, status) => {

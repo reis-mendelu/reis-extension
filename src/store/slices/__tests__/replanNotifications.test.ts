@@ -247,6 +247,31 @@ describe('replanNotifications', () => {
       expect(syncReminders.mock.calls[0]?.[0]).toHaveLength(1);
     });
 
+    // Fix round 1, second pass: the plan is built from the student's own
+    // answers and the events, never from the server's counts, so a failed
+    // counts fetch must not stop the digest being scheduled for the session.
+    it('still reconciles with the full plan when the counts fetch fails but the disk read succeeds', async () => {
+      await seedFollows(['esn']);
+      fetchMapEvents.mockResolvedValue([ev()]);
+      fetchEventRsvps.mockResolvedValue({ counts: {}, ok: false });
+      useAppStore.setState({
+        followsLoaded: false,
+        mapEventsLoaded: false,
+        rsvpLoaded: false,
+        followed: [],
+      });
+
+      const mapLoad = useAppStore.getState().loadMapEvents();
+      const followsLoad = useAppStore.getState().loadFollows();
+      await Promise.all([mapLoad, followsLoad]);
+      await flush();
+
+      expect(useAppStore.getState().rsvpLoaded).toBe(true);
+      expect(syncReminders).toHaveBeenCalledTimes(1);
+      const [planned] = syncReminders.mock.calls[0] as [Array<{ kind: string }>];
+      expect(planned.some((n) => n.kind === 'digest')).toBe(true);
+    });
+
     it('never calls syncReminders with an empty plan when IDB resolves before the network fetch', async () => {
       await seedFollows(['esn']);
       let resolveEvents!: (v: MapEvent[] | null) => void;

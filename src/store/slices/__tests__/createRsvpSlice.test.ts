@@ -308,13 +308,18 @@ describe('createRsvpSlice — failure handling', () => {
     };
   });
 
-  // A failed load leaves `rsvp` empty; reconciling from that would cancel every
-  // pending notification for events the student is still going to.
-  it('does not touch reminders when the load failed', async () => {
+  // This used to read "does not touch reminders when the load failed" and
+  // assert the opposite — but its setup was never a failed LOAD, only a
+  // failed COUNTS fetch, with the disk read (which is what the plan is
+  // actually built from) succeeding. Fix round 1, second pass: the reminder
+  // plan is never built from a count, so it must still reconcile here — the
+  // real "disk read failed" case is covered separately below (`still loads
+  // counts when the local answers cannot be read`).
+  it('still replans when only the counts request failed', async () => {
     idb.set('event_rsvps_mine', { e1: 'going' });
     fetchEventRsvps.mockResolvedValue({ counts: {}, ok: false });
     await state.loadRsvps(['e1']);
-    expect(state.replanNotifications).not.toHaveBeenCalled();
+    expect(state.replanNotifications).toHaveBeenCalled();
   });
 
   it('keeps the previous counts rather than overwriting them with zeroes', async () => {
@@ -807,6 +812,21 @@ describe('createRsvpSlice — failure handling', () => {
       await new Promise((r) => setTimeout(r, 0));
 
       expect(added).toEqual(['rsvp:e1']);
+    });
+
+    // Fix round 1, second pass: the reminder plan is built from the answers
+    // and the events, never from a count — same reasoning as the calendar
+    // block above, which already gated on `stored` alone. Gating the replan
+    // on `ok` too meant a session whose counts request happened to fail never
+    // got its digest scheduled, even though the answers had loaded fine.
+    it('still replans when the counts fail but the disk answers arrive', async () => {
+      idb.set('event_rsvps_mine', { e1: 'interested' });
+      fetchEventRsvps.mockResolvedValue({ counts: {}, ok: false });
+      withCalendar();
+
+      await state.loadRsvps(['e1']);
+
+      expect(state.replanNotifications).toHaveBeenCalled();
     });
 
     it('reconciles nothing when the disk read itself fails', async () => {
