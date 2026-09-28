@@ -43,6 +43,27 @@ beforeEach(() => {
 });
 
 describe('loadSocietyPosts', () => {
+  // Publish and delete await this action before confirming; a slow count
+  // request must not hold that up.
+  it('resolves once the posts are in, without waiting for the RSVP counts', async () => {
+    const { state, access } = makeAccess('esn');
+    const counts = deferred<{
+      counts: Record<string, { going: number; interested: number }>;
+      ok: boolean;
+    }>();
+    vi.mocked(listMyPosts).mockResolvedValueOnce([post('a')]);
+    vi.mocked(fetchEventRsvps).mockReturnValueOnce(counts.promise);
+
+    await loadSocietyPosts(access);
+    expect(state.posts.map((p) => p.id)).toEqual(['a']);
+    expect(state.counts).toEqual({});
+
+    counts.resolve({ counts: { a: { going: 1, interested: 2 } }, ok: true });
+    await counts.promise;
+    await Promise.resolve();
+    expect(state.counts).toEqual({ a: { going: 1, interested: 2 } });
+  });
+
   // A → B → A: the first A request is for the society on screen again, so an
   // id check alone let it land after the newer A request and win.
   it('ignores an older request for the same society once a newer one ran', async () => {

@@ -56,6 +56,10 @@ export async function loadSocietyPosts(access: LoadSocietyPostsAccess): Promise<
   // Not for dev:web's in-memory store: its `dev-N` ids are not the uuids the
   // RPC takes, so every reload would log a failed request for nothing.
   if (DEV_SOCIETY) return;
-  const { counts, ok } = await fetchEventRsvps(posts.map((p) => p.id));
-  if (ok && current()) access.setRsvpCounts(counts);
+  // Detached: publish and delete await this action before confirming, and a
+  // slow count must not hold up "Uloženo" — the posts are already on screen.
+  // fetchEventRsvps never rejects; the guard still drops a superseded answer.
+  void fetchEventRsvps(posts.map((p) => p.id)).then(({ counts, ok }) => {
+    if (ok && current()) access.setRsvpCounts(counts);
+  });
 }
