@@ -17,6 +17,15 @@ export interface RsvpSlice {
   rsvp: Record<string, RsvpStatus>;
   /** Real attendance per event id, as reported by Supabase. */
   rsvpCounts: Record<string, RsvpCounts>;
+  /**
+   * True once this device's own answers have been read from disk at least
+   * once (a successful `loadRsvps` — mirrors the `if (stored)` branch below,
+   * independent of whether the server's counts also arrived). `replanNotifications`
+   * gates on this alongside `followsLoaded`/`mapEventsLoaded`: `rsvp` sits at
+   * its cold-boot `{}` until this is true, and reconciling from that would
+   * cancel every RSVP reminder already pending on the device.
+   */
+  rsvpLoaded: boolean;
   /** Load counts for a set of events, and this device's own answers from IDB. */
   loadRsvps: (eventIds: string[]) => Promise<void>;
   /** Toggle an RSVP: tapping the active status clears it, otherwise it switches. */
@@ -152,6 +161,7 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
   return {
     rsvp: {},
     rsvpCounts: {},
+    rsvpLoaded: false,
 
     loadRsvps: async (eventIds) => {
       if (eventIds.length === 0) return;
@@ -242,6 +252,11 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
           // replace real numbers with a confident-looking lie.
           rsvpCounts: ok ? mergedCounts : s.rsvpCounts,
           rsvp: hydrated,
+          // Mirrors `if (stored)` below, not `if (ok && stored)`: this says
+          // only that the device's OWN answers were read, independent of
+          // whether the server's counts also arrived. Monotonic — a later
+          // failed read must not un-hydrate a student's already-loaded answers.
+          rsvpLoaded: s.rsvpLoaded || stored !== null,
         };
       });
       // Both of these must not run from an UNREAD `stored`: that is an empty

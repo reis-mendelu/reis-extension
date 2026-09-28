@@ -62,13 +62,17 @@ export interface FollowSlice {
   replanNotifications: () => void;
 }
 
-// One in-flight retry at a time, shared by every caller — module-level rather
-// than per-slice-instance state because there is exactly one store, and a
-// second concurrent `retryFollowsIfUnresolved()` (the sync-service refresh and
-// a resume landing close together, say) must await the SAME load rather than
-// kick off its own. Cleared in `finally` so a later, genuinely new retry can
-// still run if the first one failed to resolve anything.
-let followsRetryInFlight: Promise<void> | null = null;
+// One in-flight LOAD at a time, shared by both `loadFollows()` and
+// `retryFollowsIfUnresolved()` — module-level rather than per-slice-instance
+// state because there is exactly one store, and any two callers landing close
+// together must await the SAME load rather than each kick off its own. That
+// used to be true only of two concurrent `retryFollowsIfUnresolved()` calls;
+// the boot call site (`void loadFollows()` in useAppStore.ts) bypassed this
+// entirely, so a sync arriving mid-boot could still start a second concurrent
+// load racing it. Routing `loadFollows()` itself through this flag closes
+// that gap for every caller, not just retries. Cleared in `finally` so a
+// later, genuinely new load can still run once this one settles.
+let followsLoadInFlight: Promise<void> | null = null;
 
 export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
   followed: [],
@@ -80,34 +84,36 @@ export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
   notifyPermission: null,
 
   loadFollows: async () => {
-    const [list, notify] = await Promise.all([
-      loadFollowedList(get().societies),
-      loadNotifySettings(),
-    ]);
-    set({
-      followed: list ?? [],
-      followsLoaded: true,
-      // `null` means loadFollowedList could not resolve anything this time
-      // (getUserParams() came back empty — the boot race) rather than that
-      // this student genuinely follows nothing.
-      followsResolved: list !== null,
-      muted: notify.muted,
-      notifyPrefs: notify.prefs,
-      permissionAsked: notify.asked,
-    });
-    get().replanNotifications();
+    if (!followsLoadInFlight) {
+      followsLoadInFlight = (async () => {
+        const [list, notify] = await Promise.all([
+          loadFollowedList(get().societies),
+          loadNotifySettings(),
+        ]);
+        set({
+          followed: list ?? [],
+          followsLoaded: true,
+          // `null` means loadFollowedList could not resolve anything this time
+          // (getUserParams() came back empty — the boot race) rather than that
+          // this student genuinely follows nothing.
+          followsResolved: list !== null,
+          muted: notify.muted,
+          notifyPrefs: notify.prefs,
+          permissionAsked: notify.asked,
+        });
+        get().replanNotifications();
+      })().finally(() => {
+        followsLoadInFlight = null;
+      });
+    }
+    await followsLoadInFlight;
   },
 
   retryFollowsIfUnresolved: async () => {
     if (get().followsResolved) return;
-    if (!followsRetryInFlight) {
-      followsRetryInFlight = get()
-        .loadFollows()
-        .finally(() => {
-          followsRetryInFlight = null;
-        });
-    }
-    await followsRetryInFlight;
+    // Delegates entirely to `loadFollows()`, which now does its own
+    // deduplication — see `followsLoadInFlight` above.
+    await get().loadFollows();
   },
 
   toggleFollow: async (id) => {

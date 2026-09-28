@@ -3,6 +3,7 @@ import type { Mock } from 'vitest';
 import { createFollowSlice, DEFAULT_PREFS } from '../createFollowSlice';
 import type { FollowSlice } from '../createFollowSlice';
 import { IndexedDBService } from '../../../services/storage';
+import { STORAGE_KEY } from '../follows/loadFollows';
 import { BUNDLED_SOCIETIES } from '../../../data/societies';
 import type { Society } from '../../../types/events';
 
@@ -241,13 +242,64 @@ describe('createFollowSlice', () => {
       await state.loadFollows(); // unresolved
       expect(state.followsResolved).toBe(false);
       mockGetUserParams.mockResolvedValue(makeUser('PEF', false));
-      const loadFollowsSpy = vi.spyOn(state, 'loadFollows');
 
       const first = state.retryFollowsIfUnresolved();
       const second = state.retryFollowsIfUnresolved();
       await Promise.all([first, second]);
 
-      expect(loadFollowsSpy).toHaveBeenCalledTimes(1);
+      // Both calls now delegate to `loadFollows()`, which dedupes internally
+      // (see below) — so counting invocations of the wrapper no longer proves
+      // anything; a duplicate REAL load would instead double-write the
+      // resolved default list to disk.
+      expect(
+        vi.mocked(IndexedDBService.set).mock.calls.filter((c) => c[1] === STORAGE_KEY)
+      ).toHaveLength(1);
+      expect(state.followed).toEqual(['supef']);
+      expect(state.followsResolved).toBe(true);
+    });
+
+    // Task 5 fix round 1: the boot call (`void s2.loadFollows()` in
+    // useAppStore.ts) used to bypass this function's in-flight guard entirely
+    // — only `retryFollowsIfUnresolved()` calling itself twice was
+    // deduplicated, not a direct `loadFollows()` racing a
+    // `retryFollowsIfUnresolved()` landing at the same time (a sync arriving
+    // mid-boot, say). `loadFollows()` now shares its own in-flight promise
+    // with `retryFollowsIfUnresolved()`, so either ordering collapses to one
+    // real load.
+    it('a boot loadFollows() in flight, and a concurrent retryFollowsIfUnresolved(), share one load', async () => {
+      // Only the FIRST getUserParams() call is held pending — this fixture's
+      // resolution (PEF, non-erasmus) makes loadFollowedList call it a second
+      // time later on (the "robust auto-subscription" check), which must be
+      // free to resolve immediately or the test would hang on it instead of
+      // proving anything about deduplication.
+      let resolveUserParams!: (v: ReturnType<typeof makeUser> | null) => void;
+      mockGetUserParams
+        .mockImplementationOnce(
+          () =>
+            new Promise((r) => {
+              resolveUserParams = r;
+            })
+        )
+        .mockResolvedValue(makeUser('PEF', false));
+
+      // Fired unawaited, exactly like the boot call site.
+      const bootLoad = state.loadFollows();
+      // A sync (or a resume) lands while it is still in flight.
+      const retry = state.retryFollowsIfUnresolved();
+
+      // Let both progress up to the point where a real load calls
+      // getUserParams() (two awaited IDB reads first) — deduped, this is
+      // reached once; undeduped, twice, independently, well before either
+      // resolves.
+      await new Promise((r) => setTimeout(r, 0));
+      expect(mockGetUserParams).toHaveBeenCalledTimes(1);
+
+      resolveUserParams(makeUser('PEF', false));
+      await Promise.all([bootLoad, retry]);
+
+      expect(
+        vi.mocked(IndexedDBService.set).mock.calls.filter((c) => c[1] === STORAGE_KEY)
+      ).toHaveLength(1);
       expect(state.followed).toEqual(['supef']);
       expect(state.followsResolved).toBe(true);
     });

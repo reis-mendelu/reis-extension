@@ -17,11 +17,17 @@ import { translate } from '../../../i18n/translate';
  */
 export function replanNotifications(get: () => AppState): void {
   const s = get();
-  // Never reconcile from an unread state: `followed`/`muted`/`rsvp` are all
-  // still at their cold-boot defaults until `loadFollows()` resolves, and an
-  // empty plan built from those would cancel every notification already
-  // pending on the device.
-  if (!s.followsLoaded) return;
+  // Never reconcile from an unread state: `followed`/`muted`/`mapEvents`/`rsvp`
+  // are all still at their cold-boot defaults until each of these three loads
+  // resolves, and an empty plan built from those would cancel every
+  // notification already pending on the device. `loadFollows()` (two IDB
+  // reads) usually settles well before `reloadMapEvents`'s network fetch, so
+  // `followsLoaded` alone is not a safe gate — its own `replanNotifications()`
+  // call would otherwise fire mid-boot with `mapEvents: []` and `rsvp: {}`.
+  // Each flag's owner calls `replanNotifications()` again once it settles
+  // (`loadFollows`, `reloadMapEvents`, `loadRsvps`), so the first call that
+  // finds all three true is the one that actually reconciles.
+  if (!s.followsLoaded || !s.mapEventsLoaded || !s.rsvpLoaded) return;
   const lang = s.language;
   const tr = (k: string, p?: Record<string, string | number>) => translate(lang, k, p);
   const labels: DigestLabels = {

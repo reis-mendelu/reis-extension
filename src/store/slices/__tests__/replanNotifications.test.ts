@@ -30,11 +30,34 @@ vi.mock('../../../api/eventRsvp', async (importOriginal) => ({
   fetchEventRsvps: (...a: unknown[]) => fetchEventRsvps(...a),
 }));
 
+// loadFollows() calls getUserParams() (via loadFollowedList) for real; off the
+// network here — resolving null just means "IS hasn't confirmed identity
+// yet," which still settles followsLoaded, exactly like the real boot race.
+const mockGetUserParams = vi.fn();
+vi.mock('../../../utils/userParams', () => ({
+  getUserParams: (...a: unknown[]) => mockGetUserParams(...a),
+}));
+
 import { useAppStore } from '../../useAppStore';
 import { DEFAULT_PREFS } from '../createFollowSlice';
+import { STORAGE_KEY, MUTED_KEY } from '../follows/loadFollows';
+import { IndexedDBService } from '../../../services/storage';
 import type { MapEvent } from '../../../types/events';
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+// The "cold-boot hydration race" tests exercise the REAL loadFollows(), which
+// reads follows AND mutes off disk and overwrites whatever `useAppStore.
+// setState({ followed/muted: [...] })` set — so, unlike the other tests in
+// this file, they need real IndexedDB records to read back, on the real
+// fake-indexeddb backing this environment. That store persists across every
+// test in this file (an earlier `toggleMute('esn')` test really writes
+// MUTED_KEY), so each of these tests seeds both keys itself.
+const seedFollows = (followed: string[], muted: string[] = []) =>
+  Promise.all([
+    IndexedDBService.set('meta', STORAGE_KEY, followed),
+    IndexedDBService.set('meta', MUTED_KEY, muted),
+  ]);
 
 function ev(overrides: Partial<MapEvent> = {}): MapEvent {
   return {
@@ -68,6 +91,7 @@ describe('replanNotifications', () => {
     fetchMapEvents.mockReset().mockResolvedValue([]);
     fetchEventRsvps.mockReset().mockResolvedValue({ counts: {}, ok: true });
     setEventRsvp.mockReset().mockResolvedValue(true);
+    mockGetUserParams.mockReset().mockResolvedValue(null);
     useAppStore.setState({
       followed: [],
       followsLoaded: false,
@@ -76,8 +100,12 @@ describe('replanNotifications', () => {
       notifyPrefs: DEFAULT_PREFS,
       rsvp: {},
       rsvpCounts: {},
+      // Most tests below are about re-planning after an action, not the boot
+      // race itself — start them past the hydration guard (see "cold-boot
+      // hydration race" below, which overrides these back to false).
+      rsvpLoaded: true,
       mapEvents: [],
-      mapEventsLoaded: false,
+      mapEventsLoaded: true,
       mapEventsFetchedAt: null,
       language: 'cz',
     });
@@ -146,6 +174,111 @@ describe('replanNotifications', () => {
 
     expect(syncReminders).toHaveBeenCalledTimes(1);
     expect(syncReminders.mock.calls[0]?.[0]).toHaveLength(1);
+    // reloadMapEvents' own loadRsvps call is detached — drain it before the
+    // next test starts, or its eventual `set({ rsvpLoaded: true })` lands
+    // during a later test's setup and corrupts it.
+    await flush();
+  });
+
+  // The actual boot race (src/store/useAppStore.ts, Tier 2): `loadMapEvents()`
+  // fires the network fetch and `loadFollows()` fires right after it, both
+  // unawaited. `loadFollows()` is two IDB reads and usually resolves first —
+  // its own `replanNotifications()` call must not reconcile from
+  // `mapEvents: []`/`rsvp: {}` just because `followsLoaded` alone went true.
+  // Modeled with independent, separately-controlled promises for the network
+  // fetch and the RSVP hydration read — not one `setState` standing in for
+  // both — because the bug was specifically about these resolving out of
+  // step with each other.
+  describe('cold-boot hydration race', () => {
+    it('does not call syncReminders while events/RSVP have not hydrated, even once followsLoaded is true', async () => {
+      await seedFollows(['esn']);
+      let resolveEvents!: (v: MapEvent[] | null) => void;
+      fetchMapEvents.mockImplementation(
+        () =>
+          new Promise((r) => {
+            resolveEvents = r;
+          })
+      );
+      useAppStore.setState({
+        followsLoaded: false,
+        mapEventsLoaded: false,
+        rsvpLoaded: false,
+        followed: [],
+      });
+
+      // Fired in boot order, both unawaited — the network fetch is left
+      // hanging on purpose.
+      const mapLoad = useAppStore.getState().loadMapEvents();
+      await useAppStore.getState().loadFollows();
+
+      expect(useAppStore.getState().followsLoaded).toBe(true);
+      expect(useAppStore.getState().mapEventsLoaded).toBe(false);
+      expect(useAppStore.getState().rsvpLoaded).toBe(false);
+      expect(syncReminders).not.toHaveBeenCalled();
+
+      // Let the pending fetch settle so it can't leak into a later test.
+      resolveEvents([]);
+      await mapLoad;
+      await flush();
+    });
+
+    it('reconciles exactly once, with the full plan, once follows/events/RSVP have all hydrated', async () => {
+      await seedFollows(['esn']);
+      fetchMapEvents.mockResolvedValue([ev()]);
+      fetchEventRsvps.mockResolvedValue({ counts: {}, ok: true });
+      useAppStore.setState({
+        followsLoaded: false,
+        mapEventsLoaded: false,
+        rsvpLoaded: false,
+        followed: [],
+      });
+
+      const mapLoad = useAppStore.getState().loadMapEvents();
+      const followsLoad = useAppStore.getState().loadFollows();
+      await Promise.all([mapLoad, followsLoad]);
+      // loadRsvps is detached from reloadMapEvents, so its own settling — and
+      // the replan it triggers — needs a further tick past both of the above.
+      await flush();
+
+      expect(useAppStore.getState().followsLoaded).toBe(true);
+      expect(useAppStore.getState().mapEventsLoaded).toBe(true);
+      expect(useAppStore.getState().rsvpLoaded).toBe(true);
+      expect(syncReminders).toHaveBeenCalledTimes(1);
+      expect(syncReminders.mock.calls[0]?.[0]).toHaveLength(1);
+    });
+
+    it('never calls syncReminders with an empty plan when IDB resolves before the network fetch', async () => {
+      await seedFollows(['esn']);
+      let resolveEvents!: (v: MapEvent[] | null) => void;
+      fetchMapEvents.mockImplementation(
+        () =>
+          new Promise((r) => {
+            resolveEvents = r;
+          })
+      );
+      fetchEventRsvps.mockResolvedValue({ counts: {}, ok: true });
+      useAppStore.setState({
+        followsLoaded: false,
+        mapEventsLoaded: false,
+        rsvpLoaded: false,
+        followed: [],
+      });
+
+      const mapLoad = useAppStore.getState().loadMapEvents();
+      // IDB resolves well before the network fetch does — the exact ordering
+      // the CRITICAL finding described.
+      await useAppStore.getState().loadFollows();
+      await flush();
+
+      expect(syncReminders).not.toHaveBeenCalledWith([]);
+
+      resolveEvents([ev()]);
+      await mapLoad;
+      await flush();
+
+      expect(syncReminders).not.toHaveBeenCalledWith([]);
+      expect(syncReminders).toHaveBeenCalledTimes(1);
+    });
   });
 
   // Dropped from the old planner suite's migration (Task 3) and restored
