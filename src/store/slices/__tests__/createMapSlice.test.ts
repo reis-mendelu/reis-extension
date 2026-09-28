@@ -14,6 +14,13 @@ vi.mock('../../../api/mapEvents', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../api/mapEvents')>();
   return { ...actual, fetchMapEvents: vi.fn() };
 });
+// Spied, so the failed-reload test can tell the null guard from a crash that
+// the catch block swallows (both leave the list alone; only one logs).
+vi.mock('../../../utils/reportError', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../utils/reportError')>()),
+  logError: vi.fn(),
+}));
+import { logError } from '../../../utils/reportError';
 import { fetchBuildingRooms } from '../../../api/campusMap';
 import { fetchMapEvents } from '../../../api/mapEvents';
 import { useAppStore } from '../../useAppStore';
@@ -322,11 +329,16 @@ describe('mapSlice', () => {
   });
 
   it('reloadMapEvents keeps the last list and loaded flag when a reload fails', async () => {
-    useAppStore.setState({ mapEvents: MOCK_EVENTS, mapEventsLoaded: true });
+    useAppStore.setState({ mapEvents: MOCK_EVENTS, mapEventsLoaded: true, mapEventsFetchedAt: 123 });
     vi.mocked(fetchMapEvents).mockResolvedValueOnce(null);
+    vi.mocked(logError).mockClear();
     await useAppStore.getState().reloadMapEvents();
     expect(useAppStore.getState().mapEvents).toEqual(MOCK_EVENTS);
     expect(useAppStore.getState().mapEventsLoaded).toBe(true);
+    // A failed fetch is not a fresh one, and it is handled, not thrown: without
+    // the null guard `events.map` throws into the catch, which logs.
+    expect(useAppStore.getState().mapEventsFetchedAt).toBe(123);
+    expect(logError).not.toHaveBeenCalled();
   });
 
   describe('refreshMapEventsIfStale', () => {
