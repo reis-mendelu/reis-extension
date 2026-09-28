@@ -68,10 +68,11 @@ export function NotifySoftAsk() {
   const onEnable = async () => {
     const result = await askNotificationPermission();
     await markPermissionAsked();
-    if (result === 'granted') {
-      setNotifyPermission('granted');
-      replanNotifications();
-    }
+    // Recorded whatever the answer: a refusal left the store on 'prompt', so
+    // Profile kept offering a button the OS would ignore until the next
+    // resume read. Only a grant gives the replan anything to schedule.
+    setNotifyPermission(result);
+    if (result === 'granted') replanNotifications();
   };
 
   const onNotNow = async () => {

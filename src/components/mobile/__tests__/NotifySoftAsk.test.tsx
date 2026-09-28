@@ -147,6 +147,31 @@ describe('NotifySoftAsk', () => {
     expect(setOrder).toBeLessThan(replanOrder);
   });
 
+  // A refusal is an answer too: without recording it, the store kept saying
+  // 'prompt' and Profile went on offering a Turn-on button the OS would
+  // silently ignore until the next resume read.
+  it.each<NotifyPermission>(['denied', 'prompt-with-rationale', 'unsupported'])(
+    'Zapnout records a %s answer and does not replan',
+    async (answer) => {
+      askNotificationPermission.mockResolvedValue(answer);
+      seed({
+        notifyPermission: 'prompt',
+        permissionAsked: false,
+        followed: ['esn'],
+        mapEvents: [soonEvent('esn')],
+      });
+
+      render(<NotifySoftAsk />);
+      fireEvent.click(screen.getByRole('button', { name: 'Zapnout' }));
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(markPermissionAsked).toHaveBeenCalledTimes(1);
+      expect(setNotifyPermission).toHaveBeenCalledWith(answer);
+      expect(replanNotifications).not.toHaveBeenCalled();
+    }
+  );
+
   it('Teď ne only marks the permission as asked', () => {
     seed({
       notifyPermission: 'prompt',
