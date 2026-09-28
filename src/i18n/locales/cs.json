@@ -1380,6 +1380,10 @@
   },
   "notify": {
     "channelRsvp": "Připomínky akcí",
-    "channelDigest": "Akce spolků"
+    "channelDigest": "Akce spolků",
+    "digestTomorrow": "Zítra: {titles}",
+    "digestTomorrowMany": "Zítra {n} akce: {titles} a další",
+    "digestNewOnly": "Nové akce: {titles}",
+    "digestPlusNew": "+ {n} nové akce od {societies}"
   }
 }

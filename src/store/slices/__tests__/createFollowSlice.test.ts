@@ -36,7 +36,21 @@ describe('createFollowSlice', () => {
   // The slice reads `societies` off the composed store (for the faculty
   // auto-follow default); the test supplies just that one neighbour rather
   // than the whole thing — same pattern as createRsvpSlice's test.
-  let state: FollowSlice & { societies: Record<string, Society> };
+  //
+  // `mapEvents`/`rsvp`/`language` are supplied too: `loadFollows()` ends by
+  // calling the real `replanNotifications()`, which reads all three off this
+  // same `get()`. Left undefined, `planNotifications` would throw trying to
+  // iterate an undefined `events` array — every `loadFollows`/
+  // `retryFollowsIfUnresolved` test here would fail on that, not on anything
+  // this file is actually testing. `syncReminders` itself is left unmocked:
+  // its default deps see this as a non-Capacitor host and no-op before
+  // touching anything.
+  let state: FollowSlice & {
+    societies: Record<string, Society>;
+    mapEvents: unknown[];
+    rsvp: Record<string, unknown>;
+    language: string;
+  };
   let set: Mock & Parameters<typeof createFollowSlice>[0];
   let get: Mock & Parameters<typeof createFollowSlice>[1];
 
@@ -56,6 +70,9 @@ describe('createFollowSlice', () => {
       // fixtures useSpolkySettings' own test used before this logic moved
       // here).
       societies: BUNDLED_SOCIETIES,
+      mapEvents: [],
+      rsvp: {},
+      language: 'cz',
     };
   });
 

@@ -12,6 +12,7 @@ import {
   DEFAULT_PREFS,
   type NotifyPrefs,
 } from './follows/loadFollows';
+import { replanNotifications } from './follows/replanNotifications';
 
 export type { NotifyPrefs };
 export { DEFAULT_PREFS };
@@ -165,8 +166,8 @@ export const createFollowSlice: AppSlice<FollowSlice> = (set, get) => ({
 
   setNotifyPermission: (notifyPermission) => set({ notifyPermission }),
 
-  // Implemented in Task 5 — recomputes the RSVP pings and the evening digest
-  // from `followed`/`muted`/`notifyPrefs` and syncs them with the OS. A no-op
-  // here so every write above can call it unconditionally.
-  replanNotifications: () => {},
+  // Recomputes the RSVP pings and the evening digest from
+  // `followed`/`muted`/`notifyPrefs`/`mapEvents`/`rsvp` and syncs them with
+  // the OS. Every write above calls this unconditionally.
+  replanNotifications: () => replanNotifications(get),
 });

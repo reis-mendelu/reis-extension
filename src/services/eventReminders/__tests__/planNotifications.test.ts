@@ -504,8 +504,9 @@ describe('DIGEST_HOUR, DIGEST_DAYS, MAX_PENDING', () => {
   });
 });
 
-// Migrated from the old planReminders.test.ts — eventStartsAt, reminderId and
-// REMINDER_LEAD_MS are unchanged by this task and still load-bearing.
+// Migrated from the old reminder planner's test file (since deleted) —
+// eventStartsAt, reminderId and REMINDER_LEAD_MS are unchanged by this task
+// and still load-bearing.
 describe('REMINDER_LEAD_MS', () => {
   it('gives at least two hours of notice', () => {
     expect(REMINDER_LEAD_MS).toBeGreaterThanOrEqual(2 * 60 * 60 * 1000);

@@ -200,24 +200,3 @@ export function planNotifications(
 
   return out.sort((a, b) => a.at - b.at).slice(0, MAX_PENDING);
 }
-
-/** @deprecated Temporary shim so `createRsvpSlice` keeps compiling until it
- *  moves onto `planNotifications` directly; delete with that migration. */
-export const planReminders = (
-  events: MapEvent[],
-  answered: Record<string, RsvpStatus>,
-  now: number,
-  leadLabel = ''
-): PlannedReminder[] =>
-  planNotifications(
-    {
-      events,
-      rsvp: answered,
-      followed: [],
-      muted: [],
-      prefs: { myEvents: true, followedEvents: false, newEvents: false },
-      shortName: () => '',
-    },
-    now,
-    { tomorrow: () => '', tomorrowMany: () => '', newOnly: () => '', plusNew: () => '', leadLabel }
-  );

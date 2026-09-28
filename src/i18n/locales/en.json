@@ -1380,6 +1380,10 @@
   },
   "notify": {
     "channelRsvp": "Event reminders",
-    "channelDigest": "Society events"
+    "channelDigest": "Society events",
+    "digestTomorrow": "Tomorrow: {titles}",
+    "digestTomorrowMany": "Tomorrow, {n} events: {titles} and more",
+    "digestNewOnly": "New events: {titles}",
+    "digestPlusNew": "+ {n} new events from {societies}"
   }
 }
