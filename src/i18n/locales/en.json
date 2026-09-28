@@ -1392,6 +1392,7 @@
     "askManyFew": "Your societies have {n} events in the next 14 days. Want a reminder the evening before?",
     "askMany": "Your societies have {n} events in the next 14 days. Want a reminder the evening before?",
     "enable": "Turn on",
+    "turnOn": "Turn on notifications",
     "notNow": "Not now",
     "section": "Notifications",
     "myEvents": "Reminders for my events",

@@ -116,8 +116,9 @@ type PlannedNotification = PlannedReminder & { kind: 'rsvp' | 'digest'; channelI
     societies, the short names are joined.
   - Body: `+ 2 nové akce od ESN` when there are new events. With only new
     events, the title becomes `Nové akce: …`.
-- **IDs.** Stable FNV-1a hashes of `"digest:" + D`, disjoint from the RSVP id
-  space. They use the same masking as `reminderId`.
+- **IDs.** Stable FNV-1a hashes of `"digest:" + D`, practically disjoint from
+  the RSVP id space (FNV hashes; collisions are possible but unlikely). They
+  use the same masking as `reminderId`.
 - **Cap.** Sort everything soonest first and keep 50. That is below the iOS
   limit of 64 pending notifications.
 - **Tap targets.** An RSVP ping opens its event card, as today

@@ -1392,6 +1392,7 @@
     "askManyFew": "Tvoje spolky mají {n} akce v příštích 14 dnech. Chceš večer předem připomínku?",
     "askMany": "Tvoje spolky mají {n} akcí v příštích 14 dnech. Chceš večer předem připomínku?",
     "enable": "Zapnout",
+    "turnOn": "Zapnout oznámení",
     "notNow": "Teď ne",
     "section": "Oznámení",
     "myEvents": "Připomínky mých akcí",

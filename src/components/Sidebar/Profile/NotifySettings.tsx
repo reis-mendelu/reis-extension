@@ -2,9 +2,6 @@ import { Bell, BellOff } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { askNotificationPermission } from '../../../services/eventReminders/sync';
-import type { NotifyPrefs } from '../../../store/slices/createFollowSlice';
-
-const ASKABLE = new Set(['prompt', 'prompt-with-rationale']);
 
 function ToggleRow({
   label,
@@ -17,7 +14,7 @@ function ToggleRow({
 }) {
   return (
     <label className="flex items-center justify-between px-2 py-1.5 rounded-md">
-      <span className="text-[xs] opacity-90">{label}</span>
+      <span className="text-xs opacity-90">{label}</span>
       <input
         type="checkbox"
         className="toggle toggle-sm"
@@ -33,11 +30,11 @@ function ToggleRow({
  * `notificationUiIsPhoneOnly` — the extension posts no notifications, so it
  * has nothing for these switches to control).
  *
- * Turning a switch ON while `notifyPermission` is still askable (`prompt` or
- * `prompt-with-rationale`) is treated the same as the soft-ask card and a
- * first RSVP: it asks once, then records whatever the OS answered and
- * replans. A `denied` permission replaces the switches with an explanatory
- * line instead — a switch that could do nothing is worse than no switch.
+ * One state per OS permission: still askable (`prompt` or
+ * `prompt-with-rationale`) shows a single Turn-on button that asks, records
+ * whatever the OS answered and replans; `granted` shows the three switches;
+ * `denied` shows an explanatory line — a switch that could do nothing is
+ * worse than no switch. Unread (`null`) or `unsupported` renders nothing.
  */
 export function NotifySettings() {
   const { t } = useTranslation();
@@ -47,13 +44,12 @@ export function NotifySettings() {
   const setNotifyPermission = useAppStore((s) => s.setNotifyPermission);
   const replanNotifications = useAppStore((s) => s.replanNotifications);
 
-  const onToggle = async (key: keyof NotifyPrefs, checked: boolean) => {
-    if (checked && ASKABLE.has(notifyPermission ?? '')) {
-      const result = await askNotificationPermission();
-      setNotifyPermission(result);
-      replanNotifications();
-    }
-    await setNotifyPref(key, checked);
+  if (notifyPermission === null || notifyPermission === 'unsupported') return null;
+
+  const onTurnOn = async () => {
+    const result = await askNotificationPermission();
+    setNotifyPermission(result);
+    replanNotifications();
   };
 
   return (
@@ -61,23 +57,29 @@ export function NotifySettings() {
       <div className="px-1 py-1 text-xs font-medium opacity-70">{t('notify.section')}</div>
       {notifyPermission === 'denied' ? (
         <p className="px-2 py-1.5 text-xs opacity-70">{t('notify.denied')}</p>
-      ) : (
+      ) : notifyPermission === 'granted' ? (
         <div className="space-y-1">
           <ToggleRow
             label={t('notify.myEvents')}
             checked={notifyPrefs.myEvents}
-            onChange={(v) => void onToggle('myEvents', v)}
+            onChange={(v) => void setNotifyPref('myEvents', v)}
           />
           <ToggleRow
             label={t('notify.followedEvents')}
             checked={notifyPrefs.followedEvents}
-            onChange={(v) => void onToggle('followedEvents', v)}
+            onChange={(v) => void setNotifyPref('followedEvents', v)}
           />
           <ToggleRow
             label={t('notify.newEvents')}
             checked={notifyPrefs.newEvents}
-            onChange={(v) => void onToggle('newEvents', v)}
+            onChange={(v) => void setNotifyPref('newEvents', v)}
           />
+        </div>
+      ) : (
+        <div className="px-2 py-1.5">
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => void onTurnOn()}>
+            {t('notify.turnOn')}
+          </button>
         </div>
       )}
     </div>

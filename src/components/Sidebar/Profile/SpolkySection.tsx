@@ -86,7 +86,7 @@ export function SpolkySection({
                   className="flex items-center justify-between px-2 py-1.5 hover:bg-base-200 rounded-md"
                 >
                   <label className="flex flex-1 items-center justify-between cursor-pointer">
-                    <span className="text-[xs] opacity-90">{p.name}</span>
+                    <span className="text-xs opacity-90">{p.name}</span>
                     <input
                       type="checkbox"
                       className="checkbox checkbox-xs checkbox-primary"

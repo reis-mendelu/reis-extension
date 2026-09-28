@@ -56,28 +56,44 @@ describe('NotifySettings', () => {
     expect(setNotifyPref).toHaveBeenCalledWith('newEvents', false);
   });
 
-  it('turning a switch ON while permission is prompt also asks permission once', async () => {
-    // newEvents starts false so the click is unambiguously "turning ON".
-    const { setNotifyPermission, replanNotifications } = setup('prompt', vi.fn(), {
-      ...DEFAULT_PREFS,
-      newEvents: false,
-    });
-    fireEvent.click(screen.getByLabelText('Nové akce'));
-    await waitFor(() => expect(askNotificationPermission).toHaveBeenCalledTimes(1));
-    expect(setNotifyPermission).toHaveBeenCalledWith('granted');
-    expect(replanNotifications).toHaveBeenCalled();
-  });
-
-  it('does not ask permission when turning a switch off', () => {
-    setup('prompt');
-    fireEvent.click(screen.getByLabelText('Nové akce'));
-    expect(askNotificationPermission).not.toHaveBeenCalled();
-  });
-
-  it('does not ask permission when already granted', () => {
+  it('a switch never asks for permission once granted', () => {
     setup('granted', vi.fn(), { ...DEFAULT_PREFS, newEvents: false });
     fireEvent.click(screen.getByLabelText('Nové akce'));
     expect(askNotificationPermission).not.toHaveBeenCalled();
+  });
+
+  // Controller ruling: before the OS has been answered, three switches would
+  // each have to double as the permission prompt. One explicit button asks
+  // instead, and the switches appear once there is something for them to do.
+  it.each(['prompt', 'prompt-with-rationale'] as const)(
+    'shows one Turn-on button instead of the switches while %s',
+    (permission) => {
+      setup(permission);
+      const button = screen.getByRole('button', { name: 'Zapnout oznámení' });
+      expect(button.className).toContain('btn');
+      expect(button.className).toContain('btn-primary');
+      expect(button.className).toContain('btn-sm');
+      expect(screen.queryByLabelText('Nové akce')).toBeNull();
+      expect(screen.queryByLabelText('Připomínky mých akcí')).toBeNull();
+      expect(screen.queryByLabelText('Akce sledovaných spolků')).toBeNull();
+    }
+  );
+
+  it('the Turn-on button asks, records the answer and replans', async () => {
+    askNotificationPermission.mockResolvedValue('denied');
+    const { setNotifyPermission, replanNotifications, setNotifyPref } = setup('prompt');
+    fireEvent.click(screen.getByRole('button', { name: 'Zapnout oznámení' }));
+    await waitFor(() => expect(setNotifyPermission).toHaveBeenCalledWith('denied'));
+    expect(askNotificationPermission).toHaveBeenCalledTimes(1);
+    expect(replanNotifications).toHaveBeenCalled();
+    expect(setNotifyPref).not.toHaveBeenCalled();
+  });
+
+  it.each(['unsupported', null] as const)('renders nothing while permission is %s', (p) => {
+    setup(p);
+    expect(screen.queryByText('Oznámení')).toBeNull();
+    expect(screen.queryByRole('button')).toBeNull();
+    expect(screen.queryByLabelText('Nové akce')).toBeNull();
   });
 
   it('replaces the switches with an explanatory line when denied', () => {
