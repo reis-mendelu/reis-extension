@@ -151,7 +151,22 @@ comment on column public.societies.instagram is
 notify pgrst, 'reload schema';
 ```
 
-A follow-up migration, `20260928130000_spolky_events_tba_has_no_place.sql`, adds the rule that a `tba` row carries no room and no coordinates (added from review on #471).
+Then the follow-up migration `20260928130000_spolky_events_tba_has_no_place.sql` (added from review on #471): a `tba` row carries no room and no coordinates.
+
+```sql
+-- A 'tba' event is list-only BECAUSE it has no place: the client pins anything
+-- with a coordinate and flies to anything with a room code. A row marked 'tba'
+-- that still carried either would be pinned while its card says "Místo upřesní",
+-- so the database refuses the combination, the same way campus/offcampus rows
+-- are held to theirs (spolky_events_venue_invariants).
+-- Adding a place later is an UPDATE to campus/offcampus, which this allows.
+-- `location` (free text) is deliberately not covered: a hint like "Brno" is fine.
+alter table public.spolky_events drop constraint if exists spolky_events_tba_no_place_chk;
+alter table public.spolky_events add constraint spolky_events_tba_no_place_chk
+  check (venue_kind <> 'tba' or (room_code is null and coord_lng is null and coord_lat is null));
+
+notify pgrst, 'reload schema';
+```
 
 - [ ] **Step 5: Dry-run against production.** The `DO` block raises at the end, so nothing is kept.
 
@@ -162,6 +177,7 @@ npx supabase db query --linked "do \$\$ begin
   alter table public.societies add column if not exists instagram text check (instagram is null or instagram ~ '^[A-Za-z0-9._]{1,30}\$');
   insert into public.spolky_events (association_id,title,category,date,venue_kind,body) values ('esn','dry-run','quiz','2026-12-01','tba','');
   begin insert into public.spolky_events (association_id,title,category,date,venue_kind,body) values ('esn','dry-run','quiz','2026-12-01','foo',''); raise exception 'foo accepted'; exception when check_violation then null; end;
+  alter table public.spolky_events drop constraint if exists spolky_events_tba_no_place_chk;
   alter table public.spolky_events add constraint spolky_events_tba_no_place_chk check (venue_kind <> 'tba' or (room_code is null and coord_lng is null and coord_lat is null));
   begin insert into public.spolky_events (association_id,title,category,date,venue_kind,body,room_code) values ('esn','dry-run','quiz','2026-12-01','tba','','Q01'); raise exception 'tba with a room accepted'; exception when check_violation then null; end;
   begin update public.societies set instagram='a/b' where id='esn'; if not found then raise exception 'esn row missing: constraint not exercised'; end if; raise exception 'a/b accepted'; exception when check_violation then null; end;
@@ -176,7 +192,7 @@ Expected: `ERROR: DRY RUN OK`. Any other error means stop and report.
 - [ ] **Step 7: Commit and open the PR**
 
 ```bash
-git add supabase/migrations/20260928120000_spolky_events_tba_and_instagram.sql src/api/societyPosts.ts src/types/events.ts src/api/__tests__/mapEvents.test.ts
+git add supabase/migrations/20260928120000_spolky_events_tba_and_instagram.sql supabase/migrations/20260928130000_spolky_events_tba_has_no_place.sql src/api/societyPosts.ts src/types/events.ts src/api/__tests__/mapEvents.test.ts
 git commit -m "feat(events): allow place-TBA events and a society Instagram handle
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
