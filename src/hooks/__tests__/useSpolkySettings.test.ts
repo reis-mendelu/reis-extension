@@ -1,381 +1,68 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { useSpolkySettings } from '../useSpolkySettings';
 import { useAppStore } from '../../store/useAppStore';
-import { BUNDLED_SOCIETIES } from '../../data/societies';
 
-const mockGetUserParams = vi.fn();
-const mockIDBGet = vi.fn();
-const mockIDBSet = vi.fn();
-
-vi.mock('../../utils/userParams', () => ({
-  getUserParams: (...args: unknown[]) => mockGetUserParams(...args),
-}));
-
-vi.mock('../../services/storage', () => ({
-  IndexedDBService: {
-    get: (...args: unknown[]) => mockIDBGet(...args),
-    set: (...args: unknown[]) => mockIDBSet(...args),
-  },
-}));
-
-// Faculty defaults come from the societies catalog in the store, which starts
-// as the bundled seed: AF->usaf, PEF->supef, FRRMS->au_frrms, ZF->zf, LDF->ldf.
-
-function makeUser(facultyLabel: string | null, isErasmus: boolean) {
-  return facultyLabel
-    ? {
-        studium: 's',
-        obdobi: 'o',
-        facultyId: '',
-        facultyLabel,
-        username: 'u',
-        studentId: 'id',
-        fullName: 'Test',
-        isErasmus,
-      }
-    : {
-        studium: 's',
-        obdobi: 'o',
-        facultyId: '',
-        facultyLabel: '',
-        username: 'u',
-        studentId: 'id',
-        fullName: 'Test',
-        isErasmus,
-      };
-}
-
-beforeEach(() => {
-  vi.clearAllMocks();
-  mockIDBSet.mockResolvedValue(undefined);
-  useAppStore.setState({ societies: BUNDLED_SOCIETIES });
-});
-
-// ---------------------------------------------------------------------------
-// Fresh user (no saved associations in IDB)
-// ---------------------------------------------------------------------------
-describe('fresh user — faculty auto-subscription', () => {
+// The loading and auto-follow logic (faculty defaults, ESN for Erasmus, the
+// empty-list retry, renamed-id migration) moved into
+// `createFollowSlice`/`loadFollows` — see
+// `src/store/slices/__tests__/createFollowSlice.test.ts` and
+// `loadFollowedList.test.ts` for that coverage.
+// This hook is now a thin reader, so its own test only checks the reading and
+// the write path it exposes.
+describe('useSpolkySettings', () => {
   beforeEach(() => {
-    // No saved list, no flag
-    mockIDBGet.mockResolvedValue(undefined);
+    useAppStore.setState({ followed: [], followsLoaded: false });
   });
 
-  it.each([
-    ['AF', 'AF', 'usaf'],
-    ['PEF', 'PEF', 'supef'],
-    ['AU/FRRMS', 'FRRMS', 'au_frrms'],
-    ['ZF', 'ZF', 'zf'],
-    ['LDF', 'LDF', 'ldf'],
-  ])('%s faculty → subscribes to %s', async (_label, facultyLabel, expected) => {
-    mockGetUserParams.mockResolvedValue(makeUser(facultyLabel, false));
-
+  it('is loading until the store has resolved follows', () => {
     const { result } = renderHook(() => useSpolkySettings());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.subscribedAssociations).toEqual([expected]);
-  });
-
-  // The default is whatever the catalog says, not a list compiled into the app:
-  // a faculty union added or replaced in the admin console becomes the default
-  // for new students without a release.
-  it('follows the catalog when the faculty default changes', async () => {
-    useAppStore.setState({
-      societies: {
-        ...BUNDLED_SOCIETIES,
-        supef: { ...BUNDLED_SOCIETIES.supef!, autoFollowFaculty: false },
-        kino: { ...BUNDLED_SOCIETIES.supef!, id: 'kino', name: 'Kino' },
-      },
-    });
-    mockGetUserParams.mockResolvedValue(makeUser('PEF', false));
-
-    const { result } = renderHook(() => useSpolkySettings());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    expect(result.current.subscribedAssociations).toEqual(['kino']);
-  });
-
-  it('Erasmus with a faculty ID → ESN only, no faculty association', async () => {
-    mockGetUserParams.mockResolvedValue(makeUser('AF', true));
-
-    const { result } = renderHook(() => useSpolkySettings());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    expect(result.current.subscribedAssociations).toEqual(['esn']);
-  });
-
-  it('Erasmus with no faculty ID → ESN only', async () => {
-    mockGetUserParams.mockResolvedValue(makeUser(null, true));
-
-    const { result } = renderHook(() => useSpolkySettings());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    expect(result.current.subscribedAssociations).toEqual(['esn']);
-  });
-
-  it('unknown faculty → empty list', async () => {
-    mockGetUserParams.mockResolvedValue(makeUser('99', false));
-
-    const { result } = renderHook(() => useSpolkySettings());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
+    expect(result.current.isLoading).toBe(true);
     expect(result.current.subscribedAssociations).toEqual([]);
   });
 
-  it('getUserParams returns null → empty list', async () => {
-    mockGetUserParams.mockResolvedValue(null);
+  it('reads the followed list once the store has loaded it', () => {
+    useAppStore.setState({ followed: ['supef', 'esn'], followsLoaded: true });
 
     const { result } = renderHook(() => useSpolkySettings());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.subscribedAssociations).toEqual([]);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Returning user (saved associations in IDB)
-// ---------------------------------------------------------------------------
-describe('returning user — respects saved list', () => {
-  it('returns saved associations without modification', async () => {
-    mockIDBGet.mockImplementation((store: string, key: string) => {
-      if (store === 'meta' && key === 'reis_subscribed_associations')
-        return Promise.resolve(['ldf', 'esn']);
-      return Promise.resolve(undefined);
-    });
-    mockGetUserParams.mockResolvedValue(makeUser('5', false));
-
-    const { result } = renderHook(() => useSpolkySettings());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    expect(result.current.subscribedAssociations).toEqual(['ldf', 'esn']);
-  });
-});
-
-describe('returning Erasmus user — legacy ESN back-fill', () => {
-  it('back-fills ESN when flag not set and ESN missing', async () => {
-    mockIDBGet.mockImplementation((store: string, key: string) => {
-      if (store === 'meta' && key === 'reis_subscribed_associations')
-        return Promise.resolve(['ldf']);
-      if (store === 'meta' && key === 'reis_erasmus_auto_subscribed')
-        return Promise.resolve(undefined);
-      return Promise.resolve(undefined);
-    });
-    mockGetUserParams.mockResolvedValue(makeUser('1', true));
-
-    const { result } = renderHook(() => useSpolkySettings());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    expect(result.current.subscribedAssociations).toEqual(['ldf', 'esn']);
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.subscribedAssociations).toEqual(['supef', 'esn']);
   });
 
-  it('does NOT back-fill ESN when flag already set', async () => {
-    mockIDBGet.mockImplementation((store: string, key: string) => {
-      if (store === 'meta' && key === 'reis_subscribed_associations')
-        return Promise.resolve(['ldf']);
-      if (store === 'meta' && key === 'reis_erasmus_auto_subscribed') return Promise.resolve(true);
-      return Promise.resolve(undefined);
-    });
-    mockGetUserParams.mockResolvedValue(makeUser('1', true));
+  it('isSubscribed reflects the followed list', () => {
+    useAppStore.setState({ followed: ['supef'], followsLoaded: true });
 
     const { result } = renderHook(() => useSpolkySettings());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.subscribedAssociations).toEqual(['ldf']);
+    expect(result.current.isSubscribed('supef')).toBe(true);
+    expect(result.current.isSubscribed('esn')).toBe(false);
   });
 
-  it('does NOT back-fill ESN when ESN already present', async () => {
-    mockIDBGet.mockImplementation((store: string, key: string) => {
-      if (store === 'meta' && key === 'reis_subscribed_associations')
-        return Promise.resolve(['ldf', 'esn']);
-      return Promise.resolve(undefined);
-    });
-    mockGetUserParams.mockResolvedValue(makeUser('1', true));
-
+  // The custom `reis-spolky-settings-changed` event is gone because the store
+  // notifies every subscriber itself; a one-shot read would fail this.
+  it('re-renders when the store changes after mount', () => {
     const { result } = renderHook(() => useSpolkySettings());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.isLoading).toBe(true);
 
-    expect(result.current.subscribedAssociations).toEqual(['ldf', 'esn']);
-  });
-});
+    act(() => useAppStore.setState({ followed: ['esn'], followsLoaded: true }));
 
-// ---------------------------------------------------------------------------
-// A renamed society must not orphan the students already subscribed to it
-// ---------------------------------------------------------------------------
-describe('renamed society ids are migrated in the saved list', () => {
-  // Subscriptions persist as bare ids, so renaming 'af' to 'usaf' in the
-  // catalog would leave every AF student holding an id that matches no
-  // society: the checkbox reads unchecked and their events vanish from
-  // Novinky. Silent, and it hits exactly the people the rename is for.
-  it('rewrites a stored "af" to "usaf" and persists it', async () => {
-    mockIDBGet.mockImplementation((store: string, key: string) => {
-      if (store === 'meta' && key === 'reis_subscribed_associations')
-        return Promise.resolve(['af', 'esn']);
-      return Promise.resolve(undefined);
-    });
-    mockGetUserParams.mockResolvedValue(makeUser('AF', false));
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isSubscribed('esn')).toBe(true);
 
-    const { result } = renderHook(() => useSpolkySettings());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    act(() => useAppStore.setState({ followed: [] }));
 
-    expect(result.current.subscribedAssociations).toEqual(['usaf', 'esn']);
-    expect(mockIDBSet).toHaveBeenCalledWith('meta', 'reis_subscribed_associations', [
-      'usaf',
-      'esn',
-    ]);
+    expect(result.current.isSubscribed('esn')).toBe(false);
   });
 
-  // Picking AF by hand is the commonest way to hold the old id, and it is
-  // exactly the case that sets CHOSEN_KEY — so the rename cannot be gated on
-  // that flag the way the empty-list re-resolution is.
-  it('rewrites it even when the list was chosen by hand', async () => {
-    mockIDBGet.mockImplementation((store: string, key: string) => {
-      if (store === 'meta' && key === 'reis_subscribed_associations')
-        return Promise.resolve(['af']);
-      if (store === 'meta' && key === 'reis_associations_chosen') return Promise.resolve(true);
-      return Promise.resolve(undefined);
-    });
-    mockGetUserParams.mockResolvedValue(makeUser('AF', false));
+  it('toggleAssociation delegates to the store action', () => {
+    const toggleFollow = vi.fn();
+    useAppStore.setState({ followed: [], followsLoaded: true, toggleFollow });
 
     const { result } = renderHook(() => useSpolkySettings());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    result.current.toggleAssociation('esn');
 
-    expect(result.current.subscribedAssociations).toEqual(['usaf']);
-  });
-
-  // Reported by review on #333. The write was awaited BEFORE the list reached
-  // React state, so a failed IndexedDB transaction fell through to the outer
-  // catch and hydration never ran — leaving a student who has a perfectly good
-  // saved list subscribed to NOTHING for the rest of the session. That is the
-  // very failure this hook's comments are about, reintroduced by the fix for it.
-  it('still hydrates the migrated list when persisting it fails', async () => {
-    mockIDBGet.mockImplementation((store: string, key: string) => {
-      if (store === 'meta' && key === 'reis_subscribed_associations')
-        return Promise.resolve(['af', 'esn']);
-      return Promise.resolve(undefined);
-    });
-    mockIDBSet.mockRejectedValue(new Error('QuotaExceededError'));
-    mockGetUserParams.mockResolvedValue(makeUser('AF', false));
-
-    const { result } = renderHook(() => useSpolkySettings());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    expect(result.current.subscribedAssociations).toEqual(['usaf', 'esn']);
-  });
-
-  it('does not write when no saved id was renamed', async () => {
-    mockIDBGet.mockImplementation((store: string, key: string) => {
-      if (store === 'meta' && key === 'reis_subscribed_associations')
-        return Promise.resolve(['ldf', 'esn']);
-      return Promise.resolve(undefined);
-    });
-    mockGetUserParams.mockResolvedValue(makeUser('LDF', false));
-
-    const { result } = renderHook(() => useSpolkySettings());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    expect(result.current.subscribedAssociations).toEqual(['ldf', 'esn']);
-    expect(mockIDBSet).not.toHaveBeenCalledWith(
-      'meta',
-      'reis_subscribed_associations',
-      expect.anything()
-    );
-  });
-});
-
-// ---------------------------------------------------------------------------
-// The empty-set trap
-// ---------------------------------------------------------------------------
-describe('unresolved faculty must not be persisted as "subscribed to nothing"', () => {
-  // Reported as "the deskovky test notification didn't appear in the
-  // notification". A society event is filtered out of the feed unless the
-  // student is subscribed to that society, and the faculty default is computed
-  // ONCE — the first time IDB has no saved list.
-  //
-  // `#titulek` does not always parse: a doctoral or combined-study header, or a
-  // session not yet restored at boot on the long-lived Capacitor app, leaves
-  // `facultyLabel` undefined. The defaults then came out `[]` — and `[]` was
-  // written to IDB. `[]` is truthy, so `if (!saved)` never ran again, and the
-  // student was subscribed to nothing PERMANENTLY, on every later boot where
-  // the faculty parsed perfectly well.
-  it('does not save an empty default set, so the next boot can resolve it', async () => {
-    mockIDBGet.mockResolvedValue(undefined);
-    mockGetUserParams.mockResolvedValue(makeUser(null, false));
-
-    const { result } = renderHook(() => useSpolkySettings());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    expect(
-      mockIDBSet.mock.calls.filter((c) => c[1] === 'reis_subscribed_associations')
-    ).toHaveLength(0);
-  });
-
-  it('recovers a student already stuck on a stored empty list', async () => {
-    mockIDBGet.mockImplementation((_store: string, key: string) =>
-      Promise.resolve(key === 'reis_subscribed_associations' ? [] : undefined)
-    );
-    mockGetUserParams.mockResolvedValue(makeUser('PEF', false));
-
-    const { result } = renderHook(() => useSpolkySettings());
-    await waitFor(() => expect(result.current.subscribedAssociations).toEqual(['supef']));
-  });
-
-  // The opposite must still hold: a student who deliberately unsubscribed from
-  // everything stays unsubscribed. `toggleAssociation` writes that choice, and
-  // an explicit empty choice is not the same as an unresolved one.
-  it('leaves a deliberate empty choice alone', async () => {
-    mockIDBGet.mockImplementation((_store: string, key: string) =>
-      Promise.resolve(
-        key === 'reis_subscribed_associations'
-          ? []
-          : key === 'reis_associations_chosen'
-            ? true
-            : undefined
-      )
-    );
-    mockGetUserParams.mockResolvedValue(makeUser('PEF', false));
-
-    const { result } = renderHook(() => useSpolkySettings());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect(result.current.subscribedAssociations).toEqual([]);
-  });
-});
-
-describe('the legacy empty list is re-resolved exactly once', () => {
-  // Before CHOSEN_KEY existed, `toggleAssociation` ALSO persisted `[]` when a
-  // student removed their last society. A stored empty list on such an install
-  // is therefore ambiguous, and cannot be told apart after the fact. Recovering
-  // it once and marking it settled bounds the cost both ways; leaving it
-  // unmarked would re-subscribe a deliberate opt-out on every single launch.
-  it('marks the recovered list as chosen, so it cannot happen twice', async () => {
-    mockIDBGet.mockImplementation((_store: string, key: string) =>
-      Promise.resolve(key === 'reis_subscribed_associations' ? [] : undefined)
-    );
-    mockGetUserParams.mockResolvedValue(makeUser('PEF', false));
-
-    const { result } = renderHook(() => useSpolkySettings());
-    await waitFor(() => expect(result.current.subscribedAssociations).toEqual(['supef']));
-
-    expect(
-      mockIDBSet.mock.calls.some((c) => c[1] === 'reis_associations_chosen' && c[2] === true)
-    ).toBe(true);
-  });
-
-  // ...and once marked, a later empty list is left exactly as the student left
-  // it, however many times they relaunch.
-  it('never touches an empty list that has been marked chosen', async () => {
-    mockIDBGet.mockImplementation((_store: string, key: string) =>
-      Promise.resolve(
-        key === 'reis_subscribed_associations'
-          ? []
-          : key === 'reis_associations_chosen'
-            ? true
-            : undefined
-      )
-    );
-    mockGetUserParams.mockResolvedValue(makeUser('PEF', false));
-
-    const { result } = renderHook(() => useSpolkySettings());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect(result.current.subscribedAssociations).toEqual([]);
+    expect(toggleFollow).toHaveBeenCalledWith('esn');
   });
 });

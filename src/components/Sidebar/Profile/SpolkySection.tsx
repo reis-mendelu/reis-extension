@@ -3,6 +3,7 @@ import { Users, ChevronDown, ChevronRight, Shield } from 'lucide-react';
 import { useListedSocieties } from '../../../hooks/useSociety';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
+import { NotifySettings, MuteBell } from './NotifySettings';
 
 interface SpolkySectionProps {
   expanded: boolean;
@@ -22,6 +23,14 @@ interface SpolkySectionProps {
    * floating panel with nowhere to grow, which is what the cap was for.
    */
   expandFully?: boolean;
+  /**
+   * Renders the Oznámení group above the list and a mute bell on every
+   * followed row. Only `ProfileScreen` (phone/iPad) passes this — the
+   * extension posts no notifications, so its `ProfilePopup` render leaves it
+   * unset and gets today's UI unchanged. Pinned by
+   * `notificationUiIsPhoneOnly.test.ts`.
+   */
+  notifications?: boolean;
 }
 
 export function SpolkySection({
@@ -31,6 +40,7 @@ export function SpolkySection({
   onToggleAssoc,
   onNavigate,
   expandFully = false,
+  notifications = false,
 }: SpolkySectionProps) {
   const { t } = useTranslation();
   const societies = useListedSocieties();
@@ -64,25 +74,40 @@ export function SpolkySection({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
+            {notifications && <NotifySettings />}
             <div
               className={`space-y-1 mb-2 px-1 ${
                 expandFully ? '' : 'max-h-40 overflow-y-auto custom-scrollbar'
               }`}
             >
-              {societies.map((p) => (
-                <label
-                  key={p.id}
-                  className="flex items-center justify-between px-2 py-1.5 hover:bg-base-200 rounded-md cursor-pointer"
-                >
-                  <span className="text-[xs] opacity-90">{p.name}</span>
-                  <input
-                    type="checkbox"
-                    className="checkbox checkbox-xs checkbox-primary"
-                    checked={isSub(p.id)}
-                    onChange={() => onToggleAssoc(p.id)}
-                  />
-                </label>
-              ))}
+              {societies.map((p) => {
+                const bell = notifications && isSub(p.id);
+                // The label owns the row's padding, so a tap anywhere in the
+                // padded row (bar the bell) follows or unfollows; the bell is
+                // its sibling, never inside it, and takes the right padding.
+                return (
+                  <div key={p.id} className="flex items-center hover:bg-base-200 rounded-md">
+                    <label
+                      className={`flex flex-1 items-center justify-between cursor-pointer pl-2 py-1.5 ${
+                        bell ? '' : 'pr-2'
+                      }`}
+                    >
+                      <span className="text-xs opacity-90">{p.name}</span>
+                      <input
+                        type="checkbox"
+                        className="checkbox checkbox-xs checkbox-primary"
+                        checked={isSub(p.id)}
+                        onChange={() => onToggleAssoc(p.id)}
+                      />
+                    </label>
+                    {bell && (
+                      <div className="flex pr-2">
+                        <MuteBell id={p.id} name={p.name} />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             <button
               onClick={manage}

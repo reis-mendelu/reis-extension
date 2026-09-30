@@ -2,9 +2,8 @@ import type { AppSlice } from '../types';
 import { fetchEventRsvps, setEventRsvp, type RsvpStatus } from '../../api/eventRsvp';
 import { createRsvpBlockSync } from './rsvpBlockSync';
 import { IndexedDBService } from '../../services/storage';
-import { planReminders } from '../../services/eventReminders/plan';
-import { syncReminders } from '../../services/eventReminders/sync';
-import { translate } from '../../i18n/translate';
+import { askNotificationPermission } from '../../services/eventReminders/sync';
+import { eventStartsAt, REMINDER_LEAD_MS } from '../../services/eventReminders/plan';
 import { logError } from '../../utils/reportError';
 
 export type { RsvpStatus };
@@ -19,6 +18,15 @@ export interface RsvpSlice {
   rsvp: Record<string, RsvpStatus>;
   /** Real attendance per event id, as reported by Supabase. */
   rsvpCounts: Record<string, RsvpCounts>;
+  /**
+   * True once this device's own answers have been read from disk at least
+   * once (a successful `loadRsvps` — mirrors the `if (stored)` branch below,
+   * independent of whether the server's counts also arrived). `replanNotifications`
+   * gates on this alongside `followsLoaded`/`mapEventsLoaded`: `rsvp` sits at
+   * its cold-boot `{}` until this is true, and reconciling from that would
+   * cancel every RSVP reminder already pending on the device.
+   */
+  rsvpLoaded: boolean;
   /** Load counts for a set of events, and this device's own answers from IDB. */
   loadRsvps: (eventIds: string[]) => Promise<void>;
   /** Toggle an RSVP: tapping the active status clears it, otherwise it switches. */
@@ -140,11 +148,10 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
   };
 
   /**
-   * Re-derive every reminder from the current answers, after any change to
-   * them. Recomputing the whole set rather than nudging one is what makes
-   * un-RSVPing cancel its notification: the reminder simply stops being in the
-   * plan, and syncReminders cancels whatever the device is holding that the
-   * plan no longer contains.
+   * Recomputing every reminder (via `get().replanNotifications()`, not
+   * repeated here) is what makes un-RSVPing cancel its notification: the
+   * reminder simply stops being in the plan, and syncReminders cancels
+   * whatever the device is holding that the plan no longer contains.
    *
    * Detached from its caller: a notification is a courtesy and must not be able
    * to fail an RSVP.
@@ -152,19 +159,16 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
   // Serialised and self-contained — see `rsvpBlockSync`.
   const refreshRsvpBlocks = createRsvpBlockSync(get);
 
-  const refreshReminders = () => {
-    // `translate` rather than useTranslation: this runs in the store, outside
-    // any component, which is exactly what that helper exists for.
-    const lead = translate(get().language, 'map.reminderLead');
-    void syncReminders(planReminders(get().mapEvents, get().rsvp, Date.now(), lead));
-  };
-
   return {
     rsvp: {},
     rsvpCounts: {},
+    rsvpLoaded: false,
 
     loadRsvps: async (eventIds) => {
-      if (eventIds.length === 0) return;
+      // No early return for an empty feed: it is still a settled read, and
+      // returning before `rsvpLoaded` kept the replan gate shut for the whole
+      // session, so pings and digests for events that vanished still fired.
+      // Only the counts RPC is skipped — there is nothing to count.
       // Three sources of truth meet in this function, and every bug here has
       // come from blurring them. Each one has exactly one owner:
       //
@@ -223,12 +227,13 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
         }
       }
 
-      const { counts, ok } = await fetchEventRsvps(eventIds);
+      const { counts, ok } =
+        eventIds.length > 0 ? await fetchEventRsvps(eventIds) : { counts: {}, ok: false };
       set((s) => {
         // Spreading `stored` under the live map is not enough. A WITHDRAWAL that
         // settles during this load removes its event from `s.rsvp` entirely, so
         // the spread silently re-inserts the answer the student just took back —
-        // and refreshReminders below then schedules a reminder for it, while
+        // and replanNotifications below then schedules a reminder for it, while
         // disk already says otherwise. `revisions` names every event this
         // session has touched, so those are left alone in both directions.
         const hydrated = { ...s.rsvp };
@@ -252,19 +257,27 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
           // replace real numbers with a confident-looking lie.
           rsvpCounts: ok ? mergedCounts : s.rsvpCounts,
           rsvp: hydrated,
+          // Mirrors `if (stored)` below, not `if (ok && stored)`: this says
+          // only that the device's OWN answers were read, independent of
+          // whether the server's counts also arrived. Monotonic — a later
+          // failed read must not un-hydrate a student's already-loaded answers.
+          rsvpLoaded: s.rsvpLoaded || stored !== null,
         };
       });
-      // Both of these must not run from an UNREAD `stored`: that is an empty
+      // Neither of these may run from an UNREAD `stored`: that is an empty
       // plan, and reconciling against it cancels every reminder and deletes
       // every calendar block for events the student is still going to.
       //
-      // They part company on `ok`, which says only whether the server's COUNTS
-      // arrived. The blocks are planned from the answers and the events, and
-      // neither is a count — so a load where the disk succeeded and the count
-      // request failed can still reconcile them, and gating it on `ok` left
-      // them stale until the next answer. Raised in review by CodeRabbit.
+      // Both gate on `stored` alone, never on `ok`. `ok` says only whether the
+      // server's COUNTS arrived, and neither the calendar blocks nor the
+      // reminder plan is built from a count — both come from the answers and
+      // the events. The blocks were fixed to this first (raised in review by
+      // CodeRabbit); the reminder replan used to still gate on `ok && stored`,
+      // which left a session whose counts request happened to fail without
+      // its digest ever getting scheduled, even though the answers had
+      // loaded fine — fixed in the same way in fix round 1.
       if (stored) refreshRsvpBlocks();
-      if (ok && stored) refreshReminders();
+      if (stored) get().replanNotifications();
     },
 
     setRsvp: async (eventId, status) => {
@@ -272,6 +285,31 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       // Tapping the active choice un-RSVPs — the same gesture the buttons have
       // always had, now expressed to the backend as a null status.
       const next = previous === status ? undefined : status;
+
+      // A NEW answer — this event had no prior response — is the moment
+      // permission is earned: the prompt appears the first time the student
+      // has actually asked to be reminded of something, not on a cold boot
+      // before they've touched a single event. Fired here rather than gated on
+      // the write settling: the OS prompt is about the STUDENT'S gesture, not
+      // about whether this particular write is later accepted or rolled back.
+      // Safe to call on every new answer, not just the very first ever —
+      // askNotificationPermission no-ops once the student has already
+      // answered the system dialog.
+      //
+      // Only when a ping will actually be scheduled: a readable start whose
+      // two-hour warning is still ahead, with RSVP reminders switched on.
+      // Otherwise the prompt would promise a reminder that never comes.
+      const event = get().mapEvents.find((e) => e.id === eventId);
+      const starts = event ? eventStartsAt(event) : null;
+      const pingable =
+        starts !== null && starts - REMINDER_LEAD_MS > Date.now() && get().notifyPrefs.myEvents;
+      if (previous === undefined && next !== undefined && pingable) {
+        void askNotificationPermission().then((p) => {
+          get().setNotifyPermission(p);
+          get().replanNotifications();
+        });
+      }
+
       const beforeCounts = get().rsvpCounts[eventId] ?? EMPTY;
 
       const revision = (revisions.get(eventId) ?? 0) + 1;
@@ -333,7 +371,7 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
 
       if (ok) {
         persistAnswers();
-        refreshReminders();
+        get().replanNotifications();
         refreshRsvpBlocks();
         return;
       }
@@ -378,7 +416,7 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       persistAnswers();
       // The rollback is a change to the answers too: a reminder must never
       // outlive an RSVP that did not actually land.
-      refreshReminders();
+      get().replanNotifications();
       refreshRsvpBlocks();
     },
   };

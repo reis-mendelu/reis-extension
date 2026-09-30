@@ -76,6 +76,7 @@ describe('toMapEvent', () => {
       // Absent on the row: a society that did not restrict the event, and
       // every row written before the column existed.
       subscribersOnly: false,
+      createdAt: null,
     });
   });
 
@@ -114,6 +115,7 @@ describe('toMapEvent', () => {
       // Absent on the row: a society that did not restrict the event, and
       // every row written before the column existed.
       subscribersOnly: false,
+      createdAt: null,
     });
   });
 
@@ -168,6 +170,18 @@ describe('toMapEvent — a place-TBA row', () => {
     );
     expect(e.venueKind).toBe('tba');
     expect(e.coord).toBeNull();
+  });
+});
+
+describe('toMapEvent — createdAt', () => {
+  it('carries the created_at timestamp when present', () => {
+    expect(
+      toMapEvent({ ...base, created_at: '2026-09-28T10:00:00+00:00' }, BUNDLED_SOCIETIES).createdAt
+    ).toBe('2026-09-28T10:00:00+00:00');
+  });
+
+  it('reads createdAt as null when created_at is missing', () => {
+    expect(toMapEvent(base, BUNDLED_SOCIETIES).createdAt).toBeNull();
   });
 });
 

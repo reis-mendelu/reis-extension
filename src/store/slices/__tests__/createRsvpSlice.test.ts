@@ -16,18 +16,31 @@ vi.mock('../../../services/storage', () => ({
   },
 }));
 
-const syncReminders = vi.fn();
+const askNotificationPermission = vi.fn();
 vi.mock('../../../services/eventReminders/sync', () => ({
-  syncReminders: (...a: unknown[]) => syncReminders(...a),
+  askNotificationPermission: (...a: unknown[]) => askNotificationPermission(...a),
 }));
 
 import { createRsvpSlice, type RsvpSlice } from '../createRsvpSlice';
 import type { MapEvent } from '../../../types/events';
 
+// Writes are chained per event, so even the first one is issued a microtask
+// after the tap, and `askNotificationPermission`'s own `.then()` is a further
+// detached microtask on top of that. Tests that assert on either have to let
+// that turn run; tests that assert on store state do not, because the
+// optimistic update is synchronous.
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
 describe('createRsvpSlice', () => {
-  // The slice reads studentId and mapEvents off the composed store; the test
-  // supplies just those two neighbours rather than the whole thing.
-  let state: RsvpSlice & { mapEvents: MapEvent[] };
+  // The slice reads mapEvents off the composed store, and now calls
+  // `get().replanNotifications()` (a FollowSlice neighbour) instead of
+  // planning/syncing reminders itself — both are supplied the same way.
+  let state: RsvpSlice & {
+    mapEvents: MapEvent[];
+    notifyPrefs: { myEvents: boolean; followedEvents: boolean; newEvents: boolean };
+    replanNotifications: Mock;
+    setNotifyPermission: Mock;
+  };
   let set: Mock & Parameters<typeof createRsvpSlice>[0];
   let get: Mock & Parameters<typeof createRsvpSlice>[1];
 
@@ -35,14 +48,20 @@ describe('createRsvpSlice', () => {
     idb.clear();
     fetchEventRsvps.mockReset().mockResolvedValue({ counts: {}, ok: true });
     setEventRsvp.mockReset().mockResolvedValue(true);
-    syncReminders.mockReset().mockResolvedValue(undefined);
+    askNotificationPermission.mockReset().mockResolvedValue('granted');
     set = vi.fn((updater: unknown) => {
       const patch = typeof updater === 'function' ? updater(state) : updater;
       state = { ...state, ...patch };
     });
     get = vi.fn(() => state) as unknown as typeof get;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    state = { ...createRsvpSlice(set, get, {} as any), mapEvents: [] };
+    state = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...createRsvpSlice(set, get, {} as any),
+      mapEvents: [],
+      notifyPrefs: { myEvents: true, followedEvents: true, newEvents: true },
+      replanNotifications: vi.fn(),
+      setNotifyPermission: vi.fn(),
+    };
   });
 
   it('starts with no responses and no counts', () => {
@@ -76,6 +95,18 @@ describe('createRsvpSlice', () => {
     it('does not ask about nothing', async () => {
       await state.loadRsvps([]);
       expect(fetchEventRsvps).not.toHaveBeenCalled();
+    });
+
+    // An empty feed (every event cancelled, or none published yet) is still a
+    // settled read. Returning before rsvpLoaded left the replan gate shut for
+    // the whole session, so pings and digests for vanished events still fired.
+    it('an empty feed still reads the device answers, opens the gate and replans', async () => {
+      idb.set('event_rsvps_mine', { gone: 'going' });
+      await state.loadRsvps([]);
+      expect(fetchEventRsvps).not.toHaveBeenCalled();
+      expect(state.rsvp.gone).toBe('going');
+      expect(state.rsvpLoaded).toBe(true);
+      expect(state.replanNotifications).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -167,36 +198,137 @@ describe('createRsvpSlice', () => {
       category: 'party',
     };
 
-    it('schedules a reminder when the student says they are going', async () => {
+    // Planning and syncing the actual reminder content now lives in
+    // `replanNotifications` (tested on its own); this slice's job is only to
+    // trigger a replan at the right moments.
+    it('replans when the student says they are going', async () => {
       state.mapEvents = [party] as never;
       await state.setRsvp('e1', 'going');
-      expect(syncReminders).toHaveBeenCalledWith([expect.objectContaining({ eventId: 'e1' })]);
+      await flush();
+      expect(state.replanNotifications).toHaveBeenCalled();
     });
 
     // Backing out has to take the notification with it.
-    it('drops the reminder when the student un-RSVPs', async () => {
+    it('replans again when the student un-RSVPs', async () => {
       state.mapEvents = [party] as never;
       await state.setRsvp('e1', 'going');
-      syncReminders.mockClear();
-      await state.setRsvp('e1', 'going');
-      expect(syncReminders).toHaveBeenCalledWith([]);
+      await flush();
+      state.replanNotifications.mockClear();
+      await state.setRsvp('e1', 'going'); // tapping the active choice withdraws
+      await flush();
+      expect(state.replanNotifications).toHaveBeenCalled();
     });
 
-    it('does not schedule anything off the back of a refused write', async () => {
+    it('still replans off the back of a refused write', async () => {
       state.mapEvents = [party] as never;
       setEventRsvp.mockResolvedValue(false);
       await state.setRsvp('e1', 'going');
-      expect(syncReminders).toHaveBeenCalledWith([]);
+      await flush();
+      expect(state.replanNotifications).toHaveBeenCalled();
     });
 
     // Reopening the app restores the student's answers, so their reminders have
     // to come back with them — on a fresh install there is nothing pending.
-    it('restores reminders for answers loaded from the backend', async () => {
+    it('replans for answers loaded from the backend', async () => {
       state.mapEvents = [party] as never;
       idb.set('event_rsvps_mine', { e1: 'going' });
       fetchEventRsvps.mockResolvedValue({ counts: { e1: { going: 1, interested: 0 } }, ok: true });
       await state.loadRsvps(['e1']);
-      expect(syncReminders).toHaveBeenCalledWith([expect.objectContaining({ eventId: 'e1' })]);
+      expect(state.replanNotifications).toHaveBeenCalled();
+    });
+
+    // The first answer for an event is the moment permission is earned — the
+    // prompt appears the first time the student asks to be reminded of
+    // something, not before they've touched a single event.
+    it('asks for notification permission on a new answer, then replans', async () => {
+      state.mapEvents = [party] as never;
+      await state.setRsvp('e1', 'going');
+      await flush();
+      expect(askNotificationPermission).toHaveBeenCalledTimes(1);
+      expect(state.setNotifyPermission).toHaveBeenCalledWith('granted');
+      expect(state.replanNotifications).toHaveBeenCalled();
+    });
+
+    // Ruling: an event with no readable start time (all-day, or a time IS
+    // wrote in some other shape) gets no RSVP ping, so answering it has
+    // nothing to earn permission for — the prompt would be a promise the
+    // app then does not keep.
+    it.each([
+      ['no time', { time: null }],
+      ['an unreadable time', { time: 'večer' }],
+    ])('does not ask on a new answer to an event with %s', async (_label, over) => {
+      state.mapEvents = [{ ...party, ...over }] as never;
+      await state.setRsvp('e1', 'going');
+      await flush();
+      expect(askNotificationPermission).not.toHaveBeenCalled();
+    });
+
+    // A start `hoursAhead` from now, as the date and HH:MM an event carries.
+    const startingIn = (hoursAhead: number) => {
+      const d = new Date(Date.now() + hoursAhead * 60 * 60 * 1000);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      return {
+        date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+        time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+      };
+    };
+
+    // The ping fires two hours before the start: an event one hour out has
+    // no ping left to schedule, so the prompt would promise nothing.
+    it('does not ask when the reminder time has already passed', async () => {
+      state.mapEvents = [{ ...party, ...startingIn(1) }] as never;
+      await state.setRsvp('e1', 'going');
+      await flush();
+      expect(askNotificationPermission).not.toHaveBeenCalled();
+    });
+
+    // Eight hours, not three: a wall time in the repeated hour of a clock
+    // change re-parses up to an hour off, and the margin has to absorb that.
+    it('asks when the reminder time is still ahead', async () => {
+      state.mapEvents = [{ ...party, ...startingIn(8) }] as never;
+      await state.setRsvp('e1', 'going');
+      await flush();
+      expect(askNotificationPermission).toHaveBeenCalledTimes(1);
+    });
+
+    // With "Připomínky mých akcí" off the planner schedules no ping at all.
+    it('does not ask when the student has turned RSVP reminders off', async () => {
+      state.mapEvents = [party] as never;
+      state.notifyPrefs = { myEvents: false, followedEvents: true, newEvents: true };
+      await state.setRsvp('e1', 'going');
+      await flush();
+      expect(askNotificationPermission).not.toHaveBeenCalled();
+    });
+
+    it('does not ask for an event it cannot find', async () => {
+      state.mapEvents = [] as never;
+      await state.setRsvp('e1', 'going');
+      await flush();
+      expect(askNotificationPermission).not.toHaveBeenCalled();
+    });
+
+    // Switching Going -> Interested is a CHANGE, not a new answer — the
+    // student already answered the OS prompt once for this event.
+    it('does not ask again when an existing answer merely changes', async () => {
+      state.mapEvents = [party] as never;
+      await state.setRsvp('e1', 'going');
+      await flush();
+      askNotificationPermission.mockClear();
+      await state.setRsvp('e1', 'interested');
+      await flush();
+      expect(askNotificationPermission).not.toHaveBeenCalled();
+    });
+
+    // Un-RSVPing is a withdrawal, not a new answer — nothing to earn
+    // permission for.
+    it('does not ask when the student un-RSVPs', async () => {
+      state.mapEvents = [party] as never;
+      await state.setRsvp('e1', 'going');
+      await flush();
+      askNotificationPermission.mockClear();
+      await state.setRsvp('e1', 'going'); // tapping the active choice withdraws
+      await flush();
+      expect(askNotificationPermission).not.toHaveBeenCalled();
     });
   });
 });
@@ -205,12 +337,6 @@ describe('createRsvpSlice', () => {
  * Two failure modes reviewers caught, both of which quietly destroy state.
  */
 describe('createRsvpSlice — failure handling', () => {
-  // Writes are chained per event, so even the first one is issued a microtask
-  // after the tap. Tests that assert on what has been SENT have to let that
-  // turn run; tests that assert on store state do not, because the optimistic
-  // update is synchronous.
-  const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
-
   const party = {
     id: 'e1',
     title: 'Beánie',
@@ -227,7 +353,12 @@ describe('createRsvpSlice — failure handling', () => {
     venueKind: 'campus',
     category: 'party',
   };
-  let state: RsvpSlice & { mapEvents: MapEvent[] };
+  let state: RsvpSlice & {
+    mapEvents: MapEvent[];
+    notifyPrefs: { myEvents: boolean; followedEvents: boolean; newEvents: boolean };
+    replanNotifications: Mock;
+    setNotifyPermission: Mock;
+  };
   let set: Mock & Parameters<typeof createRsvpSlice>[0];
   let get: Mock & Parameters<typeof createRsvpSlice>[1];
 
@@ -235,23 +366,34 @@ describe('createRsvpSlice — failure handling', () => {
     idb.clear();
     fetchEventRsvps.mockReset().mockResolvedValue({ counts: {}, ok: true });
     setEventRsvp.mockReset().mockResolvedValue(true);
-    syncReminders.mockReset().mockResolvedValue(undefined);
+    askNotificationPermission.mockReset().mockResolvedValue('granted');
     set = vi.fn((u) => {
       const p = typeof u === 'function' ? u(state) : u;
       state = { ...state, ...p };
     });
     get = vi.fn(() => state) as unknown as typeof get;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    state = { ...createRsvpSlice(set, get, {} as any), mapEvents: [party] as never };
+    state = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...createRsvpSlice(set, get, {} as any),
+      mapEvents: [party] as never,
+      notifyPrefs: { myEvents: true, followedEvents: true, newEvents: true },
+      replanNotifications: vi.fn(),
+      setNotifyPermission: vi.fn(),
+    };
   });
 
-  // A failed load leaves `rsvp` empty; reconciling from that would cancel every
-  // pending notification for events the student is still going to.
-  it('does not touch reminders when the load failed', async () => {
+  // This used to read "does not touch reminders when the load failed" and
+  // assert the opposite — but its setup was never a failed LOAD, only a
+  // failed COUNTS fetch, with the disk read (which is what the plan is
+  // actually built from) succeeding. Fix round 1, second pass: the reminder
+  // plan is never built from a count, so it must still reconcile here — the
+  // real "disk read failed" case is covered separately below (`still loads
+  // counts when the local answers cannot be read`).
+  it('still replans when only the counts request failed', async () => {
     idb.set('event_rsvps_mine', { e1: 'going' });
     fetchEventRsvps.mockResolvedValue({ counts: {}, ok: false });
     await state.loadRsvps(['e1']);
-    expect(syncReminders).not.toHaveBeenCalled();
+    expect(state.replanNotifications).toHaveBeenCalled();
   });
 
   it('keeps the previous counts rather than overwriting them with zeroes', async () => {
@@ -289,7 +431,7 @@ describe('createRsvpSlice — failure handling', () => {
     expect(state.rsvpCounts.e1).toEqual({ going: 4, interested: 2 });
     // …and reminders are NOT reconciled from answers we failed to read, which
     // would be an empty plan and would cancel everything.
-    expect(syncReminders).not.toHaveBeenCalled();
+    expect(state.replanNotifications).not.toHaveBeenCalled();
   });
 
   // Tap Going, wait for it to actually be sent, then tap Interested while it is
@@ -744,6 +886,21 @@ describe('createRsvpSlice — failure handling', () => {
       await new Promise((r) => setTimeout(r, 0));
 
       expect(added).toEqual(['rsvp:e1']);
+    });
+
+    // Fix round 1, second pass: the reminder plan is built from the answers
+    // and the events, never from a count — same reasoning as the calendar
+    // block above, which already gated on `stored` alone. Gating the replan
+    // on `ok` too meant a session whose counts request happened to fail never
+    // got its digest scheduled, even though the answers had loaded fine.
+    it('still replans when the counts fail but the disk answers arrive', async () => {
+      idb.set('event_rsvps_mine', { e1: 'interested' });
+      fetchEventRsvps.mockResolvedValue({ counts: {}, ok: false });
+      withCalendar();
+
+      await state.loadRsvps(['e1']);
+
+      expect(state.replanNotifications).toHaveBeenCalled();
     });
 
     it('reconciles nothing when the disk read itself fails', async () => {

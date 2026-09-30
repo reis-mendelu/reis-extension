@@ -11,7 +11,7 @@ import { eventStartsAt } from '../services/eventReminders/plan';
  * student expected to see it, and the two were not connected.
  *
  * DERIVED, never accumulated: `refreshRsvpBlocks` reconciles the calendar
- * against whatever this returns, exactly as `planReminders` does for
+ * against whatever this returns, exactly as `replanNotifications` does for
  * notifications. That is what makes un-answering take the block away again —
  * it simply stops being in the plan — and it is why the ids are prefixed:
  * reconciliation must be able to tell its own blocks from the ones a student

@@ -7,7 +7,7 @@ vi.mock('@capacitor/local-notifications', () => ({
   LocalNotifications: { addListener: (...args: unknown[]) => addListener(...args) },
 }));
 
-import { installReminderTapHandler, openRemindedEvent } from '../reminderTap';
+import { installReminderTapHandler, openDigest, openRemindedEvent } from '../reminderTap';
 
 const EVENT = MOCK_MAP_EVENTS[1]!;
 const realLoad = useAppStore.getState().loadMapEvents;
@@ -105,6 +105,71 @@ describe('openRemindedEvent', () => {
   });
 });
 
+describe('openDigest', () => {
+  // Same cold start as an event tap: the list must open over a feed that has
+  // landed, not over the empty one the boot load has not filled yet.
+  it('waits for the map feed on a cold start, then opens the events list', async () => {
+    let feedLoadedWhenOpened: boolean | null = null;
+    const load = vi.fn(async () => {
+      useAppStore.setState({ mapEvents: MOCK_MAP_EVENTS, mapEventsLoaded: true });
+    });
+    const setMapSheetState = useAppStore.getState().setMapSheetState;
+    useAppStore.setState({
+      loadMapEvents: load,
+      setMapSheetState: (st) => {
+        feedLoadedWhenOpened = useAppStore.getState().mapEventsLoaded;
+        setMapSheetState(st);
+      },
+    });
+
+    await openDigest();
+
+    expect(load).toHaveBeenCalledOnce();
+    expect(feedLoadedWhenOpened).toBe(true);
+    expect(useAppStore.getState().mobileTab).toBe('map');
+    useAppStore.setState({ setMapSheetState });
+  });
+
+  it('does not reload a feed that is already there', async () => {
+    const load = vi.fn(async () => {});
+    useAppStore.setState({
+      mapEvents: MOCK_MAP_EVENTS,
+      mapEventsLoaded: true,
+      loadMapEvents: load,
+    });
+
+    await openDigest();
+
+    expect(load).not.toHaveBeenCalled();
+    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+  });
+
+  // Unlike an event tap, a digest has no one event that could be missing:
+  // the list opens even over a failed load, and shows its own empty state.
+  it('still opens the events list when the feed fails to load', async () => {
+    useAppStore.setState({ loadMapEvents: vi.fn(async () => {}), mapSheetState: 'peek' });
+
+    await openDigest();
+
+    expect(useAppStore.getState().mobileTab).toBe('map');
+    expect(useAppStore.getState().mapSheetState).toBe('expanded');
+  });
+
+  it('yields to an event tap made while it waits on the feed', async () => {
+    const pending: (() => void)[] = [];
+    const load = vi.fn(() => new Promise<void>((resolve) => pending.push(resolve)));
+    useAppStore.setState({ loadMapEvents: load, mapSheetState: 'peek' });
+
+    const digest = openDigest();
+    const event = openRemindedEvent(EVENT.id);
+    useAppStore.setState({ mapEvents: MOCK_MAP_EVENTS, mapEventsLoaded: true });
+    pending.reverse().forEach((resolve) => resolve());
+    await Promise.all([digest, event]);
+
+    expect(useAppStore.getState().mapSelection).toMatchObject({ event: { id: EVENT.id } });
+  });
+});
+
 describe('installReminderTapHandler', () => {
   it('opens the event whose id the tapped reminder carries', async () => {
     useAppStore.setState({ mapEvents: MOCK_MAP_EVENTS, mapEventsLoaded: true });
@@ -129,5 +194,69 @@ describe('installReminderTapHandler', () => {
     await onTap(tapped(undefined));
 
     expect(useAppStore.getState().mobileTab).toBe('calendar');
+  });
+
+  it('opens the map with sheet expanded when the digest is tapped', async () => {
+    useAppStore.setState({ mapRailOpen: false });
+
+    installReminderTapHandler();
+
+    const onTap = addListener.mock.calls[0]![1] as (a: unknown) => Promise<void> | void;
+    await onTap(tapped({ kind: 'digest', eventId: '' }));
+
+    const s = useAppStore.getState();
+    expect(s.mobileTab).toBe('map');
+    expect(s.mapSheetState).toBe('expanded');
+    expect(s.mapRailOpen).toBe(true);
+    expect(s.mapSelection).toBeNull();
+  });
+
+  it('clears an existing selection when digest is tapped', async () => {
+    useAppStore.setState({
+      mapEvents: MOCK_MAP_EVENTS,
+      mapEventsLoaded: true,
+      mapSelection: { kind: 'event', event: EVENT },
+    });
+
+    installReminderTapHandler();
+
+    const onTap = addListener.mock.calls[0]![1] as (a: unknown) => Promise<void> | void;
+    await onTap(tapped({ kind: 'digest', eventId: '' }));
+
+    const s = useAppStore.getState();
+    expect(s.mapSelection).toBeNull();
+    expect(s.mapSheetState).toBe('expanded');
+  });
+
+  it('digest tap supersedes an event tap still waiting on the feed', async () => {
+    const pending: (() => void)[] = [];
+    const load = vi.fn(() => new Promise<void>((resolve) => pending.push(resolve)));
+    useAppStore.setState({ loadMapEvents: load });
+
+    installReminderTapHandler();
+    const onTap = addListener.mock.calls[0]![1] as (a: unknown) => Promise<void> | void;
+
+    const eventTap = onTap(tapped({ eventId: EVENT.id }));
+    const digestTap = onTap(tapped({ kind: 'digest', eventId: '' }));
+    useAppStore.setState({ mapEvents: MOCK_MAP_EVENTS, mapEventsLoaded: true });
+    pending.reverse().forEach((resolve) => resolve());
+    await Promise.all([eventTap, digestTap]);
+
+    const s = useAppStore.getState();
+    expect(s.mapSelection).toBeNull();
+    expect(s.mapSheetState).toBe('expanded');
+  });
+
+  it('behaves as today when notification has no kind (backward compat)', async () => {
+    useAppStore.setState({ mapEvents: MOCK_MAP_EVENTS, mapEventsLoaded: true });
+
+    installReminderTapHandler();
+
+    const onTap = addListener.mock.calls[0]![1] as (a: unknown) => Promise<void> | void;
+    await onTap(tapped({ eventId: EVENT.id }));
+
+    const s = useAppStore.getState();
+    expect(s.mobileTab).toBe('map');
+    expect(s.mapSelection).toMatchObject({ kind: 'event', event: { id: EVENT.id } });
   });
 });

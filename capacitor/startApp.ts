@@ -10,6 +10,7 @@ import { resolveNativeEduroamSupport } from '@/mobile/eduroamNative';
 import { installMobileActionHandler } from '@/mobile/actionHandler';
 import { installExternalLinkHandler } from '@/mobile/openExternal';
 import { installReminderTapHandler } from '@/mobile/reminderTap';
+import { readNotificationPermission } from '@/services/eventReminders/sync';
 import { promptSessionRecovery } from '@/mobile/sessionRecovery';
 import { setSessionExpiredHandler } from '@/services/sessionExpiry';
 import { setDemoErrorHandler } from '@/utils/reportError';
@@ -96,6 +97,12 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // return, since an RSVP in the demo schedules a real reminder too.
   installReminderTapHandler();
 
+  // Once at boot, beside the tap handler: the soft-ask card and the Profile
+  // switches read `notifyPermission` to decide what to show, and nothing else
+  // populates it before the first frame that needs it. Read-only — never
+  // requests — so this is safe in demo mode too.
+  void readNotificationPermission().then((p) => useAppStore.getState().setNotifyPermission(p));
+
   // Demo data is seeded, static and complete. Syncing would only produce
   // failed IS requests, and fetchWithAuth throws DemoModeError anyway.
   if (demo) return;
@@ -125,5 +132,13 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
     // otherwise never reaches a long-lived app process. Gap-limited like the
     // IS sync, so tabbing away and back does not refetch every time.
     void useAppStore.getState().refreshMapEventsIfStale(MIN_SYNC_GAP);
+    // A second chance for `loadFollows()` if it lost the boot race against
+    // `getUserParams()` — a resume is exactly the kind of "app already
+    // running a while" moment where identity is settled by now, unlike
+    // `onIdentityChange`, which only fires for a DIFFERENT student signing in.
+    void useAppStore.getState().retryFollowsIfUnresolved();
+    // The OS permission can change while backgrounded (the student flips it in
+    // Settings), and the soft-ask card's visibility depends on knowing that.
+    void readNotificationPermission().then((p) => useAppStore.getState().setNotifyPermission(p));
   });
 }

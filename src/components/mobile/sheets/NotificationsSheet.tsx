@@ -9,6 +9,7 @@ import { NotificationItem } from '../../Notifications/NotificationItem';
 import { DeadlineAlertItem } from '../../Notifications/DeadlineAlertItem';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
+import { NotifySoftAsk } from '../NotifySoftAsk';
 
 export interface NotificationsSheetProps {
   onClose: () => void;
@@ -89,6 +90,7 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
     <Sheet size="full" onClose={onClose}>
       <SheetHeader title={t('notifications.title')} onClose={onClose} />
       <div className="flex-1 overflow-y-auto px-4 pb-6 pt-1">
+        <NotifySoftAsk />
         {alerts.length > 0 && (
           <>
             <SectionLabel>{t('notifications.sectionDeadlines')}</SectionLabel>

@@ -353,6 +353,10 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
       // Detached on purpose — a card renders with 0/0 while this is in flight,
       // and a failure must not take the events down with it.
       void get().loadRsvps(events.map((e) => e.id));
+      // A society's event can be published, moved or cancelled between loads,
+      // and the digest/RSVP plan has to catch up with it — boot, a manual
+      // reload and spec 1's resume-triggered refresh all land here.
+      get().replanNotifications();
     } catch (err) {
       logError('MapSlice.reloadMapEvents', err);
     }

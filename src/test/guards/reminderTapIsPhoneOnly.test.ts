@@ -38,9 +38,13 @@ describe('reminder tap placement', () => {
     expect(read('capacitor/startApp.ts')).toContain('installReminderTapHandler()');
   });
 
-  it('the reminder carries the event id the handler reads', () => {
-    expect(read('src/services/eventReminders/sync.ts')).toContain('extra: { eventId: r.eventId }');
-    expect(read('src/mobile/reminderTap.ts')).toContain('eventId');
+  it('the reminder carries the event id and kind the handler reads', () => {
+    expect(read('src/services/eventReminders/sync.ts')).toContain(
+      "extra: { eventId: r.eventId, kind: (r as PlannedNotification).kind ?? 'rsvp' }"
+    );
+    const tap = read('src/mobile/reminderTap.ts');
+    expect(tap).toContain('openRemindedEvent(extra?.eventId)');
+    expect(tap).toContain("extra?.kind === 'digest'");
   });
 
   it('nothing outside the native tree imports the tap handler', () => {
