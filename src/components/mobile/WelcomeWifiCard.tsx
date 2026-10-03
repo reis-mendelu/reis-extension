@@ -44,9 +44,12 @@ export function WelcomeWifiCard({ status, outcome, target, onSetup }: WelcomeWif
     ? t('mobile.welcome.wifiDone')
     : stale
       ? t('eduroam.native.staleAssociation')
-      : failed
-        ? t('mobile.welcome.wifiFailed')
-        : t('mobile.welcome.wifiLine');
+      : // iOS kept the old certificate because the device is on eduroam.
+        outcome === 'renewal-blocked'
+        ? t('eduroam.native.renewalBlocked')
+        : failed
+          ? t('mobile.welcome.wifiFailed')
+          : t('mobile.welcome.wifiLine');
 
   return (
     // A centred card on the phone. Inside the tablet dialog it is already on a

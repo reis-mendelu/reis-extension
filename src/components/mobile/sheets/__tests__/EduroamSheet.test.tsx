@@ -222,6 +222,36 @@ describe('EduroamSheet', () => {
     expect(screen.getByText(/už na tomto zařízení nastavený je/)).toBeInTheDocument();
   });
 
+  // The shipped build swapped keychain items under a live configuration, so a
+  // device can hold an eduroam setup whose references are dead. Nothing on iOS
+  // can tell that apart from a healthy one, so the line must not vouch for it.
+  it('gives iOS students the recovery step alongside already-configured', () => {
+    onPhone({ status: 'done', outcome: 'already-configured' }, 'ios');
+
+    render(<EduroamSheet onClose={vi.fn()} />);
+
+    expect(screen.getByText(/Kdyby eduroam vypadával/)).toBeInTheDocument();
+  });
+
+  it('keeps that hint off Android, where ALREADY_EXISTS is a real credential', () => {
+    onPhone({ status: 'done', outcome: 'already-configured' }, 'android');
+
+    render(<EduroamSheet onClose={vi.fn()} />);
+
+    expect(screen.queryByText(/Kdyby eduroam vypadával/)).not.toBeInTheDocument();
+  });
+
+  it('says the renewed certificate was not installed, as a warning', () => {
+    onPhone({ status: 'error', outcome: 'renewal-blocked' }, 'ios');
+
+    render(<EduroamSheet onClose={vi.fn()} />);
+
+    const line = screen.getByText(/nový certifikát/i);
+    expect(line).toHaveTextContent(/Zapomeň síť/);
+    expect(line.closest('.alert')).toHaveClass('alert-warning');
+    expect(screen.queryByText(/nastavený je/)).not.toBeInTheDocument();
+  });
+
   it('does not scold a student who dismissed the system dialog', () => {
     onPhone({ status: 'idle', outcome: 'cancelled' });
 

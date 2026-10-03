@@ -72,7 +72,13 @@ describe('useEduroamSetup engagement signal', () => {
   // The remaining native outcomes installed nothing. `already-configured` is
   // the subtle one: the network was there before reIS was asked, so counting it
   // would report students as newly set up who were already on eduroam.
-  it.each<EduroamConfigOutcome>(['already-configured', 'cancelled', 'failed', 'stale-association'])(
+  it.each<EduroamConfigOutcome>([
+    'already-configured',
+    'cancelled',
+    'failed',
+    'stale-association',
+    'renewal-blocked',
+  ])(
     'counts nothing when the outcome is %s',
     async (outcome) => {
       configureEduroam.mockResolvedValue(outcome);
