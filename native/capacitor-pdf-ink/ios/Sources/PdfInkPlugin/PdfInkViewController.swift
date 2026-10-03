@@ -97,6 +97,8 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         image: UIImage(systemName: "xmark"), style: .plain, target: self,
         action: #selector(exitTapped))
     private var saveTimer: Timer?
+    /// Waits out a pinch before the canvases re-render at the new scale.
+    private var inkScaleTimer: Timer?
     /// Set by `willClose`: the pens are put away for good, not lost.
     private var closing = false
     private var laidOutWidth: CGFloat = 0
@@ -129,6 +131,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     deinit {
         NotificationCenter.default.removeObserver(self)
         saveTimer?.invalidate()
+        inkScaleTimer?.invalidate()
     }
 
     override func viewDidLoad() {
@@ -216,6 +219,8 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
             name: UIApplication.willResignActiveNotification, object: nil)
         NotificationCenter.default.addObserver(
             self, selector: #selector(updatePageItem), name: .PDFViewPageChanged, object: pdfView)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(pageScaleChanged), name: .PDFViewScaleChanged, object: pdfView)
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -610,6 +615,48 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         toolPicker.setVisible(false, forFirstResponder: pdfView)
     }
 
+    // MARK: - Ink sharpness
+
+    /// What one fully inked page may cost: 64 MB at four bytes a pixel.
+    /// PDFKit keeps a few pages alive, and an iPad 8 has 3 GB.
+    static let maxInkPixels: CGFloat = 16_777_216
+
+    /**
+     * The scale a page's ink is rendered at (`PageOverlayView.inkScale`): the
+     * scale the page is shown at, never below the page's own, and no further
+     * than `maxInkPixels` allows — 2.9x for an A4. Past that a pinch magnifies
+     * the ink again, but from a finer start.
+     */
+    static func inkScale(pageScale: CGFloat, pageSize: CGSize, screenScale: CGFloat) -> CGFloat {
+        let pixelsAtOne = pageSize.width * pageSize.height * screenScale * screenScale
+        guard pixelsAtOne > 0 else { return 1 }
+        let budget = (maxInkPixels / pixelsAtOne).squareRoot()
+        return max(1, min(pageScale, budget))
+    }
+
+    private func inkScale(for page: PDFPage) -> CGFloat {
+        Self.inkScale(
+            pageScale: pdfView.scaleFactor, pageSize: InkPages.displayedSize(of: page),
+            screenScale: traitCollection.displayScale > 0 ? traitCollection.displayScale : 2)
+    }
+
+    /// Fired continuously through a pinch; re-rendering every canvas on each
+    /// step would stutter, so the ink follows once the pinch settles.
+    @objc private func pageScaleChanged() {
+        inkScaleTimer?.invalidate()
+        inkScaleTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: false) {
+            [weak self] _ in self?.updateInkScale()
+        }
+    }
+
+    private func updateInkScale() {
+        guard let document else { return }
+        for (index, overlay) in overlays {
+            guard let page = document.page(at: index) else { continue }
+            overlay.inkScale = inkScale(for: page)
+        }
+    }
+
     // MARK: - PDFPageOverlayViewProvider
 
     func pdfView(_ view: PDFView, overlayViewFor page: PDFPage) -> UIView? {
@@ -629,6 +676,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         canvas.drawing = drawings[index] ?? PKDrawing()
         canvas.tool = toolPicker.selectedTool
         canvas.delegate = self
+        overlay.inkScale = inkScale(for: page)
         toolPicker.addObserver(canvas)
         toolPicker.setVisible(true, forFirstResponder: canvas)
         overlays[index] = overlay
