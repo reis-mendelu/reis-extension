@@ -84,7 +84,16 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
     /// `beginArrangingPictures` (a pick), and both clear the flag.
     func beginPicking() {
         pickingPicture = true
+        pickingFor = inkURL
         putPensAway()
+    }
+
+    /// Stops waiting for a pick without taking the responder (a file switch).
+    func endPicking() {
+        guard pickingPicture else { return }
+        pickingPicture = false
+        pickingFor = nil
+        setPagePens(visible: true)
     }
 
     /**
@@ -97,7 +106,7 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
      * cancel or a dismissal takes it back through `showToolPicker()`.
      */
     private func putPensAway() {
-        toolPicker.setVisible(false, forFirstResponder: pdfView)
+        setPagePens(visible: false)
         for overlay in overlays.values where overlay.canvas.isFirstResponder {
             overlay.canvas.resignFirstResponder()
         }
@@ -133,10 +142,20 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
         showToolPicker()
     }
 
-    private func finishPicking(_ picture: PictureIngest.Picture?, error: Error?) {
+    /// `target` is the file the pick started in: a photo can take seconds to
+    /// load, and one that arrives after a file switch belongs to neither file.
+    func finishPicking(_ picture: PictureIngest.Picture?, error: Error?, for target: URL?) {
+        guard target == inkURL else {
+            NSLog("PdfInk: a picked photo arrived after a file switch; dropped")
+            return
+        }
         if let picture, insertPicture(picture) { return }
         NSLog("PdfInk: picture could not be placed (\(String(describing: error)))")
         showToolPicker()
+    }
+
+    private func finishPicking(_ picture: PictureIngest.Picture?, error: Error?) {
+        finishPicking(picture, error: error, for: pickingFor)
     }
 
     // MARK: - Placing
@@ -212,6 +231,8 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
         beginArrangingPictures(selecting: index.flatMap { i in top.map { (i, $0.id) } })
     }
 
+    /// The page's pens come back on every exit; `restoringPens` only decides
+    /// whether the page takes the responder now (not when a file is closing).
     func endArrangingPictures(restoringPens: Bool = true) {
         guard arrangingPictures else { return }
         arrangingPictures = false
@@ -219,7 +240,7 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
         navigationItem.rightBarButtonItems = fileToolItems
         emptyPageTap.isEnabled = false
         for (index, overlay) in overlays { applyPictureMode(to: overlay, page: index) }
-        if restoringPens { showToolPicker() }
+        if restoringPens { showToolPicker() } else { setPagePens(visible: true) }
     }
 
     @objc func doneArrangingTapped() { endArrangingPictures() }

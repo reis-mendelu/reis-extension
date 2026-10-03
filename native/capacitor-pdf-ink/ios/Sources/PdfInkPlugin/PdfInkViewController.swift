@@ -50,7 +50,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     private let message = UILabel()
 
     private(set) var document: PDFDocument?
-    private var inkURL: URL?
+    private(set) var inkURL: URL?
     private var drawings: [Int: PKDrawing] = [:]
     /// What PDFKit currently has over each page. The canvases live inside these.
     private(set) var overlays: [Int: PageOverlayView] = [:]
@@ -65,6 +65,11 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     /// cancelled. Holds #485's re-assert off through the moment between the
     /// menu closing and the picker appearing, when nothing is presented.
     var pickingPicture = false
+    /// The file a pick started in; a photo that arrives after a switch is dropped.
+    var pickingFor: URL?
+    /// What the page's pens were last set to. Every change goes through
+    /// `setPagePens`, so the tests can see what a hostless picker cannot show.
+    private(set) var pagePensVisible = true
     var selectedPicture: (page: Int, id: String)?
     /// What picture undo actions are registered against, so a renumbering can
     /// clear them without touching PencilKit's strokes.
@@ -246,7 +251,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
 
         toolPicker.showsDrawingPolicyControls = true
         toolPicker.colorUserInterfaceStyle = .light
-        toolPicker.setVisible(true, forFirstResponder: pdfView)
+        setPagePens(visible: true)
         toolPicker.addObserver(self)
 
         NotificationCenter.default.addObserver(
@@ -379,7 +384,10 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     /// when the save fails and the caller has not chosen to discard.
     private func leaveCurrentFile(discardingUnsaved: Bool) -> Bool {
         if !persistNow() && !discardingUnsaved { return false }
+        // Both hid the page's pens, and `load` only takes the responder back:
+        // left hidden, the next file would open with no pens.
         endArrangingPictures(restoringPens: false)
+        endPicking()
         drawings = [:]
         overlays = [:]
         insertedPages = []
@@ -557,13 +565,13 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
             controller.loadViewIfNeeded()
             PdfInkTint.apply(tint, toBarItemsOf: controller.navigationItem)
         }
-        toolPicker.setVisible(false, forFirstResponder: pdfView)
+        setPagePens(visible: false)
         present(sheet, animated: true)
     }
 
     func showToolPicker() {
         pickingPicture = false
-        toolPicker.setVisible(true, forFirstResponder: pdfView)
+        setPagePens(visible: true)
         pdfView.becomeFirstResponder()
     }
 
@@ -594,6 +602,12 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         guard !toolPicker.isVisible else { return }
         // Fired while the responder is still moving; take it back after that.
         DispatchQueue.main.async { [weak self] in self?.restoreToolPicker() }
+    }
+
+    /// The pens registered for the page itself; the canvases register their own.
+    func setPagePens(visible: Bool) {
+        pagePensVisible = visible
+        toolPicker.setVisible(visible, forFirstResponder: pdfView)
     }
 
     /// Swiping a sheet away never reaches its own buttons.
@@ -660,7 +674,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
 
     func willClose() {
         closing = true
-        toolPicker.setVisible(false, forFirstResponder: pdfView)
+        setPagePens(visible: false)
     }
 
     // MARK: - Ink sharpness

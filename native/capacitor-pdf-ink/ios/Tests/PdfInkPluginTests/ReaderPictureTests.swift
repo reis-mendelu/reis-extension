@@ -104,6 +104,44 @@ final class ReaderPictureTests: XCTestCase {
         XCTAssertEqual(reader.selectedPicture?.id, "over")
     }
 
+    /// Arranging hides the page's pens; a file switch ended arranging without
+    /// setting them back, and `load` only takes the responder — so the next
+    /// file opened with no pens and nothing to re-assert them (#485's bug by a
+    /// new path, found in review). Every exit restores the page's pens.
+    func testSwitchingFilesWhileArrangingBringsThePensBack() throws {
+        let (reader, _) = try show(pages: 1)
+        reader.beginArrangingPictures()
+        XCTAssertFalse(reader.pagePensVisible)
+
+        try open(reader, pages: 1, ink: tempInk())
+
+        XCTAssertFalse(reader.arrangingPictures)
+        XCTAssertTrue(reader.pagePensVisible, "the next file opened with no pens")
+    }
+
+    func testSwitchingFilesWhilePickingBringsThePensBack() throws {
+        let (reader, _) = try show(pages: 1)
+        reader.beginPicking()
+
+        try open(reader, pages: 1, ink: tempInk())
+
+        XCTAssertFalse(reader.pickingPicture)
+        XCTAssertTrue(reader.pagePensVisible)
+    }
+
+    /// A photo can take seconds to load (iCloud). One that arrives after the
+    /// student opened another file belongs to neither, and is dropped.
+    func testAPickThatArrivesAfterAFileSwitchIsDropped() throws {
+        let (reader, first) = try show(pages: 1)
+        reader.beginPicking()
+        try open(reader, pages: 1, ink: tempInk())
+
+        reader.finishPicking(try picture(), error: nil, for: first)
+
+        XCTAssertTrue(reader.pictures.isEmpty, "the photo landed in the wrong file")
+        XCTAssertFalse(reader.arrangingPictures)
+    }
+
     func testDoneWearsTheThemeTint() throws {
         let tint = UIColor.systemGreen
         let reader = PdfInkViewController(strings: strings, tint: tint)
