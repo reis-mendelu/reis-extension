@@ -2,7 +2,7 @@ import { Download, Loader2, AlertTriangle, Wifi, CheckCircle2 } from 'lucide-rea
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
 import { PasswordChip } from '../../Eduroam/PasswordChip';
-import { EduroamExpiredNotice } from '../../Eduroam/EduroamExpiredNotice';
+import { EduroamCertNotices } from '../../Eduroam/EduroamExpiredNotice';
 import { useEduroamSetup, type EduroamTarget } from '../../../hooks/data/useEduroamSetup';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { isMac, isMobile } from '../../../utils/platform';
@@ -47,7 +47,8 @@ function NumberBadge({ n }: { n: number }) {
 export function EduroamSheet({ onClose }: EduroamSheetProps) {
   const { t } = useTranslation();
   const target = detectTarget();
-  const { status, password, error, outcome, expiredAt, run, renew } = useEduroamSetup(target);
+  const { status, password, error, outcome, expiredAt, expiresSoonAt, run, renew } =
+    useEduroamSetup(target);
   const working = status === 'working';
 
   // On the phone itself Android saves the network directly, so there is no
@@ -174,15 +175,15 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
           </button>
         </div>
 
-        {/* Under the button the student just tapped: IS's certificate has
-            expired, and the way on is generating a new one. */}
-        {status === 'expired' && expiredAt && (
-          <EduroamExpiredNotice
-            expiredAt={expiredAt}
-            onRenew={() => void renew(target)}
-            className="text-base"
-          />
-        )}
+        {/* Under the button the student just tapped: the certificate has expired,
+            or will soon, and the way on is generating a new one. */}
+        <EduroamCertNotices
+          status={status}
+          expiredAt={expiredAt}
+          expiresSoonAt={expiresSoonAt}
+          onRenew={() => void renew(target)}
+          className="text-base"
+        />
 
         {macInApp && (
           <div className="flex items-center gap-3">

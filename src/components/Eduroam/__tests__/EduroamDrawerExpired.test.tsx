@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { EduroamDrawer } from '../EduroamDrawer';
 import { useAppStore } from '../../../store/useAppStore';
-import { regenerateEduroamCert } from '../../../api/eduroam';
+import { fetchEduroamCertMaterial, regenerateEduroamCert } from '../../../api/eduroam';
 import { deliverEduroamProfile } from '../../../mobile/eduroamProfile';
 
 vi.mock('../../../api/eduroam', () => ({
@@ -54,5 +54,26 @@ describe('EduroamDrawer with an expired certificate', () => {
     fireEvent.click(await screen.findByRole('button', { name: /Generate a new certificate/i }));
 
     await waitFor(() => expect(regenerateEduroamCert).toHaveBeenCalledTimes(1));
+  });
+
+  // The current certificate keeps working until its expiry (IS does not revoke
+  // on regeneration), so the profile is still handed over — with the offer.
+  it('hands over the profile and offers an early renewal when expiry is near', async () => {
+    vi.mocked(fetchEduroamCertMaterial).mockResolvedValueOnce({
+      rootCaDer: new Uint8Array([1]),
+      clientP12: new Uint8Array([2]),
+      password: 'pw123',
+      generated: false,
+      expiresAt: new Date(Date.now() + 10 * 86_400_000),
+    });
+    useAppStore.setState({ isTouch: false, isNarrow: false, language: 'en' });
+    useAppStore.getState().openEduroamFor('windows');
+    render(<EduroamDrawer />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Download eduroam profile' }));
+
+    expect(await screen.findByText(/expires on/)).toBeTruthy();
+    expect(deliverEduroamProfile).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: /Generate a new certificate/i })).toBeTruthy();
   });
 });

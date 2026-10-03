@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Wifi, AlertTriangle, X } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
-import { EduroamExpiredNotice } from './EduroamExpiredNotice';
+import { EduroamCertNotices } from './EduroamExpiredNotice';
 import { useEduroamSetup } from '../../hooks/data/useEduroamSetup';
 import { AdaptiveDrawer } from '../ui/AdaptiveDrawer';
 import type { DesktopEduroamTarget } from './manual';
@@ -19,6 +19,7 @@ export function EduroamDrawer() {
     password,
     error,
     expiredAt,
+    expiresSoonAt,
     run,
     renew,
     reset,
@@ -86,13 +87,13 @@ export function EduroamDrawer() {
           </div>
         )}
 
-        {status === 'expired' && expiredAt && (
-          <EduroamExpiredNotice
-            expiredAt={expiredAt}
-            onRenew={() => selected && void renew(selected)}
-            className="text-sm mb-5"
-          />
-        )}
+        <EduroamCertNotices
+          status={status}
+          expiredAt={expiredAt}
+          expiresSoonAt={expiresSoonAt}
+          onRenew={() => selected && void renew(selected)}
+          className="text-sm mb-5"
+        />
 
         <DeviceAccordion
           selected={selected}

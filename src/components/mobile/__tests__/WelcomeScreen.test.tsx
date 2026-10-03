@@ -22,6 +22,7 @@ function hook(over: Partial<HookState> = {}): HookState {
     error: null,
     outcome: null,
     expiredAt: null,
+    expiresSoonAt: null,
     run: vi.fn(),
     renew: vi.fn(),
     reset: vi.fn(),

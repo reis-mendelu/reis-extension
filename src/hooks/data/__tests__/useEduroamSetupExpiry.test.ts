@@ -106,4 +106,32 @@ describe('useEduroamSetup with an expired certificate', () => {
     expect(result.current.status).toBe('done');
     expect(nativeEduroamDeps.configure).toHaveBeenCalledTimes(1);
   });
+
+  it('sets up as usual and offers an early renewal when expiry is near', async () => {
+    const soon = new Date(Date.now() + 10 * 86_400_000);
+    vi.mocked(fetchEduroamCertMaterial).mockResolvedValue(material(soon));
+    const { result } = renderHook(() => useEduroamSetup());
+
+    await act(async () => {
+      await result.current.run('ios');
+    });
+
+    expect(result.current.status).toBe('done');
+    expect(nativeEduroamDeps.configure).toHaveBeenCalledTimes(1);
+    expect(result.current.expiresSoonAt).toEqual(soon);
+    expect(regenerateEduroamCert).not.toHaveBeenCalled();
+  });
+
+  it('offers nothing early when expiry is far off', async () => {
+    vi.mocked(fetchEduroamCertMaterial).mockResolvedValue(
+      material(new Date(Date.now() + 200 * 86_400_000))
+    );
+    const { result } = renderHook(() => useEduroamSetup());
+
+    await act(async () => {
+      await result.current.run('ios');
+    });
+
+    expect(result.current.expiresSoonAt).toBeNull();
+  });
 });

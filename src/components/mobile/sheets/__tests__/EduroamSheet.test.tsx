@@ -37,6 +37,7 @@ function baseHookState(): HookState {
     error: null,
     outcome: null,
     expiredAt: null,
+    expiresSoonAt: null,
     run: vi.fn(),
     renew: vi.fn(),
     reset: vi.fn(),
@@ -302,6 +303,26 @@ describe('EduroamSheet', () => {
     render(<EduroamSheet onClose={vi.fn()} />);
 
     expect(screen.getByText(/vypršel 01\.01\.2025/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Vygenerovat nový certifikát/ }));
+    expect(renew).toHaveBeenCalledWith('ios');
+  });
+
+  it('offers an early renewal after setup when the certificate expires soon', () => {
+    const renew = vi.fn();
+    onPhone(
+      {
+        status: 'done',
+        outcome: 'saved',
+        expiresSoonAt: new Date('2026-10-20T05:43:49Z'),
+        renew,
+      },
+      'ios'
+    );
+
+    render(<EduroamSheet onClose={vi.fn()} />);
+
+    expect(screen.getByText(/eduroam je uložený/)).toBeInTheDocument();
+    expect(screen.getByText(/vyprší 20\.10\.2026/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Vygenerovat nový certifikát/ }));
     expect(renew).toHaveBeenCalledWith('ios');
   });

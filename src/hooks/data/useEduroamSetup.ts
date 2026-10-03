@@ -7,6 +7,7 @@ import {
 import { configureEduroam, type EduroamConfigOutcome } from '../../mobile/configureEduroam';
 import { canConfigureEduroamNatively, nativeEduroamDeps } from '../../mobile/eduroamNative';
 import { deliverEduroamFile } from './eduroamFileDelivery';
+import { useCertExpiry } from './useCertExpiry';
 import { logError } from '../../utils/reportError';
 import { trackFeatureSignal } from '../../api/featureUsage';
 
@@ -39,88 +40,88 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
   const [error, setError] = useState<string | null>(null);
   /** Native-path only: what Android did with the network. Null on file paths. */
   const [outcome, setOutcome] = useState<EduroamConfigOutcome | null>(null);
-  /** Set when IS's certificate has expired; the UI then offers `renew`. */
-  const [expiredAt, setExpiredAt] = useState<Date | null>(null);
+  const { expiredAt, expiresSoonAt, note: noteExpiry, clear: clearExpiry } = useCertExpiry();
 
   // The .p12 password is NEVER embedded: the macOS path prompts at install, and
   // the iOS transfer path must keep the profile from being a standalone credential.
-  const run = useCallback(async (t: EduroamTarget) => {
-    setStatus('working');
-    setError(null);
-    setPassword(null);
-    setOutcome(null);
-    setExpiredAt(null);
-    try {
-      const material = await fetchEduroamCertMaterial();
-      const { password: extractionPw } = material;
+  const run = useCallback(
+    async (t: EduroamTarget) => {
+      setStatus('working');
+      setError(null);
+      setPassword(null);
+      setOutcome(null);
+      clearExpiry();
+      try {
+        const material = await fetchEduroamCertMaterial();
+        const { password: extractionPw } = material;
 
-      // IS keeps offering an expired certificate and never replaces it by
-      // itself. Installing it gives a network that cannot authenticate, so
-      // stop here on every target and let the student ask for a new one.
-      if (material.expiresAt && material.expiresAt.getTime() <= Date.now()) {
-        setExpiredAt(material.expiresAt);
-        setStatus('expired');
-        return;
-      }
+        // IS keeps offering an expired certificate and never replaces it by
+        // itself. Installing it gives a network that cannot authenticate, so
+        // stop here on every target and let the student ask for a new one.
+        if (noteExpiry(material.expiresAt)) {
+          setStatus('expired');
+          return;
+        }
 
-      // On the phone itself the OS configures eduroam directly — no profile
-      // file and nothing to hand over. Everything below this branch runs on the
-      // machine reIS is open on.
-      if (canConfigureEduroamNatively(t)) {
-        const result = await configureEduroam(material, nativeEduroamDeps);
-        setOutcome(result);
-        // Only `saved` is a setup that finished. `already-configured` applied
-        // nothing — the network was there before reIS was asked — and counting
-        // it would report students as newly set up who were already on
-        // eduroam. `cancelled`, `failed` and `stale-association` installed
-        // nothing at all. The file paths below get their own signal, because a
-        // delivered profile still needs the student to install it.
-        if (result === 'saved') void trackFeatureSignal('eduroam_wifi_configured');
+        // On the phone itself the OS configures eduroam directly — no profile
+        // file and nothing to hand over. Everything below this branch runs on the
+        // machine reIS is open on.
+        if (canConfigureEduroamNatively(t)) {
+          const result = await configureEduroam(material, nativeEduroamDeps);
+          setOutcome(result);
+          // Only `saved` is a setup that finished. `already-configured` applied
+          // nothing — the network was there before reIS was asked — and counting
+          // it would report students as newly set up who were already on
+          // eduroam. `cancelled`, `failed` and `stale-association` installed
+          // nothing at all. The file paths below get their own signal, because a
+          // delivered profile still needs the student to install it.
+          if (result === 'saved') void trackFeatureSignal('eduroam_wifi_configured');
+          setPassword(extractionPw);
+          // Dismissing Android's dialog is a choice, not a fault: go back to idle
+          // so the button is simply offered again, with no error banner.
+          // `stale-association` joins `failed` in the error state (#261): iOS
+          // installed nothing, so it must not land on the done branch — that is
+          // the bug. The copy differs, driven off `outcome`, not off status.
+          setStatus(
+            result === 'cancelled'
+              ? 'idle'
+              : result === 'failed' || result === 'stale-association'
+                ? 'error'
+                : 'done'
+          );
+          return;
+        }
+
+        // A phone that reached here has no native path, and there is no longer a
+        // desktop→phone transfer to fall back to. Fail loudly rather than hand it
+        // a file meant for a laptop: before this guard, an Android phone whose
+        // plugin was unavailable silently downloaded an Apple .mobileconfig.
+        if (t === 'ios' || t === 'android') {
+          throw new Error('eduroam on a phone is set up by the reIS app, not from a browser');
+        }
+
+        await deliverEduroamFile(t, material);
         setPassword(extractionPw);
-        // Dismissing Android's dialog is a choice, not a fault: go back to idle
-        // so the button is simply offered again, with no error banner.
-        // `stale-association` joins `failed` in the error state (#261): iOS
-        // installed nothing, so it must not land on the done branch — that is
-        // the bug. The copy differs, driven off `outcome`, not off status.
-        setStatus(
-          result === 'cancelled'
-            ? 'idle'
-            : result === 'failed' || result === 'stale-association'
-              ? 'error'
-              : 'done'
-        );
-        return;
+        setStatus('done');
+      } catch (e) {
+        logError('useEduroamSetup.run', e);
+        setError((e as Error).message);
+        setStatus('error');
       }
-
-      // A phone that reached here has no native path, and there is no longer a
-      // desktop→phone transfer to fall back to. Fail loudly rather than hand it
-      // a file meant for a laptop: before this guard, an Android phone whose
-      // plugin was unavailable silently downloaded an Apple .mobileconfig.
-      if (t === 'ios' || t === 'android') {
-        throw new Error('eduroam on a phone is set up by the reIS app, not from a browser');
-      }
-
-      await deliverEduroamFile(t, material);
-      setPassword(extractionPw);
-      setStatus('done');
-    } catch (e) {
-      logError('useEduroamSetup.run', e);
-      setError((e as Error).message);
-      setStatus('error');
-    }
-  }, []);
+    },
+    [noteExpiry, clearExpiry]
+  );
 
   /**
-   * The student's "generate a new certificate" tap, offered only once the
-   * current one has expired. Generation must stay student-initiated (see
-   * `regenerateEduroamCert`); an expired certificate is dead on every device,
-   * so replacing it costs the student nothing. Then sets up with the new one.
+   * The student's "generate a new certificate" tap — offered once the current
+   * one has expired or is about to (`useCertExpiry`). Generation stays
+   * student-initiated; then sets up with the new certificate.
    */
   const renew = useCallback(
     async (t: EduroamTarget) => {
       setStatus('working');
       setError(null);
-      setExpiredAt(null);
+      clearExpiry();
       try {
         await regenerateEduroamCert();
       } catch (e) {
@@ -131,33 +132,36 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
       }
       await run(t);
     },
-    [run]
+    [run, clearExpiry]
   );
 
-  const selectTarget = useCallback((t: EduroamTarget) => {
-    setTarget(t);
-    setStatus('idle');
-    setError(null);
-    setExpiredAt(null);
-    setPassword(null);
-    setOutcome(null);
-    // Prefetch the extraction password so the chip can show it before Download.
-    // Only populates when a cert already exists; first-time users get it from
-    // run(). Never overwrites a value run() may have already set.
-    void fetchEduroamPassword()
-      .then((pw) => {
-        if (pw) setPassword((prev) => prev ?? pw);
-      })
-      .catch((e) => logError('useEduroamSetup.prefetchPassword', e));
-  }, []);
+  const selectTarget = useCallback(
+    (t: EduroamTarget) => {
+      setTarget(t);
+      setStatus('idle');
+      setError(null);
+      clearExpiry();
+      setPassword(null);
+      setOutcome(null);
+      // Prefetch the extraction password so the chip can show it before Download.
+      // Only populates when a cert already exists; first-time users get it from
+      // run(). Never overwrites a value run() may have already set.
+      void fetchEduroamPassword()
+        .then((pw) => {
+          if (pw) setPassword((prev) => prev ?? pw);
+        })
+        .catch((e) => logError('useEduroamSetup.prefetchPassword', e));
+    },
+    [clearExpiry]
+  );
 
   const reset = useCallback(() => {
     setStatus('idle');
     setError(null);
-    setExpiredAt(null);
+    clearExpiry();
     setPassword(null);
     setOutcome(null);
-  }, []);
+  }, [clearExpiry]);
 
   // Fires selectTarget exactly once, only when a caller (the sheet) hands us a
   // pre-resolved target. The desktop drawer never passes autoSelectTarget, so
@@ -187,6 +191,7 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
     error,
     outcome,
     expiredAt,
+    expiresSoonAt,
     run,
     renew,
     reset,

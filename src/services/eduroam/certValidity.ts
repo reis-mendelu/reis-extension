@@ -83,3 +83,20 @@ export function certNotAfter(der: Uint8Array): Date | null {
   if (notAfter.tag !== UTC_TIME && notAfter.tag !== GENERALIZED_TIME) return null;
   return parseTime(der, notAfter);
 }
+
+/**
+ * How early reIS offers a new certificate. Safe at any point: IS does not
+ * revoke the current certificate when a new one is generated, so renewing early
+ * breaks nothing and keeps eduroam from dropping on the day it expires.
+ */
+export const RENEW_WITHIN_DAYS = 30;
+
+export type CertExpiryState = 'expired' | 'soon' | 'ok';
+
+/** Where `expiresAt` stands at `now`. An unknown expiry is `ok`: the check only adds information. */
+export function certExpiryState(expiresAt: Date | null, now: number): CertExpiryState {
+  if (!expiresAt) return 'ok';
+  const left = expiresAt.getTime() - now;
+  if (left <= 0) return 'expired';
+  return left <= RENEW_WITHIN_DAYS * 86_400_000 ? 'soon' : 'ok';
+}

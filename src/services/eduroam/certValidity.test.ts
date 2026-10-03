@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { certNotAfter } from './certValidity';
+import { certNotAfter, certExpiryState, RENEW_WITHIN_DAYS } from './certValidity';
 import { base64ToBytes } from './base64';
 
 // Synthetic certificates from a throwaway test CA (openssl x509 -req with
@@ -35,5 +35,30 @@ describe('certNotAfter', () => {
     ['truncated', base64ToBytes(UTC_2027).slice(0, 80)],
   ])('returns null for %s input', (_, bytes) => {
     expect(certNotAfter(bytes)).toBeNull();
+  });
+});
+
+describe('certExpiryState', () => {
+  const now = Date.UTC(2026, 9, 3, 12);
+  const days = (n: number) => new Date(now + n * 86_400_000);
+
+  it('is expired at and after notAfter', () => {
+    expect(certExpiryState(days(0), now)).toBe('expired');
+    expect(certExpiryState(days(-200), now)).toBe('expired');
+  });
+
+  // Regenerating does not revoke the current certificate, so offering it
+  // early costs nothing and keeps eduroam from dropping on the day.
+  it(`is soon within ${RENEW_WITHIN_DAYS} days`, () => {
+    expect(certExpiryState(days(1), now)).toBe('soon');
+    expect(certExpiryState(days(RENEW_WITHIN_DAYS), now)).toBe('soon');
+  });
+
+  it('is fine beyond that', () => {
+    expect(certExpiryState(days(RENEW_WITHIN_DAYS + 1), now)).toBe('ok');
+  });
+
+  it('treats an unknown expiry as fine — the check only adds information', () => {
+    expect(certExpiryState(null, now)).toBe('ok');
   });
 });
