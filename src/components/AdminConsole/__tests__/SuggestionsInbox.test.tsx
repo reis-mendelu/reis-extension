@@ -52,6 +52,19 @@ describe('SuggestionsInbox', () => {
     expect(screen.getByText('A'.repeat(120))).toHaveClass('min-w-0', 'break-words');
   });
 
+  // jsdom has no layout either, so this pins the classes. Both consoles already
+  // put the inbox in a pane that scrolls (AdminConsole's flex-1 overflow-y-auto,
+  // MobileAdminConsole's h-full overflow-y-auto). A max-h-96 scroller nested in
+  // it held the list to 384px and left the rest of the pane empty — measured at
+  // tablet and desktop widths, where three cards showed above blank space.
+  it('flows in the parent pane instead of scrolling inside a fixed-height box', () => {
+    useAppStore.setState({ suggestions: [row] });
+    render(<SuggestionsInbox />);
+    const list = screen.getByRole('list');
+    expect(list.className).not.toMatch(/\bmax-h-/);
+    expect(list).not.toHaveClass('overflow-y-auto');
+  });
+
   it('marks a suggestion done through the store', () => {
     const updateSuggestionStatus = vi.fn().mockResolvedValue(undefined);
     useAppStore.setState({ suggestions: [row], suggestionsUnread: 1, updateSuggestionStatus });
