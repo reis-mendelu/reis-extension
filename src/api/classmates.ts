@@ -195,7 +195,9 @@ export async function fetchSubjectClassmates(
 ): Promise<Classmate[]> {
   try {
     return rosterFrom(
-      await fetchClassmatesListingPages(`predmet=${predmetId};;studium=${studiumId};obdobi=${obdobi}`)
+      await fetchClassmatesListingPages(
+        `predmet=${predmetId};;studium=${studiumId};obdobi=${obdobi}`
+      )
     );
   } catch (e) {
     logError('Api.fetchSubjectClassmates', e, { predmetId });

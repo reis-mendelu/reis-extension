@@ -100,7 +100,9 @@ export function ClassmatesTab({
       return emptyState(t('classmates.loadFailed'), () => retry(courseCode));
     }
     if (showNoSeminar) {
-      return <NoSeminarState isUrl={classmatesUrl} onShowSubject={() => setChosenScope('subject')} />;
+      return (
+        <NoSeminarState isUrl={classmatesUrl} onShowSubject={() => setChosenScope('subject')} />
+      );
     }
     if (filteredClassmates.length === 0) return emptyState(t('classmates.noneFound'));
     return (

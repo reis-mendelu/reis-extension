@@ -28,10 +28,9 @@ function pageHtml(on: number, rewrite: (html: string) => string = (h) => h): str
   const captured = CAPTURED[on];
   if (captured) return rewrite(captured);
   return rewrite(
-    CAPTURED[8]!.replaceAll('id=900080', `id=${900000 + on * 10}`).replaceAll(
-      'id=900081',
-      `id=${900000 + on * 10 + 1}`
-    )
+    CAPTURED[8]!
+      .replaceAll('id=900080', `id=${900000 + on * 10}`)
+      .replaceAll('id=900081', `id=${900000 + on * 10 + 1}`)
   );
 }
 
@@ -61,7 +60,9 @@ describe('fetchSubjectClassmates — the whole-subject list', () => {
     const all = await fetchSubjectClassmates('111111', '222222', '333');
 
     // on=0 links numerically only to on=8; on=9..11 appear only on later pages.
-    const pages = requested().map(onOf).sort((a, b) => a - b);
+    const pages = requested()
+      .map(onOf)
+      .sort((a, b) => a - b);
     expect(pages).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
     expect(all).toHaveLength(26);
     expect(new Set(all.map((c) => c.personId)).size).toBe(26);
@@ -104,7 +105,8 @@ describe('fetchClassmates — the seminar group', () => {
   beforeEach(() => vi.clearAllMocks());
 
   // A seminar's page bar carries its skupina; follow only links to that group.
-  const asSeminar = (html: string) => html.replaceAll('obdobi=333;on=', 'obdobi=333;skupina=444;on=');
+  const asSeminar = (html: string) =>
+    html.replaceAll('obdobi=333;on=', 'obdobi=333;skupina=444;on=');
 
   it('fetches every page once, through the same crawler', async () => {
     serve(asSeminar);
@@ -112,9 +114,11 @@ describe('fetchClassmates — the seminar group', () => {
     expect(requested()[0]).toBe(
       'https://is.mendelu.cz/auth/student/spoluzaci.pl?predmet=111111;;studium=222222;obdobi=333;skupina=444;lang=cz'
     );
-    expect(requested().map(onOf).sort((a, b) => a - b)).toEqual([
-      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
-    ]);
+    expect(
+      requested()
+        .map(onOf)
+        .sort((a, b) => a - b)
+    ).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
     expect(roster).toHaveLength(26);
   });
 
