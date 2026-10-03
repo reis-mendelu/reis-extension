@@ -35,6 +35,7 @@ extension PdfInkViewController {
     func startRecall(only ids: Set<String>? = nil) -> Bool {
         guard let session = RecallSession(covers: covers, only: ids) else { return false }
         endArrangingPictures(restoringPens: false)
+        putTapeDown()
         recall = session
         titleBeforeRecall = titleBeforeRecall ?? title
         revealedCovers = []
@@ -42,6 +43,14 @@ extension PdfInkViewController {
         showToolPicker()
         showRecallStep()
         return true
+    }
+
+    /// A test is for writing answers: with the tape in hand the Pencil would
+    /// make covers and a tap would take the one being asked away.
+    private func putTapeDown() {
+        guard #available(iOS 18.0, *), CoverTool.isSelected(in: toolPicker) else { return }
+        toolPicker.selectedToolItemIdentifier = "com.apple.ink.pen"
+        coverToolDidChange()
     }
 
     func showRecallStep() {

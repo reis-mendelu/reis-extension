@@ -121,6 +121,23 @@ final class ReaderRecallTests: XCTestCase {
         XCTAssertFalse(reader.makingCovers)
     }
 
+    /// Found driving the simulator: a test started with the tape in hand, so
+    /// the Pencil could not write an answer and a tap on the cover asked about
+    /// would have taken it away. Starting a test hands back the pen.
+    func testATestStartedWithTheTapeInHandHandsBackThePen() throws {
+        guard #available(iOS 18.0, *) else { throw XCTSkip("custom palette items are iOS 18+") }
+        let (reader, _) = try host.show(pages: 1)
+        reader.addCover(rect(y: 10), onPage: 0)
+        reader.toolPicker.selectedToolItemIdentifier = CoverTool.identifier
+        reader.coverToolDidChange()
+
+        XCTAssertTrue(reader.startRecall())
+
+        XCTAssertFalse(reader.makingCovers)
+        XCTAssertEqual(reader.toolPicker.selectedToolItemIdentifier, "com.apple.ink.pen")
+        XCTAssertEqual(reader.overlays[0]?.coverLayer.isMakingCovers, false)
+    }
+
     /// An answer is not something the palette's undo takes back.
     func testUndoNeverTakesBackAnAnswer() throws {
         let (reader, _) = try host.show(pages: 1)

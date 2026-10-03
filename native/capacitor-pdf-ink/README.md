@@ -12,12 +12,20 @@ There is no Android half on purpose — Android keeps the pdf.js viewer. The gua
 
 ## Files
 
-- `ios/Sources/PdfInkPlugin/InkArchive.swift` — the ink file format (binary plist of
-  `{version, pageCount, pages: [pageIndex: PKDrawing data]}`). Foundation only.
+- `ios/Sources/PdfInkPlugin/InkArchive.swift` — the ink file format, a binary plist at
+  version 3: `{version, pageCount, pages: [pageIndex: PKDrawing data], insertedPages,
+  pictures: [pageIndex: [PagePicture]], coverCards: [pageIndex: [PageCover]]}`. New keys are
+  additive and never bump the version (see the file's header). Foundation only.
 - `ios/Sources/PdfInkPlugin/InkStore.swift` — load/save/delete; a corrupt file is renamed
   `*.ink.bad` rather than overwritten. Foundation only.
 - `ios/Sources/PdfInkPlugin/PdfInkViewController.swift` — the reader.
 - `ios/Sources/PdfInkPlugin/PdfInkPlugin.swift` — `isAvailable`, `open`.
+- Covers over an answer: `CoverTool.swift` (the tape in the palette, iOS 18+), `PageCover.swift`,
+  `PageCovers.swift`, `CoverLayerView.swift`, `PdfInkViewController+Covers.swift`.
+- "Vyzkoušet se": `RecallSession.swift`, `PdfInkViewController+Recall.swift`.
+- The rest of the reader: `PdfInkSpace.swift` (split view + file list), the other
+  `PdfInkViewController+*.swift` extensions, `InkPages.swift`, `InkExport.swift`, pictures
+  (`PagePicture(s)`, `PictureLayerView`, `PictureIngest`).
 
 ## Tests
 

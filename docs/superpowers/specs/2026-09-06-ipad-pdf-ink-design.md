@@ -634,3 +634,9 @@ release build.
   many students; the document picker, images only, out of process, no
   permission; the copy is ingested and deleted.
 
+## Addendum 2026-10-03: covers are back, as a tape in the palette, with "Vyzkoušet se"
+
+The cover tool withdrawn on 2026-09-07 (above) returns. It is now a pen in the
+palette (the tape, `CoverTool`), with ids and an answer history (`coverCards`)
+and a step-through self-test. Design: `2026-10-03-ipad-recall-covers-design.md`.
+The WITHDRAWN addendum above stays as the record of why archive version 3 exists.

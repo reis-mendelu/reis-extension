@@ -113,14 +113,36 @@ whenever one was removed.
 - The cover layer is exactly the page with no transform, like the picture layers;
   its coordinates are page points. `PageOverlayView`'s size rule is untouched.
 
-## Making covers
+## Making covers: the tape
 
-**From the `+` menu, like arranging pictures** (refined 2026-10-03 while
-planning). The `+` menu exists "so the bar stays at five buttons", and arranging
-pictures already shows how a mode looks in this reader: the pens go and the bar
-becomes one *Hotovo*. *Zakrýt odpověď* is a fourth section of that menu and
-enters the same shape of mode with its own *Hotovo*. The withdrawn tool's
-separate `square.dashed` bar button is not brought back.
+**Revised 2026-10-03 after the first device build.** The planned `+` menu entry
+with a mode of its own ("Zakrýt odpověď", a bar that becomes one *Hotovo*) was
+built and put on the iPad, and Dominik's verdict was that it was not intuitive:
+"it should be a pen". Covers are now made with **the tape**, a
+`PKToolPickerCustomItem` in the pen palette right after the marker (`CoverTool`).
+
+- **Pick the tape, drag the Pencil**: a grey block, the way a pen would draw ink.
+  While the tape is picked PencilKit switches drawing off on every canvas that
+  observes the palette, and the tape's drag (a pan on `PageOverlayView`, above
+  the canvas) takes the stroke. Every other gesture on the page waits for it,
+  PDFKit's markup gestures over text included.
+- **A finger still scrolls** when a Pencil is paired: the drag takes only
+  touches that draw (the Pencil, plus the finger when the finger draws).
+- **A drawing tap with the tape takes a cover away**, and the palette's undo
+  brings it back: covers go on the same undo manager as strokes and pictures. A
+  finger tap (with a Pencil paired), or any tap with another tool, opens or
+  shuts the cover.
+- **No bar of its own, no mode.** The pens never leave the screen.
+- **iOS 18+** for the custom palette item. Below that the palette is Apple's
+  default: covers can be opened and tested, not made (iPads stuck below
+  iPadOS 18 are the 6th generation and older).
+- **The palette's selection outlives the reader.** A reader that opens with the
+  tape picked starts in tape mode, and a canvas made then is never handed
+  `selectedTool`: with the tape picked that is not a tool a canvas can hold, and
+  PencilKit traps on it ("Unknown PKTool type"), found by the Swift suite.
+- **Starting a test hands back the pen**, and the tape does nothing during a test:
+  the Pencil is for writing answers, and a tap must look under the cover being
+  asked, never take it away. Found driving the simulator.
 
 As in `d5026aaef`, a shut cover is filled `systemGray4` and an open one leaves a
 dashed `systemGray2` outline; the layer is pinned light like the canvas (the page
@@ -186,7 +208,7 @@ like the existing ones: `t('mobile.pdfInk.*')` in `usePdfInkStrings.ts`, typed i
 
 | key | cs | en |
 | --- | --- | --- |
-| cover | Zakrýt odpověď | Cover an answer |
+| cover | Páska | Tape |
 | recallStart | Vyzkoušet se | Test me |
 | recallReveal | Ukázat | Show |
 | recallKnew | Znám | I know it |

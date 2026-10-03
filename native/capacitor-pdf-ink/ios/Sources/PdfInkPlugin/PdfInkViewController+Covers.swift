@@ -87,7 +87,8 @@ extension PdfInkViewController {
     func applyCoverMode(to overlay: PageOverlayView) {
         overlay.coverLayer.revealed = revealedCovers
         // Arranging moves pictures with the finger; covers keep out of its way.
-        overlay.coverLayer.isMakingCovers = makingCovers && !arrangingPictures
+        // In a test a tap on a cover looks under it, never takes it away.
+        overlay.coverLayer.isMakingCovers = makingCovers && !arrangingPictures && recall == nil
         overlay.coverLayer.isUserInteractionEnabled = !arrangingPictures
         // PencilKit switches drawing off on the canvases observing the palette
         // when the tape is picked. A canvas made after that is told here.
