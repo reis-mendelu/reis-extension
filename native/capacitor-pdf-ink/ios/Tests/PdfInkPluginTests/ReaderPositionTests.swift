@@ -100,7 +100,50 @@ final class ReaderPositionTests: XCTestCase {
         XCTAssertEqual(closedWith, ["l1": 7])
     }
 
+    /// Moving between files in the sidebar: each file comes back on its own page.
+    func testEachFileInTheSpaceKeepsItsOwnPage() throws {
+        let urlA = try write(deck(pages: 10)), urlB = try write(deck(pages: 10))
+        let space = PdfInkSpace(
+            courseTitle: "EBC-AP",
+            files: [
+                .init(link: "l1", name: "A", date: "d", pdfURL: urlA, inkURL: ink(), lastPageIndex: 3),
+                .init(link: "l2", name: "B", date: "d", pdfURL: urlB, inkURL: ink()),
+            ],
+            currentLink: "l1",
+            strings: PdfInkStrings(nil))
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 820, height: 1000))
+        window.rootViewController = space.split
+        window.isHidden = false
+        windows.append(window)
+        space.start(with: try XCTUnwrap(InkDocument.open(at: urlA)))
+        window.layoutIfNeeded()
+        let nav = try XCTUnwrap(space.split.viewController(for: .secondary) as? UINavigationController)
+        let reader = try XCTUnwrap(nav.topViewController as? PdfInkViewController)
+        let list = try XCTUnwrap(space.split.viewController(for: .primary) as? FileListViewController)
+        let pick = { (link: String) in
+            list.onSelect?(link)
+            window.layoutIfNeeded()
+        }
+        XCTAssertEqual(displayed(reader), 3)
+
+        pick("l2")
+        XCTAssertEqual(displayed(reader), 0, "B inherited A's page")
+        reader.pdfView.go(to: try XCTUnwrap(reader.document?.page(at: 5)))
+
+        pick("l1")
+        XCTAssertEqual(displayed(reader), 3)
+        pick("l2")
+        XCTAssertEqual(displayed(reader), 5)
+        XCTAssertEqual(space.snapshotPositions(), ["l1": 3, "l2": 5])
+    }
+
     // MARK: - Helpers
+
+    private func write(_ document: PDFDocument) throws -> URL {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).pdf")
+        XCTAssertTrue(document.write(to: url))
+        return url
+    }
 
     private var windows: [UIWindow] = []
 
