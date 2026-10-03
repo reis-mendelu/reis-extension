@@ -60,13 +60,14 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
         setPassword(extractionPw);
         // Dismissing Android's dialog is a choice, not a fault: go back to idle
         // so the button is simply offered again, with no error banner.
-        // `stale-association` joins `failed` in the error state (#261): iOS
-        // installed nothing, so it must not land on the done branch — that is
-        // the bug. The copy differs, driven off `outcome`, not off status.
+        // `stale-association` and `renewal-blocked` join `failed` in the error
+        // state (#261): iOS installed nothing, so they must not land on the
+        // done branch — that is the bug. The copy differs, driven off
+        // `outcome`, not off status.
         setStatus(
           result === 'cancelled'
             ? 'idle'
-            : result === 'failed' || result === 'stale-association'
+            : result === 'failed' || result === 'stale-association' || result === 'renewal-blocked'
               ? 'error'
               : 'done'
         );

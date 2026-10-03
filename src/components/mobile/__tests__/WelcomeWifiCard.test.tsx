@@ -61,6 +61,13 @@ describe('WelcomeWifiCard', () => {
     });
   });
 
+  it('does not read a blocked renewal as done', () => {
+    renderCard({ status: 'error', outcome: 'renewal-blocked' });
+
+    expect(screen.queryByText(/Hotovo/)).not.toBeInTheDocument();
+    expect(screen.getByText(/nový certifikát/i)).toBeInTheDocument();
+  });
+
   describe('stale association (#261)', () => {
     /**
      * The regression this pins: iOS answers `alreadyAssociated` whenever the

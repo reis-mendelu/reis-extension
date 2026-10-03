@@ -18,8 +18,19 @@ import Security
  *    exactly that group at authentication time. NEVER request persistent
  *    references (kSecReturnPersistentRef): iOS then rejects the profile as
  *    invalid EAP settings.
- * 3. Old reIS items are deleted first, so re-running after the 366-day renewal
- *    replaces the credential instead of leaving two identities to pick from.
+ * 3. Items are ADDED, never deleted first. The installed configuration holds a
+ *    persistent reference to each item (see setIdentity in the SDK header) and
+ *    resolves it at EAP time. Deleting and re-adding even an unchanged item
+ *    mints a new reference and kills the old one — measured in the simulator
+ *    keychain, 2026-10-03. When the device is on eduroam, `apply` answers
+ *    `alreadyAssociated` and replaces nothing, so the configuration it kept was
+ *    left pointing at deleted items, and the next full re-authentication
+ *    failed: eduroam dropped. A re-add of an unchanged item returns
+ *    errSecDuplicateItem and keeps the live reference instead.
+ * 4. A superseded identity (the 366-day renewal) is deleted only after `apply`
+ *    saved a configuration that uses the new one, and a new identity that no
+ *    configuration took is rolled back — so the keychain never holds an
+ *    identity whose presence would misreport what is installed.
  *
  * Every failure names its stage, mirroring the Android plugin: "rejected" is
  * only actionable if we know whether the PKCS#12, the keychain, the settings or
@@ -110,10 +121,10 @@ public class EduroamPlugin: CAPPlugin, CAPBridgedPlugin {
         // The API requires the app in the foreground and presents a system alert.
         DispatchQueue.main.async {
             do {
-                let configuration = try self.buildConfiguration(
+                let prepared = try self.buildConfiguration(
                     p12Base64: p12Base64, passphrase: passphrase, caDerBase64: caDerBase64)
-                NEHotspotConfigurationManager.shared.apply(configuration) { error in
-                    self.finish(call, error: error)
+                NEHotspotConfigurationManager.shared.apply(prepared.configuration) { error in
+                    self.finish(call, error: error, prepared: prepared)
                 }
             } catch let e as StageError {
                 call.reject(e.message)
@@ -125,8 +136,21 @@ public class EduroamPlugin: CAPPlugin, CAPBridgedPlugin {
 
     // MARK: - Building the configuration
 
+    /// The configuration to apply, plus what `finish` needs to settle the
+    /// keychain once iOS has said what it did with it.
+    private struct Prepared {
+        let configuration: NEHotspotConfiguration
+        /// The keychain's own reference (not the PKCS#12 import's), so the
+        /// rollback and cleanup delete exactly the item the setters resolved.
+        let identity: SecIdentity
+        /// False when this exact identity was already in the keychain — the
+        /// same certificate as a previous run, not a renewal.
+        let identityIsNew: Bool
+        let group: String
+    }
+
     private func buildConfiguration(p12Base64: String, passphrase: String, caDerBase64: String)
-        throws -> NEHotspotConfiguration
+        throws -> Prepared
     {
         // decode
         guard let p12 = Data(base64Encoded: p12Base64), !p12.isEmpty else {
@@ -162,15 +186,13 @@ public class EduroamPlugin: CAPPlugin, CAPBridgedPlugin {
 
         let group = try accessGroup()
 
-        // clean
-        deleteOurItems(group: group)
-
-        // keychain
-        try add(
-            [
-                kSecValueRef as String: identity,
-                kSecAttrLabel as String: Self.identityLabel,
-            ], group: group, stage: "keychain", what: "identity")
+        // keychain — add only; see the file header, point 3.
+        let identityIsNew =
+            try add(
+                [
+                    kSecValueRef as String: identity,
+                    kSecAttrLabel as String: Self.identityLabel,
+                ], group: group, stage: "keychain", what: "identity") == errSecSuccess
         for cert in chain {
             try add(
                 [
@@ -187,13 +209,7 @@ public class EduroamPlugin: CAPPlugin, CAPBridgedPlugin {
             ], group: group, stage: "keychain", what: "root certificate")
 
         // The setters resolve keychain-backed references, so read both back.
-        let storedIdentity: SecIdentity = try copyMatching(
-            [
-                kSecClass as String: kSecClassIdentity,
-                kSecAttrLabel as String: Self.identityLabel,
-                kSecAttrAccessGroup as String: group,
-                kSecReturnRef as String: true,
-            ], stage: "keychain", what: "identity")
+        let storedIdentity = try storedIdentity(matching: identity, group: group)
         let storedRoot: SecCertificate = try copyMatching(
             [
                 kSecClass as String: kSecClassCertificate,
@@ -222,15 +238,28 @@ public class EduroamPlugin: CAPPlugin, CAPBridgedPlugin {
 
         // apply — joinOnce stays false (unsupported for EAP anyway); no
         // lifeTimeInDays (does not apply to enterprise networks).
-        return NEHotspotConfiguration(ssid: Self.ssid, eapSettings: eap)
+        return Prepared(
+            configuration: NEHotspotConfiguration(ssid: Self.ssid, eapSettings: eap),
+            identity: storedIdentity, identityIsNew: identityIsNew, group: group)
     }
 
     // MARK: - Outcome mapping
 
-    private func finish(_ call: CAPPluginCall, error: Error?) {
+    private func finish(_ call: CAPPluginCall, error: Error?, prepared: Prepared) {
         guard let error = error else {
+            // The configuration now references the identity just added, so a
+            // renewal's predecessor has nothing left pointing at it.
+            deleteIdentities(group: prepared.group, except: prepared.identity)
             call.resolve(["outcome": "saved"])
             return
+        }
+        // Nothing was installed on these paths, so a new identity is referenced
+        // by nothing. Leaving it would make the next run's add a duplicate and
+        // read a renewal that never took as "the same certificate".
+        let rollBack = {
+            if prepared.identityIsNew {
+                self.deleteIdentity(prepared.identity, group: prepared.group)
+            }
         }
         let ns = error as NSError
         guard ns.domain == NEHotspotConfigurationErrorDomain else {
@@ -240,6 +269,7 @@ public class EduroamPlugin: CAPPlugin, CAPBridgedPlugin {
         switch ns.code {
         case NEHotspotConfigurationError.userDenied.rawValue:
             // The student tapped Cancel. A choice, not a fault.
+            rollBack()
             call.resolve(["outcome": "cancelled"])
         case NEHotspotConfigurationError.alreadyAssociated.rawValue:
             // The device is on eduroam right now — and that is ALL this code
@@ -248,9 +278,18 @@ public class EduroamPlugin: CAPPlugin, CAPBridgedPlugin {
             // reinstall-and-retap on campus lands here with nothing installed.
             // Reporting it as success sent students to campus believing eduroam
             // was set up. Ask what is actually configured instead of inferring.
+            //
+            // Nothing was replaced either way, and because the items were only
+            // added, the configuration iOS kept still resolves its references.
+            rollBack()
             NEHotspotConfigurationManager.shared.getConfiguredSSIDs { ssids in
                 if ssids.contains(Self.ssid) {
-                    call.resolve(["outcome": "already-configured"])
+                    // A new identity means IS holds a renewed certificate that
+                    // the kept configuration does not use. Saying "already
+                    // set up" here is how a renewal looked done and was not.
+                    call.resolve([
+                        "outcome": prepared.identityIsNew ? "renewal-blocked" : "already-configured"
+                    ])
                 } else {
                     // Associated, but nothing of ours backs it. iOS will keep
                     // short-circuiting every apply until the student forgets
@@ -259,6 +298,7 @@ public class EduroamPlugin: CAPPlugin, CAPBridgedPlugin {
                 }
             }
         case NEHotspotConfigurationError.pending.rawValue:
+            rollBack()
             call.reject("FAILED at stage=apply: a previous eduroam request is still open")
         default:
             // invalidEAPSettings (4), internal (8), systemConfiguration (10),
@@ -283,6 +323,13 @@ public class EduroamPlugin: CAPPlugin, CAPBridgedPlugin {
             // and iOS raises its own "Unable to join the network" alert
             // separately. So the case this was written for never reaches here;
             // the sheet's copy handles it instead.
+            //
+            // No rollback here, deliberately. An earlier note held that `apply`
+            // can error over a configuration that did persist; if any code in
+            // this branch ever does, deleting the new identity would recreate
+            // the dead-reference bug. A leftover identity costs only precision
+            // on the next run's duplicate check; a dead reference costs the
+            // network.
             call.resolve([
                 "outcome": "failed",
                 "detail": "NEHotspotConfigurationError \(ns.code)",
@@ -309,23 +356,84 @@ public class EduroamPlugin: CAPPlugin, CAPBridgedPlugin {
         return prefix + Self.accessGroupSuffix
     }
 
-    private func deleteOurItems(group: String) {
-        let queries: [[String: Any]] = [
-            [kSecClass as String: kSecClassIdentity, kSecAttrLabel as String: Self.identityLabel],
-            [kSecClass as String: kSecClassCertificate, kSecAttrLabel as String: Self.chainLabel],
-            [kSecClass as String: kSecClassCertificate, kSecAttrLabel as String: Self.rootLabel],
-        ]
-        for var q in queries {
-            q[kSecAttrAccessGroup as String] = group
-            // errSecItemNotFound is success: the caller asked for it to be gone.
-            SecItemDelete(q as CFDictionary)
+    /// The keychain's own reference to `identity`, matched by certificate.
+    ///
+    /// Not a label query on its own: across a renewal two identities share the
+    /// label until `finish` removes the old one, and a single-result label
+    /// query returns the OLD one (measured), which would configure the expired
+    /// certificate. Not `kSecValueRef` either: for an identity that query
+    /// reports errSecSuccess and returns no reference at all (measured).
+    private func storedIdentity(matching identity: SecIdentity, group: String) throws
+        -> SecIdentity
+    {
+        var found: CFTypeRef?
+        let status = SecItemCopyMatching(
+            [
+                kSecClass as String: kSecClassIdentity,
+                kSecAttrLabel as String: Self.identityLabel,
+                kSecAttrAccessGroup as String: group,
+                kSecReturnRef as String: true,
+                kSecMatchLimit as String: kSecMatchLimitAll,
+            ] as CFDictionary, &found)
+        let want = certificateData(identity)
+        guard status == errSecSuccess, let all = found as? [SecIdentity],
+            let match = all.first(where: { certificateData($0) == want })
+        else {
+            throw StageError(
+                stage: "keychain",
+                reason: "SecItemCopyMatching(identity) returned OSStatus \(status) without this certificate")
+        }
+        return match
+    }
+
+    /// Deletes one identity (its certificate and private key) by value.
+    private func deleteIdentity(_ identity: SecIdentity, group: String) {
+        // errSecItemNotFound is success: the caller asked for it to be gone.
+        SecItemDelete(
+            [
+                kSecClass as String: kSecClassIdentity,
+                kSecValueRef as String: identity,
+                kSecAttrAccessGroup as String: group,
+            ] as CFDictionary)
+    }
+
+    /// Deletes every reIS identity but `keep`. Identities only: certificates
+    /// are unique by issuer and serial, so the root and chain sit under
+    /// whichever label added them first (the root usually under the chain
+    /// label, measured), and a label-based sweep could delete the root the new
+    /// configuration pins. Those never change across a renewal anyway.
+    private func deleteIdentities(group: String, except keep: SecIdentity) {
+        var found: CFTypeRef?
+        let status = SecItemCopyMatching(
+            [
+                kSecClass as String: kSecClassIdentity,
+                kSecAttrLabel as String: Self.identityLabel,
+                kSecAttrAccessGroup as String: group,
+                kSecReturnRef as String: true,
+                kSecMatchLimit as String: kSecMatchLimitAll,
+            ] as CFDictionary, &found)
+        guard status == errSecSuccess, let identities = found as? [SecIdentity] else { return }
+        let kept = certificateData(keep)
+        for identity in identities where certificateData(identity) != kept {
+            deleteIdentity(identity, group: group)
         }
     }
 
-    /// SecItemAdd into the access group. `errSecDuplicateItem` is tolerated:
-    /// the chain usually contains the root too, so the root add is a repeat.
+    private func certificateData(_ identity: SecIdentity) -> Data? {
+        var cert: SecCertificate?
+        guard SecIdentityCopyCertificate(identity, &cert) == errSecSuccess, let cert = cert else {
+            return nil
+        }
+        return SecCertificateCopyData(cert) as Data
+    }
+
+    /// SecItemAdd into the access group. `errSecDuplicateItem` is tolerated —
+    /// the chain usually contains the root too, and a re-run adds the same
+    /// items again — and returned, so the caller can tell a renewal from a
+    /// repeat. A duplicate keeps the existing item and its live reference.
+    @discardableResult
     private func add(_ attributes: [String: Any], group: String, stage: String, what: String)
-        throws
+        throws -> OSStatus
     {
         var attrs = attributes
         attrs[kSecAttrAccessGroup as String] = group
@@ -337,6 +445,7 @@ public class EduroamPlugin: CAPPlugin, CAPBridgedPlugin {
             throw StageError(
                 stage: stage, reason: "SecItemAdd(\(what)) returned OSStatus \(status)")
         }
+        return status
     }
 
     private func copyMatching<T>(_ query: [String: Any], stage: String, what: String) throws -> T

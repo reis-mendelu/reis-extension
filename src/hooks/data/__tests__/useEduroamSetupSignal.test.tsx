@@ -72,19 +72,22 @@ describe('useEduroamSetup engagement signal', () => {
   // The remaining native outcomes installed nothing. `already-configured` is
   // the subtle one: the network was there before reIS was asked, so counting it
   // would report students as newly set up who were already on eduroam.
-  it.each<EduroamConfigOutcome>(['already-configured', 'cancelled', 'failed', 'stale-association'])(
-    'counts nothing when the outcome is %s',
-    async (outcome) => {
-      configureEduroam.mockResolvedValue(outcome);
-      const { result } = renderHook(() => useEduroamSetup());
+  it.each<EduroamConfigOutcome>([
+    'already-configured',
+    'cancelled',
+    'failed',
+    'stale-association',
+    'renewal-blocked',
+  ])('counts nothing when the outcome is %s', async (outcome) => {
+    configureEduroam.mockResolvedValue(outcome);
+    const { result } = renderHook(() => useEduroamSetup());
 
-      await act(async () => {
-        await result.current.run('android');
-      });
+    await act(async () => {
+      await result.current.run('android');
+    });
 
-      expect(trackFeatureSignal).not.toHaveBeenCalled();
-    }
-  );
+    expect(trackFeatureSignal).not.toHaveBeenCalled();
+  });
 
   it.each(['mac', 'windows'] as const)(
     'counts a delivered profile separately on %s',
