@@ -8,6 +8,7 @@ import { createZaznamnikSlice } from './slices/createZaznamnikSlice';
 import { createFilesSlice } from './slices/createFilesSlice';
 import { createNotesSlice } from './slices/createNotesSlice';
 import { createClassmatesSlice } from './slices/createClassmatesSlice';
+import { createSubjectClassmatesSlice } from './slices/createSubjectClassmatesSlice';
 import { createSubjectsSlice } from './slices/createSubjectsSlice';
 import { createSyncSlice } from './slices/createSyncSlice';
 import { createThemeSlice } from './slices/createThemeSlice';
@@ -30,6 +31,7 @@ import { createCustomEventsSlice } from './slices/createCustomEventsSlice';
 import { createNotificationSlice } from './slices/createNotificationSlice';
 import { createSearchSlice } from './slices/createSearchSlice';
 import { createRecentPdfsSlice } from './slices/createRecentPdfsSlice';
+import { createPdfPositionsSlice } from './slices/createPdfPositionsSlice';
 import { createPersonProfileSlice } from './slices/createPersonProfileSlice';
 import { createBulletinSlice } from './slices/createBulletinSlice';
 import { createViewportSlice } from './slices/createViewportSlice';
@@ -65,6 +67,7 @@ export const useAppStore = create<AppState>()(
     ...createFilesSlice(...a),
     ...createNotesSlice(...a),
     ...createClassmatesSlice(...a),
+    ...createSubjectClassmatesSlice(...a),
     ...createSubjectsSlice(...a),
     ...createSyncSlice(...a),
     ...createThemeSlice(...a),
@@ -87,6 +90,7 @@ export const useAppStore = create<AppState>()(
     ...createNotificationSlice(...a),
     ...createSearchSlice(...a),
     ...createRecentPdfsSlice(...a),
+    ...createPdfPositionsSlice(...a),
     ...createPersonProfileSlice(...a),
     ...createBulletinSlice(...a),
     ...createViewportSlice(...a),

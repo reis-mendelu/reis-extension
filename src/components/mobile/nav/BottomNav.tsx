@@ -2,6 +2,7 @@ import { Calendar, CalendarCheck, Book, MapPin, User } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import type { MobileTab } from '../../../store/types';
+import { useCalendarToday } from '../screens/calendar/useCalendarToday';
 
 // Order and membership are checked against MOBILE_TABS below, so this table
 // and the store's list cannot drift apart.
@@ -33,6 +34,7 @@ export function BottomNav() {
   const activeTab = useAppStore((s) => s.mobileTab);
   const setMobileTab = useAppStore((s) => s.setMobileTab);
   const keyboardOpen = useAppStore((s) => s.keyboardOpen);
+  const { goToday } = useCalendarToday();
   const { t } = useTranslation();
 
   if (keyboardOpen) return null;
@@ -55,7 +57,14 @@ export function BottomNav() {
             key={id}
             aria-current={active ? 'page' : undefined}
             aria-label={t(labelKey)}
-            onClick={() => setMobileTab(id)}
+            // Tapping the tab you are already on takes you home — the iOS
+            // convention, and on the calendar home is today. setMobileTab
+            // still runs first, so the re-tap closes sheets as it always did.
+            // From another tab the calendar opens where the student left it.
+            onClick={() => {
+              setMobileTab(id);
+              if (active && id === 'calendar') goToday();
+            }}
             className={`flex min-h-11 min-w-11 items-center gap-1.5 rounded-full px-3 transition-colors max-[359px]:px-2 ${
               active ? 'bg-primary/15 text-[var(--tone-primary)]' : 'text-base-content/60'
             }`}

@@ -45,7 +45,9 @@ describe('showOnMap placement', () => {
    * the defect had nowhere to happen, and there is no tap to fix.
    */
   it.each([
-    'components/mobile/screens/calendar/DayBody.tsx',
+    // The row's tap moved out of DayBody into useOpenLesson, which the agenda
+    // and the week grid share, so both views send an answered event the same way.
+    'components/mobile/screens/calendar/useOpenLesson.ts',
     'components/mobile/screens/calendar/useShowLessonOnMap.ts',
   ])('%s sends an answered event to the map', (file) => {
     expect(read(file)).toMatch(/eventIdFromRsvpBlock|showOnMap\(lesson\)/);

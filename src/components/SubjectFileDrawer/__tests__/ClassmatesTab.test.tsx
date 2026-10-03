@@ -33,10 +33,28 @@ vi.mock('../../../hooks/data/useClassmates', () => ({
   useClassmates: () => hook.result,
 }));
 
+const subjectHook = vi.hoisted(() => ({
+  active: [] as boolean[],
+  result: {
+    classmates: null as unknown[] | null,
+    isLoading: false,
+    error: undefined as string | undefined,
+  },
+}));
+
+vi.mock('../../../hooks/data/useSubjectClassmates', () => ({
+  useSubjectClassmates: (_code: string, active: boolean) => {
+    subjectHook.active.push(active);
+    return subjectHook.result;
+  },
+}));
+
 describe('ClassmatesTab', () => {
   beforeEach(() => {
     useAppStore.setState({ studiumId: '1', obdobiId: '2', language: 'cz' } as never);
     hook.result = { classmates, isLoading: false, error: null, noSeminar: false };
+    subjectHook.active = [];
+    subjectHook.result = { classmates: null, isLoading: false, error: undefined };
   });
 
   /**
@@ -56,6 +74,7 @@ describe('ClassmatesTab', () => {
   it('explains a subject without cvičení instead of claiming nobody is enrolled', () => {
     hook.result = { classmates: [], isLoading: false, error: null, noSeminar: true };
     render(<ClassmatesTab courseCode="EBC-MNG" />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Cvičení' }));
     expect(screen.getByText('Tento předmět nemá cvičení')).toBeInTheDocument();
     expect(screen.queryByText('Žádní spolužáci nenalezeni')).not.toBeInTheDocument();
     expect(screen.queryByText(/Spolužáci z tvého cvičení/)).not.toBeInTheDocument();
@@ -67,6 +86,7 @@ describe('ClassmatesTab', () => {
       subjects: { data: { 'EBC-MNG': { subjectId: '160001' } } },
     } as never);
     render(<ClassmatesTab courseCode="EBC-MNG" showIsBacklink={false} />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Cvičení' }));
     expect(screen.getByRole('link', { name: /IS MENDELU/ })).toHaveAttribute(
       'href',
       expect.stringContaining('spoluzaci.pl?predmet=160001;;studium=1;obdobi=2')

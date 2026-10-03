@@ -15,6 +15,8 @@ export interface PdfInkFileEntry {
   /** file:// URI of the cached PDF when the copy is fresh for `date`, else null. */
   pdfPath: string | null;
   inkPath: string;
+  /** The page the reader was last on (0-based), or null to start at the top. */
+  lastPageIndex: number | null;
 }
 
 export interface SubjectPdfInput {
@@ -62,6 +64,7 @@ export async function buildFileEntries(
       date: file.date,
       pdfPath: fresh ? await deps.fs.uri(pdfPath(key)) : null,
       inkPath: await deps.inkUri(key),
+      lastPageIndex: index[key]?.lastPageIndex ?? null,
     });
   }
   for (const kept of await keptFiles(deps, index, new Set(ordered.map((f) => f.link)))) {
@@ -91,6 +94,7 @@ async function keptFiles(
       date: entry.date,
       pdfPath: await deps.fs.uri(pdfPath(key)),
       inkPath: await deps.inkUri(key),
+      lastPageIndex: entry.lastPageIndex ?? null,
     });
   }
   return kept;

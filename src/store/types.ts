@@ -492,6 +492,8 @@ export type MobileSheet =
   | { kind: 'bulletin' }
   | { kind: 'confirm'; confirmId: string };
 
+export type MobileCalendarView = 'day' | 'week';
+
 export interface MobileUiSlice {
   mobileTab: MobileTab;
   mobileSelectedDayIso: string | null;
@@ -528,6 +530,10 @@ export interface MobileUiSlice {
   pullHintSeen: boolean | null;
   hydratePullHint: (o: { demo: boolean }) => Promise<void>;
   markPullHintSeen: () => void;
+  /** The calendar's day agenda or week grid, remembered per device. */
+  mobileCalendarView: MobileCalendarView;
+  setMobileCalendarView: (view: MobileCalendarView) => void;
+  hydrateCalendarView: () => Promise<void>;
 
   setMobileTab: (tab: MobileTab) => void;
   setMobileSelectedDay: (iso: string | null) => void;
@@ -670,6 +676,7 @@ export type AppState = ScheduleSlice &
   FilesSlice &
   NotesSlice &
   ClassmatesSlice &
+  import('./slices/createSubjectClassmatesSlice').SubjectClassmatesSlice &
   SubjectsSlice &
   SyncSlice &
   ThemeSlice &
@@ -695,6 +702,7 @@ export type AppState = ScheduleSlice &
   MobileUiSlice &
   import('./slices/createSearchSlice').SearchSlice &
   import('./slices/createRecentPdfsSlice').RecentPdfsSlice &
+  import('./slices/createPdfPositionsSlice').PdfPositionsSlice &
   import('./slices/createPersonProfileSlice').PersonProfileSlice &
   MapSlice &
   import('./slices/createRsvpSlice').RsvpSlice &

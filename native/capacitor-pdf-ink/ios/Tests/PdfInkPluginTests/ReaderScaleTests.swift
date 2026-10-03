@@ -227,7 +227,7 @@ final class SpaceExitTests: XCTestCase {
     func testTheSidebarsCloseClosesTheSpace() throws {
         let space = makeSpace()
         var closed = false
-        space.onClose = { _ in closed = true }
+        space.onClose = { _, _ in closed = true }
 
         let list = try XCTUnwrap(
             space.split.viewController(for: .primary) as? FileListViewController)
@@ -241,7 +241,7 @@ final class SpaceExitTests: XCTestCase {
     func testTheReadersExitClosesTheSpace() throws {
         let space = makeSpace()
         var closed = false
-        space.onClose = { _ in closed = true }
+        space.onClose = { _, _ in closed = true }
 
         let nav = try XCTUnwrap(
             space.split.viewController(for: .secondary) as? UINavigationController)

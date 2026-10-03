@@ -10,6 +10,7 @@ import { openTeamsChat } from '../../../mobile/teamsLink';
 import { TEAMS_ICON_PATH } from '../../../constants/icons';
 import { resolveRoomCode } from '../../../utils/mobile/resolveRoomCode';
 import { personInitials } from '../../../utils/mobile/personInitials';
+import { isPersonProfileUrl } from '../../../utils/isPersonProfileUrl';
 import type { MobileSheet } from '../../../store/types';
 
 type PersonSheetData = Extract<MobileSheet, { kind: 'person' }>;
@@ -23,10 +24,13 @@ export interface PersonSheetProps {
  * Content-size sheet for a person: who they are, how to reach them, and — for
  * staff — where to find them.
  *
- * Four things, and no fifth. The work phone IS publishes is gone: nobody rings
- * a lecturer, and on a phone-sized sheet an unused row costs more than it
- * gives. What is left is what a student actually does — read the name, take the
- * address, message them on Teams, walk to the office.
+ * The work phone IS publishes is gone: nobody rings a lecturer, and on a
+ * phone-sized sheet an unused row costs more than it gives. What is left is
+ * what a student actually does — read the name, take the address, message them
+ * on Teams, walk to the office. The name itself links to the person's page in
+ * IS, as the subject sheet's title does and the extension's hover card always
+ * has: that page carries what this sheet deliberately does not — office hours,
+ * the full contact block, the subjects they teach.
  *
  * The email is a COPY control rather than a mailto: link. A mailto: hands the
  * student to whichever mail app the OS picked years ago; the address on the
@@ -40,7 +44,7 @@ export interface PersonSheetProps {
  * resolve its room is worse than none.
  */
 export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const numericId = Number(sheet.personId);
   const { profile, isLoading, error } = usePersonProfile(
     Number.isFinite(numericId) ? numericId : undefined
@@ -71,6 +75,11 @@ export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
   // person there, so a profile with nothing but a private email gets the copy
   // row and no Teams button rather than a button that opens an empty search.
   const teamsEmail = profile?.universityEmail || null;
+  // Only a real IS id opens a page. A regex, not Number.isFinite: Number('')
+  // is 0, which would link to nobody.
+  const profileUrl = /^\d+$/.test(sheet.personId)
+    ? isPersonProfileUrl(sheet.personId, language)
+    : undefined;
   const placeholderText = isLoading
     ? t('mobile.sheet.personLoading')
     : error || t('mobile.sheet.personLoadError');
@@ -89,39 +98,49 @@ export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
     focusRoomByCode(room.code);
   };
 
+  // Beside the name, as in the extension's hover card. On a line of its own
+  // under the role it floated between the header and the card — for staff,
+  // with nothing next to it. Only once there is a name: a loading or failed
+  // sheet has no one to show. A button only once there is a photo to
+  // maximise: initials blown up to full screen are a joke at the student's
+  // expense.
+  const avatar = name ? (
+    <button
+      type="button"
+      disabled={!photo}
+      aria-label={photo ? t('mobile.sheet.enlargePhoto') : undefined}
+      onClick={() => photo && pushSheet({ kind: 'personPhoto', personId: sheet.personId, name })}
+      className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-base-200 font-display text-base font-bold text-[var(--tone-primary)]"
+    >
+      {photo ? (
+        <img src={photo} alt={name} className="h-full w-full object-cover" />
+      ) : (
+        personInitials(name)
+      )}
+    </button>
+  ) : undefined;
+
   return (
     <Sheet size="content" onClose={onClose}>
-      <SheetHeader title={title} subtitle={subtitle} onClose={onClose} />
+      <SheetHeader
+        title={title}
+        subtitle={subtitle}
+        leading={avatar}
+        // Not while the title is "Loading…" or an error: there is no one to open.
+        titleHref={name ? profileUrl : undefined}
+        onClose={onClose}
+      />
       {!name ? (
         <p className="px-5 pb-5 text-sm text-base-content/60">{placeholderText}</p>
       ) : (
         <div className="flex flex-col gap-3 px-4 pb-5">
-          <div className="flex items-center gap-3">
-            {/* A button only once there is a photo to maximise: initials blown
-                up to full screen are a joke at the student's expense. */}
-            <button
-              type="button"
-              disabled={!photo}
-              aria-label={photo ? t('mobile.sheet.enlargePhoto') : undefined}
-              onClick={() =>
-                photo && pushSheet({ kind: 'personPhoto', personId: sheet.personId, name })
-              }
-              className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-base-200 font-display text-base font-bold text-primary"
-            >
-              {photo ? (
-                <img src={photo} alt={name} className="h-full w-full object-cover" />
-              ) : (
-                personInitials(name)
-              )}
-            </button>
-            {studyLines.length > 0 && (
-              <div className="flex min-w-0 flex-col gap-0.5 text-sm leading-snug text-base-content/70">
-                {studyLines.map((line) => (
-                  <span key={line}>{line}</span>
-                ))}
-              </div>
-            )}
-          </div>
+          {studyLines.length > 0 && (
+            <div className="flex flex-col gap-0.5 text-sm leading-snug text-base-content/70">
+              {studyLines.map((line) => (
+                <span key={line}>{line}</span>
+              ))}
+            </div>
+          )}
 
           <PersonContactRows email={email} room={room} onShowOnMap={onShowOnMap} />
 
@@ -129,7 +148,7 @@ export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
             <button
               type="button"
               onClick={() => openTeamsChat(teamsEmail)}
-              className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary/15 text-base font-semibold text-primary"
+              className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary/15 text-base font-semibold text-[var(--tone-primary)]"
             >
               {/* The real Teams mark, not a generic speech bubble: the button
                   leaves the app, and the student should know where to. */}
