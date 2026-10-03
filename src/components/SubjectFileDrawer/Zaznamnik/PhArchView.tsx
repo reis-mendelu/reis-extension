@@ -25,7 +25,7 @@ export function PhArchView({ sections }: Props) {
             <div key={ai} className="bg-base-200/60 rounded-lg px-3 py-2">
               <p className="text-[11px] font-semibold text-base-content/60 mb-1">{arch.name}</p>
               {arch.empty ? (
-                <p className="text-[12px] text-base-content/30">—</p>
+                <p className="text-[12px] text-base-content/60">—</p>
               ) : arch.columns.length === 1 ? (
                 <p className="text-[12px] font-medium text-base-content">
                   <span className="text-base-content/50">{arch.columns[0]}: </span>
