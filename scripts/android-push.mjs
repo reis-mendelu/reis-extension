@@ -4,7 +4,15 @@
  * artifact testers get, not a debug or live-reload build.
  *
  *   npm run android:push              # build, install over the existing reIS, launch
- *   npm run android:push -- --wifi    # phone on USB: switch adb to Wi-Fi first
+ *   npm run android:push -- --pair <ip:port> <code>   # once per phone, no cable
+ *   npm run android:push -- --wifi    # older route: phone on USB, switch adb to Wi-Fi
+ *
+ * No cable at all (Android 11+): Developer options → Wireless debugging on,
+ * same Wi-Fi as the Mac. The phone then advertises itself over mDNS and this
+ * script connects to it on its own. A phone that never authorised this Mac
+ * over USB needs pairing once first — "Pair device with pairing code" shows
+ * the address and code for `--pair`. Android turns the toggle off when the
+ * phone changes network; turning it back on is all it takes, no re-pairing.
  *
  * The APK is signed with the upload key (android/keystore.properties), so it
  * installs over a sideloaded reIS signed with the same key and keeps the login
@@ -22,6 +30,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isWifiSerial, parseMdnsConnect, parsePairArgs } from './lib/adbWireless.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const APK = resolve(ROOT, 'android/app/build/outputs/apk/release/app-release.apk');
@@ -69,12 +78,46 @@ function reconnectViaGateway() {
   return /connected to/.test(out) ? `${gateway}:5555` : undefined;
 }
 
+/**
+ * Connect to every paired phone advertising Wireless debugging. adb's server
+ * auto-connects these too, but only once its own discovery has caught up — a
+ * fresh server reports nothing for the first second or two — so ask
+ * explicitly, and give discovery a few tries.
+ */
+function connectWireless() {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const wifi = devices().find(isWifiSerial);
+    if (wifi) return wifi;
+    for (const endpoint of parseMdnsConnect(adb('mdns', 'services'))) {
+      const out = adb('connect', endpoint);
+      if (/connected to/.test(out)) return endpoint;
+      console.log(out);
+    }
+    execFileSync('sleep', ['1']);
+  }
+  return undefined;
+}
+
+let pair;
+try {
+  pair = parsePairArgs(process.argv);
+} catch (err) {
+  fail(err.message);
+}
+if (pair) {
+  // adb prints "Successfully paired to …" and exits 0 even on some failures,
+  // so the output is the evidence, not the exit code.
+  const out = adb('pair', pair.address, pair.code);
+  console.log(out);
+  if (!/Successfully paired/.test(out)) fail('Pairing failed — is the code still on the phone?');
+}
+
 function switchToWifi() {
   const present = devices();
-  const usb = present.find((s) => !s.includes(':'));
+  const usb = present.find((s) => !isWifiSerial(s));
   if (!usb) {
     // Already on Wi-Fi (tcpip survives until the phone reboots) — nothing to switch.
-    const wifi = present.find((s) => s.includes(':')) ?? reconnectViaGateway();
+    const wifi = present.find(isWifiSerial) ?? connectWireless() ?? reconnectViaGateway();
     if (wifi) return wifi;
     fail('--wifi needs the phone on USB first, with USB debugging allowed.');
   }
@@ -95,15 +138,16 @@ function switchToWifi() {
 const wifi = process.argv.includes('--wifi')
   ? switchToWifi()
   : devices().length === 0
-    ? reconnectViaGateway()
+    ? (connectWireless() ?? reconnectViaGateway())
     : undefined;
 const all = devices();
 // Prefer the Wi-Fi transport: with the cable also in, the same phone is listed twice.
-const serial = wifi ?? process.env.ANDROID_SERIAL ?? all.find((s) => s.includes(':')) ?? all[0];
+const serial = wifi ?? process.env.ANDROID_SERIAL ?? all.find(isWifiSerial) ?? all[0];
 if (!serial || !all.includes(serial)) {
   fail(
-    'No phone reachable over adb. Plug it in and run `npm run android:push -- --wifi`,\n' +
-      'or `adb connect <phone-ip>:5555` if Wi-Fi adb is still up.'
+    'No phone reachable over adb. On the phone: Developer options → Wireless debugging on,\n' +
+      'same Wi-Fi as this Mac. First time with this phone: tap "Pair device with pairing\n' +
+      'code" and run `npm run android:push -- --pair <ip:port> <code>`.'
   );
 }
 
