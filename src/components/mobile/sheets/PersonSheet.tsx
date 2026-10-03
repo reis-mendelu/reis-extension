@@ -10,6 +10,7 @@ import { openTeamsChat } from '../../../mobile/teamsLink';
 import { TEAMS_ICON_PATH } from '../../../constants/icons';
 import { resolveRoomCode } from '../../../utils/mobile/resolveRoomCode';
 import { personInitials } from '../../../utils/mobile/personInitials';
+import { isPersonProfileUrl } from '../../../utils/isPersonProfileUrl';
 import type { MobileSheet } from '../../../store/types';
 
 type PersonSheetData = Extract<MobileSheet, { kind: 'person' }>;
@@ -23,10 +24,13 @@ export interface PersonSheetProps {
  * Content-size sheet for a person: who they are, how to reach them, and — for
  * staff — where to find them.
  *
- * Four things, and no fifth. The work phone IS publishes is gone: nobody rings
- * a lecturer, and on a phone-sized sheet an unused row costs more than it
- * gives. What is left is what a student actually does — read the name, take the
- * address, message them on Teams, walk to the office.
+ * The work phone IS publishes is gone: nobody rings a lecturer, and on a
+ * phone-sized sheet an unused row costs more than it gives. What is left is
+ * what a student actually does — read the name, take the address, message them
+ * on Teams, walk to the office — plus a way out to the person's page in IS,
+ * which the extension's hover card has always had. That page carries what this
+ * sheet deliberately does not: office hours, the full contact block, the
+ * subjects they teach.
  *
  * The email is a COPY control rather than a mailto: link. A mailto: hands the
  * student to whichever mail app the OS picked years ago; the address on the
@@ -40,7 +44,7 @@ export interface PersonSheetProps {
  * resolve its room is worse than none.
  */
 export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const numericId = Number(sheet.personId);
   const { profile, isLoading, error } = usePersonProfile(
     Number.isFinite(numericId) ? numericId : undefined
@@ -71,6 +75,11 @@ export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
   // person there, so a profile with nothing but a private email gets the copy
   // row and no Teams button rather than a button that opens an empty search.
   const teamsEmail = profile?.universityEmail || null;
+  // Only a real IS id opens a page. A regex, not Number.isFinite: Number('')
+  // is 0, which would link to nobody.
+  const profileUrl = /^\d+$/.test(sheet.personId)
+    ? isPersonProfileUrl(sheet.personId, language)
+    : null;
   const placeholderText = isLoading
     ? t('mobile.sheet.personLoading')
     : error || t('mobile.sheet.personLoadError');
@@ -123,7 +132,12 @@ export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
             )}
           </div>
 
-          <PersonContactRows email={email} room={room} onShowOnMap={onShowOnMap} />
+          <PersonContactRows
+            email={email}
+            room={room}
+            onShowOnMap={onShowOnMap}
+            profileUrl={profileUrl}
+          />
 
           {teamsEmail && (
             <button

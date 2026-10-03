@@ -1298,7 +1298,8 @@
       "enlargePhoto": "Enlarge photo",
       "copied": "Copied!",
       "teamsChat": "Message on Teams",
-      "navigateToRoom": "Show {room} on the map"
+      "navigateToRoom": "Show {room} on the map",
+      "openInIs": "Open in IS"
     },
     "profile": {
       "appearance": "Appearance",

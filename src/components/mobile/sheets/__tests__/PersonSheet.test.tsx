@@ -155,6 +155,42 @@ describe('PersonSheet', () => {
     expect(focusRoomByCode).toHaveBeenCalledWith('BA39N1009');
   });
 
+  it("links to the person's own IS page, which the extension's hover card has too", () => {
+    // A plain target="_blank" anchor: on Capacitor the capture listener in
+    // mobile/openExternal turns it into the in-app WebView that carries the IS
+    // session, so the page opens signed in rather than on IS's login form.
+    render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
+    const link = screen.getByRole('link', { name: 'Otevřít v IS' });
+    expect(link).toHaveAttribute('href', 'https://is.mendelu.cz/auth/lide/clovek.pl?id=42;lang=cz');
+    expect(link).toHaveAttribute('target', '_blank');
+  });
+
+  it('opens the IS page in English when the app is in English', () => {
+    useAppStore.setState({ language: 'en' } as never);
+    render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
+    expect(screen.getByRole('link', { name: 'Open in IS' })).toHaveAttribute(
+      'href',
+      'https://is.mendelu.cz/auth/lide/clovek.pl?id=42;lang=en'
+    );
+  });
+
+  it('still links to IS for someone with no address and no office', () => {
+    // The IS page needs only the id. With nothing else to show, it is the one
+    // thing left the student can do from this sheet.
+    useAppStore.setState({
+      schedule: { data: [], status: 'success' },
+      personProfiles: {
+        42: {
+          data: { personId: 42, name: 'Jan Novák', universityEmail: null, privateEmail: null },
+          fetchedAt: Date.now(),
+          lang: 'cz',
+        },
+      },
+    } as never);
+    render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
+    expect(screen.getByRole('link', { name: 'Otevřít v IS' })).toBeInTheDocument();
+  });
+
   it('does not show the room row when no room can be resolved', () => {
     useAppStore.setState({ schedule: { data: [], status: 'success' } } as never);
     render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
