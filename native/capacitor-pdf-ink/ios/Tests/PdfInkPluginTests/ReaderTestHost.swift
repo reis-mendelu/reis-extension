@@ -11,7 +11,7 @@ import XCTest
  * `ToolPickerResponderTests` in #492.
  *
  * The same show / open / picture that `ReaderPictureTests` keeps privately,
- * shared by the cover and recall tests.
+ * shared by the cover tests.
  */
 @available(iOS 16.0, *)
 final class ReaderTestHost {

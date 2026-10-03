@@ -1,5 +1,20 @@
 # iPad ink reader: covers and "Vyzkoušet se"
 
+> **Revised 2026-10-03, after device use — read this first.** Two parts of this
+> spec are superseded. (1) Covers are made with **the tape**, a pen in the palette,
+> not a `+` menu mode (see "Making covers: the tape"). (2) **"Vyzkoušet se" was
+> built, shipped to the iPad, and removed**: Dominik's verdict was that stepping
+> through covers with Ukázat / Znám / Ještě ne is over-engineering — "the only
+> thing we really needed is the tool to hide a section". `PageCover` therefore
+> carries no answer history, and part 3 (exam-date review) is dropped with it.
+> The sections on the test, its strings and its tests below are history.
+> Also from that round: a cover is drawn as masking tape (`TapeStyle`), any
+> stroke longer than 6 pt makes one and nothing is thinner than 16 pt, a cover
+> starts where the touch came down (not where the pan began), and every other
+> page gesture waits for a tap on a cover (fast taps were being lost to PDFKit's
+> word-selection double tap).
+
+
 Date: 2026-10-03. Scope: the native iPad reader (`native/capacitor-pdf-ink`) only.
 
 ## Why

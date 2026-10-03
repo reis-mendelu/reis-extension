@@ -40,14 +40,6 @@ export function usePdfInkStrings(): () => PdfInkStrings {
       deletePicture: t('mobile.pdfInk.deletePicture'),
       done: t('mobile.pdfInk.done'),
       cover: t('mobile.pdfInk.cover'),
-      recallStart: t('mobile.pdfInk.recallStart'),
-      recallReveal: t('mobile.pdfInk.recallReveal'),
-      recallKnew: t('mobile.pdfInk.recallKnew'),
-      recallNotYet: t('mobile.pdfInk.recallNotYet'),
-      recallProgress: t('mobile.pdfInk.recallProgress'),
-      recallEnd: t('mobile.pdfInk.recallEnd'),
-      recallRetry: t('mobile.pdfInk.recallRetry'),
-      recallScore: t('mobile.pdfInk.recallScore'),
     }),
     [t]
   );

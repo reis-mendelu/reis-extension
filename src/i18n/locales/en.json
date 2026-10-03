@@ -1358,15 +1358,7 @@
       "movePictures": "Edit pictures",
       "deletePicture": "Delete picture",
       "done": "Done",
-      "cover": "Tape",
-      "recallStart": "Test me",
-      "recallReveal": "Show",
-      "recallKnew": "I know it",
-      "recallNotYet": "Not yet",
-      "recallProgress": "{n} of {total}",
-      "recallEnd": "End",
-      "recallRetry": "Repeat the ones I don't know yet",
-      "recallScore": "You know {known} of {total}"
+      "cover": "Tape"
     },
     "openingLink": "Opening…"
   },

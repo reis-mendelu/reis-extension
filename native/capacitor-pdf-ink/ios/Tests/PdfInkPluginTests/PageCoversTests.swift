@@ -15,11 +15,24 @@ final class PageCoversTests: XCTestCase {
         XCTAssertEqual(downhill, uphill)
     }
 
-    func testADragTooShortInEitherDirectionIsNotACover() {
-        // Nothing to hide behind a sliver, and a sliver is usually a slipped tap.
-        XCTAssertNil(PageCovers.rect(from: .zero, to: CGPoint(x: 200, y: 4)))
-        XCTAssertNil(PageCovers.rect(from: .zero, to: CGPoint(x: 4, y: 200)))
-        XCTAssertNotNil(PageCovers.rect(from: .zero, to: CGPoint(x: 24, y: 24)))
+    /// Dominik on the device: a stroke drawn as one line along the text made
+    /// no box at all — the old minimum was 24 pt in BOTH directions. A line
+    /// is now a strip as tall as a line of slide text, centred on the stroke.
+    func testAStrokeAlongALineMakesAStripCentredOnIt() {
+        let strip = PageCovers.rect(from: CGPoint(x: 10, y: 100), to: CGPoint(x: 210, y: 102))
+
+        XCTAssertEqual(strip, CGRect(x: 10, y: 93, width: 200, height: 16))
+    }
+
+    func testASmallDragStillMakesABox() {
+        let box = PageCovers.rect(from: CGPoint(x: 50, y: 50), to: CGPoint(x: 60, y: 58))
+
+        XCTAssertEqual(box, CGRect(x: 47, y: 46, width: 16, height: 16))
+    }
+
+    /// Below the slop it was a tap, and a tap makes no box.
+    func testATapMakesNoBox() {
+        XCTAssertNil(PageCovers.rect(from: CGPoint(x: 50, y: 50), to: CGPoint(x: 54, y: 53)))
     }
 
     func testTheCoverUnderAPointIsTheOneOnTop() {

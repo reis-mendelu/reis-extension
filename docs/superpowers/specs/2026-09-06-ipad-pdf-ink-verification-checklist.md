@@ -184,26 +184,22 @@ build drops pictures from an archive on its next save (spec addendum 2026-10-03)
     ink over them.
 11. Dark mode: page, photos and ink look exactly as in light; Hotovo is lime.
 
-## Covers and Vyzkoušet se (2026-10-03)
+## Covers: the tape (2026-10-03)
 
 Spec: `2026-10-03-ipad-recall-covers-design.md`. With an Apple Pencil paired.
 
-1. The palette shows the tape (grey, a dashed edge) right after the marker.
-2. Pick the tape, drag the Pencil over printed text → a grey block; the page does not move.
-3. Same over your own ink → a grey block; no ink stroke is drawn.
-4. With the tape still picked, drag a finger → the page scrolls, no block.
-5. Tap a block with the Pencil (tape picked) → it goes; the palette's undo brings it back.
-6. Pick the pen, tap the block with a finger → it opens to a dashed outline; again → shut.
-7. Start a scroll with a finger on a block → the page scrolls, the block stays shut.
-8. Close the file and reopen → the blocks are there, shut.
-9. Checklist button in the bar (only on a file with blocks) → "1 z N", the first block outlined.
-   Ukázat (or tap the block) → Ještě ne / Znám. Answer all → "Znáš X z N"; Zopakovat → only
-   the Ještě ne ones.
-10. Start a test with the tape picked → the palette switches to the pen; write an answer next
-    to the block with the Pencil → the ink goes down.
-11. Ukončit halfway → title and bar come back, every block shut.
-12. Share with notes on a file with blocks → the PDF shows the answers.
-13. Sidebar open → every bar item, and the test's Ještě ne / Znám / Ukončit, still fit.
+1. The palette shows the tape (masking-tape colour) right after the marker.
+2. Pick the tape, draw one straight line with the Pencil along a line of text → a tape
+   strip covering that line; the page does not move.
+3. A tiny stroke (a few millimetres) → a small square of tape. A plain tap → nothing.
+4. Same over your own ink → tape; no ink stroke is drawn.
+5. With the tape still picked, drag a finger → the page scrolls, no tape.
+6. Tap a strip with the Pencil (tape picked) → it goes; the palette's undo brings it back.
+7. Pick the pen, tap a strip with a finger → it opens to a dashed outline; again → shut.
+8. Tap a strip quickly five or six times → it opens and shuts on every tap, none missed.
+9. Start a scroll with a finger on a strip → the page scrolls, the strip stays shut.
+10. Close the file and reopen → the strips are there, shut.
+11. Share with notes on a file with strips → the PDF shows what was under them.
 
 ## Report back
 

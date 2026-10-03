@@ -8,18 +8,24 @@ import CoreGraphics
  * real iPad PDFKit's scroller took those first.
  */
 enum PageCovers {
-    /// A drag shorter than this in either direction makes no cover: there is
-    /// nothing to hide behind a sliver, and a sliver is usually a slipped tap.
-    static let minimumSide: CGFloat = 24
+    /// A drag that moved no further than this either way was a tap.
+    static let tapSlop: CGFloat = 6
 
-    /// The block a drag covers, whichever corner it started from. Nil when it
-    /// is too small to have been meant as one.
+    /// The thinnest a cover gets. A stroke drawn as one line along the text
+    /// becomes a strip this tall, centred on the line: about a line of slide
+    /// text. Dominik on the device (2026-10-03): the first version needed 24 pt
+    /// in BOTH directions, and a line made no box at all.
+    static let minimumThickness: CGFloat = 16
+
+    /// The block a drag covers, whichever corner it started from, never
+    /// thinner than `minimumThickness`. Nil when the drag was a tap.
     static func rect(from start: CGPoint, to end: CGPoint) -> CGRect? {
-        let rect = CGRect(
-            x: min(start.x, end.x), y: min(start.y, end.y),
-            width: abs(end.x - start.x), height: abs(end.y - start.y))
-        guard rect.width >= minimumSide, rect.height >= minimumSide else { return nil }
-        return rect
+        let width = abs(end.x - start.x)
+        let height = abs(end.y - start.y)
+        guard max(width, height) > tapSlop else { return nil }
+        let rect = CGRect(x: min(start.x, end.x), y: min(start.y, end.y), width: width, height: height)
+        return rect.insetBy(
+            dx: -max(0, minimumThickness - width) / 2, dy: -max(0, minimumThickness - height) / 2)
     }
 
     /// The cover under a point. The last one made wins: it is drawn on top.

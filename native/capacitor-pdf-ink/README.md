@@ -20,9 +20,9 @@ There is no Android half on purpose — Android keeps the pdf.js viewer. The gua
   `*.ink.bad` rather than overwritten. Foundation only.
 - `ios/Sources/PdfInkPlugin/PdfInkViewController.swift` — the reader.
 - `ios/Sources/PdfInkPlugin/PdfInkPlugin.swift` — `isAvailable`, `open`.
-- Covers over an answer: `CoverTool.swift` (the tape in the palette, iOS 18+), `PageCover.swift`,
-  `PageCovers.swift`, `CoverLayerView.swift`, `PdfInkViewController+Covers.swift`.
-- "Vyzkoušet se": `RecallSession.swift`, `PdfInkViewController+Recall.swift`.
+- Covers over an answer: `CoverTool.swift` (the tape in the palette, iOS 18+), `TapeStyle.swift`
+  (how a cover looks), `PageCover.swift`, `PageCovers.swift`, `CoverLayerView.swift`,
+  `PdfInkViewController+Covers.swift`.
 - The rest of the reader: `PdfInkSpace.swift` (split view + file list), the other
   `PdfInkViewController+*.swift` extensions, `InkPages.swift`, `InkExport.swift`, pictures
   (`PagePicture(s)`, `PictureLayerView`, `PictureIngest`).

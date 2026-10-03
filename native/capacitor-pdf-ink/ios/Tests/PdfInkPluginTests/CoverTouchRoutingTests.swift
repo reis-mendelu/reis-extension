@@ -89,6 +89,26 @@ final class CoverTouchRoutingTests: XCTestCase {
         XCTAssertFalse(layer.gestureRecognizer(layer.dragRecognizer, shouldBeRequiredToFailBy: layer.tapRecognizer))
     }
 
+    /// Dominik on the device: tapping a cover quickly several times missed
+    /// taps. Reproduced in the simulator (4 fast taps, 2 reached the cover):
+    /// PDFKit's own taps on the text under the cover — a double tap selects a
+    /// word — did not wait for the cover's tap, took the second tap, and the
+    /// taps after it landed on PDFKit's selection instead. Every other gesture
+    /// must wait for a tap that lands on a cover. After the fix: 6 of 6 at
+    /// 67 ms apart.
+    func testPdfkitsTextTapsWaitForATapOnACover() {
+        let layer = CoverLayerView()
+        let wordSelection = UITapGestureRecognizer()
+        wordSelection.numberOfTapsRequired = 2
+        UIView().addGestureRecognizer(wordSelection)
+
+        XCTAssertTrue(
+            layer.gestureRecognizer(layer.tapRecognizer, shouldBeRequiredToFailBy: wordSelection))
+        XCTAssertFalse(
+            layer.gestureRecognizer(layer.tapRecognizer, shouldBeRequiredToFailBy: layer.dragRecognizer),
+            "the tape's stroke must not wait for a tap")
+    }
+
     /// With a Pencil, the tape answers only to the Pencil: a finger still scrolls.
     func testOnlyTouchesThatDrawMakeCovers() {
         let layer = CoverLayerView()

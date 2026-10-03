@@ -1358,15 +1358,7 @@
       "movePictures": "Upravit obrázky",
       "deletePicture": "Smazat obrázek",
       "done": "Hotovo",
-      "cover": "Páska",
-      "recallStart": "Vyzkoušet se",
-      "recallReveal": "Ukázat",
-      "recallKnew": "Znám",
-      "recallNotYet": "Ještě ne",
-      "recallProgress": "{n} z {total}",
-      "recallEnd": "Ukončit",
-      "recallRetry": "Zopakovat ty, co ještě neznám",
-      "recallScore": "Znáš {known} z {total}"
+      "cover": "Páska"
     },
     "openingLink": "Otevírám…"
   },

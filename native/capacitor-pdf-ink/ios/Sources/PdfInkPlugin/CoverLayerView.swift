@@ -27,9 +27,6 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
     var covers: [PageCover] = [] { didSet { setNeedsDisplay() } }
     /// The covers being looked under right now. Never saved.
     var revealed: Set<String> = [] { didSet { setNeedsDisplay() } }
-    /// The cover "Vyzkoušet se" is asking about, outlined in `currentColor`.
-    var currentID: String? { didSet { setNeedsDisplay() } }
-    var currentColor: UIColor = .tintColor { didSet { setNeedsDisplay() } }
     /// The tape is selected: the drag is on, and a drawing tap takes a cover away.
     var isMakingCovers = false {
         didSet {
@@ -52,6 +49,12 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
     let tapRecognizer = UITapGestureRecognizer()
 
     private var lastTapType: UITouch.TouchType = .direct
+    /// Where the stroke's touch came down. The pan only begins once the touch
+    /// has travelled ~10 pt, and its `translation` counts from THERE — so a
+    /// cover started at the pan's start lost its first 10 pt, and a small
+    /// stroke made nothing at all (simulator log, 2026-10-03: a 167 pt stroke
+    /// made a 161 pt cover; a 12 pt one was "too small").
+    private var touchDown: CGPoint?
     private var dragStart: CGPoint?
     private var dragEnd: CGPoint?
 
@@ -81,17 +84,19 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
 
     // MARK: - Gestures
 
-    /// Everything else on the page waits for the tape's drag: PDFKit's scroll
-    /// and its markup gestures, and the canvas's own. The drag only exists
-    /// while the tape is selected and only takes drawing touches, so this
-    /// holds up nothing else. The tap makes only the scrollers wait, as the
-    /// picture layer's does (#492).
+    /// Everything else on the page waits for ours. For the tape's drag:
+    /// PDFKit's scroll and markup gestures and the canvas's own; it only exists
+    /// while the tape is picked and only takes drawing touches, so this holds
+    /// up nothing else. For the tap: everything too, not just the scrollers —
+    /// PDFKit's double tap (word selection) took every second fast tap on a
+    /// cover and the taps after it landed on its selection (device, 2026-10-03).
+    /// The tap only ever sees touches that land on a cover (`hitTest`).
     func gestureRecognizer(
         _ gestureRecognizer: UIGestureRecognizer,
         shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer
     ) -> Bool {
         if gestureRecognizer === dragRecognizer { return otherGestureRecognizer !== tapRecognizer }
-        return otherGestureRecognizer.view is UIScrollView
+        return otherGestureRecognizer !== dragRecognizer
     }
 
     func gestureRecognizer(
@@ -101,6 +106,7 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
             lastTapType = touch.type
             return true
         }
+        if draws(touch.type) { touchDown = touch.location(in: self) }
         // One line per stroke start: whether the tape took it, and why not.
         if isMakingCovers {
             NSLog("PdfInk: tape touch \(touch.type == .pencil ? "pencil" : "finger") taken=\(draws(touch.type))")
@@ -120,7 +126,7 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
         switch pan.state {
         case .began:
             let moved = pan.translation(in: self)
-            dragStart = CGPoint(x: location.x - moved.x, y: location.y - moved.y)
+            dragStart = touchDown ?? CGPoint(x: location.x - moved.x, y: location.y - moved.y)
             dragEnd = location
         case .changed:
             dragEnd = location
@@ -168,27 +174,15 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
         guard let context = UIGraphicsGetCurrentContext() else { return }
         for cover in covers {
             if revealed.contains(cover.id) {
-                // Open: the answer shows through, with just enough outline left
-                // that the student can shut it again.
-                context.setStrokeColor(UIColor.systemGray2.cgColor)
-                context.setLineDash(phase: 0, lengths: [4, 4])
-                context.stroke(cover.rect.insetBy(dx: 0.5, dy: 0.5), width: 1)
-                context.setLineDash(phase: 0, lengths: [])
+                TapeStyle.drawOpen(cover.rect, in: context)
             } else {
-                context.setFillColor(UIColor.systemGray4.cgColor)
-                context.fill(cover.rect)
-            }
-            if cover.id == currentID {
-                context.setStrokeColor(currentColor.cgColor)
-                context.stroke(cover.rect.insetBy(dx: -1, dy: -1), width: 2)
+                TapeStyle.drawShut(cover.rect, in: context)
             }
         }
-        guard isMakingCovers, let start = dragStart, let end = dragEnd else { return }
-        context.setStrokeColor(UIColor.systemGray.cgColor)
-        context.setLineDash(phase: 0, lengths: [6, 4])
-        context.stroke(
-            CGRect(
-                x: min(start.x, end.x), y: min(start.y, end.y),
-                width: abs(end.x - start.x), height: abs(end.y - start.y)), width: 1)
+        // The block the stroke will leave, at the size it will have.
+        guard isMakingCovers, let start = dragStart, let end = dragEnd,
+            let preview = PageCovers.rect(from: start, to: end)
+        else { return }
+        TapeStyle.drawPreview(preview, in: context)
     }
 }

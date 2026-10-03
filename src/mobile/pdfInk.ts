@@ -69,18 +69,8 @@ export interface PdfInkStrings {
   deletePicture: string;
   /** Ends arranging and gives the pens back. */
   done: string;
-  /** The tape: the palette tool that puts blocks over answers, for recall. */
+  /** The tape: the palette tool that puts blocks over answers to hide them. */
   cover: string;
-  /** "Vyzkoušet se": the bar entry, reveal, the two answers, the counter ({n}/{total}). */
-  recallStart: string;
-  recallReveal: string;
-  recallKnew: string;
-  recallNotYet: string;
-  recallProgress: string;
-  /** Leaving a test early, running it again over the unknown ones, and the score ({known}/{total}). */
-  recallEnd: string;
-  recallRetry: string;
-  recallScore: string;
 }
 
 export interface PdfInkPlugin {

@@ -59,9 +59,7 @@ final class InkArchiveTests: XCTestCase {
     }
 
     func testRoundTripsCoverCards() throws {
-        let cover = PageCover(
-            id: "c", rect: CGRect(x: 10, y: 20, width: 30, height: 40),
-            reviews: [CoverReview(date: Date(timeIntervalSince1970: 1_000), knew: false)])
+        let cover = PageCover(id: "c", rect: CGRect(x: 10, y: 20, width: 30, height: 40))
         let archive = InkArchive(pageCount: 2, pages: [:], coverCards: [1: [cover]])
 
         let decoded = try InkArchive.decode(archive.encoded())
@@ -71,8 +69,8 @@ final class InkArchiveTests: XCTestCase {
     }
 
     /// The withdrawn tool (dev builds, 2026-09-07) wrote `covers` as bare
-    /// rectangles. They come back as covers with fresh ids and no answers,
-    /// and the ink comes with them.
+    /// rectangles. They come back as covers with fresh ids, and the ink comes
+    /// with them.
     func testConvertsTheWithdrawnToolsCovers() throws {
         struct Withdrawn: Encodable {
             let version = 3
@@ -89,7 +87,6 @@ final class InkArchiveTests: XCTestCase {
         XCTAssertEqual(decoded.pages, [7: Data([1, 2, 3])], "the ink was dropped")
         let converted = try XCTUnwrap(decoded.coverCards[1])
         XCTAssertEqual(converted.map(\.rect), [CGRect(x: 10, y: 20, width: 30, height: 40)])
-        XCTAssertEqual(converted.first?.reviews, [])
         XCTAssertFalse(converted.first?.id.isEmpty ?? true)
     }
 

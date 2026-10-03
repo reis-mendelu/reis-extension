@@ -60,27 +60,12 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     /// The pictures on each page, in stacking order — like `drawings`, the
     /// source of truth; the layers only show them. See `+Pictures`.
     var pictures: [Int: [PagePicture]] = [:]
-    /// Blocks over answers, per page, for practising recall (`+Covers`).
+    /// Blocks over answers, per page, made with the tape (`+Covers`).
     var covers: [Int: [PageCover]] = [:]
     /// Which covers are open right now. Never saved: a file reopens with them shut.
     var revealedCovers: Set<String> = []
     /// The tape is the palette's selected tool: strokes make covers, not ink.
     var makingCovers = false
-    /// The test running over this file's covers, if one is (`+Recall`).
-    var recall: RecallSession?
-    /// The file's own title while the bar shows the test's "3 z 10".
-    var titleBeforeRecall: String?
-    /// When an answer is given. A seam for tests.
-    var now: () -> Date = Date.init
-    /// "Vyzkoušet se". Hidden while the file has no covers.
-    private(set) lazy var recallItem = UIBarButtonItem(
-        image: UIImage(systemName: "checklist"), style: .plain, target: self,
-        action: #selector(recallTapped))
-    private(set) lazy var revealItem = makeRecallItem(strings.recallReveal, #selector(revealTapped))
-    private(set) lazy var knewItem = makeRecallItem(strings.recallKnew, #selector(knewTapped))
-    private(set) lazy var notYetItem = makeRecallItem(strings.recallNotYet, #selector(notYetTapped))
-    private(set) lazy var endRecallItem = makeRecallItem(
-        strings.recallEnd, #selector(endRecallTapped))
     /// Moving pictures instead of drawing. A visible mode: see `+Pictures`.
     var arrangingPictures = false
     /// From choosing Photos or the camera until the pick lands or is
@@ -112,11 +97,8 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     /// Ends arranging on a tap on empty page. Enabled only while arranging.
     private(set) lazy var emptyPageTap = UITapGestureRecognizer(
         target: self, action: #selector(emptyPageTapped(_:)))
-    /// The five file tools and the test entry, right to left. Arranging swaps
-    /// them for Done, a test for its own controls.
-    var fileToolItems: [UIBarButtonItem] {
-        [shareItem, addItem, focusItem, searchItem, pagesItem, recallItem]
-    }
+    /// The five file tools, right to left. Arranging swaps them for Done.
+    var fileToolItems: [UIBarButtonItem] { [shareItem, addItem, focusItem, searchItem, pagesItem] }
 
     /// `+`: a blank page, a picture, or moving the pictures already there. A
     /// menu, so the bar stays at five buttons; built fresh on every open
@@ -221,8 +203,6 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         pagesItem.accessibilityLabel = strings.pages
         searchItem.accessibilityLabel = strings.search
         exitItem.accessibilityLabel = strings.close
-        recallItem.accessibilityLabel = strings.recallStart
-        recallItem.tintColor = tint
         setBarItems(enabled: false)
         // Right to left: Share on the edge, as Notes and Files put it, then the
         // two ways of getting somewhere in the file.
@@ -433,7 +413,6 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         // left hidden, the next file would open with no pens.
         endArrangingPictures(restoringPens: false)
         endPicking()
-        endRecall(restoringPens: false)
         drawings = [:]
         overlays = [:]
         insertedPages = []
@@ -561,8 +540,6 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         // number, and an empty pill reads as a button that lost its label.
         pagesItem.isHidden = !enabled
         if !enabled { pagesItem.title = "" }
-        recallItem.isEnabled = enabled
-        updateRecallItem()
     }
 
     // MARK: - Pages

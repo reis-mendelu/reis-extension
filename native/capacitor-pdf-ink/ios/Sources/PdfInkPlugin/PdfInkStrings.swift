@@ -36,17 +36,6 @@ struct PdfInkStrings {
     let done: String
     /// The tape: the palette tool that makes covers (`CoverTool`).
     let cover: String
-    /// "Vyzkoušet se": the bar entry, the reveal, the two answers, the counter
-    /// ("{n}" / "{total}"), leaving early, the retry, and the score
-    /// ("{known}" / "{total}").
-    let recallStart: String
-    let recallReveal: String
-    let recallKnew: String
-    let recallNotYet: String
-    let recallProgress: String
-    let recallEnd: String
-    let recallRetry: String
-    let recallScore: String
 
     init(_ object: JSObject?) {
         saveFailedTitle = object?["saveFailedTitle"] as? String ?? "Your ink couldn't be saved"
@@ -79,21 +68,6 @@ struct PdfInkStrings {
         deletePicture = object?["deletePicture"] as? String ?? "Delete picture"
         done = object?["done"] as? String ?? "Done"
         cover = object?["cover"] as? String ?? "Tape"
-        recallStart = object?["recallStart"] as? String ?? "Test me"
-        recallReveal = object?["recallReveal"] as? String ?? "Show"
-        recallKnew = object?["recallKnew"] as? String ?? "I know it"
-        recallNotYet = object?["recallNotYet"] as? String ?? "Not yet"
-        recallProgress = object?["recallProgress"] as? String ?? "{n} of {total}"
-        recallEnd = object?["recallEnd"] as? String ?? "End"
-        recallRetry = object?["recallRetry"] as? String ?? "Repeat the ones I don't know yet"
-        recallScore = object?["recallScore"] as? String ?? "You know {known} of {total}"
     }
 
-    /// Puts numbers into copy that came from the app's i18n, which marks them
-    /// `{name}` (src/i18n/translate.ts). A placeholder with no value is left as is.
-    static func fill(_ template: String, _ values: [String: Int]) -> String {
-        values.reduce(template) { text, pair in
-            text.replacingOccurrences(of: "{\(pair.key)}", with: String(pair.value))
-        }
-    }
 }

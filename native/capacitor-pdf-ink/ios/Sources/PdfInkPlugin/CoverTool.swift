@@ -72,8 +72,9 @@ enum CoverTool {
         return PKToolPickerCustomItem(configuration: configuration)
     }
 
-    /// A roll of grey tape standing in the palette like the pens beside it.
-    /// PencilKit wants it at least 150 pt tall; it shows the top of it.
+    /// A roll of the same masking tape the covers are made of, standing in
+    /// the palette like the pens beside it. PencilKit wants it at least 150 pt
+    /// tall; it shows the top of it.
     private static let image: UIImage = {
         let size = CGSize(width: 36, height: 160)
         let format = UIGraphicsImageRendererFormat()
@@ -83,20 +84,8 @@ enum CoverTool {
                 roundedRect: CGRect(x: 4, y: 26, width: 28, height: 134), cornerRadius: 7)
             UIColor(white: 0.30, alpha: 1).setFill()
             body.fill()
-            // The tape itself: a light strip folded over the top, like the
-            // block it leaves on the page.
-            let tape = UIBezierPath(
-                roundedRect: CGRect(x: 4, y: 8, width: 28, height: 34), cornerRadius: 5)
-            UIColor(white: 0.82, alpha: 1).setFill()
-            tape.fill()
-            UIColor(white: 0.62, alpha: 1).setStroke()
-            let edge = UIBezierPath()
-            edge.move(to: CGPoint(x: 8, y: 34))
-            edge.addLine(to: CGPoint(x: 28, y: 34))
-            edge.lineWidth = 1.5
-            edge.setLineDash([3, 2], count: 2, phase: 0)
-            edge.stroke()
-            _ = context
+            // The tape folded over the top, as it looks on the page.
+            TapeStyle.drawShut(CGRect(x: 4, y: 8, width: 28, height: 34), in: context.cgContext)
         }
     }()
 }

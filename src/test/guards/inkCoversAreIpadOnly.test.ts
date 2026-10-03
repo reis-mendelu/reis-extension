@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Covers and "Vyzkoušet se" exist only in the iPad's native PencilKit reader.
+ * Covers (the tape) exist only in the iPad's native PencilKit reader.
  *
  * Not a split chosen per tree: the ink reader itself is iPad-only
  * (`PdfInkPlugin.isAvailable` is true only on an iPad with iPadOS 16+), so the
@@ -46,7 +46,7 @@ describe('ink covers are iPad-native only', () => {
 
   it.each(SHARED_STRING_FILES)('%s carries the reader’s cover strings and nothing else', (file) => {
     const text = read(file);
-    expect(text).toMatch(/recallStart/);
+    expect(text).toMatch(/"?cover"?:/);
     expect(text).not.toMatch(/PageCover|CoverLayerView/);
   });
 });
