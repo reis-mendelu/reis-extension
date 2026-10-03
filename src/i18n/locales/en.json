@@ -1347,7 +1347,17 @@
       "noMatches": "Nothing found",
       "removePage": "Remove page",
       "focus": "Hide the toolbar",
-      "exitFocus": "Show the toolbar"
+      "exitFocus": "Show the toolbar",
+      "add": "Add",
+      "photoLibrary": "Choose photo",
+      "takePhoto": "Take photo",
+      "chooseFile": "Choose file",
+      "underInk": "Under the notes",
+      "overInk": "Over the notes",
+      "more": "More",
+      "movePictures": "Edit pictures",
+      "deletePicture": "Delete picture",
+      "done": "Done"
     },
     "openingLink": "Opening…"
   },

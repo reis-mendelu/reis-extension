@@ -51,7 +51,24 @@ export interface PdfInkStrings {
   /** The floating button that brings the toolbar back. */
   exitFocus: string;
   cancel: string;
-  /** The tool that blocks out an answer so it can be recalled before looking. */
+  /** The `+` bar menu: a blank page, a picture, or moving the pictures. */
+  add: string;
+  /** Menu entries that put a picture on the page, from Photos or the camera. */
+  photoLibrary: string;
+  takePhoto: string;
+  /** Menu entry that puts a picture from Files (Downloads, iCloud Drive) on the page. */
+  chooseFile: string;
+  /** The selected picture's … menu: its one entry moves the picture under / over the ink. */
+  underInk: string;
+  overInk: string;
+  /** Accessibility label of that … button. */
+  more: string;
+  /** Menu entry that enters arranging, where pictures move instead of ink. */
+  movePictures: string;
+  /** The button over a selected picture. */
+  deletePicture: string;
+  /** Ends arranging and gives the pens back. */
+  done: string;
 }
 
 export interface PdfInkPlugin {

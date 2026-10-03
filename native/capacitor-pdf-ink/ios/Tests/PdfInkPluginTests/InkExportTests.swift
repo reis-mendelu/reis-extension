@@ -82,7 +82,82 @@ final class InkExportTests: XCTestCase {
             "ink baked light — it is invisible on white paper")
     }
 
+    /// Page, then the pictures under the ink, then the ink — the reader's order.
+    func testAPictureUnderTheInkIsInTheExportUnderTheInk() throws {
+        let size = CGSize(width: 200, height: 200)
+        let document = try whitePage(size: size)
+        let picture = try XCTUnwrap(PictureIngest.picture(from: grey(128, CGSize(width: 100, height: 100))))
+        let placed = PagePicture(
+            id: "p", frame: CGRect(x: 50, y: 50, width: 100, height: 100), jpeg: picture.jpeg,
+            aboveInk: false)
+        let url = tempURL()
+
+        try InkExport.flatten(
+            document, drawings: [0: horizontalStroke(y: 100, from: 40, to: 160)],
+            pictures: [0: [placed]], to: url)
+
+        let sample = try render(PDFDocument(url: url)?.page(at: 0), size: size)
+        XCTAssertEqual(sample(CGPoint(x: 70, y: 70)), 128, accuracy: 12, "the picture is missing")
+        XCTAssertLessThan(sample(CGPoint(x: 100, y: 100)), 40, "the ink is not on top of the picture")
+        XCTAssertGreaterThan(sample(CGPoint(x: 20, y: 20)), 245, "the page outside the picture changed")
+    }
+
+    /// A picture over the ink covers it, in the export as in the reader.
+    func testAPictureOverTheInkCoversItInTheExport() throws {
+        let size = CGSize(width: 200, height: 200)
+        let document = try whitePage(size: size)
+        let picture = try XCTUnwrap(PictureIngest.picture(from: grey(128, CGSize(width: 100, height: 100))))
+        let placed = PagePicture(
+            id: "p", frame: CGRect(x: 50, y: 50, width: 100, height: 100), jpeg: picture.jpeg,
+            aboveInk: true)
+        let url = tempURL()
+
+        try InkExport.flatten(
+            document, drawings: [0: horizontalStroke(y: 100, from: 40, to: 160)],
+            pictures: [0: [placed]], to: url)
+
+        let sample = try render(PDFDocument(url: url)?.page(at: 0), size: size)
+        XCTAssertEqual(sample(CGPoint(x: 100, y: 100)), 128, accuracy: 12, "the ink showed through")
+        XCTAssertLessThan(sample(CGPoint(x: 45, y: 100)), 40, "the ink beside the picture went missing")
+    }
+
+    /// The JPEG goes into the PDF as-is. Noise is what a bitmap cannot
+    /// compress, so a regression to raw pixels shows up as several times the size.
+    func testAPictureIsEmbeddedAsItsJpeg() throws {
+        let document = try whitePage(size: CGSize(width: 600, height: 800))
+        let noise = try XCTUnwrap(PictureIngest.picture(from: noiseImage(CGSize(width: 1024, height: 768))))
+        let placed = PagePicture(id: "p", frame: CGRect(x: 0, y: 0, width: 600, height: 450), jpeg: noise.jpeg)
+        let url = tempURL()
+
+        try InkExport.flatten(document, drawings: [:], pictures: [0: [placed]], to: url)
+
+        let size = try XCTUnwrap(try url.resourceValues(forKeys: [.fileSizeKey]).fileSize)
+        XCTAssertLessThan(size, noise.jpeg.count * 3 / 2, "the picture was re-encoded as a bitmap")
+    }
+
     // MARK: - Helpers
+    private func grey(_ value: CGFloat, _ size: CGSize) -> Data {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        return UIGraphicsImageRenderer(size: size, format: format).pngData { ctx in
+            UIColor(white: value / 255, alpha: 1).setFill()
+            ctx.fill(CGRect(origin: .zero, size: size))
+        }
+    }
+
+    private func noiseImage(_ size: CGSize) -> Data {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        var generator = SystemRandomNumberGenerator()
+        return UIGraphicsImageRenderer(size: size, format: format).pngData { ctx in
+            for y in stride(from: 0, to: Int(size.height), by: 2) {
+                for x in stride(from: 0, to: Int(size.width), by: 2) {
+                    UIColor(white: CGFloat.random(in: 0...1, using: &generator), alpha: 1).setFill()
+                    ctx.fill(CGRect(x: x, y: y, width: 2, height: 2))
+                }
+            }
+        }
+    }
 
     private func tempURL() -> URL {
         FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).pdf")

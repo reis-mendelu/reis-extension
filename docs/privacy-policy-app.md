@@ -78,9 +78,11 @@ are not held back while the phone sleeps — Android may still deliver one a few
 minutes late; Wi-Fi state, only for optional one-tap eduroam, where Android's
 own dialog saves the network.
 
-**iOS:** the camera, only if you choose to take a photo to attach to a problem
-report, where the photo goes into the report form like any other picture; and
-notifications, only for those same event reminders. iOS asks you before either.
+**iOS:** the camera, only if you choose to take a photo — to attach to a problem
+report, where the photo goes into the report form like any other picture, or, on
+an iPad, to put on a page of your notes, where it stays on the device with your
+ink; and notifications, only for those same event reminders. iOS asks you before
+either.
 
 **Neither app requests location** — the campus map shows the campus, not you.
 

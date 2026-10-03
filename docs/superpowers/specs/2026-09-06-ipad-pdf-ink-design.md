@@ -474,3 +474,163 @@ coloured pixels of #4a7a0d in light where there were none, and #79be15 in dark.
 An earlier headless render had suggested the inherited tint alone reached the bars. It did not — a
 headless render does not apply the glass bar styling, and only a hosted app on a real screen
 settles a question about chrome.
+
+## Addendum 2026-10-03: pictures on the page
+
+A student can put a picture on any page — a photo of the whiteboard next to the
+slide it explains, a diagram from their gallery — move it, resize it, delete it,
+draw over it, and find it in the PDF they share. Free placement: anywhere on any
+page, the teacher's or one they added. Interaction agreed with Dominik on
+2026-10-03, including the two contested points below.
+
+### What the student does
+
+- **The `+` in the bar becomes a menu** in three sections with dividers — Add a
+  page | Choose photo · Take photo | Edit pictures (cs: Přidat stránku | Vybrat
+  fotku · Pořídit fotku | Upravit obrázky), Apple's own Notes verbs. The first
+  build's flat list with "Z fotek / Přesunout obrázky" read as odd to Dominik
+  (2026-10-03) and was regrouped. The bar stays at five buttons — it has only ever been cut down
+  (see the covers) — and a blank page costs one tap more than it did. "Take
+  photo" is absent when `UIImagePickerController.isSourceTypeAvailable(.camera)`
+  is false (simulator, Mac); "Edit pictures" only when the file has a picture.
+- **A new picture lands selected**, centred on the part of the current page that
+  is on screen, at most half the page wide and half the page tall, aspect kept.
+- **Arranging is a mode, and a visible one** — the precedent is the covers'. The
+  pens go away, the bar's trailing items are replaced by one **Done**, and the
+  canvases stop taking touches. The selected picture has an accent outline, four
+  corner handles and a small **Delete** above it. Drag the body to move; drag a
+  corner or pinch to resize, aspect locked. Tap another picture to select it.
+  Tap empty page or Done to leave: the pens come back. A finger outside a
+  picture still scrolls, because the picture layer's `hitTest` returns nothing
+  there. Focus mode is unreachable while arranging — its button is not in the bar
+  — so Done can never disappear with it.
+- **While drawing, a picture is part of the page.** It sits UNDER the ink, so a
+  photo of the board can be annotated, and nothing a pen or finger does in
+  drawing mode moves it. Getting back to a picture is the menu's "Edit
+  pictures", not a long-press: PencilKit owns the long-press on a canvas.
+- **One undo stack.** Insert, move/resize (registered when the gesture ends) and
+  delete register on the same undo manager PencilKit uses, so the palette's undo
+  takes back the last thing done, stroke or picture. Adding or removing a page
+  renumbers the pages under those registrations, so it clears the picture undo
+  actions (`removeAllActions(withTarget:)`), exactly as it already strands no
+  canvas. A file switch clears them too.
+
+### Where it lives
+
+- **Layer, not `PDFAnnotation`.** An annotation lives on the `PDFPage`, i.e. it
+  rewrites the teacher's document, which this plugin never does, and
+  `page.draw(with:to:)` in the export would render it implicitly. Instead
+  `PageOverlayView` gets a `PictureLayerView` BELOW the canvas, laid out to
+  `bounds` with no transform — the overlay's bounds are the page's points, the
+  same space the drawing's coordinates are in. The canvas keeps its exact frame
+  (the load-bearing rule above is unchanged).
+- **The controller owns the data**, `pictures[pageIndex]`, the way it owns
+  `drawings`; the layer only renders and reports gestures. The mode is applied in
+  `overlayViewFor` too, so a page that scrolls in mid-arrange is not drawable.
+- **#485's picker re-assert is kept, with two exceptions added**:
+  `restoreToolPicker` returns early while arranging and while picking. Picking
+  needs its own flag (found on the simulator): the menu closes before UIKit
+  presents the photo picker, nothing is presented in between, and the re-assert
+  put the pens back over the picker. Hiding also lets the responder go —
+  `setVisible(false)` alone is not re-read while the page keeps it. The photo
+  picker and the camera are dismissed in code, which
+  `presentationControllerDidDismiss` never sees, so a cancel calls
+  `showToolPicker()` itself (clearing the flag) and a pick enters arranging.
+- **"Edit pictures" selects the top picture on the page on screen.** With
+  nothing selected the mode looked like drawing but for the bar.
+- **Geometry** is pure and in `PagePictures.swift` (tested without a view):
+  initial frame, move and resize clamped to the page, a 24 pt minimum side, the
+  topmost picture under a point. Handles are scaled by 1 / page scale so they
+  stay finger-sized at any zoom.
+
+### Stored with the ink
+
+- **Archive key `pictures: [Int: [PagePicture]]`**, read with `decodeIfPresent`;
+  a `PagePicture` is `{id, frame (page points, top-left origin, as displayed),
+  jpeg}`. Array order is stacking order, newest on top. Points, not page
+  fractions: ink drawn over a photo must stay over it if the page size changes.
+- **The version stays at 3.** Bumping it would make an older build quarantine
+  the whole file, ink included. The cost of not bumping is the other way round
+  and smaller: an older build — including another worktree's build installed
+  over this one on the same iPad — ignores the key, drops the pictures on its
+  next save, and deletes an archive whose only content is pictures. Recorded in
+  `InkArchive`'s header.
+- **Pictures count as content**: `persistNow` deletes the archive only when
+  ink, added pages AND pictures are all empty. `InkPages.shifted` moves them with
+  added and removed pages; a removed added page takes its pictures with it, like
+  its ink.
+- **Ingest, once, at insert** (`PictureIngest`): ImageIO's thumbnail path with
+  `kCGImageSourceCreateThumbnailWithTransform` (a camera photo is not sideways;
+  a 12 MP photo is never decoded whole — about 48 MB on a 3 GB iPad), long edge
+  at most 2048 px, JPEG quality 0.8 written by `CGImageDestination` with no
+  metadata — so no GPS goes into a PDF the student then shares. The bytes are
+  kept and never re-encoded; `persistNow` runs every second and must stay a
+  plist write. A camera capture is never saved to the photo library (that would
+  need another permission).
+- **Known cost:** the archive is one file, so each save rewrites the pictures'
+  bytes too — a few MB for a page of photos. Kept: one atomic file is what makes
+  the archive impossible to half-write, and a sidecar per picture would need its
+  own garbage collection.
+
+### Export
+
+`InkExport.flatten` draws page, then pictures, then ink — the order the reader
+shows. Pictures are drawn from `CGImage(jpegDataProviderSource:)` so the PDF
+context can embed the JPEG as-is rather than as a raw bitmap; the test measures
+an export with photos so a regression to bitmaps shows up as size.
+
+### Privacy and the other trees
+
+- **Nothing leaves the iPad.** The photo picker is `PHPickerViewController`,
+  which needs no photo-library permission. The camera needs
+  `NSCameraUsageDescription`, which exists — but its text says the camera is used
+  only for problem reports. That becomes false, so the plist string (both
+  languages), the iOS line of `docs/privacy-policy-app.md` and
+  `iosCameraUsage.test.ts` all gain the reader. The guard matters: its comment
+  says to remove the key if the report picker goes, and doing that after this
+  ships would terminate the app the first time a student taps Take photo.
+  Apple's label does not change — data kept on the device is not "collected".
+- **iPad only, pinned.** The reader is iPad-only (`isAvailable`), so the iPhone,
+  Android and the extension have no ink to put a picture beside.
+  `src/test/guards/inkPicturesAreIpadOnly.test.ts` records it.
+
+### Testing
+
+Swift (by hand, `ReisCapacitorPdfInk`): `PagePicturesTests` (geometry),
+`PictureIngestTests` (downscale, EXIF orientation honoured, no GPS in the
+output), `InkArchiveTests` (round trip; a v3 file without the key reads as no
+pictures), `InkExportTests` (picture pixels under ink; JPEG passthrough size),
+and reader tests: a picture survives persist + reload, a pictures-only archive
+is not deleted, arranging disables canvases and keeps the picker away, an added
+page shifts pictures, undo of a delete restores it. `ReaderScaleTests`' bar pin
+is updated for the menu. Device: checklist step 27 on the cabled iPad with a
+release build.
+
+### Changed after Dominik's first device test (2026-10-03)
+
+- **Under the ink by default; covering is in a … menu.** The first device build
+  could only put pictures under the ink; the second put them over by default with
+  a main "layers" button, which Dominik found unintuitive — and "over" hides
+  anything then written on the picture. A survey of note apps settled it:
+  GoodNotes, Notability and Noteshelf interleave per-object and keep Bring to
+  Front / Send to Back in a "…" menu; Apple Notes and Markup — one ink layer, as
+  here — put pictures under the ink with no control at all. So: under by default
+  (Apple), and the selected picture's … button holds one entry, *Přes poznámky*
+  / *Pod poznámky*. `PagePicture.aboveInk` (false unless chosen; absent reads
+  false). The overlay is `pictureLayer.belowInk` | canvas | `pictureLayer`
+  (over-ink pictures, handles, gestures); export page → under → ink → over.
+- **Handles are pulled onto the page.** PDFKit delivers no touch off the page,
+  so a handle half over the edge of a full-width picture answered only on its
+  inner half. `PagePictures.handleCenter` clamps it; the grab box is where it
+  is drawn; the resize keeps the finger's offset from the true corner.
+- **Picking a placed picture up again: a finger tap.** With the Pencil drawing
+  (`UIPencilInteraction.prefersPencilOnlyDrawing`, which PencilKit's
+  `.default` policy follows) the finger does not draw, so a tap on a picture
+  starts arranging with it selected. When the finger draws, a tap stays ink and
+  `+` → Upravit obrázky is the way in. The recognizer only begins over a
+  picture. "Long-press" was offered and not chosen: with finger drawing on it
+  leaves a dot.
+- **Pictures from Files** (`+Files`): Downloads is a second photo library for
+  many students; the document picker, images only, out of process, no
+  permission; the copy is ingested and deleted.
+

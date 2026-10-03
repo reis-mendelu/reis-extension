@@ -151,6 +151,39 @@ item was missed. Record the iPad's iPadOS version next to what you saw.
 
 The tool picker, the share sheet and the paper are Apple's and must not have changed at all.
 
+## 27. Pictures on the page
+
+Release build. Do not install any other reIS build between these steps: an older
+build drops pictures from an archive on its next save (spec addendum 2026-10-03).
+
+1. Open a subject PDF. Tap `+`: Přidat stránku, Vybrat fotku, Pořídit fotku. No Upravit
+   obrázky yet.
+2. Vybrat fotku → pick a photo. The pens are gone while the picker is open. The photo
+   appears centred on the page on screen, selected (green outline, four handles,
+   🗑). The bar shows only Hotovo — green, not blue.
+3. Drag it; drag a corner; pinch it. It moves and resizes, keeps its shape and
+   never leaves the page. A finger on empty page scrolls the document.
+4. Tap empty page. The selection goes and the pens come back. Draw a stroke
+   across the photo: the ink is on top of it. With the Pencil in hand, tap the
+   photo with a finger: it is picked up, selected. Tap … → Přes poznámky, then
+   Hotovo: the photo now covers the stroke. … → Pod poznámky puts it back. With "Draw with finger" on, the same tap draws a dot and
+   picks nothing up — use + → Upravit obrázky.
+5. Undo in the palette: the stroke goes. Undo again: the photo goes back to
+   where it was before the last move or resize.
+6. `+` → Pořídit fotku. Allow the camera. Take one. It lands selected. Tap 🗑, then
+   Hotovo, then undo: it is back. (The simulator has no camera feed — this step
+   is the only test of a real capture.)
+7. Finger-tap a photo (Pencil in hand): selected. Open the sidebar and switch
+   to another file while it is: that file opens with the pens. Switch back.
+   With Draw with finger on, + offers Upravit obrázky (hidden while the Pencil
+   draws); it selects the top photo on the page.
+8. `+` → Přidat stránku on a page before a photo. The photo stays with its page.
+9. Close the reader, reopen the file: every photo is where it was, under its
+   ink.
+10. Share with notes → save to Files → open it there: photos in place, upright,
+    ink over them.
+11. Dark mode: page, photos and ink look exactly as in light; Hotovo is lime.
+
 ## Report back
 
 Record any finding not in the design here, with the step number.

@@ -4,14 +4,13 @@ import UIKit
 /**
  * What PDFKit puts over one page.
  *
- * The canvas used to be handed to PDFKit directly. It is wrapped now, and the
- * wrapper does exactly one job: keep the canvas the same size as the page.
+ * Three things, bottom to top: the pictures under the ink
+ * (`pictureLayer.belowInk`), the canvas, and `pictureLayer` itself — the
+ * pictures over the ink, with the handles and the gestures (2026-10-03). Both
+ * picture levels are exactly the page with no transform: their coordinates are
+ * the page's points, the same ones the drawing is in.
  *
- * The cover layer it was introduced for is gone, so the canvas is alone under it
- * again and the wrapper looks pointless. It stays anyway, and the reason is
- * plain caution, not a constraint: `willEndDisplayingOverlayView` would
- * identity-match bare canvases just as well, but unwrapping means touching the
- * one thing in this plugin that must not move (see below) for no gain.
+ * The wrapper's other job is to keep the canvas the same size as the page.
  *
  * That size is load-bearing — and it is the canvas's FRAME, not its bounds:
  * the canvas is zoomed for sharpness (`inkScale`), which leaves its frame and
@@ -21,6 +20,7 @@ import UIKit
  */
 final class PageOverlayView: UIView {
     let canvas = PKCanvasView()
+    let pictureLayer = PictureLayerView()
 
     /**
      * How much finer than the page's own points the ink is rendered: the scale
@@ -41,13 +41,17 @@ final class PageOverlayView: UIView {
         super.init(frame: frame)
         backgroundColor = .clear
         isOpaque = false
+        addSubview(pictureLayer.belowInk)
         addSubview(canvas)
+        addSubview(pictureLayer)
     }
 
     required init?(coder: NSCoder) { fatalError("PageOverlayView is code-only") }
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        pictureLayer.belowInk.frame = bounds
+        pictureLayer.frame = bounds
         // Bounds and center, never `frame`: the canvas carries a transform.
         canvas.bounds = CGRect(
             origin: .zero,

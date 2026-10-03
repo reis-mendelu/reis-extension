@@ -29,6 +29,16 @@ export function usePdfInkStrings(): () => PdfInkStrings {
       focus: t('mobile.pdfInk.focus'),
       exitFocus: t('mobile.pdfInk.exitFocus'),
       cancel: t('common.cancel'),
+      add: t('mobile.pdfInk.add'),
+      photoLibrary: t('mobile.pdfInk.photoLibrary'),
+      takePhoto: t('mobile.pdfInk.takePhoto'),
+      chooseFile: t('mobile.pdfInk.chooseFile'),
+      underInk: t('mobile.pdfInk.underInk'),
+      overInk: t('mobile.pdfInk.overInk'),
+      more: t('mobile.pdfInk.more'),
+      movePictures: t('mobile.pdfInk.movePictures'),
+      deletePicture: t('mobile.pdfInk.deletePicture'),
+      done: t('mobile.pdfInk.done'),
     }),
     [t]
   );
