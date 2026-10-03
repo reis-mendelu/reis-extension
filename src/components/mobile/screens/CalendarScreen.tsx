@@ -92,7 +92,7 @@ export function CalendarScreen() {
           other tab's; what is left is the screen-reader route to the same
           sync, which takes no layout. */}
       <ScreenHeader
-        title={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale)}
+        title={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale, 'short')}
         titleAction={
           isAway ? { label: t('mobile.calendar.backToToday'), onClick: goToday } : undefined
         }

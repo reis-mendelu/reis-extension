@@ -58,9 +58,13 @@ export function BottomNav() {
             aria-current={active ? 'page' : undefined}
             aria-label={t(labelKey)}
             // Tapping the tab you are already on takes you home — the iOS
-            // convention, and on the calendar home is today. From another tab
-            // the calendar opens where the student left it.
-            onClick={() => (active && id === 'calendar' ? goToday() : setMobileTab(id))}
+            // convention, and on the calendar home is today. setMobileTab
+            // still runs first, so the re-tap closes sheets as it always did.
+            // From another tab the calendar opens where the student left it.
+            onClick={() => {
+              setMobileTab(id);
+              if (active && id === 'calendar') goToday();
+            }}
             className={`flex min-h-11 min-w-11 items-center gap-1.5 rounded-full px-3 transition-colors max-[359px]:px-2 ${
               active ? 'bg-primary/15 text-[var(--tone-primary)]' : 'text-base-content/60'
             }`}

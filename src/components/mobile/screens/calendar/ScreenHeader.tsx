@@ -62,11 +62,11 @@ export function ScreenHeader({ eyebrow, title, below, titleAction }: ScreenHeade
               onClick={titleAction.onClick}
               // Padding pulled back by an equal negative margin: a 44px target
               // without the header growing a line taller than the other tabs.
-              className="-my-1.5 flex min-w-0 items-center gap-1.5 py-1.5 text-left"
+              className="-my-1.5 flex min-w-0 items-center gap-1 py-1.5 text-left"
             >
               <span className={TITLE_CLASS}>{title}</span>
               <RotateCcw
-                size={20}
+                size={16}
                 strokeWidth={2.5}
                 className="flex-shrink-0 text-[var(--tone-primary)]"
               />

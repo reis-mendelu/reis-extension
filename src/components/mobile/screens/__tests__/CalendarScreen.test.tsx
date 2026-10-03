@@ -76,7 +76,7 @@ describe('CalendarScreen', () => {
     expect(screen.queryByText(/^Ahoj/)).not.toBeInTheDocument();
     // Asserted, not merely absent: "no greeting" also passes on a blank title.
     // The selected day is 2026-04-20 and the header is capitalised.
-    expect(screen.getByText('Pondělí 20. dubna')).toBeInTheDocument();
+    expect(screen.getByText('Po 20. dubna')).toBeInTheDocument();
     // The avatar went with the profile when it became a bottom-nav tab: a tab
     // and an icon opening the same screen is two doors to one room.
     expect(screen.queryByLabelText('Profil')).not.toBeInTheDocument();
