@@ -69,6 +69,18 @@ export interface PdfInkStrings {
   deletePicture: string;
   /** Ends arranging and gives the pens back. */
   done: string;
+  /** `+` menu entry that enters cover mode: blocks over answers, for recall. */
+  cover: string;
+  /** "Vyzkoušet se": the bar entry, reveal, the two answers, the counter ({n}/{total}). */
+  recallStart: string;
+  recallReveal: string;
+  recallKnew: string;
+  recallNotYet: string;
+  recallProgress: string;
+  /** Leaving a test early, running it again over the unknown ones, and the score ({known}/{total}). */
+  recallEnd: string;
+  recallRetry: string;
+  recallScore: string;
 }
 
 export interface PdfInkPlugin {
