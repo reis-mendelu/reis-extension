@@ -20,6 +20,14 @@ import Foundation
  * written. The version stays at 3 all the same: dropping back to 2 would make
  * every archive already on a device a "newer version", and `decode` quarantines
  * those — the ink would go with them.
+ *
+ * `pictures` (2026-10-03) are the photos the student put on pages, per page in
+ * stacking order, as `PagePicture`s. The key is ADDITIVE and the version did not
+ * move, for the same reason: a bump would make an older build quarantine the
+ * whole file, ink included. The cost runs the other way and is smaller — an
+ * older build (another worktree's, installed over this one) ignores the key,
+ * drops the pictures on its next save, and deletes an archive whose only
+ * content is pictures. Files without the key read as having none.
  */
 struct InkArchive: Codable, Equatable {
     static let currentVersion = 3
@@ -28,15 +36,20 @@ struct InkArchive: Codable, Equatable {
     var pageCount: Int
     var pages: [Int: Data]
     var insertedPages: [Int]
+    var pictures: [Int: [PagePicture]]
 
-    init(pageCount: Int, pages: [Int: Data], insertedPages: [Int] = []) {
+    init(
+        pageCount: Int, pages: [Int: Data], insertedPages: [Int] = [],
+        pictures: [Int: [PagePicture]] = [:]
+    ) {
         self.version = Self.currentVersion
         self.pageCount = pageCount
         self.pages = pages
         self.insertedPages = insertedPages
+        self.pictures = pictures
     }
 
-    /// Hand-written so a missing `insertedPages` reads as empty: the synthesised
+    /// Hand-written so a missing `insertedPages` or `pictures` reads as empty: the synthesised
     /// initialiser fails on an absent key even with a default. A `covers` key
     /// left by the withdrawn tool is simply not read.
     init(from decoder: Decoder) throws {
@@ -45,6 +58,8 @@ struct InkArchive: Codable, Equatable {
         pageCount = try container.decode(Int.self, forKey: .pageCount)
         pages = try container.decode([Int: Data].self, forKey: .pages)
         insertedPages = try container.decodeIfPresent([Int].self, forKey: .insertedPages) ?? []
+        pictures =
+            try container.decodeIfPresent([Int: [PagePicture]].self, forKey: .pictures) ?? [:]
     }
 
     func encoded() throws -> Data {

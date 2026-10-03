@@ -62,4 +62,21 @@ final class InkArchiveTests: XCTestCase {
     func testRejectsJunk() {
         XCTAssertThrowsError(try InkArchive.decode(Data("not a plist".utf8)))
     }
+
+    func testRoundTripsPictures() throws {
+        let picture = PagePicture(id: "p", frame: CGRect(x: 1, y: 2, width: 30, height: 40), jpeg: Data([7, 8]))
+        let archive = InkArchive(pageCount: 2, pages: [:], pictures: [1: [picture]])
+        let decoded = try InkArchive.decode(archive.encoded())
+        XCTAssertEqual(decoded.pictures, [1: [picture]])
+        XCTAssertEqual(decoded.version, 3, "pictures are additive; the version must not move")
+    }
+
+    /// Every archive on a device today has no `pictures` key.
+    func testAnArchiveWithoutPicturesReadsAsHavingNone() throws {
+        let v3: [String: Any] = ["version": 3, "pageCount": 4, "pages": ["1": Data([1])], "insertedPages": [Int]()]
+        let data = try PropertyListSerialization.data(fromPropertyList: v3, format: .binary, options: 0)
+        let decoded = try InkArchive.decode(data)
+        XCTAssertEqual(decoded.pictures, [:])
+        XCTAssertEqual(decoded.pages, [1: Data([1])])
+    }
 }

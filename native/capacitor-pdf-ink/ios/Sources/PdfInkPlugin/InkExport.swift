@@ -33,7 +33,10 @@ enum InkExport {
         return max(2, min(4, (InkPages.maxInkPixels / area).squareRoot()))
     }
 
-    static func flatten(_ document: PDFDocument, drawings: [Int: PKDrawing], to url: URL) throws {
+    static func flatten(
+        _ document: PDFDocument, drawings: [Int: PKDrawing], pictures: [Int: [PagePicture]] = [:],
+        to url: URL
+    ) throws {
         let renderer = UIGraphicsPDFRenderer(bounds: pageRect(document.page(at: 0)))
         try renderer.writePDF(to: url) { context in
             for index in 0..<document.pageCount {
@@ -51,6 +54,17 @@ enum InkExport {
                 cg.scaleBy(x: 1, y: -1)
                 page.draw(with: box, to: cg)
                 cg.restoreGState()
+
+                // Under the ink, as in the reader. From the JPEG's own data
+                // provider, so the PDF context embeds the JPEG rather than a bitmap.
+                for picture in pictures[index] ?? [] {
+                    guard let provider = CGDataProvider(data: picture.jpeg as CFData),
+                        let image = CGImage(
+                            jpegDataProviderSource: provider, decode: nil, shouldInterpolate: true,
+                            intent: .defaultIntent)
+                    else { continue }
+                    UIImage(cgImage: image).draw(in: picture.frame)
+                }
 
                 guard let drawing = drawings[index], !drawing.strokes.isEmpty else { continue }
                 // Rendered as if the app were in light mode, for the same
