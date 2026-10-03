@@ -100,3 +100,21 @@ export function certExpiryState(expiresAt: Date | null, now: number): CertExpiry
   if (left <= 0) return 'expired';
   return left <= RENEW_WITHIN_DAYS * 86_400_000 ? 'soon' : 'ok';
 }
+
+/** What `useEduroamSetup` exposes: at most one of the two is set. */
+export interface CertExpiry {
+  /** Past notAfter: setup stops and a new certificate is offered. */
+  expiredAt: Date | null;
+  /** Within RENEW_WITHIN_DAYS: setup runs, and a new certificate is offered alongside. */
+  expiresSoonAt: Date | null;
+}
+
+export const NO_EXPIRY: CertExpiry = { expiredAt: null, expiresSoonAt: null };
+
+export function certExpiry(expiresAt: Date | null, now: number): CertExpiry {
+  const state = certExpiryState(expiresAt, now);
+  return {
+    expiredAt: state === 'expired' ? expiresAt : null,
+    expiresSoonAt: state === 'soon' ? expiresAt : null,
+  };
+}
