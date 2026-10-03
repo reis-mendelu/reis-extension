@@ -38,9 +38,18 @@ beforeEach(() => {
   ) {
     const area = document.querySelector<HTMLElement>('[data-testid="pdf-scroll-area"]');
     const index = this.dataset.pageIndex;
-    const top =
-      index === undefined ? 0 : Number(index) * PAGE_HEIGHT - (area?.scrollTop ?? 0);
-    return { top, bottom: top + PAGE_HEIGHT, left: 0, right: 600, width: 600, height: PAGE_HEIGHT, x: 0, y: top, toJSON: () => ({}) } as DOMRect;
+    const top = index === undefined ? 0 : Number(index) * PAGE_HEIGHT - (area?.scrollTop ?? 0);
+    return {
+      top,
+      bottom: top + PAGE_HEIGHT,
+      left: 0,
+      right: 600,
+      width: 600,
+      height: PAGE_HEIGHT,
+      x: 0,
+      y: top,
+      toJSON: () => ({}),
+    } as DOMRect;
   });
   vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(VIEWPORT);
 });
@@ -50,7 +59,10 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-async function mountViewer(props: { initialPage?: number | null; onPageChange?: (p: number) => void }) {
+async function mountViewer(props: {
+  initialPage?: number | null;
+  onPageChange?: (p: number) => void;
+}) {
   const view = render(<PdfViewer blobUrl="blob:doc" onClose={() => {}} {...props} />);
   await screen.findAllByTestId('page');
   return { area: screen.getByTestId('pdf-scroll-area'), ...view };

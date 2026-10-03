@@ -81,8 +81,7 @@ function harness(over: Partial<OpenPdfWithInkDeps> = {}) {
   /** What the reader sends when the app resigns active: the page each file is on. */
   const reportPositions = async (positions: Record<string, number>) => {
     const listener = listeners.positions as
-      | ((e: { positions: Record<string, number> }) => Promise<void> | void)
-      | undefined;
+      ((e: { positions: Record<string, number> }) => Promise<void> | void) | undefined;
     if (!listener) throw new Error('positions listener was never registered');
     await listener({ positions });
   };
@@ -427,8 +426,9 @@ describe('openPdfWithInk', () => {
 
     await openPdfWithInk(deps, input);
 
-    const files = (open.mock.calls[0]![0] as { files: { link: string; lastPageIndex: number | null }[] })
-      .files;
+    const files = (
+      open.mock.calls[0]![0] as { files: { link: string; lastPageIndex: number | null }[] }
+    ).files;
     expect(files.find((f) => f.link === LINK)?.lastPageIndex).toBe(12);
     // Stale for its date, so not handed over as a path — but the page still is.
     expect(files.find((f) => f.link === LINK_B)?.lastPageIndex).toBe(3);
