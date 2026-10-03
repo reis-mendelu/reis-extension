@@ -59,11 +59,12 @@ export async function fetchEduroamPassword(): Promise<string | null> {
  * current one has expired — at which point it is dead on every device anyway.
  */
 export async function regenerateEduroamCert(): Promise<void> {
-  // The only IS write left in reIS, now that the calendar-sync writer is gone.
-  // It must
-  // stay student-initiated: a certificate is valid for 366 days and generating
-  // one silently would rotate a credential the student may already have
-  // installed on other devices.
+  // The only IS write left in reIS, now that the calendar-sync writer is gone,
+  // and it stays student-initiated because it is a write to the student's IS
+  // account. It does NOT revoke anything: an older certificate stays valid on
+  // the devices that have it until its own expiry (observed 2026-09, a
+  // regeneration left the previous certificate working). Each one is valid
+  // for 366 days from the moment it is generated.
   //
   // No explicit Content-Type. Both transports already supply it, and adding a
   // differently-cased copy DOUBLED it: DEFAULT_HEADERS uses lowercase
