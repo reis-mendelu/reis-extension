@@ -14,6 +14,7 @@ import type { MobileSheet } from '../../../store/types';
 import { useFiles } from '../../../hooks/data/useFiles';
 import { useClassmates } from '../../../hooks/data/useClassmates';
 import { useZaznamnik } from '../../../hooks/data/useZaznamnik';
+import { useOdevzdavarny } from '../../../hooks/data/useOdevzdavarny';
 import { useSyllabus } from '../../../hooks/data/useSyllabus';
 import { useSubjects } from '../../../hooks/data/useSubjects';
 import { useSchedule } from '../../../hooks/data/useSchedule';
@@ -61,9 +62,12 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
   // Mirrors desktop's useSubjectFileDrawerState: files/classmates/zaznamnik
   // need a subjectId (an enrolled subject) to fetch anything, so a subject
   // not yet resolved to one opens on Success rate instead of a dead tab.
-  const [activeTab, setActiveTab] = useState<DrawerTab>(() =>
-    getSubject(courseCode)?.subjectId ? 'files' : 'stats'
-  );
+  const [activeTab, setActiveTab] = useState<DrawerTab>(() => {
+    const enrolled = !!getSubject(courseCode)?.subjectId;
+    if (sheet.initialTab && (enrolled || !NO_ID_DISABLED.includes(sheet.initialTab)))
+      return sheet.initialTab;
+    return enrolled ? 'files' : 'stats';
+  });
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const fileRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const ignoreClickRef = useRef(false);
@@ -97,15 +101,20 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
   const { classmates } = useClassmates(courseCode);
   const pushSheet = useAppStore((s) => s.pushSheet);
   const { data: zaznamnikData } = useZaznamnik(courseCode);
+  const { assignments: boxes } = useOdevzdavarny(subjectInfo?.subjectId);
   const syllabusResult = useSyllabus(courseCode, resolvedCourseId, courseName);
 
   const filesCount = files?.reduce((acc, f) => acc + f.files.length, 0) ?? 0;
-  const zaznamnikCount = zaznamnikData
-    ? (zaznamnikData.ph.sections?.reduce(
-        (n, s) => n + s.arches.filter((a) => !a.empty).length,
-        0
-      ) ?? 0) + (zaznamnikData.vt.tests?.length ?? 0)
-    : undefined;
+  // Records plus submission boxes — both live on this tab (see ZaznamnikTab).
+  const zaznamnikCount =
+    zaznamnikData || boxes.length > 0
+      ? (zaznamnikData?.ph.sections?.reduce(
+          (n, s) => n + s.arches.filter((a) => !a.empty).length,
+          0
+        ) ?? 0) +
+        (zaznamnikData?.vt.tests?.length ?? 0) +
+        boxes.length
+      : undefined;
   const counts: Partial<Record<DrawerTab, number | undefined>> = {
     files: filesCount,
     classmates: classmates?.length,

@@ -23,6 +23,13 @@
       "autoPort": true
     },
     {
+      "name": "reis-webapp-boxes",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:web:boxes"],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
       "name": "reis-webapp-admin",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:web:admin"],

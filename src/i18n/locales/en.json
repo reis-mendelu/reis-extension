@@ -1412,5 +1412,23 @@
     "unmute": "Unmute {name}",
     "follow": "Follow",
     "following": "Following ✓"
+  },
+  "odevzdavarny": {
+    "title": "Submission boxes",
+    "closed": "Closed",
+    "nothingUploaded": "Nothing uploaded",
+    "uploaded": "Submitted",
+    "until": "due {date}",
+    "points": "{n} pts",
+    "submitInIs": "Submit in IS",
+    "openInIs": "Open in IS",
+    "nothing": "nothing",
+    "filesOne": "{n} file",
+    "filesFew": "{n} files",
+    "filesOther": "{n} files",
+    "openOne": "{n} open",
+    "openFew": "{n} open",
+    "openOther": "{n} open",
+    "nothingDueSoon": "Nothing due in the next 14 days"
   }
 }

@@ -458,7 +458,14 @@ export type MobileSheet =
   // `dayIso` disambiguates the occurrence: the store holds the whole semester
   // and IS reuses a lesson id across the weeks it repeats, so the id alone does
   // not identify which one was tapped.
-  | { kind: 'subjectDrawer'; courseCode: string; courseName?: string; courseId?: string }
+  | {
+      kind: 'subjectDrawer';
+      courseCode: string;
+      courseName?: string;
+      courseId?: string;
+      /** Tab to open on — the odevzdávárny card opens a box's subject on Záznamník. */
+      initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik';
+    }
   | { kind: 'studyPlan' }
   | { kind: 'person'; personId: string; personName?: string }
   // Pushed ON TOP of a person sheet, so back closes the photo and leaves the

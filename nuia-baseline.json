@@ -16,7 +16,6 @@
   "src/api/gradeHistory.test.ts",
   "src/api/gradeHistory.ts",
   "src/api/kontrola.ts",
-  "src/api/odevzdavarny.ts",
   "src/api/pastSubjects.ts",
   "src/api/personProfile.ts",
   "src/api/search/__tests__/subjectParser.test.ts",

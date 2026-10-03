@@ -10,6 +10,7 @@ import { StudyAveragesSection } from './StudyAveragesSection';
 import { useSubjectsData } from './useSubjectsData';
 import { buildFallbackPlan } from './buildFallbackPlan';
 import { ReportMissingLink } from '../Feedback/ReportMissingLink';
+import { SubmissionBoxesSummary } from '../SubmissionBoxes/SubmissionBoxesSummary';
 
 interface SubjectsPanelProps {
   onOpenSubject: (
@@ -17,7 +18,7 @@ interface SubjectsPanelProps {
     courseName: string,
     courseId: string,
     facultyCode?: string,
-    initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates',
+    initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik',
     isFulfilled?: boolean
   ) => void;
   onSearchSubject: (name: string) => void;
@@ -36,6 +37,21 @@ export function SubjectsPanel({
   const studyComparison = useAppStore((s) => s.studyComparison);
   const subjects = useAppStore((s) => s.subjects);
   const language = useAppStore((s) => s.language);
+  // Opens a box's subject on Záznamník, where the box is listed.
+  const boxesSummary = (className: string) => (
+    <SubmissionBoxesSummary
+      className={className}
+      onOpen={(courseCode, box) =>
+        onOpenSubject(
+          courseCode,
+          language === 'en' ? box.courseNameEn : box.courseNameCs,
+          box.courseId,
+          undefined,
+          'zaznamnik'
+        )
+      }
+    />
+  );
   const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
@@ -88,6 +104,7 @@ export function SubjectsPanel({
             onOpenSubject={onOpenSubject}
             onSearchSubject={onSearchSubject}
           />
+          {boxesSummary('mt-3 max-w-xl mx-auto')}
         </div>
       </div>
     );
@@ -113,8 +130,14 @@ export function SubjectsPanel({
           onOpenSubject={onOpenSubject}
           onSearchSubject={onSearchSubject}
         />
-        <div className="mt-3">
-          <StudyAveragesSection studyStats={studyStats} comparison={studyComparison} />
+        {/* Beside the average from lg up, not under it: this panel does not
+            scroll, and at 1280×800 a stacked card pushed Studijní plán off
+            the bottom with no way to reach it. */}
+        <div className="mt-3 flex flex-col items-center gap-3 lg:flex-row lg:items-start lg:justify-center">
+          <div className="w-full max-w-xl lg:flex-1">
+            <StudyAveragesSection studyStats={studyStats} comparison={studyComparison} />
+          </div>
+          {boxesSummary('w-full max-w-xl lg:flex-1')}
         </div>
       </div>
 

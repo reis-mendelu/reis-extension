@@ -15,6 +15,7 @@ import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { DocumentNoteEditor } from './DocumentNoteEditor';
 import { groupAndSortFiles } from './utils/groupFiles';
 import type { PdfRowMeta } from './types';
+import { useOdevzdavarny } from '../../hooks/data/useOdevzdavarny';
 
 const PdfViewer = lazy(() => import('./PdfViewer').then((m) => ({ default: m.PdfViewer })));
 
@@ -51,6 +52,8 @@ export function SubjectFileDrawer({
     lesson?.courseCode ? s.zaznamnik?.[lesson.courseCode] : undefined
   );
   const isPhone = useAppStore((s) => s.isTouch && s.isNarrow);
+  const { assignments: boxes } = useOdevzdavarny(state.subjectInfo?.subjectId);
+  const boxCount = boxes.length;
 
   const hasFiles = !!state.files?.length;
 
@@ -71,9 +74,11 @@ export function SubjectFileDrawer({
     return {
       files: state.files?.reduce((acc, f) => acc + f.files.length, 0) || 0,
       classmates: classmatesCount || 0,
-      zaznamnik: zaznamnikData !== undefined ? phCount + vtCount : undefined,
+      // Records plus submission boxes — both live on this tab (see ZaznamnikTab).
+      zaznamnik:
+        zaznamnikData !== undefined || boxCount > 0 ? phCount + vtCount + boxCount : undefined,
     };
-  }, [state.files, classmatesCount, zaznamnikData, phSections, vtTests]);
+  }, [state.files, classmatesCount, zaznamnikData, phSections, vtTests, boxCount]);
 
   const flushDocumentNotes = useAppStore((s) => s.flushDocumentNotes);
 

@@ -6,7 +6,9 @@ export async function syncOdevzdavarny(
   obdobi: string
 ): Promise<OdevzdavarnyResult | null> {
   const result = await fetchOdevzdavarny(studium, obdobi);
-  if (result && result.assignments.length > 0) {
+  // An empty list is stored too: the parser answers null for a page it does
+  // not recognise, so [] really means "no boxes" and must clear deleted ones.
+  if (result) {
     await IndexedDBService.set('odevzdavarny', `${studium}_${obdobi}`, result.assignments);
   }
   return result;

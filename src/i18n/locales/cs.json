@@ -1412,5 +1412,23 @@
     "unmute": "Zrušit ztlumení {name}",
     "follow": "Sledovat",
     "following": "Sleduješ ✓"
+  },
+  "odevzdavarny": {
+    "title": "Odevzdávárny",
+    "closed": "Uzavřené",
+    "nothingUploaded": "Nic neodevzdáno",
+    "uploaded": "Odevzdáno",
+    "until": "do {date}",
+    "points": "{n} b.",
+    "submitInIs": "Odevzdat v IS",
+    "openInIs": "Otevřít v IS",
+    "nothing": "nic",
+    "filesOne": "{n} soubor",
+    "filesFew": "{n} soubory",
+    "filesOther": "{n} souborů",
+    "openOne": "{n} otevřená",
+    "openFew": "{n} otevřené",
+    "openOther": "{n} otevřených",
+    "nothingDueSoon": "Nic k odevzdání do 14 dní"
   }
 }

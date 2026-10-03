@@ -2,29 +2,17 @@ import { useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import type { AppState } from '../../store/types';
 
-export function useOdevzdavarny(courseName?: string) {
-  const globalAssignments = useAppStore((state: AppState) => state.odevzdavarny);
+/**
+ * One subject's submission boxes, matched by IS predmet id (`subjectId`) —
+ * the id the box's syllabus link carries. Names differ between the plan, the
+ * schedule and this page, so matching by name missed boxes.
+ */
+export function useOdevzdavarny(subjectId?: string) {
+  const all = useAppStore((state: AppState) => state.odevzdavarny);
   const status = useAppStore((state: AppState) => state.odevzdavarnyStatus);
-  const assignments = useMemo(() => {
-    if (!globalAssignments || !courseName) {
-      return [];
-    }
-
-    const normalize = (s: string) =>
-      s
-        .replace(/^[A-Z]{2,4}-[A-Z0-9]+ /i, '')
-        .toLowerCase()
-        .replace(/\s+/g, ' ')
-        .replace(/-/g, ' ')
-        .trim();
-    const matchName = normalize(courseName);
-
-    const filtered = globalAssignments.filter(
-      (a) => normalize(a.courseNameCs) === matchName || normalize(a.courseNameEn) === matchName
-    );
-
-    return filtered;
-  }, [courseName, globalAssignments]);
-
+  const assignments = useMemo(
+    () => (subjectId ? all.filter((a) => a.courseId === subjectId) : []),
+    [all, subjectId]
+  );
   return { assignments, status };
 }
