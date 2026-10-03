@@ -369,6 +369,8 @@
   "zaznamnik": {
     "noData": "No assessment data.",
     "noAssessment": "This course has no continuous assessment or tests.",
+    "nothingYet": "Nothing recorded yet.",
+    "notLoaded": "reIS doesn't load assessment for this course.",
     "phSection": "Continuous assessment",
     "vtSection": "Tests",
     "isContinuous": "IS (continuous assessment)",

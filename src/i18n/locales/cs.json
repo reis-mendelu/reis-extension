@@ -369,6 +369,8 @@
   "zaznamnik": {
     "noData": "Žádná data hodnocení.",
     "noAssessment": "Tento předmět nemá průběžné hodnocení ani testy.",
+    "nothingYet": "Zatím nic zapsáno.",
+    "notLoaded": "Hodnocení k tomuto předmětu reIS nenačítá.",
     "phSection": "Průběžné hodnocení",
     "vtSection": "Testy",
     "isContinuous": "IS (průběžné hodnocení)",
