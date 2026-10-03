@@ -1388,7 +1388,7 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
         if let selected = selectedPicture, selected.page == index,
             !list.contains(where: { $0.id == selected.id })
         {
-            select(nil)
+            selectPicture(nil)
         }
         undoManagerForPictures?.registerUndo(withTarget: pictureUndoTarget) { [weak self] _ in
             self?.setPictures(before, onPage: index)
