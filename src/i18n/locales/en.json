@@ -173,7 +173,8 @@
       "unregisterTitle": "Confirm unregistration",
       "registerBody": "Sure you want to register for this exam?",
       "unregisterBody": "Sure you want to unregister from this exam?"
-    }
+    },
+    "attemptLegend": "Exam term types"
   },
   "feedback": {
     "title": "Report Bug / Idea",

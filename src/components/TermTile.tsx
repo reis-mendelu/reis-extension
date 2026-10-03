@@ -1,4 +1,4 @@
-import { RotateCcw, Zap, CircleCheck } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import type { ExamTerm, ExamSection } from '../types/exams';
 import { getDayOfWeek, parseRegistrationStart, formatCountdown } from '../utils/termUtils';
 import { useTranslation } from '../hooks/useTranslation';
@@ -6,6 +6,7 @@ import { useAppStore } from '../store/useAppStore';
 import { SNIPER_WINDOW_MS } from './ExamPanel/useAutoRegistration';
 import { TermBuiltinActions, TermDetailLink } from './ExamPanel/TermBuiltinActions';
 import { TermExtras } from './ExamPanel/TermExtras';
+import { AttemptPill } from './ExamPanel/AttemptPill';
 
 const attemptAccentClass: Record<string, string> = {
   regular: 'bg-success/50',
@@ -13,17 +14,6 @@ const attemptAccentClass: Record<string, string> = {
   retake2: 'bg-error/50',
   retake3: 'bg-error/50',
 };
-
-function attemptPillClass(type: string) {
-  if (type === 'regular') return 'bg-success/10';
-  if (type === 'retake1') return 'bg-warning/10';
-  return 'bg-error/10';
-}
-function attemptIconClass(type: string) {
-  if (type === 'regular') return 'text-success';
-  if (type === 'retake1') return 'text-warning';
-  return 'text-error';
-}
 
 export function TermTile({
   term,
@@ -100,22 +90,7 @@ export function TermTile({
         {term.attemptTypes && term.attemptTypes.length > 0 && (
           <div className="flex items-center gap-1 shrink-0">
             {term.attemptTypes.map((type) => (
-              <div
-                key={type}
-                className={`flex items-center gap-1 px-2 py-0.5 rounded-md ${attemptPillClass(type)}`}
-                title={t(`successRate.${type}`)}
-              >
-                {type === 'regular' ? (
-                  <CircleCheck size={10} className={attemptIconClass(type)} />
-                ) : (
-                  <>
-                    <RotateCcw size={10} className={attemptIconClass(type)} />
-                    <span className={`text-[9px] font-bold leading-none ${attemptIconClass(type)}`}>
-                      {type === 'retake1' ? '1' : type === 'retake2' ? '2' : '3'}
-                    </span>
-                  </>
-                )}
-              </div>
+              <AttemptPill key={type} type={type} />
             ))}
           </div>
         )}
@@ -258,24 +233,7 @@ export function TermTile({
           {term.attemptTypes && term.attemptTypes.length > 0 && (
             <div className="flex items-center gap-1 shrink-0">
               {term.attemptTypes.map((type) => (
-                <div
-                  key={type}
-                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${attemptPillClass(type)}`}
-                  title={t(`successRate.${type}`)}
-                >
-                  {type === 'regular' ? (
-                    <CircleCheck size={9} className={attemptIconClass(type)} />
-                  ) : (
-                    <>
-                      <RotateCcw size={9} className={attemptIconClass(type)} />
-                      <span
-                        className={`text-[8px] font-black leading-none ${attemptIconClass(type)}`}
-                      >
-                        {type === 'retake1' ? '1' : type === 'retake2' ? '2' : '3'}
-                      </span>
-                    </>
-                  )}
-                </div>
+                <AttemptPill key={type} type={type} />
               ))}
             </div>
           )}
