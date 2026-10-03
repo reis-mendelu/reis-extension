@@ -66,8 +66,17 @@ function taughtOn(lessonDates: ReadonlySet<string>, weekday: number): boolean {
  * "has this student ever got a Saturday lesson" is answerable, and answering
  * it per student settles both. The desktop grid still widens per week — see
  * `visibleDayCount` in `WeeklyCalendar/useCalendarData.ts`.
+ *
+ * One exception: TODAY is always in its own week. On Saturday 3 October 2026
+ * the calendar opened on today and the strip had no chip for it, so nothing on
+ * screen said which day it was — "I just don't know what day is today". Every
+ * calendar app surveyed keeps today on screen; only today's week grows.
  */
-export function weekDays(selectedIso: string, lessonDates: ReadonlySet<string>): Date[] {
+export function weekDays(
+  selectedIso: string,
+  lessonDates: ReadonlySet<string>,
+  todayIso: string
+): Date[] {
   const monday = mondayOf(selectedIso);
   const saturday = taughtOn(lessonDates, 6);
   const sunday = taughtOn(lessonDates, 0);
@@ -75,7 +84,9 @@ export function weekDays(selectedIso: string, lessonDates: ReadonlySet<string>):
     const date = new Date(monday);
     date.setDate(monday.getDate() + i);
     return date;
-  }).filter((_, i) => i < 5 || (i === 5 && saturday) || (i === 6 && sunday));
+  }).filter(
+    (date, i) => i < 5 || (i === 5 && saturday) || (i === 6 && sunday) || toIso(date) === todayIso
+  );
 }
 
 /**
@@ -87,11 +98,39 @@ export function weekDays(selectedIso: string, lessonDates: ReadonlySet<string>):
  * works from a hidden day too, since the calendar can open on a Saturday.
  * Seven tries always suffice: Monday–Friday are shown in every week.
  */
-export function stepDay(iso: string, steps: -1 | 1, lessonDates: ReadonlySet<string>): string {
+export function stepDay(
+  iso: string,
+  steps: -1 | 1,
+  lessonDates: ReadonlySet<string>,
+  todayIso: string
+): string {
   let candidate = iso;
   for (let i = 0; i < 7; i++) {
     candidate = shiftIso(candidate, steps);
-    if (weekDays(candidate, lessonDates).some((d) => toIso(d) === candidate)) return candidate;
+    if (weekDays(candidate, lessonDates, todayIso).some((d) => toIso(d) === candidate)) {
+      return candidate;
+    }
   }
   return shiftIso(iso, steps);
+}
+
+/**
+ * One week arrow (or week swipe): the same weekday `steps` weeks away, or —
+ * when that day is a weekend the target week does not show — the last day it
+ * does. Hidden days are only ever Saturday and Sunday, so the last shown day is
+ * also the nearest one.
+ *
+ * Plain `shiftIso(iso, ±7)` took a student from today's Saturday (shown,
+ * because it is today) to next week's Saturday (hidden): the header named a
+ * day the strip had no chip for, the very defect the today chip fixed.
+ */
+export function stepWeek(
+  iso: string,
+  steps: number,
+  lessonDates: ReadonlySet<string>,
+  todayIso: string
+): string {
+  const target = shiftIso(iso, steps * 7);
+  const shown = weekDays(target, lessonDates, todayIso).map(toIso);
+  return shown.includes(target) ? target : (shown[shown.length - 1] ?? target);
 }

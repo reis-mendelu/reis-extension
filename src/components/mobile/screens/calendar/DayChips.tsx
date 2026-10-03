@@ -1,8 +1,9 @@
 import { useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from '../../../../hooks/useTranslation';
+import { useAppStore } from '../../../../store/useAppStore';
 import { getCzechHoliday } from '../../../../utils/holidays';
-import { toIso, toCompact, shiftIso, weekDays } from '../../../../utils/mobile/weekDays';
+import { toIso, toCompact, stepWeek, weekDays } from '../../../../utils/mobile/weekDays';
 import { useSwipeSteps } from '../../primitives/useSwipeSteps';
 
 export interface DayChipsProps {
@@ -44,7 +45,10 @@ export interface DayChipsProps {
 export function DayChips({ selectedIso, onSelect, lessonDates, onPickDay }: DayChipsProps) {
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
-  const days = weekDays(selectedIso, lessonDates);
+  // The store's clock, as the week grid's now-line reads it: the pulse moves it,
+  // so the mark crosses midnight in an app left open.
+  const todayIso = toIso(useAppStore((s) => s.now));
+  const days = weekDays(selectedIso, lessonDates, todayIso);
 
   const elementRef = useRef<HTMLDivElement>(null);
   /**
@@ -79,7 +83,7 @@ export function DayChips({ selectedIso, onSelect, lessonDates, onPickDay }: DayC
     onMove: setOffset,
     onEnd: (steps) => {
       setOffset(null);
-      if (steps !== 0) onSelect(shiftIso(selectedIso, steps * 7));
+      if (steps !== 0) onSelect(stepWeek(selectedIso, steps, lessonDates, todayIso));
     },
     onCancel: () => setOffset(null),
   });
@@ -93,7 +97,7 @@ export function DayChips({ selectedIso, onSelect, lessonDates, onPickDay }: DayC
     <div className="flex flex-shrink-0 items-center gap-1 px-2 pb-2.5 pt-4">
       <button
         type="button"
-        onClick={() => onSelect(shiftIso(selectedIso, -7))}
+        onClick={() => onSelect(stepWeek(selectedIso, -1, lessonDates, todayIso))}
         aria-label={t('mobile.calendar.prevWeek')}
         className={arrowClass}
       >
@@ -119,6 +123,7 @@ export function DayChips({ selectedIso, onSelect, lessonDates, onPickDay }: DayC
         {days.map((date) => {
           const iso = toIso(date);
           const isSelected = iso === selectedIso;
+          const isToday = iso === todayIso;
           const weekday = new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(date);
           const label = weekday.charAt(0).toUpperCase() + weekday.slice(1);
           // Marked in the row, not only once the day is opened: a student
@@ -140,6 +145,7 @@ export function DayChips({ selectedIso, onSelect, lessonDates, onPickDay }: DayC
             <button
               key={iso}
               type="button"
+              aria-current={isToday ? 'date' : undefined}
               title={holiday ?? undefined}
               onClick={() => (onPickDay ?? onSelect)(iso)}
               // Tonal, not a solid primary fill. `--color-primary` is a lime
@@ -155,7 +161,28 @@ export function DayChips({ selectedIso, onSelect, lessonDates, onPickDay }: DayC
                   : 'font-medium text-base-content/70'
               }`}
             >
-              {label} {date.getDate()}
+              {/* Today is marked apart from the selection, the way Google
+                  Calendar does it: a filled circle on the date and the weekday
+                  in the same ink, wherever the student has moved to. The
+                  selection keeps its tonal pill, and on today the two stack.
+                  Ink on the lime fill, not white: white on #79be15 is 2.29:1,
+                  `primary-content` on it is 6.42:1 in both themes.
+                  Every number gets the circle's height, so the row keeps its
+                  height whichever chip carries it; only the circle is widened,
+                  or every "Čt 1" spreads apart. */}
+              <span className={isToday ? 'font-bold text-[var(--tone-primary)]' : undefined}>
+                {label}
+              </span>{' '}
+              <span
+                data-testid={isToday ? 'day-chip-today' : undefined}
+                className={`inline-flex h-6 items-center justify-center rounded-full tabular-nums max-[359px]:h-5 ${
+                  isToday
+                    ? 'min-w-6 bg-primary px-1 font-bold text-primary-content max-[359px]:min-w-5'
+                    : ''
+                }`}
+              >
+                {date.getDate()}
+              </span>
               {/* One dot, three states: a holiday is red, a day with something
                   on it is primary, and an empty day carries nothing — absence
                   is the clearest way to say "nothing here", and it is the only
@@ -186,7 +213,7 @@ export function DayChips({ selectedIso, onSelect, lessonDates, onPickDay }: DayC
       </div>
       <button
         type="button"
-        onClick={() => onSelect(shiftIso(selectedIso, 7))}
+        onClick={() => onSelect(stepWeek(selectedIso, 1, lessonDates, todayIso))}
         aria-label={t('mobile.calendar.nextWeek')}
         className={arrowClass}
       >

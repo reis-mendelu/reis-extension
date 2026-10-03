@@ -4,7 +4,7 @@ import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useWideViewport } from '../../../../hooks/ui/useWideViewport';
 import { getCzechHoliday } from '../../../../utils/holidays';
-import { toIso, toCompact, shiftIso, weekDays } from '../../../../utils/mobile/weekDays';
+import { toIso, toCompact, stepWeek, weekDays } from '../../../../utils/mobile/weekDays';
 import { useSwipeSteps } from '../../primitives/useSwipeSteps';
 import { useOpenLesson } from './useOpenLesson';
 import { useElementHeight } from './useElementHeight';
@@ -46,12 +46,12 @@ export function WeekGrid({ lessons, selectedIso, lessonDates, onSelectDay }: Wee
   const columnsRef = useRef<HTMLDivElement>(null);
   const gridPx = useElementHeight(columnsRef);
 
-  const days = weekDays(selectedIso, lessonDates).map(toIso);
+  const todayIso = toIso(now);
+  const days = weekDays(selectedIso, lessonDates, todayIso).map(toIso);
   const weekLessons = lessons.filter((l) => days.some((d) => toCompact(d) === l.date));
   const range = weekHourRange(weekLessons);
   const span = range.end - range.start;
   const hours = Array.from({ length: span + 1 }, (_, i) => range.start + i);
-  const todayIso = toIso(now);
 
   // Written straight to the node, never through state — DayChips documents why.
   const setOffset = (px: number | null) => {
@@ -70,7 +70,7 @@ export function WeekGrid({ lessons, selectedIso, lessonDates, onSelectDay }: Wee
     onMove: setOffset,
     onEnd: (steps) => {
       setOffset(null);
-      if (steps !== 0) onSelectDay(shiftIso(selectedIso, steps * 7));
+      if (steps !== 0) onSelectDay(stepWeek(selectedIso, steps, lessonDates, todayIso));
     },
     onCancel: () => setOffset(null),
   });

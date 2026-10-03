@@ -107,7 +107,7 @@ describe('CalendarScreen — week view', () => {
   it('tapping a day in the strip opens that day', () => {
     useAppStore.setState({ mobileCalendarView: 'week' } as never);
     render(<CalendarScreen />);
-    fireEvent.click(within(screen.getByTestId('day-strip')).getByText(/Út 6/));
+    fireEvent.click(within(screen.getByTestId('day-strip')).getByRole('button', { name: /Út 6/ }));
     expect(useAppStore.getState().mobileCalendarView).toBe('day');
     expect(useAppStore.getState().mobileSelectedDayIso).toBe('2026-10-06');
   });
