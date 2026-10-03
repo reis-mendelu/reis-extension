@@ -6,6 +6,8 @@
 const CERT_URL = 'https://is.mendelu.cz/auth/wifi/certifikat.pl';
 
 import { fetchWithAuth, fetchAuthedBytes } from './client';
+import { certNotAfter } from '../services/eduroam/certValidity';
+import { logError } from '../utils/reportError';
 
 export interface EduroamCertMaterial {
   /** MENDELU root CA, DER bytes (also the server-validation anchor). */
@@ -16,6 +18,12 @@ export interface EduroamCertMaterial {
   password: string | null;
   /** True when no cert existed and a fresh one had to be generated. */
   generated: boolean;
+  /**
+   * The certificate's notAfter, read from the certificate itself; null when it
+   * could not be read. IS keeps offering an expired certificate and does not
+   * replace it on its own, so this is how the UI knows to offer a new one.
+   */
+  expiresAt: Date | null;
 }
 
 /**
@@ -45,7 +53,12 @@ export async function fetchEduroamPassword(): Promise<string | null> {
   return parseCertPage(await getText(`${CERT_URL}?lang=cz`)).password;
 }
 
-async function generateCert(): Promise<void> {
+/**
+ * Ask IS for a new certificate. Exported for the one caller allowed to use it:
+ * the student's own "generate a new certificate" tap, offered only once the
+ * current one has expired — at which point it is dead on every device anyway.
+ */
+export async function regenerateEduroamCert(): Promise<void> {
   // The only IS write left in reIS, now that the calendar-sync writer is gone.
   // It must
   // stay student-initiated: a certificate is valid for 366 days and generating
@@ -75,16 +88,32 @@ export async function fetchEduroamCertMaterial(): Promise<EduroamCertMaterial> {
   let generated = false;
 
   if (!hasCert) {
-    await generateCert();
+    await regenerateEduroamCert();
     ({ hasCert, password } = parseCertPage(await getText(`${CERT_URL}?lang=cz`)));
     generated = true;
     if (!hasCert) throw new Error('eduroam: certificate generation did not produce a certificate');
   }
 
-  const [rootCaDer, clientP12] = await Promise.all([
+  const [rootCaDer, clientP12, expiresAt] = await Promise.all([
     fetchAuthedBytes(`${CERT_URL}?get=root-der;lang=cz`),
     fetchAuthedBytes(`${CERT_URL}?get=user-p12;lang=cz`),
+    fetchExpiry(),
   ]);
 
-  return { rootCaDer, clientP12, password, generated };
+  return { rootCaDer, clientP12, password, generated, expiresAt };
+}
+
+/**
+ * notAfter of the student's certificate, from IS's bare DER copy of it. Fails
+ * open: the check only adds information, so an unreadable answer is "unknown"
+ * and setup goes on exactly as it did before the check existed.
+ */
+async function fetchExpiry(): Promise<Date | null> {
+  try {
+    const der = await fetchAuthedBytes(`${CERT_URL}?get=user-der;lang=cz`);
+    return certNotAfter(der);
+  } catch (e) {
+    logError('Api.fetchEduroamExpiry', e);
+    return null;
+  }
 }

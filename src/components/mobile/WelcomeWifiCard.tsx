@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from 'motion/react';
 import { Check, Wifi } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
+import { formatDate } from '../../utils/date';
 import type { EduroamStatus } from '../../hooks/data/useEduroamSetup';
 import { isEduroamConfigured, type EduroamConfigOutcome } from '../../mobile/configureEduroam';
 import type { NativeEduroamTarget } from '../../mobile/eduroamNative';
@@ -9,6 +10,8 @@ export interface WelcomeWifiCardProps {
   status: EduroamStatus;
   outcome: EduroamConfigOutcome | null;
   target: NativeEduroamTarget;
+  /** Set with status `expired`; the button then generates a new certificate. */
+  expiredAt?: Date | null;
   onSetup: () => void;
 }
 
@@ -25,7 +28,13 @@ export interface WelcomeWifiCardProps {
  * tablet dialog. See `WelcomeScreen` for why the tablet gets a dialog and not
  * a bigger screen.
  */
-export function WelcomeWifiCard({ status, outcome, target, onSetup }: WelcomeWifiCardProps) {
+export function WelcomeWifiCard({
+  status,
+  outcome,
+  target,
+  expiredAt = null,
+  onSetup,
+}: WelcomeWifiCardProps) {
   const { t } = useTranslation();
   const reduced = useReducedMotion();
   const working = status === 'working';
@@ -33,6 +42,9 @@ export function WelcomeWifiCard({ status, outcome, target, onSetup }: WelcomeWif
   // Any error lands here — a genuine `failed` from the OS, or a throw before
   // the OS was reached (lapsed session, cert fetch). One line either way.
   const failed = status === 'error';
+  // IS's certificate expired. Nothing failed; the one button now generates a
+  // new one (the screen wires `onSetup` to `renew`).
+  const expired = status === 'expired' && expiredAt !== null;
 
   // iOS says `alreadyAssociated` whenever the device is on the SSID, whether or
   // not a configuration backs it (#261). That is not done — nothing was
@@ -42,11 +54,13 @@ export function WelcomeWifiCard({ status, outcome, target, onSetup }: WelcomeWif
 
   const line = done
     ? t('mobile.welcome.wifiDone')
-    : stale
-      ? t('eduroam.native.staleAssociation')
-      : failed
-        ? t('mobile.welcome.wifiFailed')
-        : t('mobile.welcome.wifiLine');
+    : expired
+      ? t('eduroam.expired.text', { date: formatDate(expiredAt) })
+      : stale
+        ? t('eduroam.native.staleAssociation')
+        : failed
+          ? t('mobile.welcome.wifiFailed')
+          : t('mobile.welcome.wifiLine');
 
   return (
     // A centred card on the phone. Inside the tablet dialog it is already on a
@@ -98,7 +112,7 @@ export function WelcomeWifiCard({ status, outcome, target, onSetup }: WelcomeWif
 
         {/* What the tap does, while it is still on offer. Gone once done: the
             done line already says everything that is left to say. */}
-        {!done && !failed && (
+        {!done && !failed && !expired && (
           <p className="text-sm text-base-content/70">{t('mobile.welcome.wifiBody')}</p>
         )}
 
@@ -142,7 +156,11 @@ export function WelcomeWifiCard({ status, outcome, target, onSetup }: WelcomeWif
           }`}
         >
           {working && <span className="loading loading-spinner loading-xs" />}
-          {working ? t('eduroam.native.working') : t('eduroam.native.button')}
+          {working
+            ? t('eduroam.native.working')
+            : expired
+              ? t('eduroam.expired.renew')
+              : t('eduroam.native.button')}
         </button>
       )}
     </div>

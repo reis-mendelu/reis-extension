@@ -607,6 +607,10 @@
     "openSettings": "Open Profiles settings",
     "privacyNoteLocal": "Everything is generated on your device and your private key stays protected by a password only you enter at install time.",
     "privacyNoteTransfer": "Everything is generated on your device and your private key is protected by a password only you enter at install time. The transfer link is one-time and expires within a few minutes.",
+    "expired": {
+      "text": "Your eduroam certificate expired on {date}, and IS won't renew it by itself. Generate a new one — the old one no longer works anywhere, so set your other devices up again afterwards.",
+      "renew": "Generate a new certificate"
+    },
     "native": {
       "button": "Set up eduroam",
       "working": "Opening Wi-Fi setup…",

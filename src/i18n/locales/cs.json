@@ -607,6 +607,10 @@
     "openSettings": "Otevřít nastavení Profily",
     "privacyNoteLocal": "Vše se generuje ve vašem zařízení a váš soukromý klíč zůstává chráněn heslem, které zadáte jen vy při instalaci.",
     "privacyNoteTransfer": "Vše se generuje ve vašem zařízení a váš soukromý klíč je chráněn heslem, které zadáte jen vy při instalaci. Přenosový odkaz je jednorázový a vyprší během několika minut.",
+    "expired": {
+      "text": "Tvůj certifikát pro eduroam vypršel {date} a IS ho sám neobnoví. Vygeneruj si nový — ten starý už nefunguje nikde, takže ostatní zařízení pak nastav znovu.",
+      "renew": "Vygenerovat nový certifikát"
+    },
     "native": {
       "button": "Nastavit eduroam",
       "working": "Otevírám nastavení Wi-Fi…",

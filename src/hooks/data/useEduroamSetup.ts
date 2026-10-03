@@ -1,14 +1,21 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { fetchEduroamCertMaterial, fetchEduroamPassword } from '../../api/eduroam';
-import { generateEduroamMobileconfig } from '../../services/eduroam/mobileconfig';
-import { generateEapConfig } from '../../services/eduroam/eapConfig';
+import {
+  fetchEduroamCertMaterial,
+  fetchEduroamPassword,
+  regenerateEduroamCert,
+} from '../../api/eduroam';
 import { configureEduroam, type EduroamConfigOutcome } from '../../mobile/configureEduroam';
 import { canConfigureEduroamNatively, nativeEduroamDeps } from '../../mobile/eduroamNative';
-import { deliverEduroamProfile, buildProfileDelivery } from '../../mobile/eduroamProfile';
+import { deliverEduroamFile } from './eduroamFileDelivery';
 import { logError } from '../../utils/reportError';
 import { trackFeatureSignal } from '../../api/featureUsage';
 
-export type EduroamStatus = 'idle' | 'working' | 'done' | 'error';
+/**
+ * `expired`: IS's certificate is past its notAfter, so nothing was installed;
+ * the surface offers `renew`. Its own status rather than `error`, because
+ * nothing failed and the way forward is a different button.
+ */
+export type EduroamStatus = 'idle' | 'working' | 'done' | 'error' | 'expired';
 /** Which device the student is setting up — not necessarily the desktop's OS. */
 export type EduroamTarget = 'mac' | 'ios' | 'android' | 'windows';
 
@@ -32,6 +39,8 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
   const [error, setError] = useState<string | null>(null);
   /** Native-path only: what Android did with the network. Null on file paths. */
   const [outcome, setOutcome] = useState<EduroamConfigOutcome | null>(null);
+  /** Set when IS's certificate has expired; the UI then offers `renew`. */
+  const [expiredAt, setExpiredAt] = useState<Date | null>(null);
 
   // The .p12 password is NEVER embedded: the macOS path prompts at install, and
   // the iOS transfer path must keep the profile from being a standalone credential.
@@ -40,9 +49,19 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
     setError(null);
     setPassword(null);
     setOutcome(null);
+    setExpiredAt(null);
     try {
       const material = await fetchEduroamCertMaterial();
-      const { rootCaDer, clientP12, password: extractionPw } = material;
+      const { password: extractionPw } = material;
+
+      // IS keeps offering an expired certificate and never replaces it by
+      // itself. Installing it gives a network that cannot authenticate, so
+      // stop here on every target and let the student ask for a new one.
+      if (material.expiresAt && material.expiresAt.getTime() <= Date.now()) {
+        setExpiredAt(material.expiresAt);
+        setStatus('expired');
+        return;
+      }
 
       // On the phone itself the OS configures eduroam directly — no profile
       // file and nothing to hand over. Everything below this branch runs on the
@@ -81,38 +100,7 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
         throw new Error('eduroam on a phone is set up by the reIS app, not from a browser');
       }
 
-      const xml = generateEduroamMobileconfig({ rootCaDer, clientP12 });
-
-      // Not `saveAs`. In a browser it is the same anchor download it always
-      // was, but the Mac target is now also reached from INSIDE the app — reIS
-      // on a Mac is the iOS app, where NEHotspotConfiguration is unavailable
-      // and a blob download is a silent no-op. deliverEduroamProfile writes the
-      // file natively and hands it to the share sheet there.
-      const delivery = buildProfileDelivery();
-      if (t === 'windows') {
-        // Windows: same .eap-config as Android, but reIS runs on this PC, so we
-        // save it straight to disk. Windows has no association for the
-        // extension, so double-clicking does NOT open it — geteduroam loads it
-        // from its own ··· menu, which is what the manual's steps walk through.
-        const eap = generateEapConfig({ rootCaDer, clientP12 });
-        await deliverEduroamProfile(
-          new Blob([eap], { type: 'application/eap-config' }),
-          'eduroam-reis.eap-config',
-          delivery
-        );
-      } else {
-        await deliverEduroamProfile(
-          new Blob([xml], { type: 'application/x-apple-aspen-config' }),
-          'eduroam-reis.mobileconfig',
-          delivery
-        );
-      }
-
-      // Deliberately a different signal from the native one: this is a
-      // profile handed over, not a configured network. The student still has
-      // to open it and approve the install (or load it from geteduroam's
-      // menu on Windows), and reIS cannot see whether they did.
-      void trackFeatureSignal('eduroam_profile_delivered');
+      await deliverEduroamFile(t, material);
       setPassword(extractionPw);
       setStatus('done');
     } catch (e) {
@@ -122,10 +110,35 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
     }
   }, []);
 
+  /**
+   * The student's "generate a new certificate" tap, offered only once the
+   * current one has expired. Generation must stay student-initiated (see
+   * `regenerateEduroamCert`); an expired certificate is dead on every device,
+   * so replacing it costs the student nothing. Then sets up with the new one.
+   */
+  const renew = useCallback(
+    async (t: EduroamTarget) => {
+      setStatus('working');
+      setError(null);
+      setExpiredAt(null);
+      try {
+        await regenerateEduroamCert();
+      } catch (e) {
+        logError('useEduroamSetup.renew', e);
+        setError((e as Error).message);
+        setStatus('error');
+        return;
+      }
+      await run(t);
+    },
+    [run]
+  );
+
   const selectTarget = useCallback((t: EduroamTarget) => {
     setTarget(t);
     setStatus('idle');
     setError(null);
+    setExpiredAt(null);
     setPassword(null);
     setOutcome(null);
     // Prefetch the extraction password so the chip can show it before Download.
@@ -141,6 +154,7 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
   const reset = useCallback(() => {
     setStatus('idle');
     setError(null);
+    setExpiredAt(null);
     setPassword(null);
     setOutcome(null);
   }, []);
@@ -172,7 +186,9 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
     password,
     error,
     outcome,
+    expiredAt,
     run,
+    renew,
     reset,
     openProfilesSettings,
   };
