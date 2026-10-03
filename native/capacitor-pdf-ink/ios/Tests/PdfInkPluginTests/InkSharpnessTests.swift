@@ -106,5 +106,17 @@ final class InkSharpnessTests: XCTestCase {
         RunLoop.main.run(until: Date().addingTimeInterval(0.5))
 
         XCTAssertEqual(overlay.inkScale, 2.5, accuracy: 0.01, "a pinch left the ink at the old scale")
+
+        // And back out: the zoom limits are lowered before the zoom itself, or
+        // UIKit would clamp the way down at the old minimum.
+        let fitted = reader.fittedPageScale
+        reader.pageScale = fitted
+        RunLoop.main.run(until: Date().addingTimeInterval(0.5))
+        overlay.frame = CGRect(x: 0, y: 0, width: 595, height: 842)
+        overlay.layoutIfNeeded()
+
+        XCTAssertEqual(overlay.inkScale, fitted, accuracy: 0.01)
+        XCTAssertEqual(overlay.canvas.zoomScale, fitted, accuracy: 0.01)
+        XCTAssertEqual(overlay.canvas.frame, overlay.bounds, "zooming back out moved the ink")
     }
 }
