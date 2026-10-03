@@ -4,6 +4,9 @@ import { usePersonPhoto } from '../../../../hooks/data/usePersonPhoto';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { personInitials } from '../../../../utils/mobile/personInitials';
 
+const AVATAR =
+  'flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-base-200 font-display text-base font-bold text-[var(--tone-primary)]';
+
 /**
  * Who the Profile tab belongs to: the student's own photo, name and ID, in a
  * full-width block under the header.
@@ -26,25 +29,21 @@ export function ProfileIdentity() {
         {/* Tapping the photo opens the same lightbox a classmate's photo does,
             through the sheet stack, so Android's back closes it and leaves this
             tab as it was. A button only once there is a photo — PersonSheet's
-            rule: initials blown up to full screen are nothing to look at. They
+            rule: initials blown up to full screen are nothing to look at. Not
+            even a disabled one: a screen reader still announces that. Initials
             stay as the fallback while it loads or when there is no picture. */}
-        <button
-          type="button"
-          disabled={!photo}
-          aria-label={photo ? t('mobile.sheet.enlargePhoto') : undefined}
-          onClick={() =>
-            photo && studentId && pushSheet({ kind: 'personPhoto', personId: studentId, name })
-          }
-          className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-base-200 font-display text-base font-bold text-[var(--tone-primary)]"
-        >
-          {photo ? (
+        {photo && studentId ? (
+          <button
+            type="button"
+            aria-label={t('mobile.sheet.enlargePhoto')}
+            onClick={() => pushSheet({ kind: 'personPhoto', personId: studentId, name })}
+            className={AVATAR}
+          >
             <img src={photo} alt={name} className="h-full w-full object-cover" />
-          ) : name ? (
-            personInitials(name)
-          ) : (
-            <User size={18} />
-          )}
-        </button>
+          </button>
+        ) : (
+          <div className={AVATAR}>{name ? personInitials(name) : <User size={18} />}</div>
+        )}
         {/* No close button: this is a tab, not a sheet — the nav is how you
             leave.
 

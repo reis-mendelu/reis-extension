@@ -47,7 +47,8 @@ describe('the profile avatar', () => {
   it('offers nothing to enlarge while there is no photo, and shows initials', () => {
     render(<ProfileScreen />);
     expect(screen.queryByLabelText('Zvětšit fotku')).not.toBeInTheDocument();
-    expect(screen.getByText('JN')).toBeInTheDocument();
+    // Not even a disabled button: a screen reader would still announce one.
+    expect(screen.getByText('JN').closest('button')).toBeNull();
   });
 
   it('is not a button at all before IS has told us who the student is', () => {
