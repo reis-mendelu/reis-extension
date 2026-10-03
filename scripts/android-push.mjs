@@ -84,8 +84,8 @@ function reconnectViaGateway() {
  * fresh server reports nothing for the first second or two — so ask
  * explicitly, and give discovery a few tries.
  */
-function connectWireless() {
-  for (let attempt = 0; attempt < 4; attempt++) {
+function connectWireless(attempts = 4) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
     const wifi = devices().find(isWifiSerial);
     if (wifi) return wifi;
     for (const endpoint of parseMdnsConnect(adb('mdns', 'services'))) {
@@ -93,7 +93,7 @@ function connectWireless() {
       if (/connected to/.test(out)) return endpoint;
       console.log(out);
     }
-    execFileSync('sleep', ['1']);
+    if (attempt < attempts - 1) execFileSync('sleep', ['1']);
   }
   return undefined;
 }
@@ -135,11 +135,17 @@ function switchToWifi() {
   return `${ip}:5555`;
 }
 
+// With something already listed but nothing on Wi-Fi — an emulator, or the
+// phone on USB only — one quick mDNS look still runs, so a Wi-Fi phone wins
+// over `all[0]`. With nothing listed, discovery gets a few seconds to catch up.
+const present = devices();
 const wifi = process.argv.includes('--wifi')
   ? switchToWifi()
-  : devices().length === 0
+  : present.length === 0
     ? (connectWireless() ?? reconnectViaGateway())
-    : undefined;
+    : present.some(isWifiSerial)
+      ? undefined
+      : connectWireless(1);
 const all = devices();
 // Prefer the Wi-Fi transport: with the cable also in, the same phone is listed twice.
 const serial = wifi ?? process.env.ANDROID_SERIAL ?? all.find(isWifiSerial) ?? all[0];
