@@ -31,7 +31,7 @@ export function SyllabusTab({
   const { params } = useUserParams();
   const { t, language } = useTranslation();
 
-  const isSyllabusUrl = courseId ? syllabusUrl(courseId, language) : null;
+  const syllabusHref = courseId ? syllabusUrl(courseId, language) : null;
 
   if (isLoading)
     return (
@@ -58,7 +58,7 @@ export function SyllabusTab({
       {syllabus.requirementsTable.length > 0 && (
         <GradingTable table={syllabus.requirementsTable} studyForm={params?.studyForm || 'prez'} />
       )}
-      {isSyllabusUrl && showIsBacklink && <ISBacklink href={isSyllabusUrl} />}
+      {syllabusHref && showIsBacklink && <ISBacklink href={syllabusHref} />}
     </div>
   );
 }
