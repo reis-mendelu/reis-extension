@@ -154,9 +154,12 @@ the current one opens or shuts it as usual and records nothing.
 neznám**, which runs the same loop over just those covers. *Hotovo* returns the
 reader to normal with every cover shut.
 
-**Leaving early.** *Ukončit*, switching file in the sidebar, closing the reader
-or backgrounding the app ends the test. Marks already given are kept; nothing
-else is saved about the test (no "resume at cover 4").
+**Leaving early.** *Ukončit*, switching file in the sidebar or closing the reader
+ends the test. Backgrounding does not: a glance at Control Center must not throw
+a test away, and if the system kills the app the test is gone like any other
+in-memory state. Marks already given are kept either way, because each one is
+saved as it is given; nothing else about the test is saved (no "resume at
+cover 4").
 
 **Logic lives outside the view controller.** `RecallSession` is plain Swift
 (Foundation + CoreGraphics only): given `[Int: [PageCover]]` it produces the
