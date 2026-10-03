@@ -73,3 +73,31 @@ it('renders only the back control when given both onBack and onClose', () => {
   expect(screen.getByLabelText('mobile.sheet.back')).toBeInTheDocument();
   expect(screen.queryByLabelText('mobile.sheet.close')).not.toBeInTheDocument();
 });
+
+/**
+ * The subject sheet's title links to the subject's syllabus in IS, as the
+ * extension's drawer title always has. Opt-in per sheet: most sheets share this
+ * header and have no page in IS to point at.
+ *
+ * Left inside the touch-none header on purpose. touch-action only stops the
+ * browser panning; a tap still fires its click. On a sheet that drags, the
+ * click that ends a drag is swallowed by useSheetDrag's click capture.
+ */
+describe('SheetHeader titleHref', () => {
+  const href = 'https://is.mendelu.cz/auth/katalog/syllabus.pl?predmet=159410;lang=cz';
+
+  it('makes the title a link that leaves through the external-link handler', () => {
+    render(<SheetHeader title="Algoritmizace" titleHref={href} onBack={() => {}} />);
+    const link = screen.getByRole('link', { name: /Algoritmizace/ });
+    expect(link).toHaveAttribute('href', href);
+    // target=_blank is what installExternalLinkHandler intercepts on native.
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it('keeps the title plain text without one', () => {
+    render(<SheetHeader title="Algoritmizace" onBack={() => {}} />);
+    expect(screen.getByText('Algoritmizace').closest('a')).toBeNull();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
+});

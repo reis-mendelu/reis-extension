@@ -15,6 +15,7 @@ import { FileRowActions } from './FileRowActions';
 import type { DownloadTick } from '../../hooks/ui/readBlobWithProgress';
 import { opensInReader } from './utils/isPdfFile';
 import type { PdfRowMeta } from './types';
+import type { FileRowHint } from '../../utils/contentDisposition';
 
 export interface FileListItemProps {
   subFile: FileAttachment;
@@ -31,9 +32,9 @@ export interface FileListItemProps {
   fileRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
   ignoreClickRef: React.MutableRefObject<boolean>;
   onToggleSelect: (id: string, e: React.SyntheticEvent) => void;
-  onOpenFile: (link: string) => void;
+  onOpenFile: (link: string, row?: FileRowHint) => void;
   onViewPdf?: (link: string, meta: PdfRowMeta) => void;
-  onDownloadSingle?: (link: string) => void;
+  onDownloadSingle?: (link: string, row?: FileRowHint) => void;
   onToggleNote: () => void;
   onCloseNote: () => void;
   /** This row's file is being fetched right now. */
@@ -76,7 +77,7 @@ export function FileListItem({
     } else if (onViewPdf && opensInReader(subFile)) {
       onViewPdf(subFile.link, { name: displayName, date });
     } else {
-      onOpenFile(subFile.link);
+      onOpenFile(subFile.link, { name: displayName, type: subFile.type });
     }
   };
 

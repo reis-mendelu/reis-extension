@@ -3,6 +3,7 @@ import { Pencil, ExternalLink, X } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
 import { useCourseName } from '../../../hooks/ui/useCourseName';
+import { syllabusUrl } from '../../../utils/syllabusUrl';
 
 interface EditableCourseTitleProps {
   courseCode?: string;
@@ -117,7 +118,7 @@ export function EditableCourseTitle({
       <div className="flex items-center gap-2 overflow-hidden">
         {courseId ? (
           <a
-            href={`https://is.mendelu.cz/auth/katalog/syllabus.pl?predmet=${courseId};lang=${language}`}
+            href={syllabusUrl(courseId, language)}
             target="_blank"
             rel="noopener noreferrer"
             className="clickable-link text-lg sm:text-xl font-bold flex items-center gap-1.5 truncate"

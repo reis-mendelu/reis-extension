@@ -149,7 +149,9 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
           setPreviewUrl(blobUrl);
           setPreviewFile({ link, name });
         } else {
-          await openFile(link);
+          // The row's title names the file if IS sends none — never the 'PDF'
+          // placeholder above.
+          await openFile(link, meta?.name ? { name: meta.name } : undefined);
         }
       } finally {
         if (alive.current) setOpeningLink(null);

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ChevronLeft, X } from 'lucide-react';
+import { ChevronLeft, ExternalLink, X } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 export interface SheetHeaderProps {
@@ -15,6 +15,12 @@ export interface SheetHeaderProps {
   onBack?: () => void;
   /** Sits left of the title block in the same row — a person's avatar. */
   leading?: ReactNode;
+  /**
+   * Makes the title a link to this sheet's page in IS. Opt-in: most sheets
+   * have no such page. `target="_blank"` hands it to the external-link
+   * handler, which opens IS in the in-app browser with the session.
+   */
+  titleHref?: string;
 }
 
 /** Drag handle + title block, shared by every sheet. */
@@ -25,6 +31,7 @@ export function SheetHeader({
   onClose,
   onBack,
   leading,
+  titleHref,
 }: SheetHeaderProps) {
   const { t } = useTranslation();
   return (
@@ -53,7 +60,27 @@ export function SheetHeader({
               {eyebrow}
             </span>
           )}
-          <span className="font-display text-lg font-bold tracking-tight">{title}</span>
+          {/* Inside the touch-none header, and that is fine: touch-action only
+              stops the browser panning, a tap still clicks. On a sheet that
+              drags, useSheetDrag swallows the click a drag ends in. */}
+          {titleHref ? (
+            <a
+              href={titleHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-display text-lg font-bold tracking-tight"
+            >
+              {title}
+              {/* Inline after the last word, so a long name wraps with the icon
+                  rather than leaving it stranded in a column of its own. */}
+              <ExternalLink
+                aria-hidden="true"
+                className="ml-1.5 inline h-4 w-4 align-[-0.125em] text-base-content/60"
+              />
+            </a>
+          ) : (
+            <span className="font-display text-lg font-bold tracking-tight">{title}</span>
+          )}
           {subtitle && <span className="text-sm text-base-content/60">{subtitle}</span>}
         </div>
         {/* Back and close are alternatives, not a pair: a screen is left by

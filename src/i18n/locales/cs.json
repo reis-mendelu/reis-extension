@@ -219,7 +219,8 @@
       "unregisterTitle": "Potvrdit odhlášení",
       "registerBody": "Fakt se chceš přihlásit na tenhle termín?",
       "unregisterBody": "Fakt se chceš odhlásit z téhle zkoušky?"
-    }
+    },
+    "attemptLegend": "Typy termínů"
   },
   "feedback": {
     "title": "Nahlásit chybu / Nápad",
@@ -512,7 +513,7 @@
     "semester": "semestr",
     "wholePlan": "Celý plán",
     "subjectCount": "předmětů",
-    "creditsLastTwo": "Posl. 2 semestry",
+    "creditsLastTwo": "Kredity za poslední 2 semestry",
     "creditsTitle": "Kredity",
     "repeatWarning": "2. zápis",
     "gpa": "Průměr",

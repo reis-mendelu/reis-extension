@@ -13,6 +13,7 @@ import type { BlockLesson } from '../../types/calendarTypes';
 import type { SelectedSubject } from '../../types/app';
 import type { Classmate } from '../../types/classmates';
 import type { DownloadTick } from '../../hooks/ui/readBlobWithProgress';
+import type { FileRowHint } from '../../utils/contentDisposition';
 
 interface DrawerTabBodyProps {
   tab: DrawerTab;
@@ -29,11 +30,11 @@ interface DrawerTabBodyProps {
   fileRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
   ignoreClickRef: React.MutableRefObject<boolean>;
   toggleSelect: (id: string, e: React.SyntheticEvent) => void;
-  openFile: (link: string) => void;
+  openFile: (link: string, row?: FileRowHint) => void;
   onViewPdf?: (link: string, meta: PdfRowMeta) => void;
   openingLink?: string | null;
   downloadingLinks?: Record<string, DownloadTick>;
-  onDownloadSingle?: (link: string) => void;
+  onDownloadSingle?: (link: string, row?: FileRowHint) => void;
   resolvedCourseId: string;
   syllabusResult: { syllabus: SyllabusRequirements | null; isLoading: boolean };
   folderUrl?: string;
