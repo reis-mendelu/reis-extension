@@ -20,6 +20,7 @@ import UIKit
  * coordinates, and every archive ever written assumed those are the page's — an
  * inset of a single point here moves the ink in every file on the device.
  */
+@available(iOS 16.0, *)
 final class PageOverlayView: UIView {
     let canvas = PKCanvasView()
     let pictureLayer = PictureLayerView()

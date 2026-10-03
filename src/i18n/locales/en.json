@@ -1358,7 +1358,8 @@
       "movePictures": "Edit pictures",
       "deletePicture": "Delete picture",
       "done": "Done",
-      "cover": "Tape"
+      "cover": "Tape",
+      "deleteTape": "Delete tape"
     },
     "openingLink": "Opening…"
   },

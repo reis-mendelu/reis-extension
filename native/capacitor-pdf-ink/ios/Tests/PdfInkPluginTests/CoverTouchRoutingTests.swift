@@ -109,6 +109,35 @@ final class CoverTouchRoutingTests: XCTestCase {
             "the tape's stroke must not wait for a tap")
     }
 
+    /// Holding a finger on a strip offers to delete it. PDFKit's own long
+    /// press (text selection) must wait for it, and the tap must not fire for
+    /// a hold, nor the hold wait on the tap.
+    func testAHoldOnAStripIsTheStripsAndOffersDelete() {
+        let layer = CoverLayerView()
+        let textHold = UILongPressGestureRecognizer()
+        UIView().addGestureRecognizer(textHold)
+
+        XCTAssertTrue(
+            layer.gestureRecognizer(layer.holdRecognizer, shouldBeRequiredToFailBy: textHold))
+        XCTAssertFalse(
+            layer.gestureRecognizer(layer.holdRecognizer, shouldBeRequiredToFailBy: layer.tapRecognizer))
+        XCTAssertFalse(
+            layer.gestureRecognizer(layer.tapRecognizer, shouldBeRequiredToFailBy: layer.holdRecognizer),
+            "tap and hold waiting on each other would deadlock")
+
+        layer.deleteLabel = "Smazat pásku"
+        let menu = layer.deleteMenu(for: "a")
+        let action = try? XCTUnwrap(menu.children.first as? UIAction)
+        XCTAssertEqual(action?.title, "Smazat pásku")
+        XCTAssertTrue(action?.attributes.contains(.destructive) ?? false)
+    }
+
+    /// The tape's stroke begins on the first movement, not after UIKit's pan
+    /// threshold, so the strip grows under the Pencil from the start.
+    func testTheTapesDragBeginsOnTheFirstMovement() {
+        XCTAssertTrue(CoverLayerView().dragRecognizer is ImmediateDragRecognizer)
+    }
+
     /// With a Pencil, the tape answers only to the Pencil: a finger still scrolls.
     func testOnlyTouchesThatDrawMakeCovers() {
         let layer = CoverLayerView()

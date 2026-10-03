@@ -9,23 +9,30 @@ import CoreGraphics
  */
 enum PageCovers {
     /// A drag that moved no further than this either way was a tap.
-    static let tapSlop: CGFloat = 6
+    static let tapSlop: CGFloat = 3
 
-    /// The thinnest a cover gets. A stroke drawn as one line along the text
-    /// becomes a strip this tall, centred on the line: about a line of slide
-    /// text. Dominik on the device (2026-10-03): the first version needed 24 pt
-    /// in BOTH directions, and a line made no box at all.
-    static let minimumThickness: CGFloat = 16
+    /// The thinnest a cover gets: a stroke drawn as one line along the text
+    /// becomes a strip this tall, centred on the line. Dominik on the device
+    /// (2026-10-03): 24 pt in both directions made no box for a line; 16 was
+    /// still too tall.
+    static let minimumThickness: CGFloat = 8
 
-    /// The block a drag covers, whichever corner it started from, never
-    /// thinner than `minimumThickness`. Nil when the drag was a tap.
-    static func rect(from start: CGPoint, to end: CGPoint) -> CGRect? {
+    /// The strip under the Pencil while it moves: from the touch-down to where
+    /// it is now, never thinner than `minimumThickness` — so it shows, and
+    /// grows, from the first point of movement.
+    static func growingRect(from start: CGPoint, to end: CGPoint) -> CGRect {
         let width = abs(end.x - start.x)
         let height = abs(end.y - start.y)
-        guard max(width, height) > tapSlop else { return nil }
         let rect = CGRect(x: min(start.x, end.x), y: min(start.y, end.y), width: width, height: height)
         return rect.insetBy(
             dx: -max(0, minimumThickness - width) / 2, dy: -max(0, minimumThickness - height) / 2)
+    }
+
+    /// The cover a finished stroke leaves: the growing strip, or nil when the
+    /// Pencil hardly moved — that was a tap.
+    static func rect(from start: CGPoint, to end: CGPoint) -> CGRect? {
+        guard max(abs(end.x - start.x), abs(end.y - start.y)) > tapSlop else { return nil }
+        return growingRect(from: start, to: end)
     }
 
     /// The cover under a point. The last one made wins: it is drawn on top.

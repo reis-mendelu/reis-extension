@@ -36,6 +36,8 @@ struct PdfInkStrings {
     let done: String
     /// The tape: the palette tool that makes covers (`CoverTool`).
     let cover: String
+    /// The menu entry a finger held on a strip offers.
+    let deleteTape: String
 
     init(_ object: JSObject?) {
         saveFailedTitle = object?["saveFailedTitle"] as? String ?? "Your ink couldn't be saved"
@@ -68,6 +70,7 @@ struct PdfInkStrings {
         deletePicture = object?["deletePicture"] as? String ?? "Delete picture"
         done = object?["done"] as? String ?? "Done"
         cover = object?["cover"] as? String ?? "Tape"
+        deleteTape = object?["deleteTape"] as? String ?? "Delete tape"
     }
 
 }

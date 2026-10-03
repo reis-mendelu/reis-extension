@@ -189,9 +189,11 @@ build drops pictures from an archive on its next save (spec addendum 2026-10-03)
 Spec: `2026-10-03-ipad-recall-covers-design.md`. With an Apple Pencil paired.
 
 1. The palette shows the tape (masking-tape colour) right after the marker.
-2. Pick the tape, draw one straight line with the Pencil along a line of text → a tape
-   strip covering that line; the page does not move.
+2. Pick the tape, draw one straight line with the Pencil → a thin tape strip (8 pt) that
+   grows under the Pencil from the first millimetre; the page does not move.
 3. A tiny stroke (a few millimetres) → a small square of tape. A plain tap → nothing.
+3a. Hold a finger on a strip → a menu with "Smazat pásku"; tap it → the strip goes;
+    the palette's undo brings it back.
 4. Same over your own ink → tape; no ink stroke is drawn.
 5. With the tape still picked, drag a finger → the page scrolls, no tape.
 6. Tap a strip with the Pencil (tape picked) → it goes; the palette's undo brings it back.

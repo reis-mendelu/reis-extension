@@ -1358,7 +1358,8 @@
       "movePictures": "Upravit obrázky",
       "deletePicture": "Smazat obrázek",
       "done": "Hotovo",
-      "cover": "Páska"
+      "cover": "Páska",
+      "deleteTape": "Smazat pásku"
     },
     "openingLink": "Otevírám…"
   },

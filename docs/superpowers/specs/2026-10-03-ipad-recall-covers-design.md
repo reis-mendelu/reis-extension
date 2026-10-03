@@ -9,7 +9,10 @@
 > carries no answer history, and part 3 (exam-date review) is dropped with it.
 > The sections on the test, its strings and its tests below are history.
 > Also from that round: a cover is drawn as masking tape (`TapeStyle`), any
-> stroke longer than 6 pt makes one and nothing is thinner than 16 pt, a cover
+> stroke longer than 3 pt makes one and nothing is thinner than 8 pt (first
+> 16, then "even smaller"), the strip grows from the first movement
+> (`ImmediateDragRecognizer` — UIKit's pan waits ~10 pt), holding a finger on a
+> strip offers "Smazat pásku" (`CoverLayerView+Hold`), a cover
 > starts where the touch came down (not where the pan began), and every other
 > page gesture waits for a tap on a cover (fast taps were being lost to PDFKit's
 > word-selection double tap).

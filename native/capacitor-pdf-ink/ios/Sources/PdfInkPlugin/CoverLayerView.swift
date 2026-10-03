@@ -23,6 +23,7 @@ import UIKit
  * fails the moment the finger travels, so a scroll that starts on a cover
  * never opens it on the way past.
  */
+@available(iOS 16.0, *)
 final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
     var covers: [PageCover] = [] { didSet { setNeedsDisplay() } }
     /// The covers being looked under right now. Never saved.
@@ -43,17 +44,22 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
     /// Asked per touch, because the palette's switch can change it any time.
     var fingerDraws: () -> Bool = { false }
 
-    /// The tape's stroke: drags out a new cover. Installed on the page overlay.
-    let dragRecognizer = UIPanGestureRecognizer()
+    /// The tape's stroke: drags out a new cover from its first movement.
+    /// Installed on the page overlay.
+    let dragRecognizer = ImmediateDragRecognizer()
     /// Opens or shuts a cover; a drawing tap with the tape takes it away.
     let tapRecognizer = UITapGestureRecognizer()
+    /// A finger held on a strip offers to delete it (`+Hold`).
+    let holdRecognizer = UILongPressGestureRecognizer()
+    /// "Smazat pásku", from the app's strings.
+    var deleteLabel = "Delete tape"
+    lazy var deleteMenuInteraction = UIEditMenuInteraction(delegate: self)
+    var heldCoverID: String?
 
     private var lastTapType: UITouch.TouchType = .direct
-    /// Where the stroke's touch came down. The pan only begins once the touch
-    /// has travelled ~10 pt, and its `translation` counts from THERE — so a
-    /// cover started at the pan's start lost its first 10 pt, and a small
-    /// stroke made nothing at all (simulator log, 2026-10-03: a 167 pt stroke
-    /// made a 161 pt cover; a 12 pt one was "too small").
+    /// Where the stroke's touch came down: the strip grows from here. (With
+    /// UIKit's pan the start was ~10 pt late and small strokes made nothing —
+    /// simulator log, 2026-10-03.)
     private var touchDown: CGPoint?
     private var dragStart: CGPoint?
     private var dragEnd: CGPoint?
@@ -67,12 +73,12 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
         // under this one is forced light.
         overrideUserInterfaceStyle = .light
         dragRecognizer.addTarget(self, action: #selector(dragged(_:)))
-        dragRecognizer.maximumNumberOfTouches = 1
         dragRecognizer.isEnabled = false
         dragRecognizer.delegate = self
         tapRecognizer.addTarget(self, action: #selector(tapped(_:)))
         tapRecognizer.delegate = self
         addGestureRecognizer(tapRecognizer)
+        installHold()
     }
 
     required init?(coder: NSCoder) { fatalError("CoverLayerView is code-only") }
@@ -90,13 +96,16 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
     /// up nothing else. For the tap: everything too, not just the scrollers —
     /// PDFKit's double tap (word selection) took every second fast tap on a
     /// cover and the taps after it landed on its selection (device, 2026-10-03).
-    /// The tap only ever sees touches that land on a cover (`hitTest`).
+    /// The tap only ever sees touches that land on a cover (`hitTest`). The
+    /// hold likewise, so PDFKit's own long press (text selection) waits for
+    /// it. The tap waits for the hold to fail instead (`installHold`), so the
+    /// pair is left out here — both ways round would deadlock.
     func gestureRecognizer(
         _ gestureRecognizer: UIGestureRecognizer,
         shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer
     ) -> Bool {
-        if gestureRecognizer === dragRecognizer { return otherGestureRecognizer !== tapRecognizer }
-        return otherGestureRecognizer !== dragRecognizer
+        let ours: [UIGestureRecognizer] = [dragRecognizer, tapRecognizer, holdRecognizer]
+        return !ours.contains { $0 === otherGestureRecognizer }
     }
 
     func gestureRecognizer(
@@ -106,6 +115,7 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
             lastTapType = touch.type
             return true
         }
+        if gestureRecognizer === holdRecognizer { return true }
         if draws(touch.type) { touchDown = touch.location(in: self) }
         // One line per stroke start: whether the tape took it, and why not.
         if isMakingCovers {
@@ -121,12 +131,11 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
         otherGestureRecognizer.view === self
     }
 
-    @objc private func dragged(_ pan: UIPanGestureRecognizer) {
+    @objc private func dragged(_ pan: ImmediateDragRecognizer) {
         let location = pan.location(in: self)
         switch pan.state {
         case .began:
-            let moved = pan.translation(in: self)
-            dragStart = touchDown ?? CGPoint(x: location.x - moved.x, y: location.y - moved.y)
+            dragStart = touchDown ?? location
             dragEnd = location
         case .changed:
             dragEnd = location
@@ -179,10 +188,8 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
                 TapeStyle.drawShut(cover.rect, in: context)
             }
         }
-        // The block the stroke will leave, at the size it will have.
-        guard isMakingCovers, let start = dragStart, let end = dragEnd,
-            let preview = PageCovers.rect(from: start, to: end)
-        else { return }
-        TapeStyle.drawPreview(preview, in: context)
+        // The strip growing under the Pencil, from where it came down.
+        guard isMakingCovers, let start = dragStart, let end = dragEnd else { return }
+        TapeStyle.drawPreview(PageCovers.growingRect(from: start, to: end), in: context)
     }
 }

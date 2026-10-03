@@ -65,6 +65,7 @@ extension PdfInkViewController {
     func configureCovers(of overlay: PageOverlayView, page index: Int) {
         let layer = overlay.coverLayer
         layer.covers = covers[index] ?? []
+        layer.deleteLabel = strings.deleteTape
         layer.fingerDraws = { [weak self] in self?.fingerDraws() ?? false }
         layer.onCreate = { [weak self] rect in self?.addCover(rect, onPage: index) }
         layer.onRemove = { [weak self] id in self?.removeCover(id, onPage: index) }

@@ -71,6 +71,8 @@ export interface PdfInkStrings {
   done: string;
   /** The tape: the palette tool that puts blocks over answers to hide them. */
   cover: string;
+  /** The menu entry a finger held on a strip offers. */
+  deleteTape: string;
 }
 
 export interface PdfInkPlugin {
