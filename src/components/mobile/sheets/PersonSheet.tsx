@@ -110,7 +110,7 @@ export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
       disabled={!photo}
       aria-label={photo ? t('mobile.sheet.enlargePhoto') : undefined}
       onClick={() => photo && pushSheet({ kind: 'personPhoto', personId: sheet.personId, name })}
-      className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-base-200 font-display text-base font-bold text-primary"
+      className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-base-200 font-display text-base font-bold text-[var(--tone-primary)]"
     >
       {photo ? (
         <img src={photo} alt={name} className="h-full w-full object-cover" />
@@ -148,7 +148,7 @@ export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
             <button
               type="button"
               onClick={() => openTeamsChat(teamsEmail)}
-              className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary/15 text-base font-semibold text-primary"
+              className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary/15 text-base font-semibold text-[var(--tone-primary)]"
             >
               {/* The real Teams mark, not a generic speech bubble: the button
                   leaves the app, and the student should know where to. */}

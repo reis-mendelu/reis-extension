@@ -121,6 +121,20 @@ describe('PersonSheet', () => {
     expect(avatar.closest('.flex.items-start')).toBe(name.closest('.flex.items-start'));
   });
 
+  it('sets the initials and the Teams label in the primary tone, which reads in light', () => {
+    // verify:ui flagged both in the light theme: bare `text-primary` is 2.29:1
+    // on base-200 and about 2:1 on its own /15 tint. The tone token is the same
+    // green darkened for light, and left as is in dark.
+    render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
+    const bare = /(^|\s)text-primary(\s|$)/;
+    const initials = screen.getByText('JN');
+    const teams = screen.getByText('Napsat na Teams').closest('button')!;
+    for (const el of [initials, teams]) {
+      expect(el.className).toContain('text-[var(--tone-primary)]');
+      expect(el.className).not.toMatch(bare);
+    }
+  });
+
   it('does not offer to maximise initials when there is no photo', () => {
     usePersonPhoto.mockReturnValue(null);
     render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
