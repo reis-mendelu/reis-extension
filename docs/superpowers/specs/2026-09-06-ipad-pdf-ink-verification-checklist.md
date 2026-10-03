@@ -151,6 +151,31 @@ item was missed. Record the iPad's iPadOS version next to what you saw.
 
 The tool picker, the share sheet and the paper are Apple's and must not have changed at all.
 
+## 27. Pictures on the page
+
+Release build. Do not install any other reIS build between these steps: an older
+build drops pictures from an archive on its next save (spec addendum 2026-10-03).
+
+1. Open a subject PDF. Tap `+`: Add a page, Photo library, Take photo. No Move
+   pictures yet.
+2. Photo library → pick a photo. It appears centred on the page on screen,
+   selected (outline, four handles, Delete). The pens are gone; the bar shows
+   only Done.
+3. Drag it; drag a corner; pinch it. It moves and resizes, keeps its shape and
+   never leaves the page. A finger outside it scrolls the document.
+4. Tap empty page. The selection goes and the pens come back. Draw a stroke
+   across the picture: the ink is on top.
+5. Undo in the palette: the stroke goes. Undo again: the picture goes back to
+   where it was before the last move.
+6. `+` → Take photo. Allow the camera. Take one. It lands selected on the page.
+   Tap Delete, then Done, then undo: it is back.
+7. `+` → Add a page. The pictures on later pages stay with their pages.
+8. Close the reader, reopen the file: every picture is where it was, under its
+   ink.
+9. Share with notes → save to Files → open it there: pictures in place, ink over
+   them, the photo upright.
+10. Dark mode: the pictures and the ink look exactly as in light.
+
 ## Report back
 
 Record any finding not in the design here, with the step number.
