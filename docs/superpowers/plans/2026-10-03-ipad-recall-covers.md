@@ -239,7 +239,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ---
 
-### Task 2: Cover gestures (`PageCovers`)
+### Task 2: Cover geometry (`PageCovers`)
 
 **Files:**
 - Create: `native/capacitor-pdf-ink/ios/Sources/PdfInkPlugin/PageCovers.swift`
@@ -247,11 +247,9 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `PageCover` (Task 1).
-- Produces:
-  - `enum PageCovers { static let minimumSide: CGFloat; enum Gesture: Equatable { case create(CGRect), remove(String), nothing } }`
-  - `static func rect(from: CGPoint, to: CGPoint) -> CGRect?`
-  - `static func cover(at: CGPoint, in: [PageCover]) -> PageCover?`
-  - `static func gesture(from: CGPoint, to: CGPoint, over: [PageCover]) -> Gesture`
+- Produces: `enum PageCovers { static let minimumSide: CGFloat; static func rect(from: CGPoint, to: CGPoint) -> CGRect?; static func cover(at: CGPoint, in: [PageCover]) -> PageCover? }`
+
+The withdrawn tool also had `PageCovers.gesture(from:to:over:)`, which told a drag from a tap by distance inside raw `touchesEnded`. Here that job goes to UIKit: a pan recognizer creates and a tap recognizer opens or removes (Task 4). So `gesture` and its `Gesture` enum are not restored.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -263,11 +261,7 @@ import XCTest
 
 @testable import PdfInkPlugin
 
-/**
- * Two gestures share one finger while covers are being made (drag to create,
- * tap to take away), so which one happened is decided somewhere it can be
- * argued with. Getting it wrong deletes a cover the student meant to draw.
- */
+/// The geometry a drag and a tap are judged by.
 final class PageCoversTests: XCTestCase {
     private let big = PageCover(id: "big", rect: CGRect(x: 0, y: 0, width: 100, height: 100))
 
@@ -292,27 +286,6 @@ final class PageCoversTests: XCTestCase {
         XCTAssertEqual(PageCovers.cover(at: CGPoint(x: 80, y: 80), in: [big, small])?.id, "big")
         XCTAssertNil(PageCovers.cover(at: CGPoint(x: 500, y: 500), in: [big, small]))
     }
-
-    /// The case the two gestures fight over: a small block drawn on top of a
-    /// big one is a new cover, not a delete.
-    func testALongDragStartingOnACoverMakesANewOne() {
-        XCTAssertEqual(
-            PageCovers.gesture(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 60, y: 60), over: [big]),
-            .create(CGRect(x: 10, y: 10, width: 50, height: 50)))
-    }
-
-    func testATapOnACoverTakesItAway() {
-        XCTAssertEqual(
-            PageCovers.gesture(from: CGPoint(x: 50, y: 50), to: CGPoint(x: 52, y: 51), over: [big]),
-            .remove("big"))
-    }
-
-    func testATapOnBarePageDoesNothing() {
-        XCTAssertEqual(
-            PageCovers.gesture(
-                from: CGPoint(x: 500, y: 500), to: CGPoint(x: 501, y: 500), over: [big]),
-            .nothing)
-    }
 }
 ```
 
@@ -326,23 +299,15 @@ Run build-for-testing. Expected: `cannot find 'PageCovers' in scope`.
 import CoreGraphics
 
 /**
- * The arithmetic of making covers, kept out of the touch handler.
- *
- * While covers are being made, one finger means two things: a drag creates a
- * cover and a tap removes one. Which one happened is decided here, because
- * getting it wrong deletes a cover the student meant to draw. Restored from
- * the withdrawn tool (d5026aaef) with covers named by id instead of position.
+ * The geometry of covers, kept out of the view. Restored from the withdrawn
+ * tool (d5026aaef) with covers named by id instead of position. Telling a drag
+ * (create) from a tap (open or remove) is UIKit's job now, in CoverLayerView's
+ * recognizers.
  */
 enum PageCovers {
     /// A drag shorter than this in either direction was a tap. It is also the
     /// smallest cover worth having: there is nothing to hide behind a sliver.
     static let minimumSide: CGFloat = 24
-
-    enum Gesture: Equatable {
-        case create(CGRect)
-        case remove(String)
-        case nothing
-    }
 
     /// The block a drag covers, whichever corner it started from. Nil when it
     /// is too small to have been meant as one.
@@ -359,14 +324,6 @@ enum PageCovers {
         covers.last { $0.rect.contains(point) }
     }
 
-    /// A long enough drag is a new cover wherever it started, so a small one
-    /// drawn over a big one is still new. Otherwise it was a tap, and a tap on
-    /// a cover takes it away.
-    static func gesture(from start: CGPoint, to end: CGPoint, over covers: [PageCover]) -> Gesture {
-        if let rect = rect(from: start, to: end) { return .create(rect) }
-        if let cover = cover(at: start, in: covers) { return .remove(cover.id) }
-        return .nothing
-    }
 }
 ```
 
@@ -378,10 +335,10 @@ Run build-for-testing. Expected: `exit 0`.
 
 ```bash
 git add native/capacitor-pdf-ink/ios/Sources/PdfInkPlugin/PageCovers.swift native/capacitor-pdf-ink/ios/Tests/PdfInkPluginTests/PageCoversTests.swift
-git commit -m "feat(pdf ink): cover gesture arithmetic, by id
+git commit -m "feat(pdf ink): cover geometry, by id
 
-Restored from d5026aaef: a drag creates, a tap removes, and a small block on
-a big one is a new cover, never a delete.
+Restored from d5026aaef without its distance-based drag/tap split, which
+moves to gesture recognizers in the cover layer.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
@@ -590,61 +547,125 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 4: The cover layer on each page
 
+**Why this differs from the withdrawn layer.** `d5026aaef` handled raw `touchesBegan/Ended`. On the student's iPad, dragging out a cover did not work. PDFKit's scroll view claimed the drag first, and the page slid instead. `ed7016e4` tried pinning the scroller with `isScrollEnabled = false`, and the tool was withdrawn with creation still unproven on a device (that commit's message). The picture layer (#492) solved the same fight in a way that works on the device: gesture recognizers that PDFKit's scroll recognizers are *required to wait for* (`PictureLayerView.gestureRecognizer(_:shouldBeRequiredToFailBy:)`). This layer uses that exact pattern:
+
+- A **pan**, enabled only in cover mode, draws a new cover. One finger only, so two fingers still scroll and zoom.
+- A **tap**, always on, opens or shuts a cover. In cover mode it removes one instead.
+
+A tap recognizer fails as soon as the finger travels. So a scroll that starts on a cover never opens it, which is the review fix from `ed7016e4` and comes for free here.
+
 **Files:**
 - Create: `native/capacitor-pdf-ink/ios/Sources/PdfInkPlugin/CoverLayerView.swift`
 - Modify: `native/capacitor-pdf-ink/ios/Sources/PdfInkPlugin/PageOverlayView.swift`
-- Test: `native/capacitor-pdf-ink/ios/Tests/PdfInkPluginTests/CoverLayerTests.swift`
+- Test: `native/capacitor-pdf-ink/ios/Tests/PdfInkPluginTests/CoverTouchRoutingTests.swift` (restored from `ed7016e4`, adapted)
 
 **Interfaces:**
 - Consumes: `PageCover`, `PageCovers` (Tasks 1–2).
 - Produces:
-  - `final class CoverLayerView: UIView`, with `var covers: [PageCover]`, `var revealed: Set<String>`, `var currentID: String?`, `var currentColor: UIColor`, `var isMakingCovers: Bool`, `var onCreate: ((CGRect) -> Void)?`, `var onRemove: ((String) -> Void)?`, `var onToggle: ((String) -> Void)?`
+  - `final class CoverLayerView: UIView, UIGestureRecognizerDelegate`, with `var covers: [PageCover]`, `var revealed: Set<String>`, `var currentID: String?`, `var currentColor: UIColor`, `var isMakingCovers: Bool`, `var onCreate: ((CGRect) -> Void)?`, `var onRemove: ((String) -> Void)?`, `var onToggle: ((String) -> Void)?`, `let dragRecognizer: UIPanGestureRecognizer`, `let tapRecognizer: UITapGestureRecognizer`
   - `PageOverlayView.coverLayer: CoverLayerView`, the topmost subview, framed to the overlay's bounds
 
 - [ ] **Step 1: Write the failing tests**
 
-Create `CoverLayerTests.swift`:
+Create `CoverTouchRoutingTests.swift`:
 
 ```swift
+import PencilKit
 import UIKit
 import XCTest
 
 @testable import PdfInkPlugin
 
-/// The cover layer is invisible to every touch that is not about covers, or
-/// drawing and scrolling would stop working over a page that has one.
-final class CoverLayerTests: XCTestCase {
-    func testOnlyTakesTouchesOnACoverUnlessCoversAreBeingMade() {
-        let layer = CoverLayerView(frame: CGRect(x: 0, y: 0, width: 200, height: 200))
-        layer.covers = [PageCover(id: "a", rect: CGRect(x: 0, y: 0, width: 50, height: 50))]
+/**
+ * Whether a touch on the page can actually reach the cover layer, and whether
+ * PDFKit's scroller lets it keep the touch (restored from ed7016e4, by id).
+ *
+ * The layer's own `hitTest` proves nothing about the hierarchy it lives in:
+ * the canvas and the picture layer are siblings, PDFKit sets the frames, and a
+ * layer that is never laid out has zero size and no touch lands on it. These
+ * ask the container the question a real touch asks it.
+ */
+@available(iOS 16.0, *)
+final class CoverTouchRoutingTests: XCTestCase {
+    private let page = CGRect(x: 0, y: 0, width: 595, height: 842)
+    private let cover = PageCover(id: "a", rect: CGRect(x: 100, y: 100, width: 200, height: 80))
 
-        XCTAssertTrue(layer.hitTest(CGPoint(x: 25, y: 25), with: nil) === layer)
-        XCTAssertNil(
-            layer.hitTest(CGPoint(x: 150, y: 150), with: nil),
-            "bare page touches must reach the canvas underneath")
-
-        layer.isMakingCovers = true
-        XCTAssertTrue(
-            layer.hitTest(CGPoint(x: 150, y: 150), with: nil) === layer,
-            "a new cover has to be draggable on bare page")
-    }
-
-    func testAnInertLayerTakesNothing() {
-        let layer = CoverLayerView(frame: CGRect(x: 0, y: 0, width: 200, height: 200))
-        layer.covers = [PageCover(id: "a", rect: CGRect(x: 0, y: 0, width: 50, height: 50))]
-        layer.isUserInteractionEnabled = false  // what arranging pictures sets
-
-        XCTAssertNil(layer.hitTest(CGPoint(x: 25, y: 25), with: nil))
-    }
-
-    /// Bottom to top: pictures under the ink, the ink, pictures over the ink,
-    /// covers. A cover hides everything under it, a picture included.
-    func testCoversSitAboveEverythingAndSpanExactlyThePage() {
-        let overlay = PageOverlayView(frame: CGRect(x: 0, y: 0, width: 300, height: 400))
+    private func overlay() -> PageOverlayView {
+        let overlay = PageOverlayView()
+        overlay.frame = page  // all PDFKit does
         overlay.layoutIfNeeded()
+        return overlay
+    }
+
+    func testTheCoverLayerIsOnTopAndSizedByPdfkitSettingTheFrame() {
+        let overlay = overlay()
 
         XCTAssertTrue(overlay.subviews.last === overlay.coverLayer)
         XCTAssertEqual(overlay.coverLayer.frame, overlay.bounds)
+        XCTAssertEqual(overlay.canvas.frame, overlay.bounds)
+    }
+
+    func testATouchOnACoverReachesTheCoverLayerAndNotTheCanvas() {
+        let overlay = overlay()
+        overlay.coverLayer.covers = [cover]
+
+        let hit = overlay.hitTest(CGPoint(x: 150, y: 140), with: nil)
+
+        XCTAssertTrue(hit === overlay.coverLayer, "a tap on a cover landed on \(String(describing: hit))")
+    }
+
+    func testATouchOnBarePageReachesTheCanvasSoDrawingStillWorks() {
+        let overlay = overlay()
+        overlay.coverLayer.covers = [cover]
+
+        let hit = overlay.hitTest(CGPoint(x: 450, y: 600), with: nil)
+
+        XCTAssertFalse(hit === overlay.coverLayer, "the cover layer swallowed a touch on bare page")
+    }
+
+    /// The one the whole tool rests on: in cover mode a drag starting on bare
+    /// page has to reach the layer, or no cover can ever be drawn.
+    func testInCoverModeABarePageTouchReachesTheCoverLayer() {
+        let overlay = overlay()
+        overlay.coverLayer.isMakingCovers = true
+
+        let hit = overlay.hitTest(CGPoint(x: 450, y: 600), with: nil)
+
+        XCTAssertTrue(hit === overlay.coverLayer, "in cover mode a drag landed on \(String(describing: hit))")
+    }
+
+    /// The device failure of 2026-09-07: PDFKit's scroller took the drag and
+    /// the page slid instead. Its recognizers must wait for ours, the
+    /// way they wait for the picture layer's (#492).
+    func testPdfkitsScrollerWaitsForTheCoverLayersGestures() {
+        let layer = CoverLayerView()
+        let scroller = UIScrollView()
+
+        for ours in [layer.dragRecognizer, layer.tapRecognizer] as [UIGestureRecognizer] {
+            XCTAssertTrue(
+                layer.gestureRecognizer(ours, shouldBeRequiredToFailBy: scroller.panGestureRecognizer))
+        }
+    }
+
+    /// Outside cover mode the drag must not exist: a scroll that starts on a
+    /// cover would otherwise be held up waiting for it.
+    func testTheDragExistsOnlyInCoverMode() {
+        let layer = CoverLayerView()
+        XCTAssertFalse(layer.dragRecognizer.isEnabled)
+
+        layer.isMakingCovers = true
+        XCTAssertTrue(layer.dragRecognizer.isEnabled)
+
+        layer.isMakingCovers = false
+        XCTAssertFalse(layer.dragRecognizer.isEnabled)
+    }
+
+    func testAnInertLayerTakesNothing() {
+        let overlay = overlay()
+        overlay.coverLayer.covers = [cover]
+        overlay.coverLayer.isUserInteractionEnabled = false  // what arranging pictures sets
+
+        XCTAssertFalse(overlay.hitTest(CGPoint(x: 150, y: 140), with: nil) === overlay.coverLayer)
     }
 }
 ```
@@ -655,33 +676,46 @@ Run build-for-testing. Expected: `cannot find 'CoverLayerView' in scope` and `va
 
 - [ ] **Step 3: Create `CoverLayerView.swift`**
 
-This is the withdrawn `CoverLayerView` (`git show d5026aaef:native/capacitor-pdf-ink/ios/Sources/PdfInkPlugin/CoverLayerView.swift`), adapted to ids and a "current" cover:
-
 ```swift
 import UIKit
 
 /**
- * The covers over one page, and the touches that make and open them.
+ * The covers over one page, and the gestures that make and open them.
  *
- * It sits above everything else on the page and is invisible to touches that
- * are not about covers: outside a cover `hitTest` returns nothing, so drawing,
- * scrolling and picking up a picture reach the views underneath exactly as
- * before. Inside a cover it takes the touch, which is also why a covered patch
- * cannot be drawn on: it is covered. Restored from d5026aaef.
+ * On top of everything else on the page, and invisible to touches that are
+ * not about covers: outside a cover `hitTest` returns nothing, so drawing,
+ * scrolling and picking a picture up reach the views below exactly as before.
+ * Inside a cover it takes the touch, which is also why a covered patch cannot
+ * be drawn on: it is covered.
+ *
+ * Gesture recognizers, not raw touches. The withdrawn layer (d5026aaef) used
+ * touchesBegan/Ended, and on a real iPad PDFKit's scroller took the drag and
+ * the page slid under the finger (ed7016e4). PDFKit's recognizers wait for
+ * these to fail, the way they wait for the picture layer's (#492).
  */
-final class CoverLayerView: UIView {
+final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
     var covers: [PageCover] = [] { didSet { setNeedsDisplay() } }
     /// The covers being looked under right now. Never saved.
     var revealed: Set<String> = [] { didSet { setNeedsDisplay() } }
     /// The cover "Vyzkoušet se" is asking about, outlined in `currentColor`.
     var currentID: String? { didSet { setNeedsDisplay() } }
     var currentColor: UIColor = .tintColor { didSet { setNeedsDisplay() } }
-    /// While making covers the layer takes every touch on the page.
-    var isMakingCovers = false { didSet { setNeedsDisplay() } }
+    /// Cover mode: the layer takes every touch on the page, and the drag is on.
+    var isMakingCovers = false {
+        didSet {
+            dragRecognizer.isEnabled = isMakingCovers
+            setNeedsDisplay()
+        }
+    }
 
     var onCreate: ((CGRect) -> Void)?
     var onRemove: ((String) -> Void)?
     var onToggle: ((String) -> Void)?
+
+    /// One finger drags out a new cover; two fingers still scroll and zoom.
+    let dragRecognizer = UIPanGestureRecognizer()
+    /// Opens or shuts a cover; in cover mode, takes it away.
+    let tapRecognizer = UITapGestureRecognizer()
 
     private var dragStart: CGPoint?
     private var dragEnd: CGPoint?
@@ -694,6 +728,14 @@ final class CoverLayerView: UIView {
         // PDF paper is white in any appearance, the same reason the canvas
         // under this one is forced light.
         overrideUserInterfaceStyle = .light
+        dragRecognizer.addTarget(self, action: #selector(dragged(_:)))
+        dragRecognizer.maximumNumberOfTouches = 1
+        dragRecognizer.isEnabled = false
+        tapRecognizer.addTarget(self, action: #selector(tapped(_:)))
+        for recognizer in [dragRecognizer, tapRecognizer] as [UIGestureRecognizer] {
+            recognizer.delegate = self
+            addGestureRecognizer(recognizer)
+        }
     }
 
     required init?(coder: NSCoder) { fatalError("CoverLayerView is code-only") }
@@ -704,12 +746,62 @@ final class CoverLayerView: UIView {
         return PageCovers.cover(at: point, in: covers) != nil ? self : nil
     }
 
+    // MARK: - Gestures
+
+    /// PDFView's scroll and zoom wait for ours to fail, so dragging out a
+    /// cover never scrolls the page under it. Ours only ever see touches the
+    /// layer took in `hitTest`.
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        otherGestureRecognizer.view is UIScrollView
+    }
+
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        otherGestureRecognizer.view === self
+    }
+
+    @objc private func dragged(_ pan: UIPanGestureRecognizer) {
+        let location = pan.location(in: self)
+        switch pan.state {
+        case .began:
+            let moved = pan.translation(in: self)
+            dragStart = CGPoint(x: location.x - moved.x, y: location.y - moved.y)
+            dragEnd = location
+        case .changed:
+            dragEnd = location
+        case .ended:
+            if let start = dragStart, let rect = PageCovers.rect(from: start, to: location) {
+                onCreate?(rect)
+            }
+            dragStart = nil
+            dragEnd = nil
+        default:
+            dragStart = nil
+            dragEnd = nil
+        }
+        setNeedsDisplay()
+    }
+
+    @objc private func tapped(_ tap: UITapGestureRecognizer) {
+        guard tap.state == .ended,
+            let cover = PageCovers.cover(at: tap.location(in: self), in: covers)
+        else { return }
+        if isMakingCovers { onRemove?(cover.id) } else { onToggle?(cover.id) }
+    }
+
+    // MARK: - Drawing
+
     override func draw(_ rect: CGRect) {
         guard let context = UIGraphicsGetCurrentContext() else { return }
         for cover in covers {
             if revealed.contains(cover.id) {
-                // Open: the answer shows through, with just enough outline left
-                // that the student can shut it again.
+                // Open: the answer shows through, with just enough outline
+                // left that the student can shut it again.
                 context.setStrokeColor(UIColor.systemGray2.cgColor)
                 context.setLineDash(phase: 0, lengths: [4, 4])
                 context.stroke(cover.rect.insetBy(dx: 0.5, dy: 0.5), width: 1)
@@ -731,51 +823,12 @@ final class CoverLayerView: UIView {
                 x: min(start.x, end.x), y: min(start.y, end.y),
                 width: abs(end.x - start.x), height: abs(end.y - start.y)), width: 1)
     }
-
-    // MARK: - Touches
-
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let point = touches.first?.location(in: self) else { return }
-        dragStart = point
-        dragEnd = point
-    }
-
-    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard isMakingCovers, let point = touches.first?.location(in: self) else { return }
-        dragEnd = point
-        setNeedsDisplay()
-    }
-
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        defer {
-            dragStart = nil
-            dragEnd = nil
-            setNeedsDisplay()
-        }
-        guard let start = dragStart, let end = touches.first?.location(in: self) else { return }
-        guard isMakingCovers else {
-            // Reading: a tap on a cover looks under it, and again shuts it.
-            if let cover = PageCovers.cover(at: end, in: covers) { onToggle?(cover.id) }
-            return
-        }
-        switch PageCovers.gesture(from: start, to: end, over: covers) {
-        case .create(let rect): onCreate?(rect)
-        case .remove(let id): onRemove?(id)
-        case .nothing: break
-        }
-    }
-
-    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        dragStart = nil
-        dragEnd = nil
-        setNeedsDisplay()
-    }
 }
 ```
 
 - [ ] **Step 4: Put the layer on top in `PageOverlayView`**
 
-In the header comment, change "Three things, bottom to top: …" to list four, ending with "…, and `coverLayer` on top of all of them: the covers a student puts over an answer (2026-10-03), which hide pictures too."
+In the header comment, change "Three things, bottom to top: …" so it lists four, ending with "…, and `coverLayer` on top of all of them: the covers a student puts over an answer (2026-10-03), which hide pictures too."
 
 Add the property after `pictureLayer`:
 
@@ -802,8 +855,12 @@ Run build-for-testing. Expected: `exit 0`.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add native/capacitor-pdf-ink/ios/Sources/PdfInkPlugin/CoverLayerView.swift native/capacitor-pdf-ink/ios/Sources/PdfInkPlugin/PageOverlayView.swift native/capacitor-pdf-ink/ios/Tests/PdfInkPluginTests/CoverLayerTests.swift
-git commit -m "feat(pdf ink): the cover layer, on top of the page's pictures and ink
+git add native/capacitor-pdf-ink/ios/Sources/PdfInkPlugin/CoverLayerView.swift native/capacitor-pdf-ink/ios/Sources/PdfInkPlugin/PageOverlayView.swift native/capacitor-pdf-ink/ios/Tests/PdfInkPluginTests/CoverTouchRoutingTests.swift
+git commit -m "feat(pdf ink): the cover layer, on top, on gesture recognizers
+
+The withdrawn layer's raw touches lost the drag to PDFKit's scroller on a
+real iPad (ed7016e4). This one uses the picture layer's pattern (#492):
+PDFKit's recognizers wait for ours. The drag exists only in cover mode.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
@@ -1070,15 +1127,93 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `native/capacitor-pdf-ink/ios/Sources/PdfInkPlugin/PdfInkViewController.swift` (stored properties and hooks only)
 - Modify: `native/capacitor-pdf-ink/ios/Sources/PdfInkPlugin/PdfInkViewController+Pictures.swift`
 - Modify: `native/capacitor-pdf-ink/ios/Sources/PdfInkPlugin/PdfInkViewController+PickUp.swift`
+- Create: `native/capacitor-pdf-ink/ios/Tests/PdfInkPluginTests/ReaderTestHost.swift` (shared by this task's and Task 7's reader tests)
 - Test: `native/capacitor-pdf-ink/ios/Tests/PdfInkPluginTests/ReaderCoverTests.swift`
 
 **Interfaces:**
 - Consumes: `PageCover`, `CoverLayerView`, `PageOverlayView.coverLayer`, `InkArchive.coverCards`, `PdfInkStrings.cover`.
+- Produces for tests: `final class ReaderTestHost`, with `let strings: PdfInkStrings`, `func show(pages: Int) throws -> (PdfInkViewController, URL)`, `func open(_: PdfInkViewController, pages: Int, ink: URL) throws`, `static func tempInk() -> URL`, `static func picture() throws -> PictureIngest.Picture`, `func closeAll()`
 - Produces on `PdfInkViewController`:
   - stored: `var covers: [Int: [PageCover]]`, `var revealedCovers: Set<String>`, `var makingCovers: Bool`, `lazy var doneCoveringItem: UIBarButtonItem`
   - from `+Covers`: `func beginCovering()`, `func endCovering(restoringPens: Bool = true)`, `func setCovers(_: [PageCover], onPage: Int)`, `func addCover(_: CGRect, onPage: Int)`, `func removeCover(_: String, onPage: Int)`, `func toggleCover(_: String, onPage: Int)`, `func configureCovers(of: PageOverlayView, page: Int)`, `var hasCovers: Bool`, `func refreshCoverLayers()`
 
-- [ ] **Step 1: Write the failing tests**
+- [ ] **Step 1: Write the shared test host and the failing tests**
+
+Create `ReaderTestHost.swift`. It is the same `show` / `open` / `tempInk` / `picture` / `tearDown` that `ReaderPictureTests` keeps privately (lines 362–413 as of 2026-10-03), shared so the two new reader test files don't each copy it. `ReaderPictureTests` is left as it is.
+
+```swift
+import PDFKit
+import UIKit
+import XCTest
+
+@testable import PdfInkPlugin
+
+/**
+ * A reader in a real key window, the way the space shows one, for tests that
+ * drive it. Call `closeAll()` from tearDown: a reader left open takes the
+ * responder back (#485's re-assert) from whatever test runs next, which broke
+ * `ToolPickerResponderTests` in #492.
+ */
+@available(iOS 16.0, *)
+final class ReaderTestHost {
+    let strings = PdfInkStrings(nil)
+    private var windows: [UIWindow] = []
+    private var readers: [PdfInkViewController] = []
+
+    func show(pages: Int) throws -> (PdfInkViewController, URL) {
+        let reader = PdfInkViewController(strings: strings)
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 820, height: 1000))
+        window.rootViewController = UINavigationController(rootViewController: reader)
+        window.makeKeyAndVisible()
+        window.layoutIfNeeded()
+        windows.append(window)
+        readers.append(reader)
+        let ink = Self.tempInk()
+        try open(reader, pages: pages, ink: ink)
+        return (reader, ink)
+    }
+
+    /// Opens a blank `pages`-page PDF titled "t" with its ink at `ink`. Leaving
+    /// the previous file saves it, as a switch in the sidebar does.
+    func open(_ reader: PdfInkViewController, pages: Int, ink: URL) throws {
+        let size = CGSize(width: 400, height: 500)
+        let data = UIGraphicsPDFRenderer(bounds: CGRect(origin: .zero, size: size)).pdfData { ctx in
+            for _ in 0..<pages {
+                ctx.beginPage()
+                UIColor.white.setFill()
+                ctx.cgContext.fill(CGRect(origin: .zero, size: size))
+            }
+        }
+        XCTAssertTrue(
+            reader.load(document: try XCTUnwrap(PDFDocument(data: data)), inkURL: ink, title: "t"))
+        reader.view.layoutIfNeeded()
+    }
+
+    static func tempInk() -> URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).ink")
+    }
+
+    static func picture() throws -> PictureIngest.Picture {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let png = UIGraphicsImageRenderer(size: CGSize(width: 80, height: 60), format: format)
+            .pngData { ctx in
+                UIColor.orange.setFill()
+                ctx.fill(CGRect(x: 0, y: 0, width: 80, height: 60))
+            }
+        return try XCTUnwrap(PictureIngest.picture(from: png))
+    }
+
+    func closeAll() {
+        for reader in readers { reader.willClose() }
+        readers = []
+        for window in windows { window.isHidden = true }
+        windows = []
+    }
+}
+```
+
+Before relying on `open`, read `ReaderPictureTests.swift` lines 389–400. If its `open` does more than the code above, mirror it here.
 
 Create `ReaderCoverTests.swift`:
 
@@ -1093,34 +1228,37 @@ import XCTest
 /// page, made in a mode of their own, and on top of pictures.
 @available(iOS 16.0, *)
 final class ReaderCoverTests: XCTestCase {
-    private var windows: [UIWindow] = []
-    private var readers: [PdfInkViewController] = []
-    private let strings = PdfInkStrings(nil)
+    private let host = ReaderTestHost()
     private let block = CGRect(x: 10, y: 10, width: 60, height: 30)
 
+    override func tearDown() {
+        host.closeAll()
+        super.tearDown()
+    }
+
     func testACoverComesBackAndComesBackShut() throws {
-        let (reader, ink) = try show(pages: 1)
+        let (reader, ink) = try host.show(pages: 1)
         reader.addCover(block, onPage: 0)
         let id = try XCTUnwrap(reader.covers[0]?.first?.id)
         reader.toggleCover(id, onPage: 0)
         XCTAssertEqual(reader.revealedCovers, [id], "tapping it did not open it")
 
-        try open(reader, pages: 1, ink: tempInk())  // leaving the file saves it
-        try open(reader, pages: 1, ink: ink)
+        try host.open(reader, pages: 1, ink: ReaderTestHost.tempInk())  // leaving saves
+        try host.open(reader, pages: 1, ink: ink)
 
         XCTAssertEqual(reader.covers[0]?.map(\.rect), [block], "the cover was not kept")
         XCTAssertTrue(reader.revealedCovers.isEmpty, "it came back already open")
     }
 
     func testAFileWithOnlyCoversKeepsItsArchive() throws {
-        let (reader, ink) = try show(pages: 1)
+        let (reader, ink) = try host.show(pages: 1)
         reader.addCover(block, onPage: 0)
         XCTAssertTrue(reader.persistNow())
         XCTAssertEqual(InkStore.load(from: ink)?.coverCards[0]?.count, 1)
     }
 
     func testCoversMoveWithAnAddedPage() throws {
-        let (reader, _) = try show(pages: 2)
+        let (reader, _) = try host.show(pages: 2)
         reader.addCover(block, onPage: 1)
         reader.pdfView.go(to: try XCTUnwrap(reader.document?.page(at: 0)))
 
@@ -1131,7 +1269,7 @@ final class ReaderCoverTests: XCTestCase {
     }
 
     func testMakingCoversTakesThePensAndTheBarUntilDone() throws {
-        let (reader, _) = try show(pages: 1)
+        let (reader, _) = try host.show(pages: 1)
 
         reader.beginCovering()
         reader.restoreToolPicker()  // #485's re-assert must leave the mode alone
@@ -1145,7 +1283,7 @@ final class ReaderCoverTests: XCTestCase {
     }
 
     func testCoveringAndArrangingPicturesAreExclusive() throws {
-        let (reader, _) = try show(pages: 1)
+        let (reader, _) = try host.show(pages: 1)
 
         reader.beginArrangingPictures()
         reader.beginCovering()
@@ -1157,12 +1295,13 @@ final class ReaderCoverTests: XCTestCase {
         XCTAssertTrue(reader.arrangingPictures)
     }
 
-    /// The cover is on top. A finger tap on it opens the cover; it does not
-    /// also pick up the picture underneath.
+    /// The cover is on top. A finger tap on it opens the cover and does not
+    /// also pick the picture underneath up: the pick-up recognizer sits on the
+    /// overlay and would otherwise fire for the same tap.
     func testATapOnACoverOverAPictureIsTheCoversNotThePictures() throws {
-        let (reader, _) = try show(pages: 1)
+        let (reader, _) = try host.show(pages: 1)
         reader.fingerDraws = { false }
-        XCTAssertTrue(reader.insertPicture(try picture()))
+        XCTAssertTrue(reader.insertPicture(try ReaderTestHost.picture()))
         reader.endArrangingPictures()
         let frame = try XCTUnwrap(reader.pictures[0]?.first?.frame)
         let middle = CGPoint(x: frame.midX, y: frame.midY)
@@ -1172,62 +1311,24 @@ final class ReaderCoverTests: XCTestCase {
         XCTAssertFalse(reader.arrangingPictures)
     }
 
-    // MARK: - Helpers (as in ReaderPictureTests)
+    /// The same routing question as CoverTouchRoutingTests, asked of the
+    /// overlay a real reader hands PDFKit (restored from ed7016e4).
+    func testTheOverlayPdfkitIsGivenRoutesACreatedCoverToTheCoverLayer() throws {
+        let (reader, _) = try host.show(pages: 1)
+        let page = try XCTUnwrap(reader.document?.page(at: 0))
+        let overlay = try XCTUnwrap(
+            reader.pdfView(PDFView(), overlayViewFor: page) as? PageOverlayView)
+        overlay.frame = CGRect(x: 0, y: 0, width: 400, height: 500)
+        overlay.layoutIfNeeded()
 
-    private func picture() throws -> PictureIngest.Picture {
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = 1
-        let png = UIGraphicsImageRenderer(size: CGSize(width: 80, height: 60), format: format)
-            .pngData { ctx in
-                UIColor.orange.setFill()
-                ctx.fill(CGRect(x: 0, y: 0, width: 80, height: 60))
-            }
-        return try XCTUnwrap(PictureIngest.picture(from: png))
-    }
+        overlay.coverLayer.onCreate?(CGRect(x: 50, y: 50, width: 120, height: 60))
 
-    private func tempInk() -> URL {
-        FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).ink")
-    }
-
-    private func show(pages: Int) throws -> (PdfInkViewController, URL) {
-        let reader = PdfInkViewController(strings: strings)
-        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 820, height: 1000))
-        window.rootViewController = UINavigationController(rootViewController: reader)
-        window.makeKeyAndVisible()
-        window.layoutIfNeeded()
-        windows.append(window)
-        readers.append(reader)
-        let ink = tempInk()
-        try open(reader, pages: pages, ink: ink)
-        return (reader, ink)
-    }
-
-    private func open(_ reader: PdfInkViewController, pages: Int, ink: URL) throws {
-        let size = CGSize(width: 400, height: 500)
-        let data = UIGraphicsPDFRenderer(bounds: CGRect(origin: .zero, size: size)).pdfData { ctx in
-            for _ in 0..<pages {
-                ctx.beginPage()
-                UIColor.white.setFill()
-                ctx.cgContext.fill(CGRect(origin: .zero, size: size))
-            }
-        }
         XCTAssertTrue(
-            reader.load(
-                document: try XCTUnwrap(PDFDocument(data: data)), inkURL: ink, title: "t"))
-        reader.view.layoutIfNeeded()
-    }
-
-    override func tearDown() {
-        for reader in readers { reader.willClose() }
-        readers = []
-        for window in windows { window.isHidden = true }
-        windows = []
-        super.tearDown()
+            overlay.hitTest(CGPoint(x: 80, y: 70), with: nil) === overlay.coverLayer,
+            "the created cover is not tappable")
     }
 }
 ```
-
-These helpers match `ReaderPictureTests`' `show`/`open`/`tearDown` (lines 372–413 as of 2026-10-03).
 
 - [ ] **Step 2: Compile to verify it fails**
 
@@ -1435,6 +1536,25 @@ saved as coverCards, always reopened shut.
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
+- [ ] **Step 8: Device checkpoint, before any of the test is built**
+
+The withdrawn tool failed exactly here, on a real iPad. So prove covers on the device before Task 7 builds on them.
+
+1. **Before.** Before installing, screenshot the reader as it is on the iPad now, with the `+` menu open and the bar showing: `~/.local/bin/pymobiledevice3 developer dvt screenshot <scratchpad>/before-plus-menu.png`. Say which build that is: whatever was last installed, possibly another worktree's (memory: stale worktree builds).
+2. **Build and install** the release build exactly as in Task 8, Step 6.
+3. **Tap script.** Send Dominik this script and wait for his answers:
+   1. Open any subject PDF, then `+` → **Zakrýt odpověď**. Do the pens go and the bar become one **Hotovo**?
+   2. With one finger, drag a block over some text. Does a grey block appear, while the page stays still?
+   3. Drag with two fingers. Does the page scroll?
+   4. Tap **Hotovo**, then tap the block. Does it open to a dashed outline, and does a second tap shut it?
+   5. Start a scroll with your finger on a block. Does the page scroll without the block opening?
+   6. Write with the Pencil right next to a block. Does the ink go down?
+   7. With the sidebar open (narrowest bar), is every bar item visible?
+4. **After.** Take screenshots after steps 2 and 4.
+5. **Send** the before and after PNGs with `SendUserFile` (memory: verifying-ui-work).
+
+**If step 2 fails** (no block appears, or the page scrolls), stop. Use superpowers:systematic-debugging, and report before starting Task 7.
+
 ---
 
 ### Task 7: "Vyzkoušet se" in the reader
@@ -1454,7 +1574,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 - [ ] **Step 1: Write the failing tests**
 
-Create `ReaderRecallTests.swift`. Copy the `// MARK: - Helpers` block and the `windows` / `readers` / `strings` properties from `ReaderCoverTests` verbatim (`tempInk`, `show`, `open`, `tearDown`; `picture()` is not needed), then add:
+Create `ReaderRecallTests.swift`, using `ReaderTestHost` from Task 6:
 
 ```swift
 import PDFKit
@@ -1466,15 +1586,19 @@ import XCTest
 /// "Vyzkoušet se": every cover in reading order, reveal, Znám / Ještě ne, kept.
 @available(iOS 16.0, *)
 final class ReaderRecallTests: XCTestCase {
-    private var windows: [UIWindow] = []
-    private var readers: [PdfInkViewController] = []
-    private let strings = PdfInkStrings(nil)
+    private let host = ReaderTestHost()
+    private var strings: PdfInkStrings { host.strings }
     private let when = Date(timeIntervalSince1970: 1_000)
+
+    override func tearDown() {
+        host.closeAll()
+        super.tearDown()
+    }
 
     private func rect(y: CGFloat) -> CGRect { CGRect(x: 20, y: y, width: 80, height: 30) }
 
     func testTheEntryShowsOnlyWhenTheFileHasCovers() throws {
-        let (reader, _) = try show(pages: 1)
+        let (reader, _) = try host.show(pages: 1)
         XCTAssertTrue(reader.recallItem.isHidden)
 
         reader.addCover(rect(y: 10), onPage: 0)
@@ -1482,7 +1606,7 @@ final class ReaderRecallTests: XCTestCase {
     }
 
     func testATestGoesInReadingOrderRecordsAnswersAndEndsWithTheScore() throws {
-        let (reader, ink) = try show(pages: 2)
+        let (reader, ink) = try host.show(pages: 2)
         reader.now = { self.when }
         reader.addCover(rect(y: 100), onPage: 1)
         reader.addCover(rect(y: 300), onPage: 0)
@@ -1519,7 +1643,7 @@ final class ReaderRecallTests: XCTestCase {
 
     /// Tapping the cover itself is the same as Ukázat.
     func testTappingTheCurrentCoverRevealsIt() throws {
-        let (reader, _) = try show(pages: 1)
+        let (reader, _) = try host.show(pages: 1)
         reader.addCover(rect(y: 10), onPage: 0)
         XCTAssertTrue(reader.startRecall())
         let id = try XCTUnwrap(reader.recall?.current?.id)
@@ -1532,7 +1656,7 @@ final class ReaderRecallTests: XCTestCase {
     }
 
     func testLeavingEarlyKeepsTheAnswersGivenAndShutsEverything() throws {
-        let (reader, ink) = try show(pages: 1)
+        let (reader, ink) = try host.show(pages: 1)
         reader.addCover(rect(y: 10), onPage: 0)
         reader.addCover(rect(y: 100), onPage: 0)
         XCTAssertTrue(reader.startRecall())
@@ -1551,7 +1675,7 @@ final class ReaderRecallTests: XCTestCase {
     }
 
     func testTheRetryAsksOnlyTheOnesNotKnownYet() throws {
-        let (reader, _) = try show(pages: 1)
+        let (reader, _) = try host.show(pages: 1)
         reader.addCover(rect(y: 10), onPage: 0)
         reader.addCover(rect(y: 100), onPage: 0)
         XCTAssertTrue(reader.startRecall())
@@ -1568,7 +1692,7 @@ final class ReaderRecallTests: XCTestCase {
 
     /// Writing the answer before revealing it is the point.
     func testThePencilStillDrawsDuringATest() throws {
-        let (reader, _) = try show(pages: 1)
+        let (reader, _) = try host.show(pages: 1)
         reader.addCover(rect(y: 10), onPage: 0)
         XCTAssertTrue(reader.startRecall())
 
@@ -1577,17 +1701,16 @@ final class ReaderRecallTests: XCTestCase {
     }
 
     func testSwitchingFileEndsTheTest() throws {
-        let (reader, _) = try show(pages: 1)
+        let (reader, _) = try host.show(pages: 1)
         reader.addCover(rect(y: 10), onPage: 0)
         XCTAssertTrue(reader.startRecall())
 
-        try open(reader, pages: 1, ink: tempInk())
+        try host.open(reader, pages: 1, ink: ReaderTestHost.tempInk())
 
         XCTAssertNil(reader.recall)
         XCTAssertEqual(reader.title, "t")
     }
 
-    // MARK: - Helpers (copied verbatim from ReaderCoverTests)
 }
 ```
 

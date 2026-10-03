@@ -38,9 +38,19 @@ carried over unchanged:
 - **Own layer, invisible elsewhere.** Outside a cover the layer's `hitTest`
   returns nil, so ink and scrolling reach the canvas exactly as before. Inside
   one it takes the touch, which is also why a covered patch cannot be drawn on.
-- **`PageCovers` owns the ambiguous gesture.** While making covers: a drag
-  creates, a tap removes, a drag shorter than 24 pt is a tap, and a small block
-  drawn on a big one is a new cover, never a delete.
+- **A drag creates, a tap removes** while making covers; a drag shorter than
+  24 pt makes nothing.
+
+**What did not survive: raw touches.** The withdrawn layer handled
+`touchesBegan/Ended`, and on the student's iPad dragging out a cover did not
+work — PDFKit's scroller claimed the drag and the page slid (`ed7016e4`, which
+tried pinning the scroller and was withdrawn hours later with creation still
+unproven on a device). The cover layer now uses the picture layer's pattern
+from #492, proven on the device: a pan (cover mode only, one finger) and a tap,
+which PDFKit's scroll recognizers are required to wait for. A tap fails when the
+finger travels, so a scroll that starts on a cover never opens it. Two fingers
+still scroll in cover mode. Covers are proven on the iPad before the test is
+built on them.
 
 What has changed since, and what this spec adds:
 
