@@ -26,15 +26,17 @@ final class PageOverlayTests: XCTestCase {
         XCTAssertEqual(overlay.canvas.frame, overlay.bounds)
     }
 
-    /// Pictures sit under the ink, at exactly the page's size and with no
-    /// transform: their frames are in the same points as the drawing.
-    func testThePicturesAreUnderTheInkAndExactlyThePage() {
+    /// Both picture levels are exactly the page with no transform: their
+    /// frames are in the same points as the drawing.
+    func testThePictureLevelsSandwichTheInkAndAreExactlyThePage() {
         let overlay = PageOverlayView(frame: CGRect(x: 0, y: 0, width: 300, height: 400))
         overlay.inkScale = 2
         overlay.layoutIfNeeded()
-        XCTAssertEqual(overlay.subviews.first, overlay.pictureLayer)
-        XCTAssertEqual(overlay.subviews.last, overlay.canvas)
+        XCTAssertEqual(
+            overlay.subviews, [overlay.pictureLayer.belowInk, overlay.canvas, overlay.pictureLayer],
+            "under the ink, the ink, then the pictures over it with their handles")
         XCTAssertEqual(overlay.pictureLayer.frame, overlay.bounds)
+        XCTAssertEqual(overlay.pictureLayer.belowInk.frame, overlay.bounds)
         XCTAssertEqual(overlay.pictureLayer.transform, .identity)
     }
 

@@ -65,6 +65,9 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     /// cancelled. Holds #485's re-assert off through the moment between the
     /// menu closing and the picker appearing, when nothing is presented.
     var pickingPicture = false
+    /// Whether a finger draws ink rather than scrolling — a tap on a picture
+    /// picks it up only when it does not. A closure so the tests can choose.
+    var fingerDraws: () -> Bool = { PdfInkViewController.systemFingerDraws }
     /// The file a pick started in; a photo that arrives after a switch is dropped.
     var pickingFor: URL?
     /// What the page's pens were last set to. Every change goes through

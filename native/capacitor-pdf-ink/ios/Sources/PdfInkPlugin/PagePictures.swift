@@ -15,6 +15,26 @@ struct PagePicture: Codable, Equatable {
     var id: String
     var frame: CGRect
     var jpeg: Data
+    /// Over the ink, covering it — where a new picture goes — or under it,
+    /// where it can be drawn on. Dominik's call after the first device build
+    /// (2026-10-03): placing a picture over notes is the common case.
+    var aboveInk: Bool
+
+    init(id: String, frame: CGRect, jpeg: Data, aboveInk: Bool = true) {
+        self.id = id
+        self.frame = frame
+        self.jpeg = jpeg
+        self.aboveInk = aboveInk
+    }
+
+    /// Pictures saved before the choice existed were all under the ink.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        frame = try container.decode(CGRect.self, forKey: .frame)
+        jpeg = try container.decode(Data.self, forKey: .jpeg)
+        aboveInk = try container.decodeIfPresent(Bool.self, forKey: .aboveInk) ?? false
+    }
 }
 
 enum PictureCorner: CaseIterable {
@@ -102,8 +122,14 @@ enum PagePictures {
         CGPoint(x: corner.isLeft ? frame.minX : frame.maxX, y: corner.isTop ? frame.minY : frame.maxY)
     }
 
-    /// Array order is stacking order, so the last one under the point is on top.
+    /// Bottom to top as the page shows them: every picture under the ink, then
+    /// every one over it, each group in array order.
+    static func stackingOrder(_ pictures: [PagePicture]) -> [PagePicture] {
+        pictures.filter { !$0.aboveInk } + pictures.filter(\.aboveInk)
+    }
+
+    /// The last one under the point in stacking order is the one on top.
     static func topmost(at point: CGPoint, in pictures: [PagePicture]) -> PagePicture? {
-        pictures.last { $0.frame.contains(point) }
+        stackingOrder(pictures).last { $0.frame.contains(point) }
     }
 }

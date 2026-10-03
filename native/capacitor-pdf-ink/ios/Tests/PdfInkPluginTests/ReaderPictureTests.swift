@@ -202,6 +202,49 @@ final class ReaderPictureTests: XCTestCase {
         XCTAssertTrue(reader.pagePensVisible)
     }
 
+    /// With the Pencil drawing, a finger tap on a placed picture picks it up:
+    /// arranging, with that picture selected. Dominik could not move a picture
+    /// again once placed (device, 2026-10-03).
+    func testAFingerTapPicksUpAPictureWhenThePencilDraws() throws {
+        let (reader, _) = try show(pages: 1)
+        reader.fingerDraws = { false }
+        let placed = PagePicture(id: "p", frame: CGRect(x: 10, y: 10, width: 100, height: 100), jpeg: try picture().jpeg)
+        reader.setPictures([placed], onPage: 0)
+
+        XCTAssertTrue(reader.pickUpPicture(at: CGPoint(x: 50, y: 50), onPage: 0))
+
+        XCTAssertTrue(reader.arrangingPictures)
+        XCTAssertEqual(reader.selectedPicture?.id, "p")
+    }
+
+    /// With "Draw with finger" on, the finger is drawing; a tap is ink.
+    func testAFingerTapDrawsWhenTheFingerDraws() throws {
+        let (reader, _) = try show(pages: 1)
+        reader.fingerDraws = { true }
+        reader.setPictures(
+            [PagePicture(id: "p", frame: CGRect(x: 10, y: 10, width: 100, height: 100), jpeg: try picture().jpeg)],
+            onPage: 0)
+
+        XCTAssertFalse(reader.pickUpPicture(at: CGPoint(x: 50, y: 50), onPage: 0))
+        XCTAssertFalse(reader.arrangingPictures)
+    }
+
+    func testAFingerTapBesideAPictureIsNotAPickUp() throws {
+        let (reader, _) = try show(pages: 1)
+        reader.fingerDraws = { false }
+        reader.setPictures(
+            [PagePicture(id: "p", frame: CGRect(x: 10, y: 10, width: 100, height: 100), jpeg: try picture().jpeg)],
+            onPage: 0)
+
+        XCTAssertFalse(reader.pickUpPicture(at: CGPoint(x: 300, y: 300), onPage: 0))
+    }
+
+    func testANewPictureGoesOverTheInk() throws {
+        let (reader, _) = try show(pages: 1)
+        XCTAssertTrue(reader.insertPicture(try picture()))
+        XCTAssertEqual(reader.pictures[0]?.first?.aboveInk, true)
+    }
+
     func testDoneWearsTheThemeTint() throws {
         let tint = UIColor.systemGreen
         let reader = PdfInkViewController(strings: strings, tint: tint)

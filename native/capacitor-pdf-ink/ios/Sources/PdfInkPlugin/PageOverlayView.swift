@@ -4,10 +4,11 @@ import UIKit
 /**
  * What PDFKit puts over one page.
  *
- * Two things, in this order: the pictures the student put on the page
- * (`pictureLayer`, 2026-10-03), and the canvas OVER them, so ink can be drawn
- * on a photo. The picture layer is exactly the page with no transform — its
- * coordinates are the page's points, the same ones the drawing is in.
+ * Three things, bottom to top: the pictures under the ink
+ * (`pictureLayer.belowInk`), the canvas, and `pictureLayer` itself — the
+ * pictures over the ink, with the handles and the gestures (2026-10-03). Both
+ * picture levels are exactly the page with no transform: their coordinates are
+ * the page's points, the same ones the drawing is in.
  *
  * The wrapper's other job is to keep the canvas the same size as the page.
  *
@@ -40,14 +41,16 @@ final class PageOverlayView: UIView {
         super.init(frame: frame)
         backgroundColor = .clear
         isOpaque = false
-        addSubview(pictureLayer)
+        addSubview(pictureLayer.belowInk)
         addSubview(canvas)
+        addSubview(pictureLayer)
     }
 
     required init?(coder: NSCoder) { fatalError("PageOverlayView is code-only") }
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        pictureLayer.belowInk.frame = bounds
         pictureLayer.frame = bounds
         // Bounds and center, never `frame`: the canvas carries a transform.
         canvas.bounds = CGRect(

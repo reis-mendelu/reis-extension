@@ -164,7 +164,11 @@ build drops pictures from an archive on its next save (spec addendum 2026-10-03)
 3. Drag it; drag a corner; pinch it. It moves and resizes, keeps its shape and
    never leaves the page. A finger on empty page scrolls the document.
 4. Tap empty page. The selection goes and the pens come back. Draw a stroke
-   across the photo: the ink is on top.
+   across the photo: the photo covers it (over the ink by default).
+   With the Pencil in hand, tap the photo with a finger: it is picked up,
+   selected. Tap the layers button beside 🗑, then Hotovo: the stroke is now on
+   top of the photo. With "Draw with finger" on, the same tap draws a dot and
+   picks nothing up — use + → Upravit obrázky.
 5. Undo in the palette: the stroke goes. Undo again: the photo goes back to
    where it was before the last move or resize.
 6. `+` → Pořídit fotku. Allow the camera. Take one. It lands selected. Tap 🗑, then

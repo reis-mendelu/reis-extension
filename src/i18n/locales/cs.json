@@ -1345,6 +1345,8 @@
       "photoLibrary": "Vybrat fotku",
       "takePhoto": "Pořídit fotku",
       "chooseFile": "Vybrat soubor",
+      "underInk": "Pod poznámky",
+      "overInk": "Nad poznámky",
       "movePictures": "Upravit obrázky",
       "deletePicture": "Smazat obrázek",
       "done": "Hotovo"

@@ -43,6 +43,33 @@ final class PictureLayerTests: XCTestCase {
         XCTAssertNil(layer.selectedID)
     }
 
+    /// Each picture is drawn on its own side of the ink: the layer itself sits
+    /// over the canvas, `belowInk` under it.
+    func testEachPictureIsDrawnOnItsSideOfTheInk() {
+        let layer = PictureLayerView(frame: CGRect(x: 0, y: 0, width: 600, height: 800))
+        layer.pictures = [
+            PagePicture(id: "over", frame: CGRect(x: 0, y: 0, width: 50, height: 50), jpeg: Data()),
+            PagePicture(
+                id: "under", frame: CGRect(x: 100, y: 0, width: 50, height: 50), jpeg: Data(),
+                aboveInk: false),
+        ]
+        XCTAssertEqual(layer.aboveInk.shownIDs, ["over"])
+        XCTAssertEqual(layer.belowInk.shownIDs, ["under"])
+    }
+
+    func testTheLayerButtonMovesTheSelectedPictureUnderOrOverTheInk() {
+        let layer = layer(arranging: true)
+        layer.selectedID = "a"
+        var committed: [PagePicture]?
+        layer.onCommit = { committed = $0 }
+
+        layer.toggleSelectedInkSide()
+        XCTAssertEqual(committed?.first?.aboveInk, false)
+        layer.toggleSelectedInkSide()
+        XCTAssertEqual(committed?.first?.aboveInk, true)
+        XCTAssertEqual(layer.selectedID, "a", "the picture stays selected")
+    }
+
     func testLeavingArrangingDropsTheSelection() {
         let layer = layer(arranging: true)
         layer.selectedID = "a"

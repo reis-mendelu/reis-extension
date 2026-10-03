@@ -1,7 +1,10 @@
 import UIKit
 
 /**
- * The pictures on one page, under its ink.
+ * The pictures on one page: the ones over the ink, the handles, and the
+ * gestures. The ones under the ink are drawn by `belowInk`, which the overlay
+ * puts under the canvas — PencilKit's ink is one view, so the two sides of it
+ * are two views.
  *
  * It renders and it reports; it decides nothing. The reader owns the pictures
  * (`pictures[pageIndex]`, like `drawings`), hands them in, and gets the new list
@@ -18,8 +21,16 @@ import UIKit
  */
 final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
     var pictures: [PagePicture] = [] {
-        didSet { syncImageViews() }
+        didSet {
+            belowInk.pictures = pictures.filter { !$0.aboveInk }
+            aboveInk.pictures = pictures.filter(\.aboveInk)
+            setNeedsLayout()
+        }
     }
+    /// Drawn under the canvas; the overlay owns where it sits.
+    let belowInk = PictureStackView()
+    /// Drawn here, over the canvas and under the handles.
+    let aboveInk = PictureStackView()
     var selectedID: String? {
         didSet { setNeedsLayout() }
     }
@@ -35,6 +46,9 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
     var deleteLabel = "Delete" {
         didSet { deleteButton.accessibilityLabel = deleteLabel }
     }
+    /// What the layer button does, by where the selected picture is now.
+    var underInkLabel = "Under the notes"
+    var overInkLabel = "Over the notes"
     var onSelect: ((String) -> Void)?
     var onCommit: (([PagePicture]) -> Void)?
 
@@ -42,11 +56,11 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
     static let handleSide: CGFloat = 22
     static let deleteSide: CGFloat = 40
 
-    private var imageViews: [String: UIImageView] = [:]
     private let chrome = UIView()
     private let outline = CAShapeLayer()
     private var handles: [PictureCorner: UIView] = [:]
     private let deleteButton = UIButton(type: .system)
+    private let inkSideButton = UIButton(type: .system)
     private enum Gesture {
         case move(id: String, start: CGRect)
         case resize(id: String, corner: PictureCorner, start: CGRect)
@@ -80,6 +94,13 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
         deleteButton.accessibilityLabel = deleteLabel
         deleteButton.addTarget(self, action: #selector(deleteTapped), for: .touchUpInside)
         chrome.addSubview(deleteButton)
+        var side = UIButton.Configuration.filled()
+        side.cornerStyle = .capsule
+        inkSideButton.configuration = side
+        inkSideButton.frame = deleteButton.frame
+        inkSideButton.addTarget(self, action: #selector(inkSideTapped), for: .touchUpInside)
+        chrome.addSubview(inkSideButton)
+        addSubview(aboveInk)
         addSubview(chrome)
 
         let pan = UIPanGestureRecognizer(target: self, action: #selector(panned(_:)))
@@ -101,7 +122,9 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
     func takesTouch(at point: CGPoint) -> Bool {
         guard arranging else { return false }
         if selectedFrame != nil {
-            if !deleteButton.isHidden, deleteButton.frame.contains(point) { return true }
+            if deleteButton.frame.contains(point) || inkSideButton.frame.contains(point) {
+                return true
+            }
             if corner(at: point) != nil { return true }
         }
         return PagePictures.topmost(at: point, in: pictures) != nil
@@ -113,7 +136,8 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
 
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         guard isUserInteractionEnabled, !isHidden, takesTouch(at: point) else { return nil }
-        if !deleteButton.isHidden, deleteButton.frame.contains(point) { return deleteButton }
+        if selectedFrame != nil, deleteButton.frame.contains(point) { return deleteButton }
+        if selectedFrame != nil, inkSideButton.frame.contains(point) { return inkSideButton }
         return self
     }
 
@@ -185,6 +209,15 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
 
     @objc private func deleteTapped() { deleteSelected() }
 
+    @objc private func inkSideTapped() { toggleSelectedInkSide() }
+
+    /// Over the ink ↔ under it, as one undoable change. Stays selected.
+    func toggleSelectedInkSide() {
+        guard let index = pictures.firstIndex(where: { $0.id == selectedID }) else { return }
+        pictures[index].aboveInk.toggle()
+        onCommit?(pictures)
+    }
+
     func deleteSelected() {
         guard let selectedID else { return }
         pictures.removeAll { $0.id == selectedID }
@@ -231,27 +264,9 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
         }
     }
 
-    private func syncImageViews() {
-        let ids = Set(pictures.map(\.id))
-        for (id, view) in imageViews where !ids.contains(id) {
-            view.removeFromSuperview()
-            imageViews[id] = nil
-        }
-        for picture in pictures {
-            let view = imageViews[picture.id] ?? {
-                let view = UIImageView(image: UIImage(data: picture.jpeg))
-                view.contentMode = .scaleToFill
-                imageViews[picture.id] = view
-                return view
-            }()
-            view.frame = picture.frame
-            insertSubview(view, belowSubview: chrome)
-        }
-        setNeedsLayout()
-    }
-
     override func layoutSubviews() {
         super.layoutSubviews()
+        aboveInk.frame = bounds
         chrome.frame = bounds
         guard let frame = selectedFrame else {
             chrome.isHidden = true
@@ -267,11 +282,24 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
             handle.transform = scale
             handle.center = PagePictures.point(of: corner, in: frame)
         }
-        // Above the picture, or inside its top edge when it touches the page top.
-        deleteButton.transform = scale
+        // Side by side above the picture, or inside its top edge when it
+        // touches the page top: delete, then over/under the ink.
         let lift = (Self.deleteSide / 2 + 10) * chromeScale
         let above = frame.minY - lift
-        deleteButton.center = CGPoint(x: frame.midX, y: above >= lift / 2 ? above : frame.minY + lift)
+        let y = above >= lift / 2 ? above : frame.minY + lift
+        let spread = (Self.deleteSide / 2 + 6) * chromeScale
+        deleteButton.transform = scale
+        deleteButton.center = CGPoint(x: frame.midX - spread, y: y)
+        let selectedAbove = pictures.first { $0.id == selectedID }?.aboveInk ?? true
+        var side = inkSideButton.configuration ?? .filled()
+        side.image = UIImage(
+            systemName: selectedAbove
+                ? "square.2.layers.3d.bottom.filled" : "square.2.layers.3d.top.filled")
+        side.baseBackgroundColor = tintColor
+        inkSideButton.configuration = side
+        inkSideButton.accessibilityLabel = selectedAbove ? underInkLabel : overInkLabel
+        inkSideButton.transform = scale
+        inkSideButton.center = CGPoint(x: frame.midX + spread, y: y)
     }
 
     override func tintColorDidChange() {

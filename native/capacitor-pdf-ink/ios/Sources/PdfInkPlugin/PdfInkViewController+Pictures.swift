@@ -284,6 +284,9 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
         let layer = overlay.pictureLayer
         layer.pictures = pictures[index] ?? []
         layer.deleteLabel = strings.deletePicture
+        layer.underInkLabel = strings.underInk
+        layer.overInkLabel = strings.overInk
+        addPickUpTap(to: overlay)
         layer.chromeScale = pictureChromeScale
         layer.onSelect = { [weak self] id in self?.selectPicture((index, id)) }
         layer.onCommit = { [weak self] list in self?.setPictures(list, onPage: index) }

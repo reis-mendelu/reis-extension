@@ -82,12 +82,14 @@ final class InkExportTests: XCTestCase {
             "ink baked light — it is invisible on white paper")
     }
 
-    /// Page, then pictures, then ink — the order the reader shows.
-    func testAPictureIsInTheExportUnderTheInk() throws {
+    /// Page, then the pictures under the ink, then the ink — the reader's order.
+    func testAPictureUnderTheInkIsInTheExportUnderTheInk() throws {
         let size = CGSize(width: 200, height: 200)
         let document = try whitePage(size: size)
         let picture = try XCTUnwrap(PictureIngest.picture(from: grey(128, CGSize(width: 100, height: 100))))
-        let placed = PagePicture(id: "p", frame: CGRect(x: 50, y: 50, width: 100, height: 100), jpeg: picture.jpeg)
+        let placed = PagePicture(
+            id: "p", frame: CGRect(x: 50, y: 50, width: 100, height: 100), jpeg: picture.jpeg,
+            aboveInk: false)
         let url = tempURL()
 
         try InkExport.flatten(
@@ -98,6 +100,25 @@ final class InkExportTests: XCTestCase {
         XCTAssertEqual(sample(CGPoint(x: 70, y: 70)), 128, accuracy: 12, "the picture is missing")
         XCTAssertLessThan(sample(CGPoint(x: 100, y: 100)), 40, "the ink is not on top of the picture")
         XCTAssertGreaterThan(sample(CGPoint(x: 20, y: 20)), 245, "the page outside the picture changed")
+    }
+
+    /// A picture over the ink covers it, in the export as in the reader.
+    func testAPictureOverTheInkCoversItInTheExport() throws {
+        let size = CGSize(width: 200, height: 200)
+        let document = try whitePage(size: size)
+        let picture = try XCTUnwrap(PictureIngest.picture(from: grey(128, CGSize(width: 100, height: 100))))
+        let placed = PagePicture(
+            id: "p", frame: CGRect(x: 50, y: 50, width: 100, height: 100), jpeg: picture.jpeg,
+            aboveInk: true)
+        let url = tempURL()
+
+        try InkExport.flatten(
+            document, drawings: [0: horizontalStroke(y: 100, from: 40, to: 160)],
+            pictures: [0: [placed]], to: url)
+
+        let sample = try render(PDFDocument(url: url)?.page(at: 0), size: size)
+        XCTAssertEqual(sample(CGPoint(x: 100, y: 100)), 128, accuracy: 12, "the ink showed through")
+        XCTAssertLessThan(sample(CGPoint(x: 45, y: 100)), 40, "the ink beside the picture went missing")
     }
 
     /// The JPEG goes into the PDF as-is. Noise is what a bitmap cannot

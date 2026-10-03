@@ -58,6 +58,9 @@ export interface PdfInkStrings {
   takePhoto: string;
   /** Menu entry that puts a picture from Files (Downloads, iCloud Drive) on the page. */
   chooseFile: string;
+  /** The selected picture's layer button: move it under / over the ink (accessibility labels). */
+  underInk: string;
+  overInk: string;
   /** Menu entry that enters arranging, where pictures move instead of ink. */
   movePictures: string;
   /** The button over a selected picture. */

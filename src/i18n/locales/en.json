@@ -1345,6 +1345,8 @@
       "photoLibrary": "Choose photo",
       "takePhoto": "Take photo",
       "chooseFile": "Choose file",
+      "underInk": "Under the notes",
+      "overInk": "Over the notes",
       "movePictures": "Edit pictures",
       "deletePicture": "Delete picture",
       "done": "Done"

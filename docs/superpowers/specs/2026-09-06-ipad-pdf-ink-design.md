@@ -605,3 +605,25 @@ is not deleted, arranging disables canvases and keeps the picker away, an added
 page shifts pictures, undo of a delete restores it. `ReaderScaleTests`' bar pin
 is updated for the menu. Device: checklist step 27 on the cabled iPad with a
 release build.
+
+### Changed after Dominik's first device test (2026-10-03)
+
+- **Over the ink by default, switchable.** "Under the ink" made it impossible to
+  put a picture over notes, the more common wish. `PagePicture.aboveInk` (true
+  for a new picture; a picture saved without the key reads as under). The
+  overlay is now three views: `pictureLayer.belowInk`, the canvas, and
+  `pictureLayer` (over-ink pictures + handles + gestures). The selected
+  picture's chrome gains a second button beside 🗑 that flips the side, as one
+  undoable change. A picture over the ink also wins a touch over one under it
+  (`PagePictures.stackingOrder`). Export: page → under → ink → over.
+- **Picking a placed picture up again: a finger tap.** With the Pencil drawing
+  (`UIPencilInteraction.prefersPencilOnlyDrawing`, which PencilKit's
+  `.default` policy follows) the finger does not draw, so a tap on a picture
+  starts arranging with it selected. When the finger draws, a tap stays ink and
+  `+` → Upravit obrázky is the way in. The recognizer only begins over a
+  picture. "Long-press" was offered and not chosen: with finger drawing on it
+  leaves a dot.
+- **Pictures from Files** (`+Files`): Downloads is a second photo library for
+  many students; the document picker, images only, out of process, no
+  permission; the copy is ingested and deleted.
+

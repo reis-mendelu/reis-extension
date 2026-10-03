@@ -67,6 +67,29 @@ final class PagePicturesTests: XCTestCase {
         XCTAssertEqual(scaled, CGRect(x: 150, y: 175, width: 200, height: 100))
     }
 
+    /// Over-the-ink pictures are drawn above every under-the-ink one, whatever
+    /// the array order, so they win a touch there too.
+    func testAPictureOverTheInkWinsATouchOverOneUnderIt() {
+        let over = PagePicture(id: "over", frame: CGRect(x: 0, y: 0, width: 100, height: 100), jpeg: Data())
+        let under = PagePicture(
+            id: "under", frame: CGRect(x: 0, y: 0, width: 100, height: 100), jpeg: Data(), aboveInk: false)
+        XCTAssertEqual(PagePictures.topmost(at: CGPoint(x: 50, y: 50), in: [over, under])?.id, "over")
+        XCTAssertEqual(PagePictures.stackingOrder([over, under]).map(\.id), ["under", "over"])
+    }
+
+    func testANewPictureSitsOverTheInk() {
+        XCTAssertTrue(PagePicture(id: "p", frame: .zero, jpeg: Data()).aboveInk)
+    }
+
+    /// Pictures saved before the choice existed were all under the ink.
+    func testAPictureSavedWithoutTheChoiceReadsAsUnderTheInk() throws {
+        let old: [String: Any] = ["id": "p", "frame": [[1.0, 2.0], [3.0, 4.0]], "jpeg": Data([1])]
+        let data = try PropertyListSerialization.data(fromPropertyList: old, format: .binary, options: 0)
+        let decoded = try PropertyListDecoder().decode(PagePicture.self, from: data)
+        XCTAssertFalse(decoded.aboveInk)
+        XCTAssertEqual(decoded.frame, CGRect(x: 1, y: 2, width: 3, height: 4))
+    }
+
     func testTheTopmostPictureWinsATouch() {
         let under = PagePicture(id: "a", frame: CGRect(x: 0, y: 0, width: 100, height: 100), jpeg: Data())
         let over = PagePicture(id: "b", frame: CGRect(x: 50, y: 50, width: 100, height: 100), jpeg: Data())
