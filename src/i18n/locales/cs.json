@@ -219,7 +219,8 @@
       "unregisterTitle": "Potvrdit odhlášení",
       "registerBody": "Fakt se chceš přihlásit na tenhle termín?",
       "unregisterBody": "Fakt se chceš odhlásit z téhle zkoušky?"
-    }
+    },
+    "attemptLegend": "Typy termínů"
   },
   "feedback": {
     "title": "Nahlásit chybu / Nápad",

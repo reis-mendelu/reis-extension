@@ -5,6 +5,7 @@ import type { RegisteredExam } from '../../../../utils/mobile/examRows';
 import type { ExamSection, ExamTerm } from '../../../../types/exams';
 import { ExamRowCard } from './ExamRowCard';
 import { TermRow } from './TermRow';
+import { AttemptBadgeLegend } from './AttemptBadgeLegend';
 import { TermDetails } from './TermDetails';
 import { MoreChip } from './MoreChip';
 import { parseRegistrationStart } from '../../../../utils/termUtils';
@@ -86,6 +87,8 @@ export function RegisteredCard({
           onRegister={onRegister}
         />
       ))}
+      {/* Over `others` only: the registered term above wears no badge. */}
+      <AttemptBadgeLegend terms={others} />
       {/* Last, after the other terms: right under the "Více" chip a thumb
           reaching for the details could land on the way out instead. */}
       {/* IS closes deregistration at `deregistrationDeadline`. The button was
