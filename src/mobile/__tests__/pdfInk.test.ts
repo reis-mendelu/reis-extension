@@ -32,6 +32,7 @@ const STRINGS: PdfInkStrings = {
   add: 'ad',
   photoLibrary: 'pl',
   takePhoto: 'tp',
+  chooseFile: 'cf',
   movePictures: 'mp',
   deletePicture: 'dp',
   done: 'do',

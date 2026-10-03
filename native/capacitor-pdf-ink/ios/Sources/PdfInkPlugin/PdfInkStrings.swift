@@ -27,6 +27,7 @@ struct PdfInkStrings {
     let add: String
     let photoLibrary: String
     let takePhoto: String
+    let chooseFile: String
     let movePictures: String
     let deletePicture: String
     let done: String
@@ -54,6 +55,7 @@ struct PdfInkStrings {
         add = object?["add"] as? String ?? "Add"
         photoLibrary = object?["photoLibrary"] as? String ?? "Choose photo"
         takePhoto = object?["takePhoto"] as? String ?? "Take photo"
+        chooseFile = object?["chooseFile"] as? String ?? "Choose file"
         movePictures = object?["movePictures"] as? String ?? "Edit pictures"
         deletePicture = object?["deletePicture"] as? String ?? "Delete picture"
         done = object?["done"] as? String ?? "Done"

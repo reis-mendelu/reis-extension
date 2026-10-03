@@ -56,6 +56,8 @@ export interface PdfInkStrings {
   /** Menu entries that put a picture on the page, from Photos or the camera. */
   photoLibrary: string;
   takePhoto: string;
+  /** Menu entry that puts a picture from Files (Downloads, iCloud Drive) on the page. */
+  chooseFile: string;
   /** Menu entry that enters arranging, where pictures move instead of ink. */
   movePictures: string;
   /** The button over a selected picture. */

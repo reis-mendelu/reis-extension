@@ -39,6 +39,10 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
                     [weak self] _ in self?.presentCamera()
                 })
         }
+        picture.append(
+            UIAction(title: strings.chooseFile, image: UIImage(systemName: "folder")) {
+                [weak self] _ in self?.presentFilePicker()
+            })
         var sections = [section([page]), section(picture)]
         if pictures.values.contains(where: { !$0.isEmpty }) {
             sections.append(
@@ -81,10 +85,10 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
         presentPicking(camera)
     }
 
-    /// Both pickers are dismissed in code, which `presentationControllerDidDismiss`
+    /// The photo pickers are dismissed in code, which `presentationControllerDidDismiss`
     /// never hears about — so a cancel gives the pens back itself, and a pick
     /// goes on to arranging. A swipe-away still reaches the delegate.
-    private func presentPicking(_ controller: UIViewController) {
+    func presentPicking(_ controller: UIViewController) {
         controller.presentationController?.delegate = self
         if let tint { controller.view.tintColor = tint }
         beginPicking()

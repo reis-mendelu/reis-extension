@@ -1344,6 +1344,7 @@
       "add": "Add",
       "photoLibrary": "Choose photo",
       "takePhoto": "Take photo",
+      "chooseFile": "Choose file",
       "movePictures": "Edit pictures",
       "deletePicture": "Delete picture",
       "done": "Done"

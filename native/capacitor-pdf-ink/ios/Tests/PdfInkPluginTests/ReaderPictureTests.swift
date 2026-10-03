@@ -142,6 +142,66 @@ final class ReaderPictureTests: XCTestCase {
         XCTAssertFalse(reader.arrangingPictures)
     }
 
+    /// Students save pictures to Downloads as often as to Photos, and the photo
+    /// picker cannot see Files. A file picked there takes the same path as a
+    /// photo: ingested, placed on the page on screen, selected.
+    func testAPictureFromFilesLandsSelectedOnThePage() throws {
+        let (reader, _) = try show(pages: 1)
+        let file = FileManager.default.temporaryDirectory
+            .appendingPathComponent("\(UUID().uuidString).png")
+        try pngData(CGSize(width: 120, height: 90)).write(to: file)
+        reader.beginPicking()
+
+        reader.documentPicker(UIDocumentPickerViewController(forOpeningContentTypes: [.image]),
+            didPickDocumentsAt: [file])
+
+        let placed = expectation(description: "the picture is placed")
+        func poll() {
+            if reader.pictures[0]?.count == 1 { return placed.fulfill() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05, execute: poll)
+        }
+        poll()
+        wait(for: [placed], timeout: 5)
+        XCTAssertTrue(reader.arrangingPictures)
+        XCTAssertEqual(reader.selectedPicture?.id, reader.pictures[0]?.first?.id)
+        XCTAssertFalse(reader.pickingPicture)
+    }
+
+    func testCancellingFilesGivesThePensBack() throws {
+        let (reader, _) = try show(pages: 1)
+        reader.beginPicking()
+
+        reader.documentPickerWasCancelled(
+            UIDocumentPickerViewController(forOpeningContentTypes: [.image]))
+
+        XCTAssertFalse(reader.pickingPicture)
+        XCTAssertTrue(reader.pagePensVisible)
+        XCTAssertTrue(reader.pdfView.isFirstResponder)
+    }
+
+    /// Something in Files that is not an image after all — a mislabelled
+    /// download — must not leave the student without pens.
+    func testAFileThatIsNotAnImageGivesThePensBack() throws {
+        let (reader, _) = try show(pages: 1)
+        let file = FileManager.default.temporaryDirectory
+            .appendingPathComponent("\(UUID().uuidString).png")
+        try Data("not an image".utf8).write(to: file)
+        reader.beginPicking()
+
+        reader.documentPicker(UIDocumentPickerViewController(forOpeningContentTypes: [.image]),
+            didPickDocumentsAt: [file])
+
+        let restored = expectation(description: "the pens come back")
+        func poll() {
+            if !reader.pickingPicture { return restored.fulfill() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05, execute: poll)
+        }
+        poll()
+        wait(for: [restored], timeout: 5)
+        XCTAssertTrue(reader.pictures.isEmpty)
+        XCTAssertTrue(reader.pagePensVisible)
+    }
+
     func testDoneWearsTheThemeTint() throws {
         let tint = UIColor.systemGreen
         let reader = PdfInkViewController(strings: strings, tint: tint)
@@ -208,8 +268,8 @@ final class ReaderPictureTests: XCTestCase {
             }
         }
         // The camera row depends on the machine; the simulator may have one.
-        let pictureRow = UIImagePickerController.isSourceTypeAvailable(.camera)
-            ? [strings.photoLibrary, strings.takePhoto] : [strings.photoLibrary]
+        let camera = UIImagePickerController.isSourceTypeAvailable(.camera) ? [strings.takePhoto] : []
+        let pictureRow = [strings.photoLibrary] + camera + [strings.chooseFile]
         XCTAssertEqual(sections(), [[strings.addPage], pictureRow])
 
         reader.setPictures(
@@ -226,6 +286,15 @@ final class ReaderPictureTests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    private func pngData(_ size: CGSize) -> Data {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        return UIGraphicsImageRenderer(size: size, format: format).pngData { ctx in
+            UIColor.systemTeal.setFill()
+            ctx.fill(CGRect(origin: .zero, size: size))
+        }
+    }
 
     private func picture() throws -> PictureIngest.Picture {
         let format = UIGraphicsImageRendererFormat()
