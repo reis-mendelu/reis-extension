@@ -167,15 +167,18 @@ export function DayChips({ selectedIso, onSelect, lessonDates, onPickDay }: DayC
                   selection keeps its tonal pill, and on today the two stack.
                   Ink on the lime fill, not white: white on #79be15 is 2.29:1,
                   `primary-content` on it is 6.42:1 in both themes.
-                  Every number sits in the same box, so the row keeps its
-                  height whichever chip carries the circle. */}
+                  Every number gets the circle's height, so the row keeps its
+                  height whichever chip carries it; only the circle is widened,
+                  or every "Čt 1" spreads apart. */}
               <span className={isToday ? 'font-bold text-[var(--tone-primary)]' : undefined}>
                 {label}
               </span>{' '}
               <span
                 data-testid={isToday ? 'day-chip-today' : undefined}
-                className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 tabular-nums max-[359px]:h-5 max-[359px]:min-w-5 ${
-                  isToday ? 'bg-primary font-bold text-primary-content' : ''
+                className={`inline-flex h-6 items-center justify-center rounded-full tabular-nums max-[359px]:h-5 ${
+                  isToday
+                    ? 'min-w-6 bg-primary px-1 font-bold text-primary-content max-[359px]:min-w-5'
+                    : ''
                 }`}
               >
                 {date.getDate()}
