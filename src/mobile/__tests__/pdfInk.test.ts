@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { memFs } from './memPdfCacheFs';
-import { pdfPath, readIndex, store } from '../pdfCache';
+import { pdfPath, readIndex, recordPositions, store } from '../pdfCache';
 import {
   openPdfWithInk,
   pdfInkKey,
@@ -42,17 +42,17 @@ const pdf = () => new Blob(['%PDF-1.4 fake'], { type: 'application/pdf' });
 
 function harness(over: Partial<OpenPdfWithInkDeps> = {}) {
   const { fs, files } = memFs();
-  const open = vi.fn<(o: unknown) => Promise<{ shown: string[] }>>(async () => ({ shown: [LINK] }));
+  const open = vi.fn<
+    (o: unknown) => Promise<{ shown: string[]; positions?: Record<string, number> }>
+  >(async () => ({ shown: [LINK] }));
   const deliverFile = vi.fn(async () => {});
   const fileUnavailable = vi.fn(async () => {});
   const remove = vi.fn(async () => {});
-  let needsFile: ((e: { link: string }) => Promise<void>) | null = null;
-  const addListener = vi.fn(
-    async (_event: 'needsFile', cb: (e: { link: string }) => Promise<void>) => {
-      needsFile = cb;
-      return { remove };
-    }
-  );
+  const listeners: Record<string, (e: never) => Promise<void> | void> = {};
+  const addListener = vi.fn(async (event: string, cb: (e: never) => Promise<void> | void) => {
+    listeners[event] = cb;
+    return { remove };
+  });
   const hasInk = vi.fn<(key: string) => Promise<boolean>>(async () => false);
   const deps: OpenPdfWithInkDeps = {
     plugin: { open, deliverFile, fileUnavailable, addListener },
@@ -74,8 +74,17 @@ function harness(over: Partial<OpenPdfWithInkDeps> = {}) {
     fetchPdf,
   };
   const trigger = (link: string) => {
+    const needsFile = listeners.needsFile as ((e: { link: string }) => Promise<void>) | undefined;
     if (!needsFile) throw new Error('needsFile listener was never registered');
     return needsFile({ link });
+  };
+  /** What the reader sends when the app resigns active: the page each file is on. */
+  const reportPositions = async (positions: Record<string, number>) => {
+    const listener = listeners.positions as
+      | ((e: { positions: Record<string, number> }) => Promise<void> | void)
+      | undefined;
+    if (!listener) throw new Error('positions listener was never registered');
+    await listener({ positions });
   };
   return {
     deps,
@@ -85,6 +94,7 @@ function harness(over: Partial<OpenPdfWithInkDeps> = {}) {
     fileUnavailable,
     remove,
     trigger,
+    reportPositions,
     fetchPdf,
     hasInk,
     fs,
@@ -125,6 +135,7 @@ describe('openPdfWithInk', () => {
           date: '12. 3. 2026',
           pdfPath: `file:///lib/${pdfPath(key)}`,
           inkPath: `file:///lib-cloud/pdf-ink/${key}.ink`,
+          lastPageIndex: null,
         },
         {
           link: LINK_B,
@@ -132,6 +143,7 @@ describe('openPdfWithInk', () => {
           date: '19. 3. 2026',
           pdfPath: null,
           inkPath: `file:///lib-cloud/pdf-ink/${keyB}.ink`,
+          lastPageIndex: null,
         },
         {
           link: LINK_C,
@@ -139,6 +151,7 @@ describe('openPdfWithInk', () => {
           date: '01. 2. 2026',
           pdfPath: null,
           inkPath: `file:///lib-cloud/pdf-ink/${keyC}.ink`,
+          lastPageIndex: null,
         },
       ],
       strings: STRINGS,
@@ -186,6 +199,7 @@ describe('openPdfWithInk', () => {
       { date: '05. 1. 2026', name: 'Zadání semestrálky', courseCode: 'EBC-MT', link: gone },
       1000
     );
+    await recordPositions(fs, { [keyGone]: 6 });
 
     await openPdfWithInk(deps, input);
 
@@ -199,6 +213,7 @@ describe('openPdfWithInk', () => {
       date: '05. 1. 2026',
       pdfPath: `file:///lib/${pdfPath(keyGone)}`,
       inkPath: `file:///lib-cloud/pdf-ink/${keyGone}.ink`,
+      lastPageIndex: 6,
     });
   });
 
@@ -367,7 +382,8 @@ describe('openPdfWithInk', () => {
     const index = await readIndex(fs);
     expect(index[key]?.lastOpenedAt).toBe(7000);
     expect(index[keyC]?.lastOpenedAt).toBe(7000);
-    expect(remove).toHaveBeenCalledTimes(1);
+    // needsFile and positions, both.
+    expect(remove).toHaveBeenCalledTimes(2);
   });
 
   it('hands the same bytes back for the web viewer when PDFKit cannot read them, and forgets the copy', async () => {
@@ -381,7 +397,7 @@ describe('openPdfWithInk', () => {
     expect(fetchPdf).toHaveBeenCalledTimes(1);
     expect(files.has(pdfPath(key))).toBe(false);
     expect(await readIndex(fs)).toEqual({});
-    expect(remove).toHaveBeenCalledTimes(1);
+    expect(remove).toHaveBeenCalledTimes(2);
   });
 
   it('refetches for the web viewer when a FRESH copy turns out unreadable', async () => {
@@ -398,6 +414,68 @@ describe('openPdfWithInk', () => {
     const { deps, input, open } = harness();
     open.mockRejectedValueOnce(new Error('no view controller'));
     expect((await openPdfWithInk(deps, input)).kind).toBe('failed');
+  });
+
+  it('opens each file on the page it was left on, cached or not', async () => {
+    const { deps, input, open, fs } = harness();
+    const keyB = await pdfInkKey(input.courseCode, LINK_B);
+    await store(fs, keyB, pdf(), { date: 'old', name: 'Přednáška 10' }, 1);
+    await openPdfWithInk(deps, input);
+    open.mockClear();
+    const key = await pdfInkKey(input.courseCode, input.fileLink);
+    await recordPositions(fs, { [key]: 12, [keyB]: 3 });
+
+    await openPdfWithInk(deps, input);
+
+    const files = (open.mock.calls[0]![0] as { files: { link: string; lastPageIndex: number | null }[] })
+      .files;
+    expect(files.find((f) => f.link === LINK)?.lastPageIndex).toBe(12);
+    // Stale for its date, so not handed over as a path — but the page still is.
+    expect(files.find((f) => f.link === LINK_B)?.lastPageIndex).toBe(3);
+    expect(files.find((f) => f.link === LINK_C)?.lastPageIndex).toBeNull();
+  });
+
+  it('records the page every file was left on when the reader closes', async () => {
+    const { deps, input, open, trigger, fs } = harness();
+    open.mockImplementationOnce(async () => {
+      await trigger(LINK_C);
+      return { shown: [LINK, LINK_C], positions: { [LINK]: 9, [LINK_C]: 0 } };
+    });
+
+    await openPdfWithInk(deps, input);
+
+    const index = await readIndex(fs);
+    expect(index[await pdfInkKey(input.courseCode, LINK)]?.lastPageIndex).toBe(9);
+    expect(index[await pdfInkKey(input.courseCode, LINK_C)]?.lastPageIndex).toBe(0);
+  });
+
+  // The app can be killed in the background with the reader still up, and then
+  // `open` never resolves. The reader reports positions on resign-active so the
+  // next day's open still lands on the right page.
+  it('records positions the reader reports while it is still open', async () => {
+    const { deps, input, open, reportPositions, fs } = harness();
+    let recorded: number | undefined;
+    open.mockImplementationOnce(async () => {
+      await reportPositions({ [LINK]: 21 });
+      recorded = (await readIndex(fs))[await pdfInkKey(input.courseCode, LINK)]?.lastPageIndex;
+      return { shown: [LINK] };
+    });
+
+    await openPdfWithInk(deps, input);
+
+    expect(recorded).toBe(21);
+    expect((await readIndex(fs))[await pdfInkKey(input.courseCode, LINK)]?.lastPageIndex).toBe(21);
+  });
+
+  it('ignores a positions report for a link it does not know', async () => {
+    const { deps, input, open, reportPositions, fs } = harness();
+    open.mockImplementationOnce(async () => {
+      await reportPositions({ 'https://elsewhere': 4 });
+      return { shown: [LINK] };
+    });
+    await openPdfWithInk(deps, input);
+    const index = await readIndex(fs);
+    expect(Object.values(index).some((e) => e.lastPageIndex === 4)).toBe(false);
   });
 
   it('enforces the cache cap after a successful open', async () => {

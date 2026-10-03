@@ -84,6 +84,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
   // in the drawer's grouped order, so both lists read the same.
   const {
     previewUrl,
+    previewPosition,
     viewPdf,
     closePreview,
     openFile,
@@ -211,7 +212,12 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
               this flex column rather than overflowing past the screen. */}
           <div className="min-h-0 flex-1">
             <Suspense fallback={null}>
-              <PdfViewer key={previewUrl} blobUrl={previewUrl} onClose={closePreview} />
+              <PdfViewer
+                key={previewUrl}
+                blobUrl={previewUrl}
+                onClose={closePreview}
+                {...previewPosition}
+              />
             </Suspense>
           </div>
         </div>

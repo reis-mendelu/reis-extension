@@ -6,6 +6,7 @@ import { resolvePdfWorkerSource } from './pdfWorkerSource';
 import { computeRenderWindow } from './pdfWindow';
 import { clampScale } from './pinchZoom';
 import { usePinchZoom } from './usePinchZoom';
+import { usePdfPagePosition } from './usePdfPagePosition';
 
 // Resolving the worker moved to pdfWorkerSource so it goes through the platform
 // seam: the old `chrome.runtime.getURL` here is undefined on Capacitor, which is
@@ -21,6 +22,10 @@ interface PdfViewerProps {
   onClose: () => void;
   onToggleNotes?: () => void;
   hasNotesOpen?: boolean;
+  /** The page (0-based) to reopen on; past the end means the last page. */
+  initialPage?: number | null;
+  /** The page being read, once scrolling settles and when the viewer closes. */
+  onPageChange?: (page: number) => void;
 }
 
 // pdf.js advises against mounting more than ~25 page canvases at once; mobile
@@ -34,9 +39,17 @@ const MAX_RENDERED = 20;
 // hide fast-fling blank flashes, still bounded by MAX_RENDERED.
 const ROOT_MARGIN = '600px 0px';
 
-export function PdfViewer({ blobUrl, onClose, onToggleNotes, hasNotesOpen }: PdfViewerProps) {
+export function PdfViewer({
+  blobUrl,
+  onClose,
+  onToggleNotes,
+  hasNotesOpen,
+  initialPage,
+  onPageChange,
+}: PdfViewerProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [scale, setScale] = useState(1.0);
+  const [fitted, setFitted] = useState(false);
   const [ready, setReady] = useState(false);
   const [visible, setVisible] = useState<Set<number>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
@@ -49,6 +62,14 @@ export function PdfViewer({ blobUrl, onClose, onToggleNotes, hasNotesOpen }: Pdf
   const [baseHeight, setBaseHeight] = useState(0);
   const [pageHeights, setPageHeights] = useState<Map<number, number>>(new Map());
   usePinchZoom(containerRef, contentRef, scale, setScale);
+  const { trackRow } = usePdfPagePosition({
+    containerRef,
+    numPages,
+    fitted,
+    contentRef,
+    initialPage,
+    onPageChange,
+  });
 
   useEffect(() => {
     getWorkerReady()
@@ -83,13 +104,20 @@ export function PdfViewer({ blobUrl, onClose, onToggleNotes, hasNotesOpen }: Pdf
 
   // Returns a cleanup (React 19) so the observer stops tracking a page wrapper
   // when it unmounts — otherwise the observer retains detached nodes.
-  const registerPage = useCallback((el: HTMLDivElement | null, idx: number) => {
-    if (!el) return;
-    el.dataset.pageIndex = String(idx);
-    const io = observerRef.current;
-    io?.observe(el);
-    return () => io?.unobserve(el);
-  }, []);
+  const registerPage = useCallback(
+    (el: HTMLDivElement | null, idx: number) => {
+      if (!el) return;
+      el.dataset.pageIndex = String(idx);
+      trackRow(el, idx);
+      const io = observerRef.current;
+      io?.observe(el);
+      return () => {
+        io?.unobserve(el);
+        trackRow(null, idx);
+      };
+    },
+    [trackRow]
+  );
 
   const onDocumentLoadSuccess = useCallback(async (pdf: PDFDocumentProxy) => {
     setNumPages(pdf.numPages);
@@ -103,6 +131,7 @@ export function PdfViewer({ blobUrl, onClose, onToggleNotes, hasNotesOpen }: Pdf
         const fitScale = containerWidth / viewport.width;
         setScale(fitScale);
       }
+      setFitted(true);
     }, 350);
   }, []);
 

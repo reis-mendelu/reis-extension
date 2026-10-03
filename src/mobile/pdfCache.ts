@@ -32,6 +32,13 @@ export interface PdfCacheEntry {
    */
   courseCode?: string;
   link?: string;
+  /**
+   * The page the reader was last on, 0-based, counting the blank pages the
+   * student added (the reader's own numbering). Kept when IS serves new bytes
+   * for the same file: the ink is kept on the same terms, and a re-upload is
+   * usually a fixed typo, not a new deck. The reader clamps a page past the end.
+   */
+  lastPageIndex?: number;
 }
 export type PdfCacheIndex = Record<string, PdfCacheEntry>;
 export type PdfCacheState = 'fresh' | 'stale' | 'absent';
@@ -106,6 +113,7 @@ export async function store(
 ): Promise<void> {
   await fs.writeBase64(pdfPath(key), await blobToBase64(blob));
   await withIndex(fs, (index) => {
+    const lastPageIndex = index[key]?.lastPageIndex;
     index[key] = {
       date: meta.date,
       bytes: blob.size,
@@ -113,7 +121,22 @@ export async function store(
       lastOpenedAt: now,
       ...(meta.courseCode ? { courseCode: meta.courseCode } : {}),
       ...(meta.link ? { link: meta.link } : {}),
+      ...(lastPageIndex !== undefined ? { lastPageIndex } : {}),
     };
+  });
+}
+
+/** Records the page each key's reader was left on. Keys with no entry are ignored. */
+export async function recordPositions(
+  fs: PdfCacheFs,
+  byKey: Record<string, number>
+): Promise<void> {
+  await withIndex(fs, (index) => {
+    for (const [key, page] of Object.entries(byKey)) {
+      const entry = index[key];
+      if (!entry || !Number.isInteger(page) || page < 0) continue;
+      index[key] = { ...entry, lastPageIndex: page };
+    }
   });
 }
 
