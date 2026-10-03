@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { ChevronLeft, ExternalLink, X } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 
@@ -12,6 +13,8 @@ export interface SheetHeaderProps {
    * gesture `Sheet variant="screen"` deliberately does not have.
    */
   onBack?: () => void;
+  /** Sits left of the title block in the same row — a person's avatar. */
+  leading?: ReactNode;
   /**
    * Makes the title a link to this sheet's page in IS. Opt-in: most sheets
    * have no such page. `target="_blank"` hands it to the external-link
@@ -27,6 +30,7 @@ export function SheetHeader({
   eyebrow,
   onClose,
   onBack,
+  leading,
   titleHref,
 }: SheetHeaderProps) {
   const { t } = useTranslation();
@@ -49,6 +53,7 @@ export function SheetHeader({
             <ChevronLeft className="h-5 w-5" />
           </button>
         )}
+        {leading}
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           {eyebrow && (
             <span className="font-mono text-xs font-semibold tracking-wider text-primary">
