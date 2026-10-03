@@ -166,7 +166,19 @@ describe('PersonSheet', () => {
   });
 
   it('opens the IS page in English when the app is in English', () => {
-    useAppStore.setState({ language: 'en' } as never);
+    // The cached profile has to be in English too: a `cz` entry is stale for
+    // an `en` app, so the hook refetches and the sheet shows no rows meanwhile.
+    useAppStore.setState({
+      language: 'en',
+      personProfiles: {
+        42: {
+          data: { personId: 42, name: 'Jan Novák', universityEmail: 'novak@mendelu.cz' },
+          fetchedAt: Date.now(),
+          lang: 'en',
+        },
+      },
+      fetchPersonProfileById: vi.fn(),
+    } as never);
     render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
     expect(screen.getByRole('link', { name: 'Open in IS' })).toHaveAttribute(
       'href',
