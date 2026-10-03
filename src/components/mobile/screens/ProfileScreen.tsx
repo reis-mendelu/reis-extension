@@ -1,27 +1,17 @@
 import { useState } from 'react';
-import { Wifi, FileText, MessageSquarePlus, LogOut, User, UserCog } from 'lucide-react';
+import { Wifi, FileText, MessageSquarePlus, LogOut, UserCog } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useSpolkySettings } from '../../../hooks/useSpolkySettings';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { SpolkySection } from '../../Sidebar/Profile/SpolkySection';
 import { HiddenItemsSection } from '../../Sidebar/Profile/HiddenItemsSection';
 import { SignOutConfirm } from '../sheets/SignOutConfirm';
-import { PersonPhoto } from '../../ui/PersonPhoto';
 import { AboutSection } from './profile/AboutSection';
+import { ProfileIdentity } from './profile/ProfileIdentity';
 import { NavRow } from '../primitives/NavRow';
 import { AppearanceRows } from './profile/AppearanceRows';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { AlwaysScrollable } from '../primitives/AlwaysScrollable';
-
-function initials(name: string): string {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .map((w) => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-}
 
 /**
  * The profile TAB: theme, language, eduroam setup,
@@ -36,7 +26,6 @@ function initials(name: string): string {
  */
 export function ProfileScreen() {
   const { t } = useTranslation();
-  const fullName = useAppStore((s) => s.fullName);
   const { isSubscribed, toggleAssociation } = useSpolkySettings();
   const pushSheet = useAppStore((s) => s.pushSheet);
   const setMobileTab = useAppStore((s) => s.setMobileTab);
@@ -44,11 +33,8 @@ export function ProfileScreen() {
   const openReport = useAppStore((s) => s.openReport);
   const [signOutOpen, setSignOutOpen] = useState(false);
 
-  const studentId = useAppStore((s) => s.studentId);
   const isReisAdmin = useAppStore((s) => s.adminRole === 'reis_admin');
   const loadImpersonationOptions = useAppStore((s) => s.loadImpersonationOptions);
-
-  const name = fullName ?? '';
 
   return (
     <div data-testid="profile-screen" className="flex flex-1 flex-col overflow-hidden">
@@ -57,49 +43,7 @@ export function ProfileScreen() {
           206px and was truncated there. The identity gets its own full-width
           block below instead, which is where it lived as a sheet. */}
       <ScreenHeader title={t('sidebar.profile')} />
-      <div className="flex-shrink-0">
-        <div className="flex items-center gap-3 px-4 pb-3 pt-1">
-          {/* The student's own face, the one photo the app never showed: this
-              sheet rendered initials, and a generic glyph whenever `fullName`
-              had not resolved. `studentId` is IS's "Identifikační číslo
-              uživatele", the same id space `foto.pl` takes for everyone else,
-              so the existing authenticated fetch covers this with no new
-              endpoint. Initials stay as the fallback while it loads or when
-              there is no picture. */}
-          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-base-200 font-display text-base font-bold text-[var(--tone-primary)]">
-            <PersonPhoto
-              personId={studentId}
-              alt={name}
-              className="h-full w-full object-cover"
-              fallback={name ? initials(name) : <User size={18} />}
-            />
-          </div>
-          {/* No close button: this is a tab, not a sheet — the nav is how you
-              leave.
-
-              The name WRAPS rather than truncating. At 320px "Marie Anna
-              Nováková-Svobodová" needs 287px in a 232px slot, and losing
-              "-Svobodová" is worse than a second line — it is the half that
-              tells two siblings apart. */}
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="font-display text-lg font-bold leading-tight tracking-tight">
-              {name}
-            </span>
-            {/* The student ID and nothing else under the name. This row used to
-                carry the study plan's title ("B-F prez - ZS 2025/2026", or a
-                literal "Study Plan" when `extractPlanTitle` found no heading) —
-                a fact about the plan, which the Předměty tab already owns.
-                The ID is the number every office, form and exam sheet asks for.
-                `select-all` so a long-press copies the whole number rather than
-                a fragment of it. */}
-            {studentId && (
-              <span className="select-all text-sm tabular-nums text-base-content/60">
-                ID {studentId}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
+      <ProfileIdentity />
 
       {/* pb-[84px], not pb-24. The floating BottomNav needs 76px of clearance —
           measured, `innerHeight - nav.top` at 375×780 — and 96 reserved 20px of
