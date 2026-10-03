@@ -1330,9 +1330,9 @@
       "focus": "Hide the toolbar",
       "exitFocus": "Show the toolbar",
       "add": "Add",
-      "photoLibrary": "Photo library",
+      "photoLibrary": "Choose photo",
       "takePhoto": "Take photo",
-      "movePictures": "Move pictures",
+      "movePictures": "Edit pictures",
       "deletePicture": "Delete picture",
       "done": "Done"
     },

@@ -485,11 +485,14 @@ page, the teacher's or one they added. Interaction agreed with Dominik on
 
 ### What the student does
 
-- **The `+` in the bar becomes a menu**: Add a page · Photo library · Take photo
-  · Move pictures. The bar stays at five buttons — it has only ever been cut down
+- **The `+` in the bar becomes a menu** in three sections with dividers — Add a
+  page | Choose photo · Take photo | Edit pictures (cs: Přidat stránku | Vybrat
+  fotku · Pořídit fotku | Upravit obrázky), Apple's own Notes verbs. The first
+  build's flat list with "Z fotek / Přesunout obrázky" read as odd to Dominik
+  (2026-10-03) and was regrouped. The bar stays at five buttons — it has only ever been cut down
   (see the covers) — and a blank page costs one tap more than it did. "Take
   photo" is absent when `UIImagePickerController.isSourceTypeAvailable(.camera)`
-  is false (simulator, Mac); "Move pictures" only when the file has a picture.
+  is false (simulator, Mac); "Edit pictures" only when the file has a picture.
 - **A new picture lands selected**, centred on the part of the current page that
   is on screen, at most half the page wide and half the page tall, aspect kept.
 - **Arranging is a mode, and a visible one** — the precedent is the covers'. The
@@ -503,7 +506,7 @@ page, the teacher's or one they added. Interaction agreed with Dominik on
   — so Done can never disappear with it.
 - **While drawing, a picture is part of the page.** It sits UNDER the ink, so a
   photo of the board can be annotated, and nothing a pen or finger does in
-  drawing mode moves it. Getting back to a picture is the menu's "Move
+  drawing mode moves it. Getting back to a picture is the menu's "Edit
   pictures", not a long-press: PencilKit owns the long-press on a canvas.
 - **One undo stack.** Insert, move/resize (registered when the gesture ends) and
   delete register on the same undo manager PencilKit uses, so the palette's undo
@@ -533,7 +536,7 @@ page, the teacher's or one they added. Interaction agreed with Dominik on
   picker and the camera are dismissed in code, which
   `presentationControllerDidDismiss` never sees, so a cancel calls
   `showToolPicker()` itself (clearing the flag) and a pick enters arranging.
-- **"Move pictures" selects the top picture on the page on screen.** With
+- **"Edit pictures" selects the top picture on the page on screen.** With
   nothing selected the mode looked like drawing but for the bar.
 - **Geometry** is pure and in `PagePictures.swift` (tested without a view):
   initial frame, move and resize clamped to the page, a 24 pt minimum side, the

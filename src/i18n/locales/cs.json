@@ -1330,9 +1330,9 @@
       "focus": "Skrýt lištu",
       "exitFocus": "Zobrazit lištu",
       "add": "Přidat",
-      "photoLibrary": "Z fotek",
-      "takePhoto": "Vyfotit",
-      "movePictures": "Přesunout obrázky",
+      "photoLibrary": "Vybrat fotku",
+      "takePhoto": "Pořídit fotku",
+      "movePictures": "Upravit obrázky",
       "deletePicture": "Smazat obrázek",
       "done": "Hotovo"
     },

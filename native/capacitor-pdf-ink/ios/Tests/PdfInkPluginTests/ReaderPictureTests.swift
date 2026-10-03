@@ -87,7 +87,7 @@ final class ReaderPictureTests: XCTestCase {
         XCTAssertTrue(reader.pdfView.isFirstResponder)
     }
 
-    /// "Move pictures" with nothing selected looked exactly like drawing but
+    /// "Edit pictures" with nothing selected looked exactly like drawing but
     /// for the bar (seen on the simulator). It selects the top picture on the
     /// page on screen, so it is plain what will move.
     func testMovePicturesSelectsTheTopPictureOnThePageOnScreen() throws {
@@ -195,18 +195,34 @@ final class ReaderPictureTests: XCTestCase {
         RunLoop.current.run(until: Date().addingTimeInterval(0.05))
     }
 
-    func testTheMenuOffersMovingOnlyOnceThereIsAPicture() throws {
+    /// Three groups with dividers between them — a page, a picture, editing the
+    /// pictures — agreed with Dominik after the first build read as one odd
+    /// flat list. Editing appears only once the file has a picture.
+    func testTheMenuGroupsAPageAPictureAndEditing() throws {
         let (reader, _) = try show(pages: 1)
-        let titles = { reader.addMenuItems().compactMap { ($0 as? UIAction)?.title } }
-        XCTAssertEqual(titles().first, strings.addPage)
-        XCTAssertTrue(titles().contains(strings.photoLibrary))
-        XCTAssertFalse(titles().contains(strings.movePictures))
+        let sections = {
+            reader.addMenuItems().map { element -> [String] in
+                let menu = element as? UIMenu
+                XCTAssertEqual(menu?.options.contains(.displayInline), true, "a section, not a submenu")
+                return menu?.children.compactMap { ($0 as? UIAction)?.title } ?? []
+            }
+        }
+        // The camera row depends on the machine; the simulator may have one.
+        let pictureRow = UIImagePickerController.isSourceTypeAvailable(.camera)
+            ? [strings.photoLibrary, strings.takePhoto] : [strings.photoLibrary]
+        XCTAssertEqual(sections(), [[strings.addPage], pictureRow])
 
         reader.setPictures(
             [PagePicture(id: "p", frame: CGRect(x: 0, y: 0, width: 10, height: 10), jpeg: Data())],
             onPage: 0)
 
-        XCTAssertTrue(titles().contains(strings.movePictures))
+        XCTAssertEqual(sections(), [[strings.addPage], pictureRow, [strings.movePictures]])
+    }
+
+    func testThePictureEntriesAreApplesVerbs() {
+        XCTAssertEqual(strings.photoLibrary, "Choose photo")
+        XCTAssertEqual(strings.takePhoto, "Take photo")
+        XCTAssertEqual(strings.movePictures, "Edit pictures")
     }
 
     // MARK: - Helpers

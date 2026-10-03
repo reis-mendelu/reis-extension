@@ -156,9 +156,9 @@ The tool picker, the share sheet and the paper are Apple's and must not have cha
 Release build. Do not install any other reIS build between these steps: an older
 build drops pictures from an archive on its next save (spec addendum 2026-10-03).
 
-1. Open a subject PDF. Tap `+`: Přidat stránku, Z fotek, Vyfotit. No Přesunout
+1. Open a subject PDF. Tap `+`: Přidat stránku, Vybrat fotku, Pořídit fotku. No Upravit
    obrázky yet.
-2. Z fotek → pick a photo. The pens are gone while the picker is open. The photo
+2. Vybrat fotku → pick a photo. The pens are gone while the picker is open. The photo
    appears centred on the page on screen, selected (green outline, four handles,
    🗑). The bar shows only Hotovo — green, not blue.
 3. Drag it; drag a corner; pinch it. It moves and resizes, keeps its shape and
@@ -167,10 +167,10 @@ build drops pictures from an archive on its next save (spec addendum 2026-10-03)
    across the photo: the ink is on top.
 5. Undo in the palette: the stroke goes. Undo again: the photo goes back to
    where it was before the last move or resize.
-6. `+` → Vyfotit. Allow the camera. Take one. It lands selected. Tap 🗑, then
+6. `+` → Pořídit fotku. Allow the camera. Take one. It lands selected. Tap 🗑, then
    Hotovo, then undo: it is back. (The simulator has no camera feed — this step
    is the only test of a real capture.)
-7. `+` → Přesunout obrázky: the top photo on the page is already selected. Open
+7. `+` → Upravit obrázky: the top photo on the page is already selected. Open
    the sidebar and switch to another file while it is: that file opens with the
    pens. Switch back.
 8. `+` → Přidat stránku on a page before a photo. The photo stays with its page.

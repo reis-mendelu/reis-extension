@@ -52,9 +52,9 @@ struct PdfInkStrings {
         exitFocus = object?["exitFocus"] as? String ?? "Show the toolbar"
         cancel = object?["cancel"] as? String ?? "Cancel"
         add = object?["add"] as? String ?? "Add"
-        photoLibrary = object?["photoLibrary"] as? String ?? "Photo library"
+        photoLibrary = object?["photoLibrary"] as? String ?? "Choose photo"
         takePhoto = object?["takePhoto"] as? String ?? "Take photo"
-        movePictures = object?["movePictures"] as? String ?? "Move pictures"
+        movePictures = object?["movePictures"] as? String ?? "Edit pictures"
         deletePicture = object?["deletePicture"] as? String ?? "Delete picture"
         done = object?["done"] as? String ?? "Done"
     }

@@ -20,29 +20,41 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
 {
     // MARK: - Menu
 
+    /// Three sections with dividers: a page, a picture, editing the pictures.
+    /// Apple's own verbs (Notes: "Choose Photo", "Take Photo") rather than
+    /// fragments — the first build's flat "Z fotek / Přesunout obrázky" list
+    /// read as odd. Editing is offered only once the file has a picture.
     func addMenuItems() -> [UIMenuElement] {
-        var items: [UIMenuElement] = [
-            UIAction(title: strings.addPage, image: UIImage(systemName: "doc.badge.plus")) {
-                [weak self] _ in self?.addBlankPage()
-            },
+        let page = UIAction(title: strings.addPage, image: UIImage(systemName: "doc.badge.plus")) {
+            [weak self] _ in self?.addBlankPage()
+        }
+        var picture: [UIMenuElement] = [
             UIAction(title: strings.photoLibrary, image: UIImage(systemName: "photo.on.rectangle")) {
                 [weak self] _ in self?.presentPhotoPicker()
-            },
+            }
         ]
         if UIImagePickerController.isSourceTypeAvailable(.camera) {
-            items.append(
+            picture.append(
                 UIAction(title: strings.takePhoto, image: UIImage(systemName: "camera")) {
                     [weak self] _ in self?.presentCamera()
                 })
         }
+        var sections = [section([page]), section(picture)]
         if pictures.values.contains(where: { !$0.isEmpty }) {
-            items.append(
-                UIAction(
-                    title: strings.movePictures,
-                    image: UIImage(systemName: "arrow.up.and.down.and.arrow.left.and.right")
-                ) { [weak self] _ in self?.arrangePicturesOnPageOnScreen() })
+            sections.append(
+                section([
+                    UIAction(
+                        title: strings.movePictures,
+                        image: UIImage(systemName: "arrow.up.and.down.and.arrow.left.and.right")
+                    ) { [weak self] _ in self?.arrangePicturesOnPageOnScreen() }
+                ]))
         }
-        return items
+        return sections
+    }
+
+    /// An inline group: UIKit draws a divider between neighbouring ones.
+    private func section(_ children: [UIMenuElement]) -> UIMenu {
+        UIMenu(title: "", options: .displayInline, children: children)
     }
 
     // MARK: - Picking
@@ -221,7 +233,7 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
         for (index, overlay) in overlays { applyPictureMode(to: overlay, page: index) }
     }
 
-    /// "Move pictures": arranging with the top picture on the page on screen
+    /// "Edit pictures": arranging with the top picture on the page on screen
     /// selected, so it is plain what will move. A page with none selects nothing.
     func arrangePicturesOnPageOnScreen() {
         let index = document.flatMap { document in
