@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef, Suspense, lazy } from 'react';
 import { useFileActions } from '../../hooks/ui/useFileActions';
+import { usePdfReadingPosition } from '../../hooks/ui/usePdfReadingPosition';
 import { logError } from '../../utils/reportError';
 import { DrawerHeader } from './DrawerHeader';
 import { IndexedDBService } from '../../services/storage/IndexedDBService';
@@ -43,6 +44,7 @@ export function SubjectFileDrawer({
   const [activeNoteFile, setActiveNoteFile] = useState<{ link: string; name: string } | null>(null);
   const [lastVisitedAt, setLastVisitedAt] = useState<number | null | undefined>(undefined);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
+  const { loadPosition, viewerPosition } = usePdfReadingPosition(lesson?.courseCode);
   const { t } = useTranslation();
   const classmatesCount = useAppStore((s) =>
     lesson?.courseCode ? s.classmates[lesson.courseCode]?.length : undefined
@@ -175,7 +177,7 @@ export function SubjectFileDrawer({
     async (link: string, meta?: PdfRowMeta) => {
       if (isPdfLoading) return;
       setIsPdfLoading(true);
-      const blobUrl = await openPdfInline(link);
+      const [blobUrl] = await Promise.all([openPdfInline(link), loadPosition(link)]);
       if (blobUrl) {
         setActivePdfUrl(blobUrl);
         const attachment = state.files?.flatMap((f) => f.files).find((sub) => sub.link === link);
@@ -188,7 +190,7 @@ export function SubjectFileDrawer({
       }
       setIsPdfLoading(false);
     },
-    [openPdfInline, openFile, isPdfLoading, state.files]
+    [openPdfInline, openFile, isPdfLoading, state.files, loadPosition]
   );
 
   const handleClosePdf = useCallback(() => {
@@ -315,6 +317,7 @@ export function SubjectFileDrawer({
           onClose={handleClosePdf}
           onToggleNotes={handleToggleNotes}
           hasNotesOpen={hasNote}
+          {...viewerPosition}
         />
       </Suspense>
     </ErrorBoundary>

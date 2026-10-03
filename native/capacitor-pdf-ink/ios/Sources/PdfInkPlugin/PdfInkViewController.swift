@@ -42,12 +42,12 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     private let strings: PdfInkStrings
     /// Presented things are not in this view's subtree, so they cannot inherit it.
     private let tint: UIColor?
-    private let pdfView = InkPDFView()
+    let pdfView = InkPDFView()
     private let toolPicker = PKToolPicker()
     private let spinner = UIActivityIndicatorView(style: .large)
     private let message = UILabel()
 
-    private var document: PDFDocument?
+    private(set) var document: PDFDocument?
     private var inkURL: URL?
     private var drawings: [Int: PKDrawing] = [:]
     /// What PDFKit currently has over each page. The canvases live inside these.
@@ -99,6 +99,9 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     private var saveTimer: Timer?
     /// Waits out a pinch before the canvases re-render at the new scale.
     private var inkScaleTimer: Timer?
+    /// The page a file asked to open on, until the view is laid out enough to
+    /// go there. See `+Position`.
+    var pendingStartPage: Int?
     /// Set by `willClose`: the pens are put away for good, not lost.
     private var closing = false
     private var laidOutWidth: CGFloat = 0
@@ -225,6 +228,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        applyPendingStartPage()
         pdfView.becomeFirstResponder()
     }
 
@@ -247,6 +251,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
      */
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        applyPendingStartPage()
         let width = pdfView.bounds.width
         guard width > 0 else { return }
         defer { laidOutWidth = width }
@@ -267,9 +272,10 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
      * the student and calls again with `discardingUnsaved: true` if they choose so.
      */
     @discardableResult
-    func load(document: PDFDocument, inkURL: URL, title: String, discardingUnsaved: Bool = false)
-        -> Bool
-    {
+    func load(
+        document: PDFDocument, inkURL: URL, title: String, startPage: Int? = nil,
+        discardingUnsaved: Bool = false
+    ) -> Bool {
         // The space loads the first file before presenting anything. The view
         // must exist first: viewDidLoad attaches the overlay provider, and a
         // document laid out without it gets no canvases — the first file could
@@ -296,6 +302,9 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         // PDFKit's auto-fit off, and without this the next file opened in a
         // narrowed half kept the wide file's zoom and hung off the edge.
         pdfView.autoScales = true
+        // After the added pages are back in: the index counts them.
+        pendingStartPage = Self.startPage(startPage, pageCount: document.pageCount)
+        applyPendingStartPage()
         setBarItems(enabled: true)
         updatePageItem()
         pdfView.becomeFirstResponder()
@@ -327,6 +336,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         loadViewIfNeeded()
         guard leaveCurrentFile(discardingUnsaved: discardingUnsaved) else { return false }
         document = nil
+        pendingStartPage = nil
         inkURL = nil
         self.title = title
         pdfView.document = nil
@@ -465,7 +475,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
 
     // MARK: - Pages
 
-    @objc private func updatePageItem() {
+    @objc func updatePageItem() {
         guard let document, let page = pdfView.currentPage else { return }
         pagesItem.title = "\(document.index(for: page) + 1)/\(document.pageCount)"
     }

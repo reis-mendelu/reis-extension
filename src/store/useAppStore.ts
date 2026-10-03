@@ -31,6 +31,7 @@ import { createCustomEventsSlice } from './slices/createCustomEventsSlice';
 import { createNotificationSlice } from './slices/createNotificationSlice';
 import { createSearchSlice } from './slices/createSearchSlice';
 import { createRecentPdfsSlice } from './slices/createRecentPdfsSlice';
+import { createPdfPositionsSlice } from './slices/createPdfPositionsSlice';
 import { createPersonProfileSlice } from './slices/createPersonProfileSlice';
 import { createBulletinSlice } from './slices/createBulletinSlice';
 import { createViewportSlice } from './slices/createViewportSlice';
@@ -89,6 +90,7 @@ export const useAppStore = create<AppState>()(
     ...createNotificationSlice(...a),
     ...createSearchSlice(...a),
     ...createRecentPdfsSlice(...a),
+    ...createPdfPositionsSlice(...a),
     ...createPersonProfileSlice(...a),
     ...createBulletinSlice(...a),
     ...createViewportSlice(...a),
