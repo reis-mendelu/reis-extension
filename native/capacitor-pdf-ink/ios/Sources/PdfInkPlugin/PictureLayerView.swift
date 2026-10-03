@@ -63,7 +63,10 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
     private let inkSideButton = UIButton(type: .system)
     private enum Gesture {
         case move(id: String, start: CGRect)
-        case resize(id: String, corner: PictureCorner, start: CGRect)
+        /// `grab` is where the finger is relative to the true corner: a handle
+        /// pulled onto the page is not on the corner, and the picture must not
+        /// jump by that much when the drag starts.
+        case resize(id: String, corner: PictureCorner, start: CGRect, grab: CGPoint)
         case pinch(id: String, start: CGRect)
     }
     private var gesture: Gesture?
@@ -125,7 +128,7 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
             if deleteButton.frame.contains(point) || inkSideButton.frame.contains(point) {
                 return true
             }
-            if corner(at: point) != nil { return true }
+            if handleCorner(at: point) != nil { return true }
         }
         return PagePictures.topmost(at: point, in: pictures) != nil
     }
@@ -167,8 +170,11 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
         switch pan.state {
         case .began:
             let start = CGPoint(x: pan.location(in: self).x - translation.x, y: pan.location(in: self).y - translation.y)
-            if let selectedID, let frame = selectedFrame, let corner = corner(at: start) {
-                gesture = .resize(id: selectedID, corner: corner, start: frame)
+            if let selectedID, let frame = selectedFrame, let corner = handleCorner(at: start) {
+                let tip = PagePictures.point(of: corner, in: frame)
+                gesture = .resize(
+                    id: selectedID, corner: corner, start: frame,
+                    grab: CGPoint(x: start.x - tip.x, y: start.y - tip.y))
             } else if let picture = PagePictures.topmost(at: start, in: pictures) {
                 selectPicture(picture.id)
                 gesture = .move(id: picture.id, start: picture.frame)
@@ -177,10 +183,10 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
             switch gesture {
             case .move(let id, let start):
                 setFrame(PagePictures.moved(start, by: translation, in: bounds.size), of: id)
-            case .resize(let id, let corner, let start):
-                setFrame(
-                    PagePictures.resized(start, dragging: corner, to: pan.location(in: self), in: bounds.size),
-                    of: id)
+            case .resize(let id, let corner, let start, let grab):
+                let finger = pan.location(in: self)
+                let tip = CGPoint(x: finger.x - grab.x, y: finger.y - grab.y)
+                setFrame(PagePictures.resized(start, dragging: corner, to: tip, in: bounds.size), of: id)
             default: break
             }
         case .ended, .cancelled, .failed:
@@ -242,7 +248,7 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
         let id: String
         switch gesture {
         case .move(let i, let s), .pinch(let i, let s): (id, start) = (i, s)
-        case .resize(let i, _, let s): (id, start) = (i, s)
+        case .resize(let i, _, let s, _): (id, start) = (i, s)
         case nil: return
         }
         if pictures.first(where: { $0.id == id })?.frame != start { onCommit?(pictures) }
@@ -255,13 +261,20 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
         return pictures.first { $0.id == selectedID }?.frame
     }
 
-    private func corner(at point: CGPoint) -> PictureCorner? {
+    /// The handle under a point: a box twice the handle's size around where
+    /// it is drawn — a finger is bigger than the dot.
+    func handleCorner(at point: CGPoint) -> PictureCorner? {
         guard let frame = selectedFrame else { return nil }
         let reach = Self.handleSide * chromeScale
         return PictureCorner.allCases.first { corner in
-            let center = PagePictures.point(of: corner, in: frame)
+            let center = handleCenter(of: corner, in: frame)
             return abs(point.x - center.x) <= reach && abs(point.y - center.y) <= reach
         }
+    }
+
+    private func handleCenter(of corner: PictureCorner, in frame: CGRect) -> CGPoint {
+        PagePictures.handleCenter(
+            of: corner, in: frame, pageSize: bounds.size, radius: Self.handleSide / 2 * chromeScale)
     }
 
     override func layoutSubviews() {
@@ -280,7 +293,7 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
         for (corner, handle) in handles {
             handle.layer.borderColor = tintColor.cgColor
             handle.transform = scale
-            handle.center = PagePictures.point(of: corner, in: frame)
+            handle.center = handleCenter(of: corner, in: frame)
         }
         // Side by side above the picture, or inside its top edge when it
         // touches the page top: delete, then over/under the ink.

@@ -90,6 +90,27 @@ final class PagePicturesTests: XCTestCase {
         XCTAssertEqual(decoded.frame, CGRect(x: 1, y: 2, width: 3, height: 4))
     }
 
+    /// A handle is drawn and grabbed in the same place, and that place is on
+    /// the page: off it, PDFKit delivers no touch, so a handle half off the edge
+    /// of a full-width picture only answered on its inner half (Dominik, device).
+    func testAHandleAtThePageEdgeIsPulledOntoThePage() {
+        let full = CGRect(x: 0, y: 0, width: 600, height: 300)
+        let radius: CGFloat = 15
+        XCTAssertEqual(
+            PagePictures.handleCenter(of: .topLeft, in: full, pageSize: page, radius: radius),
+            CGPoint(x: 15, y: 15))
+        XCTAssertEqual(
+            PagePictures.handleCenter(of: .bottomRight, in: full, pageSize: page, radius: radius),
+            CGPoint(x: 585, y: 300))
+    }
+
+    func testAHandleAwayFromTheEdgeSitsOnTheCorner() {
+        let frame = CGRect(x: 100, y: 100, width: 200, height: 100)
+        XCTAssertEqual(
+            PagePictures.handleCenter(of: .topRight, in: frame, pageSize: page, radius: 15),
+            CGPoint(x: 300, y: 100))
+    }
+
     func testTheTopmostPictureWinsATouch() {
         let under = PagePicture(id: "a", frame: CGRect(x: 0, y: 0, width: 100, height: 100), jpeg: Data())
         let over = PagePicture(id: "b", frame: CGRect(x: 50, y: 50, width: 100, height: 100), jpeg: Data())

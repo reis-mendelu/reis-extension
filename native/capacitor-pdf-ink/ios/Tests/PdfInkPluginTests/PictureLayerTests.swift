@@ -33,6 +33,22 @@ final class PictureLayerTests: XCTestCase {
         XCTAssertTrue(layer.takesTouch(at: CGPoint(x: 299 + 10, y: 199 + 10)), "a handle pokes past the corner")
     }
 
+    /// The visible handle of a picture flush with the page edge takes the touch
+    /// — all of it is on the page now.
+    func testAHandleOfAFullWidthPictureTakesTouchesWhereItIsDrawn() {
+        let layer = PictureLayerView(frame: CGRect(x: 0, y: 0, width: 600, height: 800))
+        layer.pictures = [
+            PagePicture(id: "a", frame: CGRect(x: 0, y: 100, width: 600, height: 300), jpeg: Data())
+        ]
+        layer.arranging = true
+        layer.selectedID = "a"
+        let radius = PictureLayerView.handleSide / 2
+        // The inner edge of the bottom-right handle, now pulled onto the page:
+        // outside the picture, inside the handle.
+        XCTAssertTrue(layer.takesTouch(at: CGPoint(x: 600 - radius, y: 400 + radius - 1)))
+        XCTAssertEqual(layer.handleCorner(at: CGPoint(x: 600 - radius, y: 400)), .bottomRight)
+    }
+
     func testDeleteRemovesTheSelectedPictureAndCommits() {
         let layer = layer(arranging: true)
         layer.selectedID = "a"

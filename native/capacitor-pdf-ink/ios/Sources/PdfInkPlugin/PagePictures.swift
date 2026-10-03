@@ -118,6 +118,19 @@ enum PagePictures {
             in: pageSize)
     }
 
+    /// Where a corner's handle is drawn and grabbed: on the corner, pulled
+    /// onto the page when the picture reaches its edge. PDFKit delivers no
+    /// touch off the page, so a handle half over the edge answered only on its
+    /// inner half (Dominik's device test, 2026-10-03).
+    static func handleCenter(
+        of corner: PictureCorner, in frame: CGRect, pageSize: CGSize, radius: CGFloat
+    ) -> CGPoint {
+        let point = point(of: corner, in: frame)
+        return CGPoint(
+            x: min(max(point.x, radius), max(radius, pageSize.width - radius)),
+            y: min(max(point.y, radius), max(radius, pageSize.height - radius)))
+    }
+
     static func point(of corner: PictureCorner, in frame: CGRect) -> CGPoint {
         CGPoint(x: corner.isLeft ? frame.minX : frame.maxX, y: corner.isTop ? frame.minY : frame.maxY)
     }
