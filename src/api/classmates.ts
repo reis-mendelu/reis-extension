@@ -1,8 +1,7 @@
 import { fetchWithAuth, BASE_URL } from './client';
 import { logError } from '../utils/reportError';
+import { fetchClassmatesListingPages, SPOLUZACI_URL } from './classmatesListing';
 import type { Classmate } from '../types/classmates';
-
-const SPOLUZACI_URL = `${BASE_URL}/auth/student/spoluzaci.pl`;
 
 /**
  * Parse one page of the #tmtab_1 classmates table.
@@ -152,16 +151,22 @@ async function fetchSeminarGroupIdsImpl(
   }
 }
 
+/** Every person in a list once, in IS order. */
+function rosterFrom(pages: Document[]): Classmate[] {
+  const byId = new Map<number, Classmate>();
+  for (const c of pages.flatMap(parseClassmatesPage)) {
+    if (!byId.has(c.personId)) byId.set(c.personId, c);
+  }
+  return [...byId.values()];
+}
+
 /**
- * Fetch all classmates for a given seminar group, following pagination.
+ * Everyone in the student's seminar group, every page.
  *
- * URL shape exactly mirrors the IS scraper:
  *   /auth/student/spoluzaci.pl?predmet=X;;studium=Y;obdobi=Z;skupina=W;lang=cz
  *
  * The double ;; after predmet is intentional — it matches what IS generates
  * in its own anchor hrefs and is required for legacy compatibility.
- *
- * Pagination links (e.g. "41–80") are resolved and fetched sequentially.
  */
 export async function fetchClassmates(
   predmetId: string,
@@ -169,37 +174,31 @@ export async function fetchClassmates(
   obdobi: string,
   skupinaId: string
 ): Promise<Classmate[]> {
-  const firstUrl = `${SPOLUZACI_URL}?predmet=${predmetId};;studium=${studiumId};obdobi=${obdobi};skupina=${skupinaId};lang=cz`;
-
+  const query = `predmet=${predmetId};;studium=${studiumId};obdobi=${obdobi};skupina=${skupinaId}`;
   try {
-    const response = await fetchWithAuth(firstUrl);
-    const html = await response.text();
-
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-
-    // Collect pagination hrefs whose link text is "41–80" style
-    const paginationLinks: string[] = Array.from(
-      doc.querySelectorAll<HTMLAnchorElement>('a[href*="spoluzaci.pl"]')
-    )
-      .filter((a) => /^\d+–\d+$/.test(a.textContent?.trim() ?? ''))
-      .map((a) => {
-        const href = a.getAttribute('href') ?? '';
-        return href.startsWith('http') ? href : `${BASE_URL}${href}`;
-      });
-
-    const all: Classmate[] = parseClassmatesPage(doc);
-
-    for (const link of paginationLinks) {
-      const r = await fetchWithAuth(link);
-      const h = await r.text();
-      const d = new DOMParser().parseFromString(h, 'text/html');
-      all.push(...parseClassmatesPage(d));
-    }
-
-    return all;
+    return rosterFrom(await fetchClassmatesListingPages(query));
   } catch (e) {
     logError('Api.fetchClassmates', e, { predmetId, skupinaId });
+    throw e;
+  }
+}
+
+/**
+ * Everyone taking the subject this semester, lectures included — the list IS
+ * links from Moji spolužáci as the subject's own row (no skupina). Hundreds of
+ * students at 40 a page, so it is fetched only when the student asks for it.
+ */
+export async function fetchSubjectClassmates(
+  predmetId: string,
+  studiumId: string,
+  obdobi: string
+): Promise<Classmate[]> {
+  try {
+    return rosterFrom(
+      await fetchClassmatesListingPages(`predmet=${predmetId};;studium=${studiumId};obdobi=${obdobi}`)
+    );
+  } catch (e) {
+    logError('Api.fetchSubjectClassmates', e, { predmetId });
     throw e;
   }
 }
