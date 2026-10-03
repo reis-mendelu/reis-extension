@@ -158,3 +158,15 @@ export function parseOdevzdavarnyPage(
   }
   return rows;
 }
+
+/**
+ * The student's periods from the page's own `<select name="obdobi">`, in IS
+ * order — oldest first (verified: 801 ZS 25/26, 812 LS 25/26, 829 ZS 26/27).
+ */
+export function parsePeriodIds(doc: Document): string[] {
+  const select = doc.querySelector('select[name="obdobi"]');
+  if (!select) return [];
+  return Array.from(select.querySelectorAll('option'))
+    .map((o) => o.getAttribute('value') ?? '')
+    .filter(Boolean);
+}

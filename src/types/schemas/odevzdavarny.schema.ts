@@ -29,6 +29,7 @@ const OdevzdavarnaSchema = z
     section: z.string().optional(),
     isOpen: z.boolean().optional(),
     points: z.string().optional(),
+    obdobi: z.string().optional(),
   })
   .passthrough();
 

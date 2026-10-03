@@ -119,6 +119,15 @@ describe('fetchOdevzdavarny — all three IS tables', () => {
     expect(rows[0]!.courseNameEn).not.toBe('');
   });
 
+  it('lists the student’s periods in IS order, and tags each row with its own', async () => {
+    serve('829');
+    const result = (await fetchOdevzdavarny('100001', '829'))!;
+    // The page's own <select name="obdobi">, oldest first — the sync takes the
+    // period before the current one from here.
+    expect(result.periods).toEqual(['801', '812', '829']);
+    expect(result.assignments.every((r) => r.obdobi === '829')).toBe(true);
+  });
+
   it('answers null — not an empty list — for a page without the three sections', async () => {
     // A login page or an error page arrives as 200 HTML too. An empty list now
     // overwrites the cache, so mistaking this for "no boxes" would wipe it.

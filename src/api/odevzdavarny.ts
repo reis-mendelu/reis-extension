@@ -2,6 +2,7 @@ import { fetchWithAuth, BASE_URL } from './client';
 import { logError } from '../utils/reportError';
 import {
   parseOdevzdavarnyPage,
+  parsePeriodIds,
   type OdevzdavarnaSection,
   type ParsedOdevzdavarna,
 } from '../utils/parsers/odevzdavarnyParser';
@@ -25,13 +26,15 @@ export interface Odevzdavarna {
   isOpen?: boolean;
   /** The student's points, once graded. */
   points?: string;
+  /** The IS period the box belongs to — the sync reads two. */
+  obdobi?: string;
 }
 
 async function fetchLang(
   studium: string,
   obdobi: string,
   lang: 'cz' | 'en'
-): Promise<ParsedOdevzdavarna[] | null> {
+): Promise<{ rows: ParsedOdevzdavarna[]; periods: string[] } | null> {
   try {
     const url = `${BASE_URL}/auth/student/odevzdavarny.pl?studium=${studium};obdobi=${obdobi};lang=${lang}`;
     // fetchWithAuth, not a bare fetch: IS denies CORS to every origin, so
@@ -43,7 +46,7 @@ async function fetchLang(
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const rows = parseOdevzdavarnyPage(doc, lang);
     if (!rows) throw new Error('Unrecognised odevzdavarny page');
-    return rows;
+    return { rows, periods: parsePeriodIds(doc) };
   } catch (error) {
     logError('Api.fetchOdevzdavarnyLang', error, { lang });
     return null;
@@ -53,6 +56,8 @@ async function fetchLang(
 export interface OdevzdavarnyResult {
   assignments: Odevzdavarna[];
   lastFetched: number;
+  /** The student's period ids from the page, oldest first. */
+  periods: string[];
 }
 
 /**
@@ -66,12 +71,14 @@ export async function fetchOdevzdavarny(
   studium: string,
   obdobi: string
 ): Promise<OdevzdavarnyResult | null> {
-  const [czData, enData] = await Promise.all([
+  const [czPage, enPage] = await Promise.all([
     fetchLang(studium, obdobi, 'cz'),
     fetchLang(studium, obdobi, 'en'),
   ]);
 
-  if (!czData) return null;
+  if (!czPage) return null;
+  const czData = czPage.rows;
+  const enData = enPage?.rows;
 
   const listUrl = `${BASE_URL}/auth/student/odevzdavarny.pl?studium=${studium};obdobi=${obdobi}`;
   const enBySection = (section: OdevzdavarnaSection) =>
@@ -98,6 +105,7 @@ export async function fetchOdevzdavarny(
       uploadUrl: cz.uploadUrl || listUrl,
       section: cz.section,
       isOpen: cz.isOpen,
+      obdobi,
     };
     if (cz.points) box.points = cz.points;
 
@@ -113,5 +121,5 @@ export async function fetchOdevzdavarny(
     merged.push(box);
   }
 
-  return { assignments: merged, lastFetched: Date.now() };
+  return { assignments: merged, lastFetched: Date.now(), periods: czPage.periods };
 }
