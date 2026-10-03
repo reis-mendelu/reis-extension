@@ -140,6 +140,8 @@ public class EduroamPlugin: CAPPlugin, CAPBridgedPlugin {
     /// keychain once iOS has said what it did with it.
     private struct Prepared {
         let configuration: NEHotspotConfiguration
+        /// The keychain's own reference (not the PKCS#12 import's), so the
+        /// rollback and cleanup delete exactly the item the setters resolved.
         let identity: SecIdentity
         /// False when this exact identity was already in the keychain — the
         /// same certificate as a previous run, not a renewal.
@@ -238,7 +240,7 @@ public class EduroamPlugin: CAPPlugin, CAPBridgedPlugin {
         // lifeTimeInDays (does not apply to enterprise networks).
         return Prepared(
             configuration: NEHotspotConfiguration(ssid: Self.ssid, eapSettings: eap),
-            identity: identity, identityIsNew: identityIsNew, group: group)
+            identity: storedIdentity, identityIsNew: identityIsNew, group: group)
     }
 
     // MARK: - Outcome mapping
