@@ -173,9 +173,10 @@ build drops pictures from an archive on its next save (spec addendum 2026-10-03)
 6. `+` → Pořídit fotku. Allow the camera. Take one. It lands selected. Tap 🗑, then
    Hotovo, then undo: it is back. (The simulator has no camera feed — this step
    is the only test of a real capture.)
-7. `+` → Upravit obrázky: the top photo on the page is already selected. Open
-   the sidebar and switch to another file while it is: that file opens with the
-   pens. Switch back.
+7. Finger-tap a photo (Pencil in hand): selected. Open the sidebar and switch
+   to another file while it is: that file opens with the pens. Switch back.
+   With Draw with finger on, + offers Upravit obrázky (hidden while the Pencil
+   draws); it selects the top photo on the page.
 8. `+` → Přidat stránku on a page before a photo. The photo stays with its page.
 9. Close the reader, reopen the file: every photo is where it was, under its
    ink.

@@ -303,6 +303,7 @@ final class ReaderPictureTests: XCTestCase {
     /// flat list. Editing appears only once the file has a picture.
     func testTheMenuGroupsAPageAPictureAndEditing() throws {
         let (reader, _) = try show(pages: 1)
+        reader.fingerDraws = { true }
         let sections = {
             reader.addMenuItems().map { element -> [String] in
                 let menu = element as? UIMenu
@@ -320,6 +321,25 @@ final class ReaderPictureTests: XCTestCase {
             onPage: 0)
 
         XCTAssertEqual(sections(), [[strings.addPage], pictureRow, [strings.movePictures]])
+    }
+
+    /// With the Pencil drawing, a finger tap picks a picture up, and "Upravit
+    /// obrázky" was redundant (Dominik, device). It is offered only when the
+    /// finger draws — then it is the only way to move a picture.
+    func testEditingPicturesIsOfferedOnlyWhenTheFingerDraws() throws {
+        let (reader, _) = try show(pages: 1)
+        reader.setPictures(
+            [PagePicture(id: "p", frame: CGRect(x: 0, y: 0, width: 10, height: 10), jpeg: Data())],
+            onPage: 0)
+        let titles = {
+            reader.addMenuItems().flatMap { ($0 as? UIMenu)?.children ?? [] }
+                .compactMap { ($0 as? UIAction)?.title }
+        }
+
+        reader.fingerDraws = { false }
+        XCTAssertFalse(titles().contains(strings.movePictures))
+        reader.fingerDraws = { true }
+        XCTAssertTrue(titles().contains(strings.movePictures))
     }
 
     func testThePictureEntriesAreApplesVerbs() {

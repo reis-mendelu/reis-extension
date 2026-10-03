@@ -23,7 +23,8 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
     /// Three sections with dividers: a page, a picture, editing the pictures.
     /// Apple's own verbs (Notes: "Choose Photo", "Take Photo") rather than
     /// fragments — the first build's flat "Z fotek / Přesunout obrázky" list
-    /// read as odd. Editing is offered only once the file has a picture.
+    /// read as odd. Editing is offered only once the file has a picture, and
+    /// only when the finger draws (`+PickUp`).
     func addMenuItems() -> [UIMenuElement] {
         let page = UIAction(title: strings.addPage, image: UIImage(systemName: "doc.badge.plus")) {
             [weak self] _ in self?.addBlankPage()
@@ -44,7 +45,9 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
                 [weak self] _ in self?.presentFilePicker()
             })
         var sections = [section([page]), section(picture)]
-        if pictures.values.contains(where: { !$0.isEmpty }) {
+        // Only when a finger tap cannot pick a picture up (it draws): with the
+        // Pencil drawing, the tap is the way and this entry was redundant.
+        if fingerDraws(), pictures.values.contains(where: { !$0.isEmpty }) {
             sections.append(
                 section([
                     UIAction(
