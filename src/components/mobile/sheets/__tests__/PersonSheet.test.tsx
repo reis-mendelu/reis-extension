@@ -111,6 +111,16 @@ describe('PersonSheet', () => {
     });
   });
 
+  it("shows the avatar beside the name, the way the extension's hover card does", () => {
+    // On its own line under the role it read as a stray icon: for staff there
+    // is nothing beside it, so it floated between the header and the card.
+    usePersonPhoto.mockReturnValue(PHOTO);
+    render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
+    const avatar = screen.getByLabelText('Zvětšit fotku');
+    const name = screen.getByText('Jan Novák', { selector: 'span' });
+    expect(avatar.closest('.flex.items-start')).toBe(name.closest('.flex.items-start'));
+  });
+
   it('does not offer to maximise initials when there is no photo', () => {
     usePersonPhoto.mockReturnValue(null);
     render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);

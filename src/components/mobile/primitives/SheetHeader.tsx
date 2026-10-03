@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { ChevronLeft, X } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 
@@ -12,10 +13,19 @@ export interface SheetHeaderProps {
    * gesture `Sheet variant="screen"` deliberately does not have.
    */
   onBack?: () => void;
+  /** Sits left of the title block in the same row — a person's avatar. */
+  leading?: ReactNode;
 }
 
 /** Drag handle + title block, shared by every sheet. */
-export function SheetHeader({ title, subtitle, eyebrow, onClose, onBack }: SheetHeaderProps) {
+export function SheetHeader({
+  title,
+  subtitle,
+  eyebrow,
+  onClose,
+  onBack,
+  leading,
+}: SheetHeaderProps) {
   const { t } = useTranslation();
   return (
     // touch-none is what makes the drag pill below more than decoration. Sheet
@@ -36,6 +46,7 @@ export function SheetHeader({ title, subtitle, eyebrow, onClose, onBack }: Sheet
             <ChevronLeft className="h-5 w-5" />
           </button>
         )}
+        {leading}
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           {eyebrow && (
             <span className="font-mono text-xs font-semibold tracking-wider text-primary">

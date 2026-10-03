@@ -13,6 +13,15 @@ describe('SheetHeader', () => {
     expect(screen.getByText('EBC-IV')).toBeInTheDocument();
   });
 
+  it('puts a leading element before the title, in the same row', () => {
+    render(<SheetHeader title="Jan Novák" leading={<span data-testid="avatar">JN</span>} />);
+    const avatar = screen.getByTestId('avatar');
+    const title = screen.getByText('Jan Novák');
+    // Same row: the title block is a later sibling of the leading slot.
+    expect(avatar.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(avatar.closest('.flex.items-start')).toBe(title.closest('.flex.items-start'));
+  });
+
   /**
    * Load-bearing and easy to delete by accident. With the default touch-action
    * the browser claims a downward drag as a pan and fires pointercancel partway

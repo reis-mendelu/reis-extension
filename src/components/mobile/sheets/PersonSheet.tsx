@@ -98,39 +98,42 @@ export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
     focusRoomByCode(room.code);
   };
 
+  // Beside the name, as in the extension's hover card. On a line of its own
+  // under the role it floated between the header and the card — for staff,
+  // with nothing next to it. Only once there is a name: a loading or failed
+  // sheet has no one to show. A button only once there is a photo to
+  // maximise: initials blown up to full screen are a joke at the student's
+  // expense.
+  const avatar = name ? (
+    <button
+      type="button"
+      disabled={!photo}
+      aria-label={photo ? t('mobile.sheet.enlargePhoto') : undefined}
+      onClick={() => photo && pushSheet({ kind: 'personPhoto', personId: sheet.personId, name })}
+      className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-base-200 font-display text-base font-bold text-primary"
+    >
+      {photo ? (
+        <img src={photo} alt={name} className="h-full w-full object-cover" />
+      ) : (
+        personInitials(name)
+      )}
+    </button>
+  ) : undefined;
+
   return (
     <Sheet size="content" onClose={onClose}>
-      <SheetHeader title={title} subtitle={subtitle} onClose={onClose} />
+      <SheetHeader title={title} subtitle={subtitle} leading={avatar} onClose={onClose} />
       {!name ? (
         <p className="px-5 pb-5 text-sm text-base-content/60">{placeholderText}</p>
       ) : (
         <div className="flex flex-col gap-3 px-4 pb-5">
-          <div className="flex items-center gap-3">
-            {/* A button only once there is a photo to maximise: initials blown
-                up to full screen are a joke at the student's expense. */}
-            <button
-              type="button"
-              disabled={!photo}
-              aria-label={photo ? t('mobile.sheet.enlargePhoto') : undefined}
-              onClick={() =>
-                photo && pushSheet({ kind: 'personPhoto', personId: sheet.personId, name })
-              }
-              className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-base-200 font-display text-base font-bold text-primary"
-            >
-              {photo ? (
-                <img src={photo} alt={name} className="h-full w-full object-cover" />
-              ) : (
-                personInitials(name)
-              )}
-            </button>
-            {studyLines.length > 0 && (
-              <div className="flex min-w-0 flex-col gap-0.5 text-sm leading-snug text-base-content/70">
-                {studyLines.map((line) => (
-                  <span key={line}>{line}</span>
-                ))}
-              </div>
-            )}
-          </div>
+          {studyLines.length > 0 && (
+            <div className="flex flex-col gap-0.5 text-sm leading-snug text-base-content/70">
+              {studyLines.map((line) => (
+                <span key={line}>{line}</span>
+              ))}
+            </div>
+          )}
 
           <PersonContactRows
             email={email}
