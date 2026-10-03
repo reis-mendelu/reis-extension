@@ -4,11 +4,13 @@ import UIKit
 /**
  * What PDFKit puts over one page.
  *
- * Three things, bottom to top: the pictures under the ink
- * (`pictureLayer.belowInk`), the canvas, and `pictureLayer` itself — the
- * pictures over the ink, with the handles and the gestures (2026-10-03). Both
- * picture levels are exactly the page with no transform: their coordinates are
- * the page's points, the same ones the drawing is in.
+ * Four things, bottom to top: the pictures under the ink
+ * (`pictureLayer.belowInk`), the canvas, `pictureLayer` itself — the pictures
+ * over the ink, with the handles and the gestures (2026-10-03) — and
+ * `coverLayer` on top of all of them: the covers a student puts over an answer
+ * (2026-10-03), which hide pictures too. The picture levels and the covers are
+ * exactly the page with no transform: their coordinates are the page's points,
+ * the same ones the drawing is in.
  *
  * The wrapper's other job is to keep the canvas the same size as the page.
  *
@@ -21,6 +23,7 @@ import UIKit
 final class PageOverlayView: UIView {
     let canvas = PKCanvasView()
     let pictureLayer = PictureLayerView()
+    let coverLayer = CoverLayerView()
 
     /**
      * How much finer than the page's own points the ink is rendered: the scale
@@ -44,6 +47,7 @@ final class PageOverlayView: UIView {
         addSubview(pictureLayer.belowInk)
         addSubview(canvas)
         addSubview(pictureLayer)
+        addSubview(coverLayer)
     }
 
     required init?(coder: NSCoder) { fatalError("PageOverlayView is code-only") }
@@ -52,6 +56,7 @@ final class PageOverlayView: UIView {
         super.layoutSubviews()
         pictureLayer.belowInk.frame = bounds
         pictureLayer.frame = bounds
+        coverLayer.frame = bounds
         // Bounds and center, never `frame`: the canvas carries a transform.
         canvas.bounds = CGRect(
             origin: .zero,
