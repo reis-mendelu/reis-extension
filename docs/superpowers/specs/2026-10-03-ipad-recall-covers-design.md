@@ -53,14 +53,14 @@ What has changed since, and what this spec adds:
 
 ```swift
 struct PageCover: Codable, Equatable {
-    let id: UUID
-    var rect: CGRect          // page points, the same space as the drawing
-    var reviews: [Review]     // oldest first; empty until first tested
+    var id: String               // a UUID string, like PagePicture.id
+    var rect: CGRect             // page points, the same space as the drawing
+    var reviews: [CoverReview]   // oldest first; empty until first tested
 }
 
-struct Review: Codable, Equatable {
-    let date: Date
-    let knew: Bool            // Znám = true, Ještě ne = false
+struct CoverReview: Codable, Equatable {
+    var date: Date
+    var knew: Bool               // Znám = true, Ještě ne = false
 }
 ```
 
@@ -83,7 +83,7 @@ order, the same shape as `pictures`.
 - **Size.** A review is a date and a bool. Even 100 covers × 50 reviews is a few
   tens of kB; no cap.
 
-Open covers are `Set<UUID>` in memory, never saved. Ids replace the withdrawn
+Open covers are `Set<String>` (ids) in memory, never saved. Ids replace the withdrawn
 tool's positional `revealed` set, which had to shut every open cover on a page
 whenever one was removed.
 
@@ -105,14 +105,17 @@ whenever one was removed.
 
 ## Making covers
 
-As in `d5026aaef`: a bar button (`square.dashed`, filled while on). It goes into
-the bar beside the existing items, and `ReaderScaleTests`' pinned bar contents are
-updated in the same commit.
+**From the `+` menu, like arranging pictures** (refined 2026-10-03 while
+planning). The `+` menu exists "so the bar stays at five buttons", and arranging
+pictures already shows how a mode looks in this reader: the pens go and the bar
+becomes one *Hotovo*. *Zakrýt odpověď* is a fourth section of that menu and
+enters the same shape of mode with its own *Hotovo*. The withdrawn tool's
+separate `square.dashed` bar button is not brought back.
 
-A shut cover is drawn opaque in the paper colour with a thin border, so it reads
-as "something is under here", not as a rendering bug. An open one leaves a dashed
-outline. Colours follow the ink's pinned light appearance (the page is always
-white).
+As in `d5026aaef`, a shut cover is filled `systemGray4` and an open one leaves a
+dashed `systemGray2` outline; the layer is pinned light like the canvas (the page
+is always white). The current cover in a test gets a 2 pt outline in the theme
+tint.
 
 ## Vyzkoušet se
 
@@ -129,20 +132,25 @@ Covers on added pages count like any other.
 2. The reader scrolls to the current cover with some margin around it, and marks
    it with an accent outline. The other covers stay as they are.
 3. The student taps the cover, or *Ukázat* in the bar, to reveal it.
-4. The bar now offers **Znám** and **Ještě ne**. Either one appends a `Review`,
+4. The bar now offers **Znám** and **Ještě ne**. Either one appends a `CoverReview`,
    saves immediately (`persistNow`) and moves to the next cover.
 
 **Controls live in the navigation bar**, not in a floating panel, so they can
 never sit under the tool picker, which floats wherever the student put it. While
-a test runs, the bar shows: *Ukončit* (leading), the progress *3 z 10* (title),
-and *Ukázat* or *Znám* / *Ještě ne* (trailing). The usual items come back when
-the test ends.
+a test runs, the title is the progress *3 z 10* and the trailing items are, right
+to left, *Ukončit* then *Ukázat* — or *Ukončit*, *Znám*, *Ještě ne* once the
+cover is open. *Ukončit* sits trailing, not leading: the leading group holds the
+reader's exit X beside the split view's own toggle, which took a day to get right
+(`exitItem`), and is not touched. The usual items come back when the test ends.
+
+**The entry button** is the only new item in the normal bar, nearest the title,
+and hidden — not just disabled — while the file has no covers.
 
 **The Pencil still draws.** Writing the answer before revealing it is the
 strongest form of recall. The finger still scrolls. Tapping a cover that is not
 the current one opens or shuts it as usual and records nothing.
 
-**End.** A summary: *8 z 10* and, if any were *Ještě ne*, **Zopakovat ty, co ještě
+**End.** A summary alert: *Znáš 8 z 10* and, if any were *Ještě ne*, **Zopakovat ty, co ještě
 neznám**, which runs the same loop over just those covers. *Hotovo* returns the
 reader to normal with every cover shut.
 
@@ -152,7 +160,7 @@ else is saved about the test (no "resume at cover 4").
 
 **Logic lives outside the view controller.** `RecallSession` is plain Swift
 (Foundation + CoreGraphics only): given `[Int: [PageCover]]` it produces the
-order, holds the current position, records an answer (returns the `Review` to
+order, holds the current position, records an answer (returns the `CoverReview` to
 append), and produces the "only Ještě ne" follow-up session. The view controller
 is already 823 lines. The cover mode goes in `PdfInkViewController+Covers.swift`
 and the test in `PdfInkViewController+Recall.swift`.
@@ -160,7 +168,7 @@ and the test in `PdfInkViewController+Recall.swift`.
 ## Strings
 
 All new strings go through `PdfInkStrings`, fed from `src/i18n/locales/{cs,en}.json`
-like the existing ones: `t('mobile.pdfInk.*')` in `usePdfPreview.ts`, typed in
+like the existing ones: `t('mobile.pdfInk.*')` in `usePdfInkStrings.ts`, typed in
 `pdfInk.ts`, as the withdrawn tool did. Czech wording is gender-neutral:
 
 | key | cs | en |
@@ -172,16 +180,19 @@ like the existing ones: `t('mobile.pdfInk.*')` in `usePdfPreview.ts`, typed in
 | recallNotYet | Ještě ne | Not yet |
 | recallProgress | {n} z {total} | {n} of {total} |
 | recallEnd | Ukončit | End |
+| recallScore | Znáš {known} z {total} | You know {known} of {total} |
 | recallRetry | Zopakovat ty, co ještě neznám | Repeat the ones I don't know yet |
-| recallDone | Hotovo | Done |
 
 ## Trees and parity
 
 iPad only, by nature: covers live in the native PencilKit reader. Android keeps
 the pdf.js viewer with no ink, and the extension has no ink. The guard
 `src/test/guards/nativePluginsAreReachable.test.ts` already lists `PdfInk` under
-`IOS_ONLY`. The only shared files touched are the locale JSONs and the strings
-plumbing in `src/mobile/pdfInk.ts` and `src/hooks/ui/usePdfPreview.ts`.
+`IOS_ONLY`. A guard `src/test/guards/inkCoversAreIpadOnly.test.ts`, modelled on
+`inkPicturesAreIpadOnly.test.ts`, names the shared files so the tree-parity Stop
+hook is answered in code. *Hotovo* reuses the existing `done` string. The only
+shared files touched are the locale JSONs and the strings
+plumbing in `src/mobile/pdfInk.ts` and `src/hooks/ui/usePdfInkStrings.ts` (plus the strings fixture in `src/mobile/__tests__/pdfInk.test.ts`).
 
 ## Testing
 
