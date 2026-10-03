@@ -24,6 +24,12 @@ struct PdfInkStrings {
     let focus: String
     let exitFocus: String
     let cancel: String
+    let add: String
+    let photoLibrary: String
+    let takePhoto: String
+    let movePictures: String
+    let deletePicture: String
+    let done: String
 
     init(_ object: JSObject?) {
         saveFailedTitle = object?["saveFailedTitle"] as? String ?? "Your ink couldn't be saved"
@@ -45,5 +51,11 @@ struct PdfInkStrings {
         focus = object?["focus"] as? String ?? "Hide the toolbar"
         exitFocus = object?["exitFocus"] as? String ?? "Show the toolbar"
         cancel = object?["cancel"] as? String ?? "Cancel"
+        add = object?["add"] as? String ?? "Add"
+        photoLibrary = object?["photoLibrary"] as? String ?? "Photo library"
+        takePhoto = object?["takePhoto"] as? String ?? "Take photo"
+        movePictures = object?["movePictures"] as? String ?? "Move pictures"
+        deletePicture = object?["deletePicture"] as? String ?? "Delete picture"
+        done = object?["done"] as? String ?? "Done"
     }
 }

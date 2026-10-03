@@ -1328,7 +1328,13 @@
       "noMatches": "Nothing found",
       "removePage": "Remove page",
       "focus": "Hide the toolbar",
-      "exitFocus": "Show the toolbar"
+      "exitFocus": "Show the toolbar",
+      "add": "Add",
+      "photoLibrary": "Photo library",
+      "takePhoto": "Take photo",
+      "movePictures": "Move pictures",
+      "deletePicture": "Delete picture",
+      "done": "Done"
     },
     "openingLink": "Opening…"
   },

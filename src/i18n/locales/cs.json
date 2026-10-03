@@ -1328,7 +1328,13 @@
       "noMatches": "Nic nenalezeno",
       "removePage": "Odstranit stránku",
       "focus": "Skrýt lištu",
-      "exitFocus": "Zobrazit lištu"
+      "exitFocus": "Zobrazit lištu",
+      "add": "Přidat",
+      "photoLibrary": "Z fotek",
+      "takePhoto": "Vyfotit",
+      "movePictures": "Přesunout obrázky",
+      "deletePicture": "Smazat obrázek",
+      "done": "Hotovo"
     },
     "openingLink": "Otevírám…"
   },

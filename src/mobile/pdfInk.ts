@@ -43,7 +43,17 @@ export interface PdfInkStrings {
   /** The floating button that brings the toolbar back. */
   exitFocus: string;
   cancel: string;
-  /** The tool that blocks out an answer so it can be recalled before looking. */
+  /** The `+` bar menu: a blank page, a picture, or moving the pictures. */
+  add: string;
+  /** Menu entries that put a picture on the page, from Photos or the camera. */
+  photoLibrary: string;
+  takePhoto: string;
+  /** Menu entry that enters arranging, where pictures move instead of ink. */
+  movePictures: string;
+  /** The button over a selected picture. */
+  deletePicture: string;
+  /** Ends arranging and gives the pens back. */
+  done: string;
 }
 
 export interface PdfInkPlugin {
