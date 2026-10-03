@@ -49,6 +49,11 @@ enum InkPages {
      */
     static let displayBox = PDFDisplayBox.cropBox
 
+    /// What one fully inked page may cost as pixels: 64 MB at four bytes a
+    /// pixel. The reader's canvases and the export both stop there — PDFKit
+    /// keeps a few pages alive, and an iPad 8 has 3 GB.
+    static let maxInkPixels: CGFloat = 16_777_216
+
     /**
      * The page as the reader SHOWS it — the display box, turned on its side
      * when the page is rotated a quarter turn.

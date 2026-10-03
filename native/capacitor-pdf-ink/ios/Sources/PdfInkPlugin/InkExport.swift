@@ -11,7 +11,7 @@ import UIKit
  * must be in the page. The original copy is untouched — this writes a new file.
  *
  * The page content is redrawn through Core Graphics, so text stays text; only
- * the ink is an image, at `inkScale` so it does not look soft next to it.
+ * the ink is an image, at `inkScale(for:)` so it does not look soft next to it.
  */
 enum InkExport {
     /// The box PDFKit lays the reader's canvases out in, so the box the strokes
@@ -19,7 +19,19 @@ enum InkExport {
     /// which is why it is `InkPages`' to define, not this file's: an added page
     /// is measured in it too.
     static let box = InkPages.displayBox
-    static let inkScale: CGFloat = 2
+
+    /**
+     * Pixels per page point the ink is baked at: 4, about 288 dpi — sharp on
+     * an iPad at a moderate zoom (it shows an A4 at 2.72 px/pt just fitting it)
+     * and close to print. It was 2, as soft as the reader used to be. A page
+     * too big for 4 within `InkPages.maxInkPixels` gets less, but never less
+     * than the 2 every export had before.
+     */
+    static func inkScale(for pageSize: CGSize) -> CGFloat {
+        let area = pageSize.width * pageSize.height
+        guard area > 0 else { return 2 }
+        return max(2, min(4, (InkPages.maxInkPixels / area).squareRoot()))
+    }
 
     static func flatten(_ document: PDFDocument, drawings: [Int: PKDrawing], to url: URL) throws {
         let renderer = UIGraphicsPDFRenderer(bounds: pageRect(document.page(at: 0)))
@@ -53,7 +65,7 @@ enum InkExport {
                 // through a captured var rather than as the closure's value.)
                 var ink: UIImage?
                 UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
-                    ink = drawing.image(from: rect, scale: inkScale)
+                    ink = drawing.image(from: rect, scale: inkScale(for: rect.size))
                 }
                 ink?.draw(in: rect)
             }

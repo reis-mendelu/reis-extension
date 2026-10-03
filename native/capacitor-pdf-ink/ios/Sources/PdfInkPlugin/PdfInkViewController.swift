@@ -617,20 +617,16 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
 
     // MARK: - Ink sharpness
 
-    /// What one fully inked page may cost: 64 MB at four bytes a pixel.
-    /// PDFKit keeps a few pages alive, and an iPad 8 has 3 GB.
-    static let maxInkPixels: CGFloat = 16_777_216
-
     /**
      * The scale a page's ink is rendered at (`PageOverlayView.inkScale`): the
      * scale the page is shown at, never below the page's own, and no further
-     * than `maxInkPixels` allows — 2.9x for an A4. Past that a pinch magnifies
+     * than `InkPages.maxInkPixels` allows — 2.9x for an A4. Past that a pinch magnifies
      * the ink again, but from a finer start.
      */
     static func inkScale(pageScale: CGFloat, pageSize: CGSize, screenScale: CGFloat) -> CGFloat {
         let pixelsAtOne = pageSize.width * pageSize.height * screenScale * screenScale
         guard pixelsAtOne > 0 else { return 1 }
-        let budget = (maxInkPixels / pixelsAtOne).squareRoot()
+        let budget = (InkPages.maxInkPixels / pixelsAtOne).squareRoot()
         return max(1, min(pageScale, budget))
     }
 
