@@ -34,7 +34,7 @@ export function SubjectDrawerTabs({
 
   return (
     // Below 360px the five labels no longer fit a fifth of the width each
-    // — the longest ("Záznámník") pushed the row to 325px on a 320px
+    // — the longest ("Záznamník") pushed the row to 325px on a 320px
     // screen and clipped itself. Tighter padding and a hair smaller label
     // keep all five visible; wider phones are unaffected.
     <div className="flex flex-shrink-0 items-end gap-0.5 border-b border-base-300 px-2 max-[359px]:gap-0 max-[359px]:px-1">
