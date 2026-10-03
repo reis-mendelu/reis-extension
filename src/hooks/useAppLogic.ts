@@ -206,7 +206,9 @@ export function useAppLogic() {
             useAppStore.getState().setCvicneTests(r.cvicneTests);
           }
         }
-        if (r.odevzdavarny?.length) {
+        // Array.isArray, not .length: [] is a real answer ("no boxes") — see
+        // useAppLogic.emptyOdevzdavarny.test.ts. A missing key changes nothing.
+        if (Array.isArray(r.odevzdavarny)) {
           const userParams = await IndexedDBService.get('meta', 'reis_user_params');
           if (userParams?.studium && userParams?.obdobi) {
             await IndexedDBService.set(

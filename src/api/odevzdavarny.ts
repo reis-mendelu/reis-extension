@@ -1,5 +1,11 @@
 import { fetchWithAuth, BASE_URL } from './client';
 import { logError } from '../utils/reportError';
+import {
+  parseOdevzdavarnyPage,
+  parsePeriodIds,
+  type OdevzdavarnaSection,
+  type ParsedOdevzdavarna,
+} from '../utils/parsers/odevzdavarnyParser';
 
 export interface Odevzdavarna {
   courseId: string;
@@ -11,51 +17,24 @@ export interface Odevzdavarna {
   odevzdavarnaId: string;
   fileCount: number;
   uploadUrl: string;
-}
-
-interface RawOdevzdavarna {
-  courseId: string;
-  courseName: string;
-  name: string;
-  type: string;
-  deadline: string;
-  odevzdavarnaId: string;
-  fileCount: number;
-  uploadUrl: string;
-}
-
-function findOpenTable(doc: Document, lang: 'cz' | 'en'): HTMLTableElement | null {
-  const marker = lang === 'cz' ? 'Kam mohu odevzd' : 'Where I can submit';
-  const bolds = doc.getElementsByTagName('b');
-  for (let i = 0; i < bolds.length; i++) {
-    if (bolds[i].textContent?.trim().startsWith(marker)) {
-      let sibling = bolds[i].nextElementSibling;
-      while (sibling) {
-        if (sibling.tagName === 'TABLE') return sibling as HTMLTableElement;
-        sibling = sibling.nextElementSibling;
-      }
-      // Also check parent's siblings
-      let parent = bolds[i].parentElement;
-      while (parent) {
-        sibling = parent.nextElementSibling;
-        while (sibling) {
-          if (sibling.tagName === 'TABLE') return sibling as HTMLTableElement;
-          const table = sibling.querySelector('table');
-          if (table) return table;
-          sibling = sibling.nextElementSibling;
-        }
-        parent = parent.parentElement;
-      }
-    }
-  }
-  return null;
+  // Optional: rows cached by a build that read only the open table have none
+  // of these, and must still read as open boxes (see isBoxOpen).
+  courseCode?: string;
+  /** Which IS table the box sits in. Uploading moves it to 'submitted'. */
+  section?: OdevzdavarnaSection;
+  /** Whether IS still accepts files. */
+  isOpen?: boolean;
+  /** The student's points, once graded. */
+  points?: string;
+  /** The IS period the box belongs to — the sync reads two. */
+  obdobi?: string;
 }
 
 async function fetchLang(
   studium: string,
   obdobi: string,
   lang: 'cz' | 'en'
-): Promise<RawOdevzdavarna[] | null> {
+): Promise<{ rows: ParsedOdevzdavarna[]; periods: string[] } | null> {
   try {
     const url = `${BASE_URL}/auth/student/odevzdavarny.pl?studium=${studium};obdobi=${obdobi};lang=${lang}`;
     // fetchWithAuth, not a bare fetch: IS denies CORS to every origin, so
@@ -65,61 +44,11 @@ async function fetchLang(
 
     const html = await res.text();
     const doc = new DOMParser().parseFromString(html, 'text/html');
-
-    const table = findOpenTable(doc, lang);
-    if (!table) return [];
-
-    const rows = table.getElementsByTagName('tr');
-    const assignments: RawOdevzdavarna[] = [];
-
-    for (let i = 1; i < rows.length; i++) {
-      const cols = rows[i].getElementsByTagName('td');
-      if (cols.length < 8) continue;
-
-      const courseLink = cols[0].getElementsByTagName('a')[0];
-      const rawCourseName = courseLink?.textContent?.trim() || cols[0].textContent?.trim() || '';
-      // Strip course code prefix like "EBC-DSND " to get just the name
-      const courseName = rawCourseName.replace(/^[A-Z]{2,4}-[A-Z0-9]+ /, '');
-      const syllabusHref = courseLink?.getAttribute('href') || '';
-      const predmetMatch = syllabusHref.match(/predmet=(\d+)/);
-      const courseId = predmetMatch ? predmetMatch[1] : '';
-
-      const name = cols[1].textContent?.trim() || '';
-
-      const typeImg = cols[2].getElementsByTagName('img')[0];
-      const type = typeImg?.getAttribute('sysid') || '';
-
-      const deadline = cols[4].textContent?.trim() || '';
-
-      const fileCountText = cols[7].textContent?.trim() || '0';
-      const fileCount = parseInt(fileCountText, 10) || 0;
-
-      const uploadLink = cols[10]?.getElementsByTagName('a')[0];
-      let uploadUrl = uploadLink?.getAttribute('href') || '';
-      if (uploadUrl && !uploadUrl.startsWith('http')) {
-        uploadUrl = `https://is.mendelu.cz/auth/student/${uploadUrl}`;
-      }
-
-      const odevzdavarnaMatch = uploadUrl.match(/odevzdavarna=(\d+)/);
-      const odevzdavarnaId = odevzdavarnaMatch ? odevzdavarnaMatch[1] : '';
-
-      if (courseName && name) {
-        assignments.push({
-          courseId,
-          courseName,
-          name,
-          type,
-          deadline,
-          odevzdavarnaId,
-          fileCount,
-          uploadUrl,
-        });
-      }
-    }
-
-    return assignments;
+    const rows = parseOdevzdavarnyPage(doc, lang);
+    if (!rows) throw new Error('Unrecognised odevzdavarny page');
+    return { rows, periods: parsePeriodIds(doc) };
   } catch (error) {
-    logError('Api.fetchOdevzdavarnyLang', error);
+    logError('Api.fetchOdevzdavarnyLang', error, { lang });
     return null;
   }
 }
@@ -127,30 +56,70 @@ async function fetchLang(
 export interface OdevzdavarnyResult {
   assignments: Odevzdavarna[];
   lastFetched: number;
+  /** The student's period ids from the page, oldest first. */
+  periods: string[];
 }
 
+/**
+ * Every submission box of the period, open, handed in and closed.
+ *
+ * Czech is the source of truth: the English page prints deadlines as
+ * MM/DD/YYYY, so it contributes course names only, matched per table and row
+ * and only when the course id agrees.
+ */
 export async function fetchOdevzdavarny(
   studium: string,
   obdobi: string
 ): Promise<OdevzdavarnyResult | null> {
-  const [czData, enData] = await Promise.all([
+  const [czPage, enPage] = await Promise.all([
     fetchLang(studium, obdobi, 'cz'),
     fetchLang(studium, obdobi, 'en'),
   ]);
 
-  if (!czData) return null;
+  if (!czPage) return null;
+  const czData = czPage.rows;
+  const enData = enPage?.rows;
 
-  const merged: Odevzdavarna[] = czData.map((cz, i) => ({
-    courseId: cz.courseId,
-    courseNameCs: cz.courseName,
-    courseNameEn: enData?.[i]?.courseName ?? cz.courseName,
-    name: cz.name,
-    type: cz.type,
-    deadline: cz.deadline,
-    odevzdavarnaId: cz.odevzdavarnaId,
-    fileCount: cz.fileCount,
-    uploadUrl: cz.uploadUrl,
-  }));
+  const listUrl = `${BASE_URL}/auth/student/odevzdavarny.pl?studium=${studium};obdobi=${obdobi}`;
+  const enBySection = (section: OdevzdavarnaSection) =>
+    (enData ?? []).filter((r) => r.section === section);
+  const position = new Map<OdevzdavarnaSection, number>();
 
-  return { assignments: merged, lastFetched: Date.now() };
+  const byId = new Map<string, Odevzdavarna>();
+  const merged: Odevzdavarna[] = [];
+  for (const cz of czData) {
+    const i = position.get(cz.section) ?? 0;
+    position.set(cz.section, i + 1);
+    const en = enBySection(cz.section)[i];
+
+    const box: Odevzdavarna = {
+      courseId: cz.courseId,
+      courseCode: cz.courseCode,
+      courseNameCs: cz.courseName,
+      courseNameEn: en && en.courseId === cz.courseId ? en.courseName : cz.courseName,
+      name: cz.name,
+      type: cz.type,
+      deadline: cz.deadline,
+      odevzdavarnaId: cz.odevzdavarnaId,
+      fileCount: cz.fileCount,
+      uploadUrl: cz.uploadUrl || listUrl,
+      section: cz.section,
+      isOpen: cz.isOpen,
+      obdobi,
+    };
+    if (cz.points) box.points = cz.points;
+
+    // One box, one row. The real pages never list a box twice, but if IS ever
+    // keeps an open box in both tables, the first (open) row wins and borrows
+    // the graded points from the other.
+    const seen = cz.odevzdavarnaId ? byId.get(cz.odevzdavarnaId) : undefined;
+    if (seen) {
+      if (!seen.points && box.points) seen.points = box.points;
+      continue;
+    }
+    if (cz.odevzdavarnaId) byId.set(cz.odevzdavarnaId, box);
+    merged.push(box);
+  }
+
+  return { assignments: merged, lastFetched: Date.now(), periods: czPage.periods };
 }

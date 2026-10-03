@@ -96,7 +96,8 @@ export function useDeadlineAlerts() {
     }
 
     for (const a of odevzdavarny) {
-      if (a.fileCount > 0 || !a.deadline) continue;
+      // The list also holds boxes IS will not take files for ("Kam nemohu").
+      if (a.fileCount > 0 || !a.deadline || a.isOpen === false) continue;
       const deadline = parseCzDateTime(a.deadline);
       if (!deadline) continue;
       const h = (deadline.getTime() - now) / H;

@@ -305,7 +305,7 @@ export async function syncAllData() {
           ? cvicneTests.value.tests
           : cachedData.cvicneTests,
       odevzdavarny:
-        odevzdavarnyResult.status === 'fulfilled' && odevzdavarnyResult.value?.assignments?.length
+        odevzdavarnyResult.status === 'fulfilled' && odevzdavarnyResult.value
           ? odevzdavarnyResult.value.assignments
           : cachedData.odevzdavarny,
       files: cachedData.files || {},

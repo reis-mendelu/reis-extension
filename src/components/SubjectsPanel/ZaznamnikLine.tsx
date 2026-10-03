@@ -69,7 +69,7 @@ export function ZaznamnikLine({ courseCode, subjectId, className }: ZaznamnikLin
     const now = Date.now();
     const cutoff = now + 21 * 24 * 60 * 60 * 1000;
     return allAssignments
-      .filter((a) => a.courseId === subjectId)
+      .filter((a) => a.courseId === subjectId && a.isOpen !== false)
       .map((a) => ({ a, ts: parseRegistrationStart(a.deadline)?.getTime() ?? 0 }))
       .filter(({ ts }) => ts > now && ts <= cutoff)
       .sort((x, y) => x.ts - y.ts);

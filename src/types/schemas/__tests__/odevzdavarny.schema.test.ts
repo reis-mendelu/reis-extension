@@ -49,3 +49,17 @@ describe('OdevzdavarnySchema', () => {
     expect(OdevzdavarnySchema.safeParse([noCourseId]).success).toBe(false);
   });
 });
+
+describe('OdevzdavarnySchema — rows from all three IS tables', () => {
+  it('accepts the fields the three-table parser adds', () => {
+    const full = [
+      { ...realData[0], courseCode: 'EBC-DSND', section: 'submitted', isOpen: false, points: '90' },
+    ];
+    expect(OdevzdavarnySchema.safeParse(full).success).toBe(true);
+  });
+
+  it('rejects a wrongly typed isOpen, which would read every box as open', () => {
+    const bad = [{ ...realData[0], isOpen: 'no' }];
+    expect(OdevzdavarnySchema.safeParse(bad).success).toBe(false);
+  });
+});
