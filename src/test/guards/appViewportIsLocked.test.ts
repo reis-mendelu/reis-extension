@@ -5,15 +5,15 @@ import { describe, expect, it } from 'vitest';
 /**
  * The iOS and Android apps do not pinch-zoom the page; the extension does.
  *
- * In the Capacitor shell a pinch on a plain scrolling screen (Exams, Subjects,
- * Profile) zoomed the whole app, tab bar and all, and left the student stuck
- * in a magnified frame with no browser chrome to reset it. Capacitor's own
- * guards are not enough: on iOS its scroll-view delegate disables the pinch
- * recognizer only once zooming has already begun, and on Android it relies on
- * built-in zoom controls being off. The page has to say it is not scalable, and
- * both WKWebView and Android WebView honour `maximum-scale=1, user-scalable=no`
- * (only Safari ignores it). This also stops iOS auto-zooming into a focused
- * input set below 16px.
+ * Pinching a plain scrolling screen (Exams, Subjects) was reported on device to
+ * zoom the whole app, tab bar and all, leaving the student in a magnified frame
+ * with no browser chrome to reset it. It reproduced once (5x) on Subjects on
+ * the Android emulator; the iOS simulator did not reproduce it. Capacitor
+ * guards zoom only indirectly — on iOS its scroll-view delegate disables the
+ * pinch recognizer once zooming begins, on Android it turns built-in zoom
+ * controls off — so the page itself says it is not scalable:
+ * `maximum-scale=1, user-scalable=no` is the lock both WKWebView and Android
+ * WebView honour (only Safari ignores it).
  *
  * What still zooms, by design, is unaffected: the Leaflet map, the PDF viewer's
  * JS pinch (`SubjectFileDrawer/usePinchZoom.ts`, which calls preventDefault
