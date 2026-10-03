@@ -5,6 +5,8 @@ import { PdfViewer } from '../PdfViewer';
 
 const PAGES = 10;
 const PAGE_HEIGHT = 1000;
+/** Per test: a landscape slide on a phone is far shorter than the pane. */
+let pageHeight = PAGE_HEIGHT;
 const VIEWPORT = 900;
 
 vi.mock('react-pdf', () => ({
@@ -33,19 +35,20 @@ vi.mock('../pdfWorkerSource', () => ({
 // jsdom lays nothing out: every page row is PAGE_HEIGHT tall, stacked, and the
 // scroll area shows VIEWPORT of them.
 beforeEach(() => {
+  pageHeight = PAGE_HEIGHT;
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
     this: HTMLElement
   ) {
     const area = document.querySelector<HTMLElement>('[data-testid="pdf-scroll-area"]');
     const index = this.dataset.pageIndex;
-    const top = index === undefined ? 0 : Number(index) * PAGE_HEIGHT - (area?.scrollTop ?? 0);
+    const top = index === undefined ? 0 : Number(index) * pageHeight - (area?.scrollTop ?? 0);
     return {
       top,
-      bottom: top + PAGE_HEIGHT,
+      bottom: top + pageHeight,
       left: 0,
       right: 600,
       width: 600,
-      height: PAGE_HEIGHT,
+      height: pageHeight,
       x: 0,
       y: top,
       toJSON: () => ({}),
@@ -105,6 +108,9 @@ describe('PdfViewer reading position', () => {
     const { area } = await mountViewer({ initialPage: 2, onPageChange });
     await waitFor(() => expect(area.scrollTop).toBe(2 * PAGE_HEIGHT), { timeout: 2000 });
 
+    act(() => {
+      area.dispatchEvent(new Event('wheel'));
+    });
     scrollTo(area, 4 * PAGE_HEIGHT + 100);
 
     await waitFor(() => expect(onPageChange).toHaveBeenLastCalledWith(4));
@@ -119,5 +125,35 @@ describe('PdfViewer reading position', () => {
     unmount();
 
     expect(onPageChange).toHaveBeenLastCalledWith(8);
+  });
+
+  // A 16:9 slide on a phone is ~235 px in an ~800 px pane. Restore puts slide N
+  // at the top; a reading line a third of the way down sits in slide N+1, and
+  // each reopen then saved one slide further on.
+  describe('with slides shorter than a third of the pane', () => {
+    it('saves nothing when the student only looks', async () => {
+      pageHeight = 200;
+      const onPageChange = vi.fn();
+      const { area } = await mountViewer({ initialPage: 6, onPageChange });
+      await waitFor(() => expect(area.scrollTop).toBe(6 * 200), { timeout: 2000 });
+      // The browser fires scroll for the restore's own scrollTop write.
+      scrollTo(area, area.scrollTop);
+      await new Promise((r) => setTimeout(r, 400));
+      expect(onPageChange).not.toHaveBeenCalled();
+    });
+
+    it('saves the slide at the top of the pane, the one a restore puts there', async () => {
+      pageHeight = 200;
+      const onPageChange = vi.fn();
+      const { area } = await mountViewer({ onPageChange });
+      await new Promise((r) => setTimeout(r, 400));
+
+      act(() => {
+        area.dispatchEvent(new Event('wheel'));
+      });
+      scrollTo(area, 6 * 200);
+
+      await waitFor(() => expect(onPageChange).toHaveBeenLastCalledWith(6));
+    });
   });
 });

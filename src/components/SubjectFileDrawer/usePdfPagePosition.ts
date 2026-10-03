@@ -3,8 +3,14 @@ import { clampPageIndex, pageAtOffset } from './pdfPagePosition';
 
 /** How long scrolling has to rest before the page counts as read. */
 const SETTLE_MS = 250;
-/** Where on screen "the page being read" is measured: a third of the way down. */
-const READING_LINE = 1 / 3;
+/**
+ * "The page being read" is the row at the top edge of the pane — the same
+ * anchor the restore puts a page at. Any line lower down and a slide shorter
+ * than that line (a 16:9 slide on a phone is ~235 px) would save the slide
+ * AFTER the one restored, one further on every reopen. A couple of px of slack
+ * so a row restored exactly to the edge still counts as on it.
+ */
+const TOP_EDGE_SLACK = 2;
 /** Anything the student does in the pane. Until then the restore holds the page. */
 const USER_INPUT = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const;
 
@@ -22,9 +28,11 @@ interface Options {
 /**
  * Reopens the viewer on `initialPage` and reports the page being read.
  *
- * Nothing is reported until the restore has happened. The pane mounts at the
- * top and the restore waits for the fit-to-width zoom, so a report from that
- * first frame would save page 0 over the very page being restored.
+ * Nothing is reported until the restore has happened, and then not until the
+ * student touches the pane. The pane mounts at the top and the restore waits
+ * for the fit-to-width zoom, so a report from that first frame would save page
+ * 0 over the very page being restored; and the restore's own scroll events are
+ * not the student reading anything.
  *
  * Until the student touches the pane, the restored page is held in place: rows
  * above it are sized from page 1 until they render, and a deck whose cover is
@@ -106,10 +114,10 @@ export function usePdfPagePosition({
       onPageChangeRef.current?.(page);
     };
     const onScroll = () => {
-      if (!restored.current) return;
+      if (!restored.current || holding.current) return;
       const tops: number[] = [];
       for (let i = 0; i < rows.current.size; i++) tops.push(rowTop(i) ?? Infinity);
-      const page = pageAtOffset(tops, area.scrollTop + area.clientHeight * READING_LINE);
+      const page = pageAtOffset(tops, area.scrollTop + TOP_EDGE_SLACK);
       pending.current = page;
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => report(page), SETTLE_MS);
