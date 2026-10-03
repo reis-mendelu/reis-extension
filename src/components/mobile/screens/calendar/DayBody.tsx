@@ -1,7 +1,7 @@
 import { useRef, type RefObject } from 'react';
 import type { AgendaRow } from '../../../../utils/mobile/dayAgenda';
 import { useAppStore } from '../../../../store/useAppStore';
-import { stepDay } from '../../../../utils/mobile/weekDays';
+import { stepDay, toIso } from '../../../../utils/mobile/weekDays';
 import { DayAgenda } from './DayAgenda';
 import { CalendarEmptyDay } from './CalendarEmptyDay';
 import { RecentFilesStrip } from './RecentFilesStrip';
@@ -70,6 +70,7 @@ export function DayBody({
 }: DayBodyProps) {
   const scheduleRefreshing = useAppStore((s) => s.scheduleRefreshing);
   const triggerScheduleRefresh = useAppStore((s) => s.triggerScheduleRefresh);
+  const now = useAppStore((s) => s.now);
   const showOnMap = useShowLessonOnMap();
   const openLesson = useOpenLesson();
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -103,7 +104,7 @@ export function DayBody({
       // ONE day, not seven: the unit is the caller's, and this is the day view.
       // A day the strip shows, so a weekend the student is never taught on is
       // stepped over rather than landed on.
-      if (steps !== 0) onSelectDay(stepDay(selectedIso, steps, lessonDates));
+      if (steps !== 0) onSelectDay(stepDay(selectedIso, steps, lessonDates, toIso(now)));
     },
     onCancel: () => setOffset(null),
   });

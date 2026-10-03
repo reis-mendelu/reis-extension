@@ -46,12 +46,12 @@ export function WeekGrid({ lessons, selectedIso, lessonDates, onSelectDay }: Wee
   const columnsRef = useRef<HTMLDivElement>(null);
   const gridPx = useElementHeight(columnsRef);
 
-  const days = weekDays(selectedIso, lessonDates).map(toIso);
+  const todayIso = toIso(now);
+  const days = weekDays(selectedIso, lessonDates, todayIso).map(toIso);
   const weekLessons = lessons.filter((l) => days.some((d) => toCompact(d) === l.date));
   const range = weekHourRange(weekLessons);
   const span = range.end - range.start;
   const hours = Array.from({ length: span + 1 }, (_, i) => range.start + i);
-  const todayIso = toIso(now);
 
   // Written straight to the node, never through state — DayChips documents why.
   const setOffset = (px: number | null) => {

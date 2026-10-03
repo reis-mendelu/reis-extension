@@ -10,6 +10,7 @@ import { resolveNativeEduroamSupport } from '@/mobile/eduroamNative';
 import { installMobileActionHandler } from '@/mobile/actionHandler';
 import { installExternalLinkHandler } from '@/mobile/openExternal';
 import { installReminderTapHandler } from '@/mobile/reminderTap';
+import { installCalendarResumeReset } from '@/mobile/calendarResume';
 import { readNotificationPermission } from '@/services/eventReminders/sync';
 import { promptSessionRecovery } from '@/mobile/sessionRecovery';
 import { setSessionExpiredHandler } from '@/services/sessionExpiry';
@@ -102,6 +103,9 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // can put the calendar back over the event it opened. Before the demo
   // return, since an RSVP in the demo schedules a real reminder too.
   installReminderTapHandler();
+  // Before the demo return: the reviewer's calendar goes back to today on a
+  // reopen too. Nothing above sets the calendar's day, so nothing races it.
+  installCalendarResumeReset();
 
   // Once at boot, beside the tap handler: the soft-ask card and the Profile
   // switches read `notifyPermission` to decide what to show, and nothing else
