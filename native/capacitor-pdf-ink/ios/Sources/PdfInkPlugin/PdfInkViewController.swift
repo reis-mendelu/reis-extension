@@ -61,12 +61,24 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     var pictures: [Int: [PagePicture]] = [:]
     /// Moving pictures instead of drawing. A visible mode: see `+Pictures`.
     var arrangingPictures = false
+    /// From choosing Photos or the camera until the pick lands or is
+    /// cancelled. Holds #485's re-assert off through the moment between the
+    /// menu closing and the picker appearing, when nothing is presented.
+    var pickingPicture = false
     var selectedPicture: (page: Int, id: String)?
     /// What picture undo actions are registered against, so a renumbering can
     /// clear them without touching PencilKit's strokes.
     let pictureUndoTarget = NSObject()
-    private(set) lazy var doneArrangingItem = UIBarButtonItem(
-        title: strings.done, style: .done, target: self, action: #selector(doneArrangingTapped))
+    /// Plain, in the theme tint like every other bar item: `.done` is a
+    /// filled pill on iPadOS 26, and white on the dark bar's lime fails 3:1.
+    /// Tinted here because it is built after `PdfInkTint.apply` walked the bar.
+    private(set) lazy var doneArrangingItem: UIBarButtonItem = {
+        let item = UIBarButtonItem(
+            title: strings.done, style: .plain, target: self,
+            action: #selector(doneArrangingTapped))
+        item.tintColor = tint
+        return item
+    }()
     /// Ends arranging on a tap on empty page. Enabled only while arranging.
     private(set) lazy var emptyPageTap = UITapGestureRecognizer(
         target: self, action: #selector(emptyPageTapped(_:)))
@@ -550,6 +562,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     }
 
     func showToolPicker() {
+        pickingPicture = false
         toolPicker.setVisible(true, forFirstResponder: pdfView)
         pdfView.becomeFirstResponder()
     }
@@ -570,8 +583,9 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     @objc func restoreToolPicker() {
         guard isViewLoaded, view.window != nil, presentedViewController == nil, !closing,
             document != nil, !toolPicker.isVisible,
-            // Arranging pictures takes the pens away on purpose; Done brings them back.
-            !arrangingPictures
+            // Arranging and picking take the pens away on purpose; Done, a
+            // pick or a cancel brings them back.
+            !arrangingPictures, !pickingPicture
         else { return }
         showToolPicker()
     }

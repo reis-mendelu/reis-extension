@@ -40,7 +40,7 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
                 UIAction(
                     title: strings.movePictures,
                     image: UIImage(systemName: "arrow.up.and.down.and.arrow.left.and.right")
-                ) { [weak self] _ in self?.beginArrangingPictures() })
+                ) { [weak self] _ in self?.arrangePicturesOnPageOnScreen() })
         }
         return items
     }
@@ -75,8 +75,33 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
     private func presentPicking(_ controller: UIViewController) {
         controller.presentationController?.delegate = self
         if let tint { controller.view.tintColor = tint }
-        toolPicker.setVisible(false, forFirstResponder: pdfView)
+        beginPicking()
         present(controller, animated: true)
+    }
+
+    /// Pens away until the pick ends. Every way out goes through
+    /// `showToolPicker()` (cancel, failure, swipe-away) or
+    /// `beginArrangingPictures` (a pick), and both clear the flag.
+    func beginPicking() {
+        pickingPicture = true
+        putPensAway()
+    }
+
+    /**
+     * Hides the pens and lets the responder go.
+     *
+     * `setVisible(false)` alone is not enough: PencilKit re-reads it when the
+     * responder changes, and the photo picker runs out of process and takes no
+     * responder — the pens stayed over it on the simulator. The search sheet
+     * never showed this only because its field takes the responder. Done, a
+     * cancel or a dismissal takes it back through `showToolPicker()`.
+     */
+    private func putPensAway() {
+        toolPicker.setVisible(false, forFirstResponder: pdfView)
+        for overlay in overlays.values where overlay.canvas.isFirstResponder {
+            overlay.canvas.resignFirstResponder()
+        }
+        pdfView.resignFirstResponder()
     }
 
     func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
@@ -169,11 +194,22 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
 
     func beginArrangingPictures(selecting selection: (page: Int, id: String)? = nil) {
         arrangingPictures = true
+        pickingPicture = false
         selectedPicture = selection
-        toolPicker.setVisible(false, forFirstResponder: pdfView)
+        putPensAway()
         navigationItem.rightBarButtonItems = [doneArrangingItem]
         emptyPageTap.isEnabled = true
         for (index, overlay) in overlays { applyPictureMode(to: overlay, page: index) }
+    }
+
+    /// "Move pictures": arranging with the top picture on the page on screen
+    /// selected, so it is plain what will move. A page with none selects nothing.
+    func arrangePicturesOnPageOnScreen() {
+        let index = document.flatMap { document in
+            pdfView.currentPage.map { document.index(for: $0) }
+        }
+        let top = index.flatMap { pictures[$0]?.last }
+        beginArrangingPictures(selecting: index.flatMap { i in top.map { (i, $0.id) } })
     }
 
     func endArrangingPictures(restoringPens: Bool = true) {

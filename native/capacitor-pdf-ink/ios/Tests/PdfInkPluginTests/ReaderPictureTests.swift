@@ -54,6 +54,63 @@ final class ReaderPictureTests: XCTestCase {
         XCTAssertEqual(reader.navigationItem.rightBarButtonItems, [reader.doneArrangingItem])
     }
 
+    /// `setVisible(false)` alone left the pens over the photo picker on the
+    /// simulator: the picker runs out of process and takes no responder, so
+    /// nothing made PencilKit re-read it. Arranging and picking let the
+    /// responder go; Done (or a dismissal) takes it back.
+    func testArrangingLetsTheResponderGoAndDoneTakesItBack() throws {
+        let (reader, _) = try show(pages: 1)
+        reader.showToolPicker()
+        XCTAssertTrue(reader.pdfView.isFirstResponder)
+
+        reader.beginArrangingPictures()
+        XCTAssertFalse(reader.pdfView.isFirstResponder, "the pens would stay over the page")
+
+        reader.endArrangingPictures()
+        XCTAssertTrue(reader.pdfView.isFirstResponder)
+    }
+
+    /// The menu closes before UIKit presents the photo picker, and in that gap
+    /// nothing is presented — #485's re-assert brought the pens straight back
+    /// over the picker (seen on the simulator, probed: page first responder,
+    /// pens visible, PHPicker on screen). Picking holds them off until it ends.
+    func testThePensStayAwayWhilePickingAndComeBackAfter() throws {
+        let (reader, _) = try show(pages: 1)
+        reader.showToolPicker()
+
+        reader.beginPicking()
+        reader.restoreToolPicker()  // the gap: no presented controller yet
+        XCTAssertFalse(reader.pdfView.isFirstResponder, "the pens came back over the picker")
+
+        reader.showToolPicker()  // a cancel
+        XCTAssertFalse(reader.pickingPicture)
+        XCTAssertTrue(reader.pdfView.isFirstResponder)
+    }
+
+    /// "Move pictures" with nothing selected looked exactly like drawing but
+    /// for the bar (seen on the simulator). It selects the top picture on the
+    /// page on screen, so it is plain what will move.
+    func testMovePicturesSelectsTheTopPictureOnThePageOnScreen() throws {
+        let (reader, _) = try show(pages: 1)
+        let jpeg = try picture().jpeg
+        let under = PagePicture(id: "under", frame: CGRect(x: 0, y: 0, width: 50, height: 50), jpeg: jpeg)
+        let over = PagePicture(id: "over", frame: CGRect(x: 10, y: 10, width: 50, height: 50), jpeg: jpeg)
+        reader.setPictures([under, over], onPage: 0)
+
+        reader.arrangePicturesOnPageOnScreen()
+
+        XCTAssertTrue(reader.arrangingPictures)
+        XCTAssertEqual(reader.selectedPicture?.page, 0)
+        XCTAssertEqual(reader.selectedPicture?.id, "over")
+    }
+
+    func testDoneWearsTheThemeTint() throws {
+        let tint = UIColor.systemGreen
+        let reader = PdfInkViewController(strings: strings, tint: tint)
+        XCTAssertEqual(reader.doneArrangingItem.tintColor, tint)
+        XCTAssertEqual(reader.doneArrangingItem.style, .plain, "a filled pill puts white on lime")
+    }
+
     func testDoneGivesThePensBack() throws {
         let (reader, _) = try show(pages: 1)
         reader.view.layoutIfNeeded()
@@ -108,7 +165,8 @@ final class ReaderPictureTests: XCTestCase {
         XCTAssertFalse(titles().contains(strings.movePictures))
 
         reader.setPictures(
-            [PagePicture(id: "p", frame: CGRect(x: 0, y: 0, width: 10, height: 10), jpeg: Data())], onPage: 0)
+            [PagePicture(id: "p", frame: CGRect(x: 0, y: 0, width: 10, height: 10), jpeg: Data())],
+            onPage: 0)
 
         XCTAssertTrue(titles().contains(strings.movePictures))
     }
