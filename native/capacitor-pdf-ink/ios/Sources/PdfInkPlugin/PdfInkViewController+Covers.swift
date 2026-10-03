@@ -45,6 +45,13 @@ extension PdfInkViewController {
         setCovers((covers[index] ?? []) + [PageCover(rect: rect)], onPage: index)
     }
 
+    /// A strip carried by a held finger. Same id, so it is the same strip;
+    /// on the undo stack like everything else.
+    func moveCover(_ id: String, to rect: CGRect, onPage index: Int) {
+        let list = (covers[index] ?? []).map { $0.id == id ? PageCover(id: id, rect: rect) : $0 }
+        setCovers(list, onPage: index)
+    }
+
     func removeCover(_ id: String, onPage index: Int) {
         revealedCovers.remove(id)
         overlays[index]?.coverLayer.revealed = revealedCovers
@@ -69,6 +76,7 @@ extension PdfInkViewController {
         layer.fingerDraws = { [weak self] in self?.fingerDraws() ?? false }
         layer.onCreate = { [weak self] rect in self?.addCover(rect, onPage: index) }
         layer.onRemove = { [weak self] id in self?.removeCover(id, onPage: index) }
+        layer.onMove = { [weak self] id, rect in self?.moveCover(id, to: rect, onPage: index) }
         layer.onToggle = { [weak self] id in self?.toggleCover(id, onPage: index) }
         applyCoverMode(to: overlay)
     }

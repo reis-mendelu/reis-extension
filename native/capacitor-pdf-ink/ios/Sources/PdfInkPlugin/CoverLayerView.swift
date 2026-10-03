@@ -39,6 +39,7 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
     var onCreate: ((CGRect) -> Void)?
     var onRemove: ((String) -> Void)?
     var onToggle: ((String) -> Void)?
+    var onMove: ((String, CGRect) -> Void)?
 
     /// Whether the finger draws (no Pencil paired, or "Draw with finger" on).
     /// Asked per touch, because the palette's switch can change it any time.
@@ -55,6 +56,13 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
     var deleteLabel = "Delete tape"
     lazy var deleteMenuInteraction = UIEditMenuInteraction(delegate: self)
     var heldCoverID: String?
+    /// Where the held finger came down — the strip is the one under THIS, not
+    /// under the finger when the hold is recognised, which can be after it has
+    /// started to move (simulator, 2026-10-03: began ~0.5 s in, off the strip).
+    var holdTouchDown: CGPoint?
+    /// Where the hold began, and where the held strip is while it is carried.
+    var holdStart: CGPoint?
+    var carriedRect: CGRect? { didSet { setNeedsDisplay() } }
 
     private var lastTapType: UITouch.TouchType = .direct
     /// Where the stroke's touch came down: the strip grows from here. (With
@@ -115,7 +123,10 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
             lastTapType = touch.type
             return true
         }
-        if gestureRecognizer === holdRecognizer { return true }
+        if gestureRecognizer === holdRecognizer {
+            holdTouchDown = touch.location(in: self)
+            return true
+        }
         if draws(touch.type) { touchDown = touch.location(in: self) }
         // One line per stroke start: whether the tape took it, and why not.
         if isMakingCovers {
@@ -182,7 +193,9 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
     override func draw(_ rect: CGRect) {
         guard let context = UIGraphicsGetCurrentContext() else { return }
         for cover in covers {
-            if revealed.contains(cover.id) {
+            if cover.id == heldCoverID, let carried = carriedRect {
+                TapeStyle.drawLifted(carried, in: context)
+            } else if revealed.contains(cover.id) {
                 TapeStyle.drawOpen(cover.rect, in: context)
             } else {
                 TapeStyle.drawShut(cover.rect, in: context)

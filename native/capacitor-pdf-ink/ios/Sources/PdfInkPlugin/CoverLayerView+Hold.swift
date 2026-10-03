@@ -1,8 +1,10 @@
 import UIKit
 
 /**
- * Holding a finger on a strip: a small menu with one entry, delete. Dominik's
- * ask on the device (2026-10-03). A menu rather than deleting on the hold
+ * Holding a finger on a strip: a small menu with one entry, delete — and if
+ * the held finger then moves, the strip is carried instead. Dominik's asks on
+ * the device (2026-10-03), the iOS home-screen pattern: hold for the menu,
+ * move to carry. A menu rather than deleting on the hold
  * itself, so a hold that was only a pause cannot take a strip away; the
  * palette's undo brings a deleted one back all the same.
  */
@@ -23,15 +25,45 @@ extension CoverLayerView: UIEditMenuInteractionDelegate {
         addInteraction(deleteMenuInteraction)
     }
 
+    /// Hold: the delete menu comes up at once. Move the held finger and the
+    /// menu goes and the strip follows it; let go and it stays there. Let go
+    /// without moving and the menu stays for a tap.
     @objc private func held(_ hold: UILongPressGestureRecognizer) {
-        guard hold.state == .began else { return }
         let point = hold.location(in: self)
-        guard let cover = PageCovers.cover(at: point, in: covers) else { return }
-        NSLog("PdfInk: strip held, offering delete")
-        heldCoverID = cover.id
-        deleteMenuInteraction.presentEditMenu(
-            with: UIEditMenuConfiguration(identifier: nil, sourcePoint: point))
+        switch hold.state {
+        case .began:
+            let down = holdTouchDown ?? point
+            guard let cover = PageCovers.cover(at: down, in: covers) else { return }
+            NSLog("PdfInk: strip held, offering delete")
+            heldCoverID = cover.id
+            holdStart = down
+            deleteMenuInteraction.presentEditMenu(
+                with: UIEditMenuConfiguration(identifier: nil, sourcePoint: down))
+        case .changed:
+            guard let id = heldCoverID, let start = holdStart,
+                let cover = covers.first(where: { $0.id == id })
+            else { return }
+            let offset = CGPoint(x: point.x - start.x, y: point.y - start.y)
+            guard carriedRect != nil || hypot(offset.x, offset.y) > Self.carryThreshold else { return }
+            if carriedRect == nil { deleteMenuInteraction.dismissMenu() }
+            carriedRect = PageCovers.moved(cover.rect, by: offset, within: bounds)
+        case .ended:
+            if let id = heldCoverID, let rect = carriedRect {
+                NSLog("PdfInk: strip moved")
+                onMove?(id, rect)
+                heldCoverID = nil
+            }
+            holdStart = nil
+            carriedRect = nil
+        default:
+            heldCoverID = nil
+            holdStart = nil
+            carriedRect = nil
+        }
     }
+
+    /// A held finger trembles; past this it means to carry the strip.
+    static let carryThreshold: CGFloat = 8
 
     /// The menu offered for a held strip.
     func deleteMenu(for id: String) -> UIMenu {

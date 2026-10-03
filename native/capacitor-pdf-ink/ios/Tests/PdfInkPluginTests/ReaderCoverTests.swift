@@ -116,6 +116,25 @@ final class ReaderCoverTests: XCTestCase {
         XCTAssertTrue(overlay.coverLayer.isUserInteractionEnabled)
     }
 
+    func testAMovedStripIsKeptAndUndoPutsItBack() throws {
+        let (reader, ink) = try host.show(pages: 1)
+        let undo = try XCTUnwrap(reader.undoManagerForPictures)
+        reader.addCover(block, onPage: 0)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+        let id = try XCTUnwrap(reader.covers[0]?.first?.id)
+        let moved = block.offsetBy(dx: 40, dy: 100)
+
+        reader.moveCover(id, to: moved, onPage: 0)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+
+        XCTAssertEqual(reader.covers[0]?.first?.rect, moved)
+        XCTAssertEqual(InkStore.load(from: ink)?.coverCards[0]?.first?.rect, moved)
+        XCTAssertEqual(reader.covers[0]?.first?.id, id, "a move keeps the strip, it does not make a new one")
+        undo.undo()
+        XCTAssertEqual(reader.covers[0]?.first?.rect, block)
+        undo.removeAllActions()
+    }
+
     /// One undo stack: the palette's undo takes back a cover put down or
     /// taken away by mistake.
     func testUndoTakesBackACover() throws {

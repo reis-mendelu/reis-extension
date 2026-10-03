@@ -35,6 +35,15 @@ enum PageCovers {
         return growingRect(from: start, to: end)
     }
 
+    /// A strip moved by a held finger: shifted by the finger's travel, and
+    /// kept inside the page — it stops at the edge rather than leaving.
+    static func moved(_ rect: CGRect, by offset: CGPoint, within page: CGRect) -> CGRect {
+        var moved = rect.offsetBy(dx: offset.x, dy: offset.y)
+        moved.origin.x = min(max(moved.minX, page.minX), page.maxX - moved.width)
+        moved.origin.y = min(max(moved.minY, page.minY), page.maxY - moved.height)
+        return moved
+    }
+
     /// The cover under a point. The last one made wins: it is drawn on top.
     static func cover(at point: CGPoint, in covers: [PageCover]) -> PageCover? {
         covers.last { $0.rect.contains(point) }

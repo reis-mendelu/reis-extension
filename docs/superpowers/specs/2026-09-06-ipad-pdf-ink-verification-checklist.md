@@ -194,6 +194,8 @@ Spec: `2026-10-03-ipad-recall-covers-design.md`. With an Apple Pencil paired.
 3. A tiny stroke (a few millimetres) → a small square of tape. A plain tap → nothing.
 3a. Hold a finger on a strip → a menu with "Smazat pásku"; tap it → the strip goes;
     the palette's undo brings it back.
+3b. Hold a finger on a strip, then move it → the menu goes and the strip follows the finger,
+    lifted; let go → it stays there, inside the page. Undo puts it back.
 4. Same over your own ink → tape; no ink stroke is drawn.
 5. With the tape still picked, drag a finger → the page scrolls, no tape.
 6. Tap a strip with the Pencil (tape picked) → it goes; the palette's undo brings it back.

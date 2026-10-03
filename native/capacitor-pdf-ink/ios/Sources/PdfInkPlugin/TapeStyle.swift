@@ -49,6 +49,16 @@ enum TapeStyle {
         path.stroke()
     }
 
+    /// A strip carried by a held finger: lifted off the page by a soft shadow.
+    static func drawLifted(_ rect: CGRect, in context: CGContext) {
+        context.saveGState()
+        context.setShadow(
+            offset: CGSize(width: 0, height: 3), blur: 8,
+            color: UIColor.black.withAlphaComponent(0.3).cgColor)
+        drawShut(rect, in: context)
+        context.restoreGState()
+    }
+
     /// The block a stroke in progress will leave, half see-through so the
     /// student can see what they are covering.
     static func drawPreview(_ rect: CGRect, in context: CGContext) {

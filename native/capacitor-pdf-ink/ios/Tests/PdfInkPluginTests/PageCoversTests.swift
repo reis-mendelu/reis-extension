@@ -46,6 +46,20 @@ final class PageCoversTests: XCTestCase {
             CGRect(x: 50, y: 46, width: 40, height: 8))
     }
 
+    /// Moving a strip with a held finger: it follows the finger, and stops at
+    /// the page's edges rather than leaving the page.
+    func testAMovedStripFollowsTheFingerAndStaysOnThePage() {
+        let page = CGRect(x: 0, y: 0, width: 400, height: 500)
+        let strip = CGRect(x: 50, y: 50, width: 100, height: 8)
+
+        XCTAssertEqual(
+            PageCovers.moved(strip, by: CGPoint(x: 30, y: 200), within: page),
+            CGRect(x: 80, y: 250, width: 100, height: 8))
+        XCTAssertEqual(
+            PageCovers.moved(strip, by: CGPoint(x: -500, y: 900), within: page),
+            CGRect(x: 0, y: 492, width: 100, height: 8))
+    }
+
     func testTheCoverUnderAPointIsTheOneOnTop() {
         let small = PageCover(id: "small", rect: CGRect(x: 20, y: 20, width: 40, height: 40))
 
