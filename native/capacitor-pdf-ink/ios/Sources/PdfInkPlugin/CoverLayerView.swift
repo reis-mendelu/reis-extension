@@ -101,6 +101,10 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
             lastTapType = touch.type
             return true
         }
+        // One line per stroke start: whether the tape took it, and why not.
+        if isMakingCovers {
+            NSLog("PdfInk: tape touch \(touch.type == .pencil ? "pencil" : "finger") taken=\(draws(touch.type))")
+        }
         return draws(touch.type)
     }
 
@@ -122,11 +126,16 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
             dragEnd = location
         case .ended:
             if let start = dragStart, let rect = PageCovers.rect(from: start, to: location) {
+                NSLog("PdfInk: tape made a cover \(Int(rect.width))x\(Int(rect.height))")
                 onCreate?(rect)
+            } else {
+                NSLog("PdfInk: tape stroke too small for a cover")
             }
             dragStart = nil
             dragEnd = nil
         default:
+            // Cancelled or failed: something else on the page took the stroke.
+            NSLog("PdfInk: tape stroke lost (state \(pan.state.rawValue))")
             dragStart = nil
             dragEnd = nil
         }
@@ -140,8 +149,10 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
         // The tape in hand: a tap with what draws takes the cover away (and the
         // palette's undo brings it back). Any other tap looks under it.
         if isMakingCovers, draws(lastTapType) {
+            NSLog("PdfInk: tape tap removed a cover")
             onRemove?(cover.id)
         } else {
+            NSLog("PdfInk: cover tapped open/shut")
             onToggle?(cover.id)
         }
     }

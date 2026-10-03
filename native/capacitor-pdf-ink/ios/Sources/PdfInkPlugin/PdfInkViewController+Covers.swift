@@ -26,6 +26,7 @@ extension PdfInkViewController {
     /// Reads the palette: is the tape in hand?
     func coverToolDidChange() {
         makingCovers = CoverTool.isSelected(in: toolPicker)
+        NSLog("PdfInk: tape \(makingCovers ? "picked" : "put down")")
         refreshCoverLayers()
     }
 
