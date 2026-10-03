@@ -19,6 +19,16 @@ describe('WelcomeWifiCard', () => {
     expect(screen.getByText(/Školní Wi-Fi jedním klepnutím/)).toBeInTheDocument();
   });
 
+  it('offers a new certificate when the current one has expired', () => {
+    const onSetup = vi.fn();
+    renderCard({ status: 'expired', expiredAt: new Date('2025-01-01T12:00:00Z'), onSetup });
+
+    expect(screen.getByText(/vypršel 01\.01\.2025/)).toBeInTheDocument();
+    expect(screen.queryByText(/Hotovo/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Vygenerovat nový certifikát/ }));
+    expect(onSetup).toHaveBeenCalledTimes(1);
+  });
+
   it('reads as done once the network is saved, with no button left', () => {
     renderCard({ status: 'done', outcome: 'saved' });
     expect(screen.getByText(/Hotovo, na fakultě se připojíš sám/)).toBeInTheDocument();
@@ -59,16 +69,6 @@ describe('WelcomeWifiCard', () => {
 
       expect(screen.queryByText(/není v dosahu/)).not.toBeInTheDocument();
     });
-  });
-
-  it('offers a new certificate when the current one has expired', () => {
-    const onSetup = vi.fn();
-    renderCard({ status: 'expired', expiredAt: new Date('2025-01-01T12:00:00Z'), onSetup });
-
-    expect(screen.getByText(/vypršel 01\.01\.2025/)).toBeInTheDocument();
-    expect(screen.queryByText(/Hotovo/)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Vygenerovat nový certifikát/ }));
-    expect(onSetup).toHaveBeenCalledTimes(1);
   });
 
   describe('stale association (#261)', () => {

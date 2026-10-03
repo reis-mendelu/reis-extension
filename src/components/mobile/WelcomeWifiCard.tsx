@@ -54,13 +54,11 @@ export function WelcomeWifiCard({
 
   const line = done
     ? t('mobile.welcome.wifiDone')
-    : expired
-      ? t('eduroam.expired.text', { date: formatDate(expiredAt) })
-      : stale
-        ? t('eduroam.native.staleAssociation')
-        : failed
-          ? t('mobile.welcome.wifiFailed')
-          : t('mobile.welcome.wifiLine');
+    : stale
+      ? t('eduroam.native.staleAssociation')
+      : failed
+        ? t('mobile.welcome.wifiFailed')
+        : t('mobile.welcome.wifiLine');
 
   return (
     // A centred card on the phone. Inside the tablet dialog it is already on a
@@ -107,7 +105,7 @@ export function WelcomeWifiCard({
           because it only ever appears when the button is gone. */}
       <div className="contents md:flex md:flex-1 md:flex-col md:items-start md:gap-1">
         <p className="text-base font-medium text-base-content md:text-lg md:font-semibold md:tracking-tight">
-          {line}
+          {expired ? t('eduroam.expired.text', { date: formatDate(expiredAt) }) : line}
         </p>
 
         {/* What the tap does, while it is still on offer. Gone once done: the

@@ -224,19 +224,6 @@ describe('EduroamSheet', () => {
     expect(screen.getByText(/už na tomto zařízení nastavený je/)).toBeInTheDocument();
   });
 
-  // IS keeps offering an expired certificate and never replaces it; the
-  // sheet must say so and offer the student's own "generate" tap.
-  it('offers a new certificate once the current one has expired', () => {
-    const renew = vi.fn();
-    onPhone({ status: 'expired', expiredAt: new Date('2025-01-01T12:00:00Z'), renew }, 'ios');
-
-    render(<EduroamSheet onClose={vi.fn()} />);
-
-    expect(screen.getByText(/vypršel 01\.01\.2025/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Vygenerovat nový certifikát/ }));
-    expect(renew).toHaveBeenCalledWith('ios');
-  });
-
   it('does not scold a student who dismissed the system dialog', () => {
     onPhone({ status: 'idle', outcome: 'cancelled' });
 
@@ -304,6 +291,19 @@ describe('EduroamSheet', () => {
     render(<EduroamSheet onClose={vi.fn()} />);
 
     expect(screen.queryByAltText('eduroam QR')).not.toBeInTheDocument();
+  });
+
+  // IS keeps offering an expired certificate and never replaces it; the
+  // sheet must say so and offer the student's own "generate" tap.
+  it('offers a new certificate once the current one has expired', () => {
+    const renew = vi.fn();
+    onPhone({ status: 'expired', expiredAt: new Date('2025-01-01T12:00:00Z'), renew }, 'ios');
+
+    render(<EduroamSheet onClose={vi.fn()} />);
+
+    expect(screen.getByText(/vypršel 01\.01\.2025/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Vygenerovat nový certifikát/ }));
+    expect(renew).toHaveBeenCalledWith('ios');
   });
 
   it('closes via the header close button', () => {
