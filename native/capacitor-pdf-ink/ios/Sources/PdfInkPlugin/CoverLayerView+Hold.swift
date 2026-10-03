@@ -8,13 +8,17 @@ import UIKit
  */
 @available(iOS 16.0, *)
 extension CoverLayerView: UIEditMenuInteractionDelegate {
+    /// 0.45 s "takes a bit too long" (Dominik, device). A tap is well under
+    /// 0.2 s, so 0.3 s still tells them apart.
+    static let holdDuration: TimeInterval = 0.3
+
     func installHold() {
         holdRecognizer.addTarget(self, action: #selector(held(_:)))
-        holdRecognizer.minimumPressDuration = 0.45
+        holdRecognizer.minimumPressDuration = Self.holdDuration
         holdRecognizer.delegate = self
         addGestureRecognizer(holdRecognizer)
         // A hold is not a tap: the tap waits until the hold has failed, which
-        // a touch lifted before 0.45 s does at once.
+        // a touch lifted before `holdDuration` does at once.
         tapRecognizer.require(toFail: holdRecognizer)
         addInteraction(deleteMenuInteraction)
     }

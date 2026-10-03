@@ -125,6 +125,8 @@ final class CoverTouchRoutingTests: XCTestCase {
             layer.gestureRecognizer(layer.tapRecognizer, shouldBeRequiredToFailBy: layer.holdRecognizer),
             "tap and hold waiting on each other would deadlock")
 
+        XCTAssertLessThanOrEqual(layer.holdRecognizer.minimumPressDuration, 0.3, "the menu felt slow at 0.45 s")
+
         layer.deleteLabel = "Smazat pásku"
         let menu = layer.deleteMenu(for: "a")
         let action = try? XCTUnwrap(menu.children.first as? UIAction)
