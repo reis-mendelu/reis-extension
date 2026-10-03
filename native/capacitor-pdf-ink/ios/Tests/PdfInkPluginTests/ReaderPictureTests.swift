@@ -239,10 +239,10 @@ final class ReaderPictureTests: XCTestCase {
         XCTAssertFalse(reader.pickUpPicture(at: CGPoint(x: 300, y: 300), onPage: 0))
     }
 
-    func testANewPictureGoesOverTheInk() throws {
+    func testANewPictureGoesUnderTheInk() throws {
         let (reader, _) = try show(pages: 1)
         XCTAssertTrue(reader.insertPicture(try picture()))
-        XCTAssertEqual(reader.pictures[0]?.first?.aboveInk, true)
+        XCTAssertEqual(reader.pictures[0]?.first?.aboveInk, false)
     }
 
     func testDoneWearsTheThemeTint() throws {

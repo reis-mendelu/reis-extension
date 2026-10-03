@@ -35,6 +35,7 @@ const STRINGS: PdfInkStrings = {
   chooseFile: 'cf',
   underInk: 'ui',
   overInk: 'oi',
+  more: 'mo',
   movePictures: 'mp',
   deletePicture: 'dp',
   done: 'do',

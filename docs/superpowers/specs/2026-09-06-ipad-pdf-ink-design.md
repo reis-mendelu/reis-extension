@@ -608,14 +608,21 @@ release build.
 
 ### Changed after Dominik's first device test (2026-10-03)
 
-- **Over the ink by default, switchable.** "Under the ink" made it impossible to
-  put a picture over notes, the more common wish. `PagePicture.aboveInk` (true
-  for a new picture; a picture saved without the key reads as under). The
-  overlay is now three views: `pictureLayer.belowInk`, the canvas, and
-  `pictureLayer` (over-ink pictures + handles + gestures). The selected
-  picture's chrome gains a second button beside 🗑 that flips the side, as one
-  undoable change. A picture over the ink also wins a touch over one under it
-  (`PagePictures.stackingOrder`). Export: page → under → ink → over.
+- **Under the ink by default; covering is in a … menu.** The first device build
+  could only put pictures under the ink; the second put them over by default with
+  a main "layers" button, which Dominik found unintuitive — and "over" hides
+  anything then written on the picture. A survey of note apps settled it:
+  GoodNotes, Notability and Noteshelf interleave per-object and keep Bring to
+  Front / Send to Back in a "…" menu; Apple Notes and Markup — one ink layer, as
+  here — put pictures under the ink with no control at all. So: under by default
+  (Apple), and the selected picture's … button holds one entry, *Přes poznámky*
+  / *Pod poznámky*. `PagePicture.aboveInk` (false unless chosen; absent reads
+  false). The overlay is `pictureLayer.belowInk` | canvas | `pictureLayer`
+  (over-ink pictures, handles, gestures); export page → under → ink → over.
+- **Handles are pulled onto the page.** PDFKit delivers no touch off the page,
+  so a handle half over the edge of a full-width picture answered only on its
+  inner half. `PagePictures.handleCenter` clamps it; the grab box is where it
+  is drawn; the resize keeps the finger's offset from the true corner.
 - **Picking a placed picture up again: a finger tap.** With the Pencil drawing
   (`UIPencilInteraction.prefersPencilOnlyDrawing`, which PencilKit's
   `.default` policy follows) the finger does not draw, so a tap on a picture

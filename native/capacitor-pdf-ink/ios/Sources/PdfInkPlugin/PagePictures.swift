@@ -15,12 +15,15 @@ struct PagePicture: Codable, Equatable {
     var id: String
     var frame: CGRect
     var jpeg: Data
-    /// Over the ink, covering it — where a new picture goes — or under it,
-    /// where it can be drawn on. Dominik's call after the first device build
-    /// (2026-10-03): placing a picture over notes is the common case.
+    /// Under the ink — where a new picture goes, so writing on it just works —
+    /// or over it, covering notes. Apple's model (Notes, Markup): one canvas of
+    /// ink per page means a picture is under all of it or over all of it, and
+    /// "over" hides anything then written on the picture. Settled with Dominik
+    /// after the first device build and a survey of note apps (2026-10-03);
+    /// covering is the exception, in the selected picture's … menu.
     var aboveInk: Bool
 
-    init(id: String, frame: CGRect, jpeg: Data, aboveInk: Bool = true) {
+    init(id: String, frame: CGRect, jpeg: Data, aboveInk: Bool = false) {
         self.id = id
         self.frame = frame
         self.jpeg = jpeg

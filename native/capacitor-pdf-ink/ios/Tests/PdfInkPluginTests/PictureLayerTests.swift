@@ -64,10 +64,10 @@ final class PictureLayerTests: XCTestCase {
     func testEachPictureIsDrawnOnItsSideOfTheInk() {
         let layer = PictureLayerView(frame: CGRect(x: 0, y: 0, width: 600, height: 800))
         layer.pictures = [
-            PagePicture(id: "over", frame: CGRect(x: 0, y: 0, width: 50, height: 50), jpeg: Data()),
             PagePicture(
-                id: "under", frame: CGRect(x: 100, y: 0, width: 50, height: 50), jpeg: Data(),
-                aboveInk: false),
+                id: "over", frame: CGRect(x: 0, y: 0, width: 50, height: 50), jpeg: Data(),
+                aboveInk: true),
+            PagePicture(id: "under", frame: CGRect(x: 100, y: 0, width: 50, height: 50), jpeg: Data()),
         ]
         XCTAssertEqual(layer.aboveInk.shownIDs, ["over"])
         XCTAssertEqual(layer.belowInk.shownIDs, ["under"])
@@ -80,10 +80,29 @@ final class PictureLayerTests: XCTestCase {
         layer.onCommit = { committed = $0 }
 
         layer.toggleSelectedInkSide()
-        XCTAssertEqual(committed?.first?.aboveInk, false)
-        layer.toggleSelectedInkSide()
         XCTAssertEqual(committed?.first?.aboveInk, true)
+        layer.toggleSelectedInkSide()
+        XCTAssertEqual(committed?.first?.aboveInk, false)
         XCTAssertEqual(layer.selectedID, "a", "the picture stays selected")
+    }
+
+    /// The side of the ink is not a main button — it read as unintuitive on the
+    /// device. It is one entry in the selected picture's … menu, as GoodNotes
+    /// and Notability keep their Bring to Front / Send to Back.
+    func testTheMoreMenuOffersTheOtherSideOfTheInk() throws {
+        let layer = layer(arranging: true)
+        layer.overInkLabel = "Přes poznámky"
+        layer.underInkLabel = "Pod poznámky"
+        layer.selectedID = "a"
+        layer.layoutIfNeeded()
+
+        XCTAssertTrue(layer.moreButton.showsMenuAsPrimaryAction)
+        let titles = { layer.moreButton.menu?.children.compactMap { ($0 as? UIAction)?.title } }
+        XCTAssertEqual(titles(), ["Přes poznámky"], "under the ink, it offers to cover")
+
+        layer.toggleSelectedInkSide()
+        layer.layoutIfNeeded()
+        XCTAssertEqual(titles(), ["Pod poznámky"])
     }
 
     func testLeavingArrangingDropsTheSelection() {

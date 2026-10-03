@@ -70,15 +70,17 @@ final class PagePicturesTests: XCTestCase {
     /// Over-the-ink pictures are drawn above every under-the-ink one, whatever
     /// the array order, so they win a touch there too.
     func testAPictureOverTheInkWinsATouchOverOneUnderIt() {
-        let over = PagePicture(id: "over", frame: CGRect(x: 0, y: 0, width: 100, height: 100), jpeg: Data())
-        let under = PagePicture(
-            id: "under", frame: CGRect(x: 0, y: 0, width: 100, height: 100), jpeg: Data(), aboveInk: false)
+        let over = PagePicture(
+            id: "over", frame: CGRect(x: 0, y: 0, width: 100, height: 100), jpeg: Data(), aboveInk: true)
+        let under = PagePicture(id: "under", frame: CGRect(x: 0, y: 0, width: 100, height: 100), jpeg: Data())
         XCTAssertEqual(PagePictures.topmost(at: CGPoint(x: 50, y: 50), in: [over, under])?.id, "over")
         XCTAssertEqual(PagePictures.stackingOrder([over, under]).map(\.id), ["under", "over"])
     }
 
-    func testANewPictureSitsOverTheInk() {
-        XCTAssertTrue(PagePicture(id: "p", frame: .zero, jpeg: Data()).aboveInk)
+    /// Apple's model (Notes, Markup): ink always shows on a picture, so writing
+    /// on one just works. Covering notes is the exception, from the … menu.
+    func testANewPictureSitsUnderTheInk() {
+        XCTAssertFalse(PagePicture(id: "p", frame: .zero, jpeg: Data()).aboveInk)
     }
 
     /// Pictures saved before the choice existed were all under the ink.

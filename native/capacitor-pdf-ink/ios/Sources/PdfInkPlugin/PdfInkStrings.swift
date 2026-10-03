@@ -30,6 +30,7 @@ struct PdfInkStrings {
     let chooseFile: String
     let underInk: String
     let overInk: String
+    let more: String
     let movePictures: String
     let deletePicture: String
     let done: String
@@ -60,6 +61,7 @@ struct PdfInkStrings {
         chooseFile = object?["chooseFile"] as? String ?? "Choose file"
         underInk = object?["underInk"] as? String ?? "Under the notes"
         overInk = object?["overInk"] as? String ?? "Over the notes"
+        more = object?["more"] as? String ?? "More"
         movePictures = object?["movePictures"] as? String ?? "Edit pictures"
         deletePicture = object?["deletePicture"] as? String ?? "Delete picture"
         done = object?["done"] as? String ?? "Done"

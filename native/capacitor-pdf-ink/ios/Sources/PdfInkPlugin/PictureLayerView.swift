@@ -46,9 +46,14 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
     var deleteLabel = "Delete" {
         didSet { deleteButton.accessibilityLabel = deleteLabel }
     }
-    /// What the layer button does, by where the selected picture is now.
-    var underInkLabel = "Under the notes"
-    var overInkLabel = "Over the notes"
+    /// The … menu's one entry, by where the selected picture is now.
+    var underInkLabel = "Under the notes" {
+        didSet { setNeedsLayout() }
+    }
+    var overInkLabel = "Over the notes" {
+        didSet { setNeedsLayout() }
+    }
+    var moreLabel = "More"
     var onSelect: ((String) -> Void)?
     var onCommit: (([PagePicture]) -> Void)?
 
@@ -60,7 +65,9 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
     private let outline = CAShapeLayer()
     private var handles: [PictureCorner: UIView] = [:]
     private let deleteButton = UIButton(type: .system)
-    private let inkSideButton = UIButton(type: .system)
+    /// "…": the selected picture's less common actions — today, the side of
+    /// the ink. A main button for it read as unintuitive on the device.
+    let moreButton = UIButton(type: .system)
     private enum Gesture {
         case move(id: String, start: CGRect)
         /// `grab` is where the finger is relative to the true corner: a handle
@@ -97,12 +104,13 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
         deleteButton.accessibilityLabel = deleteLabel
         deleteButton.addTarget(self, action: #selector(deleteTapped), for: .touchUpInside)
         chrome.addSubview(deleteButton)
-        var side = UIButton.Configuration.filled()
-        side.cornerStyle = .capsule
-        inkSideButton.configuration = side
-        inkSideButton.frame = deleteButton.frame
-        inkSideButton.addTarget(self, action: #selector(inkSideTapped), for: .touchUpInside)
-        chrome.addSubview(inkSideButton)
+        var more = UIButton.Configuration.filled()
+        more.image = UIImage(systemName: "ellipsis")
+        more.cornerStyle = .capsule
+        moreButton.configuration = more
+        moreButton.frame = deleteButton.frame
+        moreButton.showsMenuAsPrimaryAction = true
+        chrome.addSubview(moreButton)
         addSubview(aboveInk)
         addSubview(chrome)
 
@@ -125,7 +133,7 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
     func takesTouch(at point: CGPoint) -> Bool {
         guard arranging else { return false }
         if selectedFrame != nil {
-            if deleteButton.frame.contains(point) || inkSideButton.frame.contains(point) {
+            if deleteButton.frame.contains(point) || moreButton.frame.contains(point) {
                 return true
             }
             if handleCorner(at: point) != nil { return true }
@@ -140,7 +148,7 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         guard isUserInteractionEnabled, !isHidden, takesTouch(at: point) else { return nil }
         if selectedFrame != nil, deleteButton.frame.contains(point) { return deleteButton }
-        if selectedFrame != nil, inkSideButton.frame.contains(point) { return inkSideButton }
+        if selectedFrame != nil, moreButton.frame.contains(point) { return moreButton }
         return self
     }
 
@@ -214,8 +222,6 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
     }
 
     @objc private func deleteTapped() { deleteSelected() }
-
-    @objc private func inkSideTapped() { toggleSelectedInkSide() }
 
     /// Over the ink ↔ under it, as one undoable change. Stays selected.
     func toggleSelectedInkSide() {
@@ -296,23 +302,28 @@ final class PictureLayerView: UIView, UIGestureRecognizerDelegate {
             handle.center = handleCenter(of: corner, in: frame)
         }
         // Side by side above the picture, or inside its top edge when it
-        // touches the page top: delete, then over/under the ink.
+        // touches the page top: delete, then the … menu.
         let lift = (Self.deleteSide / 2 + 10) * chromeScale
         let above = frame.minY - lift
         let y = above >= lift / 2 ? above : frame.minY + lift
         let spread = (Self.deleteSide / 2 + 6) * chromeScale
         deleteButton.transform = scale
         deleteButton.center = CGPoint(x: frame.midX - spread, y: y)
-        let selectedAbove = pictures.first { $0.id == selectedID }?.aboveInk ?? true
-        var side = inkSideButton.configuration ?? .filled()
-        side.image = UIImage(
-            systemName: selectedAbove
-                ? "square.2.layers.3d.bottom.filled" : "square.2.layers.3d.top.filled")
-        side.baseBackgroundColor = tintColor
-        inkSideButton.configuration = side
-        inkSideButton.accessibilityLabel = selectedAbove ? underInkLabel : overInkLabel
-        inkSideButton.transform = scale
-        inkSideButton.center = CGPoint(x: frame.midX + spread, y: y)
+        let selectedAbove = pictures.first { $0.id == selectedID }?.aboveInk ?? false
+        var more = moreButton.configuration ?? .filled()
+        more.baseBackgroundColor = tintColor
+        moreButton.configuration = more
+        moreButton.accessibilityLabel = moreLabel
+        moreButton.menu = UIMenu(children: [
+            UIAction(
+                title: selectedAbove ? underInkLabel : overInkLabel,
+                image: UIImage(
+                    systemName: selectedAbove
+                        ? "square.2.layers.3d.bottom.filled" : "square.2.layers.3d.top.filled")
+            ) { [weak self] _ in self?.toggleSelectedInkSide() }
+        ])
+        moreButton.transform = scale
+        moreButton.center = CGPoint(x: frame.midX + spread, y: y)
     }
 
     override func tintColorDidChange() {
