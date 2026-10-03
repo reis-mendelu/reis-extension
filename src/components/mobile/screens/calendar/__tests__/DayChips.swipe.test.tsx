@@ -11,7 +11,7 @@ import { DayChips } from '../DayChips';
  * another week — the gesture a horizontal row of days invites did nothing at
  * all.
  *
- * Velocity itself is asserted in weekSwipe.test.ts rather than here: happy-dom
+ * Velocity itself is asserted in primitives/__tests__/swipeSteps.test.ts rather than here: happy-dom
  * stamps its own `timeStamp` on synthesised events and ignores the one
  * `fireEvent` is given, so no DOM test in this project can dictate a gesture's
  * speed. What these cover is the wiring and the arbitration.

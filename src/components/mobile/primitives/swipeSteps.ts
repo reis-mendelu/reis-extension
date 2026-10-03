@@ -1,10 +1,11 @@
-import {
-  DISMISS_VELOCITY_PX_PER_MS,
-  REVERSAL_VELOCITY_PX_PER_MS,
-} from '../../primitives/sheetDrag';
+import { DISMISS_VELOCITY_PX_PER_MS, REVERSAL_VELOCITY_PX_PER_MS } from './sheetDrag';
 
 /**
- * Which week a swipe across the day strip lands on.
+ * Whether a sideways swipe moves one step back, one forward, or none.
+ *
+ * Written for the calendar's week strip and now shared by every sideways
+ * stepper — the day under it, and the subject sheet's tabs — so that all of
+ * them agree on how hard a swipe has to be. What a step MEANS is the caller's.
  *
  * The strip is a horizontal row of days, and the gesture a horizontal row of
  * days invites is a horizontal swipe — but it did nothing, so the only route to
@@ -19,8 +20,8 @@ import {
  * it.
  */
 
-/** Past this much horizontal travel the week changes regardless of speed. */
-export const WEEK_SWIPE_DISTANCE_PX = 64;
+/** Past this much horizontal travel the step is taken regardless of speed. */
+export const SWIPE_STEP_DISTANCE_PX = 64;
 
 /**
  * How much steeper than horizontal a swipe may be before it belongs to the
@@ -55,13 +56,13 @@ export function isHorizontal(dx: number, dy: number): boolean {
  * distance but is being pushed back at the moment of release stays put, so
  * changing your mind mid-gesture works instead of landing you a week away.
  */
-export function weekSwipeSteps(dx: number, velocity: number): -1 | 0 | 1 {
+export function swipeSteps(dx: number, velocity: number): -1 | 0 | 1 {
   if (dx === 0) return 0;
   const forward = dx < 0;
   // Speed in the direction of travel, so one threshold serves both ways.
   const towards = forward ? -velocity : velocity;
   if (towards >= DISMISS_VELOCITY_PX_PER_MS) return forward ? 1 : -1;
-  if (Math.abs(dx) >= WEEK_SWIPE_DISTANCE_PX && towards > REVERSAL_VELOCITY_PX_PER_MS)
+  if (Math.abs(dx) >= SWIPE_STEP_DISTANCE_PX && towards > REVERSAL_VELOCITY_PX_PER_MS)
     return forward ? 1 : -1;
   return 0;
 }

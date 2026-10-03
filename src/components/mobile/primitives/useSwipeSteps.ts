@@ -5,8 +5,8 @@ import {
   type PointerEvent as ReactPointerEvent,
   type RefObject,
 } from 'react';
-import { releaseVelocity, DRAG_SLOP_PX, type DragSample } from '../../primitives/sheetDrag';
-import { weekSwipeSteps, isHorizontal } from './weekSwipe';
+import { releaseVelocity, DRAG_SLOP_PX, type DragSample } from './sheetDrag';
+import { swipeSteps, isHorizontal } from './swipeSteps';
 
 export interface SwipeStepsConfig {
   /** The element being swiped. Pointer capture and the touch claim scope to it. */
@@ -17,15 +17,23 @@ export interface SwipeStepsConfig {
   onEnd: (steps: -1 | 0 | 1) => void;
   /** The browser took the gesture. Put the strip back. */
   onCancel: () => void;
+  /**
+   * True for a press this gesture must leave alone — read once, at
+   * pointerdown. The subject sheet uses it to hand the screen edges to the
+   * system back gesture and an overflowing table its own pan
+   * (`swipeStartIsOffLimits`). Unset, every press is a candidate.
+   */
+  ignoreStart?: (e: ReactPointerEvent<HTMLElement>) => boolean;
 }
 
 /**
  * A horizontal swipe that resolves to one step back, one forward, or none.
  *
  * WHAT a step means belongs to the caller: the day strip moves a week per
- * swipe, and the agenda under it moves a day. The distance, the velocity and
- * the reversal guard are the same in both, which is why they are one hook —
- * two copies of `weekSwipeSteps` tuned separately is how a calendar ends up
+ * swipe, the agenda under it moves a day, and the subject sheet moves a tab.
+ * The distance, the velocity and the reversal guard are the same in all of
+ * them, which is why they are one hook —
+ * two copies of `swipeSteps` tuned separately is how a calendar ends up
  * with two gestures that disagree about how hard you have to push.
  *
  * A sibling to `useSheetDrag` rather than an axis parameter on it. The sheet
@@ -44,7 +52,13 @@ export interface SwipeStepsConfig {
  * gesture. Re-deciding every frame meant a swipe that drifted downward at the
  * end handed the tail of itself back to the page.
  */
-export function useSwipeSteps({ elementRef, onMove, onEnd, onCancel }: SwipeStepsConfig) {
+export function useSwipeSteps({
+  elementRef,
+  onMove,
+  onEnd,
+  onCancel,
+  ignoreStart,
+}: SwipeStepsConfig) {
   /**
    * The gesture in progress, including WHICH pointer owns it.
    *
@@ -70,8 +84,11 @@ export function useSwipeSteps({ elementRef, onMove, onEnd, onCancel }: SwipeStep
     // A swipe already in flight keeps the strip; a second finger is not a new
     // gesture and must not clear the click-suppression flag either.
     if (start.current) return;
+    // Disarmed BEFORE the start is judged, so a press the hook declines cannot
+    // inherit a swallow armed by the previous swipe and eat its own tap.
     dragged.current = false;
     reset();
+    if (ignoreStart?.(e)) return;
     start.current = { id: e.pointerId, x: e.clientX, y: e.clientY };
     samples.current = [{ pos: e.clientX, t: e.timeStamp }];
   };
@@ -120,7 +137,7 @@ export function useSwipeSteps({ elementRef, onMove, onEnd, onCancel }: SwipeStep
     if (elementRef.current?.hasPointerCapture?.(e.pointerId))
       elementRef.current?.releasePointerCapture?.(e.pointerId);
     if (!from || !wasOurs) return onEnd(0);
-    onEnd(weekSwipeSteps(e.clientX - from.x, releaseVelocity(released)));
+    onEnd(swipeSteps(e.clientX - from.x, releaseVelocity(released)));
   };
 
   const onPointerCancel = (e: ReactPointerEvent<HTMLElement>) => {

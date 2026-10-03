@@ -8,7 +8,7 @@ import { DayAgenda } from './DayAgenda';
 import { CalendarEmptyDay } from './CalendarEmptyDay';
 import { RecentFilesStrip } from './RecentFilesStrip';
 import { MenuCard } from './MenuCard';
-import { useSwipeSteps } from './useSwipeSteps';
+import { useSwipeSteps } from '../../primitives/useSwipeSteps';
 import { useShowLessonOnMap } from './useShowLessonOnMap';
 import { AlwaysScrollable } from '../../primitives/AlwaysScrollable';
 import { PullRefreshIndicator } from '../../primitives/PullRefreshIndicator';

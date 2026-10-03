@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { useRef } from 'react';
 import { useSwipeSteps } from '../useSwipeSteps';
-import * as rules from '../weekSwipe';
+import * as rules from '../swipeSteps';
 
 /**
  * The release velocity has to survive the release.
@@ -45,7 +45,7 @@ describe('useSwipeSteps — the release velocity reaches the rule', () => {
   };
 
   it('hands the rule a measured velocity, not a zero from an emptied buffer', () => {
-    const spy = vi.spyOn(rules, 'weekSwipeSteps');
+    const spy = vi.spyOn(rules, 'swipeSteps');
     render(<Host />);
     swipe(screen.getByTestId('strip'), [260, 220, 180, 140]);
 
@@ -60,7 +60,7 @@ describe('useSwipeSteps — the release velocity reaches the rule', () => {
   });
 
   it('measures a rightward gesture with the opposite sign', () => {
-    const spy = vi.spyOn(rules, 'weekSwipeSteps');
+    const spy = vi.spyOn(rules, 'swipeSteps');
     render(<Host />);
     swipe(screen.getByTestId('strip'), [340, 380, 420, 460]);
 
@@ -72,7 +72,7 @@ describe('useSwipeSteps — the release velocity reaches the rule', () => {
   it('does not consult the rule for a gesture it never owned', () => {
     // A vertical drag belongs to the agenda; asking the rule about it would
     // mean the arbitration had already failed.
-    const spy = vi.spyOn(rules, 'weekSwipeSteps');
+    const spy = vi.spyOn(rules, 'swipeSteps');
     render(<Host />);
     const strip = screen.getByTestId('strip');
     fireEvent.pointerDown(strip, { clientX: 300, clientY: 100, pointerId: 1 });
@@ -84,7 +84,7 @@ describe('useSwipeSteps — the release velocity reaches the rule', () => {
   it('starts each gesture from a clean buffer', () => {
     // The buffer must be emptied SOMEWHERE, or a second swipe measures across
     // the gap since the first — the reason the clear was where the bug was.
-    const spy = vi.spyOn(rules, 'weekSwipeSteps');
+    const spy = vi.spyOn(rules, 'swipeSteps');
     render(<Host />);
     const strip = screen.getByTestId('strip');
     swipe(strip, [260, 220, 180, 140]);

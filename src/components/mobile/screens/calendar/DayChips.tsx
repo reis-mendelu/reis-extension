@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { getCzechHoliday } from '../../../../utils/holidays';
 import { toIso, toCompact, shiftIso, weekDays } from '../../../../utils/mobile/weekDays';
-import { useSwipeSteps } from './useSwipeSteps';
+import { useSwipeSteps } from '../../primitives/useSwipeSteps';
 
 export interface DayChipsProps {
   selectedIso: string;
