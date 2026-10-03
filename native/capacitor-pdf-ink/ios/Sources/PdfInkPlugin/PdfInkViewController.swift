@@ -59,6 +59,20 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     /// The pictures on each page, in stacking order — like `drawings`, the
     /// source of truth; the layers only show them. See `+Pictures`.
     var pictures: [Int: [PagePicture]] = [:]
+    /// Blocks over answers, per page, for practising recall (`+Covers`).
+    var covers: [Int: [PageCover]] = [:]
+    /// Which covers are open right now. Never saved: a file reopens with them shut.
+    var revealedCovers: Set<String> = []
+    /// Cover mode: the finger makes blocks instead of scrolling or drawing.
+    var makingCovers = false
+    /// Ends cover mode. Plain and tinted for the same reason as `doneArrangingItem`.
+    private(set) lazy var doneCoveringItem: UIBarButtonItem = {
+        let item = UIBarButtonItem(
+            title: strings.done, style: .plain, target: self,
+            action: #selector(doneCoveringTapped))
+        item.tintColor = tint
+        return item
+    }()
     /// Moving pictures instead of drawing. A visible mode: see `+Pictures`.
     var arrangingPictures = false
     /// From choosing Photos or the camera until the pick lands or is
@@ -334,6 +348,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         if let archive = InkStore.load(from: inkURL) {
             insertedPages = archive.insertedPages
             pictures = archive.pictures
+            covers = archive.coverCards
             // Before the document reaches the view: the ink indices below are
             // indices in the document WITH the added pages back in it.
             InkPages.apply(inserts: insertedPages, to: document)
@@ -401,10 +416,13 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         // left hidden, the next file would open with no pens.
         endArrangingPictures(restoringPens: false)
         endPicking()
+        endCovering(restoringPens: false)
         drawings = [:]
         overlays = [:]
         insertedPages = []
         pictures = [:]
+        covers = [:]
+        revealedCovers = []
         forgetPictureUndo()
         lastSaveError = nil
         return true
@@ -448,6 +466,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         drawings = InkPages.shifted(drawings, insertingAt: at)
         insertedPages = InkPages.shifted(insertedPages, insertingAt: at)
         pictures = InkPages.shifted(pictures, insertingAt: at)
+        covers = InkPages.shifted(covers, insertingAt: at)
         forgetPictureUndo()
         document.insert(InkPages.blank(size: InkPages.displayedSize(of: current)), at: at)
         reloadDocumentKeepingZoom()
@@ -497,6 +516,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         drawings = InkPages.shifted(drawings, removingAt: index)
         insertedPages = InkPages.shifted(insertedPages, removingAt: index)
         pictures = InkPages.shifted(pictures, removingAt: index)
+        covers = InkPages.shifted(covers, removingAt: index)
         forgetPictureUndo()
         document.removePage(at: index)
         reloadDocumentKeepingZoom()
@@ -606,7 +626,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
             document != nil, !toolPicker.isVisible,
             // Arranging and picking take the pens away on purpose; Done, a
             // pick or a cancel brings them back.
-            !arrangingPictures, !pickingPicture
+            !arrangingPictures, !pickingPicture, !makingCovers
         else { return }
         showToolPicker()
     }
@@ -752,6 +772,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         toolPicker.addObserver(canvas)
         toolPicker.setVisible(true, forFirstResponder: canvas)
         configurePictures(of: overlay, page: index)
+        configureCovers(of: overlay, page: index)
         overlays[index] = overlay
         return overlay
     }
@@ -792,7 +813,8 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
             .mapValues { $0.dataRepresentation() }
         return InkArchive(
             pageCount: document.pageCount, pages: pages, insertedPages: insertedPages,
-            pictures: pictures.filter { !$0.value.isEmpty })
+            pictures: pictures.filter { !$0.value.isEmpty },
+            coverCards: covers.filter { !$0.value.isEmpty })
     }
 
     /// Writes the current file's ink. False means the strokes are still only in
@@ -803,7 +825,9 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         saveTimer = nil
         guard let inkURL, let archive = currentArchive() else { return true }
         do {
-            if archive.pages.isEmpty && archive.insertedPages.isEmpty && archive.pictures.isEmpty {
+            if archive.pages.isEmpty && archive.insertedPages.isEmpty && archive.pictures.isEmpty
+                && archive.coverCards.isEmpty
+            {
                 InkStore.delete(at: inkURL)
             } else {
                 try InkStore.save(archive, to: inkURL)
