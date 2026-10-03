@@ -73,6 +73,17 @@ describe('WelcomeScreen', () => {
     expect(h.run).toHaveBeenCalledWith('android');
   });
 
+  // The card only reports the tap; the screen decides it means `renew`.
+  it('renews the certificate, not a plain setup, from the expired card', () => {
+    const { h } = setup({
+      os: 'android',
+      hookState: { status: 'expired', expiredAt: new Date('2025-01-01T12:00:00Z') },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Vygenerovat nový certifikát/ }));
+    expect(h.renew).toHaveBeenCalledWith('android');
+    expect(h.run).not.toHaveBeenCalled();
+  });
+
   it('says who built reIS under the title', () => {
     setup();
     expect(screen.getByText(/Vytvořeno studenty pro studenty/)).toBeInTheDocument();

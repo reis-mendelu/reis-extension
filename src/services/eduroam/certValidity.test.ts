@@ -27,6 +27,19 @@ describe('certNotAfter', () => {
     expect(certNotAfter(base64ToBytes(GENERALIZED_2051))).toEqual(new Date('2051-03-15T08:30:00Z'));
   });
 
+  // Date.UTC would roll 30 Feb into 2 Mar — a date that could read as
+  // "expired" and stop a setup that should have gone through.
+  it.each([
+    ['30 February', '270230054349Z'],
+    ['hour 24', '270922244349Z'],
+    ['minute 60', '270922056049Z'],
+  ])('rejects an impossible notAfter (%s) instead of normalising it', (_, time) => {
+    const der = base64ToBytes(UTC_2027);
+    const at = indexOfAscii(der, '270922054349Z');
+    der.set(new TextEncoder().encode(time), at);
+    expect(certNotAfter(der)).toBeNull();
+  });
+
   // The check only adds information, so anything it cannot read is "unknown",
   // never an error and never "expired".
   it.each([
@@ -62,3 +75,12 @@ describe('certExpiryState', () => {
     expect(certExpiryState(null, now)).toBe('ok');
   });
 });
+
+function indexOfAscii(bytes: Uint8Array, text: string): number {
+  const needle = new TextEncoder().encode(text);
+  outer: for (let i = 0; i + needle.length <= bytes.length; i++) {
+    for (let j = 0; j < needle.length; j++) if (bytes[i + j] !== needle[j]) continue outer;
+    return i;
+  }
+  throw new Error(`${text} not in fixture`);
+}

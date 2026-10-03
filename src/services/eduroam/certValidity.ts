@@ -46,15 +46,25 @@ function parseTime(der: Uint8Array, t: Tlv): Date | null {
   let year = Number(m[1]);
   // Two-digit years: 50–99 are 19xx, 00–49 are 20xx (same section).
   if (t.tag === UTC_TIME) year += year >= 50 ? 1900 : 2000;
-  const ms = Date.UTC(
-    year,
-    Number(m[2]) - 1,
-    Number(m[3]),
-    Number(m[4]),
-    Number(m[5]),
-    Number(m[6])
-  );
-  return Number.isNaN(ms) ? null : new Date(ms);
+  const [month, day, hour, minute, second] = [m[2], m[3], m[4], m[5], m[6]].map(Number) as [
+    number,
+    number,
+    number,
+    number,
+    number,
+  ];
+  const d = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  // Date.UTC normalises: 30 Feb becomes 2 Mar, hour 24 the next day. An
+  // impossible time is unreadable, and unreadable must stay "unknown" — a
+  // rolled-over date could read as expired and stop a setup that should run.
+  const roundTrips =
+    d.getUTCFullYear() === year &&
+    d.getUTCMonth() === month - 1 &&
+    d.getUTCDate() === day &&
+    d.getUTCHours() === hour &&
+    d.getUTCMinutes() === minute &&
+    d.getUTCSeconds() === second;
+  return roundTrips ? d : null;
 }
 
 /**
