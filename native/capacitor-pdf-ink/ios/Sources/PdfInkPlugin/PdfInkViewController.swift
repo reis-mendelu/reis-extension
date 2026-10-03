@@ -39,25 +39,50 @@ final class InkPDFView: PDFView {
 final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     PKCanvasViewDelegate, PKToolPickerObserver, UIAdaptivePresentationControllerDelegate
 {
-    private let strings: PdfInkStrings
+    // Not private: `+Pictures` is another file, and a Swift extension there
+    // sees only what is at least internal.
+    let strings: PdfInkStrings
     /// Presented things are not in this view's subtree, so they cannot inherit it.
-    private let tint: UIColor?
-    private let pdfView = InkPDFView()
-    private let toolPicker = PKToolPicker()
+    let tint: UIColor?
+    let pdfView = InkPDFView()
+    let toolPicker = PKToolPicker()
     private let spinner = UIActivityIndicatorView(style: .large)
     private let message = UILabel()
 
-    private var document: PDFDocument?
+    private(set) var document: PDFDocument?
     private var inkURL: URL?
     private var drawings: [Int: PKDrawing] = [:]
     /// What PDFKit currently has over each page. The canvases live inside these.
-    private var overlays: [Int: PageOverlayView] = [:]
+    private(set) var overlays: [Int: PageOverlayView] = [:]
     /// Where the blank pages the student added sit in the document on screen.
     private var insertedPages: [Int] = []
-    private lazy var addPageItem = UIBarButtonItem(
-        image: UIImage(systemName: "plus.rectangle.portrait"), style: .plain, target: self,
-        action: #selector(addPageTapped))
-    /// Whether the reader has put its bar away so the page can have the screen.
+    /// The pictures on each page, in stacking order — like `drawings`, the
+    /// source of truth; the layers only show them. See `+Pictures`.
+    var pictures: [Int: [PagePicture]] = [:]
+    /// Moving pictures instead of drawing. A visible mode: see `+Pictures`.
+    var arrangingPictures = false
+    var selectedPicture: (page: Int, id: String)?
+    /// What picture undo actions are registered against, so a renumbering can
+    /// clear them without touching PencilKit's strokes.
+    let pictureUndoTarget = NSObject()
+    private(set) lazy var doneArrangingItem = UIBarButtonItem(
+        title: strings.done, style: .done, target: self, action: #selector(doneArrangingTapped))
+    /// Ends arranging on a tap on empty page. Enabled only while arranging.
+    private(set) lazy var emptyPageTap = UITapGestureRecognizer(
+        target: self, action: #selector(emptyPageTapped(_:)))
+    /// The five file tools, right to left. Arranging swaps them for Done.
+    var fileToolItems: [UIBarButtonItem] { [shareItem, addItem, focusItem, searchItem, pagesItem] }
+
+    /// `+`: a blank page, a picture, or moving the pictures already there. A
+    /// menu, so the bar stays at five buttons; built fresh on every open
+    /// (`+Pictures`) because what it offers depends on the file.
+    private(set) lazy var addItem = UIBarButtonItem(
+        title: nil, image: UIImage(systemName: "plus"), primaryAction: nil,
+        menu: UIMenu(children: [
+            UIDeferredMenuElement.uncached { [weak self] completion in
+                completion(self?.addMenuItems() ?? [])
+            }
+        ]))
     /// Whether the reader has put its bar away so the page can have the screen.
     private var chromeHidden = false
     /// Drops the navigation bar and leaves the page and the tool picker.
@@ -140,7 +165,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
 
         // Notes and GoodNotes both put "add a page" in the top bar of the page
         // itself; the sidebar toggle owns the other corner.
-        addPageItem.accessibilityLabel = strings.addPage
+        addItem.accessibilityLabel = strings.add
         focusItem.accessibilityLabel = strings.focus
         restoreChromeButton.accessibilityLabel = strings.exitFocus
         shareItem.accessibilityLabel = strings.export
@@ -150,9 +175,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         setBarItems(enabled: false)
         // Right to left: Share on the edge, as Notes and Files put it, then the
         // two ways of getting somewhere in the file.
-        navigationItem.rightBarButtonItems = [
-            shareItem, addPageItem, focusItem, searchItem, pagesItem,
-        ]
+        navigationItem.rightBarButtonItems = fileToolItems
         // The exit, as a group: see `exitItem`. Not `leftBarButtonItems`.
         navigationItem.leadingItemGroups = [
             UIBarButtonItemGroup(barButtonItems: [exitItem], representativeItem: nil)
@@ -170,6 +193,9 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         pdfView.document = document
         pdfView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(pdfView)
+        emptyPageTap.cancelsTouchesInView = false
+        emptyPageTap.isEnabled = false
+        pdfView.addGestureRecognizer(emptyPageTap)
 
         spinner.hidesWhenStopped = true
         spinner.translatesAutoresizingMaskIntoConstraints = false
@@ -281,6 +307,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         self.title = title
         if let archive = InkStore.load(from: inkURL) {
             insertedPages = archive.insertedPages
+            pictures = archive.pictures
             // Before the document reaches the view: the ink indices below are
             // indices in the document WITH the added pages back in it.
             InkPages.apply(inserts: insertedPages, to: document)
@@ -340,9 +367,12 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     /// when the save fails and the caller has not chosen to discard.
     private func leaveCurrentFile(discardingUnsaved: Bool) -> Bool {
         if !persistNow() && !discardingUnsaved { return false }
+        endArrangingPictures(restoringPens: false)
         drawings = [:]
         overlays = [:]
         insertedPages = []
+        pictures = [:]
+        forgetPictureUndo()
         lastSaveError = nil
         return true
     }
@@ -384,6 +414,8 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         harvestCanvases()
         drawings = InkPages.shifted(drawings, insertingAt: at)
         insertedPages = InkPages.shifted(insertedPages, insertingAt: at)
+        pictures = InkPages.shifted(pictures, insertingAt: at)
+        forgetPictureUndo()
         document.insert(InkPages.blank(size: InkPages.displayedSize(of: current)), at: at)
         reloadDocumentKeepingZoom()
         if let page = document.page(at: at) { pdfView.go(to: page) }
@@ -416,10 +448,6 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         pdfView.becomeFirstResponder()
     }
 
-    @objc private func addPageTapped() {
-        addBlankPage()
-    }
-
     /**
      * Removes a page the STUDENT added, and the ink on it.
      *
@@ -435,6 +463,8 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         harvestCanvases()
         drawings = InkPages.shifted(drawings, removingAt: index)
         insertedPages = InkPages.shifted(insertedPages, removingAt: index)
+        pictures = InkPages.shifted(pictures, removingAt: index)
+        forgetPictureUndo()
         document.removePage(at: index)
         reloadDocumentKeepingZoom()
         if let page = document.page(at: min(index, document.pageCount - 1)) {
@@ -452,7 +482,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
 
     private func setBarItems(enabled: Bool) {
         // Not the exit: a student whose file is loading or failed needs it most.
-        addPageItem.isEnabled = enabled
+        addItem.isEnabled = enabled
         shareItem.isEnabled = enabled
         pagesItem.isEnabled = enabled
         searchItem.isEnabled = enabled
@@ -519,7 +549,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         present(sheet, animated: true)
     }
 
-    private func showToolPicker() {
+    func showToolPicker() {
         toolPicker.setVisible(true, forFirstResponder: pdfView)
         pdfView.becomeFirstResponder()
     }
@@ -539,7 +569,9 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
      */
     @objc func restoreToolPicker() {
         guard isViewLoaded, view.window != nil, presentedViewController == nil, !closing,
-            document != nil, !toolPicker.isVisible
+            document != nil, !toolPicker.isVisible,
+            // Arranging pictures takes the pens away on purpose; Done brings them back.
+            !arrangingPictures
         else { return }
         showToolPicker()
     }
@@ -555,8 +587,10 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         showToolPicker()
     }
 
-    /// A canvas on screen is ahead of `drawings` until the next save, so both are asked.
+    /// Ink or a picture. A canvas on screen is ahead of `drawings` until the
+    /// next save, so both are asked.
     private func hasInk(onPage index: Int) -> Bool {
+        if !(pictures[index]?.isEmpty ?? true) { return true }
         if let overlay = overlays[index] { return !overlay.canvas.drawing.strokes.isEmpty }
         return !(drawings[index]?.strokes.isEmpty ?? true)
     }
@@ -588,7 +622,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
             .appendingPathComponent(InkExport.fileName(for: title ?? ""))
         do {
             try? FileManager.default.removeItem(at: url)
-            try InkExport.flatten(document, drawings: drawings, to: url)
+            try InkExport.flatten(document, drawings: drawings, pictures: pictures, to: url)
         } catch {
             NSLog("PdfInk: export failed: \(error)")
             let alert = UIAlertController(
@@ -650,6 +684,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         for (index, overlay) in overlays {
             guard let page = document.page(at: index) else { continue }
             overlay.inkScale = inkScale(for: page)
+            overlay.pictureLayer.chromeScale = pictureChromeScale
         }
     }
 
@@ -675,6 +710,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         overlay.inkScale = inkScale(for: page)
         toolPicker.addObserver(canvas)
         toolPicker.setVisible(true, forFirstResponder: canvas)
+        configurePictures(of: overlay, page: index)
         overlays[index] = overlay
         return overlay
     }
@@ -714,7 +750,8 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         let pages = drawings.filter { !$0.value.strokes.isEmpty }
             .mapValues { $0.dataRepresentation() }
         return InkArchive(
-            pageCount: document.pageCount, pages: pages, insertedPages: insertedPages)
+            pageCount: document.pageCount, pages: pages, insertedPages: insertedPages,
+            pictures: pictures.filter { !$0.value.isEmpty })
     }
 
     /// Writes the current file's ink. False means the strokes are still only in
@@ -725,7 +762,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         saveTimer = nil
         guard let inkURL, let archive = currentArchive() else { return true }
         do {
-            if archive.pages.isEmpty && archive.insertedPages.isEmpty {
+            if archive.pages.isEmpty && archive.insertedPages.isEmpty && archive.pictures.isEmpty {
                 InkStore.delete(at: inkURL)
             } else {
                 try InkStore.save(archive, to: inkURL)

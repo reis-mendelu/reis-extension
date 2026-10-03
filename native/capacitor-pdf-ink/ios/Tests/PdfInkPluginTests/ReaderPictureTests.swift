@@ -1,0 +1,170 @@
+import PDFKit
+import PencilKit
+import XCTest
+
+@testable import PdfInkPlugin
+
+/**
+ * Pictures in the reader: kept like ink, arranged in a mode of their own, and
+ * undone on the same stack as strokes.
+ */
+@available(iOS 16.0, *)
+final class ReaderPictureTests: XCTestCase {
+    private var windows: [UIWindow] = []
+    private var readers: [PdfInkViewController] = []
+    private let strings = PdfInkStrings(nil)
+
+    func testAPictureSurvivesClosingAndReopeningTheFile() throws {
+        let (reader, ink) = try show(pages: 2)
+        XCTAssertTrue(reader.insertPicture(try picture()))
+        let placed = reader.pictures[0]
+
+        try open(reader, pages: 1, ink: tempInk())  // leaving the file saves it
+        XCTAssertEqual(reader.pictures[0], nil)
+        try open(reader, pages: 2, ink: ink)
+
+        XCTAssertEqual(reader.pictures[0], placed)
+    }
+
+    /// `persistNow` deletes an archive with nothing in it; pictures are something.
+    func testAFileWithOnlyAPictureKeepsItsArchive() throws {
+        let (reader, ink) = try show(pages: 1)
+        XCTAssertTrue(reader.insertPicture(try picture()))
+        XCTAssertTrue(reader.persistNow())
+        XCTAssertTrue(FileManager.default.fileExists(atPath: ink.path))
+    }
+
+    func testANewPictureIsSelectedAndArrangingTakesThePensAway() throws {
+        let (reader, _) = try show(pages: 1)
+        reader.view.layoutIfNeeded()
+        XCTAssertTrue(reader.insertPicture(try picture()))
+
+        XCTAssertTrue(reader.arrangingPictures)
+        XCTAssertEqual(reader.navigationItem.rightBarButtonItems, [reader.doneArrangingItem])
+        XCTAssertEqual(reader.canvas(onPage: 0)?.isUserInteractionEnabled, false)
+    }
+
+    /// #485's re-assert brings the pens back whenever they go — except here,
+    /// where taking them away is the point.
+    func testTheToolPickerReassertLeavesArrangingAlone() throws {
+        let (reader, _) = try show(pages: 1)
+        reader.beginArrangingPictures()
+        reader.restoreToolPicker()
+        XCTAssertTrue(reader.arrangingPictures)
+        XCTAssertEqual(reader.navigationItem.rightBarButtonItems, [reader.doneArrangingItem])
+    }
+
+    func testDoneGivesThePensBack() throws {
+        let (reader, _) = try show(pages: 1)
+        reader.view.layoutIfNeeded()
+        reader.beginArrangingPictures()
+        reader.endArrangingPictures()
+
+        XCTAssertFalse(reader.arrangingPictures)
+        XCTAssertEqual(reader.navigationItem.rightBarButtonItems, reader.fileToolItems)
+        XCTAssertEqual(reader.canvas(onPage: 0)?.isUserInteractionEnabled, true)
+    }
+
+    func testAnAddedPageMovesPicturesWithTheirPage() throws {
+        let (reader, _) = try show(pages: 2)
+        let placed = PagePicture(id: "p", frame: CGRect(x: 0, y: 0, width: 10, height: 10), jpeg: try picture().jpeg)
+        reader.setPictures([placed], onPage: 1)
+
+        XCTAssertTrue(reader.addBlankPage())  // after page 0, the one on screen
+
+        XCTAssertNil(reader.pictures[1])
+        XCTAssertEqual(reader.pictures[2], [placed])
+    }
+
+    /// One undo stack: the palette's undo takes back a deleted picture.
+    func testUndoBringsADeletedPictureBack() throws {
+        let (reader, _) = try show(pages: 1)
+        let undo = try XCTUnwrap(reader.undoManagerForPictures)
+        let placed = PagePicture(id: "p", frame: CGRect(x: 0, y: 0, width: 10, height: 10), jpeg: try picture().jpeg)
+
+        // The undo manager groups by run-loop turn, as it does for a student:
+        // one turn per action, so each is its own undo.
+        reader.setPictures([placed], onPage: 0)
+        turnRunLoop()
+        reader.setPictures([], onPage: 0)
+        turnRunLoop()
+
+        undo.undo()
+        XCTAssertEqual(reader.pictures[0], [placed])
+        undo.redo()
+        XCTAssertNil(reader.pictures[0])
+        undo.removeAllActions()
+    }
+
+    private func turnRunLoop() {
+        RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+    }
+
+    func testTheMenuOffersMovingOnlyOnceThereIsAPicture() throws {
+        let (reader, _) = try show(pages: 1)
+        let titles = { reader.addMenuItems().compactMap { ($0 as? UIAction)?.title } }
+        XCTAssertEqual(titles().first, strings.addPage)
+        XCTAssertTrue(titles().contains(strings.photoLibrary))
+        XCTAssertFalse(titles().contains(strings.movePictures))
+
+        reader.setPictures(
+            [PagePicture(id: "p", frame: CGRect(x: 0, y: 0, width: 10, height: 10), jpeg: Data())], onPage: 0)
+
+        XCTAssertTrue(titles().contains(strings.movePictures))
+    }
+
+    // MARK: - Helpers
+
+    private func picture() throws -> PictureIngest.Picture {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let png = UIGraphicsImageRenderer(size: CGSize(width: 80, height: 60), format: format).pngData { ctx in
+            UIColor.orange.setFill()
+            ctx.fill(CGRect(x: 0, y: 0, width: 80, height: 60))
+        }
+        return try XCTUnwrap(PictureIngest.picture(from: png))
+    }
+
+    private func tempInk() -> URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).ink")
+    }
+
+    private func show(pages: Int) throws -> (PdfInkViewController, URL) {
+        let reader = PdfInkViewController(strings: strings)
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 820, height: 1000))
+        window.rootViewController = UINavigationController(rootViewController: reader)
+        window.makeKeyAndVisible()
+        window.layoutIfNeeded()
+        windows.append(window)
+        readers.append(reader)
+        let ink = tempInk()
+        try open(reader, pages: pages, ink: ink)
+        return (reader, ink)
+    }
+
+    private func open(_ reader: PdfInkViewController, pages: Int, ink: URL) throws {
+        let size = CGSize(width: 400, height: 500)
+        let data = UIGraphicsPDFRenderer(bounds: CGRect(origin: .zero, size: size)).pdfData { ctx in
+            for _ in 0..<pages {
+                ctx.beginPage()
+                UIColor.white.setFill()
+                ctx.cgContext.fill(CGRect(origin: .zero, size: size))
+            }
+        }
+        XCTAssertTrue(reader.load(document: try XCTUnwrap(PDFDocument(data: data)), inkURL: ink, title: "t"))
+        reader.view.layoutIfNeeded()
+    }
+
+    /// Closed the way the space closes them. A hostless test process keeps the
+    /// reader alive past its test, and an open one takes the responder back
+    /// (#485's re-assert) from whatever test runs next — that failed
+    /// `ToolPickerResponderTests` on origin/test too, given any reader in a key
+    /// window before it.
+    override func tearDown() {
+        for reader in readers { reader.willClose() }
+        readers = []
+        for window in windows { window.isHidden = true }
+        windows = []
+        super.tearDown()
+    }
+}
