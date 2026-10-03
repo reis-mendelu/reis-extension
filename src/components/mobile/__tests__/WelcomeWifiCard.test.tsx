@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { WelcomeWifiCard } from '../WelcomeWifiCard';
 
 afterEach(cleanup);
@@ -17,6 +17,16 @@ describe('WelcomeWifiCard', () => {
     renderCard();
     expect(screen.getByRole('button', { name: /Nastavit eduroam/ })).toBeInTheDocument();
     expect(screen.getByText(/Školní Wi-Fi jedním klepnutím/)).toBeInTheDocument();
+  });
+
+  it('offers a new certificate when the current one has expired', () => {
+    const onSetup = vi.fn();
+    renderCard({ status: 'expired', expiredAt: new Date('2025-01-01T12:00:00Z'), onSetup });
+
+    expect(screen.getByText(/vypršel 01\.01\.2025/)).toBeInTheDocument();
+    expect(screen.queryByText(/Hotovo/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Vygenerovat nový certifikát/ }));
+    expect(onSetup).toHaveBeenCalledTimes(1);
   });
 
   it('reads as done once the network is saved, with no button left', () => {

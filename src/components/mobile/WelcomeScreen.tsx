@@ -42,10 +42,12 @@ export function WelcomeScreen() {
   // `?eduroam=ios` forces the gate on the dev webapp — see `eduroamNative`.
   const target = nativeEduroamTarget();
   const native = target !== null && canConfigureEduroamNatively(target);
-  const { status, outcome, run } = useEduroamSetup(target ?? undefined);
+  const { status, outcome, expiredAt, run, renew } = useEduroamSetup(target ?? undefined);
 
   const done = status === 'done' && isEduroamConfigured(outcome);
-  const failed = status === 'error';
+  // An expired certificate reads as a failure for the footer: it moves on
+  // honestly, while the card offers the new certificate.
+  const failed = status === 'error' || status === 'expired';
 
   const dismiss = () => {
     void dismissWelcome().catch((e) => logError('WelcomeScreen.dismiss', e));
@@ -114,7 +116,8 @@ export function WelcomeScreen() {
                 status={status}
                 outcome={outcome}
                 target={target}
-                onSetup={() => void run(target)}
+                expiredAt={expiredAt}
+                onSetup={() => void (status === 'expired' ? renew(target) : run(target))}
               />
             </div>
           )}

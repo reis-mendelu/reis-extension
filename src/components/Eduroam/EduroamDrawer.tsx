@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Wifi, AlertTriangle, X } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
+import { EduroamCertNotices } from './EduroamExpiredNotice';
 import { useEduroamSetup } from '../../hooks/data/useEduroamSetup';
 import { AdaptiveDrawer } from '../ui/AdaptiveDrawer';
 import type { DesktopEduroamTarget } from './manual';
@@ -13,8 +14,18 @@ export function EduroamDrawer() {
   const isOpen = useAppStore((s) => s.isEduroamOpen);
   const setOpen = useAppStore((s) => s.setIsEduroamOpen);
   const initialTarget = useAppStore((s) => s.eduroamInitialTarget);
-  const { status, password, error, run, reset, selectTarget, openProfilesSettings } =
-    useEduroamSetup();
+  const {
+    status,
+    password,
+    error,
+    expiredAt,
+    expiresSoonAt,
+    run,
+    renew,
+    reset,
+    selectTarget,
+    openProfilesSettings,
+  } = useEduroamSetup();
   const [selected, setSelected] = useState<DesktopEduroamTarget | null>(null);
 
   // Opened from the welcome modal, the device is already known — the machine
@@ -75,6 +86,14 @@ export function EduroamDrawer() {
             </span>
           </div>
         )}
+
+        <EduroamCertNotices
+          status={status}
+          expiredAt={expiredAt}
+          expiresSoonAt={expiresSoonAt}
+          onRenew={() => selected && void renew(selected)}
+          className="text-sm mb-5"
+        />
 
         <DeviceAccordion
           selected={selected}

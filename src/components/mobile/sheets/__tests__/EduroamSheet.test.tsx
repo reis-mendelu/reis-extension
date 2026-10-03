@@ -36,7 +36,10 @@ function baseHookState(): HookState {
     password: null,
     error: null,
     outcome: null,
+    expiredAt: null,
+    expiresSoonAt: null,
     run: vi.fn(),
+    renew: vi.fn(),
     reset: vi.fn(),
     openProfilesSettings: vi.fn(),
   };
@@ -319,6 +322,39 @@ describe('EduroamSheet', () => {
     render(<EduroamSheet onClose={vi.fn()} />);
 
     expect(screen.queryByAltText('eduroam QR')).not.toBeInTheDocument();
+  });
+
+  // IS keeps offering an expired certificate and never replaces it; the
+  // sheet must say so and offer the student's own "generate" tap.
+  it('offers a new certificate once the current one has expired', () => {
+    const renew = vi.fn();
+    onPhone({ status: 'expired', expiredAt: new Date('2025-01-01T12:00:00Z'), renew }, 'ios');
+
+    render(<EduroamSheet onClose={vi.fn()} />);
+
+    expect(screen.getByText(/vypršel 01\.01\.2025/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Vygenerovat nový certifikát/ }));
+    expect(renew).toHaveBeenCalledWith('ios');
+  });
+
+  it('offers an early renewal after setup when the certificate expires soon', () => {
+    const renew = vi.fn();
+    onPhone(
+      {
+        status: 'done',
+        outcome: 'saved',
+        expiresSoonAt: new Date('2026-10-20T05:43:49Z'),
+        renew,
+      },
+      'ios'
+    );
+
+    render(<EduroamSheet onClose={vi.fn()} />);
+
+    expect(screen.getByText(/eduroam je uložený/)).toBeInTheDocument();
+    expect(screen.getByText(/vyprší 20\.10\.2026/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Vygenerovat nový certifikát/ }));
+    expect(renew).toHaveBeenCalledWith('ios');
   });
 
   it('closes via the header close button', () => {
