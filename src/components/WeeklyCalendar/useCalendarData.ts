@@ -185,12 +185,16 @@ export function useCalendarData(initialDate: Date) {
    * The count is contiguous rather than per-day (a lone Sunday lesson shows
    * Saturday too) — the columns are laid out side by side, so skipping one
    * would leave a hole in the week rather than a narrower week.
+   *
+   * TODAY widens it too, in its own week only: on a lesson-free Saturday the
+   * grid stopped at Friday and nothing on screen said which day it was. The
+   * phone's `weekDays()` makes the same exception.
    */
   const visibleDayCount = useMemo(() => {
-    if (lessonsByDay[6].length > 0) return 7;
-    if (lessonsByDay[5].length > 0) return 6;
+    if (lessonsByDay[6].length > 0 || todayIndex === 6) return 7;
+    if (lessonsByDay[5].length > 0 || todayIndex === 5) return 6;
     return 5;
-  }, [lessonsByDay]);
+  }, [lessonsByDay, todayIndex]);
 
   // Everything inside the visible columns, which is what the empty-week overlay
   // has to judge. A weekend item can no longer fool that check by being counted

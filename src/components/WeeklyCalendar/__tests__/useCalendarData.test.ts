@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useCalendarData } from '../useCalendarData';
 import { useSchedule, useExams } from '../../../hooks/data';
@@ -237,6 +237,41 @@ describe('useCalendarData', () => {
       );
       const { result } = renderHook(() => useCalendarData(mockInitialDate));
       expect(result.current.visibleDayCount).toBe(5);
+    });
+
+    /**
+     * Today always has a column, as it always has a chip on the phone: on a
+     * lesson-free Saturday the grid used to stop at Friday, so nothing on
+     * screen said which day it was.
+     */
+    describe('when today is a weekend day', () => {
+      afterEach(() => vi.useRealTimers());
+      const today = (d: Date) => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(d);
+      };
+
+      it('grows to six on a lesson-free Saturday in its own week', () => {
+        today(new Date(2026, 1, 14, 16, 0)); // Saturday of the Feb 9–15 week
+        withSchedule([lessonOn('20260212', 'Thursday Lesson')]);
+        const { result } = renderHook(() => useCalendarData(mockInitialDate));
+        expect(result.current.todayIndex).toBe(5);
+        expect(result.current.visibleDayCount).toBe(6);
+      });
+
+      it('grows to seven on a Sunday, contiguous like the lesson rule', () => {
+        today(new Date(2026, 1, 15, 10, 0));
+        withSchedule([]);
+        const { result } = renderHook(() => useCalendarData(mockInitialDate));
+        expect(result.current.visibleDayCount).toBe(7);
+      });
+
+      it('leaves another week at five', () => {
+        today(new Date(2026, 1, 21, 10, 0)); // the following Saturday
+        withSchedule([]);
+        const { result } = renderHook(() => useCalendarData(mockInitialDate));
+        expect(result.current.visibleDayCount).toBe(5);
+      });
     });
   });
 
