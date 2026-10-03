@@ -151,7 +151,13 @@ async function fetchSeminarGroupIdsImpl(
   }
 }
 
-/** Every person in a list once, in IS order. */
+/**
+ * Every person in a list once, in IS order. IS lists a student once per
+ * study: on 2026-10-03 a 895-row lecture held 888 people, seven of them in
+ * two programmes at once (B-F and B-EM, say), each pair in adjacent rows. The
+ * tab counts people, so it says 888 where IS says "z 895" — that is not a
+ * missed page.
+ */
 function rosterFrom(pages: Document[]): Classmate[] {
   const byId = new Map<number, Classmate>();
   for (const c of pages.flatMap(parseClassmatesPage)) {
