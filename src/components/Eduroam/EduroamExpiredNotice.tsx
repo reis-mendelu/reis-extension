@@ -21,7 +21,8 @@ export interface EduroamExpiredNoticeProps {
  * on regeneration, so the offer is safe at either point.
  *
  * `expired` is a warning (nothing was installed); `soon` is information
- * (setup went through, this is only ahead of time).
+ * (setup went through, this is only ahead of time) — a neutral alert with
+ * only the glyph tinted, because body text on `alert-info` measured 3.68:1.
  */
 export function EduroamExpiredNotice({
   at,
@@ -33,10 +34,10 @@ export function EduroamExpiredNotice({
   const Icon = kind === 'expired' ? AlertTriangle : Clock;
   return (
     <div
-      className={`alert ${kind === 'expired' ? 'alert-warning' : 'alert-info'} flex flex-col items-stretch gap-3 ${className}`}
+      className={`alert ${kind === 'expired' ? 'alert-warning' : 'border-base-content/10'} flex flex-col items-stretch gap-3 ${className}`}
     >
       <div className="flex items-start gap-2">
-        <Icon className="mt-0.5 h-4 w-4 shrink-0" />
+        <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${kind === 'soon' ? 'text-info' : ''}`} />
         <span>
           {t(kind === 'expired' ? 'eduroam.expired.text' : 'eduroam.expired.soon', {
             date: formatDate(at),
