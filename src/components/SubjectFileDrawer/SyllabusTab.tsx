@@ -8,6 +8,7 @@ import type { SyllabusRequirements } from '../../types/documents';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ISBacklink } from './ISBacklink';
 import { ReportMissingLink } from '../Feedback/ReportMissingLink';
+import { syllabusUrl } from '../../utils/syllabusUrl';
 
 interface SyllabusTabProps {
   /** Off for the phone sheet — see `showIsBacklink` in DrawerTabBody. */
@@ -30,10 +31,7 @@ export function SyllabusTab({
   const { params } = useUserParams();
   const { t, language } = useTranslation();
 
-  const lang = language === 'cz' ? 'cz' : 'en';
-  const syllabusUrl = courseId
-    ? `https://is.mendelu.cz/auth/katalog/syllabus.pl?predmet=${courseId};lang=${lang}`
-    : null;
+  const isSyllabusUrl = courseId ? syllabusUrl(courseId, language) : null;
 
   if (isLoading)
     return (
@@ -60,7 +58,7 @@ export function SyllabusTab({
       {syllabus.requirementsTable.length > 0 && (
         <GradingTable table={syllabus.requirementsTable} studyForm={params?.studyForm || 'prez'} />
       )}
-      {syllabusUrl && showIsBacklink && <ISBacklink href={syllabusUrl} />}
+      {isSyllabusUrl && showIsBacklink && <ISBacklink href={isSyllabusUrl} />}
     </div>
   );
 }

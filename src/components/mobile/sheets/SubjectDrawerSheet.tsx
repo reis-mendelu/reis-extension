@@ -21,6 +21,7 @@ import { usePdfPreview } from '../../../hooks/ui/usePdfPreview';
 import { listSubjectPdfs } from '../../SubjectFileDrawer/utils/listSubjectPdfs';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
+import { syllabusUrl } from '../../../utils/syllabusUrl';
 
 // pdf.js and its worker are the heaviest thing the app can load; a student who
 // never opens a PDF should never pay for it.
@@ -39,7 +40,8 @@ export interface SubjectDrawerSheetProps {
 
 /**
  * Full-size sheet for a single subject: header, five-tab icon bar, the
- * shared `DrawerTabBody` beneath. No IS footer since #341 — see below.
+ * shared `DrawerTabBody` beneath. No IS footer since #341 — see below; the
+ * title linking the syllabus is the one IS link kept, as the extension has it.
  *
  * Selection/drag props passed to `DrawerTabBody` are mouse-only concerns
  * (rubber-band rectangle select) that don't translate to touch, so this sheet
@@ -53,7 +55,7 @@ export interface SubjectDrawerSheetProps {
  */
 export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) {
   const { courseCode, courseName, courseId } = sheet;
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { getSubject } = useSubjects();
   // Mirrors desktop's useSubjectFileDrawerState: files/classmates/zaznamnik
   // need a subjectId (an enrolled subject) to fetch anything, so a subject
@@ -130,7 +132,12 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
         pullable={activeTab === 'files'}
         top={
           <>
-            <SheetHeader eyebrow={courseCode} title={courseName || courseCode} onBack={onClose} />
+            <SheetHeader
+              eyebrow={courseCode}
+              title={courseName || courseCode}
+              titleHref={resolvedCourseId ? syllabusUrl(resolvedCourseId, language) : undefined}
+              onBack={onClose}
+            />
             {/* Below the header, not inside it: the header is `touch-none` so the
                 sheet can be dragged by it, and this is a list of things to tap. */}
             <TeacherList teachers={syllabusResult.syllabus?.courseInfo?.teachers} />
@@ -169,8 +176,9 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
           // Off since this sheet pinned an 'Otevřít v IS MENDELU' footer, which
           // made every tab show two identical links. #341 dropped that footer
           // (it opened the file structure whatever the tab), so the tabs here
-          // carry no IS link. The one exception is the classmates tab's
-          // no-cvičení state, which links IS because that link is its answer.
+          // carry no IS link. The exceptions are the title, which links the
+          // syllabus as the extension's drawer title does (Dominik's call), and
+          // the classmates tab's no-cvičení state, whose answer is that link.
           showIsBacklink={false}
           // A classmate tap reaches the same PersonSheet the Lidé search
           // opens. Without this it landed in ClassmatePersonDrawer — a second
