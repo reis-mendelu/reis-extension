@@ -78,19 +78,16 @@ describe('useEduroamSetup engagement signal', () => {
     'failed',
     'stale-association',
     'renewal-blocked',
-  ])(
-    'counts nothing when the outcome is %s',
-    async (outcome) => {
-      configureEduroam.mockResolvedValue(outcome);
-      const { result } = renderHook(() => useEduroamSetup());
+  ])('counts nothing when the outcome is %s', async (outcome) => {
+    configureEduroam.mockResolvedValue(outcome);
+    const { result } = renderHook(() => useEduroamSetup());
 
-      await act(async () => {
-        await result.current.run('android');
-      });
+    await act(async () => {
+      await result.current.run('android');
+    });
 
-      expect(trackFeatureSignal).not.toHaveBeenCalled();
-    }
-  );
+    expect(trackFeatureSignal).not.toHaveBeenCalled();
+  });
 
   it.each(['mac', 'windows'] as const)(
     'counts a delivered profile separately on %s',

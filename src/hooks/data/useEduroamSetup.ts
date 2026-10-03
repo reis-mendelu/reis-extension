@@ -67,9 +67,7 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
         setStatus(
           result === 'cancelled'
             ? 'idle'
-            : result === 'failed' ||
-                result === 'stale-association' ||
-                result === 'renewal-blocked'
+            : result === 'failed' || result === 'stale-association' || result === 'renewal-blocked'
               ? 'error'
               : 'done'
         );
