@@ -524,11 +524,17 @@ page, the teacher's or one they added. Interaction agreed with Dominik on
 - **The controller owns the data**, `pictures[pageIndex]`, the way it owns
   `drawings`; the layer only renders and reports gestures. The mode is applied in
   `overlayViewFor` too, so a page that scrolls in mid-arrange is not drawable.
-- **#485's picker re-assert is kept, with one exception added**:
-  `restoreToolPicker` returns early while arranging. Without it the picker would
-  be put back the instant arranging hid it. The photo picker and the camera are
-  dismissed in code, which `presentationControllerDidDismiss` never sees, so a
-  cancel calls `showToolPicker()` itself and a pick enters arranging.
+- **#485's picker re-assert is kept, with two exceptions added**:
+  `restoreToolPicker` returns early while arranging and while picking. Picking
+  needs its own flag (found on the simulator): the menu closes before UIKit
+  presents the photo picker, nothing is presented in between, and the re-assert
+  put the pens back over the picker. Hiding also lets the responder go —
+  `setVisible(false)` alone is not re-read while the page keeps it. The photo
+  picker and the camera are dismissed in code, which
+  `presentationControllerDidDismiss` never sees, so a cancel calls
+  `showToolPicker()` itself (clearing the flag) and a pick enters arranging.
+- **"Move pictures" selects the top picture on the page on screen.** With
+  nothing selected the mode looked like drawing but for the bar.
 - **Geometry** is pure and in `PagePictures.swift` (tested without a view):
   initial frame, move and resize clamped to the page, a 24 pt minimum side, the
   topmost picture under a point. Handles are scaled by 1 / page scale so they
