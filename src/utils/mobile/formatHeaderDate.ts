@@ -7,10 +7,18 @@
  *
  * Czech renders the weekday lower-case; it leads a header here, so the first
  * letter is raised.
+ *
+ * The calendar asks for a `short` weekday ("Čt 26. listopadu"): beside three
+ * header actions the long form was cut to an ellipsis on half the weekdays at
+ * 375px, before the return-to-today glyph took its share of the line too.
  */
-export function formatHeaderDate(date: Date, locale: string): string {
+export function formatHeaderDate(
+  date: Date,
+  locale: string,
+  weekday: 'long' | 'short' = 'long'
+): string {
   const formatted = new Intl.DateTimeFormat(locale, {
-    weekday: 'long',
+    weekday,
     day: 'numeric',
     month: 'long',
   }).format(date);

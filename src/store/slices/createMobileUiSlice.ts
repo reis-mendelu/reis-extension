@@ -33,6 +33,7 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
   welcomeSeen: null,
   externalOpening: false,
   pullHintSeen: null,
+  mobileCalendarView: 'day',
 
   // Read once at boot, before the root renders (capacitor/main.capacitor.tsx).
   // Same key as the desktop WelcomeModal: a device that dismissed it there has
@@ -69,6 +70,19 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
     if (get().pullHintSeen === true) return;
     set({ pullHintSeen: true });
     IndexedDBService.set('meta', 'pull_hint_seen', true).catch(() => {});
+  },
+
+  // Read once at boot beside the pull hint. Anything but 'week' is the day
+  // view, so a value from some future build cannot strand the calendar.
+  hydrateCalendarView: async () => {
+    const stored = await IndexedDBService.get('meta', 'calendar_view');
+    set({ mobileCalendarView: stored === 'week' ? 'week' : 'day' });
+  },
+  // State first, storage second, like dismissWelcome: the view changes on the
+  // tap, and a failed write only means the choice is not remembered.
+  setMobileCalendarView: (view) => {
+    set({ mobileCalendarView: view });
+    IndexedDBService.set('meta', 'calendar_view', view).catch(() => {});
   },
 
   // Switching tabs closes sheets: a sheet belongs to the screen that opened it.

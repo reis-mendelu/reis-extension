@@ -1179,7 +1179,11 @@
       "loading": "Loading your timetable…",
       "holiday": "Public holiday",
       "teachingStarts": "Teaching starts {date}",
-      "recentFiles": "Recently opened"
+      "recentFiles": "Recently opened",
+      "backToToday": "Back to today",
+      "viewLabel": "Calendar view",
+      "dayView": "Day",
+      "weekView": "Week"
     },
     "exams": {
       "title": "Exams",
