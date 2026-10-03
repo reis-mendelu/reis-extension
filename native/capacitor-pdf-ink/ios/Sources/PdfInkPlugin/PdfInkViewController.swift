@@ -37,7 +37,7 @@ final class InkPDFView: PDFView {
  */
 @available(iOS 16.0, *)
 final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
-    PKCanvasViewDelegate, UIAdaptivePresentationControllerDelegate
+    PKCanvasViewDelegate, PKToolPickerObserver, UIAdaptivePresentationControllerDelegate
 {
     private let strings: PdfInkStrings
     /// Presented things are not in this view's subtree, so they cannot inherit it.
@@ -97,6 +97,10 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         image: UIImage(systemName: "xmark"), style: .plain, target: self,
         action: #selector(exitTapped))
     private var saveTimer: Timer?
+    /// Waits out a pinch before the canvases re-render at the new scale.
+    private var inkScaleTimer: Timer?
+    /// Set by `willClose`: the pens are put away for good, not lost.
+    private var closing = false
     private var laidOutWidth: CGFloat = 0
     private(set) var lastSaveError: Error?
     /// Fired by the bar's exit. The space wires it to the same `closeTapped()`
@@ -113,6 +117,8 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         set { pdfView.scaleFactor = newValue }
     }
     var fittedPageScale: CGFloat { pdfView.scaleFactorForSizeToFit }
+    /// Whether the pens are on screen. `ToolPickerResponderTests` asks.
+    var isToolPickerVisible: Bool { toolPicker.isVisible }
 
     init(strings: PdfInkStrings, tint: UIColor? = nil) {
         self.strings = strings
@@ -125,6 +131,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     deinit {
         NotificationCenter.default.removeObserver(self)
         saveTimer?.invalidate()
+        inkScaleTimer?.invalidate()
     }
 
     override func viewDidLoad() {
@@ -202,12 +209,18 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         toolPicker.showsDrawingPolicyControls = true
         toolPicker.colorUserInterfaceStyle = .light
         toolPicker.setVisible(true, forFirstResponder: pdfView)
+        toolPicker.addObserver(self)
 
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(restoreToolPicker),
+            name: UIApplication.didBecomeActiveNotification, object: nil)
         NotificationCenter.default.addObserver(
             self, selector: #selector(persistOnResignActive),
             name: UIApplication.willResignActiveNotification, object: nil)
         NotificationCenter.default.addObserver(
             self, selector: #selector(updatePageItem), name: .PDFViewPageChanged, object: pdfView)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(pageScaleChanged), name: .PDFViewScaleChanged, object: pdfView)
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -511,6 +524,32 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         pdfView.becomeFirstResponder()
     }
 
+    /**
+     * Gives the page the responder back, and with it the pens.
+     *
+     * The picker is visible only while the page (or a canvas) is first
+     * responder, and things the reader does not control take that away with
+     * nothing on screen to explain it: a tap on a sidebar row makes the list
+     * cell first responder, and a page whose canvas held it (PencilKit's
+     * long-press menu, a lasso selection) gives it to PDFKit's document view as
+     * it scrolls away. Rather than chase each one, the reader watches the picker
+     * itself and takes the responder back whenever the pens go while nothing is
+     * over the reader. A presented sheet or alert keeps it: those hide the pens
+     * on purpose, and their own dismissal brings them back.
+     */
+    @objc func restoreToolPicker() {
+        guard isViewLoaded, view.window != nil, presentedViewController == nil, !closing,
+            document != nil, !toolPicker.isVisible
+        else { return }
+        showToolPicker()
+    }
+
+    func toolPickerVisibilityDidChange(_ toolPicker: PKToolPicker) {
+        guard !toolPicker.isVisible else { return }
+        // Fired while the responder is still moving; take it back after that.
+        DispatchQueue.main.async { [weak self] in self?.restoreToolPicker() }
+    }
+
     /// Swiping a sheet away never reaches its own buttons.
     func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
         showToolPicker()
@@ -555,7 +594,10 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
             let alert = UIAlertController(
                 title: strings.exportFailed, message: error.localizedDescription,
                 preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: strings.close, style: .cancel))
+            alert.addAction(
+                UIAlertAction(title: strings.close, style: .cancel) { [weak self] _ in
+                    self?.restoreToolPicker()
+                })
             if let tint { alert.view.tintColor = tint }
             present(alert, animated: true)
             return
@@ -564,11 +606,51 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         let share = UIActivityViewController(activityItems: [url], applicationActivities: nil)
         // An iPad presents this as a popover and needs the anchor, or it traps.
         share.popoverPresentationController?.barButtonItem = shareItem
+        share.completionWithItemsHandler = { [weak self] _, _, _, _ in self?.restoreToolPicker() }
         present(share, animated: true)
     }
 
     func willClose() {
+        closing = true
         toolPicker.setVisible(false, forFirstResponder: pdfView)
+    }
+
+    // MARK: - Ink sharpness
+
+    /**
+     * The scale a page's ink is rendered at (`PageOverlayView.inkScale`): the
+     * scale the page is shown at, never below the page's own, and no further
+     * than `InkPages.maxInkPixels` allows — 2.9x for an A4. Past that a pinch magnifies
+     * the ink again, but from a finer start.
+     */
+    static func inkScale(pageScale: CGFloat, pageSize: CGSize, screenScale: CGFloat) -> CGFloat {
+        let pixelsAtOne = pageSize.width * pageSize.height * screenScale * screenScale
+        guard pixelsAtOne > 0 else { return 1 }
+        let budget = (InkPages.maxInkPixels / pixelsAtOne).squareRoot()
+        return max(1, min(pageScale, budget))
+    }
+
+    private func inkScale(for page: PDFPage) -> CGFloat {
+        Self.inkScale(
+            pageScale: pdfView.scaleFactor, pageSize: InkPages.displayedSize(of: page),
+            screenScale: traitCollection.displayScale > 0 ? traitCollection.displayScale : 2)
+    }
+
+    /// Fired continuously through a pinch; re-rendering every canvas on each
+    /// step would stutter, so the ink follows once the pinch settles.
+    @objc private func pageScaleChanged() {
+        inkScaleTimer?.invalidate()
+        inkScaleTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: false) {
+            [weak self] _ in self?.updateInkScale()
+        }
+    }
+
+    private func updateInkScale() {
+        guard let document else { return }
+        for (index, overlay) in overlays {
+            guard let page = document.page(at: index) else { continue }
+            overlay.inkScale = inkScale(for: page)
+        }
     }
 
     // MARK: - PDFPageOverlayViewProvider
@@ -590,6 +672,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         canvas.drawing = drawings[index] ?? PKDrawing()
         canvas.tool = toolPicker.selectedTool
         canvas.delegate = self
+        overlay.inkScale = inkScale(for: page)
         toolPicker.addObserver(canvas)
         toolPicker.setVisible(true, forFirstResponder: canvas)
         overlays[index] = overlay
