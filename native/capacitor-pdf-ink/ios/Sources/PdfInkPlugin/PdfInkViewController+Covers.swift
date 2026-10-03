@@ -1,42 +1,46 @@
+import PencilKit
 import UIKit
 
 /**
  * Covers: blocks over an answer, so a lecture can be read back before the
  * answer is (spec 2026-10-03-ipad-recall-covers-design.md).
  *
- * Making them is a visible mode, entered from `+` like arranging pictures:
- * the pens go, the bar is one Done, and one finger drags out blocks. Reading
- * them is not a mode — a tap opens or shuts a cover whenever the file is open.
- * `setCovers` is the only writer; it shows and saves at once.
+ * Made with the tape, a tool in the pen palette (`CoverTool`): pick it and the
+ * Pencil drags out blocks the way it would draw ink, while a finger still
+ * scrolls. No separate mode, no bar of its own. Reading covers is never a mode
+ * either: a tap opens or shuts one whenever the file is open.
+ *
+ * `setCovers` is the only writer. It shows and saves at once, and registers
+ * its reverse on the same undo manager as strokes and pictures, so the
+ * palette's undo takes back a cover put down or taken away by mistake.
  */
 @available(iOS 16.0, *)
 extension PdfInkViewController {
     var hasCovers: Bool { covers.values.contains { !$0.isEmpty } }
 
-    func beginCovering() {
-        endArrangingPictures(restoringPens: false)
-        makingCovers = true
-        putPensAway()
-        navigationItem.rightBarButtonItems = [doneCoveringItem]
+    @available(iOS 18.0, *)
+    func toolPickerSelectedToolItemDidChange(_ toolPicker: PKToolPicker) {
+        coverToolDidChange()
+    }
+
+    /// Reads the palette: is the tape in hand?
+    func coverToolDidChange() {
+        makingCovers = CoverTool.isSelected(in: toolPicker)
         refreshCoverLayers()
     }
 
-    /// The pens come back on every exit; `restoringPens` only decides whether
-    /// the page takes the responder now (not when a file is closing).
-    func endCovering(restoringPens: Bool = true) {
-        guard makingCovers else { return }
-        makingCovers = false
-        navigationItem.rightBarButtonItems = fileToolItems
-        refreshCoverLayers()
-        if restoringPens { showToolPicker() } else { setPagePens(visible: true) }
-    }
-
-    @objc func doneCoveringTapped() { endCovering() }
-
-    func setCovers(_ list: [PageCover], onPage index: Int) {
-        guard list != (covers[index] ?? []) else { return }
+    /// `registeringUndo` is false for an answer in a test: undoing a stroke
+    /// must never take back "Znám".
+    func setCovers(_ list: [PageCover], onPage index: Int, registeringUndo: Bool = true) {
+        let before = covers[index] ?? []
+        guard list != before else { return }
         covers[index] = list.isEmpty ? nil : list
         overlays[index]?.coverLayer.covers = list
+        if registeringUndo {
+            undoManagerForPictures?.registerUndo(withTarget: pictureUndoTarget) { [weak self] _ in
+                self?.setCovers(before, onPage: index)
+            }
+        }
         persistNow()
     }
 
@@ -60,11 +64,12 @@ extension PdfInkViewController {
     }
 
     /// Called for every overlay PDFKit asks for, so a page that scrolls in
-    /// mid-mode behaves like the rest.
+    /// while the tape is in hand behaves like the rest.
     func configureCovers(of overlay: PageOverlayView, page index: Int) {
         let layer = overlay.coverLayer
         layer.covers = covers[index] ?? []
         layer.currentColor = tint ?? .tintColor
+        layer.fingerDraws = { [weak self] in self?.fingerDraws() ?? false }
         layer.onCreate = { [weak self] rect in self?.addCover(rect, onPage: index) }
         layer.onRemove = { [weak self] id in self?.removeCover(id, onPage: index) }
         layer.onToggle = { [weak self] id in self?.toggleCover(id, onPage: index) }
@@ -75,10 +80,13 @@ extension PdfInkViewController {
         for overlay in overlays.values { applyCoverMode(to: overlay) }
     }
 
-    private func applyCoverMode(to overlay: PageOverlayView) {
+    func applyCoverMode(to overlay: PageOverlayView) {
         overlay.coverLayer.revealed = revealedCovers
-        overlay.coverLayer.isMakingCovers = makingCovers
-        // Arranging moves pictures with the finger; a cover on top would catch it.
+        // Arranging moves pictures with the finger; covers keep out of its way.
+        overlay.coverLayer.isMakingCovers = makingCovers && !arrangingPictures
         overlay.coverLayer.isUserInteractionEnabled = !arrangingPictures
+        // PencilKit switches drawing off on the canvases observing the palette
+        // when the tape is picked. A canvas made after that is told here.
+        if #available(iOS 18.0, *), makingCovers { overlay.canvas.isDrawingEnabled = false }
     }
 }

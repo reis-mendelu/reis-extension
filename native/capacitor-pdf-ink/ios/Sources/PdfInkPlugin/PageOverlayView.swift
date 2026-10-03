@@ -48,6 +48,9 @@ final class PageOverlayView: UIView {
         addSubview(canvas)
         addSubview(pictureLayer)
         addSubview(coverLayer)
+        // The tape's stroke lands on the canvas (the cover layer only takes
+        // touches on a cover), so its drag sits here, above both.
+        addGestureRecognizer(coverLayer.dragRecognizer)
     }
 
     required init?(coder: NSCoder) { fatalError("PageOverlayView is code-only") }

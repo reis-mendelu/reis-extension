@@ -45,7 +45,8 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     /// Presented things are not in this view's subtree, so they cannot inherit it.
     let tint: UIColor?
     let pdfView = InkPDFView()
-    let toolPicker = PKToolPicker()
+    /// Apple's pens plus the tape (`CoverTool`).
+    let toolPicker: PKToolPicker
     private let spinner = UIActivityIndicatorView(style: .large)
     private let message = UILabel()
 
@@ -63,16 +64,8 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     var covers: [Int: [PageCover]] = [:]
     /// Which covers are open right now. Never saved: a file reopens with them shut.
     var revealedCovers: Set<String> = []
-    /// Cover mode: the finger makes blocks instead of scrolling or drawing.
+    /// The tape is the palette's selected tool: strokes make covers, not ink.
     var makingCovers = false
-    /// Ends cover mode. Plain and tinted for the same reason as `doneArrangingItem`.
-    private(set) lazy var doneCoveringItem: UIBarButtonItem = {
-        let item = UIBarButtonItem(
-            title: strings.done, style: .plain, target: self,
-            action: #selector(doneCoveringTapped))
-        item.tintColor = tint
-        return item
-    }()
     /// Moving pictures instead of drawing. A visible mode: see `+Pictures`.
     var arrangingPictures = false
     /// From choosing Photos or the camera until the pick lands or is
@@ -185,6 +178,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     init(strings: PdfInkStrings, tint: UIColor? = nil) {
         self.strings = strings
         self.tint = tint
+        self.toolPicker = CoverTool.makePicker(name: strings.cover)
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -273,6 +267,9 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         toolPicker.colorUserInterfaceStyle = .light
         setPagePens(visible: true)
         toolPicker.addObserver(self)
+        // PencilKit keeps the palette's selection between readers: one closed
+        // with the tape in hand opens with it.
+        coverToolDidChange()
 
         NotificationCenter.default.addObserver(
             self, selector: #selector(restoreToolPicker),
@@ -416,7 +413,6 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         // left hidden, the next file would open with no pens.
         endArrangingPictures(restoringPens: false)
         endPicking()
-        endCovering(restoringPens: false)
         drawings = [:]
         overlays = [:]
         insertedPages = []
@@ -626,7 +622,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
             document != nil, !toolPicker.isVisible,
             // Arranging and picking take the pens away on purpose; Done, a
             // pick or a cancel brings them back.
-            !arrangingPictures, !pickingPicture, !makingCovers
+            !arrangingPictures, !pickingPicture
         else { return }
         showToolPicker()
     }
@@ -766,7 +762,10 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         canvas.overrideUserInterfaceStyle = .light
         canvas.drawingPolicy = .default
         canvas.drawing = drawings[index] ?? PKDrawing()
-        canvas.tool = toolPicker.selectedTool
+        // Not `toolPicker.selectedTool` blindly: with the tape selected it is no
+        // tool a canvas can take, and assigning it traps in PencilKit (the
+        // selection outlives the reader, so the next file would crash).
+        if let tool = CoverTool.canvasTool(of: toolPicker) { canvas.tool = tool }
         canvas.delegate = self
         overlay.inkScale = inkScale(for: page)
         toolPicker.addObserver(canvas)

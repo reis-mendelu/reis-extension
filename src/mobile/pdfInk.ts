@@ -69,7 +69,7 @@ export interface PdfInkStrings {
   deletePicture: string;
   /** Ends arranging and gives the pens back. */
   done: string;
-  /** `+` menu entry that enters cover mode: blocks over answers, for recall. */
+  /** The tape: the palette tool that puts blocks over answers, for recall. */
   cover: string;
   /** "Vyzkoušet se": the bar entry, reveal, the two answers, the counter ({n}/{total}). */
   recallStart: string;

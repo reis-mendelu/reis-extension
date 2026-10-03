@@ -34,7 +34,7 @@ struct PdfInkStrings {
     let movePictures: String
     let deletePicture: String
     let done: String
-    /// The `+` menu entry that enters cover mode.
+    /// The tape: the palette tool that makes covers (`CoverTool`).
     let cover: String
     /// "Vyzkoušet se": the bar entry, the reveal, the two answers, the counter
     /// ("{n}" / "{total}"), leaving early, the retry, and the score
@@ -78,7 +78,7 @@ struct PdfInkStrings {
         movePictures = object?["movePictures"] as? String ?? "Edit pictures"
         deletePicture = object?["deletePicture"] as? String ?? "Delete picture"
         done = object?["done"] as? String ?? "Done"
-        cover = object?["cover"] as? String ?? "Cover an answer"
+        cover = object?["cover"] as? String ?? "Tape"
         recallStart = object?["recallStart"] as? String ?? "Test me"
         recallReveal = object?["recallReveal"] as? String ?? "Show"
         recallKnew = object?["recallKnew"] as? String ?? "I know it"

@@ -20,8 +20,7 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
 {
     // MARK: - Menu
 
-    /// Four sections with dividers: a page, a picture, covering an answer
-    /// (`+Covers`), editing the pictures.
+    /// Three sections with dividers: a page, a picture, editing the pictures.
     /// Apple's own verbs (Notes: "Choose Photo", "Take Photo") rather than
     /// fragments — the first build's flat "Z fotek / Přesunout obrázky" list
     /// read as odd. Editing is offered only once the file has a picture, and
@@ -46,12 +45,6 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
                 [weak self] _ in self?.presentFilePicker()
             })
         var sections = [section([page]), section(picture)]
-        sections.append(
-            section([
-                UIAction(title: strings.cover, image: UIImage(systemName: "square.dashed")) {
-                    [weak self] _ in self?.beginCovering()
-                }
-            ]))
         // Only when a finger tap cannot pick a picture up (it draws): with the
         // Pencil drawing, the tap is the way and this entry was redundant.
         if fingerDraws(), pictures.values.contains(where: { !$0.isEmpty }) {
@@ -131,7 +124,7 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
      * never showed this only because its field takes the responder. Done, a
      * cancel or a dismissal takes it back through `showToolPicker()`.
      */
-    func putPensAway() {
+    private func putPensAway() {
         setPagePens(visible: false)
         for overlay in overlays.values where overlay.canvas.isFirstResponder {
             overlay.canvas.resignFirstResponder()
@@ -238,7 +231,6 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
     // MARK: - Arranging
 
     func beginArrangingPictures(selecting selection: (page: Int, id: String)? = nil) {
-        endCovering(restoringPens: false)
         arrangingPictures = true
         pickingPicture = false
         selectedPicture = selection
@@ -310,7 +302,7 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
         overlay.pictureLayer.arranging = arrangingPictures
         overlay.pictureLayer.selectedID =
             selectedPicture?.page == index ? selectedPicture?.id : nil
-        overlay.coverLayer.isUserInteractionEnabled = !arrangingPictures
+        applyCoverMode(to: overlay)
     }
 
     var pictureChromeScale: CGFloat { 1 / max(pdfView.scaleFactor, 0.01) }

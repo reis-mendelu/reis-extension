@@ -52,16 +52,16 @@ final class CoverTouchRoutingTests: XCTestCase {
         XCTAssertFalse(hit === overlay.coverLayer, "the cover layer swallowed a touch on bare page")
     }
 
-    /// The one the whole tool rests on: in cover mode a drag starting on bare
-    /// page has to reach the layer, or no cover can ever be drawn.
-    func testInCoverModeABarePageTouchReachesTheCoverLayer() {
+    /// With the tape in hand a stroke lands on the canvas, not on the cover
+    /// layer: the drag that makes covers has to sit above both, on the overlay.
+    func testTheTapesDragSitsOnTheOverlayAboveTheCanvas() {
         let overlay = overlay()
         overlay.coverLayer.isMakingCovers = true
 
-        let hit = overlay.hitTest(CGPoint(x: 450, y: 600), with: nil)
-
-        XCTAssertTrue(
-            hit === overlay.coverLayer, "in cover mode a drag landed on \(String(describing: hit))")
+        XCTAssertTrue(overlay.gestureRecognizers?.contains(overlay.coverLayer.dragRecognizer) ?? false)
+        XCTAssertFalse(
+            overlay.hitTest(CGPoint(x: 450, y: 600), with: nil) === overlay.coverLayer,
+            "bare page is the canvas's even with the tape: the drag is not a hit view")
     }
 
     /// The device failure of 2026-09-07: PDFKit's scroller took the drag and
@@ -76,6 +76,27 @@ final class CoverTouchRoutingTests: XCTestCase {
                 layer.gestureRecognizer(
                     ours, shouldBeRequiredToFailBy: scroller.panGestureRecognizer))
         }
+    }
+
+    /// PDFKit's markup gestures over text are not on a scroll view; they must
+    /// wait for the tape too, or a stroke over text goes to them.
+    func testEveryOtherPageGestureWaitsForTheTape() {
+        let layer = CoverLayerView()
+        let textGesture = UILongPressGestureRecognizer()
+        UIView().addGestureRecognizer(textGesture)
+
+        XCTAssertTrue(layer.gestureRecognizer(layer.dragRecognizer, shouldBeRequiredToFailBy: textGesture))
+        XCTAssertFalse(layer.gestureRecognizer(layer.dragRecognizer, shouldBeRequiredToFailBy: layer.tapRecognizer))
+    }
+
+    /// With a Pencil, the tape answers only to the Pencil: a finger still scrolls.
+    func testOnlyTouchesThatDrawMakeCovers() {
+        let layer = CoverLayerView()
+        XCTAssertTrue(layer.draws(.pencil))
+        XCTAssertFalse(layer.draws(.direct))
+
+        layer.fingerDraws = { true }
+        XCTAssertTrue(layer.draws(.direct))
     }
 
     /// Outside cover mode the drag must not exist: a scroll that starts on a

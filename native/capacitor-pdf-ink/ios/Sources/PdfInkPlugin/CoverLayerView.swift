@@ -9,12 +9,19 @@ import UIKit
  * Inside a cover it takes the touch — which is also why a covered patch cannot
  * be drawn on. It is covered.
  *
+ * Covers are made with the tape, a tool in the pen palette (`CoverTool`).
+ * Its drag is not on this layer but on the page overlay (`PageOverlayView`),
+ * so it sees strokes that land on the canvas, whose own drawing PencilKit
+ * switches off while the tape is selected. It takes only touches that draw —
+ * the Pencil, and the finger only when the finger draws — so with a Pencil a
+ * finger still scrolls.
+ *
  * Gesture recognizers, not raw touches. The withdrawn layer (d5026aaef) used
  * touchesBegan/Ended, and on a real iPad PDFKit's scroller took the drag and
- * the page slid under the finger (ed7016e4). PDFKit's recognizers wait for
- * these to fail, the way they wait for the picture layer's (#492). A tap fails
- * the moment the finger travels, so a scroll that starts on a cover never
- * opens it on the way past.
+ * the page slid under the finger (ed7016e4). Every other recognizer on the
+ * page waits for the tape's drag, and the scrollers wait for the tap. A tap
+ * fails the moment the finger travels, so a scroll that starts on a cover
+ * never opens it on the way past.
  */
 final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
     var covers: [PageCover] = [] { didSet { setNeedsDisplay() } }
@@ -23,7 +30,7 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
     /// The cover "Vyzkoušet se" is asking about, outlined in `currentColor`.
     var currentID: String? { didSet { setNeedsDisplay() } }
     var currentColor: UIColor = .tintColor { didSet { setNeedsDisplay() } }
-    /// Cover mode: the layer takes every touch on the page, and the drag is on.
+    /// The tape is selected: the drag is on, and a drawing tap takes a cover away.
     var isMakingCovers = false {
         didSet {
             dragRecognizer.isEnabled = isMakingCovers
@@ -35,11 +42,16 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
     var onRemove: ((String) -> Void)?
     var onToggle: ((String) -> Void)?
 
-    /// One finger drags out a new cover; two fingers still scroll and zoom.
+    /// Whether the finger draws (no Pencil paired, or "Draw with finger" on).
+    /// Asked per touch, because the palette's switch can change it any time.
+    var fingerDraws: () -> Bool = { false }
+
+    /// The tape's stroke: drags out a new cover. Installed on the page overlay.
     let dragRecognizer = UIPanGestureRecognizer()
-    /// Opens or shuts a cover; in cover mode, takes it away.
+    /// Opens or shuts a cover; a drawing tap with the tape takes it away.
     let tapRecognizer = UITapGestureRecognizer()
 
+    private var lastTapType: UITouch.TouchType = .direct
     private var dragStart: CGPoint?
     private var dragEnd: CGPoint?
 
@@ -54,31 +66,42 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
         dragRecognizer.addTarget(self, action: #selector(dragged(_:)))
         dragRecognizer.maximumNumberOfTouches = 1
         dragRecognizer.isEnabled = false
+        dragRecognizer.delegate = self
         tapRecognizer.addTarget(self, action: #selector(tapped(_:)))
-        for recognizer in [dragRecognizer, tapRecognizer] as [UIGestureRecognizer] {
-            recognizer.delegate = self
-            addGestureRecognizer(recognizer)
-        }
+        tapRecognizer.delegate = self
+        addGestureRecognizer(tapRecognizer)
     }
 
     required init?(coder: NSCoder) { fatalError("CoverLayerView is code-only") }
 
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         guard isUserInteractionEnabled, !isHidden, alpha > 0.01 else { return nil }
-        if isMakingCovers { return bounds.contains(point) ? self : nil }
         return PageCovers.cover(at: point, in: covers) != nil ? self : nil
     }
 
     // MARK: - Gestures
 
-    /// PDFView's scroll and zoom wait for ours to fail, so dragging out a cover
-    /// never scrolls the page under it. Ours only ever see touches the layer
-    /// took in `hitTest`.
+    /// Everything else on the page waits for the tape's drag: PDFKit's scroll
+    /// and its markup gestures, and the canvas's own. The drag only exists
+    /// while the tape is selected and only takes drawing touches, so this
+    /// holds up nothing else. The tap makes only the scrollers wait, as the
+    /// picture layer's does (#492).
     func gestureRecognizer(
         _ gestureRecognizer: UIGestureRecognizer,
         shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer
     ) -> Bool {
-        otherGestureRecognizer.view is UIScrollView
+        if gestureRecognizer === dragRecognizer { return otherGestureRecognizer !== tapRecognizer }
+        return otherGestureRecognizer.view is UIScrollView
+    }
+
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch
+    ) -> Bool {
+        if gestureRecognizer === tapRecognizer {
+            lastTapType = touch.type
+            return true
+        }
+        return draws(touch.type)
     }
 
     func gestureRecognizer(
@@ -114,7 +137,18 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
         guard tap.state == .ended,
             let cover = PageCovers.cover(at: tap.location(in: self), in: covers)
         else { return }
-        if isMakingCovers { onRemove?(cover.id) } else { onToggle?(cover.id) }
+        // The tape in hand: a tap with what draws takes the cover away (and the
+        // palette's undo brings it back). Any other tap looks under it.
+        if isMakingCovers, draws(lastTapType) {
+            onRemove?(cover.id)
+        } else {
+            onToggle?(cover.id)
+        }
+    }
+
+    /// A touch that would put ink down: the Pencil, or a finger that draws.
+    func draws(_ type: UITouch.TouchType) -> Bool {
+        type == .pencil || (type == .direct && fingerDraws())
     }
 
     // MARK: - Drawing

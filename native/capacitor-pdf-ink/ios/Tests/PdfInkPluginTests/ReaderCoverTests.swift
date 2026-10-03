@@ -48,31 +48,87 @@ final class ReaderCoverTests: XCTestCase {
         XCTAssertEqual(reader.covers[2]?.map(\.rect), [block])
     }
 
-    func testMakingCoversTakesThePensAndTheBarUntilDone() throws {
+    /// The tape is a pen in the palette, beside the marker — not a menu entry
+    /// and not a mode with a bar of its own (Dominik, first device build).
+    func testThePaletteCarriesTheTapeAfterTheMarker() throws {
+        guard #available(iOS 18.0, *) else { throw XCTSkip("custom palette items are iOS 18+") }
         let (reader, _) = try host.show(pages: 1)
 
-        reader.beginCovering()
-        reader.restoreToolPicker()  // #485's re-assert must leave the mode alone
+        let ids = reader.toolPicker.toolItems.map(\.identifier)
+        let marker = try XCTUnwrap(ids.firstIndex(of: "com.apple.ink.marker"))
 
-        XCTAssertTrue(reader.makingCovers)
-        XCTAssertEqual(reader.navigationItem.rightBarButtonItems, [reader.doneCoveringItem])
-
-        reader.endCovering()
-        XCTAssertFalse(reader.makingCovers)
-        XCTAssertEqual(reader.navigationItem.rightBarButtonItems, reader.fileToolItems)
+        XCTAssertEqual(ids[marker + 1], CoverTool.identifier)
     }
 
-    func testCoveringAndArrangingPicturesAreExclusive() throws {
+    func testPickingTheTapeMakesCoversAndKeepsThePensAndTheBar() throws {
+        guard #available(iOS 18.0, *) else { throw XCTSkip("custom palette items are iOS 18+") }
         let (reader, _) = try host.show(pages: 1)
+        let overlay = try XCTUnwrap(reader.overlays[0])
 
-        reader.beginArrangingPictures()
-        reader.beginCovering()
-        XCTAssertFalse(reader.arrangingPictures)
+        reader.toolPicker.selectedToolItemIdentifier = CoverTool.identifier
+        reader.coverToolDidChange()
+
         XCTAssertTrue(reader.makingCovers)
+        XCTAssertTrue(overlay.coverLayer.isMakingCovers)
+        XCTAssertTrue(overlay.coverLayer.dragRecognizer.isEnabled)
+        XCTAssertEqual(reader.navigationItem.rightBarButtonItems, reader.fileToolItems)
+
+        reader.toolPicker.selectedToolItemIdentifier = "com.apple.ink.pen"
+        reader.coverToolDidChange()
+        XCTAssertFalse(reader.makingCovers)
+        XCTAssertFalse(overlay.coverLayer.dragRecognizer.isEnabled)
+    }
+
+    /// The trap the first suite run found: a canvas made while the tape is in
+    /// hand was handed `selectedTool`, which PencilKit cannot put on a canvas
+    /// ("Unknown PKTool type"). PencilKit also keeps the selection between
+    /// readers, so it hit the next file opened, not only a page scrolled in.
+    func testAReaderOpenedWithTheTapeInHandMakesCoversAndDoesNotCrash() throws {
+        guard #available(iOS 18.0, *) else { throw XCTSkip("custom palette items are iOS 18+") }
+        let (first, _) = try host.show(pages: 1)
+        first.toolPicker.selectedToolItemIdentifier = CoverTool.identifier
+        first.coverToolDidChange()
+
+        try host.open(first, pages: 3, ink: ReaderTestHost.tempInk())  // new canvases
+        let overlay = try XCTUnwrap(first.overlays[0])
+
+        XCTAssertTrue(first.makingCovers)
+        XCTAssertFalse(overlay.canvas.isDrawingEnabled, "the tape must not also draw ink")
+        XCTAssertNil(CoverTool.canvasTool(of: first.toolPicker))
+        first.toolPicker.selectedToolItemIdentifier = "com.apple.ink.pen"
+        XCTAssertTrue(CoverTool.canvasTool(of: first.toolPicker) is PKInkingTool)
+    }
+
+    /// Arranging moves pictures with the finger: the tape keeps out of its way.
+    func testArrangingPicturesPutsTheTapeAside() throws {
+        guard #available(iOS 18.0, *) else { throw XCTSkip("custom palette items are iOS 18+") }
+        let (reader, _) = try host.show(pages: 1)
+        let overlay = try XCTUnwrap(reader.overlays[0])
+        reader.toolPicker.selectedToolItemIdentifier = CoverTool.identifier
+        reader.coverToolDidChange()
 
         reader.beginArrangingPictures()
-        XCTAssertFalse(reader.makingCovers)
-        XCTAssertTrue(reader.arrangingPictures)
+        XCTAssertFalse(overlay.coverLayer.isMakingCovers)
+        XCTAssertFalse(overlay.coverLayer.isUserInteractionEnabled)
+
+        reader.endArrangingPictures()
+        XCTAssertTrue(overlay.coverLayer.isMakingCovers)
+        XCTAssertTrue(overlay.coverLayer.isUserInteractionEnabled)
+    }
+
+    /// One undo stack: the palette's undo takes back a cover put down or
+    /// taken away by mistake.
+    func testUndoTakesBackACover() throws {
+        let (reader, _) = try host.show(pages: 1)
+        let undo = try XCTUnwrap(reader.undoManagerForPictures)
+
+        reader.addCover(block, onPage: 0)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+        undo.undo()
+        XCTAssertNil(reader.covers[0])
+        undo.redo()
+        XCTAssertEqual(reader.covers[0]?.map(\.rect), [block])
+        undo.removeAllActions()
     }
 
     /// The cover is on top. A finger tap on it opens the cover and does not
