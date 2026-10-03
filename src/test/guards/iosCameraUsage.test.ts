@@ -35,7 +35,10 @@ describe('iOS camera usage string', () => {
 
   it('is disclosed in the app privacy policy, for both reasons', () => {
     const policy = read('docs/privacy-policy-app.md');
-    const ios = policy.slice(policy.indexOf('**iOS:**'), policy.indexOf('\n\n', policy.indexOf('**iOS:**')));
+    const ios = policy.slice(
+      policy.indexOf('**iOS:**'),
+      policy.indexOf('\n\n', policy.indexOf('**iOS:**'))
+    );
     expect(ios).toMatch(/camera/i);
     expect(ios).toMatch(/problem\s+report/);
     expect(ios).toMatch(/iPad[\s\S]*notes/);

@@ -6,7 +6,9 @@ import UniformTypeIdentifiers
  * A photo turned into what a page stores — once, when it is inserted.
  *
  * - **At most 2048 px on the long side.** Sharp on a page at any zoom the reader
- *   reaches, and a few hundred KB rather than a 12 MP original. ImageIO's
+ *   reaches. Measured on the simulator: a detailed 2048×1536 photo (flowers)
+ *   stores at 1.34 MB — a whiteboard far less — against several MB for the
+ *   12 MP original. ImageIO's
  *   thumbnail path decodes straight to that size: decoding a camera photo whole
  *   costs about 48 MB, on an iPad 8 with 3 GB.
  * - **Upright.** The orientation flag is applied to the pixels

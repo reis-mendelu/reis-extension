@@ -41,9 +41,12 @@ describe('ink pictures are iPad-native only', () => {
     );
   });
 
-  it.each(SHARED_STRING_FILES)('%s carries the reader’s picture strings and nothing else', (file) => {
-    const text = read(file);
-    expect(text).toMatch(/photoLibrary/);
-    expect(text).not.toMatch(/PHPicker|PagePicture/);
-  });
+  it.each(SHARED_STRING_FILES)(
+    '%s carries the reader’s picture strings and nothing else',
+    (file) => {
+      const text = read(file);
+      expect(text).toMatch(/photoLibrary/);
+      expect(text).not.toMatch(/PHPicker|PagePicture/);
+    }
+  );
 });
