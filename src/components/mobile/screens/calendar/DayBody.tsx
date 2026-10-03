@@ -1,8 +1,6 @@
 import { useRef, type RefObject } from 'react';
 import type { AgendaRow } from '../../../../utils/mobile/dayAgenda';
 import { useAppStore } from '../../../../store/useAppStore';
-import { subjectSheetFor } from '../../../../utils/mobile/lessonActions';
-import { eventIdFromRsvpBlock } from '../../../../utils/rsvpBlocks';
 import { stepDay } from '../../../../utils/mobile/weekDays';
 import { DayAgenda } from './DayAgenda';
 import { CalendarEmptyDay } from './CalendarEmptyDay';
@@ -10,6 +8,7 @@ import { RecentFilesStrip } from './RecentFilesStrip';
 import { MenuCard } from './MenuCard';
 import { useSwipeSteps } from '../../primitives/useSwipeSteps';
 import { useShowLessonOnMap } from './useShowLessonOnMap';
+import { useOpenLesson } from './useOpenLesson';
 import { AlwaysScrollable } from '../../primitives/AlwaysScrollable';
 import { PullRefreshIndicator } from '../../primitives/PullRefreshIndicator';
 
@@ -69,10 +68,10 @@ export function DayBody({
   onSelectDay,
   pullSurfaceRef,
 }: DayBodyProps) {
-  const pushSheet = useAppStore((s) => s.pushSheet);
   const scheduleRefreshing = useAppStore((s) => s.scheduleRefreshing);
   const triggerScheduleRefresh = useAppStore((s) => s.triggerScheduleRefresh);
   const showOnMap = useShowLessonOnMap();
+  const openLesson = useOpenLesson();
   const bodyRef = useRef<HTMLDivElement>(null);
 
   /**
@@ -138,25 +137,7 @@ export function DayBody({
               rows={agenda}
               // The row hands over the day's own lesson object, so there is no
               // id to look up and no week to disambiguate.
-              onOpenSubject={(lesson) => {
-                // A custom event has no course, so `subjectSheetFor` would open the
-                // drawer on an empty `courseCode` and go looking for the files,
-                // syllabus and classmates of a party. The rows only became tappable
-                // when the phone started rendering them at all, so this branch is
-                // part of that change rather than a separate polish.
-                if (lesson.isCustom) {
-                  const eventId = eventIdFromRsvpBlock(lesson.customEventId ?? '');
-                  // An entry the student typed in themselves. There is nothing
-                  // behind it — switching to the map would change tabs and then log
-                  // "unknown event" — so the row is simply text.
-                  if (!eventId) return;
-                  // The pin's own path: there is nothing more to open for an
-                  // event than the map, so the row and its pin are one action.
-                  showOnMap(lesson);
-                  return;
-                }
-                pushSheet(subjectSheetFor(lesson));
-              }}
+              onOpenSubject={openLesson}
               onShowOnMap={showOnMap}
             />
           )}

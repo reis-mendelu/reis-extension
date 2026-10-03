@@ -10,6 +10,12 @@ export interface DayChipsProps {
   onSelect: (iso: string) => void;
   /** Compact IS dates (YYYYMMDD) that have at least one lesson. */
   lessonDates: ReadonlySet<string>;
+  /**
+   * A tap on a chip, when it means more than "select this day". In the week
+   * view it opens that day, while the arrows and the swipe still only move the
+   * week — so they keep `onSelect`.
+   */
+  onPickDay?: (iso: string) => void;
 }
 
 /**
@@ -35,7 +41,7 @@ export interface DayChipsProps {
  * is the arrow you reach for, and a pill breaks that mapping for the sake of a
  * tidier row. 44px tall now, the touch minimum the old 36px missed.
  */
-export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) {
+export function DayChips({ selectedIso, onSelect, lessonDates, onPickDay }: DayChipsProps) {
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
   const days = weekDays(selectedIso, lessonDates);
@@ -135,7 +141,7 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
               key={iso}
               type="button"
               title={holiday ?? undefined}
-              onClick={() => onSelect(iso)}
+              onClick={() => (onPickDay ?? onSelect)(iso)}
               // Tonal, not a solid primary fill. `--color-primary` is a lime
               // #79be15 and `--color-primary-content` is white, which is
               // 2.29:1 — below AA, measured. The same tint BottomNav marks its

@@ -82,6 +82,12 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
     .getState()
     .hydratePullHint({ demo })
     .catch(() => {});
+  // And the calendar's day/week choice, so its first frame is the view the
+  // student left it on rather than the day view swapping to the week a tick in.
+  await useAppStore
+    .getState()
+    .hydrateCalendarView()
+    .catch(() => {});
 
   // Dynamic import on purpose: this module renders the React root on
   // evaluation, so a static import would boot the app BEFORE a session exists

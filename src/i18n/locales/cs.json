@@ -1171,7 +1171,11 @@
       "loading": "Načítám rozvrh…",
       "holiday": "Státní svátek",
       "teachingStarts": "Výuka začíná {date}",
-      "recentFiles": "Naposledy otevřené"
+      "recentFiles": "Naposledy otevřené",
+      "backToToday": "Zpět na dnešek",
+      "viewLabel": "Zobrazení kalendáře",
+      "dayView": "Den",
+      "weekView": "Týden"
     },
     "exams": {
       "title": "Zkoušky",

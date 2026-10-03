@@ -149,7 +149,7 @@ describe('CalendarScreen landing day', () => {
     // fireEvent, not userEvent: userEvent's own timers deadlock against the
     // fake clock this suite needs to pin a date before term.
     render(<CalendarScreen />);
-    fireEvent.click(screen.getByRole('button', { name: 'Dnes' }));
+    fireEvent.click(screen.getByRole('button', { name: /Zpět na dnešek/ }));
     expect(screen.getByText('Středa 16. září')).toBeInTheDocument();
     expect(screen.getByTestId('calendar-outside-teaching')).toBeInTheDocument();
   });
@@ -169,7 +169,7 @@ describe('CalendarScreen landing day', () => {
     vi.setSystemTime(new Date('2026-09-21T08:00:00'));
     render(<CalendarScreen />);
     expect(screen.getByText('Pondělí 21. září')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Dnes' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Zpět na dnešek/ })).not.toBeInTheDocument();
   });
 
   it('stays on today mid-week once term is running, with the ordinary empty state', () => {
@@ -181,7 +181,7 @@ describe('CalendarScreen landing day', () => {
     expect(screen.getByText('Středa 23. září')).toBeInTheDocument();
     expect(screen.queryByTestId('calendar-outside-teaching')).not.toBeInTheDocument();
     expect(screen.getByText('Nic nemáš, pohodička')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Dnes' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Zpět na dnešek/ })).not.toBeInTheDocument();
   });
 
   it('stays on today after term, when the first lesson is in the past', () => {

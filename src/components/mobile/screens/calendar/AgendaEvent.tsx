@@ -4,38 +4,7 @@ import { useTranslation } from '../../../../hooks/useTranslation';
 import { useAppStore } from '../../../../store/useAppStore';
 import { localizedCourseName } from '../../../../utils/localizedLesson';
 import { lessonPlace } from '../../../../utils/lessonPlace';
-
-/**
- * Colour tokens match `CalendarEventCard`'s desktop scheme exactly (same
- * `exam-*`/`lecture-*`/`seminar-*` design tokens) — these card backgrounds are
- * fixed light tints that do NOT follow the active theme, so the foreground
- * uses the fixed `content-primary`/`content-secondary` tokens too, not
- * theme-reactive `base-content`.
- */
-function eventStyles(lesson: BlockLesson) {
-  if (lesson.isExam) {
-    return {
-      bg: 'bg-exam-bg/85',
-      border: 'border-exam-border/30',
-      rail: 'border-l-exam-border',
-      text: 'text-exam-text',
-    };
-  }
-  if (lesson.isSeminar === 'true') {
-    return {
-      bg: 'bg-seminar-bg/85',
-      border: 'border-seminar-border/30',
-      rail: 'border-l-seminar-border',
-      text: 'text-seminar-text',
-    };
-  }
-  return {
-    bg: 'bg-lecture-bg/85',
-    border: 'border-lecture-border/30',
-    rail: 'border-l-lecture-border',
-    text: 'text-lecture-text',
-  };
-}
+import { eventStyles } from './eventStyles';
 
 export interface AgendaEventProps {
   lesson: BlockLesson;
