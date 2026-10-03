@@ -4,7 +4,7 @@ import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useWideViewport } from '../../../../hooks/ui/useWideViewport';
 import { getCzechHoliday } from '../../../../utils/holidays';
-import { toIso, toCompact, shiftIso, weekDays } from '../../../../utils/mobile/weekDays';
+import { toIso, toCompact, stepWeek, weekDays } from '../../../../utils/mobile/weekDays';
 import { useSwipeSteps } from '../../primitives/useSwipeSteps';
 import { useOpenLesson } from './useOpenLesson';
 import { useElementHeight } from './useElementHeight';
@@ -70,7 +70,7 @@ export function WeekGrid({ lessons, selectedIso, lessonDates, onSelectDay }: Wee
     onMove: setOffset,
     onEnd: (steps) => {
       setOffset(null);
-      if (steps !== 0) onSelectDay(shiftIso(selectedIso, steps * 7));
+      if (steps !== 0) onSelectDay(stepWeek(selectedIso, steps, lessonDates, todayIso));
     },
     onCancel: () => setOffset(null),
   });

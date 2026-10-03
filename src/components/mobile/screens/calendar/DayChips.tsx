@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useAppStore } from '../../../../store/useAppStore';
 import { getCzechHoliday } from '../../../../utils/holidays';
-import { toIso, toCompact, shiftIso, weekDays } from '../../../../utils/mobile/weekDays';
+import { toIso, toCompact, stepWeek, weekDays } from '../../../../utils/mobile/weekDays';
 import { useSwipeSteps } from '../../primitives/useSwipeSteps';
 
 export interface DayChipsProps {
@@ -83,7 +83,7 @@ export function DayChips({ selectedIso, onSelect, lessonDates, onPickDay }: DayC
     onMove: setOffset,
     onEnd: (steps) => {
       setOffset(null);
-      if (steps !== 0) onSelect(shiftIso(selectedIso, steps * 7));
+      if (steps !== 0) onSelect(stepWeek(selectedIso, steps, lessonDates, todayIso));
     },
     onCancel: () => setOffset(null),
   });
@@ -97,7 +97,7 @@ export function DayChips({ selectedIso, onSelect, lessonDates, onPickDay }: DayC
     <div className="flex flex-shrink-0 items-center gap-1 px-2 pb-2.5 pt-4">
       <button
         type="button"
-        onClick={() => onSelect(shiftIso(selectedIso, -7))}
+        onClick={() => onSelect(stepWeek(selectedIso, -1, lessonDates, todayIso))}
         aria-label={t('mobile.calendar.prevWeek')}
         className={arrowClass}
       >
@@ -213,7 +213,7 @@ export function DayChips({ selectedIso, onSelect, lessonDates, onPickDay }: DayC
       </div>
       <button
         type="button"
-        onClick={() => onSelect(shiftIso(selectedIso, 7))}
+        onClick={() => onSelect(stepWeek(selectedIso, 1, lessonDates, todayIso))}
         aria-label={t('mobile.calendar.nextWeek')}
         className={arrowClass}
       >

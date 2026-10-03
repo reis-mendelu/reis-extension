@@ -113,3 +113,24 @@ export function stepDay(
   }
   return shiftIso(iso, steps);
 }
+
+/**
+ * One week arrow (or week swipe): the same weekday `steps` weeks away, or —
+ * when that day is a weekend the target week does not show — the last day it
+ * does. Hidden days are only ever Saturday and Sunday, so the last shown day is
+ * also the nearest one.
+ *
+ * Plain `shiftIso(iso, ±7)` took a student from today's Saturday (shown,
+ * because it is today) to next week's Saturday (hidden): the header named a
+ * day the strip had no chip for, the very defect the today chip fixed.
+ */
+export function stepWeek(
+  iso: string,
+  steps: number,
+  lessonDates: ReadonlySet<string>,
+  todayIso: string
+): string {
+  const target = shiftIso(iso, steps * 7);
+  const shown = weekDays(target, lessonDates, todayIso).map(toIso);
+  return shown.includes(target) ? target : (shown[shown.length - 1] ?? target);
+}

@@ -17,6 +17,10 @@ import { useAppStore } from '../store/useAppStore';
  */
 export function installCalendarResumeReset(): void {
   void CapApp.addListener('resume', () => {
+    // The clock first. The pulse is a setInterval the OS suspended, so until
+    // its next tick `now` is still the moment the app went away — last night,
+    // after a night — and the today circle would sit on yesterday.
+    useAppStore.getState().updatePulse();
     useAppStore.getState().setMobileSelectedDay(null);
   });
 }

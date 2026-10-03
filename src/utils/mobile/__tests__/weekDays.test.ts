@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { weekDays, toIso, mondayOf, stepDay } from '../weekDays';
+import { weekDays, toIso, mondayOf, stepDay, stepWeek } from '../weekDays';
 
 // Mon 21 Sep 2026 … Sun 27 Sep 2026.
 const MONDAY = '2026-09-21';
@@ -125,5 +125,30 @@ describe('stepDay', () => {
 
   it('is an ordinary day step inside the week', () => {
     expect(stepDay(MONDAY, 1, weekdaysOnly, ELSEWHERE)).toBe('2026-09-22');
+  });
+});
+
+/**
+ * A week arrow from today's Saturday used to land on the next Saturday — a day
+ * the strip has no chip for, so the header named a day nobody could see. The
+ * same defect the today chip fixed, one tap away from it.
+ */
+describe('stepWeek', () => {
+  const weekdaysOnly = new Set(['20260921']);
+
+  it('moves seven days when the target day is shown', () => {
+    expect(stepWeek('2026-09-23', 1, weekdaysOnly, ELSEWHERE)).toBe('2026-09-30');
+    expect(stepWeek('2026-09-23', -1, weekdaysOnly, ELSEWHERE)).toBe('2026-09-16');
+  });
+
+  it('settles on the last shown day when the target is a hidden weekend day', () => {
+    // From today, Saturday 26 September: next week's Saturday is hidden → Friday 2 Oct.
+    expect(stepWeek(SATURDAY, 1, weekdaysOnly, SATURDAY)).toBe('2026-10-02');
+    expect(stepWeek(SATURDAY, -1, weekdaysOnly, SATURDAY)).toBe('2026-09-18');
+    expect(stepWeek(SUNDAY, 1, weekdaysOnly, SUNDAY)).toBe('2026-10-02');
+  });
+
+  it('comes back onto today when the week arrow returns to it', () => {
+    expect(stepWeek('2026-10-03', -1, weekdaysOnly, SATURDAY)).toBe(SATURDAY);
   });
 });
