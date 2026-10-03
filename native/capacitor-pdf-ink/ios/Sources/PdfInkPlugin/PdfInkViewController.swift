@@ -37,7 +37,7 @@ final class InkPDFView: PDFView {
  */
 @available(iOS 16.0, *)
 final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
-    PKCanvasViewDelegate, UIAdaptivePresentationControllerDelegate
+    PKCanvasViewDelegate, PKToolPickerObserver, UIAdaptivePresentationControllerDelegate
 {
     private let strings: PdfInkStrings
     /// Presented things are not in this view's subtree, so they cannot inherit it.
@@ -97,6 +97,8 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         image: UIImage(systemName: "xmark"), style: .plain, target: self,
         action: #selector(exitTapped))
     private var saveTimer: Timer?
+    /// Set by `willClose`: the pens are put away for good, not lost.
+    private var closing = false
     private var laidOutWidth: CGFloat = 0
     private(set) var lastSaveError: Error?
     /// Fired by the bar's exit. The space wires it to the same `closeTapped()`
@@ -113,6 +115,8 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         set { pdfView.scaleFactor = newValue }
     }
     var fittedPageScale: CGFloat { pdfView.scaleFactorForSizeToFit }
+    /// Whether the pens are on screen. `ToolPickerResponderTests` asks.
+    var isToolPickerVisible: Bool { toolPicker.isVisible }
 
     init(strings: PdfInkStrings, tint: UIColor? = nil) {
         self.strings = strings
@@ -202,7 +206,11 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         toolPicker.showsDrawingPolicyControls = true
         toolPicker.colorUserInterfaceStyle = .light
         toolPicker.setVisible(true, forFirstResponder: pdfView)
+        toolPicker.addObserver(self)
 
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(restoreToolPicker),
+            name: UIApplication.didBecomeActiveNotification, object: nil)
         NotificationCenter.default.addObserver(
             self, selector: #selector(persistOnResignActive),
             name: UIApplication.willResignActiveNotification, object: nil)
@@ -511,6 +519,32 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         pdfView.becomeFirstResponder()
     }
 
+    /**
+     * Gives the page the responder back, and with it the pens.
+     *
+     * The picker is visible only while the page (or a canvas) is first
+     * responder, and things the reader does not control take that away with
+     * nothing on screen to explain it: a tap on a sidebar row makes the list
+     * cell first responder, and a page whose canvas held it (PencilKit's
+     * long-press menu, a lasso selection) gives it to PDFKit's document view as
+     * it scrolls away. Rather than chase each one, the reader watches the picker
+     * itself and takes the responder back whenever the pens go while nothing is
+     * over the reader. A presented sheet or alert keeps it: those hide the pens
+     * on purpose, and their own dismissal brings them back.
+     */
+    @objc func restoreToolPicker() {
+        guard isViewLoaded, view.window != nil, presentedViewController == nil, !closing,
+            document != nil, !toolPicker.isVisible
+        else { return }
+        showToolPicker()
+    }
+
+    func toolPickerVisibilityDidChange(_ toolPicker: PKToolPicker) {
+        guard !toolPicker.isVisible else { return }
+        // Fired while the responder is still moving; take it back after that.
+        DispatchQueue.main.async { [weak self] in self?.restoreToolPicker() }
+    }
+
     /// Swiping a sheet away never reaches its own buttons.
     func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
         showToolPicker()
@@ -555,7 +589,10 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
             let alert = UIAlertController(
                 title: strings.exportFailed, message: error.localizedDescription,
                 preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: strings.close, style: .cancel))
+            alert.addAction(
+                UIAlertAction(title: strings.close, style: .cancel) { [weak self] _ in
+                    self?.restoreToolPicker()
+                })
             if let tint { alert.view.tintColor = tint }
             present(alert, animated: true)
             return
@@ -564,10 +601,12 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         let share = UIActivityViewController(activityItems: [url], applicationActivities: nil)
         // An iPad presents this as a popover and needs the anchor, or it traps.
         share.popoverPresentationController?.barButtonItem = shareItem
+        share.completionWithItemsHandler = { [weak self] _, _, _, _ in self?.restoreToolPicker() }
         present(share, animated: true)
     }
 
     func willClose() {
+        closing = true
         toolPicker.setVisible(false, forFirstResponder: pdfView)
     }
 

@@ -213,7 +213,10 @@ final class PdfInkSpace: NSObject {
             title: strings.saveFailedTitle,
             message: "\(strings.saveFailedMessage)\n\n\(detail)",
             preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: strings.keepEditing, style: .cancel))
+        alert.addAction(
+            UIAlertAction(title: strings.keepEditing, style: .cancel) { [reader] _ in
+                reader.restoreToolPicker()
+            })
         alert.addAction(UIAlertAction(title: strings.discard, style: .destructive) { _ in discard() })
         // An alert is presented over the window, not inside `split.view`, so it
         // inherits nothing: every presented thing in here is tinted by hand.
