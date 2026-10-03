@@ -4,6 +4,7 @@ import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
 import { TeacherList } from './TeacherList';
 import { SubjectDrawerTabs } from './SubjectDrawerTabs';
+import { stepTab, SUBJECT_TAB_ORDER } from './subjectTabStep';
 import { SubjectDrawerScroller } from './SubjectDrawerScroller';
 import { DrawerTabBody } from '../../SubjectFileDrawer/DrawerTabBody';
 import { groupAndSortFiles } from '../../SubjectFileDrawer/utils/groupFiles';
@@ -130,6 +131,9 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
       <SubjectDrawerScroller
         courseCode={courseCode}
         pullable={activeTab === 'files'}
+        onSwipeStep={(steps) =>
+          setActiveTab(stepTab(SUBJECT_TAB_ORDER, activeTab, steps, disabledTabs))
+        }
         top={
           <>
             <SheetHeader

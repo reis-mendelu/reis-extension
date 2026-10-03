@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  weekSwipeSteps,
-  isHorizontal,
-  WEEK_SWIPE_DISTANCE_PX,
-  HORIZONTAL_BIAS,
-} from '../weekSwipe';
+import { swipeSteps, isHorizontal, SWIPE_STEP_DISTANCE_PX, HORIZONTAL_BIAS } from '../swipeSteps';
 
 /**
  * `velocity` is the RELEASE velocity in px/ms, positive rightward — the same
@@ -13,23 +8,23 @@ import {
  * primitives/__tests__/sheetDragVelocity.test.ts; these are the rules built on
  * top of it.
  */
-describe('weekSwipeSteps', () => {
+describe('swipeSteps', () => {
   it('pulls next week in on a leftward drag, the way a carousel does', () => {
-    expect(weekSwipeSteps(-WEEK_SWIPE_DISTANCE_PX, -0.02)).toBe(1);
+    expect(swipeSteps(-SWIPE_STEP_DISTANCE_PX, -0.02)).toBe(1);
   });
 
   it('brings last week back on a rightward drag', () => {
-    expect(weekSwipeSteps(WEEK_SWIPE_DISTANCE_PX, 0.02)).toBe(-1);
+    expect(swipeSteps(SWIPE_STEP_DISTANCE_PX, 0.02)).toBe(-1);
   });
 
   it('takes a short fast flick, where the distance alone would not', () => {
-    expect(weekSwipeSteps(-30, -0.8)).toBe(1);
-    expect(weekSwipeSteps(30, 0.8)).toBe(-1);
+    expect(swipeSteps(-30, -0.8)).toBe(1);
+    expect(swipeSteps(30, 0.8)).toBe(-1);
   });
 
   it('stays put on a short slow drag', () => {
-    expect(weekSwipeSteps(-30, -0.02)).toBe(0);
-    expect(weekSwipeSteps(30, 0.02)).toBe(0);
+    expect(swipeSteps(-30, -0.02)).toBe(0);
+    expect(swipeSteps(30, 0.02)).toBe(0);
   });
 
   /**
@@ -38,20 +33,20 @@ describe('weekSwipeSteps', () => {
    * is the decision, not the distance it covered getting there.
    */
   it('stays put when the finger is heading back at release', () => {
-    expect(weekSwipeSteps(-120, 0.4)).toBe(0);
-    expect(weekSwipeSteps(120, -0.4)).toBe(0);
+    expect(swipeSteps(-120, 0.4)).toBe(0);
+    expect(swipeSteps(120, -0.4)).toBe(0);
   });
 
   it('moves one week however far the drag went', () => {
     // Aimability over speed: a strip that jumped four weeks on one long drag
     // could not be landed on a chosen week.
-    expect(weekSwipeSteps(-900, -3)).toBe(1);
-    expect(weekSwipeSteps(900, 3)).toBe(-1);
+    expect(swipeSteps(-900, -3)).toBe(1);
+    expect(swipeSteps(900, 3)).toBe(-1);
   });
 
   it('does nothing without travel', () => {
-    expect(weekSwipeSteps(0, 5)).toBe(0);
-    expect(weekSwipeSteps(0, 0)).toBe(0);
+    expect(swipeSteps(0, 5)).toBe(0);
+    expect(swipeSteps(0, 0)).toBe(0);
   });
 });
 
