@@ -117,7 +117,7 @@ describe('PersonSheet', () => {
     usePersonPhoto.mockReturnValue(PHOTO);
     render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
     const avatar = screen.getByLabelText('Zvětšit fotku');
-    const name = screen.getByText('Jan Novák', { selector: 'span' });
+    const name = screen.getByRole('link', { name: 'Jan Novák' });
     expect(avatar.closest('.flex.items-start')).toBe(name.closest('.flex.items-start'));
   });
 
@@ -165,19 +165,21 @@ describe('PersonSheet', () => {
     expect(focusRoomByCode).toHaveBeenCalledWith('BA39N1009');
   });
 
-  it("links to the person's own IS page, which the extension's hover card has too", () => {
-    // A plain target="_blank" anchor: on Capacitor the capture listener in
-    // mobile/openExternal turns it into the in-app WebView that carries the IS
-    // session, so the page opens signed in rather than on IS's login form.
+  it("makes the name a link to the person's own IS page, as the subject sheet does", () => {
+    // The title, not a row of its own — the same pattern as the subject sheet
+    // (#478). A plain target="_blank" anchor: on Capacitor the capture listener
+    // in mobile/openExternal turns it into the in-app WebView that carries the
+    // IS session, so the page opens signed in rather than on IS's login form.
     render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
-    const link = screen.getByRole('link', { name: 'Otevřít v IS' });
+    const link = screen.getByRole('link', { name: 'Jan Novák' });
     expect(link).toHaveAttribute('href', 'https://is.mendelu.cz/auth/lide/clovek.pl?id=42;lang=cz');
     expect(link).toHaveAttribute('target', '_blank');
+    expect(screen.queryByText('Otevřít v IS')).not.toBeInTheDocument();
   });
 
   it('opens the IS page in English when the app is in English', () => {
     // The cached profile has to be in English too: a `cz` entry is stale for
-    // an `en` app, so the hook refetches and the sheet shows no rows meanwhile.
+    // an `en` app, so the hook refetches and the sheet shows no name meanwhile.
     useAppStore.setState({
       language: 'en',
       personProfiles: {
@@ -190,27 +192,20 @@ describe('PersonSheet', () => {
       fetchPersonProfileById: vi.fn(),
     } as never);
     render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
-    expect(screen.getByRole('link', { name: 'Open in IS' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Jan Novák' })).toHaveAttribute(
       'href',
       'https://is.mendelu.cz/auth/lide/clovek.pl?id=42;lang=en'
     );
   });
 
-  it('still links to IS for someone with no address and no office', () => {
-    // The IS page needs only the id. With nothing else to show, it is the one
-    // thing left the student can do from this sheet.
+  it('does not link the loading title — there is no one to open yet', () => {
     useAppStore.setState({
-      schedule: { data: [], status: 'success' },
-      personProfiles: {
-        42: {
-          data: { personId: 42, name: 'Jan Novák', universityEmail: null, privateEmail: null },
-          fetchedAt: Date.now(),
-          lang: 'cz',
-        },
-      },
+      personProfiles: {},
+      personProfilesLoading: { 42: true },
+      fetchPersonProfileById: vi.fn(),
     } as never);
     render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
-    expect(screen.getByRole('link', { name: 'Otevřít v IS' })).toBeInTheDocument();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 
   it('does not show the room row when no room can be resolved', () => {

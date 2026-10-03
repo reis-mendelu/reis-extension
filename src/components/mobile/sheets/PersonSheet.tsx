@@ -27,10 +27,10 @@ export interface PersonSheetProps {
  * The work phone IS publishes is gone: nobody rings a lecturer, and on a
  * phone-sized sheet an unused row costs more than it gives. What is left is
  * what a student actually does — read the name, take the address, message them
- * on Teams, walk to the office — plus a way out to the person's page in IS,
- * which the extension's hover card has always had. That page carries what this
- * sheet deliberately does not: office hours, the full contact block, the
- * subjects they teach.
+ * on Teams, walk to the office. The name itself links to the person's page in
+ * IS, as the subject sheet's title does and the extension's hover card always
+ * has: that page carries what this sheet deliberately does not — office hours,
+ * the full contact block, the subjects they teach.
  *
  * The email is a COPY control rather than a mailto: link. A mailto: hands the
  * student to whichever mail app the OS picked years ago; the address on the
@@ -79,7 +79,7 @@ export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
   // is 0, which would link to nobody.
   const profileUrl = /^\d+$/.test(sheet.personId)
     ? isPersonProfileUrl(sheet.personId, language)
-    : null;
+    : undefined;
   const placeholderText = isLoading
     ? t('mobile.sheet.personLoading')
     : error || t('mobile.sheet.personLoadError');
@@ -122,7 +122,14 @@ export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
 
   return (
     <Sheet size="content" onClose={onClose}>
-      <SheetHeader title={title} subtitle={subtitle} leading={avatar} onClose={onClose} />
+      <SheetHeader
+        title={title}
+        subtitle={subtitle}
+        leading={avatar}
+        // Not while the title is "Loading…" or an error: there is no one to open.
+        titleHref={name ? profileUrl : undefined}
+        onClose={onClose}
+      />
       {!name ? (
         <p className="px-5 pb-5 text-sm text-base-content/60">{placeholderText}</p>
       ) : (
@@ -135,12 +142,7 @@ export function PersonSheet({ sheet, onClose }: PersonSheetProps) {
             </div>
           )}
 
-          <PersonContactRows
-            email={email}
-            room={room}
-            onShowOnMap={onShowOnMap}
-            profileUrl={profileUrl}
-          />
+          <PersonContactRows email={email} room={room} onShowOnMap={onShowOnMap} />
 
           {teamsEmail && (
             <button
