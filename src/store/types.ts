@@ -670,6 +670,7 @@ export type AppState = ScheduleSlice &
   FilesSlice &
   NotesSlice &
   ClassmatesSlice &
+  import('./slices/createSubjectClassmatesSlice').SubjectClassmatesSlice &
   SubjectsSlice &
   SyncSlice &
   ThemeSlice &
