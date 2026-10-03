@@ -39,6 +39,8 @@ export function usePdfInkStrings(): () => PdfInkStrings {
       movePictures: t('mobile.pdfInk.movePictures'),
       deletePicture: t('mobile.pdfInk.deletePicture'),
       done: t('mobile.pdfInk.done'),
+      cover: t('mobile.pdfInk.cover'),
+      deleteTape: t('mobile.pdfInk.deleteTape'),
     }),
     [t]
   );

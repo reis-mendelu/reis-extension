@@ -1357,7 +1357,9 @@
       "more": "Další",
       "movePictures": "Upravit obrázky",
       "deletePicture": "Smazat obrázek",
-      "done": "Hotovo"
+      "done": "Hotovo",
+      "cover": "Páska",
+      "deleteTape": "Smazat pásku"
     },
     "openingLink": "Otevírám…"
   },

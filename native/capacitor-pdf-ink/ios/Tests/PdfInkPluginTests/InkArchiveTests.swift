@@ -37,11 +37,9 @@ final class InkArchiveTests: XCTestCase {
         XCTAssertEqual(decoded.insertedPages, [])
     }
 
-    /// Archives written while the cover tool existed are on devices now. The
-    /// key is gone from the struct, so it is simply not read — but the version
-    /// stayed at 3 on purpose: dropping back to 2 would make every one of those
-    /// files a "newer version", and the reader quarantines those. The ink has to
-    /// survive.
+    /// A `covers` key the reader cannot read — any shape other than the
+    /// withdrawn tool's `[Int: [CGRect]]` — is dropped, never fatal: the ink
+    /// has to survive. The version stayed at 3 for the same reason.
     func testAnArchiveCarryingCoversStillOpensWithItsInk() throws {
         let withCovers: [String: Any] = [
             "version": 3, "pageCount": 4, "pages": ["7": Data([1, 2, 3])],
@@ -57,6 +55,52 @@ final class InkArchiveTests: XCTestCase {
 
         XCTAssertEqual(decoded.pages, [7: Data([1, 2, 3])], "the ink was dropped")
         XCTAssertEqual(decoded.insertedPages, [2])
+        XCTAssertEqual(decoded.coverCards, [:], "an unreadable withdrawn key is dropped")
+    }
+
+    func testRoundTripsCoverCards() throws {
+        let cover = PageCover(id: "c", rect: CGRect(x: 10, y: 20, width: 30, height: 40))
+        let archive = InkArchive(pageCount: 2, pages: [:], coverCards: [1: [cover]])
+
+        let decoded = try InkArchive.decode(archive.encoded())
+
+        XCTAssertEqual(decoded.coverCards, [1: [cover]])
+        XCTAssertEqual(decoded.version, 3, "covers are additive; a bump quarantines older files")
+    }
+
+    /// The withdrawn tool (dev builds, 2026-09-07) wrote `covers` as bare
+    /// rectangles. They come back as covers with fresh ids, and the ink comes
+    /// with them.
+    func testConvertsTheWithdrawnToolsCovers() throws {
+        struct Withdrawn: Encodable {
+            let version = 3
+            let pageCount = 4
+            let pages: [Int: Data] = [7: Data([1, 2, 3])]
+            let insertedPages: [Int] = []
+            let covers: [Int: [CGRect]] = [1: [CGRect(x: 10, y: 20, width: 30, height: 40)]]
+        }
+        let encoder = PropertyListEncoder()
+        encoder.outputFormat = .binary
+
+        let decoded = try InkArchive.decode(encoder.encode(Withdrawn()))
+
+        XCTAssertEqual(decoded.pages, [7: Data([1, 2, 3])], "the ink was dropped")
+        let converted = try XCTUnwrap(decoded.coverCards[1])
+        XCTAssertEqual(converted.map(\.rect), [CGRect(x: 10, y: 20, width: 30, height: 40)])
+        XCTAssertFalse(converted.first?.id.isEmpty ?? true)
+    }
+
+    func testNeverWritesTheWithdrawnKey() throws {
+        let archive = InkArchive(
+            pageCount: 1, pages: [:],
+            coverCards: [0: [PageCover(rect: CGRect(x: 0, y: 0, width: 30, height: 30))]])
+
+        let plist = try XCTUnwrap(
+            PropertyListSerialization.propertyList(from: archive.encoded(), format: nil)
+                as? [String: Any])
+
+        XCTAssertNil(plist["covers"])
+        XCTAssertNotNil(plist["coverCards"])
     }
 
     func testRejectsJunk() {

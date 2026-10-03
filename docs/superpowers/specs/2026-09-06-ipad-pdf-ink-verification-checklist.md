@@ -184,6 +184,27 @@ build drops pictures from an archive on its next save (spec addendum 2026-10-03)
     ink over them.
 11. Dark mode: page, photos and ink look exactly as in light; Hotovo is lime.
 
+## Covers: the tape (2026-10-03)
+
+Spec: `2026-10-03-ipad-recall-covers-design.md`. With an Apple Pencil paired.
+
+1. The palette shows the tape (masking-tape colour) right after the marker.
+2. Pick the tape, draw one straight line with the Pencil → a thin tape strip (8 pt) that
+   grows under the Pencil from the first millimetre; the page does not move.
+3. A tiny stroke (a few millimetres) → a small square of tape. A plain tap → nothing.
+3a. Hold a finger on a strip → a menu with "Smazat pásku"; tap it → the strip goes;
+    the palette's undo brings it back.
+3b. Hold a finger on a strip, then move it → the menu goes and the strip follows the finger,
+    lifted; let go → it stays there, inside the page. Undo puts it back.
+4. Same over your own ink → tape; no ink stroke is drawn.
+5. With the tape still picked, drag a finger → the page scrolls, no tape.
+6. Tap a strip with the Pencil (tape picked) → it goes; the palette's undo brings it back.
+7. Pick the pen, tap a strip with a finger → it opens to a dashed outline; again → shut.
+8. Tap a strip quickly five or six times → it opens and shuts on every tap, none missed.
+9. Start a scroll with a finger on a strip → the page scrolls, the strip stays shut.
+10. Close the file and reopen → the strips are there, shut.
+11. Share with notes on a file with strips → the PDF shows what was under them.
+
 ## Report back
 
 Record any finding not in the design here, with the step number.

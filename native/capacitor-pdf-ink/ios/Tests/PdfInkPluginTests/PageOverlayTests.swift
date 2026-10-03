@@ -33,8 +33,9 @@ final class PageOverlayTests: XCTestCase {
         overlay.inkScale = 2
         overlay.layoutIfNeeded()
         XCTAssertEqual(
-            overlay.subviews, [overlay.pictureLayer.belowInk, overlay.canvas, overlay.pictureLayer],
-            "under the ink, the ink, then the pictures over it with their handles")
+            overlay.subviews,
+            [overlay.pictureLayer.belowInk, overlay.canvas, overlay.pictureLayer, overlay.coverLayer],
+            "under the ink, the ink, the pictures over it with their handles, then the covers")
         XCTAssertEqual(overlay.pictureLayer.frame, overlay.bounds)
         XCTAssertEqual(overlay.pictureLayer.belowInk.frame, overlay.bounds)
         XCTAssertEqual(overlay.pictureLayer.transform, .identity)
