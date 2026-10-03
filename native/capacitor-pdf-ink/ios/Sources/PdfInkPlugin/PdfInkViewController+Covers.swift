@@ -36,6 +36,7 @@ extension PdfInkViewController {
         guard list != before else { return }
         covers[index] = list.isEmpty ? nil : list
         overlays[index]?.coverLayer.covers = list
+        updateRecallItem()
         if registeringUndo {
             undoManagerForPictures?.registerUndo(withTarget: pictureUndoTarget) { [weak self] _ in
                 self?.setCovers(before, onPage: index)
@@ -61,6 +62,7 @@ extension PdfInkViewController {
             revealedCovers.insert(id)
         }
         overlays[index]?.coverLayer.revealed = revealedCovers
+        if recall?.current?.id == id, revealedCovers.contains(id) { currentCoverOpened() }
     }
 
     /// Called for every overlay PDFKit asks for, so a page that scrolls in
@@ -69,6 +71,8 @@ extension PdfInkViewController {
         let layer = overlay.coverLayer
         layer.covers = covers[index] ?? []
         layer.currentColor = tint ?? .tintColor
+        // A page scrolled in mid-test still outlines the cover being asked.
+        layer.currentID = recall?.current.flatMap { $0.page == index ? $0.id : nil }
         layer.fingerDraws = { [weak self] in self?.fingerDraws() ?? false }
         layer.onCreate = { [weak self] rect in self?.addCover(rect, onPage: index) }
         layer.onRemove = { [weak self] id in self?.removeCover(id, onPage: index) }
