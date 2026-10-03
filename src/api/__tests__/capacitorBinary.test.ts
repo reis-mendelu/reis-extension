@@ -46,6 +46,24 @@ describe('filenameFromResponse', () => {
   it('falls back to a sane name when the header is absent — IS query URLs have no basename', () => {
     expect(filenameFromResponse({})).toBe('dokument.pdf');
   });
+
+  // The old regex returned this still percent-encoded, and the native path
+  // writes the name straight to the filesystem.
+  it('percent-decodes a filename* name', () => {
+    expect(
+      filenameFromResponse({
+        'Content-Disposition': "attachment; filename*=UTF-8''P%C5%99edn%C3%A1%C5%A1ka%204.pptx",
+      })
+    ).toBe('Přednáška 4.pptx');
+  });
+
+  it('gives a headerless Office file its own extension, not .pdf', () => {
+    expect(
+      filenameFromResponse({
+        'content-type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      })
+    ).toBe('dokument.pptx');
+  });
 });
 
 describe('fetchIsBinary', () => {
