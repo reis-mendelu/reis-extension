@@ -77,13 +77,21 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
 
   if (!data || (!data.ph.sections.length && !data.vt.tests.length)) {
     const hasFlags = subjectInfo?.hasPrubezne || subjectInfo?.hasTest;
+    // Flags are set only from the current semester's subject list. A subject
+    // known only from the document server has none and is never fetched, so
+    // reIS cannot say it has no assessment — only that it does not load it.
+    const checked = subjectInfo?.hasPrubezne === false && subjectInfo?.hasTest === false;
     return (
       <div className="flex flex-col h-full">
         <div className="flex flex-col items-center justify-center flex-1 p-6 text-center">
           <div className="flex flex-col items-center opacity-40">
             <ClipboardList className="w-12 h-12 mb-3" />
             <p className="text-sm">
-              {hasFlags ? t('zaznamnik.noData') : t('zaznamnik.noAssessment')}
+              {hasFlags
+                ? t('zaznamnik.noData')
+                : checked
+                  ? t('zaznamnik.noAssessment')
+                  : t('zaznamnik.notLoaded')}
             </p>
           </div>
           {hasFlags && <ReportMissingLink prefill="zaznamnikEmpty" className="mt-2" />}
@@ -119,10 +127,10 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
       )}
 
       {nonEmptyArches.length === 0 && vtGroups.length === 0 && (
-        <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+        <div className="flex flex-col items-center justify-center p-6 text-center">
           <div className="flex flex-col items-center opacity-40">
             <ClipboardList className="w-12 h-12 mb-3" />
-            <p className="text-sm">{t('zaznamnik.noData')}</p>
+            <p className="text-sm">{t('zaznamnik.nothingYet')}</p>
           </div>
           <ReportMissingLink prefill="zaznamnikEmpty" className="mt-2" />
         </div>
