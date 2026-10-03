@@ -14,21 +14,23 @@ import { normalizeFileUrl } from '../../utils/fileUrl';
 import { createLogger } from '../../utils/logger';
 import { requestQueue } from '../../utils/requestQueue';
 import { assertNotDemo } from './assertNotDemo';
-import { fetchIsFile } from './fetchIsFile';
+import { fetchIsFile, type IsFile } from './fetchIsFile';
+import { downloadName } from '../../utils/contentDisposition';
 
 const log = createLogger('downloadZipFiles');
 
-/** Strips the characters a zip entry name cannot carry across platforms. */
-function safeEntryName(contentDisposition: string | null, link: string): string {
-  let filename = 'file';
-  if (contentDisposition) {
-    const match = contentDisposition.match(/filename="?([^"]+)"?/);
-    if (match?.[1]) filename = match[1];
-  }
-  if (filename === 'file') {
-    filename = link.split('/').pop() || `file_${Math.random().toString(36).substr(2, 9)}`;
-  }
-  return filename.replace(/[\\/:*?"<>|]/g, '_');
+/**
+ * IS's name for the file, made safe for a zip entry. The fallback is numbered,
+ * not the link's tail: IS links are `slozka.pl?download=…`, and the zip path
+ * has no row titles to fall back on.
+ */
+function safeEntryName(file: IsFile, index: number): string {
+  const name = downloadName(
+    { contentDisposition: file.contentDisposition, contentType: file.blob.type || null },
+    undefined,
+    `soubor-${index + 1}`
+  );
+  return name.replace(/[\\/:*?"<>|]/g, '_');
 }
 
 /**
@@ -43,7 +45,7 @@ export async function downloadZipFiles(
 ): Promise<void> {
   const zip = new JSZip();
 
-  const downloads = fileLinks.map((link) =>
+  const downloads = fileLinks.map((link, index) =>
     requestQueue.add(async () => {
       try {
         const fullUrl = normalizeFileUrl(link);
@@ -51,11 +53,11 @@ export async function downloadZipFiles(
 
         // One retry, on an IS 5xx only. Through the proxy the status arrives
         // as text, so it is read from the message on both paths.
-        const { blob, contentDisposition } = await fetchIsFile(fullUrl).catch((e: unknown) => {
+        const file = await fetchIsFile(fullUrl).catch((e: unknown) => {
           if (/HTTP 5\d\d/.test(String(e))) return fetchIsFile(fullUrl);
           throw e;
         });
-        zip.file(safeEntryName(contentDisposition, link), blob);
+        zip.file(safeEntryName(file, index), file.blob);
       } catch (e) {
         log.error(`Failed to add file ${link} to zip`, e);
       } finally {

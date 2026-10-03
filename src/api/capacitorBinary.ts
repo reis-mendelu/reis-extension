@@ -1,5 +1,6 @@
 import { assertIsOrigin, buildCookieDelivery } from './capacitorTransport';
 import { notifySessionExpired } from '../services/sessionExpiry';
+import { downloadName } from '../utils/contentDisposition';
 
 export interface BinaryDeps {
   platform: 'ios' | 'android' | 'web';
@@ -29,12 +30,13 @@ export function base64ToBlob(base64: string, type: string): Blob {
 /**
  * IS serves documents from query-string URLs (`slozka.pl?download=354316`), so
  * the URL has no usable basename — the Content-Disposition filename is the only
- * real source, and a generic fallback beats naming a file "slozka.pl".
+ * real source, and a generic fallback beats naming a file "slozka.pl". With no
+ * content type either, the fallback stays the `.pdf` it has always been.
  */
 export function filenameFromResponse(headers: Record<string, string>): string {
-  const cd = headers['Content-Disposition'] ?? headers['content-disposition'] ?? '';
-  const match = cd.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
-  return match?.[1]?.trim() || 'dokument.pdf';
+  const cd = headers['Content-Disposition'] ?? headers['content-disposition'] ?? null;
+  const contentType = (headers['Content-Type'] ?? headers['content-type']) || 'application/pdf';
+  return downloadName({ contentDisposition: cd, contentType });
 }
 
 /** Mints the tagged auth error and reports it — see the twin in

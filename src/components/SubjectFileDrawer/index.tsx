@@ -14,6 +14,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '../ui/resi
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { DocumentNoteEditor } from './DocumentNoteEditor';
 import { groupAndSortFiles } from './utils/groupFiles';
+import type { PdfRowMeta } from './types';
 
 const PdfViewer = lazy(() => import('./PdfViewer').then((m) => ({ default: m.PdfViewer })));
 
@@ -171,7 +172,7 @@ export function SubjectFileDrawer({
   }, [activePdfUrl]);
 
   const handleViewPdf = useCallback(
-    async (link: string) => {
+    async (link: string, meta?: PdfRowMeta) => {
       if (isPdfLoading) return;
       setIsPdfLoading(true);
       const blobUrl = await openPdfInline(link);
@@ -183,7 +184,7 @@ export function SubjectFileDrawer({
           : { link, name: 'PDF Document' };
         setActivePdfFile(activeFile);
       } else {
-        openFile(link);
+        openFile(link, meta && { name: meta.name });
       }
       setIsPdfLoading(false);
     },

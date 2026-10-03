@@ -315,7 +315,10 @@ describe('SubjectDrawerSheet — previewing a file before downloading it', () =>
   it('still downloads a file it cannot preview', () => {
     renderSheet();
     fireEvent.click(screen.getByText('Data.xlsx'));
-    expect(fileActions.openFile).toHaveBeenCalledWith(expect.stringContaining('f=2'));
+    expect(fileActions.openFile).toHaveBeenCalledWith(
+      expect.stringContaining('f=2'),
+      expect.objectContaining({ name: 'Data.xlsx' })
+    );
     expect(fileActions.openPdfInline).not.toHaveBeenCalled();
   });
 
@@ -327,7 +330,10 @@ describe('SubjectDrawerSheet — previewing a file before downloading it', () =>
     // index — Data.xlsx sorts first.
     const pdfRow = screen.getByText('Prednaska01.pdf').closest('.space-y-1') as HTMLElement;
     fireEvent.click(within(pdfRow).getByTitle('Stáhnout'));
-    expect(fileActions.downloadSingle).toHaveBeenCalledWith(expect.stringContaining('f=1'));
+    expect(fileActions.downloadSingle).toHaveBeenCalledWith(
+      expect.stringContaining('f=1'),
+      expect.objectContaining({ name: 'Prednaska01.pdf' })
+    );
     expect(fileActions.openPdfInline).not.toHaveBeenCalled();
   });
 
@@ -336,7 +342,9 @@ describe('SubjectDrawerSheet — previewing a file before downloading it', () =>
     renderSheet();
     fireEvent.click(screen.getByText('Prednaska01.pdf'));
     await waitFor(() =>
-      expect(fileActions.openFile).toHaveBeenCalledWith(expect.stringContaining('f=1'))
+      expect(fileActions.openFile).toHaveBeenCalledWith(expect.stringContaining('f=1'), {
+        name: 'Prednaska01.pdf',
+      })
     );
   });
 });
