@@ -22,11 +22,18 @@ final class PdfInkSpace: NSObject {
         let date: String
         var pdfURL: URL?
         let inkURL: URL
+        /// The page the file was last left on (0-based), kept up to date as the
+        /// student moves between files in here.
+        var lastPageIndex: Int? = nil
     }
 
     let split = UISplitViewController(style: .doubleColumn)
     var onNeedsFile: ((String) -> Void)?
-    var onClose: (([String]) -> Void)?
+    /// Every link that was displayed, and the page each was left on.
+    var onClose: (([String], [String: Int]) -> Void)?
+    /// The same pages while the space is still up: sent when the app resigns
+    /// active, because iOS may kill it in the background and `onClose` never comes.
+    var onPositions: (([String: Int]) -> Void)?
 
     private let reader: PdfInkViewController
     private let list: FileListViewController
@@ -36,6 +43,7 @@ final class PdfInkSpace: NSObject {
     private var currentLink = ""
     private var pendingLink: String?
     private var shown: [String] = []
+    private var positions: [String: Int] = [:]
     private var closed = false
 
     init(
@@ -77,6 +85,9 @@ final class PdfInkSpace: NSObject {
         // Two doors, one path: both persist first and share the save-failed alert.
         list.onClose = { [weak self] in self?.closeTapped() }
         reader.onCloseSpace = { [weak self] in self?.closeTapped() }
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(reportPositions),
+            name: UIApplication.willResignActiveNotification, object: nil)
     }
 
     /**
@@ -102,7 +113,9 @@ final class PdfInkSpace: NSObject {
         guard let link = pendingLink, let file = files.first(where: { $0.link == link }) else { return }
         pendingLink = nil
         // Nothing is loaded yet, so this cannot be refused.
-        reader.load(document: document, inkURL: file.inkURL, title: file.name)
+        reader.load(
+            document: document, inkURL: file.inkURL, title: file.name,
+            startPage: file.lastPageIndex)
         currentLink = file.link
         shown.append(file.link)
         list.select(link: file.link)
@@ -174,7 +187,7 @@ final class PdfInkSpace: NSObject {
             guard let self,
                 reader.load(
                     document: document, inkURL: file.inkURL, title: file.name,
-                    discardingUnsaved: discard)
+                    startPage: lastPage(of: file.link), discardingUnsaved: discard)
             else { return false }
             let previous = currentLink
             currentLink = file.link
@@ -190,8 +203,33 @@ final class PdfInkSpace: NSObject {
      * or discard those strokes and go ahead. Nothing is ever dropped silently.
      */
     private func transition(_ attempt: @escaping (_ discardingUnsaved: Bool) -> Bool) {
+        // Every way off the file on screen comes through here.
+        recordCurrentPosition()
         if attempt(false) { return }
         presentSaveFailed { _ = attempt(true) }
+    }
+
+    /// Where each file shown in here was left, the one on screen included.
+    func snapshotPositions() -> [String: Int] {
+        recordCurrentPosition()
+        return positions
+    }
+
+    private func recordCurrentPosition() {
+        guard !currentLink.isEmpty, let page = reader.currentPageIndex else { return }
+        positions[currentLink] = page
+        if let row = files.firstIndex(where: { $0.link == currentLink }) {
+            files[row].lastPageIndex = page
+        }
+    }
+
+    private func lastPage(of link: String) -> Int? {
+        files.first(where: { $0.link == link })?.lastPageIndex
+    }
+
+    @objc private func reportPositions() {
+        guard !closed else { return }
+        onPositions?(snapshotPositions())
     }
 
     private func refreshInkMark(for link: String) {
@@ -226,9 +264,10 @@ final class PdfInkSpace: NSObject {
 
     private func finish() {
         guard !closed else { return }
+        let positions = snapshotPositions()
         closed = true
         reader.willClose()
         let shown = self.shown
-        split.dismiss(animated: true) { [onClose] in onClose?(shown) }
+        split.dismiss(animated: true) { [onClose] in onClose?(shown, positions) }
     }
 }
