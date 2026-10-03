@@ -10,9 +10,9 @@ import { describe, expect, it } from 'vitest';
  * - The today mark: the desktop week header tints today's column and colours
  *   its date (`bg-current-day-header`, `text-current-day`). The phone's chip
  *   now carries a filled circle and `aria-current="date"`.
- * - Today always in its week (`weekDays(…, todayIso)`): the phone strip hides
- *   a lesson-free weekend per student. The desktop grid's own rule is
- *   `visibleDayCount` and is not changed here.
+ * - Today always in its week: the phone's `weekDays(…, todayIso)` and the
+ *   desktop's `visibleDayCount` (which reads `todayIndex`) both add a
+ *   lesson-free weekend day when it is today.
  * - Back to today on resume (`installCalendarResumeReset`): Capacitor only. The
  *   extension's iframe is rebuilt on every IS page load, so it opens fresh —
  *   the same reason `eventsResumeRefreshIsCapacitorOnly` gives.
@@ -36,6 +36,10 @@ describe('today is marked on both trees', () => {
     expect(read('src/components/mobile/screens/calendar/DayChips.tsx')).toContain(
       "aria-current={isToday ? 'date' : undefined}"
     );
+  });
+
+  it('the extension grid widens to a weekend today', () => {
+    expect(read('src/components/WeeklyCalendar/useCalendarData.ts')).toContain('todayIndex === 5');
   });
 
   it('the extension week header marks today', () => {

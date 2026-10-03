@@ -70,7 +70,8 @@ function taughtOn(lessonDates: ReadonlySet<string>, weekday: number): boolean {
  * One exception: TODAY is always in its own week. On Saturday 3 October 2026
  * the calendar opened on today and the strip had no chip for it, so nothing on
  * screen said which day it was — "I just don't know what day is today". Every
- * calendar app surveyed keeps today on screen; only today's week grows.
+ * calendar app surveyed keeps today on screen; only today's week grows. The
+ * desktop grid's `visibleDayCount` makes the same exception.
  */
 export function weekDays(
   selectedIso: string,
