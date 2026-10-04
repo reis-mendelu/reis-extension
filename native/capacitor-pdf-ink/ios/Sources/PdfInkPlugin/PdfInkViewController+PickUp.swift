@@ -54,7 +54,10 @@ extension PdfInkViewController: UIGestureRecognizerDelegate {
     ) -> Bool { true }
 
     private func pictureToPickUp(at point: CGPoint, onPage index: Int) -> PagePicture? {
-        guard !arrangingPictures, !fingerDraws() else { return nil }
+        guard !arrangingPictures, !makingCovers, !fingerDraws() else { return nil }
+        // A cover is on top: a tap on one opens the cover (CoverLayerView), and
+        // this recognizer, on the overlay, would otherwise fire for it too.
+        guard PageCovers.cover(at: point, in: covers[index] ?? []) == nil else { return nil }
         return PagePictures.topmost(at: point, in: pictures[index] ?? [])
     }
 

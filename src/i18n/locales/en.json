@@ -1357,7 +1357,9 @@
       "more": "More",
       "movePictures": "Edit pictures",
       "deletePicture": "Delete picture",
-      "done": "Done"
+      "done": "Done",
+      "cover": "Tape",
+      "deleteTape": "Delete tape"
     },
     "openingLink": "Opening…"
   },

@@ -45,7 +45,8 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     /// Presented things are not in this view's subtree, so they cannot inherit it.
     let tint: UIColor?
     let pdfView = InkPDFView()
-    let toolPicker = PKToolPicker()
+    /// Apple's pens plus the tape (`CoverTool`).
+    let toolPicker: PKToolPicker
     private let spinner = UIActivityIndicatorView(style: .large)
     private let message = UILabel()
 
@@ -59,6 +60,12 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     /// The pictures on each page, in stacking order — like `drawings`, the
     /// source of truth; the layers only show them. See `+Pictures`.
     var pictures: [Int: [PagePicture]] = [:]
+    /// Blocks over answers, per page, made with the tape (`+Covers`).
+    var covers: [Int: [PageCover]] = [:]
+    /// Which covers are open right now. Never saved: a file reopens with them shut.
+    var revealedCovers: Set<String> = []
+    /// The tape is the palette's selected tool: strokes make covers, not ink.
+    var makingCovers = false
     /// Moving pictures instead of drawing. A visible mode: see `+Pictures`.
     var arrangingPictures = false
     /// From choosing Photos or the camera until the pick lands or is
@@ -171,6 +178,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     init(strings: PdfInkStrings, tint: UIColor? = nil) {
         self.strings = strings
         self.tint = tint
+        self.toolPicker = CoverTool.makePicker(name: strings.cover)
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -259,6 +267,9 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         toolPicker.colorUserInterfaceStyle = .light
         setPagePens(visible: true)
         toolPicker.addObserver(self)
+        // PencilKit keeps the palette's selection between readers: one closed
+        // with the tape in hand opens with it.
+        coverToolDidChange()
 
         NotificationCenter.default.addObserver(
             self, selector: #selector(restoreToolPicker),
@@ -334,6 +345,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         if let archive = InkStore.load(from: inkURL) {
             insertedPages = archive.insertedPages
             pictures = archive.pictures
+            covers = archive.coverCards
             // Before the document reaches the view: the ink indices below are
             // indices in the document WITH the added pages back in it.
             InkPages.apply(inserts: insertedPages, to: document)
@@ -405,6 +417,8 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         overlays = [:]
         insertedPages = []
         pictures = [:]
+        covers = [:]
+        revealedCovers = []
         forgetPictureUndo()
         lastSaveError = nil
         return true
@@ -448,6 +462,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         drawings = InkPages.shifted(drawings, insertingAt: at)
         insertedPages = InkPages.shifted(insertedPages, insertingAt: at)
         pictures = InkPages.shifted(pictures, insertingAt: at)
+        covers = InkPages.shifted(covers, insertingAt: at)
         forgetPictureUndo()
         document.insert(InkPages.blank(size: InkPages.displayedSize(of: current)), at: at)
         reloadDocumentKeepingZoom()
@@ -497,6 +512,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         drawings = InkPages.shifted(drawings, removingAt: index)
         insertedPages = InkPages.shifted(insertedPages, removingAt: index)
         pictures = InkPages.shifted(pictures, removingAt: index)
+        covers = InkPages.shifted(covers, removingAt: index)
         forgetPictureUndo()
         document.removePage(at: index)
         reloadDocumentKeepingZoom()
@@ -746,12 +762,16 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         canvas.overrideUserInterfaceStyle = .light
         canvas.drawingPolicy = .default
         canvas.drawing = drawings[index] ?? PKDrawing()
-        canvas.tool = toolPicker.selectedTool
+        // Not `toolPicker.selectedTool` blindly: with the tape selected it is no
+        // tool a canvas can take, and assigning it traps in PencilKit (the
+        // selection outlives the reader, so the next file would crash).
+        if let tool = CoverTool.canvasTool(of: toolPicker) { canvas.tool = tool }
         canvas.delegate = self
         overlay.inkScale = inkScale(for: page)
         toolPicker.addObserver(canvas)
         toolPicker.setVisible(true, forFirstResponder: canvas)
         configurePictures(of: overlay, page: index)
+        configureCovers(of: overlay, page: index)
         overlays[index] = overlay
         return overlay
     }
@@ -792,7 +812,8 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
             .mapValues { $0.dataRepresentation() }
         return InkArchive(
             pageCount: document.pageCount, pages: pages, insertedPages: insertedPages,
-            pictures: pictures.filter { !$0.value.isEmpty })
+            pictures: pictures.filter { !$0.value.isEmpty },
+            coverCards: covers.filter { !$0.value.isEmpty })
     }
 
     /// Writes the current file's ink. False means the strokes are still only in
@@ -803,7 +824,9 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         saveTimer = nil
         guard let inkURL, let archive = currentArchive() else { return true }
         do {
-            if archive.pages.isEmpty && archive.insertedPages.isEmpty && archive.pictures.isEmpty {
+            if archive.pages.isEmpty && archive.insertedPages.isEmpty && archive.pictures.isEmpty
+                && archive.coverCards.isEmpty
+            {
                 InkStore.delete(at: inkURL)
             } else {
                 try InkStore.save(archive, to: inkURL)

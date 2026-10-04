@@ -302,6 +302,7 @@ extension PdfInkViewController: PHPickerViewControllerDelegate,
         overlay.pictureLayer.arranging = arrangingPictures
         overlay.pictureLayer.selectedID =
             selectedPicture?.page == index ? selectedPicture?.id : nil
+        applyCoverMode(to: overlay)
     }
 
     var pictureChromeScale: CGFloat { 1 / max(pdfView.scaleFactor, 0.01) }
