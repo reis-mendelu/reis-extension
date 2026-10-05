@@ -135,18 +135,32 @@ describe('ClassmatesTab — Cvičení / Celý předmět', () => {
    * extension, the tab's own box on the phone).
    */
   it('jumps back to the first match when the search changes', () => {
-    render(<ClassmatesTab courseCode="EBC-IV" />);
+    // The outer box stands in for the extension drawer's body, which is what
+    // actually scrolls there; the tab's own box is the phone's scroller.
+    render(
+      <div data-testid="drawer-body">
+        <ClassmatesTab courseCode="EBC-IV" />
+      </div>
+    );
     fireEvent.click(tab('Celý předmět'));
-    const scrolled = screen.getByText('Student 000').closest('.overflow-y-auto') as HTMLElement;
-    let top = 3000;
-    Object.defineProperty(scrolled, 'scrollTop', {
-      configurable: true,
-      get: () => top,
-      set: (v: number) => (top = v),
-    });
+    const scrolledTo = (el: HTMLElement, initial: number) => {
+      const box = { top: initial };
+      Object.defineProperty(el, 'scrollTop', {
+        configurable: true,
+        get: () => box.top,
+        set: (v: number) => (box.top = v),
+      });
+      return box;
+    };
+    const tabBox = scrolledTo(
+      screen.getByText('Student 000').closest('.overflow-y-auto') as HTMLElement,
+      3000
+    );
+    const drawerBody = scrolledTo(screen.getByTestId('drawer-body'), 48000);
     fireEvent.change(screen.getByPlaceholderText('Vyhledat...'), {
       target: { value: 'Student 5' },
     });
-    expect(top).toBe(0);
+    expect(tabBox.top).toBe(0);
+    expect(drawerBody.top).toBe(0);
   });
 });
