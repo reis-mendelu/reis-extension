@@ -151,4 +151,41 @@ describe('stepWeek', () => {
   it('comes back onto today when the week arrow returns to it', () => {
     expect(stepWeek('2026-10-03', -1, weekdaysOnly, SATURDAY)).toBe(SATURDAY);
   });
+
+  /**
+   * "When I switch to a next week, the 9th of October gets highlighted … and
+   * on Saturday returning to today highlights Friday instead" — Saturday
+   * 3 October 2026. Forward clamps today's Saturday to Friday 9, which is
+   * reachable; the case above starts from a hidden Saturday no arrow ever
+   * lands on, so it passed while the real round trip went Sat 3 → Fri 9 →
+   * Fri 2. Stepping into today's week lands on today, whatever day it left.
+   */
+  describe('into the week that holds today', () => {
+    const SAT_3_OCT = '2026-10-03';
+    const SUN_4_OCT = '2026-10-04';
+    const there = (from: string, today: string) =>
+      stepWeek(stepWeek(from, 1, weekdaysOnly, today), -1, weekdaysOnly, today);
+
+    it('brings a round trip from a lesson-free Saturday today back to it', () => {
+      expect(stepWeek(SAT_3_OCT, 1, weekdaysOnly, SAT_3_OCT)).toBe('2026-10-09');
+      expect(there(SAT_3_OCT, SAT_3_OCT)).toBe(SAT_3_OCT);
+    });
+
+    it('does the same from a Sunday today, and from the week before', () => {
+      expect(there(SUN_4_OCT, SUN_4_OCT)).toBe(SUN_4_OCT);
+      expect(stepWeek('2026-09-25', 1, weekdaysOnly, SAT_3_OCT)).toBe(SAT_3_OCT);
+    });
+
+    it('lands on a weekday today from any day of a neighbouring week', () => {
+      // Wednesday 7 October is today; the arrow from Monday 12 or Friday 2.
+      expect(stepWeek('2026-10-12', -1, weekdaysOnly, '2026-10-07')).toBe('2026-10-07');
+      expect(stepWeek('2026-10-02', 1, weekdaysOnly, '2026-10-07')).toBe('2026-10-07');
+    });
+
+    it('keeps Saturday to Saturday for a student taught at the weekend', () => {
+      const withSaturday = new Set(['20260921', '20261010']);
+      expect(stepWeek(SAT_3_OCT, 1, withSaturday, SAT_3_OCT)).toBe('2026-10-10');
+      expect(stepWeek('2026-10-10', -1, withSaturday, SAT_3_OCT)).toBe(SAT_3_OCT);
+    });
+  });
 });

@@ -124,6 +124,12 @@ export function stepDay(
  * Plain `shiftIso(iso, ±7)` took a student from today's Saturday (shown,
  * because it is today) to next week's Saturday (hidden): the header named a
  * day the strip had no chip for, the very defect the today chip fixed.
+ *
+ * Stepping INTO today's week lands on today, whatever day it left — the way
+ * Apple's month view selects today in the current month. The clamp alone was
+ * not reversible: Saturday 3 October went forward to Friday 9 and back to
+ * Friday 2, so "returning to today highlights Friday instead". Coming back to
+ * this week is a way back to today, and the mark and the selection meet again.
  */
 export function stepWeek(
   iso: string,
@@ -132,6 +138,7 @@ export function stepWeek(
   todayIso: string
 ): string {
   const target = shiftIso(iso, steps * 7);
+  if (toIso(mondayOf(target)) === toIso(mondayOf(todayIso))) return todayIso;
   const shown = weekDays(target, lessonDates, todayIso).map(toIso);
   return shown.includes(target) ? target : (shown[shown.length - 1] ?? target);
 }

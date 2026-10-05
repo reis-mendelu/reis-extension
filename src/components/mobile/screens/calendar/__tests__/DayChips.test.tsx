@@ -32,13 +32,17 @@ describe('DayChips', () => {
     expect(screen.getByRole('button', { name: /24/ })).toBeInTheDocument();
   });
 
-  it('spells the selected day in the tone token, not raw primary', () => {
-    // Raw lime on its own /15 tint measured 1.89:1 in the light theme — the
-    // label of the one chip the student is looking at was the faintest on the row.
+  it('marks the selected day in full ink, not in colour', () => {
+    // The tonal pill this replaced read as "today" when today was elsewhere
+    // (October 2026). Colour is the today mark's alone; the selection, which
+    // the header names too, is the one chip at full strength.
     render(<DayChips selectedIso="2026-04-22" onSelect={() => {}} lessonDates={new Set()} />);
-    const selected = screen.getByRole('button', { name: /22/ });
-    expect(selected.className).toContain('text-[var(--tone-primary)]');
-    expect(selected.className.split(/\s+/)).not.toContain('text-primary');
+    const classes = (day: number) =>
+      screen.getByRole('button', { name: new RegExp(`\\b${day}\\b`) }).className.split(/\s+/);
+    expect(classes(22)).toContain('text-base-content');
+    expect(classes(22)).toContain('font-semibold');
+    expect(classes(22).some((c) => c.includes('primary'))).toBe(false);
+    expect(classes(23)).toContain('text-base-content/70');
   });
 
   it('moves the selection a week forward', async () => {

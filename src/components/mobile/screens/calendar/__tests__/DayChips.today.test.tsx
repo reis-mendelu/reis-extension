@@ -38,6 +38,74 @@ describe('DayChips today mark', () => {
     expect(screen.queryByTestId('day-chip-today')).not.toBeInTheDocument();
   });
 
+  /**
+   * "When I switch to a next week, the 9th of October gets highlighted as the
+   * current day even though it's not" — Saturday 3 October 2026. The arrow
+   * kept a selected day (Friday 9, the nearest to a hidden Saturday) and the
+   * strip drew it as the week's only tonal pill, which read as "today". No
+   * view draws a pill now: the filled circle is the strip's one coloured mark.
+   */
+  it('draws no pill in either view, only the today mark', () => {
+    useAppStore.setState({ now: new Date(2026, 9, 3, 16, 0) });
+    for (const view of ['day', 'week'] as const) {
+      const { unmount } = render(
+        <DayChips
+          selectedIso="2026-10-09"
+          onSelect={() => {}}
+          lessonDates={new Set()}
+          view={view}
+        />
+      );
+      expect(chip(9).className).not.toContain('bg-primary');
+      expect(chip(9).className).not.toContain('tone-primary');
+      unmount();
+    }
+    render(<DayChips selectedIso="2026-10-02" onSelect={() => {}} lessonDates={new Set()} />);
+    expect(chip(2).className).not.toContain('bg-primary');
+    expect(chip(3)).toHaveAttribute('aria-current', 'date');
+  });
+
+  /**
+   * "The bullets below the days are useless in the weekly view": the grid
+   * under the strip already shows every lesson, and a holiday's column is
+   * washed red. The week view keeps only the dot's empty slot, so the strip is
+   * the same height in both views and does not jump on the switch.
+   */
+  /**
+   * Without the pill the selection is weight and ink only, which a screen
+   * reader does not hear. In the day view the chips are a pick-one row and say
+   * which is pressed; in the week view nothing is selected, so they say nothing.
+   */
+  it('exposes the agenda day as pressed in the day view only', () => {
+    useAppStore.setState({ now: new Date(2026, 9, 3, 16, 0) });
+    const { unmount } = render(
+      <DayChips selectedIso="2026-10-09" onSelect={() => {}} lessonDates={new Set()} />
+    );
+    expect(chip(9)).toHaveAttribute('aria-pressed', 'true');
+    expect(chip(8)).toHaveAttribute('aria-pressed', 'false');
+    unmount();
+    render(
+      <DayChips selectedIso="2026-10-09" onSelect={() => {}} lessonDates={new Set()} view="week" />
+    );
+    expect(chip(9)).not.toHaveAttribute('aria-pressed');
+  });
+
+  it('draws no dots in the week view', () => {
+    useAppStore.setState({ now: new Date(2026, 9, 3, 16, 0) });
+    // Friday 9 October has a lesson; Wednesday 28 October is a holiday.
+    const lessons = new Set(['20261009', '20261028']);
+    const { unmount } = render(
+      <DayChips selectedIso="2026-10-09" onSelect={() => {}} lessonDates={lessons} view="week" />
+    );
+    expect(screen.queryAllByTestId('day-chip-lessons')).toHaveLength(0);
+    unmount();
+    render(
+      <DayChips selectedIso="2026-10-28" onSelect={() => {}} lessonDates={lessons} view="week" />
+    );
+    expect(screen.queryAllByTestId('day-chip-holiday')).toHaveLength(0);
+    expect(chip(28).querySelectorAll('span')).toHaveLength(3);
+  });
+
   it('gives a lesson-free Saturday a chip when it is today', () => {
     useAppStore.setState({ now: new Date(2026, 3, 25, 16, 17) });
     render(<DayChips selectedIso="2026-04-25" onSelect={() => {}} lessonDates={new Set()} />);

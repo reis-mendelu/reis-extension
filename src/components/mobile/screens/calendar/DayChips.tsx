@@ -2,9 +2,9 @@ import { useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useAppStore } from '../../../../store/useAppStore';
-import { getCzechHoliday } from '../../../../utils/holidays';
 import { toIso, toCompact, stepWeek, weekDays } from '../../../../utils/mobile/weekDays';
 import { useSwipeSteps } from '../../primitives/useSwipeSteps';
+import { DayChip } from './DayChip';
 
 export interface DayChipsProps {
   selectedIso: string;
@@ -17,6 +17,12 @@ export interface DayChipsProps {
    * week — so they keep `onSelect`.
    */
   onPickDay?: (iso: string) => void;
+  /**
+   * The week view marks no selection and no dots. A chip tap there opens the
+   * day, so the selected day is only the week's anchor, and the grid below
+   * already shows each day's lessons.
+   */
+  view?: 'day' | 'week';
 }
 
 /**
@@ -42,7 +48,13 @@ export interface DayChipsProps {
  * is the arrow you reach for, and a pill breaks that mapping for the sake of a
  * tidier row. 44px tall now, the touch minimum the old 36px missed.
  */
-export function DayChips({ selectedIso, onSelect, lessonDates, onPickDay }: DayChipsProps) {
+export function DayChips({
+  selectedIso,
+  onSelect,
+  lessonDates,
+  onPickDay,
+  view = 'day',
+}: DayChipsProps) {
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
   // The store's clock, as the week grid's now-line reads it: the pulse moves it,
@@ -122,92 +134,24 @@ export function DayChips({ selectedIso, onSelect, lessonDates, onPickDay }: DayC
       >
         {days.map((date) => {
           const iso = toIso(date);
-          const isSelected = iso === selectedIso;
-          const isToday = iso === todayIso;
-          const weekday = new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(date);
-          const label = weekday.charAt(0).toUpperCase() + weekday.slice(1);
-          // Marked in the row, not only once the day is opened: a student
-          // scanning the week should see the day off without tapping into it.
-          const holiday = getCzechHoliday(date, language === 'en' ? 'en' : 'cz');
           // Whether the day holds anything, said in the row instead of only in
           // the agenda: "people click on days, just to find out they might be
-          // empty". `lessonDates` was already here for the weekend branch — it
-          // just was not shown.
-          //
-          // A DOT on the days that have something, rather than dimming the ones
-          // that do not. Dimming was the first attempt and it failed the
-          // contrast gate: `text-base-content/40` measures 2.51:1 in the light
-          // theme, under the 4.5 floor, so the empty days became the hardest
-          // labels on the screen to read. Every label stays at /70, which
-          // passes, and presence is carried by the mark instead.
-          const hasLessons = lessonDates.has(toCompact(iso));
+          // empty". A DOT on the days that have something, rather than dimming
+          // the ones that do not: `text-base-content/40` measured 2.51:1 in
+          // the light theme, so the empty days became the hardest labels on
+          // the screen to read.
           return (
-            <button
+            <DayChip
               key={iso}
-              type="button"
-              aria-current={isToday ? 'date' : undefined}
-              title={holiday ?? undefined}
+              date={date}
+              locale={locale}
+              language={language === 'en' ? 'en' : 'cz'}
+              isSelected={view === 'day' ? iso === selectedIso : undefined}
+              isToday={iso === todayIso}
+              hasLessons={lessonDates.has(toCompact(iso))}
+              showDot={view === 'day'}
               onClick={() => (onPickDay ?? onSelect)(iso)}
-              // Tonal, not a solid primary fill. `--color-primary` is a lime
-              // #79be15 and `--color-primary-content` is white, which is
-              // 2.29:1 — below AA, measured. The same tint BottomNav marks its
-              // active tab with reads at full strength and is what the app's
-              // soft-fill convention asks for anyway. Nothing rendered this
-              // before: no chip could be selected while the row was anchored to
-              // the semester start, so the failing state was never on screen.
-              className={`flex-1 whitespace-nowrap rounded-full py-2 text-center text-sm transition-colors max-[359px]:text-[11px] ${
-                isSelected
-                  ? 'bg-primary/15 font-semibold text-[var(--tone-primary)]'
-                  : 'font-medium text-base-content/70'
-              }`}
-            >
-              {/* Today is marked apart from the selection, the way Google
-                  Calendar does it: a filled circle on the date and the weekday
-                  in the same ink, wherever the student has moved to. The
-                  selection keeps its tonal pill, and on today the two stack.
-                  Ink on the lime fill, not white: white on #79be15 is 2.29:1,
-                  `primary-content` on it is 6.42:1 in both themes.
-                  Every number gets the circle's height, so the row keeps its
-                  height whichever chip carries it; only the circle is widened,
-                  or every "Čt 1" spreads apart. */}
-              <span className={isToday ? 'font-bold text-[var(--tone-primary)]' : undefined}>
-                {label}
-              </span>{' '}
-              <span
-                data-testid={isToday ? 'day-chip-today' : undefined}
-                className={`inline-flex h-6 items-center justify-center rounded-full tabular-nums max-[359px]:h-5 ${
-                  isToday
-                    ? 'min-w-6 bg-primary px-1 font-bold text-primary-content max-[359px]:min-w-5'
-                    : ''
-                }`}
-              >
-                {date.getDate()}
-              </span>
-              {/* One dot, three states: a holiday is red, a day with something
-                  on it is primary, and an empty day carries nothing — absence
-                  is the clearest way to say "nothing here", and it is the only
-                  one that costs no contrast.
-                  A holiday wins over lessons in the rare case of both: the
-                  closure is the more surprising fact, and the banner above the
-                  agenda still names it either way. */}
-              {holiday ? (
-                <span
-                  data-testid="day-chip-holiday"
-                  className="mx-auto mt-0.5 block h-1 w-1 rounded-full bg-error"
-                />
-              ) : hasLessons ? (
-                <span
-                  data-testid="day-chip-lessons"
-                  className={`mx-auto mt-0.5 block h-1 w-1 rounded-full ${
-                    isSelected ? 'bg-primary' : 'bg-base-content/40'
-                  }`}
-                />
-              ) : (
-                // Keeps every chip the same height, so the row does not jitter
-                // as the week changes.
-                <span className="mx-auto mt-0.5 block h-1 w-1" />
-              )}
-            </button>
+            />
           );
         })}
       </div>

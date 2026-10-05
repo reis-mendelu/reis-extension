@@ -272,6 +272,22 @@ describe('useCalendarData', () => {
         const { result } = renderHook(() => useCalendarData(mockInitialDate));
         expect(result.current.visibleDayCount).toBe(5);
       });
+
+      /**
+       * The Sprint 12 report ("the 9th of October gets highlighted as the
+       * current day … returning to today highlights Friday") is the phone's
+       * `stepWeek` clamp. The grid has no selected day to clamp: on Saturday
+       * 3 October it opens on 5–11 October with nothing marked, and paging
+       * back marks Saturday 3, not a Friday.
+       */
+      it('marks no Friday in the next week, and Saturday 3 October in its own', () => {
+        today(new Date(2026, 9, 3, 16, 0));
+        withSchedule([]);
+        const next = renderHook(() => useCalendarData(new Date(2026, 9, 5)));
+        expect(next.result.current.todayIndex).toBe(-1);
+        const own = renderHook(() => useCalendarData(new Date(2026, 8, 28)));
+        expect(own.result.current.todayIndex).toBe(5);
+      });
     });
   });
 

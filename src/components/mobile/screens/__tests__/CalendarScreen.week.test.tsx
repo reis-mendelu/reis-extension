@@ -46,6 +46,9 @@ describe('CalendarScreen — week view', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-10-07T10:00:00'));
     useAppStore.setState({
+      // The store's clock is a singleton the DayChips today mark reads; set it
+      // with the system time so no test inherits another's day.
+      now: new Date('2026-10-07T10:00:00'),
       language: 'cz',
       mobileSelectedDayIso: '2026-10-07',
       mobileSheets: [],
@@ -67,6 +70,37 @@ describe('CalendarScreen — week view', () => {
     } as never);
   });
   afterEach(() => vi.useRealTimers());
+
+  /**
+   * Saturday 3 October 2026: the arrow took the week view to Friday 9, drew
+   * it as the strip's only pill, and the student read it as today. The week
+   * view marks today and nothing else; the arrow back lands on today.
+   */
+  it('marks only today in the week view, and the arrow back lands on it', () => {
+    vi.setSystemTime(new Date('2026-10-03T16:00:00'));
+    useAppStore.setState({
+      now: new Date('2026-10-03T16:00:00'),
+      mobileSelectedDayIso: null,
+      mobileCalendarView: 'week',
+    } as never);
+    render(<CalendarScreen />);
+    const strip = screen.getByTestId('day-strip');
+    const pills = () => strip.querySelectorAll('button[class*="bg-primary/15"]');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Další týden' }));
+    expect(useAppStore.getState().mobileSelectedDayIso).toBe('2026-10-09');
+    expect(pills()).toHaveLength(0);
+    // The grid shows the lessons; the strip's dots would only repeat it.
+    expect(within(strip).queryAllByTestId('day-chip-lessons')).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Předchozí týden' }));
+    expect(useAppStore.getState().mobileSelectedDayIso).toBe('2026-10-03');
+    expect(within(strip).getByRole('button', { name: /\b3\b/ })).toHaveAttribute(
+      'aria-current',
+      'date'
+    );
+    expect(pills()).toHaveLength(0);
+  });
 
   it('the switch turns the day agenda into the week grid', () => {
     render(<CalendarScreen />);

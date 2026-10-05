@@ -13,6 +13,12 @@ import { describe, expect, it } from 'vitest';
  * - Today always in its week: the phone's `weekDays(…, todayIso)` and the
  *   desktop's `visibleDayCount` (which reads `todayIndex`) both add a
  *   lesson-free weekend day when it is today.
+ * - Week steps land on today in today's week, the selection is ink rather
+ *   than a lime pill, and the week view draws no selection and no dots
+ *   (`stepWeek`, DayChip, DayChips `view`, October 2026): phone only, because
+ *   only the phone has a selected day and a dot row. The extension grid steps a whole
+ *   week with nothing selected, and marks today's column wherever it is —
+ *   `useCalendarData.test.ts` pins that the report did not reproduce there.
  * - Back to today on resume (`installCalendarResumeReset`): Capacitor only. The
  *   extension's iframe is rebuilt on every IS page load, so it opens fresh —
  *   the same reason `eventsResumeRefreshIsCapacitorOnly` gives.
@@ -21,6 +27,7 @@ const read = (p: string) => readFileSync(resolve(process.cwd(), p), 'utf8');
 
 const PHONE_FILES = [
   'src/components/mobile/screens/calendar/DayChips.tsx',
+  'src/components/mobile/screens/calendar/DayChip.tsx',
   'src/components/mobile/screens/calendar/DayBody.tsx',
   'src/components/mobile/screens/calendar/WeekGrid.tsx',
   'src/utils/mobile/weekDays.ts',
@@ -33,7 +40,7 @@ describe('today is marked on both trees', () => {
   });
 
   it('the phone strip marks today apart from the selection', () => {
-    expect(read('src/components/mobile/screens/calendar/DayChips.tsx')).toContain(
+    expect(read('src/components/mobile/screens/calendar/DayChip.tsx')).toContain(
       "aria-current={isToday ? 'date' : undefined}"
     );
   });
