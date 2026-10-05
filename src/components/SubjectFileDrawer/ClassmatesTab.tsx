@@ -113,7 +113,6 @@ export function ClassmatesTab({
           })}
         </p>
         <ClassmatesList
-          key={`${scope}|${searchQuery}`}
           classmates={filteredClassmates}
           showStudyInfo={showStudyInfo}
           onOpen={openPerson}

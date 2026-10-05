@@ -103,15 +103,17 @@ describe('ClassmatesTab — Cvičení / Celý předmět', () => {
   });
 
   /**
-   * Every row loads its photo from IS. 519 rows at once is 519 photo requests;
-   * render them 40 at a time, as IS itself pages them.
+   * The whole subject is one scrollable list. The listing is already in memory
+   * (every spoluzaci.pl page is read up front), so a "show 40 more" button only
+   * made the student tap for rows the app already had. Photos are what cost a
+   * request each, and ClassmatesList defers those until a row is near view.
    */
-  it('renders 40 rows, then 40 more on request', () => {
+  it('renders every student of a 519-student lecture, with no "show more" step', () => {
     render(<ClassmatesTab courseCode="EBC-IV" />);
     fireEvent.click(tab('Celý předmět'));
-    expect(screen.getAllByTestId('photo')).toHaveLength(40);
-    fireEvent.click(screen.getByRole('button', { name: 'Zobrazit dalších 40' }));
-    expect(screen.getAllByTestId('photo')).toHaveLength(80);
+    expect(screen.getAllByTestId('photo')).toHaveLength(519);
+    expect(screen.getByText('Student 518')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Zobrazit dalších/ })).not.toBeInTheDocument();
   });
 
   it('searches the whole list, not only the rows on screen', () => {
@@ -122,13 +124,5 @@ describe('ClassmatesTab — Cvičení / Celý předmět', () => {
     });
     expect(screen.getByText('Student 500')).toBeInTheDocument();
     expect(screen.getAllByTestId('photo')).toHaveLength(1);
-  });
-
-  it('counts the remainder on the last step', () => {
-    subject.result = { classmates: LECTURE.slice(0, 50), isLoading: false, error: undefined };
-    render(<ClassmatesTab courseCode="EBC-IV" />);
-    fireEvent.click(tab('Celý předmět'));
-    fireEvent.click(screen.getByRole('button', { name: 'Zobrazit dalších 10' }));
-    expect(screen.queryByRole('button', { name: /Zobrazit dalších/ })).not.toBeInTheDocument();
   });
 });
