@@ -1,12 +1,10 @@
 import { useAppStore } from '../../store/useAppStore';
+import { courseDisplayName } from '../../utils/courseDisplayName';
 
 export function useCourseName(
   courseCode: string | undefined,
   fallbackName: string | undefined
 ): string {
-  const defaultName = fallbackName || courseCode || '';
-  const nickname = useAppStore((state) =>
-    courseCode ? state.courseNicknames?.[courseCode] : undefined
-  );
-  return nickname || defaultName;
+  const nicknames = useAppStore((state) => state.courseNicknames);
+  return courseDisplayName(nicknames, courseCode, fallbackName);
 }

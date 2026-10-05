@@ -1,7 +1,7 @@
 import { lazy, Suspense, useRef, useState } from 'react';
 import type { SyntheticEvent } from 'react';
 import { Sheet } from '../primitives/Sheet';
-import { SheetHeader } from '../primitives/SheetHeader';
+import { SubjectSheetHeader } from './SubjectSheetHeader';
 import { TeacherList } from './TeacherList';
 import { SubjectDrawerTabs } from './SubjectDrawerTabs';
 import { stepTab, SUBJECT_TAB_ORDER } from './subjectTabStep';
@@ -23,6 +23,7 @@ import { usePdfPreview } from '../../../hooks/ui/usePdfPreview';
 import { listSubjectPdfs } from '../../SubjectFileDrawer/utils/listSubjectPdfs';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
+import { useCourseName } from '../../../hooks/ui/useCourseName';
 import { syllabusUrl } from '../../../utils/syllabusUrl';
 
 // pdf.js and its worker are the heaviest thing the app can load; a student who
@@ -73,6 +74,9 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
   const ignoreClickRef = useRef(false);
 
   const subjectInfo = getSubject(courseCode);
+  // The student's name for it, for what they read: the header and the reader's
+  // title. The syllabus lookup and the lesson below keep IS's name.
+  const displayName = useCourseName(courseCode, courseName);
   const { schedule } = useSchedule();
   const { isSyncing } = useSyncStatus();
   // Tapping a PDF opens it in the reader rather than exporting it: on iOS the
@@ -96,7 +100,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
     openingLink,
     activeDownloads,
   } = usePdfPreview(courseCode, {
-    title: courseName || courseCode,
+    title: displayName,
     files: listSubjectPdfs(groupedFiles.flatMap((g) => g.files)),
   });
   const { classmates } = useClassmates(courseCode);
@@ -146,9 +150,9 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
         }
         top={
           <>
-            <SheetHeader
-              eyebrow={courseCode}
-              title={courseName || courseCode}
+            <SubjectSheetHeader
+              courseCode={courseCode}
+              isName={courseName || courseCode}
               titleHref={resolvedCourseId ? syllabusUrl(resolvedCourseId, language) : undefined}
               onBack={onClose}
             />

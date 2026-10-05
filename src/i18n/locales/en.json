@@ -1309,6 +1309,14 @@
       "documentsSub": "proof of study",
       "recentSubjects": "Recently opened"
     },
+    "subjectName": {
+      "rename": "Rename subject",
+      "label": "Subject name",
+      "save": "Save",
+      "cancel": "Cancel",
+      "reset": "Use the IS name",
+      "inIs": "In IS: {name}"
+    },
     "sheet": {
       "close": "Close",
       "cancel": "Not now",

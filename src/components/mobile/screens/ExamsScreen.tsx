@@ -10,6 +10,7 @@ import { useExamActions } from '../../ExamPanel/useExamActions';
 import {
   buildRegisteredExams,
   buildOpenExams,
+  withNicknames,
   type RegisteredExam,
   type OpenExam,
 } from '../../../utils/mobile/examRows';
@@ -79,11 +80,19 @@ export function ExamsScreen() {
   // been sat, until it is graded — see `dropFinished` for why it is hidden
   // rather than grouped, and why "finished" means the day is over. Filtered
   // here, once, so the strip, the groups and the count all agree.
+  const nicknames = useAppStore((s) => s.courseNicknames);
   const registered = useMemo(
-    () => dropFinished(buildRegisteredExams(exams, language), (r) => r.date, now),
-    [exams, language, now]
+    () =>
+      withNicknames(
+        dropFinished(buildRegisteredExams(exams, language), (r) => r.date, now),
+        nicknames
+      ),
+    [exams, language, now, nicknames]
   );
-  const open = useMemo(() => buildOpenExams(exams, language), [exams, language]);
+  const open = useMemo(
+    () => withNicknames(buildOpenExams(exams, language), nicknames),
+    [exams, language, nicknames]
+  );
   // "Otevřené termíny 2" has to mean two things that can be booked. A section
   // whose registration opens in December is not one of them — see
   // utils/mobile/examOpening.

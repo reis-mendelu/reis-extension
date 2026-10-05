@@ -1,6 +1,8 @@
 import { useCallback, useMemo } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { parseDate } from '../utils/date';
+import { courseDisplayName } from '../utils/courseDisplayName';
+import { boxCourseCode } from '../utils/submissionBoxes';
 
 export interface DeadlineAlert {
   id: string;
@@ -28,6 +30,8 @@ export function useDeadlineAlerts() {
   const exams = useAppStore((s) => s.exams.data);
   const odevzdavarny = useAppStore((s) => s.odevzdavarny);
   const cvicneTests = useAppStore((s) => s.cvicneTests);
+  const subjects = useAppStore((s) => s.subjects?.data);
+  const nicknames = useAppStore((s) => s.courseNicknames);
   const language = useAppStore((s) => s.language);
   const seenIds = useAppStore((s) => s.notifications.seenDeadlineAlertIds);
   const markDeadlineAlertsSeen = useAppStore((s) => s.markDeadlineAlertsSeen);
@@ -46,7 +50,11 @@ export function useDeadlineAlerts() {
     const result: DeadlineAlert[] = [];
 
     for (const subject of exams) {
-      const subjectName = (isEn ? subject.nameEn : subject.nameCs) ?? subject.name;
+      const subjectName = courseDisplayName(
+        nicknames,
+        subject.code,
+        (isEn ? subject.nameEn : subject.nameCs) ?? subject.name
+      );
 
       for (const section of subject.sections) {
         const sectionName = (isEn ? section.nameEn : section.nameCs) ?? section.name;
@@ -102,7 +110,11 @@ export function useDeadlineAlerts() {
       if (!deadline) continue;
       const h = (deadline.getTime() - now) / H;
       if (h > 0 && h <= 48) {
-        const courseName = isEn ? a.courseNameEn : a.courseNameCs;
+        const courseName = courseDisplayName(
+          nicknames,
+          boxCourseCode(a, subjects) ?? undefined,
+          isEn ? a.courseNameEn : a.courseNameCs
+        );
         result.push({
           id: `odev-${a.odevzdavarnaId || a.name}`,
           type: 'assignment',
@@ -124,7 +136,7 @@ export function useDeadlineAlerts() {
 
     result.sort((a, b) => (a.hoursUntil ?? Infinity) - (b.hoursUntil ?? Infinity));
     return result;
-  }, [exams, odevzdavarny, cvicneTests, language, pulseNow]);
+  }, [exams, odevzdavarny, cvicneTests, language, pulseNow, subjects, nicknames]);
 
   const unseenCount = useMemo(
     () => alerts.filter((a) => !seenIds.has(a.id)).length,

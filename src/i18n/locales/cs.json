@@ -1309,6 +1309,14 @@
       "documentsSub": "potvrzení o studiu",
       "recentSubjects": "Naposledy otevřené"
     },
+    "subjectName": {
+      "rename": "Přejmenovat předmět",
+      "label": "Název předmětu",
+      "save": "Uložit",
+      "cancel": "Zrušit",
+      "reset": "Vrátit název z IS",
+      "inIs": "V IS: {name}"
+    },
     "sheet": {
       "close": "Zavřít",
       "cancel": "Radši ne",

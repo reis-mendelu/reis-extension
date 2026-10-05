@@ -2,6 +2,7 @@ import type { Odevzdavarna } from '../../api/odevzdavarny';
 import { useAppStore } from '../../store/useAppStore';
 import { boxCourseCode, boxDeadline, boxesDueSoon, splitBoxes } from '../../utils/submissionBoxes';
 import { daysUntil, useBoxLabels } from './useBoxLabels';
+import { courseDisplayName } from '../../utils/courseDisplayName';
 
 const WINDOW_DAYS = 14;
 const MAX_ROWS = 3;
@@ -24,6 +25,7 @@ export function SubmissionBoxesSummary({ onOpen, className = '' }: SubmissionBox
   const L = useBoxLabels();
   const boxes = useAppStore((s) => s.odevzdavarny);
   const subjects = useAppStore((s) => s.subjects?.data);
+  const nicknames = useAppStore((s) => s.courseNicknames);
   const now = useAppStore((s) => s.now).getTime();
   const { open } = splitBoxes(boxes, now);
   if (open.length === 0) return null;
@@ -56,7 +58,7 @@ export function SubmissionBoxesSummary({ onOpen, className = '' }: SubmissionBox
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate font-semibold">{box.name}</span>
                   <span className="truncate text-[11px] text-base-content/70">
-                    {L.courseName(box)}
+                    {courseDisplayName(nicknames, code ?? undefined, L.courseName(box))}
                   </span>
                 </span>
                 <span
