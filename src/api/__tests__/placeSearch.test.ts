@@ -95,8 +95,16 @@ describe('searchPlaces', () => {
 
   // Measured 2026-10-05: Photon took 16.5–21 s to answer (TCP+TLS in 60 ms, the
   // rest server time). The old 8 s bound turned every search into a blank list.
-  it('waits long enough for Photon on a slow day', () => {
+  it('waits long enough for Photon on a slow day', async () => {
     expect(PHOTON_TIMEOUT_MS).toBeGreaterThanOrEqual(25_000);
+    const timeout = vi.spyOn(AbortSignal, 'timeout');
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ features: [] }),
+    } as Response);
+    await searchPlaces('Lužánky');
+    expect(timeout).toHaveBeenCalledWith(PHOTON_TIMEOUT_MS);
+    timeout.mockRestore();
   });
 
   it('drops features that have neither a name nor a street', async () => {

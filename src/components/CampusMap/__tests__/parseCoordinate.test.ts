@@ -28,6 +28,18 @@ describe('parseCoordinate', () => {
     expect(dms[0]).toBeCloseTo(16.60306, 4);
   });
 
+  it('rejects minutes or seconds of 60 or more instead of rolling them into another point', () => {
+    expect(parseCoordinate(`49°60'28.4"N 16°36'11.0"E`)).toBeNull();
+    expect(parseCoordinate(`49°12'60.0"N 16°36'11.0"E`)).toBeNull();
+  });
+
+  // A link and a DMS string name their axes, so a real point abroad whose
+  // numbers happen to read as Brno the other way round must stay where it is.
+  it('never swaps a link or DMS, whose axis order is explicit', () => {
+    expect(parseCoordinate('https://www.google.com/maps/@16.0,49.0,15z')?.coord).toEqual([49, 16]);
+    expect(parseCoordinate(`16°36'11.0"N 49°12'28.4"E`)!.coord[1]).toBeCloseTo(16.60306, 4);
+  });
+
   it('puts a pair typed lng-first back in order when only that order lands in Czechia', () => {
     expect(parseCoordinate('16.6030499, 49.2078989')?.coord).toEqual([LNG, LAT]);
   });

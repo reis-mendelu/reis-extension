@@ -112,7 +112,8 @@ export function ComposerVenueSearch({
   const searched = q.trim().length >= 2;
   const nothing =
     searched && !point && !link && !loading && !failed && !rooms.length && !places.length;
-  // A link that is not a point is a short link (its place is behind a redirect).
+  // A link we read no point from: a short link (its place is behind a
+  // redirect) or a maps site the parser does not know.
   const note =
     (link && !point && 'map.linkUnreadable') ||
     (failed && !loading && 'map.placeSearchFailed') ||

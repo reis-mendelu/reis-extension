@@ -9,16 +9,13 @@ export interface ParsedPoint {
 
 // The same Czech box placeSearch restricts Photon to. Used only to decide
 // which way round a bare pair was typed; a point outside it is still accepted.
+// Links and DMS name their axes, so they are never swapped.
 const inCz = (lat: number, lng: number) =>
   lat >= 48.55 && lat <= 51.06 && lng >= 12.09 && lng <= 18.86;
 const onEarth = (lat: number, lng: number) => Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
 
 function point(lat: number, lng: number, name?: string): ParsedPoint | null {
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-  // A pair copied from a tool that writes lng first: swap only when that is
-  // the one order that lands in Czechia, so a real point abroad is untouched.
-  if (!inCz(lat, lng) && inCz(lng, lat)) [lat, lng] = [lng, lat];
-  if (!onEarth(lat, lng)) return null;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || !onEarth(lat, lng)) return null;
   return name ? { coord: [lng, lat], name } : { coord: [lng, lat] };
 }
 
@@ -71,6 +68,8 @@ const DMS =
 function fromDms(text: string): ParsedPoint | null {
   const m = DMS.exec(text);
   if (!m) return null;
+  // 49°75' would otherwise roll over into a different, valid-looking point.
+  if ([m[2], m[3], m[6], m[7]].some((v) => num(v!) >= 60)) return null;
   const deg = (d: string, mi: string, s: string, hemi: string) =>
     (Number(d) + Number(mi) / 60 + num(s) / 3600) * (/[SW]/i.test(hemi) ? -1 : 1);
   return point(deg(m[1]!, m[2]!, m[3]!, m[4]!), deg(m[5]!, m[6]!, m[7]!, m[8]!));
@@ -91,6 +90,11 @@ export function parseCoordinate(input: string): ParsedPoint | null {
   const text = input.trim();
   if (isLink(text)) return fromUrl(text);
   const pair = PAIR_DOT.exec(text) ?? PAIR_COMMA.exec(text);
-  if (pair) return point(num(pair[1]!), num(pair[2]!));
+  if (pair) {
+    const [a, b] = [num(pair[1]!), num(pair[2]!)];
+    // A bare pair copied from a tool that writes lng first: swap only when that
+    // is the one order that lands in Czechia, so a real point abroad is untouched.
+    return !inCz(a, b) && inCz(b, a) ? point(b, a) : point(a, b);
+  }
   return fromDms(text);
 }
