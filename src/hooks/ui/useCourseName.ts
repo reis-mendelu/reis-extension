@@ -1,10 +1,16 @@
 import { useAppStore } from '../../store/useAppStore';
-import { courseDisplayName } from '../../utils/courseDisplayName';
 
+/**
+ * The hook form of `courseDisplayName` (utils/courseDisplayName). It selects
+ * only this course's nickname, so renaming one subject does not re-render
+ * every row that names another.
+ */
 export function useCourseName(
   courseCode: string | undefined,
   fallbackName: string | undefined
 ): string {
-  const nicknames = useAppStore((state) => state.courseNicknames);
-  return courseDisplayName(nicknames, courseCode, fallbackName);
+  const nickname = useAppStore((state) =>
+    courseCode ? state.courseNicknames?.[courseCode] : undefined
+  );
+  return nickname || fallbackName || courseCode || '';
 }
