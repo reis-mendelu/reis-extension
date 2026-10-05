@@ -70,6 +70,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
     clearDraftCoord,
     pickRoom,
     pickPlace,
+    pickPoint,
     clearVenue,
     pickOnMap,
   } = useVenuePicker(initialRoom(source, INDEX), initialPlaceName(source), source?.coord ?? null);
@@ -174,6 +175,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
         selected={venueName}
         onSelectRoom={pickRoom}
         onSelectPlace={pickPlace}
+        onSelectPoint={pickPoint}
         onClear={clearVenue}
         onPickOnMap={pickOnMap}
         t={t}

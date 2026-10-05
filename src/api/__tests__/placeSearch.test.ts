@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { toPlaceResult, searchPlaces, type PhotonFeature } from '../placeSearch';
+import { toPlaceResult, searchPlaces, PHOTON_TIMEOUT_MS, type PhotonFeature } from '../placeSearch';
 
 const feature = (
   props: Partial<PhotonFeature['properties']>,
@@ -70,12 +70,33 @@ describe('searchPlaces', () => {
     // outrank the Brno venue.
     expect(url).toContain('bbox=');
     expect(res).toHaveLength(1);
-    expect(res[0]).toMatchObject({ name: 'Lužánky', coord: [16.6085, 49.2067] });
+    expect(res?.[0]).toMatchObject({ name: 'Lužánky', coord: [16.6085, 49.2067] });
   });
 
-  it('returns [] and does not throw when the request fails', async () => {
+  // null, not []: "nothing is called that" and "the service did not answer"
+  // need different advice, and [] made a timeout read as the first.
+  it('returns null and does not throw when Photon answers with an error', async () => {
     vi.mocked(fetch).mockResolvedValue({ ok: false, status: 500 } as Response);
-    expect(await searchPlaces('anything')).toEqual([]);
+    expect(await searchPlaces('anything')).toBeNull();
+  });
+
+  it('returns null when the request times out or the network is down', async () => {
+    vi.mocked(fetch).mockRejectedValue(new DOMException('timed out', 'TimeoutError'));
+    expect(await searchPlaces('Kotlářská 51a')).toBeNull();
+  });
+
+  it('returns [] — not null — when Photon answers and simply knows nothing', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ features: [] }),
+    } as Response);
+    expect(await searchPlaces('nic takového')).toEqual([]);
+  });
+
+  // Measured 2026-10-05: Photon took 16.5–21 s to answer (TCP+TLS in 60 ms, the
+  // rest server time). The old 8 s bound turned every search into a blank list.
+  it('waits long enough for Photon on a slow day', () => {
+    expect(PHOTON_TIMEOUT_MS).toBeGreaterThanOrEqual(25_000);
   });
 
   it('drops features that have neither a name nor a street', async () => {
@@ -90,6 +111,6 @@ describe('searchPlaces', () => {
     } as Response);
     const res = await searchPlaces('utopia');
     expect(res).toHaveLength(1);
-    expect(res[0]!.name).toBe('Utopia');
+    expect(res?.[0]?.name).toBe('Utopia');
   });
 });

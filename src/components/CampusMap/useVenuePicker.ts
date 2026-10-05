@@ -16,7 +16,8 @@ const sameCoord = (a: Coord, b: Coord | null) => !!b && a[0] === b[0] && a[1] ==
 
 /**
  * The composer's venue state and the handful of ways it changes: a picked
- * room, a searched place, a hand-dropped pin, or cleared back to none (tba).
+ * room, a searched place, a hand-dropped or pasted pin, or cleared back to
+ * none (tba).
  * Split out of EventComposer so its line budget covers the fields it lays
  * out, not the venue bookkeeping behind one of them.
  *
@@ -67,6 +68,12 @@ export function useVenuePicker(
     setPick({ room: null, placeName: sel.name, at: sel.coord });
     pinned(sel.coord);
   };
+  // A pasted coordinate: no room, no name, so it publishes exactly like a pin
+  // dropped by hand.
+  const pickPoint = (c: Coord) => {
+    setPick({ room: null, placeName: null, at: c });
+    pinned(c);
+  };
   const clearVenue = () => {
     setPick({ room: null, placeName: null, at: null });
     clearDraftCoord();
@@ -85,6 +92,7 @@ export function useVenuePicker(
     clearDraftCoord,
     pickRoom,
     pickPlace,
+    pickPoint,
     clearVenue,
     pickOnMap,
   };

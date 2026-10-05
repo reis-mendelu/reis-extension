@@ -18,6 +18,7 @@ const props = () => ({
   selected: null as string | null,
   onSelectRoom: vi.fn(),
   onSelectPlace: vi.fn(),
+  onSelectPoint: vi.fn(),
   onClear: vi.fn(),
   onPickOnMap: vi.fn(),
   t,
@@ -73,6 +74,47 @@ describe('ComposerVenueSearch', () => {
     type('a');
     await new Promise((r) => setTimeout(r, 350));
     expect(searchPlaces).not.toHaveBeenCalled();
+  });
+
+  // An organiser who already has the spot in Google Maps or Mapy.cz pastes it
+  // instead of hunting for the pin by hand (task list, Sprint 11).
+  it('turns pasted coordinates into a pin without asking the place service', async () => {
+    const p = props();
+    render(<ComposerVenueSearch {...p} />);
+    type('49.2078989, 16.6030499');
+    fireEvent.click(screen.getByRole('button', { name: /map.useThisPoint/ }));
+    expect(p.onSelectPoint).toHaveBeenCalledWith([16.6030499, 49.2078989]);
+    await new Promise((r) => setTimeout(r, 350));
+    expect(searchPlaces).not.toHaveBeenCalled();
+    expect(screen.queryByText('map.noPlaceFound')).toBeNull();
+  });
+
+  it('keeps the place name a pasted Google Maps link carries', () => {
+    const p = props();
+    render(<ComposerVenueSearch {...p} />);
+    type('https://www.google.com/maps/place/Padagali/@49.2078989,16.6030499,17z');
+    fireEvent.click(screen.getByRole('button', { name: /Padagali/ }));
+    expect(p.onSelectPlace).toHaveBeenCalledWith({
+      name: 'Padagali',
+      coord: [16.6030499, 49.2078989],
+    });
+    expect(p.onSelectPoint).not.toHaveBeenCalled();
+  });
+
+  it('says the place search is not answering, rather than that nothing exists', async () => {
+    vi.mocked(searchPlaces).mockResolvedValue(null);
+    render(<ComposerVenueSearch {...props()} />);
+    type('Kotlářská 51a');
+    expect(await screen.findByText('map.placeSearchFailed')).toBeInTheDocument();
+    expect(screen.queryByText('map.noPlaceFound')).toBeNull();
+  });
+
+  it('still lists campus rooms when the place search fails', async () => {
+    vi.mocked(searchPlaces).mockResolvedValue(null);
+    render(<ComposerVenueSearch {...props()} />);
+    type('q01');
+    await screen.findByText('map.placeSearchFailed');
+    expect(screen.getByText('map.venueCampus')).toBeInTheDocument();
   });
 
   it('always offers dropping the pin by hand', () => {

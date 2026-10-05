@@ -16,6 +16,10 @@ const BIAS_LON = 16.6144;
 // Brno first within the box.
 const CZ_BBOX = '12.09,48.55,18.86,51.06';
 const MIN_QUERY = 2;
+// Photon is a free public instance and answers slowly on a bad day: 16.5–21 s
+// measured on 2026-10-05, nearly all of it server time. A shorter bound throws
+// away answers that were on their way.
+export const PHOTON_TIMEOUT_MS = 30_000;
 
 export interface PhotonFeature {
   type: 'Feature';
@@ -58,22 +62,27 @@ export function toPlaceResult(f: PhotonFeature): PlaceResult {
   };
 }
 
-export async function searchPlaces(query: string): Promise<PlaceResult[]> {
+/**
+ * Places matching `query`, [] when Photon answered and knows none, or null
+ * when it did not answer (error status, timeout, offline) — the composer
+ * gives different advice for each.
+ */
+export async function searchPlaces(query: string): Promise<PlaceResult[] | null> {
   const q = query.trim();
   if (q.length < MIN_QUERY) return [];
   const url = `${PHOTON_URL}?q=${encodeURIComponent(q)}&limit=6&lat=${BIAS_LAT}&lon=${BIAS_LON}&bbox=${CZ_BBOX}&lang=default`;
   try {
-    // Bound the request so a slow/unresponsive Photon doesn't hang the search
+    // Bound the request so an unresponsive Photon doesn't hang the search
     // dropdown's loading state forever.
-    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(PHOTON_TIMEOUT_MS) });
     if (!res.ok) {
       logError('Api.searchPlaces', new Error(`photon ${res.status}`));
-      return [];
+      return null;
     }
     const data = (await res.json()) as { features?: PhotonFeature[] };
     return (data.features ?? []).map(toPlaceResult).filter((r) => r.name.length > 0);
   } catch (err) {
     logError('Api.searchPlaces', err);
-    return [];
+    return null;
   }
 }

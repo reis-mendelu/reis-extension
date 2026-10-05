@@ -422,6 +422,29 @@ describe('EventComposer — the venue kind follows the pick', () => {
     expect(createPost.mock.calls[0][0].venueKind).toBe('offcampus');
     expect(createPost.mock.calls[0][0].location).toBeNull();
   });
+
+  // Kotlářská 51a, pasted from Google Maps: the same venue as a hand-dropped pin.
+  it('publishes pasted coordinates as an off-campus point, and pins them on the map', async () => {
+    render(<EventComposer onDone={() => {}} />);
+    fillRequired();
+    pickRoom();
+    fireEvent.click(screen.getByRole('button', { name: 'Změnit místo' }));
+    fireEvent.change(screen.getByPlaceholderText(VENUE), {
+      target: { value: '49.2078989, 16.6030499' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Použít tento bod/ }));
+    expect(useAppStore.getState().draftCoord).toEqual([16.6030499, 49.2078989]);
+    expect(screen.getByText('Vybrané místo na mapě')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    const input = createPost.mock.calls[0][0];
+    expect(input.venueKind).toBe('offcampus');
+    expect(input.roomCode).toBeNull();
+    expect(input.location).toBeNull();
+    expect(input.coordLng).toBe(16.6030499);
+    expect(input.coordLat).toBe(49.2078989);
+  });
 });
 
 /**
