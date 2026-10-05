@@ -56,6 +56,16 @@ describe('ClassmatesList — photos load only for rows on screen', () => {
     expect(fetchPersonPhoto).not.toHaveBeenCalled();
   });
 
+  it('watches all 519 rows through one observer, not one each', () => {
+    const { unmount } = render(
+      <ClassmatesList classmates={LECTURE} showStudyInfo={false} onOpen={() => {}} />
+    );
+    expect(FakeObserver.all).toHaveLength(1);
+    expect(FakeObserver.all[0]!.targets.size).toBe(519);
+    unmount();
+    expect(FakeObserver.all[0]!.targets.size).toBe(0);
+  });
+
   it('requests exactly the rows that came into view', async () => {
     render(<ClassmatesList classmates={LECTURE} showStudyInfo={false} onOpen={() => {}} />);
     await act(async () => {

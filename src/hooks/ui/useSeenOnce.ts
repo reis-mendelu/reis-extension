@@ -1,6 +1,41 @@
 import { useEffect, useState, type RefObject } from 'react';
 
 /**
+ * One observer for every watched element, as PdfViewer does for its pages: a
+ * 519-student lecture would otherwise run 519 IntersectionObserver instances.
+ * Created on the first watch, disconnected when the last element leaves.
+ */
+let shared: { io: IntersectionObserver; onSeen: Map<Element, () => void> } | null = null;
+
+function unwatch(el: Element): void {
+  if (!shared) return;
+  shared.io.unobserve(el);
+  shared.onSeen.delete(el);
+  if (shared.onSeen.size === 0) {
+    shared.io.disconnect();
+    shared = null;
+  }
+}
+
+function watch(el: Element, onSeen: () => void): () => void {
+  if (!shared) {
+    const callbacks = new Map<Element, () => void>();
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        const cb = e.isIntersecting ? callbacks.get(e.target) : undefined;
+        if (!cb) continue;
+        unwatch(e.target);
+        cb();
+      }
+    });
+    shared = { io, onSeen: callbacks };
+  }
+  shared.onSeen.set(el, onSeen);
+  shared.io.observe(el);
+  return () => unwatch(el);
+}
+
+/**
  * True once the element is on screen, and true from then on — scrolling it
  * away again does not take it back.
  *
@@ -19,14 +54,7 @@ export function useSeenOnce(ref: RefObject<Element | null>): boolean {
   useEffect(() => {
     const el = ref.current;
     if (seen || !el) return;
-    const observer = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) {
-        observer.disconnect();
-        setSeen(true);
-      }
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
+    return watch(el, () => setSeen(true));
   }, [ref, seen]);
 
   return seen;

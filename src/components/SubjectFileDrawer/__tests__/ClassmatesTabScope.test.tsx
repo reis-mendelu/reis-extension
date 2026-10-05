@@ -106,12 +106,13 @@ describe('ClassmatesTab — Cvičení / Celý předmět', () => {
    * The whole subject is one scrollable list. The listing is already in memory
    * (every spoluzaci.pl page is read up front), so a "show 40 more" button only
    * made the student tap for rows the app already had. Photos are what cost a
-   * request each, and ClassmatesList defers those until a row is near view.
+   * request each, and ClassmatesList defers those until a row is on screen
+   * (ClassmatesList.photos.test.tsx; this file mocks PersonPhoto away).
    */
   it('renders every student of a 519-student lecture, with no "show more" step', () => {
     render(<ClassmatesTab courseCode="EBC-IV" />);
     fireEvent.click(tab('Celý předmět'));
-    expect(screen.getAllByTestId('photo')).toHaveLength(519);
+    expect(screen.getAllByText(/^Student \d{3}$/)).toHaveLength(519);
     expect(screen.getByText('Student 518')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Zobrazit dalších/ })).not.toBeInTheDocument();
   });
@@ -124,5 +125,28 @@ describe('ClassmatesTab — Cvičení / Celý předmět', () => {
     });
     expect(screen.getByText('Student 500')).toBeInTheDocument();
     expect(screen.getAllByTestId('photo')).toHaveLength(1);
+  });
+
+  /**
+   * The search stays on screen over the whole list now, so a student can type
+   * from deep in it. Without a reset the scroller keeps its old offset and the
+   * first matches sit above the view. Every scrolled ancestor is reset because
+   * the element that scrolls differs per tree (the drawer body on the
+   * extension, the tab's own box on the phone).
+   */
+  it('jumps back to the first match when the search changes', () => {
+    render(<ClassmatesTab courseCode="EBC-IV" />);
+    fireEvent.click(tab('Celý předmět'));
+    const scrolled = screen.getByText('Student 000').closest('.overflow-y-auto') as HTMLElement;
+    let top = 3000;
+    Object.defineProperty(scrolled, 'scrollTop', {
+      configurable: true,
+      get: () => top,
+      set: (v: number) => (top = v),
+    });
+    fireEvent.change(screen.getByPlaceholderText('Vyhledat...'), {
+      target: { value: 'Student 5' },
+    });
+    expect(top).toBe(0);
   });
 });
