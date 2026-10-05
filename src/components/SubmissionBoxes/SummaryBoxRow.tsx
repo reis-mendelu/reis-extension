@@ -1,6 +1,7 @@
 import type { Odevzdavarna } from '../../api/odevzdavarny';
 import { boxDeadline } from '../../utils/submissionBoxes';
 import { daysUntil, useBoxLabels } from './useBoxLabels';
+import { useCourseName } from '../../hooks/ui/useCourseName';
 
 /** Past this, a relative "za 118 d" stops reading; the date does. */
 const RELATIVE_DAYS = 14;
@@ -30,6 +31,7 @@ export function SummaryBoxRow({
   testId,
 }: SummaryBoxRowProps) {
   const L = useBoxLabels();
+  const subjectName = useCourseName(courseCode ?? undefined, L.courseName(box));
   const deadline = boxDeadline(box);
   const uploaded = box.fileCount > 0;
   const days = deadline ? daysUntil(deadline, now) : null;
@@ -44,7 +46,7 @@ export function SummaryBoxRow({
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-semibold">{box.name}</span>
         <span className="flex min-w-0 gap-1 text-[11px] text-base-content/70">
-          <span className="truncate">{L.courseName(box)}</span>
+          <span className="truncate">{subjectName}</span>
           {showUpload && uploaded && (
             <span className="shrink-0 whitespace-nowrap font-medium text-[var(--tone-success)]">
               · {L.t('odevzdavarny.uploaded')}

@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import { useAppStore } from '../../../../store/useAppStore';
+import { courseDisplayName } from '../../../../utils/courseDisplayName';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useRecentPdfOpen } from '../../../../hooks/ui/useRecentPdfOpen';
 
@@ -24,6 +25,7 @@ export function RecentFilesStrip() {
   const { t } = useTranslation();
   const recent = useAppStore((s) => s.recentPdfs);
   const subjects = useAppStore((s) => s.subjects);
+  const nicknames = useAppStore((s) => s.courseNicknames);
   const dismissRecentPdf = useAppStore((s) => s.dismissRecentPdf);
   const { openRecentPdf, isOpening } = useRecentPdfOpen();
 
@@ -48,7 +50,11 @@ export function RecentFilesStrip() {
               >
                 <span className="truncate text-md font-semibold text-base-content">{row.name}</span>
                 <span className="truncate text-2sm text-base-content/70">
-                  {subjects?.data[row.courseCode]?.displayName ?? row.courseCode}
+                  {courseDisplayName(
+                    nicknames,
+                    row.courseCode,
+                    subjects?.data[row.courseCode]?.displayName
+                  )}
                 </span>
               </button>
               <button

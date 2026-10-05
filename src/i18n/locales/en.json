@@ -1308,6 +1308,15 @@
       "documentsSub": "proof of study",
       "recentSubjects": "Recently opened"
     },
+    "subjectName": {
+      "rename": "Rename subject",
+      "label": "Your name for this subject",
+      "hint": "You'll see it in the calendar, exams and subjects. IS stays as it is.",
+      "save": "Save",
+      "cancel": "Cancel",
+      "reset": "Use “{name}”",
+      "inIs": "Name in IS: {name}"
+    },
     "sheet": {
       "close": "Close",
       "cancel": "Not now",

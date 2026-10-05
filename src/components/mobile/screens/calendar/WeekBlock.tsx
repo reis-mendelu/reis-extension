@@ -2,6 +2,7 @@ import type { BlockLesson } from '../../../../types/calendarTypes';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useAppStore } from '../../../../store/useAppStore';
 import { localizedCourseName } from '../../../../utils/localizedLesson';
+import { lessonDisplayName } from '../../../../utils/courseDisplayName';
 import { lessonPlace } from '../../../../utils/lessonPlace';
 import { eventStyles } from './eventStyles';
 import { blockBox, nameLines, type PlacedBlock } from './weekLayout';
@@ -33,7 +34,8 @@ export function WeekBlock({ block, cascade, gridPx, onOpen }: WeekBlockProps) {
   const mapEvents = useAppStore((s) => s.mapEvents);
   const societies = useAppStore((s) => s.societies);
   const { lesson } = block;
-  const name = localizedCourseName(lesson, language);
+  const nicknames = useAppStore((s) => s.courseNicknames);
+  const name = lessonDisplayName(nicknames, lesson, localizedCourseName(lesson, language));
   const room = lessonPlace(lesson, language, mapEvents, t('map.venueOnMap'), societies).label;
   const styles = eventStyles(lesson);
   const box = blockBox(block.lane, block.lanes, cascade);

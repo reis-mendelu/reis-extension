@@ -21,6 +21,13 @@ export interface SheetHeaderProps {
    * handler, which opens IS in the in-app browser with the session.
    */
   titleHref?: string;
+  /** Replaces the title and subtitle — an in-place editor for the title. */
+  titleSlot?: ReactNode;
+  /**
+   * Sits right of the title block, where a sheet's close X goes — a screen's
+   * own action, such as renaming the subject. Ignored when there is a close X.
+   */
+  trailing?: ReactNode;
 }
 
 /** Drag handle + title block, shared by every sheet. */
@@ -32,6 +39,8 @@ export function SheetHeader({
   onBack,
   leading,
   titleHref,
+  titleSlot,
+  trailing,
 }: SheetHeaderProps) {
   const { t } = useTranslation();
   return (
@@ -63,25 +72,28 @@ export function SheetHeader({
           {/* Inside the touch-none header, and that is fine: touch-action only
               stops the browser panning, a tap still clicks. On a sheet that
               drags, useSheetDrag swallows the click a drag ends in. */}
-          {titleHref ? (
-            <a
-              href={titleHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-display text-lg font-bold tracking-tight"
-            >
-              {title}
-              {/* Inline after the last word, so a long name wraps with the icon
+          {titleSlot ??
+            (titleHref ? (
+              <a
+                href={titleHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-display text-lg font-bold tracking-tight"
+              >
+                {title}
+                {/* Inline after the last word, so a long name wraps with the icon
                   rather than leaving it stranded in a column of its own. */}
-              <ExternalLink
-                aria-hidden="true"
-                className="ml-1.5 inline h-4 w-4 align-[-0.125em] text-base-content/60"
-              />
-            </a>
-          ) : (
-            <span className="font-display text-lg font-bold tracking-tight">{title}</span>
+                <ExternalLink
+                  aria-hidden="true"
+                  className="ml-1.5 inline h-4 w-4 align-[-0.125em] text-base-content/60"
+                />
+              </a>
+            ) : (
+              <span className="font-display text-lg font-bold tracking-tight">{title}</span>
+            ))}
+          {subtitle && !titleSlot && (
+            <span className="text-sm text-base-content/60">{subtitle}</span>
           )}
-          {subtitle && <span className="text-sm text-base-content/60">{subtitle}</span>}
         </div>
         {/* Back and close are alternatives, not a pair: a screen is left by
             going back, a sheet by being closed. onBack wins so a caller passing
@@ -95,6 +107,7 @@ export function SheetHeader({
             <X className="h-4 w-4" />
           </button>
         )}
+        {(!onClose || onBack) && trailing}
       </div>
     </div>
   );

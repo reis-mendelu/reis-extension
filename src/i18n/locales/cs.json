@@ -1308,6 +1308,15 @@
       "documentsSub": "potvrzení o studiu",
       "recentSubjects": "Naposledy otevřené"
     },
+    "subjectName": {
+      "rename": "Přejmenovat předmět",
+      "label": "Tvůj název předmětu",
+      "hint": "Uvidíš ho v kalendáři, zkouškách a předmětech. V IS se nezmění.",
+      "save": "Uložit",
+      "cancel": "Zrušit",
+      "reset": "Vrátit „{name}“",
+      "inIs": "Název v IS: {name}"
+    },
     "sheet": {
       "close": "Zavřít",
       "cancel": "Radši ne",

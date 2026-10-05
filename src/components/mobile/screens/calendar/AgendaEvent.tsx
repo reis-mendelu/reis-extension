@@ -3,6 +3,7 @@ import type { BlockLesson } from '../../../../types/calendarTypes';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useAppStore } from '../../../../store/useAppStore';
 import { localizedCourseName } from '../../../../utils/localizedLesson';
+import { lessonDisplayName } from '../../../../utils/courseDisplayName';
 import { lessonPlace } from '../../../../utils/lessonPlace';
 import { eventStyles } from './eventStyles';
 
@@ -32,7 +33,8 @@ export interface AgendaEventProps {
  */
 export function AgendaEvent({ lesson, onOpenSubject, onShowOnMap }: AgendaEventProps) {
   const { t, language } = useTranslation();
-  const courseName = localizedCourseName(lesson, language);
+  const nicknames = useAppStore((s) => s.courseNicknames);
+  const courseName = lessonDisplayName(nicknames, lesson, localizedCourseName(lesson, language));
   const mapEvents = useAppStore((s) => s.mapEvents);
   const societies = useAppStore((s) => s.societies);
   // A room the index knows, or the society event an answered block stands for.
