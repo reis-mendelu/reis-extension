@@ -21,6 +21,7 @@ const read = (p: string) => readFileSync(resolve(process.cwd(), p), 'utf8');
 
 const PHONE_FILES = [
   'src/components/mobile/screens/calendar/DayChips.tsx',
+  'src/components/mobile/screens/calendar/DayChip.tsx',
   'src/components/mobile/screens/calendar/DayBody.tsx',
   'src/components/mobile/screens/calendar/WeekGrid.tsx',
   'src/utils/mobile/weekDays.ts',
@@ -33,7 +34,7 @@ describe('today is marked on both trees', () => {
   });
 
   it('the phone strip marks today apart from the selection', () => {
-    expect(read('src/components/mobile/screens/calendar/DayChips.tsx')).toContain(
+    expect(read('src/components/mobile/screens/calendar/DayChip.tsx')).toContain(
       "aria-current={isToday ? 'date' : undefined}"
     );
   });

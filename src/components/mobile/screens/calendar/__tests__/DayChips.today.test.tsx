@@ -38,6 +38,43 @@ describe('DayChips today mark', () => {
     expect(screen.queryByTestId('day-chip-today')).not.toBeInTheDocument();
   });
 
+  /**
+   * "When I switch to a next week, the 9th of October gets highlighted as the
+   * current day even though it's not" — Saturday 3 October 2026, week view.
+   * The arrow kept a selected day (Friday 9, the nearest to a hidden Saturday)
+   * and the strip drew it as the week's only tonal pill, which beside a grid
+   * whose today column is washed the same lime reads as "today". In the week
+   * view a chip tap opens that day, so the selection is not something the
+   * student can act on; it is not drawn there.
+   */
+  it('draws no selection in the week view, only the today mark', () => {
+    useAppStore.setState({ now: new Date(2026, 9, 3, 16, 0) });
+    const lessons = new Set(['20261009']);
+    const { unmount } = render(
+      <DayChips
+        selectedIso="2026-10-09"
+        onSelect={() => {}}
+        lessonDates={lessons}
+        showSelection={false}
+      />
+    );
+    expect(chip(9).className).not.toContain('bg-primary/15');
+    expect(chip(9).className).toContain('text-base-content/70');
+    expect(screen.getByTestId('day-chip-lessons').className).toContain('bg-base-content/40');
+    unmount();
+
+    render(
+      <DayChips
+        selectedIso="2026-10-02"
+        onSelect={() => {}}
+        lessonDates={lessons}
+        showSelection={false}
+      />
+    );
+    expect(chip(2).className).not.toContain('bg-primary/15');
+    expect(chip(3)).toHaveAttribute('aria-current', 'date');
+  });
+
   it('gives a lesson-free Saturday a chip when it is today', () => {
     useAppStore.setState({ now: new Date(2026, 3, 25, 16, 17) });
     render(<DayChips selectedIso="2026-04-25" onSelect={() => {}} lessonDates={new Set()} />);

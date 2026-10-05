@@ -41,8 +41,9 @@ On `DayChips`, in both views:
 - Today's date number sits in a solid circle, `bg-primary text-primary-content`
   (6.42:1 in both themes; white on lime would be 2.29:1). Today's weekday label
   turns `--tone-primary` and bold.
-- The mark is independent of selection. The selected day keeps its tonal pill,
-  and on today the two combine.
+- The mark is independent of selection. In the day view the selected day keeps
+  its tonal pill, and on today the two combine. The week view draws no
+  selection (amended 2026-10-05, below).
 - Every chip's number sits in the same fixed-size box, so the row does not
   shift when the mark moves.
 - Today's chip carries `aria-current="date"`.
@@ -53,6 +54,25 @@ On `DayChips`, in both views:
 falls in the shown week. Other weeks keep the per-student rule. `stepDay`
 takes the same argument, so swiping the agenda from Friday lands on today's
 Saturday. `WeekGrid` gets the column from the same function.
+
+### 2a. Week steps (amended 2026-10-05)
+
+Reported on Saturday 3 October, after the first build: "when I switch to a next
+week, the 9th of October gets highlighted as the current day even though it's
+not and on Saturday returning to today highlights Friday instead".
+
+- `stepWeek` clamps a hidden weekend target to the last shown day, so today's
+  Saturday went forward to Friday 9, and back to Friday 2: the clamp was not
+  reversible. **Stepping into today's week now lands on today**, from any day,
+  as Apple's month view selects today in the current month.
+- In the week view the only pill on the strip was that clamped Friday, beside a
+  grid whose today column is washed the same lime, and it read as today. A chip
+  tap there opens the day, so the selection is only the week's anchor. **The
+  week view no longer draws the selection pill**; the today circle is the one
+  mark. The day view keeps the pill, because there it names the agenda below.
+- The extension did not reproduce: its grid has no selected day, and on a
+  Saturday it opens on next week (`getSmartWeekRange`) with nothing marked.
+  Whether a weekend should open on today's week instead is still open (#497).
 
 ### 3. Back to today on reopen
 
