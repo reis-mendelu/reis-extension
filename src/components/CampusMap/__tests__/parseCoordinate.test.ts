@@ -48,6 +48,14 @@ describe('parseCoordinate', () => {
     });
   });
 
+  // What Google puts in the address bar for a pin dropped where nothing is
+  // named: the "place" is the point itself, which is no name to publish.
+  it('gives a dropped-pin link no name, since its place segment is only the coordinate', () => {
+    const url =
+      "https://www.google.com/maps/place/49%C2%B012'28.4%22N+16%C2%B036'11.0%22E/@49.2078989,16.6030499,17z/data=!3m1!4b1!4m4!3m3!8m2!3d49.2078989!4d16.6030499";
+    expect(parseCoordinate(url)).toEqual({ coord: [LNG, LAT] });
+  });
+
   it('falls back to the @ centre, and reads ?q= and ?ll= links', () => {
     expect(
       parseCoordinate('https://www.google.com/maps/@49.2078989,16.6030499,15z')?.coord

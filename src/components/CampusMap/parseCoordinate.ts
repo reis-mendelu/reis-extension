@@ -33,6 +33,9 @@ const decode = (s: string) => {
   }
 };
 
+/** Pasted text that is a web address — never a name worth geocoding. */
+export const isLink = (text: string) => /^https?:\/\//i.test(text.trim());
+
 function fromUrl(text: string): ParsedPoint | null {
   let url: URL;
   try {
@@ -41,7 +44,10 @@ function fromUrl(text: string): ParsedPoint | null {
     return null;
   }
   const place = /\/maps\/place\/([^/@]+)/.exec(url.pathname)?.[1];
-  const name = place ? decode(place.replace(/\+/g, ' ')).trim() : undefined;
+  const label = place ? decode(place.replace(/\+/g, ' ')).trim() : undefined;
+  // A pin dropped where nothing is named comes back as /place/49°12'28.4"N…:
+  // the point itself, which is no name to publish.
+  const name = label && !parseCoordinate(label) ? label : undefined;
   const href = decode(url.href);
   // Google: !3d<lat>!4d<lng> is the place's own pin; @<lat>,<lng> is only
   // where the viewport was centred, so it comes second.
@@ -83,7 +89,7 @@ const PAIR_COMMA = /^(-?\d{1,3},\d+)\s*[NS]?\s*(?:;\s*|\s+)(-?\d{1,3},\d+)\s*[EW
  */
 export function parseCoordinate(input: string): ParsedPoint | null {
   const text = input.trim();
-  if (/^https?:\/\//i.test(text)) return fromUrl(text);
+  if (isLink(text)) return fromUrl(text);
   const pair = PAIR_DOT.exec(text) ?? PAIR_COMMA.exec(text);
   if (pair) return point(num(pair[1]!), num(pair[2]!));
   return fromDms(text);

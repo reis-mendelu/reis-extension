@@ -968,6 +968,7 @@
     "searching": "Searching…",
     "noPlaceFound": "Nothing found — try another name, paste coordinates, or pick on the map.",
     "placeSearchFailed": "Place search is not answering right now — paste coordinates or a maps link, or pick on the map.",
+    "linkUnreadable": "A short link can't be read — open it in maps and copy the coordinates or the full link.",
     "useThisPoint": "Use this point",
     "orPickOnMap": "or pick manually on the map",
     "mapPoint": "Point selected on map",

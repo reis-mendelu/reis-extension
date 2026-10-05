@@ -4,7 +4,7 @@ import roomsIndexJson from '../../data/map/rooms-index.json';
 import buildingsJson from '../../data/map/buildings.json';
 import { roomCodeToCoord, roomLabel, searchRooms } from './mapHelpers';
 import { searchPlaces, type PlaceResult } from '../../api/placeSearch';
-import { parseCoordinate } from './parseCoordinate';
+import { isLink, parseCoordinate } from './parseCoordinate';
 import { ComposerPastedPoint } from './ComposerPastedPoint';
 import type { RoomIndexEntry, BuildingsMeta } from '../../types/campusMap';
 
@@ -80,8 +80,9 @@ export function ComposerVenueSearch({
     if (timer.current) clearTimeout(timer.current);
     const trimmed = val.trim();
     setFailed(false);
-    // A pasted coordinate is already the answer; Photon would only guess at it.
-    if (trimmed.length < 2 || parseCoordinate(trimmed)) {
+    // A pasted coordinate is already the answer, and Photon can only answer
+    // "nothing found" about a link.
+    if (trimmed.length < 2 || isLink(trimmed) || parseCoordinate(trimmed)) {
       seq.current++;
       setPlaces([]);
       setLoading(false);
@@ -100,8 +101,9 @@ export function ComposerVenueSearch({
   };
 
   const point = parseCoordinate(q);
+  const link = isLink(q);
   const rooms =
-    q.trim() && !point
+    q.trim() && !point && !link
       ? searchRooms(q, INDEX)
           .map((r) => ({ r, coord: roomCodeToCoord(r.code, INDEX, BUILDINGS) }))
           .filter((x): x is { r: RoomIndexEntry; coord: Coord } => !!x.coord)
@@ -109,7 +111,12 @@ export function ComposerVenueSearch({
       : [];
   const searched = q.trim().length >= 2;
   const nothing =
-    searched && !point && !loading && !failed && rooms.length === 0 && places.length === 0;
+    searched && !point && !link && !loading && !failed && !rooms.length && !places.length;
+  // A link that is not a point is a short link (its place is behind a redirect).
+  const note =
+    (link && !point && 'map.linkUnreadable') ||
+    (failed && !loading && 'map.placeSearchFailed') ||
+    (nothing && 'map.noPlaceFound');
   const group = 'px-2 pb-0.5 pt-1.5 text-[10px] font-bold uppercase tracking-wide opacity-60';
   const hit = 'flex items-center gap-2 rounded-lg px-2 py-2 text-left text-sm hover:bg-base-200';
 
@@ -176,16 +183,7 @@ export function ComposerVenueSearch({
               {t('map.searching')}
             </p>
           )}
-          {failed && !loading && (
-            <p className="px-2 py-3 text-center text-xs text-base-content/50">
-              {t('map.placeSearchFailed')}
-            </p>
-          )}
-          {nothing && (
-            <p className="px-2 py-3 text-center text-xs text-base-content/50">
-              {t('map.noPlaceFound')}
-            </p>
-          )}
+          {note && <p className="px-2 py-3 text-center text-xs text-base-content/50">{t(note)}</p>}
         </div>
       )}
       <button

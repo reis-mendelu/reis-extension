@@ -968,6 +968,7 @@
     "searching": "Hledám…",
     "noPlaceFound": "Nic nenalezeno — zkuste jiný název, vložte souřadnice, nebo vyberte na mapě.",
     "placeSearchFailed": "Vyhledávání míst teď neodpovídá — vložte souřadnice nebo odkaz z map, nebo vyberte na mapě.",
+    "linkUnreadable": "Zkrácený odkaz nejde přečíst — otevřete ho v mapách a zkopírujte souřadnice nebo celý odkaz.",
     "useThisPoint": "Použít tento bod",
     "orPickOnMap": "nebo vybrat ručně na mapě",
     "mapPoint": "Vybrané místo na mapě",

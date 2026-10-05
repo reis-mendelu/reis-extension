@@ -101,6 +101,17 @@ describe('ComposerVenueSearch', () => {
     expect(p.onSelectPoint).not.toHaveBeenCalled();
   });
 
+  // The phone's Share button hands out a maps.app.goo.gl link, whose place is
+  // behind a redirect. Photon would only answer "nothing found" about a URL.
+  it('says a short maps link cannot be read, and does not send it to the place service', async () => {
+    render(<ComposerVenueSearch {...props()} />);
+    type('https://maps.app.goo.gl/AbCdEf123');
+    expect(screen.getByText('map.linkUnreadable')).toBeInTheDocument();
+    await new Promise((r) => setTimeout(r, 350));
+    expect(searchPlaces).not.toHaveBeenCalled();
+    expect(screen.queryByText('map.noPlaceFound')).toBeNull();
+  });
+
   it('says the place search is not answering, rather than that nothing exists', async () => {
     vi.mocked(searchPlaces).mockResolvedValue(null);
     render(<ComposerVenueSearch {...props()} />);
