@@ -4,8 +4,11 @@ export interface DayChipProps {
   date: Date;
   locale: string;
   language: 'cz' | 'en';
-  /** The agenda's day, in full ink. False for every chip in the week view. */
-  isSelected: boolean;
+  /**
+   * The agenda's day, in full ink and `aria-pressed`. Undefined in the week
+   * view, which has no selection to draw or announce.
+   */
+  isSelected: boolean | undefined;
   isToday: boolean;
   hasLessons: boolean;
   /** The lesson/holiday dot. Off in the week view, where the grid says it. */
@@ -33,6 +36,7 @@ export function DayChip({
     <button
       type="button"
       aria-current={isToday ? 'date' : undefined}
+      aria-pressed={isSelected}
       title={holiday ?? undefined}
       onClick={onClick}
       // The selection is ink, not colour. It was a lime tonal pill, and on

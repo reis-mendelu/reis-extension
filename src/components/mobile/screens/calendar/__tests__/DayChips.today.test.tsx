@@ -71,6 +71,25 @@ describe('DayChips today mark', () => {
    * washed red. The week view keeps only the dot's empty slot, so the strip is
    * the same height in both views and does not jump on the switch.
    */
+  /**
+   * Without the pill the selection is weight and ink only, which a screen
+   * reader does not hear. In the day view the chips are a pick-one row and say
+   * which is pressed; in the week view nothing is selected, so they say nothing.
+   */
+  it('exposes the agenda day as pressed in the day view only', () => {
+    useAppStore.setState({ now: new Date(2026, 9, 3, 16, 0) });
+    const { unmount } = render(
+      <DayChips selectedIso="2026-10-09" onSelect={() => {}} lessonDates={new Set()} />
+    );
+    expect(chip(9)).toHaveAttribute('aria-pressed', 'true');
+    expect(chip(8)).toHaveAttribute('aria-pressed', 'false');
+    unmount();
+    render(
+      <DayChips selectedIso="2026-10-09" onSelect={() => {}} lessonDates={new Set()} view="week" />
+    );
+    expect(chip(9)).not.toHaveAttribute('aria-pressed');
+  });
+
   it('draws no dots in the week view', () => {
     useAppStore.setState({ now: new Date(2026, 9, 3, 16, 0) });
     // Friday 9 October has a lesson; Wednesday 28 October is a holiday.

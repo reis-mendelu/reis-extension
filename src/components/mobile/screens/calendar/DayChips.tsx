@@ -146,7 +146,7 @@ export function DayChips({
               date={date}
               locale={locale}
               language={language === 'en' ? 'en' : 'cz'}
-              isSelected={view === 'day' && iso === selectedIso}
+              isSelected={view === 'day' ? iso === selectedIso : undefined}
               isToday={iso === todayIso}
               hasLessons={lessonDates.has(toCompact(iso))}
               showDot={view === 'day'}

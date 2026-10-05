@@ -46,6 +46,9 @@ describe('CalendarScreen — week view', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-10-07T10:00:00'));
     useAppStore.setState({
+      // The store's clock is a singleton the DayChips today mark reads; set it
+      // with the system time so no test inherits another's day.
+      now: new Date('2026-10-07T10:00:00'),
       language: 'cz',
       mobileSelectedDayIso: '2026-10-07',
       mobileSheets: [],
