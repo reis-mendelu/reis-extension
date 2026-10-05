@@ -44,7 +44,7 @@ describe('SubjectDrawerSheet — renaming the subject', () => {
       />
     );
   const pencil = () => screen.getByRole('button', { name: 'Přejmenovat předmět' });
-  const field = () => screen.getByRole('textbox', { name: 'Název předmětu' });
+  const field = () => screen.getByRole('textbox', { name: 'Tvůj název předmětu' });
 
   it('has a pencil a thumb can hit, visible without hover', () => {
     renderSheet();
@@ -65,7 +65,18 @@ describe('SubjectDrawerSheet — renaming the subject', () => {
     expect(useAppStore.getState().courseNicknames).toEqual({ ALG: 'Algo' });
     expect(screen.queryByRole('textbox')).toBeNull();
     expect(screen.getByText('Algo')).toBeInTheDocument();
-    expect(screen.getByText('V IS: Algoritmizace')).toBeInTheDocument();
+    expect(screen.getByText('Název v IS: Algoritmizace')).toBeInTheDocument();
+  });
+
+  // What the field is for has to be said, not guessed from a pencil: whose
+  // name it is, where it shows, and that IS keeps its own.
+  it('says what the name is for, and that IS stays as it is', () => {
+    renderSheet();
+    fireEvent.click(pencil());
+    const hint = screen.getByText(
+      'Uvidíš ho v kalendáři, zkouškách a předmětech. V IS se nezmění.'
+    );
+    expect(field()).toHaveAttribute('aria-describedby', hint.id);
   });
 
   it('saves on the keyboard’s Done key too', () => {
@@ -90,16 +101,16 @@ describe('SubjectDrawerSheet — renaming the subject', () => {
     useAppStore.setState({ courseNicknames: { ALG: 'Algo' } } as never);
     renderSheet();
     fireEvent.click(pencil());
-    fireEvent.click(screen.getByRole('button', { name: 'Vrátit název z IS' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Vrátit „Algoritmizace“' }));
     expect(useAppStore.getState().courseNicknames).toEqual({});
     expect(screen.getByText('Algoritmizace')).toBeInTheDocument();
-    expect(screen.queryByText(/V IS:/)).toBeNull();
+    expect(screen.queryByText(/Název v IS:/)).toBeNull();
   });
 
   it('offers no reset while there is nothing to reset', () => {
     renderSheet();
     fireEvent.click(pencil());
-    expect(screen.queryByRole('button', { name: 'Vrátit název z IS' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Vrátit „Algoritmizace“' })).toBeNull();
   });
 
   it('an emptied field, or the IS name itself, clears the nickname', () => {

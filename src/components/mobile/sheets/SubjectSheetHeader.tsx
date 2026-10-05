@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { flushSync } from 'react-dom';
 import { Pencil } from 'lucide-react';
@@ -40,6 +40,8 @@ export function SubjectSheetHeader({
   const displayName = useCourseName(courseCode, isName);
   const [draft, setDraft] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useId();
+  const hintId = useId();
 
   // Rendered and focused inside the tap itself: iOS raises the keyboard only
   // for a focus() made while handling the user's gesture, and an effect after
@@ -52,49 +54,64 @@ export function SubjectSheetHeader({
   };
 
   const cancel = () => setDraft(null);
-  const save = (e: FormEvent) => {
-    e.preventDefault();
-    // The IS name typed back in is no nickname; the store clears an empty one.
-    setCourseNickname(courseCode, draft?.trim() === isName ? null : draft);
-    setDraft(null);
-  };
   const reset = () => {
     setCourseNickname(courseCode, null);
     setDraft(null);
   };
+  const save = (e: FormEvent) => {
+    e.preventDefault();
+    // The IS name typed back in is no nickname; the store clears an empty one.
+    // No toast: the header changes in place, and a toast covered its close.
+    const next = draft?.trim() ?? '';
+    setCourseNickname(courseCode, next === isName ? null : next);
+    setDraft(null);
+  };
 
   const editor = draft !== null && (
-    <form onSubmit={save} className="flex flex-col gap-2 pt-0.5 md:max-w-xl">
+    <form onSubmit={save} className="flex flex-col gap-1.5 pt-0.5 md:max-w-xl">
+      <label htmlFor={inputId} className="text-sm font-semibold text-base-content/80">
+        {t('mobile.subjectName.label')}
+      </label>
       <input
         ref={inputRef}
+        id={inputId}
         type="text"
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
-        aria-label={t('mobile.subjectName.label')}
+        aria-describedby={hintId}
         placeholder={isName}
         enterKeyHint="done"
         autoComplete="off"
         // text-base is 16px — below that iOS zooms the page in on focus.
         className="input input-bordered h-11 w-full text-base font-semibold"
       />
-      <div className="flex justify-end gap-2">
-        <button type="button" onClick={cancel} className="btn btn-ghost h-11 min-h-11">
-          {t('mobile.subjectName.cancel')}
-        </button>
-        <button type="submit" className="btn btn-primary h-11 min-h-11">
-          {t('mobile.subjectName.save')}
-        </button>
+      {/* Whose name this is, where it shows, and that IS keeps its own — the
+          three things a bare pencil left a student to guess. */}
+      <p id={hintId} className="text-sm text-base-content/70">
+        {t('mobile.subjectName.hint')}
+      </p>
+      {/* One row while it fits. When the IS name leaves Zrušit and Uložit no
+          room, wrap-reverse drops the reset BELOW them: wrapped above, it
+          read as the main action. */}
+      <div className="flex flex-wrap-reverse items-center gap-x-2 gap-y-1 pt-1">
+        {nickname && (
+          <button
+            type="button"
+            onClick={reset}
+            className="btn btn-ghost btn-sm -ml-2 h-11 min-h-11 max-w-full justify-start px-2 font-medium text-[var(--tone-primary)]"
+          >
+            <span className="truncate">{t('mobile.subjectName.reset', { name: isName })}</span>
+          </button>
+        )}
+        <div className="ml-auto flex flex-shrink-0 gap-2">
+          <button type="button" onClick={cancel} className="btn btn-ghost h-11 min-h-11">
+            {t('mobile.subjectName.cancel')}
+          </button>
+          <button type="submit" className="btn btn-primary h-11 min-h-11">
+            {t('mobile.subjectName.save')}
+          </button>
+        </div>
       </div>
-      {/* Its own line: beside Zrušit and Uložit it left neither room at 320px. */}
-      {nickname && (
-        <button
-          type="button"
-          onClick={reset}
-          className="btn btn-ghost btn-sm -ml-2 h-11 min-h-11 self-start px-2 font-medium text-[var(--tone-primary)]"
-        >
-          {t('mobile.subjectName.reset')}
-        </button>
-      )}
     </form>
   );
 

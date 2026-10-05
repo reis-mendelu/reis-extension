@@ -1311,11 +1311,12 @@
     },
     "subjectName": {
       "rename": "Rename subject",
-      "label": "Subject name",
+      "label": "Your name for this subject",
+      "hint": "You'll see it in the calendar, exams and subjects. IS stays as it is.",
       "save": "Save",
       "cancel": "Cancel",
-      "reset": "Use the IS name",
-      "inIs": "In IS: {name}"
+      "reset": "Use “{name}”",
+      "inIs": "Name in IS: {name}"
     },
     "sheet": {
       "close": "Close",

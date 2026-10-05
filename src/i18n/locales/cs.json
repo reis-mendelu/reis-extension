@@ -1311,11 +1311,12 @@
     },
     "subjectName": {
       "rename": "Přejmenovat předmět",
-      "label": "Název předmětu",
+      "label": "Tvůj název předmětu",
+      "hint": "Uvidíš ho v kalendáři, zkouškách a předmětech. V IS se nezmění.",
       "save": "Uložit",
       "cancel": "Zrušit",
-      "reset": "Vrátit název z IS",
-      "inIs": "V IS: {name}"
+      "reset": "Vrátit „{name}“",
+      "inIs": "Název v IS: {name}"
     },
     "sheet": {
       "close": "Zavřít",
