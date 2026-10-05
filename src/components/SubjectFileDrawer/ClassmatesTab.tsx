@@ -123,7 +123,10 @@ export function ClassmatesTab({
 
   return (
     <div className="flex flex-col h-full bg-base-100">
-      <div className="flex flex-col gap-3 px-6 py-4 border-b border-base-300">
+      {/* Sticky for the extension, whose drawer body (not this tab) scrolls: the
+          whole subject is one list now, and the search would otherwise be
+          hundreds of rows up. On the phone this box is outside the scroller. */}
+      <div className="sticky top-0 z-10 flex flex-col gap-3 px-6 py-4 border-b border-base-300 bg-base-100">
         <ClassmatesScopeToggle scope={scope} onChange={setChosenScope} />
         {!showNoSeminar && (
           <div className="relative">

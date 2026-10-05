@@ -15,7 +15,7 @@ interface ClassmatesListProps {
  * the phone would stop the sheet's tab swipe reaching the list. The listing is
  * already in memory (classmatesListing reads every IS page up front); what
  * costs is the photos, one IS request each, so a 519-student lecture asks only
- * for the rows near the screen. Not `loading="lazy"`: the <img> gets a data:
+ * for the rows on screen. Not `loading="lazy"`: the <img> gets a data:
  * URL that usePersonPhoto has already fetched, so the fetch itself is gated.
  */
 export function ClassmatesList({ classmates, showStudyInfo, onOpen }: ClassmatesListProps) {

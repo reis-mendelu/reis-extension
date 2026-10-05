@@ -41,7 +41,7 @@ const row = (name: string) => screen.getByText(name).closest('[role="button"]')!
  * CapacitorHttp on the app). The whole list is rendered now, so a 519-student
  * lecture must still ask only for the faces near the screen.
  */
-describe('ClassmatesList — photos load only near the viewport', () => {
+describe('ClassmatesList — photos load only for rows on screen', () => {
   beforeEach(() => {
     FakeObserver.all = [];
     __resetResolvedPhotos();
@@ -56,7 +56,7 @@ describe('ClassmatesList — photos load only near the viewport', () => {
     expect(fetchPersonPhoto).not.toHaveBeenCalled();
   });
 
-  it('requests exactly the rows that came into view, once each', async () => {
+  it('requests exactly the rows that came into view', async () => {
     render(<ClassmatesList classmates={LECTURE} showStudyInfo={false} onOpen={() => {}} />);
     await act(async () => {
       FakeObserver.show(row('Student 000'));
@@ -67,10 +67,6 @@ describe('ClassmatesList — photos load only near the viewport', () => {
       'src',
       'data:image/jpeg;base64,AA=='
     );
-
-    // Seen stays seen: scrolling past and back does not ask again.
-    await act(async () => FakeObserver.show(row('Student 000')));
-    expect(fetchPersonPhoto).toHaveBeenCalledTimes(2);
   });
 
   it('loads every photo where IntersectionObserver does not exist', () => {

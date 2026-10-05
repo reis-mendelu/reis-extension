@@ -1,36 +1,33 @@
 import { useEffect, useState, type RefObject } from 'react';
 
 /**
- * True once the element has come within `rootMargin` of the viewport, and true
- * from then on — scrolling it away again does not take it back.
+ * True once the element is on screen, and true from then on — scrolling it
+ * away again does not take it back.
  *
- * The implicit root (the viewport) on purpose: it is clipped by every scrolling
- * ancestor, so it is right whichever element actually scrolls — the extension
- * drawer's tab body or the phone sheet's SubjectDrawerScroller. An explicit
- * root that turned out not to clip would report every row visible at once.
- * Inside the extension's cross-origin iframe the browser ignores `rootMargin`
- * for the implicit root, so there a row counts only once it is on screen.
+ * The implicit root (the viewport) on purpose: intersection is clipped by every
+ * scrolling ancestor, so it is right whichever element actually scrolls. That
+ * differs per tree — the extension drawer's outer body scrolls the classmates
+ * tab, the phone the tab's own box — and an explicit root that turned out not
+ * to clip would report every row visible at once. No `rootMargin`: it grows
+ * only the root, never an ancestor's clip, so it would prefetch nothing.
  *
  * Where IntersectionObserver does not exist, everything counts as seen.
  */
-export function useSeenOnce(ref: RefObject<Element | null>, rootMargin = '200px 0px'): boolean {
+export function useSeenOnce(ref: RefObject<Element | null>): boolean {
   const [seen, setSeen] = useState(() => typeof IntersectionObserver === 'undefined');
 
   useEffect(() => {
     const el = ref.current;
     if (seen || !el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          observer.disconnect();
-          setSeen(true);
-        }
-      },
-      { rootMargin }
-    );
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        observer.disconnect();
+        setSeen(true);
+      }
+    });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [ref, rootMargin, seen]);
+  }, [ref, seen]);
 
   return seen;
 }
