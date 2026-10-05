@@ -40,39 +40,51 @@ describe('DayChips today mark', () => {
 
   /**
    * "When I switch to a next week, the 9th of October gets highlighted as the
-   * current day even though it's not" — Saturday 3 October 2026, week view.
-   * The arrow kept a selected day (Friday 9, the nearest to a hidden Saturday)
-   * and the strip drew it as the week's only tonal pill, which beside a grid
-   * whose today column is washed the same lime reads as "today". In the week
-   * view a chip tap opens that day, so the selection is not something the
-   * student can act on; it is not drawn there.
+   * current day even though it's not" — Saturday 3 October 2026. The arrow
+   * kept a selected day (Friday 9, the nearest to a hidden Saturday) and the
+   * strip drew it as the week's only tonal pill, which read as "today". No
+   * view draws a pill now: the filled circle is the strip's one coloured mark.
    */
-  it('draws no selection in the week view, only the today mark', () => {
+  it('draws no pill in either view, only the today mark', () => {
     useAppStore.setState({ now: new Date(2026, 9, 3, 16, 0) });
-    const lessons = new Set(['20261009']);
-    const { unmount } = render(
-      <DayChips
-        selectedIso="2026-10-09"
-        onSelect={() => {}}
-        lessonDates={lessons}
-        showSelection={false}
-      />
-    );
-    expect(chip(9).className).not.toContain('bg-primary/15');
-    expect(chip(9).className).toContain('text-base-content/70');
-    expect(screen.getByTestId('day-chip-lessons').className).toContain('bg-base-content/40');
-    unmount();
-
-    render(
-      <DayChips
-        selectedIso="2026-10-02"
-        onSelect={() => {}}
-        lessonDates={lessons}
-        showSelection={false}
-      />
-    );
-    expect(chip(2).className).not.toContain('bg-primary/15');
+    for (const view of ['day', 'week'] as const) {
+      const { unmount } = render(
+        <DayChips
+          selectedIso="2026-10-09"
+          onSelect={() => {}}
+          lessonDates={new Set()}
+          view={view}
+        />
+      );
+      expect(chip(9).className).not.toContain('bg-primary');
+      expect(chip(9).className).not.toContain('tone-primary');
+      unmount();
+    }
+    render(<DayChips selectedIso="2026-10-02" onSelect={() => {}} lessonDates={new Set()} />);
+    expect(chip(2).className).not.toContain('bg-primary');
     expect(chip(3)).toHaveAttribute('aria-current', 'date');
+  });
+
+  /**
+   * "The bullets below the days are useless in the weekly view": the grid
+   * under the strip already shows every lesson, and a holiday's column is
+   * washed red. The week view keeps only the dot's empty slot, so the strip is
+   * the same height in both views and does not jump on the switch.
+   */
+  it('draws no dots in the week view', () => {
+    useAppStore.setState({ now: new Date(2026, 9, 3, 16, 0) });
+    // Friday 9 October has a lesson; Wednesday 28 October is a holiday.
+    const lessons = new Set(['20261009', '20261028']);
+    const { unmount } = render(
+      <DayChips selectedIso="2026-10-09" onSelect={() => {}} lessonDates={lessons} view="week" />
+    );
+    expect(screen.queryAllByTestId('day-chip-lessons')).toHaveLength(0);
+    unmount();
+    render(
+      <DayChips selectedIso="2026-10-28" onSelect={() => {}} lessonDates={lessons} view="week" />
+    );
+    expect(screen.queryAllByTestId('day-chip-holiday')).toHaveLength(0);
+    expect(chip(28).querySelectorAll('span')).toHaveLength(3);
   });
 
   it('gives a lesson-free Saturday a chip when it is today', () => {

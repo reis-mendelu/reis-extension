@@ -87,6 +87,8 @@ describe('CalendarScreen — week view', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Další týden' }));
     expect(useAppStore.getState().mobileSelectedDayIso).toBe('2026-10-09');
     expect(pills()).toHaveLength(0);
+    // The grid shows the lessons; the strip's dots would only repeat it.
+    expect(within(strip).queryAllByTestId('day-chip-lessons')).toHaveLength(0);
 
     fireEvent.click(screen.getByRole('button', { name: 'Předchozí týden' }));
     expect(useAppStore.getState().mobileSelectedDayIso).toBe('2026-10-03');

@@ -202,9 +202,8 @@ export function CalendarScreen() {
           selectedIso={selectedIso}
           onSelect={setMobileSelectedDay}
           lessonDates={lessonDates}
-          // The selected day is only this week's anchor here, so no pill —
-          // see DayChips' `showSelection`.
-          showSelection={false}
+          // No selection mark and no dots here — see DayChips' `view`.
+          view="week"
           // A chip in the week view zooms in: that day, in the day view.
           onPickDay={(iso) => {
             setMobileSelectedDay(iso);

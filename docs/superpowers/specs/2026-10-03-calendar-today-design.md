@@ -41,9 +41,8 @@ On `DayChips`, in both views:
 - Today's date number sits in a solid circle, `bg-primary text-primary-content`
   (6.42:1 in both themes; white on lime would be 2.29:1). Today's weekday label
   turns `--tone-primary` and bold.
-- The mark is independent of selection. In the day view the selected day keeps
-  its tonal pill, and on today the two combine. The week view draws no
-  selection (amended 2026-10-05, below).
+- The mark is independent of selection. The selected day is full-ink semibold
+  text with no fill (amended 2026-10-05, below: it was a tonal pill).
 - Every chip's number sits in the same fixed-size box, so the row does not
   shift when the mark moves.
 - Today's chip carries `aria-current="date"`.
@@ -65,11 +64,15 @@ not and on Saturday returning to today highlights Friday instead".
   Saturday went forward to Friday 9, and back to Friday 2: the clamp was not
   reversible. **Stepping into today's week now lands on today**, from any day,
   as Apple's month view selects today in the current month.
-- In the week view the only pill on the strip was that clamped Friday, beside a
-  grid whose today column is washed the same lime, and it read as today. A chip
-  tap there opens the day, so the selection is only the week's anchor. **The
-  week view no longer draws the selection pill**; the today circle is the one
-  mark. The day view keeps the pill, because there it names the agenda below.
+- The only pill on the strip was that clamped Friday, and it read as today.
+  Dominik: **drop the pill in both views.** The filled circle is the strip's
+  only coloured mark. In the day view the selected day is full-ink semibold
+  text (the others are /70), because the agenda below is that day's. In the week
+  view a chip tap opens the day, so the selection is only the week's anchor
+  and is not drawn at all.
+- **No dots in the week view** ("the bullets below the days are useless in the
+  weekly view"): the grid shows each day's lessons and washes a holiday's column
+  red. The dot's empty slot stays, so the strip is one height in both views.
 - The extension did not reproduce: its grid has no selected day, and on a
   Saturday it opens on next week (`getSmartWeekRange`) with nothing marked.
   Whether a weekend should open on today's week instead is still open (#497).

@@ -18,12 +18,11 @@ export interface DayChipsProps {
    */
   onPickDay?: (iso: string) => void;
   /**
-   * Whether the selected day gets the tonal pill. False in the week view: a
-   * chip tap there opens the day, so the selection is only the week's anchor,
-   * and drawn as the row's one pill it read as today — "the 9th of October
-   * gets highlighted as the current day even though it's not".
+   * The week view marks no selection and no dots. A chip tap there opens the
+   * day, so the selected day is only the week's anchor, and the grid below
+   * already shows each day's lessons.
    */
-  showSelection?: boolean;
+  view?: 'day' | 'week';
 }
 
 /**
@@ -54,7 +53,7 @@ export function DayChips({
   onSelect,
   lessonDates,
   onPickDay,
-  showSelection = true,
+  view = 'day',
 }: DayChipsProps) {
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
@@ -147,9 +146,10 @@ export function DayChips({
               date={date}
               locale={locale}
               language={language === 'en' ? 'en' : 'cz'}
-              isSelected={showSelection && iso === selectedIso}
+              isSelected={view === 'day' && iso === selectedIso}
               isToday={iso === todayIso}
               hasLessons={lessonDates.has(toCompact(iso))}
+              showDot={view === 'day'}
               onClick={() => (onPickDay ?? onSelect)(iso)}
             />
           );
