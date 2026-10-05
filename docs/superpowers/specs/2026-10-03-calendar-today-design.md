@@ -41,8 +41,9 @@ On `DayChips`, in both views:
 - Today's date number sits in a solid circle, `bg-primary text-primary-content`
   (6.42:1 in both themes; white on lime would be 2.29:1). Today's weekday label
   turns `--tone-primary` and bold.
-- The mark is independent of selection. The selected day is full-ink semibold
-  text with no fill (amended 2026-10-05, below: it was a tonal pill).
+- The mark is independent of selection. In the day view the selected day is
+  full-ink semibold text with no fill; the week view draws no selection
+  (amended 2026-10-05, below: it was a tonal pill in both).
 - Every chip's number sits in the same fixed-size box, so the row does not
   shift when the mark moves.
 - Today's chip carries `aria-current="date"`.
