@@ -870,7 +870,6 @@
     "wholeSubject": "Whole subject",
     "scopeLabel": "Whose list",
     "loadingSubject": "Loading everyone taking the subject…",
-    "showMore": "Show {count} more",
     "showWholeSubject": "Show the whole subject",
     "retry": "Try again",
     "loadFailed": "Couldn't load classmates",

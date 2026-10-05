@@ -103,15 +103,18 @@ describe('ClassmatesTab — Cvičení / Celý předmět', () => {
   });
 
   /**
-   * Every row loads its photo from IS. 519 rows at once is 519 photo requests;
-   * render them 40 at a time, as IS itself pages them.
+   * The whole subject is one scrollable list. The listing is already in memory
+   * (every spoluzaci.pl page is read up front), so a "show 40 more" button only
+   * made the student tap for rows the app already had. Photos are what cost a
+   * request each, and ClassmatesList defers those until a row is on screen
+   * (ClassmatesList.photos.test.tsx; this file mocks PersonPhoto away).
    */
-  it('renders 40 rows, then 40 more on request', () => {
+  it('renders every student of a 519-student lecture, with no "show more" step', () => {
     render(<ClassmatesTab courseCode="EBC-IV" />);
     fireEvent.click(tab('Celý předmět'));
-    expect(screen.getAllByTestId('photo')).toHaveLength(40);
-    fireEvent.click(screen.getByRole('button', { name: 'Zobrazit dalších 40' }));
-    expect(screen.getAllByTestId('photo')).toHaveLength(80);
+    expect(screen.getAllByText(/^Student \d{3}$/)).toHaveLength(519);
+    expect(screen.getByText('Student 518')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Zobrazit dalších/ })).not.toBeInTheDocument();
   });
 
   it('searches the whole list, not only the rows on screen', () => {
@@ -124,11 +127,40 @@ describe('ClassmatesTab — Cvičení / Celý předmět', () => {
     expect(screen.getAllByTestId('photo')).toHaveLength(1);
   });
 
-  it('counts the remainder on the last step', () => {
-    subject.result = { classmates: LECTURE.slice(0, 50), isLoading: false, error: undefined };
-    render(<ClassmatesTab courseCode="EBC-IV" />);
+  /**
+   * The search stays on screen over the whole list now, so a student can type
+   * from deep in it. Without a reset the scroller keeps its old offset and the
+   * first matches sit above the view. Every scrolled ancestor is reset because
+   * the element that scrolls differs per tree (the drawer body on the
+   * extension, the tab's own box on the phone).
+   */
+  it('jumps back to the first match when the search changes', () => {
+    // The outer box stands in for the extension drawer's body, which is what
+    // actually scrolls there; the tab's own box is the phone's scroller.
+    render(
+      <div data-testid="drawer-body">
+        <ClassmatesTab courseCode="EBC-IV" />
+      </div>
+    );
     fireEvent.click(tab('Celý předmět'));
-    fireEvent.click(screen.getByRole('button', { name: 'Zobrazit dalších 10' }));
-    expect(screen.queryByRole('button', { name: /Zobrazit dalších/ })).not.toBeInTheDocument();
+    const scrolledTo = (el: HTMLElement, initial: number) => {
+      const box = { top: initial };
+      Object.defineProperty(el, 'scrollTop', {
+        configurable: true,
+        get: () => box.top,
+        set: (v: number) => (box.top = v),
+      });
+      return box;
+    };
+    const tabBox = scrolledTo(
+      screen.getByText('Student 000').closest('.overflow-y-auto') as HTMLElement,
+      3000
+    );
+    const drawerBody = scrolledTo(screen.getByTestId('drawer-body'), 48000);
+    fireEvent.change(screen.getByPlaceholderText('Vyhledat...'), {
+      target: { value: 'Student 5' },
+    });
+    expect(tabBox.top).toBe(0);
+    expect(drawerBody.top).toBe(0);
   });
 });

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Search, Users } from 'lucide-react';
 import { useClassmates } from '../../hooks/data/useClassmates';
 import { useSubjectClassmates } from '../../hooks/data/useSubjectClassmates';
@@ -44,6 +44,7 @@ export function ClassmatesTab({
 }: ClassmatesTabProps) {
   const { t, language } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
+  const bodyRef = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<Classmate | null>(null);
   const [chosenScope, setChosenScope] = useState<ClassmatesScope | null>(null);
   const seminar = useClassmates(courseCode);
@@ -68,6 +69,17 @@ export function ClassmatesTab({
         ? `https://is.mendelu.cz/auth/student/spoluzaci.pl?predmet=${subjectId};;studium=${studium};obdobi=${obdobi};lang=${lang}`
         : `https://is.mendelu.cz/auth/student/spoluzaci.pl?studium=${studium};obdobi=${obdobi};lang=${lang}`
       : null;
+
+  // The search is on screen over the whole list, so a student types from deep
+  // in it; start the matches at the top. Every scrolled ancestor, because which
+  // element scrolls differs per tree (drawer body on the extension, this tab's
+  // box on the phone).
+  const search = (query: string) => {
+    setSearchQuery(query);
+    for (let el: HTMLElement | null = bodyRef.current; el; el = el.parentElement) {
+      if (el.scrollTop > 0) el.scrollTop = 0;
+    }
+  };
 
   const openPerson = (student: Classmate) =>
     onSelectPerson ? onSelectPerson(student) : setSelected(student);
@@ -113,7 +125,6 @@ export function ClassmatesTab({
           })}
         </p>
         <ClassmatesList
-          key={`${scope}|${searchQuery}`}
           classmates={filteredClassmates}
           showStudyInfo={showStudyInfo}
           onOpen={openPerson}
@@ -124,7 +135,10 @@ export function ClassmatesTab({
 
   return (
     <div className="flex flex-col h-full bg-base-100">
-      <div className="flex flex-col gap-3 px-6 py-4 border-b border-base-300">
+      {/* Sticky for the extension, whose drawer body (not this tab) scrolls: the
+          whole subject is one list now, and the search would otherwise be
+          hundreds of rows up. On the phone this box is outside the scroller. */}
+      <div className="sticky top-0 z-10 flex flex-col gap-3 px-6 py-4 border-b border-base-300 bg-base-100">
         <ClassmatesScopeToggle scope={scope} onChange={setChosenScope} />
         {!showNoSeminar && (
           <div className="relative">
@@ -133,7 +147,7 @@ export function ClassmatesTab({
               placeholder={t('classmates.search')}
               className="input input-sm input-bordered w-full h-10 pl-9 rounded-lg bg-base-100 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => search(e.target.value)}
             />
             <Search
               size={16}
@@ -149,7 +163,7 @@ export function ClassmatesTab({
           )}
         />
       ) : (
-        <div className="flex-1 overflow-y-auto p-4">
+        <div ref={bodyRef} className="flex-1 overflow-y-auto p-4">
           {renderBody()}
           {classmatesUrl && showIsBacklink && !showNoSeminar && <ISBacklink href={classmatesUrl} />}
         </div>
