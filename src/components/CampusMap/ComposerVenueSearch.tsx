@@ -4,6 +4,8 @@ import roomsIndexJson from '../../data/map/rooms-index.json';
 import buildingsJson from '../../data/map/buildings.json';
 import { roomCodeToCoord, roomLabel, searchRooms } from './mapHelpers';
 import { searchPlaces, type PlaceResult } from '../../api/placeSearch';
+import { isLink, parseCoordinate } from './parseCoordinate';
+import { ComposerPastedPoint } from './ComposerPastedPoint';
 import type { RoomIndexEntry, BuildingsMeta } from '../../types/campusMap';
 
 const INDEX = roomsIndexJson as RoomIndexEntry[];
@@ -20,8 +22,9 @@ type Coord = [number, number];
  * with a separate search behind each side: a society had to decide which kind of
  * venue it had before it could type it. Now it types, and campus rooms (the
  * local index, instant) list above places in town (Photon, debounced) — the
- * kind follows from the pick. Dropping the pin by hand stays as the fallback for
- * a venue neither knows.
+ * kind follows from the pick. Pasted coordinates or a maps link become the pin
+ * directly, and dropping the pin by hand stays as the fallback for a venue
+ * nothing knows.
  *
  * Event-driven fetching only: the one effect is the debounce timer's cleanup.
  */
@@ -29,6 +32,7 @@ export function ComposerVenueSearch({
   selected,
   onSelectRoom,
   onSelectPlace,
+  onSelectPoint,
   onClear,
   onPickOnMap,
   t,
@@ -37,6 +41,8 @@ export function ComposerVenueSearch({
   selected: string | null;
   onSelectRoom: (sel: { code: string; name: string; coord: Coord }) => void;
   onSelectPlace: (sel: { name: string; coord: Coord }) => void;
+  /** A pasted coordinate with no name: the same venue as a hand-dropped pin. */
+  onSelectPoint: (coord: Coord) => void;
   onClear: () => void;
   onPickOnMap: () => void;
   t: (k: string) => string;
@@ -44,6 +50,8 @@ export function ComposerVenueSearch({
   const [q, setQ] = useState('');
   const [places, setPlaces] = useState<PlaceResult[]>([]);
   const [loading, setLoading] = useState(false);
+  // Photon did not answer: say so, or a timeout reads as "no such place".
+  const [failed, setFailed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Monotonic request id so a slow earlier response can't overwrite a later one.
   const seq = useRef(0);
@@ -71,7 +79,11 @@ export function ComposerVenueSearch({
     setQ(val);
     if (timer.current) clearTimeout(timer.current);
     const trimmed = val.trim();
-    if (trimmed.length < 2) {
+    setFailed(false);
+    // A pasted coordinate is already the answer, and Photon can only answer
+    // "nothing found" about a link.
+    if (trimmed.length < 2 || isLink(trimmed) || parseCoordinate(trimmed)) {
+      seq.current++;
       setPlaces([]);
       setLoading(false);
       return;
@@ -81,20 +93,31 @@ export function ComposerVenueSearch({
     timer.current = setTimeout(() => {
       void searchPlaces(trimmed).then((r) => {
         if (mine !== seq.current) return; // a newer keystroke already fired
-        setPlaces(r);
+        setPlaces(r ?? []);
+        setFailed(r === null);
         setLoading(false);
       });
     }, DEBOUNCE_MS);
   };
 
-  const rooms = q.trim()
-    ? searchRooms(q, INDEX)
-        .map((r) => ({ r, coord: roomCodeToCoord(r.code, INDEX, BUILDINGS) }))
-        .filter((x): x is { r: RoomIndexEntry; coord: Coord } => !!x.coord)
-        .slice(0, MAX_ROOMS)
-    : [];
+  const point = parseCoordinate(q);
+  const link = isLink(q);
+  const rooms =
+    q.trim() && !point && !link
+      ? searchRooms(q, INDEX)
+          .map((r) => ({ r, coord: roomCodeToCoord(r.code, INDEX, BUILDINGS) }))
+          .filter((x): x is { r: RoomIndexEntry; coord: Coord } => !!x.coord)
+          .slice(0, MAX_ROOMS)
+      : [];
   const searched = q.trim().length >= 2;
-  const nothing = searched && !loading && rooms.length === 0 && places.length === 0;
+  const nothing =
+    searched && !point && !link && !loading && !failed && !rooms.length && !places.length;
+  // A link we read no point from: a short link (its place is behind a
+  // redirect) or a maps site the parser does not know.
+  const note =
+    (link && !point && 'map.linkUnreadable') ||
+    (failed && !loading && 'map.placeSearchFailed') ||
+    (nothing && 'map.noPlaceFound');
   const group = 'px-2 pb-0.5 pt-1.5 text-[10px] font-bold uppercase tracking-wide opacity-60';
   const hit = 'flex items-center gap-2 rounded-lg px-2 py-2 text-left text-sm hover:bg-base-200';
 
@@ -112,6 +135,15 @@ export function ComposerVenueSearch({
       </label>
       {(rooms.length > 0 || searched) && (
         <div className="mt-1 flex max-h-56 flex-col overflow-y-auto">
+          {point && (
+            <ComposerPastedPoint
+              point={point}
+              className={hit}
+              onSelectPlace={onSelectPlace}
+              onSelectPoint={onSelectPoint}
+              t={t}
+            />
+          )}
           {rooms.length > 0 && <div className={group}>{t('map.venueCampus')}</div>}
           {rooms.map(({ r, coord }) => {
             const label = roomLabel(r.name, r.code, r.nickname);
@@ -152,11 +184,7 @@ export function ComposerVenueSearch({
               {t('map.searching')}
             </p>
           )}
-          {nothing && (
-            <p className="px-2 py-3 text-center text-xs text-base-content/50">
-              {t('map.noPlaceFound')}
-            </p>
-          )}
+          {note && <p className="px-2 py-3 text-center text-xs text-base-content/50">{t(note)}</p>}
         </div>
       )}
       <button
