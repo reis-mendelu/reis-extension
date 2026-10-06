@@ -93,10 +93,10 @@ describe('searchPlaces', () => {
     expect(await searchPlaces('nic takového')).toEqual([]);
   });
 
-  // Measured 2026-10-05: Photon took 16.5–21 s to answer (TCP+TLS in 60 ms, the
-  // rest server time). The old 8 s bound turned every search into a blank list.
-  it('waits long enough for Photon on a slow day', async () => {
-    expect(PHOTON_TIMEOUT_MS).toBeGreaterThanOrEqual(25_000);
+  // A slow Photon must not hold the composer: five seconds, then the failure
+  // message offers pasting coordinates instead (Dominik, 2026-10-06).
+  it('gives up on Photon after five seconds at most', async () => {
+    expect(PHOTON_TIMEOUT_MS).toBeLessThanOrEqual(5_000);
     const timeout = vi.spyOn(AbortSignal, 'timeout');
     vi.mocked(fetch).mockResolvedValue({
       ok: true,

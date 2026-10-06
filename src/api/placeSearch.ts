@@ -16,10 +16,11 @@ const BIAS_LON = 16.6144;
 // Brno first within the box.
 const CZ_BBOX = '12.09,48.55,18.86,51.06';
 const MIN_QUERY = 2;
-// Photon is a free public instance and answers slowly on a bad day: 16.5–21 s
-// measured on 2026-10-05, nearly all of it server time. A shorter bound throws
-// away answers that were on their way.
-export const PHOTON_TIMEOUT_MS = 30_000;
+// Photon is a free public instance: ~1 s on a normal day (2026-10-06), but
+// 16.5–21 s on a bad one (2026-10-05). An organiser will not watch "Hledám…"
+// for longer than this; past it the box says the search is not answering and
+// points to pasting coordinates or dropping the pin, which need no Photon.
+export const PHOTON_TIMEOUT_MS = 5_000;
 
 export interface PhotonFeature {
   type: 'Feature';
