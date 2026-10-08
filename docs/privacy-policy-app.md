@@ -100,8 +100,8 @@ either.
 ## Your control
 
 Sign out to delete the token and cookies. Uninstall to delete everything local.
-Turn off Google Calendar sync in Profil to revoke reIS's access; you choose there
-whether the "Rozvrh" calendar is deleted or stays in your Google account.
+Turn off Google Calendar sync in Profil to revoke reIS's access. The "Rozvrh"
+calendar stays in your Google account; delete it in Google Calendar if you want.
 For feedback you sent, and anything attached to it, write to the address below
 and we will delete it; the daily-count rows hold nothing that identifies you.
 

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { CalendarSync, Loader2 } from 'lucide-react';
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
@@ -24,14 +23,13 @@ const NOTICE_KEY = {
 
 /**
  * Turns the "Rozvrh" sync on and off (phone/iPad only; see
- * desktopHasNoGoogleCalendar.test.ts). Deleting the calendar takes a second
- * tap: it also removes past semesters, and nothing brings them back.
+ * desktopHasNoGoogleCalendar.test.ts). On and off only — no "delete the
+ * calendar" (Dominik, 2026-10-08): turning off keeps "Rozvrh" in Google.
  */
 export function GoogleCalendarSheet({ onClose }: GoogleCalendarSheetProps) {
   const { t } = useTranslation();
   const gcal = useAppStore((s) => s.gcal);
   const language = useAppStore((s) => s.language);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const time = syncTimeLabel(gcal.lastSyncAt, language);
 
   return (
@@ -76,41 +74,14 @@ export function GoogleCalendarSheet({ onClose }: GoogleCalendarSheetProps) {
             >
               {t('mobile.gcal.open')}
             </button>
-            {confirmDelete ? (
-              <div className="flex flex-col gap-2 rounded-box bg-base-200 p-3">
-                <p className="text-sm">{t('mobile.gcal.offDeleteConfirm')}</p>
-                <button
-                  type="button"
-                  className="btn btn-error"
-                  onClick={() => void disconnectGoogleCalendar({ deleteCalendar: true })}
-                >
-                  {t('mobile.gcal.offDeleteYes')}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  onClick={() => setConfirmDelete(false)}
-                >
-                  {t('common.back')}
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                // --tone-error, as on "Odhlásit se": plain text-error fails contrast in dark.
-                className="btn btn-outline border-[var(--tone-error)] text-[var(--tone-error)]"
-                onClick={() => setConfirmDelete(true)}
-              >
-                {t('mobile.gcal.offDelete')}
-              </button>
-            )}
             <button
               type="button"
-              className="btn btn-ghost"
-              onClick={() => void disconnectGoogleCalendar({ deleteCalendar: false })}
+              className="btn btn-outline"
+              onClick={() => void disconnectGoogleCalendar()}
             >
-              {t('mobile.gcal.offKeep')}
+              {t('mobile.gcal.off')}
             </button>
+            <p className="text-xs text-base-content/70">{t('mobile.gcal.offHint')}</p>
           </>
         )}
       </div>

@@ -143,13 +143,12 @@ export async function connectGoogleCalendar(): Promise<void> {
   }
 }
 
-export async function disconnectGoogleCalendar(o: { deleteCalendar: boolean }): Promise<void> {
-  const st = await loadSyncState();
-  try {
-    if (o.deleteCalendar && st.calendarId) await api().deleteCalendar(st.calendarId);
-  } catch (e) {
-    logError('GoogleCalendar.deleteCalendar', e);
-  }
+/**
+ * Turns the sync off and revokes reIS's access. "Rozvrh" stays in the student's
+ * Google account (Dominik, 2026-10-08: on and off only); they can delete it in
+ * Google Calendar themselves.
+ */
+export async function disconnectGoogleCalendar(): Promise<void> {
   await GoogleCalendarNative.disconnect().catch((e: unknown) =>
     logError('GoogleCalendar.disconnect', e)
   );

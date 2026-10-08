@@ -19,6 +19,7 @@ kalendáře v telefonu"*.
 | Calendar | reIS creates its own calendar, **"Rozvrh"**, in the student's Google account. |
 | History | The first fill writes everything reIS has. After that, **events before today are never touched**, so past semesters and years stay in Google. |
 | Placement | A row in the phone **profile sheet** (where the removed Outlook toggle was). |
+| Turning off | **On and off only.** Off revokes access and keeps "Rozvrh" in Google; no delete-the-calendar option. |
 | Multiple devices | Option A: also request `calendar.calendarlist.readonly`, so a second device finds the same "Rozvrh". |
 | Google identity | **reis.mendelu@gmail.com** owns everything. Never a personal account. |
 | Edits in Google | **The student wins** (option B, 2026-10-08). A lesson they delete in Google stays deleted, even if IS later changes it. One they move or edit stays as they left it until IS actually changes that lesson; then IS overwrites it. Only events reIS itself deleted are restored. |
@@ -260,11 +261,10 @@ it changes every hash, which would rewrite every future event once.
 **On.** "Rozvrh · synchronizováno 14:02", the Google account, and "Otevřít v Google
 Kalendáři". The first fill shows progress.
 
-**Turning it off** offers two choices:
-- "Vypnout a smazat kalendář Rozvrh" (off, and delete the Rozvrh calendar);
-- "Jen vypnout" (off only, keep the calendar).
-
-Both revoke the grant.
+**Turning it off** is one button, "Vypnout synchronizaci". It revokes the grant and keeps
+"Rozvrh" in Google, where the student can delete it themselves. (Revised by Dominik
+2026-10-08 after the device test: "there should be no delete calendar button, should be
+just able to turn it on and off". The delete path also took ~10 s with no feedback.)
 
 **Messages:**
 - Revoked at Google: "Přístup ke Google Kalendáři byl odebrán", and the row turns off.

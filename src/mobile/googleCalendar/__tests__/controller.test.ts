@@ -287,7 +287,7 @@ describe('controller', () => {
       sourcesFingerprint: null,
     });
     useAppStore.getState().setGcal({ connected: true, email: 'x@y' });
-    await disconnectGoogleCalendar({ deleteCalendar: false });
+    await disconnectGoogleCalendar();
     expect(native.disconnect).toHaveBeenCalledTimes(1);
     expect((await loadSyncState()).enabled).toBe(false);
     expect(useAppStore.getState().gcal).toMatchObject({ connected: false, email: null });

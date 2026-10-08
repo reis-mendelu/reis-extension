@@ -130,15 +130,7 @@ export function createCalendarApi(deps: CalendarApiDeps) {
     ok(res, 'deleteEvent');
   }
 
-  /** "Vypnout a smazat kalendář Rozvrh". Only ever the calendar reIS created. */
-  async function deleteCalendar(id: string): Promise<void> {
-    const res = await request('DELETE', `/calendars/${enc(id)}`);
-    if (res.status === 404 || res.status === 410) return;
-    ok(res, 'deleteCalendar');
-  }
-
   return {
-    deleteCalendar,
     findReisCalendar,
     createCalendar,
     assertCalendar,

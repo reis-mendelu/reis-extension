@@ -3,11 +3,11 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 const { connect, disconnect } = vi.hoisted(() => ({
   connect: vi.fn(async () => {}),
-  disconnect: vi.fn(async (_o: { deleteCalendar: boolean }) => {}),
+  disconnect: vi.fn(async () => {}),
 }));
 vi.mock('../../../../mobile/googleCalendar/controller', () => ({
   connectGoogleCalendar: () => connect(),
-  disconnectGoogleCalendar: (o: { deleteCalendar: boolean }) => disconnect(o),
+  disconnectGoogleCalendar: () => disconnect(),
 }));
 
 import { GoogleCalendarSheet } from '../GoogleCalendarSheet';
@@ -37,33 +37,16 @@ describe('GoogleCalendarSheet', () => {
     expect(connect).toHaveBeenCalled();
   });
 
-  it('shows the account and turns off without deleting', () => {
+  it('shows the account and turns off with one tap, keeping the calendar', () => {
     useAppStore
       .getState()
       .setGcal({ connected: true, email: 'reis.mendelu@gmail.com', lastSyncAt: Date.now() });
     render(<GoogleCalendarSheet onClose={() => {}} />);
     expect(screen.getByText('Účet: reis.mendelu@gmail.com')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /Jen vypnout/ }));
-    expect(disconnect).toHaveBeenCalledWith({ deleteCalendar: false });
-  });
-
-  it('deletes the calendar only after a second, explicit tap', () => {
-    useAppStore.getState().setGcal({ connected: true, email: 'x@y', lastSyncAt: Date.now() });
-    render(<GoogleCalendarSheet onClose={() => {}} />);
-    fireEvent.click(screen.getByRole('button', { name: /Vypnout a smazat kalendář Rozvrh/ }));
-    expect(disconnect).not.toHaveBeenCalled();
-    expect(screen.getByText(/nejde vrátit/)).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /Smazat Rozvrh/ }));
-    expect(disconnect).toHaveBeenCalledWith({ deleteCalendar: true });
-  });
-
-  it('can back out of deleting', () => {
-    useAppStore.getState().setGcal({ connected: true, email: 'x@y', lastSyncAt: Date.now() });
-    render(<GoogleCalendarSheet onClose={() => {}} />);
-    fireEvent.click(screen.getByRole('button', { name: /Vypnout a smazat kalendář Rozvrh/ }));
-    fireEvent.click(screen.getByRole('button', { name: /Zpět/ }));
-    expect(screen.getByRole('button', { name: /Vypnout a smazat kalendář Rozvrh/ })).toBeTruthy();
-    expect(disconnect).not.toHaveBeenCalled();
+    // Dominik, 2026-10-08: on and off only — no "delete the calendar" here.
+    expect(screen.queryByText(/smazat/i)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Vypnout synchronizaci/ }));
+    expect(disconnect).toHaveBeenCalledTimes(1);
   });
 
   it('explains a deleted calendar', () => {
