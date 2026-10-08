@@ -38,6 +38,8 @@ describe('eventDetailsLink', () => {
 describe('eventDirectLink', () => {
   const bare = {
     url: '',
+    date: '2026-11-23',
+    endDate: null,
     description: null,
     time: '',
     location: '',
@@ -60,9 +62,13 @@ describe('eventDirectLink', () => {
     ['a dropped pin', { coord: [16.6, 49.2] as [number, number], venueKind: 'offcampus' as const }],
     ['a room', { roomCode: 'Q01', venueKind: 'campus' as const }],
     ['an online venue', { venueKind: 'online' as const }],
+    // An upcoming trip's row shows only its first day; the card shows the span.
+    ['a multi-day span', { endDate: '2026-11-29' }],
   ])('keeps the card when the event has %s', (_, extra) =>
     expect(eventDirectLink({ ...bare, ...extra }, esn)).toBeNull()
   );
+  it('a same-day end date is not a span', () =>
+    expect(eventDirectLink({ ...bare, endDate: '2026-11-23' }, esn)).not.toBeNull());
   it('treats whitespace as nothing', () =>
     expect(eventDirectLink({ ...bare, description: '  ', location: ' ' }, esn)).not.toBeNull());
   it('keeps the card when there is nowhere to send the student', () =>

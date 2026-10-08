@@ -77,11 +77,13 @@ export function MapEventsSection() {
                       selected={e.id === selectedId}
                       href={direct?.href}
                       onClick={() => {
+                        // A direct row opens nothing on the map: not a view.
+                        if (direct) return;
                         // This panel is the student map's own list on both
                         // surfaces (desktop MapSidePanel, mobile Akce tab), so a
                         // row opened here is a map view exactly like a pin.
                         void trackMapEventView(e.id);
-                        if (!direct) focusEvent(e.id, { fly: true });
+                        focusEvent(e.id, { fly: true });
                       }}
                     />
                   );
