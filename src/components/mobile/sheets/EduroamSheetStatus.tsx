@@ -2,11 +2,14 @@ import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import type { EduroamStatus, EduroamTarget } from '../../../hooks/data/useEduroamSetup';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { isEduroamConfigured, type EduroamConfigOutcome } from '../../../mobile/configureEduroam';
+import type { NetworkFailure } from '../../../services/eduroam/networkFailure';
 
 export interface EduroamSheetStatusProps {
   status: EduroamStatus;
   outcome: EduroamConfigOutcome | null;
   error: string | null;
+  /** The network, not IS, is why it failed — said in words, not the OS's raw text. */
+  networkFailure: NetworkFailure | null;
   native: boolean;
   target: EduroamTarget;
 }
@@ -20,6 +23,7 @@ export function EduroamSheetStatus({
   status,
   outcome,
   error,
+  networkFailure,
   native,
   target,
 }: EduroamSheetStatusProps) {
@@ -27,7 +31,9 @@ export function EduroamSheetStatus({
   // Warnings, not errors: nothing broke, the student has one thing to do.
   // `stale-association` (#261) — on eduroam with nothing of ours behind it;
   // `renewal-blocked` — on eduroam, so iOS kept the old certificate.
-  const warning = outcome === 'stale-association' || outcome === 'renewal-blocked';
+  // No connection is the same kind of thing: nothing broke, get online.
+  const warning =
+    outcome === 'stale-association' || outcome === 'renewal-blocked' || networkFailure !== null;
 
   return (
     <>
@@ -40,15 +46,17 @@ export function EduroamSheetStatus({
                 including when the throw lands before Android is ever reached
                 (a lapsed IS session, a blip fetching the certificate) and
                 outcome is therefore still null. */}
-            {native
-              ? outcome === 'stale-association'
-                ? t('eduroam.native.staleAssociation')
-                : outcome === 'renewal-blocked'
-                  ? t('eduroam.native.renewalBlocked')
-                  : outcome === 'failed'
-                    ? t('eduroam.native.failed')
-                    : `${t('eduroam.native.error')}${error ? `: ${error}` : ''}`
-              : `${t('eduroam.error')}${error ? `: ${error}` : ''}`}
+            {networkFailure
+              ? t(`eduroam.network.${networkFailure}`)
+              : native
+                ? outcome === 'stale-association'
+                  ? t('eduroam.native.staleAssociation')
+                  : outcome === 'renewal-blocked'
+                    ? t('eduroam.native.renewalBlocked')
+                    : outcome === 'failed'
+                      ? t('eduroam.native.failed')
+                      : `${t('eduroam.native.error')}${error ? `: ${error}` : ''}`
+                : `${t('eduroam.error')}${error ? `: ${error}` : ''}`}
           </span>
         </div>
       )}

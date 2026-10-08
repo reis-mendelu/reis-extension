@@ -77,3 +77,22 @@ describe('EduroamDrawer with an expired certificate', () => {
     expect(screen.getByRole('button', { name: /Generate a new certificate/i })).toBeTruthy();
   });
 });
+
+/**
+ * The extension opens on is.mendelu.cz, so it starts online — but a laptop can
+ * drop its connection with the page still open, and the fetch then fails with
+ * the browser's raw "Failed to fetch".
+ */
+describe('EduroamDrawer without a network', () => {
+  it('says IS could not be reached instead of the raw fetch error', async () => {
+    vi.mocked(fetchEduroamCertMaterial).mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    useAppStore.setState({ isTouch: false, isNarrow: false, language: 'en' });
+    useAppStore.getState().openEduroamFor('windows');
+    render(<EduroamDrawer />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Download eduroam profile' }));
+
+    expect(await screen.findByText(/Couldn't reach IS/)).toBeTruthy();
+    expect(screen.queryByText(/Failed to fetch/)).toBeNull();
+  });
+});

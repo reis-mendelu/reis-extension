@@ -35,6 +35,7 @@ function baseHookState(): HookState {
     selectTarget: vi.fn(),
     password: null,
     error: null,
+    networkFailure: null,
     outcome: null,
     expiredAt: null,
     expiresSoonAt: null,
@@ -368,5 +369,32 @@ describe('EduroamSheet', () => {
     fireEvent.click(screen.getByLabelText('Zavřít'));
 
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  describe('without a network', () => {
+    it('says the student is offline instead of the raw OS error', () => {
+      onPhone(
+        {
+          status: 'error',
+          error: 'The Internet connection appears to be offline.',
+          networkFailure: 'offline',
+        },
+        'ios'
+      );
+
+      render(<EduroamSheet onClose={vi.fn()} />);
+
+      expect(screen.getByText(/Jsi offline/)).toHaveTextContent(/mobilní data/);
+      expect(screen.queryByText(/appears to be offline/)).not.toBeInTheDocument();
+    });
+
+    it('hedges when IS never answered', () => {
+      onPhone({ status: 'error', error: 'timed out', networkFailure: 'unreachable' }, 'android');
+
+      render(<EduroamSheet onClose={vi.fn()} />);
+
+      expect(screen.getByText(/Nepodařilo se spojit s IS/)).toBeInTheDocument();
+      expect(screen.queryByText(/timed out/)).not.toBeInTheDocument();
+    });
   });
 });
