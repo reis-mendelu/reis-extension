@@ -20,12 +20,12 @@ Production numbers, 2026-10-08:
 ## Agreed behaviour
 
 **Student, on both trees:**
-- **Events appear on the map only:**
+- **Events appear on the map:**
   - pins for the next 14 days
   - the Akce list, covering the semester. Dnes and Zítra are labelled, followed by Tento týden and Příští týden, with Později folded. This is unchanged.
   - the phone's peek band
 - **No follow, no RSVP, no count, no timetable block, no reminders, no digest.**
-- **Novinky carries no society events.**
+- **Novinky lists events from the next 7 days** that pass the audience rule, with no follow filter. The unread badge stays. Taps cluster in the week before an event (see the data below). Impersonation applies to Novinky as well.
 - **The card shows:** logo, title, "Pořádá X", description, date and time, category, place, and the Instagram or more-info link.
 - **Profile has no Spolky section.**
 
@@ -118,18 +118,19 @@ update. So:
   - `createMapSlice.reloadMapEvents`: remove `loadRsvps`
 - **One-time device cleanup**, new `src/services/cleanup/retireSocietyFeatures.ts`, run once at boot, idempotent, logged via `logError`:
   - delete custom events whose id starts with `rsvp:`. Without this they become orphan blocks that nothing can remove, because the card toggle is gone.
-  - delete the IndexedDB `meta` keys `event_rsvps_mine`, `reis_subscribed_associations`, `reis_associations_chosen`, `reis_erasmus_auto_subscribed`, `reis_muted_associations`, `reis_notify_prefs`, `reis_notify_asked`, `notifications_cache` and `viewed_notifications_analytics`.
+  - delete the IndexedDB `meta` keys `event_rsvps_mine`, `reis_subscribed_associations`, `reis_associations_chosen`, `reis_erasmus_auto_subscribed`, `reis_muted_associations`, `reis_notify_prefs`, `reis_notify_asked` and `viewed_notifications_analytics`. Novinky's dedupe moves to `event_seen_ids`.
   - Capacitor only: `LocalNotifications.cancel` on every pending notification, and `deleteChannel` for `reis-event-reminders` and `reis-society-digest`, so Android settings no longer list them.
   - Keep `seen_deadline_alerts`, because deadline badges depend on it.
 - `@capacitor/local-notifications` and Android `POST_NOTIFICATIONS` stay for this one release, because the cleanup needs them. Remove them in the next release, together with the permission entry in the disclosures.
 
-### 4. Novinky without society events (shared, both trees)
-- **Remove:**
-  - from `services/spolky/spolkyService.ts`: the `spolky_events` read and the society counters (`fetchNotifications`, `filterNotificationsByFaculty`, `trackNotificationsViewed`, `trackNotificationClick`)
-  - `services/spolky/dropScheduledEvents.ts`
-  - from `hooks/useNotificationFeed.ts` and `hooks/useOpenNotification.ts`: the society branch
-  - from `NotificationItem.tsx`: the society rendering
-- **Reduce** `createNotificationSlice.ts` to what deadline alerts need (`seenDeadlineAlertIds`). The bell badge counts deadline alerts only.
+### 4. Novinky: 7 days, filtered by audience (shared, both trees)
+- `services/spolky/spolkyService.ts`:
+  - The fetch window is `date <= today + 6`. Old builds keep 14 days.
+  - `filterNotificationsByFaculty(subscribed)` is replaced by the audience rule from section 1. It uses the same `viewer`, so impersonation applies here too.
+  - Remove `trackNotificationsViewed` and `trackNotificationClick` (`increment_post_view` / `increment_post_click`). A Novinky row on screen fires **Seen**, and the tap opens the card, which fires **Opened**. All three admin numbers then count both surfaces the same way.
+- `hooks/useNotificationFeed.ts`: drop the `useSpolkySettings` dependency.
+- `hooks/useOpenNotification.ts`: drop the click counter.
+- `dropScheduledEvents.ts` (`visible_from`), `notifications_cache` and `read_notifications` stay.
 - **Delete dead code found on the way:**
   - `services/spolky/config.ts`
   - `hooks/useEventsFacultySettings.ts`
@@ -225,6 +226,6 @@ Events dated from 29 Sep on, while both counters were live:
 
 ## Open questions
 
-1. Novinky. The data shows about a third of event taps arrive through it. Keep events out of it, as decided, or bring back a narrow version?
+1. ~~Novinky~~: decided 2026-10-08. Keep it, limited to 7 days and filtered by audience.
 2. The counter unit: once per device for all three numbers, or once per session for all three?
 3. Remove the reis_admin "top events" block in FeatureSignals, now that every event carries its own numbers?
