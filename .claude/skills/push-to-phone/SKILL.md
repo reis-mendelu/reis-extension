@@ -44,11 +44,29 @@ git -C "$W" reset -q --hard origin/test && git -C "$W" rev-parse --short HEAD
   needs its own copy. Copy one from a sibling worktree. Never print it.
   Without it the APK comes out unsigned.
   `find "$(git rev-parse --path-format=absolute --git-common-dir)/../.claude/worktrees" -maxdepth 3 -name keystore.properties`
-- **Phone on the network:** Developer options → Wireless debugging on, same
-  Wi-Fi as the Mac. eduroam and guest networks block device-to-device
-  traffic. On the phone's own hotspot Android offers no Wireless debugging:
-  there, plug the cable in once per phone reboot and run
-  `npm run android:push -- --wifi`.
+- **Phone on the network:** first check which network the Mac is on, with
+  `route -n get default | grep gateway`. The answer decides the route:
+
+  | Mac's gateway | Network | Route |
+  |---|---|---|
+  | `10.99.x.x` | the Pixel's own hotspot (the gateway is the phone) | Plain `npm run android:push` if tcpip is still up since the last reboot. Otherwise: cable once, `npm run android:push -- --wifi`, unplug. |
+  | `10.65.x.x` | eduroam | Cable only. |
+  | anything else | home or other Wi-Fi | Wireless debugging; the script finds it via mDNS. |
+
+  - **The hotspot never works with Wireless debugging.** Android opens the
+    debugging port only on Wi-Fi the phone has *joined*. Even with the toggle
+    on, nothing listens on the hotspot side. What works there is
+    `adb tcpip 5555`, which listens on every interface but can only be
+    switched on over USB, and it resets when the phone reboots. After that,
+    plain `android:push` finds the phone at `<gateway>:5555` on its own.
+    Verified on 2026-10-08.
+  - **eduroam isolates clients.** Even with the phone's IPv4 and port from
+    the Wireless debugging screen, the Mac gets no answer, not even a ping.
+    Don't ask for the address, and never scan the subnet (that probes
+    strangers' devices). Ask for the cable.
+  - With a cable coming, run a background loop that waits for
+    `$ADB devices | grep -cE '\tdevice$'` and then runs `android:push`. Then
+    `$ADB -s <usb serial> tcpip 5555` on a hotspot, so he can unplug.
 - **First time with a phone:** have him tap "Pair device with pairing code",
   then run `npm run android:push -- --pair <ip:port> <code>`. A phone already
   authorised over USB needs no pairing.
@@ -69,7 +87,7 @@ The script's last line names the serial it installed on; use it below.
 
 | Failure | Meaning and what to do |
 |---|---|
-| `No phone reachable` | Wireless debugging is off, or the phone is on a different or isolating network. Ask him to toggle it. |
+| `No phone reachable` | Check the gateway table in step 2 first. On the hotspot or eduroam, toggling Wireless debugging won't help: ask for the cable. Elsewhere, Wireless debugging is off or the phone is on a different network, so ask him to toggle it. |
 | `device offline` / `not found` at install | adb lost the phone during a long cold build. Rerun; the warm build takes seconds. |
 | `INSTALL_FAILED_UPDATE_INCOMPATIBLE` | A Play install is on the phone. Replacing it means uninstalling: he gets signed out and the phone stops getting Play updates. **Ask first, every time.** |
 | `Command failed: ./gradlew …` with null output | The script hides Gradle's output. Rerun from `android/` with `ANDROID_HOME=~/Library/Android/sdk JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ./gradlew assembleRelease`. |
