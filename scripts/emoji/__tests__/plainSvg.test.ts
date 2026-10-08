@@ -17,11 +17,23 @@ describe('asPlainSvg', () => {
   it.each([
     ['a script', '<svg><script>alert(1)</script></svg>'],
     ['an event handler', '<svg onload="alert(1)"><path d="M0 0"/></svg>'],
+    ['a transform hiding a url()', '<svg><g transform="url(#x)"><path d="M0 0"/></g></svg>'],
     ['a link', '<svg><a href="https://x.io"><path d="M0 0"/></a></svg>'],
     ['an external image', '<svg><image href="https://x.io/a.png"/></svg>'],
     ['a foreign object', '<svg><foreignObject><div/></foreignObject></svg>'],
     ['a CSS url()', '<svg><path style="fill:url(https://x.io)"/></svg>'],
-    ['an entity declaration', '<!DOCTYPE svg [<!ENTITY x "y">]><svg/>'],
+    // Inside a well-formed root, so only the content check can refuse it.
+    ['an entity declaration', '<svg><!ENTITY x "y"><path d="M0 0"/></svg>'],
+    [
+      'a namespace-prefixed script',
+      '<svg xmlns="http://www.w3.org/2000/svg" xmlns:s="http://www.w3.org/2000/svg"><s:script>alert(1)</s:script></svg>',
+    ],
+    ['a style attribute', '<svg><path style="fill:red" d="M0 0"/></svg>'],
+    ['a style element', '<svg><style>path{fill:red}</style></svg>'],
+    ['a comment', '<svg><!-- hi --><path d="M0 0"/></svg>'],
+    ['text outside any element', '<svg>hello<path d="M0 0"/></svg>'],
+    ['a foreign namespace', '<svg xmlns="http://www.w3.org/1999/xhtml"><path d="M0 0"/></svg>'],
+    ['an unquoted attribute', '<svg><path d=M0 /></svg>'],
   ])('refuses an SVG with %s', (_, svg) => expect(() => asPlainSvg('x', svg)).toThrow());
 
   it('refuses an HTML error page', () =>

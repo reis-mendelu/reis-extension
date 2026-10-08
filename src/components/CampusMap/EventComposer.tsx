@@ -62,12 +62,11 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
   const [endDate, setEndDate] = useState(duplicating ? '' : (source?.endDate ?? ''));
   const [time, setTime] = useState(source?.time ?? '');
   const [url, setUrl] = useState(source?.url ?? '');
+  // An edit keeps the stored code even when this build does not ship it:
+  // swapping it for the fallback would rewrite the event on any save.
+  const [startEmoji] = useState(() => (source ? (source.emoji ?? eventEmojiCode(source)) : null));
   const [emoji, setEmoji] = useState<string>(
-    // An edit keeps the stored code even when this build does not ship it:
-    // swapping it for the fallback would rewrite the event on any save.
-    source
-      ? (source.emoji ?? eventEmojiCode(source))
-      : (latestEmoji(posts) ?? CATEGORY_EMOJI_CODE.party)
+    startEmoji ?? latestEmoji(posts) ?? CATEGORY_EMOJI_CODE.party
   );
   const [subscribersOnly, setSubscribersOnly] = useState(source?.subscribersOnly ?? false);
   const [busy, setBusy] = useState(false);
@@ -106,6 +105,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       description,
       emoji,
       fallbackCategory: source?.category ?? 'other',
+      startEmoji,
       date,
       endDate,
       time,

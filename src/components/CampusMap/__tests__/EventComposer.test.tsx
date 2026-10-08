@@ -188,6 +188,36 @@ describe('EventComposer publish', () => {
 
   // An emoji a newer build added is unknown here. Saving an unrelated change
   // must not swap it for this build's fallback, nor re-file the event.
+  it('keeps a trip filed as a trip when an edit leaves its flag alone', async () => {
+    useAppStore.setState({
+      editEventId: 'c10',
+      societyMapEvents: [
+        {
+          id: 'c10',
+          title: 'Trip to Finland',
+          url: '',
+          date: '2026-07-08',
+          endDate: null,
+          time: null,
+          location: 'Q6.06',
+          imageUrl: null,
+          organizerKey: 'mendelu',
+          societyId: 'esn',
+          coord: [16.614, 49.209],
+          roomCode: 'BA39N6006',
+          venueKind: 'campus',
+          category: 'trip',
+          emoji: '1f1eb-1f1ee',
+        },
+      ],
+    });
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
+    await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
+    expect(updatePost.mock.calls[0][1]).toMatchObject({ emoji: '1f1eb-1f1ee', category: 'trip' });
+  });
+
   it('keeps an emoji this build does not ship when saving an edit', async () => {
     useAppStore.setState({
       editEventId: 'c9',

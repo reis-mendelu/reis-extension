@@ -2,18 +2,90 @@
  * The downloaded text, if it is a plain SVG drawing; throws otherwise.
  *
  * emoji:fetch writes what a CDN returned into public/, which ships in every
- * build. Twemoji's files are paths and fills only, so anything that can run or
- * load something — a script, an event handler, a link, a foreign object — means
- * the response is not the file we asked for, and nothing is written.
+ * build. Twemoji's files are shapes and fills only, so this is an ALLOWLIST of
+ * drawing elements and attributes rather than a list of dangerous ones: a
+ * blocklist missed `<s:script>` bound to the SVG namespace (review on #517),
+ * and would miss whatever comes next. Anything outside the list — a prefixed
+ * name, a link, a style, an entity, a comment, stray text — means the response
+ * is not the file we asked for, and nothing is written.
  */
 const MAX_BYTES = 64 * 1024;
-const ACTIVE =
-  /<script|<foreignObject|<iframe|<image|\bon[a-z]+\s*=|href\s*=|url\s*\(|<!ENTITY|<!DOCTYPE/i;
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+const ELEMENTS = new Set([
+  'svg',
+  'g',
+  'path',
+  'circle',
+  'ellipse',
+  'rect',
+  'polygon',
+  'polyline',
+  'line',
+]);
+const ATTRIBUTES = new Set([
+  'xmlns',
+  'viewBox',
+  'xml:space',
+  'd',
+  'fill',
+  'fill-rule',
+  'fill-opacity',
+  'opacity',
+  'clip-rule',
+  'stroke',
+  'stroke-width',
+  'stroke-linecap',
+  'stroke-linejoin',
+  'cx',
+  'cy',
+  'r',
+  'rx',
+  'ry',
+  'x',
+  'y',
+  'x1',
+  'y1',
+  'x2',
+  'y2',
+  'width',
+  'height',
+  'points',
+  'transform',
+]);
+// A colour, a number list or a path: no parentheses, no url(), no quotes or
+// angle brackets. transform gets its own pattern below.
+const PLAIN_VALUE = /^[#\w\s.,%-]*$/;
+const TRANSFORM = /^(\s*(matrix|translate|scale|rotate)\([-\d.,\se]*\)\s*)+$/;
 
 export function asPlainSvg(code: string, text: string): string {
   const svg = text.trim();
-  if (svg.length > MAX_BYTES) throw new Error(`${code}: ${svg.length} bytes is not an emoji`);
-  if (!/^<svg[\s>][\s\S]*<\/svg>$/.test(svg)) throw new Error(`${code}: not an SVG document`);
-  if (ACTIVE.test(svg)) throw new Error(`${code}: the SVG holds active content`);
+  const fail = (why: string): never => {
+    throw new Error(`${code}: ${why}`);
+  };
+  if (svg.length > MAX_BYTES) fail(`${svg.length} bytes is not an emoji`);
+  if (!/^<svg[\s>][\s\S]*<\/svg>$/.test(svg)) fail('not an SVG document');
+
+  let end = 0;
+  for (const m of svg.matchAll(/<(\/?)([^\s/>]+)([^>]*)>/g)) {
+    if (svg.slice(end, m.index).trim()) fail('text outside the drawing');
+    end = m.index + m[0].length;
+    const closing = m[1];
+    const name = m[2] ?? '';
+    if (!ELEMENTS.has(name)) fail(`<${name}> is not a drawing element`);
+    if (closing) continue;
+    const attrs = (m[3] ?? '').replace(/\/\s*$/, '');
+    const leftover = attrs.replace(/\s([^\s=]+)="([^"]*)"/g, (_, key: string, value: string) => {
+      if (!ATTRIBUTES.has(key)) fail(`${key}= is not a drawing attribute`);
+      if (key === 'xmlns') {
+        if (value !== SVG_NS) fail(`xmlns="${value}"`);
+      } else if (key === 'transform') {
+        if (!TRANSFORM.test(value)) fail(`transform="${value}"`);
+      } else if (!PLAIN_VALUE.test(value)) fail(`${key}="${value}"`);
+      return '';
+    });
+    if (leftover.trim()) fail(`unparsed attributes on <${name}>`);
+  }
+  if (svg.slice(end).trim()) fail('text outside the drawing');
   return text;
 }
