@@ -114,8 +114,24 @@ committed.
       of an *expired* Google token was not measured, because v1 dropped background sync
       first.
 
+11. **Pixel 9a, release build, 2026-10-08 evening** (Dominik's own calendar account as a
+    test user; checked on Google's side through Calendar on the web):
+    - first fill: 136/136 lessons with title, room, teachers, "reIS" and no reminders;
+    - a lesson deleted in Google stayed deleted through two language switches and a
+      reconnect (option B);
+    - a language switch rewrote today and later only (110), the 25 past lessons untouched;
+    - turning off revoked the grant (the linked-apps entry disappeared) and kept "Rozvrh";
+      reconnecting reused that calendar, with no duplicate and nothing rewritten;
+    - Google's consent screen shows both calendar checkboxes **unticked by default**
+      (Dominik: no extra hint, students should notice);
+    - speed: one write at a time ran at about 2 events/s; with 8 in flight, 111 updates took
+      ~30 s (~40 s with 4). Each Google write takes ~1.2 s, and one calendar's writes look
+      largely serialized.
+
 **Still unverified:** whether GoogleSignIn works in the Mac ("Designed for iPad") build.
-It needs Dominik to start that build from Xcode.
+It needs Dominik to start that build from Xcode; until then the row is hidden on the Mac.
+The iPad run of the final iOS plugin is also still owed (prompt name, unticked boxes,
+second device on the same "Rozvrh", revoke on one device showing on the other).
 
 ## Architecture
 
