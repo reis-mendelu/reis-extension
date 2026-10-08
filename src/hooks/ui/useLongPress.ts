@@ -11,6 +11,7 @@ const SLOP = 10;
 export function useLongPress(onLongPress: () => void, ms = 700) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const origin = useRef<{ x: number; y: number } | null>(null);
+  const touch = useRef(false);
   const cancel = () => {
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
@@ -20,6 +21,7 @@ export function useLongPress(onLongPress: () => void, ms = 700) {
   return {
     onPointerDown: (e: PointerEvent) => {
       cancel();
+      touch.current = e.pointerType === 'touch';
       origin.current = { x: e.clientX, y: e.clientY };
       timer.current = setTimeout(() => {
         timer.current = null;
@@ -33,7 +35,10 @@ export function useLongPress(onLongPress: () => void, ms = 700) {
     onPointerUp: cancel,
     onPointerLeave: cancel,
     onPointerCancel: cancel,
-    // iOS/Android open a text-selection callout on a held name; the hold is ours.
-    onContextMenu: (e: MouseEvent) => e.preventDefault(),
+    // iOS/Android open a text-selection callout on a held name; the hold is
+    // ours. Touch only: a desktop right-click keeps its menu.
+    onContextMenu: (e: MouseEvent) => {
+      if (touch.current) e.preventDefault();
+    },
   };
 }

@@ -997,7 +997,7 @@ describe('retireSocietyFeatures', () => {
     expect(stores.meta!.has('event_rsvps_mine')).toBe(false);
     expect(stores.meta!.get('seen_deadline_alerts')).toEqual(['a']);
     expect(stores.meta!.get('read_notifications')).toEqual(['b']);
-    expect(stores.meta!.has('notifications_cache')).toBe(false);
+    expect(stores.meta!.has('notifications_cache')).toBe(true); // filtered on read instead (dropPreAudienceRows)
     expect(clear).toHaveBeenCalledOnce();
     await retireSocietyFeatures({ clearScheduledNotifications: clear });
     expect(clear).toHaveBeenCalledOnce();
@@ -1039,10 +1039,6 @@ const RETIRED_META_KEYS = [
   'reis_muted_associations',
   'reis_notify_prefs',
   'reis_notify_asked',
-  // Old builds cached the unfiltered 14-day feed with no `subscribersOnly`,
-  // which would read as public and show ESN's restricted rows to everyone
-  // until the first fetch lands (or all session, offline).
-  'notifications_cache',
 ];
 const RETIRED_CHANNELS = ['reis-event-reminders', 'reis-society-digest'];
 

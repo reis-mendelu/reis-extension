@@ -1,6 +1,7 @@
 import { parseEventDate } from './eventHelpers';
 
-// the soon horizon (pins, Novinky) is SOON_WINDOW_DAYS; the catalog list has no upper bound
+// Horizons: map pins use SOON_WINDOW_DAYS (14), Novinky uses NOVINKY_WINDOW_DAYS
+// (7), and the catalog list has no upper bound.
 
 function startOfDay(ref: Date): Date {
   const d = new Date(ref);

@@ -32,6 +32,8 @@ async function clearScheduledNotifications(): Promise<void> {
   if (notifications.length > 0) {
     await LocalNotifications.cancel({ notifications: notifications.map((n) => ({ id: n.id })) });
   }
+  // Reminders 5.3.0 already delivered would sit in the tray with no tap handler.
+  await LocalNotifications.removeAllDeliveredNotifications();
   // iOS has no channel concept; the plugin call would reject there.
   const { Capacitor } = await import('@capacitor/core');
   if (Capacitor.getPlatform() !== 'android') return;
