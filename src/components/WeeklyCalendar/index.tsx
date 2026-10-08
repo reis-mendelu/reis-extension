@@ -12,6 +12,8 @@ import { CurrentTimeIndicator } from './CurrentTimeIndicator';
 import { WeeklyCalendarDay } from './WeeklyCalendarDay';
 import { DailyView } from './DailyView';
 import { CustomEventModal } from '../CustomEventModal';
+import { RsvpBlockPopover } from './RsvpBlockPopover';
+import { isRsvpBlock } from '../../utils/rsvpBlocks';
 import { useHintStatus } from '../../hooks/ui/useHintStatus';
 import { useIsMobile } from '../../hooks/ui/useIsMobile';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -55,6 +57,10 @@ export function WeeklyCalendar({
     event: CalendarCustomEvent;
     anchor?: { x: number; y: number };
   } | null>(null);
+  const [openRsvpBlock, setOpenRsvpBlock] = useState<{
+    event: CalendarCustomEvent;
+    anchor?: { x: number; y: number };
+  } | null>(null);
   const addCalendarCustomEvent = useAppStore((state) => state.addCalendarCustomEvent);
   const updateCalendarCustomEvent = useAppStore((state) => state.updateCalendarCustomEvent);
   const removeCalendarCustomEvent = useAppStore((state) => state.removeCalendarCustomEvent);
@@ -75,12 +81,25 @@ export function WeeklyCalendar({
       const event = useAppStore
         .getState()
         .customEvents.find((ce: CalendarCustomEvent) => ce.id === lesson.customEventId);
-      if (event) setEditingCustomEvent({ event, anchor });
+      if (!event) return;
+      // An answered society event is not the student's to edit: the block is
+      // derived from the answer and reconciliation reverts any edit or delete.
+      // It gets the one removal that holds — withdrawing the answer.
+      if (isRsvpBlock(event.id)) setOpenRsvpBlock({ event, anchor });
+      else setEditingCustomEvent({ event, anchor });
       return;
     }
     setSelected(lesson);
     if (!isSeen) markSeen();
   };
+
+  const rsvpPopover = openRsvpBlock && (
+    <RsvpBlockPopover
+      event={openRsvpBlock.event}
+      anchor={openRsvpBlock.anchor}
+      onClose={() => setOpenRsvpBlock(null)}
+    />
+  );
 
   if (isMobile) {
     return (
@@ -135,6 +154,7 @@ export function WeeklyCalendar({
             }}
           />
         )}
+        {rsvpPopover}
       </div>
     );
   }
@@ -243,6 +263,7 @@ export function WeeklyCalendar({
           }}
         />
       )}
+      {rsvpPopover}
     </div>
   );
 }

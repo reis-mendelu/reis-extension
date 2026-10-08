@@ -901,6 +901,11 @@
     "addLocation": "Add location",
     "delete": "Delete"
   },
+  "rsvpBlock": {
+    "remove": "Remove from calendar",
+    "note": "Removing it also withdraws your RSVP. The society sets the time.",
+    "failed": "Couldn't remove it. Try again."
+  },
   "map": {
     "title": "Map",
     "searchPlaceholder": "Search a room or place…",
