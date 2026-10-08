@@ -348,15 +348,6 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
         mapEventsLoaded: true,
         mapEventsFetchedAt: Date.now(),
       });
-      // Attendance is loaded here, with the events, rather than by the cards:
-      // one RPC covers every visible event, and components do not fetch.
-      // Detached on purpose — a card renders with 0/0 while this is in flight,
-      // and a failure must not take the events down with it.
-      void get().loadRsvps(events.map((e) => e.id));
-      // A society's event can be published, moved or cancelled between loads,
-      // and the digest/RSVP plan has to catch up with it — boot, a manual
-      // reload and spec 1's resume-triggered refresh all land here.
-      get().replanNotifications();
     } catch (err) {
       logError('MapSlice.reloadMapEvents', err);
     }
@@ -389,11 +380,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
     set({
       activeBuildingId: null,
       activeFloorId: null,
-      // On the selection, not a field of its own: every later focus builds a
-      // new selection, so a pin tap after the calendar's drops it by itself.
-      mapSelection: opts?.reveal
-        ? { kind: 'event', event, reveal: opts.reveal }
-        : { kind: 'event', event },
+      mapSelection: { kind: 'event', event },
       ...(fly
         ? { mapFocusRequest: get().mapFocusRequest + 1, mapFocusTarget: 'campus' as const }
         : {}),

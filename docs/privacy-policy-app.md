@@ -33,7 +33,7 @@ yourself — see *Report attachments* below.
 | Daily count | once a day | a random install identifier — a UUID unrelated to you. Counts **installs, not people**, plus faculty and platform as group labels. |
 | Feedback | you press send | your message, any contact detail you type, the screen name, app version, browser, window size |
 | Report attachments | only what you add to a report, when you press send | a **screenshot you pick** yourself, re-encoded on your device so photo metadata and location are removed; and, **only if you tick the box**, the recent reIS errors and warnings from this session, with link parameters, email addresses, long numbers and coordinates already blanked out, plus platform, OS version, language and sync status. **Not linked to the install identifier.** |
-| In-app survey, event RSVP | you answer / RSVP | the same random install identifier |
+| In-app survey | you answer | the same random install identifier |
 | Society post view or click | you open one | a post id |
 | Map event opened | you open an event on the campus map | that event's id and nothing else — a counter on the event, with no identifier of yours attached |
 | Map used for 3 seconds | at most once a day, after three seconds on the map | the random install identifier and the fixed `map_dwell_3s` label |
@@ -71,18 +71,16 @@ else.
 
 ## Permissions
 
-**Android:** internet; notifications (so a download can say it finished, and for
-reminders of events you marked Going or Interested); running at startup and
-keeping the device awake briefly, only so those reminders survive a restart and
-are not held back while the phone sleeps — Android may still deliver one a few
-minutes late; Wi-Fi state, only for optional one-tap eduroam, where Android's
-own dialog saves the network.
+**Android:** internet; notifications (so a download can say it finished);
+running at startup and keeping the device awake briefly, which come with the
+same notifications library — reIS no longer schedules event reminders, and these
+two leave with the library in a later release; Wi-Fi state, only for optional
+one-tap eduroam, where Android's own dialog saves the network.
 
 **iOS:** the camera, only if you choose to take a photo — to attach to a problem
 report, where the photo goes into the report form like any other picture, or, on
 an iPad, to put on a page of your notes, where it stays on the device with your
-ink; and notifications, only for those same event reminders. iOS asks you before
-either.
+ink. iOS asks you first. reIS no longer asks for notifications on iOS.
 
 **Neither app requests location** — the campus map shows the campus, not you.
 

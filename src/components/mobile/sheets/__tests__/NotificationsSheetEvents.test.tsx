@@ -16,8 +16,8 @@ vi.mock('../../../../services/spolky', async (importOriginal) => ({
 // The linked branch hands the URL to the system browser; a unit test has none.
 vi.mock('../../../../mobile/openExternal', () => ({ openExternal: vi.fn() }));
 
-// 'admin' bypasses the spolky-subscription filter (always shown), keeping these
-// independent of useSpolkySettings' async IDB-backed state.
+// 'admin' bypasses the audience filter (always shown), keeping these
+// independent of the student's faculty.
 const notification: SpolekNotification = {
   id: 'n1',
   associationId: 'admin',

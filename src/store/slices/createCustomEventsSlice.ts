@@ -10,7 +10,14 @@ export const createCustomEventsSlice: AppSlice<CalendarCustomEventsSlice> = (set
     try {
       const data = await IndexedDBService.getAllWithKeys('custom_events');
       if (Array.isArray(data)) {
-        set({ customEvents: data.map((item) => item.value as CalendarCustomEvent) });
+        set({
+          customEvents: data
+            .map((item) => item.value as CalendarCustomEvent)
+            // Retired RSVP blocks (rsvp:<eventId>) that the one-time cleanup
+            // could not delete yet: nothing can remove them any more, so they
+            // are never drawn (services/cleanup/retireSocietyFeatures).
+            .filter((e) => !e.id.startsWith('rsvp:')),
+        });
       }
     } catch (error) {
       logError('CustomEventsSlice.loadCalendarCustomEvents', error);

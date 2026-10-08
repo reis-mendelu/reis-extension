@@ -18,7 +18,7 @@ const fallbackRow = {
   body: null,
   url: null,
   created_at: '2026-09-02T00:00:00Z',
-  date: '2026-10-05',
+  date: '2026-10-03',
   end_date: null,
 };
 
@@ -97,7 +97,7 @@ describe('fetchNotifications (repointed to spolky_events)', () => {
     vi.useRealTimers();
   });
 
-  it('queries spolky_events bounded to the soon horizon, keeping trips still running', async () => {
+  it('queries spolky_events bounded to the Novinky week, keeping trips still running', async () => {
     const result = await fetchNotifications();
 
     const today = localTodayIso();
@@ -105,9 +105,9 @@ describe('fetchNotifications (repointed to spolky_events)', () => {
     const visible = `or(visible_from.is.null,visible_from.lte.${nowIso})`;
 
     expect(from).toHaveBeenCalledWith('spolky_events');
-    // Bounded to the soon horizon (today + 13 days) so an unbounded semester of
+    // Bounded to the Novinky week (today + 6 days) so an unbounded semester of
     // events can't push a small society's next event off the 200-row cap.
-    expect(lte).toHaveBeenCalledWith('date', '2026-10-11');
+    expect(lte).toHaveBeenCalledWith('date', '2026-10-04');
     // ONE .or() with nested and(): a trip still running (end_date >= today)
     // stays even if it started before today.
     expect(or).toHaveBeenCalledTimes(1);
@@ -128,6 +128,7 @@ describe('fetchNotifications (repointed to spolky_events)', () => {
         expiresAt: '2026-09-30',
         startsAt: '2026-09-26',
         priority: 'normal',
+        subscribersOnly: false,
       },
       {
         id: 'e1',
@@ -139,6 +140,7 @@ describe('fetchNotifications (repointed to spolky_events)', () => {
         expiresAt: '2026-09-30',
         startsAt: '2026-09-30',
         priority: 'normal',
+        subscribersOnly: false,
       },
       {
         id: 'e2',
@@ -147,9 +149,10 @@ describe('fetchNotifications (repointed to spolky_events)', () => {
         body: 'Fallback Title',
         link: undefined,
         createdAt: '2026-09-02T00:00:00Z',
-        expiresAt: '2026-10-05',
-        startsAt: '2026-10-05',
+        expiresAt: '2026-10-03',
+        startsAt: '2026-10-03',
         priority: 'normal',
+        subscribersOnly: false,
       },
     ]);
   });

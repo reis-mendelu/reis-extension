@@ -1,4 +1,4 @@
-import { audienceHint, audienceLabelKey } from '../../utils/eventAudience';
+import { audienceLabelKey } from '../../utils/eventAudience';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 
@@ -12,21 +12,20 @@ export interface ComposerAudienceFieldProps {
 /**
  * Who the event is for, as one opt-in: "Jen studenti PEF", off by default.
  *
- * It was two equal buttons ("Všichni" / the restricted option) under its own
- * heading — a question every society had to read on every event, answered
- * "everyone" by nearly all of them (1 of 6 prod events restricted, Sep 2026).
- * A checkbox keeps the choice one tap away without asking it.
+ * A checkbox rather than two equal buttons: nearly every event is for everyone,
+ * so the choice stays one tap away without being asked every time.
  *
- * "Jen odběratelé" was the mechanism talking. A society thinks in terms of who
- * the event is FOR — its faculty's students, or the Erasmus crowd — so the
- * label says that instead, resolved per society by `audienceLabelKey`.
+ * The label names exactly who sees the event — the society's faculty, or the
+ * Erasmus students for ESN — because that is the rule (`utils/eventAudience`),
+ * not an approximation of a follow list. reIS is university-wide and has no
+ * narrower audience, so it gets no control at all.
  */
 export function ComposerAudienceField({ societyId, value, onChange }: ComposerAudienceFieldProps) {
   const { t } = useTranslation();
-  // '' (no society) reads undefined, which is the generic wording.
+  // '' (no society) reads undefined, which cannot restrict.
   const society = useAppStore((s) => s.societies[societyId]);
   const audience = audienceLabelKey(society);
-  const hint = audienceHint(society);
+  if (!audience) return null;
 
   return (
     <div className="mt-3">
@@ -39,13 +38,9 @@ export function ComposerAudienceField({ societyId, value, onChange }: ComposerAu
         />
         <span>{t(audience.key, audience.faculty ? { faculty: audience.faculty } : undefined)}</span>
       </label>
-      {/* The label names the audience the society recognises; this line keeps
-          the promise honest. The filter runs on SUBSCRIPTIONS — a faculty only
-          seeds the default — so "students of PEF" is an approximation, and a
-          society choosing who sees its event deserves to know by what. */}
       {value && (
         <p className="mt-1 pl-7 text-[11px] leading-snug text-base-content/70">
-          {t(hint.key, hint.society ? { society: hint.society } : undefined)}
+          {t('map.audienceHint')}
         </p>
       )}
     </div>

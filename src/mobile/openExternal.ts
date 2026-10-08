@@ -4,6 +4,7 @@ import { logError } from '../utils/reportError';
 import { DemoModeError, isDemoMode } from '../errors/demoMode';
 import { useAppStore } from '../store/useAppStore';
 import { BROWSING_TOOLBAR, armOpenInBrowser, type HandoffBrowser } from './openInBrowser';
+import { handToSystem } from './handToSystem';
 
 /**
  * Opening external links without escaping to the system browser.
@@ -28,6 +29,21 @@ const OPENABLE_PROTOCOL = /^https?:$/;
  * uses, and must never be handed a view that can read an IS session.
  */
 const NEEDS_APP_SESSION = /^is\.mendelu\.cz$/i;
+
+/**
+ * Hosts whose links open in their own app. In the in-app browser Instagram is
+ * the web page, signed out ("doesn't open it in the Instagram app"); handed to
+ * the OS it opens the Instagram app, or the browser when it is not installed.
+ */
+const HAS_OWN_APP = /(^|\.)instagram\.com$/i;
+
+function hasOwnApp(url: string): boolean {
+  try {
+    return HAS_OWN_APP.test(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+}
 
 export function needsAppSession(url: string): boolean {
   try {
@@ -174,6 +190,12 @@ export async function openExternal(url: string): Promise<void> {
 
   if (getPlatform().kind !== 'capacitor') {
     window.open(target, '_blank', 'noopener,noreferrer');
+    return;
+  }
+
+  // Before the scrim goes up: no browser is coming for it to wait on.
+  if (hasOwnApp(target)) {
+    handToSystem(target);
     return;
   }
 

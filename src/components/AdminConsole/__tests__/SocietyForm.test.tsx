@@ -70,36 +70,14 @@ describe('SocietyForm (new)', () => {
     // The accounts panel below must list the new login, or it keeps offering to create it.
     expect(loadSocietyAccounts).toHaveBeenCalled();
   });
-
-  it('releases auto-follow from a HIDDEN holder too: the unique index ignores is_active', async () => {
-    useAppStore.setState({
-      societies: { ...BUNDLED_SOCIETIES, zf: { ...BUNDLED_SOCIETIES.zf!, isActive: false } },
-    });
-    render(<SocietyForm onDone={() => {}} />);
-    fill(/login name|přihlašovací jméno/i, 'zfnew');
-    fill(/^name$|^název$/i, 'ZF Nový');
-    fill(/short name|zkratka/i, 'ZFN');
-    fill(/pin colou?r|barva/i, '#123456');
-    fireEvent.change(screen.getByLabelText(/faculty|fakulta/i), { target: { value: 'zf' } });
-    fireEvent.click(screen.getByLabelText(/automati/i));
-    fireEvent.change(screen.getByLabelText(/^logo$/i), { target: { files: [logoFile] } });
-    fireEvent.click(screen.getByRole('button', { name: /save|uložit/i }));
-    await waitFor(() => expect(saveSociety).toHaveBeenCalledTimes(2));
-    expect(saveSociety.mock.calls[0]![0]).toMatchObject({ id: 'zf', autoFollowFaculty: false });
-    expect(saveSociety.mock.calls[1]![0]).toMatchObject({ id: 'zfnew', autoFollowFaculty: true });
-  });
 });
 
 describe('SocietyForm (failures)', () => {
-  const fillNew = (id: string, faculty?: string) => {
+  const fillNew = (id: string) => {
     fill(/login name|přihlašovací jméno/i, id);
     fill(/^name$|^název$/i, 'Nový');
     fill(/short name|zkratka/i, 'NEW');
     fill(/pin colou?r|barva/i, '#123456');
-    if (faculty) {
-      fireEvent.change(screen.getByLabelText(/faculty|fakulta/i), { target: { value: faculty } });
-      fireEvent.click(screen.getByLabelText(/automati/i));
-    }
     fireEvent.change(screen.getByLabelText(/^logo$/i), { target: { files: [logoFile] } });
     fireEvent.click(screen.getByRole('button', { name: /save|uložit/i }));
   };
@@ -110,17 +88,6 @@ describe('SocietyForm (failures)', () => {
     fillNew('kino');
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save|uložit/i })).toBeEnabled();
-  });
-
-  it('gives auto-follow back to the holder when the replacement fails to save', async () => {
-    saveSociety
-      .mockResolvedValueOnce({}) // holder released
-      .mockResolvedValueOnce({ error: 'save_failed' }); // replacement fails
-    render(<SocietyForm onDone={() => {}} />);
-    fillNew('zfnew', 'zf');
-    await waitFor(() => expect(saveSociety).toHaveBeenCalledTimes(3));
-    expect(saveSociety.mock.calls[2]![0]).toMatchObject({ id: 'zf', autoFollowFaculty: true });
-    expect(await screen.findByRole('alert')).toBeInTheDocument();
   });
 });
 
@@ -133,6 +100,16 @@ describe('SocietyForm (edit)', () => {
       expect(saveSociety).toHaveBeenCalledWith(expect.objectContaining({ id: 'zf' }), null, false)
     );
     expect(createSocietyAccount).not.toHaveBeenCalled();
+  });
+
+  // Follow is gone (spec 2026-10-08), but builds 5.1.1–5.3.0 still seed follows
+  // from auto_follow_faculty: an edit must not quietly clear it.
+  it('keeps the stored auto-follow flag, which old builds still read', async () => {
+    render(<SocietyForm society={BUNDLED_SOCIETIES.zf} onDone={() => {}} />);
+    expect(screen.queryByLabelText(/automati/i)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /save|uložit/i }));
+    await waitFor(() => expect(saveSociety).toHaveBeenCalledTimes(1));
+    expect(saveSociety.mock.calls[0]![0]).toMatchObject({ id: 'zf', autoFollowFaculty: true });
   });
 });
 
@@ -172,25 +149,14 @@ describe('SocietyForm (instagram)', () => {
     await waitFor(() => expect(saveSociety).toHaveBeenCalledTimes(1));
     expect(lastInput()).toMatchObject({ id: 'zf', instagram: null });
   });
+});
 
-  it('never sends the holder\u2019s handle when releasing or restoring auto-follow', async () => {
-    saveSociety
-      .mockResolvedValueOnce({}) // holder released
-      .mockResolvedValueOnce({ error: 'save_failed' }); // replacement fails → restore
-    render(<SocietyForm onDone={() => {}} />);
-    fill(/login name|přihlašovací jméno/i, 'zfnew');
-    fill(/^name$|^název$/i, 'ZF Nový');
-    fill(/short name|zkratka/i, 'ZFN');
-    fill(/pin colou?r|barva/i, '#123456');
-    fireEvent.change(screen.getByLabelText(/faculty|fakulta/i), { target: { value: 'zf' } });
-    fireEvent.click(screen.getByLabelText(/automati/i));
-    fireEvent.change(screen.getByLabelText(/^logo$/i), { target: { files: [logoFile] } });
-    save();
-    await waitFor(() => expect(saveSociety).toHaveBeenCalledTimes(3));
-    const [release, , restore] = saveSociety.mock.calls.map((c) => c[0]);
-    expect(release).toMatchObject({ id: 'zf', autoFollowFaculty: false });
-    expect(release).not.toHaveProperty('instagram');
-    expect(restore).toMatchObject({ id: 'zf', autoFollowFaculty: true });
-    expect(restore).not.toHaveProperty('instagram');
+describe('SocietyForm (auto-follow on a faculty move)', () => {
+  it('drops the flag when the faculty changes, so it never collides with another holder', async () => {
+    render(<SocietyForm society={BUNDLED_SOCIETIES.zf} onDone={() => {}} />);
+    fireEvent.change(screen.getByLabelText(/faculty|fakulta/i), { target: { value: 'af' } });
+    fireEvent.click(screen.getByRole('button', { name: /save|uložit/i }));
+    await waitFor(() => expect(saveSociety).toHaveBeenCalledTimes(1));
+    expect(saveSociety.mock.calls[0]![0]).toMatchObject({ id: 'zf', autoFollowFaculty: false });
   });
 });

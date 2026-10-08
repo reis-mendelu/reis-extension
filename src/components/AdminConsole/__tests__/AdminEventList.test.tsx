@@ -64,14 +64,14 @@ describe('AdminEventList', () => {
     expect(within(pastSection).queryByText('E-sched')).toBeNull();
   });
 
-  // The shared row already says "Venue TBA by …" for an unplaced event; a
-  // second "· No place yet" on the subline said the same thing twice.
-  it('says once that a tba row has no place yet', () => {
+  // An unplaced event shows no place at all: neither the shared row's old
+  // "Venue TBA by …" nor a "· No place yet" suffix on the subline.
+  it('says nothing about the place of a tba row', () => {
     useAppStore.setState({
       societyMapEvents: [{ ...mk('tba', iso(2)), venueKind: 'tba', coord: null }],
     });
     render(<AdminEventList />);
-    expect(screen.getAllByText(/^venue tba by /i)).toHaveLength(1);
+    expect(screen.queryByText(/venue tba/i)).toBeNull();
     expect(screen.queryByText(/no place yet/i)).toBeNull();
   });
 

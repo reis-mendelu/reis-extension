@@ -14,6 +14,8 @@ export interface SpolekNotification {
   // Absent on academic rows and on caches written before it existed.
   startsAt?: string;
   priority: 'normal' | 'high';
+  /** Restricted to the society's own people (utils/eventAudience). Absent on old caches: public. */
+  subscribersOnly?: boolean;
   viewCount?: number;
   clickCount?: number;
 }

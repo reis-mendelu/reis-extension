@@ -7,11 +7,9 @@ import {
   Wifi,
   ChevronRight,
   UserCog,
+  ShieldCheck,
 } from 'lucide-react';
-import { useState } from 'react';
 import { useTheme } from '../../hooks/useTheme';
-import { useSpolkySettings } from '../../hooks/useSpolkySettings';
-import { SpolkySection } from './Profile/SpolkySection';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { useUserParams } from '../../hooks/useUserParams';
@@ -19,11 +17,10 @@ import { User, Mail, Hash } from 'lucide-react';
 import { logout } from '../../api/proxyClient';
 import { HiddenItemsSection } from './Profile/HiddenItemsSection';
 import { desktopEduroamTarget } from '../../utils/desktopEduroamTarget';
+import { useLongPress } from '../../hooks/ui/useLongPress';
 
 export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: () => void }) {
-  const { isDark, isLoading: tLoading, toggle: tTheme } = useTheme(),
-    { isSubscribed, toggleAssociation } = useSpolkySettings(),
-    [spolkyOpen, setSpolkyOpen] = useState(false);
+  const { isDark, isLoading: tLoading, toggle: tTheme } = useTheme();
   const { t } = useTranslation();
   const language = useAppStore((state) => state.language);
   const setLanguage = useAppStore((state) => state.setLanguage);
@@ -32,6 +29,14 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
   const openReport = useAppStore((state) => state.openReport);
   const isReisAdmin = useAppStore((state) => state.adminRole === 'reis_admin');
   const openImpersonationPicker = useAppStore((state) => state.openImpersonationPicker);
+  const hasAdminSession = useAppStore((state) => state.adminSession !== null);
+  const openSocietyAdmin = useAppStore((state) => state.openSocietyAdmin);
+  const openAdmin = () => {
+    openSocietyAdmin();
+    onClose?.();
+  };
+  // The hidden door into the admin console: hold your name (spec 2026-10-08).
+  const hold = useLongPress(openAdmin);
   const { params } = useUserParams();
 
   if (!isOpen) return null;
@@ -49,7 +54,11 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
           {/* IS MENDELU Profile Info */}
           {params && (
             <div className="flex flex-col gap-2.5 text-xs">
-              <div className="flex items-center gap-3 text-base-content/90">
+              <div
+                data-testid="profile-popup-name"
+                {...hold}
+                className="flex select-none items-center gap-3 text-base-content/90"
+              >
                 <User size={16} className="text-base-content/40" />
                 <span className="font-semibold text-sm truncate">{params.fullName}</span>
               </div>
@@ -129,28 +138,33 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
           </button>
         </div>
 
-        {/* Services Section */}
-        <div className="py-1 border-b border-base-200">
-          <SpolkySection
-            expanded={spolkyOpen}
-            onToggle={() => setSpolkyOpen(!spolkyOpen)}
-            isSub={isSubscribed}
-            onToggleAssoc={toggleAssociation}
-            onNavigate={onClose}
-          />
-          {isReisAdmin && (
-            <button
-              onClick={() => {
-                openImpersonationPicker();
-                onClose?.();
-              }}
-              className="w-full flex items-center gap-2 px-1 py-2 hover:bg-base-200 rounded-lg transition-colors"
-            >
-              <UserCog size={16} className="text-base-content/50" />
-              <span className="text-xs opacity-70">{t('impersonation.entry')}</span>
-            </button>
-          )}
-        </div>
+        {/* Admin section: only for a device signed in to the console. Students
+            have nothing here — societies are not chosen (spec 2026-10-08). */}
+        {(hasAdminSession || isReisAdmin) && (
+          <div className="py-1 border-b border-base-200">
+            {hasAdminSession && (
+              <button
+                onClick={openAdmin}
+                className="w-full flex items-center gap-2 px-1 py-2 hover:bg-base-200 rounded-lg transition-colors"
+              >
+                <ShieldCheck size={16} className="text-base-content/50" />
+                <span className="text-xs opacity-70">{t('admin.entry')}</span>
+              </button>
+            )}
+            {isReisAdmin && (
+              <button
+                onClick={() => {
+                  openImpersonationPicker();
+                  onClose?.();
+                }}
+                className="w-full flex items-center gap-2 px-1 py-2 hover:bg-base-200 rounded-lg transition-colors"
+              >
+                <UserCog size={16} className="text-base-content/50" />
+                <span className="text-xs opacity-70">{t('impersonation.entry')}</span>
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Support Section */}
         <div className="py-1">

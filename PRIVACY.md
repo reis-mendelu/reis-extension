@@ -60,13 +60,13 @@ reIS contacts the following services. **IS Mendelu is the only one that receives
 
 **Always:**
 1. **IS Mendelu** (`is.mendelu.cz`) — fetches your academic data, authenticated by you.
-2. **Supabase** (`*.supabase.co`) — reIS's own backend: public notifications, society events and their attendance counts, anonymous usage events, and feedback you submit, with any attachment you added to it. Different records carry different keys. The daily usage count, the in-app survey and event RSVPs use the random installation identifier described above; society view/click counters carry only a post row id. A submitted suggestion carries no identifier we generate — but if you fill in the optional contact field, it carries whatever you typed there, because asking us to reply is what that field is for.
+2. **Supabase** (`*.supabase.co`) — reIS's own backend: public notifications, society events, anonymous usage events, and feedback you submit, with any attachment you added to it. Different records carry different keys. The daily usage count and the in-app survey use the random installation identifier described above; society view/click counters carry only a post row id. Versions up to 5.3.0 (September 2026) also send event RSVPs, with the same random installation identifier, until they are updated; current versions send none. A submitted suggestion carries no identifier we generate — but if you fill in the optional contact field, it carries whatever you typed there, because asking us to reply is what that field is for.
 3. **jsDelivr** (`cdn.jsdelivr.net`) — static subject-difficulty data. No identifier is sent, but the set of subjects requested does reveal to the CDN which courses you are enrolled in.
 4. **OpenStreetMap** — campus map tiles. The request identifies reIS by name, which their tile usage policy requires; it carries nothing about you.
 
 **Only when you use the relevant feature:**
 5. **Erasmus HEI directory** (`hei.api.uni-foundation.eu`) — a public list of partner universities. Nothing about you is sent.
-6. **Photon** (`photon.komoot.io`) — venue search, used only by student-society administrators when creating an event.
+6. **Photon** (`photon.komoot.io`) — venue search, used only by reIS staff and society logins in the admin console when creating an event.
 
 **Links you open yourself** (Teams, Outlook, geteduroam, society websites and Instagram profiles) are handed to your browser or the relevant app. reIS makes no background request to them.
 

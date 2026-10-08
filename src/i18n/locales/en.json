@@ -477,13 +477,7 @@
     "inDays": "in {n}d",
     "accessible": "Accessible"
   },
-  "events": {
-    "title": "Events",
-    "loading": "Loading...",
-    "empty": "No upcoming events"
-  },
   "sync": {
-    "spolky": "Subscribed societies",
     "lastSync": "Last synced: {time}"
   },
   "fileCategories": {
@@ -906,11 +900,6 @@
     "addLocation": "Add location",
     "delete": "Delete"
   },
-  "rsvpBlock": {
-    "remove": "Remove from calendar",
-    "note": "Removing it also withdraws your RSVP. The society sets the time.",
-    "failed": "Couldn't remove it. Try again."
-  },
   "map": {
     "title": "Map",
     "searchPlaceholder": "Search a room or place…",
@@ -944,8 +933,6 @@
     "moreInfo": "More info",
     "moreOnInstagram": "More on Instagram",
     "hostedBy": "Hosted by",
-    "interested": "interested",
-    "rsvpInterested": "Interested",
     "myEvents": "My events",
     "prevMonth": "Previous month",
     "nextMonth": "Next month",
@@ -982,7 +969,6 @@
     "orPickOnMap": "or pick manually on the map",
     "mapPoint": "Point selected on map",
     "venueOnMap": "Place on the map",
-    "venueTba": "Venue TBA by {name}",
     "changePlace": "Change place",
     "publish": "Publish event",
     "clickToPlace": "Tap the button, then mark the spot on the map",
@@ -1009,13 +995,11 @@
       "other": "Event"
     },
     "studyRooms": "Study rooms",
-    "reminderLead": "In 2 hours",
     "finished": "finished",
     "openInMaps": "Open in Maps",
     "openInAppleMaps": "Apple Maps",
     "openInGoogleMaps": "Google Maps",
-    "audienceHint": "Seen by students who follow {society}.",
-    "audienceHintGeneric": "Seen only by students who follow this society.",
+    "audienceHint": "Other students won't see this event on the map or in Novinky.",
     "panelCollapse": "Collapse map panel",
     "panelExpand": "Expand map panel",
     "walkMinutes": "{n} min",
@@ -1043,6 +1027,7 @@
     }
   },
   "admin": {
+    "entry": "Admin",
     "email": "Email",
     "username": "Society name",
     "password": "Password",
@@ -1054,7 +1039,6 @@
     "addPost": "Add post",
     "logout": "Log out",
     "saveError": "Could not save — please try again",
-    "manageButton": "Manage societies",
     "consoleTitle": "Society management",
     "loginTitle": "Society sign-in",
     "loginSubtitle": "Sign in with your society's account to manage its campus events.",
@@ -1067,7 +1051,6 @@
     "eventViewsOne": "1 view",
     "eventClicks": "{count} clicks",
     "eventClicksOne": "1 click",
-    "eventInterest": "Interested in reIS: {count}",
     "eventStatsNote": "Views: how many devices saw the event in News — devices, not people. Clicks: how many times it was opened from there.",
     "newSuggestions": "{count} new suggestion(s) from students",
     "noSuggestions": "No suggestions yet.",
@@ -1131,8 +1114,7 @@
     "loginName": "login",
     "audience": {
       "faculty": "Only {faculty} students",
-      "erasmus": "Erasmus students only",
-      "followers": "Followers only"
+      "erasmus": "Erasmus students only"
     },
     "attachments": "Attachments",
     "screenshotBadge": "📎 screenshot",
@@ -1157,8 +1139,6 @@
       "color": "Pin colour",
       "faculty": "Faculty",
       "wholeMendelu": "All of MENDELU",
-      "autoFollow": "New students of this faculty follow it automatically",
-      "autoFollowMoves": "Automatic following moves from {from}.",
       "logo": "Logo",
       "save": "Save",
       "cancel": "Cancel",
@@ -1348,8 +1328,7 @@
     },
     "profile": {
       "appearance": "Appearance",
-      "settings": "Settings",
-      "societies": "Societies on the map"
+      "settings": "Settings"
     },
     "loadFailed": {
       "title": "Couldn't load your data",
@@ -1435,38 +1414,6 @@
     "bannerLabel": "Viewing as {programme} · year {year}",
     "bannerExit": "Exit",
     "close": "Close"
-  },
-  "notify": {
-    "channelRsvp": "Event reminders",
-    "channelDigest": "Society events",
-    "digestTomorrow": "Tomorrow: {titles}",
-    "digestTomorrowManyOne": "Tomorrow, 1 event: {titles}",
-    "digestTomorrowManyFew": "Tomorrow, {n} events: {titles} and more",
-    "digestTomorrowManyOther": "Tomorrow, {n} events: {titles} and more",
-    "digestNewOnlyOne": "New event: {titles}",
-    "digestNewOnlyFew": "New events: {titles}",
-    "digestNewOnlyOther": "New events: {titles}",
-    "digestPlusNewOne": "+ 1 new event from {societies}",
-    "digestPlusNewFew": "+ {n} new events from {societies}",
-    "digestPlusNewOther": "+ {n} new events from {societies}",
-    "askOneOne": "{society} has 1 event in the next 14 days. Want a reminder the evening before?",
-    "askOneFew": "{society} has {n} events in the next 14 days. Want a reminder the evening before?",
-    "askOneOther": "{society} has {n} events in the next 14 days. Want a reminder the evening before?",
-    "askManyOne": "Your societies have 1 event in the next 14 days. Want a reminder the evening before?",
-    "askManyFew": "Your societies have {n} events in the next 14 days. Want a reminder the evening before?",
-    "askManyOther": "Your societies have {n} events in the next 14 days. Want a reminder the evening before?",
-    "enable": "Turn on",
-    "turnOn": "Turn on notifications",
-    "notNow": "Not now",
-    "section": "Notifications",
-    "myEvents": "Reminders for my events",
-    "followedEvents": "Events from followed societies",
-    "newEvents": "New events",
-    "denied": "Notifications are turned off in your phone's settings.",
-    "mute": "Mute {name}",
-    "unmute": "Unmute {name}",
-    "follow": "Follow",
-    "following": "Following ✓"
   },
   "odevzdavarny": {
     "title": "Submission boxes",
