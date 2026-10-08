@@ -128,10 +128,20 @@ committed.
       ~30 s (~40 s with 4). Each Google write takes ~1.2 s, and one calendar's writes look
       largely serialized.
 
+12. **iPad 8 + Pixel 9a together, release builds, 2026-10-08 late evening:**
+    - the iPad created a fresh "Rozvrh" and filled 136/136, past included;
+    - the Pixel then connected with **no consent screen** (the grant is per project and
+      per account, so the iPad's covered it), found the same "Rozvrh", wrote nothing, and
+      Google still had exactly one calendar with 136 lessons;
+    - turning off on the Pixel revoked that shared grant; the iPad's next sync switched its
+      row off with "Přístup ke Google Kalendáři byl odebrán";
+    - found on the iPad and fixed before the run: a revoked grant left in the keychain was
+      reused by connect, so every connect would have ended in "access removed". connect now
+      refreshes a restored sign-in first, and a revoked sync forgets the local sign-in.
+
 **Still unverified:** whether GoogleSignIn works in the Mac ("Designed for iPad") build.
 It needs Dominik to start that build from Xcode; until then the row is hidden on the Mac.
-The iPad run of the final iOS plugin is also still owed (prompt name, unticked boxes,
-second device on the same "Rozvrh", revoke on one device showing on the other).
+The row stays hidden on the Mac until then.
 
 ## Architecture
 
