@@ -12,7 +12,6 @@
   "src/api/documents/service.test.ts",
   "src/api/documents/service.ts",
   "src/api/eduroam.ts",
-  "src/api/events.ts",
   "src/api/gradeHistory.test.ts",
   "src/api/gradeHistory.ts",
   "src/api/kontrola.ts",
