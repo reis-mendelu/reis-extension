@@ -65,9 +65,10 @@ git -C "$W" reset -q --hard origin/test && git -C "$W" rev-parse --short HEAD
     the Wireless debugging screen, the Mac gets no answer, not even a ping.
     Don't ask for the address, and never scan the subnet (that probes
     strangers' devices). Ask for the cable.
-  - With a cable coming, run a background loop that waits for a **USB** serial,
-    not just any device, since an emulator or a Wi-Fi phone may already be
-    listed: `S=$($ADB devices -l | awk '/ usb:/ && $2 == "device" {print $1; exit}')`.
+  - With a cable coming, run in the background a loop that waits for a
+    **USB** serial, not just any device, since an emulator or a Wi-Fi phone
+    may already be listed:
+    `S=; while [ -z "$S" ]; do sleep 5; S=$($ADB devices -l | awk '/ usb:/ && $2 == "device" {print $1; exit}'); done`.
     Check that `$ADB devices -l` names his phone (`model:Pixel_9a`), then run
     `ANDROID_SERIAL=$S npm run android:push`. On a hotspot, follow with
     `$ADB -s $S tcpip 5555` so he can unplug.
@@ -91,7 +92,7 @@ The script's last line names the serial it installed on; use it below.
 
 | Failure | Meaning and what to do |
 |---|---|
-| `No phone reachable` | Check the gateway table in step 2 first. On the hotspot, eduroam or a guest network, toggling Wireless debugging won't help: ask for the cable. Elsewhere, Wireless debugging is off or the phone is on a different network, so ask him to toggle it. |
+| `No phone reachable` | Check the gateway table in step 2 first. On the hotspot, eduroam or a guest network, toggling Wireless debugging won't help: ask for the cable. Elsewhere: if Wireless debugging is off, ask him to turn it on; if the phone is on a different network, ask him to join the Mac's Wi-Fi. |
 | `device offline` / `not found` at install | adb lost the phone during a long cold build. Rerun; the warm build takes seconds. |
 | `INSTALL_FAILED_UPDATE_INCOMPATIBLE` | A Play install is on the phone. Replacing it means uninstalling: he gets signed out and the phone stops getting Play updates. **Ask first, every time.** |
 | `Command failed: ./gradlew …` with null output | The script hides Gradle's output. Rerun from `android/` with `ANDROID_HOME=~/Library/Android/sdk JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ./gradlew assembleRelease`. |
