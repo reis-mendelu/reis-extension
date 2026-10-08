@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Every society event shows its own emoji, picked from a curated set of 84 shipped Twemoji SVGs, instead of one emoji per broad category.
+**Goal:** Every society event shows its own emoji, picked from a curated set of 85 shipped Twemoji SVGs, instead of one emoji per broad category.
 
 **Architecture:** A nullable `spolky_events.emoji` column holds a Twemoji codepoint filename. A catalog in `src/data/eventEmoji.ts` lists the shipped emoji, each mapped to one of the 10 legacy categories. Pins, rows and the peek band render `eventEmojiSrc(event)`, which falls back to the category's emoji. The admin composer's category chips become an emoji picker that writes both columns. Released builds keep reading `category`, which stays valid.
 
@@ -25,10 +25,10 @@
 
 | File | Responsibility |
 |---|---|
-| `src/data/eventEmoji.ts` (new) | The catalog: 84 entries, groups, category fallback codes, `findEventEmoji`, `eventEmojiCode`, `eventEmojiSrc`, `EMOJI_CODE_FORMAT` |
+| `src/data/eventEmoji.ts` (new) | The catalog: 85 entries, groups, category fallback codes, `findEventEmoji`, `eventEmojiCode`, `eventEmojiSrc`, `EMOJI_CODE_FORMAT` |
 | `src/data/__tests__/eventEmoji.test.ts` (new) | Catalog integrity: format, uniqueness, every SVG shipped, no orphan SVGs, fallbacks |
 | `scripts/emoji/fetch-event-emoji.ts` (new) | Downloads missing catalog SVGs from the pinned Twemoji version |
-| `public/emoji/*.svg` | 74 new SVGs next to the 10 existing ones |
+| `public/emoji/*.svg` | 75 new SVGs next to the 10 existing ones |
 | `src/components/CampusMap/mapLayers.ts` | Twemoji credit in the map attribution |
 | `supabase/migrations/20261010120000_event_emoji.sql` (new) | Column + format CHECK |
 | `src/types/events.ts`, `src/api/mapEvents.ts`, `src/api/societyPosts.ts`, `src/components/CampusMap/composerPost.ts`, `composerRules.ts` | Carry `emoji` through read, create and edit |
@@ -36,7 +36,7 @@
 | `EventDetailCard.tsx` | Drop the category line |
 | `ComposerEmojiField.tsx` (new), `EventComposer.tsx` | Emoji picker replacing `ComposerCategoryField.tsx` (deleted) |
 | `src/data/eventCategories.ts` | Shrinks to what is still read (`CATEGORY_COLOR`) |
-| `supabase/backfills/20261010_event_emoji.sql` (new) | Emoji + corrected category for the 57 production rows |
+| `supabase/backfills/20261010_event_emoji.sql` (new) | Emoji + corrected category for the 56 production rows |
 
 ---
 
@@ -50,7 +50,7 @@
 - Modify: `src/components/CampusMap/mapLayers.ts:84-85`
 - Modify: `src/components/CampusMap/__tests__/mapLayers.test.ts`
 - Modify: `src/i18n/locales/cs.json`, `src/i18n/locales/en.json` (inside the top-level `"map"` object, line ~898)
-- Add: 74 files in `public/emoji/`
+- Add: 75 files in `public/emoji/`
 
 **Interfaces:**
 - Produces:
@@ -94,9 +94,9 @@ const shipped = readdirSync(resolve(__dirname, '../../../public/emoji'))
 // without its file is a broken image on every device; a file without an entry
 // is dead weight in every bundle.
 describe('event emoji catalog', () => {
-  it('has 84 entries with unique codes', () => {
-    expect(EVENT_EMOJI).toHaveLength(84);
-    expect(new Set(EVENT_EMOJI.map((e) => e.code)).size).toBe(84);
+  it('has 85 entries with unique codes', () => {
+    expect(EVENT_EMOJI).toHaveLength(85);
+    expect(new Set(EVENT_EMOJI.map((e) => e.code)).size).toBe(85);
   });
 
   it('uses the format the database CHECK enforces', () => {
@@ -205,6 +205,7 @@ export const EVENT_EMOJI: readonly EventEmoji[] = [
   e('1f37d', 'social', 'party', 'Večeře', 'Dinner'),
   e('1f355', 'social', 'party', 'Pizza', 'Pizza'),
   e('2615', 'social', 'party', 'Káva', 'Coffee'),
+  e('1f950', 'social', 'party', 'Snídaně', 'Breakfast'),
   e('1f9fa', 'social', 'party', 'Piknik', 'Picnic'),
   e('1f382', 'party', 'party', 'Narozeniny', 'Birthday'),
   e('1f91d', 'social', 'party', 'Setkání', 'Meetup'),
@@ -346,7 +347,7 @@ In `package.json` `"scripts"`, after `"verify:ui"`, add:
 - [ ] **Step 5: Fetch the SVGs**
 
 Run: `npm run emoji:fetch`
-Expected: 74 `added <code>` lines, then `74 added, 84 in the catalog`. Then `ls public/emoji | wc -l` prints `84`.
+Expected: 75 `added <code>` lines, then `75 added, 85 in the catalog`. Then `ls public/emoji | wc -l` prints `85`.
 
 - [ ] **Step 6: Run the catalog test**
 
@@ -1016,7 +1017,6 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 -- exists (builds 5.1.1–5.3.0 still draw the category). Apply only after
 -- 20261010120000_event_emoji.sql, and only with Dominik's yes:
 --   npx supabase db query --linked -f supabase/backfills/20261010_event_emoji.sql
--- 'Bruch s USAFem' (usaf) stays null: unknown event type, falls back to culture.
 begin;
 update public.spolky_events as e set emoji = v.emoji, category = v.category
 from (values
@@ -1056,7 +1056,6 @@ from (values
   ('esn', 'Goodbye party', '1f44b', 'party'),
   ('esn', 'Erasmus awards', '1f3c6', 'other'),
   ('supef', 'Deskovky', '1f3b2', 'boardgames'),
-  ('supef', 'Deskovky — test notifikace', '1f3b2', 'boardgames'),
   ('supef', 'Filmový klub', '1f3ac', 'film'),
   ('supef', 'Tour de Pub', '1f37b', 'social'),
   ('supef', 'Redbull Felite Gamenight', '1f3ae', 'other'),
@@ -1064,16 +1063,16 @@ from (values
   ('supef', 'PEF Quiz', '1f9e0', 'quiz'),
   ('supef', 'Tour de Svařák', '1f377', 'social'),
   ('supef', 'Pro Dobro Vánoc', '1f381', 'other'),
-  ('supef', 'Karneval na ledu', '26f8', 'sports')
+  ('supef', 'Karneval na ledu', '26f8', 'sports'),
+  ('usaf', 'Bruch s USAFem', '1f950', 'social')
 ) as v(association_id, title, emoji, category)
 where e.association_id = v.association_id and e.title = v.title;
 
--- Every row but the one deliberately left out must now carry an emoji.
+-- Every row must now carry an emoji.
 do $$
 declare missing int;
 begin
-  select count(*) into missing from public.spolky_events
-   where emoji is null and not (association_id = 'usaf' and title = 'Bruch s USAFem');
+  select count(*) into missing from public.spolky_events where emoji is null;
   if missing > 0 then raise exception '% rows still without an emoji', missing; end if;
 end $$;
 commit;
@@ -1128,7 +1127,7 @@ Do not open the PR until #515 has merged. Then: `gh pr create --base test` as El
 1. Merge.
 2. With Dominik's yes, apply `supabase/migrations/20261010120000_event_emoji.sql`.
 3. Then apply `supabase/backfills/20261010_event_emoji.sql`.
-4. Ask Dominik separately whether to delete the test row "Deskovky — test notifikace".
+4. The test row "Deskovky — test notifikace" is deleted by Dominik before the backfill (he approved it on 2026-10-08). If it is still there, the backfill's final check fails on it, so delete it first.
 
 The device check is on the Pixel 9a via `npm run android:push`, after the backfill.
 
@@ -1136,5 +1135,5 @@ The device check is on the Pixel 9a via `npm run android:push`, after the backfi
 
 ## Self-review notes
 
-- Spec coverage: column (T2), catalog + assets + attribution (T1), rendering + fallback (T3), card drops the category (T3), composer picker with derived category (T4), released-build safety (CHECK kept, category corrected in T5), backfill (T5), test row left for approval (T5 step 5). No privacy change, so no `privacy/disclosures.ts` edit.
+- Spec coverage: column (T2), catalog + assets + attribution (T1), rendering + fallback (T3), card drops the category (T3), composer picker with derived category (T4), released-build safety (CHECK kept, category corrected in T5), backfill (T5), test row deleted by Dominik before the backfill (T5 step 5). No privacy change, so no `privacy/disclosures.ts` edit.
 - Type names used across tasks: `eventEmojiSrc`, `eventEmojiCode`, `findEventEmoji`, `CATEGORY_EMOJI_CODE`, `EVENT_EMOJI`, `EMOJI_GROUPS`, `latestEmoji`, `ComposerEmojiField`, `ComposerDraft.emoji`, `PostInput.emoji`, `MapEvent.emoji`.

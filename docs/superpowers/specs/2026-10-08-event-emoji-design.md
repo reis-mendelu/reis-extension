@@ -23,7 +23,7 @@ Twemoji SVGs. The category stays as a coarse fallback.
 - **New column** `spolky_events.emoji text null`: a Twemoji codepoint
   filename (`26f8`, `1f1eb-1f1ee`), format-checked in the database. Not
   enumerated in SQL, so the set grows without a migration.
-- **Curated catalog** `src/data/eventEmoji.ts`: 84 entries, each with a
+- **Curated catalog** `src/data/eventEmoji.ts`: 85 entries, each with a
   codepoint, the legacy category it maps to, and a picker group. Names are in
   the locale files (`map.emoji.<code>`). Every entry's SVG ships in
   `public/emoji/` (Twemoji 15.1.0, about 146 KB in total).
@@ -52,13 +52,13 @@ Twemoji SVGs. The category stays as a coarse fallback.
 - Shipping the full Twemoji set (about 3,700 files). The catalog grows when
   an import needs a new emoji.
 - Deleting the production test row "Deskovky — test notifikace" (4 Sep).
-  It is listed for Dominik's approval, not done by the migration.
+  Dominik approved it on 2026-10-08 and runs the delete himself.
 
 ## Data
 
-Backfill for all 57 production rows by `(association_id, title)`, in
-`supabase/backfills/20261010_event_emoji.sql`. "Bruch s USAFem" is left null
-(unknown event type) and falls back to its category.
+Backfill for all 56 production rows (57 minus the test row) by
+`(association_id, title)`, in `supabase/backfills/20261010_event_emoji.sql`.
+"Bruch s USAFem" is a breakfast with USAF and gets 🥐.
 
 ## Privacy
 
