@@ -452,6 +452,8 @@ describe('loadContext viewer cache', () => {
 ```
 
   - In the `set({...})`, change `userFaculty: params.facultyLabel ?? null` to `userFaculty: params.facultyLabel ?? get().userFaculty`. An unparsed header must not erase a known faculty.
+  - Add `contextResolved: boolean` to `ContextSlice` (`src/store/types.ts:375`), initial `false`. Set it to `true` in the same `set` when `params.facultyLabel` is present. Later re-asks check it, so once IS has answered they cost nothing.
+  - Add a fourth test case: after a resolved `loadContext`, `contextResolved` is `true`; after one with `getUserParams` → `null`, it stays `false`.
 
 - [ ] **Step 8: Re-ask after IS lands.**
   - In `src/store/useAppStore.ts`, sync handler (around line 283), replace `st.retryFollowsIfUnresolved();` and its comment with:
@@ -460,11 +462,11 @@ describe('loadContext viewer cache', () => {
     // A sync only reaches here once IS data has actually landed, which is
     // also the point `getUserParams()` becomes resolvable — so a boot-time
     // `loadContext()` that lost that race gets its real answer here (the
-    // event audience depends on it).
-    void st.loadContext();
+    // event audience depends on it). Once answered, it is not asked again.
+    if (!st.contextResolved) void st.loadContext();
 ```
 
-  - In `capacitor/startApp.ts`, resume listener, replace the `retryFollowsIfUnresolved` line and its comment with `void useAppStore.getState().loadContext();`.
+  - In `capacitor/startApp.ts`, resume listener, replace the `retryFollowsIfUnresolved` line and its comment with `if (!useAppStore.getState().contextResolved) void useAppStore.getState().loadContext();`.
   - These two edits remove `retryFollowsIfUnresolved` callers before Task 6 deletes it. Keep the action in the follow slice until then.
 
 - [ ] **Step 9: Run the tests.** Run `npx vitest run src/hooks/__tests__/useViewer.test.ts src/store/slices/__tests__/createContextSlice capacitor/__tests__/startApp.test.ts` and `npm run typecheck`. Expected: PASS. If `startApp.test.ts` asserts `retryFollowsIfUnresolved` on resume, change that assertion to `loadContext`.
@@ -642,6 +644,8 @@ git commit -m "feat(novinky): next 7 days, filtered by audience instead of follo
 
 ### Task 4: Remove RSVP, reminders and the notification plumbing
 
+One large task on purpose: the RSVP slice, the reminder planner and the follow slice's notification state import each other, so any smaller cut fails to typecheck.
+
 **Files:**
 - Delete:
   - `src/api/eventRsvp.ts`
@@ -706,7 +710,7 @@ git commit -m "feat(novinky): next 7 days, filtered by audience instead of follo
   - `src/test/guards/noStudentDataLeaves.test.ts`: remove `'src/api/eventRsvp.ts'` and its comment from `SUPABASE_CALLERS`; drop the RSVP implicit-consent note in the Firefox-consent test (around lines 351-370).
   - `scripts/appHealth.ts:43-46`: remove `'get_event_rsvps'` from `READ_ONLY_SUPABASE_RPCS`.
   - `PRIVACY.md:63`: drop RSVP from the sentence.
-  - i18n `cs.json` / `en.json`: delete the keys used only by deleted components (`map.rsvp*`, `map.interested*`, `notify.*`, `calendar.rsvp*`). Find them with `git grep -n "t('<key>"` before deleting.
+  - i18n `cs.json` / `en.json`: delete the keys used only by deleted components (`map.rsvp*`, `map.interested*`, `notify.*`, `calendar.rsvp*`). Find them with `git grep -n "t('<key>"`, then also search the namespace inside template literals (`` git grep -n "\`map\." ``, `` "\`admin\." ``). Keys like ``t(`map.${s.key}`)`` and ``t(`map.category.${…}`)`` are built at runtime. Delete a key only when neither search finds it.
 
 **Interfaces:**
 - Consumes: nothing new.
@@ -726,7 +730,11 @@ import { execSync } from 'node:child_process';
  */
 const grep = (pattern: string) => {
   try {
-    return execSync(`git grep -n -E "${pattern}" -- src ':!src/test/guards'`, { encoding: 'utf8' });
+    // The cleanup module names retired keys on purpose; it is the one exception.
+    return execSync(
+      `git grep -n -E "${pattern}" -- src ':!src/test/guards' ':!src/services/cleanup'`,
+      { encoding: 'utf8' }
+    );
   } catch {
     return '';
   }
@@ -742,7 +750,7 @@ describe('society events stay reduced', () => {
 });
 ```
 
-- [ ] **Step 2: Run it and confirm it fails.** Run `npx vitest run src/test/guards/societyEventsStayReduced.test.ts`. Expected: FAIL; it lists `src/api/eventRsvp.ts` and `src/services/eventReminders/sync.ts`.
+- [ ] **Step 2: Run it and confirm it fails.** Run `npx vitest run src/test/guards/societyEventsStayReduced.test.ts`. Expected: FAIL; it lists `src/api/eventRsvp.ts` and `src/services/eventReminders/sync.ts`. The patterns match comments too, so reword any leftover doc comment that names a removed call rather than weakening the guard.
 
 - [ ] **Step 3: Make the deletions and modifications listed above.** Work in this order, so the tree compiles at the end: card and list first, then slices and boot, calendar, admin, guards and privacy, and i18n last.
 
@@ -973,6 +981,7 @@ describe('retireSocietyFeatures', () => {
       ['event_rsvps_mine', {}],
       ['seen_deadline_alerts', ['a']],
       ['read_notifications', ['b']],
+      ['notifications_cache', [{ id: 'x' }]],
     ]);
     stores.custom_events = new Map<string, unknown>([
       ['rsvp:123', {}],
@@ -988,6 +997,7 @@ describe('retireSocietyFeatures', () => {
     expect(stores.meta!.has('event_rsvps_mine')).toBe(false);
     expect(stores.meta!.get('seen_deadline_alerts')).toEqual(['a']);
     expect(stores.meta!.get('read_notifications')).toEqual(['b']);
+    expect(stores.meta!.has('notifications_cache')).toBe(false);
     expect(clear).toHaveBeenCalledOnce();
     await retireSocietyFeatures({ clearScheduledNotifications: clear });
     expect(clear).toHaveBeenCalledOnce();
@@ -1017,8 +1027,7 @@ import { logError } from '../../utils/reportError';
  * 2026-10-08). Without it an answered event stays in the timetable as a block
  * nothing can remove (the card's toggle is gone), and 5.3.0's 2-hour reminders
  * still fire. Runs once; a failure leaves it unmarked so the next boot retries.
- * `seen_deadline_alerts`, `read_notifications` and `notifications_cache` are
- * Novinky's and stay.
+ * `seen_deadline_alerts` and `read_notifications` are Novinky's and stay.
  */
 const DONE_KEY = 'retired_society_features_v1';
 const RSVP_BLOCK_PREFIX = 'rsvp:';
@@ -1030,6 +1039,10 @@ const RETIRED_META_KEYS = [
   'reis_muted_associations',
   'reis_notify_prefs',
   'reis_notify_asked',
+  // Old builds cached the unfiltered 14-day feed with no `subscribersOnly`,
+  // which would read as public and show ESN's restricted rows to everyone
+  // until the first fetch lands (or all session, offline).
+  'notifications_cache',
 ];
 const RETIRED_CHANNELS = ['reis-event-reminders', 'reis-society-digest'];
 
@@ -1344,7 +1357,7 @@ export async function trackEventSignal(eventId: string, signal: EventSignal): Pr
   - Add `src/api/eventSignals.ts` to `SUPABASE_CALLERS` in `noStudentDataLeaves.test.ts`. Use the justification: "Event id only, no identifier; once per device recorded locally (spec 2026-10-08). Replaces increment_event_map_view."
   - Remove the `increment_event_map_view` note from the `featureUsage.ts` entry.
   - Add `'src/api/eventSignals.ts'` to the guard's Firefox-consent gated list.
-  - If the checker requires one flow per call, keep a single flow and put both policy rows in it.
+  - Two flows sharing one call is valid: `scripts/privacy/check.ts` compares calls as a set (line 78). `eventSignalsAdmin.ts` uses `adminAuthClient`, and admin readers such as `featureStats.ts` are not in `SUPABASE_CALLERS`, so it needs only the EXEMPT entry (Task 14).
   - Run `npm run privacy:generate`, then `npx vitest run scripts/lib/__tests__/privacyDisclosures.test.ts src/test/guards/noStudentDataLeaves.test.ts src/api`. Expected: PASS.
 
 - [ ] **Step 6: Commit.**
