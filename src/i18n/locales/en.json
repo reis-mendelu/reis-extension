@@ -689,6 +689,11 @@
     "macApp": {
       "button": "Save eduroam profile",
       "installStep": "Save the file, then open it — macOS installs the profile in System Settings. Use the password from step one when it asks."
+    },
+    "network": {
+      "offline": "You're offline. Any internet connection will do for setting up eduroam — mobile data is fine, no Wi‑Fi needed.",
+      "unreachable": "Couldn't reach IS. Check your internet — mobile data is fine — and try again.",
+      "desktop": "Couldn't reach IS. Check your internet connection and try again."
     }
   },
   "erasmus": {

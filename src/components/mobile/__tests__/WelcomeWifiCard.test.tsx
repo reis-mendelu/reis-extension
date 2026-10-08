@@ -128,4 +128,61 @@ describe('WelcomeWifiCard', () => {
       expect(screen.queryByText(/Zapomenout tuto síť/)).not.toBeInTheDocument();
     });
   });
+
+  /**
+   * Being off Wi‑Fi is fine — setup only needs internet, and mobile data is
+   * enough. No connection at all is the case that needs saying, in words, not
+   * as the generic "Nepovedlo se".
+   */
+  describe('without a network', () => {
+    it('says the student is offline and that mobile data will do', () => {
+      renderCard({ status: 'error', networkFailure: 'offline', offline: true });
+
+      expect(screen.getByText(/Jsi offline/)).toHaveTextContent(/mobilní data/);
+      expect(screen.queryByText(/Nepovedlo se/)).not.toBeInTheDocument();
+    });
+
+    // Said before the tap: a student who opens reIS for the first time
+    // without a connection should not have to fail once to find out.
+    it('says so before any tap when the device is already offline', () => {
+      renderCard({ status: 'idle', offline: true });
+
+      expect(screen.getByText(/Jsi offline/)).toBeInTheDocument();
+      expect(screen.queryByText(/Školní Wi-Fi jedním klepnutím/)).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Nastavit eduroam/ })).toBeInTheDocument();
+    });
+
+    // The connection came back: the last tap's "offline" is no longer true,
+    // so the card offers the setup again rather than a failure.
+    it('goes back to the offer once the connection returns', () => {
+      renderCard({ status: 'error', networkFailure: 'offline', offline: false });
+
+      expect(screen.getByText(/Školní Wi-Fi jedním klepnutím/)).toBeInTheDocument();
+      expect(screen.queryByText(/Jsi offline/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Nepovedlo se/)).not.toBeInTheDocument();
+    });
+
+    // One message at a time: the spinner already says what is happening, and
+    // the run itself reports the offline failure when it lands.
+    it('does not contradict a tap that is in flight', () => {
+      renderCard({ status: 'working', offline: true });
+
+      expect(screen.queryByText(/Jsi offline/)).not.toBeInTheDocument();
+      expect(screen.getByText('Otevírám nastavení Wi-Fi…')).toBeInTheDocument();
+    });
+
+    it('does not cover a finished setup', () => {
+      renderCard({ status: 'done', outcome: 'saved', offline: true });
+
+      expect(screen.getByText(/Hotovo/)).toBeInTheDocument();
+      expect(screen.queryByText(/Jsi offline/)).not.toBeInTheDocument();
+    });
+
+    it('hedges when the device thinks it is online but IS never answered', () => {
+      renderCard({ status: 'error', networkFailure: 'unreachable' });
+
+      expect(screen.getByText(/Nepodařilo se spojit s IS/)).toBeInTheDocument();
+      expect(screen.queryByText(/Jsi offline/)).not.toBeInTheDocument();
+    });
+  });
 });

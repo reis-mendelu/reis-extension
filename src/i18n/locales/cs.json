@@ -689,6 +689,11 @@
     "macApp": {
       "button": "Uložit eduroam profil",
       "installStep": "Ulož soubor a pak ho otevři — macOS profil nainstaluje v Nastavení systému. Při instalaci zadej heslo z prvního kroku."
+    },
+    "network": {
+      "offline": "Jsi offline. K nastavení eduroamu stačí jakýkoli internet — klidně mobilní data, Wi‑Fi není potřeba.",
+      "unreachable": "Nepodařilo se spojit s IS. Zkontroluj internet — mobilní data stačí — a zkus to znovu.",
+      "desktop": "Nepodařilo se spojit s IS. Zkontroluj připojení k internetu a zkus to znovu."
     }
   },
   "erasmus": {
