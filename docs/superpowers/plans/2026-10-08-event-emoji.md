@@ -397,8 +397,10 @@ In `src/components/CampusMap/mapLayers.ts`, replace the `attribution:` value:
 
 ```ts
     attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Emoji: <a href="https://github.com/jdecked/twemoji">Twemoji</a>, CC BY 4.0',
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Emoji: Twemoji, CC BY 4.0',
 ```
+
+Plain text, not a link: `noStudentDataLeaves.test.ts` treats every host in source as an outbound destination, and a credit needs no second one.
 
 - [ ] **Step 10: Add the picker strings**
 

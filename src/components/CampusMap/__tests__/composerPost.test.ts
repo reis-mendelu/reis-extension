@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toPatch, latestCategory } from '../composerPost';
+import { toPatch, latestEmoji } from '../composerPost';
 import type { PostInput } from '../../../api/societyPosts';
 
 const input: PostInput = {
@@ -53,18 +53,15 @@ describe('toPatch', () => {
   });
 });
 
-describe('latestCategory', () => {
-  it('is the category of the latest-dated post, whatever the order', () => {
+describe('latestEmoji', () => {
+  it("starts on the latest-dated event's emoji", () =>
     expect(
-      latestCategory([
-        { date: '2026-07-20', category: 'quiz' },
-        { date: '2026-07-01', category: 'party' },
+      latestEmoji([
+        { date: '2026-07-01', category: 'party', emoji: '1f389' },
+        { date: '2026-07-20', category: 'boardgames', emoji: '265f' },
       ])
-    ).toBe('quiz');
-  });
-
-  it('is null for a society with no posts, or an unknown category', () => {
-    expect(latestCategory([])).toBeNull();
-    expect(latestCategory([{ date: '2026-07-01', category: 'rave' }])).toBeNull();
-  });
+    ).toBe('265f'));
+  it("falls back to that event's category emoji", () =>
+    expect(latestEmoji([{ date: '2026-07-20', category: 'quiz', emoji: null }])).toBe('1f9e0'));
+  it('is null for a society that never posted', () => expect(latestEmoji([])).toBeNull());
 });

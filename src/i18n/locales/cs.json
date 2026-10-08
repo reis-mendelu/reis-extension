@@ -976,7 +976,6 @@
     "edit": "Upravit",
     "delete": "Smazat",
     "deleteConfirm": "Opravdu smazat?",
-    "categoryLabel": "Typ akce",
     "emojiPickerLabel": "Obrázek akce",
     "emojiChange": "Změnit obrázek",
     "emojiGroup": {
@@ -987,18 +986,6 @@
       "season": "Svátky",
       "travel": "Výlety",
       "other": "Ostatní"
-    },
-    "category": {
-      "party": "Párty",
-      "boardgames": "Deskovky",
-      "trip": "Výlet",
-      "quiz": "Kvíz",
-      "sports": "Sport",
-      "film": "Film",
-      "karaoke": "Karaoke",
-      "culture": "Kultura",
-      "social": "Společenská akce",
-      "other": "Akce"
     },
     "studyRooms": "Studovny",
     "finished": "proběhlo",

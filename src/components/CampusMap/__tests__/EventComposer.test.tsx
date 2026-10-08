@@ -132,7 +132,7 @@ describe('EventComposer publish', () => {
     expect(createPost.mock.calls[0][0].time).toBe('19:30');
   });
 
-  it('publishes with the category chosen in the picker (not hardcoded party)', async () => {
+  it('publishes with the emoji chosen in the picker (not hardcoded party)', async () => {
     useAppStore.setState({ draftCoord: [16.61, 49.21] });
     render(<EventComposer onDone={() => {}} />);
     fireEvent.change(screen.getByPlaceholderText('Název akce'), {
@@ -142,11 +142,12 @@ describe('EventComposer publish', () => {
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     // A start time is required now, so every publish path sets one.
     fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
-    // Pick the "Kvíz" (quiz) category instead of leaving the default party.
+    // Open the picker and choose the quiz emoji instead of the default party.
+    fireEvent.click(screen.getByRole('button', { name: /Párty/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Kvíz' }));
     fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
     await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
-    expect(createPost.mock.calls[0][0].category).toBe('quiz');
+    expect(createPost.mock.calls[0][0]).toMatchObject({ emoji: '1f9e0', category: 'quiz' });
   });
 
   it('preserves venue_kind=campus and room_code when editing a campus event', async () => {
@@ -604,25 +605,25 @@ describe('EventComposer — a description', () => {
   });
 });
 
-describe('EventComposer — the category a society usually picks', () => {
-  it('starts on the category of the society’s latest event', async () => {
+describe('EventComposer — the picture a society usually picks', () => {
+  it('starts on the emoji of the society’s latest event', () => {
     useAppStore.setState({
       draftCoord: [16.61, 49.21],
       societyPosts: [
-        { id: 'p1', date: '2026-07-01', category: 'party' },
-        { id: 'p2', date: '2026-07-20', category: 'boardgames' },
+        { id: 'p1', date: '2026-07-01', category: 'party', emoji: null },
+        { id: 'p2', date: '2026-07-20', category: 'boardgames', emoji: null },
       ],
     } as never);
     render(<EventComposer onDone={() => {}} />);
-    expect(screen.getByRole('button', { name: 'Deskovky' })).toHaveAttribute(
-      'aria-pressed',
-      'true'
+    expect(screen.getByRole('button', { name: /Deskovky/ })).toHaveAttribute(
+      'aria-expanded',
+      'false'
     );
   });
 
   it('starts on Párty for a society that has never posted', () => {
     render(<EventComposer onDone={() => {}} />);
-    expect(screen.getByRole('button', { name: 'Párty' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /Párty/ })).toBeInTheDocument();
   });
 });
 

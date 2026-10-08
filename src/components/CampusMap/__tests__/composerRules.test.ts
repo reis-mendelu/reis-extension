@@ -4,7 +4,7 @@ import { isComposerReady, deriveVenue, buildPostInput } from '../composerRules';
 const draft = {
   title: 'Pub Quiz',
   description: '',
-  category: 'quiz' as const,
+  emoji: '1f3d3',
   date: '2026-10-13',
   endDate: '',
   time: '',
@@ -39,6 +39,12 @@ describe('composerRules', () => {
     expect(deriveVenue({ code: 'Q01' }, [16, 49])).toBe('campus');
     expect(deriveVenue(null, [16, 49])).toBe('offcampus');
     expect(deriveVenue(null, null)).toBe('tba');
+  });
+
+  it('files the event under the category its emoji maps to', () => {
+    const input = buildPostInput({ ...draft, emoji: '26f8' });
+    expect(input.emoji).toBe('26f8');
+    expect(input.category).toBe('sports');
   });
 
   it('builds a tba input with nulls, and end date only when set', () => {

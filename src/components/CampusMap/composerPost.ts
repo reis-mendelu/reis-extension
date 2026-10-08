@@ -1,7 +1,7 @@
 import type { PostInput } from '../../api/societyPosts';
 import type { EventCategory, MapEvent } from '../../types/events';
 import type { RoomIndexEntry } from '../../types/campusMap';
-import { EVENT_CATEGORIES } from '../../data/eventCategories';
+import { eventEmojiCode } from '../../data/eventEmoji';
 import { roomCodeToName } from './mapHelpers';
 
 export type Room = { code: string; name: string; coord: [number, number] };
@@ -61,18 +61,18 @@ export function toPatch(input: PostInput) {
 }
 
 /**
- * The category of the society's latest-dated event: what a new one starts on,
- * since most societies run one kind of thing (Deskovky, a quiz night). Null for
- * a first event, or a stored value this build does not know.
+ * The emoji of the society's latest-dated event: what a new one starts on,
+ * since most societies run one kind of thing (Deskovky, a quiz night). Its
+ * category's emoji when that event has none; null for a first event.
  */
-export function latestCategory(
-  posts: ReadonlyArray<{ date: string; category: string }>
-): EventCategory | null {
-  const latest = posts.reduce<{ date: string; category: string } | null>(
+export function latestEmoji(
+  posts: ReadonlyArray<{ date: string; category: string; emoji?: string | null }>
+): string | null {
+  const latest = posts.reduce<(typeof posts)[number] | null>(
     (best, p) => (!best || p.date > best.date ? p : best),
     null
   );
-  return latest && (EVENT_CATEGORIES as readonly string[]).includes(latest.category)
-    ? (latest.category as EventCategory)
+  return latest
+    ? eventEmojiCode({ emoji: latest.emoji, category: latest.category as EventCategory })
     : null;
 }

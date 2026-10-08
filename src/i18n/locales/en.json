@@ -976,7 +976,6 @@
     "edit": "Edit",
     "delete": "Delete",
     "deleteConfirm": "Delete for good?",
-    "categoryLabel": "Event type",
     "emojiPickerLabel": "Event picture",
     "emojiChange": "Change picture",
     "emojiGroup": {
@@ -987,18 +986,6 @@
       "season": "Holidays",
       "travel": "Trips",
       "other": "Other"
-    },
-    "category": {
-      "party": "Party",
-      "boardgames": "Board games",
-      "trip": "Trip",
-      "quiz": "Quiz",
-      "sports": "Sports",
-      "film": "Film",
-      "karaoke": "Karaoke",
-      "culture": "Culture",
-      "social": "Social",
-      "other": "Event"
     },
     "studyRooms": "Study rooms",
     "finished": "finished",

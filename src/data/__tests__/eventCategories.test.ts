@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CATEGORY_ICON, CATEGORY_COLOR } from '../eventCategories';
+import { CATEGORY_COLOR } from '../eventCategories';
 import type { EventCategory } from '../../types/events';
 
 const ALL_CATEGORIES: EventCategory[] = [
@@ -16,9 +16,8 @@ const ALL_CATEGORIES: EventCategory[] = [
 ];
 
 describe('category maps', () => {
-  it('have a lucide icon and a vivid colour for every category', () => {
+  it('have a vivid colour for every category', () => {
     for (const c of ALL_CATEGORIES) {
-      expect(CATEGORY_ICON[c]).toBeTruthy();
       expect(CATEGORY_COLOR[c]).toMatch(/^#[0-9a-f]{6}$/i);
     }
   });
