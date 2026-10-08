@@ -2,6 +2,9 @@ import { useEffect, useRef } from 'react';
 import type { SpolekNotification } from '../services/spolky';
 import { openExternal } from '../mobile/openExternal';
 import { useAppStore } from '../store/useAppStore';
+import { eventDirectLink } from '../components/CampusMap/eventLinks';
+import { resolveSociety } from '../utils/societies/resolveSociety';
+import { trackEventSignal } from '../api/eventSignals';
 
 /**
  * What tapping a notification does, for BOTH trees — the phone's Novinky sheet
@@ -16,8 +19,10 @@ import { useAppStore } from '../store/useAppStore';
  *
  * The row's id is the map event's id (one `spolky_events` id space, mapped by
  * `toMapEvent`), so `focusEventById` opens the same EventDetailCard a pin does,
- * with the venue, the RSVP and the event's own URL on it. `showMap` is the only
- * part that differs per tree: a mobile tab on the phone, a view in the extension.
+ * with the venue and the event's own URL on it — unless that card would add
+ * nothing to the row (eventDirectLink), and then the tap goes to its link, as
+ * the map list's row does. `showMap` is the only part that differs per tree: a
+ * mobile tab on the phone, a view in the extension.
  *
  * The card has priority; the link is the fallback for rows with no event
  * (academic deadlines). A notification with neither a link nor a matching
@@ -113,9 +118,18 @@ export function useOpenNotification({
       if (!mapEventsLoaded) await loadMapEvents();
       if (activationRef.current !== activation) return;
       // The CARD first, even when the event has a URL: the card carries the
-      // venue and the details, and the URL is its button. Opening it here
-      // counts as Opened (focusEventById), the same number a pin tap gives.
-      if (useAppStore.getState().mapEvents.some((e) => e.id === n.id)) {
+      // venue, the time and the description, and the URL is its button.
+      // Opening it here counts as Opened (focusEventById), the same number a
+      // pin tap gives. A card with none of those is only the button, so the
+      // tap is the button, and counts as Link.
+      const { mapEvents: events, societies } = useAppStore.getState();
+      const event = events.find((e) => e.id === n.id);
+      if (event) {
+        const direct = eventDirectLink(event, resolveSociety(societies, event.societyId));
+        if (direct) {
+          void trackEventSignal(event.id, 'link');
+          return openLink(direct.href);
+        }
         focusEventById(n.id, { fly: true });
         showMap();
         onClose();

@@ -17,3 +17,36 @@ export function eventDetailsLink(
     return { href: `https://www.instagram.com/${society.instagram}/`, kind: 'instagram' };
   return null;
 }
+
+/**
+ * Whether the detail card would tell the student anything the list row does
+ * not: the row already shows the title, the date and a named place.
+ */
+export function eventHasDetails(
+  event: Pick<MapEvent, 'description' | 'time' | 'location' | 'coord' | 'roomCode' | 'venueKind'>
+): boolean {
+  return (
+    !!event.description?.trim() ||
+    !!event.time?.trim() ||
+    !!event.location?.trim() ||
+    !!event.coord ||
+    !!event.roomCode ||
+    event.venueKind !== 'tba'
+  );
+}
+
+/**
+ * Where tapping the event goes INSTEAD of its card, or null to open the card.
+ * An event with no details had a card that repeated the row and held one
+ * button, so the tap goes to that button's link (spec 2026-10-08). With no
+ * link either, the card stays: a tap must still go somewhere.
+ */
+export function eventDirectLink(
+  event: Pick<
+    MapEvent,
+    'url' | 'description' | 'time' | 'location' | 'coord' | 'roomCode' | 'venueKind'
+  >,
+  society: Pick<Society, 'instagram'>
+): { href: string; kind: 'event' | 'instagram' } | null {
+  return eventHasDetails(event) ? null : eventDetailsLink(event, society);
+}
