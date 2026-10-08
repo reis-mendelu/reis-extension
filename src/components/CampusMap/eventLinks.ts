@@ -20,12 +20,17 @@ export function eventDetailsLink(
 
 /**
  * Whether the detail card would tell the student anything the list row does
- * not: the row already shows the title, the date and a named place.
+ * not: the row already shows the title, the date and a named place. A span is
+ * a detail: an upcoming trip's row shows only its first day.
  */
 export function eventHasDetails(
-  event: Pick<MapEvent, 'description' | 'time' | 'location' | 'coord' | 'roomCode' | 'venueKind'>
+  event: Pick<
+    MapEvent,
+    'date' | 'endDate' | 'description' | 'time' | 'location' | 'coord' | 'roomCode' | 'venueKind'
+  >
 ): boolean {
   return (
+    (!!event.endDate && event.endDate > event.date) ||
     !!event.description?.trim() ||
     !!event.time?.trim() ||
     !!event.location?.trim() ||
@@ -44,7 +49,15 @@ export function eventHasDetails(
 export function eventDirectLink(
   event: Pick<
     MapEvent,
-    'url' | 'description' | 'time' | 'location' | 'coord' | 'roomCode' | 'venueKind'
+    | 'url'
+    | 'date'
+    | 'endDate'
+    | 'description'
+    | 'time'
+    | 'location'
+    | 'coord'
+    | 'roomCode'
+    | 'venueKind'
   >,
   society: Pick<Society, 'instagram'>
 ): { href: string; kind: 'event' | 'instagram' } | null {
