@@ -138,9 +138,9 @@ update. So:
 
 ### 5. Counters and the three numbers (server and admin)
 - **New migration `20261009120000_event_signals.sql`:**
-  - `event_map_views` gains `seen int not null default 0` and `link_taps int not null default 0`. It stays per event and per day, with no identifier; `views` keeps meaning Opened.
-  - `increment_event_signal(row_id uuid, signal text)`: a SECURITY DEFINER function granted to anon. `signal` is `'seen'` or `'link'`. The server stamps the date. `increment_event_map_view` stays for old builds.
-  - `event_signals(p_event_ids uuid[])` returns `(event_id, seen, opened, link_taps)` totals. It is allowed for reis_admin, or for an association reading its own events. Add it to `READ_ONLY_SUPABASE_RPCS`.
+  - `event_map_views` gains `seen`, `opened` and `link_taps` (each `int not null default 0`). It stays per event and per day, with no identifier. `views` remains only for old builds' once-per-session opens, and nothing displays it. Reusing it would mix the two units.
+  - `increment_event_signal(row_id uuid, signal text)`: a SECURITY DEFINER function granted to anon. `signal` is `'seen'`, `'opened'` or `'link'`. The server stamps the date. `increment_event_map_view` stays for old builds.
+  - `event_signals(p_event_ids uuid[])` returns `(event_id, seen, opened, link_taps)` totals, taken from the new columns only. It is allowed for reis_admin, or for an association reading its own events. Add it to `READ_ONLY_SUPABASE_RPCS`.
   - Dry-run in a self-unwinding `DO` block. Apply by hand before the client ships.
 - **Client:**
   - `api/featureUsage.ts` gains `trackEventSignal(id, 'seen' | 'link')`, gated on consent and demo mode like `trackMapEventView`.
@@ -150,7 +150,7 @@ update. So:
   - `eventLinks` / `EventDetailCard` fire Link on a tap of the link button.
   - **Opened fires when the card opens** (on the selection), not from the pin and row click handlers. Otherwise opens from the peek band and from deep links go uncounted.
   - On the phone, Seen fires only while the Map tab is actually visible.
-  - All three count once per device. Events that already exist still carry opens from before this change (`views`), and their Seen starts at 0. The admin row says "od {date of release}" until the semester rolls over.
+  - All three count once per device and start at 0 on release day. The admin row says "od {date}" so that a low number on an older event isn't misread.
 - **Admin:**
   - `AdminConsole/EventStats.tsx` shows Seen · Opened · Link tapped, updates `EventStatsNote`, and drops views, clicks and interest.
   - `store/slices/admin/loadSocietyPosts.ts` replaces `fetchEventRsvps` with `fetchEventSignals`.
