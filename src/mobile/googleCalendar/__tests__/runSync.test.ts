@@ -19,6 +19,7 @@ function fakeApi(opts: { found?: string | null; gone?: boolean } = {}) {
   const store = (d: DesiredEvent) =>
     events.set(d.id, { id: d.id, kind: d.kind, date: d.date, hash: d.hash, cancelled: false });
   const api: CalendarApi = {
+    deleteCalendar: async () => {},
     findReisCalendar: async () => opts.found ?? null,
     createCalendar: async () => {
       log.push('create');

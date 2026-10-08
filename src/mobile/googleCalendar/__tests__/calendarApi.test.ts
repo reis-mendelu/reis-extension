@@ -129,6 +129,13 @@ describe('calendarApi', () => {
     expect(calls[0]!.url).toContain('timeMin=');
     expect(calls[1]!.url).toContain('pageToken=p2');
   });
+  it('deletes the whole calendar, treating 404/410 as already gone', async () => {
+    const { a, calls } = api([{ status: 204 }, { status: 404 }]);
+    await a.deleteCalendar('cal');
+    await expect(a.deleteCalendar('cal')).resolves.toBeUndefined();
+    expect(calls[0]).toMatchObject({ method: 'DELETE' });
+    expect(calls[0]!.url).toMatch(/\/calendars\/cal$/);
+  });
   it('treats 404 and 410 on delete as already gone', async () => {
     const { a } = api([{ status: 410 }]);
     await expect(a.remove('cal', 'lx')).resolves.toBeUndefined();

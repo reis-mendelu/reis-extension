@@ -11,6 +11,7 @@ import { installMobileActionHandler } from '@/mobile/actionHandler';
 import { installExternalLinkHandler } from '@/mobile/openExternal';
 import { installReminderTapHandler } from '@/mobile/reminderTap';
 import { installCalendarResumeReset } from '@/mobile/calendarResume';
+import { installGoogleCalendarSync } from '@/mobile/googleCalendar/installGoogleCalendarSync';
 import { readNotificationPermission } from '@/services/eventReminders/sync';
 import { promptSessionRecovery } from '@/mobile/sessionRecovery';
 import { setSessionExpiredHandler } from '@/services/sessionExpiry';
@@ -106,6 +107,10 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // Before the demo return: the reviewer's calendar goes back to today on a
   // reopen too. Nothing above sets the calendar's day, so nothing races it.
   installCalendarResumeReset();
+  // Beside it, for the same reason: a resume is one of its triggers. It shows
+  // the Profil row's state and syncs "Rozvrh" while the app is open; in demo
+  // mode the sync itself returns early, so nothing is written.
+  installGoogleCalendarSync();
 
   // Once at boot, beside the tap handler: the soft-ask card and the Profile
   // switches read `notifyPermission` to decide what to show, and nothing else
