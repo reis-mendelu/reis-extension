@@ -118,7 +118,7 @@ update. So:
   - `createMapSlice.reloadMapEvents`: remove `loadRsvps`
 - **One-time device cleanup**, new `src/services/cleanup/retireSocietyFeatures.ts`, run once at boot, idempotent, logged via `logError`:
   - delete custom events whose id starts with `rsvp:`. Without this they become orphan blocks that nothing can remove, because the card toggle is gone.
-  - delete the IndexedDB `meta` keys `event_rsvps_mine`, `reis_subscribed_associations`, `reis_associations_chosen`, `reis_erasmus_auto_subscribed`, `reis_muted_associations`, `reis_notify_prefs`, `reis_notify_asked` and `viewed_notifications_analytics`. Novinky's dedupe moves to `event_seen_ids`.
+  - delete the IndexedDB `meta` keys `event_rsvps_mine`, `reis_subscribed_associations`, `reis_associations_chosen`, `reis_erasmus_auto_subscribed`, `reis_muted_associations`, `reis_notify_prefs`, `reis_notify_asked` and `viewed_notifications_analytics`. Novinky's dedupe moves to `event_signal_sent`.
   - Capacitor only: `LocalNotifications.cancel` on every pending notification, and `deleteChannel` for `reis-event-reminders` and `reis-society-digest`, so Android settings no longer list them.
   - Keep `seen_deadline_alerts`, because deadline badges depend on it.
 - `@capacitor/local-notifications` and Android `POST_NOTIFICATIONS` stay for this one release, because the cleanup needs them. Remove them in the next release, together with the permission entry in the disclosures.
@@ -144,13 +144,13 @@ update. So:
   - Dry-run in a self-unwinding `DO` block. Apply by hand before the client ships.
 - **Client:**
   - `api/featureUsage.ts` gains `trackEventSignal(id, 'seen' | 'link')`, gated on consent and demo mode like `trackMapEventView`.
-  - "Seen" is deduplicated per device in IndexedDB (`event_seen_ids`). Opened stays once per session.
+  - All three signals are deduplicated per device and per event in IndexedDB (`event_signal_sent`). Opened changes from once per session to once per device.
   - `EventRow` / `MapEventsSection` and `MapSheetPeek` fire Seen when the element is at least 50% visible (IntersectionObserver, as `NotificationItem` does today).
   - `EventLayer` fires Seen for pins inside the map bounds while the map is visible in campus overview.
   - `eventLinks` / `EventDetailCard` fire Link on a tap of the link button.
   - **Opened fires when the card opens** (on the selection), not from the pin and row click handlers. Otherwise opens from the peek band and from deep links go uncounted.
   - On the phone, Seen fires only while the Map tab is actually visible.
-  - The three numbers need one unit. Today Seen is once per device and Opened is once per session, so Opened could exceed Seen. Events already live would also show Seen 0 next to their historical opens. See the open questions.
+  - All three count once per device. Events that already exist still carry opens from before this change (`views`), and their Seen starts at 0. The admin row says "od {date of release}" until the semester rolls over.
 - **Admin:**
   - `AdminConsole/EventStats.tsx` shows Seen · Opened · Link tapped, updates `EventStatsNote`, and drops views, clicks and interest.
   - `store/slices/admin/loadSocietyPosts.ts` replaces `fetchEventRsvps` with `fetchEventSignals`.
@@ -227,5 +227,5 @@ Events dated from 29 Sep on, while both counters were live:
 ## Open questions
 
 1. ~~Novinky~~: decided 2026-10-08. Keep it, limited to 7 days and filtered by audience.
-2. The counter unit: once per device for all three numbers, or once per session for all three?
-3. Remove the reis_admin "top events" block in FeatureSignals, now that every event carries its own numbers?
+2. ~~The counter unit~~: decided. All three numbers count once per device per event, deduplicated locally in IndexedDB (`event_signal_sent`). The server still receives no identifier.
+3. ~~The top events block~~: decided. Remove the "top events" block from `AdminConsole/FeatureSignals.tsx`. The `feature_stats` RPC stays, because it is admin-only and still serves the feature counters.
