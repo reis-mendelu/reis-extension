@@ -849,3 +849,34 @@ describe('EventComposer — reIS cannot restrict', () => {
     expect(updatePost.mock.calls[0][1].subscribers_only).toBe(false);
   });
 });
+
+describe('EventComposer — a society the catalog does not know', () => {
+  it('keeps a stored restriction rather than clearing it blind', async () => {
+    const row = {
+      id: 'g1',
+      title: 'Ghost event',
+      url: '',
+      date: '2026-07-08',
+      endDate: null,
+      time: '19:30',
+      location: null,
+      imageUrl: null,
+      organizerKey: 'pef',
+      societyId: 'ghost',
+      coord: [16.614, 49.209] as [number, number],
+      roomCode: 'BA39N6006',
+      venueKind: 'campus' as const,
+      category: 'quiz' as const,
+      subscribersOnly: true,
+    };
+    useAppStore.setState({
+      adminActiveAssociationId: 'ghost',
+      editEventId: 'g1',
+      societyMapEvents: [row],
+    } as never);
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
+    await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
+    expect(updatePost.mock.calls[0][1].subscribers_only).toBe(true);
+  });
+});

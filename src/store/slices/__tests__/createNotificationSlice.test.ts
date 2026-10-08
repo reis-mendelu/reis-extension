@@ -177,3 +177,19 @@ describe('createNotificationSlice: marking read before the saved set is back', (
     );
   });
 });
+
+describe('createNotificationSlice: marking read when the disk read fails', () => {
+  it('still marks in memory instead of leaving the badge stuck', async () => {
+    let state: NotificationSlice;
+    const set = vi.fn((updater: unknown) => {
+      const patch = typeof updater === 'function' ? updater(state) : updater;
+      state = { ...state, ...patch };
+    }) as Mock & Parameters<typeof createNotificationSlice>[0];
+    const get = vi.fn(() => state) as unknown as Parameters<typeof createNotificationSlice>[1];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    state = createNotificationSlice(set, get, {} as any);
+    vi.mocked(IndexedDBService.get).mockRejectedValueOnce(new Error('idb'));
+    await expect(state.markNotificationsRead(['n1'])).resolves.toBeUndefined();
+    expect(state.notifications.readIds.has('n1')).toBe(true);
+  });
+});

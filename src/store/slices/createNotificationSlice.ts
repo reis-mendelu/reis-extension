@@ -79,8 +79,10 @@ export const createNotificationSlice: AppSlice<NotificationSlice> = (set, get) =
     // marks as soon as its list fills, which a fast fetch can do before
     // loadNotificationState has restored the saved set — and writing only the
     // in-memory one would erase the read history.
-    const saved = (await IndexedDBService.get('meta', 'read_notifications')) as
-      string[] | undefined;
+    // A failed disk read falls back to memory: marking must never depend on it.
+    const saved = (await IndexedDBService.get('meta', 'read_notifications').catch(
+      () => undefined
+    )) as string[] | undefined;
     const next = new Set([...(saved ?? []), ...get().notifications.readIds, ...ids]);
 
     set((state) => ({
