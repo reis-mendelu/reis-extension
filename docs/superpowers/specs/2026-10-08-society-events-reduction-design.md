@@ -38,7 +38,7 @@ Production numbers, 2026-10-08:
 | reIS (`mendelu`, no label) | everyone, because it cannot be restricted |
 
 - A student sees every audience they belong to, so an Erasmus student at PEF sees both ESN and SU PEF.
-- If the faculty is unknown, the student sees public events only.
+- If the faculty is unknown, faculty-restricted events stay hidden; ESN's still show to an Erasmus student (that audience needs only Erasmus status).
 - While impersonating, the impersonated student's `selection.faculty` is used in place of the admin's own. Erasmus status is false, because the picker cannot impersonate an Erasmus student.
 
 **Admin:**
@@ -143,7 +143,7 @@ update. So:
   - `event_signals(p_event_ids uuid[])` returns `(event_id, seen, opened, link_taps)` totals, taken from the new columns only. It is allowed for reis_admin, or for an association reading its own events. Add it to `READ_ONLY_SUPABASE_RPCS`.
   - Dry-run in a self-unwinding `DO` block. Apply by hand before the client ships.
 - **Client:**
-  - `api/featureUsage.ts` gains `trackEventSignal(id, 'seen' | 'link')`, gated on consent and demo mode like `trackMapEventView`.
+  - A new `api/eventSignals.ts` exports `trackEventSignal(id, 'seen' | 'opened' | 'link')`, gated on consent and demo mode; `trackMapEventView` is removed from `api/featureUsage.ts`.
   - All three signals are deduplicated per device and per event in IndexedDB (`event_signal_sent`). Opened changes from once per session to once per device.
   - `EventRow` / `MapEventsSection` and `MapSheetPeek` fire Seen when the element is at least 50% visible (IntersectionObserver, as `NotificationItem` does today).
   - `EventLayer` fires Seen for pins inside the map bounds while the map is visible in campus overview.

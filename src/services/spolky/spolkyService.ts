@@ -161,13 +161,15 @@ export function dropPastEvents(
  * older). Their rows carry no `subscribersOnly`, which would read as public and
  * put ESN's Erasmus-only events in every student's Novinky until the first
  * fetch lands — or for the whole session, offline. Only an old build writes a
- * society row without the key; reIS's own rows (no society) stay.
+ * society row without the key; reIS's own rows (no society, or `reis`) stay.
  */
 export function dropPreAudienceRows(notifications: SpolekNotification[]): SpolekNotification[] {
   return notifications.filter(
     (n) =>
       !n.associationId ||
       n.associationId === 'admin' ||
+      // reIS's own events are university-wide whatever the row says.
+      n.associationId === 'reis' ||
       n.associationId.startsWith('academic_') ||
       'subscribersOnly' in n
   );

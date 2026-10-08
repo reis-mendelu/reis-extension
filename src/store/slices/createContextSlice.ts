@@ -1,5 +1,5 @@
 import type { ContextSlice, AppSlice } from '../types';
-import { getUserParams } from '../../utils/userParams';
+import { getUserParams, isIdentityConfirmed } from '../../utils/userParams';
 import { IndexedDBService } from '../../services/storage';
 import { logError } from '../../utils/reportError';
 
@@ -24,13 +24,14 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
     // way to restore. Same shape as trackDailyUsage's guard.
     if (get().demoMode) return;
 
+    // Cold start on Capacitor: getUserParams can lose the race with session
+    // restore and return nothing, which would leave the event audience
+    // unknown (public events only) for the whole session. Follows used to be
+    // persisted, which hid this; the remembered audience replaces them. An
+    // identity switch wipes IndexedDB (watchSignedInStudent), so this is never
+    // another student's. Its own try: a failed cache read must not stop the
+    // IS read below.
     try {
-      // Cold start on Capacitor: getUserParams can lose the race with session
-      // restore and return nothing, which would leave the event audience
-      // unknown (public events only) for the whole session. Follows used to be
-      // persisted, which hid this; the remembered audience replaces them. An
-      // identity switch wipes IndexedDB (watchSignedInStudent), so this is
-      // never another student's.
       if (get().userFaculty === null) {
         const cached = (await IndexedDBService.get('meta', VIEWER_KEY)) as
           { faculty: string | null; erasmus: boolean } | undefined;
@@ -38,7 +39,11 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
           set({ userFaculty: cached.faculty, isErasmus: cached.erasmus });
         }
       }
+    } catch (err) {
+      logError('ContextSlice.loadContext.cache', err);
+    }
 
+    try {
       const params = await getUserParams();
       if (params) {
         set({
@@ -52,8 +57,9 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
           isErasmus: params.isErasmus,
           fullName: params.fullName ?? null,
           userEmail: params.email ?? null,
-          // Answered by IS this session: later re-asks (sync, resume) are free.
-          ...(params.facultyLabel ? { contextResolved: true } : {}),
+          // Answered by IS this session (not a persisted record from an earlier
+          // one): later re-asks (sync, resume) are free.
+          ...(params.facultyLabel && isIdentityConfirmed() ? { contextResolved: true } : {}),
         });
         if (params.facultyLabel) {
           await IndexedDBService.set('meta', VIEWER_KEY, {

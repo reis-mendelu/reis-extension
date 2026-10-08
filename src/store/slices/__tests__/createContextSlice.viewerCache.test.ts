@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { idb, getUserParams } = vi.hoisted(() => ({
+const { idb, getUserParams, isIdentityConfirmed } = vi.hoisted(() => ({
   idb: new Map<string, unknown>(),
   getUserParams: vi.fn(),
+  isIdentityConfirmed: vi.fn(() => true),
 }));
 vi.mock('../../../services/storage', async (orig) => {
   const real = await orig<typeof import('../../../services/storage')>();
@@ -15,7 +16,7 @@ vi.mock('../../../services/storage', async (orig) => {
     },
   };
 });
-vi.mock('../../../utils/userParams', () => ({ getUserParams }));
+vi.mock('../../../utils/userParams', () => ({ getUserParams, isIdentityConfirmed }));
 
 import { useAppStore } from '../../useAppStore';
 
@@ -29,6 +30,7 @@ describe('loadContext viewer cache', () => {
   beforeEach(() => {
     idb.clear();
     getUserParams.mockReset();
+    isIdentityConfirmed.mockReturnValue(true);
     useAppStore.setState({
       userFaculty: null,
       isErasmus: false,
@@ -57,6 +59,23 @@ describe('loadContext viewer cache', () => {
     getUserParams.mockResolvedValue({ facultyLabel: undefined, isErasmus: false });
     await useAppStore.getState().loadContext();
     expect(idb.get('viewer_audience')).toEqual({ faculty: 'ZF', erasmus: false });
+    expect(useAppStore.getState().userFaculty).toBe('ZF');
+  });
+
+  it('a persisted answer IS has not confirmed does not count as resolved', async () => {
+    isIdentityConfirmed.mockReturnValue(false);
+    getUserParams.mockResolvedValue({ facultyLabel: 'AF', isErasmus: false });
+    await useAppStore.getState().loadContext();
+    expect(useAppStore.getState().userFaculty).toBe('AF');
+    expect(useAppStore.getState().contextResolved).toBe(false);
+  });
+
+  it('still asks IS when the cache cannot be read', async () => {
+    idb.set('viewer_audience', 'boom');
+    const { IndexedDBService } = await import('../../../services/storage');
+    vi.mocked(IndexedDBService.get).mockRejectedValueOnce(new Error('idb'));
+    getUserParams.mockResolvedValue({ facultyLabel: 'ZF', isErasmus: false });
+    await useAppStore.getState().loadContext();
     expect(useAppStore.getState().userFaculty).toBe('ZF');
   });
 });

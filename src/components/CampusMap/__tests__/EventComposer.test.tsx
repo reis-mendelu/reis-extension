@@ -814,3 +814,38 @@ describe('EventComposer — url validation', () => {
     expect(wrapper?.querySelector('span')?.className).not.toMatch(/label-text/);
   });
 });
+
+/**
+ * reIS has no narrower audience, so the composer shows no control for it — and
+ * an edit must not quietly keep a legacy restricted flag it cannot clear.
+ */
+describe('EventComposer — reIS cannot restrict', () => {
+  it('clears a legacy restricted flag on save', async () => {
+    const legacy = {
+      id: 'r1',
+      title: 'reIS meetup',
+      url: '',
+      date: '2026-07-08',
+      endDate: null,
+      time: '19:30',
+      location: null,
+      imageUrl: null,
+      organizerKey: 'mendelu',
+      societyId: 'reis',
+      coord: [16.614, 49.209] as [number, number],
+      roomCode: 'BA39N6006',
+      venueKind: 'campus' as const,
+      category: 'quiz' as const,
+      subscribersOnly: true,
+    };
+    useAppStore.setState({
+      adminActiveAssociationId: 'reis',
+      editEventId: 'r1',
+      societyMapEvents: [legacy],
+    } as never);
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
+    await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
+    expect(updatePost.mock.calls[0][1].subscribers_only).toBe(false);
+  });
+});

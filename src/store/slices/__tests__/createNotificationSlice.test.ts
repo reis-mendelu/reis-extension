@@ -137,11 +137,43 @@ describe('createNotificationSlice: a pre-audience cache', () => {
       { id: 'legacy', associationId: 'esn', title: 'Boat Party' },
       { id: 'current', associationId: 'esn', title: 'Pub Quiz', subscribersOnly: true },
       { id: 'deadline', associationId: 'academic_deadline', title: 'Zápočet' },
+      { id: 'reis-event', associationId: 'reis', title: 'reIS meetup' },
     ];
     vi.mocked(IndexedDBService.get).mockImplementation(async (_store, key) =>
       key === 'notifications_cache' ? cache : []
     );
     await state.loadNotificationState();
-    expect(state.notifications.data.map((n) => n.id)).toEqual(['current', 'deadline']);
+    expect(state.notifications.data.map((n) => n.id)).toEqual([
+      'current',
+      'deadline',
+      'reis-event',
+    ]);
+  });
+});
+
+/**
+ * The phone sheet marks the feed as soon as it fills, which a fast fetch can do
+ * before loadNotificationState restores the saved read set. Writing only the
+ * in-memory set then erased the history.
+ */
+describe('createNotificationSlice: marking read before the saved set is back', () => {
+  it('keeps the saved read history', async () => {
+    let state: NotificationSlice;
+    const set = vi.fn((updater: unknown) => {
+      const patch = typeof updater === 'function' ? updater(state) : updater;
+      state = { ...state, ...patch };
+    }) as Mock & Parameters<typeof createNotificationSlice>[0];
+    const get = vi.fn(() => state) as unknown as Parameters<typeof createNotificationSlice>[1];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    state = createNotificationSlice(set, get, {} as any);
+    vi.mocked(IndexedDBService.get).mockImplementation(async (_store, key) =>
+      key === 'read_notifications' ? ['older'] : undefined
+    );
+    await state.markNotificationsRead(['new']);
+    expect(vi.mocked(IndexedDBService.set)).toHaveBeenLastCalledWith(
+      'meta',
+      'read_notifications',
+      expect.arrayContaining(['older', 'new'])
+    );
   });
 });

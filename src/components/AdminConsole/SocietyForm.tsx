@@ -63,8 +63,12 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
         color,
         facultyKey,
         // Follow is gone (spec 2026-10-08), but builds 5.1.1–5.3.0 still seed
-        // follows from this column, so an edit keeps whatever it holds.
-        autoFollowFaculty: society?.autoFollowFaculty ?? false,
+        // follows from this column, so an edit keeps it — unless the faculty
+        // changed: the column is unique per faculty, and keeping it on a move
+        // would collide with that faculty's holder (or flag the whole of
+        // MENDELU). Off is always safe.
+        autoFollowFaculty:
+          (society?.autoFollowFaculty ?? false) && society?.facultyKey === facultyKey,
         ...(igChanged ? { instagram: ig } : {}),
       },
       logo,
