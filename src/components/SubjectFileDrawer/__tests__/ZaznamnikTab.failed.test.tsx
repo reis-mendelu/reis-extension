@@ -18,6 +18,9 @@ describe('ZaznamnikTab when the fetch failed', () => {
   beforeEach(() => {
     refetch = vi.fn(async () => undefined);
     useAppStore.setState({
+      // Reset here, not in a test body: a failed assertion would skip it, and
+      // a leaked impersonation makes overlayGuard drop later tests' writes.
+      impersonation: null,
       language: 'cz',
       studiumId: '123',
       obdobiId: '456',
@@ -54,7 +57,6 @@ describe('ZaznamnikTab when the fetch failed', () => {
     render(<ZaznamnikTab courseCode="EBC" />);
     expect(screen.getByText(cs.mobile.loadFailed.title)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: cs.mobile.loadFailed.retry })).toBeNull();
-    useAppStore.setState({ impersonation: null } as never);
   });
 
   it('keeps "no assessment data" for a subject never fetched (undefined)', () => {
