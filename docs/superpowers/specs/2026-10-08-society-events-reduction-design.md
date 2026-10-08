@@ -74,6 +74,10 @@ update. So:
   - The `admin.audience.followers` wording goes.
 - `src/hooks/useVisibleMapEvents.ts`: build `viewer` from the store (`userFaculty`, `isErasmus`, `impersonation?.selection.faculty`) and the societies catalog. Map the label through `FACULTY_LABEL_TO_KEY`.
 - **Tests first:** a table test for the rule. It covers every society, Erasmus with a faculty, an unknown faculty, impersonation, and reIS with `subscribers_only = true`.
+- **The cold-start gap on native.** `loadContext` runs once at boot (`useAppStore.ts:174`). On Capacitor, `getUserParams` can lose the race with session restore (`loadFollows.ts:87`). That would leave `userFaculty` null for the whole session, and the student would see public events only.
+  - Follows were persisted, which hid this gap. The rule needs the same protection.
+  - Persist the last known `{ facultyKey, erasmus }` in IndexedDB `meta`.
+  - Re-run `loadContext` once IS data arrives after a restore.
 
 ### 2. Follow removed (shared, both trees)
 - **Delete:**
@@ -115,7 +119,8 @@ update. So:
 - **One-time device cleanup**, new `src/services/cleanup/retireSocietyFeatures.ts`, run once at boot, idempotent, logged via `logError`:
   - delete custom events whose id starts with `rsvp:`. Without this they become orphan blocks that nothing can remove, because the card toggle is gone.
   - delete the IndexedDB `meta` keys `event_rsvps_mine`, `reis_subscribed_associations`, `reis_associations_chosen`, `reis_erasmus_auto_subscribed`, `reis_muted_associations`, `reis_notify_prefs`, `reis_notify_asked`, `notifications_cache` and `viewed_notifications_analytics`.
-  - Capacitor only: `LocalNotifications.cancel` on every pending notification.
+  - Capacitor only: `LocalNotifications.cancel` on every pending notification, and `deleteChannel` for `reis-event-reminders` and `reis-society-digest`, so Android settings no longer list them.
+  - Keep `seen_deadline_alerts`, because deadline badges depend on it.
 - `@capacitor/local-notifications` and Android `POST_NOTIFICATIONS` stay for this one release, because the cleanup needs them. Remove them in the next release, together with the permission entry in the disclosures.
 
 ### 4. Novinky without society events (shared, both trees)
@@ -142,6 +147,9 @@ update. So:
   - `EventRow` / `MapEventsSection` and `MapSheetPeek` fire Seen when the element is at least 50% visible (IntersectionObserver, as `NotificationItem` does today).
   - `EventLayer` fires Seen for pins inside the map bounds while the map is visible in campus overview.
   - `eventLinks` / `EventDetailCard` fire Link on a tap of the link button.
+  - **Opened fires when the card opens** (on the selection), not from the pin and row click handlers. Otherwise opens from the peek band and from deep links go uncounted.
+  - On the phone, Seen fires only while the Map tab is actually visible.
+  - The three numbers need one unit. Today Seen is once per device and Opened is once per session, so Opened could exceed Seen. Events already live would also show Seen 0 next to their historical opens. See the open questions.
 - **Admin:**
   - `AdminConsole/EventStats.tsx` shows Seen · Opened · Link tapped, updates `EventStatsNote`, and drops views, clicks and interest.
   - `store/slices/admin/loadSocietyPosts.ts` replaces `fetchEventRsvps` with `fetchEventSignals`.
@@ -162,7 +170,8 @@ update. So:
 - `privacy/disclosures.ts`:
   - `survey_and_rsvp` becomes `survey`, without `eventRsvp.ts` or `set_event_rsvp`.
   - Drop the `society_post_counters` flow.
-  - `map_event_views` gains `increment_event_signal` and policy rows for "seen" and "link".
+  - `map_event_views` gains `increment_event_signal` for "link" (a student action).
+  - "Seen" gets **its own flow**, `when: 'background'`, with policy wording along the lines of "when an event appears on your screen". It sits behind Firefox consent.
   - Exempt: drop `get_event_rsvps`; add `event_signals`; reword the `spolky_events` reason ("writes are by reIS staff or a society login").
 - Run `npm run privacy:generate` so `docs/privacy-policy-app.md` is regenerated. Hand-edit `PRIVACY.md`. Update CLAUDE.md, "What reIS still sends", item 5. The gist is published at release.
 - `noStudentDataLeaves.test.ts`: remove `eventRsvp.ts` from `SUPABASE_CALLERS` and update the RSVP note on Firefox consent.
@@ -178,14 +187,44 @@ update. So:
 
 ## Shipping
 
-There are three PRs against `test`. All of them stay open until all three are
-approved, and then they ride one release together:
+There are two independent PRs against `test`, neither stacked on the other. Follow, RSVP, reminders and Novinky import each other's state (`createRsvpSlice` reads `notifyPrefs`; `replanNotifications` waits on `rsvpLoaded`; `useNotificationFeed` filters on follows), so splitting the removal does not typecheck.
 
-- **A: audience rule, follow removed, Profile section removed, hidden entry.** These go together because follow drives visibility today and SpolkySection holds the admin button.
-- **B: RSVP, reminders and calendar blocks removed, plus the device cleanup.**
-- **C: Novinky society feed removed, plus the migration, the counters and the three admin numbers.** The migration is applied before the release.
+- **1. Reduction:** sections 1–4, 6 and 7, plus the device cleanup.
+- **2. Counters:** section 5, with the migration. The migration is applied before the release.
 
-The work on `test` from #475 (digest, Sledovat chip) is removed by A and B, so
-its pending device test is no longer needed.
+Both stay open until approved, then ride one release together.
+
+**Release timing.** `test` currently carries #475 (the digest and the Sledovat
+chip). A release cut from `test` before PR 1 lands would ship those to students.
+Either cut no release until then, or revert #475 first. PR 1 removes that work,
+so its pending device test is no longer needed.
 
 UI verification follows the `verify-ui` skill: 320/390/430 and tablet width, both themes; desktop map and Profile; before/after PNGs sent.
+
+## What the data says (production, 2026-10-08)
+
+The two counters run on separate paths. A Novinky tap opens the card without bumping the map counter, so the paths do not overlap. The comparison is skewed in two directions:
+
+- **Map opens are undercounted.** They are counted once per session per event, and only by 5.3.0 and later (from 25 Sep).
+- **Novinky taps are overcounted.** They come from every build since 5.1.1, and every tap counts, repeats included.
+
+So the map figure is a floor and the Novinky figure is a ceiling.
+
+Events dated from 29 Sep on, while both counters were live:
+
+| | Novinky taps | Map opens |
+| --- | --- | --- |
+| Public, own-faculty events (Kvíz 7.10, Bruch 7.10, Filmový klub, Tour de Pub, Gamenight) | 139 | 202 |
+| ESN, Erasmus only | 25 | 80 |
+| **Total** | **≈165** | **≈280** |
+
+- **About 37% of event taps come through Novinky.** Its pull is strongest on the day an event first appears: the SU PEF import got 30 + 20 Novinky taps against 20 + 20 map opens the same day.
+- **Taps cluster within about a week of the event.** Events further out get Novinky "seen" impressions and zero taps.
+- Map visitors are 130–230 devices a day, against about 1,600 daily actives.
+- Attendance is not measurable.
+
+## Open questions
+
+1. Novinky. The data shows about a third of event taps arrive through it. Keep events out of it, as decided, or bring back a narrow version?
+2. The counter unit: once per device for all three numbers, or once per session for all three?
+3. Remove the reis_admin "top events" block in FeatureSignals, now that every event carries its own numbers?
