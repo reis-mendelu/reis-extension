@@ -1,6 +1,6 @@
 # Society events: reduction
 
-Status: proposal, 2026-10-08. Nothing below is built yet.
+Status: built, 2026-10-08. The reduction is reis-mendelu/reis-extension#515; the counters (section 5) follow in a second PR.
 
 ## Why
 
@@ -130,7 +130,7 @@ update. So:
   - Remove `trackNotificationsViewed` and `trackNotificationClick` (`increment_post_view` / `increment_post_click`). A Novinky row on screen fires **Seen**, and the tap opens the card, which fires **Opened**. All three admin numbers then count both surfaces the same way.
 - `hooks/useNotificationFeed.ts`: drop the `useSpolkySettings` dependency.
 - `hooks/useOpenNotification.ts`: drop the click counter.
-- `dropScheduledEvents.ts` (`visible_from`), `notifications_cache` and `read_notifications` stay.
+- `notifications_cache` and `read_notifications` stay. (`dropScheduledEvents.ts` turned out redundant once the week bounds the feed, and was removed.)
 - **Delete dead code found on the way:**
   - `services/spolky/config.ts`
   - `hooks/useEventsFacultySettings.ts`

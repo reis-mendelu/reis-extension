@@ -5,6 +5,8 @@ import { logError } from '../../utils/reportError';
 
 /** Who the student was last time IS said so — the event audience's fallback. */
 const VIEWER_KEY = 'viewer_audience';
+/** How long a remembered Erasmus status is trusted without IS confirming it. */
+const ERASMUS_CACHE_MS = 120 * 24 * 60 * 60 * 1000;
 
 export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
   studiumId: null,
@@ -34,9 +36,12 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
     try {
       if (get().userFaculty === null) {
         const cached = (await IndexedDBService.get('meta', VIEWER_KEY)) as
-          { faculty: string | null; erasmus: boolean } | undefined;
+          { faculty: string | null; erasmus: boolean; savedAt?: number } | undefined;
         if (cached && get().userFaculty === null) {
-          set({ userFaculty: cached.faculty, isErasmus: cached.erasmus });
+          // Erasmus is a semester, a faculty is a degree: an old Erasmus flag
+          // would show ESN-only events to a student who is no longer one.
+          const fresh = Date.now() - (cached.savedAt ?? 0) < ERASMUS_CACHE_MS;
+          set({ userFaculty: cached.faculty, isErasmus: fresh && cached.erasmus });
         }
       }
     } catch (err) {
@@ -65,6 +70,7 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
           await IndexedDBService.set('meta', VIEWER_KEY, {
             faculty: params.facultyLabel,
             erasmus: params.isErasmus,
+            savedAt: Date.now(),
           });
         }
       }

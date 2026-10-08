@@ -41,4 +41,12 @@ describe('useLongPress', () => {
     act(() => void vi.advanceTimersByTime(1000));
     expect(onLong).not.toHaveBeenCalled();
   });
+
+  it('blocks the context menu after a touch hold, not after a mouse press', () => {
+    const { getByTestId } = render(<Probe onLong={vi.fn()} />);
+    fireEvent.pointerDown(getByTestId('t'), { pointerType: 'mouse', clientX: 0, clientY: 0 });
+    expect(fireEvent.contextMenu(getByTestId('t'))).toBe(true);
+    fireEvent.pointerDown(getByTestId('t'), { pointerType: 'touch', clientX: 0, clientY: 0 });
+    expect(fireEvent.contextMenu(getByTestId('t'))).toBe(false);
+  });
 });

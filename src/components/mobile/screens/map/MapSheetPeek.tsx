@@ -23,8 +23,8 @@ import { useRoomDirections } from '../../../CampusMap/useRoomDirections';
  * whole band is one target with one meaning — open the list — so the venue
  * line, the selection state and the nested button all have to go.
  *
- * Except when an event is SELECTED at peek (the student dragged the sheet down
- * over an open card): then the band names that event, the one whose pin is highlighted,
+ * Except when an event is SELECTED at peek (a route or room note folded the
+ * sheet while a card was open): then the band names that event, the one whose pin is highlighted,
  * and the same tap opens its card. Naming "the next event" there would have
  * the row and the pin describing two different things.
  */

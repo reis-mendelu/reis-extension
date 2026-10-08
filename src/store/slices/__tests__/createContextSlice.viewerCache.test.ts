@@ -42,7 +42,8 @@ describe('loadContext viewer cache', () => {
   it('remembers faculty and Erasmus once IS names them', async () => {
     getUserParams.mockResolvedValue({ facultyLabel: 'AF', isErasmus: true });
     await useAppStore.getState().loadContext();
-    expect(idb.get('viewer_audience')).toEqual({ faculty: 'AF', erasmus: true });
+    expect(idb.get('viewer_audience')).toMatchObject({ faculty: 'AF', erasmus: true });
+    expect((idb.get('viewer_audience') as { savedAt: number }).savedAt).toBeGreaterThan(0);
     expect(useAppStore.getState().contextResolved).toBe(true);
   });
 
@@ -77,5 +78,14 @@ describe('loadContext viewer cache', () => {
     getUserParams.mockResolvedValue({ facultyLabel: 'ZF', isErasmus: false });
     await useAppStore.getState().loadContext();
     expect(useAppStore.getState().userFaculty).toBe('ZF');
+  });
+
+  it('trusts a remembered Erasmus status only while it is recent', async () => {
+    const old = Date.now() - 200 * 24 * 60 * 60 * 1000;
+    idb.set('viewer_audience', { faculty: 'PEF', erasmus: true, savedAt: old });
+    getUserParams.mockResolvedValue(null);
+    await useAppStore.getState().loadContext();
+    expect(useAppStore.getState().userFaculty).toBe('PEF');
+    expect(useAppStore.getState().isErasmus).toBe(false);
   });
 });

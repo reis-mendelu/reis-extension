@@ -18,7 +18,7 @@ const fallbackRow = {
   body: null,
   url: null,
   created_at: '2026-09-02T00:00:00Z',
-  date: '2026-10-05',
+  date: '2026-10-03',
   end_date: null,
 };
 
@@ -149,8 +149,8 @@ describe('fetchNotifications (repointed to spolky_events)', () => {
         body: 'Fallback Title',
         link: undefined,
         createdAt: '2026-09-02T00:00:00Z',
-        expiresAt: '2026-10-05',
-        startsAt: '2026-10-05',
+        expiresAt: '2026-10-03',
+        startsAt: '2026-10-03',
         priority: 'normal',
         subscribersOnly: false,
       },

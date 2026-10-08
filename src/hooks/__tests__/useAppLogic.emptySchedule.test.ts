@@ -47,6 +47,9 @@ vi.mock('../../services/sync', () => ({
   syncService: { triggerRefresh: vi.fn() },
   syncGradeHistory: vi.fn(async () => undefined),
 }));
+vi.mock('../../services/loadRealDataSnapshot', () => ({
+  loadRealDataSnapshot: vi.fn(async () => false),
+}));
 vi.mock('../../api/proxyClient', () => ({
   isInIframe: vi.fn(() => false),
   signalReady: vi.fn(),

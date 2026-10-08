@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 // Rule in CLAUDE.md forbids adding to a re-export, and `services/spolky/index`
 // is one.
 import { dropPastEvents, dropBeyondNovinkyWindow } from '../services/spolky/spolkyService';
-import { dropScheduledEvents } from '../services/spolky/dropScheduledEvents';
 import type { SpolekNotification } from '../services/spolky/types';
 import { localTodayIso } from '../components/CampusMap/eventWindow';
 import { canSee } from '../utils/eventAudience';
@@ -35,34 +34,31 @@ export function useNotificationFeed() {
   // yesterday, exactly when "is this event over?" changes its answer.
   const todayIso = localTodayIso();
 
-  // Four questions: is the student in this event's audience (utils/eventAudience
-  // — no follow list), has the event already happened, is it within the
-  // Novinky week, and has it gone live yet? The list can come from
-  // `notifications_cache` in IndexedDB, which is written whenever a fetch lands
-  // and is never re-examined, so without the second question a past event
-  // stays in the feed unread and highlighted — "deskovky notification still
-  // shows and highlights even a day after they happened". Without the third, an
-  // event the console lists as "Naplánované — zveřejní se …" reached Novinky
-  // (and its view/click counts) the moment it was published. Both trees read
-  // this list, so the badge, the rows and the view counter all follow it.
+  // Three questions: is the student in this event's audience (utils/eventAudience
+  // — no follow list), has the event already happened, and is it within the
+  // Novinky week? The list can come from `notifications_cache` in IndexedDB,
+  // which is written whenever a fetch lands and is never re-examined, so
+  // without the second question a past event stays in the feed unread and
+  // highlighted — "deskovky notification still shows and highlights even a day
+  // after they happened". The week also holds back anything the console lists
+  // as "Naplánované" further out (the old 14-day gate, now inside it). Both
+  // trees read this list, so the badge, the rows and the view counter follow it.
   const notifications = useMemo(
     () =>
-      dropScheduledEvents(
-        dropBeyondNovinkyWindow(
-          dropPastEvents(
-            allNotifications.filter(
-              (n) =>
-                isReisRow(n) ||
-                canSee(
-                  { societyId: n.associationId ?? '', subscribersOnly: n.subscribersOnly },
-                  societies,
-                  viewer
-                )
-            ),
-            todayIso
+      dropBeyondNovinkyWindow(
+        dropPastEvents(
+          allNotifications.filter(
+            (n) =>
+              isReisRow(n) ||
+              canSee(
+                { societyId: n.associationId ?? '', subscribersOnly: n.subscribersOnly },
+                societies,
+                viewer
+              )
           ),
           todayIso
-        )
+        ),
+        todayIso
       ),
     [allNotifications, societies, viewer, todayIso]
   );
