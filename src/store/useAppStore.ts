@@ -51,6 +51,7 @@ import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 import { resetRealDataStores } from '../services/loadRealDataSnapshot';
 import { devAdminSeed } from '../utils/mock/devSociety';
+import { retireSocietyFeatures } from '../services/cleanup/retireSocietyFeatures';
 import type { Session } from '@supabase/supabase-js';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
 import { setDemoModeFlag, isDemoMode } from '../errors/demoMode';
@@ -198,7 +199,9 @@ export const initializeStore = async () => {
     s2.fetchZaznamnik();
     s2.loadFeedbackState();
     s2.loadHiddenItems();
-    s2.loadCalendarCustomEvents();
+    // Before the calendar loads its blocks, so a retired RSVP block is never
+    // drawn once (see retireSocietyFeatures). Never rejects.
+    void retireSocietyFeatures().finally(() => s2.loadCalendarCustomEvents());
     s2.fetchTeachingWeek();
     s2.loadRecentSearches();
     s2.refreshRecentPdfs();
