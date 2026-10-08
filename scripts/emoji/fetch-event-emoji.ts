@@ -2,38 +2,47 @@
 // Twemoji release. Run after adding an entry to src/data/eventEmoji.ts:
 //   npm run emoji:fetch
 // The SVGs are committed; the app never fetches them at runtime.
-import { open, unlink } from 'node:fs/promises';
+import { link, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { EVENT_EMOJI } from '../../src/data/eventEmoji';
 import { asPlainSvg } from './plainSvg';
 
 const VERSION = '15.1.0';
-const DIR = fileURLToPath(new URL('../../public/emoji/', import.meta.url));
+const ROOT = fileURLToPath(new URL('../../', import.meta.url));
+const DIR = join(ROOT, 'public/emoji');
+
+// Staged under node_modules/.cache: the same filesystem as public/ (link needs
+// that), gitignored, and outside anything a build copies. A run killed
+// mid-download leaves its debris here, never a half-written emoji in public/.
+await mkdir(join(ROOT, 'node_modules/.cache'), { recursive: true });
+const STAGE = await mkdtemp(join(ROOT, 'node_modules/.cache/emoji-fetch-'));
 
 let added = 0;
-for (const { code } of EVENT_EMOJI) {
-  const out = `${DIR}${code}.svg`;
-  // 'wx' creates the file or fails if it exists, in one step: no window
-  // between "is it there?" and the write for another writer to slip into.
-  const file = await open(out, 'wx').catch((e: NodeJS.ErrnoException) => {
-    if (e.code === 'EEXIST') return null;
-    throw e;
-  });
-  if (!file) continue;
-  try {
+try {
+  for (const { code } of EVENT_EMOJI) {
     const res = await fetch(
       `https://cdn.jsdelivr.net/gh/jdecked/twemoji@${VERSION}/assets/svg/${code}.svg`
     );
     if (!res.ok) throw new Error(`${code}: HTTP ${res.status} (not in Twemoji ${VERSION}?)`);
     // The bytes ship inside the app, so only a plain drawing gets written.
-    await file.writeFile(asPlainSvg(code, await res.text()));
-    added += 1;
-    console.log('added', code);
-  } catch (e) {
-    await file.close();
-    await unlink(out);
-    throw e;
+    const staged = join(STAGE, `${code}.svg`);
+    await writeFile(staged, asPlainSvg(code, await res.text()), { flag: 'wx' });
+    // link installs the complete file in one step and fails if the name is
+    // taken: an emoji already in public/ is left alone, never overwritten.
+    const installed = await link(staged, join(DIR, `${code}.svg`)).then(
+      () => true,
+      (e: NodeJS.ErrnoException) => {
+        if (e.code === 'EEXIST') return false;
+        throw e;
+      }
+    );
+    if (installed) {
+      added += 1;
+      console.log('added', code);
+    }
   }
-  await file.close();
+} finally {
+  await rm(STAGE, { recursive: true, force: true });
 }
 console.log(`${added} added, ${EVENT_EMOJI.length} in the catalog`);
