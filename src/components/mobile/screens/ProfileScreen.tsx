@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { Wifi, FileText, MessageSquarePlus, LogOut, UserCog, ShieldCheck, CalendarSync } from 'lucide-react';
+import {
+  Wifi,
+  FileText,
+  MessageSquarePlus,
+  LogOut,
+  UserCog,
+  ShieldCheck,
+  CalendarSync,
+} from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { HiddenItemsSection } from '../../Sidebar/Profile/HiddenItemsSection';
