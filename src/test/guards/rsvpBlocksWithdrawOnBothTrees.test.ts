@@ -22,6 +22,11 @@ import { describe, expect, it } from 'vitest';
  * (`EventRsvp`), so un-pressing "Mám zájem" there withdraws the answer and the
  * block goes with it — measured at 390 and 834 (2026-10-08). The phone tree has
  * no custom-event editor at all, so it never had the lying delete.
+ *
+ * `components/CustomEventModal.tsx` and `utils/calendarPopover.ts` are
+ * desktop-only for that same reason: the popover position and date label the
+ * two desktop popovers share have no phone counterpart to share with — the
+ * last test below is what holds that true.
  */
 const src = (p: string) => readFileSync(resolve(process.cwd(), 'src', p), 'utf8');
 
