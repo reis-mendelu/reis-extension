@@ -5,6 +5,7 @@ import { formatDate } from '../../utils/date';
 import type { EduroamStatus } from '../../hooks/data/useEduroamSetup';
 import { isEduroamConfigured, type EduroamConfigOutcome } from '../../mobile/configureEduroam';
 import type { NativeEduroamTarget } from '../../mobile/eduroamNative';
+import type { NetworkFailure } from '../../services/eduroam/networkFailure';
 
 export interface WelcomeWifiCardProps {
   status: EduroamStatus;
@@ -12,6 +13,8 @@ export interface WelcomeWifiCardProps {
   target: NativeEduroamTarget;
   /** Set with status `expired`; the button then generates a new certificate. */
   expiredAt?: Date | null;
+  /** With status `error`: no connection, rather than a setup that failed. */
+  networkFailure?: NetworkFailure | null;
   onSetup: () => void;
 }
 
@@ -33,6 +36,7 @@ export function WelcomeWifiCard({
   outcome,
   target,
   expiredAt = null,
+  networkFailure = null,
   onSetup,
 }: WelcomeWifiCardProps) {
   const { t } = useTranslation();
@@ -51,6 +55,9 @@ export function WelcomeWifiCard({
   // installed — and the student cannot get past it without forgetting the
   // network, so this line names that step instead of blaming the setup.
   const stale = outcome === 'stale-association';
+  // Offline is not a failed setup either: the way on is getting online, and
+  // mobile data is enough. It takes the warning tint, not the error one.
+  const caution = stale || networkFailure !== null;
 
   const line = done
     ? t('mobile.welcome.wifiDone')
@@ -60,7 +67,9 @@ export function WelcomeWifiCard({
         outcome === 'renewal-blocked'
         ? t('eduroam.native.renewalBlocked')
         : failed
-          ? t('mobile.welcome.wifiFailed')
+          ? networkFailure
+            ? t(`eduroam.network.${networkFailure}`)
+            : t('mobile.welcome.wifiFailed')
           : t('mobile.welcome.wifiLine');
 
   return (
@@ -82,7 +91,7 @@ export function WelcomeWifiCard({
           // fixable by weight at this size — whereas a 56pt glyph only owes
           // the 3:1 that non-text graphics owe, and clears it. The words say
           // "Nepovedlo se" regardless; the red is not carrying the meaning.
-          stale
+          caution
             ? 'bg-warning/15 text-warning'
             : failed
               ? 'bg-error/15 text-error'
@@ -115,6 +124,12 @@ export function WelcomeWifiCard({
             done line already says everything that is left to say. */}
         {!done && !failed && !expired && (
           <p className="text-sm text-base-content/70">{t('mobile.welcome.wifiBody')}</p>
+        )}
+
+        {/* The same alert, named BEFORE the tap — after it, iOS's alert covers
+            this card. Setup needs internet, not eduroam in range. */}
+        {!done && !failed && !expired && target === 'ios' && (
+          <p className="text-sm text-base-content/70">{t('eduroam.native.anywhereNote')}</p>
         )}
 
         {/* The alert iOS raises over this card, named before it is read as a

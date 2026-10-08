@@ -47,7 +47,7 @@ function NumberBadge({ n }: { n: number }) {
 export function EduroamSheet({ onClose }: EduroamSheetProps) {
   const { t } = useTranslation();
   const target = detectTarget();
-  const { status, password, error, outcome, expiredAt, expiresSoonAt, run, renew } =
+  const { status, password, error, networkFailure, outcome, expiredAt, expiresSoonAt, run, renew } =
     useEduroamSetup(target);
   const working = status === 'working';
 
@@ -76,6 +76,7 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
           status={status}
           outcome={outcome}
           error={error}
+          networkFailure={networkFailure}
           native={native}
           target={target}
         />
@@ -119,6 +120,15 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
                   : t('eduroam.download')}
           </button>
         </div>
+
+        {/* Read BEFORE the tap: once tapped off campus, iOS's own "Unable to
+            join" alert sits on top of this sheet and of the saved note above.
+            Setup needs internet, not eduroam in range. iOS only — Android saves
+            without joining, so it raises no alert. Gone once done, when the
+            saved note says the same thing after the fact. */}
+        {native && target === 'ios' && status !== 'done' && (
+          <p className="ml-9 text-sm text-base-content/70">{t('eduroam.native.anywhereNote')}</p>
+        )}
 
         {/* Under the button the student just tapped: the certificate has expired,
             or will soon, and the way on is generating a new one. */}

@@ -128,4 +128,47 @@ describe('WelcomeWifiCard', () => {
       expect(screen.queryByText(/Zapomenout tuto síť/)).not.toBeInTheDocument();
     });
   });
+
+  /**
+   * Being off Wi‑Fi is fine — setup only needs internet, and mobile data is
+   * enough. No connection at all is the case that needs saying, in words, not
+   * as the generic "Nepovedlo se".
+   */
+  describe('without a network', () => {
+    it('says the student is offline and that mobile data will do', () => {
+      renderCard({ status: 'error', networkFailure: 'offline' });
+
+      expect(screen.getByText(/Jsi offline/)).toHaveTextContent(/mobilní data/);
+      expect(screen.queryByText(/Nepovedlo se/)).not.toBeInTheDocument();
+    });
+
+    it('hedges when the device thinks it is online but IS never answered', () => {
+      renderCard({ status: 'error', networkFailure: 'unreachable' });
+
+      expect(screen.getByText(/Nepodařilo se spojit s IS/)).toBeInTheDocument();
+      expect(screen.queryByText(/Jsi offline/)).not.toBeInTheDocument();
+    });
+  });
+
+  // Read before the tap, because after it iOS's own "Unable to join" alert
+  // sits on top of whatever this card says.
+  describe('the iOS join alert, named before the tap', () => {
+    it('says setup works anywhere and the alert is expected', () => {
+      renderCard({ status: 'idle', target: 'ios' });
+
+      expect(screen.getByText(/Jde to odkudkoli s internetem/)).toHaveTextContent(/v pořádku/);
+    });
+
+    it('is not on Android, which never attempts a join', () => {
+      renderCard({ status: 'idle', target: 'android' });
+
+      expect(screen.queryByText(/Jde to odkudkoli/)).not.toBeInTheDocument();
+    });
+
+    it('gives way to the saved note once done', () => {
+      renderCard({ status: 'done', outcome: 'saved', target: 'ios' });
+
+      expect(screen.queryByText(/Jde to odkudkoli/)).not.toBeInTheDocument();
+    });
+  });
 });

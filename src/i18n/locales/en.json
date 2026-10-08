@@ -625,7 +625,8 @@
       "failed": "Your device didn't save the eduroam network. Please try again.",
       "error": "eduroam setup didn't go through",
       "privacyNote": "The certificate never leaves your device — reIS hands it straight to the system.",
-      "iosLifetime": "eduroam stays set up as long as reIS is installed."
+      "iosLifetime": "eduroam stays set up as long as reIS is installed.",
+      "anywhereNote": "Works from anywhere with internet. Off campus, iOS will say it couldn't join eduroam — that's expected."
     },
     "manual": {
       "mac": {
@@ -695,6 +696,11 @@
     "macApp": {
       "button": "Save eduroam profile",
       "installStep": "Save the file, then open it — macOS installs the profile in System Settings. Use the password from step one when it asks."
+    },
+    "network": {
+      "offline": "You're offline. Any internet connection will do for setting up eduroam — mobile data is fine, no Wi‑Fi needed.",
+      "unreachable": "Couldn't reach IS. Check your internet — mobile data is fine — and try again.",
+      "desktop": "Couldn't reach IS. Check your internet connection and try again."
     }
   },
   "erasmus": {

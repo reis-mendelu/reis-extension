@@ -35,6 +35,7 @@ function baseHookState(): HookState {
     selectTarget: vi.fn(),
     password: null,
     error: null,
+    networkFailure: null,
     outcome: null,
     expiredAt: null,
     expiresSoonAt: null,
@@ -368,5 +369,60 @@ describe('EduroamSheet', () => {
     fireEvent.click(screen.getByLabelText('Zavřít'));
 
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  describe('without a network', () => {
+    it('says the student is offline instead of the raw OS error', () => {
+      onPhone(
+        {
+          status: 'error',
+          error: 'The Internet connection appears to be offline.',
+          networkFailure: 'offline',
+        },
+        'ios'
+      );
+
+      render(<EduroamSheet onClose={vi.fn()} />);
+
+      expect(screen.getByText(/Jsi offline/)).toHaveTextContent(/mobilní data/);
+      expect(screen.queryByText(/appears to be offline/)).not.toBeInTheDocument();
+    });
+
+    it('hedges when IS never answered', () => {
+      onPhone({ status: 'error', error: 'timed out', networkFailure: 'unreachable' }, 'android');
+
+      render(<EduroamSheet onClose={vi.fn()} />);
+
+      expect(screen.getByText(/Nepodařilo se spojit s IS/)).toBeInTheDocument();
+      expect(screen.queryByText(/timed out/)).not.toBeInTheDocument();
+    });
+  });
+
+  // Before the tap: afterwards iOS's own "Unable to join" alert covers the sheet.
+  describe('the iOS join alert, named before the tap', () => {
+    it('is under the button on iOS', () => {
+      onPhone({}, 'ios');
+
+      render(<EduroamSheet onClose={vi.fn()} />);
+
+      expect(screen.getByText(/Jde to odkudkoli s internetem/)).toBeInTheDocument();
+    });
+
+    it('is not on Android', () => {
+      onPhone({}, 'android');
+
+      render(<EduroamSheet onClose={vi.fn()} />);
+
+      expect(screen.queryByText(/Jde to odkudkoli/)).not.toBeInTheDocument();
+    });
+
+    it('gives way to the saved note once done', () => {
+      onPhone({ status: 'done', outcome: 'saved' }, 'ios');
+
+      render(<EduroamSheet onClose={vi.fn()} />);
+
+      expect(screen.queryByText(/Jde to odkudkoli/)).not.toBeInTheDocument();
+      expect(screen.getByText(/není v dosahu/)).toBeInTheDocument();
+    });
   });
 });

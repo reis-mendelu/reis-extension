@@ -42,7 +42,9 @@ export function WelcomeScreen() {
   // `?eduroam=ios` forces the gate on the dev webapp — see `eduroamNative`.
   const target = nativeEduroamTarget();
   const native = target !== null && canConfigureEduroamNatively(target);
-  const { status, outcome, expiredAt, run, renew } = useEduroamSetup(target ?? undefined);
+  const { status, outcome, networkFailure, expiredAt, run, renew } = useEduroamSetup(
+    target ?? undefined
+  );
 
   const done = status === 'done' && isEduroamConfigured(outcome);
   // An expired certificate reads as a failure for the footer: it moves on
@@ -115,6 +117,7 @@ export function WelcomeScreen() {
               <WelcomeWifiCard
                 status={status}
                 outcome={outcome}
+                networkFailure={networkFailure}
                 target={target}
                 expiredAt={expiredAt}
                 onSetup={() => void (status === 'expired' ? renew(target) : run(target))}
