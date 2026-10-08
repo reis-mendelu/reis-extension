@@ -1,6 +1,7 @@
 import type { AppSlice } from '../types';
 import { fetchEventRsvps, setEventRsvp, type RsvpStatus } from '../../api/eventRsvp';
 import { createRsvpBlockSync } from './rsvpBlockSync';
+import { eventIdFromRsvpBlock } from '../../utils/rsvpBlocks';
 import { IndexedDBService } from '../../services/storage';
 import { askNotificationPermission } from '../../services/eventReminders/sync';
 import { eventStartsAt, REMINDER_LEAD_MS } from '../../services/eventReminders/plan';
@@ -31,6 +32,12 @@ export interface RsvpSlice {
   loadRsvps: (eventIds: string[]) => Promise<void>;
   /** Toggle an RSVP: tapping the active status clears it, otherwise it switches. */
   setRsvp: (eventId: string, status: RsvpStatus) => Promise<void>;
+  /**
+   * "Odebrat z kalendáře" on an answered event's block: withdraws the answer
+   * the block stands for. Deleting the block itself does not last — it is
+   * derived from the answer, and the next reconciliation puts it back.
+   */
+  withdrawRsvpBlock: (blockId: string) => Promise<void>;
 }
 
 const EMPTY: RsvpCounts = { going: 0, interested: 0 };
@@ -278,6 +285,14 @@ export const createRsvpSlice: AppSlice<RsvpSlice> = (set, get) => {
       // loaded fine — fixed in the same way in fix round 1.
       if (stored) refreshRsvpBlocks();
       if (stored) get().replanNotifications();
+    },
+
+    withdrawRsvpBlock: async (blockId) => {
+      const eventId = eventIdFromRsvpBlock(blockId);
+      const held = eventId ? get().rsvp[eventId] : undefined;
+      // `setRsvp` is a toggle: sending back the answer already held clears it.
+      // With no answer held it would ANSWER instead, so that case sends nothing.
+      if (eventId && held) await get().setRsvp(eventId, held);
     },
 
     setRsvp: async (eventId, status) => {

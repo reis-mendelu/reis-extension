@@ -901,6 +901,10 @@
     "addLocation": "Add location",
     "delete": "Delete"
   },
+  "rsvpBlock": {
+    "remove": "Remove from calendar",
+    "note": "Removing it also withdraws your “Interested”. The society sets the time."
+  },
   "map": {
     "title": "Map",
     "searchPlaceholder": "Search a room or place…",
