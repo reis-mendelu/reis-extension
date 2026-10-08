@@ -37,7 +37,7 @@
 - **Deletes require all of the following:**
   - the kind's source was confirmed this run (exams: `status === 'success' && data.length > 0`, where `data` is the subject list, which stays non-empty after deregistering);
   - **lessons only:** the desired list is non-empty, and deletes ≤ ⅓ of existing future lessons unless the previous run held back the same set. IS's failure-looks-like-empty problem is a timetable problem; a student deregistering from their last exam must disappear from Google.
-- **409 on insert** → `PUT` the same id with `status: "confirmed"`.
+- **The student's edits in Google win** (option B): a 409 on insert is resolved by the runner. Restore with `PUT status: "confirmed"` only what reIS itself deleted (`reisDeleted`); `PUT` a moved event only if IS changed it since; otherwise record it in `skipped`.
 - **No background work of any kind** in this plan: no JobService, no BGAppRefreshTask, no `UIBackgroundModes`, no native timetable fetch, no Java/Swift mapping ports. Nothing a student must enable in system settings.
 - **Logging:** errors via `logError('GoogleCalendar.<step>', err)`. Never `console.error` directly.
 - **Repo rules:** no `localStorage`; no `useEffect` data fetching; DaisyUI classes only; max ~200 lines per file; direct imports, no barrels; test first.
@@ -932,6 +932,8 @@ git commit -m "feat(gcal): reconcile planner with frozen past and delete safegua
 
 ### Task 6: The Google Calendar REST client
 
+> **Done 2026-10-08, as built differs:** `upsert` became `insert` (returns `'inserted' | 'exists'` on 409) plus `getEvent` (cancelled + hash), so the runner can apply option B. Transport lives in `calendarHttp.ts` (errors, pacing, retries); import the error classes from there.
+
 **Files:**
 - Create: `src/mobile/googleCalendar/calendarApi.ts`
 - Test: `src/mobile/googleCalendar/__tests__/calendarApi.test.ts`
@@ -1217,6 +1219,8 @@ git commit -m "feat(gcal): paced Calendar REST client with 409 restore, 401 refr
 
 ### Task 7: The sync runner
 
+> **Done 2026-10-08, as built differs:** `SyncState` also carries `reisDeleted: Record<string, string>` and `skipped: Record<string, { hash; date }>`, and the runner resolves 409s per option B (see Global Constraints). The code below is the original sketch; `runSync.ts` is the source of truth.
+
 **Files:**
 - Create: `src/mobile/googleCalendar/runSync.ts`
 - Test: `src/mobile/googleCalendar/__tests__/runSync.test.ts`
@@ -1318,7 +1322,7 @@ describe('runSync', () => {
     api.upsert = realUpsert;
     const r = await runSync({ api, now: NOW, persist: async () => {},
       state: saved.at(-1) as never, sources: sources(['2026-10-01', '2026-10-02', '2026-10-09']) });
-    expect(r).toMatchObject({ kind: 'ok', state: { pastFillPending: false } });
+    expect(r).toMatchObject({ kind: 'ok', state: { pastFillPending: false, reisDeleted: {}, skipped: {} } });
     expect(log.filter((l) => l.startsWith('up:'))).toHaveLength(3);
   });
   it('a second run with nothing changed writes nothing', async () => {
@@ -1430,7 +1434,7 @@ export async function runSync(o: {
       await work[i]!();
       o.onProgress?.(i + 1, work.length);
     }
-    return { kind: 'ok', written: work.length, state: { calendarId, held, lastSyncAt: now.getTime(), pastFillPending: false } };
+    return { kind: 'ok', written: work.length, state: { calendarId, held, lastSyncAt: now.getTime(), pastFillPending: false, reisDeleted: {}, skipped: {} } };
   } catch (e) {
     if (e instanceof CalendarGoneError) return { kind: 'calendarGone' };
     if (e instanceof AuthRevokedError) return { kind: 'revoked' };
@@ -1523,10 +1527,10 @@ import { installTestPlatform } from './testPlatform';
 describe('syncStateStore', () => {
   beforeEach(() => installTestPlatform());
   it('defaults to disabled and empty', async () => {
-    expect(await loadSyncState()).toEqual({ enabled: false, calendarId: null, held: {}, lastSyncAt: null, pastFillPending: false, sourcesFingerprint: null });
+    expect(await loadSyncState()).toEqual({ enabled: false, calendarId: null, held: {}, lastSyncAt: null, pastFillPending: false, reisDeleted: {}, skipped: {}, sourcesFingerprint: null });
   });
   it('round-trips and clears', async () => {
-    const s = { enabled: true, calendarId: 'c', held: { lesson: 'l1' }, lastSyncAt: 5, pastFillPending: false, sourcesFingerprint: 'f' };
+    const s = { enabled: true, calendarId: 'c', held: { lesson: 'l1' }, lastSyncAt: 5, pastFillPending: false, reisDeleted: { x: '2026-10-09' }, skipped: {}, sourcesFingerprint: 'f' };
     await saveSyncState(s);
     expect(await loadSyncState()).toEqual(s);
     await clearSyncState();
@@ -1634,7 +1638,7 @@ import type { SyncState } from './runSync';
 
 const KEY = 'reis.gcal.state';
 export type PersistedSync = SyncState & { enabled: boolean; sourcesFingerprint: string | null };
-const EMPTY: PersistedSync = { enabled: false, calendarId: null, held: {}, lastSyncAt: null, pastFillPending: false, sourcesFingerprint: null };
+const EMPTY: PersistedSync = { enabled: false, calendarId: null, held: {}, lastSyncAt: null, pastFillPending: false, reisDeleted: {}, skipped: {}, sourcesFingerprint: null };
 
 export async function loadSyncState(): Promise<PersistedSync> {
   const v = (await getPlatform().storage.get(KEY)) as Partial<PersistedSync> | null;
@@ -1740,7 +1744,7 @@ beforeEach(async () => {
 
 describe('controller', () => {
   it('connect enables and runs a sync', async () => {
-    runSyncMock.mockResolvedValue({ kind: 'ok', written: 1, state: { calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false } });
+    runSyncMock.mockResolvedValue({ kind: 'ok', written: 1, state: { calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false, reisDeleted: {}, skipped: {} } });
     await connectGoogleCalendar();
     expect((await loadSyncState()).enabled).toBe(true);
     expect(runSyncMock).toHaveBeenCalledTimes(1);
@@ -1755,43 +1759,43 @@ describe('controller', () => {
   });
   it('connect without the calendar list asks once more, then proceeds', async () => {
     native.connect.mockResolvedValueOnce({ email: 'x@y', scopes: [APP] }).mockResolvedValueOnce({ email: 'x@y', scopes: [APP] });
-    runSyncMock.mockResolvedValue({ kind: 'ok', written: 1, state: { calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false } });
+    runSyncMock.mockResolvedValue({ kind: 'ok', written: 1, state: { calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false, reisDeleted: {}, skipped: {} } });
     await connectGoogleCalendar();
     expect(native.connect).toHaveBeenCalledTimes(2);
     expect((await loadSyncState()).enabled).toBe(true);
   });
   it('change with an unchanged fingerprint and a fresh sync does nothing', async () => {
-    runSyncMock.mockResolvedValue({ kind: 'ok', written: 0, state: { calendarId: 'c', held: {}, lastSyncAt: Date.now(), pastFillPending: false } });
+    runSyncMock.mockResolvedValue({ kind: 'ok', written: 0, state: { calendarId: 'c', held: {}, lastSyncAt: Date.now(), pastFillPending: false, reisDeleted: {}, skipped: {} } });
     await connectGoogleCalendar();
     runSyncMock.mockClear();
     await syncGoogleCalendarNow('change');
     expect(runSyncMock).not.toHaveBeenCalled();
   });
   it('a held-back delete re-runs on the next change even with unchanged sources', async () => {
-    runSyncMock.mockResolvedValue({ kind: 'ok', written: 0, state: { calendarId: 'c', held: { lesson: 'l2,l3' }, lastSyncAt: 1, pastFillPending: false } });
+    runSyncMock.mockResolvedValue({ kind: 'ok', written: 0, state: { calendarId: 'c', held: { lesson: 'l2,l3' }, lastSyncAt: 1, pastFillPending: false, reisDeleted: {}, skipped: {} } });
     await connectGoogleCalendar();
     runSyncMock.mockClear();
     await syncGoogleCalendarNow('change');
     expect(runSyncMock).toHaveBeenCalledTimes(1);
   });
   it('calendarGone turns the sync off and does not recreate', async () => {
-    await saveSyncState({ enabled: true, calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false, sourcesFingerprint: null });
+    await saveSyncState({ enabled: true, calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false, reisDeleted: {}, skipped: {}, sourcesFingerprint: null });
     runSyncMock.mockResolvedValue({ kind: 'calendarGone' });
     await syncGoogleCalendarNow('change');
     expect((await loadSyncState()).enabled).toBe(false);
     expect(useAppStore.getState().gcal.notice).toBe('calendarGone');
   });
   it('unchanged sources still re-run after 6 h, to repair edits made in Google', async () => {
-    runSyncMock.mockResolvedValue({ kind: 'ok', written: 0, state: { calendarId: 'c', held: {}, lastSyncAt: Date.now() - 7 * 3600_000, pastFillPending: false } });
+    runSyncMock.mockResolvedValue({ kind: 'ok', written: 0, state: { calendarId: 'c', held: {}, lastSyncAt: Date.now() - 7 * 3600_000, pastFillPending: false, reisDeleted: {}, skipped: {} } });
     await connectGoogleCalendar();
     runSyncMock.mockClear();
     await syncGoogleCalendarNow('change');
     expect(runSyncMock).toHaveBeenCalledTimes(1);
   });
   it('a trigger during a running sync is not lost: it re-runs once afterwards', async () => {
-    await saveSyncState({ enabled: true, calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false, sourcesFingerprint: null });
+    await saveSyncState({ enabled: true, calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false, reisDeleted: {}, skipped: {}, sourcesFingerprint: null });
     let release!: () => void;
-    const ok = { kind: 'ok', written: 0, state: { calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false } };
+    const ok = { kind: 'ok', written: 0, state: { calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false, reisDeleted: {}, skipped: {} } };
     runSyncMock.mockImplementationOnce(() => new Promise((r) => (release = () => r(ok)))).mockResolvedValue(ok);
     const first = syncGoogleCalendarNow('change');
     await syncGoogleCalendarNow('change'); // arrives mid-sync
@@ -1802,7 +1806,7 @@ describe('controller', () => {
   });
   it('cancelling the second consent keeps a connect that has app.created', async () => {
     native.connect.mockResolvedValueOnce({ email: 'x@y', scopes: [APP] }).mockRejectedValueOnce(new Error('CANCELLED'));
-    runSyncMock.mockResolvedValue({ kind: 'ok', written: 1, state: { calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false } });
+    runSyncMock.mockResolvedValue({ kind: 'ok', written: 1, state: { calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false, reisDeleted: {}, skipped: {} } });
     await connectGoogleCalendar();
     expect((await loadSyncState()).enabled).toBe(true);
   });

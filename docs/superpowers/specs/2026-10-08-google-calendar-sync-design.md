@@ -21,6 +21,7 @@ kalendáře v telefonu"*.
 | Placement | A row in the phone **profile sheet** (where the removed Outlook toggle was). |
 | Multiple devices | Option A: also request `calendar.calendarlist.readonly`, so a second device finds the same "Rozvrh". |
 | Google identity | **reis.mendelu@gmail.com** owns everything. Never a personal account. |
+| Edits in Google | **The student wins** (option B, 2026-10-08). A lesson they delete in Google stays deleted, even if IS later changes it. One they move or edit stays as they left it until IS actually changes that lesson; then IS overwrites it. Only events reIS itself deleted are restored. |
 
 ## Why not the other routes (kept so they aren't re-proposed)
 
@@ -210,7 +211,11 @@ This is a pure planner. Inputs: the events that should exist, the events that do
    - A device that *finds and reuses* an existing "Rozvrh" (a second device, or after a reinstall) does **not** do a past fill. It behaves like any later sync. Otherwise the 409 → `PUT confirmed` rule would bring back past events the student deleted, and a language change would rewrite past titles.
 2. **Every other sync** considers only events starting **≥ todayStart**. Events before it are
    never updated, deleted or re-created.
-3. **Insert** what's missing. On **409**, `PUT` with `status: confirmed`.
+3. **Insert** what's missing. A **409** means the id exists (Google keeps deleted ids reserved), so decide who did it:
+   - reIS deleted it earlier (a local `reisDeleted` list) → `PUT` with `status: confirmed` restores it;
+   - it exists, not deleted, and its `reisHash` differs → the student moved it and IS has changed it since → `PUT`;
+   - otherwise the student deleted or moved it → leave it, and remember the hash in `skipped` so it isn't retried until IS changes it.
+   Both lists keep only entries dated today or later.
 4. **Update** (`PUT`) when `reisHash` differs.
 5. **Delete** what shouldn't exist, only within [todayStart, end of window], and only
    for the kinds whose source was read successfully in this run.
@@ -346,15 +351,16 @@ The project is `reis-479320` ("reIS"), owner **reis.mendelu@gmail.com**.
 - **Unit, written first:**
   - mapping, including the summer-time change;
   - id stability, alphabet, and no collisions between kinds;
-  - the planner: past events frozen, the 409 → `PUT` rule, the three delete safeguards;
+  - the planner: past events frozen, the delete safeguards, skipped events;
+  - the runner: a student-deleted lesson stays deleted (even after an IS room change), a moved one stays until IS changes it, a reIS-deleted one comes back;
   - error handling (401 / 404-calendar / 429) against a fake `fetch`.
 - **Golden fixture** for the mapping, as above.
 - **Guards:** the new desktop guard, plus `noStudentDataLeaves`, privacy disclosures and
   the content-script graph.
 - **Devices** (release builds):
   - **Pixel and cabled iPad:** connect; the first fill's count matches reIS; change the
-    language and see future titles change and past ones stay; a deleted future event
-    returns on the next open and a deleted past event doesn't; untick a scope on Google's
+    language and see future titles change and past ones stay; delete a future lecture in
+    Google and see it stay deleted; move one and see it stay; untick a scope on Google's
     screen and see the row ask again.
   - **Mac ("Designed for iPad"):** connect works, or the row is hidden there.
 
