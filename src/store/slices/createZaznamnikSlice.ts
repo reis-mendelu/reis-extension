@@ -37,9 +37,11 @@ export const createZaznamnikSlice: AppSlice<ZaznamnikSlice> = (set, get) => ({
   // Inert while impersonating, like the files slice: it would hit IS for
   // another programme's subject ids.
   refetchZaznamnik: async (courseCode) => {
-    const { impersonation, studiumId, obdobiId, subjects } = get();
+    const { impersonation, studiumId, obdobiId, subjects, zaznamnikLoading } = get();
     const subjectId = subjects?.data?.[courseCode]?.subjectId;
     if (impersonation || !studiumId || !obdobiId || !subjectId) return;
+    // One retry at a time: a second would race the first to the store.
+    if (zaznamnikLoading[courseCode]) return;
     set((s) => ({ zaznamnikLoading: { ...s.zaznamnikLoading, [courseCode]: true } }));
     try {
       // Lazy: keeps the IS parsers out of the store's static graph. The sync

@@ -14,7 +14,6 @@ import { useUserParams } from '../../hooks/useUserParams';
 import { useAppStore } from '../../store/useAppStore';
 import { ExamsFreshness } from './ExamsFreshness';
 import { LoadFailed } from '../LoadFailed';
-import { syncService } from '../../services/sync/SyncService';
 
 interface RegisteredExam extends TimelineExam {
   subject: ExamSubject;
@@ -164,7 +163,11 @@ export function ExamPanel() {
             <span className="loading loading-spinner mr-2" /> {t('exams.loading')}
           </div>
         ) : showFailed ? (
-          <LoadFailed testId="exams-error" onRetry={() => syncService.triggerSync()} />
+          // The targeted refresh (refresh_exams), not a whole user sync.
+          <LoadFailed
+            testId="exams-error"
+            onRetry={() => useAppStore.getState().triggerExamsRefresh()}
+          />
         ) : exams.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center">
             <EmptyExamsState />

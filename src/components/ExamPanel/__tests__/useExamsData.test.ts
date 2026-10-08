@@ -86,3 +86,27 @@ describe('the desktop exam panel after a sync that could not reach IS', () => {
     expect(result.current.showFailed).toBe(false);
   });
 });
+
+describe('the desktop exam panel while its retry runs', () => {
+  beforeEach(() => {
+    useAppStore.setState((s) => ({
+      exams: { ...s.exams, data: [], status: 'success' },
+      firstSyncSettled: true,
+      syncLoaded: {},
+      examsRefreshing: true,
+      syncStatus: { ...s.syncStatus, isSyncing: false, handshakeDone: true },
+    }));
+  });
+
+  it('shows the loading state, not the failure', () => {
+    const { result } = renderHook(() => useExamsData());
+    expect(result.current.showFailed).toBe(false);
+    expect(result.current.showSkeleton).toBe(true);
+  });
+
+  it('does not flash a skeleton over a known-empty list on the routine refresh', () => {
+    useAppStore.setState({ syncLoaded: { exams: true } });
+    const { result } = renderHook(() => useExamsData());
+    expect(result.current.showSkeleton).toBe(false);
+  });
+});

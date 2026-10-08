@@ -97,9 +97,12 @@ function DiagnosticsTable({ d }: { d: NonNullable<SuggestionAttachment['diagnost
           answered; this can (Návrhy #26). */}
       {d.sync.syncLoaded && (
         <p className="break-words">
-          {d.sync.firstSyncSettled ? 'settled' : 'first sync running'} · answered{' '}
+          {/* Session-cumulative "answered" beside a last-run flag, labelled
+              as such: an outage after a good first run reads "answered this
+              session schedule · last run failed", not as one run's result. */}
+          {d.sync.firstSyncSettled ? 'settled' : 'first sync running'} · answered this session{' '}
           {d.sync.syncLoaded.length ? d.sync.syncLoaded.join(', ') : 'nothing'}
-          {d.sync.syncFailed ? ' · run failed' : ''}
+          {d.sync.syncFailed ? ' · last run failed' : ''}
         </p>
       )}
       <ul className="mt-1 max-h-56 overflow-y-auto space-y-1">

@@ -273,6 +273,20 @@ describe('a run that reached nothing', () => {
     expect((await finalMessage()).data.error).toBeUndefined();
   });
 
+  it('does not when exams failed but the schedule answered "no lessons"', async () => {
+    // [] is an answer: IS was reached. This is the one combination where the
+    // verdict depends on [] counting as answered.
+    api.exams.mockImplementation(offline);
+    api.subjects.mockImplementation(offline);
+    api.studyPlan.mockImplementation(offline);
+    api.schedule.mockResolvedValue([]);
+
+    const { syncAllData } = await loadSync();
+    await syncAllData();
+
+    expect((await finalMessage()).data.error).toBeUndefined();
+  });
+
   it('does not when the other fetches were skipped as fresh, not failed', async () => {
     // A tick after a full run: schedule, subjects and plan are TTL-skipped
     // (null without being asked). An exams-only failure then must not read as
@@ -294,5 +308,34 @@ describe('a run that reached nothing', () => {
     await syncAllData();
 
     expect((await finalMessage()).data.error).toBeUndefined();
+  });
+});
+
+/**
+ * The desktop exam panel's retry is the targeted `refresh_exams`, not a whole
+ * user sync. Now that a failed exams fetch rejects, a refresh that resolves is
+ * an answer — "none" included — so it can release the failed state.
+ */
+describe('refreshExams', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    primeResponses();
+  });
+
+  it('reports exams as answered when IS says there are none', async () => {
+    api.exams.mockResolvedValue([]);
+    const { refreshExams } = await loadSync();
+    await refreshExams();
+
+    const loaded = (await updates()).flatMap((m) => (m.data.loaded as string[]) ?? []);
+    expect(loaded).toContain('exams');
+  });
+
+  it('reports nothing when IS could not be reached', async () => {
+    api.exams.mockRejectedValue(new Error('Unable to resolve host'));
+    const { refreshExams } = await loadSync();
+    await expect(refreshExams()).rejects.toThrow();
+
+    expect(await updates()).toEqual([]);
   });
 });

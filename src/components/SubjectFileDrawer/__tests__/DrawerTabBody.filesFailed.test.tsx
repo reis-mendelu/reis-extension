@@ -61,6 +61,9 @@ describe('DrawerTabBody — a failed folder fetch', () => {
   it('says it could not load, not that the subject has no files', () => {
     renderFiles();
 
+    // Announced: it can replace the tab's content with no click preceding it.
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+
     expect(screen.getByText(cs.mobile.loadFailed.title)).toBeInTheDocument();
     expect(screen.queryByText(cs.course.footer.noFilesAvailable)).toBeNull();
   });

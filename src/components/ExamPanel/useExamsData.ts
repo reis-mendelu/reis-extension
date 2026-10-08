@@ -11,6 +11,7 @@ export function useExamsData() {
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
   const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
   const examsAnswered = useAppStore((s) => !!s.syncLoaded.exams);
+  const refreshing = useAppStore((s) => s.examsRefreshing);
 
   const sections = useMemo(() => {
     const res: { subject: ExamSubject; section: ExamSection }[] = [];
@@ -25,7 +26,7 @@ export function useExamsData() {
     return res;
   }, [exams]);
 
-  const showSkeleton =
+  const waiting =
     exams.length === 0 &&
     (status === 'loading' ||
       status === 'idle' ||
@@ -34,7 +35,12 @@ export function useExamsData() {
 
   // The phone's ExamsScreen rule: a settled sync that never got an answer about
   // exams, with nothing cached, failed — it did not find "none" (Návrhy #26).
-  const showFailed = !showSkeleton && exams.length === 0 && firstSyncSettled && !examsAnswered;
+  const unanswered = !waiting && exams.length === 0 && firstSyncSettled && !examsAnswered;
+  // The retry is the targeted exams refresh; while it runs, the failure gives
+  // way to the loading state. Only then: a routine refresh over a list known
+  // to be empty must not flash a skeleton.
+  const showSkeleton = waiting || (unanswered && refreshing);
+  const showFailed = unanswered && !refreshing;
 
   return { exams, showSkeleton, showFailed, sections };
 }

@@ -92,7 +92,8 @@ export async function fetchDualLanguageExams(): Promise<ExamSubject[]> {
   // told the sync "answered, no exams", and the Exams screen said "Žádné
   // zkoušky" with IS unreachable (Návrhy #26). The caller keeps its cache.
   if (czResult.status === 'rejected' && enResult.status === 'rejected') {
-    logError('Api.fetchDualLanguageExams', czResult.reason);
+    logError('Api.fetchDualLanguageExams', czResult.reason, { lang: 'cz' });
+    logError('Api.fetchDualLanguageExams', enResult.reason, { lang: 'en' });
     throw czResult.reason;
   }
   try {

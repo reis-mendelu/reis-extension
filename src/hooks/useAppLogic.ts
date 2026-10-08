@@ -341,7 +341,10 @@ export function useAppLogic() {
         useAppStore.getState().setSyncStatus({
           isSyncing: r.isSyncing,
           ...(typeof r.error === 'string' ? { error: r.error } : {}),
-          ...(!r.isSyncing && typeof r.lastSync === 'number' ? { lastSync: r.lastSync } : {}),
+          // `> 0`: the injector's cachedData starts at 0, its "no stamp yet".
+          ...(!r.isSyncing && typeof r.lastSync === 'number' && r.lastSync > 0
+            ? { lastSync: r.lastSync }
+            : {}),
         });
         if (!r.isSyncing) {
           useAppStore.getState().fetchAllFiles();

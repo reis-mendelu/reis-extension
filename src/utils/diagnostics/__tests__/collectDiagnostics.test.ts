@@ -37,6 +37,9 @@ describe('collectDiagnostics', () => {
   beforeEach(() => {
     clearDiagnostics();
     platform.kind = 'extension';
+    syncState.firstSyncSettled = true;
+    syncState.syncLoaded = { schedule: true };
+    syncState.error = null;
   });
 
   it('merges app and content-script entries in time order', async () => {

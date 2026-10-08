@@ -44,8 +44,17 @@ describe('ZaznamnikTab when the fetch failed', () => {
 
   it('shows the skeleton while the retry runs', () => {
     useAppStore.setState({ zaznamnikLoading: { EBC: true } } as never);
-    render(<ZaznamnikTab courseCode="EBC" />);
+    const { container } = render(<ZaznamnikTab courseCode="EBC" />);
     expect(screen.queryByText(cs.mobile.loadFailed.title)).toBeNull();
+    expect(container.querySelector('.animate-pulse')).not.toBeNull();
+  });
+
+  it('offers no retry button it cannot honour — while impersonating', () => {
+    useAppStore.setState({ impersonation: { programme: 'x' } } as never);
+    render(<ZaznamnikTab courseCode="EBC" />);
+    expect(screen.getByText(cs.mobile.loadFailed.title)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: cs.mobile.loadFailed.retry })).toBeNull();
+    useAppStore.setState({ impersonation: null } as never);
   });
 
   it('keeps "no assessment data" for a subject never fetched (undefined)', () => {

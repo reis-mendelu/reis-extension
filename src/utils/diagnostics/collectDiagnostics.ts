@@ -31,11 +31,14 @@ export interface DiagnosticsPayload {
     examsFetchedAt: number | null;
     // Optional: 5.3.0 builds send the payload without them, and the admin
     // console parses every stored row with the same type.
-    /** A sync run has finished this session. */
+    /** A sync run has finished this session. Latched. */
     firstSyncSettled?: boolean;
-    /** Domains a sync got an answer for this session, empty answers included. */
+    /** Domains a sync got an answer for at any point THIS SESSION, empty
+     *  answers included — cumulative, not the last run's. */
     syncLoaded?: string[];
-    /** The last run threw. A flag only: the message is String(e), uncleaned. */
+    /** The last FINISHED run failed. Cleared the moment the next run starts,
+     *  so it reads false while a retry is in flight. A flag only: the message
+     *  is String(e), uncleaned. */
     syncFailed?: boolean;
   };
 }

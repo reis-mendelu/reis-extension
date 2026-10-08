@@ -574,18 +574,30 @@ export async function refreshSchedule(): Promise<void> {
 }
 
 export async function refreshExams(): Promise<void> {
+  // Rejects when IS could not be reached, so anything past this line is an
+  // answer — "none" included — and may release the failed state. Data only
+  // when there is some: an empty read must not wipe what is on screen.
   const fresh = await fetchDualLanguageExams();
-  if (fresh.length > 0) {
-    const params = await getUserParams();
-    const enriched = await enrichExamsWithDurations(
-      fresh,
-      cachedExams(),
-      params?.studium ?? '',
-      params?.obdobi ?? ''
-    );
-    cachedData = { ...cachedData, exams: enriched };
+  if (fresh.length === 0) {
     sendToIframe(
-      Messages.syncUpdate({ exams: enriched, isSyncing, lastSync: cachedData.lastSync })
+      Messages.syncUpdate({ loaded: ['exams'], isSyncing, lastSync: cachedData.lastSync })
     );
+    return;
   }
+  const params = await getUserParams();
+  const enriched = await enrichExamsWithDurations(
+    fresh,
+    cachedExams(),
+    params?.studium ?? '',
+    params?.obdobi ?? ''
+  );
+  cachedData = { ...cachedData, exams: enriched };
+  sendToIframe(
+    Messages.syncUpdate({
+      exams: enriched,
+      loaded: ['exams'],
+      isSyncing,
+      lastSync: cachedData.lastSync,
+    })
+  );
 }

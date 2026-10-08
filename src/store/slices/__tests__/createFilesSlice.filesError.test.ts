@@ -30,7 +30,7 @@ const SUBJECTS = {
 
 describe('a failed folder fetch is not an empty folder', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     idb.get.mockImplementation(async () => undefined);
     useAppStore.setState({
       impersonation: null,
@@ -132,5 +132,15 @@ describe('a failed folder fetch is not an empty folder', () => {
     await useAppStore.getState().refreshFiles(CODE);
 
     expect(useAppStore.getState().filesError[CODE]).toBeFalsy();
+  });
+
+  it('the cache reload still drops a stale subject that did not fail', async () => {
+    // Merging is only for failed subjects; anything else the cache no longer
+    // has is gone, as it was before.
+    useAppStore.setState({ files: { 'OLD-1': [{ file_name: 'x.pdf' } as never] }, filesError: {} });
+
+    await useAppStore.getState().fetchAllFiles();
+
+    expect(useAppStore.getState().files['OLD-1']).toBeUndefined();
   });
 });

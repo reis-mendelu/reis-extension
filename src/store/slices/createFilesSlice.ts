@@ -270,17 +270,22 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
       language: get().language,
       subjects: get().subjects,
     });
-    // Merged, not replaced: a subject whose only fetch failed has no IDB entry,
-    // and dropping its key put useFiles back on a skeleton that never ends,
-    // over the failed state (Návrhy #26). Every successful fetch is persisted,
-    // so the cache still wins for any subject that has one.
-    // A subject the cache has an entry for was fetched successfully at some
-    // point (here or by the sync), so any failure shown for it is stale.
+    // The cache is the map, except for a subject whose only fetch failed: it
+    // has no IDB entry, and dropping its key put useFiles back on a skeleton
+    // that never ends, over the failed state (Návrhy #26). Anything else the
+    // cache no longer has is dropped, as before.
+    // A subject the cache does have was fetched successfully at some point
+    // (here or by the sync), so any failure shown for it is stale.
     const answered = Object.fromEntries(Object.keys(files).map((code) => [code, false]));
-    set((state) => ({
-      files: { ...state.files, ...files },
-      filesError: { ...state.filesError, ...answered },
-    }));
+    set((state) => {
+      const failed = Object.fromEntries(
+        Object.entries(state.files).filter(([code]) => state.filesError[code])
+      );
+      return {
+        files: { ...failed, ...files },
+        filesError: { ...state.filesError, ...answered },
+      };
+    });
   },
   prefetchTodaySubjects: () => {
     if (get().impersonation) return;

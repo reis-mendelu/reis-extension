@@ -203,13 +203,13 @@ describe('SuggestionsInbox', () => {
 
   it('says which domains a sync got an answer for', () => {
     openWithSync({ firstSyncSettled: true, syncLoaded: ['schedule'], syncFailed: true });
-    expect(screen.getByText(/answered schedule/)).toBeInTheDocument();
-    expect(screen.getByText(/run failed/)).toBeInTheDocument();
+    expect(screen.getByText(/answered this session schedule/)).toBeInTheDocument();
+    expect(screen.getByText(/last run failed/)).toBeInTheDocument();
   });
 
   it('says nothing answered rather than implying success', () => {
     openWithSync({ firstSyncSettled: true, syncLoaded: [], syncFailed: false });
-    expect(screen.getByText(/answered nothing/)).toBeInTheDocument();
+    expect(screen.getByText(/answered this session nothing/)).toBeInTheDocument();
   });
 
   it('still renders a 5.3.0 payload without the new fields', () => {

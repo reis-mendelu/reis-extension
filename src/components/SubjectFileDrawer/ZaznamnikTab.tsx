@@ -25,6 +25,7 @@ interface ZaznamnikTabProps {
 export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTabProps) {
   const { data, isLoading, isFailed } = useZaznamnik(courseCode);
   const refetchZaznamnik = useAppStore((s) => s.refetchZaznamnik);
+  const impersonating = useAppStore((s) => !!s.impersonation);
   const subjectInfo = useAppStore((s) => (courseCode ? s.subjects?.data[courseCode] : undefined));
   const studium = useAppStore((s) => s.studiumId);
   const obdobi = useAppStore((s) => s.obdobiId);
@@ -92,7 +93,16 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
     return (
       <div className="flex flex-col h-full overflow-y-auto">
         {boxes.length > 0 && <div className="p-4 pb-0 text-[13px]">{boxSection}</div>}
-        <LoadFailed testId="zaznamnik-error" onRetry={() => refetchZaznamnik(courseCode)} />
+        <LoadFailed
+          testId="zaznamnik-error"
+          // The same preconditions refetchZaznamnik checks, so the button is
+          // never one that does nothing.
+          onRetry={
+            !impersonating && studium && obdobi && subjectId
+              ? () => refetchZaznamnik(courseCode)
+              : undefined
+          }
+        />
         {backlinks}
       </div>
     );

@@ -95,6 +95,15 @@ describe('sync status reaches the store', () => {
     });
   });
 
+  it("ignores the injector's 0 no-stamp sentinel", async () => {
+    // cachedData.lastSync starts at 0; a boot run that throws before Phase 2
+    // posts it. Taking it would block the IndexedDB seed and show 0.
+    renderHook(() => useAppLogic());
+    await push({ isSyncing: false, error: 'boom', lastSync: 0 });
+
+    expect(store.setSyncStatus).toHaveBeenCalledWith({ isSyncing: false, error: 'boom' });
+  });
+
   it('ignores lastSync on a push from a run still in flight', async () => {
     renderHook(() => useAppLogic());
     await push({ isSyncing: true, lastSync: 1_700_000_000_000 });

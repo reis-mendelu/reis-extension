@@ -74,4 +74,27 @@ describe('refetchZaznamnik', () => {
 
     expect(fetchSubjectZaznamnik).not.toHaveBeenCalled();
   });
+
+  it('ignores a second retry while one is in flight', async () => {
+    let release: (v: unknown) => void = () => {};
+    fetchSubjectZaznamnik.mockReturnValue(new Promise((r) => (release = r)));
+
+    const first = useAppStore.getState().refetchZaznamnik('EBC');
+    await useAppStore.getState().refetchZaznamnik('EBC');
+    await vi.waitFor(() => expect(fetchSubjectZaznamnik).toHaveBeenCalled());
+    release(LOADED);
+    await first;
+
+    expect(fetchSubjectZaznamnik).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps cached records when the retry fails', async () => {
+    useAppStore.setState({ zaznamnik: { EBC: LOADED } } as never);
+    fetchSubjectZaznamnik.mockResolvedValue(null);
+
+    await useAppStore.getState().refetchZaznamnik('EBC');
+
+    expect(useAppStore.getState().zaznamnik['EBC']).toEqual(LOADED);
+    expect(idbSet).not.toHaveBeenCalled();
+  });
 });
