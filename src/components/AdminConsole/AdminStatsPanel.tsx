@@ -34,12 +34,30 @@ export function AdminStatsPanel() {
   // --color-warning-content is now #111827 in both themes (index.css),
   // 8.26:1 on --color-warning — the DaisyUI alert-warning fill already
   // carries readable text, no override needed.
+  // Its own block, so it wraps under the three totals on a phone rather than
+  // pushing a fourth tile off a 320px screen. From its own RPC: absent until
+  // that read lands, and shown even when the usage read failed.
+  const lossTile = retention && retention.regularsEver > 0 && (
+    <div className="stats self-start shadow-sm">
+      <div className="stat p-3" title={t('admin.stats.goneQuietHint')}>
+        <div className="stat-title text-xs">{t('admin.stats.goneQuiet')}</div>
+        <div className="stat-value text-2xl">
+          {Math.round((retention.goneQuiet / retention.regularsEver) * 100)} %
+        </div>
+        <div className="stat-desc text-xs">{t('admin.stats.goneQuietDesc')}</div>
+      </div>
+    </div>
+  );
+
   const usage = !stats ? (
-    loading ? (
-      <span className="loading loading-dots loading-sm m-4" />
-    ) : (
-      <div className="alert alert-warning m-2 text-sm">{t('admin.stats.loadFailed')}</div>
-    )
+    <>
+      {lossTile}
+      {loading ? (
+        <span className="loading loading-dots loading-sm m-4" />
+      ) : (
+        <div className="alert alert-warning m-2 text-sm">{t('admin.stats.loadFailed')}</div>
+      )}
+    </>
   ) : (
     <>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -69,20 +87,7 @@ export function AdminStatsPanel() {
               </div>
             ))}
           </div>
-          {/* Its own block, so it wraps under the three totals on a phone rather
-            than pushing a fourth tile off a 320px screen. From its own RPC:
-            absent until that read lands, never blocking the totals. */}
-          {retention && retention.regularsEver > 0 && (
-            <div className="stats shadow-sm">
-              <div className="stat p-3" title={t('admin.stats.goneQuietHint')}>
-                <div className="stat-title text-xs">{t('admin.stats.goneQuiet')}</div>
-                <div className="stat-value text-2xl">
-                  {Math.round((retention.goneQuiet / retention.regularsEver) * 100)} %
-                </div>
-                <div className="stat-desc text-xs">{t('admin.stats.goneQuietDesc')}</div>
-              </div>
-            </div>
-          )}
+          {lossTile}
         </div>
         <span className="text-xs opacity-60">{t('admin.stats.epochNote')}</span>
       </div>

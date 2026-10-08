@@ -185,4 +185,17 @@ describe('AdminStatsPanel', () => {
     render(<AdminStatsPanel />);
     expect(screen.queryByText('Odešli')).not.toBeInTheDocument();
   });
+
+  // Same contract as the feature signals: its own RPC, so a failed usage read
+  // must not hide a loss figure that arrived perfectly well.
+  it('still shows the loss tile when the usage read failed', () => {
+    useAppStore.setState({
+      adminStats: null,
+      adminStatsLoading: false,
+      adminRetention: { regularsEver: 2435, goneQuiet: 97 },
+    } as never);
+    render(<AdminStatsPanel />);
+    expect(screen.getByText('Statistiky se nepodařilo načíst.')).toBeInTheDocument();
+    expect(screen.getByText('4 %')).toBeInTheDocument();
+  });
 });
