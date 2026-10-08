@@ -977,6 +977,17 @@
     "delete": "Delete",
     "deleteConfirm": "Delete for good?",
     "categoryLabel": "Event type",
+    "emojiPickerLabel": "Event picture",
+    "emojiChange": "Change picture",
+    "emojiGroup": {
+      "party": "Parties and food",
+      "games": "Games and quizzes",
+      "sport": "Sport",
+      "culture": "Culture and learning",
+      "season": "Holidays",
+      "travel": "Trips",
+      "other": "Other"
+    },
     "category": {
       "party": "Party",
       "boardgames": "Board games",

@@ -977,6 +977,17 @@
     "delete": "Smazat",
     "deleteConfirm": "Opravdu smazat?",
     "categoryLabel": "Typ akce",
+    "emojiPickerLabel": "Obrázek akce",
+    "emojiChange": "Změnit obrázek",
+    "emojiGroup": {
+      "party": "Párty a jídlo",
+      "games": "Hry a kvízy",
+      "sport": "Sport",
+      "culture": "Kultura a vzdělávání",
+      "season": "Svátky",
+      "travel": "Výlety",
+      "other": "Ostatní"
+    },
     "category": {
       "party": "Párty",
       "boardgames": "Deskovky",
