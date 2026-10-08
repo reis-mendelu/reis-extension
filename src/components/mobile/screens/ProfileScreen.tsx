@@ -80,9 +80,11 @@ export function ProfileScreen() {
               icon={CalendarSync}
               label={t('mobile.gcal.row')}
               sublabel={
-                gcal.connected && gcalTime
-                  ? t('mobile.gcal.rowOn', { time: gcalTime })
-                  : t('mobile.gcal.rowOff')
+                gcal.syncing && gcal.progress
+                  ? t('mobile.gcal.progress', gcal.progress)
+                  : gcal.connected && gcalTime
+                    ? t('mobile.gcal.rowOn', { time: gcalTime })
+                    : t('mobile.gcal.rowOff')
               }
               onClick={() => pushSheet({ kind: 'googleCalendar' })}
             />

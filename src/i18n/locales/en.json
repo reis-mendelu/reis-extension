@@ -1382,6 +1382,7 @@
       "account": "Account: {email}",
       "open": "Open in Google Calendar",
       "progress": "Syncing {done}/{total}",
+      "progressHint": "You can close this, the sync keeps going. If you leave reIS, it finishes the next time you open it.",
       "offDelete": "Turn off and delete the Rozvrh calendar",
       "offDeleteConfirm": "This deletes the Rozvrh calendar, past semesters included. It can’t be undone.",
       "offDeleteYes": "Delete Rozvrh",

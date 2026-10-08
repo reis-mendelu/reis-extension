@@ -4,6 +4,7 @@ import type { CalendarApi } from './calendarApi';
 import { AuthRevokedError, CalendarGoneError } from './calendarHttp';
 import { normalizeCustom, normalizeExams, normalizeLessons } from './normalize';
 import { planKind } from './plan';
+import { runPool } from './runPool';
 import { pragueToday } from './pragueDate';
 import { toDesired } from './toGoogleEvent';
 import type { AppLanguage, DesiredEvent, ReisKind } from './types';
@@ -36,6 +37,12 @@ export type SyncOutcome =
 
 const CALENDAR_NAME = 'Rozvrh';
 const KINDS = ['lesson', 'exam', 'custom'] as const;
+/**
+ * Writes in flight at once. One at a time took a minute for 136 events on 4G
+ * (Pixel 9a, 2026-10-08): each call is ~250 ms of latency. With the 150 ms pace
+ * in calendarHttp.ts, four workers stay near Google's 600 requests/minute/user.
+ */
+const WRITE_CONCURRENCY = 4;
 
 /** 00:00 in Prague as RFC 3339. Prague is +01:00 or +02:00; take it from Intl. */
 function pragueMidnight(today: string, now: Date): string {
@@ -145,10 +152,7 @@ export async function runSync(o: {
       );
     }
 
-    for (let i = 0; i < work.length; i++) {
-      await work[i]!();
-      o.onProgress?.(i + 1, work.length);
-    }
+    await runPool(work, WRITE_CONCURRENCY, (n) => o.onProgress?.(n, work.length));
     return {
       kind: 'ok',
       written: work.length,

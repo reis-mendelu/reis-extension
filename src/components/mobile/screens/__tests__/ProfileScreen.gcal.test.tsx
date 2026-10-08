@@ -41,4 +41,15 @@ describe('ProfileScreen — Google Calendar row', () => {
     render(<ProfileScreen />);
     expect(screen.getByText('Synchronizováno 14:02')).toBeInTheDocument();
   });
+
+  it("shows the first fill's progress, so closing the sheet still shows it running", () => {
+    useAppStore.getState().setGcal({
+      available: true,
+      connected: true,
+      syncing: true,
+      progress: { done: 56, total: 136 },
+    });
+    render(<ProfileScreen />);
+    expect(screen.getByText('Synchronizuji 56/136')).toBeInTheDocument();
+  });
 });

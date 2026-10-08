@@ -1382,6 +1382,7 @@
       "account": "Účet: {email}",
       "open": "Otevřít v Google Kalendáři",
       "progress": "Synchronizuji {done}/{total}",
+      "progressHint": "Tohle okno můžeš zavřít, synchronizace poběží dál. Když reIS zavřeš, dokončí se při dalším otevření.",
       "offDelete": "Vypnout a smazat kalendář Rozvrh",
       "offDeleteConfirm": "Smaže kalendář Rozvrh i s minulými semestry. To nejde vrátit.",
       "offDeleteYes": "Smazat Rozvrh",

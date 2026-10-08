@@ -4,7 +4,7 @@
  * list of calls the sync makes.
  */
 const BASE = 'https://www.googleapis.com/calendar/v3';
-const PACE_MS = 200; // 5 req/s — Google's per-user quota counts batch parts too
+const PACE_MS = 150; // per worker; with 4 workers (runSync) ≈ 10 req/s = Google's 600/min/user
 const MAX_BACKOFF_TRIES = 5;
 
 export class CalendarGoneError extends Error {}

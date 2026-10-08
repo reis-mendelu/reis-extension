@@ -85,5 +85,7 @@ describe('GoogleCalendarSheet', () => {
       .setGcal({ connected: true, syncing: true, progress: { done: 120, total: 480 } });
     render(<GoogleCalendarSheet onClose={() => {}} />);
     expect(screen.getByText(/Synchronizuji 120\/480/)).toBeTruthy();
+    // The first fill takes a while; say it doesn't need this sheet open.
+    expect(screen.getByText(/můžeš zavřít/)).toBeTruthy();
   });
 });

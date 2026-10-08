@@ -61,6 +61,9 @@ export function GoogleCalendarSheet({ onClose }: GoogleCalendarSheetProps) {
                 : time && t('mobile.gcal.rowOn', { time })}
               {gcal.syncing && <Loader2 size={14} className="ml-2 inline animate-spin" />}
             </p>
+            {gcal.syncing && gcal.progress && (
+              <p className="text-xs text-base-content/70">{t('mobile.gcal.progressHint')}</p>
+            )}
             {gcal.email && (
               <p className="text-xs text-base-content/70">
                 {t('mobile.gcal.account', { email: gcal.email })}
