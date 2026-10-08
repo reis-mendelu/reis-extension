@@ -80,12 +80,19 @@ committed.
    `AfterFirstUnlockThisDeviceOnly` "to allow background access".
 8. **Timetable data is JSON** (`rozvrhy_view.pl?format=json`), so the background job needs
    no DOM. The exam parser does need `DOMParser`.
+9. **`calendar.app.created` is scoped per *project*, not per OAuth client** (plan Task 1).
+   - Two throwaway Desktop clients in reis-479320, one Google account, each with its own
+     consent and token. Client B was granted `calendar.app.created` only.
+   - Client A created a calendar and an event in it. Client B then got the calendar (200),
+     listed its events (200), `PUT` an edit to A's event (200), inserted its own event
+     (200) and deleted it (204). A deleted the calendar (204).
+   - With `calendar.calendarlist.readonly` added, `calendarList.list?minAccessRole=owner`
+     returned 200 and listed the app's calendar (the probe found and deleted an orphan from
+     a failed first run that way), so a second device can find "Rozvrh".
+   - So the iOS client, the Play-signing client and the upload-key client share one
+     "Rozvrh". No sensitive scope and no per-device calendar are needed.
 
-**Still unverified, so the plan does these first, in this order:**
-- **Is `calendar.app.created` per *project* or per *OAuth client*?** The iPad signs in through an iOS client, Play installs through a Play-signing Android client, and sideloads through the upload-key client. Those are three different clients.
-  - If access is per client, a second device can't read or write the "Rozvrh" another client created, and finding it via `calendarlist.readonly` doesn't help.
-  - The fallbacks would then be a sensitive scope (e.g. `calendar.events.owned`, which brings Google's review) or one calendar per device.
-  - **This is the first test in the plan,** and it blocks the multi-device parts: one client creates the calendar and an event, then a second client edits both.
+**Still unverified, so the plan does these next, in this order:**
 - GoogleSignIn on iOS in a `BGAppRefreshTask`;
 - how often iOS actually runs that task;
 - whether GoogleSignIn works in the Mac ("Designed for iPad") build.
