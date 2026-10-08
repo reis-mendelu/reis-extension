@@ -5,12 +5,15 @@ import type { NotificationSlice } from '../../types';
 import { IndexedDBService } from '../../../services/storage/IndexedDBService';
 
 vi.mock('../../../services/storage/IndexedDBService', () => ({
-  IndexedDBService: { get: vi.fn(), set: vi.fn().mockResolvedValue(undefined) },
+  IndexedDBService: {
+    get: vi.fn(),
+    set: vi.fn().mockResolvedValue(undefined),
+    delete: vi.fn().mockResolvedValue(undefined),
+  },
 }));
 const fetchNotifications = vi.hoisted(() => vi.fn());
 vi.mock('../../../services/spolky', () => ({
   fetchNotifications,
-  trackNotificationsViewed: vi.fn(),
 }));
 
 const CACHED = [{ id: 'old', title: 'Deskovky', body: 'Deskovky', expiresAt: '2026-09-04' }];
@@ -101,7 +104,7 @@ describe('createNotificationSlice: the cache must not outrank the network', () =
     expect(IndexedDBService.set).toHaveBeenCalledWith('meta', 'notifications_cache', []);
   });
 
-  it('keeps the read and viewed sets whichever way the race went', async () => {
+  it('keeps the read set whichever way the race went', async () => {
     fetchNotifications.mockResolvedValue(FRESH);
     await state.fetchNotifications();
     vi.mocked(IndexedDBService.get).mockImplementation(async (_store, key) => {

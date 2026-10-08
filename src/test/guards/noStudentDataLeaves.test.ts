@@ -73,7 +73,8 @@ const SUPABASE_CALLERS = new Set([
   // counts over thousands of installs, not per-student data. Disclosed in
   // PRIVACY.md ("Daily Usage & NPS Feedback") and docs/privacy-policy-app.md.
   'src/api/feedback.ts',
-  // Society post view/click counters; sends a post row id and nothing else.
+  // Reads the public society events for Novinky. Writes nothing (the post
+  // view/click counters left with spec 2026-10-08; old builds still send them).
   'src/services/spolky/spolkyService.ts',
   // Reads the public society events feed. No student data in either direction.
   'src/api/mapEvents.ts',
@@ -81,23 +82,24 @@ const SUPABASE_CALLERS = new Set([
   // branding (name, colour, faculty, logo path). No identity, no student data,
   // nothing written. Logos then load as plain <img> GETs from the same project.
   'src/api/societies.ts',
-  // Two feature counters, added September 2026, both disclosed in PRIVACY.md
-  // section 2 and docs/privacy-policy-app.md BEFORE this entry was added.
+  // Feature counters, added September 2026, disclosed in PRIVACY.md section 2
+  // and docs/privacy-policy-app.md BEFORE this entry was added.
   //
   // `track_feature_usage` sends the random per-install UUID and one label from
   // a three-value whitelist enforced in the database ('map_dwell_3s',
   // 'eduroam_wifi_configured', 'eduroam_profile_delivered'). Same identifier
   // and same posture as `feedback.ts`: it counts INSTALLS, not people.
-  //
-  // `increment_event_map_view` sends a society event's row id and NO
-  // identifier whatsoever — the same shape `increment_post_view` has always
-  // had in spolkyService.ts.
-  //
-  // What makes this safe to allow is that the two are deliberately kept
-  // unjoinable: nothing anywhere records which event a given install looked
-  // at. That pairing would be a behavioural profile, and no payload here can
-  // express it.
   'src/api/featureUsage.ts',
+  // Seen / Opened / Link per society event (spec 2026-10-08). Sends a society
+  // event's row id, one of three whitelisted signal names, and NO identifier
+  // whatsoever; "once per device" is remembered locally, never sent. Replaces
+  // increment_event_map_view and the post view/click counters.
+  //
+  // What makes this safe to allow is that it is deliberately unjoinable with
+  // the install-id counters above: nothing anywhere records which event a
+  // given install looked at. That pairing would be a behavioural profile, and
+  // no payload here can express it.
+  'src/api/eventSignals.ts',
 ]);
 
 /**
@@ -342,8 +344,8 @@ describe('no student data leaves the device', () => {
   // interacts with Firefox and the installed add-ons, metrics for product
   // improvement" — with no carve-out for data that carries no identifier. So
   // the daily count, feature counters and NPS are "technicalAndInteraction"
-  // data, and so are the identifier-free post view/click and map-event view
-  // counters: a post id is not a person, but the count is still a metric.
+  // data, and so are the identifier-free event signals (seen, opened, link):
+  // an event id is not a person, but the count is still a metric.
   //
   // The only way out is Mozilla's implicit consent, for a send that is "a
   // direct, immediate consequence of a single, deliberate user command". No
@@ -357,8 +359,8 @@ describe('no student data leaves the device', () => {
     // are stripped first so a mention of either string cannot pad the count.
     const gated = [
       'src/api/feedback.ts', // trackDailyUsage and the NPS answer
-      'src/api/featureUsage.ts', // trackFeatureSignal and trackMapEventView
-      'src/services/spolky/spolkyService.ts', // post views and clicks
+      'src/api/featureUsage.ts', // trackFeatureSignal
+      'src/api/eventSignals.ts', // seen, opened, link
     ];
     for (const path of gated) {
       const code = readFileSync(join(ROOT, path), 'utf-8')

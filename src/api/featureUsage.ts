@@ -6,21 +6,18 @@ import { logError } from '../utils/reportError';
 import { hasDataConsent } from '../utils/firefoxDataConsent';
 
 /**
- * The three counters reIS keeps about its own features, and the per-event map
- * view counter beside them.
+ * The three counters reIS keeps about its own features.
  *
- * Both writes here identify the DEVICE or the EVENT, never the student. The
- * feature signals carry the random per-install UUID
- * (`services/identity/installId.ts`) and a fixed label; the map view carries an
- * event id and no identifier at all. They therefore count INSTALLS, not people
- * — one student on a phone and a laptop is two, and a reinstall is a third.
- * Any dashboard built on them must say so, exactly as the admin usage panel
+ * They carry the random per-install UUID (`services/identity/installId.ts`)
+ * and a fixed label, never the student, so they count INSTALLS, not people —
+ * one student on a phone and a laptop is two, and a reinstall is a third. Any
+ * dashboard built on them must say so, exactly as the admin usage panel
  * already does. Disclosed in PRIVACY.md section 2 and
- * docs/privacy-policy-app.md before either write existed.
+ * docs/privacy-policy-app.md before the write existed.
  *
  * What is deliberately NOT recorded: which event a given install looked at.
- * Pairing the install id with an event id would be a behavioural profile, so
- * the two counters are kept in separate shapes that cannot be joined.
+ * The per-event counters live in `api/eventSignals.ts` and carry an event id
+ * and no identifier, so the two cannot be joined into a behavioural profile.
  */
 export type FeatureSignal =
   /** Spent at least three seconds on the campus map. */
@@ -51,12 +48,10 @@ function writesAllowed(): boolean {
  * reasoning as the in-flight promise in `api/feedback.ts`.
  */
 const sentSignals = new Set<FeatureSignal>();
-const viewedEvents = new Set<string>();
 
 /** Test-only: drop the once-per-session latches. */
 export function __resetFeatureSignalsForTests(): void {
   sentSignals.clear();
-  viewedEvents.clear();
 }
 
 /**
@@ -90,38 +85,5 @@ export async function trackFeatureSignal(signal: FeatureSignal): Promise<void> {
   } catch (err) {
     sentSignals.delete(signal);
     logError('Api.trackFeatureSignal', err);
-  }
-}
-
-/**
- * Bump the map-view counter on one society event, at most once per session.
- *
- * The view lands in `event_map_views`, a rollup keyed on (event, day), NOT in
- * `view_count` — that is the Novinky feed metric
- * (`services/spolky/spolkyService.ts`), and folding map views into it would
- * silently corrupt a number societies are already shown. Keeping the day is
- * what lets the admin console draw a trend; a bare counter could only ever
- * answer "143 opens, ever".
- */
-export async function trackMapEventView(eventId: string): Promise<void> {
-  if (!writesAllowed()) return;
-  if (viewedEvents.has(eventId)) return;
-  viewedEvents.add(eventId);
-  // Gated although it carries no identifier: Mozilla counts interaction metrics
-  // as technicalAndInteraction data, and the student opened a card, not a
-  // counter — the card works without it, so this is no implicit-consent send.
-  if (!(await hasDataConsent('technicalAndInteraction'))) {
-    viewedEvents.delete(eventId);
-    return;
-  }
-  try {
-    const { error } = await supabase.rpc('increment_event_map_view', { row_id: eventId });
-    if (error) {
-      viewedEvents.delete(eventId);
-      logError('Api.trackMapEventView', new Error(error.message));
-    }
-  } catch (err) {
-    viewedEvents.delete(eventId);
-    logError('Api.trackMapEventView', err);
   }
 }

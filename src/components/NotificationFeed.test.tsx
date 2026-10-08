@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NotificationFeed } from './NotificationFeed';
 import { IndexedDBService } from '../services/storage';
 import * as spolkyService from '../services/spolky';
+import { trackEventSignal } from '../api/eventSignals';
 import { useAppStore } from '../store/useAppStore';
 
 // The linked branch hands the URL to the system browser; a unit test has none.
@@ -12,9 +13,9 @@ vi.mock('../mobile/openExternal', () => ({ openExternal: vi.fn() }));
 // Mock the services
 vi.mock('../services/spolky', () => ({
   fetchNotifications: vi.fn(),
-  trackNotificationsViewed: vi.fn(),
-  trackNotificationClick: vi.fn(),
 }));
+// A society row on screen counts Seen (api/eventSignals dedupes per device).
+vi.mock('../api/eventSignals', () => ({ trackEventSignal: vi.fn() }));
 
 // Mock IndexedDBService. This sat inside the `describe` body until vitest 5,
 // which errors on a hoisted call written below the top level rather than
@@ -122,7 +123,7 @@ describe('NotificationFeed', () => {
     } as any);
   });
 
-  it('should track views when notification becomes visible', async () => {
+  it('counts a society row as Seen once it is on screen', async () => {
     // Mock user has NOT viewed anything yet
 
     (IndexedDBService.get as any).mockImplementation((_store: string, key: string) => {
@@ -150,13 +151,12 @@ describe('NotificationFeed', () => {
       });
     }
 
-    // Check if view tracking was called for item 1
     await waitFor(() => {
-      expect(spolkyService.trackNotificationsViewed).toHaveBeenCalledWith(['1']);
+      expect(trackEventSignal).toHaveBeenCalledWith('1', 'seen');
     });
   });
 
-  it('should NOT track views again if notifications are locally marked as VIEWED (analytics)', async () => {
+  it('does not count a row again once it was seen this session', async () => {
     useAppStore.setState({
       notifications: {
         data: mockNotifications,
@@ -185,8 +185,7 @@ describe('NotificationFeed', () => {
       });
     }
 
-    // Should NOT have called trackNotificationsViewed for '1'
-    expect(spolkyService.trackNotificationsViewed).not.toHaveBeenCalled();
+    expect(trackEventSignal).not.toHaveBeenCalled();
   });
 
   it('holds back an event the console still lists as scheduled', async () => {

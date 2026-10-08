@@ -11,7 +11,7 @@ import { EventPin } from './EventPin';
 import { DraftPin } from './DraftPin';
 import { useSociety } from '../../hooks/useSociety';
 import { isSoonEvent } from './eventWindow';
-import { trackMapEventView } from '../../api/featureUsage';
+import { usePinsSeen } from './usePinsSeen';
 
 interface Placed {
   key: string;
@@ -81,16 +81,6 @@ export function EventLayer() {
   const [draftPt, setDraftPt] = useState<{ x: number; y: number } | null>(null);
   const [pane, setPane] = useState<HTMLElement | null>(null);
   const activeDraft = composerOpen ? draftCoord : null;
-  // A pin opened on the student map is the map-view signal. NOT while
-  // authoring: the admin console renders this same layer over a society's own
-  // events, and a society checking its own listing is not a student looking at
-  // it. Tracked here rather than inside `focusEventById`, because that action
-  // is also how a Novinky feed click and the admin console's own list open an
-  // event — both of which would arrive as map views.
-  const selectEvent = (id: string) => {
-    if (!authoring) void trackMapEventView(id);
-    focusEvent(id);
-  };
   const draftSociety = useSociety(assocId);
   const draftColor = draftSociety?.color ?? '#0046a0';
   // Events are loaded by the store (initializeStore + language handlers), not a
@@ -103,6 +93,8 @@ export function EventLayer() {
     // clear it, so the pins and the list beside them disagreed.
     return groupEventsByVenue(events);
   }, [events]);
+  // Seen: pins inside the visible map, on the student map in campus overview.
+  usePinsSeen(groups, !authoring && activeBuildingId === null);
 
   // Re-place pins when the visible groups change (filter toggle, data load).
   const groupsRef = useRef(groups);
@@ -215,7 +207,7 @@ export function EventLayer() {
           y={p.y}
           selected={p.group.events.some((e) => e.id === selectedId)}
           locale={language === 'en' ? 'en-US' : 'cs-CZ'}
-          onSelect={selectEvent}
+          onSelect={(id: string) => focusEvent(id)}
         />
       ))}
       {draftPt && (

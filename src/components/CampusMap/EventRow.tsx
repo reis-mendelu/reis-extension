@@ -22,6 +22,7 @@ export function EventRow({
   subline,
   actions,
   footer,
+  seenRef,
 }: {
   event: MapEvent;
   locale: string;
@@ -31,6 +32,8 @@ export function EventRow({
   subline?: string;
   actions?: ReactNode;
   footer?: ReactNode;
+  /** The student list's Seen counter (useSeenSignal); the console passes none. */
+  seenRef?: (el: HTMLDivElement | null) => void;
 }) {
   const soc = useSociety(event.societyId);
   const day = subline ?? eventWhenLabel(event, locale, t);
@@ -38,6 +41,7 @@ export function EventRow({
   const location = event.location?.trim() || null;
   return (
     <div
+      ref={seenRef}
       className={`flex items-stretch border-l-2 transition-colors ${
         selected ? 'border-primary bg-primary/10' : 'border-transparent hover:bg-base-content/5'
       }`}

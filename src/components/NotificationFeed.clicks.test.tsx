@@ -5,6 +5,7 @@ import { NotificationFeed } from './NotificationFeed';
 import * as spolkyService from '../services/spolky';
 import { useAppStore } from '../store/useAppStore';
 import { openExternal } from '../mobile/openExternal';
+import { trackEventSignal } from '../api/eventSignals';
 import { MOCK_MAP_EVENTS } from './CampusMap/__tests__/fixtures/mockMapEvents';
 import { localTodayIso } from './CampusMap/eventWindow';
 
@@ -16,9 +17,9 @@ import { localTodayIso } from './CampusMap/eventWindow';
 vi.mock('../mobile/openExternal', () => ({ openExternal: vi.fn() }));
 vi.mock('../services/spolky', () => ({
   fetchNotifications: vi.fn(),
-  trackNotificationsViewed: vi.fn(),
-  trackNotificationClick: vi.fn(),
 }));
+// Opening a card counts Opened (focusEventById); a link counts nothing.
+vi.mock('../api/eventSignals', () => ({ trackEventSignal: vi.fn() }));
 vi.mock('../services/storage', () => ({
   IndexedDBService: {
     get: vi.fn().mockResolvedValue(null),
@@ -72,7 +73,7 @@ describe('NotificationFeed row taps', () => {
     } as any);
   });
 
-  it('should track click and fall back to the link when no map event matches', async () => {
+  it('falls back to the link, counting nothing, when no map event matches', async () => {
     // 'Test Notification 1' has a link but its id ('1') is not in mapEvents
     // (empty, loaded — see beforeEach), so the tap falls back to the link
     // rather than opening a card that does not exist.
@@ -92,7 +93,7 @@ describe('NotificationFeed row taps', () => {
       fireEvent.click(notificationItem);
     });
 
-    expect(spolkyService.trackNotificationClick).toHaveBeenCalledWith('1');
+    expect(trackEventSignal).not.toHaveBeenCalled();
     expect(openExternal).toHaveBeenCalledWith('https://example.com');
   });
 
@@ -155,7 +156,7 @@ describe('NotificationFeed row taps', () => {
     });
 
     expect(openExternal).toHaveBeenCalledWith('https://is.mendelu.cz/dp');
-    expect(spolkyService.trackNotificationClick).not.toHaveBeenCalled();
+    expect(trackEventSignal).not.toHaveBeenCalled();
   });
 
   it('falls back to the link once the map feed loads with no matching event', async () => {

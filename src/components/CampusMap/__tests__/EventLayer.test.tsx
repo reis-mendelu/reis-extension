@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
+// Pins report Seen; the counter itself is tested in api/eventSignals.
+vi.mock('../../../api/eventSignals', () => ({ trackEventSignal: vi.fn() }));
+
 import { render, act, fireEvent } from '@testing-library/react';
 import { EventLayer } from '../EventLayer';
 import { setMapInstance } from '../mapInstance';
@@ -53,6 +56,8 @@ beforeEach(() => {
     latLngToLayerPoint() {
       return { x: this.zoom === 17 ? 10 : 50, y: 20 };
     },
+    // Every pin on screen (usePinsSeen asks).
+    getBounds: () => ({ contains: () => true }),
     // Post-zoom target layer point (Leaflet rounds it).
     _latLngToNewLayerPoint: () => ({ round: () => ({ x: 99, y: 88 }) }),
     // Record the handler under every space-separated event token.

@@ -4,7 +4,8 @@ import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { weekSections } from './eventHelpers';
 import { EventRow } from './EventRow';
-import { trackMapEventView } from '../../api/featureUsage';
+import { useSeenSignal } from '../../hooks/ui/useSeenSignal';
+import type { MapEvent } from '../../types/events';
 
 // The events tab body shared by the desktop MapSidePanel and the mobile map
 // sheet's Akce tab: the upcoming events grouped into This week / Next week /
@@ -63,19 +64,13 @@ export function MapEventsSection() {
               )}
               {(s.key !== 'later' || laterExpanded) &&
                 s.events.map((e) => (
-                  <EventRow
+                  <SeenEventRow
                     key={e.id}
                     event={e}
                     locale={locale}
                     t={t}
                     selected={e.id === selectedId}
-                    onClick={() => {
-                      // This panel is the student map's own list on both
-                      // surfaces (desktop MapSidePanel, mobile Akce tab), so a
-                      // row opened here is a map view exactly like a pin.
-                      void trackMapEventView(e.id);
-                      focusEvent(e.id, { fly: true });
-                    }}
+                    onClick={() => focusEvent(e.id, { fly: true })}
                   />
                 ))}
             </div>
@@ -84,4 +79,15 @@ export function MapEventsSection() {
       </div>
     </div>
   );
+}
+
+/** A student-list row that counts as Seen once on screen (spec 2026-10-08). */
+function SeenEventRow(props: {
+  event: MapEvent;
+  locale: string;
+  t: (k: string, p?: Record<string, string | number>) => string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return <EventRow {...props} seenRef={useSeenSignal<HTMLDivElement>(props.event.id)} />;
 }

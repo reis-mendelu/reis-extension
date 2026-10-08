@@ -32,6 +32,12 @@ describe('society events stay reduced', () => {
     expect(grep('LocalNotifications\\.schedule')).toBe('');
   });
 
+  // Seen / Opened / Link (api/eventSignals) replaced them: one unit, once per
+  // device. Old builds still send these; current code must not.
+  it('no Novinky post counters or per-session map views', () => {
+    expect(grep('increment_post_view|increment_post_click|increment_event_map_view')).toBe('');
+  });
+
   it('no follow store', () => {
     expect(
       grep('reis_subscribed_associations|toggleFollow|useSpolkySettings|createFollowSlice')

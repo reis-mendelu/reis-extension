@@ -2,16 +2,19 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { NotificationsSheet } from '../NotificationsSheet';
 import { useAppStore } from '../../../../store/useAppStore';
-import { trackNotificationClick } from '../../../../services/spolky';
+import { trackEventSignal } from '../../../../api/eventSignals';
 import type { SpolekNotification } from '../../../../services/spolky';
 import { openExternal } from '../../../../mobile/openExternal';
 
-// Only the click counter is faked: the rest of the module backs the feed's own
-// faculty filter, and a real RPC here would reach Supabase from a unit test.
-vi.mock('../../../../services/spolky', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../../../services/spolky')>()),
-  trackNotificationClick: vi.fn(),
-}));
+// Only the counter is faked: a real RPC here would reach Supabase from a unit
+// test. Opening an event's card counts Opened (focusEventById); a link counts
+// nothing.
+vi.mock('../../../../api/eventSignals', () => ({ trackEventSignal: vi.fn() }));
+const opened = () =>
+  vi
+    .mocked(trackEventSignal)
+    .mock.calls.filter((c) => c[1] === 'opened')
+    .map((c) => c[0]);
 
 // The linked branch hands the URL to the system browser; a unit test has none.
 vi.mock('../../../../mobile/openExternal', () => ({ openExternal: vi.fn() }));
@@ -27,7 +30,7 @@ const notification: SpolekNotification = {
 } as SpolekNotification;
 
 beforeEach(() => {
-  vi.mocked(trackNotificationClick).mockClear();
+  vi.mocked(trackEventSignal).mockClear();
   vi.mocked(openExternal).mockClear();
   useAppStore.setState({
     language: 'cz',
@@ -152,11 +155,11 @@ describe('NotificationsSheet event notifications', () => {
   /**
    * Waiting on the load opened a window the synchronous version never had. Two
    * taps inside it ran two handlers: two undeduplicated fetches (loadMapEvents
-   * guards on "already loaded", not on "already loading") and two
-   * increment_post_click RPCs for ONE intent — a click counter that overstates
-   * the row a student had to tap twice because it was slow.
+   * guards on "already loaded", not on "already loading") and two Opened
+   * counts for ONE intent — a counter that overstates the row a student had to
+   * tap twice because it was slow.
    */
-  it('counts one click and loads once when tapped twice during the load', async () => {
+  it('counts one open and loads once when tapped twice during the load', async () => {
     let release!: () => void;
     const pending = new Promise<void>((r) => {
       release = r;
@@ -175,7 +178,7 @@ describe('NotificationsSheet event notifications', () => {
 
     await waitFor(() => expect(useAppStore.getState().mobileTab).toBe('map'));
     expect(loadMapEvents).toHaveBeenCalledTimes(1);
-    expect(trackNotificationClick).toHaveBeenCalledTimes(1);
+    expect(opened()).toEqual(['n1']);
   });
 
   // The guard spans the in-flight load only — it must not wedge the row shut.
@@ -244,9 +247,9 @@ describe('NotificationsSheet event notifications', () => {
     expect(state.mapSelection).toBeNull();
     // The academic tap went straight to its link instead.
     expect(openExternal).toHaveBeenCalledWith(academicNotification.link);
-    // Academic rows are never tracked, and the earlier (superseded)
-    // activation never got far enough to track its own row either.
-    expect(trackNotificationClick).not.toHaveBeenCalled();
+    // Academic rows are never counted, and the earlier (superseded)
+    // activation never got far enough to open its own card either.
+    expect(opened()).toEqual([]);
   });
 
   /**
@@ -298,9 +301,9 @@ describe('NotificationsSheet event notifications', () => {
     // The first row's tap never got to open the map — it was superseded.
     expect(state.mobileTab).toBe('calendar');
     expect(state.mapSelection).toBeNull();
-    // Only the row the later tap actually landed on was tracked.
-    expect(trackNotificationClick).toHaveBeenCalledTimes(1);
-    expect(trackNotificationClick).toHaveBeenCalledWith('n3');
+    // The later tap opened a link, which counts nothing; the superseded one
+    // never opened its card.
+    expect(opened()).toEqual([]);
   });
 
   // Same as above, but the later row IS on the loaded map: the card wins for
@@ -348,8 +351,7 @@ describe('NotificationsSheet event notifications', () => {
     const state = useAppStore.getState();
     expect(state.mobileTab).toBe('map');
     expect(openExternal).not.toHaveBeenCalled();
-    expect(trackNotificationClick).toHaveBeenCalledTimes(1);
-    expect(trackNotificationClick).toHaveBeenCalledWith('n4');
+    expect(opened()).toEqual(['n4']);
   });
 
   // The card carries the RSVP and the venue; the link is just its button. A
@@ -402,7 +404,7 @@ describe('NotificationsSheet event notifications', () => {
     fireEvent.click(screen.getByText('ESN party tonight'));
 
     expect(openExternal).toHaveBeenCalledWith('https://is.mendelu.cz/dp');
-    expect(trackNotificationClick).not.toHaveBeenCalled();
+    expect(opened()).toEqual([]);
     expect(useAppStore.getState().mobileTab).toBe('calendar');
   });
 
@@ -461,7 +463,7 @@ describe('NotificationsSheet event notifications', () => {
     const state = useAppStore.getState();
     expect(state.mobileTab).toBe('calendar');
     expect(state.mapSelection).toBeNull();
-    expect(trackNotificationClick).not.toHaveBeenCalled();
+    expect(opened()).toEqual([]);
   });
 
   // A notification the map has no row for (a far-future event the public feed

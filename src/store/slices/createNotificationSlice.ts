@@ -1,5 +1,6 @@
 import type { AppSlice, NotificationSlice } from '../types';
-import { fetchNotifications, trackNotificationsViewed } from '../../services/spolky';
+import { fetchNotifications } from '../../services/spolky';
+import { trackEventSignal } from '../../api/eventSignals';
 import { IndexedDBService } from '../../services/storage';
 import { dropPreAudienceRows } from '../../services/spolky/spolkyService';
 
@@ -13,18 +14,18 @@ export const createNotificationSlice: AppSlice<NotificationSlice> = (set, get) =
   },
 
   loadNotificationState: async () => {
-    const [readIds, viewedIds, seenIds, cache] = await Promise.all([
+    const [readIds, seenIds, cache] = await Promise.all([
       IndexedDBService.get('meta', 'read_notifications'),
-      IndexedDBService.get('meta', 'viewed_notifications_analytics'),
       IndexedDBService.get('meta', 'seen_deadline_alerts'),
       IndexedDBService.get('meta', 'notifications_cache'),
     ]);
+    // The old post-view dedupe; Seen now keeps its own record (api/eventSignals).
+    void IndexedDBService.delete('meta', 'viewed_notifications_analytics');
 
     set((state) => ({
       notifications: {
         ...state.notifications,
         readIds: new Set(readIds || []),
-        viewedIds: new Set(viewedIds || []),
         seenDeadlineAlertIds: new Set(seenIds || []),
         // A HEAD START, not an answer. Boot fires this and
         // `fetchNotifications` side by side and awaits neither, so on a
@@ -102,8 +103,13 @@ export const createNotificationSlice: AppSlice<NotificationSlice> = (set, get) =
       },
     }));
 
-    await trackNotificationsViewed([id]);
-    await IndexedDBService.set('meta', 'viewed_notifications_analytics', Array.from(next));
+    // A society row is an event: Seen, the same number the map list gives.
+    // reIS's own rows (admin, academic deadlines) are not events.
+    const row = get().notifications.data.find((n) => n.id === id);
+    const society = row?.associationId;
+    if (society && society !== 'admin' && !society.startsWith('academic_')) {
+      await trackEventSignal(id, 'seen');
+    }
   },
 
   markDeadlineAlertsSeen: async (ids) => {

@@ -21,6 +21,7 @@ import {
 } from '../../components/CampusMap/mapHelpers';
 import { fetchMapEvents, toMapEvent } from '../../api/mapEvents';
 import { logError } from '../../utils/reportError';
+import { trackEventSignal } from '../../api/eventSignals';
 import { createBuildingGeometryActions } from './buildingGeometryActions';
 import { lookupRoomEntry, isNonPhysicalRoom } from '../../utils/rooms/lookupRoom';
 import { lookupRoomPlace, type RoomPlaceEntry } from '../../utils/rooms/lookupRoomPlace';
@@ -369,6 +370,10 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
       logError('MapSlice.focusEventById', new Error(`unknown event ${id}`));
       return;
     }
+    // Opened is counted here, where every surface opens an event (pin, list,
+    // peek band, Novinky), so none is missed — but not in the console, where a
+    // society checking its own listing is not a student opening it.
+    if (!get().adminConsoleOpen) void trackEventSignal(id, 'opened');
     // A PIN click (no opts) never moves the camera — you're already looking at the
     // pin, so we just open the detail panel and highlight it. Leaving
     // activeBuildingId at null and not bumping mapFocusRequest keeps the redraw

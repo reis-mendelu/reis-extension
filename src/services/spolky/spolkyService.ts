@@ -2,7 +2,6 @@ import { z } from 'zod';
 import type { SpolekNotification } from './types';
 import { supabase } from './supabaseClient';
 import { logError } from '../../utils/reportError';
-import { hasDataConsent } from '../../utils/firefoxDataConsent';
 import { localTodayIso, NOVINKY_WINDOW_DAYS } from '../../components/CampusMap/eventWindow';
 
 // Runtime shape of a `spolky_events` row used by the notification feed. Supabase
@@ -19,42 +18,6 @@ const NotificationRowSchema = z.object({
   end_date: z.string().nullable(),
   subscribers_only: z.boolean().nullable().optional(),
 });
-
-/**
- * Track that notifications were viewed (when bell icon opened)
- * @param notificationIds - IDs of notifications that were viewed
- */
-export async function trackNotificationsViewed(notificationIds: string[]): Promise<void> {
-  if (!notificationIds || notificationIds.length === 0) return;
-  // A post id is no identifier, but a view count is interaction data to
-  // Mozilla, and opening the feed works without it — Firefox's toggle decides.
-  if (!(await hasDataConsent('technicalAndInteraction'))) return;
-
-  try {
-    // Call Supabase RPC to increment view counts for each notification
-    // We use Promise.all to run them in parallel
-    await Promise.all(
-      notificationIds.map((id) => supabase.rpc('increment_post_view', { row_id: id }))
-    );
-  } catch (error) {
-    logError('Spolky.trackNotificationsViewed', error);
-  }
-}
-
-/**
- * Track that a notification was clicked
- * @param notificationId - ID of the notification that was clicked
- */
-export async function trackNotificationClick(notificationId: string): Promise<void> {
-  if (!notificationId) return;
-  if (!(await hasDataConsent('technicalAndInteraction'))) return;
-
-  try {
-    await supabase.rpc('increment_post_click', { row_id: notificationId });
-  } catch (error) {
-    logError('Spolky.trackNotificationClick', error);
-  }
-}
 
 /**
  * Fetch all active notifications from Supabase

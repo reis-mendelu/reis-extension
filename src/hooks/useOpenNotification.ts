@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { trackNotificationClick } from '../services/spolky';
 import type { SpolekNotification } from '../services/spolky';
 import { openExternal } from '../mobile/openExternal';
 import { useAppStore } from '../store/useAppStore';
@@ -50,7 +49,7 @@ export function useOpenNotification({
   // One activation at a time. Awaiting the load opens a window the synchronous
   // version never had, and a second tap inside it ran a second handler: two
   // fetches (loadMapEvents guards on "already loaded", not on "already
-  // loading") and two increment_post_click RPCs for one intent. A slow row is
+  // loading") and two Opened counts for one intent. A slow row is
   // exactly the row a student taps twice, so this is the common case, not the
   // exotic one. The guard spans the in-flight load and nothing more.
   const openingRef = useRef(false);
@@ -82,11 +81,7 @@ export function useOpenNotification({
   );
 
   const openNotification = async (n: SpolekNotification) => {
-    const track = () => {
-      if (!n.associationId?.startsWith('academic_')) trackNotificationClick(n.id);
-    };
     const openLink = (link: string) => {
-      track();
       // openExternal, not window.open: on Capacitor the system browser has no IS
       // session, and a notification's URL is data from outside the app.
       void openExternal(link);
@@ -118,10 +113,9 @@ export function useOpenNotification({
       if (!mapEventsLoaded) await loadMapEvents();
       if (activationRef.current !== activation) return;
       // The CARD first, even when the event has a URL: the card carries the
-      // RSVP, the venue and the reminder, and the URL is its button. Jumping
-      // straight to the link cost every linked event its RSVPs.
+      // venue and the details, and the URL is its button. Opening it here
+      // counts as Opened (focusEventById), the same number a pin tap gives.
       if (useAppStore.getState().mapEvents.some((e) => e.id === n.id)) {
-        track();
         focusEventById(n.id, { fly: true });
         showMap();
         onClose();

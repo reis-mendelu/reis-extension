@@ -29,7 +29,6 @@ vi.mock('../../utils/harnessEnabled', () => ({
 
 import {
   trackFeatureSignal,
-  trackMapEventView,
   __resetFeatureSignalsForTests,
 } from '../featureUsage';
 
@@ -90,7 +89,6 @@ describe('featureUsage', () => {
     useAppStore.setState({ demoMode: true });
 
     await trackFeatureSignal('map_dwell_3s');
-    await trackMapEventView('event-1');
 
     expect(rpc).not.toHaveBeenCalled();
   });
@@ -101,37 +99,8 @@ describe('featureUsage', () => {
     isHarnessEnabled.mockReturnValue(true);
 
     await trackFeatureSignal('map_dwell_3s');
-    await trackMapEventView('event-1');
 
     expect(rpc).not.toHaveBeenCalled();
-  });
-
-  it('bumps the map-view counter with an event id and no identity at all', async () => {
-    await trackMapEventView('event-1');
-
-    expect(rpc).toHaveBeenCalledTimes(1);
-    const [fn, args] = rpc.mock.calls[0] as [string, Record<string, unknown>];
-    expect(fn).toBe('increment_event_map_view');
-    expect(args).toEqual({ row_id: 'event-1' });
-    expect(JSON.stringify(args)).not.toContain('install');
-  });
-
-  // Reopening the same card is the same student looking at the same event.
-  it('counts an event once per session however often its card is reopened', async () => {
-    await trackMapEventView('event-1');
-    await trackMapEventView('event-1');
-    await trackMapEventView('event-2');
-
-    expect(rpc).toHaveBeenCalledTimes(2);
-  });
-
-  it('retries an event view after a failed write', async () => {
-    rpc.mockResolvedValueOnce({ error: { message: 'network' } });
-
-    await trackMapEventView('event-1');
-    await trackMapEventView('event-1');
-
-    expect(rpc).toHaveBeenCalledTimes(2);
   });
 
   it('sends no signal on Firefox while the technical-data toggle is off', async () => {
@@ -142,18 +111,6 @@ describe('featureUsage', () => {
     // …and does not latch, so turning the toggle back on counts this session.
     hasDataConsent.mockResolvedValue(true);
     await trackFeatureSignal('map_dwell_3s');
-    expect(rpc).toHaveBeenCalledTimes(1);
-  });
-
-  // No identifier does not make it exempt: Mozilla counts interaction metrics as
-  // technicalAndInteraction data, and the student opened a card, not a counter.
-  it('bumps no map-view counter on Firefox while the technical-data toggle is off', async () => {
-    hasDataConsent.mockResolvedValue(false);
-    await trackMapEventView('event-1');
-    expect(hasDataConsent).toHaveBeenCalledWith('technicalAndInteraction');
-    expect(rpc).not.toHaveBeenCalled();
-    hasDataConsent.mockResolvedValue(true);
-    await trackMapEventView('event-1');
     expect(rpc).toHaveBeenCalledTimes(1);
   });
 });

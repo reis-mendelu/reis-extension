@@ -1,5 +1,6 @@
 import { CATEGORY_EMOJI_SRC } from '../../../../data/eventCategories';
 import { eventWhenLabel, sortByDate } from '../../../CampusMap/eventHelpers';
+import { useSeenSignal } from '../../../../hooks/ui/useSeenSignal';
 import { useVisibleMapEvents } from '../../../../hooks/useVisibleMapEvents';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useAppStore } from '../../../../store/useAppStore';
@@ -34,6 +35,8 @@ export function MapSheetPeek() {
   const forRoom = useForRoomSelection();
   const directions = useRoomDirections();
   const next = selection?.kind === 'event' ? selection.event : sortByDate(events)[0];
+  // Seen, when the band is naming an event (not a room note).
+  const seenRef = useSeenSignal<HTMLSpanElement>(forRoom || directions ? null : (next?.id ?? null));
 
   // A lesson sent here for a room with no floor plan: say which, and where.
   if (forRoom) return <RoomPlaceNote />;
@@ -70,7 +73,10 @@ export function MapSheetPeek() {
         )}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[13.5px] font-semibold text-base-content">
+        <span
+          ref={seenRef}
+          className="block truncate text-[13.5px] font-semibold text-base-content"
+        >
           {next.title}
         </span>
         <span className="mt-0.5 block truncate text-[12px] text-base-content/60">{when}</span>

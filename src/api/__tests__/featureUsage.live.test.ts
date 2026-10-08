@@ -40,7 +40,6 @@ vi.mock('../../services/identity/installId', () => ({
 
 import {
   trackFeatureSignal,
-  trackMapEventView,
   __resetFeatureSignalsForTests,
 } from '../featureUsage';
 import { assertLocalStack } from './liveStack';
@@ -50,19 +49,10 @@ import { assertLocalStack } from './liveStack';
 const admin = () => createClient(URL_!, ADMIN!);
 
 describe.skipIf(!configured)('featureUsage against a live PostgREST', () => {
-  let eventId = '';
-
-  beforeAll(async () => {
+  beforeAll(() => {
     // This suite only inserts, but a misconfigured URL would inflate real
     // counters just the same.
     assertLocalStack(URL_!);
-    const { data, error } = await admin()
-      .from('spolky_events')
-      .insert({ title: `live test ${INSTALL}` })
-      .select('id')
-      .single();
-    expect(error).toBeNull();
-    eventId = (data as { id: string }).id;
   });
 
   it('writes a real feature_usage row, and anon cannot read it back', async () => {
@@ -80,41 +70,6 @@ describe.skipIf(!configured)('featureUsage against a live PostgREST', () => {
     const asAnon = createClient(URL_!, ANON!);
     const { data: leaked } = await asAnon.from('feature_usage').select('install_id');
     expect(leaked ?? []).toEqual([]);
-  });
-
-  it("rolls the view up under today's date and leaves the feed counters alone", async () => {
-    __resetFeatureSignalsForTests();
-    await trackMapEventView(eventId);
-    await trackMapEventView(eventId); // same session: must not count twice
-
-    const { data } = await admin()
-      .from('event_map_views')
-      .select('event_id, views')
-      .eq('event_id', eventId);
-    expect(data).toEqual([{ event_id: eventId, views: 1 }]);
-
-    // The Novinky feed metrics are a different number and must not move.
-    const { data: ev } = await admin()
-      .from('spolky_events')
-      .select('view_count, click_count')
-      .eq('id', eventId)
-      .single();
-    expect(ev).toEqual({ view_count: 0, click_count: 0 });
-  });
-
-  // A view of an event that has since been deleted is a race, not a fault: the
-  // RPC checks first, so nothing is raised at the student and nothing is stored.
-  it('drops a view of an event that no longer exists without erroring', async () => {
-    __resetFeatureSignalsForTests();
-    await expect(
-      trackMapEventView('00000000-0000-0000-0000-000000000000')
-    ).resolves.toBeUndefined();
-
-    const { data } = await admin()
-      .from('event_map_views')
-      .select('event_id')
-      .eq('event_id', '00000000-0000-0000-0000-000000000000');
-    expect(data).toEqual([]);
   });
 
   // A second app session on the same day is the same install: one row, two

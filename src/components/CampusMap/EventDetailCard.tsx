@@ -6,6 +6,7 @@ import { SocietyLogo } from '../SocietyLogo';
 import { parseEventDate } from './eventHelpers';
 import { EventVenueLine } from './EventVenueLine';
 import { eventDetailsLink } from './eventLinks';
+import { trackEventSignal } from '../../api/eventSignals';
 import type { MapEvent } from '../../types/events';
 
 // Bottom-left detail body for a selected event — a read-only preview shown to
@@ -91,9 +92,10 @@ export function EventDetailCard({ event, flush = false }: { event: MapEvent; flu
             href={details.href}
             target="_blank"
             rel="noopener noreferrer"
-            // No onClick of its own: on Capacitor installExternalLinkHandler
-            // (capture phase) already opens every target=_blank link in the
-            // in-app browser, and a second open here showed the page twice.
+            // Counting only: on Capacitor installExternalLinkHandler (capture
+            // phase) already opens every target=_blank link in the in-app
+            // browser, and a second open here showed the page twice.
+            onClick={() => void trackEventSignal(event.id, 'link')}
             className="btn btn-primary btn-sm btn-block"
           >
             {details.kind === 'instagram' ? t('map.moreOnInstagram') : t('map.moreInfo')}{' '}
