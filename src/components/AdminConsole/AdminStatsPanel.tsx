@@ -45,6 +45,9 @@ export function AdminStatsPanel() {
           {Math.round((retention.goneQuiet / retention.regularsEver) * 100)} %
         </div>
         <div className="stat-desc text-xs">{t('admin.stats.goneQuietDesc')}</div>
+        {/* The full definition, reinstall caveat included: `title` alone
+            reaches neither screen readers nor touch. */}
+        <span className="sr-only">{t('admin.stats.goneQuietHint')}</span>
       </div>
     </div>
   );

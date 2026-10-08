@@ -173,6 +173,7 @@ describe('AdminStatsPanel', () => {
     expect(screen.getByText('4 %')).toBeInTheDocument();
     expect(screen.getByText('Odešli')).toBeInTheDocument();
     expect(screen.getByText(/14\+ dní bez reIS/)).toBeInTheDocument();
+    expect(screen.getByText(/přeinstalace se počítá taky/)).toHaveClass('sr-only');
   });
 
   // Its own RPC: until it answers, or with nobody to lose yet, there is no tile
