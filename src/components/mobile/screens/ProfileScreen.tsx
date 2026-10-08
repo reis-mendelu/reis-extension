@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Wifi, FileText, MessageSquarePlus, LogOut, UserCog } from 'lucide-react';
+import { Wifi, FileText, MessageSquarePlus, LogOut, UserCog, ShieldCheck } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useSpolkySettings } from '../../../hooks/useSpolkySettings';
 import { useTranslation } from '../../../hooks/useTranslation';
@@ -34,6 +34,9 @@ export function ProfileScreen() {
   const [signOutOpen, setSignOutOpen] = useState(false);
 
   const isReisAdmin = useAppStore((s) => s.adminRole === 'reis_admin');
+  // Signed in to the console on this device (held the name once): keep a way back.
+  const hasAdminSession = useAppStore((s) => s.adminSession !== null);
+  const openSocietyAdmin = useAppStore((s) => s.openSocietyAdmin);
   const loadImpersonationOptions = useAppStore((s) => s.loadImpersonationOptions);
 
   return (
@@ -79,6 +82,10 @@ export function ProfileScreen() {
             sublabel={t('mobile.student.documentsSub')}
             onClick={() => pushSheet({ kind: 'docs' })}
           />
+
+          {hasAdminSession && (
+            <NavRow icon={ShieldCheck} label={t('admin.entry')} onClick={openSocietyAdmin} />
+          )}
 
           {/* reIS admins only. Options load from the tap, never from an effect. */}
           {isReisAdmin && (

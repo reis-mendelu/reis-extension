@@ -1037,6 +1037,7 @@
     }
   },
   "admin": {
+    "entry": "Admin",
     "email": "Email",
     "username": "Society name",
     "password": "Password",
