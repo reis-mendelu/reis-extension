@@ -1088,8 +1088,8 @@
       "devicesNote": "Aktivní zařízení, ne lidé: student s telefonem i notebookem je dvakrát.",
       "epochNote": "Data od 7. 9. 2026",
       "new": "noví",
-      "returning": "vracející se",
-      "ofWhichReturning": "z toho vracející se",
+      "returning": "stávající",
+      "ofWhichReturning": "z toho stávající",
       "activeDevices": "aktivních zařízení",
       "pickDay": "Zobrazit den",
       "noData": "Zatím žádná data.",
@@ -1106,7 +1106,10 @@
       "mapViews": "otevření",
       "mapViewsNote": "Počet otevření, ne lidí — u těchto čísel není žádný identifikátor.",
       "trendAria": "Vývoj: {label}, posledních {days} dní, celkem {total} {unit}, maximum {max} za den.",
-      "trendWithheld": "Pro tento signál zatím graf nezobrazujeme — méně než 5 instalací za 30 dní."
+      "trendWithheld": "Pro tento signál zatím graf nezobrazujeme — méně než 5 instalací za 30 dní.",
+      "goneQuietHint": "Podíl zařízení, která reIS aspoň jeden týden používala 2 a více dní, ale 14 dní ho neotevřela. Zařízení, ne lidé — přeinstalace se počítá taky.",
+      "goneQuietDesc": "pravidelných · 14+ dní bez reIS",
+      "goneQuiet": "Odešli"
     },
     "loginName": "login",
     "audience": {

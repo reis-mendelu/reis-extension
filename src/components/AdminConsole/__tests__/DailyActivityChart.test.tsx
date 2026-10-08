@@ -43,7 +43,7 @@ describe('DailyActivityChart', () => {
     render(<DailyActivityChart daily={DAILY} selectedDay={null} onPick={() => {}} />);
     expect(
       screen.getByRole('button', {
-        name: '14.9. — 330 aktivních zařízení, 283 noví, 47 vracející se',
+        name: '14.9. — 330 aktivních zařízení, noví: 283, stávající: 47',
       })
     ).toBeInTheDocument();
   });
@@ -55,7 +55,7 @@ describe('DailyActivityChart', () => {
     render(<DailyActivityChart daily={DAILY} selectedDay={null} onPick={() => {}} />);
     expect(screen.getByRole('button', { name: /^13\.9\./ })).toHaveAttribute(
       'title',
-      '13.9. — 94 aktivních zařízení, 83 noví, 11 vracející se'
+      '13.9. — 94 aktivních zařízení, noví: 83, stávající: 11'
     );
   });
 

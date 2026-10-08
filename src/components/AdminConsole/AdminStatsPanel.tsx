@@ -21,6 +21,7 @@ export function AdminStatsPanel() {
   const selectedDay = useAppStore((s) => s.adminStatsDay);
   const reload = useAppStore((s) => s.loadAdminStats);
   const pickDay = useAppStore((s) => s.selectAdminStatsDay);
+  const retention = useAppStore((s) => s.adminRetention);
   const label = (k: string) => (k === 'unknown' ? t('admin.stats.unknown') : k);
   const today = stats?.daily.at(-1) ?? null;
 
@@ -33,39 +34,66 @@ export function AdminStatsPanel() {
   // --color-warning-content is now #111827 in both themes (index.css),
   // 8.26:1 on --color-warning — the DaisyUI alert-warning fill already
   // carries readable text, no override needed.
+  // Its own block, so it wraps under the three totals on a phone rather than
+  // pushing a fourth tile off a 320px screen. From its own RPC: absent until
+  // that read lands, and shown even when the usage read failed.
+  const lossTile = retention && retention.regularsEver > 0 && (
+    <div className="stats self-start shadow-sm">
+      <div className="stat p-3" title={t('admin.stats.goneQuietHint')}>
+        <div className="stat-title text-xs">{t('admin.stats.goneQuiet')}</div>
+        <div className="stat-value text-2xl">
+          {Math.round((retention.goneQuiet / retention.regularsEver) * 100)} %
+        </div>
+        <div className="stat-desc text-xs">{t('admin.stats.goneQuietDesc')}</div>
+        {/* The full definition, reinstall caveat included: `title` alone
+            reaches neither screen readers nor touch. */}
+        <span className="sr-only">{t('admin.stats.goneQuietHint')}</span>
+      </div>
+    </div>
+  );
+
   const usage = !stats ? (
-    loading ? (
-      <span className="loading loading-dots loading-sm m-4" />
-    ) : (
-      <div className="alert alert-warning m-2 text-sm">{t('admin.stats.loadFailed')}</div>
-    )
+    <>
+      {lossTile}
+      {loading ? (
+        <span className="loading loading-dots loading-sm m-4" />
+      ) : (
+        <div className="alert alert-warning m-2 text-sm">{t('admin.stats.loadFailed')}</div>
+      )}
+    </>
   ) : (
     <>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <div className="stats stats-horizontal shadow-sm">
-          {(
-            [
-              ['today', stats.today],
-              ['d7', stats.d7],
-              ['d30', stats.d30],
-            ] as const
-          ).map(([k, v]) => (
-            <div key={k} className="stat p-3">
-              <div className="stat-title text-xs">{t(`admin.stats.${k}`)}</div>
-              <div className="stat-value text-2xl">{v}</div>
-              {/* "86 today" says nothing about whether reIS is being discovered
+        <div className="flex flex-wrap gap-2">
+          <div className="stats stats-horizontal shadow-sm">
+            {(
+              [
+                ['today', stats.today],
+                ['d7', stats.d7],
+                ['d30', stats.d30],
+              ] as const
+            ).map(([k, v]) => (
+              <div key={k} className="stat p-3">
+                <div className="stat-title text-xs">{t(`admin.stats.${k}`)}</div>
+                <div className="stat-value text-2xl">{v}</div>
+                {/* "86 today" says nothing about whether reIS is being discovered
                   or actually kept, which is the question the redesign exists to
                   answer. The RPC's date spine always ends on today, so the last
                   daily row is today's — but an empty window must not crash the
                   tile. */}
-              {k === 'today' && today && (
-                <div className="stat-desc text-xs">
-                  {today.newDevices} {t('admin.stats.new')} · {today.returningDevices}{' '}
-                  {t('admin.stats.returning')}
-                </div>
-              )}
-            </div>
-          ))}
+                {k === 'today' && today && (
+                  <div className="stat-desc text-xs">
+                    {/* "label: n", not "n label": Czech declines the label by
+                        the count (2 stávající, 65 stávajících), and this form
+                        is correct for every number. */}
+                    {t('admin.stats.new')}: {today.newDevices} · {t('admin.stats.returning')}:{' '}
+                    {today.returningDevices}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {lossTile}
         </div>
         <span className="text-xs opacity-60">{t('admin.stats.epochNote')}</span>
       </div>
