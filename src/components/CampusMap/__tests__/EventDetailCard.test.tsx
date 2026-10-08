@@ -136,6 +136,19 @@ describe('EventDetailCard', () => {
 
   // Nothing to open: no coordinate, no name, no row — rather than a link
   // pointing at 0,0.
+  // A semester-list import: the society has not said where yet. The card's
+  // Instagram button is where that gets announced; a muted "Místo upřesní …"
+  // line above it only repeated that nobody knows.
+  it('says nothing about the place for a TBA event', () => {
+    const { container } = render(
+      <EventDetailCard
+        event={{ ...ev, location: null, coord: null, roomCode: null, venueKind: 'tba' }}
+      />
+    );
+    expect(screen.queryByText(/upřesní|TBA/)).toBeNull();
+    expect(container.querySelector('.lucide-map-pin')).toBeNull();
+  });
+
   it('renders no venue row when the event has neither a coordinate nor a name', () => {
     const nowhere: MapEvent = { ...ev, location: null, coord: null };
     render(<EventDetailCard event={nowhere} />);
@@ -152,9 +165,9 @@ describe('EventDetailCard', () => {
   });
 
   // A TBA event has no room, no coordinate, and no url: everything a society
-  // knows so far is "watch our Instagram". The venue line names the society
-  // instead of a place, and the More-info button becomes the Instagram link.
-  it('shows "Venue TBA by ESN" and links to Instagram for a TBA event with no url', () => {
+  // knows so far is "watch our Instagram". There is no venue line, and the
+  // More-info button becomes the Instagram link.
+  it('links to Instagram, with no venue line, for a TBA event with no url', () => {
     const tbaEvent: MapEvent = {
       ...ev,
       societyId: 'esn',
@@ -165,7 +178,7 @@ describe('EventDetailCard', () => {
       venueKind: 'tba',
     };
     render(<EventDetailCard event={tbaEvent} />);
-    expect(screen.getByText('Venue TBA by ESN')).toBeInTheDocument();
+    expect(screen.queryByText(/venue tba/i)).toBeNull();
     const link = screen.getByRole('link', { name: /more on instagram/i });
     expect(link).toHaveAttribute('href', 'https://www.instagram.com/esnmendelubrno/');
   });
