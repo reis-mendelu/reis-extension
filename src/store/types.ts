@@ -212,6 +212,19 @@ export interface EduroamSlice {
   openEduroamFor: (target: 'mac' | 'windows') => void;
 }
 
+export interface GoogleCalendarSlice {
+  gcal: {
+    available: boolean;
+    connected: boolean;
+    email: string | null;
+    syncing: boolean;
+    progress: { done: number; total: number } | null;
+    lastSyncAt: number | null;
+    notice: 'calendarGone' | 'revoked' | 'failed' | 'scopeMissing' | null;
+  };
+  setGcal: (patch: Partial<GoogleCalendarSlice['gcal']>) => void;
+}
+
 export interface DocumentsSlice {
   isDocumentsOpen: boolean;
   setIsDocumentsOpen: (open: boolean) => void;
@@ -691,6 +704,7 @@ export type AppState = ScheduleSlice &
   SuccessRateSlice &
   SimilarSubjectsSlice &
   EduroamSlice &
+  GoogleCalendarSlice &
   DocumentsSlice &
   FeedbackSlice &
   StudyPlanSlice &

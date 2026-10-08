@@ -107,12 +107,17 @@ const SUPABASE_CALLERS = new Set([
  * identifier: PKCE verifiers, image fingerprints, and the iPad reader's on-device
  * filename for a subject PDF (`courseCode:fileLink` — a course code and an IS
  * document URL, hashed only because a URL is not a filename; the result is a
- * path in the app sandbox and is never transmitted).
+ * path in the app sandbox and is never transmitted), and the Google Calendar
+ * sync's event ids (a timetable slot `lessonId|date|time`, an exam term id or a
+ * custom event id — keys of timetable entries, not of the student — hashed only
+ * to fit Google's id alphabet; the event itself goes to the student's own
+ * calendar, so the hash hides nothing and claims to hide nothing).
  */
 const DIGEST_CALLERS = new Set([
   'src/utils/pkce.ts',
   'src/services/notes/imageNormalize.ts',
   'src/mobile/pdfInk.ts',
+  'src/mobile/googleCalendar/eventIdentity.ts',
 ]);
 
 /**
