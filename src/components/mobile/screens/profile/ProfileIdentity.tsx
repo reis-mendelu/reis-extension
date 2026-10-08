@@ -55,12 +55,14 @@ export function ProfileIdentity() {
             Nováková-Svobodová" needs 287px in a 232px slot, and losing
             "-Svobodová" is worse than a second line — it is the half that
             tells two siblings apart. */}
-        <div
-          data-testid="profile-identity-name"
-          {...hold}
-          className="flex min-w-0 flex-1 select-none flex-col gap-0.5 [-webkit-touch-callout:none]"
-        >
-          <span className="font-display text-lg font-bold leading-tight tracking-tight">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          {/* The hold is on the NAME only: the ID below keeps its own
+              long-press, which copies the number. */}
+          <span
+            data-testid="profile-identity-name"
+            {...hold}
+            className="select-none font-display text-lg font-bold leading-tight tracking-tight [-webkit-touch-callout:none]"
+          >
             {name}
           </span>
           {/* The student ID and nothing else under the name. This row used to

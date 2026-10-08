@@ -22,12 +22,20 @@ describe('useLongPress', () => {
     expect(onLong).toHaveBeenCalledOnce();
   });
 
-  it('a release or a move cancels it', () => {
+  it('a release cancels it', () => {
     vi.useFakeTimers();
     const onLong = vi.fn();
     const { getByTestId } = render(<Probe onLong={onLong} />);
     fireEvent.pointerDown(getByTestId('t'), { clientX: 0, clientY: 0 });
     fireEvent.pointerUp(getByTestId('t'));
+    act(() => void vi.advanceTimersByTime(1000));
+    expect(onLong).not.toHaveBeenCalled();
+  });
+
+  it('a move past the slop cancels it', () => {
+    vi.useFakeTimers();
+    const onLong = vi.fn();
+    const { getByTestId } = render(<Probe onLong={onLong} />);
     fireEvent.pointerDown(getByTestId('t'), { clientX: 0, clientY: 0 });
     fireEvent.pointerMove(getByTestId('t'), { clientX: 30, clientY: 0 });
     act(() => void vi.advanceTimersByTime(1000));

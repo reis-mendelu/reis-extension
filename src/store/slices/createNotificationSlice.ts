@@ -76,9 +76,13 @@ export const createNotificationSlice: AppSlice<NotificationSlice> = (set, get) =
   },
 
   markNotificationsRead: async (ids) => {
-    const { readIds } = get().notifications;
-    const next = new Set(readIds);
-    ids.forEach((id) => next.add(id));
+    // Merged with what is on disk, not just what is in memory: the phone sheet
+    // marks as soon as its list fills, which a fast fetch can do before
+    // loadNotificationState has restored the saved set — and writing only the
+    // in-memory one would erase the read history.
+    const saved = (await IndexedDBService.get('meta', 'read_notifications')) as
+      string[] | undefined;
+    const next = new Set([...(saved ?? []), ...get().notifications.readIds, ...ids]);
 
     set((state) => ({
       notifications: {

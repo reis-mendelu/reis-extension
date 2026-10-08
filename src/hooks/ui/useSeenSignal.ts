@@ -16,7 +16,8 @@ export function useSeenSignal<T extends Element>(eventId: string | null) {
       if (!el || !eventId) return;
       const obs = new IntersectionObserver(
         (entries) => {
-          if (entries.some((e) => e.isIntersecting)) {
+          // isIntersecting alone is true for any sliver; Seen is half or more.
+          if (entries.some((e) => e.isIntersecting && e.intersectionRatio >= 0.5)) {
             void trackEventSignal(eventId, 'seen');
             obs.disconnect();
           }

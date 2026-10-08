@@ -150,3 +150,13 @@ describe('SocietyForm (instagram)', () => {
     expect(lastInput()).toMatchObject({ id: 'zf', instagram: null });
   });
 });
+
+describe('SocietyForm (auto-follow on a faculty move)', () => {
+  it('drops the flag when the faculty changes, so it never collides with another holder', async () => {
+    render(<SocietyForm society={BUNDLED_SOCIETIES.zf} onDone={() => {}} />);
+    fireEvent.change(screen.getByLabelText(/faculty|fakulta/i), { target: { value: 'af' } });
+    fireEvent.click(screen.getByRole('button', { name: /save|uložit/i }));
+    await waitFor(() => expect(saveSociety).toHaveBeenCalledTimes(1));
+    expect(saveSociety.mock.calls[0]![0]).toMatchObject({ id: 'zf', autoFollowFaculty: false });
+  });
+});

@@ -9,6 +9,7 @@ import { useVenuePicker } from './useVenuePicker';
 import { ComposerWhenField } from './ComposerWhenField';
 import { ComposerVenueSearch } from './ComposerVenueSearch';
 import { ComposerAudienceField } from './ComposerAudienceField';
+import { audienceLabelKey } from '../../utils/eventAudience';
 import { ComposerCategoryField } from './ComposerCategoryField';
 import { ComposerLinkField } from './ComposerLinkField';
 import { toPatch, latestCategory, initialRoom, initialPlaceName } from './composerPost';
@@ -42,6 +43,9 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
     (s) => s.societyMapEvents.find((e) => e.id === (s.editEventId ?? s.duplicateEventId)) ?? null
   );
   const posts = useAppStore((s) => s.societyPosts);
+  const canRestrict = useAppStore(
+    (s) => audienceLabelKey(s.societies[associationId ?? '']) !== null
+  );
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
 
@@ -100,7 +104,9 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       coord,
       placeName,
       url,
-      subscribersOnly,
+      // A society with no narrower audience (reIS) cannot restrict: a legacy
+      // flag on an edited row is cleared rather than silently kept.
+      subscribersOnly: canRestrict && subscribersOnly,
     });
     try {
       const res = editId
