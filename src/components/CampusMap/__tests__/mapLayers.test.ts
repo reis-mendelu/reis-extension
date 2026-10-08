@@ -47,3 +47,34 @@ describe('initLeafletMap zoom ceilings', () => {
     expect(m.getMaxZoom()).toBeGreaterThan(tiles.options.maxZoom!);
   });
 });
+
+// The pins draw Twemoji SVGs, which are CC BY 4.0: the credit sits beside
+// OpenStreetMap's in the one attribution line the map already shows.
+describe('initLeafletMap attribution', () => {
+  let map: L.Map | null = null;
+  let el: HTMLDivElement | null = null;
+  afterEach(() => {
+    map?.remove();
+    el?.remove();
+    map = null;
+    el = null;
+  });
+
+  it('credits Twemoji next to OpenStreetMap', () => {
+    el = document.createElement('div');
+    document.body.appendChild(el);
+    map = initLeafletMap(el, [
+      [49.209, 16.613],
+      [49.212, 16.619],
+    ]);
+    const text = el.querySelector('.leaflet-control-attribution')?.textContent ?? '';
+    expect(text).toContain('OpenStreetMap');
+    expect(text).toContain('Twemoji');
+    expect(text).toContain('CC BY 4.0');
+    // CC BY 4.0 asks for the licence's URI next to the credit.
+    const licence = [...el.querySelectorAll('.leaflet-control-attribution a')].find(
+      (a) => a.textContent === 'CC BY 4.0'
+    );
+    expect(licence?.getAttribute('href')).toBe('https://creativecommons.org/licenses/by/4.0/');
+  });
+});

@@ -172,6 +172,7 @@ const ALLOWED_HOSTS = [
   'www.geteduroam.app',
   'supef.cz',
   'instagram.com', // a society's profile, the "details" link on an event with none
+  'creativecommons.org', // the Twemoji licence, linked from the map's credit line
 
   // --- not destinations ---
   'localhost.that.never.exists', // CORS sentinel in capacitorTransport

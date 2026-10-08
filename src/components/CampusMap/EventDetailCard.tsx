@@ -1,5 +1,4 @@
 import { ExternalLink, Clock } from 'lucide-react';
-import { CATEGORY_EMOJI_SRC } from '../../data/eventCategories';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSociety } from '../../hooks/useSociety';
 import { SocietyLogo } from '../SocietyLogo';
@@ -10,7 +9,7 @@ import type { MapEvent } from '../../types/events';
 
 // Bottom-left detail body for a selected event — a read-only preview shown to
 // students and societies alike: a small society avatar + title + host, then the
-// facts (when / what / where) and More info. Nothing social: no follow, no
+// facts (when / where) and More info. Nothing social: no follow, no
 // RSVP, no count (spec 2026-10-08 — an event to go to, shown quietly). A society edits/deletes its own events from the "Moje akce" panel, so
 // this card carries no authoring controls (keeps management in one place).
 /**
@@ -78,10 +77,6 @@ export function EventDetailCard({ event, flush = false }: { event: MapEvent; flu
               {dateLabel}
               {event.time ? ` · ${event.time}` : ''}
             </span>
-          </div>
-          <div className="flex items-center gap-1.5 text-sm text-base-content/70">
-            <img src={CATEGORY_EMOJI_SRC[event.category]} alt="" className="h-4 w-4 shrink-0" />
-            <span>{t(`map.category.${event.category}`)}</span>
           </div>
           <EventVenueLine event={event} />
         </div>

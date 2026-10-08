@@ -981,18 +981,16 @@
     "edit": "Edit",
     "delete": "Delete",
     "deleteConfirm": "Delete for good?",
-    "categoryLabel": "Event type",
-    "category": {
-      "party": "Party",
-      "boardgames": "Board games",
-      "trip": "Trip",
-      "quiz": "Quiz",
-      "sports": "Sports",
-      "film": "Film",
-      "karaoke": "Karaoke",
-      "culture": "Culture",
-      "social": "Social",
-      "other": "Event"
+    "emojiPickerLabel": "Event picture",
+    "emojiChange": "Change picture",
+    "emojiGroup": {
+      "party": "Parties and food",
+      "games": "Games and quizzes",
+      "sport": "Sport",
+      "culture": "Culture and learning",
+      "season": "Holidays",
+      "travel": "Trips",
+      "other": "Other"
     },
     "studyRooms": "Study rooms",
     "finished": "finished",

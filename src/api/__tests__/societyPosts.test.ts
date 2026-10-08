@@ -83,3 +83,10 @@ describe('a place-TBA event', () => {
     });
   });
 });
+
+describe('toRow emoji', () => {
+  it('writes the chosen emoji', () =>
+    expect(toRow({ ...base, emoji: '1f3d3' }, 'supef', 'u1').emoji).toBe('1f3d3'));
+  it('writes null when none was chosen', () =>
+    expect(toRow({ ...base, emoji: undefined }, 'supef', 'u1').emoji).toBeNull());
+});

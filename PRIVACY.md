@@ -68,7 +68,7 @@ reIS contacts the following services. **IS Mendelu is the only one that receives
 5. **Erasmus HEI directory** (`hei.api.uni-foundation.eu`) — a public list of partner universities. Nothing about you is sent.
 6. **Photon** (`photon.komoot.io`) — venue search, used only by reIS staff and society logins in the admin console when creating an event.
 
-**Links you open yourself** (Teams, Outlook, geteduroam, society websites and Instagram profiles) are handed to your browser or the relevant app. reIS makes no background request to them.
+**Links you open yourself** (Teams, Outlook, geteduroam, society websites and Instagram profiles, the emoji licence) are handed to your browser or the relevant app. reIS makes no background request to them.
 
 ## User Control
 You have full control over your data:

@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { toPatch, latestCategory } from '../composerPost';
+import { toPatch, latestEmoji } from '../composerPost';
 import type { PostInput } from '../../../api/societyPosts';
 
 const input: PostInput = {
   title: 'Deskovky',
   body: 'Hry máme.',
   category: 'boardgames',
+  emoji: '1f3b2',
   date: '2026-07-08',
   time: '18:00',
   venueKind: 'offcampus',
@@ -18,11 +19,15 @@ const input: PostInput = {
 };
 
 describe('toPatch', () => {
+  it('writes the emoji, so an edit can change the picture', () =>
+    expect(toPatch({ ...input, emoji: '26f8' }).emoji).toBe('26f8'));
+
   it('maps every field the composer edits to its column', () => {
     expect(toPatch(input)).toEqual({
       title: 'Deskovky',
       body: 'Hry máme.',
       category: 'boardgames',
+      emoji: '1f3b2',
       date: '2026-07-08',
       end_date: null,
       time: '18:00',
@@ -48,18 +53,16 @@ describe('toPatch', () => {
   });
 });
 
-describe('latestCategory', () => {
-  it('is the category of the latest-dated post, whatever the order', () => {
+describe('latestEmoji', () => {
+  it("starts on the latest-dated event's emoji", () =>
     expect(
-      latestCategory([
-        { date: '2026-07-20', category: 'quiz' },
-        { date: '2026-07-01', category: 'party' },
+      latestEmoji([
+        // Newer first: the pick is by date, not by position.
+        { date: '2026-07-20', category: 'boardgames', emoji: '265f' },
+        { date: '2026-07-01', category: 'party', emoji: '1f389' },
       ])
-    ).toBe('quiz');
-  });
-
-  it('is null for a society with no posts, or an unknown category', () => {
-    expect(latestCategory([])).toBeNull();
-    expect(latestCategory([{ date: '2026-07-01', category: 'rave' }])).toBeNull();
-  });
+    ).toBe('265f'));
+  it("falls back to that event's category emoji", () =>
+    expect(latestEmoji([{ date: '2026-07-20', category: 'quiz', emoji: null }])).toBe('1f9e0'));
+  it('is null for a society that never posted', () => expect(latestEmoji([])).toBeNull());
 });

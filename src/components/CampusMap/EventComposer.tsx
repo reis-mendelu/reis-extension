@@ -10,12 +10,12 @@ import { ComposerWhenField } from './ComposerWhenField';
 import { ComposerVenueSearch } from './ComposerVenueSearch';
 import { ComposerAudienceField } from './ComposerAudienceField';
 import { audienceOf } from '../../utils/eventAudience';
-import { ComposerCategoryField } from './ComposerCategoryField';
+import { ComposerEmojiField } from './ComposerEmojiField';
 import { ComposerLinkField } from './ComposerLinkField';
-import { toPatch, latestCategory, initialRoom, initialPlaceName } from './composerPost';
+import { toPatch, latestEmoji, initialRoom, initialPlaceName } from './composerPost';
+import { eventEmojiCode, CATEGORY_EMOJI_CODE } from '../../data/eventEmoji';
 import roomsIndexJson from '../../data/map/rooms-index.json';
 import type { RoomIndexEntry } from '../../types/campusMap';
-import type { EventCategory } from '../../types/events';
 
 const INDEX = roomsIndexJson as RoomIndexEntry[];
 const LABEL = 'mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60';
@@ -26,7 +26,7 @@ const LABEL = 'mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide tex
 //
 // The venue KIND is derived, never asked: a picked room makes a campus event,
 // a searched place or a hand-dropped pin (draftCoord) an off-campus one, and
-// no place at all a 'tba' one. Editing keeps the event's room/category rather
+// no place at all a 'tba' one. Editing keeps the event's room/emoji rather
 // than overwriting them.
 export function EventComposer({ onDone }: { onDone: () => void }) {
   // The society being authored, not the account's own — a reIS admin belongs to
@@ -62,8 +62,11 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
   const [endDate, setEndDate] = useState(duplicating ? '' : (source?.endDate ?? ''));
   const [time, setTime] = useState(source?.time ?? '');
   const [url, setUrl] = useState(source?.url ?? '');
-  const [category, setCategory] = useState<EventCategory>(
-    source?.category ?? latestCategory(posts) ?? 'party'
+  // An edit keeps the stored code even when this build does not ship it:
+  // swapping it for the fallback would rewrite the event on any save.
+  const [startEmoji] = useState(() => (source ? (source.emoji ?? eventEmojiCode(source)) : null));
+  const [emoji, setEmoji] = useState<string>(
+    startEmoji ?? latestEmoji(posts) ?? CATEGORY_EMOJI_CODE.party
   );
   const [subscribersOnly, setSubscribersOnly] = useState(source?.subscribersOnly ?? false);
   const [busy, setBusy] = useState(false);
@@ -100,7 +103,9 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
     const input = buildPostInput({
       title,
       description,
-      category,
+      emoji,
+      fallbackCategory: source?.category ?? 'other',
+      startEmoji,
       date,
       endDate,
       time,
@@ -200,8 +205,8 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
         </button>
       )}
 
-      <label className={LABEL}>{t('map.categoryLabel')}</label>
-      <ComposerCategoryField value={category} onChange={setCategory} t={t} />
+      <label className={LABEL}>{t('map.emojiPickerLabel')}</label>
+      <ComposerEmojiField value={emoji} onChange={setEmoji} t={t} language={language} />
 
       <ComposerAudienceField
         societyId={associationId ?? ''}

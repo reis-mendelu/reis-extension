@@ -1,4 +1,4 @@
-import { CATEGORY_EMOJI_SRC } from '../../../../data/eventCategories';
+import { eventEmojiSrc } from '../../../../data/eventEmoji';
 import { eventWhenLabel, sortByDate } from '../../../CampusMap/eventHelpers';
 import { useVisibleMapEvents } from '../../../../hooks/useVisibleMapEvents';
 import { useTranslation } from '../../../../hooks/useTranslation';
@@ -65,7 +65,7 @@ export function MapSheetPeek() {
           <img src={next.imageUrl} alt="" className="h-full w-full object-cover" />
         ) : (
           <span className="flex h-full w-full items-center justify-center bg-base-content/5">
-            <img src={CATEGORY_EMOJI_SRC[next.category]} alt="" className="h-6 w-6" />
+            <img src={eventEmojiSrc(next)} alt="" className="h-6 w-6" />
           </span>
         )}
       </span>

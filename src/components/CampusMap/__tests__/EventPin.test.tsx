@@ -27,6 +27,20 @@ function group(events: MapEvent[]): VenueGroup {
 }
 
 describe('EventPin', () => {
+  it("draws the event's own emoji over its category's", () => {
+    const { container } = render(
+      <EventPin
+        group={group([{ ...ev('Bruslení', 'sports'), emoji: '26f8' }])}
+        x={100}
+        y={100}
+        selected={false}
+        locale="en-US"
+        onSelect={() => {}}
+      />
+    );
+    expect(container.querySelector('img')?.getAttribute('src')).toBe('/emoji/26f8.svg');
+  });
+
   it('renders the category emoji image as the pin face', () => {
     const { container } = render(
       <EventPin
