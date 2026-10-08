@@ -14,13 +14,6 @@ vi.mock('../services/spolky', () => ({
   fetchNotifications: vi.fn(),
   trackNotificationsViewed: vi.fn(),
   trackNotificationClick: vi.fn(),
-  filterNotificationsByFaculty: vi.fn((notifications) => notifications),
-  useSpolkySettings: vi.fn(() => ({ subscribedAssociations: [] })),
-}));
-
-// Mock useSpolkySettings hook
-vi.mock('../hooks/useSpolkySettings', () => ({
-  useSpolkySettings: vi.fn(() => ({ subscribedAssociations: [] })),
 }));
 
 // Mock IndexedDBService. This sat inside the `describe` body until vitest 5,

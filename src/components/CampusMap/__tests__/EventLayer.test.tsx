@@ -1,11 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-// Return a STABLE array ref each render (mirrors the real useState-backed hook);
-// a fresh ref per render would re-memoize `groups` every render and loop.
-vi.mock('../../../hooks/useEventsFacultySettings', () => {
-  const subscribedFaculties = ['mendelu', 'pef'];
-  return { useEventsFacultySettings: () => ({ subscribedFaculties, isLoading: false }) };
-});
 import { render, act, fireEvent } from '@testing-library/react';
 import { EventLayer } from '../EventLayer';
 import { setMapInstance } from '../mapInstance';

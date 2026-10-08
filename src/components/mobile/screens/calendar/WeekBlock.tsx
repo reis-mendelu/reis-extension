@@ -30,13 +30,11 @@ const RESERVED_PX = 16;
  * themes, so the ink is the fixed content-* tokens, not base-content.
  */
 export function WeekBlock({ block, cascade, gridPx, onOpen }: WeekBlockProps) {
-  const { t, language } = useTranslation();
-  const mapEvents = useAppStore((s) => s.mapEvents);
-  const societies = useAppStore((s) => s.societies);
+  const { language } = useTranslation();
   const { lesson } = block;
   const nicknames = useAppStore((s) => s.courseNicknames);
   const name = lessonDisplayName(nicknames, lesson, localizedCourseName(lesson, language));
-  const room = lessonPlace(lesson, language, mapEvents, t('map.venueOnMap'), societies).label;
+  const room = lessonPlace(lesson, language).label;
   const styles = eventStyles(lesson);
   const box = blockBox(block.lane, block.lanes, cascade);
   // Clamped to the part a later clash leaves uncovered — there the room line is

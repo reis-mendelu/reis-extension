@@ -68,8 +68,6 @@ const SUPABASE_CALLERS = new Set([
   // Disclosed in PRIVACY.md section 4 and docs/privacy-policy-app.md BEFORE
   // this note was written. No install id is sent with a report.
   'src/api/suggestions.ts',
-  // Random install id only. Reads take no identity argument at all.
-  'src/api/eventRsvp.ts',
   // Random install id only, since the privacy refactor. Since September 2026
   // the daily-usage event also carries two GROUP labels (faculty, platform) —
   // counts over thousands of installs, not per-student data. Disclosed in
@@ -348,10 +346,9 @@ describe('no student data leaves the device', () => {
   // counters: a post id is not a person, but the count is still a metric.
   //
   // The only way out is Mozilla's implicit consent, for a send that is "a
-  // direct, immediate consequence of a single, deliberate user command". RSVP
-  // qualifies and is absent on purpose: the student taps Going / Interested
-  // and the count IS the feature. A view counter does not: the student opened
-  // a post or a card, which works without the counter. "It has no identifier"
+  // direct, immediate consequence of a single, deliberate user command". No
+  // counter qualifies: the student opened a post or a card, which works
+  // without the counter. "It has no identifier"
   // is therefore not a reason to drop a gate here.
   // https://extensionworkshop.com/documentation/publish/add-on-policies/
   it('senders of interaction data honour Firefox consent', () => {

@@ -2,11 +2,9 @@ import { CalendarOff, ChevronDown, ChevronRight } from 'lucide-react';
 import { useVisibleMapEvents } from '../../hooks/useVisibleMapEvents';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { usePhoneViewport } from '../../hooks/ui/usePhoneViewport';
 import { weekSections } from './eventHelpers';
 import { EventRow } from './EventRow';
 import { trackMapEventView } from '../../api/featureUsage';
-import { NotifySoftAsk } from '../mobile/NotifySoftAsk';
 
 // The events tab body shared by the desktop MapSidePanel and the mobile map
 // sheet's Akce tab: the upcoming events grouped into This week / Next week /
@@ -33,7 +31,6 @@ export function MapEventsSection() {
   const toggleLater = useAppStore((s) => s.toggleMapLater);
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
-  const isPhone = usePhoneViewport();
 
   const sections = weekSections(events);
   const selectedId = selection?.kind === 'event' ? selection.event.id : null;
@@ -41,7 +38,6 @@ export function MapEventsSection() {
   return (
     <div className="flex max-h-[60vh] flex-col">
       <div className="overflow-y-auto">
-        {isPhone && <NotifySoftAsk />}
         {sections.length === 0 ? (
           <div className="flex flex-col items-center gap-1 px-4 py-8 text-center text-base-content/60">
             <CalendarOff size={28} className="opacity-40" />

@@ -38,8 +38,6 @@ import { createViewportSlice } from './slices/createViewportSlice';
 import { createMobileUiSlice } from './slices/createMobileUiSlice';
 import { createMapSlice } from './slices/createMapSlice';
 import { createSocietiesSlice } from './slices/createSocietiesSlice';
-import { createRsvpSlice } from './slices/createRsvpSlice';
-import { createFollowSlice } from './slices/createFollowSlice';
 import { createAdminSlice } from './slices/createAdminSlice';
 import { createAdminStatsSlice } from './slices/createAdminStatsSlice';
 import { createSuggestionsSlice } from './slices/createSuggestionsSlice';
@@ -53,7 +51,6 @@ import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 import { resetRealDataStores } from '../services/loadRealDataSnapshot';
 import { devAdminSeed } from '../utils/mock/devSociety';
-import { devNotifyOverride } from '../mobile/devNotifyOverride';
 import type { Session } from '@supabase/supabase-js';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
 import { setDemoModeFlag, isDemoMode } from '../errors/demoMode';
@@ -97,8 +94,6 @@ export const useAppStore = create<AppState>()(
     ...createMobileUiSlice(...a),
     ...createMapSlice(...a),
     ...createSocietiesSlice(...a),
-    ...createRsvpSlice(...a),
-    ...createFollowSlice(...a),
     ...createAdminSlice(...a),
     ...createAdminStatsSlice(...a),
     ...createSuggestionsSlice(...a),
@@ -130,18 +125,6 @@ export const initializeStore = async () => {
   }
 
   const s = useAppStore.getState();
-
-  // `?notify=` on the dev webapp. `capacitor/startApp.ts` is what reads the
-  // real permission at boot/resume, and it never runs here — the dev webapp
-  // has no Capacitor host to resume — so without this seed `notifyPermission`
-  // would sit at its initial `null` forever and the soft-ask card (and the
-  // override itself) would be unreachable outside a device build. DEV-only:
-  // dead-code-stripped from every shipped build by `devNotifyOverride`'s own
-  // `import.meta.env.DEV` gate.
-  if (import.meta.env.DEV) {
-    const forcedNotify = devNotifyOverride();
-    if (forcedNotify) s.setNotifyPermission(forcedNotify);
-  }
 
   // Who is signed in is confirmed against IS once per session, and the app
   // restarts if it turns out to be somebody else — see watchSignedInStudent.
@@ -221,7 +204,6 @@ export const initializeStore = async () => {
     s2.refreshRecentPdfs();
     s2.hydrateBulletin();
     s2.loadMapEvents();
-    void s2.loadFollows();
     // The jídelníček. It used to be fetched from a useEffect in each of the
     // three components that show it (the weekly header, its popover, the
     // phone's MenuCard) — three triggers for one request, and an Iron Rule

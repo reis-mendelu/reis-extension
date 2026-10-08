@@ -18,11 +18,6 @@ vi.mock('../services/spolky', () => ({
   fetchNotifications: vi.fn(),
   trackNotificationsViewed: vi.fn(),
   trackNotificationClick: vi.fn(),
-  filterNotificationsByFaculty: vi.fn((notifications) => notifications),
-  useSpolkySettings: vi.fn(() => ({ subscribedAssociations: [] })),
-}));
-vi.mock('../hooks/useSpolkySettings', () => ({
-  useSpolkySettings: vi.fn(() => ({ subscribedAssociations: [] })),
 }));
 vi.mock('../services/storage', () => ({
   IndexedDBService: {

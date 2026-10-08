@@ -204,10 +204,12 @@ describe('EventDetailCard', () => {
     expect(screen.getByText(/November 23/).textContent).toBe('Mon, November 23');
   });
 
-  // The follow chip is reached one tap earlier from the event that made the
-  // student want it, rather than only from Profile's follow list.
-  it('renders a follow chip for the event society', () => {
+  // Reduced on purpose (spec 2026-10-08): an event to go to, shown quietly.
+  // Nothing to follow, nothing to answer, nobody counted.
+  it('carries no follow, no RSVP and no count', () => {
     render(<EventDetailCard event={ev} />);
-    expect(screen.getByRole('button', { name: 'Follow' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /follow/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /interested/i })).toBeNull();
+    expect(screen.queryByText(/interested/i)).toBeNull();
   });
 });

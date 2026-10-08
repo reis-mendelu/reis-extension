@@ -1,21 +1,17 @@
 import { listMyPosts, type SpolkyEventRow } from '../../../api/societyPosts';
-import { fetchEventRsvps } from '../../../api/eventRsvp';
-import { DEV_SOCIETY } from '../../../utils/mock/devSociety';
-import type { RsvpCounts } from '../createRsvpSlice';
 
 /** What loadSocietyPosts needs from the slice: reading the active society (twice —
  *  once before each network call resolves, to guard against a stale response —
- *  see below), and writing the two things a load produces. */
+ *  see below), and writing what a load produces. */
 interface LoadSocietyPostsAccess {
   activeAssociationId: () => string | null;
   setPosts: (posts: SpolkyEventRow[]) => void;
-  setRsvpCounts: (counts: Record<string, RsvpCounts>) => void;
   /** MapSlice's own rebuild — societyMapEvents is derived from societyPosts. */
   refreshSocietyMapEvents: () => void;
 }
 
 /**
- * Pull the active society's own events, then their public interest counts.
+ * Pull the active society's own events.
  *
  * No society picked: clear the posts and still rebuild societyMapEvents (to
  * empty), rather than leaving a stale list of another society's events on
@@ -24,8 +20,7 @@ interface LoadSocietyPostsAccess {
  * Two picker changes in quick succession can resolve out of order. Without the
  * guard below the slower, older response wins and the console shows one
  * society's events under another's name — and delete/edit act on THOSE rows,
- * so the damage is to a society nobody is looking at. The same guard covers
- * the RSVP counts fetched afterwards, which race the same way.
+ * so the damage is to a society nobody is looking at.
  *
  * The guard is a generation AND the id. The id alone let an A → B → A switch
  * apply the first A request over the second; the generation alone would let a
@@ -50,16 +45,4 @@ export async function loadSocietyPosts(access: LoadSocietyPostsAccess): Promise<
   if (posts === null || !current()) return;
   access.setPosts(posts);
   access.refreshSocietyMapEvents();
-  // Interest per event, from the same public aggregate RPC the student card
-  // uses — no new data flow. Not attendance: RSVPs count installs, and free
-  // events see many no-shows, which is why the label says "v reIS".
-  // Not for dev:web's in-memory store: its `dev-N` ids are not the uuids the
-  // RPC takes, so every reload would log a failed request for nothing.
-  if (DEV_SOCIETY) return;
-  // Detached: publish and delete await this action before confirming, and a
-  // slow count must not hold up "Uloženo" — the posts are already on screen.
-  // fetchEventRsvps never rejects; the guard still drops a superseded answer.
-  void fetchEventRsvps(posts.map((p) => p.id)).then(({ counts, ok }) => {
-    if (ok && current()) access.setRsvpCounts(counts);
-  });
 }

@@ -4,7 +4,6 @@ import { adminAuthClient } from '../../services/admin/authClient';
 import { toAuthEmail } from '../../services/admin/societyLogin';
 import type { SpolkyEventRow } from '../../api/societyPosts';
 import { listSocietyAccounts, type SocietyAccountRow } from '../../api/societyAccounts';
-import type { RsvpCounts } from './createRsvpSlice';
 import { loadSocietyPosts } from './admin/loadSocietyPosts';
 import { logError } from '../../utils/reportError';
 
@@ -21,9 +20,6 @@ export interface AdminSlice {
   /** True while the admin console has taken the whole app over. */
   adminConsoleOpen: boolean;
   societyPosts: SpolkyEventRow[];
-  /** Interest (going + interested) per event, from the same public RSVP RPC —
-   *  no new data flow. No entry = not loaded yet, not "zero interest". */
-  societyRsvpCounts: Record<string, RsvpCounts>;
   /** reIS admin only: every society account, for the reset/create panel. Empty
    *  for an association login, which has no business listing the others. */
   societyAccounts: SocietyAccountRow[];
@@ -76,7 +72,6 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   adminActiveAssociationId: null,
   adminConsoleOpen: false,
   societyPosts: [],
-  societyRsvpCounts: {},
   societyAccounts: [],
   // Re-pull the inbox on open, not just when the session is established.
   //
@@ -119,7 +114,7 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     // slow read otherwise shows the old society's events, with edit/delete on
     // them, under the new society's name.
     if (id !== get().adminActiveAssociationId) {
-      set({ societyPosts: [], societyRsvpCounts: {} });
+      set({ societyPosts: [] });
       get().refreshSocietyMapEvents();
     }
     set({ adminActiveAssociationId: id });
@@ -192,7 +187,6 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
       adminActiveAssociationId: null,
       adminConsoleOpen: false,
       societyPosts: [],
-      societyRsvpCounts: {},
       societyAccounts: [],
       societyMapEvents: [],
       suggestions: [],
@@ -241,7 +235,6 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     loadSocietyPosts({
       activeAssociationId: () => get().adminActiveAssociationId,
       setPosts: (posts) => set({ societyPosts: posts }),
-      setRsvpCounts: (counts) => set({ societyRsvpCounts: counts }),
       refreshSocietyMapEvents: () => get().refreshSocietyMapEvents(),
     }),
 });

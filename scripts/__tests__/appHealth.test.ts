@@ -92,7 +92,7 @@ describe('evaluateHealth', () => {
   it('allows the read-only RPC even though it is a POST', () => {
     const r = evaluateHealth({
       ...healthy,
-      requests: [...healthy.requests, post(`${SUPA}/rest/v1/rpc/get_event_rsvps`)],
+      requests: [...healthy.requests, post(`${SUPA}/rest/v1/rpc/usage_stats`)],
     });
     expect(r.ok).toBe(true);
   });
@@ -112,7 +112,6 @@ describe('evaluateHealth', () => {
       ...healthy,
       requests: [
         ...healthy.requests,
-        post(`${SUPA}/rest/v1/rpc/get_event_rsvps`),
         get(`${SUPA}/rest/v1/spolky_events?select=id`),
       ],
     });

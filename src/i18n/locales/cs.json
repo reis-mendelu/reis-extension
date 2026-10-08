@@ -477,13 +477,7 @@
     "inDays": "za {n} d",
     "accessible": "Přístupný"
   },
-  "events": {
-    "title": "Akce",
-    "loading": "Načítá se...",
-    "empty": "Žádné nadcházející akce"
-  },
   "sync": {
-    "spolky": "Odebírané spolky",
     "lastSync": "Naposledy synchronizováno: {time}"
   },
   "fileCategories": {
@@ -901,11 +895,6 @@
     "addLocation": "Přidat místo",
     "delete": "Smazat"
   },
-  "rsvpBlock": {
-    "remove": "Odebrat z kalendáře",
-    "note": "Odebráním zrušíš i svoje „Mám zájem“. Čas akce určuje spolek.",
-    "failed": "Nepodařilo se odebrat. Zkus to znovu."
-  },
   "map": {
     "title": "Mapa",
     "searchPlaceholder": "Hledat místnost nebo místo…",
@@ -939,8 +928,6 @@
     "moreInfo": "Více informací",
     "moreOnInstagram": "Více na Instagramu",
     "hostedBy": "Pořádá",
-    "interested": "má zájem",
-    "rsvpInterested": "Mám zájem",
     "myEvents": "Moje akce",
     "prevMonth": "Předchozí měsíc",
     "nextMonth": "Další měsíc",
@@ -1004,7 +991,6 @@
       "other": "Akce"
     },
     "studyRooms": "Studovny",
-    "reminderLead": "Za 2 hodiny",
     "finished": "proběhlo",
     "openInMaps": "Otevřít v mapách",
     "openInAppleMaps": "Apple Mapy",
@@ -1049,7 +1035,6 @@
     "addPost": "Přidat příspěvek",
     "logout": "Odhlásit",
     "saveError": "Nepodařilo se uložit — zkuste to znovu",
-    "manageButton": "Spravovat spolky",
     "consoleTitle": "Správa spolků",
     "loginTitle": "Přihlášení pro spolky",
     "loginSubtitle": "Přihlaste se účtem spolku a spravujte jeho akce na mapě kampusu.",
@@ -1062,7 +1047,6 @@
     "eventViewsOne": "1 zobrazení",
     "eventClicks": "{count} kliknutí",
     "eventClicksOne": "1 kliknutí",
-    "eventInterest": "Zájem v reIS: {count}",
     "eventStatsNote": "Zobrazení: kolik zařízení akci vidělo v Novinkách — zařízení, ne lidí. Kliknutí: kolikrát ji odtud někdo otevřel.",
     "newSuggestions": "Nové návrhy od studentů: {count}",
     "noSuggestions": "Zatím žádné návrhy.",
@@ -1148,8 +1132,6 @@
       "color": "Barva špendlíku",
       "faculty": "Fakulta",
       "wholeMendelu": "Celá MENDELU",
-      "autoFollow": "Noví studenti této fakulty ho automaticky odebírají",
-      "autoFollowMoves": "Automatické odebírání se přesune ze spolku {from}.",
       "logo": "Logo",
       "save": "Uložit",
       "cancel": "Zrušit",
@@ -1339,8 +1321,7 @@
     },
     "profile": {
       "appearance": "Vzhled",
-      "settings": "Nastavení",
-      "societies": "Spolky na mapě"
+      "settings": "Nastavení"
     },
     "loadFailed": {
       "title": "Data se nepodařilo načíst",
@@ -1426,38 +1407,6 @@
     "bannerLabel": "Zobrazuješ jako {programme} · {year}. ročník",
     "bannerExit": "Ukončit",
     "close": "Zavřít"
-  },
-  "notify": {
-    "channelRsvp": "Připomínky akcí",
-    "channelDigest": "Akce spolků",
-    "digestTomorrow": "Zítra: {titles}",
-    "digestTomorrowManyOne": "Zítra 1 akce: {titles}",
-    "digestTomorrowManyFew": "Zítra {n} akce: {titles} a další",
-    "digestTomorrowManyOther": "Zítra {n} akcí: {titles} a další",
-    "digestNewOnlyOne": "Nová akce: {titles}",
-    "digestNewOnlyFew": "Nové akce: {titles}",
-    "digestNewOnlyOther": "Nové akce: {titles}",
-    "digestPlusNewOne": "+ 1 nová akce od {societies}",
-    "digestPlusNewFew": "+ {n} nové akce od {societies}",
-    "digestPlusNewOther": "+ {n} nových akcí od {societies}",
-    "askOneOne": "{society} má 1 akci v příštích 14 dnech. Chceš večer předem připomínku?",
-    "askOneFew": "{society} má {n} akce v příštích 14 dnech. Chceš večer předem připomínku?",
-    "askOneOther": "{society} má {n} akcí v příštích 14 dnech. Chceš večer předem připomínku?",
-    "askManyOne": "Tvoje spolky mají 1 akci v příštích 14 dnech. Chceš večer předem připomínku?",
-    "askManyFew": "Tvoje spolky mají {n} akce v příštích 14 dnech. Chceš večer předem připomínku?",
-    "askManyOther": "Tvoje spolky mají {n} akcí v příštích 14 dnech. Chceš večer předem připomínku?",
-    "enable": "Zapnout",
-    "turnOn": "Zapnout oznámení",
-    "notNow": "Teď ne",
-    "section": "Oznámení",
-    "myEvents": "Připomínky mých akcí",
-    "followedEvents": "Akce sledovaných spolků",
-    "newEvents": "Nové akce",
-    "denied": "Oznámení jsou vypnutá v nastavení telefonu.",
-    "mute": "Ztlumit {name}",
-    "unmute": "Zrušit ztlumení {name}",
-    "follow": "Sledovat",
-    "following": "Sleduješ ✓"
   },
   "odevzdavarny": {
     "title": "Odevzdávárny",
