@@ -75,6 +75,10 @@ export function hasFinished(
 // a semester imported in September is visible in September.
 export const SOON_WINDOW_DAYS = 14;
 
+/** Novinky lists the next week only: taps cluster in the week before an event
+ *  (production, Oct 2026), and further-out rows drew impressions and no taps. */
+export const NOVINKY_WINDOW_DAYS = 7;
+
 /** Local calendar day as YYYY-MM-DD — never toISOString(), which is UTC. */
 export function localTodayIso(now: Date = new Date()): string {
   const d = startOfDay(now);

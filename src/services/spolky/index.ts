@@ -1,6 +1,5 @@
 export {
   fetchNotifications,
-  filterNotificationsByFaculty,
   trackNotificationsViewed,
   trackNotificationClick,
 } from './spolkyService';
