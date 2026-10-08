@@ -353,14 +353,11 @@ The project is `reis-479320` ("reIS"), owner **reis.mendelu@gmail.com**.
    "reIS Android (upload key / sideload)" (`E0:31:19:…:9C:0C`) and "reIS Android (Play App
    Signing)" (`54:AE:96:D3:DA:E8:5D:E8:E4:3F:6C:22:67:82:C2:4E:0E:95:FF:76`, read from Play
    Console → App signing). Without the last one, every Play-installed build fails sign-in.
-3. **Branding.** Without brand verification the consent screen shows only the domain,
-   not "reIS". Verification needs homepage, privacy-policy and terms links on a domain
-   verified in Search Console, and a gist can't qualify. So:
-   - a **`reis-page` PR** adds privacy and terms pages on **reis-navod.cz**;
-   - verify the domain;
-   - logo;
-   - replace the stale `chromiumapp.org` authorised domain with `reis-navod.cz`;
-   - "Verify branding": automated, or 2–3 business days.
+3. **Branding: none.** Dropped 2026-10-08. The consent screen already shows "reIS"
+   (seen on the Pixel), and with non-sensitive scopes only the app can go to production
+   without verification. Brand verification would only add policy/terms links to Google's
+   screen, and needs both on a Search-Console-verified domain; reis-page is not the place
+   for them (Dominik). Remove the stale `chromiumapp.org` authorised domain.
 4. **Publish** (Testing → In production).
 
 ## Testing

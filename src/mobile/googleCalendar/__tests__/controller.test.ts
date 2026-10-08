@@ -250,6 +250,21 @@ describe('controller', () => {
     expect((await loadSyncState()).enabled).toBe(false);
     expect(useAppStore.getState().gcal.notice).toBe('revoked');
   });
+  it('revoked access also forgets the local sign-in, so the next connect asks Google again', async () => {
+    await saveSyncState({
+      enabled: true,
+      calendarId: 'c',
+      held: {},
+      lastSyncAt: 1,
+      pastFillPending: false,
+      reisDeleted: {},
+      skipped: {},
+      sourcesFingerprint: null,
+    });
+    runSyncMock.mockResolvedValue({ kind: 'revoked' });
+    await syncGoogleCalendarNow('change');
+    expect(native.disconnect).toHaveBeenCalledTimes(1);
+  });
   it('a native REVOKED rejection reaches the runner as AuthRevokedError', async () => {
     await saveSyncState({
       enabled: true,

@@ -69,30 +69,44 @@ public class GoogleCalendarPlugin: CAPPlugin, CAPBridgedPlugin {
                 return
             }
             GIDSignIn.sharedInstance.restorePreviousSignIn { user, _ in
-                if let user {
-                    let granted = Set(user.grantedScopes ?? [])
-                    let missing = Self.scopes.filter { !granted.contains($0) }
-                    if missing.isEmpty {
-                        self.resolveUser(call, user)
-                        return
-                    }
-                    user.addScopes(missing, presenting: presenter) { result, error in
-                        if let error { self.rejectSignIn(call, error); return }
-                        self.resolveUser(call, result?.user ?? user)
-                    }
+                guard let user else {
+                    self.freshSignIn(call, presenter)
                     return
                 }
-                GIDSignIn.sharedInstance.signIn(
-                    withPresenting: presenter, hint: nil, additionalScopes: Self.scopes
-                ) { result, error in
-                    if let error { self.rejectSignIn(call, error); return }
-                    guard let user = result?.user else {
-                        call.reject("AUTH_FAILED", "AUTH_FAILED")
+                // A keychain grant can outlive its revocation (turned off on another
+                // device, or in Google's settings). Prove it still works before reusing
+                // it; otherwise connect would hand back a dead grant forever.
+                user.refreshTokensIfNeeded { fresh, error in
+                    guard let fresh, error == nil else {
+                        GIDSignIn.sharedInstance.signOut()
+                        self.freshSignIn(call, presenter)
                         return
                     }
-                    self.resolveUser(call, user)
+                    let granted = Set(fresh.grantedScopes ?? [])
+                    let missing = Self.scopes.filter { !granted.contains($0) }
+                    if missing.isEmpty {
+                        self.resolveUser(call, fresh)
+                        return
+                    }
+                    fresh.addScopes(missing, presenting: presenter) { result, error in
+                        if let error { self.rejectSignIn(call, error); return }
+                        self.resolveUser(call, result?.user ?? fresh)
+                    }
                 }
             }
+        }
+    }
+
+    private func freshSignIn(_ call: CAPPluginCall, _ presenter: UIViewController) {
+        GIDSignIn.sharedInstance.signIn(
+            withPresenting: presenter, hint: nil, additionalScopes: Self.scopes
+        ) { result, error in
+            if let error { self.rejectSignIn(call, error); return }
+            guard let user = result?.user else {
+                call.reject("AUTH_FAILED", "AUTH_FAILED")
+                return
+            }
+            self.resolveUser(call, user)
         }
     }
 

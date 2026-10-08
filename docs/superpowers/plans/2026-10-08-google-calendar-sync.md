@@ -2509,6 +2509,8 @@ The Swift ports and the `BGAppRefreshTask` were background sync, now phase 2 (sp
 
 ### Task 18: Google project to production and the policy pages
 
+> **Revised 2026-10-08:** no reis-page pages, no Search Console, no brand verification (Dominik: "no privacy ever lived there"). The consent screen already shows "reIS", and non-sensitive scopes publish without verification. What remains: save the scopes on Data access, remove the `chromiumapp.org` authorised domain, and publish to production — each only with Dominik's yes. The Play App Signing client already exists.
+
 **Files:** in `../reis-page` (resolve it from a worktree as CLAUDE.md says): `soukromi/index.html`, `podminky/index.html`, linked from `index.html`. That's a separate PR on `reis-page` `main`, with no `test` branch there.
 
 - [ ] **Step 1: The `reis-page` PR:**

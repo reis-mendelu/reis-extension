@@ -68,6 +68,13 @@ export async function sourcesFingerprint(src: SyncSources): Promise<string> {
 }
 
 async function turnOff(notice: 'calendarGone' | 'revoked' | null) {
+  // A grant revoked elsewhere can still sit in the native keychain with a
+  // valid-looking token; forget it so the next connect shows Google's screen.
+  if (notice === 'revoked') {
+    await GoogleCalendarNative.disconnect().catch((e: unknown) =>
+      logError('GoogleCalendar.forgetRevoked', e)
+    );
+  }
   await clearSyncState();
   cachedToken = null;
   useAppStore
