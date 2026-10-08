@@ -42,11 +42,11 @@ export const createZaznamnikSlice: AppSlice<ZaznamnikSlice> = (set, get) => ({
     if (impersonation || !studiumId || !obdobiId || !subjectId) return;
     set((s) => ({ zaznamnikLoading: { ...s.zaznamnikLoading, [courseCode]: true } }));
     try {
-      // Lazy: keeps the IS parsers out of the store's static graph.
-      const { fetchSubjectZaznamnik } = await import('../../api/zaznamnik');
-      const fresh = await fetchSubjectZaznamnik(studiumId, obdobiId, subjectId);
+      // Lazy: keeps the IS parsers out of the store's static graph. The sync
+      // layer persists; the slice only puts the answer on screen.
+      const { refetchSubjectZaznamnik } = await import('../../services/sync/syncZaznamnik');
+      const fresh = await refetchSubjectZaznamnik(studiumId, obdobiId, courseCode, subjectId);
       get().setZaznamnikBatch({ [courseCode]: fresh });
-      if (!isEmpty(fresh)) await IndexedDBService.set('zaznamnik', courseCode, fresh!);
     } catch (err) {
       logError('ZaznamnikSlice.refetchZaznamnik', err);
     } finally {

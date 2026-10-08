@@ -14,6 +14,10 @@ vi.mock('../../../api/zaznamnik', () => ({ fetchSubjectZaznamnik }));
 vi.mock('../../../services/storage', () => ({
   IndexedDBService: { get: vi.fn(async () => undefined), set: idbSet, getAllWithKeys: vi.fn() },
 }));
+// The retry persists through services/sync, which imports the file directly.
+vi.mock('../../../services/storage/IndexedDBService', () => ({
+  IndexedDBService: { get: vi.fn(async () => undefined), set: idbSet, getAllWithKeys: vi.fn() },
+}));
 
 import { useAppStore } from '../../useAppStore';
 

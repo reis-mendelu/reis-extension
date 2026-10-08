@@ -273,6 +273,18 @@ describe('a run that reached nothing', () => {
     expect((await finalMessage()).data.error).toBeUndefined();
   });
 
+  it('does not when the other fetches were skipped as fresh, not failed', async () => {
+    // A tick after a full run: schedule, subjects and plan are TTL-skipped
+    // (null without being asked). An exams-only failure then must not read as
+    // "nothing was reached" — nothing else was even tried.
+    const { syncAllData } = await loadSync();
+    await syncAllData();
+    api.exams.mockImplementation(offline);
+    await syncAllData();
+
+    expect((await finalMessage()).data.error).toBeUndefined();
+  });
+
   it('does not when IS answered with nothing', async () => {
     api.exams.mockResolvedValue([]);
     api.schedule.mockResolvedValue([]);

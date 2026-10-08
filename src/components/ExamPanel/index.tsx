@@ -14,7 +14,7 @@ import { useUserParams } from '../../hooks/useUserParams';
 import { useAppStore } from '../../store/useAppStore';
 import { ExamsFreshness } from './ExamsFreshness';
 import { LoadFailed } from '../LoadFailed';
-import { syncService } from '../../services/sync';
+import { syncService } from '../../services/sync/SyncService';
 
 interface RegisteredExam extends TimelineExam {
   subject: ExamSubject;

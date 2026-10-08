@@ -111,4 +111,26 @@ describe('a failed folder fetch is not an empty folder', () => {
 
     expect(useAppStore.getState().files[CODE]).toEqual([]);
   });
+
+  it('the cache reload clears a failure for a subject the sync has since fetched', async () => {
+    useAppStore.setState({ files: { [CODE]: [] }, filesError: { [CODE]: true } });
+    idb.get.mockImplementation(async (store: unknown, key: unknown) =>
+      store === 'files' && key === CODE ? { cz: [], en: [] } : undefined
+    );
+
+    await useAppStore.getState().fetchAllFiles();
+
+    expect(useAppStore.getState().filesError[CODE]).toBeFalsy();
+  });
+
+  it('a successful cache read clears a failure', async () => {
+    useAppStore.setState({ files: { [CODE]: [] }, filesError: { [CODE]: true } });
+    idb.get.mockImplementation(async (store: unknown, key: unknown) =>
+      store === 'files' && key === CODE ? { cz: [], en: [] } : undefined
+    );
+
+    await useAppStore.getState().refreshFiles(CODE);
+
+    expect(useAppStore.getState().filesError[CODE]).toBeFalsy();
+  });
 });

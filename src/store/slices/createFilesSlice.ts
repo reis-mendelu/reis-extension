@@ -198,6 +198,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
       set((state) => ({
         files: { ...state.files, [courseCode]: filesList },
         filesLoading: { ...state.filesLoading, [courseCode]: false },
+        filesError: { ...state.filesError, [courseCode]: false },
       }));
     } catch (e) {
       logError('FilesSlice.refreshFiles', e, { courseCode });
@@ -273,7 +274,13 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
     // and dropping its key put useFiles back on a skeleton that never ends,
     // over the failed state (Návrhy #26). Every successful fetch is persisted,
     // so the cache still wins for any subject that has one.
-    set((state) => ({ files: { ...state.files, ...files } }));
+    // A subject the cache has an entry for was fetched successfully at some
+    // point (here or by the sync), so any failure shown for it is stale.
+    const answered = Object.fromEntries(Object.keys(files).map((code) => [code, false]));
+    set((state) => ({
+      files: { ...state.files, ...files },
+      filesError: { ...state.filesError, ...answered },
+    }));
   },
   prefetchTodaySubjects: () => {
     if (get().impersonation) return;
