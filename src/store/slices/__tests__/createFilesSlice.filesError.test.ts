@@ -143,4 +143,20 @@ describe('a failed folder fetch is not an empty folder', () => {
 
     expect(useAppStore.getState().files['OLD-1']).toBeUndefined();
   });
+
+  it('a legacy cache in the other language whose refetch failed is still a failure', async () => {
+    // refreshFiles shows the stale-language list, but it did not load what
+    // was asked for — clearing the error would dress the outage as success.
+    useAppStore.setState({ files: {}, filesError: {} });
+    idb.get.mockImplementation(async (store: unknown, key: unknown) => {
+      if (store === 'files' && key === CODE) return [{ file_name: 'a.pdf', language: 'en' }];
+      if (store === 'subjects') return SUBJECTS;
+      return undefined;
+    });
+    fetchFilesFromFolder.mockRejectedValue(OFFLINE);
+
+    await useAppStore.getState().refreshFiles(CODE);
+
+    expect(useAppStore.getState().filesError[CODE]).toBe(true);
+  });
 });

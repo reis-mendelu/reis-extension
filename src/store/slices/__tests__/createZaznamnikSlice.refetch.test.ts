@@ -15,7 +15,9 @@ vi.mock('../../../services/storage', () => ({
   IndexedDBService: { get: vi.fn(async () => undefined), set: idbSet, getAllWithKeys: vi.fn() },
 }));
 // The retry persists through services/sync, which imports the file directly.
+// INSTALL_ID_KEY mirrors the real module: installId.ts is in this graph.
 vi.mock('../../../services/storage/IndexedDBService', () => ({
+  INSTALL_ID_KEY: 'install_id',
   IndexedDBService: { get: vi.fn(async () => undefined), set: idbSet, getAllWithKeys: vi.fn() },
 }));
 

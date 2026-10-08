@@ -159,6 +159,9 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
 
       // Handle dual-language structure vs legacy array
       let filesList: ParsedFile[] = [];
+      // Set when the legacy-cache language refetch fails: the list shown is
+      // then the other language's, which is not a successful load.
+      let refetchFailed = false;
       if (data && 'cz' in data && 'en' in data) {
         // Dual language structure
         filesList = currentLang === 'en' ? data.en : data.cz;
@@ -189,6 +192,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
               await IndexedDBService.set('files', courseCode, dualData);
               filesList = currentLang === 'en' ? dualData.en : dualData.cz;
             } catch (e) {
+              refetchFailed = true;
               logError('FilesSlice.refreshFiles:langRefetch', e, { courseCode });
             }
           }
@@ -198,7 +202,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
       set((state) => ({
         files: { ...state.files, [courseCode]: filesList },
         filesLoading: { ...state.filesLoading, [courseCode]: false },
-        filesError: { ...state.filesError, [courseCode]: false },
+        filesError: { ...state.filesError, [courseCode]: refetchFailed },
       }));
     } catch (e) {
       logError('FilesSlice.refreshFiles', e, { courseCode });
