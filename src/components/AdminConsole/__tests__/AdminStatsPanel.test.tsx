@@ -55,7 +55,7 @@ describe('AdminStatsPanel', () => {
   // about whether reIS is being discovered or actually kept.
   it("shows today's new/returning split under the Dnes tile", () => {
     render(<AdminStatsPanel />);
-    expect(screen.getByText('21 noví · 65 stávající')).toBeInTheDocument();
+    expect(screen.getByText('noví: 21 · stávající: 65')).toBeInTheDocument();
   });
 
   // The RPC's date spine always ends on today, but a caller that hands back an
@@ -64,7 +64,7 @@ describe('AdminStatsPanel', () => {
     useAppStore.setState({ adminStats: { ...STATS, daily: [] } } as never);
     render(<AdminStatsPanel />);
     expect(screen.getByText('86')).toBeInTheDocument();
-    expect(screen.queryByText(/noví ·/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/noví:/)).not.toBeInTheDocument();
   });
 
   it('renders a suppressed group as "under 5" rather than a number', () => {
@@ -178,8 +178,10 @@ describe('AdminStatsPanel', () => {
   // Its own RPC: until it answers, or with nobody to lose yet, there is no tile
   // rather than a "0 %" that would read as a measurement.
   it('shows no loss tile without a retention read or with no regulars yet', () => {
-    render(<AdminStatsPanel />);
+    const { unmount } = render(<AdminStatsPanel />);
     expect(screen.queryByText('Odešli')).not.toBeInTheDocument();
+    // Unmount first: a store update under a mounted panel renders outside act.
+    unmount();
 
     useAppStore.setState({ adminRetention: { regularsEver: 0, goneQuiet: 0 } } as never);
     render(<AdminStatsPanel />);

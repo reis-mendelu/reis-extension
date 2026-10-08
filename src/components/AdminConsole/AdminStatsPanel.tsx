@@ -80,8 +80,11 @@ export function AdminStatsPanel() {
                   tile. */}
                 {k === 'today' && today && (
                   <div className="stat-desc text-xs">
-                    {today.newDevices} {t('admin.stats.new')} · {today.returningDevices}{' '}
-                    {t('admin.stats.returning')}
+                    {/* "label: n", not "n label": Czech declines the label by
+                        the count (2 stávající, 65 stávajících), and this form
+                        is correct for every number. */}
+                    {t('admin.stats.new')}: {today.newDevices} · {t('admin.stats.returning')}:{' '}
+                    {today.returningDevices}
                   </div>
                 )}
               </div>
