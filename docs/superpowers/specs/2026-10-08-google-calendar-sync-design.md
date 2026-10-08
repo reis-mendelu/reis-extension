@@ -124,6 +124,7 @@ committed.
   | `configure({ enabled, calendarId, studentId, language })` | Writes what the background job reads into native preferences. Non-secret only. |
 
 - **Scopes:** `calendar.app.created`, `calendar.calendarlist.readonly`, and `email`.
+  GoogleSignIn-iOS also always requests `openid` and `profile`; both are non-sensitive.
   - `email` is a Sign-in scope, which Google pre-fills as non-sensitive. Confirm it on the Data access page anyway.
   - It exists only so the row can say which Google account is connected; `AuthorizationClient` won't return the address without it. The address stays on the device. If Dominik prefers a shorter consent screen, drop it together with the account line in the UI.
   - Nothing else.
@@ -194,14 +195,22 @@ This is a pure planner. Inputs: the events that should exist, the events that do
 **Delete safeguards.** IS returns identical bytes for "no lessons" and a failed query
 (see the memory note on IS empty schedules), so:
 
-- never delete based on a fetch that wasn't confirmed successful;
-- an empty list for a kind is "no information": delete nothing for that kind;
-- a plan deleting more than ⅓ of a kind's future events is held back, and runs only if
-  the next sync produces the same plan.
+- never delete based on a fetch that wasn't confirmed successful (exams: the subject list
+  read successfully and is non-empty);
+- **lessons only:** an empty lesson list is "no information", so delete nothing;
+- **lessons only:** a plan deleting more than ⅓ of future lessons is held back, and runs
+  only if the next sync produces the same plan.
+
+Exams and custom events may legitimately go empty: a student deregistering from their last
+exam must disappear from Google. (Revised in planning, 2026-10-08.)
 
 **Transport:**
-- **TypeScript** sends Google batch requests (multipart, 50 per batch). The first fill of
-  ~500 events is about 10 HTTP requests, with "Synchronizuji 120/480" shown in the row.
+- **TypeScript** sends paced single requests at 5/s.
+  - Revised in planning, 2026-10-08: Google's batch guide says "A set of n requests batched
+    together counts toward your usage limit as n requests", and the project's limit is 600
+    queries per minute per user, so batching saved nothing that mattered.
+  - The ~500-event first fill takes about 100 s, shows "Synchronizuji 120/480", and is
+    **resumable**: `pastFillPending` is persisted right after the calendar is created.
 - **Native** sends small diffs one at a time, within iOS's ~30 s budget.
 
 **Errors:**

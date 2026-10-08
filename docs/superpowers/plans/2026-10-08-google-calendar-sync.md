@@ -28,7 +28,9 @@
 - **Trees:**
   - Phone/iPad only. Nothing under `src/` that the extension imports may import `src/mobile/googleCalendar/**` or the native plugin. Install only from `capacitor/startApp.ts`.
   - The extension gets nothing; record that in `src/test/guards/desktopHasNoGoogleCalendar.test.ts`.
-- **Scopes:** exactly `https://www.googleapis.com/auth/calendar.app.created`, `https://www.googleapis.com/auth/calendar.calendarlist.readonly` and `email`. Nothing else.
+- **Scopes:** exactly `https://www.googleapis.com/auth/calendar.app.created`, `https://www.googleapis.com/auth/calendar.calendarlist.readonly` and `email`. GoogleSignIn-iOS also always requests `openid` and `profile`, both non-sensitive sign-in scopes; that's acceptable and must be listed on the Data access page too (Task 18).
+- **First fill is resumable:** the creating run persists `calendarId` plus `pastFillPending: true` immediately after `createCalendar`. Past events are included on every run until one completes with the flag set.
+- **Lessons are dual-language natively too:** the native job fetches CZ **and** EN and merges by `id + date + startTime`, exactly like `mergeDualLanguageLessons`. Otherwise its hashes differ from the app's and the two keep overwriting each other.
 - **No client secret, no Web client, no relay server.** Android uses an Android OAuth client (package + SHA-1); iOS uses an iOS OAuth client.
 - **Google project:** `reis-479320`, owner `reis.mendelu@gmail.com`. Never mention any personal Google account in code, commits or docs.
 - **Calendar:** name `Rozvrh`. Time zone `Europe/Prague`. The marker `reis:rozvrh:v1` goes in the calendar description.
@@ -36,9 +38,8 @@
 - **`extendedProperties.private`:** `reisKind` (`lesson|exam|custom`), `reisHash` (the first 16 hex characters of sha256 over the canonical fields), `reisV` = `"1"`.
 - **Past events are written only by the device that *creates* the calendar.** Every other sync touches only events with date ≥ today (Europe/Prague).
 - **Deletes require all of the following:**
-  - the kind's source was confirmed this run;
-  - the desired list for that kind is non-empty, or the kind is `custom`;
-  - deletes ≤ ⅓ of that kind's existing future events, unless the same delete set was already held back by the previous run.
+  - the kind's source was confirmed this run (exams: `status === 'success' && data.length > 0`, where `data` is the subject list, which stays non-empty after deregistering);
+  - **lessons only:** the desired list is non-empty, and deletes ≤ ⅓ of existing future lessons unless the previous run held back the same set. IS's failure-looks-like-empty problem is a timetable problem; a student deregistering from their last exam must disappear from Google.
 - **409 on insert** → `PUT` the same id with `status: "confirmed"`.
 - **Android background job:** a plain `JobService`. **Never WorkManager**: it loses the network after 5 s (spec, fact 3).
 - **Logging:** errors via `logError('GoogleCalendar.<step>', err)`. Never `console.error` directly.
@@ -573,19 +574,23 @@ const PATH = resolve(__dirname, '../__fixtures__/lessonEvents.json');
 interface Case {
   name: string;
   lang: 'cz' | 'en';
-  lesson: { id: string; date: string; startTime: string; endTime: string; courseName: string; room: string; isSeminar: string; teachers: string[] };
+  /** The MERGED lesson shape both paths produce: CZ base + EN name/room (mergeDualLanguageLessons). */
+  lesson: { id: string; date: string; startTime: string; endTime: string; courseName: string; courseNameCs: string; courseNameEn: string; room: string; roomCs: string; roomEn: string; isSeminar: string; teachers: string[] };
   expected?: { id: string; hash: string; body: unknown };
 }
 
+const L = (o: Partial<Case['lesson']> & Pick<Case['lesson'], 'id' | 'courseName' | 'room'>): Case['lesson'] => ({
+  date: '20261012', startTime: '09:00', endTime: '10:50', isSeminar: 'false', teachers: [],
+  courseNameCs: o.courseName, courseNameEn: o.courseName, roomCs: o.room, roomEn: o.room, ...o,
+});
 const INPUTS: Omit<Case, 'expected'>[] = [
-  { name: 'cz lecture', lang: 'cz', lesson: { id: '123', date: '20261012', startTime: '09:00', endTime: '10:50', courseName: 'Ekonomie I', room: 'Q01', isSeminar: 'false', teachers: ['doc. Jan Novák'] } },
-  { name: 'en seminar, two teachers', lang: 'en', lesson: { id: '124', date: '20261013', startTime: '13:00', endTime: '14:50', courseName: 'Economics I', room: 'Q02', isSeminar: 'true', teachers: ['A B', 'C D'] } },
-  { name: 'no teacher, no room, diacritics', lang: 'cz', lesson: { id: '9', date: '20270301', startTime: '07:00', endTime: '08:50', courseName: 'Účetnictví – úvod', room: '', isSeminar: 'false', teachers: [] } },
+  { name: 'cz lecture', lang: 'cz', lesson: L({ id: '123', courseName: 'Ekonomie I', room: 'Q01', teachers: ['doc. Jan Novák'] }) },
+  { name: 'en seminar, EN name and room differ, two teachers', lang: 'en', lesson: L({ id: '124', date: '20261013', startTime: '13:00', endTime: '14:50', courseName: 'Ekonomie I', courseNameEn: 'Economics I', room: 'Q02', roomEn: 'Q02 (EN)', isSeminar: 'true', teachers: ['A B', 'C D'] }) },
+  { name: 'no teacher, no room, diacritics', lang: 'cz', lesson: L({ id: '9', date: '20270301', startTime: '07:00', endTime: '08:50', courseName: 'Účetnictví – úvod', room: '' }) },
 ];
 
 const toBlock = (l: Case['lesson']): BlockLesson =>
-  ({ ...l, courseNameCs: l.courseName, courseNameEn: l.courseName, roomCs: l.room, roomEn: l.room,
-     teachers: l.teachers.map((fullName, i) => ({ fullName, shortName: fullName, id: String(i) })) }) as unknown as BlockLesson;
+  ({ ...l, teachers: l.teachers.map((fullName, i) => ({ fullName, shortName: fullName, id: String(i) })) }) as unknown as BlockLesson;
 
 async function compute(c: Omit<Case, 'expected'>): Promise<Case> {
   const [n] = normalizeLessons([toBlock(c.lesson)], c.lang);
@@ -808,6 +813,15 @@ export function deleteFingerprint(ids: string[]): string;
     "expected": { "insert": [], "update": [], "remove": ["l2", "l3"], "held": null }
   },
   {
+    "name": "deregistering the last exam deletes it",
+    "input": {
+      "kind": "exam", "today": "2026-10-08", "includePast": false, "sourceConfirmed": true, "previousHeld": null,
+      "desired": [],
+      "existing": [{ "id": "e1", "date": "2027-01-20", "hash": "x" }]
+    },
+    "expected": { "insert": [], "update": [], "remove": ["e1"], "held": null }
+  },
+  {
     "name": "custom may go empty (the student deleted their last event)",
     "input": {
       "kind": "custom", "today": "2026-10-08", "includePast": false, "sourceConfirmed": true, "previousHeld": null,
@@ -821,7 +835,7 @@ export function deleteFingerprint(ids: string[]): string;
 
 Notes on these cases:
 - The first case removes 1 of 4 existing future events (`ld`); 1×3 is not more than 4, so nothing is held.
-- In the last case the one-in-one deletion would exceed ⅓, but `custom` is exempt from both the empty rule and the ⅓ rule. The student's own deletions in reIS are authoritative.
+- In the last two cases the one-in-one deletion would exceed ⅓, but the empty rule and the ⅓ rule apply to lessons only.
 
 `__tests__/plan.test.ts`:
 
@@ -896,10 +910,10 @@ export function deleteFingerprint(ids: string[]): string {
  * One kind, one run. Pure: same input, same plan, in TS, Java and Swift
  * (lessonPlans.json is the shared contract).
  *
- * Deletes are the dangerous half. IS answers "no lessons" and "query failed"
- * with the same bytes, so a delete needs a confirmed read, a non-empty
- * desired list (custom events excepted: they are local and authoritative)
- * and, past a third of the future, the same set seen twice in a row.
+ * Deletes are the dangerous half. Every kind needs a confirmed read. Lessons
+ * also need a non-empty desired list and, past a third of the future, the
+ * same set seen twice in a row: IS answers "no lessons" and "query failed"
+ * with the same bytes. Exams and custom events may legitimately go empty.
  */
 export function planKind(input: PlanInput): Plan {
   const { kind, today, includePast } = input;
@@ -921,10 +935,12 @@ export function planKind(input: PlanInput): Plan {
   const empty = { insert, update, remove: [] as string[], held: null };
   if (candidates.length === 0) return empty;
   if (!input.sourceConfirmed) return empty;
-  if (kind !== 'custom' && input.desired.length === 0) return empty;
+  // Lessons only: IS answers "no lessons" and "failed" with the same bytes.
+  // Exams and custom events legitimately go empty (last exam deregistered).
+  if (kind === 'lesson' && input.desired.length === 0) return empty;
 
   const fingerprint = deleteFingerprint(candidates);
-  const massive = kind !== 'custom' && candidates.length * 3 > futureExisting.length;
+  const massive = kind === 'lesson' && candidates.length * 3 > futureExisting.length;
   if (massive && input.previousHeld !== fingerprint) {
     return { insert, update, remove: [], held: fingerprint };
   }
@@ -946,7 +962,11 @@ git commit -m "feat(gcal): reconcile planner with frozen past and delete safegua
 - Create: `src/mobile/googleCalendar/calendarApi.ts`
 - Test: `src/mobile/googleCalendar/__tests__/calendarApi.test.ts`
 
-**Note on batching (deliberate deviation from the spec):** Google counts every sub-request of a batch against the per-user quota, so batching saves only HTTP overhead. To stay under the quota, writes are **paced at 5 requests/second**: about 100 s for a ~500-event first fill, with progress shown. Task 6 Step 6 updates the spec's "Transport" paragraph to match.
+**Note on batching (deliberate deviation from the spec, verified 2026-10-08):**
+- Google's batch guide: "A set of n requests batched together counts toward your usage limit as n requests".
+- The `reis-479320` console shows **600 queries per minute per user** (10,000 per minute per project).
+- So batching saves only HTTP overhead. Writes are **paced at 5 requests/second** (300/min): about 100 s for a ~500-event first fill, with progress shown, and resumable (Task 7).
+- Task 6 Step 6 updates the spec's "Transport" paragraph to match.
 
 **Interfaces:**
 - Consumes: `DesiredEvent`, `ExistingEvent` (Task 3)
@@ -1228,6 +1248,7 @@ export interface SyncState {
   calendarId: string | null;
   held: Partial<Record<ReisKind, string>>;
   lastSyncAt: number | null;
+  pastFillPending: boolean; // the creating run hasn't finished writing history yet
 }
 export interface SyncSources {
   language: AppLanguage;
@@ -1244,6 +1265,7 @@ export async function runSync(o: {
   state: SyncState;
   sources: SyncSources;
   now: Date;
+  persist: (s: SyncState) => Promise<void>; // called right after createCalendar
   onProgress?: (done: number, total: number) => void;
 }): Promise<SyncOutcome>;
 ```
@@ -1286,27 +1308,43 @@ const NOW = new Date('2026-10-08T10:00:00+02:00');
 describe('runSync', () => {
   it('creating run: makes the calendar and writes the past too', async () => {
     const { api, log } = fakeApi();
-    const r = await runSync({ api, now: NOW, state: { calendarId: null, held: {}, lastSyncAt: null }, sources: sources(['2026-10-01', '2026-10-09']) });
+    const r = await runSync({ api, now: NOW, persist: async () => {}, state: { calendarId: null, held: {}, lastSyncAt: null, pastFillPending: false }, sources: sources(['2026-10-01', '2026-10-09']) });
     expect(r).toMatchObject({ kind: 'ok', written: 2, state: { calendarId: 'new-cal' } });
     expect(log.filter((l) => l.startsWith('up:'))).toHaveLength(2);
   });
   it('reusing an existing calendar never writes the past', async () => {
     const { api, log } = fakeApi({ found: 'theirs' });
-    await runSync({ api, now: NOW, state: { calendarId: null, held: {}, lastSyncAt: null }, sources: sources(['2026-10-01', '2026-10-09']) });
+    await runSync({ api, now: NOW, persist: async () => {}, state: { calendarId: null, held: {}, lastSyncAt: null, pastFillPending: false }, sources: sources(['2026-10-01', '2026-10-09']) });
     expect(log).not.toContain('create');
     expect(log.filter((l) => l.startsWith('up:'))).toHaveLength(1);
   });
   it('reports calendarGone when Rozvrh was deleted', async () => {
     const { api } = fakeApi({ gone: true });
-    const r = await runSync({ api, now: NOW, state: { calendarId: 'cal', held: {}, lastSyncAt: 1 }, sources: sources(['2026-10-09']) });
+    const r = await runSync({ api, now: NOW, persist: async () => {}, state: { calendarId: 'cal', held: {}, lastSyncAt: 1, pastFillPending: false }, sources: sources(['2026-10-09']) });
     expect(r).toEqual({ kind: 'calendarGone' });
+  });
+  it('an interrupted creating run resumes the past fill', async () => {
+    const { api, log } = fakeApi();
+    const saved: unknown[] = [];
+    const realUpsert = api.upsert;
+    let n = 0;
+    api.upsert = async (c, d) => { if (++n === 2) throw new Error('app killed'); return realUpsert(c, d); };
+    await expect(runSync({ api, now: NOW, persist: async (s) => void saved.push(s),
+      state: { calendarId: null, held: {}, lastSyncAt: null, pastFillPending: false },
+      sources: sources(['2026-10-01', '2026-10-02', '2026-10-09']) })).rejects.toThrow('app killed');
+    expect(saved.at(-1)).toMatchObject({ calendarId: 'new-cal', pastFillPending: true });
+    api.upsert = realUpsert;
+    const r = await runSync({ api, now: NOW, persist: async () => {},
+      state: saved.at(-1) as never, sources: sources(['2026-10-01', '2026-10-02', '2026-10-09']) });
+    expect(r).toMatchObject({ kind: 'ok', state: { pastFillPending: false } });
+    expect(log.filter((l) => l.startsWith('up:'))).toHaveLength(3);
   });
   it('a second run with nothing changed writes nothing', async () => {
     const { api, log } = fakeApi();
-    const first = await runSync({ api, now: NOW, state: { calendarId: null, held: {}, lastSyncAt: null }, sources: sources(['2026-10-09']) });
+    const first = await runSync({ api, now: NOW, persist: async () => {}, state: { calendarId: null, held: {}, lastSyncAt: null, pastFillPending: false }, sources: sources(['2026-10-09']) });
     log.length = 0;
     if (first.kind !== 'ok') throw new Error('first run failed');
-    await runSync({ api, now: NOW, state: first.state, sources: sources(['2026-10-09']) });
+    await runSync({ api, now: NOW, persist: async () => {}, state: first.state, sources: sources(['2026-10-09']) });
     expect(log).toEqual([]);
   });
 });
@@ -1330,6 +1368,7 @@ export interface SyncState {
   calendarId: string | null;
   held: Partial<Record<ReisKind, string>>;
   lastSyncAt: number | null;
+  pastFillPending: boolean;
 }
 export interface SyncSources {
   language: AppLanguage;
@@ -1360,18 +1399,22 @@ export async function runSync(o: {
   state: SyncState;
   sources: SyncSources;
   now: Date;
+  persist: (s: SyncState) => Promise<void>;
   onProgress?: (done: number, total: number) => void;
 }): Promise<SyncOutcome> {
   const { api, sources, now } = o;
   const today = pragueToday(now);
   try {
     let calendarId = o.state.calendarId;
-    let includePast = false;
+    // Only the creating device writes history, and it keeps trying until a run
+    // finishes: a ~500-event first fill takes minutes, and phones get killed.
+    let includePast = o.state.pastFillPending;
     if (!calendarId) {
       calendarId = await api.findReisCalendar();
       if (!calendarId) {
         calendarId = await api.createCalendar(CALENDAR_NAME);
-        includePast = true; // only the creating device writes history
+        includePast = true;
+        await o.persist({ ...o.state, calendarId, pastFillPending: true });
       }
     }
     await api.assertCalendar(calendarId);
@@ -1405,7 +1448,7 @@ export async function runSync(o: {
       await work[i]!();
       o.onProgress?.(i + 1, work.length);
     }
-    return { kind: 'ok', written: work.length, state: { calendarId, held, lastSyncAt: now.getTime() } };
+    return { kind: 'ok', written: work.length, state: { calendarId, held, lastSyncAt: now.getTime(), pastFillPending: false } };
   } catch (e) {
     if (e instanceof CalendarGoneError) return { kind: 'calendarGone' };
     if (e instanceof AuthRevokedError) return { kind: 'revoked' };
@@ -1502,10 +1545,10 @@ import { installTestPlatform } from './testPlatform';
 describe('syncStateStore', () => {
   beforeEach(() => installTestPlatform());
   it('defaults to disabled and empty', async () => {
-    expect(await loadSyncState()).toEqual({ enabled: false, calendarId: null, held: {}, lastSyncAt: null, sourcesFingerprint: null });
+    expect(await loadSyncState()).toEqual({ enabled: false, calendarId: null, held: {}, lastSyncAt: null, pastFillPending: false, sourcesFingerprint: null });
   });
   it('round-trips and clears', async () => {
-    const s = { enabled: true, calendarId: 'c', held: { lesson: 'l1' }, lastSyncAt: 5, sourcesFingerprint: 'f' };
+    const s = { enabled: true, calendarId: 'c', held: { lesson: 'l1' }, lastSyncAt: 5, pastFillPending: false, sourcesFingerprint: 'f' };
     await saveSyncState(s);
     expect(await loadSyncState()).toEqual(s);
     await clearSyncState();
@@ -1621,7 +1664,7 @@ import type { SyncState } from './runSync';
 
 const KEY = 'reis.gcal.state';
 export type PersistedSync = SyncState & { enabled: boolean; sourcesFingerprint: string | null };
-const EMPTY: PersistedSync = { enabled: false, calendarId: null, held: {}, lastSyncAt: null, sourcesFingerprint: null };
+const EMPTY: PersistedSync = { enabled: false, calendarId: null, held: {}, lastSyncAt: null, pastFillPending: false, sourcesFingerprint: null };
 
 export async function loadSyncState(): Promise<PersistedSync> {
   const v = (await getPlatform().storage.get(KEY)) as Partial<PersistedSync> | null;
@@ -1679,7 +1722,8 @@ export function installGoogleCalendarSync(): void; // startApp
   4. `setGcal({ syncing: true })` → `runSync` → handle the outcome → `configure(...)` → `releaseLock` (in `finally`).
 - **Confirmation flags:**
   - `lessonsConfirmed = schedule.status === 'success' && schedule.data.length > 0`;
-  - `examsConfirmed = exams.status === 'success'`.
+  - `examsConfirmed = exams.status === 'success' && exams.data.length > 0` (subjects, not registrations).
+- **A held-back delete:** don't store `sourcesFingerprint` (store `null`), so the next trigger re-runs and can confirm it.
 - **Outcomes:**
   - `calendarGone`: `clearSyncState`, `configure({ enabled: false, ... })`, `setGcal({ connected: false, notice: 'calendarGone' })`. The calendar is not recreated.
   - `revoked`: the same, with `notice: 'revoked'`.
@@ -1727,28 +1771,35 @@ beforeEach(async () => {
 
 describe('controller', () => {
   it('connect enables, runs a sync and configures native', async () => {
-    runSyncMock.mockResolvedValue({ kind: 'ok', written: 1, state: { calendarId: 'c', held: {}, lastSyncAt: 1 } });
+    runSyncMock.mockResolvedValue({ kind: 'ok', written: 1, state: { calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false } });
     await connectGoogleCalendar();
     expect((await loadSyncState()).enabled).toBe(true);
     expect(native.configure).toHaveBeenCalledWith(expect.objectContaining({ enabled: true, calendarId: 'c' }));
     expect(useAppStore.getState().gcal.connected).toBe(true);
   });
   it('change with an unchanged fingerprint does nothing', async () => {
-    runSyncMock.mockResolvedValue({ kind: 'ok', written: 0, state: { calendarId: 'c', held: {}, lastSyncAt: 1 } });
+    runSyncMock.mockResolvedValue({ kind: 'ok', written: 0, state: { calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false } });
     await connectGoogleCalendar();
     runSyncMock.mockClear();
     await syncGoogleCalendarNow('change');
     expect(runSyncMock).not.toHaveBeenCalled();
   });
+  it('a held-back delete re-runs on the next change even with unchanged sources', async () => {
+    runSyncMock.mockResolvedValue({ kind: 'ok', written: 0, state: { calendarId: 'c', held: { lesson: 'l2,l3' }, lastSyncAt: 1, pastFillPending: false } });
+    await connectGoogleCalendar();
+    runSyncMock.mockClear();
+    await syncGoogleCalendarNow('change');
+    expect(runSyncMock).toHaveBeenCalledTimes(1);
+  });
   it('calendarGone turns the sync off and does not recreate', async () => {
-    await saveSyncState({ enabled: true, calendarId: 'c', held: {}, lastSyncAt: 1, sourcesFingerprint: null });
+    await saveSyncState({ enabled: true, calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false, sourcesFingerprint: null });
     runSyncMock.mockResolvedValue({ kind: 'calendarGone' });
     await syncGoogleCalendarNow('change');
     expect((await loadSyncState()).enabled).toBe(false);
     expect(useAppStore.getState().gcal.notice).toBe('calendarGone');
   });
   it('skips when the lock is held by the background job', async () => {
-    await saveSyncState({ enabled: true, calendarId: 'c', held: {}, lastSyncAt: 1, sourcesFingerprint: null });
+    await saveSyncState({ enabled: true, calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false, sourcesFingerprint: null });
     native.acquireLock.mockResolvedValueOnce({ acquired: false });
     await syncGoogleCalendarNow('change');
     expect(runSyncMock).not.toHaveBeenCalled();
@@ -1791,7 +1842,7 @@ function currentSources(): SyncSources {
     lessons: s.schedule.data,
     lessonsConfirmed: s.schedule.status === 'success' && s.schedule.data.length > 0,
     exams: s.exams.data,
-    examsConfirmed: s.exams.status === 'success',
+    examsConfirmed: s.exams.status === 'success' && s.exams.data.length > 0,
     custom: s.customEvents,
   };
 }
@@ -1834,10 +1885,14 @@ export async function syncGoogleCalendarNow(reason: 'connect' | 'change'): Promi
       state: st,
       sources,
       now: new Date(),
+      persist: (s) => saveSyncState({ ...s, enabled: true, sourcesFingerprint: null }),
       onProgress: (done, total) => set({ progress: total > 20 ? { done, total } : null }),
     });
     if (out.kind === 'calendarGone' || out.kind === 'revoked') return await turnOff(out.kind);
-    await saveSyncState({ ...out.state, enabled: true, sourcesFingerprint: fp });
+    // A held-back delete needs a confirming second run, so don't let the
+    // unchanged-sources shortcut skip it.
+    const heldAny = Object.keys(out.state.held).length > 0;
+    await saveSyncState({ ...out.state, enabled: true, sourcesFingerprint: heldAny ? null : fp });
     await configureNative(true, out.state.calendarId);
     set({ lastSyncAt: out.state.lastSyncAt });
   } catch (e) {
@@ -2137,6 +2192,28 @@ describe('Google Calendar sync placement', () => {
   ])('%s still has it', (file, needle) => {
     expect(read(file)).toContain(needle);
   });
+
+  /**
+   * Named so the tree-parity Stop hook (.claude/hooks/tree-parity.mjs) clears
+   * them: these files are phone/iPad-only by decision, not by omission.
+   */
+  it.each([
+    'src/mobile/googleCalendar/calendarApi.ts',
+    'src/mobile/googleCalendar/controller.ts',
+    'src/mobile/googleCalendar/eventIdentity.ts',
+    'src/mobile/googleCalendar/googleCalendarNative.ts',
+    'src/mobile/googleCalendar/installGoogleCalendarSync.ts',
+    'src/mobile/googleCalendar/normalize.ts',
+    'src/mobile/googleCalendar/plan.ts',
+    'src/mobile/googleCalendar/pragueDate.ts',
+    'src/mobile/googleCalendar/runSync.ts',
+    'src/mobile/googleCalendar/syncStateStore.ts',
+    'src/mobile/googleCalendar/toGoogleEvent.ts',
+    'src/mobile/googleCalendar/types.ts',
+    'src/components/mobile/sheets/GoogleCalendarSheet.tsx',
+  ])('%s is phone-only', (file) => {
+    expect(() => read(file)).not.toThrow();
+  });
 });
 ```
 
@@ -2379,6 +2456,8 @@ public class LessonMapperTest {
         .put("id", l.getString("id")).put("date", l.getString("date"))
         .put("startTime", l.getString("startTime")).put("endTime", l.getString("endTime"))
         .put("courseName", l.getString("courseName")).put("room", l.getString("room"))
+        .put("courseNameCs", l.getString("courseNameCs")).put("courseNameEn", l.getString("courseNameEn"))
+        .put("roomCs", l.getString("roomCs")).put("roomEn", l.getString("roomEn"))
         .put("isSeminar", l.getString("isSeminar"));
       JSONArray teachers = new JSONArray();
       JSONArray names = l.getJSONArray("teachers");
@@ -2408,7 +2487,7 @@ Expected: FAIL (compile errors).
 - [ ] **Step 3: Implement `LessonMapper`.** It must reproduce TS byte for byte:
   - `key = id + "|" + date + "|" + startTime`;
   - `id = "l" + base32hex(sha256(key))`, using the alphabet `0123456789abcdefghijklmnopqrstuv` and the bit loop from `eventIdentity.ts`;
-  - `title = courseName + " – " + (isSeminar.equals("true") ? LABEL.seminar : LABEL.lecture)` (en-dash U+2013 with spaces), labels `cz`: `přednáška`/`cvičení`, `en`: `lecture`/`seminar`;
+  - `title = (lang-picked courseNameCs/courseNameEn, falling back to courseName) + " – " + (isSeminar.equals("true") ? LABEL.seminar : LABEL.lecture)` (en-dash U+2013 with spaces), labels `cz`: `přednáška`/`cvičení`, `en`: `lecture`/`seminar`; location is `roomCs`/`roomEn`, falling back to `room`;
   - `description = teachers.isEmpty() ? "reIS" : String.join(", ", teachers) + "\nreIS"`;
   - `hash = first 16 hex of sha256(String.join("\u001f", "lesson", date, start, end, title, location, description))`, with `date` as `yyyy-MM-dd`;
   - `body`: the same shape as `toGoogleEvent.ts` for lessons: `reminders {useDefault:false, overrides:[]}`, no `colorId`, `extendedProperties.private {reisKind:"lesson", reisHash, reisV:"1"}`.
@@ -2461,8 +2540,11 @@ public final class LessonMapper {
     String date = raw.substring(0, 4) + "-" + raw.substring(4, 6) + "-" + raw.substring(6, 8);
     String start = l.getString("startTime"), end = l.getString("endTime");
     String type = "true".equals(l.optString("isSeminar")) ? (en ? "seminar" : "cvičení") : (en ? "lecture" : "přednáška");
-    String title = l.getString("courseName") + " \u2013 " + type;
-    String location = l.optString("room", "");
+    String name = l.optString(en ? "courseNameEn" : "courseNameCs", "");
+    if (name.isEmpty()) name = l.getString("courseName");
+    String title = name + " \u2013 " + type;
+    String location = l.optString(en ? "roomEn" : "roomCs", "");
+    if (location.isEmpty()) location = l.optString("room", "");
     List<String> teachers = new ArrayList<>();
     JSONArray ts = l.optJSONArray("teachers");
     if (ts != null) for (int i = 0; i < ts.length(); i++) {
@@ -2559,6 +2641,7 @@ git commit -m "feat(gcal/android): Java lesson mapper and planner, held to the s
      - POST `https://is.mendelu.cz/auth/katalog/rozvrhy_view.pl?lang=<lang>` with the same form fields as `src/api/schedule.ts` `fetchWeekSchedule`, the window from `academicWindow` (ported), and the header `Cookie: UISAuth=<token>`;
      - JSON → `blockLessons`;
      - non-JSON → `null` (no info). The "no results" HTML also returns `null` here: the background job never deletes on emptiness.
+     - **Fetch twice, `lang=cz` and `lang=en`, then merge** exactly like `mergeDualLanguageLessons` in `src/api/schedule.ts`: CZ lessons are the base; EN name and room are joined on `id + date + startTime`, falling back to CZ; `courseNameCs/courseNameEn/roomCs/roomEn` are set; teachers come from CZ. Either leg `null` → stop (no info).
   5. Map with `LessonMapper`, keep date ≥ Prague today.
   6. Get a token with `Identity.getAuthorizationClient(getApplicationContext()).authorize(GoogleCalendarPlugin.request())` and `Tasks.await(…, 30 s)`. On `hasResolution` → `SyncConfig.setNotice("revoked")`, `enabled=false`, stop.
   7. `CalendarHttp.getCalendar` → 404 → `setNotice("calendarGone")`, `enabled=false`, stop.
@@ -2575,6 +2658,7 @@ git commit -m "feat(gcal/android): Java lesson mapper and planner, held to the s
   - delete one **past** lesson in Google, run again: it does **not** come back;
   - turn Battery Saver on: `cmd jobscheduler run -f` still forces it, but a natural run waits; then turn it off;
   - turn Background data off for reIS and confirm the job waits for the network constraint. Ask Dominik to flip these settings; never change them over adb.
+  - **No ping-pong:** right after a job run, open reIS in **English** and let it sync. The `GoogleCalendar` TS run must write **0 lesson events**: identical ids and hashes from both paths. Repeat in Czech. Any writes mean the paths disagree; diff a sample event's fields before going on.
 - [ ] **Step 5: Commit**
 
 ```bash
@@ -2650,8 +2734,10 @@ enum LessonMapper {
         let start = l["startTime"] as? String ?? "", end = l["endTime"] as? String ?? ""
         let seminar = (l["isSeminar"] as? String) == "true"
         let type = seminar ? (en ? "seminar" : "cvičení") : (en ? "lecture" : "přednáška")
-        let title = "\(l["courseName"] as? String ?? "") \u{2013} \(type)"
-        let location = l["room"] as? String ?? ""
+        let pick = { (k: String, fallback: String) -> String in
+            let v = l[k] as? String ?? ""; return v.isEmpty ? (l[fallback] as? String ?? "") : v }
+        let title = "\(pick(en ? "courseNameEn" : "courseNameCs", "courseName")) \u{2013} \(type)"
+        let location = pick(en ? "roomEn" : "roomCs", "room")
         let teachers = (l["teachers"] as? [[String: Any]] ?? []).compactMap { $0["fullName"] as? String }.filter { !$0.isEmpty }
         let description = teachers.isEmpty ? "reIS" : teachers.joined(separator: ", ") + "\nreIS"
         let key = "\(l["id"] as? String ?? "")|\(raw)|\(start)"
@@ -2697,7 +2783,8 @@ git commit -m "feat(gcal/ios): Swift lesson mapper and planner, held to the shar
 - [ ] **Step 2: Fire the task from the Xcode debugger** (the Task 2 command):
   - delete one future lesson in Google → it comes back;
   - delete one past lesson → it doesn't;
-  - read the steps in Console.app filtered by subsystem `cz.reis.app.gcal`.
+  - read the steps in Console.app filtered by subsystem `cz.reis.app.gcal`;
+  - **no ping-pong:** after a BG run, the app's next sync writes 0 lesson events, in both languages (same check as Task 14). The Swift `IsTimetable` fetches CZ + EN and merges like `mergeDualLanguageLessons`.
 - [ ] **Step 3: Commit**
 
 ```bash
@@ -2720,7 +2807,7 @@ git commit -m "feat(gcal/ios): BGAppRefreshTask keeps future lessons in sync"
   - Show Dominik the pages before merging.
 - [ ] **Step 2: Domain verification.** Search Console → add `reis-navod.cz` as `reis.mendelu@gmail.com` (DNS TXT on Vercel's domain settings; Dominik may need to do the DNS click).
 - [ ] **Step 3: Console, as `reis.mendelu` (`authuser=2`):**
-  - **Data access:** save `calendar.app.created`, `calendar.calendarlist.readonly`, `email`. Confirm `email` is listed non-sensitive.
+  - **Data access:** save `calendar.app.created`, `calendar.calendarlist.readonly`, `email`, `openid` and `profile` (GoogleSignIn-iOS always asks for the last two). Confirm all of them are listed non-sensitive.
   - **Clients:** add an Android client for the Play App Signing SHA-1 (Play Console → Test and release → App integrity).
   - **Branding:**
     - name `reIS`; logo 120×120 PNG from `public/` (use an existing reIS icon);
