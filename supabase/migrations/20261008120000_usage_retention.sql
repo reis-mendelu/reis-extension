@@ -3,10 +3,16 @@
 -- kept, because once installs slow down nearly every active device is
 -- "existing" by definition.
 --
--- NOT YET APPLIED. No CI applies this directory; run it by hand with
--- `npx supabase db query --linked -f <this file>`, never `db push`. It only
--- creates two new functions, so an old build against a migrated database is
--- unaffected and it is safe to apply before the branch merges.
+-- APPLIED 2026-10-08 against the linked project (zvbpgkmnrqyprtkyxkwn), before
+-- the branch merged — it only creates two new functions, so an old build
+-- against the migrated database is unaffected. No CI applies this directory;
+-- it is run by hand with `npx supabase db query --linked -f <this file>`,
+-- never `db push`.
+--
+-- Verified after applying: usage_retention_unchecked() returned
+-- {regulars_ever: 2435, gone_quiet: 97}; has_function_privilege shows anon
+-- without EXECUTE on both and authenticated only on the gated wrapper; and
+-- both answer 401 to anon through the public API with the publishable key.
 --
 -- Definitions (DEVICES — a random per-install UUID — never people):
 --   * regular     a device active on >= 2 distinct days of some Monday–Sunday
