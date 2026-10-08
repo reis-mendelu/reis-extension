@@ -1683,13 +1683,14 @@ export function installGoogleCalendarSync(): void; // startApp
 - **`installGoogleCalendarSync`:**
   1. `isAvailable()` → `setGcal({ available })`.
   2. Load the state, then `status()` → `setGcal({ connected, email })`.
-  3. `useAppStore.subscribe` on `schedule.data`, `exams.data`, `customEvents` and `language`, debounced 3 s → `syncGoogleCalendarNow('change')`. Opening the app loads the schedule, so this is also the on-open trigger.
+  3. `useAppStore.subscribe` on `schedule.data`, `exams.data`, `customEvents` and `language`, debounced 3 s → `syncGoogleCalendarNow('change')`.
+  4. **Explicit on-open and on-resume calls**, because the subscription alone misses both: the schedule can be hydrated from IndexedDB before install, and a resume inside the 24 h schedule TTL / `MIN_SYNC_GAP` refetches nothing. So call `syncGoogleCalendarNow('change')` once at the end of install, and from a `CapApp.addListener('resume', ...)`. The fingerprint and 6 h gate make these cheap.
 - **`syncGoogleCalendarNow`:**
   1. Return early unless enabled, not demo mode, and the store's schedule status ≠ `loading`.
-  2. Return if a sync is already running (a module-level `running` flag; one JS process, no native job to race).
+  2. If a sync is already running (module-level `running` flag; one JS process, no native job to race), set `pending = true` and return. When the running sync finishes, it re-runs once if `pending` was set. Otherwise a change that arrives during the ~100 s first fill would be lost.
   3. Compute `sourcesFingerprint`; on `'change'`, return if it equals the stored one **and** the last sync is under 6 h old. The 6 h re-run repairs edits made in Google (a deleted future lesson comes back) without a background job.
   4. `setGcal({ syncing: true })` → `runSync` → handle the outcome; clear `running` in `finally`.
-- **`connectGoogleCalendar`:** `connect()`; if `scopes` lacks `SCOPE_APP_CREATED` → `setGcal({ notice: 'scopeMissing' })` and stop. If it lacks only `SCOPE_CALENDAR_LIST` → call `connect()` once more, then proceed whatever it returns (`findReisCalendar` treats a 403 as "not found").
+- **`connectGoogleCalendar`:** `connect()`; if `scopes` lacks `SCOPE_APP_CREATED` → `setGcal({ notice: 'scopeMissing' })` and stop. If it lacks only `SCOPE_CALENDAR_LIST` → call `connect()` once more, with its own `.catch` that keeps the first result (cancelling the second sheet must not abort a connect that already has `app.created`), then proceed (`findReisCalendar` treats a 403 as "not found").
 - **Confirmation flags:**
   - `lessonsConfirmed = schedule.status === 'success' && schedule.data.length > 0`;
   - `examsConfirmed = exams.status === 'success' && exams.data.length > 0` (subjects, not registrations).
@@ -1787,15 +1788,23 @@ describe('controller', () => {
     await syncGoogleCalendarNow('change');
     expect(runSyncMock).toHaveBeenCalledTimes(1);
   });
-  it('a second trigger while a sync runs is dropped', async () => {
+  it('a trigger during a running sync is not lost: it re-runs once afterwards', async () => {
     await saveSyncState({ enabled: true, calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false, sourcesFingerprint: null });
     let release!: () => void;
-    runSyncMock.mockImplementationOnce(() => new Promise((r) => (release = () => r({ kind: 'ok', written: 0, state: { calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false } }))));
+    const ok = { kind: 'ok', written: 0, state: { calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false } };
+    runSyncMock.mockImplementationOnce(() => new Promise((r) => (release = () => r(ok)))).mockResolvedValue(ok);
     const first = syncGoogleCalendarNow('change');
-    await syncGoogleCalendarNow('change');
+    await syncGoogleCalendarNow('change'); // arrives mid-sync
+    useAppStore.setState({ customEvents: [{ id: 'new' } as never] }); // sources moved on meanwhile
     release();
     await first;
-    expect(runSyncMock).toHaveBeenCalledTimes(1);
+    expect(runSyncMock).toHaveBeenCalledTimes(2);
+  });
+  it('cancelling the second consent keeps a connect that has app.created', async () => {
+    native.connect.mockResolvedValueOnce({ email: 'x@y', scopes: [APP] }).mockRejectedValueOnce(new Error('CANCELLED'));
+    runSyncMock.mockResolvedValue({ kind: 'ok', written: 1, state: { calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false } });
+    await connectGoogleCalendar();
+    expect((await loadSyncState()).enabled).toBe(true);
   });
 });
 ```
@@ -1817,6 +1826,7 @@ import { logError } from '../../utils/reportError';
 const REPAIR_AFTER_MS = 6 * 3600_000;
 let cachedToken: string | null = null;
 let running = false;
+let pending = false;
 
 function api() {
   return createCalendarApi({
@@ -1853,7 +1863,11 @@ async function turnOff(notice: 'calendarGone' | 'revoked' | null) {
 
 export async function syncGoogleCalendarNow(reason: 'connect' | 'change'): Promise<void> {
   const st = await loadSyncState();
-  if (!st.enabled || isDemoMode() || running) return;
+  if (!st.enabled || isDemoMode()) return;
+  if (running) {
+    pending = true;
+    return;
+  }
   const sources = currentSources();
   const fp = await sourcesFingerprint(sources);
   const fresh = st.lastSyncAt !== null && Date.now() - st.lastSyncAt < REPAIR_AFTER_MS;
@@ -1883,6 +1897,10 @@ export async function syncGoogleCalendarNow(reason: 'connect' | 'change'): Promi
     set({ syncing: false, progress: null });
     running = false;
   }
+  if (pending) {
+    pending = false;
+    await syncGoogleCalendarNow('change');
+  }
 }
 
 export async function connectGoogleCalendar(): Promise<void> {
@@ -1894,7 +1912,9 @@ export async function connectGoogleCalendar(): Promise<void> {
     }
     // Granular consent: the calendar list was unticked. Ask once more; it only
     // helps a second device find the same "Rozvrh", so proceed either way.
-    if (!scopes.includes(SCOPE_CALENDAR_LIST)) ({ email, scopes } = await GoogleCalendarNative.connect());
+    if (!scopes.includes(SCOPE_CALENDAR_LIST)) {
+      ({ email, scopes } = await GoogleCalendarNative.connect().catch(() => ({ email, scopes })));
+    }
     const st = await loadSyncState();
     await saveSyncState({ ...st, enabled: true, sourcesFingerprint: null });
     useAppStore.getState().setGcal({ connected: true, email, notice: null });
@@ -1920,6 +1940,7 @@ export async function disconnectGoogleCalendar(o: { deleteCalendar: boolean }): 
 `installGoogleCalendarSync.ts`:
 
 ```ts
+import { App as CapApp } from '@capacitor/app';
 import { GoogleCalendarNative } from './googleCalendarNative';
 import { loadSyncState } from './syncStateStore';
 import { syncGoogleCalendarNow } from './controller';
@@ -1941,10 +1962,17 @@ export function installGoogleCalendarSync(): void {
         email,
         lastSyncAt: st.lastSyncAt,
       });
+      // On open: the store may already hold the schedule (IndexedDB), so the
+      // subscription below would never fire for this launch.
+      await syncGoogleCalendarNow('change');
     } catch (e) {
       logError('GoogleCalendar.install', e);
     }
   })();
+
+  // On resume: inside MIN_SYNC_GAP / the schedule TTL nothing refetches, and the
+  // 6 h repair would never run. The fingerprint check keeps this cheap.
+  void CapApp.addListener('resume', () => void syncGoogleCalendarNow('change'));
 
   let timer: ReturnType<typeof setTimeout> | null = null;
   useAppStore.subscribe((s, prev) => {
@@ -2302,8 +2330,21 @@ public class GoogleCalendarPlugin extends Plugin {
   private ActivityResultLauncher<IntentSenderRequest> consent;
   private PluginCall pendingConnect;
 
-  static AuthorizationRequest request() {
-    return AuthorizationRequest.builder().setRequestedScopes(SCOPES).build();
+  static AuthorizationRequest request(List<Scope> scopes) {
+    return AuthorizationRequest.builder().setRequestedScopes(scopes).build();
+  }
+
+  /**
+   * What the student actually granted (granular consent). accessToken/status must
+   * ask for exactly these: asking for an unticked scope again needs consent, which
+   * would read as REVOKED and turn the sync off.
+   */
+  List<Scope> grantedScopes() {
+    String csv = getContext().getSharedPreferences(PREFS, 0).getString("scopes", null);
+    if (csv == null) return SCOPES;
+    List<Scope> out = new ArrayList<>();
+    for (String sc : csv.split(",")) if (!sc.isEmpty()) out.add(new Scope(sc));
+    return out;
   }
 
   @Override public void load() {
@@ -2324,7 +2365,7 @@ public class GoogleCalendarPlugin extends Plugin {
   }
 
   @PluginMethod public void connect(PluginCall call) {
-    Identity.getAuthorizationClient(getActivity()).authorize(request())
+    Identity.getAuthorizationClient(getActivity()).authorize(request(SCOPES))
       .addOnSuccessListener(res -> {
         if (res.hasResolution()) {
           pendingConnect = call;
@@ -2338,15 +2379,18 @@ public class GoogleCalendarPlugin extends Plugin {
     // The email comes from the token's tokeninfo; fetch it once, off the main thread.
     new Thread(() -> {
       String email = fetchEmail(res.getAccessToken());
-      getContext().getSharedPreferences(PREFS, 0).edit().putString("email", email).apply();
       JSArray scopes = new JSArray();
       for (String sc : res.getGrantedScopes()) scopes.put(sc); // granular consent: may lack some
+      getContext().getSharedPreferences(PREFS, 0).edit()
+          .putString("email", email)
+          .putString("scopes", String.join(",", res.getGrantedScopes()))
+          .apply();
       call.resolve(new JSObject().put("email", email).put("scopes", scopes));
     }).start();
   }
 
   @PluginMethod public void accessToken(PluginCall call) {
-    Identity.getAuthorizationClient(getContext()).authorize(request())
+    Identity.getAuthorizationClient(getContext()).authorize(request(grantedScopes()))
       .addOnSuccessListener(res -> {
         // hasResolution = consent needed again, i.e. a scope was revoked or never granted.
         if (res.hasResolution() || res.getAccessToken() == null) call.reject("REVOKED");
@@ -2386,7 +2430,7 @@ public class GoogleCalendarPlugin extends Plugin {
     Identity.getAuthorizationClient(getContext())
         .revokeAccess(RevokeAccessRequest.builder()
             .setAccount(new Account(email, "com.google"))
-            .setScopes(SCOPES)
+            .setScopes(grantedScopes())
             .build())
         .addOnCompleteListener(t -> forget.run()); // revoke failure still forgets locally
   }
@@ -2395,7 +2439,7 @@ public class GoogleCalendarPlugin extends Plugin {
   @PluginMethod public void status(PluginCall call) {
     String email = getContext().getSharedPreferences(PREFS, 0).getString("email", null);
     if (email == null) { call.resolve(new JSObject().put("connected", false).put("email", null)); return; }
-    Identity.getAuthorizationClient(getContext()).authorize(request())
+    Identity.getAuthorizationClient(getContext()).authorize(request(grantedScopes()))
       .addOnSuccessListener(res -> call.resolve(new JSObject()
           .put("connected", !res.hasResolution() && res.getAccessToken() != null).put("email", email)))
       .addOnFailureListener(e -> call.resolve(new JSObject().put("connected", false).put("email", email)));
