@@ -51,6 +51,7 @@ describe('Google Calendar sync placement', () => {
     'src/mobile/googleCalendar/normalize.ts',
     'src/mobile/googleCalendar/plan.ts',
     'src/mobile/googleCalendar/pragueDate.ts',
+    'src/mobile/googleCalendar/runPool.ts',
     'src/mobile/googleCalendar/runSync.ts',
     'src/mobile/googleCalendar/syncStateStore.ts',
     'src/mobile/googleCalendar/syncTimeLabel.ts',

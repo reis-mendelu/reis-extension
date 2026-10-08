@@ -2020,6 +2020,8 @@ git commit -m "feat(gcal): connect, disconnect and sync-on-change for the phone 
 
 ### Task 10: The profile row and the Google Calendar sheet
 
+> **As built differs (2026-10-08):** on and off only. The delete-the-calendar button, its confirm step and the `offDelete*`/`offKeep` strings were removed after the Pixel test; turning off is one "Vypnout synchronizaci" button and keeps "Rozvrh" in Google. The sheet also shows a "you can close this" hint during a long sync, and the Profil row shows progress. `GoogleCalendarSheet.tsx` is the source of truth.
+
 **Files:**
 - Create: `src/components/mobile/sheets/GoogleCalendarSheet.tsx`
 - Modify: `src/components/mobile/screens/ProfileScreen.tsx` (a `NavRow` after eduroam, shown only when `gcal.available`), `src/store/types.ts` (sheet union `| { kind: 'googleCalendar' }`), `src/components/mobile/sheets/SheetHost.tsx` (a `case 'googleCalendar'`), `src/i18n/locales/cs.json` and `en.json`
@@ -2530,7 +2532,7 @@ The Swift ports and the `BGAppRefreshTask` were background sync, now phase 2 (sp
 
 - [ ] **Step 1: Two devices.** Pixel and iPad on `reis.mendelu`, both connected. Exactly one "Rozvrh" at calendar.google.com, the event count equals reIS, and a lesson synced by one device isn't rewritten by the other: open reIS on both and diff `updated` timestamps via the API (expect no change from the second device).
 - [ ] **Step 2: Language switch.** Switch the app to English: future titles change, past titles don't.
-- [ ] **Step 3: Turn-off paths.** "Jen vypnout" keeps the calendar; "Vypnout a smazat" removes it; deleting "Rozvrh" in Google turns the row off with the `gone` text.
+- [ ] **Step 3: Turn-off paths.** "Vypnout synchronizaci" revokes access and keeps "Rozvrh" (on/off only, Dominik 2026-10-08); deleting "Rozvrh" in Google turns the row off with the `gone` text; revoking on one device shows the `revoked` notice on the other (the grant is per project).
 - [ ] **Step 4: Local checks:** `npx vitest run src/mobile/googleCalendar src/test/guards scripts/privacy` and `npm run typecheck`.
 - [ ] **Step 5: Open the PR.** `gh pr create --base test` (push via the `personal` identity; memory `github-push-identity`), then turn on Auto-fix (memory `always-enable-auto-fix`).
   - PR body: link the spec and the plan, list the device evidence (PNG screenshots sent to Dominik), and note the store-form changes owed at release:
