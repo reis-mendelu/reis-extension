@@ -1009,8 +1009,7 @@
     "openInMaps": "Open in Maps",
     "openInAppleMaps": "Apple Maps",
     "openInGoogleMaps": "Google Maps",
-    "audienceHint": "Seen by students who follow {society}.",
-    "audienceHintGeneric": "Seen only by students who follow this society.",
+    "audienceHint": "Other students won't see this event on the map or in Novinky.",
     "panelCollapse": "Collapse map panel",
     "panelExpand": "Expand map panel",
     "walkMinutes": "{n} min",
@@ -1123,8 +1122,7 @@
     "loginName": "login",
     "audience": {
       "faculty": "Only {faculty} students",
-      "erasmus": "Erasmus students only",
-      "followers": "Followers only"
+      "erasmus": "Erasmus students only"
     },
     "attachments": "Attachments",
     "screenshotBadge": "📎 screenshot",

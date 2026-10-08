@@ -255,7 +255,19 @@ describe('EventComposer — the audience survives an edit', () => {
     expect(updatePost.mock.calls[0][1].subscribers_only).toBe(false);
   });
 
-  it('sends the audience in the patch when it is narrowed to followers', async () => {
+  it('offers no audience control for reIS, which is for everyone', () => {
+    useAppStore.setState({ adminActiveAssociationId: 'reis' } as never);
+    render(<EventComposer onDone={() => {}} />);
+    expect(screen.queryByRole('checkbox', { name: /^Jen / })).toBeNull();
+  });
+
+  it('names Erasmus students for ESN', () => {
+    useAppStore.setState({ adminActiveAssociationId: 'esn' } as never);
+    render(<EventComposer onDone={() => {}} />);
+    expect(screen.getByRole('checkbox', { name: 'Jen erasmáci' })).toBeInTheDocument();
+  });
+
+  it('sends the audience in the patch when it is narrowed to the faculty', async () => {
     useAppStore.setState({
       editEventId: 'a1',
       societyMapEvents: [{ ...restricted, subscribersOnly: false }],

@@ -1009,8 +1009,7 @@
     "openInMaps": "Otevřít v mapách",
     "openInAppleMaps": "Apple Mapy",
     "openInGoogleMaps": "Google Maps",
-    "audienceHint": "Uvidí studenti, kteří odebírají {society}.",
-    "audienceHintGeneric": "Uvidí jen studenti, kteří tento spolek odebírají.",
+    "audienceHint": "Ostatní studenti tuto akci na mapě ani v Novinkách neuvidí.",
     "panelCollapse": "Sbalit panel mapy",
     "panelExpand": "Rozbalit panel mapy",
     "walkMinutes": "{n} min",
@@ -1123,8 +1122,7 @@
     "loginName": "login",
     "audience": {
       "faculty": "Jen studenti {faculty}",
-      "erasmus": "Jen erasmáci",
-      "followers": "Jen naši"
+      "erasmus": "Jen erasmáci"
     },
     "attachments": "Přílohy",
     "screenshotBadge": "📎 snímek",
