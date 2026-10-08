@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { MapPin } from 'lucide-react';
+import { ExternalLink, MapPin } from 'lucide-react';
 import { CATEGORY_EMOJI_SRC } from '../../data/eventCategories';
 import { eventWhenLabel } from './eventHelpers';
 import { useSociety } from '../../hooks/useSociety';
@@ -12,7 +12,9 @@ import type { MapEvent } from '../../types/events';
 // row-level controls (edit/delete) as siblings of the clickable body: the
 // body stays a single <button>, so the controls can't nest inside it.
 // `footer` is a last line under the venue — the console's views/clicks. The
-// public Events tab never passes it.
+// public Events tab never passes it. `href` turns the body into a link out of
+// the app for an event with nothing to expand (eventDirectLink), marked ↗ so
+// leaving reIS is not a surprise.
 export function EventRow({
   event,
   locale,
@@ -22,6 +24,7 @@ export function EventRow({
   subline,
   actions,
   footer,
+  href,
 }: {
   event: MapEvent;
   locale: string;
@@ -31,6 +34,7 @@ export function EventRow({
   subline?: string;
   actions?: ReactNode;
   footer?: ReactNode;
+  href?: string;
 }) {
   const soc = useSociety(event.societyId);
   const day = subline ?? eventWhenLabel(event, locale, t);
@@ -42,7 +46,8 @@ export function EventRow({
         selected ? 'border-primary bg-primary/10' : 'border-transparent hover:bg-base-content/5'
       }`}
     >
-      <button
+      <Body
+        href={href}
         onClick={onClick}
         className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2 text-left"
       >
@@ -84,8 +89,47 @@ export function EventRow({
           )}
           {footer}
         </span>
-      </button>
+        {href && (
+          <ExternalLink
+            size={14}
+            aria-hidden
+            data-testid="event-row-external"
+            className="flex-shrink-0 text-base-content/50"
+          />
+        )}
+      </Body>
       {actions && <div className="flex flex-shrink-0 items-center gap-0.5 pr-1.5">{actions}</div>}
     </div>
+  );
+}
+
+/** The clickable body: a button that opens the card, or a link out of the app. */
+function Body({
+  href,
+  onClick,
+  className,
+  children,
+}: {
+  href?: string;
+  onClick: () => void;
+  className: string;
+  children: ReactNode;
+}) {
+  return href ? (
+    // target=_blank: on Capacitor installExternalLinkHandler opens it in the
+    // in-app browser, as it does the card's own button.
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={onClick}
+      className={className}
+    >
+      {children}
+    </a>
+  ) : (
+    <button onClick={onClick} className={className}>
+      {children}
+    </button>
   );
 }

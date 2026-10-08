@@ -7,6 +7,7 @@ import { useAppStore } from '../store/useAppStore';
 import { openExternal } from '../mobile/openExternal';
 import { MOCK_MAP_EVENTS } from './CampusMap/__tests__/fixtures/mockMapEvents';
 import { localTodayIso } from './CampusMap/eventWindow';
+import { neutralSociety } from '../utils/societies/resolveSociety';
 
 // What a tap on a Novinky row does: the event's card when it is on the map,
 // its link otherwise, the link straight away for an academic row. Split from
@@ -121,6 +122,44 @@ describe('NotificationFeed row taps', () => {
       event: { id: '1' },
     });
     expect(openExternal).not.toHaveBeenCalled();
+  });
+
+  it('goes straight to the society when the event has nothing the card could add', async () => {
+    // A semester-list import: title and date only. Its card would repeat the
+    // row around one button, so the tap is that button.
+    useAppStore.setState({
+      mapEvents: [
+        {
+          ...MOCK_MAP_EVENTS[0]!,
+          id: '1',
+          url: '',
+          date: localTodayIso(),
+          endDate: null,
+          time: null,
+          location: null,
+          coord: null,
+          roomCode: null,
+          venueKind: 'tba',
+        },
+      ],
+      mapEventsLoaded: true,
+      societies: { esn: { ...neutralSociety('esn'), instagram: 'esnmendelubrno' } },
+    } as any);
+    render(<NotificationFeed onShowMap={vi.fn()} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Notifications'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Test Notification 1')).toBeInTheDocument();
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Test Notification 1'));
+    });
+
+    expect(openExternal).toHaveBeenCalledWith('https://www.instagram.com/esnmendelubrno/');
+    expect(useAppStore.getState().mapSelection).toBeNull();
+    expect(spolkyService.trackNotificationClick).toHaveBeenCalledWith('1');
   });
 
   it('opens the link immediately for an academic row, without tracking', async () => {
