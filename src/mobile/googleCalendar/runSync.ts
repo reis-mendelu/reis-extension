@@ -38,11 +38,12 @@ export type SyncOutcome =
 const CALENDAR_NAME = 'Rozvrh';
 const KINDS = ['lesson', 'exam', 'custom'] as const;
 /**
- * Writes in flight at once. One at a time took a minute for 136 events on 4G
- * (Pixel 9a, 2026-10-08): each call is ~250 ms of latency. With the 150 ms pace
- * in calendarHttp.ts, four workers stay near Google's 600 requests/minute/user.
+ * Writes in flight at once. Measured on the Pixel 9a, 2026-10-08: one at a time
+ * wrote ~2 events/s (136 in about a minute); four at a time ~3/s, because each
+ * Google write takes ~1.2 s server-side. Eight stays under Google's 600
+ * requests/minute/user even at the 150 ms pace in calendarHttp.ts.
  */
-const WRITE_CONCURRENCY = 4;
+const WRITE_CONCURRENCY = 8;
 
 /** 00:00 in Prague as RFC 3339. Prague is +01:00 or +02:00; take it from Intl. */
 function pragueMidnight(today: string, now: Date): string {

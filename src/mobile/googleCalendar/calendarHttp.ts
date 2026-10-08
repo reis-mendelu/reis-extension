@@ -4,7 +4,7 @@
  * list of calls the sync makes.
  */
 const BASE = 'https://www.googleapis.com/calendar/v3';
-const PACE_MS = 150; // per worker; with 4 workers (runSync) ≈ 10 req/s = Google's 600/min/user
+const PACE_MS = 150; // per worker; Google's ~1.2 s write latency keeps 8 workers (runSync) under 600/min/user
 const MAX_BACKOFF_TRIES = 5;
 
 export class CalendarGoneError extends Error {}
