@@ -1,0 +1,115 @@
+import { describe, expect, it, vi } from 'vitest';
+import {
+  AuthRevokedError,
+  CalendarGoneError,
+  CALENDAR_MARKER,
+  createCalendarApi,
+} from '../calendarApi';
+import type { DesiredEvent } from '../types';
+
+type R = { status: number; body?: unknown };
+function fakeFetch(responses: R[]) {
+  const calls: { url: string; method: string; body?: string }[] = [];
+  const f = vi.fn(async (url: string, init?: RequestInit) => {
+    calls.push({ url, method: init?.method ?? 'GET', body: init?.body as string | undefined });
+    const r = responses.shift() ?? { status: 500 };
+    return new Response(r.body === undefined ? null : JSON.stringify(r.body), { status: r.status });
+  });
+  return { f: f as unknown as typeof fetch, calls };
+}
+const api = (responses: R[], invalidate = vi.fn(async () => {})) => {
+  const { f, calls } = fakeFetch(responses);
+  return {
+    calls,
+    invalidate,
+    a: createCalendarApi({
+      token: async () => 'T',
+      invalidateToken: invalidate,
+      fetch: f,
+      sleep: async () => {},
+    }),
+  };
+};
+const d = {
+  id: 'lx',
+  kind: 'lesson',
+  date: '2026-10-09',
+  hash: 'h',
+  body: { id: 'lx', summary: 's' },
+} as unknown as DesiredEvent;
+
+describe('calendarApi', () => {
+  it('finds the reIS calendar by its description marker', async () => {
+    const { a } = api([
+      {
+        status: 200,
+        body: {
+          items: [
+            { id: 'other', description: 'x', accessRole: 'owner' },
+            { id: 'mine', description: `Rozvrh ${CALENDAR_MARKER}`, accessRole: 'owner' },
+          ],
+        },
+      },
+    ]);
+    expect(await a.findReisCalendar()).toBe('mine');
+  });
+  it('treats an unticked calendar list (403 insufficient scopes) as not found', async () => {
+    const { a } = api([
+      {
+        status: 403,
+        body: {
+          error: { status: 'PERMISSION_DENIED', errors: [{ reason: 'insufficientPermissions' }] },
+        },
+      },
+    ]);
+    expect(await a.findReisCalendar()).toBeNull();
+  });
+  it('upsert falls back to PUT confirmed on 409', async () => {
+    const { a, calls } = api([{ status: 409 }, { status: 200, body: {} }]);
+    await a.upsert('cal', d);
+    expect(calls.map((c) => c.method)).toEqual(['POST', 'PUT']);
+    expect(JSON.parse(calls[1]!.body!)).toMatchObject({ status: 'confirmed' });
+    expect(calls[1]!.url).toContain('/calendars/cal/events/lx');
+  });
+  it('assertCalendar throws CalendarGoneError on 404', async () => {
+    const { a } = api([{ status: 404 }]);
+    await expect(a.assertCalendar('cal')).rejects.toBeInstanceOf(CalendarGoneError);
+  });
+  it('retries once after a 401 with a fresh token, then reports revoked', async () => {
+    const { a, invalidate } = api([{ status: 401 }, { status: 401 }]);
+    await expect(a.assertCalendar('cal')).rejects.toBeInstanceOf(AuthRevokedError);
+    expect(invalidate).toHaveBeenCalledTimes(1);
+  });
+  it('backs off on 429 and on 403 rateLimitExceeded', async () => {
+    const { a, calls } = api([
+      { status: 429 },
+      { status: 403, body: { error: { errors: [{ reason: 'rateLimitExceeded' }] } } },
+      { status: 200, body: {} },
+    ]);
+    await a.put('cal', d);
+    expect(calls).toHaveLength(3);
+  });
+  it('lists one kind, paginated, from timeMin', async () => {
+    const ev = (id: string) => ({
+      id,
+      start: { dateTime: '2026-10-09T09:00:00+02:00' },
+      extendedProperties: { private: { reisKind: 'lesson', reisHash: 'h' } },
+    });
+    const { a, calls } = api([
+      { status: 200, body: { items: [ev('l1')], nextPageToken: 'p2' } },
+      { status: 200, body: { items: [ev('l2')] } },
+    ]);
+    const out = await a.listEvents('cal', 'lesson', '2026-10-08T00:00:00+02:00');
+    expect(out).toEqual([
+      { id: 'l1', kind: 'lesson', date: '2026-10-09', hash: 'h' },
+      { id: 'l2', kind: 'lesson', date: '2026-10-09', hash: 'h' },
+    ]);
+    expect(calls[0]!.url).toContain('privateExtendedProperty=reisKind%3Dlesson');
+    expect(calls[0]!.url).toContain('timeMin=');
+    expect(calls[1]!.url).toContain('pageToken=p2');
+  });
+  it('treats 404 and 410 on delete as already gone', async () => {
+    const { a } = api([{ status: 410 }]);
+    await expect(a.remove('cal', 'lx')).resolves.toBeUndefined();
+  });
+});
