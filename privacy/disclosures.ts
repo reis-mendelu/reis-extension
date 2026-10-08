@@ -122,15 +122,13 @@ export const FLOWS: Flow[] = [
     },
   },
   {
-    id: 'survey_and_rsvp',
-    what: 'An NPS answer, or an event RSVP, on the random install id.',
+    id: 'survey',
+    what: 'An NPS answer on the random install id.',
     when: 'student-action',
     identifier: 'install_id',
-    files: ['src/api/feedback.ts', 'src/api/eventRsvp.ts'],
-    calls: ['submit_feedback', 'set_event_rsvp'],
-    policyRows: [
-      ['In-app survey, event RSVP', 'you answer / RSVP', 'the same random install identifier'],
-    ],
+    files: ['src/api/feedback.ts'],
+    calls: ['submit_feedback'],
+    policyRows: [['In-app survey', 'you answer', 'the same random install identifier']],
     stores: {
       apple: [INSTALL_ID_APPLE],
       play: ['PSL_USER_ACCOUNT'],
@@ -200,18 +198,13 @@ export const FLOWS: Flow[] = [
 /** Supabase calls that carry no student data flow, each with the reason. */
 export const EXEMPT: Exempt[] = [
   {
-    call: 'get_event_rsvps',
-    files: ['src/api/eventRsvp.ts'],
-    why: 'Reads public RSVP counts; sends event ids only.',
-  },
-  {
     call: 'spolky_events',
     files: [
       'src/api/mapEvents.ts',
       'src/services/spolky/spolkyService.ts',
       'src/api/societyPosts.ts',
     ],
-    why: 'Public society feed reads; writes are by a signed-in society, not a student.',
+    why: 'Public society feed reads; writes are by reIS staff or a society login, never a student.',
   },
   {
     call: 'societies',

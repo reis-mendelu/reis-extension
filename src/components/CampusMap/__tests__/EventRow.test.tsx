@@ -76,9 +76,10 @@ describe('EventRow', () => {
   });
 
   // Imported from a semester list: no room, no coordinate, no name — the
-  // society just hasn't said where yet. Name the society instead of the
-  // place, same wording as the detail card.
-  it('names the society instead of a place for a TBA event', () => {
+  // society just hasn't said where yet. "Místo upřesní SUPEF" on every row
+  // said nothing the student could use; the row's link to the society's
+  // Instagram is where the place gets announced, so the row stays quiet.
+  it('says nothing about the place for a TBA event', () => {
     const tbaEvent: MapEvent = {
       ...ev,
       societyId: 'esn',
@@ -87,12 +88,14 @@ describe('EventRow', () => {
       roomCode: null,
       venueKind: 'tba',
     };
-    render(<EventRow event={tbaEvent} locale="cs-CZ" t={t} selected={false} onClick={() => {}} />);
-    expect(screen.getByText('map.venueTba {"name":"ESN"}')).toBeInTheDocument();
+    const { container } = render(
+      <EventRow event={tbaEvent} locale="cs-CZ" t={t} selected={false} onClick={() => {}} />
+    );
+    expect(screen.queryByText(/map\.venueTba/)).toBeNull();
+    expect(container.querySelector('.lucide-map-pin')).toBeNull();
   });
 
-  // A blank location is no location: it used to suppress the TBA line and
-  // draw a pin beside nothing.
+  // A blank location is no location: it used to draw a pin beside nothing.
   it('treats a whitespace-only location as none', () => {
     const tbaEvent: MapEvent = {
       ...ev,
@@ -105,7 +108,6 @@ describe('EventRow', () => {
     const { container } = render(
       <EventRow event={tbaEvent} locale="cs-CZ" t={t} selected={false} onClick={() => {}} />
     );
-    expect(screen.getByText('map.venueTba {"name":"ESN"}')).toBeInTheDocument();
     expect(container.querySelector('.lucide-map-pin')).toBeNull();
   });
   // The list keeps a multi-day trip until its last day. Labelled by its start,

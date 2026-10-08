@@ -8,9 +8,6 @@ vi.mock('../../../CampusMap/MapCanvas', () => ({
 vi.mock('../../../CampusMap/EventLayer', () => ({
   EventLayer: () => <div data-testid="mock-event-layer" />,
 }));
-vi.mock('../../../../hooks/useEventsFacultySettings', () => ({
-  useEventsFacultySettings: () => ({ subscribedFaculties: ['mendelu'], isLoading: false }),
-}));
 
 import { render, screen } from '@testing-library/react';
 import { MapScreen } from '../MapScreen';

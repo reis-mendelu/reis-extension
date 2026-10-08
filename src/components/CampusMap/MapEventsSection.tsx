@@ -2,17 +2,18 @@ import { CalendarOff, ChevronDown, ChevronRight } from 'lucide-react';
 import { useVisibleMapEvents } from '../../hooks/useVisibleMapEvents';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { usePhoneViewport } from '../../hooks/ui/usePhoneViewport';
 import { weekSections } from './eventHelpers';
 import { EventRow } from './EventRow';
+import { eventDirectLink } from './eventLinks';
+import { resolveSociety } from '../../utils/societies/resolveSociety';
 import { trackMapEventView } from '../../api/featureUsage';
-import { NotifySoftAsk } from '../mobile/NotifySoftAsk';
 
 // The events tab body shared by the desktop MapSidePanel and the mobile map
 // sheet's Akce tab: the upcoming events grouped into This week / Next week /
 // Later, soonest first, with Later collapsed by default (it holds the rest of
 // the semester). Rows open the bottom-left detail card on desktop (off-campus
-// rows open it too but don't move the map).
+// rows open it too but don't move the map) — unless the card would add nothing
+// to the row, and then the row is its link (eventDirectLink).
 //
 // No society filter. The chips left the phone first — nine of them above a list
 // that is usually two or three events long — and the desktop row was the same
@@ -30,10 +31,10 @@ export function MapEventsSection() {
   const selection = useAppStore((s) => s.mapSelection);
   const focusEvent = useAppStore((s) => s.focusEventById);
   const laterExpanded = useAppStore((s) => s.mapLaterExpanded);
+  const societies = useAppStore((s) => s.societies);
   const toggleLater = useAppStore((s) => s.toggleMapLater);
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
-  const isPhone = usePhoneViewport();
 
   const sections = weekSections(events);
   const selectedId = selection?.kind === 'event' ? selection.event.id : null;
@@ -41,7 +42,6 @@ export function MapEventsSection() {
   return (
     <div className="flex max-h-[60vh] flex-col">
       <div className="overflow-y-auto">
-        {isPhone && <NotifySoftAsk />}
         {sections.length === 0 ? (
           <div className="flex flex-col items-center gap-1 px-4 py-8 text-center text-base-content/60">
             <CalendarOff size={28} className="opacity-40" />
@@ -66,22 +66,28 @@ export function MapEventsSection() {
                 </div>
               )}
               {(s.key !== 'later' || laterExpanded) &&
-                s.events.map((e) => (
-                  <EventRow
-                    key={e.id}
-                    event={e}
-                    locale={locale}
-                    t={t}
-                    selected={e.id === selectedId}
-                    onClick={() => {
-                      // This panel is the student map's own list on both
-                      // surfaces (desktop MapSidePanel, mobile Akce tab), so a
-                      // row opened here is a map view exactly like a pin.
-                      void trackMapEventView(e.id);
-                      focusEvent(e.id, { fly: true });
-                    }}
-                  />
-                ))}
+                s.events.map((e) => {
+                  const direct = eventDirectLink(e, resolveSociety(societies, e.societyId));
+                  return (
+                    <EventRow
+                      key={e.id}
+                      event={e}
+                      locale={locale}
+                      t={t}
+                      selected={e.id === selectedId}
+                      href={direct?.href}
+                      onClick={() => {
+                        // A direct row opens nothing on the map: not a view.
+                        if (direct) return;
+                        // This panel is the student map's own list on both
+                        // surfaces (desktop MapSidePanel, mobile Akce tab), so a
+                        // row opened here is a map view exactly like a pin.
+                        void trackMapEventView(e.id);
+                        focusEvent(e.id, { fly: true });
+                      }}
+                    />
+                  );
+                })}
             </div>
           ))
         )}

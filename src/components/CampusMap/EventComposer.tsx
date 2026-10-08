@@ -9,6 +9,7 @@ import { useVenuePicker } from './useVenuePicker';
 import { ComposerWhenField } from './ComposerWhenField';
 import { ComposerVenueSearch } from './ComposerVenueSearch';
 import { ComposerAudienceField } from './ComposerAudienceField';
+import { audienceOf } from '../../utils/eventAudience';
 import { ComposerCategoryField } from './ComposerCategoryField';
 import { ComposerLinkField } from './ComposerLinkField';
 import { toPatch, latestCategory, initialRoom, initialPlaceName } from './composerPost';
@@ -42,6 +43,13 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
     (s) => s.societyMapEvents.find((e) => e.id === (s.editEventId ?? s.duplicateEventId)) ?? null
   );
   const posts = useAppStore((s) => s.societyPosts);
+  // Only a society the catalog KNOWS to be university-wide (reIS) cannot
+  // restrict. A society missing from a stale catalog keeps the stored flag
+  // rather than having it cleared blind.
+  const cannotRestrict = useAppStore((s) => {
+    const society = s.societies[associationId ?? ''];
+    return !!society && audienceOf(society) === 'everyone';
+  });
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
 
@@ -100,7 +108,9 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       coord,
       placeName,
       url,
-      subscribersOnly,
+      // A society with no narrower audience (reIS) cannot restrict: a legacy
+      // flag on an edited row is cleared rather than silently kept.
+      subscribersOnly: !cannotRestrict && subscribersOnly,
     });
     try {
       const res = editId

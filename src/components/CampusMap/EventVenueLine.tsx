@@ -13,13 +13,7 @@ import type { MapEvent } from '../../types/events';
 
 const INDEX = roomsIndexJson as RoomIndexEntry[];
 
-export function EventVenueLine({
-  event,
-  societyShortName,
-}: {
-  event: MapEvent;
-  societyShortName: string;
-}) {
+export function EventVenueLine({ event }: { event: MapEvent }) {
   const focusRoom = useAppStore((s) => s.focusRoomByCode);
   const { t } = useTranslation();
   /**
@@ -96,12 +90,8 @@ export function EventVenueLine({
     <div className="flex items-center gap-1.5 text-sm text-base-content/70">
       <MapPin size={13} className="shrink-0" /> {venueName}
     </div>
-  ) : event.venueKind === 'tba' ? (
-    // Imported from a semester list: the society has not said where yet.
-    // Muted and inert, because there is nowhere to go.
-    <div className="flex items-center gap-1.5 text-sm text-base-content/60">
-      <MapPin size={13} className="shrink-0 opacity-60" />
-      {t('map.venueTba', { name: societyShortName })}
-    </div>
-  ) : null;
+  ) : // Nothing for a place not announced yet (venueKind 'tba'): the card's
+  // Instagram button is where it will be, and "Místo upřesní …" only said
+  // that nobody knows.
+  null;
 }

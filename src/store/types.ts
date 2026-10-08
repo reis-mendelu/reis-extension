@@ -384,6 +384,8 @@ export interface ContextSlice {
   isErasmus: boolean;
   fullName: string | null;
   userEmail: string | null;
+  /** IS has named the faculty this session; until then loadContext is worth re-asking. */
+  contextResolved: boolean;
   loadContext: () => Promise<void>;
 }
 
@@ -629,8 +631,8 @@ export interface MapSlice {
   reloadMapEvents: () => Promise<void>;
   /** Refetch only if `minGapMs` has passed since the last successful fetch — for a resume hook on a long-lived Capacitor process. A stale-but-recent fetch is a no-op. */
   refreshMapEventsIfStale: (minGapMs: number) => Promise<void>;
-  /** Select an event for the detail panel. Pass `{ fly: true }` (list click) to also fly the camera to its coordinate; a pin click omits it and the camera stays put. `reveal: 'map'` (the calendar) is carried on the selection and keeps the phone sheet at peek, so the pin shows instead of the card. */
-  focusEventById: (id: string, opts?: { fly?: boolean; reveal?: 'map' }) => void;
+  /** Select an event for the detail panel. Pass `{ fly: true }` (list click) to also fly the camera to its coordinate; a pin click omits it and the camera stays put. */
+  focusEventById: (id: string, opts?: { fly?: boolean }) => void;
   // --- Society authoring ---
   /** The active society's own events (all dates), mapped from societyPosts. Drawn
    *  by the admin console's map; the student map draws `mapEvents` instead. Which
@@ -719,8 +721,6 @@ export type AppState = ScheduleSlice &
   import('./slices/createPdfPositionsSlice').PdfPositionsSlice &
   import('./slices/createPersonProfileSlice').PersonProfileSlice &
   MapSlice &
-  import('./slices/createRsvpSlice').RsvpSlice &
-  import('./slices/createFollowSlice').FollowSlice &
   import('./slices/createSocietiesSlice').SocietiesSlice &
   import('./slices/createAdminStatsSlice').AdminStatsSlice &
   import('./slices/createAdminSlice').AdminSlice &

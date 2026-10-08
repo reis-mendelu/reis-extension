@@ -1,6 +1,7 @@
 import type { AppSlice, NotificationSlice } from '../types';
 import { fetchNotifications, trackNotificationsViewed } from '../../services/spolky';
 import { IndexedDBService } from '../../services/storage';
+import { dropPreAudienceRows } from '../../services/spolky/spolkyService';
 
 export const createNotificationSlice: AppSlice<NotificationSlice> = (set, get) => ({
   notifications: {
@@ -34,7 +35,10 @@ export const createNotificationSlice: AppSlice<NotificationSlice> = (set, get) =
         // later. `success` is the only state that means the network has
         // actually answered; after an error the cache is still the best
         // thing available.
-        data: state.notifications.status === 'success' ? state.notifications.data : cache || [],
+        data:
+          state.notifications.status === 'success'
+            ? state.notifications.data
+            : dropPreAudienceRows(cache || []),
       },
     }));
   },
@@ -71,9 +75,15 @@ export const createNotificationSlice: AppSlice<NotificationSlice> = (set, get) =
   },
 
   markNotificationsRead: async (ids) => {
-    const { readIds } = get().notifications;
-    const next = new Set(readIds);
-    ids.forEach((id) => next.add(id));
+    // Merged with what is on disk, not just what is in memory: the phone sheet
+    // marks as soon as its list fills, which a fast fetch can do before
+    // loadNotificationState has restored the saved set — and writing only the
+    // in-memory one would erase the read history.
+    // A failed disk read falls back to memory: marking must never depend on it.
+    const saved = (await IndexedDBService.get('meta', 'read_notifications').catch(
+      () => undefined
+    )) as string[] | undefined;
+    const next = new Set([...(saved ?? []), ...get().notifications.readIds, ...ids]);
 
     set((state) => ({
       notifications: {

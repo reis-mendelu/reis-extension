@@ -255,7 +255,19 @@ describe('EventComposer — the audience survives an edit', () => {
     expect(updatePost.mock.calls[0][1].subscribers_only).toBe(false);
   });
 
-  it('sends the audience in the patch when it is narrowed to followers', async () => {
+  it('offers no audience control for reIS, which is for everyone', () => {
+    useAppStore.setState({ adminActiveAssociationId: 'reis' } as never);
+    render(<EventComposer onDone={() => {}} />);
+    expect(screen.queryByRole('checkbox', { name: /^Jen / })).toBeNull();
+  });
+
+  it('names Erasmus students for ESN', () => {
+    useAppStore.setState({ adminActiveAssociationId: 'esn' } as never);
+    render(<EventComposer onDone={() => {}} />);
+    expect(screen.getByRole('checkbox', { name: 'Jen erasmáci' })).toBeInTheDocument();
+  });
+
+  it('sends the audience in the patch when it is narrowed to the faculty', async () => {
     useAppStore.setState({
       editEventId: 'a1',
       societyMapEvents: [{ ...restricted, subscribersOnly: false }],
@@ -800,5 +812,71 @@ describe('EventComposer — url validation', () => {
     // Neither dead DaisyUI 4 class may come back.
     expect(wrapper?.className).not.toMatch(/form-control/);
     expect(wrapper?.querySelector('span')?.className).not.toMatch(/label-text/);
+  });
+});
+
+/**
+ * reIS has no narrower audience, so the composer shows no control for it — and
+ * an edit must not quietly keep a legacy restricted flag it cannot clear.
+ */
+describe('EventComposer — reIS cannot restrict', () => {
+  it('clears a legacy restricted flag on save', async () => {
+    const legacy = {
+      id: 'r1',
+      title: 'reIS meetup',
+      url: '',
+      date: '2026-07-08',
+      endDate: null,
+      time: '19:30',
+      location: null,
+      imageUrl: null,
+      organizerKey: 'mendelu',
+      societyId: 'reis',
+      coord: [16.614, 49.209] as [number, number],
+      roomCode: 'BA39N6006',
+      venueKind: 'campus' as const,
+      category: 'quiz' as const,
+      subscribersOnly: true,
+    };
+    useAppStore.setState({
+      adminActiveAssociationId: 'reis',
+      editEventId: 'r1',
+      societyMapEvents: [legacy],
+    } as never);
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
+    await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
+    expect(updatePost.mock.calls[0][1].subscribers_only).toBe(false);
+  });
+});
+
+describe('EventComposer — a society the catalog does not know', () => {
+  it('keeps a stored restriction rather than clearing it blind', async () => {
+    const row = {
+      id: 'g1',
+      title: 'Ghost event',
+      url: '',
+      date: '2026-07-08',
+      endDate: null,
+      time: '19:30',
+      location: null,
+      imageUrl: null,
+      organizerKey: 'pef',
+      societyId: 'ghost',
+      coord: [16.614, 49.209] as [number, number],
+      roomCode: 'BA39N6006',
+      venueKind: 'campus' as const,
+      category: 'quiz' as const,
+      subscribersOnly: true,
+    };
+    useAppStore.setState({
+      adminActiveAssociationId: 'ghost',
+      editEventId: 'g1',
+      societyMapEvents: [row],
+    } as never);
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
+    await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
+    expect(updatePost.mock.calls[0][1].subscribers_only).toBe(true);
   });
 });
