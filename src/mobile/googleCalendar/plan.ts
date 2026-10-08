@@ -8,6 +8,11 @@ export interface PlanInput {
   includePast: boolean;
   sourceConfirmed: boolean;
   previousHeld: string | null;
+  /**
+   * id → the hash it had when the student deleted or moved it in Google
+   * (resolved by the runner on a 409). Not retried until IS changes it.
+   */
+  skipped?: Record<string, string>;
 }
 
 export interface Plan {
@@ -36,7 +41,8 @@ export function planKind(input: PlanInput): Plan {
   const existing = new Map(input.existing.filter((e) => inScope(e.date)).map((e) => [e.id, e]));
   const wanted = new Set(desired.map((d) => d.id));
 
-  const insert = desired.filter((d) => !existing.has(d.id));
+  const skipped = input.skipped ?? {};
+  const insert = desired.filter((d) => !existing.has(d.id) && skipped[d.id] !== d.hash);
   const update = desired.filter((d) => {
     const e = existing.get(d.id);
     return e !== undefined && e.hash !== d.hash;

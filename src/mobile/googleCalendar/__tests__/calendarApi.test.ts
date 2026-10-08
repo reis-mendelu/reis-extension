@@ -64,12 +64,37 @@ describe('calendarApi', () => {
     ]);
     expect(await a.findReisCalendar()).toBeNull();
   });
-  it('upsert falls back to PUT confirmed on 409', async () => {
-    const { a, calls } = api([{ status: 409 }, { status: 200, body: {} }]);
-    await a.upsert('cal', d);
-    expect(calls.map((c) => c.method)).toEqual(['POST', 'PUT']);
-    expect(JSON.parse(calls[1]!.body!)).toMatchObject({ status: 'confirmed' });
-    expect(calls[1]!.url).toContain('/calendars/cal/events/lx');
+  it('insert reports an id that already exists (409) instead of overwriting it', async () => {
+    const { a, calls } = api([{ status: 409 }]);
+    expect(await a.insert('cal', d)).toBe('exists');
+    expect(calls.map((c) => c.method)).toEqual(['POST']);
+  });
+  it('insert reports a fresh event as inserted', async () => {
+    const { a } = api([{ status: 200, body: {} }]);
+    expect(await a.insert('cal', d)).toBe('inserted');
+  });
+  it('put restores with status confirmed', async () => {
+    const { a, calls } = api([{ status: 200, body: {} }]);
+    await a.put('cal', d);
+    expect(JSON.parse(calls[0]!.body!)).toMatchObject({ status: 'confirmed' });
+    expect(calls[0]!.url).toContain('/calendars/cal/events/lx');
+  });
+  it('getEvent tells a deleted event from a live one, with its hash', async () => {
+    const { a } = api([
+      { status: 200, body: { id: 'lx', status: 'cancelled' } },
+      {
+        status: 200,
+        body: {
+          id: 'lx',
+          status: 'confirmed',
+          extendedProperties: { private: { reisHash: 'h1' } },
+        },
+      },
+      { status: 404 },
+    ]);
+    expect(await a.getEvent('cal', 'lx')).toEqual({ cancelled: true, hash: '' });
+    expect(await a.getEvent('cal', 'lx')).toEqual({ cancelled: false, hash: 'h1' });
+    expect(await a.getEvent('cal', 'lx')).toEqual({ cancelled: true, hash: '' });
   });
   it('assertCalendar throws CalendarGoneError on 404', async () => {
     const { a } = api([{ status: 404 }]);

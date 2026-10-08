@@ -154,11 +154,34 @@ export function createCalendarApi(deps: CalendarApiDeps) {
     ok(res, 'putEvent');
   }
 
-  async function upsert(calendarId: string, d: DesiredEvent): Promise<void> {
+  /**
+   * 'exists' when the id is taken: the event was moved out of the listed window,
+   * or deleted (Google keeps a deleted event's id reserved). The runner decides
+   * which, and whether to restore it — never this client.
+   */
+  async function insert(calendarId: string, d: DesiredEvent): Promise<'inserted' | 'exists'> {
     const res = await request('POST', `/calendars/${enc(calendarId)}/events`, d.body);
-    // Google keeps a deleted event's id reserved; PUT with status confirmed restores it.
-    if (res.status === 409) return put(calendarId, d);
+    if (res.status === 409) return 'exists';
     ok(res, 'insertEvent');
+    return 'inserted';
+  }
+
+  /** A deleted event reads as cancelled (or 404/410 once Google purges it). */
+  async function getEvent(
+    calendarId: string,
+    id: string
+  ): Promise<{ cancelled: boolean; hash: string }> {
+    const res = await request(
+      'GET',
+      `/calendars/${enc(calendarId)}/events/${enc(id)}?fields=status,extendedProperties`
+    );
+    if (res.status === 404 || res.status === 410) return { cancelled: true, hash: '' };
+    const json = (await ok(res, 'getEvent').json()) as {
+      status?: string;
+      extendedProperties?: { private?: Record<string, string> };
+    };
+    if (json.status === 'cancelled') return { cancelled: true, hash: '' };
+    return { cancelled: false, hash: json.extendedProperties?.private?.reisHash ?? '' };
   }
 
   async function remove(calendarId: string, id: string): Promise<void> {
@@ -167,7 +190,16 @@ export function createCalendarApi(deps: CalendarApiDeps) {
     ok(res, 'deleteEvent');
   }
 
-  return { findReisCalendar, createCalendar, assertCalendar, listEvents, upsert, put, remove };
+  return {
+    findReisCalendar,
+    createCalendar,
+    assertCalendar,
+    listEvents,
+    insert,
+    getEvent,
+    put,
+    remove,
+  };
 }
 
 export type CalendarApi = ReturnType<typeof createCalendarApi>;

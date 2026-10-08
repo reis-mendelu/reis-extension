@@ -8,20 +8,68 @@
       "sourceConfirmed": true,
       "previousHeld": null,
       "desired": [
-        { "id": "la", "date": "2026-10-09", "hash": "1111" },
-        { "id": "lb", "date": "2026-10-10", "hash": "2222" },
-        { "id": "lc", "date": "2026-10-11", "hash": "3333" },
-        { "id": "lf", "date": "2026-10-12", "hash": "6666" },
-        { "id": "lg", "date": "2026-10-13", "hash": "7777" }
+        {
+          "id": "la",
+          "date": "2026-10-09",
+          "hash": "1111"
+        },
+        {
+          "id": "lb",
+          "date": "2026-10-10",
+          "hash": "2222"
+        },
+        {
+          "id": "lc",
+          "date": "2026-10-11",
+          "hash": "3333"
+        },
+        {
+          "id": "lf",
+          "date": "2026-10-12",
+          "hash": "6666"
+        },
+        {
+          "id": "lg",
+          "date": "2026-10-13",
+          "hash": "7777"
+        }
       ],
       "existing": [
-        { "id": "lb", "date": "2026-10-10", "hash": "2222" },
-        { "id": "lc", "date": "2026-10-11", "hash": "OLD" },
-        { "id": "ld", "date": "2026-10-12", "hash": "4444" },
-        { "id": "lg", "date": "2026-10-13", "hash": "7777" }
+        {
+          "id": "lb",
+          "date": "2026-10-10",
+          "hash": "2222"
+        },
+        {
+          "id": "lc",
+          "date": "2026-10-11",
+          "hash": "OLD"
+        },
+        {
+          "id": "ld",
+          "date": "2026-10-12",
+          "hash": "4444"
+        },
+        {
+          "id": "lg",
+          "date": "2026-10-13",
+          "hash": "7777"
+        }
       ]
     },
-    "expected": { "insert": ["la", "lf"], "update": ["lc"], "remove": ["ld"], "held": null }
+    "expected": {
+      "insert": [
+        "la",
+        "lf"
+      ],
+      "update": [
+        "lc"
+      ],
+      "remove": [
+        "ld"
+      ],
+      "held": null
+    }
   },
   {
     "name": "past is frozen unless this run created the calendar",
@@ -32,15 +80,36 @@
       "sourceConfirmed": true,
       "previousHeld": null,
       "desired": [
-        { "id": "lp", "date": "2026-10-01", "hash": "NEW" },
-        { "id": "lq", "date": "2026-10-09", "hash": "q" }
+        {
+          "id": "lp",
+          "date": "2026-10-01",
+          "hash": "NEW"
+        },
+        {
+          "id": "lq",
+          "date": "2026-10-09",
+          "hash": "q"
+        }
       ],
       "existing": [
-        { "id": "lp2", "date": "2026-10-02", "hash": "x" },
-        { "id": "lq", "date": "2026-10-09", "hash": "q" }
+        {
+          "id": "lp2",
+          "date": "2026-10-02",
+          "hash": "x"
+        },
+        {
+          "id": "lq",
+          "date": "2026-10-09",
+          "hash": "q"
+        }
       ]
     },
-    "expected": { "insert": [], "update": [], "remove": [], "held": null }
+    "expected": {
+      "insert": [],
+      "update": [],
+      "remove": [],
+      "held": null
+    }
   },
   {
     "name": "creating run writes the past too",
@@ -51,12 +120,28 @@
       "sourceConfirmed": true,
       "previousHeld": null,
       "desired": [
-        { "id": "lp", "date": "2026-10-01", "hash": "p" },
-        { "id": "lq", "date": "2026-10-09", "hash": "q" }
+        {
+          "id": "lp",
+          "date": "2026-10-01",
+          "hash": "p"
+        },
+        {
+          "id": "lq",
+          "date": "2026-10-09",
+          "hash": "q"
+        }
       ],
       "existing": []
     },
-    "expected": { "insert": ["lp", "lq"], "update": [], "remove": [], "held": null }
+    "expected": {
+      "insert": [
+        "lp",
+        "lq"
+      ],
+      "update": [],
+      "remove": [],
+      "held": null
+    }
   },
   {
     "name": "unconfirmed source never deletes",
@@ -67,9 +152,20 @@
       "sourceConfirmed": false,
       "previousHeld": null,
       "desired": [],
-      "existing": [{ "id": "lx", "date": "2026-10-09", "hash": "x" }]
+      "existing": [
+        {
+          "id": "lx",
+          "date": "2026-10-09",
+          "hash": "x"
+        }
+      ]
     },
-    "expected": { "insert": [], "update": [], "remove": [], "held": null }
+    "expected": {
+      "insert": [],
+      "update": [],
+      "remove": [],
+      "held": null
+    }
   },
   {
     "name": "empty desired lessons is no information",
@@ -80,9 +176,20 @@
       "sourceConfirmed": true,
       "previousHeld": null,
       "desired": [],
-      "existing": [{ "id": "lx", "date": "2026-10-09", "hash": "x" }]
+      "existing": [
+        {
+          "id": "lx",
+          "date": "2026-10-09",
+          "hash": "x"
+        }
+      ]
     },
-    "expected": { "insert": [], "update": [], "remove": [], "held": null }
+    "expected": {
+      "insert": [],
+      "update": [],
+      "remove": [],
+      "held": null
+    }
   },
   {
     "name": "mass delete is held back the first time",
@@ -92,14 +199,37 @@
       "includePast": false,
       "sourceConfirmed": true,
       "previousHeld": null,
-      "desired": [{ "id": "l1", "date": "2026-10-09", "hash": "1" }],
+      "desired": [
+        {
+          "id": "l1",
+          "date": "2026-10-09",
+          "hash": "1"
+        }
+      ],
       "existing": [
-        { "id": "l1", "date": "2026-10-09", "hash": "1" },
-        { "id": "l2", "date": "2026-10-09", "hash": "2" },
-        { "id": "l3", "date": "2026-10-09", "hash": "3" }
+        {
+          "id": "l1",
+          "date": "2026-10-09",
+          "hash": "1"
+        },
+        {
+          "id": "l2",
+          "date": "2026-10-09",
+          "hash": "2"
+        },
+        {
+          "id": "l3",
+          "date": "2026-10-09",
+          "hash": "3"
+        }
       ]
     },
-    "expected": { "insert": [], "update": [], "remove": [], "held": "l2,l3" }
+    "expected": {
+      "insert": [],
+      "update": [],
+      "remove": [],
+      "held": "l2,l3"
+    }
   },
   {
     "name": "mass delete goes through when the previous run held the same set",
@@ -109,14 +239,40 @@
       "includePast": false,
       "sourceConfirmed": true,
       "previousHeld": "l2,l3",
-      "desired": [{ "id": "l1", "date": "2026-10-09", "hash": "1" }],
+      "desired": [
+        {
+          "id": "l1",
+          "date": "2026-10-09",
+          "hash": "1"
+        }
+      ],
       "existing": [
-        { "id": "l1", "date": "2026-10-09", "hash": "1" },
-        { "id": "l2", "date": "2026-10-09", "hash": "2" },
-        { "id": "l3", "date": "2026-10-09", "hash": "3" }
+        {
+          "id": "l1",
+          "date": "2026-10-09",
+          "hash": "1"
+        },
+        {
+          "id": "l2",
+          "date": "2026-10-09",
+          "hash": "2"
+        },
+        {
+          "id": "l3",
+          "date": "2026-10-09",
+          "hash": "3"
+        }
       ]
     },
-    "expected": { "insert": [], "update": [], "remove": ["l2", "l3"], "held": null }
+    "expected": {
+      "insert": [],
+      "update": [],
+      "remove": [
+        "l2",
+        "l3"
+      ],
+      "held": null
+    }
   },
   {
     "name": "deregistering the last exam deletes it",
@@ -127,9 +283,22 @@
       "sourceConfirmed": true,
       "previousHeld": null,
       "desired": [],
-      "existing": [{ "id": "e1", "date": "2027-01-20", "hash": "x" }]
+      "existing": [
+        {
+          "id": "e1",
+          "date": "2027-01-20",
+          "hash": "x"
+        }
+      ]
     },
-    "expected": { "insert": [], "update": [], "remove": ["e1"], "held": null }
+    "expected": {
+      "insert": [],
+      "update": [],
+      "remove": [
+        "e1"
+      ],
+      "held": null
+    }
   },
   {
     "name": "custom may go empty (the student deleted their last event)",
@@ -140,8 +309,56 @@
       "sourceConfirmed": true,
       "previousHeld": null,
       "desired": [],
-      "existing": [{ "id": "c1", "date": "2026-10-09", "hash": "x" }]
+      "existing": [
+        {
+          "id": "c1",
+          "date": "2026-10-09",
+          "hash": "x"
+        }
+      ]
     },
-    "expected": { "insert": [], "update": [], "remove": ["c1"], "held": null }
+    "expected": {
+      "insert": [],
+      "update": [],
+      "remove": [
+        "c1"
+      ],
+      "held": null
+    }
+  },
+  {
+    "name": "an event the student deleted or moved is not retried until IS changes it",
+    "input": {
+      "kind": "lesson",
+      "today": "2026-10-08",
+      "includePast": false,
+      "sourceConfirmed": true,
+      "previousHeld": null,
+      "skipped": {
+        "la": "1111",
+        "lb": "OLD"
+      },
+      "desired": [
+        {
+          "id": "la",
+          "date": "2026-10-09",
+          "hash": "1111"
+        },
+        {
+          "id": "lb",
+          "date": "2026-10-10",
+          "hash": "2222"
+        }
+      ],
+      "existing": []
+    },
+    "expected": {
+      "insert": [
+        "lb"
+      ],
+      "update": [],
+      "remove": [],
+      "held": null
+    }
   }
 ]
