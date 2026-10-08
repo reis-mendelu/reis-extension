@@ -40,3 +40,37 @@ describe('setSyncStatus', () => {
     expect(useAppStore.getState().firstSyncSettled).toBe(true);
   });
 });
+
+describe('seedLastSync', () => {
+  beforeEach(() => {
+    useAppStore.setState({
+      syncStatus: {
+        isSyncing: true,
+        lastSync: null,
+        error: null,
+        handshakeDone: false,
+        handshakeTimedOut: false,
+      },
+    });
+  });
+
+  it('fills lastSync from the cache while the store has none', () => {
+    useAppStore.getState().seedLastSync(1_600_000_000_000);
+    expect(useAppStore.getState().syncStatus.lastSync).toBe(1_600_000_000_000);
+  });
+
+  it('never overwrites a value a sync already delivered', () => {
+    // The IndexedDB read races the first REIS_SYNC_UPDATE. A seed resolving
+    // second must not roll the store back to the previous session's stamp.
+    useAppStore.getState().setSyncStatus({ isSyncing: false, lastSync: 1_700_000_000_000 });
+    useAppStore.getState().seedLastSync(1_600_000_000_000);
+    expect(useAppStore.getState().syncStatus.lastSync).toBe(1_700_000_000_000);
+  });
+
+  it('touches nothing but lastSync — not the handshake, not isSyncing', () => {
+    useAppStore.getState().seedLastSync(1_600_000_000_000);
+    const s = useAppStore.getState();
+    expect(s.syncStatus.handshakeDone).toBe(false);
+    expect(s.syncStatus.isSyncing).toBe(true);
+  });
+});

@@ -85,8 +85,12 @@ export interface ExamSlice {
 export interface ZaznamnikSlice {
   zaznamnik: Record<string, SubjectZaznamnik | null>;
   zaznamnikHydrated: boolean;
+  /** A drawer retry is in flight for this subject. */
+  zaznamnikLoading: Record<string, boolean>;
   setZaznamnikBatch: (data: Record<string, SubjectZaznamnik | null>) => void;
   fetchZaznamnik: () => Promise<void>;
+  /** Refetch one subject on demand — the failed state's retry. */
+  refetchZaznamnik: (courseCode: string) => Promise<void>;
 }
 
 export interface SyllabusSlice {
@@ -100,6 +104,9 @@ export interface SyllabusSlice {
 export interface FilesSlice {
   files: Record<string, ParsedFile[]>;
   filesLoading: Record<string, boolean>;
+  /** The last fetch for this subject failed. Distinct from `files[code]` being
+   *  `[]`, which is an answer: the folder is empty. */
+  filesError: Record<string, boolean>;
   lastFilesFetchedAt: Record<string, number>;
   fetchFiles: (courseCode: string) => Promise<void>;
   fetchFilesPriority: (courseCode: string) => Promise<void>;
@@ -170,7 +177,7 @@ export interface SyncSlice {
    */
   syncLoaded: Partial<Record<SyncDomain, boolean>>;
   markSyncLoaded: (domains: SyncDomain[]) => void;
-  fetchSyncStatus: () => Promise<void>;
+  seedLastSync: (lastSync: number) => void;
   setSyncStatus: (status: Partial<SyncStatus>) => void;
 }
 

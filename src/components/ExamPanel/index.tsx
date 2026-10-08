@@ -13,6 +13,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useUserParams } from '../../hooks/useUserParams';
 import { useAppStore } from '../../store/useAppStore';
 import { ExamsFreshness } from './ExamsFreshness';
+import { LoadFailed } from '../LoadFailed';
 
 interface RegisteredExam extends TimelineExam {
   subject: ExamSubject;
@@ -40,7 +41,7 @@ function PanelTopBar({ href }: { href: string }) {
 export function ExamPanel() {
   const { t, language } = useTranslation();
   const { params } = useUserParams();
-  const { exams, showSkeleton, sections } = useExamsData();
+  const { exams, showSkeleton, showFailed, sections } = useExamsData();
   const studium = params?.studium || '';
   const obdobi = params?.obdobi || '';
   const href =
@@ -161,6 +162,12 @@ export function ExamPanel() {
           <div className="flex items-center justify-center h-32 opacity-50">
             <span className="loading loading-spinner mr-2" /> {t('exams.loading')}
           </div>
+        ) : showFailed ? (
+          // The targeted refresh (refresh_exams), not a whole user sync.
+          <LoadFailed
+            testId="exams-error"
+            onRetry={() => useAppStore.getState().triggerExamsRefresh()}
+          />
         ) : exams.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center">
             <EmptyExamsState />

@@ -62,13 +62,17 @@ function verifyUnregistrationSuccess(html: string, termId: string): boolean {
   return !stillRegistered;
 }
 
+/** One language's exam list, or a throw — the failure `fetchExamData` hides. */
+async function fetchExamDataOrThrow(lang: string): Promise<ExamSubject[]> {
+  const url = await getExamListUrl(lang);
+  const response = await fetchWithAuth(url);
+  const html = await response.text();
+  return parseExamData(html, lang);
+}
+
 export async function fetchExamData(lang: string = 'cz'): Promise<ExamSubject[]> {
   try {
-    const url = await getExamListUrl(lang);
-    const response = await fetchWithAuth(url);
-    const html = await response.text();
-    const data = parseExamData(html, lang);
-    return data;
+    return await fetchExamDataOrThrow(lang);
   } catch (error) {
     logError('Api.fetchExamData', error, { lang });
     return [];
@@ -80,8 +84,25 @@ export async function fetchExamData(lang: string = 'cz'): Promise<ExamSubject[]>
  * Enables instant language switching in the UI.
  */
 export async function fetchDualLanguageExams(): Promise<ExamSubject[]> {
+  const [czResult, enResult] = await Promise.allSettled([
+    fetchExamDataOrThrow('cz'),
+    fetchExamDataOrThrow('en'),
+  ]);
+  // Neither language answered: there is no answer to give. Returning [] here
+  // told the sync "answered, no exams", and the Exams screen said "Žádné
+  // zkoušky" with IS unreachable (Návrhy #26). The caller keeps its cache.
+  if (czResult.status === 'rejected' && enResult.status === 'rejected') {
+    logError('Api.fetchDualLanguageExams', czResult.reason, { lang: 'cz' });
+    logError('Api.fetchDualLanguageExams', enResult.reason, { lang: 'en' });
+    throw czResult.reason;
+  }
   try {
-    const [first, enData] = await Promise.all([fetchExamData('cz'), fetchExamData('en')]);
+    const first = czResult.status === 'fulfilled' ? czResult.value : [];
+    const enData = enResult.status === 'fulfilled' ? enResult.value : [];
+    if (enResult.status === 'rejected')
+      logError('Api.fetchExamData', enResult.reason, { lang: 'en' });
+    if (czResult.status === 'rejected')
+      logError('Api.fetchExamData', czResult.reason, { lang: 'cz' });
     let czData = first;
     // Both calls hit the same page for the same account, so an empty CZ result
     // beside a non-empty EN one means the CZ fetch failed — `fetchExamData`

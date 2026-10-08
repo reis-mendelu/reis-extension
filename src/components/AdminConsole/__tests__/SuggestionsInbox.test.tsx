@@ -167,4 +167,54 @@ describe('SuggestionsInbox', () => {
     expect(screen.getByText(/Api.fetchExams/)).toBeInTheDocument();
     expect(screen.getByText(/iOS 26/)).toBeInTheDocument();
   });
+
+  /**
+   * Návrhy #26 read "sync success/success · 0 exams" — the cache read, which
+   * says nothing about whether IS answered. A newer build says which domains a
+   * sync got an answer for, and whether the last run failed.
+   */
+  function openWithSync(sync: Record<string, unknown>) {
+    useAppStore.setState({
+      suggestions: [{ ...row, attachments: { has_screenshot: false, diagnostics_count: 0 } }],
+      loadSuggestionAttachments: vi.fn(),
+      suggestionAttachments: {
+        1: {
+          screenshot: null,
+          diagnostics: {
+            entries: [],
+            env: { platform: 'android', os: 'Android 17', lang: 'cz', online: true, uptimeS: 5 },
+            sync: {
+              lastSync: null,
+              isSyncing: false,
+              schedule: 'success',
+              exams: 'success',
+              scheduleCount: 136,
+              examsCount: 0,
+              examsFetchedAt: null,
+              ...sync,
+            },
+          },
+        },
+      },
+    } as never);
+    render(<SuggestionsInbox />);
+    fireEvent.click(screen.getByRole('button', { name: /Attachments/i }));
+  }
+
+  it('says which domains a sync got an answer for', () => {
+    openWithSync({ firstSyncSettled: true, syncLoaded: ['schedule'], syncFailed: true });
+    expect(screen.getByText(/answered this session schedule/)).toBeInTheDocument();
+    expect(screen.getByText(/last run failed/)).toBeInTheDocument();
+  });
+
+  it('says nothing answered rather than implying success', () => {
+    openWithSync({ firstSyncSettled: true, syncLoaded: [], syncFailed: false });
+    expect(screen.getByText(/answered this session nothing/)).toBeInTheDocument();
+  });
+
+  it('still renders a 5.3.0 payload without the new fields', () => {
+    openWithSync({});
+    expect(screen.getByText(/136 lessons/)).toBeInTheDocument();
+    expect(screen.queryByText(/answered/)).toBeNull();
+  });
 });
