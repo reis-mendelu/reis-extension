@@ -162,6 +162,15 @@ describe('WelcomeWifiCard', () => {
       expect(screen.queryByText(/Nepovedlo se/)).not.toBeInTheDocument();
     });
 
+    // One message at a time: the spinner already says what is happening, and
+    // the run itself reports the offline failure when it lands.
+    it('does not contradict a tap that is in flight', () => {
+      renderCard({ status: 'working', offline: true });
+
+      expect(screen.queryByText(/Jsi offline/)).not.toBeInTheDocument();
+      expect(screen.getByText('Otevírám nastavení Wi-Fi…')).toBeInTheDocument();
+    });
+
     it('does not cover a finished setup', () => {
       renderCard({ status: 'done', outcome: 'saved', offline: true });
 

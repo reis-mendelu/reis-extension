@@ -53,8 +53,9 @@ export function WelcomeWifiCard({
   // the OS was reached (lapsed session, cert fetch). One line either way.
   const failed = status === 'error' && !lapsed;
   // Said before any tap: a student opening reIS without a connection should
-  // not have to fail once to find out. Never over a finished setup.
-  const offlineNow = offline && !done;
+  // not have to fail once to find out. Never over a finished setup, nor over
+  // a tap in flight, whose spinner is already the message.
+  const offlineNow = offline && !done && !working;
   const failure = offlineNow ? 'offline' : failed ? networkFailure : null;
   // IS's certificate expired. Nothing failed; the one button now generates a
   // new one (the screen wires `onSetup` to `renew`).
