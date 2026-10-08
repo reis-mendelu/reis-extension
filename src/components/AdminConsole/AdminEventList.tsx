@@ -86,8 +86,7 @@ export function AdminEventList() {
   // A row dated today whose time has passed: it happened, but it stays
   // publicly visible for the rest of the day, so the bucket cannot say it and
   // the row does instead. See eventWindow.hasFinished for why not the bucket.
-  // An unplaced (tba) event needs nothing here: EventRow itself says
-  // "Místo upřesní …" on both hosts, so a suffix would say it twice.
+  // An unplaced (tba) event gets no line at all: the row simply shows no place.
   const subline = (e: MapEvent) => {
     const day = eventWhenLabel(e, locale, t);
     if (hasFinished(e)) return `${day} · ${t('map.finished')}`;

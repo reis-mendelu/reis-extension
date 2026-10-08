@@ -84,7 +84,7 @@ export function EventDetailCard({ event, flush = false }: { event: MapEvent; flu
             <img src={CATEGORY_EMOJI_SRC[event.category]} alt="" className="h-4 w-4 shrink-0" />
             <span>{t(`map.category.${event.category}`)}</span>
           </div>
-          <EventVenueLine event={event} societyShortName={soc.shortName} />
+          <EventVenueLine event={event} />
         </div>
 
         {details && (

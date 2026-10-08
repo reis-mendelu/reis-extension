@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import { ExternalLink, MapPin } from 'lucide-react';
 import { CATEGORY_EMOJI_SRC } from '../../data/eventCategories';
 import { eventWhenLabel } from './eventHelpers';
-import { useSociety } from '../../hooks/useSociety';
 import type { MapEvent } from '../../types/events';
 
 // Shared list row for both the public Events tab (MapEventsSection) and the
@@ -39,7 +38,6 @@ export function EventRow({
   seenRef?: (el: HTMLDivElement | null) => void;
   href?: string;
 }) {
-  const soc = useSociety(event.societyId);
   const day = subline ?? eventWhenLabel(event, locale, t);
   // Blank is none, as in EventVenueLine: "   " is not a place to show.
   const location = event.location?.trim() || null;
@@ -84,11 +82,6 @@ export function EventRow({
             <span className="mt-0.5 flex items-center gap-1 text-[11px] text-base-content/60">
               <MapPin size={11} className="flex-shrink-0" />
               <span className="truncate">{location ?? t('map.venueOnMap')}</span>
-            </span>
-          )}
-          {!location && !event.coord && event.venueKind === 'tba' && soc?.shortName && (
-            <span className="mt-0.5 block truncate text-[11px] text-base-content/60">
-              {t('map.venueTba', { name: soc.shortName })}
             </span>
           )}
           {footer}
