@@ -246,6 +246,8 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
     } catch (e) {
       logError('FilesSlice.refreshFilesForSubject', e, { courseCode });
       set((state) => ({
+        // `?? []`: undefined is "still loading" to useFiles.
+        files: { ...state.files, [courseCode]: state.files[courseCode] ?? [] },
         filesLoading: { ...state.filesLoading, [courseCode]: false },
         filesError: { ...state.filesError, [courseCode]: true },
       }));
@@ -267,7 +269,11 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
       language: get().language,
       subjects: get().subjects,
     });
-    set({ files });
+    // Merged, not replaced: a subject whose only fetch failed has no IDB entry,
+    // and dropping its key put useFiles back on a skeleton that never ends,
+    // over the failed state (Návrhy #26). Every successful fetch is persisted,
+    // so the cache still wins for any subject that has one.
+    set((state) => ({ files: { ...state.files, ...files } }));
   },
   prefetchTodaySubjects: () => {
     if (get().impersonation) return;

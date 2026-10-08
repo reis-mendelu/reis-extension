@@ -89,4 +89,26 @@ describe('a failed folder fetch is not an empty folder', () => {
 
     expect(useAppStore.getState().filesError[CODE]).toBeFalsy();
   });
+
+  it('survives the end of a sync: the cache reload keeps an uncached failed subject', async () => {
+    // A sync ending calls fetchAllFiles, which rebuilt the whole map from
+    // IndexedDB. A subject whose only fetch failed has no IDB entry, so its
+    // key went back to undefined — and useFiles reads undefined as "loading",
+    // a skeleton that never resolves, over the failed state (Návrhy #26).
+    useAppStore.setState({ files: { [CODE]: [] }, filesError: { [CODE]: true } });
+
+    await useAppStore.getState().fetchAllFiles();
+
+    expect(useAppStore.getState().files[CODE]).toEqual([]);
+    expect(useAppStore.getState().filesError[CODE]).toBe(true);
+  });
+
+  it('a failed refresh of a never-loaded subject ends the skeleton', async () => {
+    // files[code] undefined is what useFiles reads as "still loading".
+    fetchFolderListing.mockRejectedValue(OFFLINE);
+
+    await useAppStore.getState().refreshFilesForSubject(CODE);
+
+    expect(useAppStore.getState().files[CODE]).toEqual([]);
+  });
 });
