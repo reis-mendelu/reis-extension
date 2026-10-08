@@ -1372,7 +1372,25 @@
       "cover": "Páska",
       "deleteTape": "Smazat pásku"
     },
-    "openingLink": "Otevírám…"
+    "openingLink": "Otevírám…",
+    "gcal": {
+      "row": "Google Kalendář",
+      "rowOff": "Rozvrh, zkoušky a vlastní události",
+      "rowOn": "Synchronizováno {time}",
+      "connect": "Zapnout synchronizaci",
+      "explain": "reIS vytvoří ve tvém Googlu kalendář „Rozvrh“ a aktualizuje ho pokaždé, když reIS otevřeš. Ostatní kalendáře nevidí ani nemění.",
+      "account": "Účet: {email}",
+      "open": "Otevřít v Google Kalendáři",
+      "progress": "Synchronizuji {done}/{total}",
+      "offDelete": "Vypnout a smazat kalendář Rozvrh",
+      "offDeleteConfirm": "Smaže kalendář Rozvrh i s minulými semestry. To nejde vrátit.",
+      "offDeleteYes": "Smazat Rozvrh",
+      "offKeep": "Jen vypnout",
+      "revoked": "Přístup ke Google Kalendáři byl odebrán.",
+      "gone": "Kalendář Rozvrh byl v Googlu smazán, synchronizace je vypnutá.",
+      "failed": "Synchronizace se nepovedla, zkusím to znovu.",
+      "scopeMissing": "Google nedal reIS přístup ke kalendáři. Zkus to znovu a nech políčka zaškrtnutá."
+    }
   },
   "session": {
     "expired": "Přihlášení do IS vypršelo.",

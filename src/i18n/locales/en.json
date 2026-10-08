@@ -1372,7 +1372,25 @@
       "cover": "Tape",
       "deleteTape": "Delete tape"
     },
-    "openingLink": "Opening…"
+    "openingLink": "Opening…",
+    "gcal": {
+      "row": "Google Calendar",
+      "rowOff": "Timetable, exams and your own events",
+      "rowOn": "Synced {time}",
+      "connect": "Turn on sync",
+      "explain": "reIS creates a \"Rozvrh\" calendar in your Google account and updates it every time you open reIS. It cannot see or change your other calendars.",
+      "account": "Account: {email}",
+      "open": "Open in Google Calendar",
+      "progress": "Syncing {done}/{total}",
+      "offDelete": "Turn off and delete the Rozvrh calendar",
+      "offDeleteConfirm": "This deletes the Rozvrh calendar, past semesters included. It can’t be undone.",
+      "offDeleteYes": "Delete Rozvrh",
+      "offKeep": "Turn off only",
+      "revoked": "Access to Google Calendar was removed.",
+      "gone": "The Rozvrh calendar was deleted in Google, so sync is off.",
+      "failed": "Sync failed. I’ll try again.",
+      "scopeMissing": "Google didn’t give reIS access to the calendar. Try again and leave the boxes ticked."
+    }
   },
   "session": {
     "expired": "Your IS session has expired.",

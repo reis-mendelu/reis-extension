@@ -486,6 +486,8 @@ export type MobileSheet =
   // reason to fetch a profile just to label an image.
   | { kind: 'personPhoto'; personId: string; name: string }
   | { kind: 'eduroam' }
+  // Phone/iPad only: the Rozvrh → Google Calendar sync (spec 2026-10-08).
+  | { kind: 'googleCalendar' }
   | { kind: 'docs' }
   // reIS admins only: "view as a student" of another programme.
   | { kind: 'impersonation' }

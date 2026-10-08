@@ -2031,12 +2031,12 @@ git commit -m "feat(gcal): connect, disconnect and sync-on-change for the phone 
 | --- | --- | --- |
 | `row` | Google Kalendář | Google Calendar |
 | `rowOff` | Rozvrh, zkoušky a vlastní události | Timetable, exams and your own events |
-| `rowOn` | Synchronizováno {{time}} | Synced {{time}} |
+| `rowOn` | Synchronizováno {time} | Synced {time} |
 | `connect` | Synchronizovat s Google Kalendářem | Sync with Google Calendar |
 | `explain` | reIS vytvoří ve tvém Googlu kalendář „Rozvrh" a aktualizuje ho pokaždé, když reIS otevřeš. Ostatní kalendáře nevidí ani nemění. | reIS creates a "Rozvrh" calendar in your Google account and updates it every time you open reIS. It cannot see or change your other calendars. |
-| `account` | Účet: {{email}} | Account: {{email}} |
+| `account` | Účet: {email} | Account: {email} |
 | `open` | Otevřít v Google Kalendáři | Open in Google Calendar |
-| `progress` | Synchronizuji {{done}}/{{total}} | Syncing {{done}}/{{total}} |
+| `progress` | Synchronizuji {done}/{total} | Syncing {done}/{total} |
 | `offDelete` | Vypnout a smazat kalendář Rozvrh | Turn off and delete the Rozvrh calendar |
 | `offKeep` | Jen vypnout | Turn off only |
 | `revoked` | Přístup ke Google Kalendáři byl odebrán. | Access to Google Calendar was removed. |

@@ -5,6 +5,7 @@ import { NotificationsSheet } from './NotificationsSheet';
 import { PersonSheet } from './PersonSheet';
 import { PersonPhotoSheet } from './PersonPhotoSheet';
 import { EduroamSheet } from './EduroamSheet';
+import { GoogleCalendarSheet } from './GoogleCalendarSheet';
 import { DocsSheet } from './DocsSheet';
 import { SearchSheet } from './SearchSheet';
 import { BulletinSheet } from './BulletinSheet';
@@ -41,6 +42,8 @@ export function SheetHost() {
             return <PersonPhotoSheet key={index} sheet={sheet} onClose={popSheet} />;
           case 'eduroam':
             return <EduroamSheet key={index} onClose={popSheet} />;
+          case 'googleCalendar':
+            return <GoogleCalendarSheet key={index} onClose={popSheet} />;
           case 'docs':
             return <DocsSheet key={index} onClose={popSheet} />;
           case 'bulletin':
