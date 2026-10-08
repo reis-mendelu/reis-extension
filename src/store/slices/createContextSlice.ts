@@ -33,8 +33,7 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
       // never another student's.
       if (get().userFaculty === null) {
         const cached = (await IndexedDBService.get('meta', VIEWER_KEY)) as
-          | { faculty: string | null; erasmus: boolean }
-          | undefined;
+          { faculty: string | null; erasmus: boolean } | undefined;
         if (cached && get().userFaculty === null) {
           set({ userFaculty: cached.faculty, isErasmus: cached.erasmus });
         }

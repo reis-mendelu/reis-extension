@@ -20,8 +20,7 @@ import { retireSocietyFeatures } from '../retireSocietyFeatures';
 /**
  * What follow, RSVP and the reminders leave behind on a device that ran 5.3.0
  * (spec 2026-10-08): RSVP blocks nothing can remove any more, follow and
- * notification settings, a cached feed with no audience on its rows, and
- * scheduled 2-hour reminders.
+ * notification settings, and scheduled 2-hour reminders.
  */
 describe('retireSocietyFeatures', () => {
   beforeEach(() => {
@@ -45,7 +44,7 @@ describe('retireSocietyFeatures', () => {
     expect([...stores.custom_events.keys()]).toEqual(['mine-1']);
     expect(stores.meta.has('reis_subscribed_associations')).toBe(false);
     expect(stores.meta.has('event_rsvps_mine')).toBe(false);
-    expect(stores.meta.has('notifications_cache')).toBe(false);
+    expect(stores.meta.has('notifications_cache')).toBe(true);
     expect(stores.meta.get('seen_deadline_alerts')).toEqual(['a']);
     expect(stores.meta.get('read_notifications')).toEqual(['b']);
     expect(clear).toHaveBeenCalledOnce();

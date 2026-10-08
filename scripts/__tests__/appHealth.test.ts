@@ -110,10 +110,7 @@ describe('evaluateHealth', () => {
   it('allows the read-only society calls', () => {
     const r = evaluateHealth({
       ...healthy,
-      requests: [
-        ...healthy.requests,
-        get(`${SUPA}/rest/v1/spolky_events?select=id`),
-      ],
+      requests: [...healthy.requests, get(`${SUPA}/rest/v1/spolky_events?select=id`)],
     });
     expect(r.ok).toBe(true);
   });

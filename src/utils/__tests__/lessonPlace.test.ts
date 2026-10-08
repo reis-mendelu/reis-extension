@@ -11,9 +11,7 @@ describe('lessonPlace', () => {
       onMap: true,
       routable: true,
     });
-    expect(lessonPlace(makeLesson({ room: 'Lesní škola Jezírko (ŠLP)' }), 'cz').onMap).toBe(
-      false
-    );
+    expect(lessonPlace(makeLesson({ room: 'Lesní škola Jezírko (ŠLP)' }), 'cz').onMap).toBe(false);
   });
 
   // No floor plan, but the building or campus is on the map (isRoomPlaces.json).

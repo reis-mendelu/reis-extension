@@ -47,7 +47,9 @@ describe('Novinky audience', () => {
   });
 
   it("shows the impersonated student's audience", () => {
-    useAppStore.setState({ impersonation: { selection: { faculty: 'FRRMS' }, result: {} } as never });
+    useAppStore.setState({
+      impersonation: { selection: { faculty: 'FRRMS' }, result: {} } as never,
+    });
     const { result } = renderHook(() => useNotificationFeed());
     expect(result.current.notifications.map((n) => n.id)).toEqual(['pub', 'deadline']);
   });

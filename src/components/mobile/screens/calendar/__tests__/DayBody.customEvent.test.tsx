@@ -81,5 +81,4 @@ describe('DayBody — tapping a custom event', () => {
     );
     expect(focusEventById).not.toHaveBeenCalled();
   });
-
 });

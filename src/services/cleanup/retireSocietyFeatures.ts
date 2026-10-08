@@ -7,7 +7,9 @@ import { logError } from '../../utils/reportError';
  * 2026-10-08). Without it an answered event stays in the timetable as a block
  * nothing can remove (the card's toggle is gone), and 5.3.0's 2-hour reminders
  * still fire. Runs once; a failure leaves it unmarked so the next boot retries.
- * `seen_deadline_alerts` and `read_notifications` are Novinky's and stay.
+ * `seen_deadline_alerts`, `read_notifications` and `notifications_cache` are
+ * Novinky's and stay (an old cache is filtered where it is read:
+ * `dropPreAudienceRows`, which unlike this runs before the first frame).
  */
 const DONE_KEY = 'retired_society_features_v1';
 const RSVP_BLOCK_PREFIX = 'rsvp:';
@@ -19,10 +21,6 @@ const RETIRED_META_KEYS = [
   'reis_muted_associations',
   'reis_notify_prefs',
   'reis_notify_asked',
-  // Old builds cached the unfiltered 14-day feed with no `subscribersOnly`,
-  // which would read as public and show ESN's restricted rows to everyone
-  // until the first fetch lands (or all session, offline).
-  'notifications_cache',
 ];
 const RETIRED_CHANNELS = ['reis-event-reminders', 'reis-society-digest'];
 

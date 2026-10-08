@@ -157,6 +157,23 @@ export function dropPastEvents(
 }
 
 /**
+ * Drops society rows cached by a build before the audience rule (5.3.0 and
+ * older). Their rows carry no `subscribersOnly`, which would read as public and
+ * put ESN's Erasmus-only events in every student's Novinky until the first
+ * fetch lands — or for the whole session, offline. Only an old build writes a
+ * society row without the key; reIS's own rows (no society) stay.
+ */
+export function dropPreAudienceRows(notifications: SpolekNotification[]): SpolekNotification[] {
+  return notifications.filter(
+    (n) =>
+      !n.associationId ||
+      n.associationId === 'admin' ||
+      n.associationId.startsWith('academic_') ||
+      'subscribersOnly' in n
+  );
+}
+
+/**
  * Drops rows beyond the Novinky week. The server query is bounded the same way,
  * but the feed is also served from `notifications_cache`, which a build with a
  * 14-day window may have written — asking at READ time makes the answer

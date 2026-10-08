@@ -1,6 +1,7 @@
 import type { AppSlice, NotificationSlice } from '../types';
 import { fetchNotifications, trackNotificationsViewed } from '../../services/spolky';
 import { IndexedDBService } from '../../services/storage';
+import { dropPreAudienceRows } from '../../services/spolky/spolkyService';
 
 export const createNotificationSlice: AppSlice<NotificationSlice> = (set, get) => ({
   notifications: {
@@ -34,7 +35,10 @@ export const createNotificationSlice: AppSlice<NotificationSlice> = (set, get) =
         // later. `success` is the only state that means the network has
         // actually answered; after an error the cache is still the best
         // thing available.
-        data: state.notifications.status === 'success' ? state.notifications.data : cache || [],
+        data:
+          state.notifications.status === 'success'
+            ? state.notifications.data
+            : dropPreAudienceRows(cache || []),
       },
     }));
   },

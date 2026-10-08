@@ -12,7 +12,12 @@ describe('ProfilePopup — the hidden way into admin', () => {
   const open = vi.fn();
   beforeEach(() => {
     open.mockReset();
-    useAppStore.setState({ language: 'cz', adminSession: null, adminRole: null, openSocietyAdmin: open });
+    useAppStore.setState({
+      language: 'cz',
+      adminSession: null,
+      adminRole: null,
+      openSocietyAdmin: open,
+    });
   });
   afterEach(() => {
     vi.useRealTimers();

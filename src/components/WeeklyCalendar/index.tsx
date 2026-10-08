@@ -83,7 +83,6 @@ export function WeeklyCalendar({
     if (!isSeen) markSeen();
   };
 
-
   if (isMobile) {
     return (
       <div className="flex h-full overflow-hidden flex-col font-inter bg-base-100">
