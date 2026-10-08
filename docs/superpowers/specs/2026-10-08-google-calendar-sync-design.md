@@ -333,9 +333,10 @@ The project is `reis-479320` ("reIS"), owner **reis.mendelu@gmail.com**.
 
 **To do:**
 1. **Data access:** save the scopes listed under "Sign-in".
-2. **Clients:** the iOS client "reIS iOS" (bundle `cz.reis.app`) exists since
-   2026-10-08. Still to add: an Android client for the **Play App Signing** SHA-1 (from
-   the Play Console).
+2. **Clients:** all three exist since 2026-10-08: "reIS iOS" (bundle `cz.reis.app`),
+   "reIS Android (upload key / sideload)" (`E0:31:19:…:9C:0C`) and "reIS Android (Play App
+   Signing)" (`54:AE:96:D3:DA:E8:5D:E8:E4:3F:6C:22:67:82:C2:4E:0E:95:FF:76`, read from Play
+   Console → App signing). Without the last one, every Play-installed build fails sign-in.
 3. **Branding.** Without brand verification the consent screen shows only the domain,
    not "reIS". Verification needs homepage, privacy-policy and terms links on a domain
    verified in Search Console, and a gist can't qualify. So:
