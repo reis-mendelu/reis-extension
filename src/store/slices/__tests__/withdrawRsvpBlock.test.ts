@@ -53,9 +53,8 @@ type State = RsvpSlice & {
 describe('withdrawRsvpBlock', () => {
   let state: State;
 
-  beforeEach(() => {
-    idb.clear();
-    setEventRsvp.mockReset().mockResolvedValue(true);
+  /** A fresh slice over the shared fake disk — a new one is a new launch. */
+  const launch = (customEvents: CalendarCustomEvent[] = []) => {
     const set = (updater: unknown) => {
       const patch = typeof updater === 'function' ? updater(state) : updater;
       state = { ...state, ...patch };
@@ -65,7 +64,7 @@ describe('withdrawRsvpBlock', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...createRsvpSlice(set as any, get as any, {} as any),
       mapEvents: [event],
-      customEvents: [],
+      customEvents,
       notifyPrefs: { myEvents: false },
       replanNotifications: () => {},
       setNotifyPermission: () => {},
@@ -78,6 +77,12 @@ describe('withdrawRsvpBlock', () => {
       removeCalendarCustomEvent: async (id) =>
         set((s: State) => ({ customEvents: s.customEvents.filter((e) => e.id !== id) })),
     };
+  };
+
+  beforeEach(() => {
+    idb.clear();
+    setEventRsvp.mockReset().mockResolvedValue(true);
+    launch();
   });
 
   it('withdraws the answer, and the block stays gone after the next reconciliation', async () => {
@@ -93,10 +98,23 @@ describe('withdrawRsvpBlock', () => {
     expect(state.rsvp).toEqual({});
     expect(state.customEvents).toEqual([]);
 
-    // The next launch: the answers come back from disk and the calendar is
-    // reconciled again. A block deleted without its answer reappeared here.
+    // The next launch, from a NEW slice: the same one would skip hydrating an
+    // id it has already touched, and so could not see a stale answer on disk
+    // (raised in review). Worst case for the calendar too — it still holds the
+    // block, as if it had been persisted before the removal landed.
+    launch([
+      {
+        id: 'rsvp:e1',
+        title: 'Flag Party',
+        date: '20261121',
+        startTime: '19:00',
+        endTime: '20:30',
+      },
+    ]);
     await state.loadRsvps(['e1']);
     await flush();
+    expect(idb.get('event_rsvps_mine')).toEqual({});
+    expect(state.rsvp).toEqual({});
     expect(state.customEvents).toEqual([]);
   });
 

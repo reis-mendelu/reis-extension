@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { RsvpBlockPopover } from '../RsvpBlockPopover';
 import { useAppStore } from '../../../store/useAppStore';
 import type { CalendarCustomEvent } from '../../../types/calendarTypes';
@@ -14,11 +14,19 @@ const block: CalendarCustomEvent = {
 };
 
 describe('RsvpBlockPopover — an answered society event in the desktop calendar', () => {
-  const withdrawRsvpBlock = vi.fn(async () => {});
+  // Succeeds by default: the answer is withdrawn, as setRsvp would on a 200.
+  const withdrawRsvpBlock = vi.fn(async () => {
+    useAppStore.setState({ rsvp: {} } as never);
+  });
 
   beforeEach(() => {
     withdrawRsvpBlock.mockClear();
-    useAppStore.setState({ language: 'cz', withdrawRsvpBlock } as never);
+    useAppStore.setState({
+      language: 'cz',
+      rsvp: { e1: 'interested' },
+      rsvpLoaded: true,
+      withdrawRsvpBlock,
+    } as never);
   });
 
   it('shows the event, not an edit form', () => {
@@ -31,11 +39,37 @@ describe('RsvpBlockPopover — an answered society event in the desktop calendar
     expect(screen.queryByRole('textbox')).toBeNull();
   });
 
-  it('removes it by withdrawing the RSVP, then closes', () => {
+  it('is a modal dialog named by its heading, with focus inside it', () => {
+    render(<RsvpBlockPopover event={block} onClose={() => {}} />);
+    const dialog = screen.getByRole('dialog', { name: 'Flag Party' });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog).not.toHaveAttribute('aria-label');
+    expect(dialog.contains(document.activeElement)).toBe(true);
+  });
+
+  it('removes it by withdrawing the RSVP, then closes', async () => {
     const onClose = vi.fn();
     render(<RsvpBlockPopover event={block} onClose={onClose} />);
     fireEvent.click(screen.getByRole('button', { name: 'Odebrat z kalendáře' }));
     expect(withdrawRsvpBlock).toHaveBeenCalledWith('rsvp:e1');
-    expect(onClose).toHaveBeenCalled();
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it('stays open and says so when the write did not land', async () => {
+    // setRsvp rolls a refused write back, so the answer is still held after.
+    withdrawRsvpBlock.mockImplementationOnce(async () => {});
+    const onClose = vi.fn();
+    render(<RsvpBlockPopover event={block} onClose={onClose} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Odebrat z kalendáře' }));
+    expect(await screen.findByText(/Nepodařilo se/)).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('cannot withdraw before the answers are read from disk', () => {
+    // A cold boot restores the calendar before the answers: with no answer
+    // held yet, the click would silently do nothing.
+    useAppStore.setState({ rsvp: {}, rsvpLoaded: false } as never);
+    render(<RsvpBlockPopover event={block} onClose={() => {}} />);
+    expect(screen.getByRole('button', { name: 'Odebrat z kalendáře' })).toBeDisabled();
   });
 });

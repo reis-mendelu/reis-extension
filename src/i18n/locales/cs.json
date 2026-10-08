@@ -903,7 +903,8 @@
   },
   "rsvpBlock": {
     "remove": "Odebrat z kalendáře",
-    "note": "Odebráním zrušíš i svoje „Mám zájem“. Čas akce určuje spolek."
+    "note": "Odebráním zrušíš i svoje „Mám zájem“. Čas akce určuje spolek.",
+    "failed": "Nepodařilo se odebrat. Zkus to znovu."
   },
   "map": {
     "title": "Mapa",
