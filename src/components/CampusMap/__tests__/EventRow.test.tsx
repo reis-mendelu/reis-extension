@@ -24,6 +24,19 @@ const ev: MapEvent = {
 const t = (k: string, p?: Record<string, string | number>) => (p ? `${k} ${JSON.stringify(p)}` : k);
 
 describe('EventRow', () => {
+  it("shows the event's own emoji in the tile", () => {
+    render(
+      <EventRow
+        event={{ ...ev, imageUrl: null, emoji: '1f3d3' }}
+        locale="cs-CZ"
+        t={t}
+        selected={false}
+        onClick={() => {}}
+      />
+    );
+    expect(document.querySelector('img[src="/emoji/1f3d3.svg"]')).toBeTruthy();
+  });
+
   beforeEach(() => {
     useAppStore.setState({ societies: { esn: { ...neutralSociety('esn'), shortName: 'ESN' } } });
   });

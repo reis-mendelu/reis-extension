@@ -26,6 +26,14 @@ const ev: MapEvent = {
 const initialSocieties = useAppStore.getState().societies;
 
 describe('EventDetailCard', () => {
+  // The category word was wrong as often as the picture, and the title already
+  // says what the event is (spec 2026-10-08-event-emoji-design).
+  it('does not name a category', () => {
+    render(<EventDetailCard event={{ ...ev, category: 'party' }} />);
+    expect(screen.queryByText('Párty')).toBeNull();
+    expect(screen.queryByText('Party')).toBeNull();
+  });
+
   beforeEach(() => {
     useAppStore.setState({
       societies: {

@@ -60,23 +60,3 @@ export const CATEGORY_COLOR: Record<EventCategory, string> = {
   social: '#f59e0b', // amber
   other: '#64748b', // slate
 };
-
-// One REAL full-colour emoji per category, shown inside the white map pin
-// (EventPin) — Google-Maps place-marker style. We ship the Twemoji SVGs from
-// public/emoji/<codepoint>.svg (served at the extension root)
-// instead of rendering the OS emoji font: a fixed modern multicolour set that
-// looks identical on every device (an old Android/Windows OS emoji is what read
-// as "outdated" before). Confetti is multicolour, the brain pink, the globe
-// blue/green, etc. — the colour lives in the emoji, not a tint.
-export const CATEGORY_EMOJI_SRC: Record<EventCategory, string> = {
-  party: '/emoji/1f389.svg', // 🎉
-  boardgames: '/emoji/1f3b2.svg', // 🎲
-  trip: '/emoji/1f68c.svg', // 🚌
-  quiz: '/emoji/1f9e0.svg', // 🧠
-  sports: '/emoji/1f3d0.svg', // 🏐
-  film: '/emoji/1f3ac.svg', // 🎬
-  karaoke: '/emoji/1f3a4.svg', // 🎤
-  culture: '/emoji/1f30d.svg', // 🌍
-  social: '/emoji/1f37b.svg', // 🍻
-  other: '/emoji/2728.svg', // ✨
-};

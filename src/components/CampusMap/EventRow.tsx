@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { ExternalLink, MapPin } from 'lucide-react';
-import { CATEGORY_EMOJI_SRC } from '../../data/eventCategories';
+import { eventEmojiSrc } from '../../data/eventEmoji';
 import { eventWhenLabel } from './eventHelpers';
 import type { MapEvent } from '../../types/events';
 
@@ -59,7 +59,7 @@ export function EventRow({
             // (base-200), and any fixed base tone is invisible on one of them
             // in one of the themes.
             <span className="flex h-full w-full items-center justify-center bg-base-content/5">
-              <img src={CATEGORY_EMOJI_SRC[event.category]} alt="" className="h-7 w-7" />
+              <img src={eventEmojiSrc(event)} alt="" className="h-7 w-7" />
             </span>
           )}
         </span>
