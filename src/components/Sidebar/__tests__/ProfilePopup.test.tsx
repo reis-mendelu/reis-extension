@@ -11,9 +11,6 @@ vi.mock('../../../services/storage', () => ({
   },
 }));
 vi.mock('../../../hooks/useUserParams', () => ({ useUserParams: () => ({ params: null }) }));
-vi.mock('../../../hooks/useSpolkySettings', () => ({
-  useSpolkySettings: () => ({ isSubscribed: () => false, toggleAssociation: vi.fn() }),
-}));
 
 beforeEach(() => {
   useAppStore.setState({ language: 'en', isEduroamOpen: false, eduroamInitialTarget: null });

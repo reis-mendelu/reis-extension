@@ -1,19 +1,16 @@
 import { ExternalLink, Clock } from 'lucide-react';
-import { CATEGORY_EMOJI_SRC } from '../../data/eventCategories';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSociety } from '../../hooks/useSociety';
 import { SocietyLogo } from '../SocietyLogo';
 import { parseEventDate } from './eventHelpers';
-import { EventRsvp } from './EventRsvp';
-import { FollowChip } from './FollowChip';
 import { EventVenueLine } from './EventVenueLine';
 import { eventDetailsLink } from './eventLinks';
 import type { MapEvent } from '../../types/events';
 
 // Bottom-left detail body for a selected event — a read-only preview shown to
 // students and societies alike: a small society avatar + title + host, then the
-// facts (when / what / where), the social block (attendance + RSVP), and More
-// info. A society edits/deletes its own events from the "Moje akce" panel, so
+// facts (when / where) and More info. Nothing social: no follow, no
+// RSVP, no count (spec 2026-10-08 — an event to go to, shown quietly). A society edits/deletes its own events from the "Moje akce" panel, so
 // this card carries no authoring controls (keeps management in one place).
 /**
  * `flush` drops the card's own frame.
@@ -58,14 +55,9 @@ export function EventDetailCard({ event, flush = false }: { event: MapEvent; flu
             <h3 className="line-clamp-2 font-bold leading-tight text-base-content">
               {event.title}
             </h3>
-            {/* the chip lives on the host line, not squeezed onto the title,
-                so it never pushes the title into wrapping at 320px */}
-            <div className="flex items-center gap-2">
-              <span className="min-w-0 truncate text-xs text-base-content/60">
-                {t('map.hostedBy')} {soc.shortName}
-              </span>
-              <FollowChip societyId={event.societyId} />
-            </div>
+            <span className="block min-w-0 truncate text-xs text-base-content/60">
+              {t('map.hostedBy')} {soc.shortName}
+            </span>
           </div>
         </div>
 
@@ -86,15 +78,7 @@ export function EventDetailCard({ event, flush = false }: { event: MapEvent; flu
               {event.time ? ` · ${event.time}` : ''}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-sm text-base-content/70">
-            <img src={CATEGORY_EMOJI_SRC[event.category]} alt="" className="h-4 w-4 shrink-0" />
-            <span>{t(`map.category.${event.category}`)}</span>
-          </div>
-          <EventVenueLine event={event} societyShortName={soc.shortName} />
-        </div>
-
-        <div className="border-t border-base-300 pt-3">
-          <EventRsvp eventId={event.id} accent={soc.color} />
+          <EventVenueLine event={event} />
         </div>
 
         {details && (

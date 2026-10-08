@@ -33,8 +33,8 @@ const BUILDINGS = (buildingsJson as BuildingsMeta).buildings;
 // one faculty's students is squarely inside that). Its standard style is
 // colourful, which the overlays were never designed for, so the tile pane is
 // desaturated with Tailwind's own `grayscale` utility rather than a stylesheet
-// of ours. maxNativeZoom drops 20 → 19, which is OSM's deepest, so floor-level
-// zooms upscale one step more than before.
+// of ours. maxNativeZoom drops 20 → 19, which is OSM's deepest; past one
+// upscaled level the tiles are not drawn at all (see the tile layer below).
 //
 // If reIS ever outgrows "modest", the next step is self-hosting or a keyed
 // provider behind our Supabase proxy — not a key in the client.
@@ -68,7 +68,13 @@ export function initLeafletMap(
   // inside Leaflet (`getPane()` returns undefined and it appends to it anyway).
   ensureReisPanes(map);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 22,
+    // The basemap stops one level past OSM's deepest tile, while the map keeps
+    // going to 22. Past 20 a z19 tile was stretched 4–8× — the street label in
+    // budova Q's courtyard turned into a grey smear (Návrhy #27, Pixel 9a).
+    // There the camera is inside a building and only the floor plan matters,
+    // and Leaflet's bare #ddd is the same grey OSM fills a building with. The
+    // extra levels stay because they make E, X and C's small rooms tappable.
+    maxZoom: 20,
     maxNativeZoom: 19,
     // Utilities, not a stylesheet: Leaflet puts this on the tile pane and the
     // filter applies to every tile image under it. `grayscale` alone reads
@@ -76,7 +82,7 @@ export function initLeafletMap(
     // to land near where Positron sat.
     className: 'grayscale brightness-[1.06] contrast-[0.92]',
     attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Emoji: Twemoji, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>',
   }).addTo(map);
   // Show the lettered building names only when zoomed in past the overview.
   // restZoom = the zoom at which the whole campus fits (matches flyToBounds'

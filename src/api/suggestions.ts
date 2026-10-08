@@ -4,7 +4,10 @@ import { getBrowserInfo } from '@/utils/browserInfo';
 import { getAppVersion } from '@/utils/appIdentity';
 import { IndexedDBService } from '@/services/storage';
 import { isAppView, type AppView } from '@/types/app';
+import { useAppStore } from '@/store/useAppStore';
+import { readPhoneViewport } from '@/hooks/ui/usePhoneViewport';
 import type {
+  ReportScreen,
   SuggestionDraft,
   SuggestionPayload,
   SubmitResult,
@@ -18,7 +21,10 @@ export function resolveScreen(raw: unknown): AppView {
   return isAppView(raw) ? raw : 'calendar';
 }
 
-export function buildSuggestionPayload(draft: SuggestionDraft, screen: AppView): SuggestionPayload {
+export function buildSuggestionPayload(
+  draft: SuggestionDraft,
+  screen: ReportScreen
+): SuggestionPayload {
   const browser = getBrowserInfo();
   return {
     ...draft,
@@ -33,10 +39,19 @@ export function buildSuggestionPayload(draft: SuggestionDraft, screen: AppView):
   };
 }
 
-// The current screen is read from the key useAppLogic already persists on every
-// view change. Reading it here keeps FeedbackModal working identically on
+// Read here rather than passed in, so FeedbackModal works identically on the
 // desktop and in the mobile sheet stack, which has no route prop to drill.
-async function currentScreen(): Promise<AppView> {
+//
+// The phone's screen is its tab. `meta.reis_current_view` belongs to the
+// desktop tree: useAppLogic still runs above the phone fork, and on the phone
+// the only thing that moves its view is a map focus — so reading the key there
+// reported every phone and iPad report from 5.3.0 as "map".
+async function currentScreen(): Promise<ReportScreen> {
+  try {
+    if (readPhoneViewport()) return useAppStore.getState().mobileTab;
+  } catch {
+    // No platform installed: not the phone app, so the desktop answer stands.
+  }
   try {
     return resolveScreen(await IndexedDBService.get('meta', 'reis_current_view'));
   } catch {

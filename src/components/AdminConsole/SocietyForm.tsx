@@ -3,16 +3,11 @@ import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { createSocietyAccount } from '../../api/societyAccounts';
 import { ORGANIZERS, type FacultyKey, type Society } from '../../types/events';
-import { autoFollowHolder, normalizeInstagram, validateSocietyDraft } from './societyFormRules';
+import { normalizeInstagram, validateSocietyDraft } from './societyFormRules';
 import { GeneratedPasswordDialog } from './GeneratedPasswordDialog';
 import { LogoPreview } from './LogoPreview';
 
 const FACULTIES = Object.keys(ORGANIZERS) as FacultyKey[];
-
-function withoutInstagram(society: Society): Omit<Society, 'instagram'> {
-  const { instagram: _instagram, ...rest } = society;
-  return rest;
-}
 
 /** Add (no `society`) or edit one society. reis_admin only; RLS is the real gate. */
 export function SocietyForm({ society, onDone }: { society?: Society; onDone: () => void }) {
@@ -26,14 +21,11 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
   const [shortName, setShortName] = useState(society?.shortName ?? '');
   const [color, setColor] = useState(society?.color ?? '#0046a0');
   const [facultyKey, setFacultyKey] = useState<FacultyKey>(society?.facultyKey ?? 'mendelu');
-  const [autoFollow, setAutoFollow] = useState(society?.autoFollowFaculty ?? false);
   const [instagram, setInstagram] = useState(society?.instagram ?? '');
   const [logo, setLogo] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [password, setPassword] = useState<string | null>(null);
-
-  const holder = autoFollowHolder(catalog, facultyKey, id);
 
   const submit = async () => {
     if (busy) return;
@@ -48,7 +40,7 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
     setBusy(true);
     setError(null);
     try {
-      const failure = await persist(autoFollow && facultyKey !== 'mendelu', ig);
+      const failure = await persist(ig);
       if (failure) setError(failure);
       else if (!isNew) onDone();
     } catch {
@@ -60,16 +52,7 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
   };
 
   /** Returns an i18n error key, or null when everything saved. */
-  const persist = async (autoFollowFaculty: boolean, ig: string | null): Promise<string | null> => {
-    // One default per faculty: release it from the holder first, and give it
-    // back if the replacement fails, so the faculty is never left without one.
-    // The holder's instagram is left out: it is not on screen, and a stale
-    // copy of it would overwrite (or null) the stored handle.
-    const released = autoFollowFaculty && holder ? withoutInstagram(holder) : null;
-    if (released) {
-      const moved = await saveSociety({ ...released, autoFollowFaculty: false }, null, false);
-      if (moved.error) return `errors.${moved.error}`;
-    }
+  const persist = async (ig: string | null): Promise<string | null> => {
     // Only a handle the admin actually changed is sent, for the same reason.
     const igChanged = ig !== (society?.instagram ?? null);
     const res = await saveSociety(
@@ -79,16 +62,19 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
         shortName,
         color,
         facultyKey,
-        autoFollowFaculty,
+        // Follow is gone (spec 2026-10-08), but builds 5.1.1–5.3.0 still seed
+        // follows from this column, so an edit keeps it — unless the faculty
+        // changed: the column is unique per faculty, and keeping it on a move
+        // would collide with that faculty's holder (or flag the whole of
+        // MENDELU). Off is always safe.
+        autoFollowFaculty:
+          (society?.autoFollowFaculty ?? false) && society?.facultyKey === facultyKey,
         ...(igChanged ? { instagram: ig } : {}),
       },
       logo,
       isNew
     );
-    if (res.error) {
-      if (released) await saveSociety({ ...released, autoFollowFaculty: true }, null, false);
-      return `errors.${res.error}`;
-    }
+    if (res.error) return `errors.${res.error}`;
     if (!isNew) return null;
     const account = await createSocietyAccount(id, name.trim());
     if (!account.password) return 'errors.account_failed';
@@ -169,23 +155,6 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
             </option>
           ))}
         </select>
-      </label>
-      <label className="flex items-start gap-2 text-sm">
-        <input
-          type="checkbox"
-          className="checkbox checkbox-sm checkbox-primary"
-          checked={autoFollow && facultyKey !== 'mendelu'}
-          disabled={facultyKey === 'mendelu'}
-          onChange={(e) => setAutoFollow(e.target.checked)}
-        />
-        <span>
-          {t('admin.societies.autoFollow')}
-          {autoFollow && holder && (
-            <span className="block text-xs text-base-content/70">
-              {t('admin.societies.autoFollowMoves', { from: holder.name })}
-            </span>
-          )}
-        </span>
       </label>
       <label className={field}>
         <span className="opacity-70">{t('admin.societies.logo')}</span>

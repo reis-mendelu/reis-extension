@@ -60,18 +60,18 @@ reIS contacts the following services. **IS Mendelu is the only one that receives
 
 **Always:**
 1. **IS Mendelu** (`is.mendelu.cz`) — fetches your academic data, authenticated by you.
-2. **Supabase** (`*.supabase.co`) — reIS's own backend: public notifications, society events and their attendance counts, anonymous usage events, and feedback you submit, with any attachment you added to it. Different records carry different keys. The daily usage count, the in-app survey and event RSVPs use the random installation identifier described above; society view/click counters carry only a post row id. A submitted suggestion carries no identifier we generate — but if you fill in the optional contact field, it carries whatever you typed there, because asking us to reply is what that field is for.
+2. **Supabase** (`*.supabase.co`) — reIS's own backend: public notifications, society events, anonymous usage events, and feedback you submit, with any attachment you added to it. Different records carry different keys. The daily usage count and the in-app survey use the random installation identifier described above; society view/click counters carry only a post row id. Versions up to 5.3.0 (September 2026) also send event RSVPs, with the same random installation identifier, until they are updated; current versions send none. A submitted suggestion carries no identifier we generate — but if you fill in the optional contact field, it carries whatever you typed there, because asking us to reply is what that field is for.
 3. **jsDelivr** (`cdn.jsdelivr.net`) — static subject-difficulty data. No identifier is sent, but the set of subjects requested does reveal to the CDN which courses you are enrolled in.
 4. **OpenStreetMap** — campus map tiles. The request identifies reIS by name, which their tile usage policy requires; it carries nothing about you.
 
 **Only when you use the relevant feature:**
 5. **Erasmus HEI directory** (`hei.api.uni-foundation.eu`) — a public list of partner universities. Nothing about you is sent.
-6. **Photon** (`photon.komoot.io`) — venue search, used only by student-society administrators when creating an event.
+6. **Photon** (`photon.komoot.io`) — venue search, used only by reIS staff and society logins in the admin console when creating an event.
 7. **Google Calendar** (`www.googleapis.com`) — phone and iPad app only, and only if you turn on Google Calendar sync in Profil. Your lessons, exams and own events are written from your phone straight into a "Rozvrh" calendar in your own Google account; reIS's servers are not in that path. reIS reads your calendar list only to find that calendar, and cannot see or change your other calendars. Turning the sync off revokes reIS's access; "Rozvrh" stays in your Google account, and you can delete it in Google Calendar.
 
 reIS's use of information received from Google APIs adheres to the [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including the Limited Use requirements. reIS uses Google Calendar access only to write your timetable into the calendar it created, and finds that calendar by reading your calendar list. It does not read your other events, and no Google data is sent to reIS or anyone else.
 
-**Links you open yourself** (Teams, Outlook, geteduroam, society websites and Instagram profiles) are handed to your browser or the relevant app. reIS makes no background request to them.
+**Links you open yourself** (Teams, Outlook, geteduroam, society websites and Instagram profiles, the emoji licence) are handed to your browser or the relevant app. reIS makes no background request to them.
 
 ## User Control
 You have full control over your data:

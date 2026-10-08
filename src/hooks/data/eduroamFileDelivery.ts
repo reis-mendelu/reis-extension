@@ -46,3 +46,16 @@ export async function deliverEduroamFile(
   // menu on Windows), and reIS cannot see whether they did.
   void trackFeatureSignal('eduroam_profile_delivered');
 }
+
+// macOS deep link straight to the Profiles / Device Management pane.
+const PROFILES_SETTINGS_URL =
+  'x-apple.systempreferences:com.apple.preferences.configurationprofiles';
+
+/** Custom-scheme link: hand off to the OS without navigating the iframe. */
+export function openProfilesSettings(): void {
+  const a = document.createElement('a');
+  a.href = PROFILES_SETTINGS_URL;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}

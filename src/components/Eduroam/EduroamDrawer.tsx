@@ -18,6 +18,7 @@ export function EduroamDrawer() {
     status,
     password,
     error,
+    networkFailure,
     expiredAt,
     expiresSoonAt,
     run,
@@ -80,9 +81,13 @@ export function EduroamDrawer() {
         {status === 'error' && (
           <div className="alert alert-error text-sm mb-5">
             <AlertTriangle className="w-4 h-4 shrink-0" />
+            {/* The extension starts online — it opens on is.mendelu.cz — but a
+                laptop can lose its connection with the page still open. No
+                "mobile data" here: that advice is the phone's. */}
             <span>
-              {t('eduroam.error')}
-              {error ? `: ${error}` : ''}
+              {networkFailure
+                ? t('eduroam.network.desktop')
+                : `${t('eduroam.error')}${error ? `: ${error}` : ''}`}
             </span>
           </div>
         )}

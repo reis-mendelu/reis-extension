@@ -34,6 +34,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "verify:ui": "tsx --tsconfig tsconfig.app.json scripts/shot.ts",
+    "emoji:fetch": "tsx --tsconfig tsconfig.app.json scripts/emoji/fetch-event-emoji.ts",
     "dev:web:exams": "REIS_FIXTURE=examSeason vite --config vite.web.config.ts",
     "dev:web:deadlines": "REIS_FIXTURE=notificationFeed vite --config vite.web.config.ts",
     "dev:web:boxes": "REIS_FIXTURE=submissionBoxes vite --config vite.web.config.ts",

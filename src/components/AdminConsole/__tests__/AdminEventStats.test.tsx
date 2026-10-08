@@ -65,7 +65,6 @@ describe('AdminEventList — views and clicks per event', () => {
       language: 'en',
       composerOpen: false,
       // Reset like the rest: the store is a singleton and a test below sets it.
-      societyRsvpCounts: {},
       societyMapEvents: [ev('old', dates.old), ev('live', dates.live), ev('sched', dates.sched)],
       societyPosts: [
         row('old', dates.old, 13, 8),
@@ -122,27 +121,5 @@ describe('AdminEventList — views and clicks per event', () => {
     render(<AdminEventList />);
     expect(within(rowOf('E-live')).queryByText(/views/)).toBeNull();
     expect(screen.queryByText(/device/i)).toBeNull();
-  });
-
-  // The interest count is the same public aggregate RPC the student card
-  // uses (going + interested), surfaced next to the existing views/clicks.
-  it('shows the interest count alongside views and clicks', () => {
-    useAppStore.setState({
-      societyPosts: [row('live', iso(2), 60, 29)],
-      societyRsvpCounts: { live: { going: 2, interested: 5 } },
-    });
-    render(<AdminEventList />);
-    expect(within(rowOf('E-live')).getByText('Interested in reIS: 7')).toBeInTheDocument();
-  });
-
-  // No RSVP data loaded for this event yet — the line must not render "0", it
-  // must not render at all.
-  it('hides the interest line for an event with no rsvp counts', () => {
-    useAppStore.setState({
-      societyPosts: [row('live', iso(2), 60, 29)],
-      societyRsvpCounts: {},
-    });
-    render(<AdminEventList />);
-    expect(within(rowOf('E-live')).queryByText(/interested in reis/i)).toBeNull();
   });
 });

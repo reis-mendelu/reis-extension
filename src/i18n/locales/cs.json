@@ -477,13 +477,7 @@
     "inDays": "za {n} d",
     "accessible": "Přístupný"
   },
-  "events": {
-    "title": "Akce",
-    "loading": "Načítá se...",
-    "empty": "Žádné nadcházející akce"
-  },
   "sync": {
-    "spolky": "Odebírané spolky",
     "lastSync": "Naposledy synchronizováno: {time}"
   },
   "fileCategories": {
@@ -695,6 +689,11 @@
     "macApp": {
       "button": "Uložit eduroam profil",
       "installStep": "Ulož soubor a pak ho otevři — macOS profil nainstaluje v Nastavení systému. Při instalaci zadej heslo z prvního kroku."
+    },
+    "network": {
+      "offline": "Jsi offline. K nastavení eduroamu stačí jakýkoli internet — klidně mobilní data, Wi‑Fi není potřeba.",
+      "unreachable": "Nepodařilo se spojit s IS. Zkontroluj internet — mobilní data stačí — a zkus to znovu.",
+      "desktop": "Nepodařilo se spojit s IS. Zkontroluj připojení k internetu a zkus to znovu."
     }
   },
   "erasmus": {
@@ -934,8 +933,6 @@
     "moreInfo": "Více informací",
     "moreOnInstagram": "Více na Instagramu",
     "hostedBy": "Pořádá",
-    "interested": "má zájem",
-    "rsvpInterested": "Mám zájem",
     "myEvents": "Moje akce",
     "prevMonth": "Předchozí měsíc",
     "nextMonth": "Další měsíc",
@@ -972,7 +969,6 @@
     "orPickOnMap": "nebo vybrat ručně na mapě",
     "mapPoint": "Vybrané místo na mapě",
     "venueOnMap": "Místo na mapě",
-    "venueTba": "Místo upřesní {name}",
     "changePlace": "Změnit místo",
     "publish": "Zveřejnit akci",
     "clickToPlace": "Klepněte na tlačítko a poté označte místo v mapě",
@@ -985,27 +981,23 @@
     "edit": "Upravit",
     "delete": "Smazat",
     "deleteConfirm": "Opravdu smazat?",
-    "categoryLabel": "Typ akce",
-    "category": {
-      "party": "Párty",
-      "boardgames": "Deskovky",
-      "trip": "Výlet",
-      "quiz": "Kvíz",
-      "sports": "Sport",
-      "film": "Film",
-      "karaoke": "Karaoke",
-      "culture": "Kultura",
-      "social": "Společenská akce",
-      "other": "Akce"
+    "emojiPickerLabel": "Obrázek akce",
+    "emojiChange": "Změnit obrázek",
+    "emojiGroup": {
+      "party": "Párty a jídlo",
+      "games": "Hry a kvízy",
+      "sport": "Sport",
+      "culture": "Kultura a vzdělávání",
+      "season": "Svátky",
+      "travel": "Výlety",
+      "other": "Ostatní"
     },
     "studyRooms": "Studovny",
-    "reminderLead": "Za 2 hodiny",
     "finished": "proběhlo",
     "openInMaps": "Otevřít v mapách",
     "openInAppleMaps": "Apple Mapy",
     "openInGoogleMaps": "Google Maps",
-    "audienceHint": "Uvidí studenti, kteří odebírají {society}.",
-    "audienceHintGeneric": "Uvidí jen studenti, kteří tento spolek odebírají.",
+    "audienceHint": "Ostatní studenti tuto akci na mapě ani v Novinkách neuvidí.",
     "panelCollapse": "Sbalit panel mapy",
     "panelExpand": "Rozbalit panel mapy",
     "walkMinutes": "{n} min",
@@ -1033,6 +1025,7 @@
     }
   },
   "admin": {
+    "entry": "Správa",
     "email": "E-mail",
     "username": "Název spolku",
     "password": "Heslo",
@@ -1044,7 +1037,6 @@
     "addPost": "Přidat příspěvek",
     "logout": "Odhlásit",
     "saveError": "Nepodařilo se uložit — zkuste to znovu",
-    "manageButton": "Spravovat spolky",
     "consoleTitle": "Správa spolků",
     "loginTitle": "Přihlášení pro spolky",
     "loginSubtitle": "Přihlaste se účtem spolku a spravujte jeho akce na mapě kampusu.",
@@ -1057,7 +1049,6 @@
     "eventViewsOne": "1 zobrazení",
     "eventClicks": "{count} kliknutí",
     "eventClicksOne": "1 kliknutí",
-    "eventInterest": "Zájem v reIS: {count}",
     "eventStatsNote": "Zobrazení: kolik zařízení akci vidělo v Novinkách — zařízení, ne lidí. Kliknutí: kolikrát ji odtud někdo otevřel.",
     "newSuggestions": "Nové návrhy od studentů: {count}",
     "noSuggestions": "Zatím žádné návrhy.",
@@ -1095,8 +1086,8 @@
       "devicesNote": "Aktivní zařízení, ne lidé: student s telefonem i notebookem je dvakrát.",
       "epochNote": "Data od 7. 9. 2026",
       "new": "noví",
-      "returning": "vracející se",
-      "ofWhichReturning": "z toho vracející se",
+      "returning": "stávající",
+      "ofWhichReturning": "z toho stávající",
       "activeDevices": "aktivních zařízení",
       "pickDay": "Zobrazit den",
       "noData": "Zatím žádná data.",
@@ -1113,13 +1104,15 @@
       "mapViews": "otevření",
       "mapViewsNote": "Počet otevření, ne lidí — u těchto čísel není žádný identifikátor.",
       "trendAria": "Vývoj: {label}, posledních {days} dní, celkem {total} {unit}, maximum {max} za den.",
-      "trendWithheld": "Pro tento signál zatím graf nezobrazujeme — méně než 5 instalací za 30 dní."
+      "trendWithheld": "Pro tento signál zatím graf nezobrazujeme — méně než 5 instalací za 30 dní.",
+      "goneQuietHint": "Podíl zařízení, která reIS aspoň jeden týden používala 2 a více dní, ale 14 dní ho neotevřela. Zařízení, ne lidé — přeinstalace se počítá taky.",
+      "goneQuietDesc": "pravidelných · 14+ dní bez reIS",
+      "goneQuiet": "Odešli"
     },
     "loginName": "login",
     "audience": {
       "faculty": "Jen studenti {faculty}",
-      "erasmus": "Jen erasmáci",
-      "followers": "Jen naši"
+      "erasmus": "Jen erasmáci"
     },
     "attachments": "Přílohy",
     "screenshotBadge": "📎 snímek",
@@ -1144,8 +1137,6 @@
       "color": "Barva špendlíku",
       "faculty": "Fakulta",
       "wholeMendelu": "Celá MENDELU",
-      "autoFollow": "Noví studenti této fakulty ho automaticky odebírají",
-      "autoFollowMoves": "Automatické odebírání se přesune ze spolku {from}.",
       "logo": "Logo",
       "save": "Uložit",
       "cancel": "Zrušit",
@@ -1335,8 +1326,7 @@
     },
     "profile": {
       "appearance": "Vzhled",
-      "settings": "Nastavení",
-      "societies": "Spolky na mapě"
+      "settings": "Nastavení"
     },
     "loadFailed": {
       "title": "Data se nepodařilo načíst",
@@ -1439,38 +1429,6 @@
     "bannerLabel": "Zobrazuješ jako {programme} · {year}. ročník",
     "bannerExit": "Ukončit",
     "close": "Zavřít"
-  },
-  "notify": {
-    "channelRsvp": "Připomínky akcí",
-    "channelDigest": "Akce spolků",
-    "digestTomorrow": "Zítra: {titles}",
-    "digestTomorrowManyOne": "Zítra 1 akce: {titles}",
-    "digestTomorrowManyFew": "Zítra {n} akce: {titles} a další",
-    "digestTomorrowManyOther": "Zítra {n} akcí: {titles} a další",
-    "digestNewOnlyOne": "Nová akce: {titles}",
-    "digestNewOnlyFew": "Nové akce: {titles}",
-    "digestNewOnlyOther": "Nové akce: {titles}",
-    "digestPlusNewOne": "+ 1 nová akce od {societies}",
-    "digestPlusNewFew": "+ {n} nové akce od {societies}",
-    "digestPlusNewOther": "+ {n} nových akcí od {societies}",
-    "askOneOne": "{society} má 1 akci v příštích 14 dnech. Chceš večer předem připomínku?",
-    "askOneFew": "{society} má {n} akce v příštích 14 dnech. Chceš večer předem připomínku?",
-    "askOneOther": "{society} má {n} akcí v příštích 14 dnech. Chceš večer předem připomínku?",
-    "askManyOne": "Tvoje spolky mají 1 akci v příštích 14 dnech. Chceš večer předem připomínku?",
-    "askManyFew": "Tvoje spolky mají {n} akce v příštích 14 dnech. Chceš večer předem připomínku?",
-    "askManyOther": "Tvoje spolky mají {n} akcí v příštích 14 dnech. Chceš večer předem připomínku?",
-    "enable": "Zapnout",
-    "turnOn": "Zapnout oznámení",
-    "notNow": "Teď ne",
-    "section": "Oznámení",
-    "myEvents": "Připomínky mých akcí",
-    "followedEvents": "Akce sledovaných spolků",
-    "newEvents": "Nové akce",
-    "denied": "Oznámení jsou vypnutá v nastavení telefonu.",
-    "mute": "Ztlumit {name}",
-    "unmute": "Zrušit ztlumení {name}",
-    "follow": "Sledovat",
-    "following": "Sleduješ ✓"
   },
   "odevzdavarny": {
     "title": "Odevzdávárny",

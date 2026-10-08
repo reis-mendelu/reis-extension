@@ -3,6 +3,7 @@ import { useAppStore } from '../../../../store/useAppStore';
 import { usePersonPhoto } from '../../../../hooks/data/usePersonPhoto';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { personInitials } from '../../../../utils/mobile/personInitials';
+import { useLongPress } from '../../../../hooks/ui/useLongPress';
 
 const AVATAR =
   'flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-base-200 font-display text-base font-bold text-[var(--tone-primary)]';
@@ -16,6 +17,9 @@ export function ProfileIdentity() {
   const fullName = useAppStore((s) => s.fullName);
   const studentId = useAppStore((s) => s.studentId);
   const pushSheet = useAppStore((s) => s.pushSheet);
+  const openSocietyAdmin = useAppStore((s) => s.openSocietyAdmin);
+  // The hidden door into the admin console: hold your name (spec 2026-10-08).
+  const hold = useLongPress(openSocietyAdmin);
   // `studentId` is IS's "Identifikační číslo uživatele", the same id space
   // `foto.pl` takes for everyone else, so the existing authenticated fetch
   // covers the student's own face with no new endpoint.
@@ -52,7 +56,13 @@ export function ProfileIdentity() {
             "-Svobodová" is worse than a second line — it is the half that
             tells two siblings apart. */}
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="font-display text-lg font-bold leading-tight tracking-tight">
+          {/* The hold is on the NAME only: the ID below keeps its own
+              long-press, which copies the number. */}
+          <span
+            data-testid="profile-identity-name"
+            {...hold}
+            className="select-none font-display text-lg font-bold leading-tight tracking-tight [-webkit-touch-callout:none]"
+          >
             {name}
           </span>
           {/* The student ID and nothing else under the name. This row used to

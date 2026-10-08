@@ -99,6 +99,9 @@ export interface MapEvent extends MendeluEvent {
   /** 'tba' = the society has not said where yet: no pin, list-only. */
   venueKind: 'campus' | 'online' | 'offcampus' | 'tba';
   category: EventCategory;
+  /** Its own Twemoji code ('26f8'), or null for its category's emoji. Optional
+   *  so hand-built fixtures need not carry it. Render through eventEmojiSrc. */
+  emoji?: string | null;
   /** The society's optional description (spolky_events.body), trimmed; null
    *  when there is none. Optional so hand-built fixtures need not carry it. */
   description?: string | null;

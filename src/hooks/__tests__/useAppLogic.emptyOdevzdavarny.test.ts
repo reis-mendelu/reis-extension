@@ -48,7 +48,6 @@ vi.mock('../../services/sync', () => ({
   syncService: { triggerRefresh: vi.fn() },
   syncGradeHistory: vi.fn(async () => undefined),
 }));
-vi.mock('../useSpolkySettings', () => ({ useSpolkySettings: vi.fn() }));
 vi.mock('../../services/loadRealDataSnapshot', () => ({
   loadRealDataSnapshot: vi.fn(async () => false),
 }));

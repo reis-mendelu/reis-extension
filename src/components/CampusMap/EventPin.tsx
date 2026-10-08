@@ -1,6 +1,7 @@
 import type { VenueGroup } from './eventHelpers';
 import { parseEventDate } from './eventHelpers';
-import { CATEGORY_EMOJI_SRC, CATEGORY_COLOR } from '../../data/eventCategories';
+import { CATEGORY_COLOR } from '../../data/eventCategories';
+import { eventEmojiSrc } from '../../data/eventEmoji';
 
 interface EventPinProps {
   group: VenueGroup;
@@ -22,7 +23,7 @@ interface EventPinProps {
 export function EventPin({ group, x, y, selected, locale, onSelect }: EventPinProps) {
   const lead = group.events[0];
   const count = group.events.length;
-  const emojiSrc = CATEGORY_EMOJI_SRC[lead.category];
+  const emojiSrc = eventEmojiSrc(lead);
   const color = CATEGORY_COLOR[lead.category];
   const dateLabel = parseEventDate(lead.date).toLocaleDateString(locale, {
     day: 'numeric',

@@ -42,9 +42,8 @@ describe('collectImportGraph', () => {
 
   // `import type` is erased at compile time, so it ships nothing and cannot
   // execute a module-scope side effect. Counting it as an edge makes the
-  // content-script guard fail on a module that is provably harmless —
-  // src/services/eventReminders/sync.ts imports a PermissionState type from
-  // @capacitor/core and is correct to do so.
+  // content-script guard fail on a module that is provably harmless — e.g.
+  // shared code importing a PermissionState type from @capacitor/core.
   it('ignores a type-only import', () => {
     const host = hostFor({ '/a/entry.ts': `import type { T } from 'types-only-pkg';` });
     const g = collectImportGraph('/a/entry.ts', host);

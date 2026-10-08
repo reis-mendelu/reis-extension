@@ -90,9 +90,21 @@ function DiagnosticsTable({ d }: { d: NonNullable<SuggestionAttachment['diagnost
         {d.env.uptimeS}s
       </p>
       <p className="break-words">
-        sync {d.sync.schedule}/{d.sync.exams} · {d.sync.scheduleCount} lessons · {d.sync.examsCount}{' '}
-        exams · last {d.sync.lastSync ? time(d.sync.lastSync) : '—'}
+        cache {d.sync.schedule}/{d.sync.exams} · {d.sync.scheduleCount} lessons ·{' '}
+        {d.sync.examsCount} exams · last {d.sync.lastSync ? time(d.sync.lastSync) : '—'}
       </p>
+      {/* Absent from 5.3.0 payloads. The cache line above cannot say whether IS
+          answered; this can (Návrhy #26). */}
+      {d.sync.syncLoaded && (
+        <p className="break-words">
+          {/* Session-cumulative "answered" beside a last-run flag, labelled
+              as such: an outage after a good first run reads "answered this
+              session schedule · last run failed", not as one run's result. */}
+          {d.sync.firstSyncSettled ? 'settled' : 'first sync running'} · answered this session{' '}
+          {d.sync.syncLoaded.length ? d.sync.syncLoaded.join(', ') : 'nothing'}
+          {d.sync.syncFailed ? ' · last run failed' : ''}
+        </p>
+      )}
       <ul className="mt-1 max-h-56 overflow-y-auto space-y-1">
         {d.entries.map((e, i) => (
           <li key={`${e.t}-${i}`} className="break-words">

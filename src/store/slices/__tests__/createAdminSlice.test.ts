@@ -57,13 +57,6 @@ vi.mock('../../../api/societyPosts', async (orig) => ({
   ]),
 }));
 
-// loadSocietyPosts now also pulls interest counts from the same public
-// aggregate RPC the student card uses. Mocked here so these tests never hit
-// the real Supabase client.
-vi.mock('../../../api/eventRsvp', () => ({
-  fetchEventRsvps: vi.fn().mockResolvedValue({ counts: {}, ok: true }),
-}));
-
 // The account list is reIS-admin-only and lives in the store so the accounts
 // panel never fetches in a component.
 vi.mock('../../../api/societyAccounts', () => ({

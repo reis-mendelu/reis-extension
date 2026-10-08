@@ -4,8 +4,8 @@ import { NotificationsSheet } from '../NotificationsSheet';
 import { useAppStore } from '../../../../store/useAppStore';
 import type { SpolekNotification } from '../../../../services/spolky';
 
-// 'admin' notifications bypass the spolky-subscription filter (always shown),
-// keeping this test independent of useSpolkySettings' async IDB-backed state.
+// 'admin' notifications bypass the audience filter (always shown), keeping this
+// test independent of the student's faculty.
 const notification: SpolekNotification = {
   id: 'n1',
   associationId: 'admin',
@@ -29,12 +29,6 @@ describe('NotificationsSheet', () => {
       odevzdavarny: [],
       cvicneTests: [],
       now: new Date(),
-      // The mark-read effect is gated on `settingsLoading` from
-      // useSpolkySettings, which now reads `followsLoaded` off the store
-      // instead of running its own IndexedDB load — seed it directly rather
-      // than waiting on a `loadFollows()` nobody in this test triggers.
-      followed: [],
-      followsLoaded: true,
     } as never);
   });
 
@@ -72,22 +66,16 @@ describe('NotificationsSheet', () => {
   // the read, so the surface owns it.
   it('marks the feed read once it is open, so the header badge clears', async () => {
     render(<NotificationsSheet onClose={vi.fn()} />);
-    // Explicit timeout, above waitFor's 1000ms default. The sheet's mark-read
-    // effect is gated on `settingsLoading` from useSpolkySettings, which
-    // resolves off an IndexedDB read — fast locally, not always inside a second
-    // on a loaded CI runner. This test failed intermittently on three separate
-    // PRs for that reason alone (measured once at 1046ms), which costs a re-run
-    // and, worse, teaches everyone that a red check might mean nothing. It
-    // asserts that the feed gets marked read, not how quickly.
+    // Explicit timeout, above waitFor's 1000ms default: it asserts that the
+    // feed gets marked read, not how quickly, and a loaded CI runner is slow.
     await waitFor(() => expect(useAppStore.getState().notifications.readIds.has('n1')).toBe(true), {
       timeout: 5000,
     });
   });
 
-  // Marking runs off the FILTERED feed, which is empty until useSpolkySettings
-  // has read the subscriptions out of IndexedDB. Marking before that lands
-  // marks nothing, and the badge would persist exactly as it did before —
-  // a fix that passes with seeded state and fails on the device.
+  // Marking runs off the FILTERED feed, which can still be empty when the sheet
+  // opens on a cold start. Marking only then would mark nothing, and the badge
+  // would persist — a fix that passes with seeded state and fails on the device.
   it('also marks notifications that only arrive after it opened', async () => {
     useAppStore.setState({
       notifications: {

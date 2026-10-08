@@ -8,6 +8,8 @@ export interface PostInput {
   title: string;
   body: string;
   category: string; // EventCategory value
+  /** Twemoji code from src/data/eventEmoji; category is its fallback. */
+  emoji?: string | null;
   date: string; // YYYY-MM-DD
   endDate?: string | null;
   time?: string | null;
@@ -30,6 +32,7 @@ export interface SpolkyEventRow {
   title: string;
   body: string | null;
   category: string;
+  emoji?: string | null;
   date: string;
   end_date: string | null;
   time: string | null;
@@ -56,6 +59,7 @@ export function toRow(input: PostInput, associationId: string, createdBy: string
     title: input.title,
     body: input.body,
     category: input.category,
+    emoji: input.emoji ?? null,
     date: input.date,
     end_date: input.endDate ?? null,
     time: input.time ?? null,

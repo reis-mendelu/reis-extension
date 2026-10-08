@@ -31,6 +31,26 @@ describe('loadRealDataSnapshot', () => {
     spy.mockRestore();
   });
 
+  // The snapshot IS the answer for every domain it covers — a scrape with no
+  // exam terms drops `exams` because there are none. Without `loaded` the
+  // screens read "never answered" and showed the failed state in the dev
+  // webapp: the phone Exams screen always did, the desktop panel since #26.
+  it('marks schedule and exams as answered', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ lastSync: 1 }), { status: 200 }))
+    );
+    const posts: { data: { loaded?: string[] } }[] = [];
+    const spy = vi.spyOn(window, 'postMessage').mockImplementation(((m: never) => {
+      posts.push(m);
+    }) as typeof window.postMessage);
+
+    await loadRealDataSnapshot();
+
+    expect(posts[0]!.data.loaded).toEqual(['schedule', 'exams']);
+    spy.mockRestore();
+  });
+
   it('returns false and does not post when the file is absent (404)', async () => {
     vi.stubGlobal(
       'fetch',

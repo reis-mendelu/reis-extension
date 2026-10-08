@@ -1,9 +1,7 @@
 import { useState } from 'react';
-import { Wifi, FileText, MessageSquarePlus, LogOut, UserCog, CalendarSync } from 'lucide-react';
+import { Wifi, FileText, MessageSquarePlus, LogOut, UserCog, ShieldCheck, CalendarSync } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
-import { useSpolkySettings } from '../../../hooks/useSpolkySettings';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { SpolkySection } from '../../Sidebar/Profile/SpolkySection';
 import { HiddenItemsSection } from '../../Sidebar/Profile/HiddenItemsSection';
 import { SignOutConfirm } from '../sheets/SignOutConfirm';
 import { syncTimeLabel } from '../../../mobile/googleCalendar/syncTimeLabel';
@@ -15,11 +13,11 @@ import { ScreenHeader } from './calendar/ScreenHeader';
 import { AlwaysScrollable } from '../primitives/AlwaysScrollable';
 
 /**
- * The profile TAB: theme, language, eduroam setup,
- * hidden items, society map filters, feedback and logout. Reuses desktop's
- * `SpolkySection` / `HiddenItemsSection` / the shared report form (mounted by
- * `MobileApp`) wholesale rather
- * than rebuilding them — only the row layout around them is phone-specific.
+ * The profile TAB: theme, language, eduroam setup, hidden items, feedback and
+ * logout. Reuses desktop's `HiddenItemsSection` and the shared report form
+ * (mounted by `MobileApp`) wholesale rather than rebuilding them — only the row
+ * layout around them is phone-specific. No societies section: there is nothing
+ * to choose (spec 2026-10-08); the console is reached by holding the name.
  *
  * `HiddenItemsSection` is the same component the desktop sidebar profile
  * uses, so a hidden event shows up here already — restoring it calls the same
@@ -27,10 +25,7 @@ import { AlwaysScrollable } from '../primitives/AlwaysScrollable';
  */
 export function ProfileScreen() {
   const { t } = useTranslation();
-  const { isSubscribed, toggleAssociation } = useSpolkySettings();
   const pushSheet = useAppStore((s) => s.pushSheet);
-  const setMobileTab = useAppStore((s) => s.setMobileTab);
-  const [spolkyOpen, setSpolkyOpen] = useState(false);
   const openReport = useAppStore((s) => s.openReport);
   const [signOutOpen, setSignOutOpen] = useState(false);
 
@@ -38,6 +33,9 @@ export function ProfileScreen() {
   const gcal = useAppStore((s) => s.gcal);
   const language = useAppStore((s) => s.language);
   const gcalTime = syncTimeLabel(gcal.lastSyncAt, language);
+  // Signed in to the console on this device (held the name once): keep a way back.
+  const hasAdminSession = useAppStore((s) => s.adminSession !== null);
+  const openSocietyAdmin = useAppStore((s) => s.openSocietyAdmin);
   const loadImpersonationOptions = useAppStore((s) => s.loadImpersonationOptions);
 
   return (
@@ -100,6 +98,10 @@ export function ProfileScreen() {
             onClick={() => pushSheet({ kind: 'docs' })}
           />
 
+          {hasAdminSession && (
+            <NavRow icon={ShieldCheck} label={t('admin.entry')} onClick={openSocietyAdmin} />
+          )}
+
           {/* reIS admins only. Options load from the tap, never from an effect. */}
           {isReisAdmin && (
             <NavRow
@@ -114,21 +116,6 @@ export function ProfileScreen() {
           )}
 
           <HiddenItemsSection />
-
-          <div className="px-4 pb-0.5 pt-2 text-xs font-bold uppercase tracking-wider text-base-content/60">
-            {t('mobile.profile.societies')}
-          </div>
-          <div className="px-3">
-            <SpolkySection
-              expandFully
-              notifications
-              expanded={spolkyOpen}
-              onToggle={() => setSpolkyOpen((v) => !v)}
-              isSub={isSubscribed}
-              onToggleAssoc={toggleAssociation}
-              onNavigate={() => setMobileTab('map')}
-            />
-          </div>
 
           <div className="mx-4 my-2 h-px bg-base-content/10" />
 

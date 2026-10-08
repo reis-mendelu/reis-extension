@@ -47,7 +47,7 @@ function NumberBadge({ n }: { n: number }) {
 export function EduroamSheet({ onClose }: EduroamSheetProps) {
   const { t } = useTranslation();
   const target = detectTarget();
-  const { status, password, error, outcome, expiredAt, expiresSoonAt, run, renew } =
+  const { status, password, error, networkFailure, outcome, expiredAt, expiresSoonAt, run, renew } =
     useEduroamSetup(target);
   const working = status === 'working';
 
@@ -76,6 +76,7 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
           status={status}
           outcome={outcome}
           error={error}
+          networkFailure={networkFailure}
           native={native}
           target={target}
         />

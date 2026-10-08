@@ -3,37 +3,19 @@ import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { routeSuggestionFor } from '../../../../utils/mobile/lessonActions';
 import { CAMPUS_NAVIGATION_ENABLED } from '../../../../utils/routing/navigationEnabled';
-import { eventIdFromRsvpBlock } from '../../../../utils/rsvpBlocks';
 
 /**
- * What "show on map" does for a calendar row: the row itself (for an event),
- * the agenda's pin and the up-next card's "Trasa →" all land here, so they
- * cannot disagree.
- *
- * An answered society event goes to the EVENT. Its block's "room" is a venue in
- * town, or nothing at all when the society only dropped a pin, and
- * `focusRoomByCode` with either leaves the student on an unfocused campus
- * overview. The route suggestion is cleared rather than left over from the last
- * lesson tapped — there is no campus walk to a place in town.
+ * What "show on map" does for a calendar row: the agenda's pin and the up-next
+ * card's "Trasa →" both land here, so they cannot disagree.
  */
 export function useShowLessonOnMap(): (lesson: BlockLesson) => void {
   const setMobileTab = useAppStore((s) => s.setMobileTab);
   const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
-  const focusEventById = useAppStore((s) => s.focusEventById);
   const suggestRoute = useAppStore((s) => s.suggestRoute);
   const { language } = useTranslation();
 
   return (lesson) => {
     setMobileTab('map');
-    const eventId = lesson.isCustom ? eventIdFromRsvpBlock(lesson.customEventId ?? '') : null;
-    if (eventId) {
-      // `reveal: 'map'`: the student already read the event in the calendar;
-      // what they came for is WHERE. The sheet opening on the card put the pin
-      // behind it — reported from a Pixel 9a — so it stays at peek instead.
-      focusEventById(eventId, { fly: true, reveal: 'map' });
-      if (CAMPUS_NAVIGATION_ENABLED) suggestRoute(null);
-      return;
-    }
     // The room exactly as IS printed it, campus and all: "ZFAC1 (Led)" is how
     // a room with no floor plan finds its campus (lookupRoomPlace); the room
     // lookup strips the bracket itself.

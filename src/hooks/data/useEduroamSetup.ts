@@ -6,8 +6,14 @@ import {
 } from '../../api/eduroam';
 import { configureEduroam, type EduroamConfigOutcome } from '../../mobile/configureEduroam';
 import { canConfigureEduroamNatively, nativeEduroamDeps } from '../../mobile/eduroamNative';
-import { deliverEduroamFile } from './eduroamFileDelivery';
+import { deliverEduroamFile, openProfilesSettings } from './eduroamFileDelivery';
+import { statusAfterNativeOutcome } from './eduroamOutcomeStatus';
 import { certExpiry, NO_EXPIRY } from '../../services/eduroam/certValidity';
+import {
+  classifyNetworkFailure,
+  isDeviceOffline,
+  type NetworkFailure,
+} from '../../services/eduroam/networkFailure';
 import { logError } from '../../utils/reportError';
 import { trackFeatureSignal } from '../../api/featureUsage';
 
@@ -21,10 +27,6 @@ export type EduroamStatus = 'idle' | 'working' | 'done' | 'error' | 'expired';
 export type EduroamTarget = 'mac' | 'ios' | 'android' | 'windows';
 
 export const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.userAgent);
-
-// macOS deep link straight to the Profiles / Device Management pane.
-const PROFILES_SETTINGS_URL =
-  'x-apple.systempreferences:com.apple.preferences.configurationprofiles';
 
 /**
  * @param autoSelectTarget When provided (the eduroam sheet's platform, resolved
@@ -42,76 +44,82 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
   const [outcome, setOutcome] = useState<EduroamConfigOutcome | null>(null);
   /** Where IS's certificate stands; see `CertExpiry`. Either half offers `renew`. */
   const [expiry, setExpiry] = useState(NO_EXPIRY);
+  /** Set with status `error` when the network, not IS, is why it failed. */
+  const [networkFailure, setNetworkFailure] = useState<NetworkFailure | null>(null);
+
+  const clearResult = useCallback(() => {
+    setError(null);
+    setNetworkFailure(null);
+    setExpiry(NO_EXPIRY);
+    setPassword(null);
+    setOutcome(null);
+  }, []);
+
+  const fail = useCallback((context: string, e: unknown) => {
+    logError(context, e);
+    setError((e as Error).message);
+    setNetworkFailure(classifyNetworkFailure(e));
+    setStatus('error');
+  }, []);
 
   // The .p12 password is NEVER embedded: the macOS path prompts at install, and
   // the iOS transfer path must keep the profile from being a standalone credential.
-  const run = useCallback(async (t: EduroamTarget) => {
-    setStatus('working');
-    setError(null);
-    setPassword(null);
-    setOutcome(null);
-    setExpiry(NO_EXPIRY);
-    try {
-      const material = await fetchEduroamCertMaterial();
-      const { password: extractionPw } = material;
+  const run = useCallback(
+    async (t: EduroamTarget) => {
+      setStatus('working');
+      clearResult();
+      try {
+        // Off Wi‑Fi is fine — mobile data reaches IS. No connection at all is
+        // not, and asking anyway only waits for a raw OS error.
+        if (isDeviceOffline()) throw new Error('eduroam: the device is offline');
+        const material = await fetchEduroamCertMaterial();
+        const { password: extractionPw } = material;
 
-      // IS keeps offering an expired certificate and never replaces it by
-      // itself. Installing it gives a network that cannot authenticate, so
-      // stop here on every target and let the student ask for a new one.
-      const nextExpiry = certExpiry(material.expiresAt, Date.now());
-      setExpiry(nextExpiry);
-      if (nextExpiry.expiredAt) {
-        setStatus('expired');
-        return;
-      }
+        // IS keeps offering an expired certificate and never replaces it by
+        // itself. Installing it gives a network that cannot authenticate, so
+        // stop here on every target and let the student ask for a new one.
+        const nextExpiry = certExpiry(material.expiresAt, Date.now());
+        setExpiry(nextExpiry);
+        if (nextExpiry.expiredAt) {
+          setStatus('expired');
+          return;
+        }
 
-      // On the phone itself the OS configures eduroam directly — no profile
-      // file and nothing to hand over. Everything below this branch runs on the
-      // machine reIS is open on.
-      if (canConfigureEduroamNatively(t)) {
-        const result = await configureEduroam(material, nativeEduroamDeps);
-        setOutcome(result);
-        // Only `saved` is a setup that finished. `already-configured` applied
-        // nothing — the network was there before reIS was asked — and counting
-        // it would report students as newly set up who were already on
-        // eduroam. `cancelled`, `failed` and `stale-association` installed
-        // nothing at all. The file paths below get their own signal, because a
-        // delivered profile still needs the student to install it.
-        if (result === 'saved') void trackFeatureSignal('eduroam_wifi_configured');
+        // On the phone itself the OS configures eduroam directly — no profile
+        // file and nothing to hand over. Everything below this branch runs on the
+        // machine reIS is open on.
+        if (canConfigureEduroamNatively(t)) {
+          const result = await configureEduroam(material, nativeEduroamDeps);
+          setOutcome(result);
+          // Only `saved` is a setup that finished. `already-configured` applied
+          // nothing — the network was there before reIS was asked — and counting
+          // it would report students as newly set up who were already on
+          // eduroam. `cancelled`, `failed` and `stale-association` installed
+          // nothing at all. The file paths below get their own signal, because a
+          // delivered profile still needs the student to install it.
+          if (result === 'saved') void trackFeatureSignal('eduroam_wifi_configured');
+          setPassword(extractionPw);
+          setStatus(statusAfterNativeOutcome(result));
+          return;
+        }
+
+        // A phone that reached here has no native path, and there is no longer a
+        // desktop→phone transfer to fall back to. Fail loudly rather than hand it
+        // a file meant for a laptop: before this guard, an Android phone whose
+        // plugin was unavailable silently downloaded an Apple .mobileconfig.
+        if (t === 'ios' || t === 'android') {
+          throw new Error('eduroam on a phone is set up by the reIS app, not from a browser');
+        }
+
+        await deliverEduroamFile(t, material);
         setPassword(extractionPw);
-        // Dismissing Android's dialog is a choice, not a fault: go back to idle
-        // so the button is simply offered again, with no error banner.
-        // `stale-association` and `renewal-blocked` join `failed` in the error
-        // state (#261): iOS installed nothing, so they must not land on the
-        // done branch — that is the bug. The copy differs, driven off
-        // `outcome`, not off status.
-        setStatus(
-          result === 'cancelled'
-            ? 'idle'
-            : result === 'failed' || result === 'stale-association' || result === 'renewal-blocked'
-              ? 'error'
-              : 'done'
-        );
-        return;
+        setStatus('done');
+      } catch (e) {
+        fail('useEduroamSetup.run', e);
       }
-
-      // A phone that reached here has no native path, and there is no longer a
-      // desktop→phone transfer to fall back to. Fail loudly rather than hand it
-      // a file meant for a laptop: before this guard, an Android phone whose
-      // plugin was unavailable silently downloaded an Apple .mobileconfig.
-      if (t === 'ios' || t === 'android') {
-        throw new Error('eduroam on a phone is set up by the reIS app, not from a browser');
-      }
-
-      await deliverEduroamFile(t, material);
-      setPassword(extractionPw);
-      setStatus('done');
-    } catch (e) {
-      logError('useEduroamSetup.run', e);
-      setError((e as Error).message);
-      setStatus('error');
-    }
-  }, []);
+    },
+    [clearResult, fail]
+  );
 
   /**
    * The student's "generate a new certificate" tap — offered once the current
@@ -122,44 +130,41 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
     async (t: EduroamTarget) => {
       setStatus('working');
       setError(null);
+      setNetworkFailure(null);
       setExpiry(NO_EXPIRY);
       try {
+        if (isDeviceOffline()) throw new Error('eduroam: the device is offline');
         await regenerateEduroamCert();
       } catch (e) {
-        logError('useEduroamSetup.renew', e);
-        setError((e as Error).message);
-        setStatus('error');
+        fail('useEduroamSetup.renew', e);
         return;
       }
       await run(t);
     },
-    [run]
+    [run, fail]
   );
 
-  const selectTarget = useCallback((t: EduroamTarget) => {
-    setTarget(t);
-    setStatus('idle');
-    setError(null);
-    setExpiry(NO_EXPIRY);
-    setPassword(null);
-    setOutcome(null);
-    // Prefetch the extraction password so the chip can show it before Download.
-    // Only populates when a cert already exists; first-time users get it from
-    // run(). Never overwrites a value run() may have already set.
-    void fetchEduroamPassword()
-      .then((pw) => {
-        if (pw) setPassword((prev) => prev ?? pw);
-      })
-      .catch((e) => logError('useEduroamSetup.prefetchPassword', e));
-  }, []);
+  const selectTarget = useCallback(
+    (t: EduroamTarget) => {
+      setTarget(t);
+      setStatus('idle');
+      clearResult();
+      // Prefetch the extraction password so the chip can show it before Download.
+      // Only populates when a cert already exists; first-time users get it from
+      // run(). Never overwrites a value run() may have already set.
+      void fetchEduroamPassword()
+        .then((pw) => {
+          if (pw) setPassword((prev) => prev ?? pw);
+        })
+        .catch((e) => logError('useEduroamSetup.prefetchPassword', e));
+    },
+    [clearResult]
+  );
 
   const reset = useCallback(() => {
     setStatus('idle');
-    setError(null);
-    setExpiry(NO_EXPIRY);
-    setPassword(null);
-    setOutcome(null);
-  }, []);
+    clearResult();
+  }, [clearResult]);
 
   // Fires selectTarget exactly once, only when a caller (the sheet) hands us a
   // pre-resolved target. The desktop drawer never passes autoSelectTarget, so
@@ -172,21 +177,13 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
     }
   }, [autoSelectTarget, selectTarget]);
 
-  // Custom-scheme link: hand off to the OS without navigating the iframe.
-  const openProfilesSettings = useCallback(() => {
-    const a = document.createElement('a');
-    a.href = PROFILES_SETTINGS_URL;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }, []);
-
   return {
     status,
     target,
     selectTarget,
     password,
     error,
+    networkFailure,
     outcome,
     ...expiry,
     run,

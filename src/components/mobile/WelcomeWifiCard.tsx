@@ -5,6 +5,7 @@ import { formatDate } from '../../utils/date';
 import type { EduroamStatus } from '../../hooks/data/useEduroamSetup';
 import { isEduroamConfigured, type EduroamConfigOutcome } from '../../mobile/configureEduroam';
 import type { NativeEduroamTarget } from '../../mobile/eduroamNative';
+import type { NetworkFailure } from '../../services/eduroam/networkFailure';
 
 export interface WelcomeWifiCardProps {
   status: EduroamStatus;
@@ -12,6 +13,10 @@ export interface WelcomeWifiCardProps {
   target: NativeEduroamTarget;
   /** Set with status `expired`; the button then generates a new certificate. */
   expiredAt?: Date | null;
+  /** With status `error`: no connection, rather than a setup that failed. */
+  networkFailure?: NetworkFailure | null;
+  /** The device has no connection right now (live, not from a tap). */
+  offline?: boolean;
   onSetup: () => void;
 }
 
@@ -33,15 +38,25 @@ export function WelcomeWifiCard({
   outcome,
   target,
   expiredAt = null,
+  networkFailure = null,
+  offline = false,
   onSetup,
 }: WelcomeWifiCardProps) {
   const { t } = useTranslation();
   const reduced = useReducedMotion();
   const working = status === 'working';
   const done = status === 'done' && isEduroamConfigured(outcome);
+  // A tap that found the device offline stops being true once the connection
+  // is back: the card offers the setup again instead of a failure.
+  const lapsed = networkFailure === 'offline' && !offline;
   // Any error lands here — a genuine `failed` from the OS, or a throw before
   // the OS was reached (lapsed session, cert fetch). One line either way.
-  const failed = status === 'error';
+  const failed = status === 'error' && !lapsed;
+  // Said before any tap: a student opening reIS without a connection should
+  // not have to fail once to find out. Never over a finished setup, nor over
+  // a tap in flight, whose spinner is already the message.
+  const offlineNow = offline && !done && !working;
+  const failure = offlineNow ? 'offline' : failed ? networkFailure : null;
   // IS's certificate expired. Nothing failed; the one button now generates a
   // new one (the screen wires `onSetup` to `renew`).
   const expired = status === 'expired' && expiredAt !== null;
@@ -51,17 +66,22 @@ export function WelcomeWifiCard({
   // installed — and the student cannot get past it without forgetting the
   // network, so this line names that step instead of blaming the setup.
   const stale = outcome === 'stale-association';
+  // Offline is not a failed setup either: the way on is getting online, and
+  // mobile data is enough. It takes the warning tint, not the error one.
+  const caution = stale || failure !== null;
 
   const line = done
     ? t('mobile.welcome.wifiDone')
-    : stale
-      ? t('eduroam.native.staleAssociation')
-      : // iOS kept the old certificate because the device is on eduroam.
-        outcome === 'renewal-blocked'
-        ? t('eduroam.native.renewalBlocked')
-        : failed
-          ? t('mobile.welcome.wifiFailed')
-          : t('mobile.welcome.wifiLine');
+    : failure
+      ? t(`eduroam.network.${failure}`)
+      : stale
+        ? t('eduroam.native.staleAssociation')
+        : // iOS kept the old certificate because the device is on eduroam.
+          outcome === 'renewal-blocked'
+          ? t('eduroam.native.renewalBlocked')
+          : failed
+            ? t('mobile.welcome.wifiFailed')
+            : t('mobile.welcome.wifiLine');
 
   return (
     // A centred card on the phone. Inside the tablet dialog it is already on a
@@ -82,7 +102,7 @@ export function WelcomeWifiCard({
           // fixable by weight at this size — whereas a 56pt glyph only owes
           // the 3:1 that non-text graphics owe, and clears it. The words say
           // "Nepovedlo se" regardless; the red is not carrying the meaning.
-          stale
+          caution
             ? 'bg-warning/15 text-warning'
             : failed
               ? 'bg-error/15 text-error'
@@ -108,12 +128,14 @@ export function WelcomeWifiCard({
           because it only ever appears when the button is gone. */}
       <div className="contents md:flex md:flex-1 md:flex-col md:items-start md:gap-1">
         <p className="text-base font-medium text-base-content md:text-lg md:font-semibold md:tracking-tight">
-          {expired ? t('eduroam.expired.text', { date: formatDate(expiredAt) }) : line}
+          {expired && !offlineNow
+            ? t('eduroam.expired.text', { date: formatDate(expiredAt) })
+            : line}
         </p>
 
         {/* What the tap does, while it is still on offer. Gone once done: the
             done line already says everything that is left to say. */}
-        {!done && !failed && !expired && (
+        {!done && !failed && !expired && !offlineNow && (
           <p className="text-sm text-base-content/70">{t('mobile.welcome.wifiBody')}</p>
         )}
 
@@ -153,7 +175,7 @@ export function WelcomeWifiCard({
           // to), and not `btn-outline btn-primary` (the project's soft-button
           // rule fills `.btn-primary` regardless of the modifier).
           className={`btn w-full gap-2 md:w-auto md:shrink-0 md:px-8 ${
-            failed ? 'btn-ghost border border-base-content/20' : 'btn-primary'
+            failed || offlineNow ? 'btn-ghost border border-base-content/20' : 'btn-primary'
           }`}
         >
           {working && <span className="loading loading-spinner loading-xs" />}

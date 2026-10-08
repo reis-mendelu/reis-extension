@@ -1,6 +1,7 @@
 import type { AppSlice } from '../types';
 import { fetchUsageStats, type UsageStats } from '../../api/usageStats';
 import { fetchFeatureStats, type FeatureStats } from '../../api/featureStats';
+import { fetchUsageRetention, type UsageRetention } from '../../api/usageRetention';
 
 const WINDOW_DAYS = 30;
 
@@ -26,6 +27,8 @@ export interface AdminStatsSlice {
    * the two come from different RPCs.
    */
   adminFeatureStats: FeatureStats | null;
+  /** How many regulars went quiet — its own RPC, like the feature stats above. */
+  adminRetention: UsageRetention | null;
   loadAdminStats: () => Promise<void>;
   selectAdminStatsDay: (day: string | null) => Promise<void>;
 }
@@ -65,14 +68,22 @@ async function loadFeatures(set: Set): Promise<void> {
   if (stats) set({ adminFeatureStats: stats });
 }
 
+/** Same contract as `loadFeatures`: independent, and a failure keeps what is shown. */
+async function loadRetention(set: Set): Promise<void> {
+  const retention = await fetchUsageRetention();
+  if (retention) set({ adminRetention: retention });
+}
+
 export const createAdminStatsSlice: AppSlice<AdminStatsSlice> = (set, get) => ({
   adminStats: null,
   adminStatsLoading: false,
   adminStatsDay: null,
   adminStatsRequestId: 0,
   adminFeatureStats: null,
+  adminRetention: null,
   loadAdminStats: () => {
     void loadFeatures(set);
+    void loadRetention(set);
     return load(set, get, get().adminStatsDay);
   },
   selectAdminStatsDay: (day) => load(set, get, day),
