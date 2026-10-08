@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: 28 September 2026**
+**Last Updated: 8 October 2026**
 
 reIS is a student-built project that simplifies the Mendel University in Brno
 Information System (IS Mendelu). It is a browser extension (Chrome, Edge,
@@ -39,6 +39,7 @@ yourself — see *Report attachments* below.
 | Map used for 3 seconds | at most once a day, after three seconds on the map | the random install identifier and the fixed `map_dwell_3s` label |
 | eduroam network configured | the app itself saves the eduroam network (phone) | the random install identifier and the fixed `eduroam_wifi_configured` label |
 | eduroam profile handed over | a profile is prepared for you to install (Mac, Windows) | the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it |
+| Google Calendar sync | only if you turn it on, then whenever you open reIS and your timetable changed | your lessons, exams and own events, sent **from your phone straight to your own Google Calendar** ("Rozvrh"). reIS servers never see them. reIS can only change the calendar it created, and reads the list of your calendars only to find it |
 <!-- END generated:flows -->
 
 In the Firefox extension each of these is optional and Firefox asks you for it:
@@ -61,13 +62,23 @@ given by adding them; withdraw it by writing to us and we delete them.*
 ## Who else reIS talks to
 
 **IS Mendelu** receives your academic data, authenticated as you — it is the
-university's own system and the only recipient of it. **jsDelivr** serves public
+university's own system. **Google**, only if you turn on Google Calendar sync in
+the app: your lessons, exams and own events go from your phone into a "Rozvrh"
+calendar in your own Google account, under Google's privacy policy; reIS's
+servers are not in that path. **jsDelivr** serves public
 course-difficulty statistics; no identifier is sent, though the set of subjects
 requested does reveal which courses you take. **Supabase** hosts reIS's own
 database — infrastructure, not a recipient doing anything of its own.
 
 We do **not** sell or trade your personal information, and transfer it to no one
 else.
+
+reIS's use of information received from Google APIs adheres to the
+[Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy),
+including the Limited Use requirements. reIS uses Google Calendar access only to
+write your timetable into the calendar it created, and finds that calendar by
+reading your calendar list. It does not read your other events, and no Google
+data is sent to reIS or anyone else.
 
 ## Permissions
 
@@ -89,6 +100,8 @@ either.
 ## Your control
 
 Sign out to delete the token and cookies. Uninstall to delete everything local.
+Turn off Google Calendar sync in Profil to revoke reIS's access; you choose there
+whether the "Rozvrh" calendar is deleted or stays in your Google account.
 For feedback you sent, and anything attached to it, write to the address below
 and we will delete it; the daily-count rows hold nothing that identifies you.
 

@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: September 25, 2026**
+**Last Updated: October 8, 2026**
 
 ## Introduction
 reIS ("we", "our", or "us") is a Chrome extension designed to modernize and enhance the user experience of the Mendel University Information System (IS Mendelu). We are committed to protecting your privacy and ensuring the security of your data.
@@ -56,7 +56,7 @@ Firefox asks you directly about everything above. Nothing is **required** to use
 
 ## Third-Party Access
 
-reIS contacts the following services. **IS Mendelu is the only one that receives your academic data**, and only because it is the university's own system. No other service on this list receives it, under any feature. The two that once did — Anthropic, for the Erasmus syllabus comparison, and Microsoft Bookings, for library study-room booking — were removed in September 2026 along with both features. jsDelivr receives no identifier, but the set of subjects requested does reveal which courses you are enrolled in.
+reIS contacts the following services. **IS Mendelu is the only one that receives your academic data**, and only because it is the university's own system, with one exception you switch on yourself: in the phone and iPad app, Google Calendar sync (item 7). No other service on this list receives it, under any feature. The two that once did — Anthropic, for the Erasmus syllabus comparison, and Microsoft Bookings, for library study-room booking — were removed in September 2026 along with both features. jsDelivr receives no identifier, but the set of subjects requested does reveal which courses you are enrolled in.
 
 **Always:**
 1. **IS Mendelu** (`is.mendelu.cz`) — fetches your academic data, authenticated by you.
@@ -67,6 +67,9 @@ reIS contacts the following services. **IS Mendelu is the only one that receives
 **Only when you use the relevant feature:**
 5. **Erasmus HEI directory** (`hei.api.uni-foundation.eu`) — a public list of partner universities. Nothing about you is sent.
 6. **Photon** (`photon.komoot.io`) — venue search, used only by student-society administrators when creating an event.
+7. **Google Calendar** (`www.googleapis.com`) — phone and iPad app only, and only if you turn on Google Calendar sync in Profil. Your lessons, exams and own events are written from your phone straight into a "Rozvrh" calendar in your own Google account; reIS's servers are not in that path. reIS reads your calendar list only to find that calendar, and cannot see or change your other calendars. Turning the sync off revokes reIS's access and lets you choose whether "Rozvrh" is deleted or kept.
+
+reIS's use of information received from Google APIs adheres to the [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including the Limited Use requirements. reIS uses Google Calendar access only to write your timetable into the calendar it created, and finds that calendar by reading your calendar list. It does not read your other events, and no Google data is sent to reIS or anyone else.
 
 **Links you open yourself** (Teams, Outlook, geteduroam, society websites and Instagram profiles) are handed to your browser or the relevant app. reIS makes no background request to them.
 

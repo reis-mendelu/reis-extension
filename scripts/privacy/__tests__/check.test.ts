@@ -74,6 +74,29 @@ describe('checkDisclosures', () => {
     expect(checkDisclosures(s, model).join('\n')).toMatch(/orphan\.ts/);
   });
 
+  it('2. a third-party flow is not a Supabase caller and needs no calls', () => {
+    const m: Model = {
+      ...model,
+      flows: [
+        ...model.flows,
+        {
+          id: 'google_calendar_sync',
+          via: { kind: 'third-party', host: 'www.googleapis.com' },
+          what: 'x',
+          when: 'background',
+          identifier: 'none',
+          files: ['src/mobile/googleCalendar/calendarApi.ts'],
+          calls: [],
+          policyRows: [['Google Calendar sync', 'if on', 'own calendar']],
+          stores: { apple: [], play: [], firefox: [], cws: [] },
+        },
+      ],
+    };
+    const s = clean();
+    s.policyMd = `# Policy\n\n${BEGIN}\n${renderPolicyTable(m.flows)}\n${END}\n`;
+    expect(checkDisclosures(s, m)).toEqual([]);
+  });
+
   it('2. flags a flow file the privacy guard does not allow', () => {
     const s = clean();
     s.supabaseCallers = [];

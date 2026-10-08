@@ -171,9 +171,13 @@ const ALLOWED_HOSTS = [
   'hei.api.uni-foundation.eu', // public Erasmus university directory (read-only)
 
   // --- fetched from, carrying student data. Each must stay disclosed. ---
+  'googleapis.com', // Google Calendar sync: the student's lessons, exams and own
+  // events, written from the phone straight into their own Google calendar.
+  // Phone only, opt-in; privacy/disclosures.ts google_calendar_sync.
 
   // --- deep links the STUDENT opens; no background request is made ---
-  'google.com', // maps links, Play Store, Chrome Web Store, a society's Apps Script
+  'google.com', // maps links, Play Store, Chrome Web Store, a society's Apps Script,
+  // "Otevřít v Google Kalendáři" (calendar.google.com)
   'teams.microsoft.com',
   'outlook.office.com',
   'www.geteduroam.app',
