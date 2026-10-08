@@ -9,6 +9,7 @@ interface SpolkyEventRow {
   association_id: string;
   title: string;
   category: string;
+  emoji?: string | null;
   date: string;
   end_date: string | null;
   time: string | null;
@@ -49,6 +50,8 @@ export function toMapEvent(row: SpolkyEventRow, societies: Record<string, Societ
     roomCode: row.room_code,
     venueKind: row.venue_kind as MapEvent['venueKind'],
     category: row.category as EventCategory,
+    // Absent before the column existed; none either way.
+    emoji: row.emoji ?? null,
     // Null on a row written before the column existed, and on anything the
     // select happens not to return: open, which is what those rows have always
     // been. `visibleToStudent` is the only thing that reads this.

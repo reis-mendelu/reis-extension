@@ -6,6 +6,7 @@ const input: PostInput = {
   title: 'Deskovky',
   body: 'Hry máme.',
   category: 'boardgames',
+  emoji: '1f3b2',
   date: '2026-07-08',
   time: '18:00',
   venueKind: 'offcampus',
@@ -18,11 +19,15 @@ const input: PostInput = {
 };
 
 describe('toPatch', () => {
+  it('writes the emoji, so an edit can change the picture', () =>
+    expect(toPatch({ ...input, emoji: '26f8' }).emoji).toBe('26f8'));
+
   it('maps every field the composer edits to its column', () => {
     expect(toPatch(input)).toEqual({
       title: 'Deskovky',
       body: 'Hry máme.',
       category: 'boardgames',
+      emoji: '1f3b2',
       date: '2026-07-08',
       end_date: null,
       time: '18:00',

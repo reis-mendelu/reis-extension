@@ -73,6 +73,7 @@ describe('toMapEvent', () => {
       roomCode: 'Q01',
       venueKind: 'campus',
       category: 'quiz',
+      emoji: null,
       // Absent on the row: a society that did not restrict the event, and
       // every row written before the column existed.
       subscribersOnly: false,
@@ -112,6 +113,7 @@ describe('toMapEvent', () => {
       roomCode: null,
       venueKind: 'offcampus',
       category: 'party',
+      emoji: null,
       // Absent on the row: a society that did not restrict the event, and
       // every row written before the column existed.
       subscribersOnly: false,
@@ -240,5 +242,14 @@ describe('fetchMapEvents — the catalog', () => {
     vi.mocked(supabase.from).mockReturnValue({ select: () => ({ or, order }) } as never);
     const events = await fetchMapEvents(BUNDLED_SOCIETIES);
     expect(events?.map((e) => e.id)).toEqual(['live', 'future']);
+  });
+});
+
+describe('toMapEvent emoji', () => {
+  it('carries the row emoji', () =>
+    expect(toMapEvent({ ...base, emoji: '26f8' }, {}).emoji).toBe('26f8'));
+  it('reads a missing column as none', () => {
+    const { emoji: _drop, ...row } = { ...base, emoji: undefined };
+    expect(toMapEvent(row, {}).emoji).toBeNull();
   });
 });

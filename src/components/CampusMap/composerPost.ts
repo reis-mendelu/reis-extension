@@ -43,6 +43,7 @@ export function toPatch(input: PostInput) {
     title: input.title,
     body: input.body,
     category: input.category,
+    emoji: input.emoji ?? null,
     date: input.date,
     end_date: input.endDate ?? null,
     time: input.time ?? null,
