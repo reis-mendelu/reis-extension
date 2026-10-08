@@ -2,23 +2,20 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** A phone/iPad student turns on one row in the profile sheet. From then on, reIS keeps a "Rozvrh" calendar in their own Google account up to date (lessons, exams and custom events), including from the background, with no reIS server involved.
+**Goal:** A phone/iPad student turns on one row in the profile sheet. From then on, reIS keeps a "Rozvrh" calendar in their own Google account up to date (lessons, exams and custom events) **whenever reIS is open**, with no reIS server involved. Background sync is phase 2 and not in this plan (spec, "Phase 2").
 
 **Architecture:**
-- **TypeScript does the full sync whenever the app runs:**
+- **TypeScript does the whole sync, only while the app runs:**
   - pure modules: normalize, map, plan;
   - a small REST client over `fetch`;
   - a runner, triggered by a store subscription installed only from `capacitor/startApp.ts`.
-- **Native code does lessons-only background syncs:**
-  - Android: a `JobService`;
-  - iOS: a `BGAppRefreshTask`.
-- **Google's own SDKs hold the grant on each OS:** `AuthorizationClient` on Android, GoogleSignIn-iOS on iOS. reIS code only ever asks them for a 1-hour access token.
-- **One JSON fixture keeps the three lesson mappings byte-identical:** TypeScript, Java and Swift all assert it.
+- **Native code only signs in:** a small plugin per OS. Google's own SDKs hold the grant (`AuthorizationClient` on Android, GoogleSignIn-iOS on iOS); reIS code only ever asks them for a 1-hour access token.
+- **Golden fixtures pin the mapping and the planner** (`__fixtures__/*.json`), so a change to them is deliberate.
 
 **Tech stack:**
 - TypeScript, Vitest, Zustand (store slice);
-- Capacitor 8, Java and JobScheduler (Android), `play-services-auth` 22.0.0;
-- Swift, BackgroundTasks and GoogleSignIn-iOS 10.x (iOS);
+- Capacitor 8, Java (Android), `play-services-auth` 22.0.0;
+- Swift and GoogleSignIn-iOS 10.x (iOS);
 - Google Calendar API v3.
 
 **Spec:** `docs/superpowers/specs/2026-10-08-google-calendar-sync-design.md`. It is approved, and it says *why* for everything below. Read it first.
@@ -30,7 +27,7 @@
   - The extension gets nothing; record that in `src/test/guards/desktopHasNoGoogleCalendar.test.ts`.
 - **Scopes:** exactly `https://www.googleapis.com/auth/calendar.app.created`, `https://www.googleapis.com/auth/calendar.calendarlist.readonly` and `email`. GoogleSignIn-iOS also always requests `openid` and `profile`, both non-sensitive sign-in scopes; that's acceptable and must be listed on the Data access page too (Task 18).
 - **First fill is resumable:** the creating run persists `calendarId` plus `pastFillPending: true` immediately after `createCalendar`. Past events are included on every run until one completes with the flag set.
-- **Lessons are dual-language natively too:** the native job fetches CZ **and** EN and merges by `id + date + startTime`, exactly like `mergeDualLanguageLessons`. Otherwise its hashes differ from the app's and the two keep overwriting each other.
+- **Granted scopes are checked** (granular consent, spec fact 10): `connect` returns the granted scopes. Without `calendar.app.created` the sync is not enabled (`notice: 'scopeMissing'`). Without `calendarlist.readonly`, `connect` asks once more, then proceeds either way.
 - **No client secret, no Web client, no relay server.** Android uses an Android OAuth client (package + SHA-1); iOS uses an iOS OAuth client.
 - **Google project:** `reis-479320`, owner `reis.mendelu@gmail.com`. Never mention any personal Google account in code, commits or docs.
 - **Calendar:** name `Rozvrh`. Time zone `Europe/Prague`. The marker `reis:rozvrh:v1` goes in the calendar description.
@@ -41,11 +38,11 @@
   - the kind's source was confirmed this run (exams: `status === 'success' && data.length > 0`, where `data` is the subject list, which stays non-empty after deregistering);
   - **lessons only:** the desired list is non-empty, and deletes ≤ ⅓ of existing future lessons unless the previous run held back the same set. IS's failure-looks-like-empty problem is a timetable problem; a student deregistering from their last exam must disappear from Google.
 - **409 on insert** → `PUT` the same id with `status: "confirmed"`.
-- **Android background job:** a plain `JobService`. **Never WorkManager**: it loses the network after 5 s (spec, fact 3).
+- **No background work of any kind** in this plan: no JobService, no BGAppRefreshTask, no `UIBackgroundModes`, no native timetable fetch, no Java/Swift mapping ports. Nothing a student must enable in system settings.
 - **Logging:** errors via `logError('GoogleCalendar.<step>', err)`. Never `console.error` directly.
 - **Repo rules:** no `localStorage`; no `useEffect` data fetching; DaisyUI classes only; max ~200 lines per file; direct imports, no barrels; test first.
 - **Local checks:** `npx vitest run <pattern>` and `npm run typecheck`. Repo-wide lint, format and full test runs are left to CI (CLAUDE.md).
-- **Device tests:** signed **release** builds only (`npm run android:push`; the iPad via the `ipad-device` recipe). Sign in as `reis.mendelu@gmail.com`, which is a test user.
+- **Device tests:** signed **release** builds only (`npm run android:push`; the iPad via the `ipad-device` recipe). Sign in with a test-user account: `reis.mendelu@gmail.com`, or Dominik's own calendar account (added as a test user 2026-10-08, at his request; never name it in code, commits or docs).
 - **Branch:** this worktree's branch; the PR goes to `test`. Never push or merge without Dominik's say-so.
 
 ## File Structure
@@ -62,13 +59,12 @@
 | `src/mobile/googleCalendar/runSync.ts` | orchestrates one sync: token, calendar, per-kind plan and execute, state |
 | `src/mobile/googleCalendar/googleCalendarNative.ts` | `registerPlugin('GoogleCalendar')` and its TS interface |
 | `src/mobile/googleCalendar/installGoogleCalendarSync.ts` | store subscription, debounce, triggers |
-| `src/mobile/googleCalendar/__fixtures__/lessonEvents.json` | shared lesson-mapping fixture (TS, Java and Swift) |
-| `src/mobile/googleCalendar/__fixtures__/lessonPlans.json` | shared planner fixture (TS, Java and Swift) |
+| `src/mobile/googleCalendar/__fixtures__/lessonEvents.json` | golden lesson-mapping fixture |
+| `src/mobile/googleCalendar/__fixtures__/lessonPlans.json` | golden planner fixture |
 | `src/store/slices/createGoogleCalendarSlice.ts` | **state only** (status, lastSyncAt, progress, message), so the extension bundle stays clean |
 | `src/components/mobile/sheets/GoogleCalendarSheet.tsx` | the sheet: connect, status, disconnect choices |
-| `android/app/src/main/java/cz/reis/app/GoogleCalendarPlugin.java` | the Android plugin methods |
-| `android/app/src/main/java/cz/reis/app/gcal/*.java` | Java ports: `LessonMapper`, `LessonPlanner`, `CalendarHttp`, `IsTimetable`, `SecureStoreReader`, `SyncConfig`, `CalendarSyncJobService` |
-| `native/capacitor-google-calendar/**` | the iOS plugin, the Swift ports and the BG task |
+| `android/app/src/main/java/cz/reis/app/GoogleCalendarPlugin.java` | the Android plugin: sign-in and token only |
+| `native/capacitor-google-calendar/**` | the iOS plugin: sign-in and token only |
 | `src/test/guards/desktopHasNoGoogleCalendar.test.ts` | tree-parity guard |
 
 ---
@@ -150,31 +146,12 @@ git add docs/superpowers/specs/2026-10-08-google-calendar-sync-design.md
 git commit -m "docs(spec): calendar.app.created is scoped per <project|client> — measured"
 ```
 
-### Task 2: iOS spike on the cabled iPad (throwaway)
+### Task 2: iOS spike on the cabled iPad (throwaway) — done 2026-10-08
 
-**Why:** three things only the device can answer:
-- does GoogleSignIn refresh silently inside `BGAppRefreshTask`;
-- can `AppDelegate` import a local plugin module, which BG task registration needs;
-- does GoogleSignIn work in the Mac "Designed for iPad" build.
-
-**Files:** a throwaway branch `spike/ios-gcal` cut from this branch; nothing merged.
-
-- [ ] **Step 1: Create the iOS OAuth client** (keep it; it's the real one). Console → Clients → Create client → **iOS**, bundle id `cz.reis.app`, name `reIS iOS`. Note the client id and the reversed client id; both are identifiers, not secrets.
-- [ ] **Step 2: Add GoogleSignIn-iOS** to a throwaway copy of `native/capacitor-google-calendar` (Task 15's skeleton is fine). Then:
-  - `connect()` calls `GIDSignIn.sharedInstance.signIn(withPresenting:hint:additionalScopes:)` with the three scopes;
-  - `AppDelegate.didFinishLaunching` calls `BGTaskScheduler.shared.register(forTaskWithIdentifier: "cz.reis.app.calendar-sync", ...)`;
-  - the handler does `restorePreviousSignIn` → `refreshTokensIfNeeded` → `GET calendarList` and writes the HTTP status to `UserDefaults` key `spike.bg.result`.
-- [ ] **Step 3: Install a release build** on the iPad (`ipad-device` recipe) and connect as `reis.mendelu`.
-- [ ] **Step 4: Fire the task from the debugger:** pause in Xcode and run `e -l objc -- (void)[[BGTaskScheduler sharedScheduler] _simulateLaunchForTaskWithIdentifier:@"cz.reis.app.calendar-sync"]`, then continue. Read `spike.bg.result` on the next foreground.
-  **Pass:** `200`.
-- [ ] **Step 5: Run the Mac build from Xcode** ("My Mac (Designed for iPad)") and try `connect()`. Record whether it works.
-- [ ] **Step 6: Record all three results in the spec, then delete the spike branch.** If the Mac fails, Task 15 hides the row when `ProcessInfo.isiOSAppOnMac`; there's an existing helper pattern in `src/mobile/eduroamNative.ts`.
-
-```bash
-git checkout claude/pensive-antonelli-93fc92
-git branch -D spike/ios-gcal
-git commit -am "docs(spec): iOS BG token refresh / AppDelegate import / Mac — measured"
-```
+Results are in the spec, fact 10. Branch `spike/ios-gcal` (never merged; delete it after
+Task 15 lands). The iOS client "reIS iOS" exists and is kept. Background refresh was not
+measured because v1 dropped background sync. The Mac ("Designed for iPad") check moved to
+Task 15, Step 3.
 
 ---
 
@@ -387,8 +364,7 @@ export function pragueToday(now: Date = new Date()): string {
 
 /**
  * The window reIS holds lessons for. MUST stay identical to
- * `src/services/sync/syncSchedule.ts` and `src/injector/dataFetchers.ts`,
- * and to the Java/Swift ports (`IsTimetable`).
+ * `src/services/sync/syncSchedule.ts` and `src/injector/dataFetchers.ts`.
  */
 export function academicWindow(now: Date = new Date()): { start: Date; end: Date } {
   const y = now.getFullYear();
@@ -407,8 +383,8 @@ import type { ExamSubject } from '../../types/exams';
 import type { AppLanguage, NormalizedEvent } from './types';
 
 /**
- * Fixed strings, NOT i18n JSON: the Java and Swift background jobs must
- * produce byte-identical titles, and they cannot read the locale files.
+ * Fixed strings, NOT i18n JSON: a translation tweak must not silently change
+ * every event hash and rewrite every future event in Google.
  */
 export const LABELS = {
   cz: { lecture: 'přednáška', seminar: 'cvičení', exam: 'Zkouška' },
@@ -496,7 +472,7 @@ git add src/mobile/googleCalendar
 git commit -m "feat(gcal): normalize lessons, exams and custom events for Google Calendar"
 ```
 
-### Task 4: Event identity, mapping and the shared lesson fixture
+### Task 4: Event identity, mapping and the golden lesson fixture
 
 **Files:**
 - Create: `src/mobile/googleCalendar/eventIdentity.ts`, `src/mobile/googleCalendar/toGoogleEvent.ts`, `src/mobile/googleCalendar/__fixtures__/lessonEvents.json`
@@ -564,9 +540,8 @@ import { toDesired } from '../toGoogleEvent';
 import type { BlockLesson } from '../../../types/calendarTypes';
 
 /**
- * THE contract with the Java (LessonMapperTest) and Swift (LessonMapperTests)
- * ports. If this file changes, all three must change together, or phone and
- * iPad will keep overwriting each other's events.
+ * Golden output of the mapping. A change here changes every hash, so every
+ * future event is rewritten once on each student's next sync. Make it on purpose.
  * Regenerate deliberately: UPDATE_GCAL_FIXTURES=1 npx vitest run lessonFixture
  */
 const PATH = resolve(__dirname, '../__fixtures__/lessonEvents.json');
@@ -598,7 +573,7 @@ async function compute(c: Omit<Case, 'expected'>): Promise<Case> {
   return { ...c, expected: { id: d.id, hash: d.hash, body: d.body } };
 }
 
-describe('shared lesson fixture', () => {
+describe('golden lesson fixture', () => {
   it('TS mapping equals the frozen fixture', async () => {
     const computed = await Promise.all(INPUTS.map(compute));
     if (process.env.UPDATE_GCAL_FIXTURES) writeFileSync(PATH, JSON.stringify(computed, null, 2) + '\n');
@@ -691,7 +666,7 @@ Expected: PASS. Inspect `__fixtures__/lessonEvents.json` by eye: titles read "Ek
 
 ```bash
 git add src/mobile/googleCalendar
-git commit -m "feat(gcal): deterministic event ids, content hash and the shared lesson fixture"
+git commit -m "feat(gcal): deterministic event ids, content hash and the golden lesson fixture"
 ```
 
 ### Task 5: The reconcile planner and its delete safeguards
@@ -724,7 +699,7 @@ export function planKind(input: PlanInput): Plan;
 export function deleteFingerprint(ids: string[]): string;
 ```
 
-- [ ] **Step 1: Write the failing test**, driven by the shared fixture. Java and Swift use the same file in Tasks 13 and 16.
+- [ ] **Step 1: Write the failing test**, driven by the golden fixture.
 
 `src/mobile/googleCalendar/__fixtures__/lessonPlans.json` (hand-written; it *is* the spec of the planner):
 
@@ -856,7 +831,7 @@ type Raw = {
 };
 const cases: Raw[] = JSON.parse(readFileSync(resolve(__dirname, '../__fixtures__/lessonPlans.json'), 'utf8'));
 
-describe('planKind (shared fixture)', () => {
+describe('planKind (golden fixture)', () => {
   it.each(cases.map((c) => [c.name, c] as const))('%s', (_n, c) => {
     const kind = c.input.kind as ReisKind;
     const desired = c.input.desired.map((d) => ({ ...d, kind, body: {} }) as unknown as DesiredEvent);
@@ -907,8 +882,7 @@ export function deleteFingerprint(ids: string[]): string {
 }
 
 /**
- * One kind, one run. Pure: same input, same plan, in TS, Java and Swift
- * (lessonPlans.json is the shared contract).
+ * One kind, one run. Pure: same input, same plan (lessonPlans.json pins it).
  *
  * Deletes are the dangerous half. Every kind needs a confirmed read. Lessons
  * also need a non-empty desired list and, past a third of the future, the
@@ -1023,6 +997,10 @@ describe('calendarApi', () => {
       { id: 'mine', description: `Rozvrh ${CALENDAR_MARKER}`, accessRole: 'owner' },
     ] } }]);
     expect(await a.findReisCalendar()).toBe('mine');
+  });
+  it('treats an unticked calendar list (403 insufficient scopes) as not found', async () => {
+    const { a } = api([{ status: 403, body: { error: { status: 'PERMISSION_DENIED', errors: [{ reason: 'insufficientPermissions' }] } } }]);
+    expect(await a.findReisCalendar()).toBeNull();
   });
   it('upsert falls back to PUT confirmed on 409', async () => {
     const { a, calls } = api([{ status: 409 }, { status: 200, body: {} }]);
@@ -1145,7 +1123,11 @@ export function createCalendarApi(deps: CalendarApiDeps) {
       let page: string | undefined;
       do {
         const q = `/users/me/calendarList?minAccessRole=owner&fields=items(id,description),nextPageToken${page ? `&pageToken=${enc(page)}` : ''}`;
-        const json = (await (await ok(await request('GET', q), 'calendarList')).json()) as {
+        const res = await request('GET', q);
+        // Granular consent: the student unticked the calendar list. Not a rate limit
+        // (those say rateLimitExceeded and are retried inside request), so create instead.
+        if (res.status === 403 && /insufficient/i.test(await res.clone().text())) return null;
+        const json = (await (await ok(res, 'calendarList')).json()) as {
           items?: { id: string; description?: string }[];
           nextPageToken?: string;
         };
@@ -1482,16 +1464,12 @@ git commit -m "feat(gcal): sync runner (create-or-reuse calendar, per-kind plans
 ```ts
 // googleCalendarNative.ts
 export interface GoogleCalendarNativePlugin {
-  isAvailable(): Promise<{ available: boolean }>; // Play Services present / not Mac-on-iPad (per Task 2)
-  connect(): Promise<{ email: string | null }>; // consent UI on first use
+  isAvailable(): Promise<{ available: boolean }>; // Play Services present / not Mac-on-iPad (per Task 15)
+  connect(): Promise<{ email: string | null; scopes: string[] }>; // consent UI; asks only for what's missing
   accessToken(): Promise<{ token: string }>; // silent; rejects 'REVOKED' when no grant
   invalidateToken(o: { token: string }): Promise<void>;
   disconnect(): Promise<void>; // revoke at Google + forget locally
   status(): Promise<{ connected: boolean; email: string | null }>;
-  configure(o: { enabled: boolean; calendarId: string | null; studentId: string; studium: string; obdobi: string; language: 'cz' | 'en' }): Promise<void>;
-  acquireLock(o: { owner: 'app' }): Promise<{ acquired: boolean }>;
-  releaseLock(o: { owner: 'app' }): Promise<void>;
-  takeBackgroundNotice(): Promise<{ notice: 'calendarGone' | 'revoked' | null }>; // set by the BG job
 }
 export const GoogleCalendarNative: GoogleCalendarNativePlugin; // registerPlugin('GoogleCalendar')
 
@@ -1504,7 +1482,7 @@ export interface GoogleCalendarSlice {
     syncing: boolean;
     progress: { done: number; total: number } | null;
     lastSyncAt: number | null;
-    notice: 'calendarGone' | 'revoked' | 'failed' | null;
+    notice: 'calendarGone' | 'revoked' | 'failed' | 'scopeMissing' | null;
   };
   setGcal: (patch: Partial<GoogleCalendarSlice['gcal']>) => void;
 }
@@ -1619,7 +1597,7 @@ export interface GoogleCalendarSlice {
     syncing: boolean;
     progress: { done: number; total: number } | null;
     lastSyncAt: number | null;
-    notice: 'calendarGone' | 'revoked' | 'failed' | null;
+    notice: 'calendarGone' | 'revoked' | 'failed' | 'scopeMissing' | null;
   };
   setGcal: (patch: Partial<GoogleCalendarSlice['gcal']>) => void;
 }
@@ -1635,23 +1613,15 @@ import { registerPlugin } from '@capacitor/core';
 /** One JS name, two native halves: GoogleCalendarPlugin.java and native/capacitor-google-calendar. */
 export interface GoogleCalendarNativePlugin {
   isAvailable(): Promise<{ available: boolean }>;
-  connect(): Promise<{ email: string | null }>;
+  connect(): Promise<{ email: string | null; scopes: string[] }>;
   accessToken(): Promise<{ token: string }>;
   invalidateToken(o: { token: string }): Promise<void>;
   disconnect(): Promise<void>;
   status(): Promise<{ connected: boolean; email: string | null }>;
-  configure(o: {
-    enabled: boolean;
-    calendarId: string | null;
-    studentId: string;
-    studium: string;
-    obdobi: string;
-    language: 'cz' | 'en';
-  }): Promise<void>;
-  acquireLock(o: { owner: 'app' }): Promise<{ acquired: boolean }>;
-  releaseLock(o: { owner: 'app' }): Promise<void>;
-  takeBackgroundNotice(): Promise<{ notice: 'calendarGone' | 'revoked' | null }>;
 }
+
+export const SCOPE_APP_CREATED = 'https://www.googleapis.com/auth/calendar.app.created';
+export const SCOPE_CALENDAR_LIST = 'https://www.googleapis.com/auth/calendar.calendarlist.readonly';
 
 export const GoogleCalendarNative = registerPlugin<GoogleCalendarNativePlugin>('GoogleCalendar');
 ```
@@ -1697,7 +1667,7 @@ git commit -m "feat(gcal): native plugin interface, state-only slice and persist
 - Test: `src/mobile/googleCalendar/__tests__/controller.test.ts`
 
 **Interfaces:**
-- Consumes: `runSync`, `createCalendarApi`, `GoogleCalendarNative`, `loadSyncState`/`saveSyncState`, `useAppStore` (`schedule`, `exams`, `customEvents`, `language`, `gcal`, `setGcal`), `getUserParams` (`src/utils/userParams.ts`), `isDemoMode` (`src/errors/demoMode.ts`)
+- Consumes: `runSync`, `createCalendarApi`, `GoogleCalendarNative` (+ the two scope constants), `loadSyncState`/`saveSyncState`, `useAppStore` (`schedule`, `exams`, `customEvents`, `language`, `gcal`, `setGcal`), `isDemoMode` (`src/errors/demoMode.ts`)
 - Produces:
 
 ```ts
@@ -1713,24 +1683,24 @@ export function installGoogleCalendarSync(): void; // startApp
 - **`installGoogleCalendarSync`:**
   1. `isAvailable()` → `setGcal({ available })`.
   2. Load the state, then `status()` → `setGcal({ connected, email })`.
-  3. `takeBackgroundNotice()` → if set, run the same handling as the outcomes below.
-  4. `useAppStore.subscribe` on `schedule.data`, `exams.data`, `customEvents` and `language`, debounced 3 s → `syncGoogleCalendarNow('change')`.
+  3. `useAppStore.subscribe` on `schedule.data`, `exams.data`, `customEvents` and `language`, debounced 3 s → `syncGoogleCalendarNow('change')`. Opening the app loads the schedule, so this is also the on-open trigger.
 - **`syncGoogleCalendarNow`:**
   1. Return early unless enabled, not demo mode, and the store's schedule status ≠ `loading`.
-  2. Compute `sourcesFingerprint`; on `'change'`, return if it equals the stored one.
-  3. `acquireLock({ owner: 'app' })`; return if not acquired.
-  4. `setGcal({ syncing: true })` → `runSync` → handle the outcome → `configure(...)` → `releaseLock` (in `finally`).
+  2. Return if a sync is already running (a module-level `running` flag; one JS process, no native job to race).
+  3. Compute `sourcesFingerprint`; on `'change'`, return if it equals the stored one **and** the last sync is under 6 h old. The 6 h re-run repairs edits made in Google (a deleted future lesson comes back) without a background job.
+  4. `setGcal({ syncing: true })` → `runSync` → handle the outcome; clear `running` in `finally`.
+- **`connectGoogleCalendar`:** `connect()`; if `scopes` lacks `SCOPE_APP_CREATED` → `setGcal({ notice: 'scopeMissing' })` and stop. If it lacks only `SCOPE_CALENDAR_LIST` → call `connect()` once more, then proceed whatever it returns (`findReisCalendar` treats a 403 as "not found").
 - **Confirmation flags:**
   - `lessonsConfirmed = schedule.status === 'success' && schedule.data.length > 0`;
   - `examsConfirmed = exams.status === 'success' && exams.data.length > 0` (subjects, not registrations).
 - **A held-back delete:** don't store `sourcesFingerprint` (store `null`), so the next trigger re-runs and can confirm it.
 - **Outcomes:**
-  - `calendarGone`: `clearSyncState`, `configure({ enabled: false, ... })`, `setGcal({ connected: false, notice: 'calendarGone' })`. The calendar is not recreated.
+  - `calendarGone`: `clearSyncState`, `setGcal({ connected: false, notice: 'calendarGone' })`. The calendar is not recreated.
   - `revoked`: the same, with `notice: 'revoked'`.
   - Thrown error: `logError('GoogleCalendar.sync', e)` and `setGcal({ notice: 'failed' })`. Keep the state; the next trigger retries.
 - **`disconnectGoogleCalendar({ deleteCalendar })`:**
   - If `deleteCalendar` and the state has a `calendarId`: `DELETE /calendars/{id}` via the API. The `remove` helper deletes events, so add `deleteCalendar(id)` to `calendarApi` with a test: `DELETE /calendars/{id}`, 404/410 = ok.
-  - Then `GoogleCalendarNative.disconnect()`, `clearSyncState()`, `configure({ enabled: false })`, `setGcal({ connected: false, email: null })`.
+  - Then `GoogleCalendarNative.disconnect()`, `clearSyncState()`, `setGcal({ connected: false, email: null })`.
 
 - [ ] **Step 1: Write the failing controller tests**, mocking `GoogleCalendarNative` with `vi.mock('../googleCalendarNative', ...)`. See the vitest-5 mock traps memory: mock at top level, never nested.
 
@@ -1739,17 +1709,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const native = {
   isAvailable: vi.fn(async () => ({ available: true })),
-  connect: vi.fn(async () => ({ email: 'reis.mendelu@gmail.com' })),
+  connect: vi.fn(async () => ({ email: 'reis.mendelu@gmail.com', scopes: [APP, LIST] })),
   accessToken: vi.fn(async () => ({ token: 'T' })),
   invalidateToken: vi.fn(async () => {}),
   disconnect: vi.fn(async () => {}),
   status: vi.fn(async () => ({ connected: true, email: 'reis.mendelu@gmail.com' })),
-  configure: vi.fn(async () => {}),
-  acquireLock: vi.fn(async () => ({ acquired: true })),
-  releaseLock: vi.fn(async () => {}),
-  takeBackgroundNotice: vi.fn(async () => ({ notice: null })),
 };
-vi.mock('../googleCalendarNative', () => ({ GoogleCalendarNative: native }));
+const APP = 'https://www.googleapis.com/auth/calendar.app.created';
+const LIST = 'https://www.googleapis.com/auth/calendar.calendarlist.readonly';
+vi.mock('../googleCalendarNative', () => ({ GoogleCalendarNative: native, SCOPE_APP_CREATED: APP, SCOPE_CALENDAR_LIST: LIST }));
 const runSyncMock = vi.fn();
 vi.mock('../runSync', () => ({ runSync: (...a: unknown[]) => runSyncMock(...a) }));
 
@@ -1770,15 +1738,29 @@ beforeEach(async () => {
 });
 
 describe('controller', () => {
-  it('connect enables, runs a sync and configures native', async () => {
+  it('connect enables and runs a sync', async () => {
     runSyncMock.mockResolvedValue({ kind: 'ok', written: 1, state: { calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false } });
     await connectGoogleCalendar();
     expect((await loadSyncState()).enabled).toBe(true);
-    expect(native.configure).toHaveBeenCalledWith(expect.objectContaining({ enabled: true, calendarId: 'c' }));
+    expect(runSyncMock).toHaveBeenCalledTimes(1);
     expect(useAppStore.getState().gcal.connected).toBe(true);
   });
-  it('change with an unchanged fingerprint does nothing', async () => {
-    runSyncMock.mockResolvedValue({ kind: 'ok', written: 0, state: { calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false } });
+  it('connect without calendar.app.created does not enable', async () => {
+    native.connect.mockResolvedValueOnce({ email: 'x@y', scopes: [LIST] });
+    await connectGoogleCalendar();
+    expect((await loadSyncState()).enabled).toBe(false);
+    expect(runSyncMock).not.toHaveBeenCalled();
+    expect(useAppStore.getState().gcal.notice).toBe('scopeMissing');
+  });
+  it('connect without the calendar list asks once more, then proceeds', async () => {
+    native.connect.mockResolvedValueOnce({ email: 'x@y', scopes: [APP] }).mockResolvedValueOnce({ email: 'x@y', scopes: [APP] });
+    runSyncMock.mockResolvedValue({ kind: 'ok', written: 1, state: { calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false } });
+    await connectGoogleCalendar();
+    expect(native.connect).toHaveBeenCalledTimes(2);
+    expect((await loadSyncState()).enabled).toBe(true);
+  });
+  it('change with an unchanged fingerprint and a fresh sync does nothing', async () => {
+    runSyncMock.mockResolvedValue({ kind: 'ok', written: 0, state: { calendarId: 'c', held: {}, lastSyncAt: Date.now(), pastFillPending: false } });
     await connectGoogleCalendar();
     runSyncMock.mockClear();
     await syncGoogleCalendarNow('change');
@@ -1798,11 +1780,22 @@ describe('controller', () => {
     expect((await loadSyncState()).enabled).toBe(false);
     expect(useAppStore.getState().gcal.notice).toBe('calendarGone');
   });
-  it('skips when the lock is held by the background job', async () => {
-    await saveSyncState({ enabled: true, calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false, sourcesFingerprint: null });
-    native.acquireLock.mockResolvedValueOnce({ acquired: false });
+  it('unchanged sources still re-run after 6 h, to repair edits made in Google', async () => {
+    runSyncMock.mockResolvedValue({ kind: 'ok', written: 0, state: { calendarId: 'c', held: {}, lastSyncAt: Date.now() - 7 * 3600_000, pastFillPending: false } });
+    await connectGoogleCalendar();
+    runSyncMock.mockClear();
     await syncGoogleCalendarNow('change');
-    expect(runSyncMock).not.toHaveBeenCalled();
+    expect(runSyncMock).toHaveBeenCalledTimes(1);
+  });
+  it('a second trigger while a sync runs is dropped', async () => {
+    await saveSyncState({ enabled: true, calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false, sourcesFingerprint: null });
+    let release!: () => void;
+    runSyncMock.mockImplementationOnce(() => new Promise((r) => (release = () => r({ kind: 'ok', written: 0, state: { calendarId: 'c', held: {}, lastSyncAt: 1, pastFillPending: false } }))));
+    const first = syncGoogleCalendarNow('change');
+    await syncGoogleCalendarNow('change');
+    release();
+    await first;
+    expect(runSyncMock).toHaveBeenCalledTimes(1);
   });
 });
 ```
@@ -1811,17 +1804,19 @@ describe('controller', () => {
 - [ ] **Step 3: Implement `controller.ts`** (keep it under ~200 lines; if it grows, split the outcome handling into `outcome.ts`):
 
 ```ts
-import { GoogleCalendarNative } from './googleCalendarNative';
+import { GoogleCalendarNative, SCOPE_APP_CREATED, SCOPE_CALENDAR_LIST } from './googleCalendarNative';
 import { createCalendarApi } from './calendarApi';
 import { runSync, type SyncSources } from './runSync';
 import { clearSyncState, loadSyncState, saveSyncState } from './syncStateStore';
 import { sha256Hex } from './eventIdentity';
 import { useAppStore } from '../../store/useAppStore';
-import { getUserParams } from '../../utils/userParams';
 import { isDemoMode } from '../../errors/demoMode';
 import { logError } from '../../utils/reportError';
 
+/** Unchanged sources still re-sync after this, to repair edits made in Google. */
+const REPAIR_AFTER_MS = 6 * 3600_000;
 let cachedToken: string | null = null;
+let running = false;
 
 function api() {
   return createCalendarApi({
@@ -1851,32 +1846,19 @@ export async function sourcesFingerprint(src: SyncSources): Promise<string> {
   return sha256Hex(JSON.stringify([src.language, src.lessons, src.exams, src.custom]));
 }
 
-async function configureNative(enabled: boolean, calendarId: string | null) {
-  const p = await getUserParams();
-  await GoogleCalendarNative.configure({
-    enabled,
-    calendarId,
-    studentId: p?.studentId ?? '',
-    studium: p?.studium ?? '',
-    obdobi: p?.obdobi ?? '',
-    language: useAppStore.getState().language,
-  });
-}
-
 async function turnOff(notice: 'calendarGone' | 'revoked' | null) {
   await clearSyncState();
-  await configureNative(false, null);
   useAppStore.getState().setGcal({ connected: false, email: null, syncing: false, progress: null, notice });
 }
 
 export async function syncGoogleCalendarNow(reason: 'connect' | 'change'): Promise<void> {
   const st = await loadSyncState();
-  if (!st.enabled || isDemoMode()) return;
+  if (!st.enabled || isDemoMode() || running) return;
   const sources = currentSources();
   const fp = await sourcesFingerprint(sources);
-  if (reason === 'change' && fp === st.sourcesFingerprint) return;
-  const { acquired } = await GoogleCalendarNative.acquireLock({ owner: 'app' });
-  if (!acquired) return;
+  const fresh = st.lastSyncAt !== null && Date.now() - st.lastSyncAt < REPAIR_AFTER_MS;
+  if (reason === 'change' && fp === st.sourcesFingerprint && fresh) return;
+  running = true;
   const set = useAppStore.getState().setGcal;
   set({ syncing: true, notice: null });
   try {
@@ -1893,20 +1875,26 @@ export async function syncGoogleCalendarNow(reason: 'connect' | 'change'): Promi
     // unchanged-sources shortcut skip it.
     const heldAny = Object.keys(out.state.held).length > 0;
     await saveSyncState({ ...out.state, enabled: true, sourcesFingerprint: heldAny ? null : fp });
-    await configureNative(true, out.state.calendarId);
     set({ lastSyncAt: out.state.lastSyncAt });
   } catch (e) {
     logError('GoogleCalendar.sync', e, { reason });
     set({ notice: 'failed' });
   } finally {
     set({ syncing: false, progress: null });
-    await GoogleCalendarNative.releaseLock({ owner: 'app' });
+    running = false;
   }
 }
 
 export async function connectGoogleCalendar(): Promise<void> {
   try {
-    const { email } = await GoogleCalendarNative.connect();
+    let { email, scopes } = await GoogleCalendarNative.connect();
+    if (!scopes.includes(SCOPE_APP_CREATED)) {
+      useAppStore.getState().setGcal({ notice: 'scopeMissing' });
+      return;
+    }
+    // Granular consent: the calendar list was unticked. Ask once more; it only
+    // helps a second device find the same "Rozvrh", so proceed either way.
+    if (!scopes.includes(SCOPE_CALENDAR_LIST)) ({ email, scopes } = await GoogleCalendarNative.connect());
     const st = await loadSyncState();
     await saveSyncState({ ...st, enabled: true, sourcesFingerprint: null });
     useAppStore.getState().setGcal({ connected: true, email, notice: null });
@@ -1947,13 +1935,11 @@ export function installGoogleCalendarSync(): void {
       const { available } = await GoogleCalendarNative.isAvailable();
       const st = await loadSyncState();
       const { connected, email } = await GoogleCalendarNative.status();
-      const { notice } = await GoogleCalendarNative.takeBackgroundNotice();
       useAppStore.getState().setGcal({
         available,
-        connected: connected && st.enabled && !notice,
+        connected: connected && st.enabled,
         email,
         lastSyncAt: st.lastSyncAt,
-        notice,
       });
     } catch (e) {
       logError('GoogleCalendar.install', e);
@@ -1974,8 +1960,6 @@ export function installGoogleCalendarSync(): void {
   });
 }
 ```
-
-If the background job set a notice, `controller.turnOff` must also run once on install. Add `if (notice) await turnOff(notice)` by exporting `turnOff` from the controller.
 
 Add `deleteCalendar(id)` to `calendarApi.ts`, with its test (`DELETE /calendars/{id}`; 404/410 ok):
 
@@ -2017,7 +2001,7 @@ git commit -m "feat(gcal): connect, disconnect and sync-on-change for the phone 
 | `rowOff` | Rozvrh, zkoušky a vlastní události | Timetable, exams and your own events |
 | `rowOn` | Synchronizováno {{time}} | Synced {{time}} |
 | `connect` | Synchronizovat s Google Kalendářem | Sync with Google Calendar |
-| `explain` | reIS vytvoří ve tvém Googlu kalendář „Rozvrh" a bude ho udržovat aktuální, i na pozadí. Ostatní kalendáře nevidí ani nemění. | reIS creates a "Rozvrh" calendar in your Google account and keeps it current, also in the background. It cannot see or change your other calendars. |
+| `explain` | reIS vytvoří ve tvém Googlu kalendář „Rozvrh" a aktualizuje ho pokaždé, když reIS otevřeš. Ostatní kalendáře nevidí ani nemění. | reIS creates a "Rozvrh" calendar in your Google account and updates it every time you open reIS. It cannot see or change your other calendars. |
 | `account` | Účet: {{email}} | Account: {{email}} |
 | `open` | Otevřít v Google Kalendáři | Open in Google Calendar |
 | `progress` | Synchronizuji {{done}}/{{total}} | Syncing {{done}}/{{total}} |
@@ -2026,6 +2010,7 @@ git commit -m "feat(gcal): connect, disconnect and sync-on-change for the phone 
 | `revoked` | Přístup ke Google Kalendáři byl odebrán. | Access to Google Calendar was removed. |
 | `gone` | Kalendář Rozvrh byl v Googlu smazán, synchronizace je vypnutá. | The Rozvrh calendar was deleted in Google, so sync is off. |
 | `failed` | Synchronizace se nepovedla, zkusím to znovu. | Sync failed. I'll try again. |
+| `scopeMissing` | Google nedal reIS přístup ke kalendáři. Zkus to znovu a nech políčka zaškrtnutá. | Google didn't give reIS access to the calendar. Try again and leave the boxes ticked. |
 
 "Open in Google Calendar" opens `https://calendar.google.com/` through the existing `src/mobile/openExternal.ts` helper. `google.com` is already an allowed deep-link host.
 
@@ -2081,7 +2066,7 @@ export interface GoogleCalendarSheetProps {
   onClose: () => void;
 }
 
-const NOTICE_KEY = { revoked: 'mobile.gcal.revoked', calendarGone: 'mobile.gcal.gone', failed: 'mobile.gcal.failed' } as const;
+const NOTICE_KEY = { revoked: 'mobile.gcal.revoked', calendarGone: 'mobile.gcal.gone', failed: 'mobile.gcal.failed', scopeMissing: 'mobile.gcal.scopeMissing' } as const;
 
 export function GoogleCalendarSheet({ onClose }: GoogleCalendarSheetProps) {
   const { t } = useTranslation();
@@ -2239,18 +2224,14 @@ In `scripts/privacy/check.ts` step 2, build `flowFiles` from **Supabase flows on
   id: 'google_calendar_sync',
   via: { kind: 'third-party', host: 'www.googleapis.com' },
   what: 'Only if the student turns it on: titles, times, rooms, teachers and notes of their lessons, exams and own events, written from the phone straight into a "Rozvrh" calendar in their own Google account. reIS reads the list of their calendars only to find that one. Nothing reaches a reIS server.',
-  when: 'background',
+  when: 'background', // automatic after one opt-in (runs while the app is open), not per action
   identifier: 'none',
-  files: [
-    'src/mobile/googleCalendar/calendarApi.ts',
-    'android/app/src/main/java/cz/reis/app/gcal/CalendarHttp.java',
-    'native/capacitor-google-calendar/ios/Sources/GoogleCalendarPlugin/CalendarHttp.swift',
-  ],
+  files: ['src/mobile/googleCalendar/calendarApi.ts'],
   calls: [],
   policyRows: [
     [
       'Google Calendar sync',
-      'only if you turn it on, then whenever your timetable changes',
+      'only if you turn it on, then whenever you open reIS and your timetable changed',
       'your lessons, exams and own events, sent **from your phone straight to your own Google Calendar** ("Rozvrh"). reIS servers never see them. reIS can only change the calendar it created, and reads the list of your calendars only to find it',
     ],
   ],
@@ -2294,27 +2275,15 @@ git commit -m "feat(gcal): disclose the Google Calendar flow; pin it to the phon
 
 ---
 
-## Milestone 3: Android native
+## Milestone 3: Android native (sign-in only)
 
-### Task 12: `GoogleCalendarPlugin.java` (foreground methods)
+### Task 12: `GoogleCalendarPlugin.java`
 
 **Files:**
-- Create: `android/app/src/main/java/cz/reis/app/GoogleCalendarPlugin.java`, `android/app/src/main/java/cz/reis/app/gcal/SyncConfig.java`
+- Create: `android/app/src/main/java/cz/reis/app/GoogleCalendarPlugin.java`
 - Modify: `android/app/build.gradle` (`implementation 'com.google.android.gms:play-services-auth:22.0.0'`), `android/app/src/main/java/cz/reis/app/MainActivity.java` (`registerPlugin(GoogleCalendarPlugin.class);`)
 
-**Interfaces:** implements every method of `GoogleCalendarNativePlugin` (Task 8). `SyncConfig` holds the non-secret config, the lock and the background notice, in SharedPreferences `reis_gcal`:
-
-```java
-public final class SyncConfig {
-  public static final String PREFS = "reis_gcal";
-  public static SyncConfig read(Context c);
-  public void write(Context c);
-  public boolean enabled; public String calendarId; public String studentId, studium, obdobi, language; public String heldLessons;
-  public static boolean tryLock(Context c, String owner, long ttlMs); // atomic via commit()
-  public static void unlock(Context c, String owner);
-  public static void setNotice(Context c, String notice); public static String takeNotice(Context c);
-}
-```
+**Interfaces:** implements every method of `GoogleCalendarNativePlugin` (Task 8). The only thing it stores is the connected account's email, in SharedPreferences `reis_gcal` (needed for `revokeAccess` and `status`).
 
 **Before writing code:**
 - Read `EduroamPlugin.java`, its `@CapacitorPlugin` annotation, and how it handles an activity result (`@ActivityCallback` plus `startActivityForResult(call, intent, "cb")`). Use the same mechanism for the `AuthorizationClient` `PendingIntent`: `startIntentSenderForResult` is not available on `PluginCall`, so wrap the `IntentSender` with an `ActivityResultLauncher<IntentSenderRequest>` registered in `load()`. The spike proved `ActivityResultContracts.StartIntentSenderForResult` works.
@@ -2329,6 +2298,7 @@ public class GoogleCalendarPlugin extends Plugin {
       new Scope("https://www.googleapis.com/auth/calendar.app.created"),
       new Scope("https://www.googleapis.com/auth/calendar.calendarlist.readonly"),
       new Scope("email"));
+  static final String PREFS = "reis_gcal";
   private ActivityResultLauncher<IntentSenderRequest> consent;
   private PluginCall pendingConnect;
 
@@ -2368,14 +2338,17 @@ public class GoogleCalendarPlugin extends Plugin {
     // The email comes from the token's tokeninfo; fetch it once, off the main thread.
     new Thread(() -> {
       String email = fetchEmail(res.getAccessToken());
-      getContext().getSharedPreferences(SyncConfig.PREFS, 0).edit().putString("email", email).apply();
-      call.resolve(new JSObject().put("email", email));
+      getContext().getSharedPreferences(PREFS, 0).edit().putString("email", email).apply();
+      JSArray scopes = new JSArray();
+      for (String sc : res.getGrantedScopes()) scopes.put(sc); // granular consent: may lack some
+      call.resolve(new JSObject().put("email", email).put("scopes", scopes));
     }).start();
   }
 
   @PluginMethod public void accessToken(PluginCall call) {
     Identity.getAuthorizationClient(getContext()).authorize(request())
       .addOnSuccessListener(res -> {
+        // hasResolution = consent needed again, i.e. a scope was revoked or never granted.
         if (res.hasResolution() || res.getAccessToken() == null) call.reject("REVOKED");
         else call.resolve(new JSObject().put("token", res.getAccessToken()));
       })
@@ -2404,9 +2377,9 @@ public class GoogleCalendarPlugin extends Plugin {
   }
 
   @PluginMethod public void disconnect(PluginCall call) {
-    String email = getContext().getSharedPreferences(SyncConfig.PREFS, 0).getString("email", null);
+    String email = getContext().getSharedPreferences(PREFS, 0).getString("email", null);
     Runnable forget = () -> {
-      getContext().getSharedPreferences(SyncConfig.PREFS, 0).edit().clear().apply();
+      getContext().getSharedPreferences(PREFS, 0).edit().clear().apply();
       call.resolve();
     };
     if (email == null) { forget.run(); return; }
@@ -2417,11 +2390,20 @@ public class GoogleCalendarPlugin extends Plugin {
             .build())
         .addOnCompleteListener(t -> forget.run()); // revoke failure still forgets locally
   }
-  // status / configure / acquireLock / releaseLock / takeBackgroundNotice → SyncConfig
+
+  /** Connected = a stored email and a silent authorize() that needs no consent. */
+  @PluginMethod public void status(PluginCall call) {
+    String email = getContext().getSharedPreferences(PREFS, 0).getString("email", null);
+    if (email == null) { call.resolve(new JSObject().put("connected", false).put("email", null)); return; }
+    Identity.getAuthorizationClient(getContext()).authorize(request())
+      .addOnSuccessListener(res -> call.resolve(new JSObject()
+          .put("connected", !res.hasResolution() && res.getAccessToken() != null).put("email", email)))
+      .addOnFailureListener(e -> call.resolve(new JSObject().put("connected", false).put("email", email)));
+  }
 }
 ```
 
-`configure` also schedules or cancels the background job (Task 14). Until Task 14 lands, leave a call to `CalendarSyncJobService.schedule(context, enabled)` that is a no-op stub returning immediately.
+`connect` with only the missing scopes: `authorize()` with the full list already shows only what isn't granted yet, so the controller's second `connect()` needs no special code.
 
 - [ ] **Step 2: Confirm the 22.0.0 API compiles as written:** `ClearTokenRequest`, `RevokeAccessRequest`, `AuthorizationClient.revokeAccess`. If `revokeAccess` is absent in this version, `disconnect` falls back to `clearToken` plus forgetting locally. Record that in the PR (the student can still revoke at myaccount.google.com).
 - [ ] **Step 3: Check the merged manifest** (privacy check, spec point 4): `npm run android:apk`, then `~/Library/Android/sdk/cmdline-tools/latest/bin/apkanalyzer manifest permissions android/app/build/outputs/apk/release/app-release.apk`. If anything beyond the current `PLATFORM_PERMISSIONS.android` appears (e.g. `ACCESS_NETWORK_STATE`), add it to `privacy/disclosures.ts` and re-run `npx vitest run privacyDisclosures`.
@@ -2430,367 +2412,46 @@ public class GoogleCalendarPlugin extends Plugin {
 
 ```bash
 git add android/app
-git commit -m "feat(gcal/android): GoogleCalendar plugin — consent, silent token, config and lock"
+git commit -m "feat(gcal/android): GoogleCalendar plugin — consent, granted scopes, silent token"
 ```
 
-### Task 13: Java ports of the lesson mapping and the planner (with the shared fixtures)
+### Tasks 13 and 14: removed 2026-10-08
+
+The Java ports and the Android `JobService` were background sync, which moved to phase 2
+(spec, "Phase 2"). Task numbers are kept so references elsewhere stay valid.
+
+## Milestone 4: iOS native (sign-in only)
+
+### Task 15: `native/capacitor-google-calendar`
 
 **Files:**
-- Create: `android/app/src/main/java/cz/reis/app/gcal/LessonMapper.java`, `android/app/src/main/java/cz/reis/app/gcal/LessonPlanner.java`
-- Test: `android/app/src/test/java/cz/reis/app/gcal/LessonMapperTest.java`, `android/app/src/test/java/cz/reis/app/gcal/LessonPlannerTest.java`
-- Modify: `android/app/build.gradle` (`testImplementation 'org.json:json:20240303'` so `org.json` works on the JVM)
-
-**Interfaces:** `LessonMapper.map(JSONObject isLesson, String lang)` → `Desired { String id; String date; String hash; JSONObject body; }`, where the input is one IS `blockLessons[]` item. `LessonPlanner.plan(...)` mirrors `planKind` for `kind = lesson`, with `includePast = false` always.
-
-- [ ] **Step 1: Write the failing JUnit tests**, reading the TS fixtures from the repo:
-
-```java
-public class LessonMapperTest {
-  @Test public void matchesTheSharedFixture() throws Exception {
-    String json = new String(Files.readAllBytes(Paths.get("../../src/mobile/googleCalendar/__fixtures__/lessonEvents.json")), StandardCharsets.UTF_8);
-    JSONArray cases = new JSONArray(json);
-    for (int i = 0; i < cases.length(); i++) {
-      JSONObject c = cases.getJSONObject(i);
-      JSONObject l = c.getJSONObject("lesson");
-      JSONObject is = new JSONObject()
-        .put("id", l.getString("id")).put("date", l.getString("date"))
-        .put("startTime", l.getString("startTime")).put("endTime", l.getString("endTime"))
-        .put("courseName", l.getString("courseName")).put("room", l.getString("room"))
-        .put("courseNameCs", l.getString("courseNameCs")).put("courseNameEn", l.getString("courseNameEn"))
-        .put("roomCs", l.getString("roomCs")).put("roomEn", l.getString("roomEn"))
-        .put("isSeminar", l.getString("isSeminar"));
-      JSONArray teachers = new JSONArray();
-      JSONArray names = l.getJSONArray("teachers");
-      for (int t = 0; t < names.length(); t++) teachers.put(new JSONObject().put("fullName", names.getString(t)));
-      is.put("teachers", teachers);
-      LessonMapper.Desired d = LessonMapper.map(is, c.getString("lang"));
-      JSONObject exp = c.getJSONObject("expected");
-      assertEquals(c.getString("name"), exp.getString("id"), d.id);
-      assertEquals(c.getString("name"), exp.getString("hash"), d.hash);
-      JSONObject eb = exp.getJSONObject("body");
-      assertEquals(eb.getString("summary"), d.body.getString("summary"));
-      assertEquals(eb.getString("location"), d.body.getString("location"));
-      assertEquals(eb.getString("description"), d.body.getString("description"));
-      assertEquals(eb.getJSONObject("start").getString("dateTime"), d.body.getJSONObject("start").getString("dateTime"));
-    }
-  }
-}
-```
-
-`LessonPlannerTest` iterates `lessonPlans.json` and asserts `insert`/`update`/`remove`/`held` id lists, **skipping cases whose `kind` ≠ `lesson` and cases with `includePast: true`** (the background job never creates calendars).
-
-- [ ] **Step 2: Run them to verify they fail.**
-
-Run: `cd android && ANDROID_HOME=~/Library/Android/sdk JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ./gradlew testReleaseUnitTest --tests 'cz.reis.app.gcal.*'`
-Expected: FAIL (compile errors).
-
-- [ ] **Step 3: Implement `LessonMapper`.** It must reproduce TS byte for byte:
-  - `key = id + "|" + date + "|" + startTime`;
-  - `id = "l" + base32hex(sha256(key))`, using the alphabet `0123456789abcdefghijklmnopqrstuv` and the bit loop from `eventIdentity.ts`;
-  - `title = (lang-picked courseNameCs/courseNameEn, falling back to courseName) + " – " + (isSeminar.equals("true") ? LABEL.seminar : LABEL.lecture)` (en-dash U+2013 with spaces), labels `cz`: `přednáška`/`cvičení`, `en`: `lecture`/`seminar`; location is `roomCs`/`roomEn`, falling back to `room`;
-  - `description = teachers.isEmpty() ? "reIS" : String.join(", ", teachers) + "\nreIS"`;
-  - `hash = first 16 hex of sha256(String.join("\u001f", "lesson", date, start, end, title, location, description))`, with `date` as `yyyy-MM-dd`;
-  - `body`: the same shape as `toGoogleEvent.ts` for lessons: `reminders {useDefault:false, overrides:[]}`, no `colorId`, `extendedProperties.private {reisKind:"lesson", reisHash, reisV:"1"}`.
-
-  Use `MessageDigest.getInstance("SHA-256")` and `StandardCharsets.UTF_8`.
-  Code:
-
-```java
-package cz.reis.app.gcal;
-
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.List;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-/** Port of normalize.ts (lessons) + eventIdentity.ts + toGoogleEvent.ts. Held to lessonEvents.json. */
-public final class LessonMapper {
-  public static final class Desired { public String id, date, hash; public JSONObject body; }
-  private static final String ALPHABET = "0123456789abcdefghijklmnopqrstuv";
-  private static final String SEP = "\u001f";
-
-  static String base32hex(byte[] bytes) {
-    StringBuilder out = new StringBuilder();
-    int buffer = 0, bits = 0;
-    for (byte b : bytes) {
-      buffer = (buffer << 8) | (b & 0xff);
-      bits += 8;
-      while (bits >= 5) { out.append(ALPHABET.charAt((buffer >>> (bits - 5)) & 31)); bits -= 5; }
-      buffer &= (1 << bits) - 1;
-    }
-    if (bits > 0) out.append(ALPHABET.charAt((buffer << (5 - bits)) & 31));
-    return out.toString();
-  }
-
-  static byte[] sha256(String s) throws Exception {
-    return MessageDigest.getInstance("SHA-256").digest(s.getBytes(StandardCharsets.UTF_8));
-  }
-
-  static String hex(byte[] b) {
-    StringBuilder sb = new StringBuilder();
-    for (byte x : b) sb.append(String.format("%02x", x & 0xff));
-    return sb.toString();
-  }
-
-  public static Desired map(JSONObject l, String lang) throws Exception {
-    boolean en = "en".equals(lang);
-    String raw = l.getString("date");
-    String date = raw.substring(0, 4) + "-" + raw.substring(4, 6) + "-" + raw.substring(6, 8);
-    String start = l.getString("startTime"), end = l.getString("endTime");
-    String type = "true".equals(l.optString("isSeminar")) ? (en ? "seminar" : "cvičení") : (en ? "lecture" : "přednáška");
-    String name = l.optString(en ? "courseNameEn" : "courseNameCs", "");
-    if (name.isEmpty()) name = l.getString("courseName");
-    String title = name + " \u2013 " + type;
-    String location = l.optString(en ? "roomEn" : "roomCs", "");
-    if (location.isEmpty()) location = l.optString("room", "");
-    List<String> teachers = new ArrayList<>();
-    JSONArray ts = l.optJSONArray("teachers");
-    if (ts != null) for (int i = 0; i < ts.length(); i++) {
-      String n = ts.getJSONObject(i).optString("fullName", "");
-      if (!n.isEmpty()) teachers.add(n);
-    }
-    String description = teachers.isEmpty() ? "reIS" : String.join(", ", teachers) + "\nreIS";
-    String key = l.getString("id") + "|" + raw + "|" + start;
-
-    Desired d = new Desired();
-    d.id = "l" + base32hex(sha256(key));
-    d.date = date;
-    d.hash = hex(sha256(String.join(SEP, "lesson", date, start, end, title, location, description))).substring(0, 16);
-    d.body = new JSONObject()
-        .put("id", d.id).put("summary", title).put("location", location).put("description", description)
-        .put("start", new JSONObject().put("dateTime", date + "T" + start + ":00").put("timeZone", "Europe/Prague"))
-        .put("end", new JSONObject().put("dateTime", date + "T" + end + ":00").put("timeZone", "Europe/Prague"))
-        .put("reminders", new JSONObject().put("useDefault", false).put("overrides", new JSONArray()))
-        .put("extendedProperties", new JSONObject().put("private",
-            new JSONObject().put("reisKind", "lesson").put("reisHash", d.hash).put("reisV", "1")));
-    return d;
-  }
-}
-```
-
-  The `\u001f`, `\u2013` and `\n` above are Java escape sequences inside string literals, i.e. single characters at runtime.
-
-- [ ] **Step 4: Implement `LessonPlanner`** as a line-for-line port of `planKind` (with `includePast = false` and `kind = lesson`):
-
-```java
-package cz.reis.app.gcal;
-
-import java.util.*;
-
-public final class LessonPlanner {
-  public static final class Existing { public String id, date, hash; }
-  public static final class Plan {
-    public List<LessonMapper.Desired> insert = new ArrayList<>(), update = new ArrayList<>();
-    public List<String> remove = new ArrayList<>();
-    public String held;
-  }
-
-  public static String fingerprint(List<String> ids) {
-    List<String> s = new ArrayList<>(ids); Collections.sort(s); return String.join(",", s);
-  }
-
-  public static Plan plan(List<LessonMapper.Desired> desiredAll, List<Existing> existingAll, String today,
-                          boolean sourceConfirmed, String previousHeld) {
-    Plan p = new Plan();
-    Map<String, Existing> existing = new HashMap<>();
-    List<Existing> future = new ArrayList<>();
-    for (Existing e : existingAll) if (e.date.compareTo(today) >= 0) { existing.put(e.id, e); future.add(e); }
-    Set<String> wanted = new HashSet<>();
-    for (LessonMapper.Desired d : desiredAll) {
-      if (d.date.compareTo(today) < 0) continue;
-      wanted.add(d.id);
-      Existing e = existing.get(d.id);
-      if (e == null) p.insert.add(d); else if (!e.hash.equals(d.hash)) p.update.add(d);
-    }
-    List<String> candidates = new ArrayList<>();
-    for (Existing e : future) if (!wanted.contains(e.id)) candidates.add(e.id);
-    if (candidates.isEmpty() || !sourceConfirmed || desiredAll.isEmpty()) return p;
-    String fp = fingerprint(candidates);
-    if (candidates.size() * 3 > future.size() && !fp.equals(previousHeld)) { p.held = fp; return p; }
-    p.remove = candidates;
-    return p;
-  }
-}
-```
-- [ ] **Step 5: Run the tests to verify they pass.** Same gradle command. Expected: PASS.
-- [ ] **Step 6: Commit**
-
-```bash
-git add android/app
-git commit -m "feat(gcal/android): Java lesson mapper and planner, held to the shared fixtures"
-```
-
-### Task 14: `CalendarSyncJobService` (background lessons sync)
-
-**Files:**
-- Create: `android/app/src/main/java/cz/reis/app/gcal/CalendarSyncJobService.java`, `IsTimetable.java`, `SecureStoreReader.java`, `CalendarHttp.java`
-- Modify: `android/app/src/main/AndroidManifest.xml` (declare the service with `android:permission="android.permission.BIND_JOB_SERVICE" android:exported="false"`)
-- Test: `android/app/src/test/java/cz/reis/app/gcal/SecureStoreReaderTest.java` (constants match `SecureStorePlugin`)
-
-**Design** (spec, facts 2–4):
-- **Schedule:** `JobInfo.Builder(4712, …)`, `.setPeriodic(6h, 1h flex)`, `.setRequiredNetworkType(NETWORK_TYPE_ANY)`, `.setPersisted(true)`.
-- **`schedule(context, enabled)`:** schedules when enabled, `cancel(4712)` otherwise.
-- **`onStartJob`:** `return true`, do the work on a thread, call `jobFinished(params, false)` in `finally`.
-- **Steps:**
-  1. `SyncConfig.read`; stop unless `enabled && calendarId != null`.
-  2. `SyncConfig.tryLock(ctx, "job", 5 min)`; stop if held.
-  3. `SecureStoreReader.read(ctx, "reis.session.uisAuth")`; stop if null. **Only read this.** It copies the constants `PREFS="reis_secure_store"`, `KEY_ALIAS="reis.securestore.v1"`, AES/GCM and the IV length from `SecureStorePlugin`, which stays untouched, and the unit test asserts the copies still match the plugin's source text.
-  4. `IsTimetable.fetch(ctx, token, cfg)`:
-     - POST `https://is.mendelu.cz/auth/katalog/rozvrhy_view.pl?lang=<lang>` with the same form fields as `src/api/schedule.ts` `fetchWeekSchedule`, the window from `academicWindow` (ported), and the header `Cookie: UISAuth=<token>`;
-     - JSON → `blockLessons`;
-     - non-JSON → `null` (no info). The "no results" HTML also returns `null` here: the background job never deletes on emptiness.
-     - **Fetch twice, `lang=cz` and `lang=en`, then merge** exactly like `mergeDualLanguageLessons` in `src/api/schedule.ts`: CZ lessons are the base; EN name and room are joined on `id + date + startTime`, falling back to CZ; `courseNameCs/courseNameEn/roomCs/roomEn` are set; teachers come from CZ. Either leg `null` → stop (no info).
-  5. Map with `LessonMapper`, keep date ≥ Prague today.
-  6. Get a token with `Identity.getAuthorizationClient(getApplicationContext()).authorize(GoogleCalendarPlugin.request())` and `Tasks.await(…, 30 s)`. On `hasResolution` → `SyncConfig.setNotice("revoked")`, `enabled=false`, stop.
-  7. `CalendarHttp.getCalendar` → 404 → `setNotice("calendarGone")`, `enabled=false`, stop.
-  8. `CalendarHttp.listEvents(lesson, timeMin = Prague midnight)` → `LessonPlanner.plan(...)` → upsert (POST, 409 → PUT confirmed) / PUT / DELETE, sequentially at 200 ms pacing; persist `heldLessons`.
-  9. `SyncConfig.unlock(ctx, "job")` in `finally`.
-- **Logging:** `Log.w("ReisGcal", …)` with the step name only. Never log tokens, titles or ids.
-
-- [ ] **Step 1: Write the failing `SecureStoreReaderTest`.** It reads `SecureStorePlugin.java` as text and asserts it contains the reader's `PREFS`, `KEY_ALIAS` and transformation literals.
-- [ ] **Step 2: Implement the four classes** and the manifest entry. Then replace the Task 12 stub with the real `schedule()`.
-- [ ] **Step 3: Unit tests:** `./gradlew testReleaseUnitTest --tests 'cz.reis.app.gcal.*'` → PASS.
-- [ ] **Step 4: Device verification on the Pixel**, release build via `npm run android:push`, connected as `reis.mendelu`. Do each of these:
-  - check the cookie actually reaches IS from the job's process: the fetch returns JSON, not the login HTML (log the content-type only). If it fails, report rather than switching to CapacitorHttp; the Android cookie-jar note in `capacitorTransport.ts` explains why;
-  - in Google Calendar, delete one **future** "Rozvrh" lesson; then `adb shell am kill cz.reis.app` and `adb shell cmd jobscheduler run -f cz.reis.app 4712`; the logcat `ReisGcal` steps should show it re-created (409 → PUT);
-  - delete one **past** lesson in Google, run again: it does **not** come back;
-  - turn Battery Saver on: `cmd jobscheduler run -f` still forces it, but a natural run waits; then turn it off;
-  - turn Background data off for reIS and confirm the job waits for the network constraint. Ask Dominik to flip these settings; never change them over adb.
-  - **No ping-pong:** right after a job run, open reIS in **English** and let it sync. The `GoogleCalendar` TS run must write **0 lesson events**: identical ids and hashes from both paths. Repeat in Czech. Any writes mean the paths disagree; diff a sample event's fields before going on.
-- [ ] **Step 5: Commit**
-
-```bash
-git add android/app
-git commit -m "feat(gcal/android): background JobService keeps future lessons in sync"
-```
-
----
-
-## Milestone 4: iOS native
-
-### Task 15: `native/capacitor-google-calendar` (foreground methods)
-
-**Files:**
-- Create: `native/capacitor-google-calendar/package.json`, `Package.swift`, `ios/Sources/GoogleCalendarPlugin/GoogleCalendarPlugin.swift`, `ios/Sources/GoogleCalendarPlugin/SyncConfig.swift`
-- Modify: root `package.json` (`"@reis/capacitor-google-calendar": "file:native/capacitor-google-calendar"`), `ios/App/App/Info.plist` (`GIDClientID`, URL scheme = reversed client id, `UIBackgroundModes` → `fetch`, `BGTaskSchedulerPermittedIdentifiers` → `cz.reis.app.calendar-sync`), `ios/App/App/SceneDelegate.swift` (`GIDSignIn.sharedInstance.handle(url)` in `openURLContexts`), `src/test/guards/nativePluginsAreReachable.test.ts` (if it lists plugins)
+- Create: `native/capacitor-google-calendar/package.json`, `Package.swift`, `ios/Sources/GoogleCalendarPlugin/GoogleCalendarPlugin.swift`
+- Modify: root `package.json` (`"@reis/capacitor-google-calendar": "file:native/capacitor-google-calendar"`), `ios/App/App/Info.plist` (`GIDClientID` = `576873601004-j691e9hrs51grv8kj5g1p19mj0dcacfp.apps.googleusercontent.com`, URL scheme = `com.googleusercontent.apps.576873601004-j691e9hrs51grv8kj5g1p19mj0dcacfp`, `CFBundleName` = `reIS` so the system prompt stops saying "App"), `src/test/guards/nativePluginsAreReachable.test.ts` (if it lists plugins)
+- Start from the spike branch `spike/ios-gcal`: `git show spike/ios-gcal:native/capacitor-google-calendar/Package.swift` (proven to build). The spike's URL handling observes `.capacitorOpenURL` inside the plugin, so `SceneDelegate.swift` needs no edit.
 
 **Pattern:** copy `native/capacitor-eduroam`'s `package.json` and `Package.swift` shape **exactly**. The package/product name is derived from the npm name: `@reis/capacitor-google-calendar` → `ReisCapacitorGoogleCalendar`, target `GoogleCalendarPlugin`. Add the dependency `.package(url: "https://github.com/google/GoogleSignIn-iOS.git", from: "10.0.0")` with the product `GoogleSignIn`.
 
 - [ ] **Step 1: Implement the plugin methods** (`@objc(GoogleCalendarPlugin)`, `jsName = "GoogleCalendar"`):
   - `isAvailable`: `!ProcessInfo.processInfo.isiOSAppOnMac`, or `true` if Task 2 proved the Mac works.
-  - `connect`: `GIDSignIn.sharedInstance.signIn(withPresenting: bridge.viewController, hint: nil, additionalScopes: [calendar.app.created, calendar.calendarlist.readonly])`. GoogleSignIn adds `email`/`profile`/`openid` itself, which covers the email scope. Resolve with `{ email: result.user.profile?.email }`.
+  - `connect`: if `currentUser` exists (after `restorePreviousSignIn`), `currentUser.addScopes(missing, presenting:)` for whichever of the two scopes it lacks; otherwise `GIDSignIn.sharedInstance.signIn(withPresenting: bridge.viewController, hint: nil, additionalScopes: [calendar.app.created, calendar.calendarlist.readonly])`. GoogleSignIn adds `email`/`profile`/`openid` itself, which covers the email scope. Resolve with `{ email: user.profile?.email, scopes: user.grantedScopes ?? [] }`.
   - `accessToken`: `restorePreviousSignIn` if `currentUser` is nil → `currentUser.refreshTokensIfNeeded` → `{ token }`; reject `REVOKED` if there's no user or the scopes are missing.
   - `invalidateToken`: no-op. GoogleSignIn refreshes on expiry; a 401 retry calls `refreshTokensIfNeeded` again.
   - `disconnect`: `GIDSignIn.sharedInstance.disconnect`.
-  - `status`, `configure`, `acquireLock`, `releaseLock`, `takeBackgroundNotice` → `SyncConfig` (UserDefaults suite `cz.reis.app.gcal`). The lock is a timestamp plus owner, written with a compare-before-write under `os_unfair_lock` inside the process. iOS runs the BG task in the same process as the app.
-- [ ] **Step 2: Build, sync, install a release build on the cabled iPad** (`ipad-device` memory), connect as `reis.mendelu`, and check that "Rozvrh" fills at calendar.google.com.
-- [ ] **Step 3: Run `npx vitest run nativePluginsAreReachable privacyDisclosures`**: the Info.plist got no new `NS*UsageDescription`, so `PLATFORM_PERMISSIONS.ios` is unchanged.
-- [ ] **Step 4: Commit**
+  - `status`: `restorePreviousSignIn` → `{ connected: user != nil && grantedScopes contains calendar.app.created, email }`.
+- [ ] **Step 2: Build, sync, install a release build on the cabled iPad** (`ipad-device` memory: `DEVELOPMENT_TEAM=RG38V3SV8X`, release configuration), connect, and check that "Rozvrh" fills at calendar.google.com. Untick the calendar-list box once and confirm reIS asks again for just that.
+- [ ] **Step 3: The Mac ("Designed for iPad")**: ask Dominik to run the build from Xcode on "My Mac" and tap connect. If sign-in fails there, `isAvailable` returns `!ProcessInfo.processInfo.isiOSAppOnMac`. Record the result in the spec (fact 10).
+- [ ] **Step 4: Run `npx vitest run nativePluginsAreReachable privacyDisclosures`**: the Info.plist got no new `NS*UsageDescription`, so `PLATFORM_PERMISSIONS.ios` is unchanged.
+- [ ] **Step 5: Commit**, then delete the spike branch (`git branch -D spike/ios-gcal`).
 
 ```bash
 git add native/capacitor-google-calendar package.json package-lock.json ios/App/App
-git commit -m "feat(gcal/ios): GoogleCalendar plugin — GoogleSignIn consent, silent token, config and lock"
+git commit -m "feat(gcal/ios): GoogleCalendar plugin — GoogleSignIn consent, granted scopes, silent token"
 ```
 
-### Task 16: Swift ports of the mapper and the planner (with the shared fixtures)
+### Tasks 16 and 17: removed 2026-10-08
 
-**Files:**
-- Create: `native/capacitor-google-calendar/ios/Sources/GoogleCalendarPlugin/LessonMapper.swift`, `LessonPlanner.swift`
-- Create: `native/capacitor-google-calendar/ios/Tests/GoogleCalendarPluginTests/LessonMapperTests.swift`, `LessonPlannerTests.swift`
-- Modify: `Package.swift` (a `testTarget`)
-
-- [ ] **Step 1: Write the failing XCTests.** Read the fixtures via `URL(fileURLWithPath: #filePath)` → up to the repo root → `src/mobile/googleCalendar/__fixtures__/…`, then make the same assertions as the Java tests.
-- [ ] **Step 2: Run them to verify they fail.** `cd native/capacitor-google-calendar && swift test` (or the `PdfInk`-style scheme from Xcode; see memory `pdfink-swift-tests`).
-- [ ] **Step 3: Implement** `LessonMapper.swift` (and `LessonPlanner.swift`, a line-for-line port of the Java planner above):
-
-```swift
-import CryptoKit
-import Foundation
-
-/// Port of normalize.ts (lessons) + eventIdentity.ts + toGoogleEvent.ts. Held to lessonEvents.json.
-enum LessonMapper {
-    struct Desired { let id: String; let date: String; let hash: String; let body: [String: Any] }
-    private static let alphabet = Array("0123456789abcdefghijklmnopqrstuv")
-
-    static func base32hex(_ bytes: [UInt8]) -> String {
-        var out = ""; var buffer: UInt32 = 0; var bits = 0
-        for b in bytes {
-            buffer = (buffer << 8) | UInt32(b); bits += 8
-            while bits >= 5 { out.append(alphabet[Int((buffer >> UInt32(bits - 5)) & 31)]); bits -= 5 }
-            buffer &= (1 << UInt32(bits)) - 1
-        }
-        if bits > 0 { out.append(alphabet[Int((buffer << UInt32(5 - bits)) & 31)]) }
-        return out
-    }
-
-    static func sha256(_ s: String) -> [UInt8] { Array(SHA256.hash(data: Data(s.utf8))) }
-
-    static func map(_ l: [String: Any], lang: String) -> Desired {
-        let en = lang == "en"
-        let raw = l["date"] as? String ?? ""
-        let date = "\(raw.prefix(4))-\(raw.dropFirst(4).prefix(2))-\(raw.dropFirst(6).prefix(2))"
-        let start = l["startTime"] as? String ?? "", end = l["endTime"] as? String ?? ""
-        let seminar = (l["isSeminar"] as? String) == "true"
-        let type = seminar ? (en ? "seminar" : "cvičení") : (en ? "lecture" : "přednáška")
-        let pick = { (k: String, fallback: String) -> String in
-            let v = l[k] as? String ?? ""; return v.isEmpty ? (l[fallback] as? String ?? "") : v }
-        let title = "\(pick(en ? "courseNameEn" : "courseNameCs", "courseName")) \u{2013} \(type)"
-        let location = pick(en ? "roomEn" : "roomCs", "room")
-        let teachers = (l["teachers"] as? [[String: Any]] ?? []).compactMap { $0["fullName"] as? String }.filter { !$0.isEmpty }
-        let description = teachers.isEmpty ? "reIS" : teachers.joined(separator: ", ") + "\nreIS"
-        let key = "\(l["id"] as? String ?? "")|\(raw)|\(start)"
-        let id = "l" + base32hex(sha256(key))
-        let canonical = ["lesson", date, start, end, title, location, description].joined(separator: "\u{1F}")
-        let hash = String(sha256(canonical).map { String(format: "%02x", $0) }.joined().prefix(16))
-        let body: [String: Any] = [
-            "id": id, "summary": title, "location": location, "description": description,
-            "start": ["dateTime": "\(date)T\(start):00", "timeZone": "Europe/Prague"],
-            "end": ["dateTime": "\(date)T\(end):00", "timeZone": "Europe/Prague"],
-            "reminders": ["useDefault": false, "overrides": [Any]()],
-            "extendedProperties": ["private": ["reisKind": "lesson", "reisHash": hash, "reisV": "1"]],
-        ]
-        return Desired(id: id, date: date, hash: hash, body: body)
-    }
-}
-```
-
-  The backslash sequences above are Swift escapes in source: `\u{2013}` is an en dash, `\u{1F}` the unit separator, `\(...)` interpolation.
-- [ ] **Step 4: Run them to verify they pass.** Commit:
-
-```bash
-git add native/capacitor-google-calendar
-git commit -m "feat(gcal/ios): Swift lesson mapper and planner, held to the shared fixtures"
-```
-
-### Task 17: The iOS background task
-
-**Files:**
-- Create: `native/capacitor-google-calendar/ios/Sources/GoogleCalendarPlugin/CalendarSyncTask.swift`, `IsTimetable.swift`, `CalendarHttp.swift`, `SecureStoreReader.swift`
-- Modify: `ios/App/App/AppDelegate.swift` (`import ReisCapacitorGoogleCalendar` + `CalendarSyncTask.register()` in `didFinishLaunching`, per Task 2's finding)
-
-**Design:**
-- `BGTaskScheduler.shared.register(forTaskWithIdentifier: "cz.reis.app.calendar-sync", using: nil) { task in CalendarSyncTask.handle(task as! BGAppRefreshTask) }`.
-- `schedule()` submits a `BGAppRefreshTaskRequest` with `earliestBeginDate = now + 6h`. Call it from `configure(enabled: true)` and at the end of every run.
-- Set `expirationHandler` to cancel the URLSession tasks and `setTaskCompleted(success: false)`.
-- **Steps:** the same as Android's 1–9, but:
-  - the token comes from `GIDSignIn.sharedInstance.restorePreviousSignIn` → `refreshTokensIfNeeded`;
-  - the IS token comes from the keychain, service `cz.reis.app.securestore`, account `reis.session.uisAuth`. That's a **read-only** `SecItemCopyMatching`; `native/capacitor-secure-store` stays untouched.
-- Budget: ~30 s. Stop after the planner if fewer than 8 s remain, and leave the writes for the next run.
-
-- [ ] **Step 1: Implement**, then install the release build on the cabled iPad.
-- [ ] **Step 2: Fire the task from the Xcode debugger** (the Task 2 command):
-  - delete one future lesson in Google → it comes back;
-  - delete one past lesson → it doesn't;
-  - read the steps in Console.app filtered by subsystem `cz.reis.app.gcal`;
-  - **no ping-pong:** after a BG run, the app's next sync writes 0 lesson events, in both languages (same check as Task 14). The Swift `IsTimetable` fetches CZ + EN and merges like `mergeDualLanguageLessons`.
-- [ ] **Step 3: Commit**
-
-```bash
-git add native/capacitor-google-calendar ios/App/App/AppDelegate.swift
-git commit -m "feat(gcal/ios): BGAppRefreshTask keeps future lessons in sync"
-```
+The Swift ports and the `BGAppRefreshTask` were background sync, now phase 2 (spec,
+"Phase 2"). Task numbers are kept.
 
 ---
 
@@ -2819,7 +2480,7 @@ git commit -m "feat(gcal/ios): BGAppRefreshTask keeps future lessons in sync"
 
 ### Task 19: The end-to-end matrix, then the PR to `test`
 
-- [ ] **Step 1: Two devices.** Pixel and iPad on `reis.mendelu`, both connected. Exactly one "Rozvrh" at calendar.google.com, the event count equals reIS, and a lesson edited by one device's sync isn't flipped back by the other: run the job on both and diff `updated` timestamps via the API.
+- [ ] **Step 1: Two devices.** Pixel and iPad on `reis.mendelu`, both connected. Exactly one "Rozvrh" at calendar.google.com, the event count equals reIS, and a lesson synced by one device isn't rewritten by the other: open reIS on both and diff `updated` timestamps via the API (expect no change from the second device).
 - [ ] **Step 2: Language switch.** Switch the app to English: future titles change, past titles don't.
 - [ ] **Step 3: Turn-off paths.** "Jen vypnout" keeps the calendar; "Vypnout a smazat" removes it; deleting "Rozvrh" in Google turns the row off with the `gone` text.
 - [ ] **Step 4: Local checks:** `npx vitest run src/mobile/googleCalendar src/test/guards scripts/privacy` and `npm run typecheck`.
