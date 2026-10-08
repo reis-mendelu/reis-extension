@@ -226,6 +226,17 @@ export async function syncAllData() {
       studyComparisonPromise,
     ]);
 
+    // allSettled means an outage still completes normally, so without this the
+    // run ended with no error and Předměty's only failure signal never fired
+    // (Návrhy #26). Exams is fetched every run and rejects only when neither
+    // language was reachable; with nothing else back either, IS was not reached.
+    const answered = (r: PromiseSettledResult<unknown>) => r.status === 'fulfilled' && !!r.value;
+    const reachedNothing =
+      exams.status === 'rejected' &&
+      !answered(fullSchedule) &&
+      !answered(subjects) &&
+      !answered(studyPlan);
+
     // Falls back to the retained copy when the past-subject fetch was skipped as
     // fresh, so a subjects refresh still gets its merge.
     const pastSubjectsForMerge =
@@ -344,7 +355,13 @@ export async function syncAllData() {
     }
 
     cachedData.lastSync = Date.now();
-    sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing: false }));
+    sendToIframe(
+      Messages.syncUpdate({
+        ...cachedData,
+        isSyncing: false,
+        ...(reachedNothing ? { error: 'IS Mendelu unreachable' } : {}),
+      })
+    );
 
     // Fire-and-forget: fetch past semesters once, permanently cache in IDB
     if (

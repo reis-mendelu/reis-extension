@@ -8,6 +8,7 @@ import { PhArchView } from './Zaznamnik/PhArchView';
 import { ReportMissingLink } from '../Feedback/ReportMissingLink';
 import { SubmissionBoxList } from '../SubmissionBoxes/SubmissionBoxList';
 import { useOdevzdavarny } from '../../hooks/data/useOdevzdavarny';
+import { LoadFailed } from '../LoadFailed';
 
 const IS_BASE = 'https://is.mendelu.cz';
 
@@ -22,7 +23,8 @@ interface ZaznamnikTabProps {
 }
 
 export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTabProps) {
-  const { data, isLoading } = useZaznamnik(courseCode);
+  const { data, isLoading, isFailed } = useZaznamnik(courseCode);
+  const refetchZaznamnik = useAppStore((s) => s.refetchZaznamnik);
   const subjectInfo = useAppStore((s) => (courseCode ? s.subjects?.data[courseCode] : undefined));
   const studium = useAppStore((s) => s.studiumId);
   const obdobi = useAppStore((s) => s.obdobiId);
@@ -80,6 +82,18 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
           <div className="h-4 bg-base-300 rounded w-1/4 mt-4" />
           <div className="h-10 bg-base-300 rounded" />
         </div>
+      </div>
+    );
+  }
+
+  // "Could not load" is not "no marks" (Návrhy #26). Boxes come from their
+  // own sync, so they still show above it.
+  if (isFailed) {
+    return (
+      <div className="flex flex-col h-full overflow-y-auto">
+        {boxes.length > 0 && <div className="p-4 pb-0 text-[13px]">{boxSection}</div>}
+        <LoadFailed testId="zaznamnik-error" onRetry={() => refetchZaznamnik(courseCode)} />
+        {backlinks}
       </div>
     );
   }

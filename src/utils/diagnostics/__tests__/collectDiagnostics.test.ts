@@ -3,6 +3,11 @@ import { clearDiagnostics, recordDiagnostic, type DiagnosticEntry } from '../dia
 import { collectDiagnostics, osOf } from '../collectDiagnostics';
 
 const platform = { kind: 'extension' as 'extension' | 'capacitor' | 'web' };
+const syncState = {
+  firstSyncSettled: true,
+  syncLoaded: { schedule: true } as Record<string, boolean>,
+  error: null as string | null,
+};
 vi.mock('@/platform', () => ({ getPlatform: () => platform }));
 vi.mock('@/api/proxyClient', () => ({ executeAction: vi.fn() }));
 vi.mock('@/store/useAppStore', () => ({
@@ -10,7 +15,9 @@ vi.mock('@/store/useAppStore', () => ({
     getState: () => ({
       language: 'en',
       isSyncing: false,
-      syncStatus: { lastSync: 1_700_000_000_000, isSyncing: false },
+      firstSyncSettled: syncState.firstSyncSettled,
+      syncLoaded: syncState.syncLoaded,
+      syncStatus: { lastSync: 1_700_000_000_000, isSyncing: false, error: syncState.error },
       schedule: { data: [1, 2, 3], status: 'success' },
       exams: { data: [], status: 'error', error: 'x' },
       lastExamsFetchedAt: null,
@@ -73,11 +80,42 @@ describe('collectDiagnostics', () => {
       scheduleCount: 3,
       examsCount: 0,
       examsFetchedAt: null,
+      firstSyncSettled: true,
+      syncLoaded: ['schedule'],
+      syncFailed: false,
     });
     expect(out.env.lang).toBe('en');
     expect(out.env.platform).toBe('extension');
     expect(typeof out.env.online).toBe('boolean');
     expect(JSON.stringify(out)).not.toMatch(/installId|https?:/);
+  });
+});
+
+/**
+ * Návrhy #26 arrived saying `exams: "success", examsCount: 0` — which read as
+ * "IS answered: no exams". `exams` is the store's cache read, not a fetch. What
+ * a reader needs is which domains a sync actually got an answer for, whether
+ * any run has finished, and whether the last one threw.
+ */
+describe('collectDiagnostics — what the sync actually got', () => {
+  beforeEach(() => {
+    syncState.firstSyncSettled = true;
+    syncState.syncLoaded = {};
+    syncState.error = null;
+  });
+
+  it('names no domain as answered when the sync reached nothing', async () => {
+    const out = await collectDiagnostics({ fetchContent: async () => [] });
+    expect(out.sync.syncLoaded).toEqual([]);
+    expect(out.sync.firstSyncSettled).toBe(true);
+  });
+
+  it('says the run failed as a flag, never with the error text', async () => {
+    // syncStatus.error is String(e), uncleaned — it can hold a URL.
+    syncState.error = 'TypeError: fetch https://is.mendelu.cz/auth/student/list.pl?studium=1';
+    const out = await collectDiagnostics({ fetchContent: async () => [] });
+    expect(out.sync.syncFailed).toBe(true);
+    expect(JSON.stringify(out)).not.toContain('studium');
   });
 });
 

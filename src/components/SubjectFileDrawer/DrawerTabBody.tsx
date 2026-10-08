@@ -9,6 +9,8 @@ import { ISBacklink } from './ISBacklink';
 import type { FileGroup, DrawerTab, PdfRowMeta } from './types';
 import type { SyllabusRequirements, ParsedFile } from '../../types/documents';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useAppStore } from '../../store/useAppStore';
+import { LoadFailed } from '../LoadFailed';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { SelectedSubject } from '../../types/app';
 import type { Classmate } from '../../types/classmates';
@@ -89,11 +91,17 @@ export function DrawerTabBody({
   showStudyInfo,
 }: DrawerTabBodyProps) {
   const { t, language } = useTranslation();
+  const courseCode = lesson?.courseCode ?? '';
+  const filesFailed = useAppStore((s) => !!courseCode && !!s.filesError[courseCode]);
+  const refreshFilesForSubject = useAppStore((s) => s.refreshFilesForSubject);
 
   if (tab === 'files') {
     const isEmpty = !files || files.length === 0;
     const showSkeleton = isFilesLoading && isEmpty;
-    const showProgress = showSkeleton || (isSyncing && isEmpty);
+    // Cached files beat the failure; with none, the failure beats a background
+    // sync's "loading" bar, which would otherwise hide it (Návrhy #26).
+    const showFailed = filesFailed && isEmpty && !isFilesLoading;
+    const showProgress = showSkeleton || (isSyncing && isEmpty && !showFailed);
 
     return (
       <>
@@ -108,6 +116,8 @@ export function DrawerTabBody({
 
         {showSkeleton ? (
           <FileListSkeleton />
+        ) : showFailed ? (
+          <LoadFailed testId="files-error" onRetry={() => refreshFilesForSubject(courseCode)} />
         ) : isEmpty && !showProgress ? (
           <div className="flex flex-1 flex-col items-center justify-center h-full p-6 text-center">
             <FileText className="w-12 h-12 text-base-content/20 mb-3" />

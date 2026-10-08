@@ -47,3 +47,42 @@ describe('the sections the desktop exam panel lists', () => {
     expect(result.current.sections.map((r) => r.section.name)).toEqual(['Zápočet']);
   });
 });
+
+/**
+ * Návrhy #26 on the desktop tree. The phone's ExamsScreen shows ScreenError
+ * when a settled sync never got an answer about exams; the extension's panel
+ * had no such branch and said "no exams" instead.
+ */
+describe('the desktop exam panel after a sync that could not reach IS', () => {
+  beforeEach(() => {
+    useAppStore.setState((s) => ({
+      exams: { ...s.exams, data: [], status: 'success' },
+      firstSyncSettled: true,
+      syncLoaded: {},
+      syncStatus: { ...s.syncStatus, isSyncing: false, handshakeDone: true },
+    }));
+  });
+
+  it('is a failure, not an empty list', () => {
+    const { result } = renderHook(() => useExamsData());
+    expect(result.current.showFailed).toBe(true);
+  });
+
+  it('is an empty list when IS answered "none"', () => {
+    useAppStore.setState({ syncLoaded: { exams: true } });
+    const { result } = renderHook(() => useExamsData());
+    expect(result.current.showFailed).toBe(false);
+  });
+
+  it('is neither while the first sync is still running', () => {
+    useAppStore.setState({ firstSyncSettled: false });
+    const { result } = renderHook(() => useExamsData());
+    expect(result.current.showFailed).toBe(false);
+  });
+
+  it('shows cached exams over the failure', () => {
+    setExams([section({ name: 'Zkouška' })]);
+    const { result } = renderHook(() => useExamsData());
+    expect(result.current.showFailed).toBe(false);
+  });
+});

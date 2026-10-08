@@ -9,6 +9,8 @@ export function useExamsData() {
   const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
+  const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
+  const examsAnswered = useAppStore((s) => !!s.syncLoaded.exams);
 
   const sections = useMemo(() => {
     const res: { subject: ExamSubject; section: ExamSection }[] = [];
@@ -30,5 +32,9 @@ export function useExamsData() {
       (!handshakeDone && !handshakeTimedOut) ||
       isSyncing);
 
-  return { exams, showSkeleton, sections };
+  // The phone's ExamsScreen rule: a settled sync that never got an answer about
+  // exams, with nothing cached, failed — it did not find "none" (Návrhy #26).
+  const showFailed = !showSkeleton && exams.length === 0 && firstSyncSettled && !examsAnswered;
+
+  return { exams, showSkeleton, showFailed, sections };
 }

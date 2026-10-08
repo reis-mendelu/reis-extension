@@ -18,13 +18,25 @@ export interface DiagnosticsPayload {
     uptimeS: number;
   };
   sync: {
+    /** When the last run ENDED — a run that reached nothing still stamps it. */
     lastSync: number | null;
     isSyncing: boolean;
+    /** The store slices' status. For exams that is the IndexedDB cache read,
+     *  so "success" with a count of 0 does NOT mean IS answered "no exams" —
+     *  `syncLoaded` says what a sync actually got an answer for. */
     schedule: string;
     exams: string;
     scheduleCount: number;
     examsCount: number;
     examsFetchedAt: number | null;
+    // Optional: 5.3.0 builds send the payload without them, and the admin
+    // console parses every stored row with the same type.
+    /** A sync run has finished this session. */
+    firstSyncSettled?: boolean;
+    /** Domains a sync got an answer for this session, empty answers included. */
+    syncLoaded?: string[];
+    /** The last run threw. A flag only: the message is String(e), uncleaned. */
+    syncFailed?: boolean;
   };
 }
 
@@ -102,6 +114,11 @@ export async function collectDiagnostics(
       scheduleCount: s.schedule.data.length,
       examsCount: s.exams.data.length,
       examsFetchedAt: s.lastExamsFetchedAt,
+      firstSyncSettled: s.firstSyncSettled,
+      syncLoaded: Object.entries(s.syncLoaded ?? {})
+        .filter(([, v]) => v)
+        .map(([k]) => k),
+      syncFailed: !!s.syncStatus?.error,
     },
   };
 }

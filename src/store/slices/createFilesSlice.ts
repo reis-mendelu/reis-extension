@@ -17,6 +17,7 @@ import { broadcastFilesUpdate } from './files/broadcastFilesSync';
 export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
   files: {},
   filesLoading: {},
+  filesError: {},
   lastFilesFetchedAt: {},
   fetchFiles: async (courseCode) => {
     if (get().impersonation) return;
@@ -42,6 +43,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
 
     set((state) => ({
       filesLoading: { ...state.filesLoading, [courseCode]: true },
+      filesError: { ...state.filesError, [courseCode]: false },
     }));
 
     try {
@@ -132,9 +134,12 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
       }));
     } catch (e) {
       logError('FilesSlice.fetchFilesPriority', e, { courseCode });
+      // `[]` still ends the skeleton; `filesError` is what tells the tab this
+      // is "could not load", not "no files" (Návrhy #26).
       set((state) => ({
         files: { ...state.files, [courseCode]: [] },
         filesLoading: { ...state.filesLoading, [courseCode]: false },
+        filesError: { ...state.filesError, [courseCode]: true },
       }));
     }
   },
@@ -199,13 +204,17 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
       set((state) => ({
         files: { ...state.files, [courseCode]: state.files[courseCode] ?? [] },
         filesLoading: { ...state.filesLoading, [courseCode]: false },
+        filesError: { ...state.filesError, [courseCode]: true },
       }));
     }
   },
   refreshFilesForSubject: async (courseCode) => {
     if (get().impersonation) return;
     const { language: currentLang, subjects } = get();
-    set((state) => ({ filesLoading: { ...state.filesLoading, [courseCode]: true } }));
+    set((state) => ({
+      filesLoading: { ...state.filesLoading, [courseCode]: true },
+      filesError: { ...state.filesError, [courseCode]: false },
+    }));
     try {
       const result = await fetchAndPersistFolderFiles({
         courseCode,
@@ -236,7 +245,10 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
       broadcastFilesUpdate({ courseCode, fetchedAt: result.fetchedAt });
     } catch (e) {
       logError('FilesSlice.refreshFilesForSubject', e, { courseCode });
-      set((state) => ({ filesLoading: { ...state.filesLoading, [courseCode]: false } }));
+      set((state) => ({
+        filesLoading: { ...state.filesLoading, [courseCode]: false },
+        filesError: { ...state.filesError, [courseCode]: true },
+      }));
     }
   },
   hydrateLastFilesFetchedAt: async () => {

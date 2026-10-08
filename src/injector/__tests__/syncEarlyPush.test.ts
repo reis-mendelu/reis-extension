@@ -191,6 +191,19 @@ describe('Phase 2 reaches the UI as it arrives', () => {
     await run;
   });
 
+  it('does not report exams as loaded when the fetch failed', async () => {
+    // Návrhy #26: "answered, none" and "could not ask" must differ, or the
+    // Exams screen says "Žádné zkoušky" with IS unreachable.
+    api.exams.mockRejectedValue(new Error('Unable to resolve host'));
+
+    const { syncAllData } = await loadSync();
+    await syncAllData();
+
+    const loaded = (await updates()).flatMap((m) => (m.data.loaded as string[]) ?? []);
+    expect(loaded).not.toContain('exams');
+    expect(loaded).toContain('schedule');
+  });
+
   it('does not push an empty exam list as data, only as arrival', async () => {
     // The completed batch keeps the cached list when a read comes back empty,
     // because a parse failure looks exactly like an empty season. An empty
@@ -215,5 +228,59 @@ describe('Phase 2 reaches the UI as it arrives', () => {
     expect(final.data.isSyncing).toBe(false);
     expect(final.data.schedule).toBeTruthy();
     expect(final.data.exams).toBeTruthy();
+  });
+});
+
+/**
+ * Návrhy #26: with IS unreachable every Phase 2 fetch fails, but allSettled
+ * means the run completes normally — so it ended with no `error`, and the
+ * Předměty screen, whose only failure signal is that error, told a student
+ * with no cache "Zatím žádné předměty". Exams is fetched on every run and now
+ * rejects only when neither language could be reached, so "exams rejected and
+ * nothing else came back" is a run that reached nothing.
+ */
+describe('a run that reached nothing', () => {
+  const offline = () => Promise.reject(new Error('Unable to resolve host "is.mendelu.cz"'));
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    primeResponses();
+  });
+
+  async function finalMessage() {
+    const posted = await updates();
+    return posted[posted.length - 1]!;
+  }
+
+  it('ends with an error', async () => {
+    for (const k of ['subjects', 'exams', 'schedule', 'studyPlan', 'pastSubjects'] as const)
+      api[k].mockImplementation(offline);
+
+    const { syncAllData } = await loadSync();
+    await syncAllData();
+
+    const final = await finalMessage();
+    expect(final.data.isSyncing).toBe(false);
+    expect(final.data.error).toBeTruthy();
+  });
+
+  it('does not when the exams page alone failed', async () => {
+    api.exams.mockImplementation(offline);
+
+    const { syncAllData } = await loadSync();
+    await syncAllData();
+
+    expect((await finalMessage()).data.error).toBeUndefined();
+  });
+
+  it('does not when IS answered with nothing', async () => {
+    api.exams.mockResolvedValue([]);
+    api.schedule.mockResolvedValue([]);
+    api.subjects.mockResolvedValue(null);
+
+    const { syncAllData } = await loadSync();
+    await syncAllData();
+
+    expect((await finalMessage()).data.error).toBeUndefined();
   });
 });
