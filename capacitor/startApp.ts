@@ -142,11 +142,9 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
     // otherwise never reaches a long-lived app process. Gap-limited like the
     // IS sync, so tabbing away and back does not refetch every time.
     void useAppStore.getState().refreshMapEventsIfStale(MIN_SYNC_GAP);
-    // A second chance for `loadFollows()` if it lost the boot race against
-    // `getUserParams()` — a resume is exactly the kind of "app already
-    // running a while" moment where identity is settled by now, unlike
-    // `onIdentityChange`, which only fires for a DIFFERENT student signing in.
-    void useAppStore.getState().retryFollowsIfUnresolved();
+    // A second chance for `loadContext()` if it lost the boot race against
+    // `getUserParams()` — the event audience reads the faculty it sets.
+    if (!useAppStore.getState().contextResolved) void useAppStore.getState().loadContext();
     // The OS permission can change while backgrounded (the student flips it in
     // Settings), and the soft-ask card's visibility depends on knowing that.
     void readNotificationPermission().then((p) => useAppStore.getState().setNotifyPermission(p));

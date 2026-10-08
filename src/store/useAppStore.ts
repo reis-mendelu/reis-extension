@@ -281,11 +281,10 @@ export const initializeStore = async () => {
     st.fetchCvicneTests();
     st.fetchOdevzdavarny();
     // A sync only reaches here once IS data has actually landed, which is
-    // also the point `getUserParams()` becomes resolvable — so this is where
-    // a `loadFollows()` that lost that race at boot (Tier 2 ran before IS
-    // confirmed who is signed in) gets a real second chance. `onIdentityChange`
-    // fires only when IS names a DIFFERENT student, so it does not cover this.
-    st.retryFollowsIfUnresolved();
+    // also the point `getUserParams()` becomes resolvable — so a boot-time
+    // `loadContext()` that lost that race gets its real answer here (the event
+    // audience depends on it). Once answered, it is not asked again.
+    if (!st.contextResolved) void st.loadContext();
   });
 
   // Cross-tab theme listener — use loadTheme() to also update DOM data-theme attribute

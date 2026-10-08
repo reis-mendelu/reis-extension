@@ -384,6 +384,8 @@ export interface ContextSlice {
   isErasmus: boolean;
   fullName: string | null;
   userEmail: string | null;
+  /** IS has named the faculty this session; until then loadContext is worth re-asking. */
+  contextResolved: boolean;
   loadContext: () => Promise<void>;
 }
 
