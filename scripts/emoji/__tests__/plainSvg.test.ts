@@ -18,6 +18,7 @@ describe('asPlainSvg', () => {
     ['a script', '<svg><script>alert(1)</script></svg>'],
     ['an event handler', '<svg onload="alert(1)"><path d="M0 0"/></svg>'],
     ['a transform hiding a url()', '<svg><g transform="url(#x)"><path d="M0 0"/></g></svg>'],
+    ['a transform', '<svg><g transform="scale(2)"><path d="M0 0"/></g></svg>'],
     ['a link', '<svg><a href="https://x.io"><path d="M0 0"/></a></svg>'],
     ['an external image', '<svg><image href="https://x.io/a.png"/></svg>'],
     ['a foreign object', '<svg><foreignObject><div/></foreignObject></svg>'],

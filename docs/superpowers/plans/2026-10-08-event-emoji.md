@@ -419,12 +419,11 @@ const ATTRIBUTES = new Set([
   'width',
   'height',
   'points',
-  'transform',
 ]);
 // A colour, a number list or a path: no parentheses, no url(), no quotes or
-// angle brackets. transform gets its own pattern below.
+// angle brackets. No `transform`: no Twemoji file uses one, and its pattern was
+// the only regular expression here that could backtrack (CodeQL on #517).
 const PLAIN_VALUE = /^[#\w\s.,%-]*$/;
-const TRANSFORM = /^(\s*(matrix|translate|scale|rotate)\([-\d.,\se]*\)\s*)+$/;
 
 export function asPlainSvg(code: string, text: string): string {
   const svg = text.trim();
@@ -447,8 +446,6 @@ export function asPlainSvg(code: string, text: string): string {
       if (!ATTRIBUTES.has(key)) fail(`${key}= is not a drawing attribute`);
       if (key === 'xmlns') {
         if (value !== SVG_NS) fail(`xmlns="${value}"`);
-      } else if (key === 'transform') {
-        if (!TRANSFORM.test(value)) fail(`transform="${value}"`);
       } else if (!PLAIN_VALUE.test(value)) fail(`${key}="${value}"`);
       return '';
     });
