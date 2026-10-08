@@ -21,6 +21,7 @@ export function AdminStatsPanel() {
   const selectedDay = useAppStore((s) => s.adminStatsDay);
   const reload = useAppStore((s) => s.loadAdminStats);
   const pickDay = useAppStore((s) => s.selectAdminStatsDay);
+  const retention = useAppStore((s) => s.adminRetention);
   const label = (k: string) => (k === 'unknown' ? t('admin.stats.unknown') : k);
   const today = stats?.daily.at(-1) ?? null;
 
@@ -42,30 +43,46 @@ export function AdminStatsPanel() {
   ) : (
     <>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <div className="stats stats-horizontal shadow-sm">
-          {(
-            [
-              ['today', stats.today],
-              ['d7', stats.d7],
-              ['d30', stats.d30],
-            ] as const
-          ).map(([k, v]) => (
-            <div key={k} className="stat p-3">
-              <div className="stat-title text-xs">{t(`admin.stats.${k}`)}</div>
-              <div className="stat-value text-2xl">{v}</div>
-              {/* "86 today" says nothing about whether reIS is being discovered
+        <div className="flex flex-wrap gap-2">
+          <div className="stats stats-horizontal shadow-sm">
+            {(
+              [
+                ['today', stats.today],
+                ['d7', stats.d7],
+                ['d30', stats.d30],
+              ] as const
+            ).map(([k, v]) => (
+              <div key={k} className="stat p-3">
+                <div className="stat-title text-xs">{t(`admin.stats.${k}`)}</div>
+                <div className="stat-value text-2xl">{v}</div>
+                {/* "86 today" says nothing about whether reIS is being discovered
                   or actually kept, which is the question the redesign exists to
                   answer. The RPC's date spine always ends on today, so the last
                   daily row is today's — but an empty window must not crash the
                   tile. */}
-              {k === 'today' && today && (
-                <div className="stat-desc text-xs">
-                  {today.newDevices} {t('admin.stats.new')} · {today.returningDevices}{' '}
-                  {t('admin.stats.returning')}
+                {k === 'today' && today && (
+                  <div className="stat-desc text-xs">
+                    {today.newDevices} {t('admin.stats.new')} · {today.returningDevices}{' '}
+                    {t('admin.stats.returning')}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {/* Its own block, so it wraps under the three totals on a phone rather
+            than pushing a fourth tile off a 320px screen. From its own RPC:
+            absent until that read lands, never blocking the totals. */}
+          {retention && retention.regularsEver > 0 && (
+            <div className="stats shadow-sm">
+              <div className="stat p-3" title={t('admin.stats.goneQuietHint')}>
+                <div className="stat-title text-xs">{t('admin.stats.goneQuiet')}</div>
+                <div className="stat-value text-2xl">
+                  {Math.round((retention.goneQuiet / retention.regularsEver) * 100)} %
                 </div>
-              )}
+                <div className="stat-desc text-xs">{t('admin.stats.goneQuietDesc')}</div>
+              </div>
             </div>
-          ))}
+          )}
         </div>
         <span className="text-xs opacity-60">{t('admin.stats.epochNote')}</span>
       </div>

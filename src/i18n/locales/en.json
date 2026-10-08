@@ -1105,8 +1105,8 @@
       "devicesNote": "Active devices, not people: a student on a phone and a laptop counts twice.",
       "epochNote": "Data from 7 Sep 2026",
       "new": "new",
-      "returning": "returning",
-      "ofWhichReturning": "of which returning",
+      "returning": "existing",
+      "ofWhichReturning": "of which existing",
       "activeDevices": "active devices",
       "pickDay": "Show day",
       "noData": "No data yet.",
@@ -1123,7 +1123,10 @@
       "mapViews": "opens",
       "mapViewsNote": "A count of opens, not of people — no identifier sits behind these numbers.",
       "trendAria": "Trend: {label}, last {days} days, {total} {unit} in total, peak {max} in a day.",
-      "trendWithheld": "No chart for this signal yet — under 5 installs in 30 days."
+      "trendWithheld": "No chart for this signal yet — under 5 installs in 30 days.",
+      "goneQuietHint": "Share of devices that used reIS on 2+ days of at least one week but have not opened it for 14 days. Devices, not people — a reinstall counts too.",
+      "goneQuietDesc": "of regulars · 14+ days without reIS",
+      "goneQuiet": "Gone"
     },
     "loginName": "login",
     "audience": {

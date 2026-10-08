@@ -38,6 +38,7 @@ describe('AdminStatsPanel', () => {
       // Reset explicitly: the store is module-level, so a test that seeds the
       // feature half would otherwise leak it into every test after it.
       adminFeatureStats: null,
+      adminRetention: null,
       selectAdminStatsDay: vi.fn(async () => {}),
     } as never);
   });
@@ -54,7 +55,7 @@ describe('AdminStatsPanel', () => {
   // about whether reIS is being discovered or actually kept.
   it("shows today's new/returning split under the Dnes tile", () => {
     render(<AdminStatsPanel />);
-    expect(screen.getByText('21 noví · 65 vracející se')).toBeInTheDocument();
+    expect(screen.getByText('21 noví · 65 stávající')).toBeInTheDocument();
   });
 
   // The RPC's date spine always ends on today, but a caller that hands back an
@@ -95,7 +96,7 @@ describe('AdminStatsPanel', () => {
   it('labels the returning share as a composition, not as retention', () => {
     render(<AdminStatsPanel />);
     expect(screen.getByText('76 %')).toBeInTheDocument();
-    expect(screen.getByText('z toho vracející se')).toBeInTheDocument();
+    expect(screen.getByText('z toho stávající')).toBeInTheDocument();
     expect(screen.queryByText(/[Nn]ávratnost/)).not.toBeInTheDocument();
   });
 
@@ -162,5 +163,26 @@ describe('AdminStatsPanel', () => {
     render(<AdminStatsPanel />);
 
     expect(screen.getByRole('button', { name: /Mapa aspoň 3 sekundy/ })).toBeInTheDocument();
+  });
+
+  // The one number for "how many are we losing": regulars gone 14+ days, as a
+  // share of every device that was ever a regular.
+  it('shows the share of regulars lost as a single percentage', () => {
+    useAppStore.setState({ adminRetention: { regularsEver: 2435, goneQuiet: 97 } } as never);
+    render(<AdminStatsPanel />);
+    expect(screen.getByText('4 %')).toBeInTheDocument();
+    expect(screen.getByText('Odešli')).toBeInTheDocument();
+    expect(screen.getByText(/14\+ dní bez reIS/)).toBeInTheDocument();
+  });
+
+  // Its own RPC: until it answers, or with nobody to lose yet, there is no tile
+  // rather than a "0 %" that would read as a measurement.
+  it('shows no loss tile without a retention read or with no regulars yet', () => {
+    render(<AdminStatsPanel />);
+    expect(screen.queryByText('Odešli')).not.toBeInTheDocument();
+
+    useAppStore.setState({ adminRetention: { regularsEver: 0, goneQuiet: 0 } } as never);
+    render(<AdminStatsPanel />);
+    expect(screen.queryByText('Odešli')).not.toBeInTheDocument();
   });
 });

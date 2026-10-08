@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const fetchUsageStats = vi.hoisted(() => vi.fn());
 vi.mock('../../../api/usageStats', () => ({ fetchUsageStats }));
+const fetchUsageRetention = vi.hoisted(() => vi.fn());
+vi.mock('../../../api/usageRetention', () => ({ fetchUsageRetention }));
 
 import { useAppStore } from '../../useAppStore';
 
@@ -18,7 +20,9 @@ const stats = {
 describe('createAdminStatsSlice', () => {
   beforeEach(() => {
     fetchUsageStats.mockReset().mockResolvedValue(stats);
+    fetchUsageRetention.mockReset().mockResolvedValue(null);
     useAppStore.setState({
+      adminRetention: null,
       adminStats: null,
       adminStatsDay: null,
       adminStatsRequestId: 0,
@@ -75,5 +79,19 @@ describe('createAdminStatsSlice', () => {
     expect(useAppStore.getState().adminStatsDay).toBeNull();
     expect(useAppStore.getState().adminStats).toEqual(stats);
     expect(useAppStore.getState().adminStatsLoading).toBe(false);
+  });
+
+  // Retention comes from its own RPC: it loads beside the usage numbers, and a
+  // failed read keeps what is already on screen instead of blanking it.
+  it('loads retention alongside, and keeps it when a refetch fails', async () => {
+    const retention = { regularsEver: 2435, goneQuiet: 97 };
+    fetchUsageRetention.mockResolvedValueOnce(retention).mockResolvedValueOnce(null);
+
+    await useAppStore.getState().loadAdminStats();
+    await vi.waitFor(() => expect(useAppStore.getState().adminRetention).toEqual(retention));
+
+    await useAppStore.getState().loadAdminStats();
+    await vi.waitFor(() => expect(fetchUsageRetention).toHaveBeenCalledTimes(2));
+    expect(useAppStore.getState().adminRetention).toEqual(retention);
   });
 });
