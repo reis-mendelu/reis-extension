@@ -126,12 +126,6 @@ export function WelcomeWifiCard({
           <p className="text-sm text-base-content/70">{t('mobile.welcome.wifiBody')}</p>
         )}
 
-        {/* The same alert, named BEFORE the tap — after it, iOS's alert covers
-            this card. Setup needs internet, not eduroam in range. */}
-        {!done && !failed && !expired && target === 'ios' && (
-          <p className="text-sm text-base-content/70">{t('eduroam.native.anywhereNote')}</p>
-        )}
-
         {/* The alert iOS raises over this card, named before it is read as a
             failure. First run is where most students meet it: they install
             reIS at home, tap through, and eduroam is nowhere near.

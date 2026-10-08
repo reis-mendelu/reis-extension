@@ -149,26 +149,4 @@ describe('WelcomeWifiCard', () => {
       expect(screen.queryByText(/Jsi offline/)).not.toBeInTheDocument();
     });
   });
-
-  // Read before the tap, because after it iOS's own "Unable to join" alert
-  // sits on top of whatever this card says.
-  describe('the iOS join alert, named before the tap', () => {
-    it('says setup works anywhere and the alert is expected', () => {
-      renderCard({ status: 'idle', target: 'ios' });
-
-      expect(screen.getByText(/Jde to odkudkoli s internetem/)).toHaveTextContent(/v pořádku/);
-    });
-
-    it('is not on Android, which never attempts a join', () => {
-      renderCard({ status: 'idle', target: 'android' });
-
-      expect(screen.queryByText(/Jde to odkudkoli/)).not.toBeInTheDocument();
-    });
-
-    it('gives way to the saved note once done', () => {
-      renderCard({ status: 'done', outcome: 'saved', target: 'ios' });
-
-      expect(screen.queryByText(/Jde to odkudkoli/)).not.toBeInTheDocument();
-    });
-  });
 });

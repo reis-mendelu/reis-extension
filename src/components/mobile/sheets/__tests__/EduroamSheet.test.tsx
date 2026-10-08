@@ -397,32 +397,4 @@ describe('EduroamSheet', () => {
       expect(screen.queryByText(/timed out/)).not.toBeInTheDocument();
     });
   });
-
-  // Before the tap: afterwards iOS's own "Unable to join" alert covers the sheet.
-  describe('the iOS join alert, named before the tap', () => {
-    it('is under the button on iOS', () => {
-      onPhone({}, 'ios');
-
-      render(<EduroamSheet onClose={vi.fn()} />);
-
-      expect(screen.getByText(/Jde to odkudkoli s internetem/)).toBeInTheDocument();
-    });
-
-    it('is not on Android', () => {
-      onPhone({}, 'android');
-
-      render(<EduroamSheet onClose={vi.fn()} />);
-
-      expect(screen.queryByText(/Jde to odkudkoli/)).not.toBeInTheDocument();
-    });
-
-    it('gives way to the saved note once done', () => {
-      onPhone({ status: 'done', outcome: 'saved' }, 'ios');
-
-      render(<EduroamSheet onClose={vi.fn()} />);
-
-      expect(screen.queryByText(/Jde to odkudkoli/)).not.toBeInTheDocument();
-      expect(screen.getByText(/není v dosahu/)).toBeInTheDocument();
-    });
-  });
 });

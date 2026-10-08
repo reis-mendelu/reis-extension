@@ -625,8 +625,7 @@
       "failed": "Your device didn't save the eduroam network. Please try again.",
       "error": "eduroam setup didn't go through",
       "privacyNote": "The certificate never leaves your device — reIS hands it straight to the system.",
-      "iosLifetime": "eduroam stays set up as long as reIS is installed.",
-      "anywhereNote": "Works from anywhere with internet. Off campus, iOS will say it couldn't join eduroam — that's expected."
+      "iosLifetime": "eduroam stays set up as long as reIS is installed."
     },
     "manual": {
       "mac": {
