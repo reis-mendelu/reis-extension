@@ -1,12 +1,16 @@
 import { validateExternalUrl } from '../../mobile/openExternal';
 import type { PostInput } from '../../api/societyPosts';
 import { findEventEmoji } from '../../data/eventEmoji';
+import type { EventCategory } from '../../types/events';
 
 export interface ComposerDraft {
   title: string;
   description: string;
-  /** A Twemoji code from the catalog; its category follows from it. */
+  /** A Twemoji code; its category follows from the catalog. */
   emoji: string;
+  /** The category to keep when this build does not ship `emoji` (a code a
+   *  newer build added): the event's own, or 'other' for a new one. */
+  fallbackCategory: EventCategory;
   date: string;
   endDate: string;
   time: string;
@@ -46,7 +50,7 @@ export function buildPostInput(d: ComposerDraft): PostInput {
     title: d.title.trim(),
     body: d.description.trim(),
     // The catalog decides the category older builds file it under.
-    category: findEventEmoji(d.emoji)?.category ?? 'other',
+    category: findEventEmoji(d.emoji)?.category ?? d.fallbackCategory,
     emoji: d.emoji,
     date: d.date,
     endDate: d.endDate && d.endDate > d.date ? d.endDate : null,

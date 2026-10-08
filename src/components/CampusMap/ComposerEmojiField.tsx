@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { EVENT_EMOJI, EMOJI_GROUPS, findEventEmoji } from '../../data/eventEmoji';
 
@@ -20,6 +20,7 @@ export function ComposerEmojiField({
   language: 'cz' | 'en';
 }) {
   const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
   const current = findEventEmoji(value);
   const name = (code: string) => {
     const e = findEventEmoji(code);
@@ -28,6 +29,7 @@ export function ComposerEmojiField({
   return (
     <div>
       <button
+        ref={trigger}
         type="button"
         aria-expanded={open}
         aria-label={`${current ? name(value) : value} · ${t('map.emojiChange')}`}
@@ -57,6 +59,8 @@ export function ComposerEmojiField({
                     onClick={() => {
                       onChange(e.code);
                       setOpen(false);
+                      // The option under focus is about to unmount.
+                      trigger.current?.focus();
                     }}
                   >
                     <img src={`/emoji/${e.code}.svg`} alt="" className="h-5 w-5" />

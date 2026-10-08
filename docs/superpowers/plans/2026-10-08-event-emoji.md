@@ -317,10 +317,10 @@ export function eventEmojiSrc(ev: { emoji?: string | null; category: EventCatego
 // Twemoji release. Run after adding an entry to src/data/eventEmoji.ts:
 //   npm run emoji:fetch
 // The SVGs are committed; the app never fetches them at runtime.
-import { existsSync } from 'node:fs';
-import { writeFile } from 'node:fs/promises';
+import { open, unlink } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { EVENT_EMOJI } from '../../src/data/eventEmoji';
+import { asPlainSvg } from './plainSvg';
 
 const VERSION = '15.1.0';
 const DIR = fileURLToPath(new URL('../../public/emoji/', import.meta.url));
@@ -328,14 +328,54 @@ const DIR = fileURLToPath(new URL('../../public/emoji/', import.meta.url));
 let added = 0;
 for (const { code } of EVENT_EMOJI) {
   const out = `${DIR}${code}.svg`;
-  if (existsSync(out)) continue;
-  const res = await fetch(`https://cdn.jsdelivr.net/gh/jdecked/twemoji@${VERSION}/assets/svg/${code}.svg`);
-  if (!res.ok) throw new Error(`${code}: HTTP ${res.status} (not in Twemoji ${VERSION}?)`);
-  await writeFile(out, await res.text());
-  added += 1;
-  console.log('added', code);
+  // 'wx' creates the file or fails if it exists, in one step: no window
+  // between "is it there?" and the write for another writer to slip into.
+  const file = await open(out, 'wx').catch((e: NodeJS.ErrnoException) => {
+    if (e.code === 'EEXIST') return null;
+    throw e;
+  });
+  if (!file) continue;
+  try {
+    const res = await fetch(
+      `https://cdn.jsdelivr.net/gh/jdecked/twemoji@${VERSION}/assets/svg/${code}.svg`
+    );
+    if (!res.ok) throw new Error(`${code}: HTTP ${res.status} (not in Twemoji ${VERSION}?)`);
+    // The bytes ship inside the app, so only a plain drawing gets written.
+    await file.writeFile(asPlainSvg(code, await res.text()));
+    added += 1;
+    console.log('added', code);
+  } catch (e) {
+    await file.close();
+    await unlink(out);
+    throw e;
+  }
+  await file.close();
 }
 console.log(`${added} added, ${EVENT_EMOJI.length} in the catalog`);
+```
+
+`scripts/emoji/plainSvg.ts` (the download must be a plain drawing before it is written; CodeQL review on #517):
+
+```ts
+/**
+ * The downloaded text, if it is a plain SVG drawing; throws otherwise.
+ *
+ * emoji:fetch writes what a CDN returned into public/, which ships in every
+ * build. Twemoji's files are paths and fills only, so anything that can run or
+ * load something — a script, an event handler, a link, a foreign object — means
+ * the response is not the file we asked for, and nothing is written.
+ */
+const MAX_BYTES = 64 * 1024;
+const ACTIVE =
+  /<script|<foreignObject|<iframe|<image|\bon[a-z]+\s*=|href\s*=|url\s*\(|<!ENTITY|<!DOCTYPE/i;
+
+export function asPlainSvg(code: string, text: string): string {
+  const svg = text.trim();
+  if (svg.length > MAX_BYTES) throw new Error(`${code}: ${svg.length} bytes is not an emoji`);
+  if (!/^<svg[\s>][\s\S]*<\/svg>$/.test(svg)) throw new Error(`${code}: not an SVG document`);
+  if (ACTIVE.test(svg)) throw new Error(`${code}: the SVG holds active content`);
+  return text;
+}
 ```
 
 In `package.json` `"scripts"`, after `"verify:ui"`, add:
@@ -397,10 +437,10 @@ In `src/components/CampusMap/mapLayers.ts`, replace the `attribution:` value:
 
 ```ts
     attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Emoji: Twemoji, CC BY 4.0',
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Emoji: Twemoji, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>',
 ```
 
-Plain text, not a link: `noStudentDataLeaves.test.ts` treats every host in source as an outbound destination, and a credit needs no second one.
+CC BY 4.0 asks for the licence's URI, so "CC BY 4.0" links to it. `noStudentDataLeaves.test.ts` treats every host in source as a destination: add `'creativecommons.org'` to its deep-link list, and "the emoji licence" to PRIVACY.md's "Links you open yourself".
 
 - [ ] **Step 10: Add the picker strings**
 

@@ -57,8 +57,9 @@ describe('latestEmoji', () => {
   it("starts on the latest-dated event's emoji", () =>
     expect(
       latestEmoji([
-        { date: '2026-07-01', category: 'party', emoji: '1f389' },
+        // Newer first: the pick is by date, not by position.
         { date: '2026-07-20', category: 'boardgames', emoji: '265f' },
+        { date: '2026-07-01', category: 'party', emoji: '1f389' },
       ])
     ).toBe('265f'));
   it("falls back to that event's category emoji", () =>

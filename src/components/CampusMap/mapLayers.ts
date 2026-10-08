@@ -82,7 +82,7 @@ export function initLeafletMap(
     // to land near where Positron sat.
     className: 'grayscale brightness-[1.06] contrast-[0.92]',
     attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Emoji: Twemoji, CC BY 4.0',
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Emoji: Twemoji, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>',
   }).addTo(map);
   // Show the lettered building names only when zoomed in past the overview.
   // restZoom = the zoom at which the whole campus fits (matches flyToBounds'

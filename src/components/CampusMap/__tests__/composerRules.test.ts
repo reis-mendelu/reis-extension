@@ -4,7 +4,8 @@ import { isComposerReady, deriveVenue, buildPostInput } from '../composerRules';
 const draft = {
   title: 'Pub Quiz',
   description: '',
-  emoji: '1f3d3',
+  emoji: '1f9e0',
+  fallbackCategory: 'quiz' as const,
   date: '2026-10-13',
   endDate: '',
   time: '',
@@ -39,6 +40,14 @@ describe('composerRules', () => {
     expect(deriveVenue({ code: 'Q01' }, [16, 49])).toBe('campus');
     expect(deriveVenue(null, [16, 49])).toBe('offcampus');
     expect(deriveVenue(null, null)).toBe('tba');
+  });
+
+  // A code a newer build added: this build cannot judge it, so an edit keeps
+  // it and keeps the category the event already had.
+  it("keeps an emoji this build does not ship, and the event's category", () => {
+    const input = buildPostInput({ ...draft, emoji: '1f9a9', fallbackCategory: 'sports' });
+    expect(input.emoji).toBe('1f9a9');
+    expect(input.category).toBe('sports');
   });
 
   it('files the event under the category its emoji maps to', () => {

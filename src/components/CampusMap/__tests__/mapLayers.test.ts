@@ -71,5 +71,10 @@ describe('initLeafletMap attribution', () => {
     expect(text).toContain('OpenStreetMap');
     expect(text).toContain('Twemoji');
     expect(text).toContain('CC BY 4.0');
+    // CC BY 4.0 asks for the licence's URI next to the credit.
+    const licence = [...el.querySelectorAll('.leaflet-control-attribution a')].find(
+      (a) => a.textContent === 'CC BY 4.0'
+    );
+    expect(licence?.getAttribute('href')).toBe('https://creativecommons.org/licenses/by/4.0/');
   });
 });

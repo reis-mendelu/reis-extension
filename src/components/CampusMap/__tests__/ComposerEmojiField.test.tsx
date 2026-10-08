@@ -26,6 +26,8 @@ describe('ComposerEmojiField', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Fotbal' }));
     expect(onChange).toHaveBeenCalledWith('26bd');
     expect(screen.queryByRole('button', { name: 'Fotbal' })).toBeNull();
+    // The picked option is gone, so focus goes back to where the grid opened.
+    expect(screen.getByRole('button', { name: /Párty/ })).toHaveFocus();
   });
 
   it('marks the current emoji as pressed in the grid', () => {

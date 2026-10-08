@@ -26,6 +26,7 @@ function rowFrom(input: PostInput, associationId: string, createdBy: string): Sp
     title: input.title,
     body: input.body ?? null,
     category: input.category,
+    emoji: input.emoji ?? null,
     date: input.date,
     end_date: input.endDate ?? null,
     time: input.time ?? null,

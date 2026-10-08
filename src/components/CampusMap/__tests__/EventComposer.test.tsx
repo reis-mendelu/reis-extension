@@ -186,6 +186,38 @@ describe('EventComposer publish', () => {
     expect(patch.category).toBe('boardgames');
   });
 
+  // An emoji a newer build added is unknown here. Saving an unrelated change
+  // must not swap it for this build's fallback, nor re-file the event.
+  it('keeps an emoji this build does not ship when saving an edit', async () => {
+    useAppStore.setState({
+      editEventId: 'c9',
+      societyMapEvents: [
+        {
+          id: 'c9',
+          title: 'Flamingo run',
+          url: '',
+          date: '2026-07-08',
+          endDate: null,
+          time: null,
+          location: 'Q6.06',
+          imageUrl: null,
+          organizerKey: 'pef',
+          societyId: 'supef',
+          coord: [16.614, 49.209],
+          roomCode: 'BA39N6006',
+          venueKind: 'campus',
+          category: 'sports',
+          emoji: '1f9a9',
+        },
+      ],
+    });
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
+    await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
+    expect(updatePost.mock.calls[0][1]).toMatchObject({ emoji: '1f9a9', category: 'sports' });
+  });
+
   it('shows the hall name (not the IS code) in the picked-room chip when editing', () => {
     // Campus events save only room_code and a null location, so the chip must
     // resolve BA39N1009 → "Q01" rather than echoing the raw code.
