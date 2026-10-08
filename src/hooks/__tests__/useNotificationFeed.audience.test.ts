@@ -35,6 +35,7 @@ describe('Novinky audience', () => {
           row('pub', 'au_frrms', false),
           row('mine', 'supef', true),
           row('esn', 'esn', true),
+          row('frrms', 'au_frrms', true),
           row('deadline', 'academic_deadline', false),
         ],
       },
@@ -51,6 +52,6 @@ describe('Novinky audience', () => {
       impersonation: { selection: { faculty: 'FRRMS' }, result: {} } as never,
     });
     const { result } = renderHook(() => useNotificationFeed());
-    expect(result.current.notifications.map((n) => n.id)).toEqual(['pub', 'deadline']);
+    expect(result.current.notifications.map((n) => n.id)).toEqual(['pub', 'frrms', 'deadline']);
   });
 });

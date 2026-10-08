@@ -18,8 +18,11 @@ const grep = (pattern: string) => {
       `git grep -n -E "${pattern}" -- src ':!src/test/guards' ':!src/services/cleanup'`,
       { encoding: 'utf8' }
     );
-  } catch {
-    return '';
+  } catch (err) {
+    // git grep exits 1 when nothing matches — the passing case. Anything else
+    // (no git, a bad pattern) must fail loudly, not pass as "no matches".
+    if ((err as { status?: number }).status === 1) return '';
+    throw err;
   }
 };
 
