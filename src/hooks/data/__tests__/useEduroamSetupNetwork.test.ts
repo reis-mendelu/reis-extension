@@ -79,6 +79,21 @@ describe('useEduroamSetup, without a network', () => {
     expect(result.current.networkFailure).toBe('unreachable');
   });
 
+  // A renewal is a write to the student's IS account; offline it can only
+  // wait for a transport error, so it is not sent at all.
+  it('does not ask IS for a new certificate when the device is offline', async () => {
+    vi.stubGlobal('navigator', { ...navigator, onLine: false });
+    const { result } = renderHook(() => useEduroamSetup());
+
+    await act(async () => {
+      await result.current.renew('ios');
+    });
+
+    expect(regenerateEduroamCert).not.toHaveBeenCalled();
+    expect(result.current.status).toBe('error');
+    expect(result.current.networkFailure).toBe('offline');
+  });
+
   it('clears the failure when the student tries again', async () => {
     vi.mocked(fetchEduroamCertMaterial).mockRejectedValueOnce(iosOffline);
     const { result } = renderHook(() => useEduroamSetup());

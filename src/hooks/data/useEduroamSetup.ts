@@ -133,6 +133,7 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
       setNetworkFailure(null);
       setExpiry(NO_EXPIRY);
       try {
+        if (isDeviceOffline()) throw new Error('eduroam: the device is offline');
         await regenerateEduroamCert();
       } catch (e) {
         fail('useEduroamSetup.renew', e);
