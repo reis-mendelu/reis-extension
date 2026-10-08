@@ -150,26 +150,16 @@ describe.skipIf(!configured)('fetchFeatureStats against a live PostgREST', () =>
       { feature: 'eduroam_wifi_configured', installs: 6, hits: 6 },
       { feature: 'map_dwell_3s', installs: 7, hits: 14 },
     ]);
-    expect(stats!.topEvents).toEqual([
-      { id: '33333333-3333-3333-3333-333333333333', title: 'Mezinárodní večer', mapViews: 143 },
-      { id: '44444444-4444-4444-4444-444444444444', title: 'Deskovky v klubu', mapViews: 88 },
-    ]);
   });
 
   // The whole point of the dated rollup: a per-day shape the old counter column
   // could never have produced, for the signals and for each event.
-  it('returns a daily shape for a signal and for an event', async () => {
+  it('returns a daily shape for a signal', async () => {
     const stats = await fetchFeatureStats(30);
 
     const dwell = stats!.daily.filter((d) => d.feature === 'map_dwell_3s');
     expect(dwell.length).toBeGreaterThan(0);
     expect(dwell.every((d) => /^\d{4}-\d{2}-\d{2}$/.test(d.day) && d.installs > 0)).toBe(true);
-
-    const ev = stats!.eventDaily.filter(
-      (d) => d.eventId === '33333333-3333-3333-3333-333333333333'
-    );
-    expect(ev.length).toBeGreaterThan(0);
-    expect(ev.every((d) => d.views > 0)).toBe(true);
   });
 
   // A signal whose total was withheld must not have its shape published a day

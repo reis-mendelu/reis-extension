@@ -1,4 +1,5 @@
 import { listMyPosts, type SpolkyEventRow } from '../../../api/societyPosts';
+import { fetchEventSignals, type EventSignalTotals } from '../../../api/eventSignalsAdmin';
 
 /** What loadSocietyPosts needs from the slice: reading the active society (twice —
  *  once before each network call resolves, to guard against a stale response —
@@ -6,12 +7,13 @@ import { listMyPosts, type SpolkyEventRow } from '../../../api/societyPosts';
 interface LoadSocietyPostsAccess {
   activeAssociationId: () => string | null;
   setPosts: (posts: SpolkyEventRow[]) => void;
+  setSignals: (totals: Record<string, EventSignalTotals>) => void;
   /** MapSlice's own rebuild — societyMapEvents is derived from societyPosts. */
   refreshSocietyMapEvents: () => void;
 }
 
 /**
- * Pull the active society's own events.
+ * Pull the active society's own events, then their Seen / Opened / Link totals.
  *
  * No society picked: clear the posts and still rebuild societyMapEvents (to
  * empty), rather than leaving a stale list of another society's events on
@@ -45,4 +47,10 @@ export async function loadSocietyPosts(access: LoadSocietyPostsAccess): Promise<
   if (posts === null || !current()) return;
   access.setPosts(posts);
   access.refreshSocietyMapEvents();
+  // Detached: publish and delete await this action, and slow numbers must not
+  // hold up "Uloženo" — the posts are already on screen. The same guard drops
+  // an answer for a society nobody is looking at any more.
+  void fetchEventSignals(posts.map((p) => p.id)).then(({ totals, ok }) => {
+    if (ok && current()) access.setSignals(totals);
+  });
 }

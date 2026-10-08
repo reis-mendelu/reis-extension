@@ -12,8 +12,9 @@ import type { VenueGroup } from './eventHelpers';
  * tab (phone) or view (desktop) is shown, so a background tab counts nothing.
  */
 export function usePinsSeen(groups: VenueGroup[], enabled: boolean): void {
+  // Seeded with the first render's values; later ones arrive in the effect
+  // below (never written during render).
   const state = useRef({ groups, enabled });
-  state.current = { groups, enabled };
   const check = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -42,6 +43,7 @@ export function usePinsSeen(groups: VenueGroup[], enabled: boolean): void {
   }, []);
 
   useEffect(() => {
+    state.current = { groups, enabled };
     check.current?.();
   }, [groups, enabled]);
 }

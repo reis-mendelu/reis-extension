@@ -22,16 +22,6 @@ const STATS: FeatureStats = {
     { day: '2026-09-22', feature: 'map_dwell_3s', installs: 2 },
     { day: '2026-09-22', feature: 'eduroam_wifi_configured', installs: 6 },
   ],
-  topEvents: [
-    { id: 'ev-1', title: 'Mezinárodní večer', mapViews: 45 },
-    { id: 'ev-2', title: 'Deskovky v klubu', mapViews: 12 },
-  ],
-  eventDaily: [
-    { day: '2026-09-20', eventId: 'ev-1', views: 12 },
-    { day: '2026-09-21', eventId: 'ev-1', views: 31 },
-    { day: '2026-09-22', eventId: 'ev-1', views: 2 },
-    { day: '2026-09-22', eventId: 'ev-2', views: 12 },
-  ],
 };
 
 const seed = (stats: FeatureStats | null = STATS) =>
@@ -50,6 +40,13 @@ describe('FeatureSignals', () => {
 
   // Until the RPC answers there is nothing honest to show; a panel of zeros
   // would read as "nobody uses the map".
+  // Per-event numbers live in the event list now (spec 2026-10-08).
+  it('lists no events', () => {
+    seed();
+    render(<FeatureSignals />);
+    expect(screen.queryByText(/nejotevíranější|most-opened/i)).toBeNull();
+  });
+
   it('renders nothing before the stats arrive', () => {
     const { container } = render(<FeatureSignals />);
 
@@ -83,16 +80,8 @@ describe('FeatureSignals', () => {
     expect(screen.getByText('eduroam profil předán')).toBeInTheDocument();
   });
 
-  it('lists the most-opened events with their counts', () => {
-    seed();
-    render(<FeatureSignals />);
-
-    expect(screen.getByRole('button', { name: /Mezinárodní večer/ })).toBeInTheDocument();
-    expect(screen.getByText(/^45 otevření$/)).toBeInTheDocument();
-  });
-
   it('shows a signal the RPC returned no row for as zero', () => {
-    seed({ byFeature: [], daily: [], topEvents: [], eventDaily: [] });
+    seed({ byFeature: [], daily: [] });
     render(<FeatureSignals />);
 
     expect(screen.getAllByText(/^0 instalací$/)).toHaveLength(3);
@@ -134,28 +123,12 @@ describe('FeatureSignals', () => {
     expect(screen.queryByRole('img', { name: /eduroam profil předán/ })).not.toBeInTheDocument();
   });
 
-  it('opens on the most-opened event and follows the one you pick', () => {
-    seed();
-    render(<FeatureSignals />);
-
-    expect(
-      screen.getByRole('img', { name: /Mezinárodní večer.*celkem 45 otevření/ })
-    ).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText('Deskovky v klubu'));
-
-    expect(
-      screen.getByRole('img', { name: /Deskovky v klubu.*celkem 12 otevření/ })
-    ).toBeInTheDocument();
-  });
-
   // The RPC omits a day with no activity. If the chart skipped those days too,
   // a quiet fortnight and a busy one would draw the same picture.
   it('spans the whole 30-day window, not just the days with rows', () => {
     seed();
     render(<FeatureSignals />);
 
-    // Both charts span the same window, so both captions say so.
-    expect(screen.getAllByText('24.8. – 22.9.')).toHaveLength(2);
+    expect(screen.getAllByText('24.8. – 22.9.')).toHaveLength(1);
   });
 });

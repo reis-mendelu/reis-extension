@@ -3,7 +3,6 @@ import { render, screen, within } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { AdminEventList } from '../AdminEventList';
 import type { MapEvent } from '../../../types/events';
-import type { SpolkyEventRow } from '../../../api/societyPosts';
 
 vi.mock('../../../api/societyPosts', () => ({ deletePost: vi.fn().mockResolvedValue({}) }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -31,95 +30,51 @@ const ev = (id: string, date: string): MapEvent => ({
   category: 'party',
 });
 
-const row = (id: string, date: string, views: number, clicks: number): SpolkyEventRow => ({
-  id,
-  association_id: 'supef',
-  title: `E-${id}`,
-  body: null,
-  category: 'party',
-  date,
-  end_date: null,
-  time: null,
-  venue_kind: 'offcampus',
-  room_code: null,
-  coord_lng: 16.6,
-  coord_lat: 49.2,
-  location: null,
-  url: null,
-  created_by: null,
-  visible_from: null,
-  subscribers_only: false,
-  view_count: views,
-  click_count: clicks,
-});
-
-// The society's reason to open the console after publishing: did anyone see it?
-// The numbers come from the society's own `spolky_events` rows, which the
-// console already loads under the society's session.
-describe('AdminEventList — views and clicks per event', () => {
+// The reason to open the console after publishing: did anyone see it, open
+// it, follow its link? Three numbers per event, each once per device, read
+// from event_signals (spec 2026-10-08).
+describe('AdminEventList — seen, opened and link per event', () => {
   beforeEach(() => {
-    const dates = { old: iso(-3), live: iso(2), sched: iso(30) };
+    const dates = { old: iso(-3), live: iso(2), far: iso(30) };
     useAppStore.setState({
       adminConsoleOpen: true,
       adminActiveAssociationId: 'supef',
       language: 'en',
       composerOpen: false,
-      // Reset like the rest: the store is a singleton and a test below sets it.
-      societyMapEvents: [ev('old', dates.old), ev('live', dates.live), ev('sched', dates.sched)],
-      societyPosts: [
-        row('old', dates.old, 13, 8),
-        row('live', dates.live, 60, 29),
-        row('sched', dates.sched, 0, 0),
-      ],
+      societyMapEvents: [ev('old', dates.old), ev('live', dates.live), ev('far', dates.far)],
+      societyPosts: [],
+      societyEventSignals: {
+        old: { seen: 13, opened: 8, linkTaps: 1 },
+        live: { seen: 60, opened: 29, linkTaps: 4 },
+        far: { seen: 0, opened: 0, linkTaps: 0 },
+      },
     });
   });
 
   const rowOf = (title: string) => screen.getByText(title).closest('button') as HTMLElement;
 
-  it('shows a live event its views and clicks', () => {
+  it('shows a live event its three numbers', () => {
     render(<AdminEventList />);
     const live = rowOf('E-live');
-    expect(within(live).getByText('60 views')).toBeInTheDocument();
-    expect(within(live).getByText('29 clicks')).toBeInTheDocument();
+    expect(within(live).getByText('60 seen')).toBeInTheDocument();
+    expect(within(live).getByText('29 opened')).toBeInTheDocument();
+    expect(within(live).getByText('4 link taps')).toBeInTheDocument();
   });
 
   it('keeps the final numbers on a past event', () => {
     render(<AdminEventList />);
-    const old = rowOf('E-old');
-    expect(within(old).getByText('13 views')).toBeInTheDocument();
-    expect(within(old).getByText('8 clicks')).toBeInTheDocument();
+    expect(within(rowOf('E-old')).getByText('13 seen')).toBeInTheDocument();
   });
 
-  // Task 10 removed the Scheduled bucket — a far-future event now sits in
-  // Upcoming like any other, and its stats footer is no longer suppressed.
-  it('shows views and clicks on a far-future event too (no more Scheduled bucket)', () => {
-    useAppStore.setState({
-      societyPosts: [row('sched', useAppStore.getState().societyMapEvents[2]!.date, 7, 2)],
-    });
+  it('says what the numbers count', () => {
     render(<AdminEventList />);
-    const sched = rowOf('E-sched');
-    expect(within(sched).getByText('7 views')).toBeInTheDocument();
-    expect(within(sched).getByText('2 clicks')).toBeInTheDocument();
+    expect(screen.getByText(/device once/i)).toBeInTheDocument();
   });
 
-  it('says one view is one device, not one person', () => {
+  it('shows no numbers, and no note, before they have loaded', () => {
+    useAppStore.setState({ societyEventSignals: {} });
     render(<AdminEventList />);
-    expect(screen.getByText(/device/i)).toBeInTheDocument();
-  });
-
-  it('shows no note when no row carries both counters', () => {
-    useAppStore.setState({
-      societyPosts: [{ ...row('live', iso(2), 60, 0), click_count: undefined }],
-    });
-    render(<AdminEventList />);
-    expect(within(rowOf('E-live')).queryByText(/views/)).toBeNull();
-    expect(screen.queryByText(/device/i)).toBeNull();
-  });
-
-  it('shows no numbers when the row carries none (dev store, stale cache)', () => {
-    useAppStore.setState({ societyPosts: [] });
-    render(<AdminEventList />);
-    expect(within(rowOf('E-live')).queryByText(/views/)).toBeNull();
-    expect(screen.queryByText(/device/i)).toBeNull();
+    expect(within(rowOf('E-live')).queryByText(/seen/)).toBeNull();
+    expect(screen.queryByText(/device once/i)).toBeNull();
   });
 });

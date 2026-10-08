@@ -8,26 +8,14 @@ const FeatureRow = z.object({
   installs: z.number(),
   hits: z.number(),
 });
-const EventRow = z.object({
-  id: z.string(),
-  title: z.string(),
-  map_views: z.number(),
-});
 const DailyRow = z.object({
   day: z.string(),
   feature: z.string(),
   installs: z.number(),
 });
-const EventDailyRow = z.object({
-  day: z.string(),
-  event_id: z.string(),
-  views: z.number(),
-});
 const Schema = z.object({
   by_feature: z.array(FeatureRow),
   daily: z.array(DailyRow),
-  top_events: z.array(EventRow),
-  event_daily: z.array(EventDailyRow),
 });
 
 export interface FeatureSignalCount {
@@ -39,24 +27,11 @@ export interface FeatureSignalCount {
   hits: number;
 }
 
-export interface EventMapViews {
-  id: string;
-  title: string;
-  mapViews: number;
-}
-
 /** One day of one signal. Absent entirely for a signal under the floor. */
 export interface FeatureDailyPoint {
   day: string;
   feature: string;
   installs: number;
-}
-
-/** One day of one event's map opens. */
-export interface EventDailyPoint {
-  day: string;
-  eventId: string;
-  views: number;
 }
 
 export interface FeatureStats {
@@ -69,22 +44,18 @@ export interface FeatureStats {
    * goes through `utils/trendSeries`.
    */
   daily: FeatureDailyPoint[];
-  /** The ten most-opened events on the map within the window, most first. */
-  topEvents: EventMapViews[];
-  /** Daily opens for those ten events. Sparse, like `daily`. */
-  eventDaily: EventDailyPoint[];
 }
 
-const EMPTY: FeatureStats = { byFeature: [], daily: [], topEvents: [], eventDaily: [] };
+const EMPTY: FeatureStats = { byFeature: [], daily: [] };
 
 /**
- * Admin-only aggregate read for the three feature signals and the per-event map
- * views beside them.
+ * Admin-only aggregate read for the three feature signals. (The RPC also
+ * returns per-event map views; those are read per event now, in the event
+ * list — api/eventSignalsAdmin — and ignored here.)
  *
  * Counts of INSTALLS, never people — the same caveat the usage panel carries,
  * for the same reason: the identifier behind these numbers belongs to an
- * installation. `map_views` is a count of OPENS within the window, with no
- * identifier behind it at all, deduplicated only per app session on the device.
+ * installation.
  *
  * -1 means "under 5" and is passed through as-is so the UI can render it as
  * "< 5" rather than a number a small group could be narrowed from.
@@ -104,15 +75,5 @@ export async function fetchFeatureStats(days: number): Promise<FeatureStats | nu
   return {
     byFeature: parsed.data.by_feature,
     daily: parsed.data.daily,
-    topEvents: parsed.data.top_events.map((e) => ({
-      id: e.id,
-      title: e.title,
-      mapViews: e.map_views,
-    })),
-    eventDaily: parsed.data.event_daily.map((d) => ({
-      day: d.day,
-      eventId: d.event_id,
-      views: d.views,
-    })),
   };
 }

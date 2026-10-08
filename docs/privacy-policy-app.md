@@ -34,8 +34,8 @@ yourself — see *Report attachments* below.
 | Feedback | you press send | your message, any contact detail you type, the screen name, app version, browser, window size |
 | Report attachments | only what you add to a report, when you press send | a **screenshot you pick** yourself, re-encoded on your device so photo metadata and location are removed; and, **only if you tick the box**, the recent reIS errors and warnings from this session, with link parameters, email addresses, long numbers and coordinates already blanked out, plus platform, OS version, language and sync status. **Not linked to the install identifier.** |
 | In-app survey | you answer | the same random install identifier |
-| Society post view or click | you open one | a post id |
-| Map event opened | you open an event on the campus map | that event's id and nothing else — a counter on the event, with no identifier of yours attached |
+| Society event opened or link tapped | you open an event or its link | that event's id and nothing else — a counter on the event, counted once per device, with no identifier of yours attached |
+| Society event shown | an event appears on your screen | that event's id and nothing else — counted once per device, with no identifier of yours attached |
 | Map used for 3 seconds | at most once a day, after three seconds on the map | the random install identifier and the fixed `map_dwell_3s` label |
 | eduroam network configured | the app itself saves the eduroam network (phone) | the random install identifier and the fixed `eduroam_wifi_configured` label |
 | eduroam profile handed over | a profile is prepared for you to install (Mac, Windows) | the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it |

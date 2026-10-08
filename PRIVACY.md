@@ -21,7 +21,7 @@ There is no longer any exception to that. Library study-room booking — the one
 ### 2. Anonymous Usage Analytics
 We collect anonymous usage data to improve the extension:
 - **Interaction Data**: Clicks on notifications and views of the notification feed.
-- **Map Event Views**: When you open a society event on the campus map, a counter on that event is incremented. The request carries **the event's id and nothing else** — no identifier of yours, not even the random install identifier described in section 3.
+- **Society Event Counters**: When a society event appears on your screen, when you open it, and when you tap its link, a counter on that event is incremented — each at most once per device, which your device remembers itself. The request carries **the event's id and nothing else** — no identifier of yours, not even the random install identifier described in section 3.
 - **Feature Counters**: Two things are counted, each as one labelled event per installation per day carrying the random install identifier from section 3 and nothing else: that you spent **at least three seconds** on the campus map, and that you **completed the eduroam Wi-Fi setup** (recorded separately for "the app configured the network itself" and "the profile was handed over for you to install"). No event ids, no room or building names, no timings beyond the three-second threshold, and nothing about what you were looking at.
 - **Purpose**: To rank relevance of student association notifications, and to know whether the map and the eduroam setup are actually used.
 - **Privacy**: This data is **not linked** to your identity, IS credentials, or personal content.
@@ -46,7 +46,7 @@ If you use the built-in "Report Bug / Feedback" feature, the following data is s
 
 ### 5. Firefox: consent for each kind of data
 Firefox asks you directly about everything above. Nothing is **required** to use reIS, and each item is optional:
-- **Technical and interaction data** covers the daily usage count, the feature counters, the view and click counters on society posts, the view counter on map events, the NPS rating and a report's error log. Firefox shows it as a switch when you install reIS and in `about:addons` → reIS → *Permissions and data*. While it is off, reIS sends none of them from Firefox.
+- **Technical and interaction data** covers the daily usage count, the feature counters, the society event counters (shown, opened, link tapped), the NPS rating and a report's error log. Firefox shows it as a switch when you install reIS and in `about:addons` → reIS → *Permissions and data*. While it is off, reIS sends none of them from Firefox.
 - **Personal communications** (the text of a report), **personally identifying information** (the optional contact email) and **website content** (an attached screenshot) are asked for when you press Send on a report, and only for what that report contains. If you decline, the report is not sent.
 
 ## Data Storage & Security
@@ -60,7 +60,7 @@ reIS contacts the following services. **IS Mendelu is the only one that receives
 
 **Always:**
 1. **IS Mendelu** (`is.mendelu.cz`) — fetches your academic data, authenticated by you.
-2. **Supabase** (`*.supabase.co`) — reIS's own backend: public notifications, society events, anonymous usage events, and feedback you submit, with any attachment you added to it. Different records carry different keys. The daily usage count and the in-app survey use the random installation identifier described above; society view/click counters carry only a post row id. A submitted suggestion carries no identifier we generate — but if you fill in the optional contact field, it carries whatever you typed there, because asking us to reply is what that field is for.
+2. **Supabase** (`*.supabase.co`) — reIS's own backend: public notifications, society events, anonymous usage events, and feedback you submit, with any attachment you added to it. Different records carry different keys. The daily usage count and the in-app survey use the random installation identifier described above; society event counters carry only an event id. A submitted suggestion carries no identifier we generate — but if you fill in the optional contact field, it carries whatever you typed there, because asking us to reply is what that field is for.
 3. **jsDelivr** (`cdn.jsdelivr.net`) — static subject-difficulty data. No identifier is sent, but the set of subjects requested does reveal to the CDN which courses you are enrolled in.
 4. **OpenStreetMap** — campus map tiles. The request identifies reIS by name, which their tile usage policy requires; it carries nothing about you.
 

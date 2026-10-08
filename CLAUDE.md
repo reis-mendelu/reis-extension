@@ -271,7 +271,7 @@ file in the same PR** (the `disclosure-drift` Stop hook asks if you forget), the
 
 **reIS transmits nothing about a failure on its own.** No error type, message,
 stack, file path or session id leaves a device unless the student attaches it to
-a report (item 6 below). There is no error-reporting service, no background
+a report (item 5 below). There is no error-reporting service, no background
 collection, and no Supabase table or RPC behind one — `error_reports`, `error_groups`, `report_error` and
 `report_error_v2` were all dropped in `supabase/migrations/20260904120000_drop_error_telemetry.sql`.
 
@@ -303,22 +303,22 @@ Only these, all disclosed in `docs/privacy-policy-app.md`:
    never anything derived from the student. Deliberately counts installs, not people.
 2. **Feedback the student typed** — via the `submit_suggestion` RPC (`src/api/suggestions.ts`),
    with screen name, app version, browser and viewport.
-3. **Society event view/click counters** — a post row id and nothing else.
+3. **Society event signals** (`src/api/eventSignals.ts`, October 2026) — Seen / Opened / Link
+   tapped, a society event's row id and *no* identifier at all, each sent once per device (the
+   record of what was sent stays on the device). Rolled up per event per day in
+   `event_map_views`; the server stamps the date. Builds up to 5.3.0 still send the old
+   post view/click counters and per-session map views; current code sends neither.
 4. **Three feature counters** (`src/api/featureUsage.ts`, September 2026) — the same random
    install UUID plus one label from a database-enforced whitelist: `map_dwell_3s`,
    `eduroam_wifi_configured`, `eduroam_profile_delivered`. Counts installs, not people.
-5. **Map views per event** (same file) — a society event's row id and *no* identifier at all,
-   rolled up per event per day in `event_map_views`, kept clear of the Novinky `view_count`.
-   The server stamps the date; the request carries only the event id.
-
-6. **Report attachments** (`submit_suggestion_v2`, September 2026) — only what the student
+5. **Report attachments** (`submit_suggestion_v2`, September 2026) — only what the student
    adds to a report: a screenshot they pick (re-encoded to JPEG on device, no EXIF/GPS) and,
    if they tick an unticked-by-default box, the cleaned diagnostic log (collected at Send, not
    listed in the form — the cleaning is what makes it safe to send unread). No install id. Deleted after 90 days or on `done` (pg_cron + a trigger).
    The guard allows diagnostics to reach Supabase through `src/api/suggestions.ts` only, and
    no Supabase caller may import `utils/diagnostics/`.
 
-4 and 5 are deliberately **unjoinable**: nothing records which event a given install looked
+3 and 4 are deliberately **unjoinable**: nothing records which event a given install looked
 at, because that pairing would be a behavioural profile. Keep it that way.
 
 `SUPABASE_CALLERS` in the guard test is the authoritative list of files allowed
