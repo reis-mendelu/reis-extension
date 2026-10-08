@@ -10,13 +10,17 @@ import { initLeafletMap } from '../mapLayers';
 // where the small rooms of E, X and C become big enough to tap.
 describe('initLeafletMap zoom ceilings', () => {
   let map: L.Map | null = null;
+  let el: HTMLDivElement | null = null;
   afterEach(() => {
+    // map.remove() tears down Leaflet's DOM but leaves the container itself.
     map?.remove();
+    el?.remove();
     map = null;
+    el = null;
   });
 
   const init = () => {
-    const el = document.createElement('div');
+    el = document.createElement('div');
     document.body.appendChild(el);
     map = initLeafletMap(el, [
       [49.209, 16.613],
