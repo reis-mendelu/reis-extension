@@ -2,7 +2,7 @@
 // Twemoji release. Run after adding an entry to src/data/eventEmoji.ts:
 //   npm run emoji:fetch
 // The SVGs are committed; the app never fetches them at runtime.
-import { link, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { link, mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { EVENT_EMOJI } from '../../src/data/eventEmoji';
@@ -18,9 +18,14 @@ const DIR = join(ROOT, 'public/emoji');
 await mkdir(join(ROOT, 'node_modules/.cache'), { recursive: true });
 const STAGE = await mkdtemp(join(ROOT, 'node_modules/.cache/emoji-fetch-'));
 
+// Read once, so a run fetches only what is missing (and a no-op run needs no
+// network). Only an optimisation: link() below still refuses a taken name.
+const shipped = new Set(await readdir(DIR));
+
 let added = 0;
 try {
   for (const { code } of EVENT_EMOJI) {
+    if (shipped.has(`${code}.svg`)) continue;
     const res = await fetch(
       `https://cdn.jsdelivr.net/gh/jdecked/twemoji@${VERSION}/assets/svg/${code}.svg`
     );

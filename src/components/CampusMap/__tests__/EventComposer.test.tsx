@@ -186,8 +186,8 @@ describe('EventComposer publish', () => {
     expect(patch.category).toBe('boardgames');
   });
 
-  // An emoji a newer build added is unknown here. Saving an unrelated change
-  // must not swap it for this build's fallback, nor re-file the event.
+  // The backfill files the Finland trip under 'trip' while 🇫🇮 alone maps to
+  // 'culture': an edit that leaves the picture alone keeps the event's own.
   it('keeps a trip filed as a trip when an edit leaves its flag alone', async () => {
     useAppStore.setState({
       editEventId: 'c10',
@@ -218,6 +218,8 @@ describe('EventComposer publish', () => {
     expect(updatePost.mock.calls[0][1]).toMatchObject({ emoji: '1f1eb-1f1ee', category: 'trip' });
   });
 
+  // An emoji a newer build added is unknown here. Saving an unrelated change
+  // must not swap it for this build's fallback, nor re-file the event.
   it('keeps an emoji this build does not ship when saving an edit', async () => {
     useAppStore.setState({
       editEventId: 'c9',
