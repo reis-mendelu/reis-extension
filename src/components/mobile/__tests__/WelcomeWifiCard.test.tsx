@@ -136,10 +136,37 @@ describe('WelcomeWifiCard', () => {
    */
   describe('without a network', () => {
     it('says the student is offline and that mobile data will do', () => {
-      renderCard({ status: 'error', networkFailure: 'offline' });
+      renderCard({ status: 'error', networkFailure: 'offline', offline: true });
 
       expect(screen.getByText(/Jsi offline/)).toHaveTextContent(/mobilní data/);
       expect(screen.queryByText(/Nepovedlo se/)).not.toBeInTheDocument();
+    });
+
+    // Said before the tap: a student who opens reIS for the first time
+    // without a connection should not have to fail once to find out.
+    it('says so before any tap when the device is already offline', () => {
+      renderCard({ status: 'idle', offline: true });
+
+      expect(screen.getByText(/Jsi offline/)).toBeInTheDocument();
+      expect(screen.queryByText(/Školní Wi-Fi jedním klepnutím/)).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Nastavit eduroam/ })).toBeInTheDocument();
+    });
+
+    // The connection came back: the last tap's "offline" is no longer true,
+    // so the card offers the setup again rather than a failure.
+    it('goes back to the offer once the connection returns', () => {
+      renderCard({ status: 'error', networkFailure: 'offline', offline: false });
+
+      expect(screen.getByText(/Školní Wi-Fi jedním klepnutím/)).toBeInTheDocument();
+      expect(screen.queryByText(/Jsi offline/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Nepovedlo se/)).not.toBeInTheDocument();
+    });
+
+    it('does not cover a finished setup', () => {
+      renderCard({ status: 'done', outcome: 'saved', offline: true });
+
+      expect(screen.getByText(/Hotovo/)).toBeInTheDocument();
+      expect(screen.queryByText(/Jsi offline/)).not.toBeInTheDocument();
     });
 
     it('hedges when the device thinks it is online but IS never answered', () => {

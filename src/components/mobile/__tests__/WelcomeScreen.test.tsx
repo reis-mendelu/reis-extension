@@ -49,6 +49,7 @@ function setup(o: { os?: 'ios' | 'android' | null; hookState?: Partial<HookState
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  vi.restoreAllMocks();
 });
 
 describe('WelcomeScreen', () => {
@@ -147,10 +148,16 @@ describe('WelcomeScreen', () => {
     expect(screen.getByText(/Nepovedlo se/)).toBeInTheDocument();
   });
 
-  it('hands an offline failure to the card, which says so instead of the failure line', () => {
-    setup({ os: 'ios', hookState: { status: 'error', networkFailure: 'offline' } });
-    expect(screen.getByText(/Jsi offline/)).toBeInTheDocument();
+  it('hands a network failure to the card, which says so instead of the failure line', () => {
+    setup({ os: 'ios', hookState: { status: 'error', networkFailure: 'unreachable' } });
+    expect(screen.getByText(/Nepodařilo se spojit s IS/)).toBeInTheDocument();
     expect(screen.queryByText(/Nepovedlo se/)).not.toBeInTheDocument();
+  });
+
+  it('says the device is offline before any tap', () => {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    setup({ os: 'ios' });
+    expect(screen.getByText(/Jsi offline/)).toBeInTheDocument();
   });
 
   it('shows the working state while the OS dialog is up', () => {
