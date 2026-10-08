@@ -58,16 +58,9 @@
       ]
     },
     "expected": {
-      "insert": [
-        "la",
-        "lf"
-      ],
-      "update": [
-        "lc"
-      ],
-      "remove": [
-        "ld"
-      ],
+      "insert": ["la", "lf"],
+      "update": ["lc"],
+      "remove": ["ld"],
       "held": null
     }
   },
@@ -134,10 +127,7 @@
       "existing": []
     },
     "expected": {
-      "insert": [
-        "lp",
-        "lq"
-      ],
+      "insert": ["lp", "lq"],
       "update": [],
       "remove": [],
       "held": null
@@ -267,10 +257,7 @@
     "expected": {
       "insert": [],
       "update": [],
-      "remove": [
-        "l2",
-        "l3"
-      ],
+      "remove": ["l2", "l3"],
       "held": null
     }
   },
@@ -294,9 +281,7 @@
     "expected": {
       "insert": [],
       "update": [],
-      "remove": [
-        "e1"
-      ],
+      "remove": ["e1"],
       "held": null
     }
   },
@@ -320,9 +305,7 @@
     "expected": {
       "insert": [],
       "update": [],
-      "remove": [
-        "c1"
-      ],
+      "remove": ["c1"],
       "held": null
     }
   },
@@ -353,9 +336,7 @@
       "existing": []
     },
     "expected": {
-      "insert": [
-        "lb"
-      ],
+      "insert": ["lb"],
       "update": [],
       "remove": [],
       "held": null

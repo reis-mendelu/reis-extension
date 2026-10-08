@@ -1,10 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  AuthRevokedError,
-  CalendarGoneError,
-  CALENDAR_MARKER,
-  createCalendarApi,
-} from '../calendarApi';
+import { CALENDAR_MARKER, createCalendarApi } from '../calendarApi';
+import { AuthRevokedError, CalendarGoneError } from '../calendarHttp';
 import type { DesiredEvent } from '../types';
 
 type R = { status: number; body?: unknown };
