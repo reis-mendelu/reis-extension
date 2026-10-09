@@ -49,6 +49,13 @@ describe('today is marked on both trees', () => {
     expect(read('src/components/WeeklyCalendar/useCalendarData.ts')).toContain('todayIndex === 5');
   });
 
+  // Across midnight, too: both trees take today from the store's clock, which
+  // the pulse advances, so a calendar left open overnight moves with it.
+  it('both trees read today from the store clock, not a frozen new Date()', () => {
+    expect(read('src/components/mobile/screens/calendar/DayChips.tsx')).toContain('s.now');
+    expect(read('src/components/WeeklyCalendar/useCalendarData.ts')).toContain('state.now');
+  });
+
   it('the extension week header marks today', () => {
     const header = read('src/components/WeeklyCalendar/WeeklyCalendarHeader.tsx');
     expect(header).toContain('bg-current-day-header');

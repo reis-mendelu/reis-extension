@@ -16,11 +16,15 @@ vi.mock('../../../store/useAppStore', () => ({
   useAppStore: vi.fn(),
 }));
 
+// The store's clock, when a test moves it by hand; otherwise the system time.
+let storeNow: Date | null = null;
+
 describe('useCalendarData', () => {
   const mockInitialDate = new Date(2026, 1, 12); // Thursday, Feb 12, 2026
 
   beforeEach(() => {
     vi.clearAllMocks();
+    storeNow = null;
 
     // Default mock implementations
     vi.mocked(useSchedule).mockReturnValue({
@@ -44,6 +48,8 @@ describe('useCalendarData', () => {
         customEvents: [],
         hiddenItems: { events: [], courses: [] },
         teachingWeekData: null,
+        // Read per call, so the weekend tests' setSystemTime reaches it.
+        now: storeNow ?? new Date(),
       })
     );
   });
@@ -218,6 +224,7 @@ describe('useCalendarData', () => {
           ],
           hiddenItems: { events: [], courses: [] },
           teachingWeekData: null,
+          now: new Date(),
         })
       );
       const { result } = renderHook(() => useCalendarData(mockInitialDate));
@@ -233,6 +240,7 @@ describe('useCalendarData', () => {
           customEvents: [],
           hiddenItems: { events: [{ id: '20260214' }], courses: [] },
           teachingWeekData: null,
+          now: new Date(),
         })
       );
       const { result } = renderHook(() => useCalendarData(mockInitialDate));
@@ -280,6 +288,24 @@ describe('useCalendarData', () => {
        * 3 October it opens on 5–11 October with nothing marked, and paging
        * back marks Saturday 3, not a Friday.
        */
+      /**
+       * A calendar left open across midnight. `todayIndex` was memoized on the
+       * week alone and read `new Date()` inside, so on a Friday-night tab the
+       * grid stayed at five columns into Saturday. It follows the store's
+       * clock now, which the pulse advances.
+       */
+      it('widens to Saturday when the store clock crosses Friday midnight', () => {
+        storeNow = new Date(2026, 1, 13, 23, 59); // Friday of the Feb 9–15 week
+        withSchedule([]);
+        const { result, rerender } = renderHook(() => useCalendarData(mockInitialDate));
+        expect(result.current.todayIndex).toBe(4);
+        expect(result.current.visibleDayCount).toBe(5);
+        storeNow = new Date(2026, 1, 14, 0, 1);
+        rerender();
+        expect(result.current.todayIndex).toBe(5);
+        expect(result.current.visibleDayCount).toBe(6);
+      });
+
       it('marks no Friday in the next week, and Saturday 3 October in its own', () => {
         today(new Date(2026, 9, 3, 16, 0));
         withSchedule([]);
@@ -300,6 +326,7 @@ describe('useCalendarData', () => {
         customEvents: [],
         hiddenItems: { events: [], courses: [] },
         teachingWeekData: null,
+        now: new Date(),
       })
     );
     const { result, rerender } = renderHook(() => useCalendarData(mockInitialDate));
@@ -313,6 +340,7 @@ describe('useCalendarData', () => {
         customEvents: [],
         hiddenItems: { events: [], courses: [] },
         teachingWeekData: null,
+        now: new Date(),
       })
     );
     rerender();
@@ -372,6 +400,7 @@ describe('useCalendarData exam duration', () => {
         customEvents: [],
         hiddenItems: { events: [], courses: [] },
         teachingWeekData: null,
+        now: new Date(),
       })
     );
     const { result } = renderHook(() => useCalendarData(thursdayFeb12));
