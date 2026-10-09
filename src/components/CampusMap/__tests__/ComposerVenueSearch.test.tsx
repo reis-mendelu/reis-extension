@@ -92,7 +92,9 @@ describe('ComposerVenueSearch', () => {
   it('keeps the place name a pasted Google Maps link carries', () => {
     const p = props();
     render(<ComposerVenueSearch {...p} />);
-    type('https://www.google.com/maps/place/Padagali/@49.2078989,16.6030499,17z');
+    type(
+      'https://www.google.com/maps/place/Padagali/@49.2078989,16.6030499,17z/data=!3m1!4b1!4m6!3m5!1s0x0:0x0!8m2!3d49.2078989!4d16.6030499!16s'
+    );
     fireEvent.click(screen.getByRole('button', { name: /Padagali/ }));
     expect(p.onSelectPlace).toHaveBeenCalledWith({
       name: 'Padagali',

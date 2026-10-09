@@ -47,10 +47,14 @@ function fromUrl(text: string): ParsedPoint | null {
   const name = label && !parseCoordinate(label) ? label : undefined;
   const href = decode(url.href);
   // Google: !3d<lat>!4d<lng> is the place's own pin; @<lat>,<lng> is only
-  // where the viewport was centred, so it comes second.
-  const pin =
-    /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/.exec(href) ?? /@(-?\d+\.\d+),(-?\d+\.\d+)/.exec(href);
-  if (pin) return point(Number(pin[1]), Number(pin[2]), name);
+  // where the viewport was centred. A bare /maps/@ link is a point the user
+  // looked at, so the centre is the answer; a /maps/place/ link names a place,
+  // and its centre follows every pan, so without the pin it is unreadable.
+  const placePin = /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/.exec(href);
+  if (placePin) return point(Number(placePin[1]), Number(placePin[2]), name);
+  if (place) return null;
+  const centre = /@(-?\d+\.\d+),(-?\d+\.\d+)/.exec(href);
+  if (centre) return point(Number(centre[1]), Number(centre[2]), name);
   for (const key of ['q', 'query', 'll', 'center']) {
     const m = /^(-?\d+\.\d+),\s*(-?\d+\.\d+)$/.exec(url.searchParams.get(key) ?? '');
     if (m) return point(Number(m[1]), Number(m[2]), name);
