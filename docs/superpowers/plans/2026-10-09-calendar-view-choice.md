@@ -51,7 +51,7 @@
   - `showCalendarView: (view: MobileCalendarView) => void` — shown only, no write
   - `saveCalendarView: (view: MobileCalendarView) => void` — saved + shown + chosen, writes `meta.calendar_view`
   - `restoreCalendarView: () => void` — shown ← saved
-- Removes: `setMobileCalendarView` (its two callers are fixed in Task 2; `CalendarViewSwitch` is deleted there).
+- Removes: `setMobileCalendarView` (its two callers move to `saveCalendarView` in Step 8; Task 2 then deletes `CalendarViewSwitch`).
 
 - [ ] **Step 1: Rewrite the slice test**
 
