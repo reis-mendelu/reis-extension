@@ -6,8 +6,8 @@ import XCTest
 /**
  * The hint's border is a CGColor, which does not follow the appearance on its
  * own. iOS 17+ re-resolves it through `registerForTraitChanges`; below that
- * (the plugin's floor is iOS 15) `traitCollectionDidChange` has to (cubic,
- * 5.4.0 release diff). A simulator on iOS 17+ exercises the first path only.
+ * (the plugin's floor is iOS 15) `traitCollectionDidChange` has to. A
+ * simulator on iOS 17+ exercises the first path only.
  */
 final class TapeHintViewTests: XCTestCase {
     func testTheBorderFollowsALightDarkSwitch() {

@@ -172,6 +172,9 @@ final class CoverTouchRoutingTests: XCTestCase {
         UIView().addGestureRecognizer(wordSelection)
 
         XCTAssertTrue(reader.gestureRecognizer(pickUp, shouldBeRequiredToFailBy: wordSelection))
+        // "Recognize together" from either side lets the double tap through
+        // the wait, so the pick-up says it only for gestures on its own overlay.
+        XCTAssertFalse(reader.gestureRecognizer(pickUp, shouldRecognizeSimultaneouslyWith: wordSelection))
         let layer = overlay.coverLayer
         for cover in [layer.dragRecognizer, layer.tapRecognizer, layer.holdRecognizer] as [UIGestureRecognizer] {
             XCTAssertFalse(

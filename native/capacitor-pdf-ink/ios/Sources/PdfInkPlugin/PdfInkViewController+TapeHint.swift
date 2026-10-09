@@ -12,7 +12,8 @@ extension PdfInkViewController {
         view.addSubview(tapeHint)
         let wide = tapeHint.widthAnchor.constraint(equalToConstant: 520)
         wide.priority = .defaultHigh
-        // Gives way to `tapeHintBelowRestore` in focus mode.
+        // One below `.required`, so it gives way to `tapeHintBelowRestore`
+        // (required) in focus mode; raising either breaks that.
         let top = tapeHint.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12)
         top.priority = .required - 1
         NSLayoutConstraint.activate([

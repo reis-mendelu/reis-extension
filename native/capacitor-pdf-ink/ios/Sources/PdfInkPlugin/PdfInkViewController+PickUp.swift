@@ -59,10 +59,13 @@ extension PdfInkViewController: UIGestureRecognizerDelegate {
         return pictureToPickUp(at: gestureRecognizer.location(in: overlay), onPage: index) != nil
     }
 
+    /// Only with the gestures on its own overlay, as `CoverLayerView` does.
+    /// "Recognize together" from either side lets a gesture through the wait
+    /// below, and PDFKit's double tap would then select text under the picture.
     public func gestureRecognizer(
         _ gestureRecognizer: UIGestureRecognizer,
         shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
-    ) -> Bool { true }
+    ) -> Bool { otherGestureRecognizer.view === gestureRecognizer.view }
 
     /// Everything else on the page waits for a tap that picks a picture up,
     /// the way it waits for a tap on a cover (`CoverLayerView`): PDFKit's
