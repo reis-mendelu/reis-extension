@@ -88,6 +88,9 @@ export const BUNDLED_SOCIETIES: Record<string, Society> = {
     autoFollowFaculty: false,
     audienceLabel: null,
     sortOrder: 70,
+    // A partner shown to all of PEF (migration 20261011120000_partner_targeting).
+    kind: 'partner',
+    audience: ['pef'],
   }),
   reis: seed({
     id: 'reis',

@@ -26,9 +26,39 @@ const row: SocietyRow = {
   sort_order: 20,
   is_active: true,
   instagram: null,
+  kind: 'society',
+  audience: null,
+  mark_light_path: null,
+  mark_dark_path: null,
 };
 
 beforeEach(() => order.mockReset());
+
+describe('rowToSociety: partner columns', () => {
+  const kpmg: SocietyRow = {
+    ...row,
+    id: 'kpmg',
+    name: 'KPMG',
+    short_name: 'KPMG',
+    faculty_key: 'frrms',
+    auto_follow_faculty: false,
+    logo_path: null,
+    kind: 'partner',
+    audience: ['frrms'],
+    mark_light_path: 'kpmg/0123456789abcdef0123456789abcdef.png',
+    mark_dark_path: null,
+  };
+  it('maps kind, audience and marks', () => {
+    const s = rowToSociety(kpmg)!;
+    expect(s.kind).toBe('partner');
+    expect(s.audience).toEqual(['frrms']);
+    expect(s.markLight).toBe(logoPublicUrl('kpmg/0123456789abcdef0123456789abcdef.png'));
+    expect(s.markDark).toBeUndefined();
+  });
+  it('reads an unknown kind as a society', () => {
+    expect(rowToSociety({ ...kpmg, kind: 'sponsor' })!.kind).toBe('society');
+  });
+});
 
 describe('rowToSociety', () => {
   it('maps a row, building the public logo URL and the glyph', () => {
@@ -44,6 +74,8 @@ describe('rowToSociety', () => {
       audienceLabel: null,
       sortOrder: 20,
       isActive: true,
+      kind: 'society',
+      audience: null,
     });
   });
   it('leaves logo undefined when there is no path', () => {

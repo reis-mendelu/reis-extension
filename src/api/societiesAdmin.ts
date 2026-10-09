@@ -62,6 +62,10 @@ function devRow(row: Partial<SocietyRow> & { id: string }): Society | null {
     sort_order: 0,
     is_active: true,
     instagram: null,
+    kind: 'society',
+    audience: null,
+    mark_light_path: null,
+    mark_dark_path: null,
     ...row,
   });
 }

@@ -18,10 +18,15 @@ export interface SocietyRow {
   sort_order: number;
   is_active: boolean;
   instagram: string | null;
+  /** 'society' | 'partner'; anything else reads as a society. */
+  kind: string;
+  audience: string[] | null;
+  mark_light_path: string | null;
+  mark_dark_path: string | null;
 }
 
 export const SOCIETY_COLUMNS =
-  'id, name, short_name, color, faculty_key, auto_follow_faculty, audience_label, logo_path, sort_order, is_active, instagram';
+  'id, name, short_name, color, faculty_key, auto_follow_faculty, audience_label, logo_path, sort_order, is_active, instagram, kind, audience, mark_light_path, mark_dark_path';
 
 export function logoPublicUrl(path: string): string {
   return `${SUPABASE_URL}/storage/v1/object/public/${SOCIETY_LOGO_BUCKET}/${path}`;
@@ -49,6 +54,10 @@ export function rowToSociety(row: SocietyRow): Society | null {
     // Always present, undefined when unset: the store merges a saved row over
     // the cached society, and an absent key would keep a cleared handle there.
     instagram: row.instagram ?? undefined,
+    kind: row.kind === 'partner' ? 'partner' : 'society',
+    audience: row.audience ?? null,
+    ...(row.mark_light_path ? { markLight: logoPublicUrl(row.mark_light_path) } : {}),
+    ...(row.mark_dark_path ? { markDark: logoPublicUrl(row.mark_dark_path) } : {}),
   };
 }
 
