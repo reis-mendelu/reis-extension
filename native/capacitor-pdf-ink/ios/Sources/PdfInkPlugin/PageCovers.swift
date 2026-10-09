@@ -48,4 +48,30 @@ enum PageCovers {
     static func cover(at point: CGPoint, in covers: [PageCover]) -> PageCover? {
         covers.last { $0.rect.contains(point) }
     }
+
+    /// A fingertip, in screen points: Apple's minimum touch target.
+    static let fingerReach: CGFloat = 44
+
+    /// The cover a finger means. On a cover, that one; beside a cover thinner
+    /// than `reach`, the nearest such — a strip is 8 pt and a fingertip is not,
+    /// so a hold on a thin strip landed beside it and nothing happened
+    /// ("cannot be removed when too small", Dominik, 2026-10-09). A cover
+    /// already `reach` wide reaches no further than its edge.
+    static func cover(near point: CGPoint, in covers: [PageCover], reach: CGFloat) -> PageCover? {
+        if let on = cover(at: point, in: covers) { return on }
+        // Newest first, so a tie goes to the strip on top, as on a strip itself.
+        return covers.reversed()
+            .filter { grown($0.rect, to: reach).contains(point) }
+            .min { distance(from: point, to: $0.rect) < distance(from: point, to: $1.rect) }
+    }
+
+    private static func grown(_ rect: CGRect, to size: CGFloat) -> CGRect {
+        rect.insetBy(dx: -max(0, size - rect.width) / 2, dy: -max(0, size - rect.height) / 2)
+    }
+
+    private static func distance(from point: CGPoint, to rect: CGRect) -> CGFloat {
+        hypot(
+            max(rect.minX - point.x, 0, point.x - rect.maxX),
+            max(rect.minY - point.y, 0, point.y - rect.maxY))
+    }
 }

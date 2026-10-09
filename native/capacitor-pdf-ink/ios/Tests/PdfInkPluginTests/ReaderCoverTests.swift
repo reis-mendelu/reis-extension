@@ -60,6 +60,72 @@ final class ReaderCoverTests: XCTestCase {
         XCTAssertEqual(ids[marker + 1], CoverTool.identifier)
     }
 
+    /// "It's not clear what it's for" — Dominik, 2026-10-09. The palette names
+    /// the tape and nothing more, so picking it in a file with no tape yet says
+    /// what it does; the first strip, or putting the tape down, takes it away.
+    func testPickingTheTapeInAFileWithNoTapeSaysWhatItIsFor() throws {
+        guard #available(iOS 18.0, *) else { throw XCTSkip("custom palette items are iOS 18+") }
+        let (reader, _) = try host.show(pages: 1)
+        // The palette's selection outlives a reader: start from the pen.
+        reader.toolPicker.selectedToolItemIdentifier = "com.apple.ink.pen"
+        reader.coverToolDidChange()
+        XCTAssertTrue(reader.tapeHint.isHidden)
+
+        reader.toolPicker.selectedToolItemIdentifier = CoverTool.identifier
+        reader.coverToolDidChange()
+        XCTAssertFalse(reader.tapeHint.isHidden, "picking the tape explained nothing")
+        XCTAssertEqual(reader.tapeHint.text, reader.strings.tapeHint)
+
+        reader.addCover(block, onPage: 0)
+        XCTAssertTrue(reader.tapeHint.isHidden, "the hint outlived the first strip")
+
+        reader.toolPicker.selectedToolItemIdentifier = "com.apple.ink.pen"
+        reader.coverToolDidChange()
+        reader.toolPicker.selectedToolItemIdentifier = CoverTool.identifier
+        reader.coverToolDidChange()
+        XCTAssertTrue(reader.tapeHint.isHidden, "a file with tape already knows what it is")
+        putTheTapeDown(reader)
+    }
+
+    /// The tape stays in hand across a file switch, so the hint follows the
+    /// file: back for one with no tape, gone for one that has some.
+    func testTheHintFollowsAFileSwitchWithTheTapeInHand() throws {
+        guard #available(iOS 18.0, *) else { throw XCTSkip("custom palette items are iOS 18+") }
+        let (reader, taped) = try host.show(pages: 1)
+        reader.toolPicker.selectedToolItemIdentifier = CoverTool.identifier
+        reader.coverToolDidChange()
+        reader.addCover(block, onPage: 0)
+        XCTAssertTrue(reader.tapeHint.isHidden)
+
+        try host.open(reader, pages: 1, ink: ReaderTestHost.tempInk())
+        XCTAssertFalse(reader.tapeHint.isHidden, "a fresh file with the tape in hand explained nothing")
+
+        try host.open(reader, pages: 1, ink: taped)
+        XCTAssertTrue(reader.tapeHint.isHidden, "the hint stayed over a file that has tape")
+        putTheTapeDown(reader)
+    }
+
+    /// The palette's selection outlives the reader: a test that ends with the
+    /// tape in hand hands it to the next reader (ReaderPictureTests then could
+    /// not pick a picture up).
+    @available(iOS 18.0, *)
+    private func putTheTapeDown(_ reader: PdfInkViewController) {
+        reader.toolPicker.selectedToolItemIdentifier = "com.apple.ink.pen"
+        reader.coverToolDidChange()
+    }
+
+    func testPuttingTheTapeDownTakesTheHintAway() throws {
+        guard #available(iOS 18.0, *) else { throw XCTSkip("custom palette items are iOS 18+") }
+        let (reader, _) = try host.show(pages: 1)
+
+        reader.toolPicker.selectedToolItemIdentifier = CoverTool.identifier
+        reader.coverToolDidChange()
+        reader.toolPicker.selectedToolItemIdentifier = "com.apple.ink.pen"
+        reader.coverToolDidChange()
+
+        XCTAssertTrue(reader.tapeHint.isHidden)
+    }
+
     func testPickingTheTapeMakesCoversAndKeepsThePensAndTheBar() throws {
         guard #available(iOS 18.0, *) else { throw XCTSkip("custom palette items are iOS 18+") }
         let (reader, _) = try host.show(pages: 1)

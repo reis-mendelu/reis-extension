@@ -1360,7 +1360,8 @@
       "deletePicture": "Delete picture",
       "done": "Done",
       "cover": "Tape",
-      "deleteTape": "Delete tape"
+      "deleteTape": "Delete tape",
+      "tapeHint": "Tape over an answer and try to recall it. Tap the tape to peek; hold it to delete or move it."
     },
     "openingLink": "Opening…"
   },

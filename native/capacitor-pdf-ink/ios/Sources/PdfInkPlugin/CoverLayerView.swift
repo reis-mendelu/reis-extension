@@ -50,15 +50,19 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
     let dragRecognizer = ImmediateDragRecognizer()
     /// Opens or shuts a cover; a drawing tap with the tape takes it away.
     let tapRecognizer = UITapGestureRecognizer()
-    /// A finger held on a strip offers to delete it (`+Hold`).
+    /// A finger held on a strip offers to delete it (`+Hold`). Installed on
+    /// the page overlay, like the drag: a finger beside a thin strip lands on
+    /// the canvas, not on this layer.
     let holdRecognizer = UILongPressGestureRecognizer()
     /// "Smazat pásku", from the app's strings.
     var deleteLabel = "Delete tape"
     lazy var deleteMenuInteraction = UIEditMenuInteraction(delegate: self)
     var heldCoverID: String?
-    /// Where the held finger came down — the strip is the one under THIS, not
-    /// under the finger when the hold is recognised, which can be after it has
-    /// started to move (simulator, 2026-10-03: began ~0.5 s in, off the strip).
+    /// The strip the held finger came down on or beside — resolved at the
+    /// touch-down, not where the finger is when the hold is recognised, which
+    /// can be after it has started to move (simulator, 2026-10-03: began
+    /// ~0.5 s in, off the strip).
+    var holdCandidateID: String?
     var holdTouchDown: CGPoint?
     /// Where the hold began, and where the held strip is while it is carried.
     var holdStart: CGPoint?
@@ -90,6 +94,12 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
     }
 
     required init?(coder: NSCoder) { fatalError("CoverLayerView is code-only") }
+
+    /// Arranging pictures turns the layer off. The hold is not on the layer,
+    /// so it is turned off with it.
+    override var isUserInteractionEnabled: Bool {
+        didSet { holdRecognizer.isEnabled = isUserInteractionEnabled }
+    }
 
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         guard isUserInteractionEnabled, !isHidden, alpha > 0.01 else { return nil }
@@ -124,7 +134,12 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
             return true
         }
         if gestureRecognizer === holdRecognizer {
-            holdTouchDown = touch.location(in: self)
+            // Every other page gesture waits for the hold, so it takes only
+            // touches that are about a strip, or a resting finger would stall.
+            let point = touch.location(in: self)
+            guard let id = heldCover(at: point, by: touch.type) else { return false }
+            holdCandidateID = id
+            holdTouchDown = point
             return true
         }
         if draws(touch.type) { touchDown = touch.location(in: self) }
@@ -181,6 +196,17 @@ final class CoverLayerView: UIView, UIGestureRecognizerDelegate {
             NSLog("PdfInk: cover tapped open/shut")
             onToggle?(cover.id)
         }
+    }
+
+    /// The strip a hold is about. A finger that does not draw reaches a thin
+    /// strip from beside it; the Pencil and a drawing finger only on it, so ink
+    /// written next to a strip stays ink.
+    func heldCover(at point: CGPoint, by type: UITouch.TouchType) -> String? {
+        guard type == .direct, !fingerDraws() else { return PageCovers.cover(at: point, in: covers)?.id }
+        // Strips are in page points; the fingertip is in screen points.
+        let scale = convert(CGRect(x: 0, y: 0, width: 1, height: 1), to: nil).width
+        let reach = PageCovers.fingerReach / (scale > 0 ? scale : 1)
+        return PageCovers.cover(near: point, in: covers, reach: reach)?.id
     }
 
     /// A touch that would put ink down: the Pencil, or a finger that draws.

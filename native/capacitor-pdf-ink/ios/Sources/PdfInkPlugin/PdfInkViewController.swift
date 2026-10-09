@@ -60,12 +60,15 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     /// The pictures on each page, in stacking order — like `drawings`, the
     /// source of truth; the layers only show them. See `+Pictures`.
     var pictures: [Int: [PagePicture]] = [:]
-    /// Blocks over answers, per page, made with the tape (`+Covers`).
-    var covers: [Int: [PageCover]] = [:]
+    /// Blocks over answers, per page, made with the tape (`+Covers`). A file
+    /// switch changes them too, with the tape still in hand: the hint follows.
+    var covers: [Int: [PageCover]] = [:] { didSet { updateTapeHint() } }
     /// Which covers are open right now. Never saved: a file reopens with them shut.
     var revealedCovers: Set<String> = []
     /// The tape is the palette's selected tool: strokes make covers, not ink.
     var makingCovers = false
+    /// What the tape is for, while it is in hand in a file with none yet (`+Covers`).
+    let tapeHint = TapeHintView()
     /// Moving pictures instead of drawing. A visible mode: see `+Pictures`.
     var arrangingPictures = false
     /// From choosing Photos or the camera until the pick lands or is
@@ -238,6 +241,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         view.addSubview(spinner)
         view.addSubview(message)
         view.addSubview(restoreChromeButton)
+        installTapeHint()
 
         NSLayoutConstraint.activate([
             // Below the navigation bar, not under it. PDFView lays its pages out

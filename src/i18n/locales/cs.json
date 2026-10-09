@@ -1360,7 +1360,8 @@
       "deletePicture": "Smazat obrázek",
       "done": "Hotovo",
       "cover": "Páska",
-      "deleteTape": "Smazat pásku"
+      "deleteTape": "Smazat pásku",
+      "tapeHint": "Přelep odpověď a zkus si ji vybavit. Klepnutím pásku odkryješ, podržením ji smažeš nebo přesuneš."
     },
     "openingLink": "Otevírám…"
   },

@@ -18,7 +18,6 @@ extension CoverLayerView: UIEditMenuInteractionDelegate {
         holdRecognizer.addTarget(self, action: #selector(held(_:)))
         holdRecognizer.minimumPressDuration = Self.holdDuration
         holdRecognizer.delegate = self
-        addGestureRecognizer(holdRecognizer)
         // A hold is not a tap: the tap waits until the hold has failed, which
         // a touch lifted before `holdDuration` does at once.
         tapRecognizer.require(toFail: holdRecognizer)
@@ -33,7 +32,7 @@ extension CoverLayerView: UIEditMenuInteractionDelegate {
         switch hold.state {
         case .began:
             let down = holdTouchDown ?? point
-            guard let cover = PageCovers.cover(at: down, in: covers) else { return }
+            guard let id = holdCandidateID, let cover = covers.first(where: { $0.id == id }) else { return }
             NSLog("PdfInk: strip held, offering delete")
             heldCoverID = cover.id
             holdStart = down
@@ -56,6 +55,9 @@ extension CoverLayerView: UIEditMenuInteractionDelegate {
             holdStart = nil
             carriedRect = nil
         default:
+            // Cancelled — arranging pictures turns the hold off mid-press —
+            // so the menu it put up goes with it.
+            deleteMenuInteraction.dismissMenu()
             heldCoverID = nil
             holdStart = nil
             carriedRect = nil
