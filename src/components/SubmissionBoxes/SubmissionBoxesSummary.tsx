@@ -15,10 +15,10 @@ const WINDOW_DAYS = 14;
  * id — would open an empty tab on the extension and Success rate on the phone.
  */
 function listedInZaznamnik(
+  code: string | null | undefined,
   box: Odevzdavarna,
   subjects: Record<string, { subjectId?: string }> | undefined
 ): boolean {
-  const code = boxCourseCode(box, subjects);
   return !!code && subjects?.[code]?.subjectId === box.courseId;
 }
 const MAX_ROWS = 3;
@@ -87,19 +87,22 @@ export function SubmissionBoxesSummary({ onOpen, className = '' }: SubmissionBox
           <p className="mt-1 text-xs text-base-content/70">{L.t('odevzdavarny.nothingDueSoon')}</p>
         ) : (
           <ul className="mt-1.5">
-            {rows.map((box, i) => (
-              <li key={box.odevzdavarnaId || `${box.name}-${i}`}>
-                <SummaryBoxRow
-                  box={box}
-                  now={now}
-                  courseCode={boxCourseCode(box, subjects)}
-                  opensSubject={listedInZaznamnik(box, subjects)}
-                  onOpen={onOpen}
-                  showUpload={showAll}
-                  testId={showAll ? 'submission-open-row' : 'submission-due-row'}
-                />
-              </li>
-            ))}
+            {rows.map((box, i) => {
+              const code = boxCourseCode(box, subjects);
+              return (
+                <li key={box.odevzdavarnaId || `${box.name}-${i}`}>
+                  <SummaryBoxRow
+                    box={box}
+                    now={now}
+                    courseCode={code}
+                    opensSubject={listedInZaznamnik(code, box, subjects)}
+                    onOpen={onOpen}
+                    showUpload={showAll}
+                    testId={showAll ? 'submission-open-row' : 'submission-due-row'}
+                  />
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
