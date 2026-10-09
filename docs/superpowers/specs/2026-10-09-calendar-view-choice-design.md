@@ -59,7 +59,7 @@ Rules:
   open, until the student saves.
 - **Who sees it: anyone without a saved view** — new installs and 5.4 students
   who never tapped the switch. A student who tapped it already has the key and
-  is not asked (see open question 1).
+  is not asked — in practice nobody, since 5.4 has not shipped (see the end).
 - **Sign-out wipes the choice** (`IndexedDBService.clearAll()` clears `meta`),
   so a student who signs out and back in is asked again. Accepted.
 - **Only after hydration.** Follow the `welcomeSeen` / `pullHintSeen` pattern:
@@ -149,8 +149,8 @@ phone-only files, so the tree-parity hook accepts it.
 
 ## Open questions
 
-1. **5.4 students who already tapped the switch** have a saved view, so they get
-   no panel and no toast — the switch simply disappears. Either accept it, or
-   show those students the toast once ("Přepínání Den/Týden je teď v Profilu →
-   Nastavení") behind its own seen flag.
-2. **What's new copy** for the release — agreed with Dominik per release.
+1. **What's new copy** for the release — agreed with Dominik per release.
+
+Settled: students who tapped the 5.4 switch would get no panel and no toast, but
+5.4 has not reached any student (Dominik, 2026-10-09), so this ships before
+anyone has a saved view to migrate. If 5.4 goes out first, revisit.
