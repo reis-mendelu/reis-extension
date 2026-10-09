@@ -91,10 +91,9 @@ describe('ProfileScreen', () => {
     expect(screen.queryByText('Skryté položky')).toBeNull();
   });
 
-  it('opens Nastavení in one tap, showing the current values', () => {
-    useAppStore.setState({ savedCalendarView: 'week' } as never);
+  it('opens Nastavení in one tap, naming what is inside', () => {
     render(<ProfileScreen />);
-    expect(screen.getByText('Týden · Čeština · Tmavý')).toBeTruthy();
+    expect(screen.getByText('Kalendář, jazyk, vzhled')).toBeTruthy();
     fireEvent.click(screen.getByText('Nastavení'));
     expect(useAppStore.getState().mobileSheets).toEqual([{ kind: 'settings' }]);
   });

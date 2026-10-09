@@ -1332,8 +1332,7 @@
       "settings": "Settings",
       "atSchool": "At school",
       "calendar": "Calendar",
-      "themeDark": "Dark",
-      "themeLight": "Light"
+      "settingsSub": "Calendar, language, appearance"
     },
     "loadFailed": {
       "title": "Couldn't load your data",

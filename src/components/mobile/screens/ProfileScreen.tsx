@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { useTheme } from '../../../hooks/useTheme';
 import { SignOutConfirm } from '../sheets/SignOutConfirm';
 import { AboutSection } from './profile/AboutSection';
 import { ProfileIdentity } from './profile/ProfileIdentity';
@@ -39,16 +38,6 @@ export function ProfileScreen() {
   const openSocietyAdmin = useAppStore((s) => s.openSocietyAdmin);
   const loadImpersonationOptions = useAppStore((s) => s.loadImpersonationOptions);
 
-  // The Nastavení row says what is set, so a student can check without opening it.
-  const savedView = useAppStore((s) => s.savedCalendarView);
-  const language = useAppStore((s) => s.language);
-  const { isDark } = useTheme();
-  const settingsSummary = [
-    t(savedView === 'week' ? 'mobile.calendar.weekView' : 'mobile.calendar.dayView'),
-    t(language === 'en' ? 'settings.english' : 'settings.czech'),
-    t(isDark ? 'mobile.profile.themeDark' : 'mobile.profile.themeLight'),
-  ].join(' · ');
-
   return (
     <div data-testid="profile-screen" className="flex flex-1 flex-col overflow-hidden">
       {/* No eyebrow: the header's title block shares its row with the three
@@ -66,12 +55,14 @@ export function ProfileScreen() {
         <AlwaysScrollable className="pb-[calc(84px_+_var(--safe-bottom,0px))]">
           {/* One row, not a group: calendar view, language and dark mode are set
             once (spec 2026-10-09), so they sit one tap down and the screen
-            keeps its room for things a student comes here to do. */}
+            keeps its room for things a student comes here to do. The second
+            line names what is inside, like every row here — the bare values
+            ("Den · Čeština · Tmavý") read as noise out of context. */}
           <div className="pt-2">
             <NavRow
               icon={Settings}
               label={t('mobile.profile.settings')}
-              sublabel={settingsSummary}
+              sublabel={t('mobile.profile.settingsSub')}
               onClick={() => pushSheet({ kind: 'settings' })}
             />
           </div>

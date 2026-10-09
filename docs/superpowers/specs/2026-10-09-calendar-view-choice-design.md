@@ -104,8 +104,9 @@ drive. The current single `mobileCalendarView` splits in two.
 The "Vzhled" group and the current "Nastavení" group (which holds actions, not
 settings) are replaced by:
 
-- **Nastavení** — one row; its secondary line shows the current values, e.g.
-  "Týden · Čeština · Tmavý". It opens a new sheet (`{ kind: 'settings' }`) with:
+- **Nastavení** — one row; its secondary line names what is inside,
+  "Kalendář, jazyk, vzhled" (Dominik, 2026-10-09: the bare current values read
+  as weird labels). It opens a new sheet (`{ kind: 'settings' }`) with:
   - Kalendář — Den | Týden segmented, writes the saved view directly
   - Jazyk — Čeština | English (moved from `AppearanceRows`)
   - Tmavý režim — toggle (moved from `AppearanceRows`)
@@ -134,6 +135,7 @@ phone-only files, so the tree-parity hook accepts it.
 | Button | Uložit: Den / Uložit: Týden | Save: Day / Save: Week |
 | Toast | Uloženo. Změníš to v Profilu → Nastavení. | Saved. Change it in Profile → Settings. |
 | Profile row | Nastavení | Settings |
+| Profile row, second line | Kalendář, jazyk, vzhled | Calendar, language, appearance |
 | Sheet row | Kalendář | Calendar |
 | Group | Ve škole | At school |
 

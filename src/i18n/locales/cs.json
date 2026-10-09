@@ -1332,8 +1332,7 @@
       "settings": "Nastavení",
       "atSchool": "Ve škole",
       "calendar": "Kalendář",
-      "themeDark": "Tmavý",
-      "themeLight": "Světlý"
+      "settingsSub": "Kalendář, jazyk, vzhled"
     },
     "loadFailed": {
       "title": "Data se nepodařilo načíst",
