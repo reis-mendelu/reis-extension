@@ -32,7 +32,10 @@ export function useNotificationFeed() {
   // does not rebuild the list (and re-render every consumer) on every tick.
   // The LOCAL day, never toISOString() (UTC): at 00:30 in Brno UTC still says
   // yesterday, exactly when "is this event over?" changes its answer.
-  const todayIso = localTodayIso();
+  // Selected from the store's clock, which the pulse advances: read with a
+  // bare `localTodayIso()` at render, nothing re-rendered this hook at
+  // midnight, so a feed left open overnight kept yesterday's list.
+  const todayIso = useAppStore((s) => localTodayIso(s.now));
 
   // Three questions: is the student in this event's audience (utils/eventAudience
   // — no follow list), has the event already happened, and is it within the
