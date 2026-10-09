@@ -23,7 +23,6 @@ const PHONE_FILES = [
   'components/mobile/screens/calendar/WeekGrid.tsx',
   'components/mobile/screens/calendar/WeekBlock.tsx',
   'components/mobile/screens/calendar/weekLayout.ts',
-  'components/mobile/screens/calendar/CalendarViewSwitch.tsx',
   'components/mobile/screens/calendar/useCalendarToday.ts',
   'components/mobile/screens/calendar/useElementHeight.ts',
   'components/mobile/screens/calendar/useOpenLesson.ts',
