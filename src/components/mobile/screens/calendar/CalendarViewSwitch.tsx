@@ -20,7 +20,7 @@ import type { MobileCalendarView } from '../../../../store/types';
 export function CalendarViewSwitch() {
   const { t } = useTranslation();
   const view = useAppStore((s) => s.mobileCalendarView);
-  const setView = useAppStore((s) => s.setMobileCalendarView);
+  const setView = useAppStore((s) => s.saveCalendarView);
 
   const option = (value: MobileCalendarView, label: string, Icon: typeof List) => (
     <button

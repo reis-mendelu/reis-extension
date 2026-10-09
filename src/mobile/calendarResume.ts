@@ -9,8 +9,9 @@ import { useAppStore } from '../store/useAppStore';
  * Google Calendar does exactly this, and it is why a student there never needs
  * a "today" button after reopening — "when I close the app, it also returns to
  * the right day". reIS kept the old selection for as long as the OS kept the
- * process, which on an iPad is days. The day/week view is the student's
- * standing choice and is left alone, as Google leaves it.
+ * process, which on an iPad is days. The SAVED day/week view comes back too:
+ * a day peeked at from the week is not a choice, and Google likewise reopens
+ * in the view the student keeps.
  *
  * Capacitor only: the extension's iframe is rebuilt on every IS page load, so
  * it already opens fresh.
@@ -22,5 +23,6 @@ export function installCalendarResumeReset(): void {
     // after a night — and the today circle would sit on yesterday.
     useAppStore.getState().updatePulse();
     useAppStore.getState().setMobileSelectedDay(null);
+    useAppStore.getState().restoreCalendarView();
   });
 }

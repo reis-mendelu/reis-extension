@@ -34,7 +34,7 @@ export function CalendarScreen() {
   const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
   const syncLoaded = useAppStore((s) => s.syncLoaded);
   const view = useAppStore((s) => s.mobileCalendarView);
-  const setView = useAppStore((s) => s.setMobileCalendarView);
+  const setView = useAppStore((s) => s.saveCalendarView);
   // The store's clock, not `new Date()`: the pulse advances it, so the running
   // lesson's card and its countdown move with it instead of being stamped once
   // per render and then only when something else happened to re-render.

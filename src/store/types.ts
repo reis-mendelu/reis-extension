@@ -546,10 +546,22 @@ export interface MobileUiSlice {
   pullHintSeen: boolean | null;
   hydratePullHint: (o: { demo: boolean }) => Promise<void>;
   markPullHintSeen: () => void;
-  /** The calendar's day agenda or week grid, remembered per device. */
+  /**
+   * What the calendar SHOWS: the saved view, a view being tried in the chooser,
+   * or one day peeked at from the week. In memory only.
+   */
   mobileCalendarView: MobileCalendarView;
-  setMobileCalendarView: (view: MobileCalendarView) => void;
-  hydrateCalendarView: () => Promise<void>;
+  /** The student's saved choice, `meta.calendar_view`. 'day' until one is saved. */
+  savedCalendarView: MobileCalendarView;
+  /**
+   * Whether a view has been saved. null = not hydrated yet (never show the
+   * chooser); false = never saved (show it); true = saved.
+   */
+  calendarViewChosen: boolean | null;
+  hydrateCalendarView: (o: { demo: boolean }) => Promise<void>;
+  showCalendarView: (view: MobileCalendarView) => void;
+  saveCalendarView: (view: MobileCalendarView) => void;
+  restoreCalendarView: () => void;
 
   setMobileTab: (tab: MobileTab) => void;
   setMobileSelectedDay: (iso: string | null) => void;
