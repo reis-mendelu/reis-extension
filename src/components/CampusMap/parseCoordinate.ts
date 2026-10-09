@@ -52,9 +52,7 @@ function fromUrl(text: string): ParsedPoint | null {
   // and its centre follows every pan, so without the pin it is unreadable.
   const placePin = /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/.exec(href);
   if (placePin) return point(Number(placePin[1]), Number(placePin[2]), name);
-  if (place) return null;
-  const centre = /@(-?\d+\.\d+),(-?\d+\.\d+)/.exec(href);
-  if (centre) return point(Number(centre[1]), Number(centre[2]), name);
+  // An explicit coordinate parameter names the point itself, place link or not.
   for (const key of ['q', 'query', 'll', 'center']) {
     const m = /^(-?\d+\.\d+),\s*(-?\d+\.\d+)$/.exec(url.searchParams.get(key) ?? '');
     if (m) return point(Number(m[1]), Number(m[2]), name);
@@ -63,6 +61,9 @@ function fromUrl(text: string): ParsedPoint | null {
   const x = url.searchParams.get('x');
   const y = url.searchParams.get('y');
   if (x && y) return point(Number(y), Number(x), name);
+  if (place) return null;
+  const centre = /@(-?\d+\.\d+),(-?\d+\.\d+)/.exec(href);
+  if (centre) return point(Number(centre[1]), Number(centre[2]), name);
   return null;
 }
 

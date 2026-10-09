@@ -109,6 +109,14 @@ describe('parseCoordinate', () => {
     expect(parseCoordinate('49.2, 216.6')).toBeNull();
   });
 
+  // Only the viewport centre is untrustworthy on a place link; an explicit
+  // coordinate parameter names the point itself.
+  it('reads an explicit ?q= point on a place link that has no pin', () => {
+    expect(
+      parseCoordinate('https://www.google.com/maps/place/Kav%C3%A1rna/@49.1,16.5,17z?q=49.21,16.61')
+    ).toMatchObject({ coord: [16.61, 49.21] });
+  });
+
   it('cannot read a short link, which hides the place behind a redirect', () => {
     expect(parseCoordinate('https://maps.app.goo.gl/AbCdEf123')).toBeNull();
   });
