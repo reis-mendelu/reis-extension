@@ -69,6 +69,10 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     var makingCovers = false
     /// What the tape is for, while it is in hand in a file with none yet (`+Covers`).
     let tapeHint = TapeHintView()
+    /// Holds the hint below the way out of focus while that button shows
+    /// (`+TapeHint`); stored here because an extension cannot store it.
+    lazy var tapeHintBelowRestore = tapeHint.topAnchor.constraint(
+        greaterThanOrEqualTo: restoreChromeButton.bottomAnchor, constant: 8)
     /// Moving pictures instead of drawing. A visible mode: see `+Pictures`.
     var arrangingPictures = false
     /// From choosing Photos or the camera until the pick lands or is
@@ -497,6 +501,7 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
         chromeHidden = hidden
         navigationController?.setNavigationBarHidden(hidden, animated: true)
         restoreChromeButton.isHidden = !hidden
+        placeTapeHint()
         pdfView.becomeFirstResponder()
     }
 

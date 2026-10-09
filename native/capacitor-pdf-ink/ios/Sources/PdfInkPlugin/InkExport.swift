@@ -25,7 +25,10 @@ enum InkExport {
      * an iPad at a moderate zoom (it shows an A4 at 2.72 px/pt just fitting it)
      * and close to print. It was 2, as soft as the reader used to be. A page
      * too big for 4 within `InkPages.maxInkPixels` gets less, but never less
-     * than the 2 every export had before.
+     * than the 2 every export had before — so a page over a quarter of the
+     * budget in points (bigger than A1: an A0 poster) still costs more than
+     * the budget, as it did before. The floor is the choice: a poster's notes
+     * stay as sharp as they were.
      */
     static func inkScale(for pageSize: CGSize) -> CGFloat {
         let area = pageSize.width * pageSize.height

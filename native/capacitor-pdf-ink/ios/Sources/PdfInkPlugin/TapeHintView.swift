@@ -53,6 +53,19 @@ final class TapeHintView: UIView {
 
     required init?(coder: NSCoder) { fatalError("TapeHintView is code-only") }
 
+    /// Below iOS 17 (the plugin's floor is 15) there is no `registerForTraitChanges`,
+    /// and the hint stays in the hierarchy, hidden, between showings: without
+    /// this a light/dark switch left the border in the old appearance.
+    /// Deprecated in 17, so marked the same to keep the build quiet there.
+    @available(iOS, deprecated: 17.0)
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if #available(iOS 17.0, *) { return }
+        if traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
+            resolveBorder()
+        }
+    }
+
     override func didMoveToWindow() {
         super.didMoveToWindow()
         resolveBorder()

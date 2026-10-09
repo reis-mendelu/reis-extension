@@ -114,6 +114,40 @@ final class ReaderCoverTests: XCTestCase {
         reader.coverToolDidChange()
     }
 
+    /// Focus mode puts the way back in the top trailing corner, at the same
+    /// top edge the hint sits on. On a narrow reader (Split View, Slide Over)
+    /// the hint spans nearly the width and sat over that button, the only way
+    /// back to the bar (cubic, 5.4.0 release diff). With the bar showing the
+    /// button is hidden and the hint keeps its place.
+    func testTheHintNeverCoversTheWayBackOnANarrowReader() throws {
+        for width: CGFloat in [320, 375, 507] {
+            let (reader, _) = try host.show(pages: 1, width: width)
+            reader.makingCovers = true
+            reader.updateTapeHint()
+            reader.view.layoutIfNeeded()
+            XCTAssertFalse(reader.tapeHint.isHidden)
+            XCTAssertEqual(
+                reader.tapeHint.frame.minY - reader.view.safeAreaLayoutGuide.layoutFrame.minY, 12,
+                accuracy: 1, "the hint moved with the bar showing")
+
+            reader.setChromeHidden(true)
+            reader.view.layoutIfNeeded()
+
+            XCTAssertFalse(reader.restoreChromeButton.isHidden)
+            XCTAssertFalse(
+                reader.tapeHint.frame.intersects(reader.restoreChromeButton.frame),
+                "at \(width) pt the hint \(reader.tapeHint.frame) covers the way back \(reader.restoreChromeButton.frame)")
+
+            reader.setChromeHidden(false)
+            reader.view.layoutIfNeeded()
+            XCTAssertEqual(
+                reader.tapeHint.frame.minY - reader.view.safeAreaLayoutGuide.layoutFrame.minY, 12,
+                accuracy: 1, "the hint stayed down after the bar came back")
+            reader.makingCovers = false
+            reader.updateTapeHint()
+        }
+    }
+
     func testPuttingTheTapeDownTakesTheHintAway() throws {
         guard #available(iOS 18.0, *) else { throw XCTSkip("custom palette items are iOS 18+") }
         let (reader, _) = try host.show(pages: 1)

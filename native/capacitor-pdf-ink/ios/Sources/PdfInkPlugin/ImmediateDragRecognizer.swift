@@ -15,10 +15,18 @@ final class ImmediateDragRecognizer: UIGestureRecognizer {
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
         guard startLocation == nil, touches.count == 1, let touch = touches.first else {
-            state = .failed
+            state = Self.refusing(from: state)
             return
         }
         startLocation = touch.location(in: view)
+    }
+
+    /// A touch the stroke cannot take (a second finger). Before the stroke
+    /// began it fails, so two fingers never make a strip; after, `.failed` is
+    /// not a transition UIKit allows, and the strip growing under the Pencil
+    /// stayed on the page. A cancel reaches the layer's handler, which clears it.
+    static func refusing(from state: State) -> State {
+        state == .possible ? .failed : .cancelled
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {

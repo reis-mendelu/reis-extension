@@ -59,6 +59,29 @@ final class PictureIngestTests: XCTestCase {
         XCTAssertNil(PictureIngest.picture(from: Data("not an image".utf8)))
     }
 
+    /// A file from Files is read by ImageIO from disk, not loaded whole into
+    /// memory first: a huge scan or TIFF could exhaust it (cubic, 5.4.0
+    /// release diff). Same picture as from the bytes.
+    func testAFileIsIngestedFromItsURLLikeItsBytes() throws {
+        let data = try encode(solid(.blue, CGSize(width: 3000, height: 1000)), as: .png)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).png")
+        try data.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let picture = try XCTUnwrap(PictureIngest.picture(at: url))
+
+        XCTAssertEqual(picture.pixelSize, CGSize(width: 2048, height: 683))
+        XCTAssertEqual(picture.pixelSize, PictureIngest.picture(from: data)?.pixelSize)
+    }
+
+    func testAJunkFileIsRefused() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).png")
+        try Data("not an image".utf8).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+        XCTAssertNil(PictureIngest.picture(at: url))
+        XCTAssertNil(PictureIngest.picture(at: url.appendingPathExtension("missing")))
+    }
+
     // MARK: - Helpers
 
     private func solid(_ color: UIColor, _ size: CGSize) -> UIImage {

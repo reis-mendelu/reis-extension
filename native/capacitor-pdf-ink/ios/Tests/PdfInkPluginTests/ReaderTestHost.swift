@@ -19,9 +19,11 @@ final class ReaderTestHost {
     private var windows: [UIWindow] = []
     private var readers: [PdfInkViewController] = []
 
-    func show(pages: Int) throws -> (PdfInkViewController, URL) {
+    /// `width` 820 is an 11-inch iPad's portrait; a narrow one is the reader
+    /// in Split View or Slide Over.
+    func show(pages: Int, width: CGFloat = 820) throws -> (PdfInkViewController, URL) {
         let reader = PdfInkViewController(strings: strings)
-        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 820, height: 1000))
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: width, height: 1000))
         window.rootViewController = UINavigationController(rootViewController: reader)
         window.makeKeyAndVisible()
         window.layoutIfNeeded()
