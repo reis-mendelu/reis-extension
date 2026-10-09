@@ -59,6 +59,14 @@ describe('filenameFromResponse', () => {
     expect(filenameFromResponse({}, { name: 'Cvičení', type: 'pptx' })).toBe('Cvičení.pptx');
   });
 
+  // IS's "I don't know" gives no extension, so the old .pdf default stands —
+  // a name with none would not open on either OS.
+  it('keeps the .pdf default when the row type gives no extension', () => {
+    expect(filenameFromResponse({}, { name: 'Přednáška 3', type: 'unknown' })).toBe(
+      'Přednáška 3.pdf'
+    );
+  });
+
   it("still prefers IS's own name over the row's title", () => {
     expect(
       filenameFromResponse(

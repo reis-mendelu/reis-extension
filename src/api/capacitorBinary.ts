@@ -1,6 +1,6 @@
 import { assertIsOrigin, buildCookieDelivery } from './capacitorTransport';
 import { notifySessionExpired } from '../services/sessionExpiry';
-import { downloadName, type FileRowHint } from '../utils/contentDisposition';
+import { downloadName, rowTypeExtension, type FileRowHint } from '../utils/contentDisposition';
 
 export interface BinaryDeps {
   platform: 'ios' | 'android' | 'web';
@@ -37,7 +37,8 @@ export function base64ToBlob(base64: string, type: string): Blob {
 export function filenameFromResponse(headers: Record<string, string>, row?: FileRowHint): string {
   const cd = headers['Content-Disposition'] ?? headers['content-disposition'] ?? null;
   const contentType =
-    (headers['Content-Type'] ?? headers['content-type']) || (row?.type ? null : 'application/pdf');
+    (headers['Content-Type'] ?? headers['content-type']) ||
+    (rowTypeExtension(row?.type) ? null : 'application/pdf');
   return downloadName({ contentDisposition: cd, contentType }, row);
 }
 
