@@ -126,7 +126,7 @@ export function DayBody({
         {...handlers}
         className="flex-1 touch-pan-y overflow-y-auto transition-transform duration-200 ease-out"
       >
-        <AlwaysScrollable className="pb-[calc(9rem_+_var(--safe-bottom,0px))]">
+        <AlwaysScrollable className="pb-[calc(6rem_+_var(--safe-bottom,0px))]">
           {agenda.length === 0 ? (
             <CalendarEmptyDay
               holiday={holiday}

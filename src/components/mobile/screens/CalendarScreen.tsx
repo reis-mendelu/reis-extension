@@ -15,7 +15,6 @@ import { ScreenHeader } from './calendar/ScreenHeader';
 import { NowNextCard } from './calendar/NowNextCard';
 import { DayChips } from './calendar/DayChips';
 import { DayBody } from './calendar/DayBody';
-import { CalendarViewSwitch } from './calendar/CalendarViewSwitch';
 import { WeekGrid } from './calendar/WeekGrid';
 import { useCalendarToday } from './calendar/useCalendarToday';
 import { RecentFilesStrip } from './calendar/RecentFilesStrip';
@@ -34,7 +33,7 @@ export function CalendarScreen() {
   const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
   const syncLoaded = useAppStore((s) => s.syncLoaded);
   const view = useAppStore((s) => s.mobileCalendarView);
-  const setView = useAppStore((s) => s.saveCalendarView);
+  const showView = useAppStore((s) => s.showCalendarView);
   // The store's clock, not `new Date()`: the pulse advances it, so the running
   // lesson's card and its countdown move with it instead of being stamped once
   // per render and then only when something else happened to re-render.
@@ -85,8 +84,8 @@ export function CalendarScreen() {
           rejected the same way — the strip and the title already say which
           week and which day this is. Away from today the date itself is the
           way back (a return glyph beside it, no extra row): the header is
-          full at a date and three actions, and a floating "Dnes" pill beside
-          the view switch read as one confusing row of words. */}
+          full at a date and three actions, and a floating "Dnes" pill read as
+          one more control at the bottom of the screen. */}
       {/* Refreshing is a pull on the day (DayBody). The visible circle that
           sat on its own row here made this header one line taller than every
           other tab's; what is left is the screen-reader route to the same
@@ -107,9 +106,8 @@ export function CalendarScreen() {
     </>
   );
   const shell = (body: ReactNode) => (
-    // `relative` anchors the floating view switch; it renders in every state,
-    // skeleton and error included, because the day strip works in all of them.
-    // The ref is where a pull to refresh may start (DayBody).
+    // `relative` anchors the first-open view chooser (day and week only). The
+    // ref is where a pull to refresh may start (DayBody).
     <div
       ref={screenRef}
       data-testid="calendar-screen"
@@ -117,7 +115,6 @@ export function CalendarScreen() {
     >
       {chrome}
       {body}
-      <CalendarViewSwitch />
     </div>
   );
 
@@ -149,7 +146,7 @@ export function CalendarScreen() {
     // (offline) is exactly where it earns its place. Not under the skeleton:
     // loading is transient and a card under placeholder bars reads as a glitch.
     return shell(
-      <div className="flex flex-1 flex-col overflow-y-auto pb-[calc(9rem_+_var(--safe-bottom,0px))]">
+      <div className="flex flex-1 flex-col overflow-y-auto pb-[calc(6rem_+_var(--safe-bottom,0px))]">
         <ScreenError testId="calendar-error" />
         <RecentFilesStrip />
       </div>
@@ -204,10 +201,11 @@ export function CalendarScreen() {
           lessonDates={lessonDates}
           // No selection mark and no dots here — see DayChips' `view`.
           view="week"
-          // A chip in the week view zooms in: that day, in the day view.
+          // A chip in the week view zooms in on that day — a peek, not a
+          // choice. The saved view comes back on a Kalendář re-tap or a reopen.
           onPickDay={(iso) => {
             setMobileSelectedDay(iso);
-            setView('day');
+            showView('day');
           }}
         />
         <WeekGrid

@@ -31,7 +31,7 @@ export interface WeekGridProps {
  *
  * It never scrolls: a screen must fit (`#root` clips), so the hours are fitted
  * to the week (`weekHourRange`) and stretched to the height there is. The
- * bottom padding reserves the band the view switch floats in.
+ * bottom padding clears the tab bar.
  *
  * It swipes a WEEK at a time, like the strip, with the same hook and the same
  * damped offset. `touch-none` is safe here for the reason it is on the strip:
@@ -80,7 +80,7 @@ export function WeekGrid({ lessons, selectedIso, lessonDates, onSelectDay }: Wee
       ref={swipeRef}
       data-testid="week-grid"
       {...handlers}
-      className="flex min-h-0 flex-1 touch-none gap-1 px-2 pb-[calc(8.5rem_+_var(--safe-bottom,0px))] pt-2 transition-transform duration-200 ease-out"
+      className="flex min-h-0 flex-1 touch-none gap-1 px-2 pb-[calc(6rem_+_var(--safe-bottom,0px))] pt-2 transition-transform duration-200 ease-out"
     >
       <div className="relative w-8 flex-shrink-0">
         {hours.slice(0, -1).map((h, i) => (

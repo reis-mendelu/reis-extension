@@ -54,6 +54,8 @@ describe('CalendarScreen — week view', () => {
       mobileSheets: [],
       mobileTab: 'calendar',
       mobileCalendarView: 'day',
+      savedCalendarView: 'day',
+      calendarViewChosen: true,
       schedule: { data: [java, economics], status: 'success' },
       customEvents: [],
       hiddenItems: { courses: [], events: [] },
@@ -102,15 +104,15 @@ describe('CalendarScreen — week view', () => {
     expect(pills()).toHaveLength(0);
   });
 
-  it('the switch turns the day agenda into the week grid', () => {
+  // Spec 2026-10-09: the view is chosen once and changed in Profile →
+  // Nastavení, so the calendar carries no switch in either view.
+  it('has no view switch on the calendar', () => {
+    const { unmount } = render(<CalendarScreen />);
+    expect(screen.queryByRole('group', { name: 'Zobrazení kalendáře' })).toBeNull();
+    unmount();
+    useAppStore.setState({ mobileCalendarView: 'week' } as never);
     render(<CalendarScreen />);
-    expect(screen.getByTestId('day-body')).toBeTruthy();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Týden' }));
-
-    expect(useAppStore.getState().mobileCalendarView).toBe('week');
-    expect(screen.getByTestId('week-grid')).toBeTruthy();
-    expect(screen.queryByTestId('day-body')).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Zobrazení kalendáře' })).toBeNull();
   });
 
   it('shows the whole week: a lesson on another day is on screen', () => {
@@ -138,11 +140,14 @@ describe('CalendarScreen — week view', () => {
     });
   });
 
-  it('tapping a day in the strip opens that day', () => {
-    useAppStore.setState({ mobileCalendarView: 'week' } as never);
+  // A peek, not a choice: with no switch on screen, saving 'day' here would
+  // strand a Týden student in the day view until they found Profile.
+  it('tapping a day in the strip opens that day without changing the saved view', () => {
+    useAppStore.setState({ mobileCalendarView: 'week', savedCalendarView: 'week' } as never);
     render(<CalendarScreen />);
     fireEvent.click(within(screen.getByTestId('day-strip')).getByRole('button', { name: /Út 6/ }));
     expect(useAppStore.getState().mobileCalendarView).toBe('day');
+    expect(useAppStore.getState().savedCalendarView).toBe('week');
     expect(useAppStore.getState().mobileSelectedDayIso).toBe('2026-10-06');
   });
 
