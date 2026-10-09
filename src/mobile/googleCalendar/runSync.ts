@@ -28,6 +28,7 @@ export interface SyncSources {
   exams: ExamSubject[];
   examsConfirmed: boolean;
   custom: CalendarCustomEvent[];
+  customConfirmed: boolean;
 }
 
 export type SyncOutcome =
@@ -63,7 +64,7 @@ export async function runSync(o: {
   state: SyncState;
   sources: SyncSources;
   now: Date;
-  persist: (s: SyncState) => Promise<void>; // called right after createCalendar
+  persist: (s: SyncState) => Promise<void>; // around createCalendar, and before deleting
   onProgress?: (done: number, total: number) => void;
 }): Promise<SyncOutcome> {
   const { api, sources, now } = o;
@@ -78,6 +79,10 @@ export async function runSync(o: {
     if (!calendarId) {
       calendarId = await api.findReisCalendar();
       if (!calendarId) {
+        // Pending BEFORE create: a run killed in between would otherwise leave a
+        // "Rozvrh" the next run finds and takes for another device's, and the
+        // past would never be written.
+        await o.persist({ ...o.state, pastFillPending: true });
         calendarId = await api.createCalendar(CALENDAR_NAME);
         includePast = true;
         await o.persist({ ...o.state, calendarId, pastFillPending: true });
@@ -94,7 +99,7 @@ export async function runSync(o: {
     const confirmed: Record<ReisKind, boolean> = {
       lesson: sources.lessonsConfirmed,
       exam: sources.examsConfirmed,
-      custom: true,
+      custom: sources.customConfirmed,
     };
 
     // The id is taken: moved out of the listed window, or deleted (Google keeps
@@ -135,12 +140,16 @@ export async function runSync(o: {
       if (plan.held) held[kind] = plan.held;
       plan.insert.forEach((d) => work.push(() => insertOrResolve(d)));
       plan.update.forEach((d) => work.push(() => api.put(cal, d)));
-      plan.remove.forEach((id) =>
-        work.push(async () => {
-          await api.remove(cal, id);
-          reisDeleted[id] = dateById.get(id) ?? today;
-        })
-      );
+      plan.remove.forEach((id) => {
+        reisDeleted[id] = dateById.get(id) ?? today;
+        work.push(() => api.remove(cal, id));
+      });
+    }
+    // Saved before deleting: a delete whose record died with a killed or failed
+    // run would read as the student's next time, and IS could never restore it.
+    // A record for a delete that then failed is harmless (restore = PUT).
+    if (Object.keys(reisDeleted).length > Object.keys(o.state.reisDeleted).length) {
+      await o.persist({ ...o.state, calendarId: cal, pastFillPending: includePast, reisDeleted });
     }
 
     await runPool(work, WRITE_CONCURRENCY, (n) => o.onProgress?.(n, work.length));
@@ -151,7 +160,8 @@ export async function runSync(o: {
         calendarId: cal,
         held,
         lastSyncAt: now.getTime(),
-        pastFillPending: false,
+        // A timetable that hadn't loaded yet wrote no past lessons; keep trying.
+        pastFillPending: includePast && !sources.lessonsConfirmed,
         reisDeleted: futureOnly(reisDeleted, (date) => date, today),
         skipped: futureOnly(skipped, (s) => s.date, today),
       },

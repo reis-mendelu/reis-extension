@@ -100,9 +100,10 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // reopen too. Nothing above sets the calendar's day, so nothing races it.
   installCalendarResumeReset();
   // Beside it, for the same reason: a resume is one of its triggers. It shows
-  // the Profil row's state and syncs "Rozvrh" while the app is open; in demo
-  // mode the sync itself returns early, so nothing is written.
-  installGoogleCalendarSync();
+  // the Profil row's state and syncs "Rozvrh" while the app is open. Not in the
+  // demo: the reviewer's demo must not reach a real Google account, so the row
+  // stays hidden there (gcal.available stays false).
+  if (!demo) installGoogleCalendarSync();
 
   // Demo data is seeded, static and complete. Syncing would only produce
   // failed IS requests, and fetchWithAuth throws DemoModeError anyway.

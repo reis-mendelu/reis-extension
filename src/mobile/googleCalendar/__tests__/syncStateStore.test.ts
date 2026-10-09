@@ -2,19 +2,21 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { clearSyncState, loadSyncState, saveSyncState } from '../syncStateStore';
 import { installTestPlatform } from './testPlatform';
 
+const EMPTY = {
+  enabled: false,
+  calendarId: null,
+  held: {},
+  lastSyncAt: null,
+  pastFillPending: false,
+  reisDeleted: {},
+  skipped: {},
+  sourcesFingerprint: null,
+};
+
 describe('syncStateStore', () => {
   beforeEach(() => installTestPlatform());
   it('defaults to disabled and empty', async () => {
-    expect(await loadSyncState()).toEqual({
-      enabled: false,
-      calendarId: null,
-      held: {},
-      lastSyncAt: null,
-      pastFillPending: false,
-      reisDeleted: {},
-      skipped: {},
-      sourcesFingerprint: null,
-    });
+    expect(await loadSyncState()).toEqual(EMPTY);
   });
   it('round-trips and clears', async () => {
     const s = {
@@ -30,6 +32,6 @@ describe('syncStateStore', () => {
     await saveSyncState(s);
     expect(await loadSyncState()).toEqual(s);
     await clearSyncState();
-    expect((await loadSyncState()).enabled).toBe(false);
+    expect(await loadSyncState()).toEqual(EMPTY); // the calendar and its history go too
   });
 });

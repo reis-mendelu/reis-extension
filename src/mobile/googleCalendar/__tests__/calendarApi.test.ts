@@ -3,26 +3,39 @@ import { CALENDAR_MARKER, createCalendarApi } from '../calendarApi';
 import { AuthRevokedError, CalendarGoneError } from '../calendarHttp';
 import type { DesiredEvent } from '../types';
 
-type R = { status: number; body?: unknown };
+type R = { status: number; body?: unknown } | 'network';
 function fakeFetch(responses: R[]) {
-  const calls: { url: string; method: string; body?: string }[] = [];
+  const calls: { url: string; method: string; body?: string; auth?: string }[] = [];
   const f = vi.fn(async (url: string, init?: RequestInit) => {
-    calls.push({ url, method: init?.method ?? 'GET', body: init?.body as string | undefined });
+    const headers = init?.headers as Record<string, string> | undefined;
+    calls.push({
+      url,
+      method: init?.method ?? 'GET',
+      body: init?.body as string | undefined,
+      auth: headers?.Authorization,
+    });
     const r = responses.shift() ?? { status: 500 };
+    if (r === 'network') throw new TypeError('Failed to fetch');
     return new Response(r.body === undefined ? null : JSON.stringify(r.body), { status: r.status });
   });
   return { f: f as unknown as typeof fetch, calls };
 }
-const api = (responses: R[], invalidate = vi.fn(async () => {})) => {
+const api = (responses: R[], invalidate = vi.fn(async () => {}), tokens = ['T']) => {
   const { f, calls } = fakeFetch(responses);
+  const sleep = vi.fn(async (_ms: number) => {});
+  let t = 0;
   return {
     calls,
     invalidate,
+    sleep,
     a: createCalendarApi({
-      token: async () => 'T',
-      invalidateToken: invalidate,
+      token: async () => tokens[Math.min(t, tokens.length - 1)]!,
+      invalidateToken: async () => {
+        t++;
+        await invalidate();
+      },
       fetch: f,
-      sleep: async () => {},
+      sleep,
     }),
   };
 };
@@ -97,18 +110,39 @@ describe('calendarApi', () => {
     await expect(a.assertCalendar('cal')).rejects.toBeInstanceOf(CalendarGoneError);
   });
   it('retries once after a 401 with a fresh token, then reports revoked', async () => {
-    const { a, invalidate } = api([{ status: 401 }, { status: 401 }]);
+    const { a, invalidate, calls } = api([{ status: 401 }, { status: 401 }], undefined, [
+      'T1',
+      'T2',
+    ]);
     await expect(a.assertCalendar('cal')).rejects.toBeInstanceOf(AuthRevokedError);
     expect(invalidate).toHaveBeenCalledTimes(1);
+    expect(calls.map((c) => c.auth)).toEqual(['Bearer T1', 'Bearer T2']);
+  });
+  it('retries a dropped connection and a 5xx, backing off, then succeeds', async () => {
+    const { a, calls, sleep } = api(['network', { status: 503 }, { status: 200, body: {} }]);
+    await a.put('cal', d);
+    expect(calls).toHaveLength(3);
+    expect(sleep.mock.calls.map(([ms]) => ms)).toEqual([150, 1000, 150, 2000, 150]);
+  });
+  it('gives up on a 5xx that persists', async () => {
+    const { a, calls } = api(Array.from({ length: 10 }, () => ({ status: 503 })));
+    await expect(a.put('cal', d)).rejects.toThrow('HTTP 503');
+    expect(calls).toHaveLength(6);
+  });
+  it('gives up on a connection that stays down', async () => {
+    const { a } = api(Array.from({ length: 10 }, (): R => 'network'));
+    await expect(a.put('cal', d)).rejects.toThrow('Failed to fetch');
   });
   it('backs off on 429 and on 403 rateLimitExceeded', async () => {
-    const { a, calls } = api([
+    const { a, calls, sleep } = api([
       { status: 429 },
       { status: 403, body: { error: { errors: [{ reason: 'rateLimitExceeded' }] } } },
       { status: 200, body: {} },
     ]);
     await a.put('cal', d);
     expect(calls).toHaveLength(3);
+    // 150 ms pace before every request; 1 s, then 2 s of backoff
+    expect(sleep.mock.calls.map(([ms]) => ms)).toEqual([150, 1000, 150, 2000, 150]);
   });
   it('lists one kind, paginated, from timeMin', async () => {
     const ev = (id: string) => ({
@@ -130,7 +164,9 @@ describe('calendarApi', () => {
     expect(calls[1]!.url).toContain('pageToken=p2');
   });
   it('treats 404 and 410 on delete as already gone', async () => {
-    const { a } = api([{ status: 410 }]);
-    await expect(a.remove('cal', 'lx')).resolves.toBeUndefined();
+    for (const status of [404, 410]) {
+      const { a } = api([{ status }]);
+      await expect(a.remove('cal', 'lx'), String(status)).resolves.toBeUndefined();
+    }
   });
 });

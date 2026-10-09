@@ -22,6 +22,8 @@ const REVISIT_AFTER_MS = 6 * 3600_000;
 let cachedToken: string | null = null;
 let running = false;
 let pending = false;
+/** Bumped by turnOff: a run that started before "off" must not write afterwards. */
+let generation = 0;
 
 /** The native halves reject with "REVOKED" when the grant is gone. */
 function isRevoked(e: unknown): boolean {
@@ -60,6 +62,8 @@ function currentSources(): SyncSources {
     // Subjects, not registrations: the list stays non-empty after deregistering.
     examsConfirmed: s.exams.status === 'success' && s.exams.data.length > 0,
     custom: s.customEvents,
+    // Loaded from IndexedDB after boot: an empty list before that is not "none".
+    customConfirmed: s.customEventsLoaded,
   };
 }
 
@@ -68,6 +72,7 @@ export async function sourcesFingerprint(src: SyncSources): Promise<string> {
 }
 
 async function turnOff(notice: 'calendarGone' | 'revoked' | null) {
+  generation++;
   // A grant revoked elsewhere can still sit in the native keychain with a
   // valid-looking token; forget it so the next connect shows Google's screen.
   if (notice === 'revoked') {
@@ -83,18 +88,35 @@ async function turnOff(notice: 'calendarGone' | 'revoked' | null) {
 }
 
 export async function syncGoogleCalendarNow(reason: 'connect' | 'change'): Promise<void> {
-  const st = await loadSyncState();
-  if (!st.enabled || isDemoMode()) return;
-  if (useAppStore.getState().schedule.status === 'loading') return; // the subscription fires when it lands
+  // Claim the slot before the first await: the open-time sync and a resume can
+  // arrive in the same tick, and both would pass a check made after awaiting.
   if (running) {
     pending = true;
     return;
   }
+  running = true;
+  try {
+    await runOnce(reason);
+  } finally {
+    running = false;
+  }
+  if (pending) {
+    pending = false;
+    await syncGoogleCalendarNow('change');
+  }
+}
+
+async function runOnce(reason: 'connect' | 'change'): Promise<void> {
+  const gen = generation;
+  const current = () => gen === generation;
+  const st = await loadSyncState();
+  if (!st.enabled || isDemoMode()) return;
+  if (useAppStore.getState().schedule.status === 'loading') return; // the subscription fires when it lands
   const sources = currentSources();
   const fp = await sourcesFingerprint(sources);
   const fresh = st.lastSyncAt !== null && Date.now() - st.lastSyncAt < REVISIT_AFTER_MS;
   if (reason === 'change' && fp === st.sourcesFingerprint && fresh) return;
-  running = true;
+  cachedToken = null; // ask the native side each run; a token cached for hours only earns a 401
   const set = useAppStore.getState().setGcal;
   set({ syncing: true, notice: null });
   try {
@@ -103,9 +125,14 @@ export async function syncGoogleCalendarNow(reason: 'connect' | 'change'): Promi
       state: st,
       sources,
       now: new Date(),
-      persist: (s) => saveSyncState({ ...s, enabled: true, sourcesFingerprint: null }),
-      onProgress: (done, total) => set({ progress: total > 20 ? { done, total } : null }),
+      persist: async (s) => {
+        if (current()) await saveSyncState({ ...s, enabled: true, sourcesFingerprint: null });
+      },
+      onProgress: (done, total) => {
+        if (current()) set({ progress: total > 20 ? { done, total } : null });
+      },
     });
+    if (!current()) return; // turned off meanwhile; don't switch it back on
     if (out.kind === 'calendarGone' || out.kind === 'revoked') {
       await turnOff(out.kind);
     } else {
@@ -117,14 +144,9 @@ export async function syncGoogleCalendarNow(reason: 'connect' | 'change'): Promi
     }
   } catch (e) {
     logError('GoogleCalendar.sync', e, { reason });
-    set({ notice: 'failed' });
+    if (current()) set({ notice: 'failed' });
   } finally {
     set({ syncing: false, progress: null });
-    running = false;
-  }
-  if (pending) {
-    pending = false;
-    await syncGoogleCalendarNow('change');
   }
 }
 

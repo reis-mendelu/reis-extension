@@ -40,6 +40,9 @@ export function installGoogleCalendarSync(): () => void {
   const unsubscribe = useAppStore.subscribe((s, prev) => {
     if (
       s.schedule.data === prev.schedule.data &&
+      // The open-time sync waits out a loading timetable; a load that fails
+      // changes only the status, and must still release it.
+      s.schedule.status === prev.schedule.status &&
       s.exams.data === prev.exams.data &&
       s.customEvents === prev.customEvents &&
       s.language === prev.language

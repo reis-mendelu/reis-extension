@@ -81,6 +81,7 @@ const sources = (dates: string[], room = 'Q'): SyncSources => ({
   exams: [],
   examsConfirmed: true,
   custom: [],
+  customConfirmed: true,
 });
 const NOW = new Date('2026-10-08T10:00:00+02:00');
 const FRESH: SyncState = {
@@ -165,6 +166,32 @@ describe('runSync', () => {
     expect(new Set(log.filter((l) => l.startsWith('ins:'))).size).toBe(3);
   });
 
+  it('marks the past fill pending before it creates the calendar', async () => {
+    // A run killed right after create must not leave a "Rozvrh" the next run
+    // finds and treats as another device's, which skips the past for good.
+    const { api, log } = fakeApi();
+    const persist = async (s: SyncState) => void log.push(`persist:${s.pastFillPending}`);
+    await runSync({ api, now: NOW, persist, state: FRESH, sources: sources(['2026-10-09']) });
+    expect(log.indexOf('persist:true')).toBeLessThan(log.indexOf('create'));
+  });
+
+  it('keeps the past fill pending while the timetable has not been confirmed', async () => {
+    const { api } = fakeApi();
+    const st = await sync(api, FRESH, { ...sources([]), lessonsConfirmed: false });
+    expect(st.pastFillPending).toBe(true);
+  });
+
+  it('does not remove own events before they have loaded', async () => {
+    const { api, log } = fakeApi();
+    const custom = [
+      { id: 'c1', title: 'K', date: '20261009', startTime: '14:00', endTime: '15:00' },
+    ];
+    const st = await sync(api, FRESH, { ...sources([]), custom: custom as never });
+    log.length = 0;
+    await sync(api, st, { ...sources([]), custom: [], customConfirmed: false });
+    expect(log.filter((l) => l.startsWith('del:'))).toEqual([]);
+  });
+
   it('a second run with nothing changed writes nothing', async () => {
     const { api, log } = fakeApi();
     const first = await sync(api, FRESH, sources(['2026-10-09']));
@@ -224,6 +251,18 @@ describe('runSync: the student wins in Google (Dominik, 2026-10-08)', () => {
     expect(log).toContain(`put:${id}`);
     expect(events.get(id)!.cancelled).toBe(false);
     expect(st.reisDeleted[id]).toBeUndefined();
+  });
+
+  it('records a reIS delete before making it, so a killed run still restores it later', async () => {
+    const { api, events, log } = fakeApi();
+    const days = ['2026-10-09', '2026-10-10', '2026-10-11', '2026-10-12'];
+    const st = await sync(api, FRESH, sources(days));
+    const id = idOf(events, '2026-10-12');
+    log.length = 0;
+    const persist = async (s: SyncState) => void log.push(`persist:${Object.keys(s.reisDeleted)}`);
+    await runSync({ api, now: NOW, persist, state: st, sources: sources(days.slice(0, 3)) });
+    expect(log.indexOf(`persist:${id}`)).toBeGreaterThanOrEqual(0);
+    expect(log.indexOf(`persist:${id}`)).toBeLessThan(log.indexOf(`del:${id}`));
   });
 
   it('forgets bookkeeping for days that are now past', async () => {

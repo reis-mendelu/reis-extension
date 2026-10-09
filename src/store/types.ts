@@ -404,6 +404,8 @@ export interface ContextSlice {
 
 export interface CalendarCustomEventsSlice {
   customEvents: CalendarCustomEvent[];
+  /** True once loadCalendarCustomEvents has read storage; [] before that means "not yet". */
+  customEventsLoaded: boolean;
   loadCalendarCustomEvents: () => Promise<void>;
   addCalendarCustomEvent: (event: CalendarCustomEvent) => Promise<void>;
   updateCalendarCustomEvent: (id: string, patch: Partial<CalendarCustomEvent>) => Promise<void>;

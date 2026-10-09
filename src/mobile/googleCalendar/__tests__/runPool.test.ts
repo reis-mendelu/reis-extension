@@ -33,6 +33,25 @@ describe('runPool', () => {
     expect(started.length).toBeLessThan(10);
   });
 
+  it('rejects only after a task already running when another fails has finished', async () => {
+    let release!: () => void;
+    let slowDone = false;
+    const slow = () => new Promise<void>((r) => (release = () => ((slowDone = true), r())));
+    const failing = async () => {
+      throw new Error('boom');
+    };
+    let rejected = false;
+    const run = runPool([slow, failing], 2, () => {}).catch((e: Error) => {
+      rejected = true;
+      expect(slowDone).toBe(true);
+      return e;
+    });
+    await new Promise((r) => setTimeout(r, 5));
+    expect(rejected).toBe(false); // still waiting on the slow task
+    release();
+    expect(((await run) as Error).message).toBe('boom');
+  });
+
   it('handles no work', async () => {
     await expect(runPool([], 4, () => {})).resolves.toBeUndefined();
   });

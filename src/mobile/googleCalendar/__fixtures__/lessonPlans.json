@@ -141,12 +141,33 @@
       "includePast": false,
       "sourceConfirmed": false,
       "previousHeld": null,
-      "desired": [],
+      "desired": [
+        {
+          "id": "ly",
+          "date": "2026-10-09",
+          "hash": "y"
+        },
+        {
+          "id": "lz",
+          "date": "2026-10-10",
+          "hash": "z"
+        }
+      ],
       "existing": [
         {
           "id": "lx",
           "date": "2026-10-09",
           "hash": "x"
+        },
+        {
+          "id": "ly",
+          "date": "2026-10-09",
+          "hash": "y"
+        },
+        {
+          "id": "lz",
+          "date": "2026-10-10",
+          "hash": "z"
         }
       ]
     },

@@ -1,6 +1,6 @@
 /**
  * Transport for the Calendar client: pacing, the one 401 retry with a fresh
- * token, and backoff on rate limits. Kept apart so calendarApi.ts reads as the
+ * token, and backoff on rate limits, 5xx and dropped connections. Kept apart so calendarApi.ts reads as the
  * list of calls the sync makes.
  */
 const BASE = 'https://www.googleapis.com/calendar/v3';
@@ -45,21 +45,31 @@ export function createRequest(deps: CalendarApiDeps) {
     let refreshed = false;
     for (let attempt = 0; ; attempt++) {
       await deps.sleep(PACE_MS);
-      const res = await deps.fetch(`${BASE}${path}`, {
-        method,
-        headers: {
-          Authorization: `Bearer ${await deps.token()}`,
-          'Content-Type': 'application/json',
-        },
-        body: body === undefined ? undefined : JSON.stringify(body),
-      });
+      const canRetry = attempt < MAX_BACKOFF_TRIES;
+      let res: Response;
+      try {
+        res = await deps.fetch(`${BASE}${path}`, {
+          method,
+          headers: {
+            Authorization: `Bearer ${await deps.token()}`,
+            'Content-Type': 'application/json',
+          },
+          body: body === undefined ? undefined : JSON.stringify(body),
+        });
+      } catch (e) {
+        // A dropped connection. Retrying is safe: ids are ours, so a write that
+        // did land comes back as 409, which insert reads as "exists".
+        if (!(e instanceof TypeError) || !canRetry) throw e;
+        await deps.sleep(1000 * 2 ** attempt);
+        continue;
+      }
       if (res.status === 401) {
         if (refreshed) throw new AuthRevokedError('Google access was revoked');
         refreshed = true;
         await deps.invalidateToken();
         continue;
       }
-      if ((await isRateLimited(res)) && attempt < MAX_BACKOFF_TRIES) {
+      if (canRetry && (res.status >= 500 || (await isRateLimited(res)))) {
         await deps.sleep(1000 * 2 ** attempt);
         continue;
       }

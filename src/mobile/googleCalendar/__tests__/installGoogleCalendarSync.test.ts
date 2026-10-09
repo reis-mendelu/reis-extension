@@ -28,6 +28,7 @@ import { installTestPlatform } from './testPlatform';
 beforeEach(async () => {
   installTestPlatform();
   sync.mockClear();
+  listeners.clear(); // so a resume callback is this install's, not an earlier test's
   await saveSyncState({
     enabled: true,
     calendarId: 'c',
@@ -69,6 +70,17 @@ describe('installGoogleCalendarSync', () => {
     vi.useFakeTimers();
     useAppStore.setState({ customEvents: [{ id: 'a' } as never] });
     useAppStore.setState({ customEvents: [{ id: 'b' } as never] });
+    vi.advanceTimersByTime(3000);
+    expect(sync).toHaveBeenCalledTimes(2);
+  });
+
+  it('syncs when the timetable fails to load, not only when it loads', async () => {
+    const data: never[] = []; // the same array: a failed load changes only the status
+    useAppStore.setState({ schedule: { data, status: 'loading' } } as never);
+    teardown = installGoogleCalendarSync();
+    await vi.waitFor(() => expect(sync).toHaveBeenCalledTimes(1));
+    vi.useFakeTimers();
+    useAppStore.setState({ schedule: { data, status: 'error' } } as never);
     vi.advanceTimersByTime(3000);
     expect(sync).toHaveBeenCalledTimes(2);
   });

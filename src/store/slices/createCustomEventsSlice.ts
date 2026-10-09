@@ -5,6 +5,7 @@ import { logError } from '../../utils/reportError';
 
 export const createCustomEventsSlice: AppSlice<CalendarCustomEventsSlice> = (set, get) => ({
   customEvents: [],
+  customEventsLoaded: false,
 
   loadCalendarCustomEvents: async () => {
     try {
@@ -17,6 +18,7 @@ export const createCustomEventsSlice: AppSlice<CalendarCustomEventsSlice> = (set
             // could not delete yet: nothing can remove them any more, so they
             // are never drawn (services/cleanup/retireSocietyFeatures).
             .filter((e) => !e.id.startsWith('rsvp:')),
+          customEventsLoaded: true,
         });
       }
     } catch (error) {

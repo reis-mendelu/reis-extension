@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -17,6 +18,19 @@ import { describe, expect, it } from 'vitest';
  */
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), 'utf8');
 
+// The tree-parity hook's own resolver (see treeParityHookSees.test.ts for why
+// it is imported by URL): it walks the desktop tree's whole import closure, so
+// an import added deep inside a child module is caught too, not only one in
+// the entry files.
+type Hook = {
+  DESKTOP_ENTRY: string[];
+  MOBILE_ENTRY: string[];
+  closure: (entries: string[]) => Set<string>;
+};
+const hook: Hook = await import(
+  /* @vite-ignore */ pathToFileURL(resolve('.claude/hooks/tree-parity.mjs')).href
+);
+
 describe('Google Calendar sync placement', () => {
   it.each([
     'src/components/Sidebar.tsx',
@@ -29,8 +43,17 @@ describe('Google Calendar sync placement', () => {
     expect(read(file)).not.toMatch(/(?:from|import)\s*\(?\s*['"][^'"]*mobile\/googleCalendar/);
   });
 
+  it('nothing in the desktop import closure is under src/mobile/googleCalendar', () => {
+    const desktop = [...hook.closure(hook.DESKTOP_ENTRY)];
+    expect(desktop.length).toBeGreaterThan(100); // resolution worked
+    expect(desktop.filter((f) => f.includes('mobile/googleCalendar'))).toEqual([]);
+    // and the same walk does see them from the phone tree, so the check can fail
+    expect(hook.closure(hook.MOBILE_ENTRY)).toContain('src/mobile/googleCalendar/controller.ts');
+  });
+
   it.each([
-    ['capacitor/startApp.ts', 'installGoogleCalendarSync'],
+    // The call, not just the import: removing it would leave the import green.
+    ['capacitor/startApp.ts', 'installGoogleCalendarSync()'],
     ['src/components/mobile/screens/ProfileScreen.tsx', "kind: 'googleCalendar'"],
     ['src/components/mobile/sheets/SheetHost.tsx', 'GoogleCalendarSheet'],
   ])('%s still has it', (file, needle) => {

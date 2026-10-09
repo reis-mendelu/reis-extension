@@ -46,9 +46,44 @@ beforeEach(async () => {
     schedule: { data: [{ id: '1' } as never], status: 'success' },
     exams: { data: [], status: 'success', error: null },
     customEvents: [],
+    customEventsLoaded: true,
     language: 'cz',
   } as never);
+  useAppStore.getState().setGcal({
+    connected: false,
+    email: null,
+    syncing: false,
+    progress: null,
+    lastSyncAt: null,
+    notice: null,
+  });
 });
+
+const OK = {
+  kind: 'ok',
+  written: 0,
+  state: {
+    calendarId: 'c',
+    held: {},
+    lastSyncAt: 1,
+    pastFillPending: false,
+    reisDeleted: {},
+    skipped: {},
+  },
+};
+
+async function enableSync() {
+  await saveSyncState({
+    enabled: true,
+    calendarId: 'c',
+    held: {},
+    lastSyncAt: null,
+    pastFillPending: false,
+    reisDeleted: {},
+    skipped: {},
+    sourcesFingerprint: null,
+  });
+}
 
 describe('controller', () => {
   it('connect enables and runs a sync', async () => {
@@ -121,7 +156,7 @@ describe('controller', () => {
       state: {
         calendarId: 'c',
         held: { lesson: 'l2,l3' },
-        lastSyncAt: 1,
+        lastSyncAt: Date.now(), // fresh: only the held delete can make it re-run
         pastFillPending: false,
         reisDeleted: {},
         skipped: {},
@@ -194,6 +229,7 @@ describe('controller', () => {
       .mockImplementationOnce(() => new Promise((r) => (release = () => r(ok))))
       .mockResolvedValue(ok);
     const first = syncGoogleCalendarNow('change');
+    await vi.waitFor(() => expect(runSyncMock).toHaveBeenCalledTimes(1));
     await syncGoogleCalendarNow('change'); // arrives mid-sync
     useAppStore.setState({ customEvents: [{ id: 'new' } as never] }); // sources moved on meanwhile
     release();
@@ -306,5 +342,38 @@ describe('controller', () => {
     expect(native.disconnect).toHaveBeenCalledTimes(1);
     expect((await loadSyncState()).enabled).toBe(false);
     expect(useAppStore.getState().gcal).toMatchObject({ connected: false, email: null });
+  });
+  it('two triggers in the same tick never run two syncs at once', async () => {
+    await enableSync();
+    let inFlight = 0;
+    let peak = 0;
+    runSyncMock.mockImplementation(async () => {
+      peak = Math.max(peak, ++inFlight);
+      await new Promise((r) => setTimeout(r, 5));
+      inFlight--;
+      return OK;
+    });
+    // Both start before either has awaited anything (open-time sync + resume).
+    await Promise.all([syncGoogleCalendarNow('change'), syncGoogleCalendarNow('connect')]);
+    expect(peak).toBe(1);
+  });
+  it('a run that finishes after "off" does not turn the sync back on', async () => {
+    await enableSync();
+    let release!: () => void;
+    runSyncMock.mockImplementationOnce(() => new Promise((r) => (release = () => r(OK))));
+    const run = syncGoogleCalendarNow('change');
+    await vi.waitFor(() => expect(runSyncMock).toHaveBeenCalledTimes(1));
+    await disconnectGoogleCalendar();
+    release();
+    await run;
+    expect((await loadSyncState()).enabled).toBe(false);
+    expect(useAppStore.getState().gcal.lastSyncAt).toBeNull();
+  });
+  it('own events count as confirmed only once they have loaded from storage', async () => {
+    await enableSync();
+    runSyncMock.mockResolvedValue(OK);
+    useAppStore.setState({ customEventsLoaded: false } as never);
+    await syncGoogleCalendarNow('change');
+    expect(runSyncMock.mock.calls[0]![0].sources.customConfirmed).toBe(false);
   });
 });
