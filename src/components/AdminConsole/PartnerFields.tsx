@@ -25,18 +25,21 @@ export function PartnerFields({ state }: { state: PartnerDraft }) {
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Native radios (DaisyUI's radio-as-button pattern), so arrow keys and
+          the single tab stop work as a radio group should. */}
       <div role="radiogroup" aria-label={t('admin.societies.kind')} className="join">
         {(['society', 'partner'] as const).map((k) => (
-          <button
+          <input
             key={k}
-            type="button"
-            role="radio"
-            aria-checked={kind === k}
-            className={`btn btn-sm join-item ${kind === k ? 'btn-primary' : 'btn-outline'}`}
-            onClick={() => setKind(k)}
-          >
-            {t(k === 'society' ? 'admin.societies.kindSociety' : 'admin.societies.kindPartner')}
-          </button>
+            type="radio"
+            name="society-kind"
+            className="btn btn-sm join-item checked:btn-primary"
+            aria-label={t(
+              k === 'society' ? 'admin.societies.kindSociety' : 'admin.societies.kindPartner'
+            )}
+            checked={kind === k}
+            onChange={() => setKind(k)}
+          />
         ))}
       </div>
       {kind === 'partner' && (

@@ -63,6 +63,14 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
     try {
       const params = await getUserParams();
       if (params) {
+        // A remembered programme only stands in for the SAME faculty: kept
+        // across a faculty change it would match another study's partner. The
+        // value kept is also the value persisted, so a cold start agrees.
+        const programme =
+          baseProgramme(params.studyProgram) ??
+          (params.facultyLabel === get().userFaculty || !params.facultyLabel
+            ? get().userProgramme
+            : null);
         set({
           studiumId: params.studium ? String(params.studium) : null,
           studentId: params.studentId ? String(params.studentId) : null,
@@ -70,13 +78,7 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
           facultyId: params.facultyId ? String(params.facultyId) : null,
           // An unparsed header (#titulek) must not erase a faculty already known.
           userFaculty: params.facultyLabel ?? get().userFaculty,
-          // A remembered programme only stands in for the SAME faculty: kept
-          // across a faculty change it would match another study's partner.
-          userProgramme:
-            baseProgramme(params.studyProgram) ??
-            (params.facultyLabel === get().userFaculty || !params.facultyLabel
-              ? get().userProgramme
-              : null),
+          userProgramme: programme,
           userSemester: params.periodLabel ?? null,
           isErasmus: params.isErasmus,
           fullName: params.fullName ?? null,
@@ -89,7 +91,7 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
           await IndexedDBService.set('meta', VIEWER_KEY, {
             faculty: params.facultyLabel,
             erasmus: params.isErasmus,
-            programme: baseProgramme(params.studyProgram),
+            programme,
             savedAt: Date.now(),
           });
         }

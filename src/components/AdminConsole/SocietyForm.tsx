@@ -40,7 +40,7 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
       catalog
     );
     if (invalid) return setError(invalid);
-    const partnerInvalid = partner.validate();
+    const partnerInvalid = partner.validate(facultyKey);
     if (partnerInvalid) return setError(partnerInvalid);
     setBusy(true);
     setError(null);

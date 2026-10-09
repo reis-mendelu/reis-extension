@@ -9,7 +9,8 @@ export function fitWithin(
   maxH: number
 ): { w: number; h: number } {
   const s = Math.min(1, maxW / w, maxH / h);
-  return { w: Math.round(w * s), h: Math.round(h * s) };
+  // At least 1px a side: a zero-width canvas cannot be encoded.
+  return { w: Math.max(1, Math.round(w * s)), h: Math.max(1, Math.round(h * s)) };
 }
 
 /**

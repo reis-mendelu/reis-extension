@@ -9,6 +9,9 @@ describe('fitWithin', () => {
   it('shrinks a tall logo to the height cap', () => {
     expect(fitWithin(400, 800, MARK_MAX_W, MARK_MAX_H)).toEqual({ w: 80, h: 160 });
   });
+  it('never rounds a side down to zero (a zero-width canvas cannot encode)', () => {
+    expect(fitWithin(1, 10000, MARK_MAX_W, MARK_MAX_H)).toEqual({ w: 1, h: 160 });
+  });
   it('never enlarges', () => {
     expect(fitWithin(100, 40, MARK_MAX_W, MARK_MAX_H)).toEqual({ w: 100, h: 40 });
   });

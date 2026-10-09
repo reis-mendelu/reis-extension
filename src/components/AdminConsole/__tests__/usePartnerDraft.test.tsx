@@ -30,6 +30,26 @@ describe('usePartnerDraft', () => {
     expect(result.current.marks.light).not.toBeNull();
   });
 
+  it('marks picked while Partner was on are dropped on switching back to Society', () => {
+    const { result } = renderHook(() => usePartnerDraft(undefined));
+    act(() => result.current.setKind('partner'));
+    act(() => result.current.setLight(new File(['x'], 'm.png', { type: 'image/png' })));
+    act(() => result.current.setKind('society'));
+    expect(result.current.marks).toEqual({ light: null, dark: null });
+  });
+
+  // Released builds without the audience rule restrict a partner's events to
+  // its row's faculty, so that faculty must be one the audience names.
+  it("a partner's faculty must be one of its audience's faculties", () => {
+    const ey = { ...BUNDLED_SOCIETIES.ey!, markLight: 'https://x/ey.png' };
+    const { result } = renderHook(() => usePartnerDraft(ey));
+    expect(result.current.validate('pef')).toBeNull();
+    expect(result.current.validate('mendelu')).toBe('errors.partner_faculty');
+    expect(result.current.validate('frrms')).toBe('errors.partner_faculty');
+    act(() => result.current.setDraft({ mendelu: '' }));
+    expect(result.current.validate('mendelu')).toBeNull();
+  });
+
   it('an existing partner with an uploaded mark needs no new one', () => {
     const withMark = { ...BUNDLED_SOCIETIES.ey!, markLight: 'https://x/ey.png' };
     const { result } = renderHook(() => usePartnerDraft(withMark));

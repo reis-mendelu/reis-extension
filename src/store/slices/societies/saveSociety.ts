@@ -88,6 +88,11 @@ export async function saveSociety(
 
   const oldPath = previous?.logo ? logoPathFromUrl(previous.logo) : null;
   if (logoPath && oldPath && oldPath !== logoPath) await removeSocietyLogo(oldPath);
+  // Marks are content-addressed too: a replaced one would stay forever.
+  const oldLight = previous?.markLight ? logoPathFromUrl(previous.markLight) : null;
+  if (lightPath && oldLight && oldLight !== lightPath) await removeSocietyLogo(oldLight);
+  const oldDark = previous?.markDark ? logoPathFromUrl(previous.markDark) : null;
+  if (darkPath && oldDark && oldDark !== darkPath) await removeSocietyLogo(oldDark);
   return {};
 }
 

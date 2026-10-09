@@ -1154,7 +1154,8 @@
         "save_failed": "The society could not be saved.",
         "account_failed": "The society is saved, but its account could not be created. Create it below.",
         "audience": "Pick at least one faculty and check the programme codes.",
-        "mark_required": "A partner needs a light-mode logo."
+        "mark_required": "A partner needs a light-mode logo.",
+        "partner_faculty": "The partner's faculty must be one of its audience's faculties (whole MENDELU only for a partner for everyone), or older app versions would show its events to everyone."
       },
       "kind": "Type",
       "kindSociety": "Society",

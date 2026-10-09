@@ -31,6 +31,7 @@ vi.mock('../../../api/societiesAdmin', () => ({
 
 import { createSocietiesSlice, type SocietiesSlice } from '../createSocietiesSlice';
 import { BUNDLED_SOCIETIES } from '../../../data/societies';
+import { logoPublicUrl } from '../../../api/societies';
 
 const makeStore = () =>
   create<SocietiesSlice>()((...a) =>
@@ -76,6 +77,21 @@ describe('saveSociety: partner', () => {
         mark_dark_path: DARK,
       })
     );
+  });
+
+  // Marks are content-addressed, so a replaced one would otherwise stay in the
+  // bucket forever. Same order as the logo: delete only once the row moved on.
+  it('removes a replaced mark only after the row points at the new one', async () => {
+    const store = makeStore();
+    const OLD = 'kpmg/dddddddddddddddddddddddddddddddd.png';
+    store.setState({
+      societies: { ...BUNDLED_SOCIETIES, kpmg: { ...KPMG_SOCIETY, markLight: logoPublicUrl(OLD) } },
+    });
+    uploadSocietyLogo.mockResolvedValueOnce(LIGHT);
+    updateSociety.mockResolvedValue(KPMG_SOCIETY);
+    await store.getState().saveSociety(KPMG, null, false, { light: blob('l'), dark: null });
+    expect(calls).toEqual(['upload', 'update', 'remove']);
+    expect(removeSocietyLogo).toHaveBeenCalledWith(OLD);
   });
 
   it('saves nothing when a mark upload fails', async () => {

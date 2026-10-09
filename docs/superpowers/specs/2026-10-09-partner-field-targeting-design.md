@@ -104,6 +104,7 @@ What stays true and is restated in the disclosure:
 - Partners receive nothing about students, only aggregate event counts.
 - Programme matching for partner visibility happens on the device.
 - The programme is sent only as an aggregate label with the anonymous daily count, never with any feature counter or event id. Items 4 and 5 of "What reIS still sends" stay unjoinable.
+- Disclosed, not hidden: the daily row and the three feature counters share the random install id, so a counter can be grouped by programme exactly as it already can by faculty. Event map views carry no install id, so they stay unjoinable with both.
 
 ## Testing (test first)
 

@@ -44,7 +44,7 @@ yourself — see *Report attachments* below.
 
 Which partner company you are shown, if any, is decided on your device from your
 faculty and study programme. Partners never receive anything about you; they see
-only how many times their own events were viewed.
+only aggregate counts of views, clicks and map views for their own events.
 
 In the Firefox extension each of these is optional and Firefox asks you for it:
 the usage count and counters follow the technical-data switch in `about:addons`,

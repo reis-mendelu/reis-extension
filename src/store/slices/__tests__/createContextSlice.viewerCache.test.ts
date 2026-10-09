@@ -72,6 +72,8 @@ describe('loadContext viewer cache', () => {
     getUserParams.mockResolvedValue({ facultyLabel: 'PEF', isErasmus: false });
     await useAppStore.getState().loadContext();
     expect(useAppStore.getState().userProgramme).toBe('B-OI');
+    // ...and persists what it kept, or the next cold start would lose it.
+    expect(idb.get('viewer_audience')).toMatchObject({ faculty: 'PEF', programme: 'B-OI' });
   });
 
   it('restores the cached programme on a cold start', async () => {

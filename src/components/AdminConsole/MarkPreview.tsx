@@ -14,6 +14,8 @@ export function MarkPreview({ file }: { file: File }) {
 
   useEffect(() => {
     let cancelled = false;
+    // Blank first, so an unreadable replacement never leaves the old mark showing.
+    canvasRef.current?.getContext('2d')?.clearRect(0, 0, W, H);
     void (async () => {
       try {
         const bitmap = await createImageBitmap(file);

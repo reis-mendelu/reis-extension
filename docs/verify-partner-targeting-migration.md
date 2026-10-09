@@ -21,6 +21,31 @@ columns, and production's own `usage_suppress_groups` and 3-argument `track_dail
 | `ARRAY[NULL]` and `{mendelu:B-OI}` are rejected (review, 2026-10-09) | `check_violation` ×2 |
 | A device that moved PEF/B-OI → ZF (no programme) counts under `ZF ?`, not `ZF B-OI` | `ZF ?` |
 
+## Stub setup (before the migration)
+
+The `ey` and `esn` rows are seeded first, so check 6 proves the backfill
+rather than passing on an empty table. Production's `usage_suppress_groups`
+and 3-argument `track_daily_usage` are pasted in from `pg_get_functiondef`.
+
+```sql
+create role anon; create role authenticated;
+create or replace function public.get_my_role() returns text language sql stable
+  as $$ select current_setting('test.role', true) $$;
+create table public.societies (
+  id text primary key check (id ~ '^[a-z0-9][a-z0-9_-]*$'),
+  name text not null, short_name text not null, color text not null,
+  faculty_key text not null, auto_follow_faculty boolean not null default false,
+  audience_label text,
+  logo_path text check (logo_path is null or logo_path ~ ('^' || id || '/[0-9a-f]{32}\.png$')),
+  sort_order int not null default 0, is_active boolean not null default true, instagram text);
+insert into public.societies (id,name,short_name,color,faculty_key,sort_order)
+  values ('ey','EY','EY','#2E2E38','pef',70), ('esn','ESN','ESN','#00AEEF','mendelu',10);
+create table public.daily_active_usage (
+  student_id text not null, usage_date date not null, open_count int not null default 1,
+  faculty text, platform text, primary key (student_id, usage_date));
+-- + production's usage_suppress_groups(jsonb) and track_daily_usage(text,text,text)
+```
+
 ## Checks run
 
 ```sql
