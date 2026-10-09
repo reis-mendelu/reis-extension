@@ -59,7 +59,9 @@ describe('DayChips today mark', () => {
 
     expect(selected).toContain('bg-primary');
     expect(other).not.toContain('bg-primary');
-    expect(other).toContain('ring-');
+    // The ring's ink is the contrast-safe tone, not raw `primary` (under 3:1 in light).
+    expect(other).toContain('ring-[1.5px]');
+    expect(other).toContain('ring-[var(--tone-primary)]');
     expect(other).not.toBe(selected);
     expect(week).toContain('bg-primary');
   });
