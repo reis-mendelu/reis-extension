@@ -32,10 +32,16 @@ export async function eventId(kind: ReisKind, key: string): Promise<string> {
   return PREFIX[kind] + base32hex(await sha256(key));
 }
 
-/** Unit separator: cannot appear in IS text, so field boundaries can't shift. */
-const SEP = '\u001f';
-
+/** JSON, not a joined string: own events are free text, so no separator is safe. */
 export async function contentHash(n: NormalizedEvent): Promise<string> {
-  const canonical = [n.kind, n.date, n.start, n.end, n.title, n.location, n.description].join(SEP);
+  const canonical = JSON.stringify([
+    n.kind,
+    n.date,
+    n.start,
+    n.end,
+    n.title,
+    n.location,
+    n.description,
+  ]);
   return (await sha256Hex(canonical)).slice(0, 16);
 }

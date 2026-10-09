@@ -17,12 +17,17 @@ const DEFAULT_EXAM_MINUTES = 90; // same fallback as useCalendarData
 const isoDate = (yyyymmdd: string) =>
   `${yyyymmdd.slice(0, 4)}-${yyyymmdd.slice(4, 6)}-${yyyymmdd.slice(6, 8)}`;
 
+/**
+ * HH:mm, wrapping past midnight (toGoogleEvent moves an end earlier than the
+ * start to the next day). Also pads "9:00", which Google rejects in a date-time.
+ */
 function addMinutes(hhmm: string, minutes: number): string {
   const [h, m] = hhmm.split(':').map(Number);
-  const total = (h ?? 0) * 60 + (m ?? 0) + minutes;
-  const clamped = Math.min(total, 23 * 60 + 59);
-  return `${String(Math.floor(clamped / 60)).padStart(2, '0')}:${String(clamped % 60).padStart(2, '0')}`;
+  const total = ((h ?? 0) * 60 + (m ?? 0) + minutes) % (24 * 60);
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
+
+const hhmm = (t: string) => addMinutes(t, 0);
 
 export function normalizeLessons(lessons: BlockLesson[], lang: AppLanguage): NormalizedEvent[] {
   return lessons
@@ -39,8 +44,8 @@ export function normalizeLessons(lessons: BlockLesson[], lang: AppLanguage): Nor
         kind: 'lesson' as const,
         key: `${l.id}|${l.date}|${l.startTime}`,
         date: isoDate(l.date),
-        start: l.startTime,
-        end: l.endTime,
+        start: hhmm(l.startTime),
+        end: hhmm(l.endTime),
         title: `${name} – ${type}`,
         location: room,
         description: teachers ? `${teachers}\n${FOOTER}` : FOOTER,
@@ -61,7 +66,7 @@ export function normalizeExams(subjects: ExamSubject[], lang: AppLanguage): Norm
         kind: 'exam',
         key: t.id || `${s.id}|${sec.id}`,
         date: `${yyyy}-${mm}-${dd}`,
-        start: t.time,
+        start: hhmm(t.time),
         end: addMinutes(t.time, t.durationMinutes ?? DEFAULT_EXAM_MINUTES),
         title: `${LABELS[lang].exam}: ${subjectName}`,
         location: (lang === 'en' ? t.roomEn : t.roomCs) || t.room || '',
@@ -77,8 +82,8 @@ export function normalizeCustom(events: CalendarCustomEvent[]): NormalizedEvent[
     kind: 'custom' as const,
     key: e.id,
     date: isoDate(e.date),
-    start: e.startTime,
-    end: e.endTime,
+    start: hhmm(e.startTime),
+    end: hhmm(e.endTime),
     title: e.title,
     location: e.room ?? '',
     description: FOOTER,

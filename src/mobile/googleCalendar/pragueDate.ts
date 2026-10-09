@@ -4,20 +4,32 @@ const PRAGUE_DAY = new Intl.DateTimeFormat('en-CA', {
   month: '2-digit',
   day: '2-digit',
 });
+const PRAGUE_OFFSET = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'Europe/Prague',
+  timeZoneName: 'longOffset',
+});
 
-/** Today's date in Prague as YYYY-MM-DD. The past/future line of the sync. */
+/**
+ * Today's date in Prague as YYYY-MM-DD. The past/future line of the sync.
+ * Built from parts: format() is locale text, and this is compared with ISO
+ * dates and sent to Google.
+ */
 export function pragueToday(now: Date = new Date()): string {
-  return PRAGUE_DAY.format(now);
+  const p = Object.fromEntries(PRAGUE_DAY.formatToParts(now).map((x) => [x.type, x.value]));
+  return `${p.year}-${p.month}-${p.day}`;
+}
+
+function offsetAt(at: Date): string {
+  const name = PRAGUE_OFFSET.formatToParts(at).find((p) => p.type === 'timeZoneName')?.value;
+  return name?.replace('GMT', '') || '+01:00';
 }
 
 /**
- * The window reIS holds lessons for. MUST stay identical to
- * `src/services/sync/syncSchedule.ts` and `src/injector/dataFetchers.ts`.
+ * Today's 00:00 in Prague as RFC 3339. The offset is the one in force at
+ * midnight: on a DST change day it differs from the one now.
  */
-export function academicWindow(now: Date = new Date()): { start: Date; end: Date } {
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  if (m >= 8) return { start: new Date(y, 8, 1), end: new Date(y + 1, 7, 31) };
-  if (m <= 1) return { start: new Date(y - 1, 8, 1), end: new Date(y, 7, 31) };
-  return { start: new Date(y, 1, 1), end: new Date(y, 7, 31) };
+export function pragueMidnight(now: Date = new Date()): string {
+  const today = pragueToday(now);
+  const guess = `${today}T00:00:00${offsetAt(now)}`;
+  return `${today}T00:00:00${offsetAt(new Date(guess))}`;
 }

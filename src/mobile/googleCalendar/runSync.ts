@@ -5,7 +5,7 @@ import { AuthRevokedError, CalendarGoneError } from './calendarHttp';
 import { normalizeCustom, normalizeExams, normalizeLessons } from './normalize';
 import { planKind } from './plan';
 import { runPool } from './runPool';
-import { pragueToday } from './pragueDate';
+import { pragueMidnight, pragueToday } from './pragueDate';
 import { toDesired } from './toGoogleEvent';
 import type { AppLanguage, DesiredEvent, ReisKind } from './types';
 
@@ -44,16 +44,6 @@ const KINDS = ['lesson', 'exam', 'custom'] as const;
  * requests/minute/user even at the 150 ms pace in calendarHttp.ts.
  */
 const WRITE_CONCURRENCY = 8;
-
-/** 00:00 in Prague as RFC 3339. Prague is +01:00 or +02:00; take it from Intl. */
-function pragueMidnight(today: string, now: Date): string {
-  const offset =
-    new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Prague', timeZoneName: 'longOffset' })
-      .formatToParts(now)
-      .find((p) => p.type === 'timeZoneName')
-      ?.value.replace('GMT', '') || '+01:00';
-  return `${today}T00:00:00${offset}`;
-}
 
 function futureOnly<T>(
   map: Record<string, T>,
@@ -125,7 +115,7 @@ export async function runSync(o: {
       skipped[d.id] = { hash: d.hash, date: d.date };
     }
 
-    const timeMin = includePast ? null : pragueMidnight(today, now);
+    const timeMin = includePast ? null : pragueMidnight(now);
     const held: SyncState['held'] = {};
     const work: (() => Promise<void>)[] = [];
     for (const kind of KINDS) {

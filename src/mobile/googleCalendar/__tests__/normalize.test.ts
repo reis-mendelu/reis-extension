@@ -48,6 +48,10 @@ describe('normalizeLessons', () => {
     const [n] = normalizeLessons([lesson({ isSeminar: 'true' })], 'en');
     expect(n?.title).toBe('Economics I – seminar');
   });
+  it('pads a one-digit hour, which Google would reject in a date-time', () => {
+    const [n] = normalizeLessons([lesson({ startTime: '9:00', endTime: '9:50' })], 'cz');
+    expect(n).toMatchObject({ start: '09:00', end: '09:50' });
+  });
   it('drops exam and custom rows the calendar merges into lessons', () => {
     expect(normalizeLessons([lesson({ isExam: true }), lesson({ isCustom: true })], 'cz')).toEqual(
       []
@@ -109,6 +113,11 @@ describe('normalizeExams', () => {
       title: 'Exam: Economics I',
       location: '',
     });
+  });
+  it('lets a late term run past midnight instead of clipping it at 23:59', () => {
+    const s = structuredClone(subject);
+    s.sections[0]!.registeredTerm = { date: '20.01.2027', time: '23:30' };
+    expect(normalizeExams([s], 'en')[0]).toMatchObject({ start: '23:30', end: '01:00' });
   });
 });
 

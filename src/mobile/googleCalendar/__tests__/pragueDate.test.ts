@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { academicWindow, pragueToday } from '../pragueDate';
+import { pragueMidnight, pragueToday } from '../pragueDate';
 
 describe('pragueToday', () => {
   it('is the Prague calendar date, not UTC', () => {
@@ -11,19 +11,16 @@ describe('pragueToday', () => {
   });
 });
 
-describe('academicWindow', () => {
-  it('October: 1 Sep this year to 31 Aug next year', () => {
-    const w = academicWindow(new Date(2026, 9, 8));
-    expect([w.start.getFullYear(), w.start.getMonth(), w.start.getDate()]).toEqual([2026, 8, 1]);
-    expect([w.end.getFullYear(), w.end.getMonth(), w.end.getDate()]).toEqual([2027, 7, 31]);
+describe('pragueMidnight', () => {
+  it('uses the offset of an ordinary day', () => {
+    expect(pragueMidnight(new Date('2026-10-08T10:00:00Z'))).toBe('2026-10-08T00:00:00+02:00');
+    expect(pragueMidnight(new Date('2026-12-08T10:00:00Z'))).toBe('2026-12-08T00:00:00+01:00');
   });
-  it('January: previous 1 Sep to this 31 Aug', () => {
-    const w = academicWindow(new Date(2027, 0, 15));
-    expect(w.start.getFullYear()).toBe(2026);
-    expect(w.end.getFullYear()).toBe(2027);
+  it('takes the offset at midnight, not now, on the autumn change day', () => {
+    // 25 Oct 2026: midnight was +02:00, but by 10:00 UTC Prague is on +01:00
+    expect(pragueMidnight(new Date('2026-10-25T10:00:00Z'))).toBe('2026-10-25T00:00:00+02:00');
   });
-  it('April: 1 Feb to 31 Aug', () => {
-    const w = academicWindow(new Date(2027, 3, 1));
-    expect([w.start.getMonth(), w.start.getDate()]).toEqual([1, 1]);
+  it('and on the spring change day', () => {
+    expect(pragueMidnight(new Date('2027-03-28T10:00:00Z'))).toBe('2027-03-28T00:00:00+01:00');
   });
 });

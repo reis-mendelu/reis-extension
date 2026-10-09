@@ -36,6 +36,32 @@ describe('contentHash', () => {
     };
     const h = await contentHash(base);
     expect(h).toMatch(/^[0-9a-f]{16}$/);
-    expect(await contentHash({ ...base, location: 'Q02' })).not.toBe(h);
+    for (const field of [
+      'kind',
+      'date',
+      'start',
+      'end',
+      'title',
+      'location',
+      'description',
+    ] as const) {
+      const changed = { ...base, [field]: field === 'kind' ? 'exam' : `${base[field]}x` };
+      expect(await contentHash(changed), field).not.toBe(h);
+    }
+  });
+  it('cannot be fooled by a separator inside a field (own events are free text)', async () => {
+    const base = {
+      kind: 'custom' as const,
+      key: 'k',
+      date: '2026-10-12',
+      start: '09:00',
+      end: '10:00',
+      title: 'a\u001fb',
+      location: '',
+      description: 'reIS',
+    };
+    expect(await contentHash(base)).not.toBe(
+      await contentHash({ ...base, title: 'a', location: 'b\u001f' })
+    );
   });
 });

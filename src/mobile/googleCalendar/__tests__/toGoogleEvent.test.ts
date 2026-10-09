@@ -29,8 +29,18 @@ describe('toDesired', () => {
 
   it('leaves custom events uncoloured and silent', async () => {
     const d = await toDesired({ ...exam, kind: 'custom', key: 'c7', title: 'Knihovna' });
-    expect(d.id).toMatch(/^c/);
+    expect(d.id).toMatch(/^c[0-9a-v]{52}$/);
     expect(d.body.colorId).toBeUndefined();
     expect(d.body.reminders).toEqual({ useDefault: false, overrides: [] });
+  });
+
+  it('ends an overnight event on the next day, so Google accepts it', async () => {
+    const d = await toDesired({ ...exam, kind: 'custom', start: '22:00', end: '01:00' });
+    expect(d.body.start.dateTime).toBe('2027-01-20T22:00:00');
+    expect(d.body.end.dateTime).toBe('2027-01-21T01:00:00');
+  });
+  it('rolls an overnight end over a month boundary', async () => {
+    const d = await toDesired({ ...exam, date: '2027-01-31', start: '23:30', end: '00:30' });
+    expect(d.body.end.dateTime).toBe('2027-02-01T00:30:00');
   });
 });

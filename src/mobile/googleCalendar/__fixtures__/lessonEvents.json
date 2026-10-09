@@ -18,7 +18,7 @@
     },
     "expected": {
       "id": "l313110ccuq60hriu375tasg9nth2bgnlgg7ec6n389n5t6c577fg",
-      "hash": "86d5a0b75e5854a5",
+      "hash": "5049aa3085ecfd1c",
       "body": {
         "id": "l313110ccuq60hriu375tasg9nth2bgnlgg7ec6n389n5t6c577fg",
         "summary": "Ekonomie I – přednáška",
@@ -39,7 +39,7 @@
         "extendedProperties": {
           "private": {
             "reisKind": "lesson",
-            "reisHash": "86d5a0b75e5854a5",
+            "reisHash": "5049aa3085ecfd1c",
             "reisV": "1"
           }
         }
@@ -65,7 +65,7 @@
     },
     "expected": {
       "id": "l6h0gs566tmh1el07utd6fsrre3b62coaog040qaqutjhlhel7ji0",
-      "hash": "d3b00e062f3ff803",
+      "hash": "de2a5cd12b5c86f1",
       "body": {
         "id": "l6h0gs566tmh1el07utd6fsrre3b62coaog040qaqutjhlhel7ji0",
         "summary": "Economics I – seminar",
@@ -86,7 +86,7 @@
         "extendedProperties": {
           "private": {
             "reisKind": "lesson",
-            "reisHash": "d3b00e062f3ff803",
+            "reisHash": "de2a5cd12b5c86f1",
             "reisV": "1"
           }
         }
@@ -112,7 +112,7 @@
     },
     "expected": {
       "id": "lu6omc8ac2r3l5see7uc4lta195lssk92ll1lriklu600ueb40lr0",
-      "hash": "6b048b413ac6df5b",
+      "hash": "5d7ff9512454f0b5",
       "body": {
         "id": "lu6omc8ac2r3l5see7uc4lta195lssk92ll1lriklu600ueb40lr0",
         "summary": "Účetnictví – úvod – přednáška",
@@ -133,7 +133,7 @@
         "extendedProperties": {
           "private": {
             "reisKind": "lesson",
-            "reisHash": "6b048b413ac6df5b",
+            "reisHash": "5d7ff9512454f0b5",
             "reisV": "1"
           }
         }
