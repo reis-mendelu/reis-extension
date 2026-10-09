@@ -28,6 +28,10 @@ describe('events refresh on resume is Capacitor-only, on purpose', () => {
     expect(end, 'the resume handler no longer closes with `  });`').toBeGreaterThan(start);
     const handler = src.slice(start, end);
     expect(handler).toContain('useAppStore.getState().refreshMapEventsIfStale(MIN_SYNC_GAP)');
+    // The catalog rides on that refresh: reloadMapEvents loads it beside the
+    // events, under the same gap. A separate call here fetched the catalog on
+    // every resume, past MIN_SYNC_GAP, and twice when the events were stale.
+    expect(handler).not.toMatch(/\bloadSocieties\s*\(/);
   });
 
   it('nothing the extension ships calls refreshMapEventsIfStale', () => {

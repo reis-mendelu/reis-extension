@@ -122,11 +122,11 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // absence still syncs.
   void CapApp.addListener('resume', () => {
     void requestSync('resume');
-    // Fetch-once-at-startup is stale forever in a long-lived Capacitor process.
-    void useAppStore.getState().loadSocieties();
-    // Same staleness, for events: a society's new, moved or cancelled event
-    // otherwise never reaches a long-lived app process. Gap-limited like the
-    // IS sync, so tabbing away and back does not refetch every time.
+    // Fetch-once-at-startup is stale forever in a long-lived Capacitor process:
+    // a society's new, moved or cancelled event would never reach it. Gap-limited
+    // like the IS sync, so tabbing away and back does not refetch every time.
+    // The societies catalog rides on this too — reloadMapEvents loads it beside
+    // the events — so it gets the same gap and no request of its own.
     void useAppStore.getState().refreshMapEventsIfStale(MIN_SYNC_GAP);
     // A second chance for `loadContext()` if it lost the boot race against
     // `getUserParams()` — the event audience reads the faculty it sets.

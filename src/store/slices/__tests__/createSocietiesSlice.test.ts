@@ -51,6 +51,25 @@ describe('createSocietiesSlice', () => {
     expect(store.getState().societies.kino!.name).toBe('Kino');
   });
 
+  // Boot and a resume (or a publish's reload) can both ask while one request
+  // is still out. They share it rather than sending a second catalog request.
+  it('shares one request between overlapping loads', async () => {
+    let resolve!: (v: unknown) => void;
+    fetchSocieties.mockReturnValue(new Promise((r) => (resolve = r)));
+    const store = makeStore();
+    const first = store.getState().loadSocieties();
+    const second = store.getState().loadSocieties();
+    // The cache read is awaited first; let both calls reach the network step.
+    await new Promise((r) => setTimeout(r, 0));
+    resolve([fresh]);
+    await Promise.all([first, second]);
+    expect(fetchSocieties).toHaveBeenCalledTimes(1);
+    // Done means done: the next load asks again.
+    fetchSocieties.mockResolvedValue([fresh]);
+    await store.getState().loadSocieties();
+    expect(fetchSocieties).toHaveBeenCalledTimes(2);
+  });
+
   it('ignores an empty fetch rather than wiping the catalog', async () => {
     fetchSocieties.mockResolvedValue([]);
     const store = makeStore();

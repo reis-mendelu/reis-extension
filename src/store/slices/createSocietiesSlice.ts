@@ -45,11 +45,12 @@ function isSociety(value: unknown): value is Society {
   );
 }
 
-export const createSocietiesSlice: AppSlice<SocietiesSlice> = (set, get) => ({
-  societies: BUNDLED_SOCIETIES,
-  societiesCacheRead: false,
+export const createSocietiesSlice: AppSlice<SocietiesSlice> = (set, get) => {
+  // The load in flight, shared: boot, a resume refresh and a publish's reload
+  // can overlap, and each would otherwise send its own catalog request.
+  let pending: Promise<void> | null = null;
 
-  loadSocieties: async () => {
+  const load = async () => {
     if (!get().societiesCacheRead) {
       try {
         const cached: unknown = await IndexedDBService.get('meta', SOCIETIES_CACHE_KEY);
@@ -72,21 +73,31 @@ export const createSocietiesSlice: AppSlice<SocietiesSlice> = (set, get) => ({
     } catch (err) {
       logError('SocietiesSlice.writeCache', err);
     }
-  },
+  };
 
-  putSociety: async (society) => {
-    const societies = { ...get().societies, [society.id]: society };
-    set({ societies });
-    try {
-      await IndexedDBService.set('meta', SOCIETIES_CACHE_KEY, Object.values(societies));
-    } catch (err) {
-      logError('SocietiesSlice.writeCache', err);
-    }
-  },
+  return {
+    societies: BUNDLED_SOCIETIES,
+    societiesCacheRead: false,
 
-  saveSociety: (input, logo, isNew) =>
-    saveSociety({ societies: () => get().societies, put: get().putSociety }, input, logo, isNew),
+    loadSocieties: () =>
+      (pending ??= load().finally(() => {
+        pending = null;
+      })),
 
-  setSocietyActive: (id, active) =>
-    setSocietyActive({ societies: () => get().societies, put: get().putSociety }, id, active),
-});
+    putSociety: async (society) => {
+      const societies = { ...get().societies, [society.id]: society };
+      set({ societies });
+      try {
+        await IndexedDBService.set('meta', SOCIETIES_CACHE_KEY, Object.values(societies));
+      } catch (err) {
+        logError('SocietiesSlice.writeCache', err);
+      }
+    },
+
+    saveSociety: (input, logo, isNew) =>
+      saveSociety({ societies: () => get().societies, put: get().putSociety }, input, logo, isNew),
+
+    setSocietyActive: (id, active) =>
+      setSocietyActive({ societies: () => get().societies, put: get().putSociety }, id, active),
+  };
+};
