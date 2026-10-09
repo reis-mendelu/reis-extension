@@ -1108,7 +1108,9 @@
       "trendWithheld": "No chart for this signal yet — under 5 installs in 30 days.",
       "goneQuietHint": "Share of devices that used reIS on 2+ days of at least one week but have not opened it for 14 days. Devices, not people — a reinstall counts too.",
       "goneQuietDesc": "of regulars · 14+ days without reIS",
-      "goneQuiet": "Gone"
+      "goneQuiet": "Gone",
+      "byProgramme": "By programme (7 days)",
+      "programmeUnknown": "{faculty} – programme unknown"
     },
     "loginName": "login",
     "audience": {

@@ -1108,7 +1108,9 @@
       "trendWithheld": "Pro tento signál zatím graf nezobrazujeme — méně než 5 instalací za 30 dní.",
       "goneQuietHint": "Podíl zařízení, která reIS aspoň jeden týden používala 2 a více dní, ale 14 dní ho neotevřela. Zařízení, ne lidé — přeinstalace se počítá taky.",
       "goneQuietDesc": "pravidelných · 14+ dní bez reIS",
-      "goneQuiet": "Odešli"
+      "goneQuiet": "Odešli",
+      "byProgramme": "Podle programu (7 dní)",
+      "programmeUnknown": "{faculty} – program neznámý"
     },
     "loginName": "login",
     "audience": {

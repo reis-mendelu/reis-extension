@@ -222,6 +222,11 @@ export const EXEMPT: Exempt[] = [
     why: 'Admin console read, signed-in reis_admin.',
   },
   {
+    call: 'usage_programmes',
+    files: ['src/api/usageProgrammes.ts'],
+    why: 'Admin console read, signed-in reis_admin.',
+  },
+  {
     call: 'feature_stats',
     files: ['src/api/featureStats.ts'],
     why: 'Admin console read, signed-in reis_admin.',

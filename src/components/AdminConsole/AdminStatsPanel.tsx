@@ -22,6 +22,10 @@ export function AdminStatsPanel() {
   const reload = useAppStore((s) => s.loadAdminStats);
   const pickDay = useAppStore((s) => s.selectAdminStatsDay);
   const retention = useAppStore((s) => s.adminRetention);
+  const programmes = useAppStore((s) => s.adminProgrammes);
+  // 'PEF ?' = faculty known, programme not sent (older build) or not parsed.
+  const programmeLabel = (k: string) =>
+    k.endsWith(' ?') ? t('admin.stats.programmeUnknown', { faculty: k.slice(0, -2) }) : k;
   const label = (k: string) => (k === 'unknown' ? t('admin.stats.unknown') : k);
   const today = stats?.daily.at(-1) ?? null;
 
@@ -120,6 +124,17 @@ export function AdminStatsPanel() {
           <StatsBars groups={stats.byFaculty} labelFor={label} under5={t('admin.stats.under5')} />
         </section>
       </div>
+
+      {programmes && programmes.length > 0 && (
+        <section>
+          <h4 className="mb-1 text-sm font-semibold">{t('admin.stats.byProgramme')}</h4>
+          <StatsBars
+            groups={programmes}
+            labelFor={programmeLabel}
+            under5={t('admin.stats.under5')}
+          />
+        </section>
+      )}
 
       <button
         type="button"

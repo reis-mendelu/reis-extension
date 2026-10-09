@@ -39,6 +39,7 @@ describe('AdminStatsPanel', () => {
       // feature half would otherwise leak it into every test after it.
       adminFeatureStats: null,
       adminRetention: null,
+      adminProgrammes: null,
       selectAdminStatsDay: vi.fn(async () => {}),
     } as never);
   });
@@ -76,6 +77,20 @@ describe('AdminStatsPanel', () => {
   // GA4's "(not set)" convention: a dimension that was added after launch has
   // legitimately-unknown rows, and they stay a labelled bar rather than being
   // dropped from the denominator — bars that do not sum to the total are a lie.
+  // Spec 2026-10-09: what partner pitches quote, per faculty + programme.
+  it('shows the programme breakdown, naming the unknown-programme bucket', () => {
+    useAppStore.setState({
+      adminProgrammes: [
+        { key: 'PEF B-OI', devices: 312 },
+        { key: 'PEF ?', devices: 41 },
+      ],
+    } as never);
+    render(<AdminStatsPanel />);
+    expect(screen.getByText('Podle programu (7 dní)')).toBeInTheDocument();
+    expect(screen.getByText('PEF B-OI')).toBeInTheDocument();
+    expect(screen.getByText('PEF – program neznámý')).toBeInTheDocument();
+  });
+
   it('labels the unknown bucket instead of hiding it', () => {
     render(<AdminStatsPanel />);
     expect(screen.getByText('neuvedeno')).toBeInTheDocument();
