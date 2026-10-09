@@ -16,6 +16,7 @@ import { NowNextCard } from './calendar/NowNextCard';
 import { DayChips } from './calendar/DayChips';
 import { DayBody } from './calendar/DayBody';
 import { WeekGrid } from './calendar/WeekGrid';
+import { CalendarViewChooser } from './calendar/CalendarViewChooser';
 import { useCalendarToday } from './calendar/useCalendarToday';
 import { RecentFilesStrip } from './calendar/RecentFilesStrip';
 import { CalendarSkeleton } from './calendar/CalendarSkeleton';
@@ -34,6 +35,7 @@ export function CalendarScreen() {
   const syncLoaded = useAppStore((s) => s.syncLoaded);
   const view = useAppStore((s) => s.mobileCalendarView);
   const showView = useAppStore((s) => s.showCalendarView);
+  const choosing = useAppStore((s) => s.calendarViewChosen === false);
   // The store's clock, not `new Date()`: the pulse advances it, so the running
   // lesson's card and its countdown move with it instead of being stamped once
   // per render and then only when something else happened to re-render.
@@ -214,6 +216,7 @@ export function CalendarScreen() {
           lessonDates={lessonDates}
           onSelectDay={setMobileSelectedDay}
         />
+        {choosing && <CalendarViewChooser />}
       </>
     );
   }
@@ -251,6 +254,7 @@ export function CalendarScreen() {
         onSelectDay={setMobileSelectedDay}
         pullSurfaceRef={screenRef}
       />
+      {choosing && <CalendarViewChooser />}
     </>
   );
 }

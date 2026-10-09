@@ -1183,7 +1183,11 @@
       "backToToday": "Back to today",
       "viewLabel": "Calendar view",
       "dayView": "Day",
-      "weekView": "Week"
+      "weekView": "Week",
+      "chooserTitle": "How do you want to see your timetable?",
+      "chooserLine": "Try both on your own timetable.",
+      "chooserSave": "Save: {view}",
+      "chooserSaved": "Saved. Change it in Profile → Settings."
     },
     "exams": {
       "title": "Exams",
