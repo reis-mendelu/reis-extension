@@ -60,8 +60,7 @@ function heldCdn() {
   };
 }
 
-const stored = async () =>
-  (await IndexedDBService.get('success_rates', 'current'))?.data['EBC-ST'];
+const stored = async () => (await IndexedDBService.get('success_rates', 'current'))?.data['EBC-ST'];
 
 beforeEach(async () => {
   await IndexedDBService.set('success_rates', 'current', {
@@ -102,8 +101,7 @@ describe('fetchSubjectSuccessRates — a late 404 beside a fresh fetch', () => {
     expect(entry?.stats[0]?.semesterName).toBe('ZS 2025/2026 - PEF');
     expect(entry?.cdnVersion).toBe(V2);
     const synced = (await IndexedDBService.get('meta', STORAGE_KEYS.GLOBAL_STATS_LAST_SYNC)) as
-      | Record<string, number>
-      | undefined;
+      Record<string, number> | undefined;
     expect(synced?.['EBC-ST']).toBeTypeOf('number');
   });
 
@@ -117,8 +115,7 @@ describe('fetchSubjectSuccessRates — a late 404 beside a fresh fetch', () => {
 
     expect(result.data['EBC-ST']).toBeUndefined();
     const synced = (await IndexedDBService.get('meta', STORAGE_KEYS.GLOBAL_STATS_LAST_SYNC)) as
-      | Record<string, number>
-      | undefined;
+      Record<string, number> | undefined;
     expect(synced?.['EBC-ST']).toBeUndefined();
   });
 });

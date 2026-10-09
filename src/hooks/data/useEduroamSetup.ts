@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import {
   fetchEduroamCertMaterial,
   fetchEduroamPassword,
@@ -16,6 +16,7 @@ import {
 } from '../../services/eduroam/networkFailure';
 import { logError } from '../../utils/reportError';
 import { trackFeatureSignal } from '../../api/featureUsage';
+import { useAutoSelectOnce, useRunGeneration } from './eduroamSetupLifecycle';
 
 /**
  * `expired`: IS's certificate is past its notAfter, so nothing was installed;
@@ -55,9 +56,8 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
     setOutcome(null);
   }, []);
 
-  // Bumped by every run, renew, reset and device pick: a request answering
-  // after one of those belongs to a flow the student has left, and is dropped.
-  const generation = useRef(0);
+  // Every run, renew, reset and device pick leaves older requests behind.
+  const generation = useRunGeneration();
 
   const fail = useCallback((context: string, e: unknown) => {
     logError(context, e);
@@ -70,8 +70,7 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
   // the iOS transfer path must keep the profile from being a standalone credential.
   const run = useCallback(
     async (t: EduroamTarget) => {
-      const gen = ++generation.current;
-      const stale = () => gen !== generation.current;
+      const stale = generation.begin();
       setStatus('working');
       clearResult();
       try {
@@ -124,10 +123,11 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
         setPassword(extractionPw);
         setStatus('done');
       } catch (e) {
-        if (!stale()) fail('useEduroamSetup.run', e);
+        if (stale()) logError('useEduroamSetup.run', e);
+        else fail('useEduroamSetup.run', e);
       }
     },
-    [clearResult, fail]
+    [clearResult, fail, generation]
   );
 
   /**
@@ -137,7 +137,7 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
    */
   const renew = useCallback(
     async (t: EduroamTarget) => {
-      const gen = ++generation.current;
+      const stale = generation.begin();
       setStatus('working');
       setError(null);
       setNetworkFailure(null);
@@ -146,17 +146,18 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
         if (isDeviceOffline()) throw new Error('eduroam: the device is offline');
         await regenerateEduroamCert();
       } catch (e) {
-        if (gen === generation.current) fail('useEduroamSetup.renew', e);
+        if (stale()) logError('useEduroamSetup.renew', e);
+        else fail('useEduroamSetup.renew', e);
         return;
       }
-      if (gen === generation.current) await run(t);
+      if (!stale()) await run(t);
     },
-    [run, fail]
+    [run, fail, generation]
   );
 
   const selectTarget = useCallback(
     (t: EduroamTarget) => {
-      generation.current++;
+      generation.invalidate();
       setTarget(t);
       setStatus('idle');
       clearResult();
@@ -169,25 +170,16 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
         })
         .catch((e) => logError('useEduroamSetup.prefetchPassword', e));
     },
-    [clearResult]
+    [clearResult, generation]
   );
 
   const reset = useCallback(() => {
-    generation.current++;
+    generation.invalidate();
     setStatus('idle');
     clearResult();
-  }, [clearResult]);
+  }, [clearResult, generation]);
 
-  // Fires selectTarget exactly once, only when a caller (the sheet) hands us a
-  // pre-resolved target. The desktop drawer never passes autoSelectTarget, so
-  // this is a no-op there — selection stays a user click.
-  const didAutoSelect = useRef(false);
-  useEffect(() => {
-    if (autoSelectTarget && !didAutoSelect.current) {
-      didAutoSelect.current = true;
-      selectTarget(autoSelectTarget);
-    }
-  }, [autoSelectTarget, selectTarget]);
+  useAutoSelectOnce(autoSelectTarget, selectTarget);
 
   return {
     status,
