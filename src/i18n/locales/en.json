@@ -1368,7 +1368,7 @@
       "rowOff": "Timetable, exams and your own events",
       "rowOn": "Synced {time}",
       "connect": "Turn on sync",
-      "explain": "reIS creates a \"Rozvrh\" calendar in your Google account and updates it every time you open reIS. It cannot see or change your other calendars.",
+      "explain": "reIS creates a \"Rozvrh\" calendar in your Google account and updates it every time you open reIS. It never reads or changes events in your other calendars.",
       "account": "Account: {email}",
       "open": "Open in Google Calendar",
       "progress": "Syncing {done}/{total}",

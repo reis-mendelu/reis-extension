@@ -1368,7 +1368,7 @@
       "rowOff": "Rozvrh, zkoušky a vlastní události",
       "rowOn": "Synchronizováno {time}",
       "connect": "Zapnout synchronizaci",
-      "explain": "reIS vytvoří ve tvém Googlu kalendář „Rozvrh“ a aktualizuje ho pokaždé, když reIS otevřeš. Ostatní kalendáře nevidí ani nemění.",
+      "explain": "reIS vytvoří ve tvém Googlu kalendář „Rozvrh“ a aktualizuje ho pokaždé, když reIS otevřeš. Události v ostatních kalendářích nečte ani nemění.",
       "account": "Účet: {email}",
       "open": "Otevřít v Google Kalendáři",
       "progress": "Synchronizuji {done}/{total}",

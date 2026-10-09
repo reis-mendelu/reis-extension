@@ -21,7 +21,7 @@ kalendáře v telefonu"*.
 | Placement | A row in the phone **profile sheet** (where the removed Outlook toggle was). |
 | Turning off | **On and off only.** Off revokes access and keeps "Rozvrh" in Google; no delete-the-calendar option. |
 | Multiple devices | Option A: also request `calendar.calendarlist.readonly`, so a second device finds the same "Rozvrh". |
-| Google identity | **reis.mendelu@gmail.com** owns everything. Never a personal account. |
+| Google identity | **reis.mendelu@gmail.com** owns the Google Cloud project and its OAuth clients. Never a personal account. Each student's "Rozvrh" belongs to that student's own Google account; the project never sees it. |
 | Edits in Google | **The student wins** (option B, 2026-10-08). A lesson they delete in Google stays deleted, even if IS later changes it. One they move or edit stays as they left it until IS actually changes that lesson; then IS overwrites it. Only events reIS itself deleted are restored. |
 
 ## Why not the other routes (kept so they aren't re-proposed)
@@ -124,9 +124,10 @@ committed.
       reconnecting reused that calendar, with no duplicate and nothing rewritten;
     - Google's consent screen shows both calendar checkboxes **unticked by default**
       (Dominik: no extra hint, students should notice);
-    - speed: one write at a time ran at about 2 events/s; with 8 in flight, 111 updates took
-      ~30 s (~40 s with 4). Each Google write takes ~1.2 s, and one calendar's writes look
-      largely serialized.
+    - speed: one write at a time ran at about 2 events/s (~0.5 s each, pacing included);
+      with 8 in flight, 111 updates took ~30 s (~3.7/s), ~40 s with 4. So writes do run
+      in parallel, with diminishing returns past 4; an earlier note that each write takes
+      ~1.2 s and that one calendar's writes are serialized did not survive these numbers.
 
 12. **iPad 8 + Pixel 9a together, release builds, 2026-10-08 late evening:**
     - the iPad created a fresh "Rozvrh" and filled 136/136, past included;
@@ -190,8 +191,12 @@ The row stays hidden on the Mac until then.
 - **Only while reIS is open (TypeScript):** after any normal sync (open, resume,
   pull-to-refresh, exam registration), **if** lessons, exams or custom events changed.
   Also once, in full, when the toggle turns on.
-- **One run at a time:** an in-memory flag in the JS process. There is no native job to
-  race with.
+- **Except every 6 hours:** unchanged sources still re-run after `REVISIT_AFTER_MS`
+  (controller.ts), so a deleted "Rozvrh" or access revoked in Google is noticed even
+  when IS doesn't change for weeks.
+- **One run at a time:** an in-memory flag in the JS process, claimed before the first
+  await. There is no native job to race with. Turning the sync off bumps a generation
+  counter, so a run still in flight can't save `enabled: true` afterwards.
 - **Never runs** without an IS session, without a network, or with the toggle off.
 - **Nothing to set up in system settings.** No Background App Refresh, no battery
   exemptions. Dominik: students shouldn't have to go into settings.
@@ -220,7 +225,7 @@ The row stays hidden on the Mac until then.
 
   | Kind | Prefix | Stable key |
   | --- | --- | --- |
-  | lesson | `l` | `id + date + startTime` (`src/types/schedule.ts`) |
+  | lesson | `l` | `` `${id}\|${date}\|${startTime}` `` — joined with `\|`, exactly as `normalize.ts` builds it (`src/types/schedule.ts`) |
   | exam | `e` | the exam term's id |
   | custom | `c` | the custom event's id |
 
@@ -242,7 +247,11 @@ This is a pure planner. Inputs: the events that should exist, the events that do
    - reIS deleted it earlier (a local `reisDeleted` list) → `PUT` with `status: confirmed` restores it;
    - it exists, not deleted, and its `reisHash` differs → the student moved it and IS has changed it since → `PUT`;
    - otherwise the student deleted or moved it → leave it, and remember the hash in `skipped` so it isn't retried until IS changes it.
-   Both lists keep only entries dated today or later.
+   Both lists keep only entries dated today or later. A `reisDeleted` entry is saved
+   **before** its delete is sent: a run killed or failed after the delete would
+   otherwise lose it, and IS bringing the event back would then read as the
+   student's delete and never be restored. An entry for a delete that then failed
+   is harmless; the restore is a `PUT`.
 4. **Update** (`PUT`) when `reisHash` differs.
 5. **Delete** what shouldn't exist, only within [todayStart, end of window], and only
    for the kinds whose source was read successfully in this run.
@@ -265,12 +274,16 @@ exam must disappear from Google. (Revised in planning, 2026-10-08.)
     together counts toward your usage limit as n requests", and the project's limit is 600
     queries per minute per user, so batching saved nothing that mattered.
   - The ~500-event first fill takes about 100 s, shows "Synchronizuji 120/480", and is
-    **resumable**: `pastFillPending` is persisted right after the calendar is created.
+    **resumable**: `pastFillPending` is persisted **before** the calendar is created
+    (a run killed in between would otherwise leave a "Rozvrh" the next run takes for
+    another device's, and skip the past for good), again right after, and stays set
+    while the timetable hasn't been confirmed.
 
 **Errors:**
 - 401: refresh the token once.
-- 403/429 rate limit: exponential backoff.
-- Network failure: the next trigger retries.
+- 403/429 rate limit, 5xx and a dropped connection: exponential backoff, up to 5 retries
+  (safe: ids are ours, so a write that did land comes back as 409 → "exists").
+- Still failing after that: the next trigger retries.
 - Everything is logged through `logError` (`GoogleCalendar.*` contexts).
 
 ### One implementation of the mapping

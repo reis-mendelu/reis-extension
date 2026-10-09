@@ -104,6 +104,20 @@ export function checkDisclosures(s: RepoSnapshot, m: Model): string[] {
     }
   }
 
+  //    A third-party flow is checked on its own terms: its files exist, one of
+  //    them talks to its host, and it has no Supabase calls.
+  for (const f of m.flows) {
+    if (f.via?.kind !== 'third-party') continue;
+    const host = f.via.host;
+    for (const file of f.files) {
+      if (!(file in s.srcFiles)) out.push(`${f.id} lists ${file}, which is not in src/.`);
+    }
+    if (!f.files.some((file) => s.srcFiles[file]?.includes(host))) {
+      out.push(`${f.id}: none of its files mentions ${host}. List the file that sends to it.`);
+    }
+    if (f.calls.length > 0) out.push(`${f.id} is a third-party flow but lists Supabase calls.`);
+  }
+
   // 3–4. Manifest and platform permissions match what is declared.
   out.push(
     ...setDiff(

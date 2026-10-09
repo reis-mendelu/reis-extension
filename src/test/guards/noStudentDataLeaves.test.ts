@@ -109,7 +109,10 @@ const SUPABASE_CALLERS = new Set([
  * sync's event ids (a timetable slot `lessonId|date|time`, an exam term id or a
  * custom event id — keys of timetable entries, not of the student — hashed only
  * to fit Google's id alphabet; the event itself goes to the student's own
- * calendar, so the hash hides nothing and claims to hide nothing).
+ * calendar, so the hash hides nothing and claims to hide nothing). The same
+ * file also hashes each event's visible fields into `reisHash`, a change
+ * detector stored in that event's private properties in the same calendar;
+ * the sync's whole-source fingerprint is kept on the device only.
  */
 const DIGEST_CALLERS = new Set([
   'src/utils/pkce.ts',

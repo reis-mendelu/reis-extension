@@ -14,6 +14,8 @@ dates, courses, materials and submission folders are fetched from MENDELU using
 your own session — the way your browser would — and kept on your device.
 **None of it reaches us. We run no server that holds it.** It moves only between
 your device and MENDELU, both ways, since signing up for an exam sends it back.
+The one exception is yours to make: turn on Google Calendar sync and your
+timetable, exams and own events also go to your own Google Calendar (below).
 Uninstalling removes the local copy.
 
 You sign in on IS Mendelu's own page; your password goes straight to
@@ -39,7 +41,7 @@ yourself — see *Report attachments* below.
 | Map used for 3 seconds | at most once a day, after three seconds on the map | the random install identifier and the fixed `map_dwell_3s` label |
 | eduroam network configured | the app itself saves the eduroam network (phone) | the random install identifier and the fixed `eduroam_wifi_configured` label |
 | eduroam profile handed over | a profile is prepared for you to install (Mac, Windows) | the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it |
-| Google Calendar sync | only if you turn it on, then whenever you open reIS and your timetable changed | your lessons, exams and own events, sent **from your phone straight to your own Google Calendar** ("Rozvrh"). reIS servers never see them. reIS can only change the calendar it created, and reads the list of your calendars only to find it |
+| Google Calendar sync | only if you turn it on, then whenever you open reIS and your timetable changed | your lessons, exams and own events, sent **from your phone straight to your own Google Calendar** ("Rozvrh"). reIS servers never see them. reIS can only change the calendar it created, reads the list of your calendars only to find it, and never reads events in your other calendars |
 <!-- END generated:flows -->
 
 In the Firefox extension each of these is optional and Firefox asks you for it:
@@ -76,9 +78,12 @@ else.
 reIS's use of information received from Google APIs adheres to the
 [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy),
 including the Limited Use requirements. reIS uses Google Calendar access only to
-write your timetable into the calendar it created, and finds that calendar by
-reading your calendar list. It does not read your other events, and no Google
-data is sent to reIS or anyone else.
+keep the calendar it created in step with your timetable: it writes events there
+and reads that calendar's events back to see what changed. It finds the calendar
+by reading your calendar list (each calendar's id and description). It never
+reads or changes events in your other calendars, and no Google data is sent to
+reIS or anyone else. The app reads your Google account's email address only to
+show which account is connected; it stays on your device.
 
 ## Permissions
 
@@ -98,8 +103,10 @@ ink. iOS asks you first. reIS no longer asks for notifications on iOS.
 ## Your control
 
 Sign out to delete the token and cookies. Uninstall to delete everything local.
-Turn off Google Calendar sync in Profil to revoke reIS's access. The "Rozvrh"
-calendar stays in your Google account; delete it in Google Calendar if you want.
+Turn off Google Calendar sync in Profil to revoke reIS's access. If your phone is
+offline at that moment, Google may not hear it; you can also remove reIS under
+third-party connections in your Google Account. The "Rozvrh" calendar stays in
+your Google account; delete it in Google Calendar if you want.
 For feedback you sent, and anything attached to it, write to the address below
 and we will delete it; the daily-count rows hold nothing that identifies you.
 

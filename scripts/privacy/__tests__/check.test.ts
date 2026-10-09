@@ -85,7 +85,10 @@ describe('checkDisclosures', () => {
           what: 'x',
           when: 'background',
           identifier: 'none',
-          files: ['src/mobile/googleCalendar/calendarApi.ts'],
+          files: [
+            'src/mobile/googleCalendar/calendarApi.ts',
+            'src/mobile/googleCalendar/calendarHttp.ts',
+          ],
           calls: [],
           policyRows: [['Google Calendar sync', 'if on', 'own calendar']],
           stores: { apple: [], play: [], firefox: [], cws: [] },
@@ -94,7 +97,16 @@ describe('checkDisclosures', () => {
     };
     const s = clean();
     s.policyMd = `# Policy\n\n${BEGIN}\n${renderPolicyTable(m.flows)}\n${END}\n`;
+    s.srcFiles['src/mobile/googleCalendar/calendarApi.ts'] = 'export {}';
+    s.srcFiles['src/mobile/googleCalendar/calendarHttp.ts'] =
+      "const BASE = 'https://www.googleapis.com/calendar/v3';";
     expect(checkDisclosures(s, m)).toEqual([]);
+
+    // ...but it is still checked: its files exist, one of them talks to the host.
+    delete s.srcFiles['src/mobile/googleCalendar/calendarHttp.ts'];
+    const errors = checkDisclosures(s, m).join('\n');
+    expect(errors).toMatch(/calendarHttp\.ts, which is not in src/);
+    expect(errors).toMatch(/none of its files mentions www\.googleapis\.com/);
   });
 
   it('2. flags a flow file the privacy guard does not allow', () => {
