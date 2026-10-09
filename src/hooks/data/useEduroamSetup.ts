@@ -55,6 +55,10 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
     setOutcome(null);
   }, []);
 
+  // Bumped by every run, renew, reset and device pick: a request answering
+  // after one of those belongs to a flow the student has left, and is dropped.
+  const generation = useRef(0);
+
   const fail = useCallback((context: string, e: unknown) => {
     logError(context, e);
     setError((e as Error).message);
@@ -66,6 +70,8 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
   // the iOS transfer path must keep the profile from being a standalone credential.
   const run = useCallback(
     async (t: EduroamTarget) => {
+      const gen = ++generation.current;
+      const stale = () => gen !== generation.current;
       setStatus('working');
       clearResult();
       try {
@@ -73,6 +79,7 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
         // not, and asking anyway only waits for a raw OS error.
         if (isDeviceOffline()) throw new Error('eduroam: the device is offline');
         const material = await fetchEduroamCertMaterial();
+        if (stale()) return;
         const { password: extractionPw } = material;
 
         // IS keeps offering an expired certificate and never replaces it by
@@ -98,6 +105,7 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
           // nothing at all. The file paths below get their own signal, because a
           // delivered profile still needs the student to install it.
           if (result === 'saved') void trackFeatureSignal('eduroam_wifi_configured');
+          if (stale()) return;
           setPassword(extractionPw);
           setStatus(statusAfterNativeOutcome(result));
           return;
@@ -112,10 +120,11 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
         }
 
         await deliverEduroamFile(t, material);
+        if (stale()) return;
         setPassword(extractionPw);
         setStatus('done');
       } catch (e) {
-        fail('useEduroamSetup.run', e);
+        if (!stale()) fail('useEduroamSetup.run', e);
       }
     },
     [clearResult, fail]
@@ -128,6 +137,7 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
    */
   const renew = useCallback(
     async (t: EduroamTarget) => {
+      const gen = ++generation.current;
       setStatus('working');
       setError(null);
       setNetworkFailure(null);
@@ -136,16 +146,17 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
         if (isDeviceOffline()) throw new Error('eduroam: the device is offline');
         await regenerateEduroamCert();
       } catch (e) {
-        fail('useEduroamSetup.renew', e);
+        if (gen === generation.current) fail('useEduroamSetup.renew', e);
         return;
       }
-      await run(t);
+      if (gen === generation.current) await run(t);
     },
     [run, fail]
   );
 
   const selectTarget = useCallback(
     (t: EduroamTarget) => {
+      generation.current++;
       setTarget(t);
       setStatus('idle');
       clearResult();
@@ -162,6 +173,7 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
   );
 
   const reset = useCallback(() => {
+    generation.current++;
     setStatus('idle');
     clearResult();
   }, [clearResult]);
