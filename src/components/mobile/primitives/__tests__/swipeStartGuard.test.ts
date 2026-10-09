@@ -106,4 +106,24 @@ describe('swipeStartIsOffLimits', () => {
     scroller.appendChild(host);
     expect(swipeStartIsOffLimits(word, root, 200, WIDTH)).toBe(blocked);
   });
+
+  // Editing is inherited: the nearest valid `contenteditable` decides, and an
+  // invalid value inherits from its parent rather than switching editing on.
+  it.each([
+    ['true', 'false', false],
+    ['false', 'true', true],
+    ['true', 'bogus', true],
+    [null, 'bogus', false],
+  ])('outer=%s inner=%s blocks the swipe: %s', (outer, inner, blocked) => {
+    const { root, scroller } = build();
+    const host = document.createElement('div');
+    if (outer !== null) host.setAttribute('contenteditable', outer);
+    const nested = document.createElement('div');
+    nested.setAttribute('contenteditable', inner);
+    const word = document.createElement('span');
+    nested.appendChild(word);
+    host.appendChild(nested);
+    scroller.appendChild(host);
+    expect(swipeStartIsOffLimits(word, root, 200, WIDTH)).toBe(blocked);
+  });
 });
