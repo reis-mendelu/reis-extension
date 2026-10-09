@@ -25,6 +25,7 @@
 - Write code that is clean under `noUncheckedIndexedAccess`. `lint --max-warnings=0` and `format:check` are repo-wide in CI.
 - Max ~200 lines per file (repo convention). Test first.
 - Release tags for this product are `mcp-v*`. Never `v*`: those drive the iOS release.
+- Before every commit, run `npx prettier --write` on the files that task created or changed. The plan's code blocks are not prettier-formatted, and CI's `format:check` is repo-wide.
 - Every `mcp/__tests__` file starts with `// @vitest-environment node`. The repo default is happy-dom, whose `Response` may lack `getSetCookie`.
 - Locally run only the tests you touched (`npx vitest run mcp/`) plus `npm run typecheck`. CI runs the rest.
 
@@ -64,6 +65,7 @@
 Facts (verified live 2026-10-09):
 - `POST https://is.mendelu.cz/system/login.pl` (urlencoded) with `login_hidden=1`, `destination=/auth/?lang=cz`, `auth_id_hidden=0`, `auth_2fa_type=no`, `credential_0`, `credential_1` and `login` answers `302 Location: /auth/?lang=cz`, with `Set-Cookie: UISAuth=…; path=/; secure; HttpOnly`.
 - That cookie alone opens `/auth/student/moje_studium.pl`.
+- A wrong password (probed 2026-10-10 with a made-up username) answers `200`, sets no cookie and shows the login form again. `credential_k` stays `disabled` and `auth_2fa_type` stays `no`. The page always contains the static texts "Incorrect login or password" and "Please type the verification code", so never classify by message text.
 - The login form also carries `credential_k` (an OTP field, `disabled` by default) and `auth_2fa_type`. No 2FA response has been observed, so the 2FA detection below is a best guess from the form: an enabled `credential_k`, or an `auth_2fa_type` other than `no`.
 
 - [ ] **Step 1: Add mcp tests to vitest include**
@@ -256,13 +258,14 @@ git commit -m "feat(mcp): browserless IS login with typed failures"
 
 **Interfaces:**
 - Consumes: `loginToIs`, `IsLoginError` (Task 1)
-- Produces: `createIsSession(creds: { user: string; pass: string }, nativeFetch: typeof fetch): IsSession`, where `interface IsSession { fetch: typeof fetch }`.
+- Produces: `createIsSession(creds: { user: string; pass: string }, nativeFetch: typeof fetch, now: () => number = Date.now): IsSession`, where `interface IsSession { fetch: typeof fetch }`.
 
 Behaviour:
 - A request to `is.mendelu.cz` logs in first if there is no cookie. Concurrent callers share one login.
 - The cookie is set only for `is.mendelu.cz`. Any other host goes to `nativeFetch` untouched.
 - A GET whose response is the login page means the session expired. That triggers one re-login and one retry. If the retry also gets the login page, throw `IsLoginError('unexpected')`. The login page is detected by `res.url` containing `/system/login.pl`, or by an HTML body containing `name="credential_1"`.
 - A login that fails with `bad-credentials` or `two-factor` is remembered. Every later call rejects with the same error and never POSTs again. Claude Desktop restarts the server when the student changes the settings.
+- **Login floor:** no new login attempt within 60 s of a failed one, whatever its kind. A call inside that window rejects with the last error and makes no request. After 3 consecutive `unexpected` failures the error becomes fatal until restart. An unknown response shape must never turn into one failed login per tool call.
 - **The cookie lives in a closure variable and `fetch` is created once.** That avoids reis-scraper's double-wrap bug, where a re-login kept sending the stale cookie.
 
 - [ ] **Step 1: Write the failing test**
@@ -337,12 +340,30 @@ describe('createIsSession', () => {
     expect(native).not.toHaveBeenCalled();
   });
 
-  it('retries a login that failed for an unexpected reason on the next call', async () => {
+  it('waits 60 s after an unexpected failure before trying again', async () => {
+    let t = 0;
     login.mockRejectedValueOnce(new IsLoginError('unexpected', 'm')).mockResolvedValueOnce('UISAuth=t');
     const native = vi.fn().mockResolvedValue(page('<html>ok</html>'));
-    const s = createIsSession({ user: 'u', pass: 'p' }, native as unknown as typeof fetch);
+    const s = createIsSession({ user: 'u', pass: 'p' }, native as unknown as typeof fetch, () => t);
     await expect(s.fetch('https://is.mendelu.cz/auth/a.pl')).rejects.toMatchObject({ kind: 'unexpected' });
+    t = 30_000;
+    await expect(s.fetch('https://is.mendelu.cz/auth/a.pl')).rejects.toMatchObject({ kind: 'unexpected' });
+    expect(login).toHaveBeenCalledTimes(1);
+    t = 61_000;
     await expect(s.fetch('https://is.mendelu.cz/auth/a.pl')).resolves.toBeInstanceOf(Response);
+    expect(login).toHaveBeenCalledTimes(2);
+  });
+
+  it('gives up for good after 3 consecutive unexpected failures', async () => {
+    let t = 0;
+    login.mockRejectedValue(new IsLoginError('unexpected', 'm'));
+    const s = createIsSession({ user: 'u', pass: 'p' }, vi.fn() as unknown as typeof fetch, () => t);
+    for (let i = 0; i < 3; i++) {
+      await expect(s.fetch('https://is.mendelu.cz/auth/a.pl')).rejects.toMatchObject({ kind: 'unexpected' });
+      t += 61_000;
+    }
+    await expect(s.fetch('https://is.mendelu.cz/auth/a.pl')).rejects.toMatchObject({ kind: 'unexpected' });
+    expect(login).toHaveBeenCalledTimes(3);
   });
 });
 ```
@@ -376,18 +397,34 @@ async function isLoginPage(res: Response): Promise<boolean> {
   return /name="credential_1"/.test(head);
 }
 
-export function createIsSession(creds: { user: string; pass: string }, nativeFetch: typeof fetch): IsSession {
+const LOGIN_FLOOR_MS = 60_000;
+const MAX_UNEXPECTED = 3;
+
+export function createIsSession(
+  creds: { user: string; pass: string },
+  nativeFetch: typeof fetch,
+  now: () => number = Date.now
+): IsSession {
   let cookie: string | null = null;
   let inflight: Promise<string> | null = null;
   let fatal: IsLoginError | null = null;
+  let lastFailure: { at: number; error: IsLoginError } | null = null;
+  let unexpectedInARow = 0;
 
   const login = (): Promise<string> => {
     if (fatal) return Promise.reject(fatal);
+    if (lastFailure && now() - lastFailure.at < LOGIN_FLOOR_MS) return Promise.reject(lastFailure.error);
     inflight ??= loginToIs(creds.user, creds.pass, nativeFetch)
-      .then((c) => (cookie = c))
+      .then((c) => {
+        lastFailure = null;
+        unexpectedInARow = 0;
+        return (cookie = c);
+      })
       .catch((e: unknown) => {
-        if (e instanceof IsLoginError && e.kind !== 'unexpected') fatal = e;
-        throw e;
+        const err = e instanceof IsLoginError ? e : new IsLoginError('unexpected', 'IS Mendelu did not start a session.');
+        lastFailure = { at: now(), error: err };
+        if (err.kind !== 'unexpected' || ++unexpectedInARow >= MAX_UNEXPECTED) fatal = err;
+        throw err;
       })
       .finally(() => {
         inflight = null;
@@ -427,7 +464,7 @@ export function createIsSession(creds: { user: string; pass: string }, nativeFet
 - [ ] **Step 4: Run the tests and confirm they pass**
 
 Run: `npx vitest run mcp/__tests__/session.test.ts`
-Expected: PASS (5 tests).
+Expected: PASS (6 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -1387,7 +1424,7 @@ Build: `npm run mcp:pack`. Releases are `mcp-v*` tags, never `v*`.
 
 - [ ] **Step 6: Run the touched tests and typecheck**
 
-Run: `npx vitest run mcp/ src/test/guards/mcpStaysReadOnly.test.ts && npm run typecheck`
+Run: `npx vitest run mcp/ src/test/guards/mcpStaysReadOnly.test.ts src/test/guards/noStudentDataLeaves.test.ts scripts/lib/__tests__/privacyDisclosures.test.ts && npm run typecheck`
 Expected: all PASS.
 
 - [ ] **Step 7: Commit, push, PR**
@@ -1412,5 +1449,6 @@ The Stop hooks may ask. Answers:
 Not automatic. Ask Dominik first, because a release is public.
 
 - [ ] Install `dist-mcp/reis-for-claude.mcpb` in Claude Desktop on Dominik's Mac by double-clicking it. Enter the credentials in its settings, then ask Claude "what exams do I have left?". Send him the screenshot.
+- [ ] Confirm that no workflow fires on a tag or release push. Run `grep -nE "^\s*(release|push):" -A4 .github/workflows/*.yml` and read every match. On 2026-10-10 none matched `mcp-v*` or `release:`.
 - [ ] After the PR merges to `test`: `git tag mcp-v0.1.0 <merge sha> && git push personal mcp-v0.1.0`, then `gh release create mcp-v0.1.0 dist-mcp/reis-for-claude.mcpb --title "reIS for Claude 0.1.0" --notes-file mcp/README.md`.
 - [ ] Verify no workflow ran for the tag: `gh run list --limit 5`.

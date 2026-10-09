@@ -35,9 +35,9 @@ the model never has to know it.
 
 ## Hard rules
 
-- **No generic page fetch.** No `raw`/`table` tools: IS has GET parameters that change state (see `docs/is-structure-map.md`).
+- **No generic page fetch.** No `raw`/`table` tools: IS has GET parameters that change state, found by a 2026-10-09 crawl. Examples: `personalizace/portlety.pl` (`vypni`, `skryt`, `move`), `personalizace/menu_user.pl` (`move`, `dir`), `posta/slozky.pl` (`move`, `prejmenuj`), `student/list.pl` (`akce`, `email_on`), `ca/ucet.pl` (`blokace`).
 - **Never touch online tests** (`elis/ot/psani_testu.pl`). Never submit anything. `mendelu_assignments` strips `uploadUrl`.
-- **Never retry a login that failed on credentials or 2FA.** Two failed logins per call could lock the account.
+- **Never retry a login that failed on credentials or 2FA.** Two failed logins per call could lock the account. Any failed login also blocks the next attempt for 60 s, and 3 unexpected failures in a row stop retries until restart.
 - **Never write credentials or the session cookie** to disk, stderr or a tool result. Error messages are fixed strings.
 - **Talk to two hosts only:** `is.mendelu.cz` gets the cookie, `cdn.jsdelivr.net` does not.
 - **Output follows reis-scraper's `toResult` semantics** (fixed 2026-10-09). Markdown mode returns text only. JSON mode attaches `structuredContent` only when it fits the character limit. No tool declares an `outputSchema`.
