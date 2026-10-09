@@ -8,6 +8,19 @@ import {
   type SocietyInput,
 } from '../../../api/societiesAdmin';
 import { encodeSocietyLogo } from '../../../utils/societies/encodeSocietyLogo';
+import { encodePartnerMark } from '../../../utils/societies/encodePartnerMark';
+
+/** A partner's light and dark colour marks; null = not changed. */
+export interface PartnerMarks {
+  light: Blob | null;
+  dark: Blob | null;
+}
+
+/** undefined = nothing picked; null = the upload failed; else the stored path. */
+async function uploadMark(id: string, file: Blob | null): Promise<string | null | undefined> {
+  if (!file) return undefined;
+  return uploadSocietyLogo(id, await encodePartnerMark(file));
+}
 
 export type SaveSocietyError = 'logo_required' | 'upload_failed' | 'save_failed';
 
@@ -35,7 +48,8 @@ export async function saveSociety(
   access: SocietiesAccess,
   input: SocietyInput,
   logo: Blob | null,
-  isNew: boolean
+  isNew: boolean,
+  marks: PartnerMarks = { light: null, dark: null }
 ): Promise<{ error?: SaveSocietyError }> {
   if (isNew && !logo) return { error: 'logo_required' };
   const previous = access.societies()[input.id];
@@ -46,7 +60,16 @@ export async function saveSociety(
     if (!logoPath) return { error: 'upload_failed' };
   }
 
-  const saved =
+  // Marks follow the logo's rule: uploaded before any row points at them.
+  const lightPath = await uploadMark(input.id, marks.light);
+  const darkPath = await uploadMark(input.id, marks.dark);
+  if (lightPath === null || darkPath === null) return { error: 'upload_failed' };
+  const markPatch = {
+    ...(lightPath ? { mark_light_path: lightPath } : {}),
+    ...(darkPath ? { mark_dark_path: darkPath } : {}),
+  };
+
+  let saved =
     isNew && logoPath
       ? await insertSociety(input, logoPath, nextSortOrder(access.societies()))
       : await updateSociety(input.id, {
@@ -56,8 +79,14 @@ export async function saveSociety(
           faculty_key: input.facultyKey,
           auto_follow_faculty: input.autoFollowFaculty,
           ...(input.instagram !== undefined ? { instagram: input.instagram } : {}),
+          ...(input.kind ? { kind: input.kind, audience: input.audience ?? null } : {}),
           ...(logoPath ? { logo_path: logoPath } : {}),
+          ...markPatch,
         });
+  // insertSociety writes the base row only; a new partner's marks attach here.
+  if (saved && isNew && Object.keys(markPatch).length > 0) {
+    saved = await updateSociety(input.id, markPatch);
+  }
   if (!saved) return { error: 'save_failed' };
   await access.put({ ...previous, ...saved });
 

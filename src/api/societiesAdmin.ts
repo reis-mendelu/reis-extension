@@ -21,6 +21,9 @@ export interface SocietyInput {
   /** Omitted = leave the column as it is; null = clear it. An update writes
    *  only what the admin changed, so a stale copy cannot overwrite a handle. */
   instagram?: string | null;
+  /** Omitted = leave as is (spec 2026-10-09). A partner always carries an audience. */
+  kind?: 'society' | 'partner';
+  audience?: string[] | null;
 }
 
 /** Content-addressed, so a replaced logo is a new URL no CDN has cached. */
@@ -85,6 +88,7 @@ export async function insertSociety(
     logo_path: logoPath,
     sort_order: sortOrder,
     instagram: input.instagram ?? null,
+    ...(input.kind ? { kind: input.kind, audience: input.audience ?? null } : {}),
   };
   if (DEV_SOCIETY) return devRow(row);
   const { data, error } = await adminAuthClient

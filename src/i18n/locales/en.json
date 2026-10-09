@@ -1150,8 +1150,18 @@
         "logo_required": "Upload a logo.",
         "upload_failed": "The logo could not be uploaded.",
         "save_failed": "The society could not be saved.",
-        "account_failed": "The society is saved, but its account could not be created. Create it below."
-      }
+        "account_failed": "The society is saved, but its account could not be created. Create it below.",
+        "audience": "Pick at least one faculty and check the programme codes.",
+        "mark_required": "A partner needs a light-mode logo."
+      },
+      "kind": "Type",
+      "kindSociety": "Society",
+      "kindPartner": "Partner",
+      "audience": "Who sees this partner",
+      "audienceHint": "A faculty with no codes = the whole faculty. Separate programme codes with commas, e.g. B-OI, N-OI.",
+      "programmesPlaceholder": "Programme codes (optional)",
+      "markLight": "Partner logo – light mode (transparent PNG)",
+      "markDark": "Partner logo – dark mode (optional)"
     }
   },
   "mobile": {

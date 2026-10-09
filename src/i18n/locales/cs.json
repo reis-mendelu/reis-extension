@@ -1150,8 +1150,18 @@
         "logo_required": "Nahrajte logo.",
         "upload_failed": "Logo se nepodařilo nahrát.",
         "save_failed": "Spolek se nepodařilo uložit.",
-        "account_failed": "Spolek je uložený, ale účet se nepodařilo vytvořit. Vytvořte ho níže."
-      }
+        "account_failed": "Spolek je uložený, ale účet se nepodařilo vytvořit. Vytvořte ho níže.",
+        "audience": "Vyber aspoň jednu fakultu a zkontroluj kódy programů.",
+        "mark_required": "Partner potřebuje logo pro světlý režim."
+      },
+      "kind": "Typ",
+      "kindSociety": "Spolek",
+      "kindPartner": "Partner",
+      "audience": "Komu se partner ukáže",
+      "audienceHint": "Fakulta bez kódů = celá fakulta. Kódy programů odděl čárkou, např. B-OI, N-OI.",
+      "programmesPlaceholder": "Kódy programů (nepovinné)",
+      "markLight": "Logo partnera – světlý režim (průhledné PNG)",
+      "markDark": "Logo partnera – tmavý režim (nepovinné)"
     }
   },
   "mobile": {
