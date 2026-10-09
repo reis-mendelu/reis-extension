@@ -74,6 +74,32 @@ describe('canSee', () => {
   });
 });
 
+describe('canSee: partners obey their audience, whatever subscribersOnly says', () => {
+  const sap = { ...cat.ey!, id: 'sap', kind: 'partner' as const, audience: ['pef:B-OI', 'pef:B-AII'] };
+  const withSap = { ...cat, sap };
+  const pefOi: Viewer = { facultyKey: 'pef', erasmus: false, programme: 'B-OI' };
+  const pefEm: Viewer = { facultyKey: 'pef', erasmus: false, programme: 'B-EM' };
+
+  it('shows a public partner event only to matching students', () => {
+    expect(canSee(ev('sap', false), withSap, pefOi)).toBe(true);
+    expect(canSee(ev('sap', false), withSap, pefEm)).toBe(false);
+    expect(canSee(ev('sap', false), withSap, frrms)).toBe(false);
+    expect(canSee(ev('sap', false), withSap, unknown)).toBe(false);
+  });
+  it('a restricted partner event follows the same audience', () => {
+    expect(canSee(ev('sap', true), withSap, pefOi)).toBe(true);
+    expect(canSee(ev('sap', true), withSap, pefEm)).toBe(false);
+  });
+  it('EY, a PEF-wide partner, is hidden from other faculties even on a public event', () => {
+    expect(canSee(ev('ey', false), cat, pef)).toBe(true);
+    expect(canSee(ev('ey', false), cat, frrms)).toBe(false);
+  });
+  it('societies keep their faculty rule', () => {
+    expect(canSee(ev('supef', false), withSap, frrms)).toBe(true);
+    expect(canSee(ev('supef', true), withSap, frrms)).toBe(false);
+  });
+});
+
 describe('visibleToStudent', () => {
   it('keeps order and drops what the viewer may not see', () => {
     const list = [ev('supef', true), ev('esn', true), ev('reis')];

@@ -2,6 +2,7 @@ import type { ContextSlice, AppSlice } from '../types';
 import { getUserParams, isIdentityConfirmed } from '../../utils/userParams';
 import { IndexedDBService } from '../../services/storage';
 import { logError } from '../../utils/reportError';
+import { baseProgramme } from '../../utils/partnerAudience';
 
 /** Who the student was last time IS said so — the event audience's fallback. */
 const VIEWER_KEY = 'viewer_audience';
@@ -14,6 +15,7 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
   obdobiId: null,
   facultyId: null,
   userFaculty: null,
+  userProgramme: null,
   userSemester: null,
   isErasmus: false,
   fullName: null,
@@ -36,12 +38,17 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
     try {
       if (get().userFaculty === null) {
         const cached = (await IndexedDBService.get('meta', VIEWER_KEY)) as
-          { faculty: string | null; erasmus: boolean; savedAt?: number } | undefined;
+          | { faculty: string | null; erasmus: boolean; programme?: string | null; savedAt?: number }
+          | undefined;
         if (cached && get().userFaculty === null) {
           // Erasmus is a semester, a faculty is a degree: an old Erasmus flag
           // would show ESN-only events to a student who is no longer one.
           const fresh = Date.now() - (cached.savedAt ?? 0) < ERASMUS_CACHE_MS;
-          set({ userFaculty: cached.faculty, isErasmus: fresh && cached.erasmus });
+          set({
+            userFaculty: cached.faculty,
+            userProgramme: cached.programme ?? null,
+            isErasmus: fresh && cached.erasmus,
+          });
         }
       }
     } catch (err) {
@@ -58,6 +65,7 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
           facultyId: params.facultyId ? String(params.facultyId) : null,
           // An unparsed header (#titulek) must not erase a faculty already known.
           userFaculty: params.facultyLabel ?? get().userFaculty,
+          userProgramme: baseProgramme(params.studyProgram) ?? get().userProgramme,
           userSemester: params.periodLabel ?? null,
           isErasmus: params.isErasmus,
           fullName: params.fullName ?? null,
@@ -70,6 +78,7 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
           await IndexedDBService.set('meta', VIEWER_KEY, {
             faculty: params.facultyLabel,
             erasmus: params.isErasmus,
+            programme: baseProgramme(params.studyProgram),
             savedAt: Date.now(),
           });
         }

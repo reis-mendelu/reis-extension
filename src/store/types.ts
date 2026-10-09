@@ -380,6 +380,8 @@ export interface ContextSlice {
   obdobiId: string | null;
   facultyId: string | null;
   userFaculty: string | null;
+  /** Base study-programme code from IS ('B-OI'): partner targeting on the device. */
+  userProgramme: string | null;
   userSemester: string | null;
   isErasmus: boolean;
   fullName: string | null;

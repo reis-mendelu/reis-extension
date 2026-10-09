@@ -3,8 +3,16 @@ import { useAppStore } from '../store/useAppStore';
 import { FACULTY_LABEL_TO_KEY } from '../types/events';
 import type { Viewer } from '../utils/eventAudience';
 
-export function viewerFrom(facultyLabel: string | null, erasmus: boolean): Viewer {
-  return { facultyKey: (facultyLabel && FACULTY_LABEL_TO_KEY[facultyLabel]) || null, erasmus };
+export function viewerFrom(
+  facultyLabel: string | null,
+  erasmus: boolean,
+  programme: string | null = null
+): Viewer {
+  return {
+    facultyKey: (facultyLabel && FACULTY_LABEL_TO_KEY[facultyLabel]) || null,
+    erasmus,
+    programme,
+  };
 }
 
 /**
@@ -17,9 +25,10 @@ export function viewerFrom(facultyLabel: string | null, erasmus: boolean): Viewe
 export function useViewer(): Viewer {
   const own = useAppStore((s) => s.userFaculty);
   const erasmus = useAppStore((s) => s.isErasmus);
+  const programme = useAppStore((s) => s.userProgramme);
   const impersonated = useAppStore((s) => s.impersonation?.selection.faculty ?? null);
   return useMemo(
-    () => (impersonated ? viewerFrom(impersonated, false) : viewerFrom(own, erasmus)),
-    [own, erasmus, impersonated]
+    () => (impersonated ? viewerFrom(impersonated, false) : viewerFrom(own, erasmus, programme)),
+    [own, erasmus, programme, impersonated]
   );
 }
