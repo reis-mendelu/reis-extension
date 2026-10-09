@@ -1155,7 +1155,7 @@
         "account_failed": "Spolek je uložený, ale účet se nepodařilo vytvořit. Vytvořte ho níže.",
         "audience": "Vyber aspoň jednu fakultu a zkontroluj kódy programů.",
         "mark_required": "Partner potřebuje logo pro světlý režim.",
-        "partner_faculty": "Fakulta partnera musí být jedna z jeho fakult (celou MENDELU jen u partnera pro všechny), jinak by starší verze aplikace jeho akce ukázaly všem."
+        "partner_faculty": "Fakulta partnera musí být jednou z fakult vybraných v poli „Komu se partner ukáže“ (celá MENDELU jen u partnera pro všechny), jinak by starší verze aplikace jeho akce ukázaly jiným studentům."
       },
       "kind": "Typ",
       "kindSociety": "Spolek",
