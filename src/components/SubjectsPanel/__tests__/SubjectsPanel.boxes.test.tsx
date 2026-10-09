@@ -38,6 +38,7 @@ describe('SubjectsPanel — odevzdávárny', () => {
       studyPlanLoaded: true,
       syncStatus: { ...useAppStore.getState().syncStatus, handshakeDone: true, isSyncing: false },
       odevzdavarny: [box({ name: 'Rozpracovaný projekt', deadline: '08.10.2026 23:59' })],
+      subjects: { data: { 'EBC-PJ': { subjectId: 'P1' } } },
     } as never);
   });
 

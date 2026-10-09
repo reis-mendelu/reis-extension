@@ -7,6 +7,20 @@ import { SummaryBoxRow } from './SummaryBoxRow';
 import { useBoxLabels } from './useBoxLabels';
 
 const WINDOW_DAYS = 14;
+
+/**
+ * Whether the subject's Záznamník tab will list this box. It finds boxes by
+ * the subject store's predmet id, and the sync also reads the previous period:
+ * a box of a subject the store does not hold — or holds under this period's
+ * id — would open an empty tab on the extension and Success rate on the phone.
+ */
+function listedInZaznamnik(
+  box: Odevzdavarna,
+  subjects: Record<string, { subjectId?: string }> | undefined
+): boolean {
+  const code = boxCourseCode(box, subjects);
+  return !!code && subjects?.[code]?.subjectId === box.courseId;
+}
 const MAX_ROWS = 3;
 
 interface SubmissionBoxesSummaryProps {
@@ -79,6 +93,7 @@ export function SubmissionBoxesSummary({ onOpen, className = '' }: SubmissionBox
                   box={box}
                   now={now}
                   courseCode={boxCourseCode(box, subjects)}
+                  opensSubject={listedInZaznamnik(box, subjects)}
                   onOpen={onOpen}
                   showUpload={showAll}
                   testId={showAll ? 'submission-open-row' : 'submission-due-row'}
