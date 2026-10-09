@@ -8,13 +8,19 @@ interface ClassmatesScopeToggleProps {
   onChange: (scope: ClassmatesScope) => void;
 }
 
+/**
+ * Two pressed buttons in a labelled group, not tabs: the choice filters the
+ * one list below (with the search box in between), so there is no tabpanel to
+ * own, and two Tab stops beat a roving-focus widget for two options. Same
+ * pattern as the phone calendar's `CalendarViewSwitch`. The daisyUI `tab`
+ * classes stay for the look; `tab-active` drives it, not `aria-selected`.
+ */
 export function ClassmatesScopeToggle({ scope, onChange }: ClassmatesScopeToggleProps) {
   const { t } = useTranslation();
   const option = (key: ClassmatesScope, label: string) => (
     <button
       type="button"
-      role="tab"
-      aria-selected={scope === key}
+      aria-pressed={scope === key}
       className={`tab flex-1 whitespace-nowrap px-2 ${
         scope === key ? 'tab-active font-semibold' : 'text-base-content/70'
       }`}
@@ -26,7 +32,7 @@ export function ClassmatesScopeToggle({ scope, onChange }: ClassmatesScopeToggle
 
   return (
     <div
-      role="tablist"
+      role="group"
       aria-label={t('classmates.scopeLabel')}
       className="tabs tabs-box tabs-sm w-full flex-nowrap"
     >

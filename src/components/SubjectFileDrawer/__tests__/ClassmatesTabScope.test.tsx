@@ -42,7 +42,7 @@ vi.mock('../../../hooks/data/useSubjectClassmates', () => ({
   },
 }));
 
-const tab = (name: string) => screen.getByRole('tab', { name });
+const tab = (name: string) => screen.getByRole('button', { name });
 
 describe('ClassmatesTab — Cvičení / Celý předmět', () => {
   beforeEach(() => {
@@ -54,24 +54,36 @@ describe('ClassmatesTab — Cvičení / Celý předmět', () => {
 
   it('opens on the seminar group and leaves the whole subject unfetched', () => {
     render(<ClassmatesTab courseCode="EBC-IV" />);
-    expect(tab('Cvičení')).toHaveAttribute('aria-selected', 'true');
-    expect(tab('Celý předmět')).toHaveAttribute('aria-selected', 'false');
+    expect(tab('Cvičení')).toHaveAttribute('aria-pressed', 'true');
+    expect(tab('Celý předmět')).toHaveAttribute('aria-pressed', 'false');
     expect(subject.active.every((a) => a === false)).toBe(true);
     expect(screen.getByText(/Spolužáci z tvého cvičení/)).toHaveTextContent('· 2');
+  });
+
+  // Two options filtering one list, with the search box between them and it:
+  // a pressed-button group, not tabs. role="tab" promised arrow-key roving and
+  // a tabpanel that never existed.
+  it('is a labelled group of two pressed buttons, not a tablist', () => {
+    render(<ClassmatesTab courseCode="EBC-IV" />);
+    const group = screen.getByRole('group', { name: 'Koho zobrazit' });
+    expect(group).toContainElement(tab('Cvičení'));
+    expect(group).toContainElement(tab('Celý předmět'));
+    expect(screen.queryAllByRole('tab')).toHaveLength(0);
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
   });
 
   it('asks for the whole subject only when the student switches to it', () => {
     render(<ClassmatesTab courseCode="EBC-IV" />);
     fireEvent.click(tab('Celý předmět'));
     expect(subject.active.at(-1)).toBe(true);
-    expect(tab('Celý předmět')).toHaveAttribute('aria-selected', 'true');
+    expect(tab('Celý předmět')).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText(/Všichni, kdo předmět studují/)).toHaveTextContent('· 519');
   });
 
   it('opens a subject without cvičení on the whole subject', () => {
     seminar.result = { classmates: [], isLoading: false, error: null, noSeminar: true };
     render(<ClassmatesTab courseCode="EBC-MNG" />);
-    expect(tab('Celý předmět')).toHaveAttribute('aria-selected', 'true');
+    expect(tab('Celý předmět')).toHaveAttribute('aria-pressed', 'true');
     expect(subject.active.at(-1)).toBe(true);
     expect(screen.queryByText('Tento předmět nemá cvičení')).not.toBeInTheDocument();
   });
@@ -81,7 +93,7 @@ describe('ClassmatesTab — Cvičení / Celý předmět', () => {
     render(<ClassmatesTab courseCode="EBC-MNG" />);
     fireEvent.click(tab('Cvičení'));
     fireEvent.click(screen.getByRole('button', { name: 'Zobrazit celý předmět' }));
-    expect(tab('Celý předmět')).toHaveAttribute('aria-selected', 'true');
+    expect(tab('Celý předmět')).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('says what it is loading — hundreds of students take a few seconds', () => {
