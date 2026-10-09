@@ -300,7 +300,8 @@ the start of a semester.
 Only these, all disclosed in `docs/privacy-policy-app.md`:
 
 1. **Daily install count** — a random per-install UUID (`services/identity/installId.ts`),
-   never anything derived from the student. Deliberately counts installs, not people.
+   plus faculty, base programme code and platform as aggregate labels; nothing else derived
+   from the student. Deliberately counts installs, not people.
 2. **Feedback the student typed** — via the `submit_suggestion` RPC (`src/api/suggestions.ts`),
    with screen name, app version, browser and viewport.
 3. **Society event view/click counters** — a post row id and nothing else.

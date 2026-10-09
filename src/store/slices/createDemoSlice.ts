@@ -109,6 +109,7 @@ export const createDemoSlice: AppSlice<DemoSlice> = (set) => ({
       facultyId: null,
       fullName: null,
       userFaculty: null,
+      userProgramme: null,
       userSemester: null,
     });
   },

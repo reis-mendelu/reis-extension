@@ -17,6 +17,10 @@ describe('BUNDLED_SOCIETIES', () => {
       'zf',
     ]);
   });
+  it('seeds EY as a PEF-wide partner (spec 2026-10-09)', () => {
+    expect(BUNDLED_SOCIETIES.ey!.kind).toBe('partner');
+    expect(BUNDLED_SOCIETIES.ey!.audience).toEqual(['pef']);
+  });
   it('carries no logo URLs: they exist only after the prod seed', () => {
     for (const s of Object.values(BUNDLED_SOCIETIES)) expect(s.logo).toBeUndefined();
   });

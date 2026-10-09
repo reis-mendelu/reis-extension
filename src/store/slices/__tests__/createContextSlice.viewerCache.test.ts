@@ -33,6 +33,7 @@ describe('loadContext viewer cache', () => {
     isIdentityConfirmed.mockReturnValue(true);
     useAppStore.setState({
       userFaculty: null,
+      userProgramme: null,
       isErasmus: false,
       demoMode: false,
       contextResolved: false,
@@ -45,6 +46,41 @@ describe('loadContext viewer cache', () => {
     expect(idb.get('viewer_audience')).toMatchObject({ faculty: 'AF', erasmus: true });
     expect((idb.get('viewer_audience') as { savedAt: number }).savedAt).toBeGreaterThan(0);
     expect(useAppStore.getState().contextResolved).toBe(true);
+  });
+
+  it('stores the base programme and caches it with the faculty (spec 2026-10-09)', async () => {
+    getUserParams.mockResolvedValue({
+      facultyLabel: 'PEF',
+      studyProgram: 'B-OI-ZBOI',
+      isErasmus: false,
+    });
+    await useAppStore.getState().loadContext();
+    expect(useAppStore.getState().userProgramme).toBe('B-OI');
+    expect(idb.get('viewer_audience')).toMatchObject({ faculty: 'PEF', programme: 'B-OI' });
+  });
+
+  it('drops a cached programme when IS names another faculty without one', async () => {
+    idb.set('viewer_audience', { faculty: 'PEF', erasmus: false, programme: 'B-OI' });
+    getUserParams.mockResolvedValue({ facultyLabel: 'ZF', isErasmus: false });
+    await useAppStore.getState().loadContext();
+    expect(useAppStore.getState().userFaculty).toBe('ZF');
+    expect(useAppStore.getState().userProgramme).toBeNull();
+  });
+
+  it('keeps a cached programme when the same faculty comes back unparsed', async () => {
+    idb.set('viewer_audience', { faculty: 'PEF', erasmus: false, programme: 'B-OI' });
+    getUserParams.mockResolvedValue({ facultyLabel: 'PEF', isErasmus: false });
+    await useAppStore.getState().loadContext();
+    expect(useAppStore.getState().userProgramme).toBe('B-OI');
+    // ...and persists what it kept, or the next cold start would lose it.
+    expect(idb.get('viewer_audience')).toMatchObject({ faculty: 'PEF', programme: 'B-OI' });
+  });
+
+  it('restores the cached programme on a cold start', async () => {
+    idb.set('viewer_audience', { faculty: 'PEF', erasmus: false, programme: 'B-OI' });
+    getUserParams.mockResolvedValue(null);
+    await useAppStore.getState().loadContext();
+    expect(useAppStore.getState().userProgramme).toBe('B-OI');
   });
 
   it('falls back to the remembered audience when IS has not answered (cold start)', async () => {

@@ -6,6 +6,7 @@ import { getUserParams } from '../utils/userParams';
 import { usagePlatform, type UsagePlatform } from '../utils/usagePlatform';
 import { isHarnessEnabled } from '../utils/harnessEnabled';
 import { hasDataConsent } from '../utils/firefoxDataConsent';
+import { baseProgramme } from '../utils/partnerAudience';
 
 /**
  * Both writes here identify the DEVICE, never the student.
@@ -115,7 +116,11 @@ async function writeDailyUsage(): Promise<void> {
     inFlight = null;
     return;
   }
-  const faculty = (await getUserParams())?.facultyLabel ?? null;
+  const params = await getUserParams();
+  const faculty = params?.facultyLabel ?? null;
+  // The base code only ('B-OI', never 'B-OI-ZBOI'): an aggregate label like
+  // faculty, disclosed in privacy/disclosures.ts and sent nowhere else.
+  const programme = baseProgramme(params?.studyProgram);
   const kind = getPlatform().kind;
   // @capacitor/core imported lazily, and only on the capacitor branch, so the
   // extension bundle never pulls it in — the same reason client.ts's
@@ -132,6 +137,7 @@ async function writeDailyUsage(): Promise<void> {
     p_student_id: await getInstallId(),
     p_faculty: faculty,
     p_platform: platform,
+    p_programme: programme,
   });
   // Thrown, not swallowed: the caller above clears the memo on a rejection so
   // a later call can still count this device. Nothing about the failure is

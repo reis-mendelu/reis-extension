@@ -2,18 +2,33 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { AboutSection } from '../AboutSection';
 import { useAppStore } from '../../../../../store/useAppStore';
+import { BUNDLED_SOCIETIES } from '../../../../../data/societies';
 
 describe('AboutSection', () => {
   beforeEach(() => {
-    useAppStore.setState({ language: 'cz', theme: 'mendelu-dark' } as never);
+    // A PEF student: EY is PEF's partner (spec 2026-10-09).
+    useAppStore.setState({
+      language: 'cz',
+      theme: 'mendelu-dark',
+      societies: BUNDLED_SOCIETIES,
+      userFaculty: 'PEF',
+      userProgramme: null,
+      isErasmus: false,
+      impersonation: null,
+    } as never);
   });
 
-  it('names the partner and what they actually do', () => {
+  it('names the partner of the student field', () => {
     render(<AboutSection />);
     // By accessible name, not text: the mark is an inline SVG, so this also
     // checks a screen reader announces it as "EY" rather than skipping it.
     expect(screen.getByRole('img', { name: 'EY' })).toBeInTheDocument();
-    expect(screen.getByText('Díky nim reIS běží.')).toBeInTheDocument();
+  });
+
+  it('shows nothing to a student whose field has no partner', () => {
+    useAppStore.setState({ userFaculty: 'ZF' } as never);
+    const { container } = render(<AboutSection />);
+    expect(container.firstChild).toBeNull();
   });
 
   // The load-bearing sentence. reIS's whole promise is that nothing leaves the

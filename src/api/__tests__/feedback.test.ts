@@ -12,7 +12,9 @@ const { hasDataConsent, rpc, getUserParams, isHarnessEnabled } = vi.hoisted(() =
   // Real shape: `facultyId` is always '' (see src/utils/userParams/fetchers.ts);
   // the faculty acronym ('PEF', 'AF', ...) lives in `facultyLabel`, optional
   // exactly like the real UserParams type.
-  getUserParams: vi.fn<() => Promise<{ facultyLabel?: string; facultyId: string }>>(async () => ({
+  getUserParams: vi.fn<
+    () => Promise<{ facultyLabel?: string; facultyId: string; studyProgram?: string }>
+  >(async () => ({
     facultyLabel: 'PEF',
     facultyId: '',
   })),
@@ -99,6 +101,26 @@ describe('feedback', () => {
       p_student_id: 'install-1',
       p_faculty: 'PEF',
       p_platform: 'extension',
+      p_programme: null,
+    });
+  });
+
+  // The base programme is one more GROUP label (spec 2026-10-09): 'B-OI', never
+  // the specialisation suffix, and never sent with anything else.
+  it('sends the base programme code beside the faculty', async () => {
+    getUserParams.mockResolvedValueOnce({
+      facultyLabel: 'PEF',
+      facultyId: '',
+      studyProgram: 'B-OI-ZBOI',
+    });
+
+    await trackDailyUsage();
+
+    expect(rpc).toHaveBeenCalledWith('track_daily_usage', {
+      p_student_id: 'install-1',
+      p_faculty: 'PEF',
+      p_platform: 'extension',
+      p_programme: 'B-OI',
     });
   });
 
@@ -114,6 +136,7 @@ describe('feedback', () => {
       p_student_id: 'install-1',
       p_faculty: null,
       p_platform: 'extension',
+      p_programme: null,
     });
   });
 

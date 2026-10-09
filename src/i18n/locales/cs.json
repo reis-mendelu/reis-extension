@@ -998,6 +998,7 @@
     "openInAppleMaps": "Apple Mapy",
     "openInGoogleMaps": "Google Maps",
     "audienceHint": "Ostatní studenti tuto akci na mapě ani v Novinkách neuvidí.",
+    "partnerAudienceHint": "Akci uvidí jen studenti, pro které je partner nastavený: celé fakulty, nebo jen vybrané programy.",
     "panelCollapse": "Sbalit panel mapy",
     "panelExpand": "Rozbalit panel mapy",
     "walkMinutes": "{n} min",
@@ -1107,7 +1108,9 @@
       "trendWithheld": "Pro tento signál zatím graf nezobrazujeme — méně než 5 instalací za 30 dní.",
       "goneQuietHint": "Podíl zařízení, která reIS aspoň jeden týden používala 2 a více dní, ale 14 dní ho neotevřela. Zařízení, ne lidé — přeinstalace se počítá taky.",
       "goneQuietDesc": "pravidelných · 14+ dní bez reIS",
-      "goneQuiet": "Odešli"
+      "goneQuiet": "Odešli",
+      "byProgramme": "Podle programu (7 dní)",
+      "programmeUnknown": "{faculty} – program neznámý"
     },
     "loginName": "login",
     "audience": {
@@ -1149,8 +1152,19 @@
         "logo_required": "Nahrajte logo.",
         "upload_failed": "Logo se nepodařilo nahrát.",
         "save_failed": "Spolek se nepodařilo uložit.",
-        "account_failed": "Spolek je uložený, ale účet se nepodařilo vytvořit. Vytvořte ho níže."
-      }
+        "account_failed": "Spolek je uložený, ale účet se nepodařilo vytvořit. Vytvořte ho níže.",
+        "audience": "Vyber aspoň jednu fakultu a zkontroluj kódy programů.",
+        "mark_required": "Partner potřebuje logo pro světlý režim.",
+        "partner_faculty": "Fakulta partnera musí být jednou z fakult vybraných v poli „Komu se partner ukáže“ (celá MENDELU jen u partnera pro všechny), jinak by starší verze aplikace jeho akce ukázaly jiným studentům."
+      },
+      "kind": "Typ",
+      "kindSociety": "Spolek",
+      "kindPartner": "Partner",
+      "audience": "Komu se partner ukáže",
+      "audienceHint": "Fakulta bez kódů = celá fakulta. Kódy programů odděl čárkou, např. B-OI, N-OI.",
+      "programmesPlaceholder": "Kódy programů (nepovinné)",
+      "markLight": "Logo partnera – světlý režim (průhledné PNG)",
+      "markDark": "Logo partnera – tmavý režim (nepovinné)"
     }
   },
   "mobile": {
@@ -1386,8 +1400,7 @@
   },
   "about": {
     "partnersLabel": "Spolupracujeme s firmami",
-    "partnersBody": "Vybíráme si je sami, podle oborů, které se tu studují. Jde nám o stáže a akce. Nevidí žádná data z tvého ISu.",
-    "eyBody": "Díky nim reIS běží."
+    "partnersBody": "Vybíráme si je sami, podle oborů, které se tu studují. Jde nám o stáže a akce. Nevidí žádná data z tvého ISu."
   },
   "impersonation": {
     "entry": "Zobrazit jako student…",

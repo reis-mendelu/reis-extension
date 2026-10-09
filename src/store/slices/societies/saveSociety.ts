@@ -8,6 +8,19 @@ import {
   type SocietyInput,
 } from '../../../api/societiesAdmin';
 import { encodeSocietyLogo } from '../../../utils/societies/encodeSocietyLogo';
+import { encodePartnerMark } from '../../../utils/societies/encodePartnerMark';
+
+/** A partner's light and dark colour marks; null = not changed. */
+export interface PartnerMarks {
+  light: Blob | null;
+  dark: Blob | null;
+}
+
+/** undefined = nothing picked; null = the upload failed; else the stored path. */
+async function uploadMark(id: string, file: Blob | null): Promise<string | null | undefined> {
+  if (!file) return undefined;
+  return uploadSocietyLogo(id, await encodePartnerMark(file));
+}
 
 export type SaveSocietyError = 'logo_required' | 'upload_failed' | 'save_failed';
 
@@ -35,7 +48,8 @@ export async function saveSociety(
   access: SocietiesAccess,
   input: SocietyInput,
   logo: Blob | null,
-  isNew: boolean
+  isNew: boolean,
+  marks: PartnerMarks = { light: null, dark: null }
 ): Promise<{ error?: SaveSocietyError }> {
   if (isNew && !logo) return { error: 'logo_required' };
   const previous = access.societies()[input.id];
@@ -46,9 +60,18 @@ export async function saveSociety(
     if (!logoPath) return { error: 'upload_failed' };
   }
 
+  // Marks follow the logo's rule: uploaded before any row points at them.
+  const lightPath = await uploadMark(input.id, marks.light);
+  const darkPath = await uploadMark(input.id, marks.dark);
+  if (lightPath === null || darkPath === null) return { error: 'upload_failed' };
+  const markPatch = {
+    ...(lightPath ? { mark_light_path: lightPath } : {}),
+    ...(darkPath ? { mark_dark_path: darkPath } : {}),
+  };
+
   const saved =
     isNew && logoPath
-      ? await insertSociety(input, logoPath, nextSortOrder(access.societies()))
+      ? await insertSociety(input, logoPath, nextSortOrder(access.societies()), markPatch)
       : await updateSociety(input.id, {
           name: input.name.trim(),
           short_name: input.shortName.trim(),
@@ -56,13 +79,20 @@ export async function saveSociety(
           faculty_key: input.facultyKey,
           auto_follow_faculty: input.autoFollowFaculty,
           ...(input.instagram !== undefined ? { instagram: input.instagram } : {}),
+          ...(input.kind ? { kind: input.kind, audience: input.audience ?? null } : {}),
           ...(logoPath ? { logo_path: logoPath } : {}),
+          ...markPatch,
         });
   if (!saved) return { error: 'save_failed' };
   await access.put({ ...previous, ...saved });
 
   const oldPath = previous?.logo ? logoPathFromUrl(previous.logo) : null;
   if (logoPath && oldPath && oldPath !== logoPath) await removeSocietyLogo(oldPath);
+  // Marks are content-addressed too: a replaced one would stay forever.
+  const oldLight = previous?.markLight ? logoPathFromUrl(previous.markLight) : null;
+  if (lightPath && oldLight && oldLight !== lightPath) await removeSocietyLogo(oldLight);
+  const oldDark = previous?.markDark ? logoPathFromUrl(previous.markDark) : null;
+  if (darkPath && oldDark && oldDark !== darkPath) await removeSocietyLogo(oldDark);
   return {};
 }
 

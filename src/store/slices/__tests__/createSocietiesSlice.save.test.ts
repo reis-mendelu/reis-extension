@@ -139,6 +139,10 @@ describe('saveSociety: instagram', () => {
     logo_path: null,
     sort_order: 10,
     is_active: true,
+    kind: 'society',
+    audience: null,
+    mark_light_path: null,
+    mark_dark_path: null,
     instagram: null as string | null,
   };
   const zfEdit = { ...input, id: 'zf', facultyKey: 'zf' as const };

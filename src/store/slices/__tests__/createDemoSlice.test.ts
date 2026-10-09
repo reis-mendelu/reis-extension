@@ -36,6 +36,14 @@ describe('createDemoSlice', () => {
     expect(s.userSemester).toBeTruthy();
   });
 
+  // The real student's programme must not survive into the demo, where it
+  // would be matched against the fabricated PEF faculty (partner targeting).
+  it('enterDemo replaces the real programme too', async () => {
+    useAppStore.setState({ userProgramme: 'B-OI' });
+    await useAppStore.getState().enterDemo();
+    expect(useAppStore.getState().userProgramme).toBeNull();
+  });
+
   it('exitDemo clears the fabricated context with the rest of it', async () => {
     await useAppStore.getState().enterDemo();
     await useAppStore.getState().exitDemo();

@@ -1,4 +1,5 @@
 import { audienceLabelKey } from '../../utils/eventAudience';
+import { isPartner } from '../../utils/partnerAudience';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 
@@ -24,6 +25,11 @@ export function ComposerAudienceField({ societyId, value, onChange }: ComposerAu
   const { t } = useTranslation();
   // '' (no society) reads undefined, which cannot restrict.
   const society = useAppStore((s) => s.societies[societyId]);
+  if (isPartner(society)) {
+    // A partner's audience is set in the console, not per event: every event
+    // goes to that audience only (spec 2026-10-09).
+    return <p className="mt-3 text-xs text-base-content/70">{t('map.partnerAudienceHint')}</p>;
+  }
   const audience = audienceLabelKey(society);
   if (!audience) return null;
 

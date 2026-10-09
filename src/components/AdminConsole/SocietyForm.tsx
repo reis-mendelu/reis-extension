@@ -6,6 +6,8 @@ import { ORGANIZERS, type FacultyKey, type Society } from '../../types/events';
 import { normalizeInstagram, validateSocietyDraft } from './societyFormRules';
 import { GeneratedPasswordDialog } from './GeneratedPasswordDialog';
 import { LogoPreview } from './LogoPreview';
+import { PartnerFields } from './PartnerFields';
+import { usePartnerDraft } from './usePartnerDraft';
 
 const FACULTIES = Object.keys(ORGANIZERS) as FacultyKey[];
 
@@ -26,6 +28,7 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [password, setPassword] = useState<string | null>(null);
+  const partner = usePartnerDraft(society);
 
   const submit = async () => {
     if (busy) return;
@@ -37,6 +40,8 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
       catalog
     );
     if (invalid) return setError(invalid);
+    const partnerInvalid = partner.validate(facultyKey);
+    if (partnerInvalid) return setError(partnerInvalid);
     setBusy(true);
     setError(null);
     try {
@@ -70,9 +75,11 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
         autoFollowFaculty:
           (society?.autoFollowFaculty ?? false) && society?.facultyKey === facultyKey,
         ...(igChanged ? { instagram: ig } : {}),
+        ...partner.toInput(),
       },
       logo,
-      isNew
+      isNew,
+      partner.marks
     );
     if (res.error) return `errors.${res.error}`;
     if (!isNew) return null;
@@ -156,6 +163,7 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
           ))}
         </select>
       </label>
+      <PartnerFields state={partner} />
       <label className={field}>
         <span className="opacity-70">{t('admin.societies.logo')}</span>
         <input

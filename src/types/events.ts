@@ -86,6 +86,14 @@ export interface Society {
   isActive: boolean;
   /** Instagram handle without @ — the "details" link on events that have none. */
   instagram?: string;
+  /** 'partner' = a company shown only to its audience (spec 2026-10-09). Absent = society. */
+  kind?: 'society' | 'partner';
+  /** Partner audience: 'pef' (whole faculty) or 'pef:B-OI' (one programme). */
+  audience?: string[] | null;
+  /** Public URL of the partner's transparent colour mark for light mode. */
+  markLight?: string;
+  /** Optional dark-mode mark; the light one is used when absent. */
+  markDark?: string;
 }
 
 // An event placed on the campus map. Extends the bell-feed event with an

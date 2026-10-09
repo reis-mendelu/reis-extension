@@ -1,4 +1,5 @@
 import type { FacultyKey, Society } from '../types/events';
+import { isPartner, matchesAudience } from './partnerAudience';
 
 /**
  * Who a society event is for, decided from who the student is — never from a
@@ -17,6 +18,8 @@ export interface Viewer {
   /** null when not known yet (first launch before IS data) — sees public only. */
   facultyKey: FacultyKey | null;
   erasmus: boolean;
+  /** Base study-programme code ('B-OI'), null when IS did not say. Partners only. */
+  programme?: string | null;
 }
 
 export type Audience = 'everyone' | 'erasmus' | Exclude<FacultyKey, 'mendelu'>;
@@ -33,8 +36,11 @@ export function canSee(
   societies: Record<string, Society>,
   viewer: Viewer
 ): boolean {
-  if (!event.subscribersOnly) return true;
   const society = societies[event.societyId];
+  // Partners reach their audience and nobody else, whatever the event's own
+  // flag (spec 2026-10-09). Noise control, like the rest of this file.
+  if (society && isPartner(society)) return matchesAudience(society.audience, viewer);
+  if (!event.subscribersOnly) return true;
   // Restricted, by a society we cannot name: hide rather than guess an audience.
   if (!society) return false;
   const audience = audienceOf(society);

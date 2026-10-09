@@ -48,7 +48,7 @@ const INSTALL_ID_APPLE: AppleType = {
 export const FLOWS: Flow[] = [
   {
     id: 'daily_count',
-    what: 'One row per install per day: random install id, faculty and platform labels.',
+    what: 'One row per install per day: random install id, faculty, base study-programme code and platform labels.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/feedback.ts'],
@@ -57,7 +57,7 @@ export const FLOWS: Flow[] = [
       [
         'Daily count',
         'once a day',
-        'a random install identifier — a UUID unrelated to you. Counts **installs, not people**, plus faculty and platform as group labels.',
+        'a random install identifier — a UUID unrelated to you. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI) and platform as group labels.',
       ],
     ],
     stores: {
@@ -219,6 +219,11 @@ export const EXEMPT: Exempt[] = [
   {
     call: 'usage_retention',
     files: ['src/api/usageRetention.ts'],
+    why: 'Admin console read, signed-in reis_admin.',
+  },
+  {
+    call: 'usage_programmes',
+    files: ['src/api/usageProgrammes.ts'],
     why: 'Admin console read, signed-in reis_admin.',
   },
   {

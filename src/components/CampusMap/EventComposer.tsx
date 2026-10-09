@@ -16,6 +16,7 @@ import { toPatch, latestEmoji, initialRoom, initialPlaceName } from './composerP
 import { eventEmojiCode, CATEGORY_EMOJI_CODE } from '../../data/eventEmoji';
 import roomsIndexJson from '../../data/map/rooms-index.json';
 import type { RoomIndexEntry } from '../../types/campusMap';
+import { isPartner } from '../../utils/partnerAudience';
 
 const INDEX = roomsIndexJson as RoomIndexEntry[];
 const LABEL = 'mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60';
@@ -50,6 +51,13 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
     const society = s.societies[associationId ?? ''];
     return !!society && audienceOf(society) === 'everyone';
   });
+  const authorIsPartner = useAppStore((s) => isPartner(s.societies[associationId ?? '']));
+  // Unknown author = unknown audience: it may be a partner whose events must
+  // be restricted, so nothing NEW is published until the catalog names it.
+  // An edit keeps its stored flag instead (see cannotRestrict above), and a
+  // partner's stored flag is always restricted.
+  const authorKnown = useAppStore((s) => Boolean(s.societies[associationId ?? '']));
+  const blockedUnknownAuthor = !authorKnown && !editId;
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
 
@@ -97,7 +105,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
   };
 
   const publish = async () => {
-    if (!ready || busy || !associationId) return;
+    if (!ready || busy || !associationId || blockedUnknownAuthor) return;
     setBusy(true);
     setError(false);
     const input = buildPostInput({
@@ -115,7 +123,9 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       url,
       // A society with no narrower audience (reIS) cannot restrict: a legacy
       // flag on an edited row is cleared rather than silently kept.
-      subscribersOnly: !cannotRestrict && subscribersOnly,
+      // Partners are always restricted: released builds without the audience
+      // rule then show the event only to the partner's faculty, never to all.
+      subscribersOnly: authorIsPartner || (!cannotRestrict && subscribersOnly),
     });
     try {
       const res = editId
@@ -224,7 +234,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
         <button
           type="button"
           className="btn btn-primary btn-sm flex-1 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={!ready || busy}
+          disabled={!ready || busy || blockedUnknownAuthor}
           onClick={publish}
         >
           {editId ? t('map.saveChanges') : t('map.publish')}
