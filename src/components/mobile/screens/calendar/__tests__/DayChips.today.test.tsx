@@ -33,6 +33,37 @@ describe('DayChips today mark', () => {
     expect(screen.getByTestId('day-chip-today')).toHaveTextContent('22');
   });
 
+  /**
+   * "When I go back to Friday, it doesn't change. How do I know if I'm on
+   * Friday?" — Dominik, Friday 9 October 2026. Today's chip drew the same
+   * filled circle selected or not, so stepping back onto today showed nothing.
+   * Today keeps its mark either way, but only fills in while it is the agenda's
+   * day; with another day picked it is a ring. The week view selects nothing
+   * and keeps the filled circle.
+   */
+  it('fills the today mark only while today is the selected day', () => {
+    const { unmount } = render(
+      <DayChips selectedIso="2026-04-22" onSelect={() => {}} lessonDates={new Set()} />
+    );
+    const selected = screen.getByTestId('day-chip-today').className;
+    unmount();
+    const { unmount: unmountOther } = render(
+      <DayChips selectedIso="2026-04-23" onSelect={() => {}} lessonDates={new Set()} />
+    );
+    const other = screen.getByTestId('day-chip-today').className;
+    unmountOther();
+    render(
+      <DayChips selectedIso="2026-04-23" onSelect={() => {}} lessonDates={new Set()} view="week" />
+    );
+    const week = screen.getByTestId('day-chip-today').className;
+
+    expect(selected).toContain('bg-primary');
+    expect(other).not.toContain('bg-primary');
+    expect(other).toContain('ring-');
+    expect(other).not.toBe(selected);
+    expect(week).toContain('bg-primary');
+  });
+
   it('shows no mark in a week that does not contain today', () => {
     render(<DayChips selectedIso="2026-04-29" onSelect={() => {}} lessonDates={new Set()} />);
     expect(screen.queryByTestId('day-chip-today')).not.toBeInTheDocument();

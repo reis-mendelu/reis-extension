@@ -32,6 +32,7 @@ export function DayChip({
   // Marked in the row, not only once the day is opened: a student
   // scanning the week should see the day off without tapping into it.
   const holiday = getCzechHoliday(date, language);
+  const todayFilled = isToday && isSelected !== false;
   return (
     <button
       type="button"
@@ -57,14 +58,33 @@ export function DayChip({
           `primary-content` on it is 6.42:1 in both themes.
           Every number gets the circle's height, so the row keeps its
           height whichever chip carries it; only the circle is widened,
-          or every "Čt 1" spreads apart. */}
-      <span className={isToday ? 'font-bold text-[var(--tone-primary)]' : undefined}>{label}</span>{' '}
+          or every "Čt 1" spreads apart.
+          The circle fills only while today is the agenda's day. Filled
+          whatever was selected, today looked the same before and after a tap
+          on it — "when I go back to Friday, it doesn't change. How do I know
+          if I'm on Friday?" With another day picked it is a ring in the same
+          ink: still today, plainly not where you are. The week view selects
+          nothing (`isSelected` undefined) and keeps the fill. A ring is a
+          box-shadow, so the circle keeps its size and the row its height;
+          `--tone-primary`, not `primary`, because lime on the light theme is
+          under 3:1 for a mark. */}
+      <span
+        className={
+          isToday
+            ? `text-[var(--tone-primary)] ${todayFilled ? 'font-bold' : 'font-semibold'}`
+            : undefined
+        }
+      >
+        {label}
+      </span>{' '}
       <span
         data-testid={isToday ? 'day-chip-today' : undefined}
         className={`inline-flex h-6 items-center justify-center rounded-full tabular-nums max-[359px]:h-5 ${
-          isToday
-            ? 'min-w-6 bg-primary px-1 font-bold text-primary-content max-[359px]:min-w-5'
-            : ''
+          !isToday
+            ? ''
+            : todayFilled
+              ? 'min-w-6 bg-primary px-1 font-bold text-primary-content max-[359px]:min-w-5'
+              : 'min-w-6 px-1 font-semibold text-[var(--tone-primary)] ring-[1.5px] ring-inset ring-[var(--tone-primary)] max-[359px]:min-w-5'
         }`}
       >
         {date.getDate()}
