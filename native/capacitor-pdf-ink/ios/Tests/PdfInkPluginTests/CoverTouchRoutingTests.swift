@@ -170,4 +170,46 @@ final class CoverTouchRoutingTests: XCTestCase {
 
         XCTAssertFalse(overlay.hitTest(CGPoint(x: 150, y: 140), with: nil) === overlay.coverLayer)
     }
+
+    /// The hold sits on the overlay, like the tape's drag: a finger beside a
+    /// thin strip lands on the canvas, never on the cover layer, so a hold on
+    /// the layer could not see it (Dominik, 2026-10-09: "cannot be removed
+    /// when too small").
+    func testTheHoldSitsOnTheOverlay() {
+        let overlay = overlay()
+
+        XCTAssertTrue(overlay.gestureRecognizers?.contains(overlay.coverLayer.holdRecognizer) ?? false)
+    }
+
+    /// Which strip a hold is about. A finger that does not draw reaches a thin
+    /// strip from beside it; the Pencil, and a finger that draws, only on it —
+    /// ink written next to a strip must stay ink.
+    func testOnlyAFingerThatDoesNotDrawReachesAStripFromBesideIt() {
+        let overlay = overlay()
+        let layer = overlay.coverLayer
+        layer.covers = [PageCover(id: "strip", rect: CGRect(x: 100, y: 100, width: 200, height: 8))]
+        let beside = CGPoint(x: 150, y: 116)
+        let on = CGPoint(x: 150, y: 104)
+
+        XCTAssertEqual(layer.heldCover(at: beside, by: .direct), "strip")
+        XCTAssertNil(layer.heldCover(at: beside, by: .pencil))
+        XCTAssertEqual(layer.heldCover(at: on, by: .pencil), "strip")
+        XCTAssertNil(layer.heldCover(at: CGPoint(x: 150, y: 300), by: .direct), "bare page is not a hold")
+
+        layer.fingerDraws = { true }
+        XCTAssertNil(layer.heldCover(at: beside, by: .direct))
+        XCTAssertEqual(layer.heldCover(at: on, by: .direct), "strip")
+    }
+
+    /// Arranging pictures turns the layer off; the hold, now on the overlay,
+    /// has to go off with it or a hold near a strip would carry it.
+    func testAnInertLayerHoldsNothing() {
+        let overlay = overlay()
+        overlay.coverLayer.isUserInteractionEnabled = false
+
+        XCTAssertFalse(overlay.coverLayer.holdRecognizer.isEnabled)
+
+        overlay.coverLayer.isUserInteractionEnabled = true
+        XCTAssertTrue(overlay.coverLayer.holdRecognizer.isEnabled)
+    }
 }

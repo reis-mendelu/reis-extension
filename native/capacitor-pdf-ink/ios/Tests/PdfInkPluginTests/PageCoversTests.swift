@@ -67,4 +67,34 @@ final class PageCoversTests: XCTestCase {
         XCTAssertEqual(PageCovers.cover(at: CGPoint(x: 80, y: 80), in: [big, small])?.id, "big")
         XCTAssertNil(PageCovers.cover(at: CGPoint(x: 500, y: 500), in: [big, small]))
     }
+
+    /// "Cannot be removed when too small" — Dominik, 2026-10-09: a finger held
+    /// on a strip missed it. A strip can be 8 pt, a fingertip ~44: the hold
+    /// landed beside it. A finger near enough a thin strip means that strip.
+    func testAFingerBesideAThinStripFindsIt() {
+        let strip = PageCover(id: "strip", rect: CGRect(x: 10, y: 97, width: 200, height: 8))
+
+        XCTAssertEqual(PageCovers.cover(near: CGPoint(x: 100, y: 115), in: [strip], reach: 44)?.id, "strip")
+        XCTAssertEqual(PageCovers.cover(near: CGPoint(x: 100, y: 80), in: [strip], reach: 44)?.id, "strip")
+        XCTAssertNil(PageCovers.cover(near: CGPoint(x: 100, y: 130), in: [strip], reach: 44))
+        // Past the ends too, for a short one.
+        let short = PageCover(id: "short", rect: CGRect(x: 100, y: 100, width: 6, height: 8))
+        XCTAssertEqual(PageCovers.cover(near: CGPoint(x: 120, y: 104), in: [short], reach: 44)?.id, "short")
+    }
+
+    /// Only what is thinner than a fingertip reaches further: a block already
+    /// that size is held where it is, so the page beside it stays the page's.
+    func testABigCoverReachesNoFurtherThanItsEdge() {
+        XCTAssertNil(PageCovers.cover(near: CGPoint(x: 105, y: 50), in: [big], reach: 44))
+    }
+
+    func testOnAStripItselfTheOneOnTopWinsAndBesideTwoTheNearerOne() {
+        let upper = PageCover(id: "upper", rect: CGRect(x: 0, y: 100, width: 200, height: 8))
+        let lower = PageCover(id: "lower", rect: CGRect(x: 0, y: 120, width: 200, height: 8))
+        let over = PageCover(id: "over", rect: CGRect(x: 50, y: 100, width: 20, height: 8))
+
+        XCTAssertEqual(PageCovers.cover(near: CGPoint(x: 60, y: 104), in: [upper, over], reach: 44)?.id, "over")
+        XCTAssertEqual(PageCovers.cover(near: CGPoint(x: 150, y: 111), in: [upper, lower], reach: 44)?.id, "upper")
+        XCTAssertEqual(PageCovers.cover(near: CGPoint(x: 150, y: 117), in: [upper, lower], reach: 44)?.id, "lower")
+    }
 }
