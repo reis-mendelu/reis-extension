@@ -27,7 +27,8 @@ export const EDGE_GUARD_PX = 20;
  */
 export const SCROLLER_MIN_OVERFLOW_PX = 8;
 
-const TEXT_FIELD = 'input, textarea, select, [contenteditable="true"]';
+// An empty `contenteditable` means "true", and "plaintext-only" edits too.
+const TEXT_FIELD = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
 
 function scrollsSideways(el: Element): boolean {
   const { overflowX } = getComputedStyle(el);

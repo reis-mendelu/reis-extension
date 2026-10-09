@@ -89,4 +89,21 @@ describe('swipeStartIsOffLimits', () => {
     scroller.appendChild(input);
     expect(swipeStartIsOffLimits(input, root, 200, WIDTH)).toBe(true);
   });
+
+  // An empty `contenteditable` attribute means "true", and "plaintext-only" is
+  // editable too; only "false" switches editing off.
+  it.each([
+    ['', true],
+    ['true', true],
+    ['plaintext-only', true],
+    ['false', false],
+  ])('treats contenteditable="%s" as a text field: %s', (value, blocked) => {
+    const { root, scroller } = build();
+    const host = document.createElement('div');
+    host.setAttribute('contenteditable', value);
+    const word = document.createElement('span');
+    host.appendChild(word);
+    scroller.appendChild(host);
+    expect(swipeStartIsOffLimits(word, root, 200, WIDTH)).toBe(blocked);
+  });
 });
