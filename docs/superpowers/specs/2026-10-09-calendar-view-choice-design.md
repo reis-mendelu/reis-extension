@@ -70,9 +70,14 @@ Rules:
 - Demo mode counts as saved, as it does for the pull hint, so reviewers and the
   demo see a clean calendar.
 
-While the panel is open it covers the lower rows of the week grid; the grid
-still scrolls underneath. Accepted — the student is comparing, not reading the
-afternoon.
+- **Only over the real timetable.** The panel shows in the day and week views,
+  never over the skeleton or the error state — a first sign-in spends minutes
+  on the skeleton, and "try both on your own timetable" means nothing there.
+
+While the panel is open, the agenda and the week grid reserve its band at the
+bottom. The week grid never scrolls (it stretches to the height there is), so it
+compresses to fit above the panel rather than sliding under it; the whole week
+stays visible while the student compares.
 
 On Uložit the panel disappears and a toast (shared sonner wrapper) says
 **"Uloženo. Změníš to v Profilu → Nastavení."** It never claims the view can be
