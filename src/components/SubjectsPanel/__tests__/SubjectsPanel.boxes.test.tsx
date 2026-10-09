@@ -68,7 +68,11 @@ describe('SubjectsPanel — odevzdávárny', () => {
   // and the button stays outside it, pinned under it.
   it('keeps Studijní plán outside a middle block that scrolls when space runs out', () => {
     render(
-      <SubjectsPanel onOpenSubject={() => {}} onSearchSubject={() => {}} onOpenStudyPlan={() => {}} />
+      <SubjectsPanel
+        onOpenSubject={() => {}}
+        onSearchSubject={() => {}}
+        onOpenStudyPlan={() => {}}
+      />
     );
     const middle = screen.getByTestId('submission-boxes-summary').closest('.overflow-y-auto');
     expect(middle).not.toBeNull();
