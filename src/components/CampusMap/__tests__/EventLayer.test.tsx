@@ -77,6 +77,8 @@ beforeEach(() => {
     draftCoord: null,
     adminAssociationId: null,
     adminActiveAssociationId: null,
+    // The store's clock is shared across tests; a test below moves it.
+    now: new Date(),
   });
   setMapInstance(fakeMap);
 });
@@ -376,5 +378,46 @@ describe('EventLayer', () => {
     });
     render(<EventLayer />);
     expect(paneEl.querySelectorAll('button').length).toBe(2);
+  });
+  /**
+   * A map left open across midnight. The soon filter used to be memoized on
+   * the event list alone and read `new Date()` inside, so it froze at whatever
+   * day the list last changed: yesterday's event kept its pin, and an event
+   * that had just come inside the 14-day horizon stayed off the map. The
+   * store's clock (advanced by the pulse) is what moves it now.
+   */
+  it('re-filters the pins when the store clock crosses midnight', () => {
+    const at = (id: string, title: string, date: string) => ({
+      id,
+      title,
+      url: '',
+      date,
+      endDate: null,
+      time: null,
+      location: null,
+      imageUrl: null,
+      organizerKey: 'pef' as const,
+      societyId: 'supef',
+      coord: [16.61, 49.21] as [number, number],
+      roomCode: null,
+      venueKind: 'offcampus' as const,
+      category: 'party' as const,
+    });
+    useAppStore.setState({
+      now: new Date(2026, 9, 9, 23, 59),
+      mapEvents: [
+        at('today', 'Tonight', '2026-10-09'),
+        // Day 14 from 9 October: just outside the horizon, inside it tomorrow.
+        at('edge', 'Edge', '2026-10-23'),
+      ],
+    });
+    render(<EventLayer />);
+    expect(paneEl.querySelector('button[title="Tonight"]')).toBeTruthy();
+    expect(paneEl.querySelector('button[title="Edge"]')).toBeNull();
+    act(() => {
+      useAppStore.setState({ now: new Date(2026, 9, 10, 0, 1) });
+    });
+    expect(paneEl.querySelector('button[title="Tonight"]')).toBeNull();
+    expect(paneEl.querySelector('button[title="Edge"]')).toBeTruthy();
   });
 });
