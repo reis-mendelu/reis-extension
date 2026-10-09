@@ -41,6 +41,7 @@ export function usePdfInkStrings(): () => PdfInkStrings {
       done: t('mobile.pdfInk.done'),
       cover: t('mobile.pdfInk.cover'),
       deleteTape: t('mobile.pdfInk.deleteTape'),
+      tapeHint: t('mobile.pdfInk.tapeHint'),
     }),
     [t]
   );

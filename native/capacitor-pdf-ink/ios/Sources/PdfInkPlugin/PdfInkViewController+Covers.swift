@@ -28,6 +28,7 @@ extension PdfInkViewController {
         makingCovers = CoverTool.isSelected(in: toolPicker)
         NSLog("PdfInk: tape \(makingCovers ? "picked" : "put down")")
         refreshCoverLayers()
+        updateTapeHint()
     }
 
     func setCovers(_ list: [PageCover], onPage index: Int) {
@@ -39,6 +40,7 @@ extension PdfInkViewController {
             self?.setCovers(before, onPage: index)
         }
         persistNow()
+        updateTapeHint()
     }
 
     func addCover(_ rect: CGRect, onPage index: Int) {

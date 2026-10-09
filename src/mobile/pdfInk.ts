@@ -73,6 +73,8 @@ export interface PdfInkStrings {
   cover: string;
   /** The menu entry a finger held on a strip offers. */
   deleteTape: string;
+  /** Shown when the tape is picked in a file with none yet: what it is for. */
+  tapeHint: string;
 }
 
 export interface PdfInkPlugin {
