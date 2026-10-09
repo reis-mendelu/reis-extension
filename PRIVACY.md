@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: September 25, 2026**
+**Last Updated: October 9, 2026**
 
 ## Introduction
 reIS ("we", "our", or "us") is a Chrome extension designed to modernize and enhance the user experience of the Mendel University Information System (IS Mendelu). We are committed to protecting your privacy and ensuring the security of your data.
@@ -16,7 +16,7 @@ We fetch and store the following information directly from MENDELU services to y
 
 This data is stored **locally on your device** using highly efficient storage (IndexedDB) and is **never** transmitted to our servers — with one exception: the daily usage count (section 3) carries two group labels taken from your study details, your faculty and your study programme's base code.
 
-There is no longer any exception to that. Library study-room booking — the one feature that ever relayed your name, university email and student ID onwards — was removed in September 2026, together with the server route that carried it.
+Nothing else of it is ever sent: no name, email, student ID, grade or timetable. Library study-room booking — the one feature that ever relayed your name, university email and student ID onwards — was removed in September 2026, together with the server route that carried it.
 
 ### 2. Anonymous Usage Analytics
 We collect anonymous usage data to improve the extension:
