@@ -60,8 +60,9 @@ final class PdfInkViewController: UIViewController, PDFPageOverlayViewProvider,
     /// The pictures on each page, in stacking order — like `drawings`, the
     /// source of truth; the layers only show them. See `+Pictures`.
     var pictures: [Int: [PagePicture]] = [:]
-    /// Blocks over answers, per page, made with the tape (`+Covers`).
-    var covers: [Int: [PageCover]] = [:]
+    /// Blocks over answers, per page, made with the tape (`+Covers`). A file
+    /// switch changes them too, with the tape still in hand: the hint follows.
+    var covers: [Int: [PageCover]] = [:] { didSet { updateTapeHint() } }
     /// Which covers are open right now. Never saved: a file reopens with them shut.
     var revealedCovers: Set<String> = []
     /// The tape is the palette's selected tool: strokes make covers, not ink.

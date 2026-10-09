@@ -59,7 +59,8 @@ enum PageCovers {
     /// already `reach` wide reaches no further than its edge.
     static func cover(near point: CGPoint, in covers: [PageCover], reach: CGFloat) -> PageCover? {
         if let on = cover(at: point, in: covers) { return on }
-        return covers
+        // Newest first, so a tie goes to the strip on top, as on a strip itself.
+        return covers.reversed()
             .filter { grown($0.rect, to: reach).contains(point) }
             .min { distance(from: point, to: $0.rect) < distance(from: point, to: $1.rect) }
     }

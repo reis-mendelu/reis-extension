@@ -96,5 +96,8 @@ final class PageCoversTests: XCTestCase {
         XCTAssertEqual(PageCovers.cover(near: CGPoint(x: 60, y: 104), in: [upper, over], reach: 44)?.id, "over")
         XCTAssertEqual(PageCovers.cover(near: CGPoint(x: 150, y: 111), in: [upper, lower], reach: 44)?.id, "upper")
         XCTAssertEqual(PageCovers.cover(near: CGPoint(x: 150, y: 117), in: [upper, lower], reach: 44)?.id, "lower")
+        // Exactly between two: the one on top, as on a strip itself.
+        XCTAssertEqual(PageCovers.cover(near: CGPoint(x: 150, y: 114), in: [upper, lower], reach: 44)?.id, "lower")
+        XCTAssertEqual(PageCovers.cover(near: CGPoint(x: 150, y: 114), in: [lower, upper], reach: 44)?.id, "upper")
     }
 }

@@ -24,6 +24,7 @@ extension PdfInkViewController {
     /// Shown while the tape is in hand in a file with no tape yet, for a few
     /// seconds at most.
     func updateTapeHint() {
+        guard isViewLoaded else { return }
         let show = makingCovers && !hasCovers
         guard show != !tapeHint.isHidden else { return }
         tapeHint.isHidden = !show

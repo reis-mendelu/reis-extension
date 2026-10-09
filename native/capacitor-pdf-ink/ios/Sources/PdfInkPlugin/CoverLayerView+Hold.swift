@@ -55,6 +55,9 @@ extension CoverLayerView: UIEditMenuInteractionDelegate {
             holdStart = nil
             carriedRect = nil
         default:
+            // Cancelled — arranging pictures turns the hold off mid-press —
+            // so the menu it put up goes with it.
+            deleteMenuInteraction.dismissMenu()
             heldCoverID = nil
             holdStart = nil
             carriedRect = nil

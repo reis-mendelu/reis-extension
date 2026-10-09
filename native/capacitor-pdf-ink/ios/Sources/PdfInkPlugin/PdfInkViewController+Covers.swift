@@ -40,7 +40,6 @@ extension PdfInkViewController {
             self?.setCovers(before, onPage: index)
         }
         persistNow()
-        updateTapeHint()
     }
 
     func addCover(_ rect: CGRect, onPage index: Int) {

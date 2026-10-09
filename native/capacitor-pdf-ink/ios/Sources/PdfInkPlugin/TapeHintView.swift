@@ -29,7 +29,13 @@ final class TapeHintView: UIView {
         layer.cornerRadius = 12
         layer.cornerCurve = .continuous
         layer.borderWidth = 1
-        layer.borderColor = UIColor.separator.cgColor
+        resolveBorder()
+        // A CGColor does not follow the appearance; re-resolve it when it changes.
+        if #available(iOS 17.0, *) {
+            registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (view: TapeHintView, _) in
+                view.resolveBorder()
+            }
+        }
         label.font = .preferredFont(forTextStyle: .subheadline)
         label.adjustsFontForContentSizeCategory = true
         label.textColor = .label
@@ -46,4 +52,13 @@ final class TapeHintView: UIView {
     }
 
     required init?(coder: NSCoder) { fatalError("TapeHintView is code-only") }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        resolveBorder()
+    }
+
+    private func resolveBorder() {
+        layer.borderColor = UIColor.separator.resolvedColor(with: traitCollection).cgColor
+    }
 }
