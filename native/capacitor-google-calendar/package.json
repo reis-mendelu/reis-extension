@@ -1,0 +1,16 @@
+{
+  "name": "@reis/capacitor-google-calendar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "iOS half of the Google Calendar sync: GoogleSignIn sign-in and 1-hour tokens only (the sync itself is TypeScript). A local Capacitor plugin package, not published; the Android half is android/app/src/main/java/cz/reis/app/GoogleCalendarPlugin.java.",
+  "license": "Apache-2.0",
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    }
+  },
+  "files": [
+    "ios/Sources",
+    "Package.swift"
+  ]
+}

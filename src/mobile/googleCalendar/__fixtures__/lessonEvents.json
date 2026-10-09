@@ -1,0 +1,143 @@
+[
+  {
+    "name": "cz lecture",
+    "lang": "cz",
+    "lesson": {
+      "date": "20261012",
+      "startTime": "09:00",
+      "endTime": "10:50",
+      "isSeminar": "false",
+      "teachers": ["doc. Jan Novák"],
+      "courseNameCs": "Ekonomie I",
+      "courseNameEn": "Ekonomie I",
+      "roomCs": "Q01",
+      "roomEn": "Q01",
+      "id": "123",
+      "courseName": "Ekonomie I",
+      "room": "Q01"
+    },
+    "expected": {
+      "id": "l313110ccuq60hriu375tasg9nth2bgnlgg7ec6n389n5t6c577fg",
+      "hash": "5049aa3085ecfd1c",
+      "body": {
+        "id": "l313110ccuq60hriu375tasg9nth2bgnlgg7ec6n389n5t6c577fg",
+        "summary": "Ekonomie I – přednáška",
+        "location": "Q01",
+        "description": "doc. Jan Novák\nreIS",
+        "start": {
+          "dateTime": "2026-10-12T09:00:00",
+          "timeZone": "Europe/Prague"
+        },
+        "end": {
+          "dateTime": "2026-10-12T10:50:00",
+          "timeZone": "Europe/Prague"
+        },
+        "reminders": {
+          "useDefault": false,
+          "overrides": []
+        },
+        "extendedProperties": {
+          "private": {
+            "reisKind": "lesson",
+            "reisHash": "5049aa3085ecfd1c",
+            "reisV": "1"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "en seminar, EN name and room differ, two teachers",
+    "lang": "en",
+    "lesson": {
+      "date": "20261013",
+      "startTime": "13:00",
+      "endTime": "14:50",
+      "isSeminar": "true",
+      "teachers": ["A B", "C D"],
+      "courseNameCs": "Ekonomie I",
+      "courseNameEn": "Economics I",
+      "roomCs": "Q02",
+      "roomEn": "Q02 (EN)",
+      "id": "124",
+      "courseName": "Ekonomie I",
+      "room": "Q02"
+    },
+    "expected": {
+      "id": "l6h0gs566tmh1el07utd6fsrre3b62coaog040qaqutjhlhel7ji0",
+      "hash": "de2a5cd12b5c86f1",
+      "body": {
+        "id": "l6h0gs566tmh1el07utd6fsrre3b62coaog040qaqutjhlhel7ji0",
+        "summary": "Economics I – seminar",
+        "location": "Q02 (EN)",
+        "description": "A B, C D\nreIS",
+        "start": {
+          "dateTime": "2026-10-13T13:00:00",
+          "timeZone": "Europe/Prague"
+        },
+        "end": {
+          "dateTime": "2026-10-13T14:50:00",
+          "timeZone": "Europe/Prague"
+        },
+        "reminders": {
+          "useDefault": false,
+          "overrides": []
+        },
+        "extendedProperties": {
+          "private": {
+            "reisKind": "lesson",
+            "reisHash": "de2a5cd12b5c86f1",
+            "reisV": "1"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "no teacher, no room, diacritics",
+    "lang": "cz",
+    "lesson": {
+      "date": "20270301",
+      "startTime": "07:00",
+      "endTime": "08:50",
+      "isSeminar": "false",
+      "teachers": [],
+      "courseNameCs": "Účetnictví – úvod",
+      "courseNameEn": "Účetnictví – úvod",
+      "roomCs": "",
+      "roomEn": "",
+      "id": "9",
+      "courseName": "Účetnictví – úvod",
+      "room": ""
+    },
+    "expected": {
+      "id": "lu6omc8ac2r3l5see7uc4lta195lssk92ll1lriklu600ueb40lr0",
+      "hash": "5d7ff9512454f0b5",
+      "body": {
+        "id": "lu6omc8ac2r3l5see7uc4lta195lssk92ll1lriklu600ueb40lr0",
+        "summary": "Účetnictví – úvod – přednáška",
+        "location": "",
+        "description": "reIS",
+        "start": {
+          "dateTime": "2027-03-01T07:00:00",
+          "timeZone": "Europe/Prague"
+        },
+        "end": {
+          "dateTime": "2027-03-01T08:50:00",
+          "timeZone": "Europe/Prague"
+        },
+        "reminders": {
+          "useDefault": false,
+          "overrides": []
+        },
+        "extendedProperties": {
+          "private": {
+            "reisKind": "lesson",
+            "reisHash": "5d7ff9512454f0b5",
+            "reisV": "1"
+          }
+        }
+      }
+    }
+  }
+]

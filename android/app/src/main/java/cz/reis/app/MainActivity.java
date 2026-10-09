@@ -12,6 +12,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(DownloadsPlugin.class);
         registerPlugin(EduroamPlugin.class);
+        registerPlugin(GoogleCalendarPlugin.class);
         registerPlugin(SecureStorePlugin.class);
         super.onCreate(savedInstanceState);
         // Android 15+ draws the app edge-to-edge on its own (targetSdk 36), so

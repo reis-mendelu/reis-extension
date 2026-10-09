@@ -1362,7 +1362,24 @@
       "cover": "Tape",
       "deleteTape": "Delete tape"
     },
-    "openingLink": "Opening…"
+    "openingLink": "Opening…",
+    "gcal": {
+      "row": "Google Calendar",
+      "rowOff": "Timetable, exams and your own events",
+      "rowOn": "Synced {time}",
+      "connect": "Turn on sync",
+      "explain": "reIS creates a \"Rozvrh\" calendar in your Google account and updates it every time you open reIS. It never reads or changes events in your other calendars.",
+      "account": "Account: {email}",
+      "open": "Open in Google Calendar",
+      "progress": "Syncing {done}/{total}",
+      "progressHint": "You can close this, the sync keeps going. If you leave reIS, it finishes the next time you open it.",
+      "off": "Turn off sync",
+      "offHint": "The Rozvrh calendar stays in your Google account; it just stops updating.",
+      "revoked": "Access to Google Calendar was removed.",
+      "gone": "The Rozvrh calendar was deleted in Google, so sync is off.",
+      "failed": "Sync failed. I’ll try again.",
+      "scopeMissing": "Google didn’t give reIS access to the calendar. Try again and leave the boxes ticked."
+    }
   },
   "session": {
     "expired": "Your IS session has expired.",

@@ -219,6 +219,19 @@ export interface EduroamSlice {
   openEduroamFor: (target: 'mac' | 'windows') => void;
 }
 
+export interface GoogleCalendarSlice {
+  gcal: {
+    available: boolean;
+    connected: boolean;
+    email: string | null;
+    syncing: boolean;
+    progress: { done: number; total: number } | null;
+    lastSyncAt: number | null;
+    notice: 'calendarGone' | 'revoked' | 'failed' | 'scopeMissing' | null;
+  };
+  setGcal: (patch: Partial<GoogleCalendarSlice['gcal']>) => void;
+}
+
 export interface DocumentsSlice {
   isDocumentsOpen: boolean;
   setIsDocumentsOpen: (open: boolean) => void;
@@ -391,6 +404,8 @@ export interface ContextSlice {
 
 export interface CalendarCustomEventsSlice {
   customEvents: CalendarCustomEvent[];
+  /** True once loadCalendarCustomEvents has read storage; [] before that means "not yet". */
+  customEventsLoaded: boolean;
   loadCalendarCustomEvents: () => Promise<void>;
   addCalendarCustomEvent: (event: CalendarCustomEvent) => Promise<void>;
   updateCalendarCustomEvent: (id: string, patch: Partial<CalendarCustomEvent>) => Promise<void>;
@@ -482,6 +497,8 @@ export type MobileSheet =
   // reason to fetch a profile just to label an image.
   | { kind: 'personPhoto'; personId: string; name: string }
   | { kind: 'eduroam' }
+  // Phone/iPad only: the Rozvrh → Google Calendar sync (spec 2026-10-08).
+  | { kind: 'googleCalendar' }
   | { kind: 'docs' }
   // reIS admins only: "view as a student" of another programme.
   | { kind: 'impersonation' }
@@ -700,6 +717,7 @@ export type AppState = ScheduleSlice &
   SuccessRateSlice &
   SimilarSubjectsSlice &
   EduroamSlice &
+  GoogleCalendarSlice &
   DocumentsSlice &
   FeedbackSlice &
   StudyPlanSlice &

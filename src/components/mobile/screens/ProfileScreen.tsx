@@ -1,9 +1,18 @@
 import { useState } from 'react';
-import { Wifi, FileText, MessageSquarePlus, LogOut, UserCog, ShieldCheck } from 'lucide-react';
+import {
+  Wifi,
+  FileText,
+  MessageSquarePlus,
+  LogOut,
+  UserCog,
+  ShieldCheck,
+  CalendarSync,
+} from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { HiddenItemsSection } from '../../Sidebar/Profile/HiddenItemsSection';
 import { SignOutConfirm } from '../sheets/SignOutConfirm';
+import { syncTimeLabel } from '../../../mobile/googleCalendar/syncTimeLabel';
 import { AboutSection } from './profile/AboutSection';
 import { ProfileIdentity } from './profile/ProfileIdentity';
 import { NavRow } from '../primitives/NavRow';
@@ -29,6 +38,9 @@ export function ProfileScreen() {
   const [signOutOpen, setSignOutOpen] = useState(false);
 
   const isReisAdmin = useAppStore((s) => s.adminRole === 'reis_admin');
+  const gcal = useAppStore((s) => s.gcal);
+  const language = useAppStore((s) => s.language);
+  const gcalTime = syncTimeLabel(gcal.lastSyncAt, language);
   // Signed in to the console on this device (held the name once): keep a way back.
   const hasAdminSession = useAppStore((s) => s.adminSession !== null);
   const openSocietyAdmin = useAppStore((s) => s.openSocietyAdmin);
@@ -67,6 +79,22 @@ export function ProfileScreen() {
             sublabel={t('mobile.student.eduroamSub')}
             onClick={() => pushSheet({ kind: 'eduroam' })}
           />
+          {/* Beside eduroam: another one-time connection to set up. Hidden where
+            the native half says Google sign-in can't work (no Play Services). */}
+          {gcal.available && (
+            <NavRow
+              icon={CalendarSync}
+              label={t('mobile.gcal.row')}
+              sublabel={
+                gcal.syncing && gcal.progress
+                  ? t('mobile.gcal.progress', gcal.progress)
+                  : gcal.connected && gcalTime
+                    ? t('mobile.gcal.rowOn', { time: gcalTime })
+                    : t('mobile.gcal.rowOff')
+              }
+              onClick={() => pushSheet({ kind: 'googleCalendar' })}
+            />
+          )}
           {/* Dokumenty was the last card on the Student hub. The hub's IS page
             directory is gone from the phone tree (every link opened the system
             browser, which has no IS session), so the card follows eduroam here

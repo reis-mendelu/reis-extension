@@ -10,6 +10,7 @@ import { resolveNativeEduroamSupport } from '@/mobile/eduroamNative';
 import { installMobileActionHandler } from '@/mobile/actionHandler';
 import { installExternalLinkHandler } from '@/mobile/openExternal';
 import { installCalendarResumeReset } from '@/mobile/calendarResume';
+import { installGoogleCalendarSync } from '@/mobile/googleCalendar/installGoogleCalendarSync';
 import { promptSessionRecovery } from '@/mobile/sessionRecovery';
 import { setSessionExpiredHandler } from '@/services/sessionExpiry';
 import { setDemoErrorHandler } from '@/utils/reportError';
@@ -98,6 +99,11 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // Before the demo return: the reviewer's calendar goes back to today on a
   // reopen too. Nothing above sets the calendar's day, so nothing races it.
   installCalendarResumeReset();
+  // Beside it, for the same reason: a resume is one of its triggers. It shows
+  // the Profil row's state and syncs "Rozvrh" while the app is open. Not in the
+  // demo: the reviewer's demo must not reach a real Google account, so the row
+  // stays hidden there (gcal.available stays false).
+  if (!demo) installGoogleCalendarSync();
 
   // Demo data is seeded, static and complete. Syncing would only produce
   // failed IS requests, and fetchWithAuth throws DemoModeError anyway.

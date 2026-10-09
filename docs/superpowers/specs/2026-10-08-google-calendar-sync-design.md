@@ -1,0 +1,430 @@
+# Timetable → Google Calendar sync
+
+Date: 2026-10-08. Scope: the **phone/iPad tree only** (iOS + Android apps). The
+extension deliberately gets nothing; see "Trees".
+
+Request: Návrhy #29 (iOS 5.3.0, 5 Oct), *"Jestli je možné přidat si rozvrh nějak do
+kalendáře v telefonu"*.
+
+## Decisions (Dominik, 2026-10-08)
+
+| Question | Answer |
+| --- | --- |
+| Target | **Google Calendar**, via the Google Calendar API. Outlook/O365 is out ("nobody uses that"). |
+| Rejected routes | A one-time **.ics** file, and writing to the **device calendar** (EventKit / CalendarContract): "nobody uses those". It must be **one-click sync**. |
+| Updates | **v1 syncs only while reIS is open**: on open, on resume, and whenever reIS notices a change. Revised by Dominik the evening of 2026-10-08; the morning answer was "must happen in the background". Background sync is **phase 2**, built only if staleness turns out to matter. See "Phase 2" for why. |
+| No IS session | No sync. That is expected (the IS session lasts 2–4 weeks on the phone). |
+| Which tree | **Phone and iPad only.** No extension, no desktop. |
+| Contents | Lessons, **exams** and **custom events**. |
+| Calendar | reIS creates its own calendar, **"Rozvrh"**, in the student's Google account. |
+| History | The first fill writes everything reIS has. After that, **events before today are never touched**, so past semesters and years stay in Google. |
+| Placement | A row in the phone **profile sheet** (where the removed Outlook toggle was). |
+| Turning off | **On and off only.** Off revokes access and keeps "Rozvrh" in Google; no delete-the-calendar option. |
+| Multiple devices | Option A: also request `calendar.calendarlist.readonly`, so a second device finds the same "Rozvrh". |
+| Google identity | **reis.mendelu@gmail.com** owns the Google Cloud project and its OAuth clients. Never a personal account. Each student's "Rozvrh" belongs to that student's own Google account; the project never sees it. |
+| Edits in Google | **The student wins** (option B, 2026-10-08). A lesson they delete in Google stays deleted, even if IS later changes it. One they move or edit stays as they left it until IS actually changes that lesson; then IS overwrites it. Only events reIS itself deleted are restored. |
+
+## Why not the other routes (kept so they aren't re-proposed)
+
+- **reIS-hosted ICS subscription URL:** reIS never hosts or relays student data.
+- **IS Mendelu's own feed:** IS has no iCal export. Its timetable page offers only HTML,
+  a list view and PDF.
+- **IS → Office 365 → published ICS → Google subscription:** IS does push lessons and
+  exams to O365 server-side (`/auth/ca/konfigurace_prenosu_udalosti.pl`). But Outlook is
+  out, and it isn't one click.
+- **Extension sync:**
+  - `getAuthToken` works only in Chrome.
+  - Edge, Firefox and Brave need `launchWebAuthFlow`, which with no client secret gives an
+    hour-long token and no refresh.
+  - A secret means a relay server. That was the design of the Google Drive backup removed
+    in `27dc1c326`.
+- **Device calendar:** rejected by Dominik. Also, an Android calendar that an app
+  *creates* is `ACCOUNT_TYPE_LOCAL` and never syncs to Google (verified in
+  `@capacitor/calendar` 1.0.1, `Calendar.kt:210`).
+
+## Facts verified on 2026-10-08
+
+On the **Pixel 9a**: signed release build, the app's process killed with `am kill`, then
+the work run from a background job. The spike code was reverted; nothing from it is
+committed.
+
+1. **One Android OAuth client is enough** (package `cz.reis.app` + SHA-1). There is no
+   Web client and no client ID in code. Google matches the app by signature, and the
+   consent screen showed "reIS".
+2. **`AuthorizationClient.authorize()`** called with the **application context** in a new
+   background process returns a token silently (`hasResolution=false`). Same pattern as
+   goodtime and octi, which are open source.
+3. **Use a plain `JobService`, not WorkManager.**
+   - WorkManager ran the work in-process, outside the JobScheduler job. JobScheduler
+     logged "app called jobFinished" within 50 ms.
+   - About 5 s later the firewall moved the app from `background-allow` to
+     `background-default`, and the request died with
+     `SocketException: Software caused connection abort`.
+   - A plain `JobService` with `NETWORK_TYPE_ANY` kept the network for the whole run.
+4. **Phone settings defer the job:** Battery Saver, including the *adaptive* one Android
+   turns on at low battery (`force_all_apps_standby`), and "Background data" off for reIS
+   (`REJECT_METERED_BACKGROUND`). Nothing is lost; the job runs later.
+5. **Calendar API under `calendar.app.created`:**
+   - `calendars.insert` 200, `calendars.get` by id 200;
+   - **`calendarList.list` 403**;
+   - an event with a client-chosen `id`: 200; the same id again: 409;
+   - the `privateExtendedProperty` filter works;
+   - **a deleted event's id stays reserved:** re-insert gives 409, and `PUT` with
+     `status: confirmed` brings it back (200).
+6. **Scope classification**, read from the reIS project's Data access page:
+   - **non-sensitive:** `calendar.app.created`, `calendar.calendarlist.readonly`,
+     `drive.appdata`;
+   - **sensitive:** `calendar.events`, `calendar.events.owned`, `calendar.calendars`,
+     `calendar.calendars.readonly`.
+   - With only non-sensitive scopes, the app needs no sensitive-scope review and has no
+     100-user cap.
+7. **iOS keychain:** GTMAppAuth 6.0, GoogleSignIn's token store, keeps tokens
+   `AfterFirstUnlockThisDeviceOnly` "to allow background access".
+8. **Timetable data is JSON** (`rozvrhy_view.pl?format=json`), so the background job needs
+   no DOM. The exam parser does need `DOMParser`.
+9. **`calendar.app.created` is scoped per *project*, not per OAuth client** (plan Task 1).
+   - Two throwaway Desktop clients in reis-479320, one Google account, each with its own
+     consent and token. Client B was granted `calendar.app.created` only.
+   - Client A created a calendar and an event in it. Client B then got the calendar (200),
+     listed its events (200), `PUT` an edit to A's event (200), inserted its own event
+     (200) and deleted it (204). A deleted the calendar (204).
+   - With `calendar.calendarlist.readonly` added, `calendarList.list?minAccessRole=owner`
+     returned 200 and listed the app's calendar (the probe found and deleted an orphan from
+     a failed first run that way), so a second device can find "Rozvrh".
+   - So the iOS client, the Play-signing client and the upload-key client share one
+     "Rozvrh". No sensitive scope and no per-device calendar are needed.
+
+10. **iOS spike on the cabled iPad** (release configuration, development-signed so lldb can
+    attach; branch `spike/ios-gcal`, never merged):
+    - GoogleSignIn-iOS 10.0.0 with an **iOS** OAuth client (bundle `cz.reis.app`, no secret)
+      signs in. Google's sheet says "Sign in to continue to **reIS**".
+    - The system prompt before it says **"App" Wants to Use "accounts.google.com"**. It
+      takes the bundle name (`$(PRODUCT_NAME)` = App), not `CFBundleDisplayName`. Set
+      `CFBundleName` to reIS.
+    - A non-test account (still Testing mode) gets "Access blocked … 403 access_denied".
+    - **Granular consent:** the student can untick a scope. Here only
+      `calendar.app.created` came back, without `calendarlist.readonly`. The app must check
+      the granted scopes after `connect` and ask again for what's missing.
+    - `AppDelegate` can `import GoogleCalendarPlugin`. The module is the SPM **target**
+      name, not the product name `ReisCapacitorGoogleCalendar`.
+    - For phase 2: a `BGAppRefreshTask` ran, `restorePreviousSignIn` worked without UI,
+      and the IS token in the secure store's keychain item was readable (status 0). With
+      **Background App Refresh off, iOS accepted `submit` without an error and then
+      dropped the request** ("No task request … has been scheduled"). A background refresh
+      of an *expired* Google token was not measured, because v1 dropped background sync
+      first.
+
+11. **Pixel 9a, release build, 2026-10-08 evening** (Dominik's own calendar account as a
+    test user; checked on Google's side through Calendar on the web):
+    - first fill: 136/136 lessons with title, room, teachers, "reIS" and no reminders;
+    - a lesson deleted in Google stayed deleted through two language switches and a
+      reconnect (option B);
+    - a language switch rewrote today and later only (110), the 25 past lessons untouched;
+    - turning off revoked the grant (the linked-apps entry disappeared) and kept "Rozvrh";
+      reconnecting reused that calendar, with no duplicate and nothing rewritten;
+    - Google's consent screen shows both calendar checkboxes **unticked by default**
+      (Dominik: no extra hint, students should notice);
+    - speed: one write at a time ran at about 2 events/s (~0.5 s each, pacing included);
+      with 8 in flight, 111 updates took ~30 s (~3.7/s), ~40 s with 4. So writes do run
+      in parallel, with diminishing returns past 4; an earlier note that each write takes
+      ~1.2 s and that one calendar's writes are serialized did not survive these numbers.
+
+12. **iPad 8 + Pixel 9a together, release builds, 2026-10-08 late evening:**
+    - the iPad created a fresh "Rozvrh" and filled 136/136, past included;
+    - the Pixel then connected with **no consent screen** (the grant is per project and
+      per account, so the iPad's covered it), found the same "Rozvrh", wrote nothing, and
+      Google still had exactly one calendar with 136 lessons;
+    - turning off on the Pixel revoked that shared grant; the iPad's next sync switched its
+      row off with "Přístup ke Google Kalendáři byl odebrán";
+    - found on the iPad and fixed before the run: a revoked grant left in the keychain was
+      reused by connect, so every connect would have ended in "access removed". connect now
+      refreshes a restored sign-in first, and a revoked sync forgets the local sign-in.
+
+**Still unverified:** whether GoogleSignIn works in the Mac ("Designed for iPad") build.
+It needs Dominik to start that build from Xcode; until then the row is hidden on the Mac.
+The row stays hidden on the Mac until then.
+
+## Architecture
+
+```
+            ┌─────────── phone / iPad app ───────────┐
+ IS Mendelu │ normal sync (TS) ──► reconcile (TS) ───┼──► www.googleapis.com
+ (UISAuth)  │                                        │    calendar v3
+            │ native plugins: sign-in + token only   │
+            └────────────────────────────────────────┘
+   no reIS server anywhere in this path
+```
+
+### Sign-in: native, with no secret and no refresh token in reIS code
+
+- **iOS:** a fourth plugin, `native/capacitor-google-calendar`, built like the other
+  three. It uses GoogleSignIn-iOS 10.x and an **iOS** OAuth client.
+  - **Info.plist:** `GIDClientID`, the reversed-client-ID URL scheme, and `CFBundleName`
+    = reIS (fact 10). No background modes.
+- **Android:** `GoogleCalendarPlugin.java` in `android/app/src/main/java/cz/reis/app/`,
+  in Java like `EduroamPlugin`.
+  - It uses `play-services-auth` `AuthorizationClient`. Credential Manager isn't needed,
+    because this is not a Google login.
+  - Phones without Play Services don't get the row.
+- **Plugin API:**
+
+  | Method | What it does |
+  | --- | --- |
+  | `connect()` | Consent, the first time only. Returns the granted scopes. |
+  | `accessToken()` | Fresh token, silently |
+  | `disconnect()` | Revokes at Google |
+  | `status()` | Connected or not, and the account |
+
+- **Missing scopes** (granular consent, fact 10): if `calendar.app.created` is missing,
+  the sync can't run. The row says so and offers to ask again. If only
+  `calendarlist.readonly` is missing, the sync still works on this device; only finding
+  an existing "Rozvrh" from another device is lost, so reIS asks again once, on connect.
+
+- **Scopes:** `calendar.app.created`, `calendar.calendarlist.readonly`, and `email`.
+  GoogleSignIn-iOS also always requests `openid` and `profile`; both are non-sensitive.
+  - `email` is a Sign-in scope, which Google pre-fills as non-sensitive. Confirm it on the Data access page anyway.
+  - It exists only so the row can say which Google account is connected; `AuthorizationClient` won't return the address without it. The address stays on the device. If Dominik prefers a shorter consent screen, drop it together with the account line in the UI.
+  - Nothing else.
+
+### Triggers
+
+- **Only while reIS is open (TypeScript):** after any normal sync (open, resume,
+  pull-to-refresh, exam registration), **if** lessons, exams or custom events changed.
+  Also once, in full, when the toggle turns on.
+- **Except every 6 hours:** unchanged sources still re-run after `REVISIT_AFTER_MS`
+  (controller.ts), so a deleted "Rozvrh" or access revoked in Google is noticed even
+  when IS doesn't change for weeks.
+- **One run at a time:** an in-memory flag in the JS process, claimed before the first
+  await. There is no native job to race with. Turning the sync off bumps a generation
+  counter, so a run still in flight can't save `enabled: true` afterwards.
+- **Never runs** without an IS session, without a network, or with the toggle off.
+- **Nothing to set up in system settings.** No Background App Refresh, no battery
+  exemptions. Dominik: students shouldn't have to go into settings.
+
+### Calendar
+
+- **On connect:** list the student's calendars and reuse the one whose description
+  contains the marker `reis:rozvrh:v1` (accessRole owner). Otherwise create "Rozvrh" in
+  `Europe/Prague` with that marker.
+- **Store** its id locally (platform storage).
+- **Every sync** first calls `calendars.get`. A **404** means the student deleted it:
+  switch the sync off and don't recreate it.
+
+### Events
+
+| Kind | Title | Location | Description | Reminders | Colour |
+| --- | --- | --- | --- | --- | --- |
+| lesson | `{subject} – {type}` (e.g. "Ekonomie I – přednáška") | room | teacher, group, "reIS" | none (`useDefault: false`) | calendar default |
+| exam | `Zkouška: {subject}` | room | term type, registration | calendar defaults | distinct `colorId` |
+| custom | its own title | its own | its own note | none | calendar default |
+
+- **Times:** `dateTime` plus `timeZone: "Europe/Prague"`.
+- **Language:** whatever reIS is set to at the time of the sync.
+- **Event id:** `kindPrefix + base32hex(sha256(stableKey))`, lowercased, using only
+  Google's `[a-v0-9]` alphabet.
+
+  | Kind | Prefix | Stable key |
+  | --- | --- | --- |
+  | lesson | `l` | `` `${id}\|${date}\|${startTime}` `` — joined with `\|`, exactly as `normalize.ts` builds it (`src/types/schedule.ts`) |
+  | exam | `e` | the exam term's id |
+  | custom | `c` | the custom event's id |
+
+- **`extendedProperties.private`:**
+  - `reisKind`: lesson, exam or custom;
+  - `reisHash`: a hash of the event body, so an unchanged event is skipped;
+  - `reisV`: the mapping version.
+
+### Reconcile
+
+This is a pure planner. Inputs: the events that should exist, the events that do exist,
+`todayStart` (00:00 Prague) and the reIS data window. Output: a plan.
+
+1. **Past events are written only when reIS *creates* the calendar.** That first fill inserts everything reIS has, past included.
+   - A device that *finds and reuses* an existing "Rozvrh" (a second device, or after a reinstall) does **not** do a past fill. It behaves like any later sync. Otherwise the 409 → `PUT confirmed` rule would bring back past events the student deleted, and a language change would rewrite past titles.
+2. **Every other sync** considers only events starting **≥ todayStart**. Events before it are
+   never updated, deleted or re-created.
+3. **Insert** what's missing. A **409** means the id exists (Google keeps deleted ids reserved), so decide who did it:
+   - reIS deleted it earlier (a local `reisDeleted` list) → `PUT` with `status: confirmed` restores it;
+   - it exists, not deleted, and its `reisHash` differs → the student moved it and IS has changed it since → `PUT`;
+   - otherwise the student deleted or moved it → leave it, and remember the hash in `skipped` so it isn't retried until IS changes it.
+   Both lists keep only entries dated today or later. A `reisDeleted` entry is saved
+   **before** its delete is sent: a run killed or failed after the delete would
+   otherwise lose it, and IS bringing the event back would then read as the
+   student's delete and never be restored. An entry for a delete that then failed
+   is harmless; the restore is a `PUT`.
+4. **Update** (`PUT`) when `reisHash` differs.
+5. **Delete** what shouldn't exist, only within [todayStart, end of window], and only
+   for the kinds whose source was read successfully in this run.
+
+**Delete safeguards.** IS returns identical bytes for "no lessons" and a failed query
+(see the memory note on IS empty schedules), so:
+
+- never delete based on a fetch that wasn't confirmed successful (exams: the subject list
+  read successfully and is non-empty);
+- **lessons only:** an empty lesson list is "no information", so delete nothing;
+- **lessons only:** a plan deleting more than ⅓ of future lessons is held back, and runs
+  only if the next sync produces the same plan.
+
+Exams and custom events may legitimately go empty: a student deregistering from their last
+exam must disappear from Google. (Revised in planning, 2026-10-08.)
+
+**Transport:**
+- **TypeScript** sends paced single requests at 5/s.
+  - Revised in planning, 2026-10-08: Google's batch guide says "A set of n requests batched
+    together counts toward your usage limit as n requests", and the project's limit is 600
+    queries per minute per user, so batching saved nothing that mattered.
+  - The ~500-event first fill takes about 100 s, shows "Synchronizuji 120/480", and is
+    **resumable**: `pastFillPending` is persisted **before** the calendar is created
+    (a run killed in between would otherwise leave a "Rozvrh" the next run takes for
+    another device's, and skip the past for good), again right after, and stays set
+    while the timetable hasn't been confirmed.
+
+**Errors:**
+- 401: refresh the token once.
+- 403/429 rate limit, 5xx and a dropped connection: exponential backoff, up to 5 retries
+  (safe: ids are ours, so a write that did land comes back as 409 → "exists").
+- Still failing after that: the next trigger retries.
+- Everything is logged through `logError` (`GoogleCalendar.*` contexts).
+
+### One implementation of the mapping
+
+Only TypeScript maps events, on both platforms. Two devices run the same code, so they
+produce identical bodies, ids and hashes and don't overwrite each other. A golden JSON
+fixture (lessons in → expected body, id and hash out) still pins the mapping: a change to
+it changes every hash, which would rewrite every future event once.
+
+## UI (phone and iPad, profile sheet)
+
+**Off.** "Synchronizovat s Google Kalendářem". A tap opens Google's own sheet.
+
+**On.** "Rozvrh · synchronizováno 14:02", the Google account, and "Otevřít v Google
+Kalendáři". The first fill shows progress.
+
+**Turning it off** is one button, "Vypnout synchronizaci". It revokes the grant and keeps
+"Rozvrh" in Google, where the student can delete it themselves. (Revised by Dominik
+2026-10-08 after the device test: "there should be no delete calendar button, should be
+just able to turn it on and off". The delete path also took ~10 s with no feedback.)
+
+**Messages:**
+- Revoked at Google: "Přístup ke Google Kalendáři byl odebrán", and the row turns off.
+- Calendar deleted in Google: the row turns off.
+- Lapsed IS session: the existing re-login prompt.
+
+**Text and checks:** strings in `src/i18n/locales/{cs,en}.json`; DaisyUI classes only;
+checked with `verify-ui`.
+
+## Trees
+
+- **Phone/iPad:** all of the above. The code lives in `src/mobile/googleCalendar/` and the
+  native code. Shared code does not import it; the #266 content-script crash came from
+  exactly that.
+- **Extension:** nothing. `src/test/guards/desktopHasNoGoogleCalendar.test.ts` records
+  why, naming the files, after the `desktopHasNoShowOnMap.test.ts` pattern:
+  - `getAuthToken` is Chrome-only;
+  - `launchWebAuthFlow` without a secret gives no refresh token, so it can't stay signed in;
+  - the phone already keeps the student's Google calendar current.
+
+## Privacy and stores
+
+**What leaves the device:** lesson, exam and custom-event titles, times, rooms, teachers
+and notes, sent **directly from the phone to the student's own Google account**. reIS
+also reads the *list* of the student's calendars, only to find "Rozvrh". Nothing reaches
+a reIS server.
+
+**In the same PR:**
+- **`privacy/disclosures.ts`:**
+  - new flow `google_calendar_sync`: automatic while the app is open, after one opt-in
+    (Apple: ongoing after one permission must be disclosed);
+  - `Flow` gains a third-party variant (host `www.googleapis.com`, plus the native files),
+    because today it assumes Supabase `files`/`calls`;
+  - `PLATFORM_PERMISSIONS` should stay unchanged: no new iOS usage key, no Android
+    permission of our own. But `privacy:check` reads the
+    **merged** release manifest, and `play-services-auth` may merge in permissions such
+    as `ACCESS_NETWORK_STATE`. After adding the dependency, inspect the merged
+    manifest and update `PLATFORM_PERMISSIONS` if it changed.
+- **`noStudentDataLeaves.test.ts`:** `googleapis.com` under "carrying student data", and
+  `accounts.google.com` for sign-in.
+- **Policies:** `docs/privacy-policy-app.md` (published as the gist) and `PRIVACY.md` get
+  a row: "only if you turn it on…". They also need Google API Services User Data Policy
+  wording: what reIS accesses, that the data goes only to the student's own calendar, and
+  that it isn't used for anything else.
+
+**At release** (Claude does the store forms, as pre-approved):
+- **Play Data safety:** *Calendar events* **collected**, optional, App functionality, not
+  shared. Play counts any transmission off the device from the app, even to a third
+  party; the user-initiated exemption covers "sharing" only.
+- **Apple App Privacy:** *Other User Content*, App Functionality, not tracking. That's
+  conservative: Apple's "third-party partners" includes SDKs in the app, and GoogleSignIn
+  is one.
+- **Apple 4.8** (Sign in with Apple) does not apply: Google is not the reIS login.
+
+## Google project
+
+The project is `reis-479320` ("reIS"), owner **reis.mendelu@gmail.com**.
+
+**Done 2026-10-08:**
+- Calendar API enabled.
+- Android client "reIS Android (upload key / sideload)" for `cz.reis.app` +
+  `E0:31:19:1C:68:77:66:51:11:2E:DD:70:7E:F7:6C:34:B5:E5:9C:0C`.
+- Support email, developer contact and test user are reis.mendelu.
+- The personal account that had created the project removed from IAM and test users.
+- Old unused Chrome-extension client deleted.
+
+**To do:**
+1. **Data access:** save the scopes listed under "Sign-in".
+2. **Clients:** all three exist since 2026-10-08: "reIS iOS" (bundle `cz.reis.app`),
+   "reIS Android (upload key / sideload)" (`E0:31:19:…:9C:0C`) and "reIS Android (Play App
+   Signing)" (`54:AE:96:D3:DA:E8:5D:E8:E4:3F:6C:22:67:82:C2:4E:0E:95:FF:76`, read from Play
+   Console → App signing). Without the last one, every Play-installed build fails sign-in.
+3. **Branding: none.** Dropped 2026-10-08. The consent screen already shows "reIS"
+   (seen on the Pixel), and with non-sensitive scopes only the app can go to production
+   without verification. Brand verification would only add policy/terms links to Google's
+   screen, and needs both on a Search-Console-verified domain; reis-page is not the place
+   for them (Dominik). Remove the stale `chromiumapp.org` authorised domain.
+4. **Publish** (Testing → In production).
+
+## Testing
+
+- **Unit, written first:**
+  - mapping, including the summer-time change;
+  - id stability, alphabet, and no collisions between kinds;
+  - the planner: past events frozen, the delete safeguards, skipped events;
+  - the runner: a student-deleted lesson stays deleted (even after an IS room change), a moved one stays until IS changes it, a reIS-deleted one comes back;
+  - error handling (401 / 404-calendar / 429) against a fake `fetch`.
+- **Golden fixture** for the mapping, as above.
+- **Guards:** the new desktop guard, plus `noStudentDataLeaves`, privacy disclosures and
+  the content-script graph.
+- **Devices** (release builds):
+  - **Pixel and cabled iPad:** connect; the first fill's count matches reIS; change the
+    language and see future titles change and past ones stay; delete a future lecture in
+    Google and see it stay deleted; move one and see it stay; untick a scope on Google's
+    screen and see the row ask again.
+  - **Mac ("Designed for iPad"):** connect works, or the row is hidden there.
+
+## Phase 2: background sync (not built; only if staleness turns out to matter)
+
+Recorded so it isn't rediscovered. v1 leaves a faculty-side change (a moved room, a
+cancelled lesson) stale in Google until the student next opens reIS. Build this only if
+students report exactly that.
+
+**Why v1 skips it:**
+- **It can't run unattended for long anyway.** The job needs the IS session, which lasts
+  2–4 weeks; then the student must open reIS regardless.
+- **iOS runs it least for the students who'd need it.** iOS spends background time by
+  app usage. And with Background App Refresh off, the request is dropped silently (fact
+  10). Fixing that means sending students into Settings, which Dominik ruled out.
+- **Android needs settings too:** Battery Saver (including the adaptive one) and
+  "Background data" off defer the job (fact 4).
+- **It roughly doubles the work:** Java and Swift ports of the mapping and the planner,
+  held byte-identical to TypeScript by shared fixtures in JUnit and XCTest, plus a
+  cross-process lock, a native IS timetable fetch with the dual-language merge, and
+  "no ping-pong" checks.
+
+**What's already known if it's built:**
+- Android: a plain `JobService` with `NETWORK_TYPE_ANY`, **not WorkManager** (fact 3);
+  `AuthorizationClient.authorize()` with the application context is silent in a
+  background process (fact 2).
+- iOS: `BGAppRefreshTask` registered in `AppDelegate` via `import GoogleCalendarPlugin`;
+  the IS token is readable there; check `UIApplication.backgroundRefreshStatus` and say
+  so in the row when it's off; measure a refresh of an *expired* Google token in the
+  background, with the iPad locked, before relying on it.

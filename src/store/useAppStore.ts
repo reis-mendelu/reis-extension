@@ -16,6 +16,7 @@ import { createI18nSlice } from './slices/createI18nSlice';
 import { createSuccessRateSlice } from './slices/createSuccessRateSlice';
 import { createSimilarSubjectsSlice } from './slices/createSimilarSubjectsSlice';
 import { createEduroamSlice } from './slices/createEduroamSlice';
+import { createGoogleCalendarSlice } from './slices/createGoogleCalendarSlice';
 import { createDocumentsSlice } from './slices/createDocumentsSlice';
 import { createFeedbackSlice } from './slices/createFeedbackSlice';
 import { createStudyPlanSlice } from './slices/createStudyPlanSlice';
@@ -73,6 +74,7 @@ export const useAppStore = create<AppState>()(
     ...createSuccessRateSlice(...a),
     ...createSimilarSubjectsSlice(...a),
     ...createEduroamSlice(...a),
+    ...createGoogleCalendarSlice(...a),
     ...createDocumentsSlice(...a),
     ...createFeedbackSlice(...a),
     ...createStudyPlanSlice(...a),

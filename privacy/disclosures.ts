@@ -20,10 +20,17 @@ export interface AppleType {
 
 export interface Flow {
   id: string;
+  /**
+   * Where it goes. Omitted = Supabase: its files must be in SUPABASE_CALLERS and
+   * its calls are RPC/table names. A third-party flow goes from the device
+   * straight to another service the student uses (never via reIS); its files
+   * are the clients that talk to that host, and it has no Supabase calls.
+   */
+  via?: { kind: 'supabase' } | { kind: 'third-party'; host: string };
   what: string;
   when: 'background' | 'student-action';
   identifier: 'install_id' | 'none' | 'contact';
-  /** Files under src/ that make this flow's Supabase calls. */
+  /** Files under src/ that make this flow's calls (Supabase, or the third-party host). */
   files: string[];
   /** RPC or table names this flow uses. */
   calls: string[];
@@ -191,6 +198,40 @@ export const FLOWS: Flow[] = [
       play: ['PSL_USER_ACCOUNT'],
       firefox: ['technicalAndInteraction'],
       cws: ['User activity'],
+    },
+  },
+  {
+    // Phone/iPad only (desktopHasNoGoogleCalendar.test.ts). Spec:
+    // docs/superpowers/specs/2026-10-08-google-calendar-sync-design.md.
+    id: 'google_calendar_sync',
+    via: { kind: 'third-party', host: 'www.googleapis.com' },
+    what: 'Only if the student turns it on: titles, times, rooms, teachers and notes of their lessons, exams and own events, written from the phone straight into a "Rozvrh" calendar in their own Google account. reIS reads the list of their calendars (ids and descriptions) only to find that one, reads back the events in that calendar to see what changed, and never reads events in their other calendars. Nothing reaches a reIS server.',
+    // Automatic after one opt-in, while the app is open; not per action.
+    when: 'background',
+    identifier: 'none',
+    // calendarApi.ts makes the calls; calendarHttp.ts is the fetch that sends them.
+    files: [
+      'src/mobile/googleCalendar/calendarApi.ts',
+      'src/mobile/googleCalendar/calendarHttp.ts',
+    ],
+    calls: [],
+    policyRows: [
+      [
+        'Google Calendar sync',
+        'only if you turn it on, then whenever you open reIS and your timetable changed',
+        'your lessons, exams and own events, sent **from your phone straight to your own Google Calendar** ("Rozvrh"). reIS servers never see them. reIS can only change the calendar it created, reads the list of your calendars only to find it, and never reads events in your other calendars',
+      ],
+    ],
+    stores: {
+      // Apple counts GoogleSignIn as an SDK "partner", so declare it conservatively.
+      apple: [
+        { type: 'Other User Content', purpose: 'App Functionality', linked: true, tracking: false },
+      ],
+      // Play counts any transmission off the device, even to the user's own account.
+      play: ['PSL_CALENDAR'],
+      // The extension doesn't ship it.
+      firefox: [],
+      cws: [],
     },
   },
 ];

@@ -88,8 +88,11 @@ export function checkDisclosures(s: RepoSnapshot, m: Model): string[] {
       out.push(`"${name}" is listed in ${SRC} but no longer called anywhere in src/.`);
   }
 
-  // 2. The privacy guard's allowlist and the flows agree.
-  const flowFiles = new Set(m.flows.flatMap((f) => f.files));
+  // 2. The privacy guard's allowlist and the Supabase flows agree. A third-party
+  //    flow (Google Calendar) never touches Supabase, so it isn't on that list.
+  const flowFiles = new Set(
+    m.flows.filter((f) => f.via?.kind !== 'third-party').flatMap((f) => f.files)
+  );
   const owned = new Set([...flowFiles, ...m.exempt.flatMap((e) => e.files)]);
   for (const f of s.supabaseCallers) {
     if (!owned.has(f))
@@ -99,6 +102,20 @@ export function checkDisclosures(s: RepoSnapshot, m: Model): string[] {
     if (!s.supabaseCallers.includes(f)) {
       out.push(`SUPABASE_CALLERS does not allow ${f}, which a flow in ${SRC} sends from.`);
     }
+  }
+
+  //    A third-party flow is checked on its own terms: its files exist, one of
+  //    them talks to its host, and it has no Supabase calls.
+  for (const f of m.flows) {
+    if (f.via?.kind !== 'third-party') continue;
+    const host = f.via.host;
+    for (const file of f.files) {
+      if (!(file in s.srcFiles)) out.push(`${f.id} lists ${file}, which is not in src/.`);
+    }
+    if (!f.files.some((file) => s.srcFiles[file]?.includes(host))) {
+      out.push(`${f.id}: none of its files mentions ${host}. List the file that sends to it.`);
+    }
+    if (f.calls.length > 0) out.push(`${f.id} is a third-party flow but lists Supabase calls.`);
   }
 
   // 3–4. Manifest and platform permissions match what is declared.

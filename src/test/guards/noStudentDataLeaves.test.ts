@@ -105,12 +105,20 @@ const SUPABASE_CALLERS = new Set([
  * identifier: PKCE verifiers, image fingerprints, and the iPad reader's on-device
  * filename for a subject PDF (`courseCode:fileLink` — a course code and an IS
  * document URL, hashed only because a URL is not a filename; the result is a
- * path in the app sandbox and is never transmitted).
+ * path in the app sandbox and is never transmitted), and the Google Calendar
+ * sync's event ids (a timetable slot `lessonId|date|time`, an exam term id or a
+ * custom event id — keys of timetable entries, not of the student — hashed only
+ * to fit Google's id alphabet; the event itself goes to the student's own
+ * calendar, so the hash hides nothing and claims to hide nothing). The same
+ * file also hashes each event's visible fields into `reisHash`, a change
+ * detector stored in that event's private properties in the same calendar;
+ * the sync's whole-source fingerprint is kept on the device only.
  */
 const DIGEST_CALLERS = new Set([
   'src/utils/pkce.ts',
   'src/services/notes/imageNormalize.ts',
   'src/mobile/pdfInk.ts',
+  'src/mobile/googleCalendar/eventIdentity.ts',
 ]);
 
 /**
@@ -164,9 +172,13 @@ const ALLOWED_HOSTS = [
   'hei.api.uni-foundation.eu', // public Erasmus university directory (read-only)
 
   // --- fetched from, carrying student data. Each must stay disclosed. ---
+  'googleapis.com', // Google Calendar sync: the student's lessons, exams and own
+  // events, written from the phone straight into their own Google calendar.
+  // Phone only, opt-in; privacy/disclosures.ts google_calendar_sync.
 
   // --- deep links the STUDENT opens; no background request is made ---
-  'google.com', // maps links, Play Store, Chrome Web Store, a society's Apps Script
+  'google.com', // maps links, Play Store, Chrome Web Store, a society's Apps Script,
+  // "Otevřít v Google Kalendáři" (calendar.google.com)
   'teams.microsoft.com',
   'outlook.office.com',
   'www.geteduroam.app',
