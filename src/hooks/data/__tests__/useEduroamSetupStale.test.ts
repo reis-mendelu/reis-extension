@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { fetchEduroamCertMaterial, regenerateEduroamCert } from '../../../api/eduroam';
 import { useEduroamSetup } from '../useEduroamSetup';
+import { nativeEduroamDeps } from '../../../mobile/eduroamNative';
 
 const EXPIRED = new Date('2025-01-01T12:00:00Z');
 const material = (expiresAt: Date | null) => ({
@@ -72,6 +73,28 @@ describe('useEduroamSetup drops a result that outlived its run', () => {
 
     expect(result.current.status).toBe('idle');
     expect(result.current.expiredAt).toBeNull();
+  });
+
+  /** Android/iOS answering after a reset must not leave its outcome behind. */
+  it('ignores a native outcome that arrives after a reset', async () => {
+    vi.mocked(fetchEduroamCertMaterial).mockResolvedValue(material(null));
+    const saved = deferred<{ outcome: string }>();
+    vi.mocked(nativeEduroamDeps.configure).mockReturnValue(saved.promise as never);
+    const { result } = renderHook(() => useEduroamSetup());
+
+    let running!: Promise<void>;
+    act(() => {
+      running = result.current.run('ios');
+    });
+    await vi.waitFor(() => expect(nativeEduroamDeps.configure).toHaveBeenCalled());
+    act(() => result.current.reset());
+    await act(async () => {
+      saved.resolve({ outcome: 'saved' });
+      await running;
+    });
+
+    expect(result.current.status).toBe('idle');
+    expect(result.current.outcome).toBeNull();
   });
 
   it('ignores a failure that arrives after another device was picked', async () => {

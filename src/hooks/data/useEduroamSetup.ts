@@ -96,15 +96,16 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
         // machine reIS is open on.
         if (canConfigureEduroamNatively(t)) {
           const result = await configureEduroam(material, nativeEduroamDeps);
-          setOutcome(result);
           // Only `saved` is a setup that finished. `already-configured` applied
           // nothing — the network was there before reIS was asked — and counting
           // it would report students as newly set up who were already on
           // eduroam. `cancelled`, `failed` and `stale-association` installed
           // nothing at all. The file paths below get their own signal, because a
           // delivered profile still needs the student to install it.
+          // The signal fires even for a superseded run: the OS did save it.
           if (result === 'saved') void trackFeatureSignal('eduroam_wifi_configured');
           if (stale()) return;
+          setOutcome(result);
           setPassword(extractionPw);
           setStatus(statusAfterNativeOutcome(result));
           return;
