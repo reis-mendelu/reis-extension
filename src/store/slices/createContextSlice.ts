@@ -38,7 +38,12 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
     try {
       if (get().userFaculty === null) {
         const cached = (await IndexedDBService.get('meta', VIEWER_KEY)) as
-          | { faculty: string | null; erasmus: boolean; programme?: string | null; savedAt?: number }
+          | {
+              faculty: string | null;
+              erasmus: boolean;
+              programme?: string | null;
+              savedAt?: number;
+            }
           | undefined;
         if (cached && get().userFaculty === null) {
           // Erasmus is a semester, a faculty is a degree: an old Erasmus flag
@@ -65,7 +70,13 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
           facultyId: params.facultyId ? String(params.facultyId) : null,
           // An unparsed header (#titulek) must not erase a faculty already known.
           userFaculty: params.facultyLabel ?? get().userFaculty,
-          userProgramme: baseProgramme(params.studyProgram) ?? get().userProgramme,
+          // A remembered programme only stands in for the SAME faculty: kept
+          // across a faculty change it would match another study's partner.
+          userProgramme:
+            baseProgramme(params.studyProgram) ??
+            (params.facultyLabel === get().userFaculty || !params.facultyLabel
+              ? get().userProgramme
+              : null),
           userSemester: params.periodLabel ?? null,
           isErasmus: params.isErasmus,
           fullName: params.fullName ?? null,

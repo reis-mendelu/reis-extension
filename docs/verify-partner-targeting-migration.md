@@ -18,6 +18,8 @@ columns, and production's own `usage_suppress_groups` and 3-argument `track_dail
 | `usage_programmes_unchecked` excludes `web`, suppresses small groups to -1 | `PEF B-OI 13, PEF B-EM -1, PEF ? -1` |
 | `usage_programmes` raises `forbidden` for non-admins, answers `reis_admin` | ok |
 | anon may execute `track_daily_usage`, not the stats; nobody but definer runs `_unchecked` | t / f / f |
+| `ARRAY[NULL]` and `{mendelu:B-OI}` are rejected (review, 2026-10-09) | `check_violation` ×2 |
+| A device that moved PEF/B-OI → ZF (no programme) counts under `ZF ?`, not `ZF B-OI` | `ZF ?` |
 
 ## Checks run
 
@@ -61,4 +63,12 @@ select public.usage_programmes(30) is not null as admin_ok;
 select has_function_privilege('anon','public.track_daily_usage(text,text,text,text)','execute') as anon_track,
        has_function_privilege('anon','public.usage_programmes(int)','execute') as anon_stats,
        has_function_privilege('authenticated','public.usage_programmes_unchecked(int)','execute') as auth_unchecked;
+\echo '12 NULL token and mendelu:programme must fail'
+do $$ begin insert into public.societies (id,name,short_name,color,faculty_key,kind,audience) values ('t5','T','T','#000000','pef','partner',ARRAY[NULL]::text[]); raise exception 'NOT REJECTED'; exception when check_violation then raise notice 'rejected ok'; end $$;
+do $$ begin insert into public.societies (id,name,short_name,color,faculty_key,kind,audience) values ('t6','T','T','#000000','pef','partner','{mendelu:B-OI}'); raise exception 'NOT REJECTED'; exception when check_violation then raise notice 'rejected ok'; end $$;
+\echo '13 faculty change pairs labels from the same row'
+insert into public.daily_active_usage (student_id, usage_date, faculty, platform, programme) values
+ ('mv', (now() at time zone 'Europe/Prague')::date - 1, 'PEF', 'ios', 'B-OI'),
+ ('mv', (now() at time zone 'Europe/Prague')::date, 'ZF', 'ios', null);
+select key from json_to_recordset(public.usage_programmes_unchecked(30)) as x(key text, devices int) where key like 'ZF%';
 ```

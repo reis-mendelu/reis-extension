@@ -91,6 +91,15 @@ describe('AdminStatsPanel', () => {
     expect(screen.getByText('PEF – program neznámý')).toBeInTheDocument();
   });
 
+  it('keeps the programme breakdown when the usage read failed', () => {
+    useAppStore.setState({
+      adminStats: null,
+      adminProgrammes: [{ key: 'PEF B-OI', devices: 312 }],
+    } as never);
+    render(<AdminStatsPanel />);
+    expect(screen.getByText('PEF B-OI')).toBeInTheDocument();
+  });
+
   it('labels the unknown bucket instead of hiding it', () => {
     render(<AdminStatsPanel />);
     expect(screen.getByText('neuvedeno')).toBeInTheDocument();

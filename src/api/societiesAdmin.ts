@@ -76,7 +76,9 @@ function devRow(row: Partial<SocietyRow> & { id: string }): Society | null {
 export async function insertSociety(
   input: SocietyInput,
   logoPath: string,
-  sortOrder: number
+  sortOrder: number,
+  /** A new partner's mark paths, written in the same insert. */
+  marks: { mark_light_path?: string; mark_dark_path?: string } = {}
 ): Promise<Society | null> {
   const row = {
     id: input.id,
@@ -89,6 +91,7 @@ export async function insertSociety(
     sort_order: sortOrder,
     instagram: input.instagram ?? null,
     ...(input.kind ? { kind: input.kind, audience: input.audience ?? null } : {}),
+    ...marks,
   };
   if (DEV_SOCIETY) return devRow(row);
   const { data, error } = await adminAuthClient

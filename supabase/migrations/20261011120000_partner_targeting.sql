@@ -11,14 +11,16 @@
 -- pg_get_functiondef on 2026-10-09 (identical to 20260915130000), plus the
 -- programme label.
 
--- An audience token is a faculty key, optionally ':' and a BASE study-programme
--- code. Must stay identical to AUDIENCE_TOKEN_RE in src/utils/partnerAudience.ts.
+-- An audience token is 'mendelu' (everyone), or a faculty key optionally
+-- followed by ':' and a BASE study-programme code. Must stay identical to
+-- AUDIENCE_TOKEN_RE in src/utils/partnerAudience.ts. A NULL element is rejected
+-- explicitly: `NULL !~ re` is NULL, which NOT EXISTS would let through.
 create or replace function public.societies_audience_valid(p text[])
 returns boolean language sql immutable as $$
   select p is null or (
     cardinality(p) > 0 and not exists (
       select 1 from unnest(p) t
-       where t !~ '^(mendelu|pef|af|ldf|zf|frrms)(:[A-Z]-[A-Z0-9]{1,10})?$'))
+       where t is null or t !~ '^(mendelu|(pef|af|ldf|zf|frrms)(:[A-Z]-[A-Z0-9]{1,10})?)$'))
 $$;
 
 alter table public.societies
@@ -90,8 +92,10 @@ grant execute on function public.track_daily_usage(text, text, text, text) to an
 -- faculty known, programme never sent (a build older than this) or not parsed.
 -- Same reporting filter and window clamp as usage_stats_unchecked (epoch
 -- 2026-09-07, 'web' = the dev server excluded), and the same one-bucket-per-
--- device rule: each device lands under its most recent non-null labels, found
--- once with DISTINCT ON (a correlated lookup per device timed out there).
+-- device rule, found once with DISTINCT ON (a correlated lookup per device
+-- timed out there). Faculty and programme come from the SAME row — the
+-- device's latest row with a faculty — so a device that moved from PEF/B-OI to
+-- ZF is counted under 'ZF ?', never under a 'ZF B-OI' it never reported.
 create or replace function public.usage_programmes_unchecked(p_days int)
 returns json language sql stable security definer set search_path = public as $$
   with
@@ -102,20 +106,14 @@ returns json language sql stable security definer set search_path = public as $$
      where u.usage_date >= greatest(date '2026-09-07', t.d - (span.n - 1))
        and u.platform is distinct from 'web'
   ),
-  latest_faculty as (
-    select distinct on (student_id) student_id, faculty
+  latest as (
+    select distinct on (student_id) student_id, faculty, programme
       from win where faculty is not null
      order by student_id, usage_date desc
   ),
-  latest_programme as (
-    select distinct on (student_id) student_id, programme
-      from win where programme is not null
-     order by student_id, usage_date desc
-  ),
   grouped as (
-    select f.faculty || ' ' || coalesce(p.programme, '?') as key, count(*) as n
-      from latest_faculty f
-      left join latest_programme p on p.student_id = f.student_id
+    select faculty || ' ' || coalesce(programme, '?') as key, count(*) as n
+      from latest
      group by 1
   )
   select public.usage_suppress_groups(

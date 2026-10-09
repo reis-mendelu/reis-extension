@@ -117,7 +117,7 @@ describe('EventComposer publish', () => {
     });
     render(<EventComposer onDone={() => {}} />);
     expect(screen.queryByRole('checkbox', { name: /PEF/ })).toBeNull();
-    expect(screen.getByText(/oborů, pro které je partner nastavený/)).toBeTruthy();
+    expect(screen.getByText(/pro které je partner nastavený/)).toBeTruthy();
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'EY talk' } });
     fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
@@ -125,6 +125,24 @@ describe('EventComposer publish', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
     await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
     expect(createPost.mock.calls[0][0].subscribersOnly).toBe(true);
+  });
+
+  // An author the catalog does not know could be a partner whose events must be
+  // restricted; publishing it as public would reach students outside its audience.
+  it('blocks publishing while the author is missing from the catalog', async () => {
+    useAppStore.setState({
+      adminRole: 'reis_admin',
+      adminAssociationId: 'reis',
+      adminActiveAssociationId: 'ghost',
+      adminSession: { user: { email: 'reis.mendelu@gmail.com' } } as never,
+      draftCoord: [16.61, 49.21],
+    });
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Ghost' } });
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
+    fireEvent.click(screen.getByRole('button', { name: '15' }));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
+    expect(screen.getByRole('button', { name: 'Zveřejnit akci' })).toBeDisabled();
   });
 
   it('keeps publish disabled until every field is filled, then enables it', async () => {

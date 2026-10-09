@@ -75,7 +75,12 @@ describe('canSee', () => {
 });
 
 describe('canSee: partners obey their audience, whatever subscribersOnly says', () => {
-  const sap = { ...cat.ey!, id: 'sap', kind: 'partner' as const, audience: ['pef:B-OI', 'pef:B-AII'] };
+  const sap = {
+    ...cat.ey!,
+    id: 'sap',
+    kind: 'partner' as const,
+    audience: ['pef:B-OI', 'pef:B-AII'],
+  };
   const withSap = { ...cat, sap };
   const pefOi: Viewer = { facultyKey: 'pef', erasmus: false, programme: 'B-OI' };
   const pefEm: Viewer = { facultyKey: 'pef', erasmus: false, programme: 'B-EM' };

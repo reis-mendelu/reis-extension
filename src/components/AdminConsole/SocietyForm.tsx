@@ -6,7 +6,8 @@ import { ORGANIZERS, type FacultyKey, type Society } from '../../types/events';
 import { normalizeInstagram, validateSocietyDraft } from './societyFormRules';
 import { GeneratedPasswordDialog } from './GeneratedPasswordDialog';
 import { LogoPreview } from './LogoPreview';
-import { PartnerFields, usePartnerDraft } from './PartnerFields';
+import { PartnerFields } from './PartnerFields';
+import { usePartnerDraft } from './usePartnerDraft';
 
 const FACULTIES = Object.keys(ORGANIZERS) as FacultyKey[];
 

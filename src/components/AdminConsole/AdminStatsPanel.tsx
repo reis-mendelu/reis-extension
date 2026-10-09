@@ -125,17 +125,6 @@ export function AdminStatsPanel() {
         </section>
       </div>
 
-      {programmes && programmes.length > 0 && (
-        <section>
-          <h4 className="mb-1 text-sm font-semibold">{t('admin.stats.byProgramme')}</h4>
-          <StatsBars
-            groups={programmes}
-            labelFor={programmeLabel}
-            under5={t('admin.stats.under5')}
-          />
-        </section>
-      )}
-
       <button
         type="button"
         className="btn btn-ghost btn-xs self-end"
@@ -151,6 +140,18 @@ export function AdminStatsPanel() {
   return (
     <div className="flex flex-col gap-4 p-3">
       {usage}
+      {/* Its own RPC like the feature signals below, so outside the usage
+          branch: it survives a failed usage read. */}
+      {programmes && programmes.length > 0 && (
+        <section>
+          <h4 className="mb-1 text-sm font-semibold">{t('admin.stats.byProgramme')}</h4>
+          <StatsBars
+            groups={programmes}
+            labelFor={programmeLabel}
+            under5={t('admin.stats.under5')}
+          />
+        </section>
+      )}
       {/* Outside the usage branch on purpose: loaded by the same
           `loadAdminStats` action but from its own RPC, so it survives a failed
           usage read and renders nothing until its own answer arrives. */}

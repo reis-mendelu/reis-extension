@@ -12,7 +12,8 @@ application of Mendel University.
 Your name, personal number, study details, timetable, grades, assessment, exam
 dates, courses, materials and submission folders are fetched from MENDELU using
 your own session — the way your browser would — and kept on your device.
-**None of it reaches us. We run no server that holds it.** It moves only between
+**None of it reaches us, apart from two group labels on the daily count below — your faculty
+and your study programme's base code. We run no server that holds it.** It moves only between
 your device and MENDELU, both ways, since signing up for an exam sends it back.
 Uninstalling removes the local copy.
 

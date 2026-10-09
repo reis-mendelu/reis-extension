@@ -108,7 +108,11 @@ describe('feedback', () => {
   // The base programme is one more GROUP label (spec 2026-10-09): 'B-OI', never
   // the specialisation suffix, and never sent with anything else.
   it('sends the base programme code beside the faculty', async () => {
-    getUserParams.mockResolvedValueOnce({ facultyLabel: 'PEF', facultyId: '', studyProgram: 'B-OI-ZBOI' });
+    getUserParams.mockResolvedValueOnce({
+      facultyLabel: 'PEF',
+      facultyId: '',
+      studyProgram: 'B-OI-ZBOI',
+    });
 
     await trackDailyUsage();
 

@@ -87,19 +87,20 @@ describe('saveSociety: partner', () => {
     expect(updateSociety).not.toHaveBeenCalled();
   });
 
-  it('a new partner is inserted, then its marks are attached', async () => {
+  // One insert carries the row and its marks: a failed follow-up update would
+  // leave a partner without marks that a retry could not re-insert.
+  it('a new partner is inserted together with its marks', async () => {
     uploadSocietyLogo
       .mockResolvedValueOnce('kpmg/cccccccccccccccccccccccccccccccc.png')
       .mockResolvedValueOnce(LIGHT);
     insertSociety.mockResolvedValue(KPMG_SOCIETY);
-    updateSociety.mockResolvedValue({ ...KPMG_SOCIETY, markLight: 'x' });
     const res = await makeStore()
       .getState()
       .saveSociety(KPMG, blob('logo'), true, { light: blob('l'), dark: null });
     expect(res).toEqual({});
-    expect(calls).toEqual(['upload', 'upload', 'insert', 'update']);
+    expect(calls).toEqual(['upload', 'upload', 'insert']);
     expect(insertSociety.mock.calls[0]![0]).toMatchObject({ kind: 'partner', audience: ['frrms'] });
-    expect(updateSociety.mock.calls[0]![1]).toEqual({ mark_light_path: LIGHT });
+    expect(insertSociety.mock.calls[0]![3]).toEqual({ mark_light_path: LIGHT });
   });
 
   it('a plain society edit writes no partner columns', async () => {

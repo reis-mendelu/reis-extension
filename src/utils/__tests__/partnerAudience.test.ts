@@ -49,7 +49,7 @@ describe('AUDIENCE_TOKEN_RE (must equal the SQL CHECK)', () => {
   it.each(['pef', 'mendelu', 'frrms', 'pef:B-OI', 'ldf:B-SBD', 'af:N-Z10'])('accepts %s', (t) => {
     expect(AUDIENCE_TOKEN_RE.test(t)).toBe(true);
   });
-  it.each(['PEF', 'pef:b-oi', 'pef:', 'xyz', 'pef:B-', 'pef:BOI', 'pef:B-OI-ZBOI'])(
+  it.each(['PEF', 'pef:b-oi', 'pef:', 'xyz', 'pef:B-', 'pef:BOI', 'pef:B-OI-ZBOI', 'mendelu:B-OI'])(
     'rejects %s',
     (t) => {
       expect(AUDIENCE_TOKEN_RE.test(t)).toBe(false);
@@ -121,6 +121,10 @@ describe('audience draft round trip', () => {
   it('an empty draft or a bad code is invalid', () => {
     expect(audienceFromDraft({})).toBe('invalid');
     expect(audienceFromDraft({ pef: 'B_OI' })).toBe('invalid');
+  });
+  it("a faculty-wide token wins over that faculty's programme tokens (same students)", () => {
+    expect(draftFromAudience(['pef', 'pef:B-OI'])).toEqual({ pef: '' });
+    expect(draftFromAudience(['pef:B-OI', 'pef'])).toEqual({ pef: '' });
   });
   it('tokens become a draft', () => {
     expect(draftFromAudience(['frrms', 'pef:B-OI', 'pef:N-OI'])).toEqual({

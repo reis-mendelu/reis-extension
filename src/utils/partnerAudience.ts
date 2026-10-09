@@ -5,7 +5,8 @@ import { ORGANIZERS, type FacultyKey, type Society } from '../types/events';
  * student's device; a partner never learns who matched. Both regexes must stay
  * identical to the CHECKs in supabase/migrations/20261011120000_partner_targeting.sql.
  */
-export const AUDIENCE_TOKEN_RE = /^(mendelu|pef|af|ldf|zf|frrms)(:[A-Z]-[A-Z0-9]{1,10})?$/;
+// 'mendelu' (everyone) takes no programme: a programme belongs to a faculty.
+export const AUDIENCE_TOKEN_RE = /^(mendelu|(pef|af|ldf|zf|frrms)(:[A-Z]-[A-Z0-9]{1,10})?)$/;
 export const PROGRAMME_RE = /^[A-Z]-[A-Z0-9]{1,10}$/;
 
 /** 'B-OI-ZBOI' → 'B-OI'. Null when the code is missing or not programme-shaped. */
@@ -76,7 +77,9 @@ export function draftFromAudience(audience: readonly string[] | null | undefined
   for (const token of audience ?? []) {
     const [faculty, programme] = token.split(':') as [FacultyKey, string | undefined];
     const prev = draft[faculty];
-    if (!programme) draft[faculty] = prev ?? '';
+    // A faculty-wide token already covers that faculty's programmes, so it
+    // wins: saving the draft must never narrow 'pef' + 'pef:B-OI' to B-OI.
+    if (!programme || prev === '') draft[faculty] = '';
     else draft[faculty] = prev ? `${prev}, ${programme}` : programme;
   }
   return draft;

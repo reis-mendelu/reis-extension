@@ -5,7 +5,11 @@ import { useViewer, viewerFrom } from '../useViewer';
 
 describe('viewerFrom', () => {
   it('maps an IS faculty label to a key', () => {
-    expect(viewerFrom('PEF', false)).toEqual({ facultyKey: 'pef', erasmus: false, programme: null });
+    expect(viewerFrom('PEF', false)).toEqual({
+      facultyKey: 'pef',
+      erasmus: false,
+      programme: null,
+    });
     expect(viewerFrom('PEF', false, 'B-OI')).toMatchObject({ programme: 'B-OI' });
   });
 

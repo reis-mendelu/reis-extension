@@ -69,9 +69,9 @@ export async function saveSociety(
     ...(darkPath ? { mark_dark_path: darkPath } : {}),
   };
 
-  let saved =
+  const saved =
     isNew && logoPath
-      ? await insertSociety(input, logoPath, nextSortOrder(access.societies()))
+      ? await insertSociety(input, logoPath, nextSortOrder(access.societies()), markPatch)
       : await updateSociety(input.id, {
           name: input.name.trim(),
           short_name: input.shortName.trim(),
@@ -83,10 +83,6 @@ export async function saveSociety(
           ...(logoPath ? { logo_path: logoPath } : {}),
           ...markPatch,
         });
-  // insertSociety writes the base row only; a new partner's marks attach here.
-  if (saved && isNew && Object.keys(markPatch).length > 0) {
-    saved = await updateSociety(input.id, markPatch);
-  }
   if (!saved) return { error: 'save_failed' };
   await access.put({ ...previous, ...saved });
 

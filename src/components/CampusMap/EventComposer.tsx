@@ -52,6 +52,12 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
     return !!society && audienceOf(society) === 'everyone';
   });
   const authorIsPartner = useAppStore((s) => isPartner(s.societies[associationId ?? '']));
+  // Unknown author = unknown audience: it may be a partner whose events must
+  // be restricted, so nothing NEW is published until the catalog names it.
+  // An edit keeps its stored flag instead (see cannotRestrict above), and a
+  // partner's stored flag is always restricted.
+  const authorKnown = useAppStore((s) => Boolean(s.societies[associationId ?? '']));
+  const blockedUnknownAuthor = !authorKnown && !editId;
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
 
@@ -99,7 +105,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
   };
 
   const publish = async () => {
-    if (!ready || busy || !associationId) return;
+    if (!ready || busy || !associationId || blockedUnknownAuthor) return;
     setBusy(true);
     setError(false);
     const input = buildPostInput({
@@ -228,7 +234,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
         <button
           type="button"
           className="btn btn-primary btn-sm flex-1 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={!ready || busy}
+          disabled={!ready || busy || blockedUnknownAuthor}
           onClick={publish}
         >
           {editId ? t('map.saveChanges') : t('map.publish')}

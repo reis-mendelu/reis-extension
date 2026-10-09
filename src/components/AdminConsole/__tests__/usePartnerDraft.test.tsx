@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import { usePartnerDraft } from '../PartnerFields';
+import { usePartnerDraft } from '../usePartnerDraft';
 import { BUNDLED_SOCIETIES } from '../../../data/societies';
 
 // The partner half of the society form (spec 2026-10-09), kept testable

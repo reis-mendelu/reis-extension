@@ -49,10 +49,29 @@ describe('loadContext viewer cache', () => {
   });
 
   it('stores the base programme and caches it with the faculty (spec 2026-10-09)', async () => {
-    getUserParams.mockResolvedValue({ facultyLabel: 'PEF', studyProgram: 'B-OI-ZBOI', isErasmus: false });
+    getUserParams.mockResolvedValue({
+      facultyLabel: 'PEF',
+      studyProgram: 'B-OI-ZBOI',
+      isErasmus: false,
+    });
     await useAppStore.getState().loadContext();
     expect(useAppStore.getState().userProgramme).toBe('B-OI');
     expect(idb.get('viewer_audience')).toMatchObject({ faculty: 'PEF', programme: 'B-OI' });
+  });
+
+  it('drops a cached programme when IS names another faculty without one', async () => {
+    idb.set('viewer_audience', { faculty: 'PEF', erasmus: false, programme: 'B-OI' });
+    getUserParams.mockResolvedValue({ facultyLabel: 'ZF', isErasmus: false });
+    await useAppStore.getState().loadContext();
+    expect(useAppStore.getState().userFaculty).toBe('ZF');
+    expect(useAppStore.getState().userProgramme).toBeNull();
+  });
+
+  it('keeps a cached programme when the same faculty comes back unparsed', async () => {
+    idb.set('viewer_audience', { faculty: 'PEF', erasmus: false, programme: 'B-OI' });
+    getUserParams.mockResolvedValue({ facultyLabel: 'PEF', isErasmus: false });
+    await useAppStore.getState().loadContext();
+    expect(useAppStore.getState().userProgramme).toBe('B-OI');
   });
 
   it('restores the cached programme on a cold start', async () => {
