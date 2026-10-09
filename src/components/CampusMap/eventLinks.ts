@@ -36,7 +36,9 @@ export function eventHasDetails(
     !!event.location?.trim() ||
     !!event.coord ||
     !!event.roomCode ||
-    event.venueKind !== 'tba'
+    // Neither 'tba' nor 'online' draws anything: EventVenueLine renders a room,
+    // a coordinate or a name, and has no line for an online venue.
+    (event.venueKind !== 'tba' && event.venueKind !== 'online')
   );
 }
 
