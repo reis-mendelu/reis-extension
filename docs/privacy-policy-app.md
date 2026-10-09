@@ -30,7 +30,7 @@ yourself — see *Report attachments* below.
 <!-- BEGIN generated:flows (npm run privacy:generate) -->
 | what | when | what it carries |
 |---|---|---|
-| Daily count | once a day | a random install identifier — a UUID unrelated to you. Counts **installs, not people**, plus faculty and platform as group labels. |
+| Daily count | once a day | a random install identifier — a UUID unrelated to you. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI) and platform as group labels. |
 | Feedback | you press send | your message, any contact detail you type, the screen name, app version, browser, window size |
 | Report attachments | only what you add to a report, when you press send | a **screenshot you pick** yourself, re-encoded on your device so photo metadata and location are removed; and, **only if you tick the box**, the recent reIS errors and warnings from this session, with link parameters, email addresses, long numbers and coordinates already blanked out, plus platform, OS version, language and sync status. **Not linked to the install identifier.** |
 | In-app survey | you answer | the same random install identifier |
@@ -40,6 +40,10 @@ yourself — see *Report attachments* below.
 | eduroam network configured | the app itself saves the eduroam network (phone) | the random install identifier and the fixed `eduroam_wifi_configured` label |
 | eduroam profile handed over | a profile is prepared for you to install (Mac, Windows) | the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it |
 <!-- END generated:flows -->
+
+Which partner company you are shown, if any, is decided on your device from your
+faculty and study programme. Partners never receive anything about you; they see
+only how many times their own events were viewed.
 
 In the Firefox extension each of these is optional and Firefox asks you for it:
 the usage count and counters follow the technical-data switch in `about:addons`,
