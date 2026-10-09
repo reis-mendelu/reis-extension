@@ -998,6 +998,7 @@
     "openInAppleMaps": "Apple Mapy",
     "openInGoogleMaps": "Google Maps",
     "audienceHint": "Ostatní studenti tuto akci na mapě ani v Novinkách neuvidí.",
+    "partnerAudienceHint": "Akci uvidí jen studenti oborů, pro které je partner nastavený.",
     "panelCollapse": "Sbalit panel mapy",
     "panelExpand": "Rozbalit panel mapy",
     "walkMinutes": "{n} min",

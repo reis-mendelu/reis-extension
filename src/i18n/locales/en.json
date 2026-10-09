@@ -998,6 +998,7 @@
     "openInAppleMaps": "Apple Maps",
     "openInGoogleMaps": "Google Maps",
     "audienceHint": "Other students won't see this event on the map or in Novinky.",
+    "partnerAudienceHint": "Only students of the fields this partner is set up for will see this event.",
     "panelCollapse": "Collapse map panel",
     "panelExpand": "Expand map panel",
     "walkMinutes": "{n} min",
