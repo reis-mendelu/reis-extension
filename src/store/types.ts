@@ -483,6 +483,8 @@ export type MobileSheet =
   | { kind: 'personPhoto'; personId: string; name: string }
   | { kind: 'eduroam' }
   | { kind: 'docs' }
+  // Calendar view, language, dark mode — behind one Profile row (spec 2026-10-09).
+  | { kind: 'settings' }
   // reIS admins only: "view as a student" of another programme.
   | { kind: 'impersonation' }
   | { kind: 'menu'; dayIso: string }

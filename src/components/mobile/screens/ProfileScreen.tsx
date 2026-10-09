@@ -1,26 +1,31 @@
 import { useState } from 'react';
-import { Wifi, FileText, MessageSquarePlus, LogOut, UserCog, ShieldCheck } from 'lucide-react';
+import {
+  Wifi,
+  FileText,
+  MessageSquarePlus,
+  LogOut,
+  UserCog,
+  ShieldCheck,
+  Settings,
+} from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { HiddenItemsSection } from '../../Sidebar/Profile/HiddenItemsSection';
+import { useTheme } from '../../../hooks/useTheme';
 import { SignOutConfirm } from '../sheets/SignOutConfirm';
 import { AboutSection } from './profile/AboutSection';
 import { ProfileIdentity } from './profile/ProfileIdentity';
 import { NavRow } from '../primitives/NavRow';
-import { AppearanceRows } from './profile/AppearanceRows';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { AlwaysScrollable } from '../primitives/AlwaysScrollable';
 
 /**
- * The profile TAB: theme, language, eduroam setup, hidden items, feedback and
- * logout. Reuses desktop's `HiddenItemsSection` and the shared report form
- * (mounted by `MobileApp`) wholesale rather than rebuilding them — only the row
- * layout around them is phone-specific. No societies section: there is nothing
- * to choose (spec 2026-10-08); the console is reached by holding the name.
+ * The profile TAB: a way into Nastavení, eduroam setup, documents, feedback and
+ * logout. Reuses the shared report form (mounted by `MobileApp`) rather than
+ * rebuilding it. No societies section: there is nothing to choose (spec
+ * 2026-10-08); the console is reached by holding the name.
  *
- * `HiddenItemsSection` is the same component the desktop sidebar profile
- * uses, so a hidden event shows up here already — restoring it calls the same
- * `unhideEvent` action that removes it from the store's `hiddenItems`.
+ * No hidden-items list: hiding exists only on desktop calendar cards and
+ * storage is per device, so on a phone it was always empty (spec 2026-10-09).
  */
 export function ProfileScreen() {
   const { t } = useTranslation();
@@ -33,6 +38,16 @@ export function ProfileScreen() {
   const hasAdminSession = useAppStore((s) => s.adminSession !== null);
   const openSocietyAdmin = useAppStore((s) => s.openSocietyAdmin);
   const loadImpersonationOptions = useAppStore((s) => s.loadImpersonationOptions);
+
+  // The Nastavení row says what is set, so a student can check without opening it.
+  const savedView = useAppStore((s) => s.savedCalendarView);
+  const language = useAppStore((s) => s.language);
+  const { isDark } = useTheme();
+  const settingsSummary = [
+    t(savedView === 'week' ? 'mobile.calendar.weekView' : 'mobile.calendar.dayView'),
+    t(language === 'en' ? 'settings.english' : 'settings.czech'),
+    t(isDark ? 'mobile.profile.themeDark' : 'mobile.profile.themeLight'),
+  ].join(' · ');
 
   return (
     <div data-testid="profile-screen" className="flex flex-1 flex-col overflow-hidden">
@@ -49,13 +64,20 @@ export function ProfileScreen() {
           over the measurement, so a taller nav does not silently tuck under. */}
       <div data-testid="profile-scroll" className="flex-1 overflow-y-auto">
         <AlwaysScrollable className="pb-[calc(84px_+_var(--safe-bottom,0px))]">
-          <div className="px-4 pb-0.5 pt-2 text-xs font-bold uppercase tracking-wider text-base-content/60">
-            {t('mobile.profile.appearance')}
+          {/* One row, not a group: calendar view, language and dark mode are set
+            once (spec 2026-10-09), so they sit one tap down and the screen
+            keeps its room for things a student comes here to do. */}
+          <div className="pt-2">
+            <NavRow
+              icon={Settings}
+              label={t('mobile.profile.settings')}
+              sublabel={settingsSummary}
+              onClick={() => pushSheet({ kind: 'settings' })}
+            />
           </div>
-          <AppearanceRows />
 
           <div className="px-4 pb-0.5 pt-2 text-xs font-bold uppercase tracking-wider text-base-content/60">
-            {t('mobile.profile.settings')}
+            {t('mobile.profile.atSchool')}
           </div>
           {/* eduroam lives here rather than on the Student hub: it is a one-time
             device setup, which is what a settings screen is for, and it was
@@ -94,8 +116,6 @@ export function ProfileScreen() {
               }}
             />
           )}
-
-          <HiddenItemsSection />
 
           <div className="mx-4 my-2 h-px bg-base-content/10" />
 

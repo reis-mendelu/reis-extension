@@ -1329,8 +1329,11 @@
       "navigateToRoom": "Show {room} on the map"
     },
     "profile": {
-      "appearance": "Appearance",
-      "settings": "Settings"
+      "settings": "Settings",
+      "atSchool": "At school",
+      "calendar": "Calendar",
+      "themeDark": "Dark",
+      "themeLight": "Light"
     },
     "loadFailed": {
       "title": "Couldn't load your data",

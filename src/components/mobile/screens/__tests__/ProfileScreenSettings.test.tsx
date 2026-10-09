@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { ProfileScreen } from '../ProfileScreen';
 import { useAppStore } from '../../../../store/useAppStore';
 
@@ -61,22 +61,6 @@ describe('ProfileScreen', () => {
     } as never);
   });
 
-  it('flips the theme between mendelu-dark and mendelu', async () => {
-    render(<ProfileScreen />);
-    const themeToggle = screen.getByRole('checkbox', { name: /Tmavý režim/i });
-    expect(themeToggle).toBeChecked();
-
-    fireEvent.click(themeToggle);
-
-    await waitFor(() => expect(useAppStore.getState().theme).toBe('mendelu'));
-  });
-
-  it('switches the language', async () => {
-    render(<ProfileScreen />);
-    fireEvent.click(screen.getByText('English'));
-    await waitFor(() => expect(useAppStore.getState().language).toBe('en'));
-  });
-
   it('offers no calendar-sync toggle', () => {
     render(<ProfileScreen />);
     // The Outlook calendar mirror was removed once the phone app covered it.
@@ -100,11 +84,24 @@ describe('ProfileScreen', () => {
     expect(useAppStore.getState().mobileSheets).toEqual([{ kind: 'eduroam' }]);
   });
 
-  it('shows a hidden event and restores it, removing it from the hidden list', () => {
+  // Hiding lessons exists only on desktop calendar cards, and storage is per
+  // device, so on a phone this list was always empty and never rendered.
+  it('has no hidden-items list on the phone', () => {
     render(<ProfileScreen />);
-    // HiddenItemsSection starts collapsed - expand it first.
-    fireEvent.click(screen.getByText('Skryté položky'));
-    fireEvent.click(screen.getByTitle('Obnovit'));
-    expect(useAppStore.getState().hiddenItems.events).toEqual([]);
+    expect(screen.queryByText('Skryté položky')).toBeNull();
+  });
+
+  it('opens Nastavení in one tap, showing the current values', () => {
+    useAppStore.setState({ savedCalendarView: 'week' } as never);
+    render(<ProfileScreen />);
+    expect(screen.getByText('Týden · Čeština · Tmavý')).toBeTruthy();
+    fireEvent.click(screen.getByText('Nastavení'));
+    expect(useAppStore.getState().mobileSheets).toEqual([{ kind: 'settings' }]);
+  });
+
+  it('groups eduroam and documents under Ve škole, with no Vzhled group', () => {
+    render(<ProfileScreen />);
+    expect(screen.getByText('Ve škole')).toBeTruthy();
+    expect(screen.queryByText('Vzhled')).toBeNull();
   });
 });

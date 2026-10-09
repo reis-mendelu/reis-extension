@@ -1329,8 +1329,11 @@
       "navigateToRoom": "Ukázat {room} na mapě"
     },
     "profile": {
-      "appearance": "Vzhled",
-      "settings": "Nastavení"
+      "settings": "Nastavení",
+      "atSchool": "Ve škole",
+      "calendar": "Kalendář",
+      "themeDark": "Tmavý",
+      "themeLight": "Světlý"
     },
     "loadFailed": {
       "title": "Data se nepodařilo načíst",
