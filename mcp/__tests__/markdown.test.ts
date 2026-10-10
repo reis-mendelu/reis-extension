@@ -18,6 +18,12 @@ describe('toMarkdown', () => {
     expect(toMarkdown([{ n: 'a|b\nc' }])).toContain('a\\|b c');
   });
 
+  it('keeps the line breaks of multi-line text values', () => {
+    expect(toMarkdown({ kind: 'pdf', text: 'Slide 1\nSlide 2' })).toBe(
+      '- **kind:** pdf\n- **text:**\n\n  Slide 1\n  Slide 2\n'
+    );
+  });
+
   it('says so when there is nothing', () => {
     expect(toMarkdown([])).toBe('Nothing found.');
     expect(toMarkdown(null)).toBe('Nothing found.');

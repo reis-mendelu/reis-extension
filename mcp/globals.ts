@@ -10,7 +10,7 @@ export const nativeFetch: typeof fetch = globalThis.fetch.bind(globalThis);
 
 let current: typeof fetch = nativeFetch;
 /** Point the global fetch at the IS session. The global itself is set once, here. */
-export function useSessionFetch(f: typeof fetch): void {
+export function setSessionFetch(f: typeof fetch): void {
   current = f;
 }
 

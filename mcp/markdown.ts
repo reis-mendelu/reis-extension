@@ -37,6 +37,11 @@ function bullets(value: unknown, indent: string): string[] {
     return Object.entries(value).flatMap(([k, v]) => {
       if (isEmpty(v)) return [];
       if (typeof v === 'object') return [`${indent}- **${k}:**`, ...bullets(v, indent + '  ')];
+      // Multi-line text (a lecture's extracted text, a syllabus section)
+      // keeps its line breaks as a block under its key.
+      if (typeof v === 'string' && v.includes('\n')) {
+        return [`${indent}- **${k}:**`, '', ...v.split('\n').map((l) => `${indent}  ${l}`), ''];
+      }
       return [`${indent}- **${k}:** ${scalar(v)}`];
     });
   }

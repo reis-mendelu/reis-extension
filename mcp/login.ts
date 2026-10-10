@@ -6,11 +6,11 @@ export type LoginFailure = 'bad-credentials' | 'two-factor' | 'unexpected';
 
 /** Messages are fixed strings: a thrown message ends up in Claude Desktop's logs. */
 export class IsLoginError extends Error {
-  constructor(
-    readonly kind: LoginFailure,
-    message: string
-  ) {
+  readonly kind: LoginFailure;
+
+  constructor(kind: LoginFailure, message: string) {
     super(message);
+    this.kind = kind;
     this.name = 'IsLoginError';
   }
 }

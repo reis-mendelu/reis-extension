@@ -1,4 +1,3 @@
-import { getDocumentProxy, extractText as extractPdfText } from 'unpdf';
 import { parseOffice } from 'officeparser';
 import { fetchFilesFromFolder } from '../src/api/documents/service';
 
@@ -12,7 +11,10 @@ export type FileText = {
 };
 
 const EMPTY = 'No extractable text — the document may be scanned or image-only.';
-const OFFICE_EXTENSIONS = ['.docx', '.pptx', '.xlsx', '.odt'];
+// One extractor for PDF and Office files: officeparser 8 ships the patched
+// pdfjs-dist 6.2.108. unpdf bundled its own pdfjs 6.1.200 (inside the
+// GHSA-hq66-cqwq-w95j range), and two pdfjs copies in one process collide.
+const DOC_EXTENSIONS = ['.pdf', '.docx', '.pptx', '.xlsx', '.odt'];
 const TEXT_EXTENSIONS = ['.txt', '.md', '.csv'];
 
 const clean = (t: string) => t.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
@@ -65,19 +67,20 @@ export async function readDokServerFile(url: string, fetchImpl: typeof fetch): P
   const bytes = new Uint8Array(await res.arrayBuffer());
   const ext = extOf(filename);
 
-  if (type === 'application/pdf' || ext === '.pdf') {
-    const pdf = await getDocumentProxy(bytes);
-    const { totalPages, text } = await extractPdfText(pdf, { mergePages: true });
-    const t = clean(text);
-    return { ...named, kind: 'pdf', pages: totalPages, text: t, ...withNote(t) };
-  }
   if (
-    /wordprocessingml|presentationml|spreadsheetml|opendocument/.test(type) ||
-    OFFICE_EXTENSIONS.includes(ext)
+    /pdf|wordprocessingml|presentationml|spreadsheetml|opendocument/.test(type) ||
+    DOC_EXTENSIONS.includes(ext)
   ) {
     const ast = await parseOffice(Buffer.from(bytes));
     const t = clean((await ast.to('text')).value);
-    return { ...named, kind: ext.slice(1) || 'office', text: t, ...withNote(t) };
+    const pages = ast.metadata?.pages;
+    return {
+      ...named,
+      kind: ast.type || ext.slice(1) || 'document',
+      ...(pages ? { pages } : {}),
+      text: t,
+      ...withNote(t),
+    };
   }
   if (
     type.startsWith('text/') ||

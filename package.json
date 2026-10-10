@@ -59,7 +59,9 @@
     "gen:splash": "tsx scripts/gen-splash.mts",
     "shot:route": "tsx --tsconfig tsconfig.app.json scripts/shot-route.ts",
     "privacy:generate": "tsx scripts/privacy/generate.ts",
-    "privacy:publish": "tsx scripts/privacy/publish.ts"
+    "privacy:publish": "tsx scripts/privacy/publish.ts",
+    "mcp:build": "vite build --config vite.mcp.config.ts",
+    "mcp:smoke": "npm run mcp:build && node scripts/mcp-smoke.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
@@ -144,7 +146,6 @@
     "tsx": "^4.23.15",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.71.0",
-    "unpdf": "^1.8.1",
     "vite": "^7.3.6",
     "vitest": "^5.0.1",
     "wxt": "^0.21.4"
