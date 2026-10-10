@@ -1,0 +1,9 @@
+{
+  "_comment": "Every feature that has a post, so no run proposes it again. Add a row when a post is drafted; set status when it is scheduled or published.",
+  "posts": [
+    { "slug": "tyden", "prs": [493, 528], "date": "2026-10-14", "status": "scheduled", "release": "5.4.0" },
+    { "slug": "odevzdavarny", "prs": [494, 504], "date": "2026-10-16", "status": "scheduled", "release": "5.4.0" },
+    { "slug": "prejmenovani", "prs": [506], "date": "2026-10-21", "status": "scheduled", "release": "5.4.0" },
+    { "slug": "budova-z", "prs": [451], "date": "2026-10-23", "status": "scheduled", "release": "5.4.0" }
+  ]
+}

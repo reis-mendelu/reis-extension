@@ -38,8 +38,9 @@ node scripts/instagram/reel.cjs scripts/instagram/examples/reel-week.json script
 
 ## Adding a screen
 
-Add a recipe to `capture.cjs` / a script to `record.cjs`, driven by roles and
-labels the way a student taps. Seed data the screen needs into
+Add `recipes/<name>.cjs` exporting `async (page) => {}` (or a script to
+`record.cjs` for a Reel), driven by roles and labels the way a student taps.
+`posted.json` lists every feature that already has a post. Seed data the screen needs into
 `data/*.json`; the demo dataset alone is too thin for a convincing week.
 
 ## Why not Claude Design

@@ -19,7 +19,7 @@
   body { font-family: 'DM Sans', sans-serif; color: var(--ink); position: relative; -webkit-font-smoothing: antialiased; }
 
   .bar { position: absolute; inset: 0 0 auto 0; height: 12px; background: var(--lime); }
-  .dots { position: absolute; top: 36px; right: 36px; width: 230px; height: 120px;
+  .dots { position: absolute; top: 36px; right: 36px; width: 208px; height: 104px;
     background-image: radial-gradient(circle, #233044 5px, transparent 5.5px);
     background-size: 52px 52px; }
 
@@ -73,7 +73,10 @@
     const esc = (s) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
     // *text* marks the highlighted phrase; everything else is escaped text.
     // Czech typography: a one-letter preposition/conjunction never ends a line.
-    const nbsp = (s) => String(s ?? '').replace(/(^|\s)([vkszouaiVKSZOUAI])\s+/g, '$1$2\u00a0');
+    // ...and neither does an ordinal or a number ("1. opravný", "20 postů").
+    const nbsp = (s) => String(s ?? '')
+      .replace(/(^|\s)([vkszouaiVKSZOUAI])\s+/g, '$1$2\u00a0')
+      .replace(/(\d+\.?)\s+/g, '$1\u00a0');
     const marked = (s) => esc(nbsp(s)).replace(/\*(.+?)\*/g, '<mark>$1</mark>');
     document.getElementById('kicker').textContent = spec.kicker || '';
     document.getElementById('kicker').style.display = spec.kicker ? '' : 'none';
@@ -84,9 +87,14 @@
     const phone = document.getElementById('phone');
     if (spec.screenshot) {
       document.getElementById('shot').src = spec.screenshot;
-      phone.style.top = (spec.phoneTop || 640) + 'px';
-      // shotOffset: app CSS px to scroll the screenshot up (the phone shows the top ~470 px of an 844 px screen).
-      document.getElementById('shot').style.marginTop = -((spec.shotOffset || 0) * 536 / 390) + 'px';
+      if (spec.phoneTop) phone.style.top = spec.phoneTop + 'px'; // else render.cjs puts it under the text
+      // shotZoom: magnify the screen (small UI). shotOffset / shotOffsetX: app CSS px to scroll it into view.
+      const k = (536 / 390) * (spec.shotZoom || 1);
+      const shot = document.getElementById('shot');
+      shot.style.width = (100 * (spec.shotZoom || 1)) + '%';
+      shot.style.maxWidth = 'none';
+      shot.style.marginTop = -((spec.shotOffset || 0) * k) + 'px';
+      shot.style.marginLeft = -((spec.shotOffsetX || 0) * k) + 'px';
     } else {
       phone.remove();
       document.body.classList.add('statement');

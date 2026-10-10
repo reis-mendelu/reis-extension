@@ -50,6 +50,11 @@ const path = require('path');
   for (const size of spec.h1Size ? [spec.h1Size] : [88, 80, 72, 66, 60]) {
     await page.evaluate((px) => document.documentElement.style.setProperty('--h1', px + 'px'), size);
     await page.evaluate(() => document.fonts.ready);
+    // Phone sits 56 px under the text (never above 560), so short copy leaves no empty band.
+    if (!spec.phoneTop) await page.evaluate(() => {
+      const ph = document.querySelector('.phone');
+      if (ph) ph.style.top = Math.max(560, Math.round(document.querySelector('.head').getBoundingClientRect().bottom + 56)) + 'px';
+    });
     problems = await check();
     if (!problems.length) { console.log('headline size', size); break; }
   }
