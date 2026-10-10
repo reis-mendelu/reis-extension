@@ -7,8 +7,9 @@ interface Props {
 
 export function PhArchView({ sections }: Props) {
   const { t } = useTranslation();
-  const hasAny = sections.some((s) => s.arches.some((a) => !a.empty));
-  if (!hasAny) return null;
+  // Empty arches render too: "Zápočet —" tells the student the teacher has set
+  // the subject up and simply not written anything yet, which a blank tab can't.
+  if (!sections.some((s) => s.arches.length > 0)) return null;
 
   return (
     <div className="space-y-3">
@@ -24,7 +25,7 @@ export function PhArchView({ sections }: Props) {
             <div key={ai} className="bg-base-200/60 rounded-lg px-3 py-2">
               <p className="text-[11px] font-semibold text-base-content/60 mb-1">{arch.name}</p>
               {arch.empty ? (
-                <p className="text-[12px] text-base-content/30">—</p>
+                <p className="text-[12px] text-base-content/60">—</p>
               ) : arch.columns.length === 1 ? (
                 <p className="text-[12px] font-medium text-base-content">
                   <span className="text-base-content/50">{arch.columns[0]}: </span>

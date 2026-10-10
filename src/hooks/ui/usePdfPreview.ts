@@ -5,6 +5,7 @@ import { useTranslation } from '../useTranslation';
 import { logError } from '../../utils/reportError';
 import { openPdfWithInk } from '../../mobile/pdfInk';
 import { usePdfInkStrings } from './usePdfInkStrings';
+import { usePdfReadingPosition } from './usePdfReadingPosition';
 import { useAppStore } from '../../store/useAppStore';
 import type { SubjectPdfInput } from '../../mobile/pdfInkFiles';
 import { isPdfInkAvailable, nativePdfInkDeps } from '../../mobile/pdfInkNative';
@@ -87,6 +88,8 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
   }, []);
 
   const inkStrings = usePdfInkStrings();
+  // The web viewer's page. The iPad reader keeps its own, in the PDF cache index.
+  const { loadPosition, viewerPosition } = usePdfReadingPosition(courseCode);
 
   /**
    * Native reader first. `handled` means the tap is done (shown, or failed and
@@ -146,16 +149,19 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
           return;
         }
         if (blobUrl) {
+          await loadPosition(link);
           setPreviewUrl(blobUrl);
           setPreviewFile({ link, name });
         } else {
-          await openFile(link);
+          // The row's title names the file if IS sends none — never the 'PDF'
+          // placeholder above.
+          await openFile(link, meta?.name ? { name: meta.name } : undefined);
         }
       } finally {
         if (alive.current) setOpeningLink(null);
       }
     },
-    [courseCode, tryNativeReader, openPdfInline, openFile, openingLink]
+    [courseCode, tryNativeReader, openPdfInline, openFile, openingLink, loadPosition]
   );
 
   const closePreview = useCallback(() => {
@@ -166,6 +172,8 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
   return {
     previewUrl,
     previewFile,
+    /** Spread onto <PdfViewer>: the page to reopen on, and where to save the next one. */
+    previewPosition: viewerPosition,
     openingLink,
     isPreviewLoading: openingLink !== null,
     viewPdf,

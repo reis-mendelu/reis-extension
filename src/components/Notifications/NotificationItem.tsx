@@ -1,8 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { Bell, ChevronRight } from 'lucide-react';
 import type { SpolekNotification } from '../../services/spolky';
-import { ASSOCIATION_PROFILES } from '../../services/spolky/config';
-import { SOCIETIES } from '../../data/societies';
+import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 
 /**
@@ -62,11 +61,12 @@ export function NotificationItem({
   // Academic rows are reIS's own — the deadline feed, not a society's — and
   // there is no profile to name. `t` gives them the app's name instead of a
   // blank line, which would collapse the row to a different height.
-  const source = ASSOCIATION_PROFILES[assocId]?.name ?? t('notifications.fromReis');
-  // SOCIETIES, not societyById: that helper falls back to ESN for an unknown
-  // id, which would badge every reIS announcement with somebody else's logo.
-  // A row with no society keeps the tinted bell.
-  const logo = SOCIETIES[assocId]?.logo ?? null;
+  const society = useAppStore((s) => s.societies[assocId]);
+  const source = society?.name ?? t('notifications.fromReis');
+  // The catalog itself, never resolveSociety: that would turn an id that is not
+  // a society (reIS announcements, academic rows) into a neutral tile. A row
+  // with no society keeps the tinted bell.
+  const logo = society?.logo ?? null;
 
   const d = new Date(notification.expiresAt);
   const now = new Date();
@@ -105,8 +105,8 @@ export function NotificationItem({
           src={logo}
           alt=""
           className="h-8 w-8 flex-shrink-0 rounded-lg object-cover"
-          // The logos ship beside the app, but the extension serves them from
-          // its own origin and a bare path can miss. Falling back to the tinted
+          // Logos load from Supabase Storage over the network, so a failed load
+          // is ordinary. Falling back to the tinted
           // bell keeps the slot filled at the same size, so a missing image
           // cannot shift the row's text out of line with its neighbours.
           onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {

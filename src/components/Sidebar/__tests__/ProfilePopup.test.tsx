@@ -11,9 +11,6 @@ vi.mock('../../../services/storage', () => ({
   },
 }));
 vi.mock('../../../hooks/useUserParams', () => ({ useUserParams: () => ({ params: null }) }));
-vi.mock('../../../hooks/useSpolkySettings', () => ({
-  useSpolkySettings: () => ({ isSubscribed: () => false, toggleAssociation: vi.fn() }),
-}));
 
 beforeEach(() => {
   useAppStore.setState({ language: 'en', isEduroamOpen: false, eduroamInitialTarget: null });
@@ -53,6 +50,24 @@ describe('ProfilePopup — report a problem', () => {
     fireEvent.click(screen.getByRole('button', { name: /Report Bug/i }));
     expect(useAppStore.getState().reportOpen).toBe(true);
     expect(useAppStore.getState().reportPrefill).toBeNull();
+    expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe('ProfilePopup — view as a student', () => {
+  it('is absent for everyone but a reis_admin', () => {
+    useAppStore.setState({ adminRole: 'association' });
+    render(<ProfilePopup isOpen />);
+    expect(screen.queryByRole('button', { name: /View as a student/ })).toBeNull();
+  });
+
+  it('for a reis_admin, opens the picker and closes the popup', () => {
+    const open = vi.fn();
+    useAppStore.setState({ adminRole: 'reis_admin', openImpersonationPicker: open });
+    const onClose = vi.fn();
+    render(<ProfilePopup isOpen onClose={onClose} />);
+    fireEvent.click(screen.getByRole('button', { name: /View as a student/ }));
+    expect(open).toHaveBeenCalledOnce();
     expect(onClose).toHaveBeenCalled();
   });
 });

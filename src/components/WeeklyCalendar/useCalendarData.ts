@@ -151,15 +151,21 @@ export function useCalendarData(initialDate: Date) {
     );
   }, [weekDates, language]);
 
-  const todayIndex = useMemo(() => {
-    const today = new Date();
-    return weekDates.findIndex(
-      (d) =>
-        parseInt(d.day) === today.getDate() &&
-        parseInt(d.month) === today.getMonth() + 1 &&
-        parseInt(d.year) === today.getFullYear()
-    );
-  }, [weekDates]);
+  // Today from the store's clock, as a YYYYMMDD number: the pulse advances
+  // `now` every second, and a primitive changes only at midnight, so a
+  // calendar left open overnight re-marks today (and widens to a weekend
+  // today) without re-rendering the grid every tick.
+  const todayKey = useAppStore(
+    (state) =>
+      state.now.getFullYear() * 10000 + (state.now.getMonth() + 1) * 100 + state.now.getDate()
+  );
+  const todayIndex = useMemo(
+    () =>
+      weekDates.findIndex(
+        (d) => parseInt(d.year) * 10000 + parseInt(d.month) * 100 + parseInt(d.day) === todayKey
+      ),
+    [weekDates, todayKey]
+  );
 
   const isOutsideTeachingPeriod = useMemo(() => {
     if (!teachingWeekData || !isScheduleLoaded) return false;
@@ -185,12 +191,16 @@ export function useCalendarData(initialDate: Date) {
    * The count is contiguous rather than per-day (a lone Sunday lesson shows
    * Saturday too) — the columns are laid out side by side, so skipping one
    * would leave a hole in the week rather than a narrower week.
+   *
+   * TODAY widens it too, in its own week only: on a lesson-free Saturday the
+   * grid stopped at Friday and nothing on screen said which day it was. The
+   * phone's `weekDays()` makes the same exception.
    */
   const visibleDayCount = useMemo(() => {
-    if (lessonsByDay[6].length > 0) return 7;
-    if (lessonsByDay[5].length > 0) return 6;
+    if (lessonsByDay[6].length > 0 || todayIndex === 6) return 7;
+    if (lessonsByDay[5].length > 0 || todayIndex === 5) return 6;
     return 5;
-  }, [lessonsByDay]);
+  }, [lessonsByDay, todayIndex]);
 
   // Everything inside the visible columns, which is what the empty-week overlay
   // has to judge. A weekend item can no longer fool that check by being counted

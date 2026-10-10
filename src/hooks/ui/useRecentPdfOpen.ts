@@ -5,6 +5,7 @@ import { usePdfInkStrings } from './usePdfInkStrings';
 import { useTranslation } from '../useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { logError } from '../../utils/reportError';
+import { courseDisplayName } from '../../utils/courseDisplayName';
 import { openPdfWithInk } from '../../mobile/pdfInk';
 import { nativePdfInkDeps } from '../../mobile/pdfInkNative';
 import type { RecentPdf } from '../../utils/mobile/recentPdfs';
@@ -37,7 +38,7 @@ export function useRecentPdfOpen() {
       if (isOpening) return;
       setIsOpening(true);
       try {
-        const { subjects, cachedPdfs, refreshRecentPdfs } = useAppStore.getState();
+        const { subjects, cachedPdfs, refreshRecentPdfs, courseNicknames } = useAppStore.getState();
         const listing = listSubjectPdfs(
           groupAndSortFiles(subjectFiles[row.courseCode] ?? null, row.courseCode, t).flatMap(
             (g) => g.files
@@ -50,7 +51,11 @@ export function useRecentPdfOpen() {
               .map(({ link, name, date }) => ({ link, name, date }));
         const result = await openPdfWithInk(nativePdfInkDeps, {
           courseCode: row.courseCode,
-          courseTitle: subjects?.data[row.courseCode]?.displayName ?? row.courseCode,
+          courseTitle: courseDisplayName(
+            courseNicknames,
+            row.courseCode,
+            subjects?.data[row.courseCode]?.displayName
+          ),
           fileLink: row.link,
           name: row.name,
           date: row.date,

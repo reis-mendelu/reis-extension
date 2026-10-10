@@ -60,9 +60,26 @@ describe('useFileActions on Capacitor', () => {
         'slozka.pl?download=1',
         undefined,
         undefined,
-        method === 'downloadSingle' ? expect.any(Function) : undefined
+        method === 'downloadSingle' ? expect.any(Function) : undefined,
+        undefined
       );
       expect(global.fetch).not.toHaveBeenCalled();
+    }
+  );
+
+  // The row's title is the name of last resort, after IS's own: without it a
+  // file served with no Content-Disposition name saved as `dokument.<ext>`.
+  it.each([['openFile'], ['downloadSingle']] as const)(
+    "%s hands the row's title to the native save",
+    async (method) => {
+      const { result } = renderHook(() => useFileActions());
+      const row = { name: 'Přednáška 3', type: 'pdf' };
+
+      await act(async () => {
+        await result.current[method]('slozka.pl?download=1', row);
+      });
+
+      expect(vi.mocked(openIsFileNatively).mock.calls[0]?.[4]).toEqual(row);
     }
   );
 

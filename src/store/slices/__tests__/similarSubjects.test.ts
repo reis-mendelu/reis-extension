@@ -122,6 +122,18 @@ describe('fetchSuccessRate → similar subjects', () => {
     expect(spy).toHaveBeenCalledWith('EKOE1');
   });
 
+  it('settles on nothing to suggest when loading its own stats fails', async () => {
+    // The tab waits on this entry; without it a failure would spin forever.
+    serve({});
+    const spy = vi.fn(async () => {});
+    useAppStore.setState({ fetchSimilarSubjects: spy } as never);
+    const get = vi.spyOn(IndexedDBService, 'get').mockRejectedValueOnce(new Error('idb closed'));
+    await useAppStore.getState().fetchSuccessRate('EKOE1');
+    get.mockRestore();
+    expect(spy).not.toHaveBeenCalled();
+    expect(useAppStore.getState().similarSubjects.EKOE1).toEqual([]);
+  });
+
   it('does not when the subject has stats of its own', async () => {
     serve({ 'subjects/PRVES': stats });
     const spy = vi.fn(async () => {});

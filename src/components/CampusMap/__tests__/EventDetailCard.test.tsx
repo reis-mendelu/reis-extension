@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { EventDetailCard } from '../EventDetailCard';
+import { neutralSociety } from '../../../utils/societies/resolveSociety';
 import type { MapEvent } from '../../../types/events';
 
 const ev: MapEvent = {
@@ -20,9 +21,25 @@ const ev: MapEvent = {
   venueKind: 'offcampus',
   category: 'party',
 };
+// The store is a singleton: each test starts from the same catalog rather
+// than whatever an earlier test left behind.
+const initialSocieties = useAppStore.getState().societies;
+
 describe('EventDetailCard', () => {
+  // The category word was wrong as often as the picture, and the title already
+  // says what the event is (spec 2026-10-08-event-emoji-design).
+  it('does not name a category', () => {
+    render(<EventDetailCard event={{ ...ev, category: 'party' }} />);
+    expect(screen.queryByText('Párty')).toBeNull();
+    expect(screen.queryByText('Party')).toBeNull();
+  });
+
   beforeEach(() => {
     useAppStore.setState({
+      societies: {
+        ...initialSocieties,
+        esn: { ...neutralSociety('esn'), shortName: 'ESN', instagram: 'esnmendelubrno' },
+      },
       adminConsoleOpen: false,
       adminAssociationId: 'supef',
       adminActiveAssociationId: 'supef',
@@ -43,6 +60,21 @@ describe('EventDetailCard', () => {
     render(<EventDetailCard event={ev} />);
     expect(screen.queryByRole('button', { name: /delete|smazat/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /edit|upravit/i })).toBeNull();
+  });
+
+  // The composer's optional description, shown to students on the card both
+  // trees render (the desktop DetailPanel and the phone's map sheet). Line
+  // breaks the society typed are kept.
+  it('shows the description the society wrote, line breaks kept', () => {
+    render(<EventDetailCard event={{ ...ev, description: 'Sraz u Q.\nVezměte propisku.' }} />);
+    const p = screen.getByText(/Sraz u Q\./);
+    expect(p.textContent).toBe('Sraz u Q.\nVezměte propisku.');
+    expect(p.className).toContain('whitespace-pre-line');
+  });
+
+  it('draws no description block when there is none', () => {
+    const { container } = render(<EventDetailCard event={{ ...ev, description: null }} />);
+    expect(container.querySelector('.whitespace-pre-line')).toBeNull();
   });
 
   it('links an off-campus venue to Google Maps at its coordinates (lat,lng)', () => {
@@ -112,6 +144,19 @@ describe('EventDetailCard', () => {
 
   // Nothing to open: no coordinate, no name, no row — rather than a link
   // pointing at 0,0.
+  // A semester-list import: the society has not said where yet. The card's
+  // Instagram button is where that gets announced; a muted "Místo upřesní …"
+  // line above it only repeated that nobody knows.
+  it('says nothing about the place for a TBA event', () => {
+    const { container } = render(
+      <EventDetailCard
+        event={{ ...ev, location: null, coord: null, roomCode: null, venueKind: 'tba' }}
+      />
+    );
+    expect(screen.queryByText(/upřesní|TBA/)).toBeNull();
+    expect(container.querySelector('.lucide-map-pin')).toBeNull();
+  });
+
   it('renders no venue row when the event has neither a coordinate nor a name', () => {
     const nowhere: MapEvent = { ...ev, location: null, coord: null };
     render(<EventDetailCard event={nowhere} />);
@@ -125,5 +170,67 @@ describe('EventDetailCard', () => {
       'href',
       'https://example.com/event'
     );
+  });
+
+  // A TBA event has no room, no coordinate, and no url: everything a society
+  // knows so far is "watch our Instagram". There is no venue line, and the
+  // More-info button becomes the Instagram link.
+  it('links to Instagram, with no venue line, for a TBA event with no url', () => {
+    const tbaEvent: MapEvent = {
+      ...ev,
+      societyId: 'esn',
+      url: '',
+      location: null,
+      coord: null,
+      roomCode: null,
+      venueKind: 'tba',
+    };
+    render(<EventDetailCard event={tbaEvent} />);
+    expect(screen.queryByText(/venue tba/i)).toBeNull();
+    const link = screen.getByRole('link', { name: /more on instagram/i });
+    expect(link).toHaveAttribute('href', 'https://www.instagram.com/esnmendelubrno/');
+  });
+
+  it('prefers the event url over Instagram when both are available', () => {
+    const tbaEvent: MapEvent = {
+      ...ev,
+      societyId: 'esn',
+      url: 'https://esn.cz/e',
+      location: null,
+      coord: null,
+      roomCode: null,
+      venueKind: 'tba',
+    };
+    render(<EventDetailCard event={tbaEvent} />);
+    expect(screen.getByRole('link', { name: /more info/i })).toHaveAttribute(
+      'href',
+      'https://esn.cz/e'
+    );
+  });
+  // A trip's card has to say how long it is: the start alone reads as a
+  // one-evening event, and the list only says "ongoing until" once it began.
+  it('shows the whole date range on one line for a multi-day event', () => {
+    render(<EventDetailCard event={{ ...ev, date: '2026-11-23', endDate: '2026-11-29' }} />);
+    const line = screen.getByText(/23.*29/);
+    expect(line.textContent).toMatch(/Mon.*November 23.*Sun.*November 29/);
+  });
+
+  it('shows a single date for a one-day event', () => {
+    render(<EventDetailCard event={{ ...ev, date: '2026-11-23', endDate: null, time: '18:00' }} />);
+    expect(screen.getByText(/November 23/).textContent).toBe('Mon, November 23 · 18:00');
+  });
+
+  it('treats an end date equal to the start as a one-day event', () => {
+    render(<EventDetailCard event={{ ...ev, date: '2026-11-23', endDate: '2026-11-23' }} />);
+    expect(screen.getByText(/November 23/).textContent).toBe('Mon, November 23');
+  });
+
+  // Reduced on purpose (spec 2026-10-08): an event to go to, shown quietly.
+  // Nothing to follow, nothing to answer, nobody counted.
+  it('carries no follow, no RSVP and no count', () => {
+    render(<EventDetailCard event={ev} />);
+    expect(screen.queryByRole('button', { name: /follow/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /interested/i })).toBeNull();
+    expect(screen.queryByText(/interested/i)).toBeNull();
   });
 });

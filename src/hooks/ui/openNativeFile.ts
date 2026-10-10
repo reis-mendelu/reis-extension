@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 import { logError } from '../../utils/reportError';
 import { openIsFileNatively } from '../../mobile/openIsFile';
+import type { FileRowHint } from '../../utils/contentDisposition';
 
 /**
  * The native branch of useFileActions' openFile/downloadSingle, with the error
@@ -26,10 +27,11 @@ export async function openNativeFile(
   fullUrl: string,
   context: string,
   t: (key: string) => string,
-  onFetched?: () => void
+  onFetched?: () => void,
+  row?: FileRowHint
 ): Promise<void> {
   try {
-    const { delivered } = await openIsFileNatively(fullUrl, undefined, undefined, onFetched);
+    const { delivered } = await openIsFileNatively(fullUrl, undefined, undefined, onFetched, row);
     // Android saves into Downloads and posts a notification — but
     // POST_NOTIFICATIONS is a runtime grant, and a student who declined it (or
     // was never asked, which was the case) got NO signal at all while the file

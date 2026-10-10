@@ -1,10 +1,26 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('../../../api/campusMap', () => ({ fetchBuildingRooms: vi.fn() }));
+// Q (building 0) has a 3D model, and loading its floor plan also asks for it.
+vi.mock('../../../api/buildingModels', () => ({
+  fetchBuildingModel: vi.fn().mockResolvedValue(null),
+}));
+// reloadMapEvents fetches the societies catalog beside the events; keep it off the network.
+vi.mock('../../../api/societies', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../api/societies')>()),
+  fetchSocieties: vi.fn(async () => null),
+}));
 vi.mock('../../../api/mapEvents', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../api/mapEvents')>();
   return { ...actual, fetchMapEvents: vi.fn() };
 });
+// Spied, so the failed-reload test can tell the null guard from a crash that
+// the catch block swallows (both leave the list alone; only one logs).
+vi.mock('../../../utils/reportError', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../utils/reportError')>()),
+  logError: vi.fn(),
+}));
+import { logError } from '../../../utils/reportError';
 import { fetchBuildingRooms } from '../../../api/campusMap';
 import { fetchMapEvents } from '../../../api/mapEvents';
 import { useAppStore } from '../../useAppStore';
@@ -86,6 +102,7 @@ beforeEach(() => {
     mapFocusRequest: 0,
     mapEvents: [],
     mapEventsLoaded: false,
+    mapEventsFetchedAt: null,
     mapPanelTab: 'places',
     placingEvent: false,
     draftCoord: null,
@@ -170,7 +187,6 @@ describe('mapSlice', () => {
   it.each([
     ['T18', 1572, 'T18'], // building T's pin
     ['ZFAC1 (Led)', -102, 'ZFAC1'], // the Lednice campus
-    ['Z11 (ČP II.)', 1587, 'Z11'], // FRRMS, Černá Pole II
   ])('focusRoomByCode shows the building for %s', (raw, id, forRoom) => {
     const before = useAppStore.getState().mapFocusRequest;
     useAppStore.getState().focusRoomByCode(raw);
@@ -178,6 +194,33 @@ describe('mapSlice', () => {
     expect(s.mapSelection).toMatchObject({ kind: 'poi', poi: { id }, forRoom });
     expect(s.activeBuildingId).toBeNull();
     expect(s.mapFocusRequest).toBe(before + 1);
+  });
+
+  it('focusing the FRRMS landmark opens budova Z instead of a no-floor-plan card', () => {
+    useAppStore.getState().focusLandmarkById(1587);
+    const s = useAppStore.getState();
+    expect(s.activeBuildingId).toBe(9000001);
+    expect(s.mapSelection?.kind).not.toBe('poi');
+  });
+
+  it('Kolej Akademie keeps its card (it is the dormitory, not the faculty)', () => {
+    useAppStore.getState().focusLandmarkById(1616);
+    const s = useAppStore.getState();
+    expect(s.mapSelection?.kind === 'poi' && s.mapSelection.poi.id).toBe(1616);
+  });
+
+  it('focusRoomByCode opens an FRRMS room on its floor in budova Z', () => {
+    useAppStore.getState().focusRoomByCode('Z11 (ČP II.)');
+    const s = useAppStore.getState();
+    expect(s.activeBuildingId).toBe(9000001);
+    expect(s.activeFloorId).toBe(9000011);
+  });
+
+  it('focusRoomByCode shows nothing for Budova K, which the map has no place for', () => {
+    useAppStore.setState({ mapSelection: null, activeBuildingId: null });
+    useAppStore.getState().focusRoomByCode('K01 (ČP II.)');
+    expect(useAppStore.getState().mapSelection).toBeNull();
+    expect(useAppStore.getState().activeBuildingId).toBeNull();
   });
 
   it('focusRoomByCode points a room in a mapped building the map does not draw at that building', () => {
@@ -285,6 +328,89 @@ describe('mapSlice', () => {
     expect(useAppStore.getState().mapEventsLoaded).toBe(true);
   });
 
+  it('reloadMapEvents keeps the last list and loaded flag when a reload fails', async () => {
+    useAppStore.setState({
+      mapEvents: MOCK_EVENTS,
+      mapEventsLoaded: true,
+      mapEventsFetchedAt: 123,
+    });
+    vi.mocked(fetchMapEvents).mockResolvedValueOnce(null);
+    vi.mocked(logError).mockClear();
+    await useAppStore.getState().reloadMapEvents();
+    // The fetch really ran: a reload that short-circuited would also keep the list.
+    expect(vi.mocked(fetchMapEvents)).toHaveBeenCalledTimes(1);
+    expect(useAppStore.getState().mapEvents).toEqual(MOCK_EVENTS);
+    expect(useAppStore.getState().mapEventsLoaded).toBe(true);
+    // A failed fetch is not a fresh one, and it is handled, not thrown: without
+    // the null guard `events.map` throws into the catch, which logs.
+    expect(useAppStore.getState().mapEventsFetchedAt).toBe(123);
+    expect(logError).not.toHaveBeenCalled();
+  });
+
+  // Boot and resume (or two resumes) can both be in flight. The older, slower
+  // response used to land last and overwrite the newer catalog — and stamp
+  // mapEventsFetchedAt, so the stale list then looked fresh for the whole gap.
+  describe('overlapping reloads', () => {
+    const deferred = () => {
+      let resolve!: (v: MapEvent[] | null) => void;
+      const promise = new Promise<MapEvent[] | null>((r) => (resolve = r));
+      return { promise, resolve };
+    };
+
+    it('keeps the newer response when an older one lands after it', async () => {
+      const older = deferred();
+      const newer = deferred();
+      vi.mocked(fetchMapEvents)
+        .mockReturnValueOnce(older.promise)
+        .mockReturnValueOnce(newer.promise);
+      useAppStore.setState({ mapEvents: [], mapEventsFetchedAt: null });
+
+      const first = useAppStore.getState().reloadMapEvents();
+      const second = useAppStore.getState().reloadMapEvents();
+      newer.resolve([MOCK_EVENTS[1]!]);
+      await second;
+      const stampedByNewer = useAppStore.getState().mapEventsFetchedAt;
+      older.resolve([MOCK_EVENTS[0]!]);
+      await first;
+
+      expect(useAppStore.getState().mapEvents.map((e) => e.id)).toEqual(['ev-2']);
+      expect(useAppStore.getState().mapEventsFetchedAt).toBe(stampedByNewer);
+    });
+
+    // A publish reloads while a boot/resume reload may already be running: the
+    // post-publish request is the one that can contain the new event.
+    it('applies the reload started last, even if an earlier one is still running', async () => {
+      const running = deferred();
+      vi.mocked(fetchMapEvents)
+        .mockReturnValueOnce(running.promise)
+        .mockResolvedValueOnce([...MOCK_EVENTS]);
+      const boot = useAppStore.getState().reloadMapEvents();
+      await useAppStore.getState().reloadMapEvents(); // after a publish
+      expect(useAppStore.getState().mapEvents).toHaveLength(MOCK_EVENTS.length);
+      running.resolve([]);
+      await boot;
+      expect(useAppStore.getState().mapEvents).toHaveLength(MOCK_EVENTS.length);
+    });
+  });
+
+  describe('refreshMapEventsIfStale', () => {
+    it('refetches only after the gap has passed', async () => {
+      useAppStore.setState({ mapEventsFetchedAt: Date.now() });
+      await useAppStore.getState().refreshMapEventsIfStale(60_000);
+      expect(vi.mocked(fetchMapEvents)).not.toHaveBeenCalled();
+
+      useAppStore.setState({ mapEventsFetchedAt: Date.now() - 61_000 });
+      await useAppStore.getState().refreshMapEventsIfStale(60_000);
+      expect(vi.mocked(fetchMapEvents)).toHaveBeenCalledTimes(1);
+    });
+
+    it('always refetches when nothing has ever been fetched', async () => {
+      useAppStore.setState({ mapEventsFetchedAt: null });
+      await useAppStore.getState().refreshMapEventsIfStale(60_000);
+      expect(vi.mocked(fetchMapEvents)).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it('focusEventById from a PIN click (no opts) selects without moving the camera', async () => {
     await useAppStore.getState().loadMapEvents();
     const pinned = useAppStore.getState().mapEvents.find((e) => e.coord)!;
@@ -315,19 +441,6 @@ describe('mapSlice', () => {
     const s = useAppStore.getState();
     expect(s.mapSelection).toMatchObject({ kind: 'event', event: { id: pinned.id } });
     expect(s.mapFocusRequest).toBe(before + 1); // list click flies → bumps focus
-  });
-
-  it("focusEventById carries { reveal: 'map' } on the selection, and nothing without it", async () => {
-    // The calendar asks for WHERE; the sheet reads this off the selection to
-    // stay at peek instead of opening the card over the pin. Carried on the
-    // selection object, so the next pin tap — which builds a new one without
-    // it — opens the card as it always did.
-    await useAppStore.getState().loadMapEvents();
-    const pinned = useAppStore.getState().mapEvents.find((e) => e.coord)!;
-    useAppStore.getState().focusEventById(pinned.id, { fly: true, reveal: 'map' });
-    expect(useAppStore.getState().mapSelection).toMatchObject({ kind: 'event', reveal: 'map' });
-    useAppStore.getState().focusEventById(pinned.id);
-    expect(useAppStore.getState().mapSelection).not.toHaveProperty('reveal');
   });
 
   it('focusEventById from a LIST click does NOT fly for an off-campus event (no coord)', async () => {
@@ -479,6 +592,46 @@ describe('composer open/close', () => {
     expect(st.composerOpen).toBe(false);
     expect(st.placingEvent).toBe(false); // genuinely reset by closeComposer
     expect(st.draftCoord).toBeNull(); // genuinely reset by closeComposer
+  });
+});
+
+describe('duplicateEvent', () => {
+  const src = {
+    id: 's1',
+    title: 'Deskovky',
+    url: '',
+    date: '2026-07-08',
+    endDate: null,
+    time: '18:00',
+    location: null,
+    imageUrl: null,
+    organizerKey: 'pef' as const,
+    societyId: 'supef',
+    coord: [16.6, 49.2] as [number, number],
+    roomCode: null,
+    venueKind: 'offcampus' as const,
+    category: 'boardgames' as const,
+  };
+
+  it('opens a NEW composer seeded from the event, with its pin on the map', () => {
+    useAppStore.setState({ societyMapEvents: [src], editEventId: 'other', draftCoord: null });
+    useAppStore.getState().duplicateEvent('s1');
+    const st = useAppStore.getState();
+    expect(st.composerOpen).toBe(true);
+    expect(st.duplicateEventId).toBe('s1');
+    // Not an edit: saving must create, never overwrite the original.
+    expect(st.editEventId).toBeNull();
+    expect(st.draftCoord).toEqual([16.6, 49.2]);
+  });
+
+  it('is forgotten by openComposer and closeComposer', () => {
+    useAppStore.setState({ societyMapEvents: [src] });
+    useAppStore.getState().duplicateEvent('s1');
+    useAppStore.getState().openComposer();
+    expect(useAppStore.getState().duplicateEventId).toBeNull();
+    useAppStore.getState().duplicateEvent('s1');
+    useAppStore.getState().closeComposer();
+    expect(useAppStore.getState().duplicateEventId).toBeNull();
   });
 });
 

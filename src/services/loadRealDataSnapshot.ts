@@ -68,7 +68,12 @@ export async function loadRealDataSnapshot(url: string = SNAPSHOT_URL): Promise<
     const res = await fetch(url);
     if (!res.ok) return false;
     const snapshot = (await res.json()) as SyncedData;
-    window.postMessage(Messages.syncUpdate({ ...snapshot, isSyncing: false }), '*');
+    // `loaded`: the snapshot is a complete answer, so a domain it omits is
+    // "none", not "never answered" — the screens' failed state keys on that.
+    window.postMessage(
+      Messages.syncUpdate({ ...snapshot, isSyncing: false, loaded: ['schedule', 'exams'] }),
+      '*'
+    );
     return true;
   } catch {
     return false;

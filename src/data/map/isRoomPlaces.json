@@ -132,24 +132,6 @@
     "id": 1579
   },
   {
-    "label": "K01",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
-    "label": "K02",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
-    "label": "K03",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
     "label": "Malá zasedačka PEF",
     "campus": "ČP",
     "kind": "building",
@@ -397,124 +379,10 @@
     "id": 465899
   },
   {
-    "label": "Z1",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
-    "label": "Z10",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
-    "label": "Z11",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
-    "label": "Z13",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
-    "label": "Z14",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
-    "label": "Z15",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
-    "label": "Z2",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
-    "label": "Z24",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
-    "label": "Z25",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
-    "label": "Z26",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
-    "label": "Z28",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
-    "label": "Z3",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
-    "label": "Z4",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
-    "label": "Z5",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
-    "label": "Z6",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
-    "label": "Z7",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
-    "label": "Z8",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
-    "label": "Z9",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
-  },
-  {
     "label": "ZAB01",
     "campus": "Žab",
     "kind": "remote",
     "id": -103
-  },
-  {
-    "label": "Zasedačka FRRMS 4NP",
-    "campus": "ČP II.",
-    "kind": "landmark",
-    "id": 1587
   },
   {
     "label": "ZFAA1",

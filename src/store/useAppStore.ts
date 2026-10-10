@@ -8,6 +8,7 @@ import { createZaznamnikSlice } from './slices/createZaznamnikSlice';
 import { createFilesSlice } from './slices/createFilesSlice';
 import { createNotesSlice } from './slices/createNotesSlice';
 import { createClassmatesSlice } from './slices/createClassmatesSlice';
+import { createSubjectClassmatesSlice } from './slices/createSubjectClassmatesSlice';
 import { createSubjectsSlice } from './slices/createSubjectsSlice';
 import { createSyncSlice } from './slices/createSyncSlice';
 import { createThemeSlice } from './slices/createThemeSlice';
@@ -30,69 +31,79 @@ import { createCustomEventsSlice } from './slices/createCustomEventsSlice';
 import { createNotificationSlice } from './slices/createNotificationSlice';
 import { createSearchSlice } from './slices/createSearchSlice';
 import { createRecentPdfsSlice } from './slices/createRecentPdfsSlice';
+import { createPdfPositionsSlice } from './slices/createPdfPositionsSlice';
 import { createPersonProfileSlice } from './slices/createPersonProfileSlice';
 import { createBulletinSlice } from './slices/createBulletinSlice';
 import { createViewportSlice } from './slices/createViewportSlice';
 import { createMobileUiSlice } from './slices/createMobileUiSlice';
 import { createMapSlice } from './slices/createMapSlice';
-import { createRsvpSlice } from './slices/createRsvpSlice';
+import { createSocietiesSlice } from './slices/createSocietiesSlice';
 import { createAdminSlice } from './slices/createAdminSlice';
 import { createAdminStatsSlice } from './slices/createAdminStatsSlice';
 import { createSuggestionsSlice } from './slices/createSuggestionsSlice';
 import { createDemoSlice } from './slices/createDemoSlice';
+import { overlayGuard } from './overlay/overlayGuard';
+import { logError } from '../utils/reportError';
+import { createImpersonationSlice } from './slices/createImpersonationSlice';
 import { createReportSlice } from './slices/createReportSlice';
 import { createRouteSlice } from './slices/createRouteSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 import { resetRealDataStores } from '../services/loadRealDataSnapshot';
 import { devAdminSeed } from '../utils/mock/devSociety';
+import { retireSocietyFeatures } from '../services/cleanup/retireSocietyFeatures';
 import type { Session } from '@supabase/supabase-js';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
 import { setDemoModeFlag, isDemoMode } from '../errors/demoMode';
 
-export const useAppStore = create<AppState>()((...a) => ({
-  ...createScheduleSlice(...a),
-  ...createExamSlice(...a),
-  ...createSyllabusSlice(...a),
-  ...createZaznamnikSlice(...a),
-  ...createFilesSlice(...a),
-  ...createNotesSlice(...a),
-  ...createClassmatesSlice(...a),
-  ...createSubjectsSlice(...a),
-  ...createSyncSlice(...a),
-  ...createThemeSlice(...a),
-  ...createI18nSlice(...a),
-  ...createSuccessRateSlice(...a),
-  ...createSimilarSubjectsSlice(...a),
-  ...createEduroamSlice(...a),
-  ...createDocumentsSlice(...a),
-  ...createFeedbackSlice(...a),
-  ...createStudyPlanSlice(...a),
-  ...createCvicneTestsSlice(...a),
-  ...createErasmusSlice(...a),
-  ...createMenuSlice(...a),
-  ...createHiddenItemsSlice(...a),
-  ...createTeachingWeekSlice(...a),
-  ...createNavPagesSlice(...a),
-  ...createContextSlice(...a),
-  ...createPulseSlice(...a),
-  ...createCustomEventsSlice(...a),
-  ...createNotificationSlice(...a),
-  ...createSearchSlice(...a),
-  ...createRecentPdfsSlice(...a),
-  ...createPersonProfileSlice(...a),
-  ...createBulletinSlice(...a),
-  ...createViewportSlice(...a),
-  ...createMobileUiSlice(...a),
-  ...createMapSlice(...a),
-  ...createRsvpSlice(...a),
-  ...createAdminSlice(...a),
-  ...createAdminStatsSlice(...a),
-  ...createSuggestionsSlice(...a),
-  ...createRouteSlice(...a),
-  ...createDemoSlice(...a),
-  ...createReportSlice(...a),
-}));
+export const useAppStore = create<AppState>()(
+  overlayGuard((...a) => ({
+    ...createScheduleSlice(...a),
+    ...createExamSlice(...a),
+    ...createSyllabusSlice(...a),
+    ...createZaznamnikSlice(...a),
+    ...createFilesSlice(...a),
+    ...createNotesSlice(...a),
+    ...createClassmatesSlice(...a),
+    ...createSubjectClassmatesSlice(...a),
+    ...createSubjectsSlice(...a),
+    ...createSyncSlice(...a),
+    ...createThemeSlice(...a),
+    ...createI18nSlice(...a),
+    ...createSuccessRateSlice(...a),
+    ...createSimilarSubjectsSlice(...a),
+    ...createEduroamSlice(...a),
+    ...createDocumentsSlice(...a),
+    ...createFeedbackSlice(...a),
+    ...createStudyPlanSlice(...a),
+    ...createCvicneTestsSlice(...a),
+    ...createErasmusSlice(...a),
+    ...createMenuSlice(...a),
+    ...createHiddenItemsSlice(...a),
+    ...createTeachingWeekSlice(...a),
+    ...createNavPagesSlice(...a),
+    ...createContextSlice(...a),
+    ...createPulseSlice(...a),
+    ...createCustomEventsSlice(...a),
+    ...createNotificationSlice(...a),
+    ...createSearchSlice(...a),
+    ...createRecentPdfsSlice(...a),
+    ...createPdfPositionsSlice(...a),
+    ...createPersonProfileSlice(...a),
+    ...createBulletinSlice(...a),
+    ...createViewportSlice(...a),
+    ...createMobileUiSlice(...a),
+    ...createMapSlice(...a),
+    ...createSocietiesSlice(...a),
+    ...createAdminSlice(...a),
+    ...createAdminStatsSlice(...a),
+    ...createSuggestionsSlice(...a),
+    ...createRouteSlice(...a),
+    ...createDemoSlice(...a),
+    ...createImpersonationSlice(...a),
+    ...createReportSlice(...a),
+  }))
+);
 
 // Initialize store and subscribe to sync updates
 export const initializeStore = async () => {
@@ -160,9 +171,15 @@ export const initializeStore = async () => {
       adminSession: { user: { email: devSeed.email } } as unknown as Session,
     });
     if (devSeed.adminRole === 'reis_admin') void s.loadSuggestions();
+    void s.restoreImpersonation();
     void s.loadSocietyPosts();
   } else {
-    s.loadAdminSession();
+    // Restore after the admin session settles, and even if loading it failed:
+    // restoreImpersonation decides whether a saved impersonation still applies.
+    void s
+      .loadAdminSession()
+      .catch((e) => logError('Boot.loadAdminSession', e))
+      .then(() => useAppStore.getState().restoreImpersonation());
   }
 
   // Tier 2: Background data — deferred to avoid thundering-herd on IDB at startup
@@ -182,7 +199,9 @@ export const initializeStore = async () => {
     s2.fetchZaznamnik();
     s2.loadFeedbackState();
     s2.loadHiddenItems();
-    s2.loadCalendarCustomEvents();
+    // Before the calendar loads its blocks, so a retired RSVP block is never
+    // drawn once (see retireSocietyFeatures). Never rejects.
+    void retireSocietyFeatures().finally(() => s2.loadCalendarCustomEvents());
     s2.fetchTeachingWeek();
     s2.loadRecentSearches();
     s2.refreshRecentPdfs();
@@ -246,6 +265,11 @@ export const initializeStore = async () => {
     st.loadGradeHistory();
     st.fetchCvicneTests();
     st.fetchOdevzdavarny();
+    // A sync only reaches here once IS data has actually landed, which is
+    // also the point `getUserParams()` becomes resolvable — so a boot-time
+    // `loadContext()` that lost that race gets its real answer here (the event
+    // audience depends on it). Once answered, it is not asked again.
+    if (!st.contextResolved) void st.loadContext();
   });
 
   // Cross-tab theme listener — use loadTheme() to also update DOM data-theme attribute

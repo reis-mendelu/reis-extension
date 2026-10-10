@@ -79,10 +79,15 @@ export async function syncAllData() {
     const userParams = await getUserParams();
     const studium = userParams?.studium;
 
+    // Which core fetches actually ran, as opposed to being TTL-skipped — both
+    // come back null, and only a fetch that ran can say IS was unreachable.
+    const attempted = new Set<'schedule' | 'subjects' | 'studyPlan'>();
+
     // Phase 2a: Start subjects early — fast fetch (explicit obdobi prevents session-state coupling)
-    const subjectsPromise = ttlGated('subjects', TTL.DAILY, !!cachedData.subjects, () =>
-      fetchDualLanguageSubjects(studium || undefined, userParams?.obdobi || undefined)
-    ).then((result) => {
+    const subjectsPromise = ttlGated('subjects', TTL.DAILY, !!cachedData.subjects, () => {
+      attempted.add('subjects');
+      return fetchDualLanguageSubjects(studium || undefined, userParams?.obdobi || undefined);
+    }).then((result) => {
       if (result) {
         cachedData = { ...cachedData, subjects: result.subjects, attendance: result.attendance };
         // Capture current-semester codes BEFORE mergePastSubjects adds past ones,
@@ -94,9 +99,10 @@ export async function syncAllData() {
 
     // Phase 2a-II: Fetch study plan + study stats concurrently with early subjects
     const studyPlanPromise = studium
-      ? ttlGated('studyPlan', TTL.SEMESTER, !!cachedData.studyPlan, () =>
-          fetchDualLanguageStudyPlan(studium)
-        ).then((plan) => {
+      ? ttlGated('studyPlan', TTL.SEMESTER, !!cachedData.studyPlan, () => {
+          attempted.add('studyPlan');
+          return fetchDualLanguageStudyPlan(studium);
+        }).then((plan) => {
           if (plan) {
             cachedData = { ...cachedData, studyPlan: plan };
             // Data only, no arrival flag: see SyncDomain. A null here is
@@ -165,9 +171,10 @@ export async function syncAllData() {
     // Phase 2b: Full schedule + exams in parallel (subjects/studyPlan/studyStats re-uses already-started promises)
     // Named rather than inline in the allSettled below, so each can post the
     // moment it resolves. These two are the screens a student opens first.
-    const schedulePromise = ttlGated('schedule', TTL.SEMESTER, !!cachedData.schedule, () =>
-      fetchFullSemesterSchedule()
-    ).then((value) => {
+    const schedulePromise = ttlGated('schedule', TTL.SEMESTER, !!cachedData.schedule, () => {
+      attempted.add('schedule');
+      return fetchFullSemesterSchedule();
+    }).then((value) => {
       if (value && value.length > 0) {
         cachedData = { ...cachedData, schedule: value };
         pushEarly({ schedule: value, loaded: ['schedule'] });
@@ -225,6 +232,17 @@ export async function syncAllData() {
       pastSubjectsPromise,
       studyComparisonPromise,
     ]);
+
+    // allSettled means an outage still completes normally, so without this the
+    // run ended with no error and Předměty's only failure signal never fired
+    // (Návrhy #26). Exams is fetched every run and rejects only when neither
+    // language was reachable. If every other core fetch that RAN also came back
+    // empty-handed, IS was not reached. A TTL-skipped fetch is no evidence, so
+    // a tick that only tried exams never reports an outage on its own.
+    const answered = (r: PromiseSettledResult<unknown>) => r.status === 'fulfilled' && !!r.value;
+    const core = { schedule: fullSchedule, subjects, studyPlan };
+    const ran = [...attempted].map((k) => core[k]);
+    const reachedNothing = exams.status === 'rejected' && ran.length > 0 && !ran.some(answered);
 
     // Falls back to the retained copy when the past-subject fetch was skipped as
     // fresh, so a subjects refresh still gets its merge.
@@ -305,7 +323,7 @@ export async function syncAllData() {
           ? cvicneTests.value.tests
           : cachedData.cvicneTests,
       odevzdavarny:
-        odevzdavarnyResult.status === 'fulfilled' && odevzdavarnyResult.value?.assignments?.length
+        odevzdavarnyResult.status === 'fulfilled' && odevzdavarnyResult.value
           ? odevzdavarnyResult.value.assignments
           : cachedData.odevzdavarny,
       files: cachedData.files || {},
@@ -344,7 +362,13 @@ export async function syncAllData() {
     }
 
     cachedData.lastSync = Date.now();
-    sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing: false }));
+    sendToIframe(
+      Messages.syncUpdate({
+        ...cachedData,
+        isSyncing: false,
+        ...(reachedNothing ? { error: 'IS Mendelu unreachable' } : {}),
+      })
+    );
 
     // Fire-and-forget: fetch past semesters once, permanently cache in IDB
     if (
@@ -550,18 +574,30 @@ export async function refreshSchedule(): Promise<void> {
 }
 
 export async function refreshExams(): Promise<void> {
+  // Rejects when IS could not be reached, so anything past this line is an
+  // answer — "none" included — and may release the failed state. Data only
+  // when there is some: an empty read must not wipe what is on screen.
   const fresh = await fetchDualLanguageExams();
-  if (fresh.length > 0) {
-    const params = await getUserParams();
-    const enriched = await enrichExamsWithDurations(
-      fresh,
-      cachedExams(),
-      params?.studium ?? '',
-      params?.obdobi ?? ''
-    );
-    cachedData = { ...cachedData, exams: enriched };
+  if (fresh.length === 0) {
     sendToIframe(
-      Messages.syncUpdate({ exams: enriched, isSyncing, lastSync: cachedData.lastSync })
+      Messages.syncUpdate({ loaded: ['exams'], isSyncing, lastSync: cachedData.lastSync })
     );
+    return;
   }
+  const params = await getUserParams();
+  const enriched = await enrichExamsWithDurations(
+    fresh,
+    cachedExams(),
+    params?.studium ?? '',
+    params?.obdobi ?? ''
+  );
+  cachedData = { ...cachedData, exams: enriched };
+  sendToIframe(
+    Messages.syncUpdate({
+      exams: enriched,
+      loaded: ['exams'],
+      isSyncing,
+      lastSync: cachedData.lastSync,
+    })
+  );
 }

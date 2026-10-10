@@ -1,8 +1,9 @@
 import { z } from 'zod';
-import type { SpolekNotification, AssociationProfile } from './types';
-import { FACULTY_TO_ASSOCIATION, ASSOCIATION_PROFILES } from './config';
+import type { SpolekNotification } from './types';
 import { supabase } from './supabaseClient';
 import { logError } from '../../utils/reportError';
+import { hasDataConsent } from '../../utils/firefoxDataConsent';
+import { localTodayIso, NOVINKY_WINDOW_DAYS } from '../../components/CampusMap/eventWindow';
 
 // Runtime shape of a `spolky_events` row used by the notification feed. Supabase
 // results are `any`-typed, so we validate before rendering user-facing content
@@ -16,6 +17,7 @@ const NotificationRowSchema = z.object({
   created_at: z.string(),
   date: z.string(),
   end_date: z.string().nullable(),
+  subscribers_only: z.boolean().nullable().optional(),
 });
 
 /**
@@ -24,6 +26,9 @@ const NotificationRowSchema = z.object({
  */
 export async function trackNotificationsViewed(notificationIds: string[]): Promise<void> {
   if (!notificationIds || notificationIds.length === 0) return;
+  // A post id is no identifier, but a view count is interaction data to
+  // Mozilla, and opening the feed works without it — Firefox's toggle decides.
+  if (!(await hasDataConsent('technicalAndInteraction'))) return;
 
   try {
     // Call Supabase RPC to increment view counts for each notification
@@ -42,6 +47,7 @@ export async function trackNotificationsViewed(notificationIds: string[]): Promi
  */
 export async function trackNotificationClick(notificationId: string): Promise<void> {
   if (!notificationId) return;
+  if (!(await hasDataConsent('technicalAndInteraction'))) return;
 
   try {
     await supabase.rpc('increment_post_click', { row_id: notificationId });
@@ -66,13 +72,24 @@ export async function trackNotificationClick(notificationId: string): Promise<vo
  */
 export async function fetchNotifications(): Promise<SpolekNotification[] | null> {
   try {
+    // Bounded to the Novinky week on the SERVER: the limit is applied before the
+    // device applies the audience rule (which never leaves the device), so an
+    // unbounded list of whole imported semesters would push a small society's
+    // next event off the end. A trip still running (end_date >= today) stays.
+    const today = localTodayIso();
+    const horizon = new Date();
+    horizon.setDate(horizon.getDate() + NOVINKY_WINDOW_DAYS - 1);
+    const now = new Date().toISOString();
+    // ONE .or() with nested and(): whether PostgREST ANDs two separate `or`
+    // params was not verified, so the whole condition is written unambiguously.
+    const visible = `or(visible_from.is.null,visible_from.lte.${now})`;
     const { data, error } = await supabase
       .from('spolky_events')
-      .select('id, association_id, title, body, url, created_at, date, end_date')
-      .gte('date', new Date().toISOString().slice(0, 10))
-      .or('visible_from.is.null,visible_from.lte.' + new Date().toISOString())
+      .select('id, association_id, title, body, url, created_at, date, end_date, subscribers_only')
+      .lte('date', localTodayIso(horizon))
+      .or(`and(date.gte.${today},${visible}),and(end_date.gte.${today},${visible})`)
       .order('date', { ascending: true })
-      .limit(50);
+      .limit(200);
 
     if (error) {
       logError('Spolky.fetchNotifications', error);
@@ -93,47 +110,14 @@ export async function fetchNotifications(): Promise<SpolekNotification[] | null>
       link: n.url || undefined,
       createdAt: n.created_at,
       expiresAt: n.end_date || n.date, // events use their date as natural expiry
+      startsAt: n.date, // decides the Novinky week, see dropBeyondNovinkyWindow
       priority: 'normal' as const,
+      subscribersOnly: n.subscribers_only ?? false,
     }));
   } catch (err) {
     logError('Spolky.fetchNotifications', err);
     return null;
   }
-}
-
-/**
- * Determine user's association based on their faculty
- * @param facultyId - User's faculty ID (e.g., 'PEF')
- * @returns AssociationProfile or null if not found
- */
-export function getUserAssociation(facultyId: string | null): AssociationProfile | null {
-  if (!facultyId) return null;
-
-  const associationId = FACULTY_TO_ASSOCIATION[facultyId as keyof typeof FACULTY_TO_ASSOCIATION];
-  if (!associationId) return null;
-
-  return ASSOCIATION_PROFILES[associationId] || null;
-}
-
-/**
- * Filter notifications relevant to user's faculty
- * @param notifications - All notifications
- * @param facultyId - User's faculty ID
- * @param isErasmus - Whether user is Erasmus+ student
- * @param optedInAssociations - List of manually subscribed association IDs
- * @returns Filtered notifications
- */
-/**
- * Today, as the STUDENT's calendar has it — not UTC.
- *
- * `toISOString().slice(0, 10)` is the obvious version and is wrong east of
- * Greenwich: at 00:30 in Brno it still answers yesterday, which is exactly the
- * window in which "is this event over?" changes its answer.
- */
-export function localDayIso(now: Date = new Date()): string {
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${now.getFullYear()}-${month}-${day}`;
 }
 
 /**
@@ -172,17 +156,37 @@ export function dropPastEvents(
   });
 }
 
-export function filterNotificationsByFaculty(
+/**
+ * Drops society rows cached by a build before the audience rule (5.3.0 and
+ * older). Their rows carry no `subscribersOnly`, which would read as public and
+ * put ESN's Erasmus-only events in every student's Novinky until the first
+ * fetch lands — or for the whole session, offline. Only an old build writes a
+ * society row without the key; reIS's own rows (no society, or `reis`) stay.
+ */
+export function dropPreAudienceRows(notifications: SpolekNotification[]): SpolekNotification[] {
+  return notifications.filter(
+    (n) =>
+      !n.associationId ||
+      n.associationId === 'admin' ||
+      // reIS's own events are university-wide whatever the row says.
+      n.associationId === 'reis' ||
+      n.associationId.startsWith('academic_') ||
+      'subscribersOnly' in n
+  );
+}
+
+/**
+ * Drops rows beyond the Novinky week. The server query is bounded the same way,
+ * but the feed is also served from `notifications_cache`, which a build with a
+ * 14-day window may have written — asking at READ time makes the answer
+ * independent of where the list came from. Undated rows (academic) stay.
+ */
+export function dropBeyondNovinkyWindow(
   notifications: SpolekNotification[],
-  subscribedAssociations: string[] = []
+  todayIso: string
 ): SpolekNotification[] {
-  return notifications.filter((n) => {
-    const assocId = n.associationId;
-
-    // 1. Always show Admin / Academic notifications
-    if (!assocId || assocId === 'admin' || assocId.startsWith('academic_')) return true;
-
-    // 2. Show if subscribed (handled by useSpolkySettings defaults + user choice)
-    return subscribedAssociations.includes(assocId);
-  });
+  const last = new Date(`${todayIso}T00:00:00`);
+  last.setDate(last.getDate() + NOVINKY_WINDOW_DAYS - 1);
+  const lastIso = localTodayIso(last);
+  return notifications.filter((n) => !n.startsAt || n.startsAt.slice(0, 10) <= lastIso);
 }

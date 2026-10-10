@@ -1,6 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { trackNotificationsViewed, trackNotificationClick } from './spolkyService';
+import {
+  trackNotificationsViewed,
+  trackNotificationClick,
+  dropBeyondNovinkyWindow,
+} from './spolkyService';
 import { supabase } from './supabaseClient';
+
+const { hasDataConsent } = vi.hoisted(() => ({
+  hasDataConsent: vi.fn<(...args: unknown[]) => Promise<boolean>>(async () => true),
+}));
+
+// Firefox's data-consent toggle. Granted unless a test says otherwise, which is
+// also what every non-Firefox browser and the apps answer.
+vi.mock('../../utils/firefoxDataConsent', () => ({
+  hasDataConsent: (...a: unknown[]) => hasDataConsent(...a),
+}));
 
 // Mock the supabase client
 vi.mock('./supabaseClient', () => ({
@@ -12,6 +26,30 @@ vi.mock('./supabaseClient', () => ({
 describe('spolkyService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    hasDataConsent.mockResolvedValue(true);
+  });
+
+  // A post id is not an identifier, but a view or click count is interaction
+  // data in Mozilla's terms, and opening a post works without it.
+  describe('on Firefox with the technical-data toggle off', () => {
+    beforeEach(() => hasDataConsent.mockResolvedValue(false));
+
+    it('sends no view counter', async () => {
+      await trackNotificationsViewed(['id1', 'id2']);
+      expect(hasDataConsent).toHaveBeenCalledWith('technicalAndInteraction');
+      expect(supabase.rpc).not.toHaveBeenCalled();
+    });
+
+    it('sends no click counter', async () => {
+      await trackNotificationClick('id1');
+      expect(hasDataConsent).toHaveBeenCalledWith('technicalAndInteraction');
+      expect(supabase.rpc).not.toHaveBeenCalled();
+    });
+
+    it('asks once for a batch of views, not once per post', async () => {
+      await trackNotificationsViewed(['id1', 'id2', 'id3']);
+      expect(hasDataConsent).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('trackNotificationsViewed', () => {
@@ -66,5 +104,29 @@ describe('spolkyService', () => {
       expect(consoleSpy).toHaveBeenCalled();
       consoleSpy.mockRestore();
     });
+  });
+});
+
+describe('dropBeyondNovinkyWindow', () => {
+  const n = (startsAt?: string) => ({
+    id: startsAt ?? 'x',
+    title: '',
+    body: '',
+    createdAt: '',
+    expiresAt: '',
+    priority: 'normal' as const,
+    startsAt,
+  });
+
+  it('keeps today through today+6, drops today+7 and later', () => {
+    const out = dropBeyondNovinkyWindow(
+      [n('2026-10-08'), n('2026-10-14'), n('2026-10-15')],
+      '2026-10-08'
+    );
+    expect(out.map((x) => x.startsAt)).toEqual(['2026-10-08', '2026-10-14']);
+  });
+
+  it('keeps undated rows (academic)', () => {
+    expect(dropBeyondNovinkyWindow([n(undefined)], '2026-10-08')).toHaveLength(1);
   });
 });

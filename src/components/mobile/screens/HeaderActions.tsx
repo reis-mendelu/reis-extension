@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Bell, Pin, Search } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useNotificationFeed } from '../../../hooks/useNotificationFeed';
@@ -20,7 +21,12 @@ import { useTranslation } from '../../../hooks/useTranslation';
  * It owns its own data (the unread count) rather than being handed it, so a
  * caller cannot render it half-configured.
  */
-export function HeaderActions() {
+/**
+ * `leading` is one screen's own round action, placed before the shared three —
+ * the calendar's chef hat in the week view. It sits in this cluster rather than
+ * beside it so the gap, and its tightening below 360px, stay one rule.
+ */
+export function HeaderActions({ leading }: { leading?: ReactNode }) {
   const { t } = useTranslation();
   const pushSheet = useAppStore((s) => s.pushSheet);
   const bulletinHydrated = useAppStore((s) => s.bulletinHydrated);
@@ -51,6 +57,7 @@ export function HeaderActions() {
   // a truncated title is `truncate` working as designed, not an overflow.
   return (
     <div className="flex flex-shrink-0 items-center gap-2 max-[359px]:gap-1">
+      {leading}
       {/* Vývěska joins the other two header actions. As a lone pill between
           the alerts and the day chips it read as misplaced and cost a row
           of vertical space for one tap target. */}

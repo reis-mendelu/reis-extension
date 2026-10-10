@@ -4,6 +4,7 @@ import type { OpenExam } from '../../../../utils/mobile/examRows';
 import type { ExamSection } from '../../../../types/exams';
 import { ExamRowCard } from './ExamRowCard';
 import { TermRow } from './TermRow';
+import { AttemptBadgeLegend } from './AttemptBadgeLegend';
 
 export interface NotYetOpenCardProps {
   row: OpenExam;
@@ -64,6 +65,7 @@ export function NotYetOpenCard({
           onRegister={onRegister}
         />
       ))}
+      <AttemptBadgeLegend terms={row.section.terms} />
     </ExamRowCard>
   );
 }

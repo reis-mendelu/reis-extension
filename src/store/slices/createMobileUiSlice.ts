@@ -33,6 +33,9 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
   welcomeSeen: null,
   externalOpening: false,
   pullHintSeen: null,
+  mobileCalendarView: 'day',
+  savedCalendarView: 'day',
+  calendarViewChosen: null,
 
   // Read once at boot, before the root renders (capacitor/main.capacitor.tsx).
   // Same key as the desktop WelcomeModal: a device that dismissed it there has
@@ -70,6 +73,32 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
     set({ pullHintSeen: true });
     IndexedDBService.set('meta', 'pull_hint_seen', true).catch(() => {});
   },
+
+  // Read once at boot beside the pull hint. Only 'day' or 'week' counts as a
+  // choice; a missing key — or a value from some other build — asks again.
+  // Demo mode counts as chosen, like the pull hint: the reviewer's calendar
+  // should open on the timetable, not on a question.
+  hydrateCalendarView: async ({ demo }) => {
+    if (demo) {
+      set({ calendarViewChosen: true });
+      return;
+    }
+    const stored = await IndexedDBService.get('meta', 'calendar_view');
+    if (stored === 'day' || stored === 'week') {
+      set({ savedCalendarView: stored, mobileCalendarView: stored, calendarViewChosen: true });
+      return;
+    }
+    set({ calendarViewChosen: false });
+  },
+  // Trying a view in the chooser: the screen changes, the choice does not.
+  showCalendarView: (view) => set({ mobileCalendarView: view }),
+  // State first, storage second, like dismissWelcome: the view changes on the
+  // tap, and a failed write only means the choice is not remembered.
+  saveCalendarView: (view) => {
+    set({ savedCalendarView: view, mobileCalendarView: view, calendarViewChosen: true });
+    IndexedDBService.set('meta', 'calendar_view', view).catch(() => {});
+  },
+  restoreCalendarView: () => set({ mobileCalendarView: get().savedCalendarView }),
 
   // Switching tabs closes sheets: a sheet belongs to the screen that opened it.
   setMobileTab: (tab) => {

@@ -1,21 +1,23 @@
 import L from 'leaflet';
 import { useAppStore } from '../../store/useAppStore';
 import landmarksJson from '../../data/map/landmarks.json';
+import buildingsJson from '../../data/map/buildings.json';
+import { buildingSharingOutline } from './landmarkBuilding';
 import { ringToLatLng, landmarkGroupLabels } from './mapHelpers';
 import { REMOTE } from './remoteLayers';
 import { GARDEN_PLACE_ID, bubblesHidden } from './gardenBubbleLayer';
-import { LABELS_PANE, TOOLTIP_CARVE_OUTS, ensureReisPanes } from './mapPanes';
-import type { Landmark } from '../../types/campusMap';
+import { TOOLTIP_CARVE_OUTS, ensureReisPanes } from './mapPanes';
+import type { BuildingsMeta, Landmark } from '../../types/campusMap';
 
 const LANDMARKS = (landmarksJson as { landmarks: Landmark[] }).landmarks;
 // FRRMS + Kolej Akademie are one building under two names → a combined "A / B"
 // tooltip. (Adjacent-but-separate places like Tauferovy/sports centre are NOT
 // merged — see landmarkGroupLabels.)
 const LANDMARK_LABELS = landmarkGroupLabels(LANDMARKS);
-// A few landmarks are official lettered campus buildings — FRRMS is "Z" on the
-// MENDELU map — and get a permanent centre letter like the drillable buildings
-// instead of the hover name. The Místa picker still carries the full pair name.
-const LANDMARK_LETTERS: Record<number, string> = { 1587: 'Z' };
+// FRRMS used to be the lettered landmark "Z". It is budova Z now, a drillable
+// building with the same outline, labelled like the others; landmarks sharing a
+// building's outline are not drawn again (see landmarkBuilding.ts).
+const BUILDINGS = (buildingsJson as BuildingsMeta).buildings;
 
 // OpenStreetMap's own tiles, desaturated to the grey the overlays were drawn
 // against.
@@ -31,8 +33,8 @@ const LANDMARK_LETTERS: Record<number, string> = { 1587: 'Z' };
 // one faculty's students is squarely inside that). Its standard style is
 // colourful, which the overlays were never designed for, so the tile pane is
 // desaturated with Tailwind's own `grayscale` utility rather than a stylesheet
-// of ours. maxNativeZoom drops 20 → 19, which is OSM's deepest, so floor-level
-// zooms upscale one step more than before.
+// of ours. maxNativeZoom drops 20 → 19, which is OSM's deepest; past one
+// upscaled level the tiles are not drawn at all (see the tile layer below).
 //
 // If reIS ever outgrows "modest", the next step is self-hosting or a keyed
 // provider behind our Supabase proxy — not a key in the client.
@@ -66,7 +68,13 @@ export function initLeafletMap(
   // inside Leaflet (`getPane()` returns undefined and it appends to it anyway).
   ensureReisPanes(map);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 22,
+    // The basemap stops one level past OSM's deepest tile, while the map keeps
+    // going to 22. Past 20 a z19 tile was stretched 4–8× — the street label in
+    // budova Q's courtyard turned into a grey smear (Návrhy #27, Pixel 9a).
+    // There the camera is inside a building and only the floor plan matters,
+    // and Leaflet's bare #ddd is the same grey OSM fills a building with. The
+    // extra levels stay because they make E, X and C's small rooms tappable.
+    maxZoom: 20,
     maxNativeZoom: 19,
     // Utilities, not a stylesheet: Leaflet puts this on the tile pane and the
     // filter applies to every tile image under it. `grayscale` alone reads
@@ -74,7 +82,7 @@ export function initLeafletMap(
     // to land near where Positron sat.
     className: 'grayscale brightness-[1.06] contrast-[0.92]',
     attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Emoji: Twemoji, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>',
   }).addTo(map);
   // Show the lettered building names only when zoomed in past the overview.
   // restZoom = the zoom at which the whole campus fits (matches flyToBounds'
@@ -136,6 +144,7 @@ export function drawLandmarks(
   style: L.PathOptions
 ) {
   for (const l of LANDMARKS) {
+    if (buildingSharingOutline(l, BUILDINGS)) continue;
     const poly = L.polygon(ringToLatLng(l.outline.coordinates[0]), style);
     poly.on('click', () => {
       const c = poly.getBounds().getCenter();
@@ -144,15 +153,7 @@ export function drawLandmarks(
         [c.lng, c.lat]
       );
     });
-    const letter = LANDMARK_LETTERS[l.id];
-    if (letter)
-      poly.bindTooltip(letter, {
-        permanent: true,
-        direction: 'center',
-        className: 'building-label',
-        pane: LABELS_PANE,
-      });
-    else poly.bindTooltip(LANDMARK_LABELS.get(l.id) ?? l.name);
+    poly.bindTooltip(LANDMARK_LABELS.get(l.id) ?? l.name);
     poly.addTo(layer);
   }
 }

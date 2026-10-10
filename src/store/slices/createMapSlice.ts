@@ -23,14 +23,23 @@ import { fetchMapEvents, toMapEvent } from '../../api/mapEvents';
 import { logError } from '../../utils/reportError';
 import { createBuildingGeometryActions } from './buildingGeometryActions';
 import { lookupRoomEntry, isNonPhysicalRoom } from '../../utils/rooms/lookupRoom';
-import { lookupRoomPlace } from '../../utils/rooms/lookupRoomPlace';
+import { lookupRoomPlace, type RoomPlaceEntry } from '../../utils/rooms/lookupRoomPlace';
+import { placedRooms } from '../../utils/rooms/placedRooms';
+import isRoomPlacesJson from '../../data/map/isRoomPlaces.json';
 import { focusRoomPlace } from './focusRoomPlace';
+import { buildingSharingOutline } from '../../components/CampusMap/landmarkBuilding';
+import { weekSections } from '../../components/CampusMap/eventHelpers';
 
 const META = buildingsJson as BuildingsMeta;
 const INDEX = roomsIndexJson as RoomIndexEntry[];
 const POIS = (poisJson as unknown as { features: PoiFeature[] }).features;
 const LANDMARKS = (landmarksJson as { landmarks: Landmark[] }).landmarks;
 const REMOTE = (remotePlacesJson as { places: RemotePlace[] }).places;
+// Rooms with no floor plan that search can still fly to (D05 → building D).
+const PLACED = placedRooms(isRoomPlacesJson as RoomPlaceEntry[], INDEX, [
+  ...POIS.map((f) => f.properties.name),
+  ...LANDMARKS.map((l) => l.name),
+]);
 
 const buildingById = (id: number) => META.buildings.find((b) => b.id === id) ?? null;
 
@@ -42,6 +51,11 @@ function locateEvent(e: MapEvent): MapEvent {
     : { ...e, coord: roomCodeToCoord(e.roomCode, INDEX, META) };
 }
 
+// Which reloadMapEvents call is the latest. Boot, resume and a post-publish
+// reload can overlap; only the last one started may write, so an older, slower
+// response can neither overwrite a newer list nor stamp it as fresh.
+let mapEventsGeneration = 0;
+
 export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   // Loading a building's floor plan lives next door, so this file does not
   // carry that responsibility too — see buildingGeometryActions.ts.
@@ -51,12 +65,18 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   activeFloorId: null,
   mapSelection: null,
   roomsByBuilding: {},
+  buildingModels: {},
+  mapTilt: { phase: 'flat', view: null },
+  setMapTilt: (mapTilt) => set({ mapTilt }),
   mapLoadingBuilding: null,
   mapSearchQuery: '',
   mapSearchResults: [],
   mapFocusRequest: 0,
   mapEvents: [],
   mapEventsLoaded: false,
+  mapEventsFetchedAt: null,
+  mapLaterExpanded: false,
+  toggleMapLater: () => set((s) => ({ mapLaterExpanded: !s.mapLaterExpanded })),
   mapPanelTab: 'events',
   societyMapEvents: [],
   placingEvent: false,
@@ -65,6 +85,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   mapFocusTarget: 'campus',
   composerOpen: false,
   editEventId: null,
+  duplicateEventId: null,
 
   setMapBuilding: (id) => {
     const b = buildingById(id);
@@ -98,7 +119,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   selectGardenPlace: (place) => set({ mapSelection: { kind: 'gardenPlace', place } }),
 
   setMapSearchQuery: (q) =>
-    set({ mapSearchQuery: q, mapSearchResults: searchPlaces(q, INDEX, POIS, LANDMARKS) }),
+    set({ mapSearchQuery: q, mapSearchResults: searchPlaces(q, INDEX, POIS, LANDMARKS, PLACED) }),
 
   focusRoomByCode: (code) => {
     const entry = lookupRoomEntry(code, INDEX);
@@ -150,6 +171,13 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
     const l = LANDMARKS.find((x) => x.id === id);
     if (!l) {
       logError('MapSlice.focusLandmarkById', new Error(`unknown landmark ${id}`));
+      return;
+    }
+    // FRRMS is budova Z, which has a floor plan: open it. Kolej Akademie shares
+    // the outline but is the dormitory, so it keeps its own card.
+    const building = l.type === 'building' ? buildingSharingOutline(l, META.buildings) : undefined;
+    if (building) {
+      get().setMapBuilding(building.id);
       return;
     }
     const coord = polygonCentroid(l.outline.coordinates[0]!); // safe: GeoJSON Polygon always has >=1 ring
@@ -224,7 +252,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
 
   refreshSocietyMapEvents: () => {
     const rows = get().societyPosts;
-    set({ societyMapEvents: rows.map((r) => locateEvent(toMapEvent(r))) });
+    set({ societyMapEvents: rows.map((r) => locateEvent(toMapEvent(r, get().societies))) });
   },
 
   beginPlacing: () =>
@@ -269,12 +297,27 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
 
   openComposer: (editId) => {
     const ev = editId ? get().societyMapEvents.find((e) => e.id === editId) : null;
-    set({ composerOpen: true, editEventId: editId ?? null, draftCoord: ev?.coord ?? null });
+    set({
+      composerOpen: true,
+      editEventId: editId ?? null,
+      duplicateEventId: null,
+      draftCoord: ev?.coord ?? null,
+    });
+  },
+  duplicateEvent: (id) => {
+    const ev = get().societyMapEvents.find((e) => e.id === id);
+    set({
+      composerOpen: true,
+      editEventId: null,
+      duplicateEventId: id,
+      draftCoord: ev?.coord ?? null,
+    });
   },
   closeComposer: () =>
     set({
       composerOpen: false,
       editEventId: null,
+      duplicateEventId: null,
       placingEvent: false,
       draftCoord: null,
       // The draft is gone, so the camera has nothing to point at any more.
@@ -291,17 +334,32 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   // society publishing/deleting an event would otherwise not surface on the
   // public map/"Akce" tab until a full reload — call this after those mutations.
   reloadMapEvents: async () => {
+    const mine = ++mapEventsGeneration;
     try {
-      const events = await fetchMapEvents();
-      set({ mapEvents: events.map(locateEvent), mapEventsLoaded: true });
-      // Attendance is loaded here, with the events, rather than by the cards:
-      // one RPC covers every visible event, and components do not fetch.
-      // Detached on purpose — a card renders with 0/0 while this is in flight,
-      // and a failure must not take the events down with it.
-      void get().loadRsvps(events.map((e) => e.id));
+      // The catalog is refetched beside every events load, in parallel, so an
+      // event can never be newer than the catalog that names its society. The
+      // mapping uses whatever catalog is in hand; display resolves reactively.
+      const [events] = await Promise.all([fetchMapEvents(get().societies), get().loadSocieties()]);
+      // A failed fetch keeps whatever is on screen: wiping it would show "no
+      // events" on every network blip, and the resume refresh makes blips common.
+      if (events === null || mine !== mapEventsGeneration) return;
+      set({
+        mapEvents: events.map(locateEvent),
+        mapEventsLoaded: true,
+        mapEventsFetchedAt: Date.now(),
+      });
     } catch (err) {
       logError('MapSlice.reloadMapEvents', err);
     }
+  },
+
+  // For a long-lived Capacitor process: the boot snapshot never refreshes on its
+  // own, so resume calls this. The gap stops a quick tab-away-and-back from
+  // refetching every time.
+  refreshMapEventsIfStale: async (minGapMs) => {
+    const at = get().mapEventsFetchedAt;
+    if (at !== null && Date.now() - at < minGapMs) return;
+    await get().reloadMapEvents();
   },
 
   focusEventById: (id, opts) => {
@@ -322,14 +380,15 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
     set({
       activeBuildingId: null,
       activeFloorId: null,
-      // On the selection, not a field of its own: every later focus builds a
-      // new selection, so a pin tap after the calendar's drops it by itself.
-      mapSelection: opts?.reveal
-        ? { kind: 'event', event, reveal: opts.reveal }
-        : { kind: 'event', event },
+      mapSelection: { kind: 'event', event },
       ...(fly
         ? { mapFocusRequest: get().mapFocusRequest + 1, mapFocusTarget: 'campus' as const }
         : {}),
+      // A Novinky or calendar tap can select an event months out, which the
+      // list files under the collapsed "Později". Open it by the stored toggle
+      // (never close it), so the row shows and the header still toggles.
+      // The bucket rule is weekSections' own, not a second copy of it.
+      ...(weekSections([event])[0]?.key === 'later' ? { mapLaterExpanded: true } : {}),
     });
   },
 });

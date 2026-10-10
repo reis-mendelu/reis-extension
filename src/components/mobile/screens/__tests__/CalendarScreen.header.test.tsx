@@ -52,7 +52,34 @@ describe('CalendarScreen header', () => {
 
   it('shows the selected day in the header while the schedule is loading', () => {
     render(<CalendarScreen />);
-    expect(screen.getByText('Pondělí 20. dubna')).toBeInTheDocument();
+    expect(screen.getByText('Po 20. dubna')).toBeInTheDocument();
+  });
+
+  /**
+   * Short weekday, like the day chips. With the long one the date was cut to an
+   * ellipsis on half the weekdays of 2026 at 375px (135 of 261 fit), and the
+   * return glyph beside it on days away from today left room for 33. "Čt 26.
+   * listopadu" fits every weekday at 375 on its own, and 224 of 261 beside the
+   * glyph (all of them at 390). Measured 2026-10-03.
+   */
+  it('the longest month name fits as a short weekday', () => {
+    useAppStore.setState({ mobileSelectedDayIso: '2026-11-26' } as never);
+    render(<CalendarScreen />);
+    expect(screen.getByText('Čt 26. listopadu')).toBeInTheDocument();
+  });
+
+  // The week grid has no room for the day's menu card, so the week view's way
+  // to the jídelníček is a chef hat among the header actions, left of the pin.
+  it('puts the menu’s chef hat first among the header actions in the week view', () => {
+    useAppStore.setState({
+      // The hat reads the store's clock, not Date: pin it to the same Monday.
+      now: new Date('2026-04-20T10:00:00'),
+      mobileCalendarView: 'week',
+      menu: [{ outlet: 'X', days: [{ date: '20. 4. 2026', soup: null, mainDishes: ['Guláš'] }] }],
+    } as never);
+    render(<CalendarScreen />);
+    const hat = screen.getByRole('button', { name: 'Jídelníček' });
+    expect(hat.nextElementSibling).toBe(screen.getByLabelText('Rozbalit vývěsku'));
   });
 
   it('opens search from the loading screen', () => {

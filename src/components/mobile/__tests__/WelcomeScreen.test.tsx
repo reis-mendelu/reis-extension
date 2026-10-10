@@ -20,8 +20,12 @@ function hook(over: Partial<HookState> = {}): HookState {
     selectTarget: vi.fn(),
     password: null,
     error: null,
+    networkFailure: null,
     outcome: null,
+    expiredAt: null,
+    expiresSoonAt: null,
     run: vi.fn(),
+    renew: vi.fn(),
     reset: vi.fn(),
     openProfilesSettings: vi.fn(),
     ...over,
@@ -45,6 +49,7 @@ function setup(o: { os?: 'ios' | 'android' | null; hookState?: Partial<HookState
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  vi.restoreAllMocks();
 });
 
 describe('WelcomeScreen', () => {
@@ -68,6 +73,17 @@ describe('WelcomeScreen', () => {
     expect(screen.getByText(/nastaví eduroam z tvého certifikátu/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Nastavit eduroam' }));
     expect(h.run).toHaveBeenCalledWith('android');
+  });
+
+  // The card only reports the tap; the screen decides it means `renew`.
+  it('renews the certificate, not a plain setup, from the expired card', () => {
+    const { h } = setup({
+      os: 'android',
+      hookState: { status: 'expired', expiredAt: new Date('2025-01-01T12:00:00Z') },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Vygenerovat nový certifikát/ }));
+    expect(h.renew).toHaveBeenCalledWith('android');
+    expect(h.run).not.toHaveBeenCalled();
   });
 
   it('says who built reIS under the title', () => {
@@ -130,6 +146,18 @@ describe('WelcomeScreen', () => {
       hookState: { status: 'error', outcome: null, error: 'Failed to fetch' },
     });
     expect(screen.getByText(/Nepovedlo se/)).toBeInTheDocument();
+  });
+
+  it('hands a network failure to the card, which says so instead of the failure line', () => {
+    setup({ os: 'ios', hookState: { status: 'error', networkFailure: 'unreachable' } });
+    expect(screen.getByText(/Nepodařilo se spojit s IS/)).toBeInTheDocument();
+    expect(screen.queryByText(/Nepovedlo se/)).not.toBeInTheDocument();
+  });
+
+  it('says the device is offline before any tap', () => {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    setup({ os: 'ios' });
+    expect(screen.getByText(/Jsi offline/)).toBeInTheDocument();
   });
 
   it('shows the working state while the OS dialog is up', () => {

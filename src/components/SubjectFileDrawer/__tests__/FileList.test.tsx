@@ -144,7 +144,10 @@ describe('FileList', () => {
     const onOpenFile = vi.fn();
     renderList({ onOpenFile });
     await userEvent.click(screen.getByText('Přednáška 09'));
-    expect(onOpenFile).toHaveBeenCalledWith(DOWNLOAD);
+    expect(onOpenFile).toHaveBeenCalledWith(
+      DOWNLOAD,
+      expect.objectContaining({ name: 'Přednáška 09' })
+    );
   });
 
   it('hands the row name and IS document date along with a PDF link — the iPad reader caches by date', async () => {
@@ -192,7 +195,8 @@ describe('FileList', () => {
 
     await userEvent.click(screen.getByText('Tabulka'));
 
-    expect(onOpenFile).toHaveBeenCalledWith(DOWNLOAD);
+    // The row's title and type name the file if IS sends no Content-Disposition.
+    expect(onOpenFile).toHaveBeenCalledWith(DOWNLOAD, { name: 'Tabulka', type: 'xlsx' });
     expect(onViewPdf).not.toHaveBeenCalled();
   });
 

@@ -5,6 +5,7 @@ import { fetchIsBinary, blobToBase64 } from '../api/capacitorBinary';
 import { toDirectDownloadUrl } from '../api/isDocumentUrl';
 import { deliverFile, type DeliveryKind } from './deliverFile';
 import { ShareCanceledError, isShareCancellation } from '../errors/shareCanceled';
+import type { FileRowHint } from '../utils/contentDisposition';
 
 interface DownloadsPlugin {
   save(o: {
@@ -58,12 +59,17 @@ export function isNativeHost(): boolean {
  * returns IS's own Content-Disposition name, but STUDY_DOCUMENTS defines what
  * the student should actually see (`Potvrzeni_o_studiu.pdf`). Subject files
  * pass nothing and keep the server's name.
+ *
+ * `row` is the subject-file row's title and type. It ranks BELOW the server's
+ * name — it only names a file IS sent without one, which used to be saved as
+ * a bare `dokument.<ext>`.
  */
 export async function openIsFileNatively(
   url: string,
   filenameOverride?: string,
   fallbackUrl?: string,
-  onFetched?: () => void
+  onFetched?: () => void,
+  row?: FileRowHint
 ): Promise<{ usedFallback: boolean; delivered: DeliveryKind }> {
   const token = await loadStoredToken();
   const { Capacitor, CapacitorHttp, CapacitorCookies } = await import('@capacitor/core');
@@ -76,7 +82,7 @@ export async function openIsFileNatively(
   };
 
   const fetchOne = (target: string) =>
-    fetchIsBinary(toDirectDownloadUrl(target) ?? target, token, deps);
+    fetchIsBinary(toDirectDownloadUrl(target) ?? target, token, deps, row);
 
   let result = await fetchOne(url);
   let usedFallback = false;

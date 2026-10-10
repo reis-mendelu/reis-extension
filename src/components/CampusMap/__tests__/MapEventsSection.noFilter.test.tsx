@@ -1,9 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-
-vi.mock('../../../hooks/useEventsFacultySettings', () => ({
-  useEventsFacultySettings: () => ({ subscribedFaculties: ['pef'], isLoading: false }),
-}));
 
 import { MapEventsSection } from '../MapEventsSection';
 import { useAppStore } from '../../../store/useAppStore';

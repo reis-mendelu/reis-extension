@@ -1,3 +1,4 @@
+import { hasWalksTo } from '../routing/routableStart';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { MobileSheet } from '../../store/types';
 import { lessonTarget, type RouteTarget } from '../routing/nextLessonTarget';
@@ -29,7 +30,8 @@ export function subjectSheetFor(
  */
 export function routeSuggestionFor(lesson: BlockLesson, language: string): RouteTarget | null {
   const target = lessonTarget(lesson);
-  if (!target) return null;
+  // On the map is not the same as reachable: budova Z has no walks in v1.
+  if (!target || !hasWalksTo(target.buildingName)) return null;
   // The printed room minus the campus in brackets, applied to the localized
   // string rather than the raw one.
   const printed = localizedRoom(lesson, language)

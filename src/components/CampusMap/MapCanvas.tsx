@@ -10,6 +10,7 @@ import {
   ringToLatLng,
   roomLabel,
   planLabel,
+  LABELLED_ROOM_SPAN_M,
   categoryStyle,
   remotePlaceBounds,
   ringContains,
@@ -29,6 +30,8 @@ import { setMapInstance } from './mapInstance';
 import { LABELS_PANE } from './mapPanes';
 import { roomFocusView } from './focusBounds';
 import { panPinClearOfSheet } from './sheetClearance';
+import { TiltToggle } from '../Building3D/tilt/TiltToggle';
+import { drawPoiHighlight, outlineForSelection } from './poiOutline';
 import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
 
 const META = buildingsJson as BuildingsMeta;
@@ -93,6 +96,10 @@ export function MapCanvas() {
   /** The campus building outlines, kept so a restyle never needs a redraw
    *  (a redraw moves the camera). */
   const buildingPolysRef = useRef<Map<string, L.Polygon>>(new Map());
+  /** The footprint of a chosen building the map has only a point for (D, T…).
+   *  Its own group, redrawn on selection alone: the overview effect neither
+   *  re-runs on a selection nor survives one clearing. */
+  const poiHighlightRef = useRef<L.LayerGroup>(L.layerGroup());
 
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const activeFloorId = useAppStore((s) => s.activeFloorId);
@@ -139,6 +146,7 @@ export function MapCanvas() {
       isPhone
     );
     layerRef.current.addTo(map);
+    poiHighlightRef.current.addTo(map);
     // Added AFTER the main layer, so the route paints over the campus rather
     // than under it. Its own group, for the reason its ref documents: the main
     // one is cleared and rebuilt on every building and floor change.
@@ -411,7 +419,7 @@ export function MapCanvas() {
           // Label sizable rooms permanently (MyMENDELU-style); tiny rooms only on
           // hover, to avoid a wall of overlapping numbers.
           const pb = poly.getBounds();
-          const big = pb.getNorthEast().distanceTo(pb.getSouthWest()) > 12;
+          const big = pb.getNorthEast().distanceTo(pb.getSouthWest()) > LABELLED_ROOM_SPAN_M;
           const label = roomLabel(p.name, p.passportNumber, p.nickname);
           const shown = big ? planLabel(label) : label;
           poly.bindTooltip(shown, {
@@ -442,11 +450,14 @@ export function MapCanvas() {
     // See focusBounds.roomFocusView.
     const view = roomFocusView<L.LatLngBoundsExpression>(
       targetBounds ?? null,
-      (b?.bounds as L.LatLngBoundsExpression | undefined) ?? null
+      (b?.bounds as L.LatLngBoundsExpression | undefined) ?? null,
+      railPaddingPx(map.getSize().x, isPhone, railRef.current.width, railRef.current.open)
     );
     if (view) {
-      const { bounds, maxZoom, padding } = view;
-      flyAndReveal(map, () => map.fitBounds(bounds, { maxZoom, padding, animate: false }));
+      const { bounds, maxZoom, paddingTopLeft, paddingBottomRight } = view;
+      flyAndReveal(map, () =>
+        map.fitBounds(bounds, { maxZoom, paddingTopLeft, paddingBottomRight, animate: false })
+      );
     }
     // isPhone joins the deps because the rail offset reads it. It is stable
     // for the life of a device, but it flips on a browser resize, and this
@@ -457,6 +468,12 @@ export function MapCanvas() {
     // `railRef` at the moment of focus. As dependencies they made a resize drag
     // re-run this whole effect sixty times a second, and it resets the camera.
   }, [activeBuildingId, activeFloorId, roomsByBuilding, focusReq, focusTarget, isPhone]);
+
+  // A building with no outline of its own (D05 → building D) still has to
+  // show which one it is; the camera move alone left the map looking unchanged.
+  useEffect(() => {
+    drawPoiHighlight(poiHighlightRef.current, outlineForSelection(mapSelection, activeBuildingId));
+  }, [mapSelection, activeBuildingId]);
 
   // Highlight the selected room in place on a plain map click — restyle the live
   // polygons without a full redraw or camera move (the heavy effect above only
@@ -591,5 +608,11 @@ export function MapCanvas() {
     });
   }, [routeWalk, routeFrom, language, isPhone]);
 
-  return <div ref={ref} className="absolute inset-0" />;
+  return (
+    <>
+      <div ref={ref} className="absolute inset-0" />
+      {/* Off unless VITE_MAP3D=1: a room in Q tilts the map into the building. */}
+      <TiltToggle />
+    </>
+  );
 }

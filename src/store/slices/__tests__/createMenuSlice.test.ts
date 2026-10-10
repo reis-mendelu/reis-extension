@@ -24,7 +24,7 @@ describe('createMenuSlice', () => {
   // The menu is scraped from skm.mendelu.cz through the content-script proxy,
   // which in demo mode there is nothing behind: `fetchViaProxy` posts and waits
   // out its full 30-second timeout. Every other IS-facing call already returns
-  // early in demo (see api/feedback.ts, api/eventRsvp.ts); this one did not,
+  // early in demo (see api/feedback.ts); this one did not,
   // and it is now on the calendar, so the demo boot sat on a pending request
   // for half a minute — long enough to time out the Capacitor boot test.
   it('does not reach the proxy in demo mode, and does not sit in a loading state', async () => {

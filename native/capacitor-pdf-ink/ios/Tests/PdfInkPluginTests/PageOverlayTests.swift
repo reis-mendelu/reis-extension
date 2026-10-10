@@ -26,6 +26,21 @@ final class PageOverlayTests: XCTestCase {
         XCTAssertEqual(overlay.canvas.frame, overlay.bounds)
     }
 
+    /// Both picture levels are exactly the page with no transform: their
+    /// frames are in the same points as the drawing.
+    func testThePictureLevelsSandwichTheInkAndAreExactlyThePage() {
+        let overlay = PageOverlayView(frame: CGRect(x: 0, y: 0, width: 300, height: 400))
+        overlay.inkScale = 2
+        overlay.layoutIfNeeded()
+        XCTAssertEqual(
+            overlay.subviews,
+            [overlay.pictureLayer.belowInk, overlay.canvas, overlay.pictureLayer, overlay.coverLayer],
+            "under the ink, the ink, the pictures over it with their handles, then the covers")
+        XCTAssertEqual(overlay.pictureLayer.frame, overlay.bounds)
+        XCTAssertEqual(overlay.pictureLayer.belowInk.frame, overlay.bounds)
+        XCTAssertEqual(overlay.pictureLayer.transform, .identity)
+    }
+
     func testTheDrawingIsKeptWhenPdfkitGivesThePageBack() throws {
         let reader = PdfInkViewController(strings: PdfInkStrings(nil))
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 820, height: 1000))

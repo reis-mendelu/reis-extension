@@ -4,7 +4,6 @@ import { getSmartWeekRange } from '../utils/calendar';
 import { IndexedDBService } from '../services/storage';
 import { syncService, syncGradeHistory } from '../services/sync';
 
-import { useSpolkySettings } from './useSpolkySettings';
 import { useAppStore, initializeStore } from '../store/useAppStore';
 import { signalReady, requestData, isInIframe } from '../api/proxyClient';
 import { loadRealDataSnapshot } from '../services/loadRealDataSnapshot';
@@ -47,8 +46,10 @@ interface SyncedData {
   studyComparison?: unknown;
   cvicneTests?: any[];
   odevzdavarny?: any[];
-  lastSync?: string;
+  lastSync?: number;
   isSyncing?: boolean;
+  /** Set only when a run threw; `String(e)`, so never sent anywhere. */
+  error?: string;
   /** Domains whose fetch finished in this run — empty answers included. */
   loaded?: SyncDomain[];
 }
@@ -60,7 +61,6 @@ export function useAppLogic() {
   const [weekNavCount, setWeekNavCount] = useState(0);
   const openSettingsRef = useRef<(() => void) | null>(null);
   const searchPrefillRef = useRef<((query: string) => void) | null>(null);
-  useSpolkySettings();
 
   // Deep-link bridge: switch to the map view when something requests a room
   // focus (e.g. "Show on map" buttons). Subscribe imperatively so the view
@@ -78,6 +78,13 @@ export function useAppLogic() {
         useAppStore.getState().loadGradeHistory();
       })
       .catch(() => {});
+
+    // The previous run's stamp, until this session's first run ends.
+    IndexedDBService.get('meta', 'last_sync')
+      .then((v) => {
+        if (typeof v === 'number') useAppStore.getState().seedLastSync(v);
+      })
+      .catch((e) => logError('useAppLogic.seedLastSync', e));
 
     // Hydrate past attendance from iframe-side IDB cache
     IndexedDBService.get('meta', 'past_attendance_merged')
@@ -208,7 +215,9 @@ export function useAppLogic() {
             useAppStore.getState().setCvicneTests(r.cvicneTests);
           }
         }
-        if (r.odevzdavarny?.length) {
+        // Array.isArray, not .length: [] is a real answer ("no boxes") — see
+        // useAppLogic.emptyOdevzdavarny.test.ts. A missing key changes nothing.
+        if (Array.isArray(r.odevzdavarny)) {
           const userParams = await IndexedDBService.get('meta', 'reis_user_params');
           if (userParams?.studium && userParams?.obdobi) {
             await IndexedDBService.set(
@@ -325,7 +334,18 @@ export function useAppLogic() {
       }
 
       if (typeof r.isSyncing === 'boolean') {
-        useAppStore.getState().setSyncStatus({ isSyncing: r.isSyncing });
+        // Only keys the message carries, so an absent one never clears the
+        // store's. `lastSync` only from the message that ENDS a run: the sync
+        // stamps it before Phase 3, and taking it from an early push made the
+        // open drawer (useFiles) refetch a folder the sync was still crawling.
+        useAppStore.getState().setSyncStatus({
+          isSyncing: r.isSyncing,
+          ...(typeof r.error === 'string' ? { error: r.error } : {}),
+          // `> 0`: the injector's cachedData starts at 0, its "no stamp yet".
+          ...(!r.isSyncing && typeof r.lastSync === 'number' && r.lastSync > 0
+            ? { lastSync: r.lastSync }
+            : {}),
+        });
         if (!r.isSyncing) {
           useAppStore.getState().fetchAllFiles();
           useAppStore.getState().fetchAllClassmates();

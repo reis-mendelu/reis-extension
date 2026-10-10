@@ -37,7 +37,7 @@ function SectionLabel({ children }: { children: ReactNode }) {
 
 export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
   const { t } = useTranslation();
-  const { notifications, loading, markVisible, settingsLoading, readIds } = useNotificationFeed();
+  const { notifications, loading, markVisible, readIds } = useNotificationFeed();
   const { alerts, markAllSeen } = useDeadlineAlerts();
   const hasContent = notifications.length > 0 || alerts.length > 0;
   const setMobileTab = useAppStore((s) => s.setMobileTab);
@@ -51,18 +51,14 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
    * belongs to the DESKTOP dropdown. The phone's bell calls `pushSheet`, so the
    * student read every notification here and the dot stayed lit forever.
    *
-   * Gated on `settingsLoading`, not just on mount: `notifications` is the feed
-   * filtered by the spolky subscriptions, which are read out of IndexedDB, so
-   * on a cold open the list is still empty for a tick or two. Marking then
-   * marks nothing and the badge survives — the very bug, reintroduced through a
-   * race. Following the list instead of the mount also covers the 5-minute
-   * refetch landing while the sheet is still up.
+   * Following the list, not the mount: on a cold open the feed can still be
+   * empty for a tick, and marking then would mark nothing and leave the badge.
+   * It also covers the 5-minute refetch landing while the sheet is still up.
    */
   useEffect(() => {
-    if (settingsLoading) return;
     const unread = notifications.filter((n) => !readIds.has(n.id)).map((n) => n.id);
     if (unread.length) void markNotificationsRead(unread);
-  }, [notifications, readIds, settingsLoading, markNotificationsRead]);
+  }, [notifications, readIds, markNotificationsRead]);
 
   /**
    * The other half of the same badge. The bell counts unseen deadline alerts

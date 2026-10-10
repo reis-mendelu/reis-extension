@@ -34,6 +34,10 @@ export const DiagnosticsPayloadSchema = z.object({
     scheduleCount: z.number(),
     examsCount: z.number(),
     examsFetchedAt: z.number().nullable(),
+    // Added after 5.3.0, so optional: older builds' rows must still parse.
+    firstSyncSettled: z.boolean().optional(),
+    syncLoaded: z.array(z.string()).max(10).optional(),
+    syncFailed: z.boolean().optional(),
   }),
 }) satisfies z.ZodType<DiagnosticsPayload>;
 

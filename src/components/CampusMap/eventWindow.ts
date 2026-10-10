@@ -1,9 +1,7 @@
 import { parseEventDate } from './eventHelpers';
 
-// How far ahead the PUBLIC map/feed shows events: this week + next week.
-// Past events and anything further out are hidden from students; a society's own
-// far-future events surface only in the admin console as "scheduled" pins.
-export const PUBLIC_WINDOW_DAYS = 14;
+// Horizons: map pins use SOON_WINDOW_DAYS (14), Novinky uses NOVINKY_WINDOW_DAYS
+// (7), and the catalog list has no upper bound.
 
 function startOfDay(ref: Date): Date {
   const d = new Date(ref);
@@ -38,12 +36,17 @@ export function isPastEvent(iso: string, now: Date = new Date()): boolean {
  * to test, and assuming a start would mark an all-day event as over at
  * midnight. Earlier days are excluded because the Proběhlé bucket already says
  * it for them.
+ *
+ * Single-day only, too: a multi-day event's time is when its FIRST day starts,
+ * so a trip leaving at 07:30 would read as over from 07:31 on day 1. With no
+ * end time there is nothing to compare, so a running one claims nothing.
  */
 export function hasFinished(
-  event: { date: string; time: string | null },
+  event: { date: string; endDate?: string | null; time: string | null },
   now: Date = new Date()
 ): boolean {
   if (!event.time) return false;
+  if (event.endDate && event.endDate !== event.date) return false;
   if (daysUntilEvent(event.date, now) !== 0) return false;
   // Both halves, in range, or nothing. `Number.isFinite(h)` alone let a
   // half-parsed clock through and `(m) || 0` finished the job: '19:bad' became
@@ -68,22 +71,35 @@ export function hasFinished(
   return now.getTime() > start.getTime();
 }
 
-// today .. today+13 inclusive.
-export function isPublicEvent(iso: string, now: Date = new Date()): boolean {
-  const d = daysUntilEvent(iso, now);
-  return d >= 0 && d < PUBLIC_WINDOW_DAYS;
+// The "soon" horizon: map pins show events starting within it (today ..
+// today+13). Novinky has its own, shorter NOVINKY_WINDOW_DAYS below. The
+// catalog list (MapEventsSection) has no upper bound — a semester imported in
+// September is visible in September.
+export const SOON_WINDOW_DAYS = 14;
+
+/** Novinky lists the next week only: taps cluster in the week before an event
+ *  (production, Oct 2026), and further-out rows drew impressions and no taps. */
+export const NOVINKY_WINDOW_DAYS = 7;
+
+/** Local calendar day as YYYY-MM-DD — never toISOString(), which is UTC. */
+export function localTodayIso(now: Date = new Date()): string {
+  const d = startOfDay(now);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-// A society's own upcoming event still outside the public window.
-export function isScheduledEvent(iso: string, now: Date = new Date()): boolean {
-  return daysUntilEvent(iso, now) >= PUBLIC_WINDOW_DAYS;
+type Dated = { date: string; endDate: string | null };
+
+/** Over once its LAST day has passed — a five-day trip stays up all five days. */
+export function isFinishedEvent(e: Dated, now: Date = new Date()): boolean {
+  return daysUntilEvent(e.endDate ?? e.date, now) < 0;
 }
 
-// The first calendar day the event becomes public (enters the window):
-// date − (PUBLIC_WINDOW_DAYS − 1) days.
-export function goLiveDate(iso: string, now: Date = new Date()): Date {
-  void now;
-  const d = startOfDay(parseEventDate(iso));
-  d.setDate(d.getDate() - (PUBLIC_WINDOW_DAYS - 1));
-  return d;
+/** Still on, and starting inside the soon horizon (a running trip counts). */
+export function isSoonEvent(e: Dated, now: Date = new Date()): boolean {
+  return !isFinishedEvent(e, now) && daysUntilEvent(e.date, now) < SOON_WINDOW_DAYS;
+}
+
+/** Starts on day 14 or later — outside the map pins' horizon. */
+export function isBeyondSoon(iso: string, now: Date = new Date()): boolean {
+  return daysUntilEvent(iso, now) >= SOON_WINDOW_DAYS;
 }

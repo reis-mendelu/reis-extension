@@ -18,8 +18,10 @@ function centroid(ring: number[][]): number[] {
 }
 
 describe('bundled map data', () => {
-  it('has 7 academic buildings each with a defaultFloorId', () => {
-    expect(buildings.buildings).toHaveLength(7);
+  // Seven from the MENDELU survey plus budova Z (FRRMS), curated in reis-data
+  // (source/curated/Z) because the survey never covered it.
+  it('has 8 academic buildings (7 surveyed + curated Z) each with a defaultFloorId', () => {
+    expect(buildings.buildings).toHaveLength(8);
     for (const b of buildings.buildings) expect(b.defaultFloorId).not.toBeNull();
   });
 
@@ -155,7 +157,8 @@ describe('room index: the two building-M ghosts stay out', () => {
   });
 
   it('keeps the real N1074/N1075 halls in A and B', () => {
-    const kept = rows.filter((e) => e.code.endsWith('N1074') || e.code.endsWith('N1075'));
+    // A and B only: budova Z has its own N1075 (the 1.NP atrium), unrelated to M's ghosts.
+    const kept = rows.filter((e) => /^BA\d\dN107[45]$/.test(e.code));
     expect(kept.map((e) => e.code).sort()).toEqual([
       'BA01N1074',
       'BA01N1075',

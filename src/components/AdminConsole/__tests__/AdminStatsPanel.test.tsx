@@ -38,6 +38,8 @@ describe('AdminStatsPanel', () => {
       // Reset explicitly: the store is module-level, so a test that seeds the
       // feature half would otherwise leak it into every test after it.
       adminFeatureStats: null,
+      adminRetention: null,
+      adminProgrammes: null,
       selectAdminStatsDay: vi.fn(async () => {}),
     } as never);
   });
@@ -54,7 +56,7 @@ describe('AdminStatsPanel', () => {
   // about whether reIS is being discovered or actually kept.
   it("shows today's new/returning split under the Dnes tile", () => {
     render(<AdminStatsPanel />);
-    expect(screen.getByText('21 noví · 65 vracející se')).toBeInTheDocument();
+    expect(screen.getByText('noví: 21 · stávající: 65')).toBeInTheDocument();
   });
 
   // The RPC's date spine always ends on today, but a caller that hands back an
@@ -63,7 +65,7 @@ describe('AdminStatsPanel', () => {
     useAppStore.setState({ adminStats: { ...STATS, daily: [] } } as never);
     render(<AdminStatsPanel />);
     expect(screen.getByText('86')).toBeInTheDocument();
-    expect(screen.queryByText(/noví ·/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/noví:/)).not.toBeInTheDocument();
   });
 
   it('renders a suppressed group as "under 5" rather than a number', () => {
@@ -75,6 +77,29 @@ describe('AdminStatsPanel', () => {
   // GA4's "(not set)" convention: a dimension that was added after launch has
   // legitimately-unknown rows, and they stay a labelled bar rather than being
   // dropped from the denominator — bars that do not sum to the total are a lie.
+  // Spec 2026-10-09: what partner pitches quote, per faculty + programme.
+  it('shows the programme breakdown, naming the unknown-programme bucket', () => {
+    useAppStore.setState({
+      adminProgrammes: [
+        { key: 'PEF B-OI', devices: 312 },
+        { key: 'PEF ?', devices: 41 },
+      ],
+    } as never);
+    render(<AdminStatsPanel />);
+    expect(screen.getByText('Podle programu (7 dní)')).toBeInTheDocument();
+    expect(screen.getByText('PEF B-OI')).toBeInTheDocument();
+    expect(screen.getByText('PEF – program neznámý')).toBeInTheDocument();
+  });
+
+  it('keeps the programme breakdown when the usage read failed', () => {
+    useAppStore.setState({
+      adminStats: null,
+      adminProgrammes: [{ key: 'PEF B-OI', devices: 312 }],
+    } as never);
+    render(<AdminStatsPanel />);
+    expect(screen.getByText('PEF B-OI')).toBeInTheDocument();
+  });
+
   it('labels the unknown bucket instead of hiding it', () => {
     render(<AdminStatsPanel />);
     expect(screen.getByText('neuvedeno')).toBeInTheDocument();
@@ -95,7 +120,7 @@ describe('AdminStatsPanel', () => {
   it('labels the returning share as a composition, not as retention', () => {
     render(<AdminStatsPanel />);
     expect(screen.getByText('76 %')).toBeInTheDocument();
-    expect(screen.getByText('z toho vracející se')).toBeInTheDocument();
+    expect(screen.getByText('z toho stávající')).toBeInTheDocument();
     expect(screen.queryByText(/[Nn]ávratnost/)).not.toBeInTheDocument();
   });
 
@@ -162,5 +187,42 @@ describe('AdminStatsPanel', () => {
     render(<AdminStatsPanel />);
 
     expect(screen.getByRole('button', { name: /Mapa aspoň 3 sekundy/ })).toBeInTheDocument();
+  });
+
+  // The one number for "how many are we losing": regulars gone 14+ days, as a
+  // share of every device that was ever a regular.
+  it('shows the share of regulars lost as a single percentage', () => {
+    useAppStore.setState({ adminRetention: { regularsEver: 2435, goneQuiet: 97 } } as never);
+    render(<AdminStatsPanel />);
+    expect(screen.getByText('4 %')).toBeInTheDocument();
+    expect(screen.getByText('Odešli')).toBeInTheDocument();
+    expect(screen.getByText(/14\+ dní bez reIS/)).toBeInTheDocument();
+    expect(screen.getByText(/přeinstalace se počítá taky/)).toHaveClass('sr-only');
+  });
+
+  // Its own RPC: until it answers, or with nobody to lose yet, there is no tile
+  // rather than a "0 %" that would read as a measurement.
+  it('shows no loss tile without a retention read or with no regulars yet', () => {
+    const { unmount } = render(<AdminStatsPanel />);
+    expect(screen.queryByText('Odešli')).not.toBeInTheDocument();
+    // Unmount first: a store update under a mounted panel renders outside act.
+    unmount();
+
+    useAppStore.setState({ adminRetention: { regularsEver: 0, goneQuiet: 0 } } as never);
+    render(<AdminStatsPanel />);
+    expect(screen.queryByText('Odešli')).not.toBeInTheDocument();
+  });
+
+  // Same contract as the feature signals: its own RPC, so a failed usage read
+  // must not hide a loss figure that arrived perfectly well.
+  it('still shows the loss tile when the usage read failed', () => {
+    useAppStore.setState({
+      adminStats: null,
+      adminStatsLoading: false,
+      adminRetention: { regularsEver: 2435, goneQuiet: 97 },
+    } as never);
+    render(<AdminStatsPanel />);
+    expect(screen.getByText('Statistiky se nepodařilo načíst.')).toBeInTheDocument();
+    expect(screen.getByText('4 %')).toBeInTheDocument();
   });
 });

@@ -1,9 +1,10 @@
 import { lazy, Suspense, useRef, useState } from 'react';
 import type { SyntheticEvent } from 'react';
 import { Sheet } from '../primitives/Sheet';
-import { SheetHeader } from '../primitives/SheetHeader';
+import { SubjectSheetHeader } from './SubjectSheetHeader';
 import { TeacherList } from './TeacherList';
 import { SubjectDrawerTabs } from './SubjectDrawerTabs';
+import { stepTab, SUBJECT_TAB_ORDER } from './subjectTabStep';
 import { SubjectDrawerScroller } from './SubjectDrawerScroller';
 import { DrawerTabBody } from '../../SubjectFileDrawer/DrawerTabBody';
 import { groupAndSortFiles } from '../../SubjectFileDrawer/utils/groupFiles';
@@ -13,6 +14,7 @@ import type { MobileSheet } from '../../../store/types';
 import { useFiles } from '../../../hooks/data/useFiles';
 import { useClassmates } from '../../../hooks/data/useClassmates';
 import { useZaznamnik } from '../../../hooks/data/useZaznamnik';
+import { useOdevzdavarny } from '../../../hooks/data/useOdevzdavarny';
 import { useSyllabus } from '../../../hooks/data/useSyllabus';
 import { useSubjects } from '../../../hooks/data/useSubjects';
 import { useSchedule } from '../../../hooks/data/useSchedule';
@@ -21,6 +23,8 @@ import { usePdfPreview } from '../../../hooks/ui/usePdfPreview';
 import { listSubjectPdfs } from '../../SubjectFileDrawer/utils/listSubjectPdfs';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
+import { useCourseName } from '../../../hooks/ui/useCourseName';
+import { syllabusUrl } from '../../../utils/syllabusUrl';
 
 // pdf.js and its worker are the heaviest thing the app can load; a student who
 // never opens a PDF should never pay for it.
@@ -39,7 +43,8 @@ export interface SubjectDrawerSheetProps {
 
 /**
  * Full-size sheet for a single subject: header, five-tab icon bar, the
- * shared `DrawerTabBody` beneath. No IS footer since #341 — see below.
+ * shared `DrawerTabBody` beneath. No IS footer since #341 — see below; the
+ * title linking the syllabus is the one IS link kept, as the extension has it.
  *
  * Selection/drag props passed to `DrawerTabBody` are mouse-only concerns
  * (rubber-band rectangle select) that don't translate to touch, so this sheet
@@ -53,19 +58,25 @@ export interface SubjectDrawerSheetProps {
  */
 export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) {
   const { courseCode, courseName, courseId } = sheet;
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { getSubject } = useSubjects();
   // Mirrors desktop's useSubjectFileDrawerState: files/classmates/zaznamnik
   // need a subjectId (an enrolled subject) to fetch anything, so a subject
   // not yet resolved to one opens on Success rate instead of a dead tab.
-  const [activeTab, setActiveTab] = useState<DrawerTab>(() =>
-    getSubject(courseCode)?.subjectId ? 'files' : 'stats'
-  );
+  const [activeTab, setActiveTab] = useState<DrawerTab>(() => {
+    const enrolled = !!getSubject(courseCode)?.subjectId;
+    if (sheet.initialTab && (enrolled || !NO_ID_DISABLED.includes(sheet.initialTab)))
+      return sheet.initialTab;
+    return enrolled ? 'files' : 'stats';
+  });
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const fileRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const ignoreClickRef = useRef(false);
 
   const subjectInfo = getSubject(courseCode);
+  // The student's name for it, for what they read: the header and the reader's
+  // title. The syllabus lookup and the lesson below keep IS's name.
+  const displayName = useCourseName(courseCode, courseName);
   const { schedule } = useSchedule();
   const { isSyncing } = useSyncStatus();
   // Tapping a PDF opens it in the reader rather than exporting it: on iOS the
@@ -81,6 +92,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
   // in the drawer's grouped order, so both lists read the same.
   const {
     previewUrl,
+    previewPosition,
     viewPdf,
     closePreview,
     openFile,
@@ -88,21 +100,26 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
     openingLink,
     activeDownloads,
   } = usePdfPreview(courseCode, {
-    title: courseName || courseCode,
+    title: displayName,
     files: listSubjectPdfs(groupedFiles.flatMap((g) => g.files)),
   });
   const { classmates } = useClassmates(courseCode);
   const pushSheet = useAppStore((s) => s.pushSheet);
   const { data: zaznamnikData } = useZaznamnik(courseCode);
+  const { assignments: boxes } = useOdevzdavarny(subjectInfo?.subjectId);
   const syllabusResult = useSyllabus(courseCode, resolvedCourseId, courseName);
 
   const filesCount = files?.reduce((acc, f) => acc + f.files.length, 0) ?? 0;
-  const zaznamnikCount = zaznamnikData
-    ? (zaznamnikData.ph.sections?.reduce(
-        (n, s) => n + s.arches.filter((a) => !a.empty).length,
-        0
-      ) ?? 0) + (zaznamnikData.vt.tests?.length ?? 0)
-    : undefined;
+  // Records plus submission boxes — both live on this tab (see ZaznamnikTab).
+  const zaznamnikCount =
+    zaznamnikData || boxes.length > 0
+      ? (zaznamnikData?.ph.sections?.reduce(
+          (n, s) => n + s.arches.filter((a) => !a.empty).length,
+          0
+        ) ?? 0) +
+        (zaznamnikData?.vt.tests?.length ?? 0) +
+        boxes.length
+      : undefined;
   const counts: Partial<Record<DrawerTab, number | undefined>> = {
     files: filesCount,
     classmates: classmates?.length,
@@ -128,9 +145,17 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
       <SubjectDrawerScroller
         courseCode={courseCode}
         pullable={activeTab === 'files'}
+        onSwipeStep={(steps) =>
+          setActiveTab(stepTab(SUBJECT_TAB_ORDER, activeTab, steps, disabledTabs))
+        }
         top={
           <>
-            <SheetHeader eyebrow={courseCode} title={courseName || courseCode} onBack={onClose} />
+            <SubjectSheetHeader
+              courseCode={courseCode}
+              isName={courseName || courseCode}
+              titleHref={resolvedCourseId ? syllabusUrl(resolvedCourseId, language) : undefined}
+              onBack={onClose}
+            />
             {/* Below the header, not inside it: the header is `touch-none` so the
                 sheet can be dragged by it, and this is a list of things to tap. */}
             <TeacherList teachers={syllabusResult.syllabus?.courseInfo?.teachers} />
@@ -169,8 +194,9 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
           // Off since this sheet pinned an 'Otevřít v IS MENDELU' footer, which
           // made every tab show two identical links. #341 dropped that footer
           // (it opened the file structure whatever the tab), so the tabs here
-          // carry no IS link. The one exception is the classmates tab's
-          // no-cvičení state, which links IS because that link is its answer.
+          // carry no IS link. The exceptions are the title, which links the
+          // syllabus as the extension's drawer title does (Dominik's call), and
+          // the classmates tab's no-cvičení state, whose answer is that link.
           showIsBacklink={false}
           // A classmate tap reaches the same PersonSheet the Lidé search
           // opens. Without this it landed in ClassmatePersonDrawer — a second
@@ -199,7 +225,12 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
               this flex column rather than overflowing past the screen. */}
           <div className="min-h-0 flex-1">
             <Suspense fallback={null}>
-              <PdfViewer key={previewUrl} blobUrl={previewUrl} onClose={closePreview} />
+              <PdfViewer
+                key={previewUrl}
+                blobUrl={previewUrl}
+                onClose={closePreview}
+                {...previewPosition}
+              />
             </Suspense>
           </div>
         </div>

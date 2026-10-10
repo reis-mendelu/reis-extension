@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useCalendarData } from '../useCalendarData';
 import { useSchedule, useExams } from '../../../hooks/data';
@@ -16,11 +16,15 @@ vi.mock('../../../store/useAppStore', () => ({
   useAppStore: vi.fn(),
 }));
 
+// The store's clock, when a test moves it by hand; otherwise the system time.
+let storeNow: Date | null = null;
+
 describe('useCalendarData', () => {
   const mockInitialDate = new Date(2026, 1, 12); // Thursday, Feb 12, 2026
 
   beforeEach(() => {
     vi.clearAllMocks();
+    storeNow = null;
 
     // Default mock implementations
     vi.mocked(useSchedule).mockReturnValue({
@@ -44,6 +48,8 @@ describe('useCalendarData', () => {
         customEvents: [],
         hiddenItems: { events: [], courses: [] },
         teachingWeekData: null,
+        // Read per call, so the weekend tests' setSystemTime reaches it.
+        now: storeNow ?? new Date(),
       })
     );
   });
@@ -218,6 +224,7 @@ describe('useCalendarData', () => {
           ],
           hiddenItems: { events: [], courses: [] },
           teachingWeekData: null,
+          now: new Date(),
         })
       );
       const { result } = renderHook(() => useCalendarData(mockInitialDate));
@@ -233,10 +240,80 @@ describe('useCalendarData', () => {
           customEvents: [],
           hiddenItems: { events: [{ id: '20260214' }], courses: [] },
           teachingWeekData: null,
+          now: new Date(),
         })
       );
       const { result } = renderHook(() => useCalendarData(mockInitialDate));
       expect(result.current.visibleDayCount).toBe(5);
+    });
+
+    /**
+     * Today always has a column, as it always has a chip on the phone: on a
+     * lesson-free Saturday the grid used to stop at Friday, so nothing on
+     * screen said which day it was.
+     */
+    describe('when today is a weekend day', () => {
+      afterEach(() => vi.useRealTimers());
+      const today = (d: Date) => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(d);
+      };
+
+      it('grows to six on a lesson-free Saturday in its own week', () => {
+        today(new Date(2026, 1, 14, 16, 0)); // Saturday of the Feb 9–15 week
+        withSchedule([lessonOn('20260212', 'Thursday Lesson')]);
+        const { result } = renderHook(() => useCalendarData(mockInitialDate));
+        expect(result.current.todayIndex).toBe(5);
+        expect(result.current.visibleDayCount).toBe(6);
+      });
+
+      it('grows to seven on a Sunday, contiguous like the lesson rule', () => {
+        today(new Date(2026, 1, 15, 10, 0));
+        withSchedule([]);
+        const { result } = renderHook(() => useCalendarData(mockInitialDate));
+        expect(result.current.visibleDayCount).toBe(7);
+      });
+
+      it('leaves another week at five', () => {
+        today(new Date(2026, 1, 21, 10, 0)); // the following Saturday
+        withSchedule([]);
+        const { result } = renderHook(() => useCalendarData(mockInitialDate));
+        expect(result.current.visibleDayCount).toBe(5);
+      });
+
+      /**
+       * The Sprint 12 report ("the 9th of October gets highlighted as the
+       * current day … returning to today highlights Friday") is the phone's
+       * `stepWeek` clamp. The grid has no selected day to clamp: on Saturday
+       * 3 October it opens on 5–11 October with nothing marked, and paging
+       * back marks Saturday 3, not a Friday.
+       */
+      /**
+       * A calendar left open across midnight. `todayIndex` was memoized on the
+       * week alone and read `new Date()` inside, so on a Friday-night tab the
+       * grid stayed at five columns into Saturday. It follows the store's
+       * clock now, which the pulse advances.
+       */
+      it('widens to Saturday when the store clock crosses Friday midnight', () => {
+        storeNow = new Date(2026, 1, 13, 23, 59); // Friday of the Feb 9–15 week
+        withSchedule([]);
+        const { result, rerender } = renderHook(() => useCalendarData(mockInitialDate));
+        expect(result.current.todayIndex).toBe(4);
+        expect(result.current.visibleDayCount).toBe(5);
+        storeNow = new Date(2026, 1, 14, 0, 1);
+        rerender();
+        expect(result.current.todayIndex).toBe(5);
+        expect(result.current.visibleDayCount).toBe(6);
+      });
+
+      it('marks no Friday in the next week, and Saturday 3 October in its own', () => {
+        today(new Date(2026, 9, 3, 16, 0));
+        withSchedule([]);
+        const next = renderHook(() => useCalendarData(new Date(2026, 9, 5)));
+        expect(next.result.current.todayIndex).toBe(-1);
+        const own = renderHook(() => useCalendarData(new Date(2026, 8, 28)));
+        expect(own.result.current.todayIndex).toBe(5);
+      });
     });
   });
 
@@ -249,6 +326,7 @@ describe('useCalendarData', () => {
         customEvents: [],
         hiddenItems: { events: [], courses: [] },
         teachingWeekData: null,
+        now: new Date(),
       })
     );
     const { result, rerender } = renderHook(() => useCalendarData(mockInitialDate));
@@ -262,6 +340,7 @@ describe('useCalendarData', () => {
         customEvents: [],
         hiddenItems: { events: [], courses: [] },
         teachingWeekData: null,
+        now: new Date(),
       })
     );
     rerender();
@@ -321,6 +400,7 @@ describe('useCalendarData exam duration', () => {
         customEvents: [],
         hiddenItems: { events: [], courses: [] },
         teachingWeekData: null,
+        now: new Date(),
       })
     );
     const { result } = renderHook(() => useCalendarData(thursdayFeb12));

@@ -292,7 +292,7 @@ export function SubjectRow({
           !subject.isFulfilled &&
           (subject.isEnrolled ? (
             <span className="badge badge-sm badge-primary badge-outline shrink-0">
-              {subject.rawStatusText}
+              {subject.rawStatusText || t('subjects.enrolled')}
             </span>
           ) : !hasId ? (
             <span className="badge badge-sm md:badge-ghost gap-1 text-base-content/70 bg-transparent border-none p-0 md:bg-base-content/5 md:px-2 shrink-0">

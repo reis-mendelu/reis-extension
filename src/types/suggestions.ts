@@ -1,4 +1,5 @@
 import type { AppView } from './app';
+import type { MobileTab } from '../store/types';
 import type { DiagnosticsPayload } from '../utils/diagnostics/collectDiagnostics';
 
 export type SuggestionType = 'bug' | 'idea' | 'other';
@@ -11,11 +12,20 @@ export interface SuggestionDraft {
   contact?: string;
 }
 
+/**
+ * Where a report was written: a desktop view, or a phone tab. `profile` is the
+ * one tab with no desktop view of the same name, and it is where most phone
+ * reports start. Not added to `APP_VIEWS`: that list also validates the stored
+ * desktop view on boot, and `profile` there would boot the desktop onto a
+ * screen nothing renders.
+ */
+export type ReportScreen = AppView | MobileTab;
+
 export interface SuggestionPayload extends SuggestionDraft {
-  // AppView, not string: the screen allowlist is enforced at runtime in the
-  // edge function, the DB constraint and resolveScreen. Typing it as `string`
-  // meant a typo at a call site would only surface as a 400 in production.
-  screen: AppView;
+  // A union, not string, so a typo at a call site fails typecheck. The server
+  // checks only the length (1–40, in the RPC and on the table), so a
+  // new value here needs no migration and breaks no released build.
+  screen: ReportScreen;
   ext_version: string;
   browser_name: string;
   browser_version: string;
@@ -28,7 +38,7 @@ export interface SuggestionRow {
   title: string;
   body: string;
   contact: string | null;
-  screen: AppView;
+  screen: ReportScreen;
   ext_version: string;
   browser_name: string;
   browser_version: string;

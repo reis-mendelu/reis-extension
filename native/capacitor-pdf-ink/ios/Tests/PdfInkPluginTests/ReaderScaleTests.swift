@@ -141,7 +141,8 @@ final class ReaderScaleTests: XCTestCase {
 /**
  * The reader's bar.
  *
- * Trailing: share, add a page, search, page counter — and nothing else.
+ * Trailing: share, the `+` menu (a page or a picture), focus, search, page
+ * counter — and nothing else. Arranging pictures swaps them for one Done.
  * Leading: our exit, as a `leadingItemGroups` group. UIKit ADDS groups beside
  * the split view's automatic sidebar toggle (proven on the simulator
  * 2026-09-07: the glyph draws, the action fires, the toggle survives), where a
@@ -192,8 +193,9 @@ final class ReaderBarTests: XCTestCase {
         let trailing = try XCTUnwrap(reader.navigationItem.rightBarButtonItems)
         XCTAssertEqual(
             trailing.map(\.accessibilityLabel),
-            [strings.export, strings.addPage, strings.focus, strings.search, strings.pages],
+            [strings.export, strings.add, strings.focus, strings.search, strings.pages],
             "the reader's bar gained or lost a tool")
+        XCTAssertNotNil(trailing[1].menu, "+ is a menu: a page, a picture, or moving pictures")
     }
 }
 
@@ -225,7 +227,7 @@ final class SpaceExitTests: XCTestCase {
     func testTheSidebarsCloseClosesTheSpace() throws {
         let space = makeSpace()
         var closed = false
-        space.onClose = { _ in closed = true }
+        space.onClose = { _, _ in closed = true }
 
         let list = try XCTUnwrap(
             space.split.viewController(for: .primary) as? FileListViewController)
@@ -239,7 +241,7 @@ final class SpaceExitTests: XCTestCase {
     func testTheReadersExitClosesTheSpace() throws {
         let space = makeSpace()
         var closed = false
-        space.onClose = { _ in closed = true }
+        space.onClose = { _, _ in closed = true }
 
         let nav = try XCTUnwrap(
             space.split.viewController(for: .secondary) as? UINavigationController)

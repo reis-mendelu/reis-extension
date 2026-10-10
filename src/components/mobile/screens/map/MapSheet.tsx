@@ -13,6 +13,8 @@ import { useTranslation } from '../../../../hooks/useTranslation';
 import { MapPanelBody } from './MapPanelBody';
 import { MapSheetPeek } from './MapSheetPeek';
 import { MapSheetHeader } from './MapSheetHeader';
+import { useRoomDirections } from '../../../CampusMap/useRoomDirections';
+import { floorText } from '../../../CampusMap/floorText';
 import { useSafeBottom } from '../../../../hooks/ui/useSafeBottom';
 import { peekHeightPx } from '../../../../utils/mobile/safeArea';
 import type { Detent } from '../../primitives/sheetDrag';
@@ -48,6 +50,7 @@ export function MapSheet() {
   const selection = useAppStore((s) => s.mapSelection);
   const clearMapSelection = useAppStore((s) => s.clearMapSelection);
   const { t } = useTranslation();
+  const directions = useRoomDirections();
   const selectedEvent = selection?.kind === 'event' ? selection.event : null;
   // A bubble in the botanical garden, tapped. Treated exactly as a tapped event
   // pin is: the card IS the answer to the tap, so it replaces the list and the
@@ -121,23 +124,14 @@ export function MapSheet() {
    * happen.
    */
   //
-  // Except from the calendar (`reveal: 'map'`). The student read the event in
-  // their timetable and crossed over to see WHERE it is; the card, hugged to
-  // ~470px, was in front of the pin — measured at 390×844, the pin at y=422
-  // under a sheet topped at 373, and reported from a Pixel 9a as "it opens
-  // straight into the detail, I can't see the map". So that focus goes to peek,
-  // actively: the detent survives tab switches, and a sheet left at `half` by
-  // an earlier visit would otherwise still show the card. The peek row names
-  // the event, one tap from its card.
-  //
-  // Keyed on the selection OBJECT, not the event: a pin tap after the
-  // calendar's selects the same event reference, and must still open the card.
+  // Keyed on the selection OBJECT, not the event: a second tap on the same pin
+  // selects the same event reference, and must still open the card.
   useEffect(() => {
     if (!selection || (selection.kind !== 'event' && selection.kind !== 'gardenPlace')) return;
     // 'half', not 'expanded' — and the height below hugs the card anyway. Any
     // state out of 'peek' will do; what this call is really for is getting the
     // peek row out of the way so the card can render at all.
-    setSheetState(selection.kind === 'event' && selection.reveal === 'map' ? 'peek' : 'half');
+    setSheetState('half');
   }, [selection, setSheetState]);
 
   // A drawn route is an answer, and the sheet is 45% of the screen in front of
@@ -289,6 +283,7 @@ export function MapSheet() {
         <>
           <MapSheetHeader
             showingCard={!!selectedCard}
+            heading={directions ? `${directions.label} · ${floorText(directions.level, t)}` : null}
             onCollapse={toggle}
             onBack={clearMapSelection}
           />

@@ -48,7 +48,7 @@ const INSTALL_ID_APPLE: AppleType = {
 export const FLOWS: Flow[] = [
   {
     id: 'daily_count',
-    what: 'One row per install per day: random install id, faculty and platform labels.',
+    what: 'One row per install per day: random install id, faculty, base study-programme code and platform labels.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/feedback.ts'],
@@ -57,7 +57,7 @@ export const FLOWS: Flow[] = [
       [
         'Daily count',
         'once a day',
-        'a random install identifier — a UUID unrelated to you. Counts **installs, not people**, plus faculty and platform as group labels.',
+        'a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI) and platform as group labels. The survey and the feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation.',
       ],
     ],
     stores: {
@@ -122,15 +122,13 @@ export const FLOWS: Flow[] = [
     },
   },
   {
-    id: 'survey_and_rsvp',
-    what: 'An NPS answer, or an event RSVP, on the random install id.',
+    id: 'survey',
+    what: 'An NPS answer on the random install id.',
     when: 'student-action',
     identifier: 'install_id',
-    files: ['src/api/feedback.ts', 'src/api/eventRsvp.ts'],
-    calls: ['submit_feedback', 'set_event_rsvp'],
-    policyRows: [
-      ['In-app survey, event RSVP', 'you answer / RSVP', 'the same random install identifier'],
-    ],
+    files: ['src/api/feedback.ts'],
+    calls: ['submit_feedback'],
+    policyRows: [['In-app survey', 'you answer', 'the same random install identifier']],
     stores: {
       apple: [INSTALL_ID_APPLE],
       play: ['PSL_USER_ACCOUNT'],
@@ -146,7 +144,7 @@ export const FLOWS: Flow[] = [
     files: ['src/services/spolky/spolkyService.ts'],
     calls: ['increment_post_view', 'increment_post_click'],
     policyRows: [['Society post view or click', 'you open one', 'a post id']],
-    stores: { apple: [], play: [], firefox: [], cws: [] },
+    stores: { apple: [], play: [], firefox: ['technicalAndInteraction'], cws: [] },
   },
   {
     id: 'map_event_views',
@@ -162,7 +160,7 @@ export const FLOWS: Flow[] = [
         "that event's id and nothing else — a counter on the event, with no identifier of yours attached",
       ],
     ],
-    stores: { apple: [], play: [], firefox: [], cws: [] },
+    stores: { apple: [], play: [], firefox: ['technicalAndInteraction'], cws: [] },
   },
   {
     id: 'feature_counters',
@@ -200,22 +198,32 @@ export const FLOWS: Flow[] = [
 /** Supabase calls that carry no student data flow, each with the reason. */
 export const EXEMPT: Exempt[] = [
   {
-    call: 'get_event_rsvps',
-    files: ['src/api/eventRsvp.ts'],
-    why: 'Reads public RSVP counts; sends event ids only.',
-  },
-  {
     call: 'spolky_events',
     files: [
       'src/api/mapEvents.ts',
       'src/services/spolky/spolkyService.ts',
       'src/api/societyPosts.ts',
     ],
-    why: 'Public society feed reads; writes are by a signed-in society, not a student.',
+    why: 'Public society feed reads; writes are by reIS staff or a society login, never a student.',
+  },
+  {
+    call: 'societies',
+    files: ['src/api/societies.ts', 'src/api/societiesAdmin.ts'],
+    why: 'Public society catalog read (names, colours, logo paths); writes are by a signed-in reis_admin, not a student.',
   },
   {
     call: 'usage_stats',
     files: ['src/api/usageStats.ts'],
+    why: 'Admin console read, signed-in reis_admin.',
+  },
+  {
+    call: 'usage_retention',
+    files: ['src/api/usageRetention.ts'],
+    why: 'Admin console read, signed-in reis_admin.',
+  },
+  {
+    call: 'usage_programmes',
+    files: ['src/api/usageProgrammes.ts'],
     why: 'Admin console read, signed-in reis_admin.',
   },
   {
@@ -243,6 +251,17 @@ export const EXEMPT: Exempt[] = [
 export const PLATFORM_PERMISSIONS = {
   /** Info.plist NS*UsageDescription keys. */
   ios: ['NSCameraUsageDescription'],
-  /** AndroidManifest uses-permission names, without the android.permission. prefix. */
-  android: ['INTERNET', 'POST_NOTIFICATIONS', 'ACCESS_WIFI_STATE', 'CHANGE_WIFI_STATE'],
+  /**
+   * What the merged release manifest requests (app manifest + every Capacitor
+   * plugin's, minus tools:node="remove"), without the android.permission. prefix.
+   * RECEIVE_BOOT_COMPLETED and WAKE_LOCK come from @capacitor/local-notifications.
+   */
+  android: [
+    'INTERNET',
+    'POST_NOTIFICATIONS',
+    'ACCESS_WIFI_STATE',
+    'CHANGE_WIFI_STATE',
+    'RECEIVE_BOOT_COMPLETED',
+    'WAKE_LOCK',
+  ],
 };

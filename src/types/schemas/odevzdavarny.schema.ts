@@ -23,6 +23,13 @@ const OdevzdavarnaSchema = z
     odevzdavarnaId: z.string(),
     fileCount: z.number(),
     uploadUrl: z.string(),
+    // Added with the three-table parser; absent on rows cached before it.
+    // `section` stays a string: an unknown future value must not hide the row.
+    courseCode: z.string().optional(),
+    section: z.string().optional(),
+    isOpen: z.boolean().optional(),
+    points: z.string().optional(),
+    obdobi: z.string().optional(),
   })
   .passthrough();
 

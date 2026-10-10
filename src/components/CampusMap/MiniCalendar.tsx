@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Calendar, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toISO, parseISO, monthMatrix, addMonths } from './calendar';
@@ -28,6 +28,8 @@ export function MiniCalendar({
   isDisabled,
   minDate,
   maxDate,
+  labelledBy,
+  describedBy,
 }: {
   value: string | null;
   onChange: (iso: string) => void;
@@ -42,7 +44,14 @@ export function MiniCalendar({
   // chevrons page freely (the original behaviour).
   minDate?: string;
   maxDate?: string;
+  // Id of the visible heading that names this picker. Two pickers in one form
+  // otherwise both read as the bare placeholder ("Pick a date"); the trigger's
+  // own id follows it so the picked date stays part of the name.
+  labelledBy?: string;
+  // Id of an error naming what is wrong with the picked date, when there is one.
+  describedBy?: string;
 }) {
+  const triggerId = useId();
   const parsed = value ? parseISO(value) : null;
   const [view, setView] = useState(
     () => parsed ?? { y: new Date().getFullYear(), m0: new Date().getMonth() }
@@ -56,12 +65,15 @@ export function MiniCalendar({
     const n = new Date();
     return toISO(n.getFullYear(), n.getMonth(), n.getDate());
   }, []);
-  const label = value
-    ? new Date(`${value}T00:00:00`).toLocaleDateString(locale, {
+  // The year only when it is not this one: "čt 19. listopadu 2026" overran a
+  // half-width field, and this year's dates are the common case.
+  const picked = value ? new Date(`${value}T00:00:00`) : null;
+  const label = picked
+    ? picked.toLocaleDateString(locale, {
         weekday: 'short',
         day: 'numeric',
         month: 'long',
-        year: 'numeric',
+        year: picked.getFullYear() === new Date().getFullYear() ? undefined : 'numeric',
       })
     : placeholder;
   const monthName = new Date(view.y, view.m0, 1).toLocaleDateString(locale, { month: 'long' });
@@ -128,6 +140,9 @@ export function MiniCalendar({
       <button
         ref={btnRef}
         type="button"
+        id={triggerId}
+        aria-labelledby={labelledBy ? `${labelledBy} ${triggerId}` : undefined}
+        aria-describedby={describedBy}
         // No tabIndex: a <button> is already focusable. When this was a DaisyUI
         // `.dropdown` trigger, marking it [tabindex] made
         // `.dropdown:focus-within > [tabindex]:first-child { pointer-events:none }`

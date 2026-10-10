@@ -29,7 +29,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>reIS uses the camera only if you choose to take a photo to attach to a problem report. / reIS použije fotoaparát jen tehdy, když se rozhodneš vyfotit snímek k hlášení problému.</string>
+	<string>reIS uses the camera only when you choose to take a photo: to attach it to a problem report, or to put it on a page of your notes in the iPad reader. / reIS použije fotoaparát jen tehdy, když se rozhodneš něco vyfotit: k hlášení problému, nebo na stránku svých poznámek ve čtečce na iPadu.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -60,8 +60,6 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>

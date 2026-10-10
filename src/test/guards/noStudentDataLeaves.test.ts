@@ -68,8 +68,6 @@ const SUPABASE_CALLERS = new Set([
   // Disclosed in PRIVACY.md section 4 and docs/privacy-policy-app.md BEFORE
   // this note was written. No install id is sent with a report.
   'src/api/suggestions.ts',
-  // Random install id only. Reads take no identity argument at all.
-  'src/api/eventRsvp.ts',
   // Random install id only, since the privacy refactor. Since September 2026
   // the daily-usage event also carries two GROUP labels (faculty, platform) —
   // counts over thousands of installs, not per-student data. Disclosed in
@@ -79,6 +77,10 @@ const SUPABASE_CALLERS = new Set([
   'src/services/spolky/spolkyService.ts',
   // Reads the public society events feed. No student data in either direction.
   'src/api/mapEvents.ts',
+  // The societies catalog (September 2026): an anonymous select of public
+  // branding (name, colour, faculty, logo path). No identity, no student data,
+  // nothing written. Logos then load as plain <img> GETs from the same project.
+  'src/api/societies.ts',
   // Two feature counters, added September 2026, both disclosed in PRIVACY.md
   // section 2 and docs/privacy-policy-app.md BEFORE this entry was added.
   //
@@ -169,6 +171,8 @@ const ALLOWED_HOSTS = [
   'outlook.office.com',
   'www.geteduroam.app',
   'supef.cz',
+  'instagram.com', // a society's profile, the "details" link on an event with none
+  'creativecommons.org', // the Twemoji licence, linked from the map's credit line
 
   // --- not destinations ---
   'localhost.that.never.exists', // CORS sentinel in capacitorTransport
@@ -334,16 +338,38 @@ describe('no student data leaves the device', () => {
     ).toEqual([]);
   });
 
-  // Firefox 140+ enforces the manifest's data_collection_permissions as consent,
-  // and the daily count, feature counters and NPS are "technicalAndInteraction"
-  // data there. A background sender that skips the check sends on Firefox after
-  // the student switched it off. RSVP is absent on purpose: it sends only when
-  // the student taps Going / Interested, and the count is the feature itself.
-  it('background senders of the install id honour Firefox consent', () => {
-    for (const path of ['src/api/feedback.ts', 'src/api/featureUsage.ts']) {
-      const src = readFileSync(join(ROOT, path), 'utf-8');
-      expect(src, `${path} must check hasDataConsent before sending`).toMatch(
-        /hasDataConsent\('technicalAndInteraction'\)/
+  // Firefox 140+ enforces the manifest's data_collection_permissions as consent.
+  // Mozilla's add-on policy defines user interaction data as "how the user
+  // interacts with Firefox and the installed add-ons, metrics for product
+  // improvement" — with no carve-out for data that carries no identifier. So
+  // the daily count, feature counters and NPS are "technicalAndInteraction"
+  // data, and so are the identifier-free post view/click and map-event view
+  // counters: a post id is not a person, but the count is still a metric.
+  //
+  // The only way out is Mozilla's implicit consent, for a send that is "a
+  // direct, immediate consequence of a single, deliberate user command". No
+  // counter qualifies: the student opened a post or a card, which works
+  // without the counter. "It has no identifier"
+  // is therefore not a reason to drop a gate here.
+  // https://extensionworkshop.com/documentation/publish/add-on-policies/
+  it('senders of interaction data honour Firefox consent', () => {
+    // Every Supabase RPC in these files is an interaction-data send, so each
+    // needs its own gate: a new counter added without one fails here. Comments
+    // are stripped first so a mention of either string cannot pad the count.
+    const gated = [
+      'src/api/feedback.ts', // trackDailyUsage and the NPS answer
+      'src/api/featureUsage.ts', // trackFeatureSignal and trackMapEventView
+      'src/services/spolky/spolkyService.ts', // post views and clicks
+    ];
+    for (const path of gated) {
+      const code = readFileSync(join(ROOT, path), 'utf-8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/(^|\s)\/\/.*$/gm, '$1');
+      const sends = code.match(/\.rpc\(/g)?.length ?? 0;
+      const checks = code.match(/hasDataConsent\('technicalAndInteraction'\)/g)?.length ?? 0;
+      expect(sends, `${path} no longer sends anything — drop it from this list`).toBeGreaterThan(0);
+      expect(checks, `${path} must check hasDataConsent before each of its ${sends} sends`).toBe(
+        sends
       );
     }
     const manifest = readFileSync(join(ROOT, 'wxt.config.ts'), 'utf-8');

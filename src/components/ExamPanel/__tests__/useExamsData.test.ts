@@ -47,3 +47,95 @@ describe('the sections the desktop exam panel lists', () => {
     expect(result.current.sections.map((r) => r.section.name)).toEqual(['Zápočet']);
   });
 });
+
+/**
+ * Návrhy #26 on the desktop tree. The phone's ExamsScreen shows ScreenError
+ * when a settled sync never got an answer about exams; the extension's panel
+ * had no such branch and said "no exams" instead.
+ */
+describe('the desktop exam panel after a sync that could not reach IS', () => {
+  beforeEach(() => {
+    useAppStore.setState((s) => ({
+      exams: { ...s.exams, data: [], status: 'success' },
+      firstSyncSettled: true,
+      syncLoaded: {},
+      syncStatus: { ...s.syncStatus, isSyncing: false, handshakeDone: true },
+    }));
+  });
+
+  it('is a failure, not an empty list', () => {
+    const { result } = renderHook(() => useExamsData());
+    expect(result.current.showFailed).toBe(true);
+  });
+
+  it('is an empty list when IS answered "none"', () => {
+    useAppStore.setState({ syncLoaded: { exams: true } });
+    const { result } = renderHook(() => useExamsData());
+    expect(result.current.showFailed).toBe(false);
+  });
+
+  it('is neither while the first sync is still running', () => {
+    useAppStore.setState({ firstSyncSettled: false });
+    const { result } = renderHook(() => useExamsData());
+    expect(result.current.showFailed).toBe(false);
+  });
+
+  it('shows cached exams over the failure', () => {
+    setExams([section({ name: 'Zkouška' })]);
+    const { result } = renderHook(() => useExamsData());
+    expect(result.current.showFailed).toBe(false);
+  });
+});
+
+describe('the desktop exam panel while its retry runs', () => {
+  beforeEach(() => {
+    useAppStore.setState((s) => ({
+      exams: { ...s.exams, data: [], status: 'success' },
+      firstSyncSettled: true,
+      syncLoaded: {},
+      examsRefreshing: true,
+      syncStatus: { ...s.syncStatus, isSyncing: false, handshakeDone: true },
+    }));
+  });
+
+  it('shows the loading state, not the failure', () => {
+    const { result } = renderHook(() => useExamsData());
+    expect(result.current.showFailed).toBe(false);
+    expect(result.current.showSkeleton).toBe(true);
+  });
+
+  it('does not flash a skeleton over a known-empty list on the routine refresh', () => {
+    useAppStore.setState({ syncLoaded: { exams: true } });
+    const { result } = renderHook(() => useExamsData());
+    expect(result.current.showSkeleton).toBe(false);
+  });
+});
+
+/**
+ * The phone's ExamsScreen shows its skeleton during a sync only while exams
+ * are unanswered (`isSyncing && !syncLoaded.exams`). The desktop panel took a
+ * bare `isSyncing`, so every background sync flashed a skeleton over a list
+ * IS had already said was empty.
+ */
+describe('the desktop exam panel during a background sync', () => {
+  beforeEach(() => {
+    useAppStore.setState((s) => ({
+      exams: { ...s.exams, data: [], status: 'success' },
+      firstSyncSettled: true,
+      syncLoaded: { exams: true },
+      examsRefreshing: false,
+      syncStatus: { ...s.syncStatus, isSyncing: true, handshakeDone: true },
+    }));
+  });
+
+  it('keeps a known-empty list on screen, without a skeleton', () => {
+    const { result } = renderHook(() => useExamsData());
+    expect(result.current.showSkeleton).toBe(false);
+  });
+
+  it('shows the skeleton while exams have no answer yet', () => {
+    useAppStore.setState({ syncLoaded: {}, firstSyncSettled: false });
+    const { result } = renderHook(() => useExamsData());
+    expect(result.current.showSkeleton).toBe(true);
+  });
+});

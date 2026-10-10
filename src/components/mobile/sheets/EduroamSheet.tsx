@@ -1,13 +1,14 @@
-import { Download, Loader2, AlertTriangle, Wifi, CheckCircle2 } from 'lucide-react';
+import { Download, Loader2, Wifi } from 'lucide-react';
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
 import { PasswordChip } from '../../Eduroam/PasswordChip';
+import { EduroamCertNotices } from '../../Eduroam/EduroamExpiredNotice';
 import { useEduroamSetup, type EduroamTarget } from '../../../hooks/data/useEduroamSetup';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { isMac, isMobile } from '../../../utils/platform';
 import { canConfigureEduroamNatively, nativeEduroamTarget } from '../../../mobile/eduroamNative';
 import { getPlatform } from '../../../platform';
-import { isEduroamConfigured } from '../../../mobile/configureEduroam';
+import { EduroamSheetStatus } from './EduroamSheetStatus';
 
 export interface EduroamSheetProps {
   onClose: () => void;
@@ -46,7 +47,8 @@ function NumberBadge({ n }: { n: number }) {
 export function EduroamSheet({ onClose }: EduroamSheetProps) {
   const { t } = useTranslation();
   const target = detectTarget();
-  const { status, password, error, outcome, run } = useEduroamSetup(target);
+  const { status, password, error, networkFailure, outcome, expiredAt, expiresSoonAt, run, renew } =
+    useEduroamSetup(target);
   const working = status === 'working';
 
   // On the phone itself Android saves the network directly, so there is no
@@ -70,68 +72,14 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
         onClose={onClose}
       />
       <div className="flex flex-col gap-3.5 px-4 pb-6">
-        {status === 'error' && (
-          // A stale association is a warning, not an error: nothing broke, the
-          // student has one thing to do (#261). Everything else here failed.
-          <div
-            className={`alert text-base ${
-              outcome === 'stale-association' ? 'alert-warning' : 'alert-error'
-            }`}
-          >
-            <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-            <span>
-              {/* On the native path nothing is prepared or downloaded, so the
-                  profile wording would describe a step that never happens —
-                  including when the throw lands before Android is ever reached
-                  (a lapsed IS session, a blip fetching the certificate) and
-                  outcome is therefore still null. */}
-              {native
-                ? outcome === 'stale-association'
-                  ? t('eduroam.native.staleAssociation')
-                  : outcome === 'failed'
-                    ? t('eduroam.native.failed')
-                    : `${t('eduroam.native.error')}${error ? `: ${error}` : ''}`
-                : `${t('eduroam.error')}${error ? `: ${error}` : ''}`}
-            </span>
-          </div>
-        )}
-
-        {native && outcome === 'cancelled' && (
-          <div className="alert alert-info text-base">
-            <span>{t('eduroam.native.cancelled')}</span>
-          </div>
-        )}
-
-        {status === 'done' && native && isEduroamConfigured(outcome) && (
-          /* items-start, not the alert's default centring: this block is two
-             lines of different weight now, and a centred icon floats against
-             the middle of the paragraph instead of sitting with the headline
-             it belongs to. */
-          <div className="alert alert-success items-start text-base">
-            <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0" />
-            <div className="flex min-w-0 flex-col gap-1">
-              <span className="font-semibold">
-                {outcome === 'already-configured'
-                  ? t('eduroam.native.already')
-                  : t('eduroam.native.saved')}
-              </span>
-              {/* The note is why this block has a hierarchy at all.
-                  `apply` SAVES and ASSOCIATES in one call, and out of range iOS
-                  raises its OWN "Unable to join the network eduroam" alert —
-                  seen on the device over this very banner. No API suppresses
-                  it: there is no save-without-join. And it cannot be predicted
-                  from the outcome either, because the device that showed it
-                  reported plain `saved` with no error at all.
-                  So the note is shown for every fresh save, hedged with "může"
-                  so it stays true on campus, where the alert never appears. Not
-                  for `already-configured`: nothing was applied, so iOS says
-                  nothing. */}
-              {outcome !== 'already-configured' && (
-                <span className="text-sm opacity-90">{t('eduroam.native.savedNote')}</span>
-              )}
-            </div>
-          </div>
-        )}
+        <EduroamSheetStatus
+          status={status}
+          outcome={outcome}
+          error={error}
+          networkFailure={networkFailure}
+          native={native}
+          target={target}
+        />
 
         {!native && (
           <div className="flex items-center gap-3">
@@ -172,6 +120,16 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
                   : t('eduroam.download')}
           </button>
         </div>
+
+        {/* Under the button the student just tapped: the certificate has expired,
+            or will soon, and the way on is generating a new one. */}
+        <EduroamCertNotices
+          status={status}
+          expiredAt={expiredAt}
+          expiresSoonAt={expiresSoonAt}
+          onRenew={() => void renew(target)}
+          className="text-base"
+        />
 
         {macInApp && (
           <div className="flex items-center gap-3">

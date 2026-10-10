@@ -6,27 +6,26 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { useSchedule } from '../../../hooks/data/useSchedule';
 import { resolveNowNext } from '../../../utils/mobile/nowNext';
 import { buildDayAgenda } from '../../../utils/mobile/dayAgenda';
-import { isLessonHidden } from '../../../utils/hiddenLessons';
 import { getCzechHoliday } from '../../../utils/holidays';
 import { isOutsideTeaching } from '../../../utils/mobile/teachingPeriod';
 import { semesterStart } from '../../../utils/mobile/semesterStart';
-import { defaultCalendarDay } from '../../../utils/mobile/landingDay';
 import { customEventToLesson } from '../../../utils/customEventLesson';
 import { useShowLessonOnMap } from './calendar/useShowLessonOnMap';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { NowNextCard } from './calendar/NowNextCard';
 import { DayChips } from './calendar/DayChips';
 import { DayBody } from './calendar/DayBody';
-import { TodayPill } from './calendar/TodayPill';
+import { WeekGrid } from './calendar/WeekGrid';
+import { CalendarViewChooser } from './calendar/CalendarViewChooser';
+import { useCalendarToday } from './calendar/useCalendarToday';
 import { RecentFilesStrip } from './calendar/RecentFilesStrip';
+import { WeekMenuButton } from './calendar/WeekMenuButton';
 import { CalendarSkeleton } from './calendar/CalendarSkeleton';
-import { formatHeaderDate } from '../../../utils/mobile/formatHeaderDate';
+import { useCalendarTitle } from './calendar/useCalendarTitle';
 
 export function CalendarScreen() {
   const { t, language } = useTranslation();
-  const locale = language === 'en' ? 'en-US' : 'cs-CZ';
   const { schedule } = useSchedule();
-  const mobileSelectedDayIso = useAppStore((s) => s.mobileSelectedDayIso);
   const setMobileSelectedDay = useAppStore((s) => s.setMobileSelectedDay);
   const showOnMap = useShowLessonOnMap();
   const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
@@ -34,7 +33,8 @@ export function CalendarScreen() {
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
   const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
   const syncLoaded = useAppStore((s) => s.syncLoaded);
-  const hiddenItems = useAppStore((s) => s.hiddenItems);
+  const view = useAppStore((s) => s.mobileCalendarView);
+  const choosing = useAppStore((s) => s.calendarViewChosen === false);
   // The store's clock, not `new Date()`: the pulse advances it, so the running
   // lesson's card and its countdown move with it instead of being stamped once
   // per render and then only when something else happened to re-render.
@@ -56,22 +56,12 @@ export function CalendarScreen() {
   // the vývěska. Returning a bare skeleton or error in its place left a
   // student with no route to any of them for as long as a crawl took, which on
   // a first sign-in is minutes.
-  // Today, except before term, when it is the first teaching day — see
-  // utils/mobile/landingDay. Resolved HERE rather than in the store so it
-  // re-derives every render: `null` stays "wherever the calendar opens", so the
-  // day still rolls over at midnight and still follows a late sync.
-  //
-  // Computed from the VISIBLE schedule, not the raw one. A student who hid the
-  // course that happens to start earliest would otherwise land on a day whose
-  // agenda is empty once the hidden lessons are taken out — the blank calendar
-  // this rule exists to prevent, arrived at by a different road.
-  //
-  // Lifted above `chrome` so the set is computed once for the strip below too,
-  // in every state including the skeleton — with no schedule it is simply
-  // empty, and the strip falls back to Mon–Fri.
-  const visibleSchedule = schedule.filter((l) => !isLessonHidden(l, hiddenItems));
-  const defaultIso = defaultCalendarDay(visibleSchedule, teachingWeekData, new Date());
-  const selectedIso = mobileSelectedDayIso ?? defaultIso;
+  // Where the calendar opens and the way back to today — see useCalendarToday,
+  // which BottomNav shares so tapping the Kalendář tab again agrees with the
+  // date in the header. Computed from the VISIBLE schedule, in every state
+  // including the skeleton — with no schedule it is simply empty, and the strip
+  // falls back to Mon–Fri.
+  const { visibleSchedule, selectedIso, isAway, goToday } = useCalendarToday();
   // The student's own entries — a society event they answered "Mám zájem" to,
   // or one they typed in themselves. The desktop grid has merged these since it
   // shipped; the phone never did, so every one of them was written, persisted
@@ -87,21 +77,27 @@ export function CalendarScreen() {
   const customLessons = customEvents.map(customEventToLesson);
   const dayLessons = [...visibleSchedule, ...customLessons];
   const lessonDates = new Set(dayLessons.map((l) => l.date));
+  const header = useCalendarTitle({ selectedIso, lessonDates, isAway });
   const chrome = (
     <>
       {/* The date IS the title, and the eyebrow stays empty. It was the
           eyebrow under a "Ahoj, {name}" greeting that told the student nothing
           they did not already know, and a week label was tried there and
           rejected the same way — the strip and the title already say which
-          week and which day this is. The way back to today is not here
-          either: the header is full at a date and three actions (see
-          TodayPill), so it floats above the tab bar instead. */}
+          week and which day this is. Away from today the date itself is the
+          way back (a return glyph beside it, no extra row): the header is
+          full at a date and three actions, and a floating "Dnes" pill read as
+          one more control at the bottom of the screen. */}
       {/* Refreshing is a pull on the day (DayBody). The visible circle that
           sat on its own row here made this header one line taller than every
           other tab's; what is left is the screen-reader route to the same
           sync, which takes no layout. */}
       <ScreenHeader
-        title={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale)}
+        title={header.title}
+        titleAction={
+          header.away ? { label: t('mobile.calendar.backToToday'), onClick: goToday } : undefined
+        }
+        leadingAction={<WeekMenuButton days={header.weekIsos} todayIso={header.todayIso} />}
         below={
           <RefreshButton
             label={t('mobile.header.refresh')}
@@ -113,9 +109,8 @@ export function CalendarScreen() {
     </>
   );
   const shell = (body: ReactNode) => (
-    // `relative` anchors the floating Dnes pill; it renders in every state,
-    // skeleton and error included, because the day strip works in all of them.
-    // The ref is where a pull to refresh may start (DayBody).
+    // `relative` anchors the first-open view chooser (day and week only). The
+    // ref is where a pull to refresh may start (DayBody).
     <div
       ref={screenRef}
       data-testid="calendar-screen"
@@ -123,7 +118,6 @@ export function CalendarScreen() {
     >
       {chrome}
       {body}
-      <TodayPill selectedIso={selectedIso} defaultIso={defaultIso} />
     </div>
   );
 
@@ -155,7 +149,7 @@ export function CalendarScreen() {
     // (offline) is exactly where it earns its place. Not under the skeleton:
     // loading is transient and a card under placeholder bars reads as a glitch.
     return shell(
-      <div className="flex flex-1 flex-col overflow-y-auto pb-[calc(9rem_+_var(--safe-bottom,0px))]">
+      <div className="flex flex-1 flex-col overflow-y-auto pb-[calc(6rem_+_var(--safe-bottom,0px))]">
         <ScreenError testId="calendar-error" />
         <RecentFilesStrip />
       </div>
@@ -197,6 +191,32 @@ export function CalendarScreen() {
     if (nowNext) showOnMap(nowNext.current);
   };
 
+  // The week grid replaces everything day-shaped under the strip: the Now/Next
+  // card and the holiday banner are about ONE day, and the grid answers both
+  // in its own terms (a now-line, a red-washed column). It also has no pull to
+  // refresh — that lives on the agenda's scroller, one tap away.
+  if (view === 'week') {
+    return shell(
+      <>
+        <DayChips
+          selectedIso={selectedIso}
+          onSelect={setMobileSelectedDay}
+          lessonDates={lessonDates}
+          // No selection, no dots, and the chips are labels — see DayChips'
+          // `view`. The arrows and the swipe move the week.
+          view="week"
+        />
+        <WeekGrid
+          lessons={dayLessons}
+          selectedIso={selectedIso}
+          lessonDates={lessonDates}
+          onSelectDay={setMobileSelectedDay}
+        />
+        {choosing && <CalendarViewChooser />}
+      </>
+    );
+  }
+
   return shell(
     <>
       {nowNext && <NowNextCard data={nowNext} onRoute={openRoute} />}
@@ -230,6 +250,7 @@ export function CalendarScreen() {
         onSelectDay={setMobileSelectedDay}
         pullSurfaceRef={screenRef}
       />
+      {choosing && <CalendarViewChooser />}
     </>
   );
 }

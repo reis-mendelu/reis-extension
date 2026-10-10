@@ -1,179 +1,135 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { CalendarPlus, Check, MapPin, X } from 'lucide-react';
+import { CalendarPlus, MapPin, X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { createPost, updatePost, type PostInput } from '../../api/societyPosts';
-import { isScheduledEvent, goLiveDate } from './eventWindow';
-import { validateExternalUrl } from '../../mobile/openExternal';
-import { MiniCalendar } from './MiniCalendar';
-import { ComposerRoomSearch } from './ComposerRoomSearch';
-import { ComposerPlaceSearch } from './ComposerPlaceSearch';
-import { ComposerTimeField } from './ComposerTimeField';
+import { createPost, updatePost } from '../../api/societyPosts';
+import { isComposerReady, isUrlInvalid, buildPostInput } from './composerRules';
+import { useVenuePicker } from './useVenuePicker';
+import { ComposerWhenField } from './ComposerWhenField';
+import { ComposerVenueSearch } from './ComposerVenueSearch';
 import { ComposerAudienceField } from './ComposerAudienceField';
-import { roomCodeToName } from './mapHelpers';
+import { audienceOf } from '../../utils/eventAudience';
+import { ComposerEmojiField } from './ComposerEmojiField';
+import { ComposerLinkField } from './ComposerLinkField';
+import { toPatch, latestEmoji, initialRoom, initialPlaceName } from './composerPost';
+import { eventEmojiCode, CATEGORY_EMOJI_CODE } from '../../data/eventEmoji';
 import roomsIndexJson from '../../data/map/rooms-index.json';
 import type { RoomIndexEntry } from '../../types/campusMap';
-import type { EventCategory } from '../../types/events';
-import { EVENT_CATEGORIES, CATEGORY_ICON } from '../../data/eventCategories';
+import { isPartner } from '../../utils/partnerAudience';
 
 const INDEX = roomsIndexJson as RoomIndexEntry[];
+const LABEL = 'mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60';
 
-// Create/edit a society event. No <form> submit (sandboxed iframe blocks it);
-// Publish/Save is a button. Venue is either a free-placed off-campus point
-// (draftCoord, captured by clicking the map) or a searched campus room
-// (ComposerRoomSearch, which resolves its own coord). Editing preserves the
-// event's venue_kind/room_code/category instead of overwriting them — the old
-// version hardcoded venueKind:'offcampus' on every save, silently rewriting
-// campus events back to a free point (CodeRabbit Critical).
+// Create, edit or duplicate a society event, asked in the order a society
+// thinks it: what → when → where → what kind → for whom → link. No <form>
+// submit (sandboxed iframe blocks it); Publish/Save is a button.
+//
+// The venue KIND is derived, never asked: a picked room makes a campus event,
+// a searched place or a hand-dropped pin (draftCoord) an off-campus one, and
+// no place at all a 'tba' one. Editing keeps the event's room/emoji rather
+// than overwriting them.
 export function EventComposer({ onDone }: { onDone: () => void }) {
   // The society being authored, not the account's own — a reIS admin belongs to
   // no society and picks one in the console header. RLS accepts either.
   const associationId = useAppStore((s) => s.adminActiveAssociationId);
   const email = useAppStore((s) => s.adminSession?.user.email ?? '');
-  const draftCoord = useAppStore((s) => s.draftCoord);
-  const beginPlacing = useAppStore((s) => s.beginPlacing);
-  const placeDraftCoord = useAppStore((s) => s.placeDraftCoord);
-  const clearDraftCoord = useAppStore((s) => s.clearDraftCoord);
-  const previewDraftOnMap = useAppStore((s) => s.previewDraftOnMap);
   const loadSocietyPosts = useAppStore((s) => s.loadSocietyPosts);
   const reloadMapEvents = useAppStore((s) => s.reloadMapEvents);
   const editId = useAppStore((s) => s.editEventId);
-  const editing = useAppStore(
-    (s) => s.societyMapEvents.find((e) => e.id === s.editEventId) ?? null
+  const duplicating = useAppStore((s) => s.duplicateEventId !== null);
+  // What the form starts from: the event being edited, or the one being
+  // duplicated. A duplicate is still a NEW event (editId stays null).
+  const source = useAppStore(
+    (s) => s.societyMapEvents.find((e) => e.id === (s.editEventId ?? s.duplicateEventId)) ?? null
   );
+  const posts = useAppStore((s) => s.societyPosts);
+  // Only a society the catalog KNOWS to be university-wide (reIS) cannot
+  // restrict. A society missing from a stale catalog keeps the stored flag
+  // rather than having it cleared blind.
+  const cannotRestrict = useAppStore((s) => {
+    const society = s.societies[associationId ?? ''];
+    return !!society && audienceOf(society) === 'everyone';
+  });
+  const authorIsPartner = useAppStore((s) => isPartner(s.societies[associationId ?? '']));
+  // Unknown author = unknown audience: it may be a partner whose events must
+  // be restricted, so nothing NEW is published until the catalog names it.
+  // An edit keeps its stored flag instead (see cannotRestrict above), and a
+  // partner's stored flag is always restricted.
+  const authorKnown = useAppStore((s) => Boolean(s.societies[associationId ?? '']));
+  const blockedUnknownAuthor = !authorKnown && !editId;
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
 
-  const [title, setTitle] = useState(editing?.title ?? '');
-  const [date, setDate] = useState(editing?.date ?? '');
-  const [time, setTime] = useState(editing?.time ?? '');
-  const [url, setUrl] = useState(editing?.url ?? '');
-  const [venue, setVenue] = useState<'offcampus' | 'campus'>(
-    editing?.venueKind === 'campus' ? 'campus' : 'offcampus'
+  const [title, setTitle] = useState(source?.title ?? '');
+  const [description, setDescription] = useState(source?.description ?? '');
+  // A duplicate exists to get a new date, so the dates are the fields it does
+  // not copy: the start AND the end. A copied end date would sit before (or
+  // oddly after) whatever new start is picked; a trip is re-spanned by hand.
+  const [date, setDate] = useState(duplicating ? '' : (source?.date ?? ''));
+  const [endDate, setEndDate] = useState(duplicating ? '' : (source?.endDate ?? ''));
+  const [time, setTime] = useState(source?.time ?? '');
+  const [url, setUrl] = useState(source?.url ?? '');
+  // An edit keeps the stored code even when this build does not ship it:
+  // swapping it for the fallback would rewrite the event on any save.
+  const [startEmoji] = useState(() => (source ? (source.emoji ?? eventEmojiCode(source)) : null));
+  const [emoji, setEmoji] = useState<string>(
+    startEmoji ?? latestEmoji(posts) ?? CATEGORY_EMOJI_CODE.party
   );
-  const [room, setRoom] = useState<{ code: string; name: string; coord: [number, number] } | null>(
-    editing && editing.venueKind === 'campus' && editing.roomCode && editing.coord
-      ? {
-          code: editing.roomCode,
-          // roomCode is the IS-internal code ("BA39N1009"); show the hall name
-          // ("Q01") in the picked-room chip, same as the search results do.
-          name: editing.location ?? roomCodeToName(editing.roomCode, INDEX),
-          coord: editing.coord,
-        }
-      : null
-  );
-  const [category, setCategory] = useState<EventCategory>(editing?.category ?? 'party');
-  // Everyone unless the society says otherwise: an event published without a
-  // thought for this reaches the whole map, exactly as every event did before
-  // the column existed.
-  const [subscribersOnly, setSubscribersOnly] = useState(editing?.subscribersOnly ?? false);
-  // Display name for an off-campus venue (from the Photon place search). Null
-  // when the point was dropped on the map by hand rather than searched.
-  const [placeName, setPlaceName] = useState<string | null>(
-    editing && editing.venueKind !== 'campus' ? (editing.location ?? null) : null
-  );
+  const [subscribersOnly, setSubscribersOnly] = useState(source?.subscribersOnly ?? false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
 
-  // The room stays the source of truth for a campus venue; draftCoord is the
-  // map's VIEW of it, kept in step by selectRoom/clearRoom below.
-  const coord = venue === 'campus' ? (room?.coord ?? null) : draftCoord;
-  // url is optional, but once something is typed it must be a URL
-  // openExternal will actually open — the same rule EventDetailCard
-  // enforces on the way OUT.
-  const trimmedUrl = url.trim();
-  const urlInvalid = trimmedUrl !== '' && !validateExternalUrl(trimmedUrl);
-  // Time is required, not optional. A `time: null` row has no start, so it has
-  // no "two hours before" and silently got no reminder at all — and the
-  // composer is the only place these rows come from (the map reads
-  // spolky_events exclusively). Requiring it here is what makes "every event
-  // gets a reminder" true, rather than inventing a default hour to notify at.
-  const ready = !!title.trim() && !!date && !!time && !!coord && !urlInvalid;
-  const scheduled = date ? isScheduledEvent(date) : false;
+  const {
+    room,
+    placeName,
+    coord,
+    isPhone,
+    previewDraftOnMap,
+    clearDraftCoord,
+    pickRoom,
+    pickPlace,
+    pickPoint,
+    clearVenue,
+    pickOnMap,
+  } = useVenuePicker(initialRoom(source, INDEX), initialPlaceName(source), source?.coord ?? null);
+  const venueName = room?.name ?? placeName ?? (coord ? t('map.mapPoint') : null);
+  // url is optional, but once something is typed it must be a URL openExternal
+  // will actually open — the same rule EventDetailCard enforces on the way OUT.
+  const urlInvalid = isUrlInvalid(url);
+  const ready = isComposerReady({ title, date, endDate, urlInvalid });
 
   const close = () => {
     clearDraftCoord();
     onDone();
   };
 
-  const switchVenue = (v: 'offcampus' | 'campus') => {
-    if (v === venue) return;
-    setVenue(v);
-    setRoom(null);
-    setPlaceName(null);
-    // Both directions, not just the switch TO campus. Once a campus room began
-    // mirroring its coordinate into draftCoord (so the map can draw its pin),
-    // switching AWAY from campus left that coordinate behind: the composer read
-    // it as an off-campus venue already chosen, hid the place search, and would
-    // have published an off-campus event sitting on a lecture hall with no
-    // location name. Changing the venue KIND invalidates whatever point either
-    // kind had picked.
-    clearDraftCoord();
-  };
-
-  // A campus room used to keep its coordinate here and nowhere else, so the map
-  // had nothing to draw and a society could not check a campus venue before
-  // publishing. Mirroring it into the store is what puts the draft pin on the
-  // map for BOTH venue kinds.
-  const selectRoom = (sel: { code: string; name: string; coord: [number, number] }) => {
-    setRoom(sel);
-    placeDraftCoord(sel.coord);
-  };
-  const clearRoom = () => {
-    setRoom(null);
-    clearDraftCoord();
-  };
-
-  // A searched venue sets both the display name and the coordinate; clearing
-  // resets both so the search box comes back.
-  const selectPlace = ({ name, coord: c }: { name: string; coord: [number, number] }) => {
-    setPlaceName(name);
-    placeDraftCoord(c);
-  };
-  const clearPlace = () => {
-    setPlaceName(null);
-    clearDraftCoord();
-  };
-
   const publish = async () => {
-    if (!ready || busy || !associationId || !coord) return;
+    if (!ready || busy || !associationId || blockedUnknownAuthor) return;
     setBusy(true);
     setError(false);
-    const input: PostInput = {
-      title: title.trim(),
-      body: '',
-      category,
+    const input = buildPostInput({
+      title,
+      description,
+      emoji,
+      fallbackCategory: source?.category ?? 'other',
+      startEmoji,
       date,
-      time: time || null,
-      venueKind: venue,
-      roomCode: venue === 'campus' ? (room?.code ?? null) : null,
-      coordLng: coord[0],
-      coordLat: coord[1],
-      location: venue === 'campus' ? null : placeName,
-      url: url.trim() || null,
-      subscribersOnly,
-    };
+      endDate,
+      time,
+      room,
+      coord,
+      placeName,
+      url,
+      // A society with no narrower audience (reIS) cannot restrict: a legacy
+      // flag on an edited row is cleared rather than silently kept.
+      // Partners are always restricted: released builds without the audience
+      // rule then show the event only to the partner's faculty, never to all.
+      subscribersOnly: authorIsPartner || (!cannotRestrict && subscribersOnly),
+    });
     try {
       const res = editId
-        ? await updatePost(editId, {
-            title: input.title,
-            date: input.date,
-            time: input.time ?? null,
-            category: input.category,
-            venue_kind: input.venueKind,
-            room_code: input.roomCode ?? null,
-            coord_lng: input.coordLng,
-            coord_lat: input.coordLat,
-            location: input.location ?? null,
-            url: input.url ?? null,
-            // Editable, so it has to be in the patch. Left out, an audience
-            // change saved cleanly and kept the old value in the database: the
-            // form reads `subscribers_only` back through `toMapEvent`, so the
-            // control showed the society its new choice while the map went on
-            // honouring the previous one.
-            subscribers_only: input.subscribersOnly ?? false,
-          })
+        ? await updatePost(editId, toPatch(input))
         : await createPost(input, associationId, email);
       if (res.error) {
         setError(true);
@@ -181,9 +137,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       }
       await loadSocietyPosts();
       void reloadMapEvents(); // surface the change on the public "Akce" feed too
-      toast.success(
-        editId ? t('map.toastSaved') : scheduled ? t('map.toastScheduled') : t('map.toastPublished')
-      );
+      toast.success(editId ? t('map.toastSaved') : t('map.toastPublished'));
       close();
     } catch {
       setError(true);
@@ -211,9 +165,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
         </button>
       </div>
 
-      <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-base-content/60">
-        {t('map.eventName')}
-      </label>
+      <label className={LABEL}>{t('map.eventName')}</label>
       <input
         className="input input-bordered w-full"
         placeholder={t('map.eventName')}
@@ -221,128 +173,39 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
         onChange={(e) => setTitle(e.target.value)}
       />
 
-      {/* `form-control` and `label-text` are both DaisyUI 4 — daisyui@5.7.22
-          defines neither, so they were no-ops. The <label> kept its default
-          `display: inline`, which put the span and the input in one line box
-          whenever they fitted: at iPad width the 20rem input rode up over the
-          label text (gap -22.7px at 1024px). `flex w-full flex-col` is the
-          real stacking rule, and `w-full` drops the 20rem cap so the field
-          matches every sibling control in this composer. */}
       <label className="flex w-full flex-col">
-        <span className="mb-1 text-xs text-base-content/60">{t('admin.urlLabel')}</span>
-        <input
-          className="input input-bordered input-sm w-full"
-          placeholder={t('admin.urlHint')}
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
+        <span className={LABEL}>{t('map.description')}</span>
+        <textarea
+          className="textarea textarea-bordered w-full"
+          rows={3}
+          placeholder={t('map.descriptionHint')}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
         />
       </label>
-      {urlInvalid && <p className="mt-1 text-[11px] text-error">{t('admin.urlInvalid')}</p>}
 
-      <label className="mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60">
-        {t('map.eventDate')}
-      </label>
-      <MiniCalendar
-        value={date || null}
-        onChange={setDate}
-        placeholder={t('map.selectDate')}
+      <ComposerWhenField
+        date={date}
+        time={time}
+        endDate={endDate}
+        onDate={setDate}
+        onTime={setTime}
+        onEndDate={setEndDate}
         t={t}
         locale={locale}
       />
-      {scheduled && (
-        <p className="mt-1.5 text-[11px] text-warning">
-          {t('map.goesLive')}{' '}
-          {goLiveDate(date).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
-        </p>
-      )}
 
-      <label className="mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60">
-        {t('map.eventTime')}
-      </label>
-      <ComposerTimeField value={time} onChange={setTime} t={t} />
-
-      <label className="mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60">
-        {t('map.categoryLabel')}
-      </label>
-      <div className="flex flex-wrap gap-1.5">
-        {EVENT_CATEGORIES.map((key) => {
-          const Icon = CATEGORY_ICON[key];
-          const label = t(`map.category.${key}`);
-          return (
-            <button
-              key={key}
-              type="button"
-              aria-label={label}
-              aria-pressed={category === key}
-              className={`btn btn-xs gap-1 ${category === key ? 'btn-primary' : 'btn-ghost border border-base-content/15'}`}
-              onClick={() => setCategory(key)}
-            >
-              <Icon size={13} /> {label}
-            </button>
-          );
-        })}
-      </div>
-
-      <label className="mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60">
-        {t('map.venueLabel')}
-      </label>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          className={`btn btn-sm flex-1 gap-1 ${venue === 'offcampus' ? 'btn-primary' : 'btn-ghost border border-base-content/15'}`}
-          onClick={() => switchVenue('offcampus')}
-        >
-          <MapPin size={13} /> {t('map.venueOffcampus')}
-        </button>
-        <button
-          type="button"
-          className={`btn btn-sm flex-1 gap-1 ${venue === 'campus' ? 'btn-primary' : 'btn-ghost border border-base-content/15'}`}
-          onClick={() => switchVenue('campus')}
-        >
-          {t('map.venueCampus')}
-        </button>
-      </div>
-
-      <ComposerAudienceField
-        societyId={associationId ?? ''}
-        value={subscribersOnly}
-        onChange={setSubscribersOnly}
+      <label className={LABEL}>{t('map.venueLabel')}</label>
+      <ComposerVenueSearch
+        selected={venueName}
+        onSelectRoom={pickRoom}
+        onSelectPlace={pickPlace}
+        onSelectPoint={pickPoint}
+        onClear={clearVenue}
+        onPickOnMap={pickOnMap}
+        t={t}
       />
-
-      {venue === 'campus' ? (
-        <ComposerRoomSearch
-          selected={room ? { code: room.code, name: room.name } : null}
-          onSelect={selectRoom}
-          onClear={clearRoom}
-          t={t}
-        />
-      ) : draftCoord ? (
-        // A venue is chosen (searched or dropped on the map): one unified chip.
-        <div className="mt-2 flex items-center gap-2 rounded-lg border border-success/40 bg-success/10 px-3 py-2 text-sm">
-          <Check size={14} className="text-success" />
-          <span className="min-w-0 flex-1 truncate">{placeName ?? t('map.mapPoint')}</span>
-          <button type="button" className="btn btn-ghost btn-xs" onClick={clearPlace}>
-            {t('map.changePlace')}
-          </button>
-        </div>
-      ) : (
-        <>
-          <ComposerPlaceSearch selected={null} onSelect={selectPlace} onClear={clearPlace} t={t} />
-          {/* Fallback for venues Photon doesn't know: drop the pin by hand. */}
-          <button
-            type="button"
-            className="btn btn-ghost btn-xs mt-1 w-full gap-1.5 text-base-content/60"
-            onClick={beginPlacing}
-          >
-            <MapPin size={13} /> {t('map.orPickOnMap')}
-          </button>
-        </>
-      )}
-
-      {/* Confirming the location is the whole point of the pin: without a way
-          to get to it, a society publishes on trust. Shown for both venue kinds
-          the moment a coordinate exists. */}
-      {coord && (
+      {isPhone && coord && (
         <button
           type="button"
           className="btn btn-ghost btn-xs mt-1.5 w-full gap-1.5 text-base-content/70"
@@ -352,6 +215,17 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
         </button>
       )}
 
+      <label className={LABEL}>{t('map.emojiPickerLabel')}</label>
+      <ComposerEmojiField value={emoji} onChange={setEmoji} t={t} language={language} />
+
+      <ComposerAudienceField
+        societyId={associationId ?? ''}
+        value={subscribersOnly}
+        onChange={setSubscribersOnly}
+      />
+
+      <ComposerLinkField url={url} onChange={setUrl} urlInvalid={urlInvalid} t={t} />
+
       {error && <p className="mt-2 text-[11px] text-error">{t('admin.saveError')}</p>}
       <div className="mt-3 flex gap-2">
         <button type="button" className="btn btn-ghost btn-sm" onClick={close}>
@@ -359,8 +233,8 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
         </button>
         <button
           type="button"
-          className="btn btn-primary btn-sm flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={!ready || busy}
+          className="btn btn-primary btn-sm flex-1 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!ready || busy || blockedUnknownAuthor}
           onClick={publish}
         >
           {editId ? t('map.saveChanges') : t('map.publish')}

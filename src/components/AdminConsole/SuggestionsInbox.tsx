@@ -26,7 +26,9 @@ export function SuggestionsInbox() {
   }
 
   return (
-    <ul className="space-y-2 max-h-96 overflow-y-auto custom-scrollbar pr-1">
+    // No height cap or scroller of its own: both consoles render this inside a
+    // pane that already scrolls, and a nested 384px box left the pane empty.
+    <ul className="space-y-2">
       {items.map((s) => {
         const replyHref = buildReplyHref(s, { native });
         return (

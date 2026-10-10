@@ -5,11 +5,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 reIS (REIS.mendelu) simplifies the MENDELU university Information System (IS
-Mendelu) for students. It ships as **three products from one codebase**: a
+Mendelu) for students. It ships as **three UI products from one codebase**: a
 Chrome/Firefox/Edge **browser extension** (WXT, injects an iframe containing the
 React app into IS Mendelu pages), an **iOS app** and an **Android app** (both
-Capacitor, same React app). All processing is client-side — no student data is
-intercepted or stored externally.
+Capacitor, same React app). A fourth, headless one, **reIS for Claude** (`mcp/`),
+is described below. All processing is client-side: academic records stay on
+the device and are never intercepted, sent to or stored by reIS anywhere else;
+the only things derived from the student that reach Supabase are the faculty
+and base programme labels on the daily count (see "What reIS still sends").
+The one recipient beyond IS is Claude
+(Anthropic) in reIS for Claude: the IS data a student asks about goes into
+their own Claude chat, by their choice; it never passes through reIS.
 
 Read the next section before editing any UI. Three products do **not** mean
 three UI trees, and the difference is where features get forgotten.
@@ -74,6 +80,33 @@ capability" is a valid answer that ends the turn.
    the extension's content script. That is how the sonner/`document_start`
    crash in PR #266 happened. `src/api/` and `src/utils/parsers/` are shared, so
    a "scraper" edit hits BOTH products.
+
+### A fourth product, headless: reIS for Claude (`mcp/`)
+
+A Claude Desktop extension (`.mcpb`) that signs in to IS as the student on
+their laptop and exposes ten read-only tools over the same `src/api` fetchers.
+It has no UI tree, so the parity rule does not apply to it. It is also the only
+reIS code that handles a password: it comes from the keychain and is sent only
+to the IS login endpoint, at sign-in and at each automatic re-login. Its standing promises are pinned in
+`src/test/guards/mcpStaysReadOnly.test.ts`.
+
+A `src/api` change reaches it too. `npx vitest run mcp/` covers the tool
+shaping; `npm run mcp:smoke` only proves the server starts and lists its tools.
+To exercise a changed fetcher against real IS, name its tool:
+`npm run mcp:smoke -- --live mendelu_grades` (it always adds `mendelu_exams`).
+
+Build with `npm run mcp:pack`. Its release tags are `mcp-v*`, never `v*`.
+
+**Plain `node` is not where it runs.** Claude Desktop starts it inside its own
+"MCP Node Host" (`nodeHost.js` in Claude.app) in an Electron utility process,
+where `process.type` is `'utility'` and Node-sniffing libraries take their
+browser path. To debug it there, not by reading logs:
+`node scripts/mcp-smoke.mjs --desktop-host [--live tool…]` runs the built
+server through that real host code (macOS, Claude installed). When an installed
+extension dies, its own log shows only a closed transport; the cause is in
+`~/Library/Logs/Claude/main.log` as `[UtilityProcess stderr] [nodeHost] …`.
+Never launch `Claude.app/Contents/MacOS/Claude` to run a script: it starts a
+second Desktop instance on the same profile.
 
 ## Multi-Repo Organization
 
@@ -153,6 +186,8 @@ secrets wrapper, so run the npm script directly.
 
 Testing the admin console against real Supabase needs exactly two keys in
 `.env`: `REIS_ADMIN_EMAIL` and `REIS_ADMIN_PASSWORD` (`dev/adminSessionPlugin.ts`).
+Despite its name, `REIS_ADMIN_EMAIL` holds the console **login** (`reis`), not an
+email; the harness maps it to the auth address the way the console does.
 The Supabase URL and publishable key are **not** env vars — they are hardcoded in
 `src/services/supabase/config.ts`. Signing in as one society instead reads
 `REIS_SOCIETY_<ID>_EMAIL` / `_PASSWORD`, uppercased. Missing credentials leave the
@@ -298,7 +333,11 @@ the start of a semester.
 Only these, all disclosed in `docs/privacy-policy-app.md`:
 
 1. **Daily install count** — a random per-install UUID (`services/identity/installId.ts`),
-   never anything derived from the student. Deliberately counts installs, not people.
+   plus faculty, base programme code and platform as labels; nothing else derived from the
+   student. Deliberately counts installs, not people. The UUID is stable, so daily rows link
+   across days, and the same UUID is on the survey and the feature counters (4), so those rows
+   join per install to faculty, platform and programme. The policy says so; none of it carries
+   a name, student number or IS account.
 2. **Feedback the student typed** — via the `submit_suggestion` RPC (`src/api/suggestions.ts`),
    with screen name, app version, browser and viewport.
 3. **Society event view/click counters** — a post row id and nothing else.

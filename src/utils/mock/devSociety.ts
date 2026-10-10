@@ -26,6 +26,7 @@ function rowFrom(input: PostInput, associationId: string, createdBy: string): Sp
     title: input.title,
     body: input.body ?? null,
     category: input.category,
+    emoji: input.emoji ?? null,
     date: input.date,
     end_date: input.endDate ?? null,
     time: input.time ?? null,
@@ -38,6 +39,8 @@ function rowFrom(input: PostInput, associationId: string, createdBy: string): Sp
     created_by: createdBy,
     visible_from: input.visibleFrom ?? null,
     subscribers_only: input.subscribersOnly ?? false,
+    view_count: 0,
+    click_count: 0,
   };
 }
 

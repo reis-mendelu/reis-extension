@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { AdminEventList } from '../AdminEventList';
 import type { MapEvent } from '../../../types/events';
@@ -26,15 +26,15 @@ const mk = (id: string, date: string): MapEvent => ({
   category: 'party',
 });
 
+// NOW is real; pick dates relative to today so the buckets are deterministic.
+const iso = (d: number) => {
+  const t = new Date();
+  t.setDate(t.getDate() + d);
+  return t.toISOString().slice(0, 10);
+};
+
 describe('AdminEventList', () => {
   beforeEach(() => {
-    // NOW is real; pick dates relative to today so the buckets are deterministic.
-    const today = new Date();
-    const iso = (d: number) => {
-      const t = new Date(today);
-      t.setDate(t.getDate() + d);
-      return t.toISOString().slice(0, 10);
-    };
     useAppStore.setState({
       adminConsoleOpen: true,
       adminActiveAssociationId: 'supef',
@@ -46,15 +46,46 @@ describe('AdminEventList', () => {
     });
   });
 
-  it('groups own events into Live / Scheduled / Past', () => {
+  it('groups own events into Upcoming and Past only — no Scheduled bucket', () => {
     render(<AdminEventList />);
-    expect(screen.getByText('E-live')).toBeInTheDocument();
-    expect(screen.getByText('E-sched')).toBeInTheDocument();
-    expect(screen.getByText('E-old')).toBeInTheDocument();
-    // headings present
-    expect(screen.getByText(/live now/i)).toBeInTheDocument();
-    expect(screen.getByText(/scheduled/i)).toBeInTheDocument();
-    expect(screen.getByText(/past/i)).toBeInTheDocument();
+    expect(screen.getByText(/^upcoming$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^past$/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^scheduled$/i)).toBeNull();
+
+    // Two rows (today+2, today+30) under Upcoming; one (today-3) under Past.
+    const upcomingSection = screen.getByText(/^upcoming$/i).parentElement as HTMLElement;
+    expect(within(upcomingSection).getByText('E-live')).toBeInTheDocument();
+    expect(within(upcomingSection).getByText('E-sched')).toBeInTheDocument();
+    expect(within(upcomingSection).queryByText('E-old')).toBeNull();
+
+    const pastSection = screen.getByText(/^past$/i).parentElement as HTMLElement;
+    expect(within(pastSection).getByText('E-old')).toBeInTheDocument();
+    expect(within(pastSection).queryByText('E-live')).toBeNull();
+    expect(within(pastSection).queryByText('E-sched')).toBeNull();
+  });
+
+  // An unplaced event shows no place at all: neither the shared row's old
+  // "Venue TBA by …" nor a "· No place yet" suffix on the subline.
+  it('says nothing about the place of a tba row', () => {
+    useAppStore.setState({
+      societyMapEvents: [{ ...mk('tba', iso(2)), venueKind: 'tba', coord: null }],
+    });
+    render(<AdminEventList />);
+    expect(screen.queryByText(/venue tba/i)).toBeNull();
+    expect(screen.queryByText(/no place yet/i)).toBeNull();
+  });
+
+  // tba only means "no room, no coordinate"; a free-text place is allowed and
+  // the row shows it, so the subline must not also say there is no place.
+  it('does not say "No place yet" on a tba row that names a place', () => {
+    useAppStore.setState({
+      societyMapEvents: [
+        { ...mk('tba', iso(2)), venueKind: 'tba', coord: null, location: 'Brno-střed' },
+      ],
+    });
+    render(<AdminEventList />);
+    expect(screen.getByText('Brno-střed')).toBeInTheDocument();
+    expect(screen.queryByText(/no place yet/i)).toBeNull();
   });
 
   // A reIS admin lands here belonging to no society. Showing an empty list would
@@ -109,6 +140,16 @@ describe('AdminEventList — rows, inline composer, delete', () => {
       clearMapSelection: vi.fn(),
     });
     vi.clearAllMocks();
+  });
+
+  // A repeat event (Deskovky every week) starts from the last one rather than
+  // from an empty form.
+  it('offers to duplicate each event', () => {
+    const duplicateEvent = vi.fn();
+    useAppStore.setState({ duplicateEvent });
+    render(<AdminEventList />);
+    fireEvent.click(screen.getByRole('button', { name: 'Duplikovat' }));
+    expect(duplicateEvent).toHaveBeenCalledWith('e1');
   });
 
   it('renders own events as rich rows with the thumbnail', () => {

@@ -1,10 +1,12 @@
-import { CATEGORY_EMOJI_SRC } from '../../../../data/eventCategories';
-import { relativeDayLabel, sortByDate } from '../../../CampusMap/eventHelpers';
+import { eventEmojiSrc } from '../../../../data/eventEmoji';
+import { eventWhenLabel, sortByDate } from '../../../CampusMap/eventHelpers';
 import { useVisibleMapEvents } from '../../../../hooks/useVisibleMapEvents';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useAppStore } from '../../../../store/useAppStore';
 import { RoomPlaceNote } from './RoomPlaceNote';
 import { useForRoomSelection } from './useForRoomSelection';
+import { RoomDirectionsNote } from './RoomDirectionsNote';
+import { useRoomDirections } from '../../../CampusMap/useRoomDirections';
 
 /**
  * What the map sheet shows while it is closed: the next thing happening.
@@ -20,8 +22,8 @@ import { useForRoomSelection } from './useForRoomSelection';
  * whole band is one target with one meaning — open the list — so the venue
  * line, the selection state and the nested button all have to go.
  *
- * Except when an event is SELECTED at peek, which only the calendar does (see
- * MapSheet): then the band names that event, the one whose pin is highlighted,
+ * Except when an event is SELECTED at peek (a route or room note folded the
+ * sheet while a card was open): then the band names that event, the one whose pin is highlighted,
  * and the same tap opens its card. Naming "the next event" there would have
  * the row and the pin describing two different things.
  */
@@ -30,10 +32,13 @@ export function MapSheetPeek() {
   const events = useVisibleMapEvents();
   const selection = useAppStore((s) => s.mapSelection);
   const forRoom = useForRoomSelection();
+  const directions = useRoomDirections();
   const next = selection?.kind === 'event' ? selection.event : sortByDate(events)[0];
 
   // A lesson sent here for a room with no floor plan: say which, and where.
   if (forRoom) return <RoomPlaceNote />;
+  // A room with directions: its floor and the way in, instead of the next event.
+  if (directions) return <RoomDirectionsNote />;
 
   if (!next) {
     // Not "no events": the band is the only place this sheet says what it is
@@ -46,7 +51,7 @@ export function MapSheetPeek() {
   }
 
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
-  const when = `${relativeDayLabel(next.date, locale, t)}${next.time ? ` · ${next.time}` : ''}`;
+  const when = eventWhenLabel(next, locale, t);
 
   return (
     <>
@@ -60,7 +65,7 @@ export function MapSheetPeek() {
           <img src={next.imageUrl} alt="" className="h-full w-full object-cover" />
         ) : (
           <span className="flex h-full w-full items-center justify-center bg-base-content/5">
-            <img src={CATEGORY_EMOJI_SRC[next.category]} alt="" className="h-6 w-6" />
+            <img src={eventEmojiSrc(next)} alt="" className="h-6 w-6" />
           </span>
         )}
       </span>

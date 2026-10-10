@@ -1,5 +1,6 @@
 import isRoomPlacesJson from '../../data/map/isRoomPlaces.json';
 import type { RoomIndexEntry } from '../../types/campusMap';
+import { isMapRoomLabel } from '../../data/map/isRoomLabels';
 import { isNonPhysicalRoom, lookupRoomEntry, normalizeRoomKey } from './lookupRoom';
 
 /**
@@ -37,6 +38,9 @@ export function makeRoomPlaceLookup(entries: readonly RoomPlaceEntry[]) {
     const bracketed = raw.trim().match(/^(.*?)\s*\(([^()]*)\)\s*$/);
     const label = (bracketed?.[1] ?? raw).trim();
     const campus = bracketed?.[2]?.trim();
+    // No campus printed means Černá Pole, where IS's "Aula" is a map room
+    // (building A's); FRRMS's "Aula" at Černá Pole II is not the one meant.
+    if (!campus && isMapRoomLabel(label)) return null;
     const hits = (byLabel.get(normalizeRoomKey(label)) ?? []).filter(
       (e) => !campus || e.campus === campus
     );

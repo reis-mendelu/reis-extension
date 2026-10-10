@@ -19,7 +19,7 @@ export function DayDetail({ detail }: { detail: DayDetailData }) {
       <div className="flex items-baseline justify-between gap-2">
         <h4 className="text-sm font-semibold">{detail.day}</h4>
         <span className="text-xs opacity-70">
-          {detail.active} {t('admin.stats.activeDevices')}
+          {t('admin.stats.activeDevices')}: {detail.active}
         </span>
       </div>
       <div className="flex gap-6">

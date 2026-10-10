@@ -3,6 +3,8 @@ import { trackNotificationClick } from '../services/spolky';
 import type { SpolekNotification } from '../services/spolky';
 import { openExternal } from '../mobile/openExternal';
 import { useAppStore } from '../store/useAppStore';
+import { eventDirectLink } from '../components/CampusMap/eventLinks';
+import { resolveSociety } from '../utils/societies/resolveSociety';
 
 /**
  * What tapping a notification does, for BOTH trees — the phone's Novinky sheet
@@ -17,15 +19,17 @@ import { useAppStore } from '../store/useAppStore';
  *
  * The row's id is the map event's id (one `spolky_events` id space, mapped by
  * `toMapEvent`), so `focusEventById` opens the same EventDetailCard a pin does,
- * with the venue, the RSVP and the event's own URL on it. `showMap` is the only
- * part that differs per tree: a mobile tab on the phone, a view in the extension.
+ * with the venue and the event's own URL on it — unless that card would add
+ * nothing to the row (eventDirectLink), and then the tap goes to its link, as
+ * the map list's row does. `showMap` is the only part that differs per tree: a
+ * mobile tab on the phone, a view in the extension.
  *
- * The link keeps priority where it exists: an author who set a URL chose a
- * destination, and the academic feed's rows are deadlines rather than places.
- * A notification with neither a link nor a matching event (a far-future one
- * the public map filters out) does nothing rather than switching to a map with
- * nothing selected — and is not counted as a click, which is reserved for taps
- * that actually went somewhere.
+ * The card has priority; the link is the fallback for rows with no event
+ * (academic deadlines). A notification with neither a link nor a matching
+ * event (one deleted since the feed was cached, or a map feed that failed to
+ * load) does nothing rather than switching to a map with nothing selected —
+ * and is not counted as a click, which is reserved for taps that actually
+ * went somewhere.
  */
 export function useOpenNotification({
   onClose,
@@ -54,13 +58,21 @@ export function useOpenNotification({
   // exactly the row a student taps twice, so this is the common case, not the
   // exotic one. The guard spans the in-flight load and nothing more.
   const openingRef = useRef(false);
+  // Which row is holding the gate. An academic row never sets this — it never
+  // reads `openingRef` at all — so it is only ever the id of the row an
+  // ordinary (card-or-fallback) activation is in flight for.
+  const openingIdRef = useRef<string | null>(null);
 
-  // ...and one activation TOTAL, not one per branch. A linked row returns
-  // before it ever reads `openingRef`, so tapping one while a linkless
-  // activation was still awaiting the map feed used to leave that first
-  // handler alive: the load lands, and it focuses the earlier event and
-  // switches to the map behind the browser the student was just handed. The
-  // later tap is the later intent, so it cancels the earlier one outright.
+  // ...and one activation per ROW, not one per branch. An academic row
+  // returns before it ever reads `openingRef`, so tapping one while a
+  // linkless activation was still awaiting the map feed used to leave that
+  // first handler alive: the load lands, and it focuses the earlier event
+  // and switches to the map behind the browser the student was just handed.
+  // A tap on a DIFFERENT row is the same situation with an ordinary row in
+  // place of an academic one — `openingIdRef` is what tells the two apart
+  // from a same-row double-tap, which must stay single-flight. Either way,
+  // the later tap is the later intent, so it cancels the earlier one
+  // outright, whichever row it landed on.
   //
   // Dismissing the surface is a supersession too — the student who closes it
   // mid-load has left, and a handler with no surface left must not drag the
@@ -77,38 +89,60 @@ export function useOpenNotification({
     const track = () => {
       if (!n.associationId?.startsWith('academic_')) trackNotificationClick(n.id);
     };
-    if (n.link) {
+    const openLink = (link: string) => {
+      track();
+      // openExternal, not window.open: on Capacitor the system browser has no IS
+      // session, and a notification's URL is data from outside the app.
+      void openExternal(link);
+      onClose();
+    };
+    // Academic rows are deadlines, not places: straight to the link.
+    if (n.link && n.associationId?.startsWith('academic_')) {
       activationRef.current += 1;
       openingRef.current = false;
-      track();
-      // openExternal, not window.open: on Capacitor that hands the URL to the
-      // system browser, which has no IS session. It also validates the link —
-      // a notification's URL is data from outside the app.
-      void openExternal(n.link);
-      onClose();
-      return;
+      openingIdRef.current = null;
+      return openLink(n.link);
     }
-    // `mapEventsLoaded` flips only on SUCCESS, so it is false both before the
-    // feed lands and forever after a failed load. Waiting for it here — rather
-    // than reading whatever happens to be in the store at tap time — is what
-    // keeps this from being the very dead tap the fix removes, reachable
-    // through a race. loadMapEvents is a no-op once loaded, and retries when
-    // the previous attempt failed.
-    if (openingRef.current) return;
+    // Only a second tap on the SAME row while one is in flight stays
+    // single-flight (a double-tap is one intent). A tap that lands on a
+    // DIFFERENT row while one is in flight is a new intent and supersedes it
+    // — falling through increments `activationRef` below, which is what
+    // invalidates the earlier activation once its awaited load resolves.
+    if (openingRef.current && openingIdRef.current === n.id) return;
     openingRef.current = true;
+    openingIdRef.current = n.id;
     const activation = (activationRef.current += 1);
     try {
+      // `mapEventsLoaded` flips only on SUCCESS, so it is false both before
+      // the feed lands and forever after a failed load. Waiting for it here —
+      // rather than reading whatever happens to be in the store at tap time —
+      // is what keeps this from being the very dead tap the fix removes,
+      // reachable through a race. loadMapEvents is a no-op once loaded, and
+      // retries when the previous attempt failed.
       if (!mapEventsLoaded) await loadMapEvents();
       if (activationRef.current !== activation) return;
-      if (!useAppStore.getState().mapEvents.some((e) => e.id === n.id)) return;
-      track();
-      focusEventById(n.id, { fly: true });
-      showMap();
-      onClose();
+      // The CARD first, even when the event has a URL: the card carries the
+      // venue, the time and the description, and the URL is its button. A card
+      // with none of those is only the button, so the tap is the button.
+      const { mapEvents: events, societies } = useAppStore.getState();
+      const event = events.find((e) => e.id === n.id);
+      if (event) {
+        const direct = eventDirectLink(event, resolveSociety(societies, event.societyId));
+        if (direct) return openLink(direct.href);
+        track();
+        focusEventById(n.id, { fly: true });
+        showMap();
+        onClose();
+        return;
+      }
+      if (n.link) openLink(n.link);
     } finally {
       // Only if nothing superseded us — whoever did has already reopened the
       // gate for itself, and closing it again here would wedge the row shut.
-      if (activationRef.current === activation) openingRef.current = false;
+      if (activationRef.current === activation) {
+        openingRef.current = false;
+        openingIdRef.current = null;
+      }
     }
   };
 

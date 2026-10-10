@@ -10,24 +10,12 @@ export interface SpolekNotification {
   link?: string;
   createdAt: string; // ISO timestamp
   expiresAt: string; // ISO timestamp
+  // The event's own start day (YYYY-MM-DD), which decides when it goes live.
+  // Absent on academic rows and on caches written before it existed.
+  startsAt?: string;
   priority: 'normal' | 'high';
+  /** Restricted to the society's own people (utils/eventAudience). Absent on old caches: public. */
+  subscribersOnly?: boolean;
   viewCount?: number;
   clickCount?: number;
 }
-
-export interface AssociationProfile {
-  id: string; // 'supef'
-  name: string; // 'SUPEF'
-  websiteUrl: string; // 'https://supef.cz'
-  facultyIds: string[]; // ['PEF']
-  /**
-   * Who this society's audience is, when it cannot be read off `facultyIds`.
-   *
-   * ESN is cross-faculty and its people are the Erasmus students, which no
-   * faculty code expresses. Data rather than an `if (id === 'esn')` in the
-   * label helper.
-   */
-  audienceLabelKey?: 'erasmus';
-}
-
-export type FacultyId = 'PEF' | 'FRRMS' | 'AGRO' | 'LDF' | 'AF' | 'ZF';

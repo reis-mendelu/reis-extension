@@ -14,6 +14,8 @@ import { assertNotDemo } from './assertNotDemo';
 import { downloadZipFiles } from './downloadZipFiles';
 import type { DownloadTick } from './readBlobWithProgress';
 import { fetchIsFile } from './fetchIsFile';
+import { opensInTab, saveIsFile } from './saveBlob';
+import type { FileRowHint } from '../../utils/contentDisposition';
 
 const log = createLogger('useFileActions');
 
@@ -29,11 +31,12 @@ interface UseFileActionsResult {
   downloadProgress: DownloadProgress | null;
   /** In-flight single downloads, keyed by the row's link. */
   activeDownloads: Record<string, DownloadTick>;
-  openFile: (link: string) => Promise<void>;
+  /** `row` names the file when IS sends no Content-Disposition. */
+  openFile: (link: string, row?: FileRowHint) => Promise<void>;
   /** The bytes of an IS PDF, or null when IS served a viewer page instead. */
   fetchPdfBlob: (link: string) => Promise<Blob | null>;
   openPdfInline: (link: string) => Promise<string | null>;
-  downloadSingle: (link: string) => Promise<void>;
+  downloadSingle: (link: string, row?: FileRowHint) => Promise<void>;
   downloadZip: (fileLinks: string[], zipFileName: string) => Promise<void>;
 }
 
@@ -48,25 +51,28 @@ export function useFileActions(): UseFileActionsResult {
   const { t } = useTranslation();
 
   const openFile = useCallback(
-    async (link: string) => {
+    async (link: string, row?: FileRowHint) => {
       const fullUrl = normalizeFileUrl(link);
 
       // Capacitor: IS denies CORS to every origin, so the browser fetch below
       // always fails here — and its window.open fallback hands the URL to the
       // SYSTEM BROWSER, which has no IS session. Fetch natively instead.
       if (isNativeHost()) {
-        await openNativeFile(fullUrl, 'useFileActions.openFile', t);
+        await openNativeFile(fullUrl, 'useFileActions.openFile', t, undefined, row);
         return;
       }
 
       try {
         assertNotDemo();
-        const { blob } = await fetchIsFile(fullUrl);
-        const blobUrl = URL.createObjectURL(blob);
-
+        const file = await fetchIsFile(fullUrl);
+        // A tab only for what a tab can show: a .pptx opened this way was saved
+        // by the browser under the blob URL's GUID instead of its name.
+        if (!opensInTab(file.blob)) {
+          saveIsFile(file, row);
+          return;
+        }
+        const blobUrl = URL.createObjectURL(file.blob);
         window.open(blobUrl, '_blank', 'noopener,noreferrer');
-
-        // Clean up after 5 minutes
         setTimeout(() => URL.revokeObjectURL(blobUrl), 5 * 60 * 1000);
       } catch (e) {
         // A demo block must not fall through to the direct link: window.open
@@ -162,7 +168,7 @@ export function useFileActions(): UseFileActionsResult {
    * output — the row is what the student is looking at, and the two differ.
    */
   const downloadSingle = useCallback(
-    async (link: string) => {
+    async (link: string, row?: FileRowHint) => {
       if (inFlight.current.has(link)) return;
       inFlight.current.add(link);
       setActiveDownloads((d) => ({ ...d, [link]: { loaded: 0, total: null } }));
@@ -181,25 +187,20 @@ export function useFileActions(): UseFileActionsResult {
         // base64 conversion and `Downloads.save` are still running here, and
         // releasing it early let a second tap start a duplicate download.
         if (isNativeHost()) {
-          await openNativeFile(fullUrl, 'useFileActions.downloadSingle', t, () =>
-            clearRowProgress(link)
+          await openNativeFile(
+            fullUrl,
+            'useFileActions.downloadSingle',
+            t,
+            () => clearRowProgress(link),
+            row
           );
           return;
         }
         assertNotDemo();
-        const { blob, contentDisposition } = await fetchIsFile(fullUrl, (tick) =>
+        const file = await fetchIsFile(fullUrl, (tick) =>
           setActiveDownloads((d) => (link in d ? { ...d, [link]: tick } : d))
         );
-        const match = contentDisposition?.match(/filename="?([^"]+)"?/);
-        const filename = match?.[1] || link.split('/').pop() || 'download';
-        const blobUrl = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        saveIsFile(file, row);
       } catch (e) {
         // See openFile: the direct-link fallback would bypass the demo guard.
         if (e instanceof DemoModeError) {

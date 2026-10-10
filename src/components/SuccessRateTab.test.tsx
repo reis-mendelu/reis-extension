@@ -78,6 +78,15 @@ describe('SuccessRateTab', () => {
     expect(screen.queryByText('Podobné předměty')).toBeNull();
   });
 
+  it('keeps loading, not "no results", while similar subjects are still being looked up', () => {
+    // No entry yet means the lookup has not answered. Showing the empty state
+    // then reads as final, and the suggestions pop in a second later.
+    seed({});
+    render(<SuccessRateTab courseCode="PRVS" />);
+    expect(screen.queryByText('Zatím bez výsledků')).toBeNull();
+    expect(document.querySelector('.loading-spinner')).toBeTruthy();
+  });
+
   it('lists suggestions as rows: reasons in one phrase, the fail rate, a stale year', () => {
     seed({
       similarSubjects: { EKOE1: [EKO1R, KLI] },

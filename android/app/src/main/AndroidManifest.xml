@@ -32,6 +32,7 @@
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
             android:name=".MainActivity"
+            android:screenOrientation="portrait"
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
@@ -66,4 +67,24 @@
          dialog via ACTION_WIFI_ADD_NETWORKS, not by us. -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+
+    <!-- Plugin manifests merge their own permissions in; privacy:check reads them
+         (scripts/privacy/androidPermissions.ts). @capacitor/local-notifications
+         adds RECEIVE_BOOT_COMPLETED and WAKE_LOCK, both kept. reIS schedules no
+         local notifications (src/test/guards/societyEventsStayReduced.test.ts);
+         the plugin stays only so src/services/cleanup/retireSocietyFeatures.ts
+         can cancel the reminders 5.3.0 scheduled and delete its channels. That
+         runs on the first launch after the update; a phone rebooted before it
+         can still have the plugin's boot receiver restore a stored 5.3.0
+         reminder, and after it the receiver has nothing of ours to restore.
+         The two below are stripped:
+         - SCHEDULE_EXACT_ALARM (local-notifications): nothing is scheduled, so
+           no alarm is either. Declaring it only put an "Alarms & reminders"
+           switch in Settings for a capability reIS never uses.
+         - CAMERA (@capgo/capacitor-inappbrowser): the in-app browser only shows
+           the IS sign-in and external links. The report screenshot input has no
+           `capture`, and with CAMERA undeclared a camera intent needs no
+           permission at all — declared-but-denied is what would break it. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />
+    <uses-permission android:name="android.permission.CAMERA" tools:node="remove" />
 </manifest>

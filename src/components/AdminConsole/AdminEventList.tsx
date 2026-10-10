@@ -1,21 +1,24 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Check, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { sortByDate } from '../CampusMap/eventHelpers';
-import { isPastEvent, isScheduledEvent, goLiveDate, hasFinished } from '../CampusMap/eventWindow';
-import { relativeDayLabel } from '../CampusMap/eventHelpers';
+import { isFinishedEvent, hasFinished } from '../CampusMap/eventWindow';
+import { eventWhenLabel } from '../CampusMap/eventHelpers';
 import { deletePost } from '../../api/societyPosts';
 import { EventRow } from '../CampusMap/EventRow';
 import { EventComposer } from '../CampusMap/EventComposer';
+import { EventStats, EventStatsNote } from './EventStats';
+import { AdminEventRowActions } from './AdminEventRowActions';
 import type { MapEvent } from '../../types/events';
 
 // The console's list column: the active society's events grouped by lifecycle,
 // the Create entry point, and an inline composer that takes the column over
-// while open. Live = on the public map now; Scheduled = still hidden from
-// students (goes live ~2 weeks out); Past = aged off the map but kept for the
-// society. Rows fly the console's map to the event.
+// while open. Upcoming = everything not over, which students see in the
+// catalog; pins and Novinky show it from 14 days out. Past = its last day
+// (endDate ?? date) has passed, kept for the society. Rows fly the console's
+// map to the event.
 //
 // Was MyEventsPanel, which lived inside the student map's side panel. The
 // society identity moved to AdminConsoleHeader, which is also where the picker
@@ -24,8 +27,10 @@ export function AdminEventList() {
   const events = useAppStore((s) => s.societyMapEvents);
   const focusEvent = useAppStore((s) => s.focusEventById);
   const openComposer = useAppStore((s) => s.openComposer);
+  const duplicateEvent = useAppStore((s) => s.duplicateEvent);
   const composerOpen = useAppStore((s) => s.composerOpen);
   const editEventId = useAppStore((s) => s.editEventId);
+  const duplicateEventId = useAppStore((s) => s.duplicateEventId);
   const closeComposer = useAppStore((s) => s.closeComposer);
   const loadSocietyPosts = useAppStore((s) => s.loadSocietyPosts);
   const reloadMapEvents = useAppStore((s) => s.reloadMapEvents);
@@ -35,22 +40,25 @@ export function AdminEventList() {
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
 
-  // Delete is a two-step, in-row confirm so authoring never leaves this column:
-  // the trash icon arms `confirmId`, then a check commits. `busyId` disables the
-  // row while the request is in flight.
+  // Delete is a two-step, in-row confirm (AdminEventRowActions). A row in
+  // `busyIds` keeps its confirm pair, every control disabled, until its own
+  // request settles: a set, so arming another row cannot release this one.
   const [confirmId, setConfirmId] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [busyIds, setBusyIds] = useState<ReadonlySet<string>>(() => new Set());
   const selectedId = selection?.kind === 'event' ? selection.event.id : null;
 
   const remove = async (id: string) => {
-    setBusyId(id);
+    setBusyIds((s) => new Set(s).add(id));
     try {
       const res = await deletePost(id);
       if (res.error) {
         toast.error(t('admin.saveError'));
         return;
       }
-      if (selectedId === id) clearMapSelection(); // drop the highlight if it was on this row
+      // The selection now, not when the delete started: a pin can pick this
+      // event while the request is in flight.
+      const now = useAppStore.getState().mapSelection;
+      if (now?.kind === 'event' && now.event.id === id) clearMapSelection();
       await loadSocietyPosts();
       void reloadMapEvents(); // drop the pin from the public "Akce" feed too
       toast.success(t('map.toastDeleted'));
@@ -58,66 +66,40 @@ export function AdminEventList() {
       toast.error(t('admin.saveError'));
     } finally {
       // Cleared in finally so an unexpected throw never leaves the row stuck
-      // disabled / mid-confirm.
-      setBusyId(null);
-      setConfirmId(null);
+      // disabled / mid-confirm. Only this row's state: another may be armed.
+      setBusyIds((s) => {
+        const next = new Set(s);
+        next.delete(id);
+        return next;
+      });
+      setConfirmId((c) => (c === id ? null : c));
     }
   };
 
-  const rowActions = (e: MapEvent) =>
-    confirmId === e.id ? (
-      <>
-        <button
-          type="button"
-          className="btn btn-ghost btn-xs px-1.5 text-error"
-          aria-label={t('map.deleteConfirm')}
-          disabled={busyId === e.id}
-          onClick={() => void remove(e.id)}
-        >
-          <Check size={15} />
-        </button>
-        <button
-          type="button"
-          className="btn btn-ghost btn-xs px-1.5"
-          aria-label={t('common.cancel')}
-          onClick={() => setConfirmId(null)}
-        >
-          <X size={15} />
-        </button>
-      </>
-    ) : (
-      <>
-        <button
-          type="button"
-          className="btn btn-ghost btn-xs px-1.5 text-base-content/45 hover:text-base-content"
-          aria-label={t('map.edit')}
-          onClick={() => openComposer(e.id)}
-        >
-          <Pencil size={14} />
-        </button>
-        <button
-          type="button"
-          className="btn btn-ghost btn-xs px-1.5 text-base-content/45 hover:text-error"
-          aria-label={t('map.delete')}
-          onClick={() => setConfirmId(e.id)}
-        >
-          <Trash2 size={14} />
-        </button>
-      </>
-    );
+  const rowActions = (e: MapEvent) => (
+    <AdminEventRowActions
+      confirming={confirmId === e.id || busyIds.has(e.id)}
+      busy={busyIds.has(e.id)}
+      onDuplicate={() => duplicateEvent(e.id)}
+      onEdit={() => openComposer(e.id)}
+      onArmDelete={() => setConfirmId(e.id)}
+      onCancelDelete={() => setConfirmId(null)}
+      onDelete={() => void remove(e.id)}
+      t={t}
+    />
+  );
 
-  const past = sortByDate(events.filter((e) => isPastEvent(e.date))).reverse();
-  const scheduled = sortByDate(events.filter((e) => isScheduledEvent(e.date)));
-  const live = sortByDate(events.filter((e) => !isPastEvent(e.date) && !isScheduledEvent(e.date)));
-  // A Live event dated today whose time has passed: it happened, but it stays
+  const past = sortByDate(events.filter((e) => isFinishedEvent(e))).reverse();
+  const upcoming = sortByDate(events.filter((e) => !isFinishedEvent(e)));
+  // A row dated today whose time has passed: it happened, but it stays
   // publicly visible for the rest of the day, so the bucket cannot say it and
   // the row does instead. See eventWindow.hasFinished for why not the bucket.
-  const finishedNote = (e: MapEvent) =>
-    hasFinished(e)
-      ? `${relativeDayLabel(e.date, locale, t)}${e.time ? ` · ${e.time}` : ''} · ${t('map.finished')}`
-      : undefined;
-  const goLive = (e: MapEvent) =>
-    `${t('map.goesLive')} ${goLiveDate(e.date).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}`;
+  // An unplaced (tba) event gets no line at all: the row simply shows no place.
+  const subline = (e: MapEvent) => {
+    const day = eventWhenLabel(e, locale, t);
+    if (hasFinished(e)) return `${day} · ${t('map.finished')}`;
+    return undefined;
+  };
 
   const section = (
     label: string,
@@ -137,8 +119,9 @@ export function AdminEventList() {
             t={t}
             selected={selectedId === e.id}
             subline={subline?.(e)}
-            onClick={() => focusEvent(e.id, { fly: true })}
+            onClick={() => !busyIds.has(e.id) && focusEvent(e.id, { fly: true })}
             actions={rowActions(e)}
+            footer={<EventStats eventId={e.id} />}
           />
         ))}
       </div>
@@ -175,12 +158,15 @@ export function AdminEventList() {
           otherwise it lists the society's events. */}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {composerOpen ? (
-          <EventComposer key={editEventId ?? 'new'} onDone={closeComposer} />
+          <EventComposer
+            key={editEventId ?? (duplicateEventId ? `dup-${duplicateEventId}` : 'new')}
+            onDone={closeComposer}
+          />
         ) : (
           <>
-            {section(t('map.liveNow'), live, finishedNote)}
-            {section(t('map.scheduled'), scheduled, goLive)}
+            {section(t('map.upcoming'), upcoming, subline)}
             {section(t('map.past'), past)}
+            <EventStatsNote eventIds={[...upcoming, ...past].map((e) => e.id)} />
             {events.length === 0 && (
               <p className="px-3 py-6 text-center text-sm text-base-content/60">
                 {t('map.noOwnEvents') as string}

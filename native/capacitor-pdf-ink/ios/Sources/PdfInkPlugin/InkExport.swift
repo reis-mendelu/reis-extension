@@ -11,7 +11,7 @@ import UIKit
  * must be in the page. The original copy is untouched — this writes a new file.
  *
  * The page content is redrawn through Core Graphics, so text stays text; only
- * the ink is an image, at `inkScale` so it does not look soft next to it.
+ * the ink is an image, at `inkScale(for:)` so it does not look soft next to it.
  */
 enum InkExport {
     /// The box PDFKit lays the reader's canvases out in, so the box the strokes
@@ -19,9 +19,27 @@ enum InkExport {
     /// which is why it is `InkPages`' to define, not this file's: an added page
     /// is measured in it too.
     static let box = InkPages.displayBox
-    static let inkScale: CGFloat = 2
 
-    static func flatten(_ document: PDFDocument, drawings: [Int: PKDrawing], to url: URL) throws {
+    /**
+     * Pixels per page point the ink is baked at: 4, about 288 dpi — sharp on
+     * an iPad at a moderate zoom (it shows an A4 at 2.72 px/pt just fitting it)
+     * and close to print. It was 2, as soft as the reader used to be. A page
+     * too big for 4 within `InkPages.maxInkPixels` gets less, but never less
+     * than the 2 every export had before — so a page over a quarter of the
+     * budget in points (bigger than A1: an A0 poster) still costs more than
+     * the budget, as it did before. The floor is the choice: a poster's notes
+     * stay as sharp as they were.
+     */
+    static func inkScale(for pageSize: CGSize) -> CGFloat {
+        let area = pageSize.width * pageSize.height
+        guard area > 0 else { return 2 }
+        return max(2, min(4, (InkPages.maxInkPixels / area).squareRoot()))
+    }
+
+    static func flatten(
+        _ document: PDFDocument, drawings: [Int: PKDrawing], pictures: [Int: [PagePicture]] = [:],
+        to url: URL
+    ) throws {
         let renderer = UIGraphicsPDFRenderer(bounds: pageRect(document.page(at: 0)))
         try renderer.writePDF(to: url) { context in
             for index in 0..<document.pageCount {
@@ -40,23 +58,45 @@ enum InkExport {
                 page.draw(with: box, to: cg)
                 cg.restoreGState()
 
-                guard let drawing = drawings[index], !drawing.strokes.isEmpty else { continue }
-                // Rendered as if the app were in light mode, for the same
-                // reason the reader pins every canvas to it: PencilKit adapts
-                // ink to the appearance, and a black pen renders WHITE in dark
-                // mode. `image(from:scale:)` reads UITraitCollection.current,
-                // so with the app dark the strokes baked white onto white paper
-                // and the export came out blank — "the ink is missing, or
-                // dimmed". The paper is white in every appearance, so the ink
-                // that goes on it is the light-mode ink, always.
-                // (`performAsCurrent` hands back Void, so the image comes out
-                // through a captured var rather than as the closure's value.)
-                var ink: UIImage?
-                UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
-                    ink = drawing.image(from: rect, scale: inkScale)
-                }
-                ink?.draw(in: rect)
+                // Page, pictures under the ink, the ink, pictures over it —
+                // the order the reader shows.
+                let onPage = PagePictures.stackingOrder(pictures[index] ?? [])
+                drawPictures(onPage.filter { !$0.aboveInk })
+                drawInk(drawings[index], in: rect)
+                drawPictures(onPage.filter(\.aboveInk))
             }
+        }
+    }
+
+    private static func drawInk(_ drawing: PKDrawing?, in rect: CGRect) {
+        guard let drawing, !drawing.strokes.isEmpty else { return }
+        // Rendered as if the app were in light mode, for the same
+        // reason the reader pins every canvas to it: PencilKit adapts
+        // ink to the appearance, and a black pen renders WHITE in dark
+        // mode. `image(from:scale:)` reads UITraitCollection.current,
+        // so with the app dark the strokes baked white onto white paper
+        // and the export came out blank — "the ink is missing, or
+        // dimmed". The paper is white in every appearance, so the ink
+        // that goes on it is the light-mode ink, always.
+        // (`performAsCurrent` hands back Void, so the image comes out
+        // through a captured var rather than as the closure's value.)
+        var ink: UIImage?
+        UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
+            ink = drawing.image(from: rect, scale: inkScale(for: rect.size))
+        }
+        ink?.draw(in: rect)
+    }
+
+    /// From each JPEG's own data provider, so the PDF context embeds the JPEG
+    /// rather than a bitmap.
+    private static func drawPictures(_ pictures: [PagePicture]) {
+        for picture in pictures {
+            guard let provider = CGDataProvider(data: picture.jpeg as CFData),
+                let image = CGImage(
+                    jpegDataProviderSource: provider, decode: nil, shouldInterpolate: true,
+                    intent: .defaultIntent)
+            else { continue }
+            UIImage(cgImage: image).draw(in: picture.frame)
         }
     }
 

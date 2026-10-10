@@ -3,7 +3,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { createSocietyAccount, resetSocietyPassword } from '../../api/societyAccounts';
 import { GeneratedPasswordDialog } from './GeneratedPasswordDialog';
-import { ALL_SOCIETIES } from '../../data/societies';
+import { useListedSocieties } from '../../hooks/useSociety';
 import { loginFromAuthEmail } from '../../services/admin/societyLogin';
 
 /**
@@ -22,6 +22,7 @@ export function SocietyAccountsPanel() {
   // Loaded by the admin slice when the reis_admin session is established and
   // refreshed after a create; the panel only reads it.
   const accounts = useAppStore((s) => s.societyAccounts);
+  const societies = useListedSocieties();
   const loadSocietyAccounts = useAppStore((s) => s.loadSocietyAccounts);
   const [selected, setSelected] = useState<string | null>(null);
   const [password, setPassword] = useState<string | null>(null);
@@ -53,15 +54,14 @@ export function SocietyAccountsPanel() {
     setBusy(false);
   };
 
-  // Only ids present in the static catalog may be created. An id outside it has
-  // no colour, logo or facultyKey, and societyById() falls back to ESN — so a
-  // typo would render the new society AS ESN on the map. Constraining the field
-  // makes that unreachable rather than merely logged.
+  // Only ids in the catalog may be created: the spolky_accounts foreign key
+  // rejects any other. A society saved from the form whose account step failed
+  // shows up here, which is how that half-finished add gets completed.
   const taken = new Set(accounts.map((a) => a.association_id));
-  const available = ALL_SOCIETIES.filter((s) => !taken.has(s.id));
+  const available = societies.filter((s) => !taken.has(s.id));
 
   const create = async () => {
-    const chosen = ALL_SOCIETIES.find((s) => s.id === newName);
+    const chosen = societies.find((s) => s.id === newName);
     if (busy || !chosen) return;
     setBusy(true);
     setFailed(false);

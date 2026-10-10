@@ -66,6 +66,8 @@ function clearLoadingAndError(set: SetState, courseCode: string): void {
   });
 }
 
+// Inert while impersonating: these hit IS and write IndexedDB per subject code,
+// and the store then holds another programme's subjects (createImpersonationSlice).
 export const createClassmatesSlice: AppSlice<ClassmatesSlice> = (set, get) => ({
   classmates: {},
   classmatesLoading: {},
@@ -74,6 +76,7 @@ export const createClassmatesSlice: AppSlice<ClassmatesSlice> = (set, get) => ({
   classmatesNoSeminar: {},
 
   fetchClassmatesPriority: async (courseCode) => {
+    if (get().impersonation) return;
     const { classmates, classmatesLoading, subjects } = get();
     if (classmatesLoading[courseCode] || classmates[courseCode] !== undefined) return;
 
@@ -112,6 +115,7 @@ export const createClassmatesSlice: AppSlice<ClassmatesSlice> = (set, get) => ({
   },
 
   refreshClassmatesForSubject: async (courseCode) => {
+    if (get().impersonation) return;
     const { subjects, classmatesLoading } = get();
     if (classmatesLoading[courseCode]) return;
 
@@ -133,6 +137,7 @@ export const createClassmatesSlice: AppSlice<ClassmatesSlice> = (set, get) => ({
   },
 
   fetchAllClassmates: async () => {
+    if (get().impersonation) return;
     const result = await loadAllClassmatesFromCache({ subjects: get().subjects });
     // Skip set() when subjects unknown — an empty map would clobber concurrent writes.
     if (result === null) return;

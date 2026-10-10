@@ -12,11 +12,15 @@ import { prefetchTodaySubjectsImpl } from './files/prefetchTodaySubjects';
 import { speculativeRefreshFilesImpl } from './files/speculativeRefreshFiles';
 import { broadcastFilesUpdate } from './files/broadcastFilesSync';
 
+// Inert while impersonating: these hit IS and write IndexedDB per subject code,
+// and the store then holds another programme's subjects (createImpersonationSlice).
 export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
   files: {},
   filesLoading: {},
+  filesError: {},
   lastFilesFetchedAt: {},
   fetchFiles: async (courseCode) => {
+    if (get().impersonation) return;
     const { files, filesLoading } = get();
 
     if (filesLoading[courseCode] || files[courseCode] !== undefined) {
@@ -30,6 +34,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
     await get().refreshFiles(courseCode);
   },
   fetchFilesPriority: async (courseCode) => {
+    if (get().impersonation) return;
     const { files, filesLoading, language: currentLang } = get();
 
     if (filesLoading[courseCode] || files[courseCode] !== undefined) {
@@ -38,6 +43,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
 
     set((state) => ({
       filesLoading: { ...state.filesLoading, [courseCode]: true },
+      filesError: { ...state.filesError, [courseCode]: false },
     }));
 
     try {
@@ -128,13 +134,17 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
       }));
     } catch (e) {
       logError('FilesSlice.fetchFilesPriority', e, { courseCode });
+      // `[]` still ends the skeleton; `filesError` is what tells the tab this
+      // is "could not load", not "no files" (Návrhy #26).
       set((state) => ({
         files: { ...state.files, [courseCode]: [] },
         filesLoading: { ...state.filesLoading, [courseCode]: false },
+        filesError: { ...state.filesError, [courseCode]: true },
       }));
     }
   },
   refreshFiles: async (courseCode) => {
+    if (get().impersonation) return;
     const { language: currentLang, files } = get();
 
     if (!files[courseCode]) {
@@ -149,6 +159,9 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
 
       // Handle dual-language structure vs legacy array
       let filesList: ParsedFile[] = [];
+      // Set when the legacy-cache language refetch fails: the list shown is
+      // then the other language's, which is not a successful load.
+      let refetchFailed = false;
       if (data && 'cz' in data && 'en' in data) {
         // Dual language structure
         filesList = currentLang === 'en' ? data.en : data.cz;
@@ -179,6 +192,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
               await IndexedDBService.set('files', courseCode, dualData);
               filesList = currentLang === 'en' ? dualData.en : dualData.cz;
             } catch (e) {
+              refetchFailed = true;
               logError('FilesSlice.refreshFiles:langRefetch', e, { courseCode });
             }
           }
@@ -188,18 +202,24 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
       set((state) => ({
         files: { ...state.files, [courseCode]: filesList },
         filesLoading: { ...state.filesLoading, [courseCode]: false },
+        filesError: { ...state.filesError, [courseCode]: refetchFailed },
       }));
     } catch (e) {
       logError('FilesSlice.refreshFiles', e, { courseCode });
       set((state) => ({
         files: { ...state.files, [courseCode]: state.files[courseCode] ?? [] },
         filesLoading: { ...state.filesLoading, [courseCode]: false },
+        filesError: { ...state.filesError, [courseCode]: true },
       }));
     }
   },
   refreshFilesForSubject: async (courseCode) => {
+    if (get().impersonation) return;
     const { language: currentLang, subjects } = get();
-    set((state) => ({ filesLoading: { ...state.filesLoading, [courseCode]: true } }));
+    set((state) => ({
+      filesLoading: { ...state.filesLoading, [courseCode]: true },
+      filesError: { ...state.filesError, [courseCode]: false },
+    }));
     try {
       const result = await fetchAndPersistFolderFiles({
         courseCode,
@@ -230,7 +250,12 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
       broadcastFilesUpdate({ courseCode, fetchedAt: result.fetchedAt });
     } catch (e) {
       logError('FilesSlice.refreshFilesForSubject', e, { courseCode });
-      set((state) => ({ filesLoading: { ...state.filesLoading, [courseCode]: false } }));
+      set((state) => ({
+        // `?? []`: undefined is "still loading" to useFiles.
+        files: { ...state.files, [courseCode]: state.files[courseCode] ?? [] },
+        filesLoading: { ...state.filesLoading, [courseCode]: false },
+        filesError: { ...state.filesError, [courseCode]: true },
+      }));
     }
   },
   hydrateLastFilesFetchedAt: async () => {
@@ -244,13 +269,30 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
     }
   },
   fetchAllFiles: async () => {
+    if (get().impersonation) return;
     const files = await loadAllFilesFromCache({
       language: get().language,
       subjects: get().subjects,
     });
-    set({ files });
+    // The cache is the map, except for a subject whose only fetch failed: it
+    // has no IDB entry, and dropping its key put useFiles back on a skeleton
+    // that never ends, over the failed state (Návrhy #26). Anything else the
+    // cache no longer has is dropped, as before.
+    // A subject the cache does have was fetched successfully at some point
+    // (here or by the sync), so any failure shown for it is stale.
+    const answered = Object.fromEntries(Object.keys(files).map((code) => [code, false]));
+    set((state) => {
+      const failed = Object.fromEntries(
+        Object.entries(state.files).filter(([code]) => state.filesError[code])
+      );
+      return {
+        files: { ...failed, ...files },
+        filesError: { ...state.filesError, ...answered },
+      };
+    });
   },
   prefetchTodaySubjects: () => {
+    if (get().impersonation) return;
     const { schedule, lastFilesFetchedAt } = get();
     prefetchTodaySubjectsImpl({
       schedule: schedule.data,
@@ -259,6 +301,7 @@ export const createFilesSlice: AppSlice<FilesSlice> = (set, get) => ({
     });
   },
   speculativeRefreshFiles: (courseCode) => {
+    if (get().impersonation) return;
     const { lastFilesFetchedAt, filesLoading } = get();
     speculativeRefreshFilesImpl({
       courseCode,

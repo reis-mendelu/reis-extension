@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: September 25, 2026**
+**Last Updated: October 10, 2026**
 
 ## Introduction
 reIS ("we", "our", or "us") is a Chrome extension designed to modernize and enhance the user experience of the Mendel University Information System (IS Mendelu). We are committed to protecting your privacy and ensuring the security of your data.
@@ -14,9 +14,9 @@ We fetch and store the following information directly from MENDELU services to y
 - **Academic Data**: Schedules, grades, exam dates, success rates, and course materials.
 - **Authentication Data**: Session cookies required to make authenticated requests to IS Mendelu on your behalf.
 
-This data is stored **locally on your device** using highly efficient storage (IndexedDB) and is **never** transmitted to our servers.
+This data is stored **locally on your device** using highly efficient storage (IndexedDB) and is **never** transmitted to our servers — with one exception: the daily usage count (section 3) carries two group labels taken from your study details, your faculty and your study programme's base code.
 
-There is no longer any exception to that. Library study-room booking — the one feature that ever relayed your name, university email and student ID onwards — was removed in September 2026, together with the server route that carried it.
+Nothing else of it is ever sent: no name, email, student ID, grade or timetable. Library study-room booking — the one feature that ever relayed your name, university email and student ID onwards — was removed in September 2026, together with the server route that carried it.
 
 ### 2. Anonymous Usage Analytics
 We collect anonymous usage data to improve the extension:
@@ -28,7 +28,7 @@ We collect anonymous usage data to improve the extension:
 
 ### 3. Daily Usage & NPS Feedback
 To understand how actively reIS is used, we record:
-- **Daily Usage**: Each day you open reIS, a **random identifier generated on your device** is sent to our Supabase backend to record one usage event. This identifier is a random UUID created the first time you use the app and stored locally. It is **not derived from your student ID, your name, or anything else about you**, and it cannot be linked back to you. Since September 2026 the event also carries two group labels: your faculty and the platform (extension, iOS, Android or web). These describe a group of thousands of installs, not you; nothing else about the event changed.
+- **Daily Usage**: Each day you open reIS, a **random identifier generated on your device** is sent to our Supabase backend to record one usage event. This identifier is a random UUID created the first time you use the app and stored locally. It is **not derived from your student ID, your name, or anything else about you**, and reIS never sends your name, student number or IS account with it. Since September 2026 the event also carries two group labels: your faculty and the platform (extension, iOS, Android or web). Since October 2026 it also carries your study programme's base code (for example B-OI), never your specialisation or year. A faculty or programme describes a group of installs, not you, and the admin console never shows the exact count for a group of fewer than five; nothing else about the event changed. Which partner company you are shown, if any, is decided on your device from your faculty and programme; partners never receive anything about you. Because the identifier stays the same, your installation's daily records can be matched to one another across days. The same identifier is also sent with the NPS rating below and with the feature counters in section 2, so in our database those records, on any day, can be matched to the daily records and their faculty, platform and programme labels, per installation. Your name, student number or IS account are never sent with any of them.
 - **NPS Rating (Voluntary)**: Once per semester you may be shown a satisfaction prompt. If you choose to rate, the same random identifier and your rating are sent. You can dismiss the prompt without sending anything.
 
 **What this means for our numbers**: because the identifier belongs to an installation rather than to a person, these figures count **installations, not people**. If you use reIS on a phone and a laptop, you are counted twice.
@@ -46,7 +46,7 @@ If you use the built-in "Report Bug / Feedback" feature, the following data is s
 
 ### 5. Firefox: consent for each kind of data
 Firefox asks you directly about everything above. Nothing is **required** to use reIS, and each item is optional:
-- **Technical and interaction data** covers the daily usage count, the feature counters, the NPS rating and a report's error log. Firefox shows it as a switch when you install reIS and in `about:addons` → reIS → *Permissions and data*. While it is off, reIS sends none of them from Firefox.
+- **Technical and interaction data** covers the daily usage count, the feature counters, the view and click counters on society posts, the view counter on map events, the NPS rating and a report's error log. Firefox shows it as a switch when you install reIS and in `about:addons` → reIS → *Permissions and data*. While it is off, reIS sends none of them from Firefox.
 - **Personal communications** (the text of a report), **personally identifying information** (the optional contact email) and **website content** (an attached screenshot) are asked for when you press Send on a report, and only for what that report contains. If you decline, the report is not sent.
 
 ## Data Storage & Security
@@ -60,15 +60,15 @@ reIS contacts the following services. **IS Mendelu is the only one that receives
 
 **Always:**
 1. **IS Mendelu** (`is.mendelu.cz`) — fetches your academic data, authenticated by you.
-2. **Supabase** (`*.supabase.co`) — reIS's own backend: public notifications, society events and their attendance counts, anonymous usage events, and feedback you submit, with any attachment you added to it. Different records carry different keys. The daily usage count, the in-app survey and event RSVPs use the random installation identifier described above; society view/click counters carry only a post row id. A submitted suggestion carries no identifier we generate — but if you fill in the optional contact field, it carries whatever you typed there, because asking us to reply is what that field is for.
+2. **Supabase** (`*.supabase.co`) — reIS's own backend: public notifications, society events, anonymous usage events, and feedback you submit, with any attachment you added to it. Different records carry different keys. The daily usage count and the in-app survey use the random installation identifier described above; society view/click counters carry only a post row id. Versions up to 5.3.0 (September 2026) also send event RSVPs, with the same random installation identifier, until they are updated; current versions send none. A submitted suggestion carries no identifier we generate — but if you fill in the optional contact field, it carries whatever you typed there, because asking us to reply is what that field is for.
 3. **jsDelivr** (`cdn.jsdelivr.net`) — static subject-difficulty data. No identifier is sent, but the set of subjects requested does reveal to the CDN which courses you are enrolled in.
 4. **OpenStreetMap** — campus map tiles. The request identifies reIS by name, which their tile usage policy requires; it carries nothing about you.
 
 **Only when you use the relevant feature:**
 5. **Erasmus HEI directory** (`hei.api.uni-foundation.eu`) — a public list of partner universities. Nothing about you is sent.
-6. **Photon** (`photon.komoot.io`) — venue search, used only by student-society administrators when creating an event.
+6. **Photon** (`photon.komoot.io`) — venue search, used only by reIS staff and society logins in the admin console when creating an event.
 
-**Links you open yourself** (Teams, Outlook, geteduroam, society websites) are handed to your browser or the relevant app. reIS makes no background request to them.
+**Links you open yourself** (Teams, Outlook, geteduroam, society websites and Instagram profiles, the emoji licence) are handed to your browser or the relevant app. reIS makes no background request to them.
 
 ## User Control
 You have full control over your data:

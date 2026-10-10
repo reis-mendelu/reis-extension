@@ -57,7 +57,11 @@ export function SuccessRateTab({
       />
     );
 
-  const hasSuggestions = !!suggestions?.length;
+  // No entry yet: the lookup has not answered. The empty state would read as
+  // final and the list would pop in under it. The slices always settle it.
+  if (suggestions === undefined) return <Spinner />;
+
+  const hasSuggestions = suggestions.length > 0;
   return (
     <div
       className={`flex h-full flex-col overflow-y-auto pb-4 ${hasSuggestions ? 'gap-5 pt-6' : 'gap-8 pt-12'}`}
@@ -65,7 +69,7 @@ export function SuccessRateTab({
       <NoResults hasSuggestions={hasSuggestions} />
       {hasSuggestions && (
         <SimilarSubjectsList
-          suggestions={suggestions!}
+          suggestions={suggestions}
           onPick={(code) => setPreview({ course: courseCode, code })}
         />
       )}

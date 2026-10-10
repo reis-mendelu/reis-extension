@@ -6,6 +6,7 @@ import { fetchPersonProfile } from '../api/search/searchService';
 import { useAppStore } from '../store/useAppStore';
 import { logError } from '../utils/reportError';
 import { PersonPhoto } from './ui/PersonPhoto';
+import { isPersonProfileUrl } from '../utils/isPersonProfileUrl';
 import type { Person } from '../api/search/types';
 
 interface PersonHoverCardProps {
@@ -22,7 +23,6 @@ interface CardPosition {
   flip: boolean;
 }
 
-const PROFILE_BASE = 'https://is.mendelu.cz/auth/lide/clovek.pl';
 const HOVER_DELAY_MS = 450;
 const CARD_WIDTH = 360;
 
@@ -52,6 +52,7 @@ export function PersonHoverCard({ personId, children, className }: PersonHoverCa
   const [loading, setLoading] = useState(false);
   const [pos, setPos] = useState<CardPosition | null>(null);
   const isTouch = useAppStore((s) => s.isTouch);
+  const language = useAppStore((s) => s.language);
 
   const anchorRef = useRef<HTMLSpanElement>(null);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -212,7 +213,7 @@ export function PersonHoverCard({ personId, children, className }: PersonHoverCa
               </a>
             )}
             <a
-              href={`${PROFILE_BASE}?id=${personId};lang=cz`}
+              href={isPersonProfileUrl(personId, language)}
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-circle btn-sm btn-ghost text-base-content/40 hover:text-primary hover:bg-primary/10"

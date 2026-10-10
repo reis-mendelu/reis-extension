@@ -7,6 +7,7 @@ import {
   pdfPath,
   readIndex,
   recordOpen,
+  recordPositions,
   resolve,
   store,
 } from '../pdfCache';
@@ -130,6 +131,45 @@ describe('pdfCache index', () => {
       courseCode: 'A',
       link: 'l',
     });
+  });
+});
+
+describe('pdfCache reading position', () => {
+  it('records the page each key was left on, and ignores keys with no entry', async () => {
+    const { fs } = memFs();
+    await store(fs, 'k1', pdf(), { date: 'd', name: 'n' }, 1000);
+    await recordPositions(fs, { k1: 11, ghost: 3 });
+    const index = await readIndex(fs);
+    expect(index.k1?.lastPageIndex).toBe(11);
+    expect(index.ghost).toBeUndefined();
+  });
+
+  it('refuses a page index that is not a non-negative integer', async () => {
+    const { fs } = memFs();
+    await store(fs, 'k1', pdf(), { date: 'd', name: 'n' }, 1000);
+    await recordPositions(fs, { k1: 4 });
+    await recordPositions(fs, { k1: -1 });
+    await recordPositions(fs, { k1: 2.5 });
+    await recordPositions(fs, { k1: Number.NaN });
+    expect((await readIndex(fs)).k1?.lastPageIndex).toBe(4);
+  });
+
+  // The teacher re-uploading a deck (a typo fixed, a slide added) must not
+  // throw the student back to page 1. The reader clamps a page past the end.
+  it('keeps the page when new bytes are stored for the same key', async () => {
+    const { fs } = memFs();
+    await store(fs, 'k1', pdf(), { date: 'd1', name: 'n' }, 1000);
+    await recordPositions(fs, { k1: 7 });
+    await store(fs, 'k1', pdf(), { date: 'd2', name: 'n' }, 2000);
+    expect((await readIndex(fs)).k1).toMatchObject({ date: 'd2', lastPageIndex: 7 });
+  });
+
+  it('keeps the page through recordOpen', async () => {
+    const { fs } = memFs();
+    await store(fs, 'k1', pdf(), { date: 'd', name: 'n' }, 1000);
+    await recordPositions(fs, { k1: 2 });
+    await recordOpen(fs, 'k1', 3000);
+    expect((await readIndex(fs)).k1?.lastPageIndex).toBe(2);
   });
 });
 

@@ -1,6 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { buildSuggestionPayload, resolveScreen, submitSuggestion } from '../suggestions';
 import { supabase } from '@/services/spolky/supabaseClient';
+import { IndexedDBService } from '@/services/storage';
+import { useAppStore } from '@/store/useAppStore';
+import { setPlatform, __resetPlatformForTests } from '@/platform';
 
 describe('buildSuggestionPayload', () => {
   it('sends the reIS screen and never the host URL', () => {
@@ -120,5 +123,58 @@ describe('submitSuggestion', () => {
     } as never);
     const r = await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
     expect(r).toEqual({ ok: true });
+  });
+});
+
+// Prod, 5.3.0: every phone and iPad report said "map". The screen came from
+// `meta.reis_current_view`, which only the desktop tree's view state writes —
+// and on the phone the one thing that moves it is a map focus, so after a
+// single "show on map" the key said `map` for good. The phone's screen is its
+// tab; the desktop's is still the persisted view.
+describe('the screen a report records', () => {
+  const asPlatform = (kind: 'extension' | 'capacitor') =>
+    setPlatform({ kind } as unknown as Parameters<typeof setPlatform>[0]);
+
+  async function sentScreen(): Promise<unknown> {
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: 'ok', error: null } as never);
+    await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
+    return vi.mocked(supabase.rpc).mock.calls[0]![1]!.p_screen;
+  }
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    __resetPlatformForTests();
+    useAppStore.setState({ isTouch: false, isNarrow: false, devPhoneOverride: null });
+    // What a phone that once showed a lesson on the map has stored.
+    await IndexedDBService.set('meta', 'reis_current_view', 'map');
+  });
+
+  afterEach(() => {
+    __resetPlatformForTests();
+  });
+
+  it('on the phone app, is the tab — not a map focus left in storage', async () => {
+    asPlatform('capacitor');
+    useAppStore.setState({ mobileTab: 'calendar' });
+    expect(await sentScreen()).toBe('calendar');
+  });
+
+  it('on the phone app, names Profil, where most phone reports are written', async () => {
+    asPlatform('capacitor');
+    useAppStore.setState({ mobileTab: 'profile' });
+    expect(await sentScreen()).toBe('profile');
+  });
+
+  it('follows the phone tree in a browser too (touch + narrow)', async () => {
+    asPlatform('extension');
+    useAppStore.setState({ isTouch: true, isNarrow: true, mobileTab: 'exams' });
+    expect(await sentScreen()).toBe('exams');
+  });
+
+  it('on the desktop tree, is still the persisted view, whatever the phone tab says', async () => {
+    asPlatform('extension');
+    await IndexedDBService.set('meta', 'reis_current_view', 'studyPlan');
+    useAppStore.setState({ mobileTab: 'profile' });
+    expect(await sentScreen()).toBe('studyPlan');
   });
 });

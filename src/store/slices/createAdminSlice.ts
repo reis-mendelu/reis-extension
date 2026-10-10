@@ -2,8 +2,9 @@ import type { Session } from '@supabase/supabase-js';
 import type { AppSlice } from '../types';
 import { adminAuthClient } from '../../services/admin/authClient';
 import { toAuthEmail } from '../../services/admin/societyLogin';
-import { listMyPosts, type SpolkyEventRow } from '../../api/societyPosts';
+import type { SpolkyEventRow } from '../../api/societyPosts';
 import { listSocietyAccounts, type SocietyAccountRow } from '../../api/societyAccounts';
+import { loadSocietyPosts } from './admin/loadSocietyPosts';
 import { logError } from '../../utils/reportError';
 
 export type AdminRole = 'association' | 'reis_admin';
@@ -44,14 +45,19 @@ export interface AdminSlice {
 
 async function resolveAccount(
   userId: string
-): Promise<{ role: AdminRole | null; associationId: string | null }> {
+): Promise<{ role: AdminRole | null; associationId: string | null; failed: boolean }> {
   const { data, error } = await adminAuthClient
     .from('spolky_accounts')
     .select('role, association_id')
     .eq('user_id', userId)
     .maybeSingle();
   if (error) logError('Admin.resolveAccount', error);
-  return { role: (data?.role as AdminRole) ?? null, associationId: data?.association_id ?? null };
+  return {
+    role: (data?.role as AdminRole) ?? null,
+    associationId: data?.association_id ?? null,
+    // A failed lookup (offline, Supabase down) is not "no account".
+    failed: !!error,
+  };
 }
 
 // The society/admin auth session. Separate from IS-Mendelu data; hydrated at
@@ -104,6 +110,13 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   },
   setActiveAssociation: (id) => {
     get().resetAuthoringState();
+    // A different society's rows go at once, not when its own load lands: a
+    // slow read otherwise shows the old society's events, with edit/delete on
+    // them, under the new society's name.
+    if (id !== get().adminActiveAssociationId) {
+      set({ societyPosts: [] });
+      get().refreshSocietyMapEvents();
+    }
     set({ adminActiveAssociationId: id });
     void get().loadSocietyPosts();
   },
@@ -160,6 +173,7 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     return {};
   },
   adminLogout: async () => {
+    if (get().impersonation) await get().stopImpersonation();
     try {
       await adminAuthClient.auth.signOut();
     } catch (e) {
@@ -182,7 +196,11 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   loadAdminSession: async () => {
     const { data } = await adminAuthClient.auth.getSession();
     if (!data.session) return;
-    const { role, associationId } = await resolveAccount(data.session.user.id);
+    const { role, associationId, failed } = await resolveAccount(data.session.user.id);
+    // Could not ask (offline, Supabase down): keep the stored session and let the
+    // next boot retry. Signing out here logged an admin out on every boot
+    // without network — and dropped any active impersonation with it.
+    if (failed) return;
     if (role === null) {
       try {
         await adminAuthClient.auth.signOut();
@@ -212,20 +230,11 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
   loadSocietyAccounts: async () => {
     set({ societyAccounts: await listSocietyAccounts() });
   },
-  loadSocietyPosts: async () => {
-    const associationId = get().adminActiveAssociationId;
-    if (!associationId) {
-      set({ societyPosts: [] });
-      get().refreshSocietyMapEvents();
-      return;
-    }
-    const posts = await listMyPosts(associationId);
-    // Two picker changes in quick succession can resolve out of order. Without
-    // this guard the slower, older response wins and the console shows one
-    // society's events under another's name — and delete/edit act on THOSE
-    // rows, so the damage is to a society nobody is looking at.
-    if (get().adminActiveAssociationId !== associationId) return;
-    set({ societyPosts: posts });
-    get().refreshSocietyMapEvents();
-  },
+  // Implementation lives in ./admin/loadSocietyPosts (this file's line budget).
+  loadSocietyPosts: () =>
+    loadSocietyPosts({
+      activeAssociationId: () => get().adminActiveAssociationId,
+      setPosts: (posts) => set({ societyPosts: posts }),
+      refreshSocietyMapEvents: () => get().refreshSocietyMapEvents(),
+    }),
 });

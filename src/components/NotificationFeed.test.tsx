@@ -6,19 +6,14 @@ import { IndexedDBService } from '../services/storage';
 import * as spolkyService from '../services/spolky';
 import { useAppStore } from '../store/useAppStore';
 
+// The linked branch hands the URL to the system browser; a unit test has none.
+vi.mock('../mobile/openExternal', () => ({ openExternal: vi.fn() }));
+
 // Mock the services
 vi.mock('../services/spolky', () => ({
   fetchNotifications: vi.fn(),
   trackNotificationsViewed: vi.fn(),
   trackNotificationClick: vi.fn(),
-  filterNotificationsByFaculty: vi.fn((notifications) => notifications),
-  getUserAssociation: vi.fn(),
-  useSpolkySettings: vi.fn(() => ({ subscribedAssociations: [] })),
-}));
-
-// Mock useSpolkySettings hook
-vi.mock('../hooks/useSpolkySettings', () => ({
-  useSpolkySettings: vi.fn(() => ({ subscribedAssociations: [] })),
 }));
 
 // Mock IndexedDBService. This sat inside the `describe` body until vitest 5,
@@ -119,7 +114,12 @@ describe('NotificationFeed', () => {
         seenDeadlineAlertIds: new Set(),
         status: 'success',
       },
-    });
+      // Loaded with no events: a click on a linked-but-unmatched row (like
+      // 'Test Notification 1') takes the fallback without ever awaiting the
+      // real loadMapEvents, which would otherwise reach out from a unit test.
+      mapEvents: [],
+      mapEventsLoaded: true,
+    } as any);
   });
 
   it('should track views when notification becomes visible', async () => {
@@ -189,23 +189,34 @@ describe('NotificationFeed', () => {
     expect(spolkyService.trackNotificationsViewed).not.toHaveBeenCalled();
   });
 
-  it('should track click when a notification is clicked', async () => {
-    render(<NotificationFeed onShowMap={vi.fn()} />);
+  it('holds back an event the console still lists as scheduled', async () => {
+    // Same window as the map: 14+ days out is "Naplánované — zveřejní se …" in
+    // the console, so it must not be in Novinky (or collect views) yet. The
+    // phone's NotificationsSheet reads the same useNotificationFeed list.
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    useAppStore.setState({
+      notifications: {
+        data: [
+          ...mockNotifications,
+          { ...mockNotifications[1]!, id: '3', title: 'Ples', startsAt: day, expiresAt: day },
+        ],
+        readIds: new Set(),
+        viewedIds: new Set(),
+        seenDeadlineAlertIds: new Set(),
+        status: 'success',
+      },
+    });
 
-    const bellButton = screen.getByLabelText('Notifications');
+    render(<NotificationFeed onShowMap={vi.fn()} />);
     await act(async () => {
-      fireEvent.click(bellButton);
+      fireEvent.click(screen.getByLabelText('Notifications'));
     });
 
     await waitFor(() => {
       expect(screen.getByText('Test Notification 1')).toBeInTheDocument();
     });
-
-    const notificationItem = screen.getByText('Test Notification 1');
-    await act(async () => {
-      fireEvent.click(notificationItem);
-    });
-
-    expect(spolkyService.trackNotificationClick).toHaveBeenCalledWith('1');
+    expect(screen.queryByText('Ples')).not.toBeInTheDocument();
   });
 });

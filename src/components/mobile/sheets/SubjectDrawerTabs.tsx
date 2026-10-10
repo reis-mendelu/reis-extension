@@ -2,14 +2,19 @@ import { FileText, Users, BarChart3, BookOpen, ClipboardList } from 'lucide-reac
 import type { LucideIcon } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import type { DrawerTab } from '../../SubjectFileDrawer/types';
+import { SUBJECT_TAB_ORDER } from './subjectTabStep';
 
-const TABS: { id: DrawerTab; labelKey: string; icon: LucideIcon }[] = [
-  { id: 'files', labelKey: 'course.tabs.files', icon: FileText },
-  { id: 'classmates', labelKey: 'course.tabs.classmates', icon: Users },
-  { id: 'stats', labelKey: 'course.tabs.successRate', icon: BarChart3 },
-  { id: 'syllabus', labelKey: 'course.tabs.requirements', icon: BookOpen },
-  { id: 'zaznamnik', labelKey: 'course.tabs.zaznamnik', icon: ClipboardList },
-];
+const TAB_META: Record<DrawerTab, { labelKey: string; icon: LucideIcon }> = {
+  files: { labelKey: 'course.tabs.files', icon: FileText },
+  classmates: { labelKey: 'course.tabs.classmates', icon: Users },
+  stats: { labelKey: 'course.tabs.successRate', icon: BarChart3 },
+  syllabus: { labelKey: 'course.tabs.requirements', icon: BookOpen },
+  zaznamnik: { labelKey: 'course.tabs.zaznamnik', icon: ClipboardList },
+};
+
+// In the swipe's order, so the bar and the gesture cannot disagree about which
+// tab is next.
+const TABS = SUBJECT_TAB_ORDER.map((id) => ({ id, ...TAB_META[id] }));
 
 interface SubjectDrawerTabsProps {
   activeTab: DrawerTab;
@@ -34,7 +39,7 @@ export function SubjectDrawerTabs({
 
   return (
     // Below 360px the five labels no longer fit a fifth of the width each
-    // — the longest ("Záznámník") pushed the row to 325px on a 320px
+    // — the longest ("Záznamník") pushed the row to 325px on a 320px
     // screen and clipped itself. Tighter padding and a hair smaller label
     // keep all five visible; wider phones are unaffected.
     <div className="flex flex-shrink-0 items-end gap-0.5 border-b border-base-300 px-2 max-[359px]:gap-0 max-[359px]:px-1">

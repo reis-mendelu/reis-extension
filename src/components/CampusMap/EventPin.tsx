@@ -1,15 +1,13 @@
 import type { VenueGroup } from './eventHelpers';
 import { parseEventDate } from './eventHelpers';
-import { CATEGORY_EMOJI_SRC, CATEGORY_COLOR } from '../../data/eventCategories';
+import { CATEGORY_COLOR } from '../../data/eventCategories';
+import { eventEmojiSrc } from '../../data/eventEmoji';
 
 interface EventPinProps {
   group: VenueGroup;
   x: number; // centre screen x (container px) = exact coordinate
   y: number; // centre screen y
   selected: boolean;
-  // A society's own far-future event, only ever true in the admin console — rendered
-  // faded/dashed so the society can tell it's not yet visible to students.
-  scheduled?: boolean;
   locale: string;
   onSelect: (id: string) => void;
 }
@@ -22,18 +20,10 @@ interface EventPinProps {
 // label; the count/title only surface on hover. (x, y) is a Leaflet LAYER point:
 // the button centres there, and `leaflet-zoom-animated` lets that transform
 // transition with the basemap during a zoom.
-export function EventPin({
-  group,
-  x,
-  y,
-  selected,
-  scheduled = false,
-  locale,
-  onSelect,
-}: EventPinProps) {
+export function EventPin({ group, x, y, selected, locale, onSelect }: EventPinProps) {
   const lead = group.events[0];
   const count = group.events.length;
-  const emojiSrc = CATEGORY_EMOJI_SRC[lead.category];
+  const emojiSrc = eventEmojiSrc(lead);
   const color = CATEGORY_COLOR[lead.category];
   const dateLabel = parseEventDate(lead.date).toLocaleDateString(locale, {
     day: 'numeric',
@@ -50,13 +40,12 @@ export function EventPin({
     >
       {/* White circle, lean border + lift shadow, real colour emoji inside. */}
       <span
-        data-scheduled={scheduled}
         className="relative flex items-center justify-center rounded-full bg-white transition-transform group-hover:scale-110"
         style={{
           width: 30,
           height: 30,
-          opacity: scheduled ? 0.65 : 1,
-          border: scheduled ? '1.5px dashed rgba(0,0,0,0.3)' : '1px solid rgba(0,0,0,0.12)',
+          opacity: 1,
+          border: '1px solid rgba(0,0,0,0.12)',
           boxShadow: selected
             ? `0 0 0 2px ${color}, 0 1px 5px rgba(0,0,0,.3)`
             : '0 1px 4px rgba(0,0,0,.28)',

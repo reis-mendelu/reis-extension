@@ -17,3 +17,14 @@ export function usePhoneViewport(): boolean {
   const isNativeApp = getPlatform().kind === 'capacitor';
   return resolvePhoneViewport({ isTouch, isNarrow, isNativeApp, override });
 }
+
+/**
+ * The same answer, read once outside React — for code that runs on a tap
+ * rather than on a render (a feedback report asking which screen it came from).
+ * Same inputs as the hook, so the two cannot disagree about which tree is up.
+ */
+export function readPhoneViewport(): boolean {
+  const { isTouch, isNarrow, devPhoneOverride } = useAppStore.getState();
+  const isNativeApp = getPlatform().kind === 'capacitor';
+  return resolvePhoneViewport({ isTouch, isNarrow, isNativeApp, override: devPhoneOverride });
+}

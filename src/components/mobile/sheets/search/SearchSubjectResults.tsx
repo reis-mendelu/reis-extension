@@ -3,6 +3,8 @@ import { SearchResultItem } from '../../../SearchBar/SearchResultItem';
 import type { SearchResult } from '../../../SearchBar/types';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { NoResults, Searching } from './SearchStates';
+import { useAppStore } from '../../../../store/useAppStore';
+import { courseDisplayName } from '../../../../utils/courseDisplayName';
 
 export interface SearchSubjectResultsProps {
   subjectResults: SearchResult[];
@@ -44,6 +46,14 @@ export function SearchSubjectResults({
   noResultsText,
 }: SearchSubjectResultsProps) {
   const { t } = useTranslation();
+  const nicknames = useAppStore((s) => s.courseNicknames);
+  // A subject the student renamed is listed by that name, as everywhere else
+  // on the phone; the code beside it is what ties it to the IS name typed.
+  // Display only — the row still opens with the result IS returned.
+  const shown = (result: SearchResult): SearchResult => ({
+    ...result,
+    title: courseDisplayName(nicknames, result.subjectCode, result.title),
+  });
   return (
     <>
       {/* The catalogue search is scoped to the student's own faculty by
@@ -99,7 +109,7 @@ export function SearchSubjectResults({
             <SearchResultItem
               key={result.id}
               id={optionId(i)}
-              result={result}
+              result={shown(result)}
               isRecent={false}
               isSelected={i === selectedIndex}
               onMouseEnter={() => {}}
@@ -121,7 +131,7 @@ export function SearchSubjectResults({
             <SearchResultItem
               key={result.id}
               id={optionId(i)}
-              result={result}
+              result={shown(result)}
               isRecent={false}
               isSelected={i === selectedIndex}
               onMouseEnter={() => {}}

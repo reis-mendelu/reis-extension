@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: 25 September 2026**
+**Last Updated: 10 October 2026**
 
 reIS is a student-built project that simplifies the Mendel University in Brno
 Information System (IS Mendelu). It is a browser extension (Chrome, Edge,
@@ -12,7 +12,8 @@ application of Mendel University.
 Your name, personal number, study details, timetable, grades, assessment, exam
 dates, courses, materials and submission folders are fetched from MENDELU using
 your own session — the way your browser would — and kept on your device.
-**None of it reaches us. We run no server that holds it.** It moves only between
+**None of it reaches us, apart from two group labels on the daily count below — your faculty
+and your study programme's base code. We run no server that holds it.** It moves only between
 your device and MENDELU, both ways, since signing up for an exam sends it back.
 Uninstalling removes the local copy.
 
@@ -30,16 +31,20 @@ yourself — see *Report attachments* below.
 <!-- BEGIN generated:flows (npm run privacy:generate) -->
 | what | when | what it carries |
 |---|---|---|
-| Daily count | once a day | a random install identifier — a UUID unrelated to you. Counts **installs, not people**, plus faculty and platform as group labels. |
+| Daily count | once a day | a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI) and platform as group labels. The survey and the feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation. |
 | Feedback | you press send | your message, any contact detail you type, the screen name, app version, browser, window size |
 | Report attachments | only what you add to a report, when you press send | a **screenshot you pick** yourself, re-encoded on your device so photo metadata and location are removed; and, **only if you tick the box**, the recent reIS errors and warnings from this session, with link parameters, email addresses, long numbers and coordinates already blanked out, plus platform, OS version, language and sync status. **Not linked to the install identifier.** |
-| In-app survey, event RSVP | you answer / RSVP | the same random install identifier |
+| In-app survey | you answer | the same random install identifier |
 | Society post view or click | you open one | a post id |
 | Map event opened | you open an event on the campus map | that event's id and nothing else — a counter on the event, with no identifier of yours attached |
 | Map used for 3 seconds | at most once a day, after three seconds on the map | the random install identifier and the fixed `map_dwell_3s` label |
 | eduroam network configured | the app itself saves the eduroam network (phone) | the random install identifier and the fixed `eduroam_wifi_configured` label |
 | eduroam profile handed over | a profile is prepared for you to install (Mac, Windows) | the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it |
 <!-- END generated:flows -->
+
+Which partner company you are shown, if any, is decided on your device from your
+faculty and study programme. Partners never receive anything about you; they see
+only aggregate counts of views, clicks and map views for their own events.
 
 In the Firefox extension each of these is optional and Firefox asks you for it:
 the usage count and counters follow the technical-data switch in `about:addons`,
@@ -71,12 +76,18 @@ else.
 
 ## Permissions
 
-**Android:** internet; notifications (so a download can say it finished); Wi-Fi
-state, only for optional one-tap eduroam, where Android's own dialog saves the
-network. **iOS:** the camera, only if you choose to take a photo to attach to a
-problem report — iOS asks you first, and the photo goes into the report form
-like any other picture. **Neither app requests location** — the campus map shows
-the campus, not you.
+**Android:** internet; notifications (so a download can say it finished);
+running at startup and keeping the device awake briefly, which come with the
+same notifications library — reIS no longer schedules event reminders, and these
+two leave with the library in a later release; Wi-Fi state, only for optional
+one-tap eduroam, where Android's own dialog saves the network.
+
+**iOS:** the camera, only if you choose to take a photo — to attach to a problem
+report, where the photo goes into the report form like any other picture, or, on
+an iPad, to put on a page of your notes, where it stays on the device with your
+ink. iOS asks you first. reIS no longer asks for notifications on iOS.
+
+**Neither app requests location** — the campus map shows the campus, not you.
 
 ## Your control
 

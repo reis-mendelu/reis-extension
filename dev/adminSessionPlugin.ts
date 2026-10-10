@@ -7,6 +7,7 @@ import type { Plugin } from 'vite';
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '../src/services/supabase/config';
 import { ADMIN_SESSION_ROUTE } from './adminSessionRoute';
+import { toAuthEmail } from '../src/services/admin/societyLogin';
 
 /**
  * Dev-only: signs the webapp harness in as a real society / reIS-admin account
@@ -23,7 +24,10 @@ import { ADMIN_SESSION_ROUTE } from './adminSessionRoute';
  * have put there anyway.
  *
  * Credentials come from the environment, so any source works — the gitignored
- * root .env (REIS_ADMIN_EMAIL / REIS_ADMIN_PASSWORD) or an explicit export:
+ * root .env (REIS_ADMIN_EMAIL / REIS_ADMIN_PASSWORD) or an explicit export.
+ * Despite the name, REIS_ADMIN_EMAIL takes the LOGIN a society types into the
+ * console (`reis`, `supef`); it is mapped to the auth address exactly as the
+ * console maps it (toAuthEmail), so a full address also still works:
  *
  *   REIS_ADMIN_EMAIL=… REIS_ADMIN_PASSWORD=… npm run dev:web:admin
  *
@@ -82,7 +86,16 @@ export function reisAdminSessionPlugin(): Plugin {
         const client = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
           auth: { persistSession: false, autoRefreshToken: false },
         });
-        const { data, error } = await client.auth.signInWithPassword({ email, password });
+        let address: string;
+        try {
+          address = toAuthEmail(email);
+        } catch {
+          console.warn(`[reis] dev admin login in REIS_ADMIN_EMAIL is not a valid username`);
+          res.statusCode = 502;
+          res.end(JSON.stringify({ error: 'sign_in_failed' }));
+          return;
+        }
+        const { data, error } = await client.auth.signInWithPassword({ email: address, password });
 
         if (error || !data.session) {
           // Report only that it failed. The message can echo the address back,

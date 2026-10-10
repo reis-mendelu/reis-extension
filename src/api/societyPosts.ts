@@ -2,12 +2,14 @@ import { adminAuthClient } from '@/services/admin/authClient';
 import { logError } from '@/utils/reportError';
 import { DEV_SOCIETY, devSocietyStore } from '@/utils/mock/devSociety';
 
-export type VenueKind = 'campus' | 'online' | 'offcampus';
+export type VenueKind = 'campus' | 'online' | 'offcampus' | 'tba';
 
 export interface PostInput {
   title: string;
   body: string;
   category: string; // EventCategory value
+  /** Twemoji code from src/data/eventEmoji; category is its fallback. */
+  emoji?: string | null;
   date: string; // YYYY-MM-DD
   endDate?: string | null;
   time?: string | null;
@@ -30,6 +32,7 @@ export interface SpolkyEventRow {
   title: string;
   body: string | null;
   category: string;
+  emoji?: string | null;
   date: string;
   end_date: string | null;
   time: string | null;
@@ -42,6 +45,10 @@ export interface SpolkyEventRow {
   created_by: string | null;
   visible_from: string | null;
   subscribers_only: boolean;
+  /** Novinky rows that scrolled into view, once per device (markNotificationViewed). */
+  view_count?: number;
+  /** Taps on the Novinky row, every tap (useOpenNotification). */
+  click_count?: number;
 }
 
 // Pure camelCase → snake_case mapping, unit-testable without the network.
@@ -52,6 +59,7 @@ export function toRow(input: PostInput, associationId: string, createdBy: string
     title: input.title,
     body: input.body,
     category: input.category,
+    emoji: input.emoji ?? null,
     date: input.date,
     end_date: input.endDate ?? null,
     time: input.time ?? null,
@@ -107,7 +115,9 @@ export async function deletePost(id: string): Promise<{ error?: string }> {
   return {};
 }
 
-export async function listMyPosts(associationId: string): Promise<SpolkyEventRow[]> {
+/** The society's own events, or null when the read failed — not [], which
+ *  would read as "this society has no events" and wipe the list on a blip. */
+export async function listMyPosts(associationId: string): Promise<SpolkyEventRow[] | null> {
   if (DEV_SOCIETY) return devSocietyStore.list(associationId);
   const { data, error } = await adminAuthClient
     .from('spolky_events')
@@ -116,7 +126,7 @@ export async function listMyPosts(associationId: string): Promise<SpolkyEventRow
     .order('date', { ascending: true });
   if (error) {
     logError('Admin.listMyPosts', error);
-    return [];
+    return null;
   }
   return (data ?? []) as SpolkyEventRow[];
 }

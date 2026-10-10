@@ -18,6 +18,7 @@ import { DownloadProgress } from '../ui/DownloadProgress';
 import type { DownloadTick } from '../../hooks/ui/readBlobWithProgress';
 import { isPdfFile } from './utils/isPdfFile';
 import type { PdfRowMeta } from './types';
+import type { FileRowHint } from '../../utils/contentDisposition';
 
 export interface FileRowActionsProps {
   subFile: FileAttachment;
@@ -31,7 +32,7 @@ export interface FileRowActionsProps {
   downloadTick: DownloadTick | null;
   onToggleNote: () => void;
   onViewPdf?: (link: string, meta: PdfRowMeta) => void;
-  onDownloadSingle?: (link: string) => void;
+  onDownloadSingle?: (link: string, row?: FileRowHint) => void;
 }
 
 export function FileRowActions({
@@ -91,7 +92,7 @@ export function FileRowActions({
           data-testid={`file-download-${subFile.link}`}
           onClick={(e) => {
             e.stopPropagation();
-            onDownloadSingle(subFile.link);
+            onDownloadSingle(subFile.link, { name: displayName, type: subFile.type });
           }}
           className="btn btn-ghost btn-xs btn-square text-base-content/40 hover:text-base-content/70"
           title={downloadLabel}

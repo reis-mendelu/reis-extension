@@ -4,13 +4,13 @@ import type L from 'leaflet';
 import { useVisibleMapEvents } from '../../hooks/useVisibleMapEvents';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { groupEventsByVenue, type VenueGroup } from './eventHelpers';
+import { groupEventsByVenue, parseEventDate, type VenueGroup } from './eventHelpers';
 import { subscribeMapInstance } from './mapInstance';
 import { EVENTS_PANE, ensurePane } from './mapPanes';
 import { EventPin } from './EventPin';
 import { DraftPin } from './DraftPin';
-import { societyById } from '../../data/societies';
-import { isScheduledEvent } from './eventWindow';
+import { useSociety } from '../../hooks/useSociety';
+import { isSoonEvent, localTodayIso } from './eventWindow';
 import { trackMapEventView } from '../../api/featureUsage';
 
 interface Placed {
@@ -44,19 +44,40 @@ type ZoomAnimMap = {
 // the exact positions. Pins only show in campus overview, not floor-view.
 export function EventLayer() {
   // One layer, two hosts: the student map draws the public feed, the admin
-  // console's map draws the active society's own events (including the ones
-  // still scheduled and hidden from students).
+  // console's map draws the active society's own events (all of them, whatever
+  // their date — the student pins keep to the soon horizon).
   const authoring = useAppStore((s) => s.adminConsoleOpen);
   // The student's own view of the public feed: a society can mark an event for
   // its followers only, and this is where that is honoured.
   const publicEvents = useVisibleMapEvents();
   const societyEvents = useAppStore((s) => s.societyMapEvents);
-  // NOT filtered while authoring. A society composing an event has to see the
-  // one it just marked for its followers — hiding it from its own author would
-  // read as the publish having failed.
-  const events = authoring ? societyEvents : publicEvents;
-  const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const selection = useAppStore((s) => s.mapSelection);
+  const selectedId = selection?.kind === 'event' ? selection.event.id : null;
+  // Students' pins show what is on SOON: the catalog list carries the whole
+  // semester, and a semester of pins would bury the campus. A society authoring
+  // in the console still sees every one of its own events. The SELECTED event
+  // is pinned whatever its date: a "Později" row or a calendar RSVP block flies
+  // the camera to it, and without its pin the fly lands on an empty map.
+  // Memoized: `.filter()` makes a new array every call, and the `groups` memo
+  // and its re-project effect below key off this reference — an unmemoized
+  // filter here reruns them every render and never settles. Keyed on the
+  // selected EVENT's id, not the selection object: a new selection object for
+  // the same event (or a room picked with no event selected) does not rebuild
+  // it; moving off an event does, since its id stops being exempt.
+  // "Soon" is measured from the store's clock, selected as the local DAY so the
+  // pulse's per-second tick re-renders nothing: a map left open across
+  // midnight drops yesterday's pins and gains the day that came into range.
+  const todayIso = useAppStore((s) => localTodayIso(s.now));
+  const events = useMemo(
+    () =>
+      authoring
+        ? societyEvents
+        : publicEvents.filter(
+            (e) => isSoonEvent(e, parseEventDate(todayIso)) || e.id === selectedId
+          ),
+    [authoring, societyEvents, publicEvents, selectedId, todayIso]
+  );
+  const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const focusEvent = useAppStore((s) => s.focusEventById);
   // The in-progress event location: only meaningful while the composer is open.
   const composerOpen = useAppStore((s) => s.composerOpen);
@@ -78,7 +99,8 @@ export function EventLayer() {
     if (!authoring) void trackMapEventView(id);
     focusEvent(id);
   };
-  const draftColor = (assocId ? societyById(assocId)?.color : null) ?? '#0046a0';
+  const draftSociety = useSociety(assocId);
+  const draftColor = draftSociety?.color ?? '#0046a0';
   // Events are loaded by the store (initializeStore + language handlers), not a
   // fetch-in-useEffect here — this layer stays presentational over store state.
 
@@ -190,7 +212,6 @@ export function EventLayer() {
   // The draft pin can be the only thing to show (placing a first event with no
   // saved events yet), so don't bail on an empty `placed` when a draft exists.
   if (activeBuildingId !== null || !pane || (placed.length === 0 && !draftPt)) return null;
-  const selectedId = selection?.kind === 'event' ? selection.event.id : null;
 
   return createPortal(
     <>
@@ -201,7 +222,6 @@ export function EventLayer() {
           x={p.x}
           y={p.y}
           selected={p.group.events.some((e) => e.id === selectedId)}
-          scheduled={authoring && p.group.events.some((e) => isScheduledEvent(e.date))}
           locale={language === 'en' ? 'en-US' : 'cs-CZ'}
           onSelect={selectEvent}
         />

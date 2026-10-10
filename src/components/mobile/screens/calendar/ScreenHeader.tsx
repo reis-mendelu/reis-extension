@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { RotateCcw } from 'lucide-react';
 import { HeaderActions } from '../HeaderActions';
 
 export interface ScreenHeaderProps {
@@ -13,7 +14,18 @@ export interface ScreenHeaderProps {
    * targets plus a text button overflows a 320px viewport.
    */
   below?: ReactNode;
+  /**
+   * Makes the title itself a control, with a return glyph beside it — the
+   * calendar's way back to today. A glyph, not a pill: the header is full at a
+   * date and three actions, and "Dnes" beside the date never fit at 375.
+   */
+  titleAction?: { label: string; onClick: () => void };
+  /** A round action of this screen's own, first in the action cluster. */
+  leadingAction?: ReactNode;
 }
+
+const TITLE_CLASS =
+  'truncate font-display text-2xl font-extrabold tracking-tight max-[359px]:text-xl';
 
 /**
  * The shared screen title block: small eyebrow above a display-face title,
@@ -24,7 +36,13 @@ export interface ScreenHeaderProps {
  * three destinations were reachable from one of five tabs; making the actions
  * part of the header means a screen cannot render one without them.
  */
-export function ScreenHeader({ eyebrow, title, below }: ScreenHeaderProps) {
+export function ScreenHeader({
+  eyebrow,
+  title,
+  below,
+  titleAction,
+  leadingAction,
+}: ScreenHeaderProps) {
   return (
     // The top padding carries --safe-top because this is the topmost element on
     // every mobile screen and targetSdk 36 forces edge-to-edge: without it the
@@ -45,11 +63,27 @@ export function ScreenHeader({ eyebrow, title, below }: ScreenHeaderProps) {
           {eyebrow && (
             <span className="truncate text-sm font-medium text-base-content/60">{eyebrow}</span>
           )}
-          <span className="truncate font-display text-2xl font-extrabold tracking-tight max-[359px]:text-xl">
-            {title}
-          </span>
+          {titleAction ? (
+            <button
+              type="button"
+              aria-label={`${title}, ${titleAction.label}`}
+              onClick={titleAction.onClick}
+              // Padding pulled back by an equal negative margin: a 44px target
+              // without the header growing a line taller than the other tabs.
+              className="-my-1.5 flex min-w-0 items-center gap-1 py-1.5 text-left"
+            >
+              <span className={TITLE_CLASS}>{title}</span>
+              <RotateCcw
+                size={16}
+                strokeWidth={2.5}
+                className="flex-shrink-0 text-[var(--tone-primary)]"
+              />
+            </button>
+          ) : (
+            <span className={TITLE_CLASS}>{title}</span>
+          )}
         </div>
-        <HeaderActions />
+        <HeaderActions leading={leadingAction} />
       </div>
       {below}
     </div>

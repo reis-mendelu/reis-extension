@@ -196,6 +196,23 @@ describe('stale-association (#261)', () => {
   });
 });
 
+describe('renewal-blocked', () => {
+  /**
+   * iOS only. IS holds a newer certificate than the one the installed eduroam
+   * configuration uses, and the device is connected, so `apply` answered
+   * `alreadyAssociated` and replaced nothing. The old build reported this as
+   * `already-configured` — after swapping the keychain items the old
+   * configuration still pointed at, which is what broke the next reconnect.
+   */
+  it('accepts the outcome instead of failing it closed', () => {
+    expect(normalizeOutcome({ outcome: 'renewal-blocked' })).toBe('renewal-blocked');
+  });
+
+  it('is not a success: the renewed certificate was not installed', () => {
+    expect(isEduroamConfigured('renewal-blocked')).toBe(false);
+  });
+});
+
 /**
  * The three surfaces that ask "is eduroam set up?" each spelled the list out,
  * so a fourth success reached a `done` status no banner recognised and the card
@@ -209,7 +226,7 @@ describe('isEduroamConfigured', () => {
   // #261: iOS answers alreadyAssociated whenever the device is ON the SSID,
   // configuration or not — nothing is installed on that path, and calling it
   // configured is the bug that sent students to campus believing it worked.
-  it.each(['failed', 'cancelled', 'stale-association', null] as const)(
+  it.each(['failed', 'cancelled', 'stale-association', 'renewal-blocked', null] as const)(
     'does not count %s',
     (outcome) => {
       expect(isEduroamConfigured(outcome)).toBe(false);

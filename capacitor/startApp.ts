@@ -9,7 +9,7 @@ import { App as CapApp } from '@capacitor/app';
 import { resolveNativeEduroamSupport } from '@/mobile/eduroamNative';
 import { installMobileActionHandler } from '@/mobile/actionHandler';
 import { installExternalLinkHandler } from '@/mobile/openExternal';
-import { installReminderTapHandler } from '@/mobile/reminderTap';
+import { installCalendarResumeReset } from '@/mobile/calendarResume';
 import { promptSessionRecovery } from '@/mobile/sessionRecovery';
 import { setSessionExpiredHandler } from '@/services/sessionExpiry';
 import { setDemoErrorHandler } from '@/utils/reportError';
@@ -81,6 +81,13 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
     .getState()
     .hydratePullHint({ demo })
     .catch(() => {});
+  // And the calendar's day/week choice, so its first frame is the saved view
+  // rather than the day view swapping to the week a tick in — or, when nothing
+  // is saved, already knows to offer the chooser.
+  await useAppStore
+    .getState()
+    .hydrateCalendarView({ demo })
+    .catch(() => {});
 
   // Dynamic import on purpose: this module renders the React root on
   // evaluation, so a static import would boot the app BEFORE a session exists
@@ -89,12 +96,9 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   appMounted = true;
   await SplashScreen.hide();
 
-  // After the mount, not before the root like the handlers above: a tap that
-  // launched the app is held by the plugin until a listener attaches, so it
-  // still arrives — and arriving after the boot means nothing the boot does
-  // can put the calendar back over the event it opened. Before the demo
-  // return, since an RSVP in the demo schedules a real reminder too.
-  installReminderTapHandler();
+  // Before the demo return: the reviewer's calendar goes back to today on a
+  // reopen too. Nothing above sets the calendar's day, so nothing races it.
+  installCalendarResumeReset();
 
   // Demo data is seeded, static and complete. Syncing would only produce
   // failed IS requests, and fetchWithAuth throws DemoModeError anyway.
@@ -107,6 +111,7 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // startSyncService fires an immediate boot sync and then sets the
   // SYNC_INTERVAL timer — no separate first call needed.
   const { requestSync, startSyncService } = await import('@/injector/syncGate');
+  const { MIN_SYNC_GAP } = await import('@/injector/config');
   startSyncService();
 
   // IS's session is a sliding inactivity window, so a returning student is
@@ -118,5 +123,18 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // absence still syncs.
   void CapApp.addListener('resume', () => {
     void requestSync('resume');
+    // Fetch-once-at-startup is stale forever in a long-lived Capacitor process:
+    // a society's new, moved or cancelled event would never reach it. Gap-limited
+    // like the IS sync, so tabbing away and back does not refetch every time.
+    // The societies catalog rides on this too — reloadMapEvents loads it beside
+    // the events — so it gets the same gap and no request of its own.
+    void useAppStore.getState().refreshMapEventsIfStale(MIN_SYNC_GAP);
+    // The jídelníček has the same fetch-once problem, worse: a boot fetch that
+    // failed (the app started while the phone dozed) was never retried, so the
+    // chef hat and the menu card stayed gone for the session.
+    void useAppStore.getState().refreshMenuIfStale(MIN_SYNC_GAP);
+    // A second chance for `loadContext()` if it lost the boot race against
+    // `getUserParams()` — the event audience reads the faculty it sets.
+    if (!useAppStore.getState().contextResolved) void useAppStore.getState().loadContext();
   });
 }

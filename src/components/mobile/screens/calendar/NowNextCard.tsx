@@ -2,30 +2,29 @@ import type { NowNext } from '../../../../utils/mobile/nowNext';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useAppStore } from '../../../../store/useAppStore';
 import { localizedCourseName } from '../../../../utils/localizedLesson';
+import { lessonDisplayName } from '../../../../utils/courseDisplayName';
 import { lessonPlace } from '../../../../utils/lessonPlace';
 
 export function NowNextCard({ data, onRoute }: { data: NowNext; onRoute: () => void }) {
   const { t, language } = useTranslation();
   const { current, next, elapsedPct, minutesLeft } = data;
-  const mapEvents = useAppStore((s) => s.mapEvents);
-  const onMapLabel = t('map.venueOnMap');
-  const currentPlace = lessonPlace(current, language, mapEvents, onMapLabel);
-  const currentName = localizedCourseName(current, language);
-  // The agenda row's rule (AgendaEvent): the short name, so no titles; an
-  // answered society event has no teacher, and who runs it goes there instead.
-  const teacher =
-    current.teachers[0]?.shortName || current.teachers[0]?.fullName || currentPlace.host;
+  const currentPlace = lessonPlace(current, language);
+  const nicknames = useAppStore((s) => s.courseNicknames);
+  const currentName = lessonDisplayName(nicknames, current, localizedCourseName(current, language));
+  // The agenda row's rule (AgendaEvent): the short name, so no titles.
+  const teacher = current.teachers[0]?.shortName || current.teachers[0]?.fullName;
   const currentLine = [currentPlace.label, teacher].filter(Boolean).join(' · ');
-  const nextName = next ? localizedCourseName(next, language) : '';
-  const nextPlace = next ? lessonPlace(next, language, mapEvents, onMapLabel) : null;
+  const nextName = next
+    ? lessonDisplayName(nicknames, next, localizedCourseName(next, language))
+    : '';
+  const nextPlace = next ? lessonPlace(next, language) : null;
   // "Kam jít" points at the RUNNING lesson's room — the lesson this card is
   // about. It used to point at the next one, so a student opening the app
   // late for the lecture on now was walked to the one after it instead.
   //
   // Offered only when there is a place to point at: a lesson held online, or a
   // room MENDELU's map does not publish, would otherwise take the student to
-  // an empty campus overview. An answered society event has one whenever it
-  // has a coordinate.
+  // an empty campus overview.
   const routable = currentPlace.routable;
 
   return (

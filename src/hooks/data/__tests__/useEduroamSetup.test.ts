@@ -186,4 +186,22 @@ describe('useEduroamSetup', () => {
     expect(result.current.status).toBe('done');
     expect(result.current.outcome).toBe('saved');
   });
+
+  // iOS kept the old configuration because the device is on eduroam. The
+  // renewed certificate was not installed, so this must not land on `done`.
+  it('does not read a blocked renewal as done', async () => {
+    const native = await import('../../../mobile/eduroamNative');
+    vi.mocked(native.canConfigureEduroamNatively).mockReturnValue(true);
+    vi.mocked(native.nativeEduroamDeps.configure).mockResolvedValue({
+      outcome: 'renewal-blocked',
+    });
+    const { result } = renderHook(() => useEduroamSetup());
+
+    await act(async () => {
+      await result.current.run('ios');
+    });
+
+    expect(result.current.status).toBe('error');
+    expect(result.current.outcome).toBe('renewal-blocked');
+  });
 });
