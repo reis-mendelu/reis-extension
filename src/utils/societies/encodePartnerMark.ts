@@ -1,3 +1,5 @@
+import { drawPng, fitUnderLimit } from './fitUnderLimit';
+
 export const MARK_MAX_W = 480;
 export const MARK_MAX_H = 160;
 
@@ -17,21 +19,17 @@ export function fitWithin(
  * A partner's wide colour mark (spec 2026-10-09): aspect kept, never cropped
  * square like a society logo, at most 480×160, PNG so transparency survives.
  * Re-drawing through a canvas drops the original's metadata, as
- * encodeSocietyLogo does.
+ * encodeSocietyLogo does. 480×160 RGBA is over the bucket's limit even raw, so
+ * a noisy mark steps down until it fits; null = it never did.
  */
-export async function encodePartnerMark(file: Blob): Promise<Blob> {
+export async function encodePartnerMark(file: Blob): Promise<Blob | null> {
   const bitmap = await createImageBitmap(file);
   try {
-    const { w, h } = fitWithin(bitmap.width, bitmap.height, MARK_MAX_W, MARK_MAX_H);
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('2d context unavailable');
-    ctx.drawImage(bitmap, 0, 0, w, h);
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
-    if (!blob) throw new Error('toBlob returned null');
-    return blob;
+    return await fitUnderLimit((scale) => {
+      const max = { w: MARK_MAX_W * scale, h: MARK_MAX_H * scale };
+      const { w, h } = fitWithin(bitmap.width, bitmap.height, max.w, max.h);
+      return drawPng(w, h, (ctx) => ctx.drawImage(bitmap, 0, 0, w, h));
+    });
   } finally {
     bitmap.close();
   }

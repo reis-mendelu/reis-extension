@@ -26,12 +26,15 @@ export function useExamsData() {
     return res;
   }, [exams]);
 
+  // A sync only means "still loading" while exams have no answer yet — the
+  // phone's ExamsScreen rule. A bare isSyncing flashed a skeleton over a list
+  // IS had already said was empty, on every background sync.
   const waiting =
     exams.length === 0 &&
     (status === 'loading' ||
       status === 'idle' ||
       (!handshakeDone && !handshakeTimedOut) ||
-      isSyncing);
+      (isSyncing && !examsAnswered));
 
   // The phone's ExamsScreen rule: a settled sync that never got an answer about
   // exams, with nothing cached, failed — it did not find "none" (Návrhy #26).

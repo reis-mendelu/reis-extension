@@ -8,8 +8,14 @@ import { useTranslation } from '../../hooks/useTranslation';
 export function SocietyPicker() {
   const active = useAppStore((s) => s.adminActiveAssociationId);
   const setActive = useAppStore((s) => s.setActiveAssociation);
+  const catalog = useAppStore((s) => s.societies);
   const { t } = useTranslation();
   const societies = useListedSocieties();
+  // The society being authored stays listed after it is hidden: without its
+  // option the controlled select shows another society while every write
+  // still targets this one.
+  const current = active ? catalog[active] : undefined;
+  const hidden = current && !current.isActive ? current : null;
 
   return (
     <select
@@ -26,6 +32,9 @@ export function SocietyPicker() {
           {s.name}
         </option>
       ))}
+      {hidden && (
+        <option value={hidden.id}>{`${hidden.name} · ${t('admin.societies.hidden')}`}</option>
+      )}
     </select>
   );
 }

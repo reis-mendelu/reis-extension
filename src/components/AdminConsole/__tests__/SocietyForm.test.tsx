@@ -97,6 +97,18 @@ describe('SocietyForm (failures)', () => {
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save|uložit/i })).toBeEnabled();
   });
+
+  it('names a logo too large for the bucket, not a generic upload failure', async () => {
+    saveSociety.mockResolvedValueOnce({ error: 'logo_too_large' });
+    render(<SocietyForm onDone={() => {}} />);
+    fillNew('kino');
+    expect(await screen.findByRole('alert')).toHaveTextContent(/too large|příliš velké/i);
+  });
+
+  it('caps the name input at the 80 characters the database allows', () => {
+    render(<SocietyForm onDone={() => {}} />);
+    expect(screen.getByLabelText(/^name$|^název$/i)).toHaveAttribute('maxLength', '80');
+  });
 });
 
 describe('SocietyForm (edit)', () => {

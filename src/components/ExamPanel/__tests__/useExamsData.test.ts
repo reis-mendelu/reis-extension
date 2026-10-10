@@ -110,3 +110,32 @@ describe('the desktop exam panel while its retry runs', () => {
     expect(result.current.showSkeleton).toBe(false);
   });
 });
+
+/**
+ * The phone's ExamsScreen shows its skeleton during a sync only while exams
+ * are unanswered (`isSyncing && !syncLoaded.exams`). The desktop panel took a
+ * bare `isSyncing`, so every background sync flashed a skeleton over a list
+ * IS had already said was empty.
+ */
+describe('the desktop exam panel during a background sync', () => {
+  beforeEach(() => {
+    useAppStore.setState((s) => ({
+      exams: { ...s.exams, data: [], status: 'success' },
+      firstSyncSettled: true,
+      syncLoaded: { exams: true },
+      examsRefreshing: false,
+      syncStatus: { ...s.syncStatus, isSyncing: true, handshakeDone: true },
+    }));
+  });
+
+  it('keeps a known-empty list on screen, without a skeleton', () => {
+    const { result } = renderHook(() => useExamsData());
+    expect(result.current.showSkeleton).toBe(false);
+  });
+
+  it('shows the skeleton while exams have no answer yet', () => {
+    useAppStore.setState({ syncLoaded: {}, firstSyncSettled: false });
+    const { result } = renderHook(() => useExamsData());
+    expect(result.current.showSkeleton).toBe(true);
+  });
+});

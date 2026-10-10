@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeInstagram } from '../societyFormRules';
+import { normalizeInstagram, validateSocietyDraft } from '../societyFormRules';
 
 describe('normalizeInstagram', () => {
   it('strips @ and whitespace', () =>
@@ -37,4 +37,31 @@ describe('normalizeInstagram', () => {
     'https://www.instagram.com/tv/Cxyz123/',
     'https://www.instagram.com/direct/inbox/',
   ])('rejects the non-profile URL %s', (url) => expect(normalizeInstagram(url)).toBe('invalid'));
+});
+
+// societies_catalog.sql: name is 1..80 characters after btrim. Over that, the
+// write failed as a generic save_failed.
+describe('validateSocietyDraft: name length', () => {
+  const draft = (name: string) => ({
+    id: 'kino',
+    name,
+    shortName: 'KINO',
+    color: '#123456',
+    hasLogo: true,
+  });
+  it('accepts 80 characters', () =>
+    expect(validateSocietyDraft(draft('x'.repeat(80)), true, {})).toBeNull());
+  it('rejects 81 characters with its own message', () =>
+    expect(validateSocietyDraft(draft('x'.repeat(81)), true, {})).toBe('errors.nameTooLong'));
+  it('measures after trimming, as the database does', () =>
+    expect(validateSocietyDraft(draft(`  ${'x'.repeat(80)}  `), true, {})).toBeNull());
+  // btrim strips spaces only, and length() counts code points, not UTF-16 units.
+  it('counts a non-breaking space at the end, as btrim keeps it', () =>
+    expect(validateSocietyDraft(draft(`${'x'.repeat(80)}\u00a0`), true, {})).toBe(
+      'errors.nameTooLong'
+    ));
+  it('counts an emoji as one character, as length() does', () =>
+    expect(validateSocietyDraft(draft('🎉'.repeat(80)), true, {})).toBeNull());
+  it('still asks for a blank name first', () =>
+    expect(validateSocietyDraft(draft('   '), true, {})).toBe('errors.required'));
 });

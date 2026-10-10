@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ORGANIZERS, type Society } from '../../types/events';
@@ -16,6 +17,13 @@ export function SocietiesPanel() {
   const setSocietyActive = useAppStore((s) => s.setSocietyActive);
   const [editing, setEditing] = useState<Society | 'new' | null>(null);
   const all = Object.values(catalog).sort((a, b) => a.sortOrder - b.sortOrder);
+
+  // false = the update was refused; a throw = the local write failed. Either
+  // way the admin must hear it, or a "hidden" society stays visible to students.
+  const toggleActive = async (s: Society) => {
+    const ok = await setSocietyActive(s.id, !s.isActive).catch(() => false);
+    if (!ok) toast.error(t('admin.saveError'));
+  };
 
   if (editing) {
     return (
@@ -54,7 +62,7 @@ export function SocietiesPanel() {
           <button
             type="button"
             className="btn btn-ghost btn-xs"
-            onClick={() => void setSocietyActive(s.id, !s.isActive)}
+            onClick={() => void toggleActive(s)}
           >
             {s.isActive ? t('admin.societies.hide') : t('admin.societies.show')}
           </button>

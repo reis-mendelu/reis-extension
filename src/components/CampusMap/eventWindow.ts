@@ -71,9 +71,10 @@ export function hasFinished(
   return now.getTime() > start.getTime();
 }
 
-// The "soon" horizon: map pins and Novinky show events starting within it
-// (today .. today+13). The catalog list (MapEventsSection) has no upper bound —
-// a semester imported in September is visible in September.
+// The "soon" horizon: map pins show events starting within it (today ..
+// today+13). Novinky has its own, shorter NOVINKY_WINDOW_DAYS below. The
+// catalog list (MapEventsSection) has no upper bound — a semester imported in
+// September is visible in September.
 export const SOON_WINDOW_DAYS = 14;
 
 /** Novinky lists the next week only: taps cluster in the week before an event
@@ -98,7 +99,7 @@ export function isSoonEvent(e: Dated, now: Date = new Date()): boolean {
   return !isFinishedEvent(e, now) && daysUntilEvent(e.date, now) < SOON_WINDOW_DAYS;
 }
 
-/** Starts on day 14 or later — outside what Novinky announces. */
+/** Starts on day 14 or later — outside the map pins' horizon. */
 export function isBeyondSoon(iso: string, now: Date = new Date()): boolean {
   return daysUntilEvent(iso, now) >= SOON_WINDOW_DAYS;
 }

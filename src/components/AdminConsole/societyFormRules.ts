@@ -6,6 +6,7 @@ import { isInstagramHandle } from '../../utils/societies/instagramHandle';
 // rendering the form.
 
 const ID_RE = /^[a-z0-9][a-z0-9_-]*$/;
+export const NAME_MAX = 80;
 // Instagram's own first path segments: a post, reel, story or account URL
 // names no profile, and its segment ("p", "reel") would pass as a handle.
 const NOT_A_PROFILE = /^(p|reel|reels|explore|accounts|stories|tv|direct)$/i;
@@ -40,6 +41,10 @@ export function validateSocietyDraft(
   if (isNew && !ID_RE.test(draft.id)) return 'errors.id';
   if (isNew && catalog[draft.id]) return 'errors.idTaken';
   if (!draft.name.trim() || !draft.shortName.trim()) return 'errors.required';
+  // The DB CHECK: 1..80 after btrim (societies_catalog.sql), measured the way
+  // Postgres does: btrim strips spaces only, length() counts code points.
+  // Short name is capped by its input's maxLength 24.
+  if ([...draft.name.replace(/^ +| +$/g, '')].length > NAME_MAX) return 'errors.nameTooLong';
   if (!isUsablePinColor(draft.color)) return 'errors.color';
   if (isNew && !draft.hasLogo) return 'errors.logo_required';
   return null;

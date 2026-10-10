@@ -11,7 +11,11 @@ export const text = async (url: string, init?: RequestInit) =>
 
 export const post = (body: string) => text(TIMETABLE_URL, { method: 'POST', body });
 
-/** Timetable POSTs are expensive for IS (reis-scraper keeps its crawl at 3). */
+/**
+ * Timetable POSTs are expensive for IS (reis-scraper keeps its crawl at 3).
+ * The first rejection fails the whole call, so after it no worker starts
+ * another item: the rest would be requests whose answers are thrown away.
+ */
 export async function mapLimit<T, R>(
   items: T[],
   limit: number,
@@ -19,11 +23,17 @@ export async function mapLimit<T, R>(
 ): Promise<R[]> {
   const out: R[] = new Array(items.length);
   let next = 0;
+  let failed = false;
   await Promise.all(
     Array.from({ length: Math.min(limit, items.length) }, async () => {
-      while (next < items.length) {
+      while (!failed && next < items.length) {
         const i = next++;
-        out[i] = await fn(items[i]!);
+        try {
+          out[i] = await fn(items[i]!);
+        } catch (err) {
+          failed = true;
+          throw err;
+        }
       }
     })
   );

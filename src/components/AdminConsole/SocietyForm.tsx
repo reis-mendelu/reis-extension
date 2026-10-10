@@ -3,7 +3,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { createSocietyAccount } from '../../api/societyAccounts';
 import { ORGANIZERS, type FacultyKey, type Society } from '../../types/events';
-import { normalizeInstagram, validateSocietyDraft } from './societyFormRules';
+import { NAME_MAX, normalizeInstagram, validateSocietyDraft } from './societyFormRules';
 import { GeneratedPasswordDialog } from './GeneratedPasswordDialog';
 import { LogoPreview } from './LogoPreview';
 import { PartnerFields } from './PartnerFields';
@@ -118,6 +118,7 @@ export function SocietyForm({ society, onDone }: { society?: Society; onDone: ()
         <input
           className="input input-bordered w-full"
           value={name}
+          maxLength={NAME_MAX}
           onChange={(e) => setName(e.target.value)}
         />
       </label>

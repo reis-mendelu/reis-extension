@@ -1,13 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { BUNDLED_SOCIETIES } from '../../../data/societies';
 import { SocietiesPanel } from '../SocietiesPanel';
 
-const setSocietyActive = vi.fn(async () => true);
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+import { toast } from 'sonner';
+
+const setSocietyActive = vi.fn(async (_id: string, _active: boolean) => true);
 
 beforeEach(() => {
   setSocietyActive.mockClear();
+  vi.mocked(toast.error).mockClear();
   useAppStore.setState({ societies: BUNDLED_SOCIETIES, setSocietyActive } as never);
 });
 
@@ -40,6 +44,29 @@ describe('SocietiesPanel', () => {
     expect(within(row).getByText(/hidden|skrytý/i)).toBeInTheDocument();
     fireEvent.click(within(row).getByRole('button', { name: /show|zobrazit/i }));
     expect(setSocietyActive).toHaveBeenCalledWith('zf', true);
+  });
+
+  // setSocietyActive reports failure as false; dropping it left the admin
+  // thinking a society was hidden while students still saw it.
+  it('says so when hiding fails', async () => {
+    setSocietyActive.mockResolvedValueOnce(false);
+    render(<SocietiesPanel />);
+    fireEvent.click(within(rowOf('ZF Spolek')).getByRole('button', { name: /hide|skrýt/i }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+  });
+
+  it('says so when hiding throws', async () => {
+    setSocietyActive.mockRejectedValueOnce(new Error('IndexedDB'));
+    render(<SocietiesPanel />);
+    fireEvent.click(within(rowOf('ZF Spolek')).getByRole('button', { name: /hide|skrýt/i }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+  });
+
+  it('stays quiet when hiding works', async () => {
+    render(<SocietiesPanel />);
+    fireEvent.click(within(rowOf('ZF Spolek')).getByRole('button', { name: /hide|skrýt/i }));
+    await waitFor(() => expect(setSocietyActive).toHaveBeenCalled());
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
   it('opens the add form', () => {

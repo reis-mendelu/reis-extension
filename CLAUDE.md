@@ -9,8 +9,11 @@ Mendelu) for students. It ships as **three UI products from one codebase**: a
 Chrome/Firefox/Edge **browser extension** (WXT, injects an iframe containing the
 React app into IS Mendelu pages), an **iOS app** and an **Android app** (both
 Capacitor, same React app). A fourth, headless one, **reIS for Claude** (`mcp/`),
-is described below. All processing is client-side — no student data is
-intercepted or stored externally. The one recipient beyond IS is Claude
+is described below. All processing is client-side: academic records stay on
+the device and are never intercepted, sent to or stored by reIS anywhere else;
+the only things derived from the student that reach Supabase are the faculty
+and base programme labels on the daily count (see "What reIS still sends").
+The one recipient beyond IS is Claude
 (Anthropic) in reIS for Claude: the IS data a student asks about goes into
 their own Claude chat, by their choice; it never passes through reIS.
 
@@ -330,8 +333,11 @@ the start of a semester.
 Only these, all disclosed in `docs/privacy-policy-app.md`:
 
 1. **Daily install count** — a random per-install UUID (`services/identity/installId.ts`),
-   plus faculty, base programme code and platform as aggregate labels; nothing else derived
-   from the student. Deliberately counts installs, not people.
+   plus faculty, base programme code and platform as labels; nothing else derived from the
+   student. Deliberately counts installs, not people. The UUID is stable, so daily rows link
+   across days, and the same UUID is on the survey and the feature counters (4), so those rows
+   join per install to faculty, platform and programme. The policy says so; none of it carries
+   a name, student number or IS account.
 2. **Feedback the student typed** — via the `submit_suggestion` RPC (`src/api/suggestions.ts`),
    with screen name, app version, browser and viewport.
 3. **Society event view/click counters** — a post row id and nothing else.

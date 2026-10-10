@@ -27,18 +27,26 @@ export function base64ToBlob(base64: string, type: string): Blob {
   return new Blob([bytes], { type });
 }
 
+const GENERIC_MIMES = new Set(['', 'application/octet-stream', 'binary/octet-stream']);
+
+/** A Content-Type that says only "bytes" — no more a type than a missing one. */
+function isGenericMime(contentType: string): boolean {
+  return GENERIC_MIMES.has(contentType.split(';')[0]?.trim().toLowerCase() ?? '');
+}
+
 /**
  * IS serves documents from query-string URLs (`slozka.pl?download=354316`), so
  * the URL has no usable basename — the Content-Disposition filename is the only
  * real source. Without it the drawer row's title (`row`) beats a generic
  * `dokument`. With no content type, the row's type gives the extension, and
- * with neither the fallback stays the `.pdf` it has always been.
+ * with neither the fallback stays the `.pdf` it has always been. A generic
+ * octet-stream names no type, so it counts as no content type.
  */
 export function filenameFromResponse(headers: Record<string, string>, row?: FileRowHint): string {
   const cd = headers['Content-Disposition'] ?? headers['content-disposition'] ?? null;
+  const sent = headers['Content-Type'] ?? headers['content-type'] ?? '';
   const contentType =
-    (headers['Content-Type'] ?? headers['content-type']) ||
-    (rowTypeExtension(row?.type) ? null : 'application/pdf');
+    (isGenericMime(sent) ? null : sent) || (rowTypeExtension(row?.type) ? null : 'application/pdf');
   return downloadName({ contentDisposition: cd, contentType }, row);
 }
 
