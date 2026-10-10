@@ -88,11 +88,12 @@ const PAIR_COMMA = /^(-?\d{1,3},\d+)\s*([NSEW])?\s*(?:;\s*|\s+)(-?\d{1,3},\d+)\s
 
 const isLat = (hemi: string) => /[NS]/i.test(hemi);
 
-/** One number and its letter as a signed degree; null when a minus fights S/W. */
+/** One number and its letter as a signed degree; null when a letter has a minus too. */
 function signed(value: string, hemi: string): number | null {
   const n = num(value);
-  if (!/[SW]/i.test(hemi)) return n;
-  return n < 0 ? null : -n;
+  if (!hemi) return n;
+  if (n < 0) return null;
+  return /[SW]/i.test(hemi) ? -n : n;
 }
 
 function fromPair(a: string, hemiA: string, b: string, hemiB: string): ParsedPoint | null {
