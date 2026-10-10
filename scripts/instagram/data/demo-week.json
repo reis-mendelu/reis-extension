@@ -1,0 +1,23 @@
+{
+  "now": "2026-10-07T10:40:00+02:00",
+  "monday": "2026-10-05",
+  "teachers": {
+    "novak": { "fullName": "doc. Ing. Petr Novák, Ph.D.", "shortName": "Novák", "id": "novak-petr" },
+    "dvorakova": { "fullName": "Ing. Jana Dvořáková, Ph.D.", "shortName": "Dvořáková", "id": "dvorakova-jana" },
+    "kral": { "fullName": "Ing. Tomáš Král", "shortName": "Král", "id": "kral-tomas" },
+    "mala": { "fullName": "Mgr. Eva Malá", "shortName": "Malá", "id": "mala-eva" }
+  },
+  "lessons": [
+    [0, "08:00", "09:50", "Algoritmizace", "DEM-ALG", "Q01", "novak", false],
+    [0, "11:00", "12:50", "Statistika", "DEM-STA", "Z18", "dvorakova", true],
+    [0, "15:00", "16:50", "Angličtina", "DEM-ANG", "Q16", "mala", true],
+    [1, "09:00", "10:50", "Mikroekonomie", "DEM-EKO", "Q01", "novak", false],
+    [1, "13:00", "14:50", "Databázové systémy", "DEM-DBS", "Q02", "kral", true],
+    [2, "08:00", "09:50", "Statistika", "DEM-STA", "Q01", "dvorakova", false],
+    [2, "10:00", "11:50", "Algoritmizace", "DEM-ALG", "Q16", "kral", true],
+    [2, "14:00", "15:50", "Účetnictví", "DEM-UCE", "Z18", "mala", false],
+    [3, "09:00", "10:50", "Databázové systémy", "DEM-DBS", "Q01", "kral", false],
+    [3, "12:00", "13:50", "Mikroekonomie", "DEM-EKO", "Q02", "novak", true],
+    [4, "08:00", "09:50", "Účetnictví", "DEM-UCE", "Q16", "mala", true]
+  ]
+}

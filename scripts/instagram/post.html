@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700;9..40,800&family=Inter:wght@400;500;600&display=block" rel="stylesheet">
+<style>
+  :root {
+    --navy: #111827;
+    --navy-2: #1a2333;
+    --lime: #79be15;
+    --ink: #ffffff;
+    --muted: #9aa3b2;
+    --line: #2a3445;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1350px; background: var(--navy); overflow: hidden; }
+  body { font-family: 'DM Sans', sans-serif; color: var(--ink); position: relative; -webkit-font-smoothing: antialiased; }
+
+  .bar { position: absolute; inset: 0 0 auto 0; height: 12px; background: var(--lime); }
+  .dots { position: absolute; top: 36px; right: 36px; width: 230px; height: 120px;
+    background-image: radial-gradient(circle, #233044 5px, transparent 5.5px);
+    background-size: 52px 52px; }
+
+  .head { position: absolute; top: 96px; left: 88px; right: 88px; }
+  .brand { display: flex; align-items: center; gap: 18px; margin-bottom: 56px; }
+  .brand svg { width: 64px; height: 64px; }
+  .kicker { font: 600 26px/1 'Inter', sans-serif; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--lime); border: 2px solid #3a5a1a; background: #18240f; padding: 12px 18px; border-radius: 999px; }
+
+  h1 { font-weight: 800; font-size: var(--h1, 88px); line-height: 1.06; letter-spacing: -0.02em; }
+  h1 mark { background: none; color: inherit; box-shadow: inset 0 -0.16em 0 #3b5a17; }
+  .sub { margin-top: 28px; font-weight: 500; font-size: 36px; line-height: 1.3; color: var(--muted); }
+
+  .phone { position: absolute; left: 50%; transform: translateX(-50%); width: 560px; height: 1180px;
+    border-radius: 72px; background: #0b0f17; border: 12px solid #2b3446;
+    box-shadow: 0 40px 120px rgba(0,0,0,.55), 0 0 0 2px #3a4458; overflow: hidden; }
+  .phone img { display: block; width: 100%; }
+  .phone .status { height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 6px 44px 0 52px;
+    font: 600 22px/1 'Inter', sans-serif; color: #fff; background: #111827; }
+  .phone .status i { display: inline-block; width: 34px; height: 16px; border: 2px solid #fff; border-radius: 5px; position: relative; }
+  .phone .status i::after { content: ''; position: absolute; inset: 2px 6px 2px 2px; background: #fff; border-radius: 2px; }
+  .phone .island { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); width: 150px; height: 42px; background: #000; border-radius: 999px; z-index: 2; }
+
+  .foot { position: absolute; bottom: 52px; left: 0; right: 0; text-align: center; font: 700 30px/1 'DM Sans', sans-serif; color: var(--lime); letter-spacing: .02em; }
+
+  /* layout: statement (no screenshot) */
+  body.statement .head { top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; text-align: center; align-items: center; }
+  body.statement .brand { flex-direction: column; gap: 28px; margin-bottom: 72px; }
+  body.statement .brand svg { width: 120px; height: 120px; }
+</style>
+</head>
+<body>
+  <div class="bar"></div>
+  <div class="dots"></div>
+  <div class="head">
+    <div class="brand">
+      <svg viewBox="0 0 128 128" aria-hidden="true"><g transform="translate(7,0)">
+        <path fill="#fff" fill-rule="evenodd" d="M38 88V86h4V42h-4V40h24c12 0 20 8 20 18s-7 17-17 18l18 12H69L55 76H54v10h4v2H38zM54 66h10c6 0 10-4 10-10s-4-8-10-8H54v18z"/>
+        <circle cx="32" cy="96" r="16" fill="#79be15" stroke="#111827" stroke-width="4"/></g></svg>
+      <span class="kicker" id="kicker"></span>
+    </div>
+    <h1 id="h1" data-max-lines="3"></h1>
+    <p class="sub" id="sub" data-max-lines="2"></p>
+  </div>
+  <div class="phone" id="phone"><div class="status"><span>9:41</span><i></i></div><div class="island"></div><img id="shot" alt=""></div>
+  <div class="foot" id="foot"></div>
+<script>
+  // Filled by render.cjs via window.fill(spec).
+  window.fill = (spec) => {
+    const esc = (s) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    // *text* marks the highlighted phrase; everything else is escaped text.
+    // Czech typography: a one-letter preposition/conjunction never ends a line.
+    const nbsp = (s) => String(s ?? '').replace(/(^|\s)([vkszouaiVKSZOUAI])\s+/g, '$1$2\u00a0');
+    const marked = (s) => esc(nbsp(s)).replace(/\*(.+?)\*/g, '<mark>$1</mark>');
+    document.getElementById('kicker').textContent = spec.kicker || '';
+    document.getElementById('kicker').style.display = spec.kicker ? '' : 'none';
+    document.getElementById('h1').innerHTML = marked(spec.headline);
+    document.getElementById('sub').textContent = nbsp(spec.sub);
+    document.getElementById('foot').textContent = spec.foot || '';
+    if (spec.h1Size) document.documentElement.style.setProperty('--h1', spec.h1Size + 'px');
+    const phone = document.getElementById('phone');
+    if (spec.screenshot) {
+      document.getElementById('shot').src = spec.screenshot;
+      phone.style.top = (spec.phoneTop || 640) + 'px';
+    } else {
+      phone.remove();
+      document.body.classList.add('statement');
+    }
+  };
+</script>
+</body>
+</html>

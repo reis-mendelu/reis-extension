@@ -9,6 +9,12 @@
       "autoPort": true
     },
     {
+      "name": "reis-demo-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "preview", "--config", "vite.web.build.config.ts", "--port", "4173", "--strictPort"],
+      "port": 4173
+    },
+    {
       "name": "reis-webapp-mock",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:web:mock"],
