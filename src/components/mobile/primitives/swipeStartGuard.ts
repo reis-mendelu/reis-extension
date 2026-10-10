@@ -27,7 +27,23 @@ export const EDGE_GUARD_PX = 20;
  */
 export const SCROLLER_MIN_OVERFLOW_PX = 8;
 
-const TEXT_FIELD = 'input, textarea, select, [contenteditable="true"]';
+const TEXT_FIELD = 'input, textarea, select';
+
+/**
+ * Whether the touch lands in editable text. Editing is inherited, so the
+ * nearest valid `contenteditable` decides: "", "true" and "plaintext-only"
+ * edit, "false" does not (even inside an editable parent), and an invalid
+ * value inherits from its parent.
+ */
+function inEditableText(target: Element | null): boolean {
+  if (target?.closest(TEXT_FIELD)) return true;
+  for (let el = target; el; el = el.parentElement) {
+    const value = el.getAttribute('contenteditable')?.toLowerCase();
+    if (value === '' || value === 'true' || value === 'plaintext-only') return true;
+    if (value === 'false') return false;
+  }
+  return false;
+}
 
 function scrollsSideways(el: Element): boolean {
   const { overflowX } = getComputedStyle(el);
@@ -44,7 +60,7 @@ export function swipeStartIsOffLimits(
   viewportWidth: number
 ): boolean {
   if (clientX < EDGE_GUARD_PX || clientX > viewportWidth - EDGE_GUARD_PX) return true;
-  if (target?.closest(TEXT_FIELD)) return true;
+  if (inEditableText(target)) return true;
   for (let el = target; el && el !== root; el = el.parentElement) {
     if (scrollsSideways(el)) return true;
   }

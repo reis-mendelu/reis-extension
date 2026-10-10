@@ -64,7 +64,8 @@ function ClassmateRow({
           <div className="w-14 h-14 rounded-full ring-1 ring-base-200 ring-offset-base-100 ring-offset-2 group-hover/profile:ring-primary/40 transition-all">
             <PersonPhoto
               personId={seen ? student.personId : null}
-              alt={student.name}
+              // Decorative: the name is printed beside it, in the same button.
+              alt=""
               className="w-full h-full object-cover scale-[1.05]"
               fallback={
                 <div className="bg-neutral text-neutral-content w-full h-full flex items-center justify-center">

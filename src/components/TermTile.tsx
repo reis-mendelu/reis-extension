@@ -53,6 +53,9 @@ export function TermTile({
     term.registrationEnd === term.deregistrationDeadline;
   const primaryAttempt = term.attemptTypes?.find((t) => t !== 'regular') ?? term.attemptTypes?.[0];
   const attemptAccent = primaryAttempt ? (attemptAccentClass[primaryAttempt] ?? '') : '';
+  // The aria-label replaces the tile's content, pills included, and the
+  // timeline drawer shows no legend: the attempt names go into the label.
+  const attemptNames = (term.attemptTypes ?? []).map((a) => t(`successRate.${a}`)).join(', ');
 
   return (
     <div
@@ -60,7 +63,11 @@ export function TermTile({
       role={disabled ? undefined : 'button'}
       tabIndex={disabled ? undefined : 0}
       aria-disabled={disabled || undefined}
-      aria-label={disabled ? undefined : `${t('exams.register')} — ${term.date} ${term.time}`}
+      aria-label={
+        disabled
+          ? undefined
+          : `${t('exams.register')} — ${term.date} ${term.time}${attemptNames ? ` — ${attemptNames}` : ''}`
+      }
       onKeyDown={(e) => {
         if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
           e.preventDefault();

@@ -77,6 +77,8 @@ export function TermRow({ term, section, now, isProcessing, onRegister }: TermRo
   // Which attempts this term counts as. IS can list more than one, and
   // sometimes none.
   const attempts = term.attemptTypes ?? [];
+  // The button's aria-label hides the badges' own names; say them in it.
+  const attemptNames = attempts.map((a) => t(`successRate.${a}`)).join(', ');
 
   return (
     <div
@@ -88,7 +90,7 @@ export function TermRow({ term, section, now, isProcessing, onRegister }: TermRo
         <button
           type="button"
           aria-expanded={open}
-          aria-label={`${t('mobile.exams.termDetailsAria')}: ${when}`}
+          aria-label={`${t('mobile.exams.termDetailsAria')}: ${when}${attemptNames ? ` · ${attemptNames}` : ''}`}
           onClick={() => setOpen((v) => !v)}
           className="flex min-w-0 flex-1 flex-col gap-0.5 text-left"
         >
