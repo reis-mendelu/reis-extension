@@ -40,14 +40,15 @@ export function AdminEventList() {
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
 
-  // Delete is a two-step, in-row confirm (AdminEventRowActions). `busyId`
-  // disables the row while the request is in flight.
+  // Delete is a two-step, in-row confirm (AdminEventRowActions). A row in
+  // `busyIds` keeps its confirm pair, every control disabled, until its own
+  // request settles: a set, so arming another row cannot release this one.
   const [confirmId, setConfirmId] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [busyIds, setBusyIds] = useState<ReadonlySet<string>>(() => new Set());
   const selectedId = selection?.kind === 'event' ? selection.event.id : null;
 
   const remove = async (id: string) => {
-    setBusyId(id);
+    setBusyIds((s) => new Set(s).add(id));
     try {
       const res = await deletePost(id);
       if (res.error) {
@@ -62,16 +63,20 @@ export function AdminEventList() {
       toast.error(t('admin.saveError'));
     } finally {
       // Cleared in finally so an unexpected throw never leaves the row stuck
-      // disabled / mid-confirm.
-      setBusyId(null);
-      setConfirmId(null);
+      // disabled / mid-confirm. Only this row's state: another may be armed.
+      setBusyIds((s) => {
+        const next = new Set(s);
+        next.delete(id);
+        return next;
+      });
+      setConfirmId((c) => (c === id ? null : c));
     }
   };
 
   const rowActions = (e: MapEvent) => (
     <AdminEventRowActions
-      confirming={confirmId === e.id}
-      busy={busyId === e.id}
+      confirming={confirmId === e.id || busyIds.has(e.id)}
+      busy={busyIds.has(e.id)}
       onDuplicate={() => duplicateEvent(e.id)}
       onEdit={() => openComposer(e.id)}
       onArmDelete={() => setConfirmId(e.id)}
