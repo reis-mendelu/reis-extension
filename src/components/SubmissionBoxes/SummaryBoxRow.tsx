@@ -9,8 +9,10 @@ const RELATIVE_DAYS = 14;
 interface SummaryBoxRowProps {
   box: Odevzdavarna;
   now: number;
-  /** The subject to open, or null to fall back to the box in IS. */
+  /** The box's subject, for its name (and nickname). */
   courseCode: string | null;
+  /** Open the subject on Záznamník; false links to the box in IS instead. */
+  opensSubject: boolean;
   onOpen: (courseCode: string, box: Odevzdavarna) => void;
   /**
    * Mark an uploaded box. Due rows never have files, so only the full open
@@ -26,6 +28,7 @@ export function SummaryBoxRow({
   box,
   now,
   courseCode,
+  opensSubject,
   onOpen,
   showUpload,
   testId,
@@ -70,7 +73,7 @@ export function SummaryBoxRow({
     </>
   );
 
-  return courseCode ? (
+  return courseCode && opensSubject ? (
     <button
       type="button"
       data-testid={testId}
@@ -80,8 +83,8 @@ export function SummaryBoxRow({
       {content}
     </button>
   ) : (
-    // No subject to open (a row cached before course codes were stored, for
-    // a subject the store does not know): go to IS.
+    // No subject whose Záznamník lists this box (a row cached before course
+    // codes were stored, or a previous period's subject): go to IS.
     <a
       href={box.uploadUrl}
       target="_blank"

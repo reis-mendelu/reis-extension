@@ -30,6 +30,11 @@ export interface Odevzdavarna {
   obdobi?: string;
 }
 
+/** IS's list of a period's boxes — where a box with no upload link of its own goes. */
+export function odevzdavarnyListUrl(studium: string, obdobi: string): string {
+  return `${BASE_URL}/auth/student/odevzdavarny.pl?studium=${studium};obdobi=${obdobi}`;
+}
+
 async function fetchLang(
   studium: string,
   obdobi: string,
@@ -80,7 +85,7 @@ export async function fetchOdevzdavarny(
   const czData = czPage.rows;
   const enData = enPage?.rows;
 
-  const listUrl = `${BASE_URL}/auth/student/odevzdavarny.pl?studium=${studium};obdobi=${obdobi}`;
+  const listUrl = odevzdavarnyListUrl(studium, obdobi);
   const enBySection = (section: OdevzdavarnaSection) =>
     (enData ?? []).filter((r) => r.section === section);
   const position = new Map<OdevzdavarnaSection, number>();

@@ -47,6 +47,35 @@ describe('filenameFromResponse', () => {
     expect(filenameFromResponse({})).toBe('dokument.pdf');
   });
 
+  // The drawer row knows the file's title; without it a file IS serves with no
+  // Content-Disposition name was saved on the phone as a bare `dokument.pdf`.
+  it("uses the row's title when the header has no name", () => {
+    expect(
+      filenameFromResponse(
+        { 'Content-Type': 'application/pdf' },
+        { name: 'Přednáška 3', type: 'pdf' }
+      )
+    ).toBe('Přednáška 3.pdf');
+    expect(filenameFromResponse({}, { name: 'Cvičení', type: 'pptx' })).toBe('Cvičení.pptx');
+  });
+
+  // IS's "I don't know" gives no extension, so the old .pdf default stands —
+  // a name with none would not open on either OS.
+  it('keeps the .pdf default when the row type gives no extension', () => {
+    expect(filenameFromResponse({}, { name: 'Přednáška 3', type: 'unknown' })).toBe(
+      'Přednáška 3.pdf'
+    );
+  });
+
+  it("still prefers IS's own name over the row's title", () => {
+    expect(
+      filenameFromResponse(
+        { 'Content-Disposition': 'attachment; filename="Prednaska_01.pdf"' },
+        { name: 'Přednáška 1' }
+      )
+    ).toBe('Prednaska_01.pdf');
+  });
+
   // The old regex returned this still percent-encoded, and the native path
   // writes the name straight to the filesystem.
   it('percent-decodes a filename* name', () => {
