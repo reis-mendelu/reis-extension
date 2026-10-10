@@ -32,14 +32,12 @@ const asFetch = (f: unknown) => f as typeof fetch;
 
 describe('loginToIs', () => {
   it('posts the IS login form and returns the UISAuth cookie pair', async () => {
-    const f = vi
-      .fn()
-      .mockResolvedValue(
-        respond(302, {
-          cookies: [`UISAuth=${TOKEN}; path=/; secure; HttpOnly`],
-          location: '/auth/?lang=cz',
-        })
-      );
+    const f = vi.fn().mockResolvedValue(
+      respond(302, {
+        cookies: [`UISAuth=${TOKEN}; path=/; secure; HttpOnly`],
+        location: '/auth/?lang=cz',
+      })
+    );
     await expect(loginToIs('xstudent', 'pw', asFetch(f))).resolves.toBe(`UISAuth=${TOKEN}`);
     const [url, init] = f.mock.calls[0]!;
     expect(url).toBe('https://is.mendelu.cz/system/login.pl');
