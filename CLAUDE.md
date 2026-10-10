@@ -335,7 +335,7 @@ Only these, all disclosed in `docs/privacy-policy-app.md`:
    plus faculty, base programme code and platform as labels; nothing else derived from the
    student. Deliberately counts installs, not people. The same UUID is on the survey and the
    feature counters (4), so those rows join per install to faculty and programme. The policy
-   says so; none of it joins to a person.
+   says so; none of it carries a name, student number or IS account.
 2. **Feedback the student typed** — via the `submit_suggestion` RPC (`src/api/suggestions.ts`),
    with screen name, app version, browser and viewport.
 3. **Society event view/click counters** — a post row id and nothing else.

@@ -73,8 +73,10 @@
          adds RECEIVE_BOOT_COMPLETED and WAKE_LOCK, both kept. reIS schedules no
          local notifications (src/test/guards/societyEventsStayReduced.test.ts);
          the plugin stays only so src/services/cleanup/retireSocietyFeatures.ts
-         can cancel the reminders 5.3.0 scheduled and delete its channels, so
-         the plugin's boot receiver has nothing of ours to reschedule.
+         can cancel the reminders 5.3.0 scheduled and delete its channels. That
+         runs on the first launch after the update; a phone rebooted before it
+         can still have the plugin's boot receiver restore a stored 5.3.0
+         reminder, and after it the receiver has nothing of ours to restore.
          The two below are stripped:
          - SCHEDULE_EXACT_ALARM (local-notifications): nothing is scheduled, so
            no alarm is either. Declaring it only put an "Alarms & reminders"

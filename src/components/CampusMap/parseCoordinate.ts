@@ -92,7 +92,8 @@ const isLat = (hemi: string) => /[NS]/i.test(hemi);
 function signed(value: string, hemi: string): number | null {
   const n = num(value);
   if (!hemi) return n;
-  if (n < 0) return null;
+  // From the text, not the number: "-0.0" parses to -0, which `n < 0` misses.
+  if (value.startsWith('-')) return null;
   return /[SW]/i.test(hemi) ? -n : n;
 }
 

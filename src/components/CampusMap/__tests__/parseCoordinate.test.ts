@@ -61,6 +61,9 @@ describe('parseCoordinate', () => {
     expect(parseCoordinate('16.6E 49.2W')).toBeNull();
     expect(parseCoordinate('-33.9S, 18.4E')).toBeNull();
     expect(parseCoordinate('-49.2N, 16.6E')).toBeNull();
+    // num('-0.0') is -0, which `< 0` misses: the sign has to be read from the text.
+    expect(parseCoordinate('-0.0N, 16.6E')).toBeNull();
+    expect(parseCoordinate('49.2N, -0.0E')).toBeNull();
   });
 
   it('puts a pair typed lng-first back in order when only that order lands in Czechia', () => {
