@@ -10,7 +10,9 @@ Chrome/Firefox/Edge **browser extension** (WXT, injects an iframe containing the
 React app into IS Mendelu pages), an **iOS app** and an **Android app** (both
 Capacitor, same React app). A fourth, headless one, **reIS for Claude** (`mcp/`),
 is described below. All processing is client-side — no student data is
-intercepted or stored externally.
+intercepted or stored externally. The one recipient beyond IS is Claude
+(Anthropic) in reIS for Claude: the IS data a student asks about goes into
+their own Claude chat, by their choice; it never passes through reIS.
 
 Read the next section before editing any UI. Three products do **not** mean
 three UI trees, and the difference is where features get forgotten.

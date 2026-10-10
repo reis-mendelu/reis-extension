@@ -1389,8 +1389,10 @@ npm install --save-dev @anthropic-ai/mcpb
 ```
 
 ```json
-"mcp:pack": "npm run mcp:build && node scripts/mcp-pack.mjs"   // cross-platform; copies the icon from public/brand-assets, runs a pinned mcpb, checks the archive
+"mcp:pack": "npm run mcp:build && node scripts/mcp-pack.mjs"
 ```
+
+`scripts/mcp-pack.mjs` is cross-platform: it copies the icon from `public/brand-assets`, runs a pinned mcpb and checks the archive.
 
 Run: `npm run mcp:pack`
 Expected: the validation passes and `dist-mcp/reis-for-claude.mcpb` exists. `unzip -l dist-mcp/reis-for-claude.mcpb` lists `manifest.json`, `icon.png` and `server/index.mjs`, and nothing else (no `.env`, no snapshot).

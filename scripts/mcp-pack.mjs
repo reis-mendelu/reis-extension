@@ -35,8 +35,9 @@ try {
     .map((p) => relative(unpacked, p).split(sep).join('/'))
     .sort();
   if (JSON.stringify(files) !== JSON.stringify(EXPECTED)) {
-    console.error(`mcp:pack: unexpected archive contents:\n${files.join('\n')}`);
-    process.exit(1);
+    // Thrown, not process.exit(): the finally below must delete the unpacked
+    // copy, which may hold exactly the data that must not ship.
+    throw new Error(`mcp:pack: unexpected archive contents:\n${files.join('\n')}`);
   }
 } finally {
   rmSync(unpacked, { recursive: true, force: true });
