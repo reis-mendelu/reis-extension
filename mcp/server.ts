@@ -19,7 +19,7 @@ if (!user || !pass) {
 const session = createIsSession({ user, pass }, nativeFetch);
 setSessionFetch(session.fetch);
 
-const server = new McpServer({ name: 'reis-mendelu', version: '0.1.1' });
+const server = new McpServer({ name: 'reis-mendelu', version: '0.1.2' });
 registerTools(server, { fetch: session.fetch });
 // No top-level await: Claude Desktop's built-in Node host loads the entry
 // with require(), and require() refuses an ES module graph that has one

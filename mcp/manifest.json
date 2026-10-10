@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "reis-mendelu",
   "display_name": "reIS for Claude",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Your IS Mendelu data in Claude: timetable, exams, grades, deadlines, subject files. Read-only, runs on your computer.",
   "long_description": "reIS for Claude signs in to IS Mendelu as you, on your own computer, and lets Claude read your timetable, exams, subjects, study plan, syllabi, grades, assignment deadlines and subject files. It never registers for anything, never submits anything, and never opens online tests. Your password stays in your operating system's keychain and is sent only to is.mendelu.cz; nothing passes through reIS servers. Unofficial: IS Mendelu belongs to Mendel University in Brno.",
   "author": { "name": "reIS", "url": "https://github.com/reis-mendelu/reis-extension" },
