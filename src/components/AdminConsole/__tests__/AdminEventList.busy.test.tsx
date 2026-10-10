@@ -68,6 +68,33 @@ describe('AdminEventList — a delete in flight', () => {
     await act(async () => finish());
   });
 
+  it('ignores a click on the row body while its delete is in flight', async () => {
+    const focusEventById = vi.fn();
+    useAppStore.setState({ focusEventById });
+    const finish = pendingDelete();
+    render(<AdminEventList />);
+    startDelete('Spring Party');
+    await waitFor(() => expect(deletePost).toHaveBeenCalledWith('e1'));
+    fireEvent.click(screen.getByText('Spring Party'));
+    expect(focusEventById).not.toHaveBeenCalled();
+    await act(async () => finish());
+  });
+
+  it('clears a selection made on the deleted event after the delete started', async () => {
+    const finish = pendingDelete();
+    render(<AdminEventList />);
+    startDelete('Spring Party');
+    await waitFor(() => expect(deletePost).toHaveBeenCalledWith('e1'));
+    // Selected some other way (a map pin) while the request was in flight.
+    act(() =>
+      useAppStore.setState({
+        mapSelection: { kind: 'event', event: mk('e1', 'Spring Party') } as never,
+      })
+    );
+    await act(async () => finish());
+    expect(useAppStore.getState().clearMapSelection).toHaveBeenCalled();
+  });
+
   it('keeps the first row disabled while a second row deletes', async () => {
     const finishFirst = pendingDelete();
     const finishSecond = pendingDelete();

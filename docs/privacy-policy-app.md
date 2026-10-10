@@ -31,7 +31,7 @@ yourself — see *Report attachments* below.
 <!-- BEGIN generated:flows (npm run privacy:generate) -->
 | what | when | what it carries |
 |---|---|---|
-| Daily count | once a day | a random install identifier — a UUID unrelated to you. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI) and platform as group labels. The survey and the feature counters below carry the same identifier, so in our database they can be matched to these labels per installation — never to your name, student number or IS account. |
+| Daily count | once a day | a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI) and platform as group labels. The survey and the feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation. |
 | Feedback | you press send | your message, any contact detail you type, the screen name, app version, browser, window size |
 | Report attachments | only what you add to a report, when you press send | a **screenshot you pick** yourself, re-encoded on your device so photo metadata and location are removed; and, **only if you tick the box**, the recent reIS errors and warnings from this session, with link parameters, email addresses, long numbers and coordinates already blanked out, plus platform, OS version, language and sync status. **Not linked to the install identifier.** |
 | In-app survey | you answer | the same random install identifier |

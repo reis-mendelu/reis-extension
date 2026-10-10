@@ -55,7 +55,10 @@ export function AdminEventList() {
         toast.error(t('admin.saveError'));
         return;
       }
-      if (selectedId === id) clearMapSelection(); // drop the highlight if it was on this row
+      // The selection now, not when the delete started: a pin can pick this
+      // event while the request is in flight.
+      const now = useAppStore.getState().mapSelection;
+      if (now?.kind === 'event' && now.event.id === id) clearMapSelection();
       await loadSocietyPosts();
       void reloadMapEvents(); // drop the pin from the public "Akce" feed too
       toast.success(t('map.toastDeleted'));
@@ -116,7 +119,7 @@ export function AdminEventList() {
             t={t}
             selected={selectedId === e.id}
             subline={subline?.(e)}
-            onClick={() => focusEvent(e.id, { fly: true })}
+            onClick={() => !busyIds.has(e.id) && focusEvent(e.id, { fly: true })}
             actions={rowActions(e)}
             footer={<EventStats eventId={e.id} />}
           />

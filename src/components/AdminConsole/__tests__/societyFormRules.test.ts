@@ -55,6 +55,13 @@ describe('validateSocietyDraft: name length', () => {
     expect(validateSocietyDraft(draft('x'.repeat(81)), true, {})).toBe('errors.nameTooLong'));
   it('measures after trimming, as the database does', () =>
     expect(validateSocietyDraft(draft(`  ${'x'.repeat(80)}  `), true, {})).toBeNull());
+  // btrim strips spaces only, and length() counts code points, not UTF-16 units.
+  it('counts a non-breaking space at the end, as btrim keeps it', () =>
+    expect(validateSocietyDraft(draft(`${'x'.repeat(80)}\u00a0`), true, {})).toBe(
+      'errors.nameTooLong'
+    ));
+  it('counts an emoji as one character, as length() does', () =>
+    expect(validateSocietyDraft(draft('🎉'.repeat(80)), true, {})).toBeNull());
   it('still asks for a blank name first', () =>
     expect(validateSocietyDraft(draft('   '), true, {})).toBe('errors.required'));
 });

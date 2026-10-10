@@ -1154,6 +1154,7 @@
         "instagram": "Not a valid Instagram account name",
         "logo_required": "Upload a logo.",
         "logo_too_large": "The logo is too large even after shrinking. Upload a simpler image, such as a logo on a transparent background instead of a photo.",
+        "mark_too_large": "The partner mark is too large even after shrinking. Upload a simpler image, such as a logo on a transparent background instead of a photo.",
         "upload_failed": "The logo could not be uploaded.",
         "save_failed": "The society could not be saved.",
         "account_failed": "The society is saved, but its account could not be created. Create it below.",

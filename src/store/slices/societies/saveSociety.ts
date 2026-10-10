@@ -22,15 +22,17 @@ async function uploadMark(id: string, png: Blob | null): Promise<string | null |
   return uploadSocietyLogo(id, png);
 }
 
-export type SaveSocietyError = 'logo_required' | 'logo_too_large' | 'upload_failed' | 'save_failed';
+export type SaveSocietyError =
+  'logo_required' | 'logo_too_large' | 'mark_too_large' | 'upload_failed' | 'save_failed';
 
-/** Every picked image as an upload-ready PNG, or null when one cannot get under the bucket's limit. */
+/** Every picked image as an upload-ready PNG, or which one cannot get under the bucket's limit. */
 async function encodeAll(logo: Blob | null, marks: PartnerMarks) {
   const png = logo ? await encodeSocietyLogo(logo) : null;
+  if (logo && !png) return 'logo_too_large' as const;
   const light = marks.light ? await encodePartnerMark(marks.light) : null;
   const dark = marks.dark ? await encodePartnerMark(marks.dark) : null;
-  const tooLarge = (logo && !png) || (marks.light && !light) || (marks.dark && !dark);
-  return tooLarge ? null : { png, light, dark };
+  if ((marks.light && !light) || (marks.dark && !dark)) return 'mark_too_large' as const;
+  return { png, light, dark };
 }
 
 /** What the admin writes need from the slice: the catalog and the local upsert. */
@@ -65,7 +67,7 @@ export async function saveSociety(
   // Encode everything before uploading anything: an image that cannot fit is
   // reported as such, and no earlier file is left behind as an orphan.
   const encoded = await encodeAll(logo, marks);
-  if (!encoded) return { error: 'logo_too_large' };
+  if (typeof encoded === 'string') return { error: encoded };
 
   let logoPath: string | null = null;
   if (encoded.png) {

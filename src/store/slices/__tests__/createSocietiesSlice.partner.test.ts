@@ -130,12 +130,12 @@ describe('saveSociety: partner', () => {
     expect(calls).toEqual([]);
   });
 
-  it('reports logo_too_large before any upload when a mark cannot fit', async () => {
+  it('reports mark_too_large, not the logo, when a partner mark cannot fit', async () => {
     vi.mocked(encodePartnerMark).mockResolvedValueOnce(null);
     const res = await makeStore()
       .getState()
       .saveSociety(KPMG, blob('logo'), true, { light: blob('l'), dark: null });
-    expect(res).toEqual({ error: 'logo_too_large' });
+    expect(res).toEqual({ error: 'mark_too_large' });
     expect(calls).toEqual([]);
   });
 
