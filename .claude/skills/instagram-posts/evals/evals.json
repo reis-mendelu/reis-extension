@@ -10,7 +10,7 @@
       "assertions": [
         "post.jpg is 1080x1350",
         "caption ends with 'Odkaz v biu.'",
-        "caption is 250-650 characters",
+        "caption is 100-250 characters",
         "alt text starts with 'Grafika reIS'",
         "feature PRs are not in posted.json",
         "rater pass is true",
@@ -26,7 +26,7 @@
       "assertions": [
         "post.jpg is 1080x1350",
         "caption ends with 'Odkaz v biu.'",
-        "caption is 250-650 characters",
+        "caption is 100-250 characters",
         "alt text starts with 'Grafika reIS'",
         "rater pass is true",
         "independent rater pass is true"

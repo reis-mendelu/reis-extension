@@ -131,15 +131,19 @@ text, a fallback font, or text running into the phone; fix the words, not the gu
 
 ## 4. Caption and alt text
 
-Caption, Czech, ~300–500 characters:
+Caption, Czech, **short — about 100–200 characters**. The image already says it; the caption
+adds one concrete detail at most. Dominik found 300–500 characters "way too long".
 
 ```
 <Headline as a sentence.>
 
-<2–3 sentences: what changed, where to find it, which devices.>
+<One sentence: where to find it.>
 
-Zdarma, od studentů pro studenty. Odkaz v biu.
+Odkaz v biu.
 ```
+
+Example (149 characters): "Najdi parťáky z celého předmětu, nejen ze cvičení.\n\nVe Spolužácích
+přepni na Celý předmět – uvidíš všechny, kdo ho studují.\n\nOdkaz v biu."
 
 Present tense, as if released — it only goes out on or after release day. No hashtag walls, no
 emoji runs, no promises of anything not in the PR. Alt text describes the image for someone who

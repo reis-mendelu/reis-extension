@@ -25,8 +25,8 @@ or describe the exact pixels that cost points.
    size.
 5. **craft** — Layout clean: nothing clipped or overlapping, text clear of the phone, no odd line
    breaks (a one-letter word at a line end), consistent with the reIS look (navy, lime, DM Sans).
-6. **caption** — Natural Czech, 300–500 chars, says where to find it and on which devices, ends
-   with "Odkaz v biu.", no emoji spam or hashtag walls, no typos. Alt text describes what is
+6. **caption** — Natural Czech, short: about 100–200 characters (over 250 scores at most 2).
+   Says where to find it, ends with "Odkaz v biu.", no emoji spam or hashtag walls, no typos. Alt text describes what is
    actually in the image.
 
 **Blockers** (any one fails the post regardless of scores): a real person's data (fictional demo
