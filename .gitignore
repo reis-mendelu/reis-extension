@@ -179,3 +179,6 @@ dist-web/
 native/*/Package.resolved
 native/*/.build/
 native/*/.swiftpm/
+
+# reIS for Claude bundle + .mcpb (npm run mcp:pack)
+dist-mcp/
