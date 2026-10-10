@@ -348,7 +348,11 @@ export interface MenuSlice {
   menuError: boolean;
   /** The language `menu` (or the request in flight) was fetched for. */
   menuLanguage: Language | null;
+  /** When `menu` last arrived (ms epoch); null before the first success. */
+  menuFetchedAt: number | null;
   fetchMenu: () => Promise<void>;
+  /** Capacitor resume: retry a failed or missing menu, refresh one older than `minGapMs`. */
+  refreshMenuIfStale: (minGapMs: number) => Promise<void>;
 }
 
 export interface HiddenItemsSlice {
