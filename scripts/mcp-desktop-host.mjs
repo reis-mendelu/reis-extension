@@ -61,6 +61,7 @@ process.parentPort = parentPort;
 const realStdout = process.stdout.write.bind(process.stdout);
 const realStderr = process.stderr.write.bind(process.stderr);
 ours.on('message', (msg) => {
+  lastHostActivity = Date.now();
   // stderr is not relayed: the host already writes it to the real stderr.
   if (msg?.type === 'stdout') realStdout(msg.content);
   else if (msg?.type === 'fatal-error')
@@ -85,7 +86,20 @@ input.on('data', (chunk) => {
     if (line.trim()) ours.postMessage({ data: { type: 'stdin', data: line } });
   }
 });
-input.on('end', () => process.exit(0));
+// When input closes, send any last unterminated line, then exit once the host
+// has been quiet for a moment, so replies to piped requests are not cut off.
+let lastHostActivity = Date.now();
+input.on('end', () => {
+  if (pending.trim()) ours.postMessage({ data: { type: 'stdin', data: pending } });
+  pending = '';
+  const QUIET_MS = 2000;
+  const check = setInterval(() => {
+    if (Date.now() - lastHostActivity >= QUIET_MS) {
+      clearInterval(check);
+      process.exit(0);
+    }
+  }, 200);
+});
 
 process.argv = [process.argv[0], hostFile, resolve(entry)];
 createRequire(import.meta.url)(hostFile);
