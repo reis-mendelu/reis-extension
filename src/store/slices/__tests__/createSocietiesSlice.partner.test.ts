@@ -32,6 +32,8 @@ vi.mock('../../../api/societiesAdmin', () => ({
 import { createSocietiesSlice, type SocietiesSlice } from '../createSocietiesSlice';
 import { BUNDLED_SOCIETIES } from '../../../data/societies';
 import { logoPublicUrl } from '../../../api/societies';
+import { encodeSocietyLogo } from '../../../utils/societies/encodeSocietyLogo';
+import { encodePartnerMark } from '../../../utils/societies/encodePartnerMark';
 
 const makeStore = () =>
   create<SocietiesSlice>()((...a) =>
@@ -117,6 +119,24 @@ describe('saveSociety: partner', () => {
     expect(calls).toEqual(['upload', 'upload', 'insert']);
     expect(insertSociety.mock.calls[0]![0]).toMatchObject({ kind: 'partner', audience: ['frrms'] });
     expect(insertSociety.mock.calls[0]![3]).toEqual({ mark_light_path: LIGHT });
+  });
+
+  // The bucket refuses a PNG over its limit with a generic error; an encoder
+  // that cannot get under it returns null, and nothing is uploaded at all.
+  it('reports logo_too_large before any upload when the logo cannot fit', async () => {
+    vi.mocked(encodeSocietyLogo).mockResolvedValueOnce(null);
+    const res = await makeStore().getState().saveSociety(KPMG, blob('logo'), true);
+    expect(res).toEqual({ error: 'logo_too_large' });
+    expect(calls).toEqual([]);
+  });
+
+  it('reports logo_too_large before any upload when a mark cannot fit', async () => {
+    vi.mocked(encodePartnerMark).mockResolvedValueOnce(null);
+    const res = await makeStore()
+      .getState()
+      .saveSociety(KPMG, blob('logo'), true, { light: blob('l'), dark: null });
+    expect(res).toEqual({ error: 'logo_too_large' });
+    expect(calls).toEqual([]);
   });
 
   it('a plain society edit writes no partner columns', async () => {

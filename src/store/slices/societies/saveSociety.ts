@@ -17,12 +17,21 @@ export interface PartnerMarks {
 }
 
 /** undefined = nothing picked; null = the upload failed; else the stored path. */
-async function uploadMark(id: string, file: Blob | null): Promise<string | null | undefined> {
-  if (!file) return undefined;
-  return uploadSocietyLogo(id, await encodePartnerMark(file));
+async function uploadMark(id: string, png: Blob | null): Promise<string | null | undefined> {
+  if (!png) return undefined;
+  return uploadSocietyLogo(id, png);
 }
 
-export type SaveSocietyError = 'logo_required' | 'upload_failed' | 'save_failed';
+export type SaveSocietyError = 'logo_required' | 'logo_too_large' | 'upload_failed' | 'save_failed';
+
+/** Every picked image as an upload-ready PNG, or null when one cannot get under the bucket's limit. */
+async function encodeAll(logo: Blob | null, marks: PartnerMarks) {
+  const png = logo ? await encodeSocietyLogo(logo) : null;
+  const light = marks.light ? await encodePartnerMark(marks.light) : null;
+  const dark = marks.dark ? await encodePartnerMark(marks.dark) : null;
+  const tooLarge = (logo && !png) || (marks.light && !light) || (marks.dark && !dark);
+  return tooLarge ? null : { png, light, dark };
+}
 
 /** What the admin writes need from the slice: the catalog and the local upsert. */
 interface SocietiesAccess {
@@ -53,16 +62,20 @@ export async function saveSociety(
 ): Promise<{ error?: SaveSocietyError }> {
   if (isNew && !logo) return { error: 'logo_required' };
   const previous = access.societies()[input.id];
+  // Encode everything before uploading anything: an image that cannot fit is
+  // reported as such, and no earlier file is left behind as an orphan.
+  const encoded = await encodeAll(logo, marks);
+  if (!encoded) return { error: 'logo_too_large' };
 
   let logoPath: string | null = null;
-  if (logo) {
-    logoPath = await uploadSocietyLogo(input.id, await encodeSocietyLogo(logo));
+  if (encoded.png) {
+    logoPath = await uploadSocietyLogo(input.id, encoded.png);
     if (!logoPath) return { error: 'upload_failed' };
   }
 
   // Marks follow the logo's rule: uploaded before any row points at them.
-  const lightPath = await uploadMark(input.id, marks.light);
-  const darkPath = await uploadMark(input.id, marks.dark);
+  const lightPath = await uploadMark(input.id, encoded.light);
+  const darkPath = await uploadMark(input.id, encoded.dark);
   if (lightPath === null || darkPath === null) return { error: 'upload_failed' };
   const markPatch = {
     ...(lightPath ? { mark_light_path: lightPath } : {}),

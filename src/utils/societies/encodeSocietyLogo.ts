@@ -1,3 +1,5 @@
+import { drawPng, fitUnderLimit } from './fitUnderLimit';
+
 export const LOGO_SIDE = 256;
 
 /** The largest centred square: a logo is shown in round and square slots. */
@@ -11,20 +13,17 @@ export function squareCrop(w: number, h: number): { sx: number; sy: number; side
  * PNG (keeps transparency). Drawing through a canvas also drops the original's
  * metadata. Accepts what createImageBitmap reads everywhere (PNG, JPEG, WebP);
  * the form's file input limits the picker to those, so SVG never arrives here.
+ * A photo-like logo can be over the bucket's limit at 256px, so it steps down
+ * until it fits; null = it never did, and the caller says so before uploading.
  */
-export async function encodeSocietyLogo(file: Blob): Promise<Blob> {
+export async function encodeSocietyLogo(file: Blob): Promise<Blob | null> {
   const bitmap = await createImageBitmap(file);
   try {
     const { sx, sy, side } = squareCrop(bitmap.width, bitmap.height);
-    const canvas = document.createElement('canvas');
-    canvas.width = LOGO_SIDE;
-    canvas.height = LOGO_SIDE;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('2d context unavailable');
-    ctx.drawImage(bitmap, sx, sy, side, side, 0, 0, LOGO_SIDE, LOGO_SIDE);
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
-    if (!blob) throw new Error('toBlob returned null');
-    return blob;
+    return await fitUnderLimit((scale) => {
+      const px = Math.max(1, Math.round(LOGO_SIDE * scale));
+      return drawPng(px, px, (ctx) => ctx.drawImage(bitmap, sx, sy, side, side, 0, 0, px, px));
+    });
   } finally {
     bitmap.close();
   }
