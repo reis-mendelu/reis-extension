@@ -129,6 +129,10 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
     // The societies catalog rides on this too — reloadMapEvents loads it beside
     // the events — so it gets the same gap and no request of its own.
     void useAppStore.getState().refreshMapEventsIfStale(MIN_SYNC_GAP);
+    // The jídelníček has the same fetch-once problem, worse: a boot fetch that
+    // failed (the app started while the phone dozed) was never retried, so the
+    // chef hat and the menu card stayed gone for the session.
+    void useAppStore.getState().refreshMenuIfStale(MIN_SYNC_GAP);
     // A second chance for `loadContext()` if it lost the boot race against
     // `getUserParams()` — the event audience reads the faculty it sets.
     if (!useAppStore.getState().contextResolved) void useAppStore.getState().loadContext();
