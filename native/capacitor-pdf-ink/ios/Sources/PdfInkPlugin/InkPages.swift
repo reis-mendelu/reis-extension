@@ -49,9 +49,14 @@ enum InkPages {
      */
     static let displayBox = PDFDisplayBox.cropBox
 
-    /// What one fully inked page may cost as pixels: 64 MB at four bytes a
-    /// pixel. The reader's canvases and the export both stop there — PDFKit
-    /// keeps a few pages alive, and an iPad 8 has 3 GB.
+    /// What one fully inked page should cost as pixels: 64 MB at four bytes a
+    /// pixel — PDFKit keeps a few pages alive, and an iPad 8 has 3 GB. A
+    /// budget, not a hard cap: the reader and the export sharpen ink only up
+    /// to it, but neither goes below its own floor to stay inside it — the
+    /// reader never renders under the screen's scale, and the export never
+    /// under 2 px/pt (what every export was before). So a page over a
+    /// quarter of this in points (bigger than A1: an A0 poster) exports
+    /// above it, as it always did (`InkExport.inkScale(for:)`).
     static let maxInkPixels: CGFloat = 16_777_216
 
     /**

@@ -31,7 +31,7 @@ extension PdfInkViewController: UIDocumentPickerDelegate {
         guard let url = urls.first else { return showToolPicker() }
         let target = pickingFor
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let picture = (try? Data(contentsOf: url)).flatMap { PictureIngest.picture(from: $0) }
+            let picture = PictureIngest.picture(at: url)
             try? FileManager.default.removeItem(at: url)
             DispatchQueue.main.async { self?.finishPicking(picture, error: nil, for: target) }
         }

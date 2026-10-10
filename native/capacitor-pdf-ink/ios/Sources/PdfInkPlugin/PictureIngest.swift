@@ -28,8 +28,19 @@ enum PictureIngest {
 
     /// From the photo library: any format ImageIO reads (HEIC, JPEG, PNG…).
     static func picture(from data: Data) -> Picture? {
-        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
-            let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+        CGImageSourceCreateWithData(data as CFData, nil).flatMap(picture(from:))
+    }
+
+    /// From a file (Files). ImageIO reads it from disk as it needs to, rather
+    /// than the whole file being loaded first: a scan or TIFF from Files can
+    /// be far bigger than any photo, and only the thumbnail is ever wanted.
+    static func picture(at url: URL) -> Picture? {
+        CGImageSourceCreateWithURL(url as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary)
+            .flatMap(picture(from:))
+    }
+
+    private static func picture(from source: CGImageSource) -> Picture? {
+        guard let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
             let width = (props[kCGImagePropertyPixelWidth] as? NSNumber)?.doubleValue,
             let height = (props[kCGImagePropertyPixelHeight] as? NSNumber)?.doubleValue
         else { return nil }

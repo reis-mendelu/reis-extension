@@ -42,16 +42,44 @@ extension PdfInkViewController: UIGestureRecognizerDelegate {
         pickUpPicture(at: tap.location(in: overlay), onPage: index)
     }
 
+    /// Only touches that come down over a picture it could pick up. Decided at
+    /// touch-down, not at the end of the tap: every other page gesture waits
+    /// for this one (below), so it must never so much as track a touch
+    /// anywhere else — a stroke or a scroll on bare page is held up by nothing.
+    public func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch
+    ) -> Bool {
+        guard let (overlay, index) = overlay(of: gestureRecognizer) else { return false }
+        return pictureToPickUp(at: touch.location(in: overlay), onPage: index) != nil
+    }
+
     /// Only over a picture, so it never competes for any other touch.
     public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         guard let (overlay, index) = overlay(of: gestureRecognizer) else { return false }
         return pictureToPickUp(at: gestureRecognizer.location(in: overlay), onPage: index) != nil
     }
 
+    /// Only with the gestures on its own overlay, as `CoverLayerView` does.
+    /// "Recognize together" from either side lets a gesture through the wait
+    /// below, and PDFKit's double tap would then select text under the picture.
     public func gestureRecognizer(
         _ gestureRecognizer: UIGestureRecognizer,
         shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
-    ) -> Bool { true }
+    ) -> Bool { otherGestureRecognizer.view === gestureRecognizer.view }
+
+    /// Everything else on the page waits for a tap that picks a picture up,
+    /// the way it waits for a tap on a cover (`CoverLayerView`): PDFKit's
+    /// double tap would otherwise also select the text under the picture.
+    /// Not the cover layer's gestures — they already make everything wait for
+    /// them, and both ways round would deadlock. A cover is never under a
+    /// pick-up anyway (`pictureToPickUp`).
+    public func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        !(otherGestureRecognizer.delegate is CoverLayerView)
+            && otherGestureRecognizer.delegate !== self
+    }
 
     private func pictureToPickUp(at point: CGPoint, onPage index: Int) -> PagePicture? {
         guard !arrangingPictures, !makingCovers, !fingerDraws() else { return nil }
