@@ -53,7 +53,7 @@ export function DailyActivityChart({
           // and a log axis would flatter it. The cost is that a quiet day next
           // to a launch day is a few pixels tall — so every bar carries its own
           // numbers, readable on hover without having to pick the day first.
-          const readout = `${shortDay(d.day)} — ${d.active} ${t('admin.stats.activeDevices')}, ${t('admin.stats.new')}: ${d.newDevices}, ${t('admin.stats.returning')}: ${d.returningDevices}`;
+          const readout = `${shortDay(d.day)} — ${t('admin.stats.activeDevices')}: ${d.active}, ${t('admin.stats.new')}: ${d.newDevices}, ${t('admin.stats.returning')}: ${d.returningDevices}`;
           return (
             <li key={d.day} className="h-full flex-1">
               <button
