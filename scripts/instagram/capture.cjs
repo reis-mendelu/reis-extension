@@ -12,6 +12,28 @@ const recipes = {
     await page.getByRole('button', { name: 'Zavřít' }).click();
     await page.getByRole('button', { name: 'Kalendář' }).last().click();
   },
+  // Předměty → Odevzdávárny card, expanded to every open box (#494, #504).
+  boxes: async (page) => {
+    await page.getByRole('button', { name: 'Předměty' }).last().click();
+    await page.getByRole('button', { name: /otevřených/ }).click();
+  },
+  // Mapa → search Z13 → building Z (FRRMS) indoor plan (#451).
+  mapZ: async (page) => {
+    await page.getByRole('button', { name: 'Mapa' }).last().click();
+    await page.getByPlaceholder('Najdi místnost, budovu, akci…').click();
+    await page.getByPlaceholder('Najdi místnost, budovu, akci…').fill('Z13');
+    await page.getByText('Z13', { exact: true }).last().click();
+    // Zoomed to the room the street map is not drawn (#512) and headless Chromium gets no
+    // tiles anyway, so the shot is the indoor plan on its own — which is the point of the post.
+    await page.waitForTimeout(2500);
+  },
+  // Předměty → Statistika → pencil → own name (#506).
+  rename: async (page) => {
+    await page.getByRole('button', { name: 'Předměty' }).last().click();
+    await page.getByText('Statistika', { exact: true }).first().click();
+    await page.getByRole('button', { name: 'Přejmenovat předmět' }).click();
+    await page.getByLabel('Tvůj název předmětu').fill('Statka');
+  },
   day: async (page) => {
     await page.getByRole('button', { name: 'Kalendář' }).last().click();
   },

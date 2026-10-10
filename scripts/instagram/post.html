@@ -36,6 +36,7 @@
   .phone { position: absolute; left: 50%; transform: translateX(-50%); width: 560px; height: 1180px;
     border-radius: 72px; background: #0b0f17; border: 12px solid #2b3446;
     box-shadow: 0 40px 120px rgba(0,0,0,.55), 0 0 0 2px #3a4458; overflow: hidden; }
+  .phone .screen { position: absolute; top: 64px; left: 0; right: 0; bottom: 0; overflow: hidden; }
   .phone img { display: block; width: 100%; }
   .phone .status { height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 6px 44px 0 52px;
     font: 600 22px/1 'Inter', sans-serif; color: #fff; background: #111827; }
@@ -64,7 +65,7 @@
     <h1 id="h1" data-max-lines="3"></h1>
     <p class="sub" id="sub" data-max-lines="2"></p>
   </div>
-  <div class="phone" id="phone"><div class="status"><span>9:41</span><i></i></div><div class="island"></div><img id="shot" alt=""></div>
+  <div class="phone" id="phone"><div class="status"><span>9:41</span><i></i></div><div class="island"></div><div class="screen"><img id="shot" alt=""></div></div>
   <div class="foot" id="foot"></div>
 <script>
   // Filled by render.cjs via window.fill(spec).
@@ -84,6 +85,8 @@
     if (spec.screenshot) {
       document.getElementById('shot').src = spec.screenshot;
       phone.style.top = (spec.phoneTop || 640) + 'px';
+      // shotOffset: app CSS px to scroll the screenshot up (the phone shows the top ~470 px of an 844 px screen).
+      document.getElementById('shot').style.marginTop = -((spec.shotOffset || 0) * 536 / 390) + 'px';
     } else {
       phone.remove();
       document.body.classList.add('statement');

@@ -37,6 +37,10 @@ async function openDemo(browser, base, { seedPath, deviceScaleFactor = 3 } = {})
     const n = await page.evaluate(() => window.__reisStore.getState().schedule.data.length);
     if (n !== lessons.length) throw new Error(`seed did not stick: ${n} lessons in store`);
   }
+  if (seed?.store) {
+    if (!seed?.lessons) await page.waitForTimeout(1500);
+    await page.evaluate((st) => window.__reisStore.setState(st), seed.store);
+  }
   await installCleanup(page);
   return page;
 }
