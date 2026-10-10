@@ -4,7 +4,7 @@ import { fetchFullSemesterSchedule } from '../src/injector/dataFetchers';
 import { fetchDualLanguageExams } from '../src/api/exams';
 import { fetchDualLanguageSubjects } from '../src/api/subjects';
 import { fetchDualLanguageStudyPlan } from '../src/api/studyPlan';
-import { fetchSyllabus } from '../src/api/syllabus';
+import { fetchSyllabus, SYLLABUS_FETCH_FAILED } from '../src/api/syllabus';
 import { fetchSubjectSuccessRates } from '../src/api/successRate';
 import { fetchGradeHistory } from '../src/api/gradeHistory';
 import { fetchOdevzdavarny } from '../src/api/odevzdavarny';
@@ -115,7 +115,16 @@ export const TOOLS: ToolDef[] = [
       predmet: z.string().regex(/^\d+$/).describe('Numeric IS subject id, e.g. "164074".'),
       lang,
     },
-    run: (a) => fetchSyllabus(String(a.predmet), a.lang === 'en' ? 'en' : 'cz'),
+    run: async (a) => {
+      const syllabus = await fetchSyllabus(String(a.predmet), a.lang === 'en' ? 'en' : 'cz');
+      // The fetcher degrades to a placeholder for the app; here a failure is an error.
+      if (syllabus.requirementsText === SYLLABUS_FETCH_FAILED) {
+        throw new Error(
+          'IS Mendelu did not return this syllabus. Check the subject id or try again.'
+        );
+      }
+      return syllabus;
+    },
   },
   {
     name: 'mendelu_subject_files',
@@ -157,7 +166,9 @@ export const TOOLS: ToolDef[] = [
     input: {},
     run: async () => {
       const { studium, obdobi } = await study();
-      return fetchGradeHistory(studium, obdobi);
+      const grades = await fetchGradeHistory(studium, obdobi);
+      if (!grades) throw new Error('IS Mendelu did not return your grades. Try again.');
+      return grades;
     },
   },
   {

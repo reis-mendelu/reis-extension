@@ -81,6 +81,22 @@ describe('loginToIs', () => {
     expect((err as IsLoginError).kind).toBe('bad-credentials');
   });
 
+  it('reads auth_2fa_type whatever the attribute order', async () => {
+    const off =
+      '<input type="password" name="credential_1" /><input value="no" type="hidden" name="auth_2fa_type" />';
+    const on = '<input value="totp" type="hidden" name="auth_2fa_type" />';
+    const run = async (html: string) =>
+      (
+        (await loginToIs(
+          'x',
+          'pw',
+          asFetch(vi.fn().mockResolvedValue(respond(200, { html })))
+        ).catch((e: unknown) => e)) as IsLoginError
+      ).kind;
+    expect(await run(off)).toBe('bad-credentials');
+    expect(await run(on)).toBe('two-factor');
+  });
+
   it('reads the form from a 403 answer too', async () => {
     const f = vi.fn().mockResolvedValue(respond(403, { html: WRONG_LOGIN_PAGE }));
     const err = await loginToIs('x', 'wrong', asFetch(f)).catch((e: unknown) => e);

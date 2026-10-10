@@ -75,7 +75,9 @@ export async function loginToIs(
   // disabled attribute anywhere, whatever the attribute order.
   const otpTag = /<input\b[^>]*\bname="credential_k"[^>]*>/.exec(html)?.[0];
   const otpEnabled = !!otpTag && !/\bdisabled\b/.test(otpTag);
-  const twoFactorType = /name="auth_2fa_type" value="(?!no")/.test(html);
+  const twoFactorTag = /<input\b[^>]*\bname="auth_2fa_type"[^>]*>/.exec(html)?.[0];
+  const twoFactorValue = twoFactorTag && /\bvalue="([^"]*)"/.exec(twoFactorTag)?.[1];
+  const twoFactorType = !!twoFactorValue && twoFactorValue !== 'no';
   if (otpEnabled || twoFactorType) throw fail('two-factor');
   if (/name="credential_1"/.test(html)) throw fail('bad-credentials');
   throw fail('unexpected');

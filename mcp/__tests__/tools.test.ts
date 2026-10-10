@@ -7,7 +7,10 @@ vi.mock('../../src/injector/dataFetchers', () => ({ fetchFullSemesterSchedule: v
 vi.mock('../../src/api/exams', () => ({ fetchDualLanguageExams: vi.fn() }));
 vi.mock('../../src/api/subjects', () => ({ fetchDualLanguageSubjects: vi.fn() }));
 vi.mock('../../src/api/studyPlan', () => ({ fetchDualLanguageStudyPlan: vi.fn() }));
-vi.mock('../../src/api/syllabus', () => ({ fetchSyllabus: vi.fn() }));
+vi.mock('../../src/api/syllabus', () => ({
+  fetchSyllabus: vi.fn(),
+  SYLLABUS_FETCH_FAILED: 'Error: Failed to fetch syllabus',
+}));
 vi.mock('../../src/api/successRate', () => ({ fetchSubjectSuccessRates: vi.fn() }));
 vi.mock('../../src/api/gradeHistory', () => ({ fetchGradeHistory: vi.fn() }));
 vi.mock('../../src/api/odevzdavarny', () => ({ fetchOdevzdavarny: vi.fn() }));
@@ -21,6 +24,7 @@ import { fetchDualLanguageSubjects } from '../../src/api/subjects';
 import { fetchDualLanguageStudyPlan } from '../../src/api/studyPlan';
 import { listFolderFiles } from '../files';
 import { fetchFullSemesterSchedule } from '../../src/injector/dataFetchers';
+import { fetchSyllabus } from '../../src/api/syllabus';
 
 const ctx = { fetch: vi.fn() as unknown as typeof fetch };
 const tool = (name: string) => {
@@ -46,7 +50,7 @@ describe('TOOLS', () => {
   });
 
   it('fills the student study context so the model never passes it', async () => {
-    vi.mocked(fetchGradeHistory).mockResolvedValue(null);
+    vi.mocked(fetchGradeHistory).mockResolvedValue({ grades: [] } as never);
     await tool('mendelu_grades').run({}, ctx);
     expect(fetchGradeHistory).toHaveBeenCalledWith('S', 'O');
   });
@@ -117,6 +121,15 @@ describe('TOOLS', () => {
     vi.mocked(fetchDualLanguageSubjects).mockResolvedValue(null);
     await expect(tool('mendelu_subjects').run({}, ctx)).rejects.toThrow(
       /did not return your subjects/
+    );
+    vi.mocked(fetchGradeHistory).mockResolvedValue(null);
+    await expect(tool('mendelu_grades').run({}, ctx)).rejects.toThrow(/did not return your grades/);
+    vi.mocked(fetchSyllabus).mockResolvedValue({
+      requirementsText: 'Error: Failed to fetch syllabus',
+      requirementsTable: [],
+    } as never);
+    await expect(tool('mendelu_syllabus').run({ predmet: '1' }, ctx)).rejects.toThrow(
+      /did not return this syllabus/
     );
     vi.mocked(fetchFullSemesterSchedule).mockResolvedValue(null as never);
     await expect(tool('mendelu_schedule').run({}, ctx)).rejects.toThrow(
