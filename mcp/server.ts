@@ -19,6 +19,14 @@ if (!user || !pass) {
 const session = createIsSession({ user, pass }, nativeFetch);
 setSessionFetch(session.fetch);
 
-const server = new McpServer({ name: 'reis-mendelu', version: '0.1.0' });
+const server = new McpServer({ name: 'reis-mendelu', version: '0.1.1' });
 registerTools(server, { fetch: session.fetch });
-await server.connect(new StdioServerTransport());
+// No top-level await: Claude Desktop's built-in Node host loads the entry
+// with require(), and require() refuses an ES module graph that has one
+// ("MCP Node Host fatal (import-failed)", 2026-10-10).
+server.connect(new StdioServerTransport()).catch((e: unknown) => {
+  process.stderr.write(
+    `reIS for Claude: could not start (${e instanceof Error ? e.message : String(e)}).\n`
+  );
+  process.exit(1);
+});

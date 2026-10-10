@@ -13,3 +13,23 @@ if (JSON.stringify(files) !== JSON.stringify(EXPECTED)) {
   process.exit(1);
 }
 console.log(`mcp:pack: archive holds exactly ${EXPECTED.join(', ')}`);
+
+// Claude Desktop's built-in Node host loads the entry with require(), which
+// rejects an ES module graph containing a top-level await. Load it the same
+// way with no credentials: it must reach the server's own "set your login"
+// exit, not ERR_REQUIRE_ASYNC_MODULE.
+let stderr = '';
+try {
+  execFileSync(process.execPath, ['-e', "require('./dist-mcp/server/index.mjs')"], {
+    env: { ...process.env, MENDELU_USER: '', MENDELU_PASS: '' },
+    stdio: ['ignore', 'ignore', 'pipe'],
+    encoding: 'utf8',
+  });
+} catch (e) {
+  stderr = String(e.stderr ?? '');
+}
+if (!stderr.includes('set your IS Mendelu username')) {
+  console.error(`mcp:pack: the bundle cannot be loaded with require():\n${stderr.slice(0, 800)}`);
+  process.exit(1);
+}
+console.log('mcp:pack: the bundle loads with require(), as Claude Desktop loads it');
