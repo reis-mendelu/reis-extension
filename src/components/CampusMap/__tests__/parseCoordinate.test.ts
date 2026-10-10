@@ -53,7 +53,7 @@ describe('parseCoordinate', () => {
 
   it('decodes a place name that Google writes with + and percent-escapes', () => {
     const url =
-      'https://www.google.com/maps/place/Kotl%C3%A1%C5%99sk%C3%A1+51a,+602+00+Brno/@49.2078989,16.6030499,17z';
+      'https://www.google.com/maps/place/Kotl%C3%A1%C5%99sk%C3%A1+51a,+602+00+Brno/@49.2078989,16.6030499,17z/data=!3m1!4b1!4m6!3m5!1s0x0:0x0!8m2!3d49.2078989!4d16.6030499!16s';
     expect(parseCoordinate(url)).toEqual({
       coord: [LNG, LAT],
       name: 'Kotlářská 51a, 602 00 Brno',
@@ -66,6 +66,15 @@ describe('parseCoordinate', () => {
     const url =
       "https://www.google.com/maps/place/49%C2%B012'28.4%22N+16%C2%B036'11.0%22E/@49.2078989,16.6030499,17z/data=!3m1!4b1!4m4!3m3!8m2!3d49.2078989!4d16.6030499";
     expect(parseCoordinate(url)).toEqual({ coord: [LNG, LAT] });
+  });
+
+  // A place link carries the place's own pin in !3d!4d. Without it, the @ pair
+  // is only where the viewport was centred, which follows every pan: falling
+  // back to it published the event wherever the organiser had scrolled.
+  it('reads no point from a place link without its pin, rather than the viewport centre', () => {
+    expect(
+      parseCoordinate('https://www.google.com/maps/place/Padagali/@49.25,16.65,15z')
+    ).toBeNull();
   });
 
   it('falls back to the @ centre, and reads ?q= and ?ll= links', () => {
@@ -98,6 +107,14 @@ describe('parseCoordinate', () => {
   it('rejects numbers that are not a place on Earth', () => {
     expect(parseCoordinate('149.2, 16.6')).toBeNull();
     expect(parseCoordinate('49.2, 216.6')).toBeNull();
+  });
+
+  // Only the viewport centre is untrustworthy on a place link; an explicit
+  // coordinate parameter names the point itself.
+  it('reads an explicit ?q= point on a place link that has no pin', () => {
+    expect(
+      parseCoordinate('https://www.google.com/maps/place/Kav%C3%A1rna/@49.1,16.5,17z?q=49.21,16.61')
+    ).toMatchObject({ coord: [16.61, 49.21] });
   });
 
   it('cannot read a short link, which hides the place behind a redirect', () => {

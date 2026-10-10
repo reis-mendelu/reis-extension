@@ -61,12 +61,18 @@ describe('eventDirectLink', () => {
     ['a named place', { location: 'Klub Fléda', venueKind: 'offcampus' as const }],
     ['a dropped pin', { coord: [16.6, 49.2] as [number, number], venueKind: 'offcampus' as const }],
     ['a room', { roomCode: 'Q01', venueKind: 'campus' as const }],
-    ['an online venue', { venueKind: 'online' as const }],
     // An upcoming trip's row shows only its first day; the card shows the span.
     ['a multi-day span', { endDate: '2026-11-29' }],
   ])('keeps the card when the event has %s', (_, extra) =>
     expect(eventDirectLink({ ...bare, ...extra }, esn)).toBeNull()
   );
+  // 'online' alone draws nothing on the card: EventVenueLine renders a room, a
+  // coordinate or a name, and no producer of 'online' exists (composerRules).
+  // Keeping the card for it opened a card that repeated the row.
+  it('goes straight to the link for a bare online row, which the card shows nothing for', () =>
+    expect(eventDirectLink({ ...bare, venueKind: 'online' as const }, esn)?.href).toBe(
+      'https://www.instagram.com/esnmendelubrno/'
+    ));
   it('a same-day end date is not a span', () =>
     expect(eventDirectLink({ ...bare, endDate: '2026-11-23' }, esn)).not.toBeNull());
   it('treats whitespace as nothing', () =>

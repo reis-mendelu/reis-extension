@@ -4,13 +4,13 @@ import type L from 'leaflet';
 import { useVisibleMapEvents } from '../../hooks/useVisibleMapEvents';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { groupEventsByVenue, type VenueGroup } from './eventHelpers';
+import { groupEventsByVenue, parseEventDate, type VenueGroup } from './eventHelpers';
 import { subscribeMapInstance } from './mapInstance';
 import { EVENTS_PANE, ensurePane } from './mapPanes';
 import { EventPin } from './EventPin';
 import { DraftPin } from './DraftPin';
 import { useSociety } from '../../hooks/useSociety';
-import { isSoonEvent } from './eventWindow';
+import { isSoonEvent, localTodayIso } from './eventWindow';
 import { trackMapEventView } from '../../api/featureUsage';
 
 interface Placed {
@@ -64,10 +64,18 @@ export function EventLayer() {
   // selected EVENT's id, not the selection object: a new selection object for
   // the same event (or a room picked with no event selected) does not rebuild
   // it; moving off an event does, since its id stops being exempt.
+  // "Soon" is measured from the store's clock, selected as the local DAY so the
+  // pulse's per-second tick re-renders nothing: a map left open across
+  // midnight drops yesterday's pins and gains the day that came into range.
+  const todayIso = useAppStore((s) => localTodayIso(s.now));
   const events = useMemo(
     () =>
-      authoring ? societyEvents : publicEvents.filter((e) => isSoonEvent(e) || e.id === selectedId),
-    [authoring, societyEvents, publicEvents, selectedId]
+      authoring
+        ? societyEvents
+        : publicEvents.filter(
+            (e) => isSoonEvent(e, parseEventDate(todayIso)) || e.id === selectedId
+          ),
+    [authoring, societyEvents, publicEvents, selectedId, todayIso]
   );
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const focusEvent = useAppStore((s) => s.focusEventById);

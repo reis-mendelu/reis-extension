@@ -51,15 +51,26 @@ function isSociety(value: unknown): value is Society {
   );
 }
 
-export const createSocietiesSlice: AppSlice<SocietiesSlice> = (set, get) => ({
-  societies: BUNDLED_SOCIETIES,
-  societiesCacheRead: false,
+export const createSocietiesSlice: AppSlice<SocietiesSlice> = (set, get) => {
+  // The load in flight, shared: boot, a resume refresh and a publish's reload
+  // can overlap, and each would otherwise send its own catalog request.
+  let pending: Promise<void> | null = null;
+  // Bumped by every save. A load that started before one holds a catalog
+  // snapshot older than the save: it must not write over it, and a reload
+  // asked for after the save must not join it.
+  let generation = 0;
+  let pendingGeneration = -1;
 
-  loadSocieties: async () => {
+  const load = async (started: number) => {
     if (!get().societiesCacheRead) {
       try {
         const cached: unknown = await IndexedDBService.get('meta', SOCIETIES_CACHE_KEY);
-        if (Array.isArray(cached) && cached.length > 0 && cached.every(isSociety)) {
+        if (
+          started === generation &&
+          Array.isArray(cached) &&
+          cached.length > 0 &&
+          cached.every(isSociety)
+        ) {
           set({ societies: toSocietyRecord(cached) });
         }
       } catch (err) {
@@ -72,33 +83,50 @@ export const createSocietiesSlice: AppSlice<SocietiesSlice> = (set, get) => ({
     // null is a failed fetch; [] is a table this client cannot read (RLS,
     // an outage). Neither may wipe a catalog every screen depends on.
     if (!fresh || fresh.length === 0) return;
+    if (started !== generation) return;
     set({ societies: toSocietyRecord(fresh) });
     try {
       await IndexedDBService.set('meta', SOCIETIES_CACHE_KEY, fresh);
     } catch (err) {
       logError('SocietiesSlice.writeCache', err);
     }
-  },
+  };
 
-  putSociety: async (society) => {
-    const societies = { ...get().societies, [society.id]: society };
-    set({ societies });
-    try {
-      await IndexedDBService.set('meta', SOCIETIES_CACHE_KEY, Object.values(societies));
-    } catch (err) {
-      logError('SocietiesSlice.writeCache', err);
-    }
-  },
+  return {
+    societies: BUNDLED_SOCIETIES,
+    societiesCacheRead: false,
 
-  saveSociety: (input, logo, isNew, marks) =>
-    saveSociety(
-      { societies: () => get().societies, put: get().putSociety },
-      input,
-      logo,
-      isNew,
-      marks
-    ),
+    loadSocieties: () => {
+      if (pending && pendingGeneration === generation) return pending;
+      pendingGeneration = generation;
+      const run: Promise<void> = load(generation).finally(() => {
+        if (pending === run) pending = null;
+      });
+      pending = run;
+      return run;
+    },
 
-  setSocietyActive: (id, active) =>
-    setSocietyActive({ societies: () => get().societies, put: get().putSociety }, id, active),
-});
+    putSociety: async (society) => {
+      generation += 1;
+      const societies = { ...get().societies, [society.id]: society };
+      set({ societies });
+      try {
+        await IndexedDBService.set('meta', SOCIETIES_CACHE_KEY, Object.values(societies));
+      } catch (err) {
+        logError('SocietiesSlice.writeCache', err);
+      }
+    },
+
+    saveSociety: (input, logo, isNew, marks) =>
+      saveSociety(
+        { societies: () => get().societies, put: get().putSociety },
+        input,
+        logo,
+        isNew,
+        marks
+      ),
+
+    setSocietyActive: (id, active) =>
+      setSocietyActive({ societies: () => get().societies, put: get().putSociety }, id, active),
+  };
+};

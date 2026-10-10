@@ -51,6 +51,59 @@ describe('createSocietiesSlice', () => {
     expect(store.getState().societies.kino!.name).toBe('Kino');
   });
 
+  // Boot and a resume (or a publish's reload) can both ask while one request
+  // is still out. They share it rather than sending a second catalog request.
+  it('shares one request between overlapping loads', async () => {
+    let resolve!: (v: unknown) => void;
+    fetchSocieties.mockReturnValue(new Promise((r) => (resolve = r)));
+    const store = makeStore();
+    const first = store.getState().loadSocieties();
+    const second = store.getState().loadSocieties();
+    // The cache read is awaited first; let both calls reach the network step.
+    await new Promise((r) => setTimeout(r, 0));
+    resolve([fresh]);
+    await Promise.all([first, second]);
+    expect(fetchSocieties).toHaveBeenCalledTimes(1);
+    // Done means done: the next load asks again.
+    fetchSocieties.mockResolvedValue([fresh]);
+    await store.getState().loadSocieties();
+    expect(fetchSocieties).toHaveBeenCalledTimes(2);
+  });
+
+  // An admin save lands while a catalog load started before it is still out.
+  // That load's snapshot predates the save: it must not roll the save back, and
+  // a reload asked for after the save must not join it.
+  it('a load that started before a save neither undoes it nor is reused after it', async () => {
+    let resolveOld!: (v: unknown) => void;
+    fetchSocieties.mockReturnValueOnce(new Promise((r) => (resolveOld = r)));
+    const store = makeStore();
+    const old = store.getState().loadSocieties();
+    await new Promise((r) => setTimeout(r, 0));
+
+    await store.getState().putSociety(newcomer);
+    fetchSocieties.mockResolvedValueOnce([fresh, newcomer]);
+    const after = store.getState().loadSocieties();
+
+    resolveOld([fresh]);
+    await Promise.all([old, after]);
+    expect(fetchSocieties).toHaveBeenCalledTimes(2);
+    expect(store.getState().societies.kino!.name).toBe('Kino');
+  });
+
+  it('an old load finishing last does not undo a save', async () => {
+    let resolveOld!: (v: unknown) => void;
+    fetchSocieties.mockReturnValueOnce(new Promise((r) => (resolveOld = r)));
+    const store = makeStore();
+    const old = store.getState().loadSocieties();
+    await new Promise((r) => setTimeout(r, 0));
+    await store.getState().putSociety(newcomer);
+
+    resolveOld([fresh]);
+    await old;
+    expect(store.getState().societies.kino!.name).toBe('Kino');
+    expect((idb.get('societies_catalog') as { id: string }[]).map((s) => s.id)).toContain('kino');
+  });
+
   it('ignores an empty fetch rather than wiping the catalog', async () => {
     fetchSocieties.mockResolvedValue([]);
     const store = makeStore();

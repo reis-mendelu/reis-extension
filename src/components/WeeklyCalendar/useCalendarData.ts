@@ -151,15 +151,21 @@ export function useCalendarData(initialDate: Date) {
     );
   }, [weekDates, language]);
 
-  const todayIndex = useMemo(() => {
-    const today = new Date();
-    return weekDates.findIndex(
-      (d) =>
-        parseInt(d.day) === today.getDate() &&
-        parseInt(d.month) === today.getMonth() + 1 &&
-        parseInt(d.year) === today.getFullYear()
-    );
-  }, [weekDates]);
+  // Today from the store's clock, as a YYYYMMDD number: the pulse advances
+  // `now` every second, and a primitive changes only at midnight, so a
+  // calendar left open overnight re-marks today (and widens to a weekend
+  // today) without re-rendering the grid every tick.
+  const todayKey = useAppStore(
+    (state) =>
+      state.now.getFullYear() * 10000 + (state.now.getMonth() + 1) * 100 + state.now.getDate()
+  );
+  const todayIndex = useMemo(
+    () =>
+      weekDates.findIndex(
+        (d) => parseInt(d.year) * 10000 + parseInt(d.month) * 100 + parseInt(d.day) === todayKey
+      ),
+    [weekDates, todayKey]
+  );
 
   const isOutsideTeachingPeriod = useMemo(() => {
     if (!teachingWeekData || !isScheduleLoaded) return false;
