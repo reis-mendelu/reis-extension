@@ -28,6 +28,13 @@
       "date": "2026-10-23",
       "status": "scheduled",
       "release": "5.4.0"
+    },
+    {
+      "slug": "spoluzaci",
+      "prs": [490, 505],
+      "date": "2026-10-30",
+      "status": "draft",
+      "release": "5.4.0"
     }
   ]
 }
