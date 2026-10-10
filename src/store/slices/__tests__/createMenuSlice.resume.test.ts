@@ -81,4 +81,50 @@ describe('refreshMenuIfStale — the resume retry', () => {
     await useAppStore.getState().refreshMenuIfStale(GAP);
     expect(apiFetchMenu).toHaveBeenCalledTimes(1);
   });
+
+  // cubic on #534.
+  it('treats an empty scrape as no menu, so the next resume retries it', async () => {
+    vi.mocked(apiFetchMenu).mockResolvedValueOnce([]);
+    await useAppStore.getState().fetchMenu();
+    vi.mocked(apiFetchMenu).mockResolvedValueOnce(week('12. 10. 2026'));
+    await useAppStore.getState().refreshMenuIfStale(GAP);
+    expect(useAppStore.getState().menu).toEqual(week('12. 10. 2026'));
+  });
+
+  it("keeps the kept menu's language when a refresh in another language fails", async () => {
+    vi.mocked(apiFetchMenu).mockResolvedValueOnce(week('5. 10. 2026'));
+    await useAppStore.getState().fetchMenu();
+    useAppStore.setState({ language: 'en' } as never);
+    vi.mocked(apiFetchMenu).mockRejectedValueOnce(new Error('offline'));
+    await useAppStore.getState().refreshMenuIfStale(GAP);
+    // Still the Czech menu, so it must not pass for a fresh English one.
+    expect(useAppStore.getState().menuLanguage).toBe('cz');
+    vi.mocked(apiFetchMenu).mockResolvedValueOnce(week('12. 10. 2026'));
+    await useAppStore.getState().refreshMenuIfStale(GAP);
+    expect(apiFetchMenu).toHaveBeenLastCalledWith('en');
+    expect(useAppStore.getState().menu).toEqual(week('12. 10. 2026'));
+  });
+
+  it('a resume during a boot fetch that then fails still gets its retry', async () => {
+    let fail!: (e: Error) => void;
+    vi.mocked(apiFetchMenu).mockReturnValueOnce(new Promise((_, r) => (fail = r)));
+    const boot = useAppStore.getState().fetchMenu();
+    await useAppStore.getState().refreshMenuIfStale(GAP); // arrives mid-flight
+    vi.mocked(apiFetchMenu).mockResolvedValueOnce(week('12. 10. 2026'));
+    fail(new Error('network cut while dozing'));
+    await boot;
+    await vi.waitFor(() => expect(useAppStore.getState().menu).toEqual(week('12. 10. 2026')));
+    expect(apiFetchMenu).toHaveBeenCalledTimes(2);
+  });
+
+  it('a resume during a boot fetch that succeeds asks nothing more', async () => {
+    let ok!: (m: OutletMenu[]) => void;
+    vi.mocked(apiFetchMenu).mockReturnValueOnce(new Promise((r) => (ok = r)));
+    const boot = useAppStore.getState().fetchMenu();
+    await useAppStore.getState().refreshMenuIfStale(GAP);
+    ok(week('12. 10. 2026'));
+    await boot;
+    await Promise.resolve();
+    expect(apiFetchMenu).toHaveBeenCalledTimes(1);
+  });
 });

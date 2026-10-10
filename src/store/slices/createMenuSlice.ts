@@ -15,9 +15,19 @@ import { fetchMenu } from '../../api/menu';
  */
 let latestRequest = 0;
 
+/**
+ * A resume that arrived while a request was in flight, and its gap. That
+ * request may be the boot fetch about to fail (a dozing phone holds it until
+ * it times out), so the resume is not dropped: it runs once the request
+ * settles, where the freshness check skips it if the request succeeded.
+ */
+let recheckGap: number | null = null;
+
 export const createMenuSlice: AppSlice<MenuSlice> = (set, get) => {
   const request = async (lang: Language) => {
     const id = ++latestRequest;
+    // The language of the menu in hand, for a failed refresh that keeps it.
+    const keptLanguage = get().menuLanguage;
     set({ menuLoading: true, menuError: false, menuLanguage: lang });
     try {
       const data = await fetchMenu(lang);
@@ -28,6 +38,7 @@ export const createMenuSlice: AppSlice<MenuSlice> = (set, get) => {
       // is still pending. The newest request owns the flags from here.
       if (id !== latestRequest) return;
       set({ menu: data, menuLoading: false, menuFetchedAt: Date.now() });
+      await recheck();
     } catch {
       // The same, and this is the half that bites hardest: a stale rejection
       // used to raise `menuError` for a request that then succeeded, leaving
@@ -35,9 +46,43 @@ export const createMenuSlice: AppSlice<MenuSlice> = (set, get) => {
       // `menuError` before it reads `menu`.
       if (id !== latestRequest) return;
       // A failed REFRESH keeps the menu it replaces: last week's is still right
-      // for the days it covers, and "unavailable" over it would hide them.
-      set({ menuLoading: false, menuError: !get().menu });
+      // for the days it covers, and "unavailable" over it would hide them. It
+      // keeps that menu's language too, or a Czech menu would pass the
+      // freshness check as an answer to English.
+      if (get().menu) set({ menuLoading: false, menuLanguage: keptLanguage });
+      else set({ menuLoading: false, menuError: true });
+      await recheck();
     }
+  };
+
+  const recheck = async () => {
+    if (recheckGap === null) return;
+    const gap = recheckGap;
+    recheckGap = null;
+    await refreshIfStale(gap);
+  };
+
+  // Capacitor's second chance, called on resume (capacitor/startApp.ts). The
+  // boot fetch is the only other request: one that failed — the app started
+  // while the phone dozed and its network was cut — left no menu and no chef
+  // hat for the session, and a process alive for days kept last week's menu
+  // after SKM moved on. A failed or missing menu is retried whatever its age;
+  // a good one only once it is older than `minGapMs`, like the map events.
+  // An empty scrape counts as missing: it is no menu, not a fresh one.
+  const refreshIfStale = async (minGapMs: number) => {
+    const s = get();
+    if (s.demoMode) return;
+    if (s.menuLoading) {
+      recheckGap = minGapMs;
+      return;
+    }
+    const fresh =
+      !!s.menu?.length &&
+      s.menuLanguage === s.language &&
+      s.menuFetchedAt !== null &&
+      Date.now() - s.menuFetchedAt < minGapMs;
+    if (fresh) return;
+    await request(s.language);
   };
 
   return {
@@ -75,22 +120,6 @@ export const createMenuSlice: AppSlice<MenuSlice> = (set, get) => {
       await request(lang);
     },
 
-    // Capacitor's second chance, called on resume (capacitor/startApp.ts). The
-    // boot fetch is the only other request: one that failed — the app started
-    // while the phone dozed and its network was cut — left no menu and no chef
-    // hat for the session, and a process alive for days kept last week's menu
-    // after SKM moved on. A failed or missing menu is retried whatever its age;
-    // a good one only once it is older than `minGapMs`, like the map events.
-    refreshMenuIfStale: async (minGapMs) => {
-      const s = get();
-      if (s.demoMode || s.menuLoading) return;
-      const fresh =
-        s.menu !== null &&
-        s.menuLanguage === s.language &&
-        s.menuFetchedAt !== null &&
-        Date.now() - s.menuFetchedAt < minGapMs;
-      if (fresh) return;
-      await request(s.language);
-    },
+    refreshMenuIfStale: refreshIfStale,
   };
 };
