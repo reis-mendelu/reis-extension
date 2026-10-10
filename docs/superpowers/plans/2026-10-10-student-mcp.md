@@ -1470,3 +1470,8 @@ Not automatic. Ask Dominik first, because a release is public.
 - **`publicDir: false` in `vite.mcp.config.ts`.** Vite copied `public/` into the bundle, including `dev-real-data.json`, a student's real IS snapshot. `scripts/mcp-check-pack.mjs` now fails the pack unless the archive holds exactly `icon.png`, `manifest.json` and `server/index.mjs`.
 - **The icon is copied at pack time** from `public/brand-assets/reIS_logo_512.png`, so there is no `mcp/icon.png`. The manifest license is `Apache-2.0`, matching the repo's LICENSE.
 - **The markdown renderer keeps multi-line text as a block,** so extracted lecture text keeps its lines.
+- **mcpb is not a devDependency.** It pulled in `node-forge` advisories, so `mcp:pack` runs a pinned `npx -y @anthropic-ai/mcpb@2.1.2`. The new packages leave `npm audit` at the 15-advisory baseline.
+- **The schedule takes `from`/`to` (default today + 14 days) as compact rows, and the study plan is compacted.** Live, both ran past the 25k cap, and the cut fell on the future. A nested list of flat rows renders as a table.
+- **Verified live (2026-10-10):**
+  - all ten tools on Node 20.20, 22.23 and 26.0, including reading a 37-page lecture PDF;
+  - an invalid `UISAuth` gets HTTP 403 with the login form in the body; the session detects the form, logs in once more, and returns the real page.

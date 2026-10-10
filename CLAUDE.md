@@ -85,7 +85,7 @@ goes into one login POST. Its standing promises are pinned in
 `src/test/guards/mcpStaysReadOnly.test.ts`.
 
 A `src/api` change reaches it too. Check the change with
-`npm run mcp:smoke` (add `--live` to call tools against real IS).
+`npm run mcp:smoke` (`npm run mcp:smoke -- --live` calls tools against real IS).
 
 Build with `npm run mcp:pack`. Its release tags are `mcp-v*`, never `v*`.
 

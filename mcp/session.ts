@@ -15,7 +15,11 @@ function urlOf(input: RequestInfo | URL): string {
   return typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
 }
 
-/** IS serves its login page with HTTP 200 when a session has lapsed. */
+/**
+ * IS answers a dead session with its login form, and not always as a redirect:
+ * an invalid UISAuth got HTTP 403 with the form in the body (live, 2026-10-10).
+ * So the status code is never trusted; the form is.
+ */
 async function isLoginPage(res: Response): Promise<boolean> {
   if (res.url.includes('/system/login.pl')) return true;
   if (!/text\/html/i.test(res.headers.get('content-type') ?? '')) return false;

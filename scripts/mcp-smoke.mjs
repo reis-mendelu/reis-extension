@@ -4,7 +4,7 @@
 import { spawn } from 'node:child_process';
 
 const live = process.argv.includes('--live');
-const child = spawn('node', ['dist-mcp/server/index.mjs'], {
+const child = spawn(process.execPath, ['dist-mcp/server/index.mjs'], {
   env: {
     ...process.env,
     MENDELU_USER: process.env.MENDELU_USER ?? 'smoke',
