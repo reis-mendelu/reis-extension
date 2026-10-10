@@ -66,8 +66,8 @@ export function BottomNav() {
               setMobileTab(id);
               if (active && id === 'calendar') {
                 goToday();
-                // Home is today in the saved view: a day peeked at from the
-                // week goes back to the week.
+                // Home is today in the saved view, not one being tried in
+                // the chooser.
                 restoreCalendarView();
               }
             }}

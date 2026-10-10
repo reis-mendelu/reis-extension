@@ -19,12 +19,12 @@ import { WeekGrid } from './calendar/WeekGrid';
 import { CalendarViewChooser } from './calendar/CalendarViewChooser';
 import { useCalendarToday } from './calendar/useCalendarToday';
 import { RecentFilesStrip } from './calendar/RecentFilesStrip';
+import { WeekMenuButton } from './calendar/WeekMenuButton';
 import { CalendarSkeleton } from './calendar/CalendarSkeleton';
-import { formatHeaderDate } from '../../../utils/mobile/formatHeaderDate';
+import { useCalendarTitle } from './calendar/useCalendarTitle';
 
 export function CalendarScreen() {
   const { t, language } = useTranslation();
-  const locale = language === 'en' ? 'en-US' : 'cs-CZ';
   const { schedule } = useSchedule();
   const setMobileSelectedDay = useAppStore((s) => s.setMobileSelectedDay);
   const showOnMap = useShowLessonOnMap();
@@ -34,7 +34,6 @@ export function CalendarScreen() {
   const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
   const syncLoaded = useAppStore((s) => s.syncLoaded);
   const view = useAppStore((s) => s.mobileCalendarView);
-  const showView = useAppStore((s) => s.showCalendarView);
   const choosing = useAppStore((s) => s.calendarViewChosen === false);
   // The store's clock, not `new Date()`: the pulse advances it, so the running
   // lesson's card and its countdown move with it instead of being stamped once
@@ -78,6 +77,7 @@ export function CalendarScreen() {
   const customLessons = customEvents.map(customEventToLesson);
   const dayLessons = [...visibleSchedule, ...customLessons];
   const lessonDates = new Set(dayLessons.map((l) => l.date));
+  const header = useCalendarTitle({ selectedIso, lessonDates, isAway });
   const chrome = (
     <>
       {/* The date IS the title, and the eyebrow stays empty. It was the
@@ -93,10 +93,11 @@ export function CalendarScreen() {
           other tab's; what is left is the screen-reader route to the same
           sync, which takes no layout. */}
       <ScreenHeader
-        title={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale, 'short')}
+        title={header.title}
         titleAction={
-          isAway ? { label: t('mobile.calendar.backToToday'), onClick: goToday } : undefined
+          header.away ? { label: t('mobile.calendar.backToToday'), onClick: goToday } : undefined
         }
+        leadingAction={<WeekMenuButton days={header.weekIsos} todayIso={header.todayIso} />}
         below={
           <RefreshButton
             label={t('mobile.header.refresh')}
@@ -201,14 +202,9 @@ export function CalendarScreen() {
           selectedIso={selectedIso}
           onSelect={setMobileSelectedDay}
           lessonDates={lessonDates}
-          // No selection mark and no dots here — see DayChips' `view`.
+          // No selection, no dots, and the chips are labels — see DayChips'
+          // `view`. The arrows and the swipe move the week.
           view="week"
-          // A chip in the week view zooms in on that day — a peek, not a
-          // choice. The saved view comes back on a Kalendář re-tap or a reopen.
-          onPickDay={(iso) => {
-            setMobileSelectedDay(iso);
-            showView('day');
-          }}
         />
         <WeekGrid
           lessons={dayLessons}

@@ -51,7 +51,9 @@ export function SheetHost() {
           case 'venue':
             return <VenueSheet key={index} sheet={sheet} onClose={popSheet} />;
           case 'menu':
-            return <MenuSheet key={index} dayIso={sheet.dayIso} onClose={popSheet} />;
+            return (
+              <MenuSheet key={index} dayIso={sheet.dayIso} week={sheet.week} onClose={popSheet} />
+            );
           case 'search':
             return <SearchSheet key={index} sheet={sheet} onClose={popSheet} />;
           case 'impersonation':
