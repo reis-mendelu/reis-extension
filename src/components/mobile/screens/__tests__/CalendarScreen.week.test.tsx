@@ -155,6 +155,8 @@ describe('CalendarScreen — week view', () => {
     // reaches the strip on older WebKit.
     expect(chip).toHaveAttribute('aria-disabled', 'true');
     expect(chip).not.toBeDisabled();
+    // And out of the tab order: a keyboard stop that does nothing is a trap.
+    expect(chip).toHaveAttribute('tabindex', '-1');
     expect(chip).not.toHaveAttribute('aria-pressed');
     fireEvent.click(chip);
     expect(useAppStore.getState().mobileCalendarView).toBe('week');
