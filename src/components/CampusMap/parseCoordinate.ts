@@ -9,7 +9,8 @@ export interface ParsedPoint {
 
 // The same Czech box placeSearch restricts Photon to. Used only to decide
 // which way round a bare pair was typed; a point outside it is still accepted.
-// Links and DMS name their axes, so they are never swapped.
+// Links, DMS and pairs with N/S/E/W letters name their axes, so they are never
+// swapped.
 const inCz = (lat: number, lng: number) =>
   lat >= 48.55 && lat <= 51.06 && lng >= 12.09 && lng <= 18.86;
 const onEarth = (lat: number, lng: number) => Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
@@ -82,8 +83,33 @@ function fromDms(text: string): ParsedPoint | null {
 
 // Decimal degrees, decimals required so "602 00" or "2024, 2025" stay text.
 // A comma separator needs dot decimals; comma decimals need ; or a space.
-const PAIR_DOT = /^(-?\d{1,3}\.\d+)\s*[NS]?\s*[,;\s]\s*(-?\d{1,3}\.\d+)\s*[EW]?$/i;
-const PAIR_COMMA = /^(-?\d{1,3},\d+)\s*[NS]?\s*(?:;\s*|\s+)(-?\d{1,3},\d+)\s*[EW]?$/i;
+const PAIR_DOT = /^(-?\d{1,3}\.\d+)\s*([NSEW])?\s*[,;\s]\s*(-?\d{1,3}\.\d+)\s*([NSEW])?$/i;
+const PAIR_COMMA = /^(-?\d{1,3},\d+)\s*([NSEW])?\s*(?:;\s*|\s+)(-?\d{1,3},\d+)\s*([NSEW])?$/i;
+
+const isLat = (hemi: string) => /[NS]/i.test(hemi);
+
+/** One number and its letter as a signed degree; null when a minus fights S/W. */
+function signed(value: string, hemi: string): number | null {
+  const n = num(value);
+  if (!/[SW]/i.test(hemi)) return n;
+  return n < 0 ? null : -n;
+}
+
+function fromPair(a: string, hemiA: string, b: string, hemiB: string): ParsedPoint | null {
+  if (!hemiA && !hemiB) {
+    const [x, y] = [num(a), num(b)];
+    // A bare pair copied from a tool that writes lng first: swap only when that
+    // is the one order that lands in Czechia, so a real point abroad is untouched.
+    return !inCz(x, y) && inCz(y, x) ? point(y, x) : point(x, y);
+  }
+  // A letter names its number's axis, and so the other number's: never swapped.
+  // Two letters for the same axis ("49.2N 16.6N") name no point.
+  if (hemiA && hemiB && isLat(hemiA) === isLat(hemiB)) return null;
+  const aIsLat = hemiA ? isLat(hemiA) : !isLat(hemiB);
+  const [x, y] = [signed(a, hemiA), signed(b, hemiB)];
+  if (x === null || y === null) return null;
+  return aIsLat ? point(x, y) : point(y, x);
+}
 
 /**
  * A coordinate an organiser pasted into the venue search — a "lat, lng" pair,
@@ -95,11 +121,6 @@ export function parseCoordinate(input: string): ParsedPoint | null {
   const text = input.trim();
   if (isLink(text)) return fromUrl(text);
   const pair = PAIR_DOT.exec(text) ?? PAIR_COMMA.exec(text);
-  if (pair) {
-    const [a, b] = [num(pair[1]!), num(pair[2]!)];
-    // A bare pair copied from a tool that writes lng first: swap only when that
-    // is the one order that lands in Czechia, so a real point abroad is untouched.
-    return !inCz(a, b) && inCz(b, a) ? point(b, a) : point(a, b);
-  }
+  if (pair) return fromPair(pair[1]!, pair[2] ?? '', pair[3]!, pair[4] ?? '');
   return fromDms(text);
 }

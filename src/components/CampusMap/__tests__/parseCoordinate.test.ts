@@ -40,6 +40,28 @@ describe('parseCoordinate', () => {
     expect(parseCoordinate(`16°36'11.0"N 49°12'28.4"E`)!.coord[1]).toBeCloseTo(16.60306, 4);
   });
 
+  // A hemisphere letter names its axis just as a link or DMS does: S and W are
+  // negative, N/S is latitude and E/W longitude wherever it stands, and the
+  // Czechia swap never runs. Before, the letters were matched and ignored.
+  it('applies S and W as negative', () => {
+    expect(parseCoordinate('33.9S, 18.4E')?.coord).toEqual([18.4, -33.9]);
+    expect(parseCoordinate('49.2N 16.6W')?.coord).toEqual([-16.6, 49.2]);
+    expect(parseCoordinate('33,9S; 18,4E')?.coord).toEqual([18.4, -33.9]);
+  });
+
+  it('never swaps a suffixed pair, and takes the axes from its letters', () => {
+    expect(parseCoordinate('16.6N, 49.2E')?.coord).toEqual([49.2, 16.6]);
+    expect(parseCoordinate('16.6E 49.2N')?.coord).toEqual([16.6, 49.2]);
+    expect(parseCoordinate('49.2N 16.6')?.coord).toEqual([16.6, 49.2]);
+    expect(parseCoordinate('16.6 49.2N')?.coord).toEqual([16.6, 49.2]);
+  });
+
+  it('rejects letters that name the same axis twice, or a sign that fights its letter', () => {
+    expect(parseCoordinate('49.2N 16.6N')).toBeNull();
+    expect(parseCoordinate('16.6E 49.2W')).toBeNull();
+    expect(parseCoordinate('-33.9S, 18.4E')).toBeNull();
+  });
+
   it('puts a pair typed lng-first back in order when only that order lands in Czechia', () => {
     expect(parseCoordinate('16.6030499, 49.2078989')?.coord).toEqual([LNG, LAT]);
   });
