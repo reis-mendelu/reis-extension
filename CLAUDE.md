@@ -92,6 +92,17 @@ To exercise a changed fetcher against real IS, name its tool:
 
 Build with `npm run mcp:pack`. Its release tags are `mcp-v*`, never `v*`.
 
+**Plain `node` is not where it runs.** Claude Desktop starts it inside its own
+"MCP Node Host" (`nodeHost.js` in Claude.app) in an Electron utility process,
+where `process.type` is `'utility'` and Node-sniffing libraries take their
+browser path. To debug it there, not by reading logs:
+`node scripts/mcp-smoke.mjs --desktop-host [--live tool…]` runs the built
+server through that real host code (macOS, Claude installed). When an installed
+extension dies, its own log shows only a closed transport; the cause is in
+`~/Library/Logs/Claude/main.log` as `[UtilityProcess stderr] [nodeHost] …`.
+Never launch `Claude.app/Contents/MacOS/Claude` to run a script: it starts a
+second Desktop instance on the same profile.
+
 ## Multi-Repo Organization
 
 Four repos sit side by side, next to the **main checkout**: **reis-extension** (this repo), **reis-scraper**, **reis-data**, **reis-page**. The admin console is not a sibling repo; it lives here, in `src/components/AdminConsole/`. `../` in this file and in `/repos` means relative to the main checkout. From a worktree, `../` is inside `.claude/worktrees/`, so resolve a sibling as `"$(git rev-parse --path-format=absolute --git-common-dir)/../../reis-scraper"`.

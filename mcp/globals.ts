@@ -31,6 +31,13 @@ for (const name of [
   'Comment',
   'DocumentFragment',
   'HTMLCollection',
+  // pdfjs (inside officeparser) builds a DOMMatrix at import time when it
+  // believes it is not in Node, and in Claude Desktop's utility process
+  // (process.type === 'utility') it believes exactly that (2026-10-10).
+  'DOMMatrix',
+  'DOMMatrixReadOnly',
+  'DOMPoint',
+  'ImageData',
 ]) {
   if (w[name]) g[name] = w[name];
 }

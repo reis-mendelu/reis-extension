@@ -19,11 +19,11 @@ if (!user || !pass) {
 const session = createIsSession({ user, pass }, nativeFetch);
 setSessionFetch(session.fetch);
 
-const server = new McpServer({ name: 'reis-mendelu', version: '0.1.2' });
+const server = new McpServer({ name: 'reis-mendelu', version: '0.1.3' });
 registerTools(server, { fetch: session.fetch });
-// No top-level await: Claude Desktop's built-in Node host loads the entry
-// with require(), and require() refuses an ES module graph that has one
-// ("MCP Node Host fatal (import-failed)", 2026-10-10).
+// No top-level await, so the entry also loads through require(). Claude
+// Desktop's own host uses import() (nodeHost.js); its real constraint is the
+// utility-process environment, handled in globals.ts.
 server.connect(new StdioServerTransport()).catch((e: unknown) => {
   process.stderr.write(
     `reIS for Claude: could not start (${e instanceof Error ? e.message : String(e)}).\n`
