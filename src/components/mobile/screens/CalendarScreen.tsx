@@ -15,16 +15,16 @@ import { ScreenHeader } from './calendar/ScreenHeader';
 import { NowNextCard } from './calendar/NowNextCard';
 import { DayChips } from './calendar/DayChips';
 import { DayBody } from './calendar/DayBody';
-import { CalendarViewSwitch } from './calendar/CalendarViewSwitch';
 import { WeekGrid } from './calendar/WeekGrid';
+import { CalendarViewChooser } from './calendar/CalendarViewChooser';
 import { useCalendarToday } from './calendar/useCalendarToday';
 import { RecentFilesStrip } from './calendar/RecentFilesStrip';
+import { WeekMenuButton } from './calendar/WeekMenuButton';
 import { CalendarSkeleton } from './calendar/CalendarSkeleton';
-import { formatHeaderDate } from '../../../utils/mobile/formatHeaderDate';
+import { useCalendarTitle } from './calendar/useCalendarTitle';
 
 export function CalendarScreen() {
   const { t, language } = useTranslation();
-  const locale = language === 'en' ? 'en-US' : 'cs-CZ';
   const { schedule } = useSchedule();
   const setMobileSelectedDay = useAppStore((s) => s.setMobileSelectedDay);
   const showOnMap = useShowLessonOnMap();
@@ -34,7 +34,7 @@ export function CalendarScreen() {
   const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
   const syncLoaded = useAppStore((s) => s.syncLoaded);
   const view = useAppStore((s) => s.mobileCalendarView);
-  const setView = useAppStore((s) => s.setMobileCalendarView);
+  const choosing = useAppStore((s) => s.calendarViewChosen === false);
   // The store's clock, not `new Date()`: the pulse advances it, so the running
   // lesson's card and its countdown move with it instead of being stamped once
   // per render and then only when something else happened to re-render.
@@ -77,6 +77,7 @@ export function CalendarScreen() {
   const customLessons = customEvents.map(customEventToLesson);
   const dayLessons = [...visibleSchedule, ...customLessons];
   const lessonDates = new Set(dayLessons.map((l) => l.date));
+  const header = useCalendarTitle({ selectedIso, lessonDates, isAway });
   const chrome = (
     <>
       {/* The date IS the title, and the eyebrow stays empty. It was the
@@ -85,17 +86,18 @@ export function CalendarScreen() {
           rejected the same way — the strip and the title already say which
           week and which day this is. Away from today the date itself is the
           way back (a return glyph beside it, no extra row): the header is
-          full at a date and three actions, and a floating "Dnes" pill beside
-          the view switch read as one confusing row of words. */}
+          full at a date and three actions, and a floating "Dnes" pill read as
+          one more control at the bottom of the screen. */}
       {/* Refreshing is a pull on the day (DayBody). The visible circle that
           sat on its own row here made this header one line taller than every
           other tab's; what is left is the screen-reader route to the same
           sync, which takes no layout. */}
       <ScreenHeader
-        title={formatHeaderDate(new Date(`${selectedIso}T00:00:00`), locale, 'short')}
+        title={header.title}
         titleAction={
-          isAway ? { label: t('mobile.calendar.backToToday'), onClick: goToday } : undefined
+          header.away ? { label: t('mobile.calendar.backToToday'), onClick: goToday } : undefined
         }
+        leadingAction={<WeekMenuButton days={header.weekIsos} todayIso={header.todayIso} />}
         below={
           <RefreshButton
             label={t('mobile.header.refresh')}
@@ -107,9 +109,8 @@ export function CalendarScreen() {
     </>
   );
   const shell = (body: ReactNode) => (
-    // `relative` anchors the floating view switch; it renders in every state,
-    // skeleton and error included, because the day strip works in all of them.
-    // The ref is where a pull to refresh may start (DayBody).
+    // `relative` anchors the first-open view chooser (day and week only). The
+    // ref is where a pull to refresh may start (DayBody).
     <div
       ref={screenRef}
       data-testid="calendar-screen"
@@ -117,7 +118,6 @@ export function CalendarScreen() {
     >
       {chrome}
       {body}
-      <CalendarViewSwitch />
     </div>
   );
 
@@ -149,7 +149,7 @@ export function CalendarScreen() {
     // (offline) is exactly where it earns its place. Not under the skeleton:
     // loading is transient and a card under placeholder bars reads as a glitch.
     return shell(
-      <div className="flex flex-1 flex-col overflow-y-auto pb-[calc(9rem_+_var(--safe-bottom,0px))]">
+      <div className="flex flex-1 flex-col overflow-y-auto pb-[calc(6rem_+_var(--safe-bottom,0px))]">
         <ScreenError testId="calendar-error" />
         <RecentFilesStrip />
       </div>
@@ -202,13 +202,9 @@ export function CalendarScreen() {
           selectedIso={selectedIso}
           onSelect={setMobileSelectedDay}
           lessonDates={lessonDates}
-          // No selection mark and no dots here — see DayChips' `view`.
+          // No selection, no dots, and the chips are labels — see DayChips'
+          // `view`. The arrows and the swipe move the week.
           view="week"
-          // A chip in the week view zooms in: that day, in the day view.
-          onPickDay={(iso) => {
-            setMobileSelectedDay(iso);
-            setView('day');
-          }}
         />
         <WeekGrid
           lessons={dayLessons}
@@ -216,6 +212,7 @@ export function CalendarScreen() {
           lessonDates={lessonDates}
           onSelectDay={setMobileSelectedDay}
         />
+        {choosing && <CalendarViewChooser />}
       </>
     );
   }
@@ -253,6 +250,7 @@ export function CalendarScreen() {
         onSelectDay={setMobileSelectedDay}
         pullSurfaceRef={screenRef}
       />
+      {choosing && <CalendarViewChooser />}
     </>
   );
 }

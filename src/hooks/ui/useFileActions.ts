@@ -58,7 +58,7 @@ export function useFileActions(): UseFileActionsResult {
       // always fails here — and its window.open fallback hands the URL to the
       // SYSTEM BROWSER, which has no IS session. Fetch natively instead.
       if (isNativeHost()) {
-        await openNativeFile(fullUrl, 'useFileActions.openFile', t);
+        await openNativeFile(fullUrl, 'useFileActions.openFile', t, undefined, row);
         return;
       }
 
@@ -187,8 +187,12 @@ export function useFileActions(): UseFileActionsResult {
         // base64 conversion and `Downloads.save` are still running here, and
         // releasing it early let a second tap start a duplicate download.
         if (isNativeHost()) {
-          await openNativeFile(fullUrl, 'useFileActions.downloadSingle', t, () =>
-            clearRowProgress(link)
+          await openNativeFile(
+            fullUrl,
+            'useFileActions.downloadSingle',
+            t,
+            () => clearRowProgress(link),
+            row
           );
           return;
         }

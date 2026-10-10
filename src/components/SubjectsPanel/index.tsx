@@ -121,7 +121,10 @@ export function SubjectsPanel({
         enrolledCredits={enrolledCredits}
       />
 
-      <div className="px-4 pt-3 pb-0 shrink-0">
+      {/* Not shrink-0: below lg the card stacks under the average, and in a
+          short window this block is taller than the room left. It gives way
+          and scrolls rather than pushing Studijní plán off the bottom. */}
+      <div className="px-4 pt-3 pb-0 min-h-0 overflow-y-auto">
         <EnrolledNowSection
           plan={effectivePlan}
           failRates={failRates}
@@ -130,9 +133,8 @@ export function SubjectsPanel({
           onOpenSubject={onOpenSubject}
           onSearchSubject={onSearchSubject}
         />
-        {/* Beside the average from lg up, not under it: this panel does not
-            scroll, and at 1280×800 a stacked card pushed Studijní plán off
-            the bottom with no way to reach it. */}
+        {/* Beside the average from lg up, not under it: at 1280×800 a stacked
+            card pushed Studijní plán off the bottom. */}
         <div className="mt-3 flex flex-col items-center gap-3 lg:flex-row lg:items-start lg:justify-center">
           <div className="w-full max-w-xl lg:flex-1">
             <StudyAveragesSection studyStats={studyStats} comparison={studyComparison} />

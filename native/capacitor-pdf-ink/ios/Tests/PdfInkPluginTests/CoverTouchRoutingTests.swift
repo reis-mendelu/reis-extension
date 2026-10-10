@@ -140,6 +140,49 @@ final class CoverTouchRoutingTests: XCTestCase {
         XCTAssertTrue(CoverLayerView().dragRecognizer is ImmediateDragRecognizer)
     }
 
+    /// A touch the stroke cannot take — a second finger — fails it before it
+    /// began, so two fingers never make a strip. After it began `.failed` is
+    /// not a transition UIKit allows from `.began`/`.changed`, and the strip
+    /// growing under the Pencil was left on the page: it is a cancel, which
+    /// the layer's handler clears (cubic, 5.4.0 release diff).
+    ///
+    /// The rule, not the recognizer: outside UIKit's own touch delivery the
+    /// state setter does nothing, so a recognizer driven by hand stays
+    /// `.possible` whatever it is told.
+    func testATouchTheStrokeCannotTakeCancelsItOnceBegun() {
+        XCTAssertEqual(ImmediateDragRecognizer.refusing(from: .possible), .failed)
+        XCTAssertEqual(ImmediateDragRecognizer.refusing(from: .began), .cancelled)
+        XCTAssertEqual(ImmediateDragRecognizer.refusing(from: .changed), .cancelled)
+    }
+
+    /// PDFKit's double tap selects a word. It recognised alongside the
+    /// picture pick-up tap, so a fast double tap on a picture picked it up AND
+    /// selected the text under it (cubic, 5.4.0 release diff), the failure
+    /// the cover's tap had on the device. Every page gesture waits for the
+    /// pick-up tap, as for the cover's, except the cover layer's own: they
+    /// already make everything wait for them, and both ways would deadlock.
+    func testPdfkitsTextTapsWaitForAPictureBeingPickedUp() throws {
+        let reader = PdfInkViewController(strings: PdfInkStrings(nil))
+        let overlay = overlay()
+        reader.addPickUpTap(to: overlay)
+        let pickUp = try XCTUnwrap(
+            overlay.gestureRecognizers?.first { $0.delegate === reader } as? UITapGestureRecognizer)
+        let wordSelection = UITapGestureRecognizer()
+        wordSelection.numberOfTapsRequired = 2
+        UIView().addGestureRecognizer(wordSelection)
+
+        XCTAssertTrue(reader.gestureRecognizer(pickUp, shouldBeRequiredToFailBy: wordSelection))
+        // "Recognize together" from either side lets the double tap through
+        // the wait, so the pick-up says it only for gestures on its own overlay.
+        XCTAssertFalse(reader.gestureRecognizer(pickUp, shouldRecognizeSimultaneouslyWith: wordSelection))
+        let layer = overlay.coverLayer
+        for cover in [layer.dragRecognizer, layer.tapRecognizer, layer.holdRecognizer] as [UIGestureRecognizer] {
+            XCTAssertFalse(
+                reader.gestureRecognizer(pickUp, shouldBeRequiredToFailBy: cover),
+                "the cover layer's gestures waiting on the pick-up would deadlock")
+        }
+    }
+
     /// With a Pencil, the tape answers only to the Pencil: a finger still scrolls.
     func testOnlyTouchesThatDrawMakeCovers() {
         let layer = CoverLayerView()

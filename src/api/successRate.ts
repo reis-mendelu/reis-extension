@@ -117,6 +117,7 @@ export async function fetchSubjectSuccessRates(
   }
 
   // 2. Fetch each course from CDN (parallel)
+  const notFound: string[] = [];
   const fetchPromises = codesToFetch.map(async (code) => {
     const url = `${CDN_BASE_URL}/subjects/${code}.json`;
     try {
@@ -127,10 +128,11 @@ export async function fetchSubjectSuccessRates(
       const response = await fetch(url, { cache: 'no-cache' });
       if (!response.ok) {
         if (response.status === 404) {
-          // No file under this version: keep the cached data, but stamp it so it
-          // is not asked for again until the version moves.
-          const cached = results[code];
-          return cached && version !== null ? { ...cached, cdnVersion: version } : null;
+          // No file under this version: keep the stored data, but stamp it so it
+          // is not asked for again until the version moves. Stamped at save
+          // time, on what is stored then — see persistFetched.
+          if (version !== null) notFound.push(code);
+          return null;
         }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
@@ -151,23 +153,34 @@ export async function fetchSubjectSuccessRates(
   });
 
   // 4. Mark fetched codes as synced and save
-  return persistFetched(fetched);
+  return persistFetched(fetched, notFound, version);
 }
 
 // Saves run one at a time, each merging only its own fetches onto what is
 // stored *now*. Two batches run at once after every sync (`fetchSubjects` and
 // `fetchStudyPlan`); writing back the snapshot each started from let the last
 // one drop the other's codes, or put back a stale copy the other had replaced.
+// A 404's stamp goes on the stored entry for the same reason: the snapshot's
+// copy may be older than what a same-code fetch has saved since.
 let persistChain: Promise<unknown> = Promise.resolve();
 
-function persistFetched(fetched: Record<string, SubjectSuccessRate>): Promise<SuccessRateData> {
+function persistFetched(
+  fetched: Record<string, SubjectSuccessRate>,
+  notFound: string[],
+  version: string | null
+): Promise<SuccessRateData> {
   const run = persistChain.then(async () => {
-    const codes = Object.keys(fetched);
-    if (codes.length > 0) await markAsSynced(codes);
     const latest = await getStoredSuccessRates();
+    const stamped: Record<string, SubjectSuccessRate> = {};
+    for (const code of notFound) {
+      const current = latest?.data[code];
+      if (current && version !== null) stamped[code] = { ...current, cdnVersion: version };
+    }
+    const codes = [...Object.keys(fetched), ...Object.keys(stamped)];
+    if (codes.length > 0) await markAsSynced(codes);
     const merged: SuccessRateData = {
       lastUpdated: new Date().toISOString(),
-      data: { ...(latest?.data || {}), ...fetched },
+      data: { ...(latest?.data || {}), ...stamped, ...fetched },
     };
     await saveSuccessRates(merged);
     return merged;

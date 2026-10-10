@@ -105,13 +105,15 @@ const EXTENSION_BY_TYPE: Record<string, string> = {
   'image/gif': 'gif',
 };
 
-function extensionFor(contentType: string | null, rowType: string | undefined): string | null {
-  const mime = contentType?.split(';')[0]?.trim().toLowerCase() ?? '';
-  const fromMime = EXTENSION_BY_TYPE[mime];
-  if (fromMime) return fromMime;
-  // IS's own row type (`pptx`, `ipynb`…) — but never its "I don't know".
+/** IS's own row type (`pptx`, `ipynb`…) as an extension — but never its "I don't know". */
+export function rowTypeExtension(rowType: string | undefined): string | null {
   const type = rowType?.trim().toLowerCase() ?? '';
   return /^[a-z0-9]{1,8}$/.test(type) && type !== 'unknown' ? type : null;
+}
+
+function extensionFor(contentType: string | null, rowType: string | undefined): string | null {
+  const mime = contentType?.split(';')[0]?.trim().toLowerCase() ?? '';
+  return EXTENSION_BY_TYPE[mime] ?? rowTypeExtension(rowType);
 }
 
 export interface DownloadedFile {

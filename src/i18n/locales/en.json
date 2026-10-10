@@ -15,6 +15,8 @@
   },
   "menu": {
     "title": "Canteen menu",
+    "day": "Day",
+    "outlet": "Canteen",
     "unavailable": "Menu not available",
     "outletOne": "1 outlet",
     "outletFew": "{count} outlets",
@@ -998,6 +1000,7 @@
     "openInAppleMaps": "Apple Maps",
     "openInGoogleMaps": "Google Maps",
     "audienceHint": "Other students won't see this event on the map or in Novinky.",
+    "partnerAudienceHint": "Only the students this partner is set up for will see this event: whole faculties, or only the chosen programmes.",
     "panelCollapse": "Collapse map panel",
     "panelExpand": "Expand map panel",
     "walkMinutes": "{n} min",
@@ -1107,7 +1110,9 @@
       "trendWithheld": "No chart for this signal yet — under 5 installs in 30 days.",
       "goneQuietHint": "Share of devices that used reIS on 2+ days of at least one week but have not opened it for 14 days. Devices, not people — a reinstall counts too.",
       "goneQuietDesc": "of regulars · 14+ days without reIS",
-      "goneQuiet": "Gone"
+      "goneQuiet": "Gone",
+      "byProgramme": "By programme (7 days)",
+      "programmeUnknown": "{faculty} – programme unknown"
     },
     "loginName": "login",
     "audience": {
@@ -1149,8 +1154,19 @@
         "logo_required": "Upload a logo.",
         "upload_failed": "The logo could not be uploaded.",
         "save_failed": "The society could not be saved.",
-        "account_failed": "The society is saved, but its account could not be created. Create it below."
-      }
+        "account_failed": "The society is saved, but its account could not be created. Create it below.",
+        "audience": "Pick at least one faculty and check the programme codes.",
+        "mark_required": "A partner needs a light-mode logo.",
+        "partner_faculty": "The partner's faculty must be one of the faculties selected under \"Who sees this partner\" (whole MENDELU only for a partner for everyone), or older app versions would show its events to other students."
+      },
+      "kind": "Type",
+      "kindSociety": "Society",
+      "kindPartner": "Partner",
+      "audience": "Who sees this partner",
+      "audienceHint": "A faculty with no codes = the whole faculty. Separate programme codes with commas, e.g. B-OI, N-OI.",
+      "programmesPlaceholder": "Programme codes (optional)",
+      "markLight": "Partner logo – light mode (transparent PNG)",
+      "markDark": "Partner logo – dark mode (optional)"
     }
   },
   "mobile": {
@@ -1183,7 +1199,11 @@
       "backToToday": "Back to today",
       "viewLabel": "Calendar view",
       "dayView": "Day",
-      "weekView": "Week"
+      "weekView": "Week",
+      "chooserTitle": "How do you want to see your timetable?",
+      "chooserLine": "Try both on your own timetable.",
+      "chooserSave": "Save: {view}",
+      "chooserSaved": "Saved. Change it in Profile → Settings."
     },
     "exams": {
       "title": "Exams",
@@ -1325,8 +1345,10 @@
       "navigateToRoom": "Show {room} on the map"
     },
     "profile": {
-      "appearance": "Appearance",
-      "settings": "Settings"
+      "settings": "Settings",
+      "atSchool": "At school",
+      "calendar": "Calendar",
+      "settingsSub": "Calendar, language, appearance"
     },
     "loadFailed": {
       "title": "Couldn't load your data",
@@ -1386,8 +1408,7 @@
   },
   "about": {
     "partnersLabel": "Companies we work with",
-    "partnersBody": "We pick them ourselves, for the subjects people study here. It is about internships and events. They see nothing from your IS.",
-    "eyBody": "They keep reIS running."
+    "partnersBody": "We pick them ourselves, for the subjects people study here. It is about internships and events. They see nothing from your IS."
   },
   "impersonation": {
     "entry": "View as a student…",

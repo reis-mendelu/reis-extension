@@ -117,7 +117,10 @@ describe('SubmissionBoxesSummary', () => {
       deadline: '01.02.2027 10:00',
       odevzdavarnaId: '2',
     });
-    useAppStore.setState({ odevzdavarny: [known, orphan], subjects: { data: {} } } as never);
+    useAppStore.setState({
+      odevzdavarny: [known, orphan],
+      subjects: { data: { 'EBC-PJ': { subjectId: 'P1' } } },
+    } as never);
     render(<SubmissionBoxesSummary onOpen={onOpen} />);
     fireEvent.click(screen.getByTestId('submission-boxes-toggle'));
     fireEvent.click(screen.getByText('Projects'));
@@ -139,7 +142,10 @@ describe('SubmissionBoxesSummary', () => {
   it('opens the box’s subject when a row is tapped', () => {
     const onOpen = vi.fn();
     const due = box({ name: 'Rozpracovaný projekt', deadline: '08.10.2026 23:59' });
-    useAppStore.setState({ odevzdavarny: [due] });
+    useAppStore.setState({
+      odevzdavarny: [due],
+      subjects: { data: { 'EBC-PJ': { subjectId: 'P1' } } },
+    } as never);
     render(<SubmissionBoxesSummary onOpen={onOpen} />);
     fireEvent.click(screen.getByText('Rozpracovaný projekt'));
     expect(onOpen).toHaveBeenCalledWith('EBC-PJ', due);
@@ -155,6 +161,38 @@ describe('SubmissionBoxesSummary', () => {
     render(<SubmissionBoxesSummary onOpen={onOpen} />);
     fireEvent.click(screen.getByText('Projekt'));
     expect(onOpen).toHaveBeenCalledWith('EBC-PJ', due);
+  });
+
+  // The sync reads the previous period too, so a box can belong to a subject
+  // the current store does not hold — or holds under this period's predmet id.
+  // Záznamník finds boxes by the store's subjectId, so opening the subject
+  // there showed an empty tab on the extension and fell back to Success rate
+  // on the phone. Such a row goes to the box in IS instead.
+  it('links to IS when Záznamník would not list the box', () => {
+    const onOpen = vi.fn();
+    const absent = box({
+      name: 'Loňský projekt',
+      courseCode: 'EBC-ALG',
+      courseId: 'P7',
+      deadline: '08.10.2026 23:59',
+      odevzdavarnaId: '1',
+    });
+    const repeated = box({
+      name: 'Opakovaný projekt',
+      courseCode: 'EBC-PJ',
+      courseId: 'P0',
+      deadline: '09.10.2026 23:59',
+      odevzdavarnaId: '2',
+    });
+    useAppStore.setState({
+      odevzdavarny: [absent, repeated],
+      subjects: { data: { 'EBC-PJ': { subjectId: 'P1' } } },
+    } as never);
+    render(<SubmissionBoxesSummary onOpen={onOpen} />);
+    const rows = screen.getAllByTestId('submission-due-row');
+    expect(rows.map((r) => r.getAttribute('href'))).toEqual([absent.uploadUrl, repeated.uploadUrl]);
+    fireEvent.click(screen.getByText('Loňský projekt'));
+    expect(onOpen).not.toHaveBeenCalled();
   });
 
   it('falls back to a link into IS when the subject cannot be found', () => {

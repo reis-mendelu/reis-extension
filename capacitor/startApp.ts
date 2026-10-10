@@ -81,11 +81,12 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
     .getState()
     .hydratePullHint({ demo })
     .catch(() => {});
-  // And the calendar's day/week choice, so its first frame is the view the
-  // student left it on rather than the day view swapping to the week a tick in.
+  // And the calendar's day/week choice, so its first frame is the saved view
+  // rather than the day view swapping to the week a tick in — or, when nothing
+  // is saved, already knows to offer the chooser.
   await useAppStore
     .getState()
-    .hydrateCalendarView()
+    .hydrateCalendarView({ demo })
     .catch(() => {});
 
   // Dynamic import on purpose: this module renders the React root on

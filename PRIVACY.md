@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: September 25, 2026**
+**Last Updated: October 9, 2026**
 
 ## Introduction
 reIS ("we", "our", or "us") is a Chrome extension designed to modernize and enhance the user experience of the Mendel University Information System (IS Mendelu). We are committed to protecting your privacy and ensuring the security of your data.
@@ -14,9 +14,9 @@ We fetch and store the following information directly from MENDELU services to y
 - **Academic Data**: Schedules, grades, exam dates, success rates, and course materials.
 - **Authentication Data**: Session cookies required to make authenticated requests to IS Mendelu on your behalf.
 
-This data is stored **locally on your device** using highly efficient storage (IndexedDB) and is **never** transmitted to our servers.
+This data is stored **locally on your device** using highly efficient storage (IndexedDB) and is **never** transmitted to our servers — with one exception: the daily usage count (section 3) carries two group labels taken from your study details, your faculty and your study programme's base code.
 
-There is no longer any exception to that. Library study-room booking — the one feature that ever relayed your name, university email and student ID onwards — was removed in September 2026, together with the server route that carried it.
+Nothing else of it is ever sent: no name, email, student ID, grade or timetable. Library study-room booking — the one feature that ever relayed your name, university email and student ID onwards — was removed in September 2026, together with the server route that carried it.
 
 ### 2. Anonymous Usage Analytics
 We collect anonymous usage data to improve the extension:
@@ -28,7 +28,7 @@ We collect anonymous usage data to improve the extension:
 
 ### 3. Daily Usage & NPS Feedback
 To understand how actively reIS is used, we record:
-- **Daily Usage**: Each day you open reIS, a **random identifier generated on your device** is sent to our Supabase backend to record one usage event. This identifier is a random UUID created the first time you use the app and stored locally. It is **not derived from your student ID, your name, or anything else about you**, and it cannot be linked back to you. Since September 2026 the event also carries two group labels: your faculty and the platform (extension, iOS, Android or web). These describe a group of thousands of installs, not you; nothing else about the event changed.
+- **Daily Usage**: Each day you open reIS, a **random identifier generated on your device** is sent to our Supabase backend to record one usage event. This identifier is a random UUID created the first time you use the app and stored locally. It is **not derived from your student ID, your name, or anything else about you**, and it cannot be linked back to you. Since September 2026 the event also carries two group labels: your faculty and the platform (extension, iOS, Android or web). Since October 2026 it also carries your study programme's base code (for example B-OI), never your specialisation or year. A faculty or programme describes a group of installs, not you, and the admin console never shows the exact count for a group of fewer than five; nothing else about the event changed. Which partner company you are shown, if any, is decided on your device from your faculty and programme; partners never receive anything about you.
 - **NPS Rating (Voluntary)**: Once per semester you may be shown a satisfaction prompt. If you choose to rate, the same random identifier and your rating are sent. You can dismiss the prompt without sending anything.
 
 **What this means for our numbers**: because the identifier belongs to an installation rather than to a person, these figures count **installations, not people**. If you use reIS on a phone and a laptop, you are counted twice.

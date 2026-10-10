@@ -16,6 +16,7 @@ import { useUserParams } from '../../hooks/useUserParams';
 import { User, Mail, Hash } from 'lucide-react';
 import { logout } from '../../api/proxyClient';
 import { HiddenItemsSection } from './Profile/HiddenItemsSection';
+import { PartnersBlock } from '../Partners/PartnersBlock';
 import { desktopEduroamTarget } from '../../utils/desktopEduroamTarget';
 import { useLongPress } from '../../hooks/ui/useLongPress';
 
@@ -165,6 +166,11 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
             )}
           </div>
         )}
+
+        {/* Who reIS works with, as on the phone's Profil (spec 2026-10-09):
+            partners reach their field on every product, the extension too.
+            Renders nothing for a field without a partner. */}
+        <PartnersBlock compact className="border-b border-base-200 px-1 py-2" />
 
         {/* Support Section */}
         <div className="py-1">

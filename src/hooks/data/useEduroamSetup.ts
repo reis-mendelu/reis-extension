@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import {
   fetchEduroamCertMaterial,
   fetchEduroamPassword,
@@ -16,6 +16,7 @@ import {
 } from '../../services/eduroam/networkFailure';
 import { logError } from '../../utils/reportError';
 import { trackFeatureSignal } from '../../api/featureUsage';
+import { useAutoSelectOnce, useRunGeneration } from './eduroamSetupLifecycle';
 
 /**
  * `expired`: IS's certificate is past its notAfter, so nothing was installed;
@@ -55,6 +56,9 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
     setOutcome(null);
   }, []);
 
+  // Every run, renew, reset and device pick leaves older requests behind.
+  const generation = useRunGeneration();
+
   const fail = useCallback((context: string, e: unknown) => {
     logError(context, e);
     setError((e as Error).message);
@@ -66,6 +70,7 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
   // the iOS transfer path must keep the profile from being a standalone credential.
   const run = useCallback(
     async (t: EduroamTarget) => {
+      const stale = generation.begin();
       setStatus('working');
       clearResult();
       try {
@@ -73,6 +78,7 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
         // not, and asking anyway only waits for a raw OS error.
         if (isDeviceOffline()) throw new Error('eduroam: the device is offline');
         const material = await fetchEduroamCertMaterial();
+        if (stale()) return;
         const { password: extractionPw } = material;
 
         // IS keeps offering an expired certificate and never replaces it by
@@ -90,14 +96,16 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
         // machine reIS is open on.
         if (canConfigureEduroamNatively(t)) {
           const result = await configureEduroam(material, nativeEduroamDeps);
-          setOutcome(result);
           // Only `saved` is a setup that finished. `already-configured` applied
           // nothing — the network was there before reIS was asked — and counting
           // it would report students as newly set up who were already on
           // eduroam. `cancelled`, `failed` and `stale-association` installed
           // nothing at all. The file paths below get their own signal, because a
           // delivered profile still needs the student to install it.
+          // The signal fires even for a superseded run: the OS did save it.
           if (result === 'saved') void trackFeatureSignal('eduroam_wifi_configured');
+          if (stale()) return;
+          setOutcome(result);
           setPassword(extractionPw);
           setStatus(statusAfterNativeOutcome(result));
           return;
@@ -112,13 +120,15 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
         }
 
         await deliverEduroamFile(t, material);
+        if (stale()) return;
         setPassword(extractionPw);
         setStatus('done');
       } catch (e) {
-        fail('useEduroamSetup.run', e);
+        if (stale()) logError('useEduroamSetup.run', e);
+        else fail('useEduroamSetup.run', e);
       }
     },
-    [clearResult, fail]
+    [clearResult, fail, generation]
   );
 
   /**
@@ -128,6 +138,7 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
    */
   const renew = useCallback(
     async (t: EduroamTarget) => {
+      const stale = generation.begin();
       setStatus('working');
       setError(null);
       setNetworkFailure(null);
@@ -136,16 +147,18 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
         if (isDeviceOffline()) throw new Error('eduroam: the device is offline');
         await regenerateEduroamCert();
       } catch (e) {
-        fail('useEduroamSetup.renew', e);
+        if (stale()) logError('useEduroamSetup.renew', e);
+        else fail('useEduroamSetup.renew', e);
         return;
       }
-      await run(t);
+      if (!stale()) await run(t);
     },
-    [run, fail]
+    [run, fail, generation]
   );
 
   const selectTarget = useCallback(
     (t: EduroamTarget) => {
+      generation.invalidate();
       setTarget(t);
       setStatus('idle');
       clearResult();
@@ -158,24 +171,16 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
         })
         .catch((e) => logError('useEduroamSetup.prefetchPassword', e));
     },
-    [clearResult]
+    [clearResult, generation]
   );
 
   const reset = useCallback(() => {
+    generation.invalidate();
     setStatus('idle');
     clearResult();
-  }, [clearResult]);
+  }, [clearResult, generation]);
 
-  // Fires selectTarget exactly once, only when a caller (the sheet) hands us a
-  // pre-resolved target. The desktop drawer never passes autoSelectTarget, so
-  // this is a no-op there — selection stays a user click.
-  const didAutoSelect = useRef(false);
-  useEffect(() => {
-    if (autoSelectTarget && !didAutoSelect.current) {
-      didAutoSelect.current = true;
-      selectTarget(autoSelectTarget);
-    }
-  }, [autoSelectTarget, selectTarget]);
+  useAutoSelectOnce(autoSelectTarget, selectTarget);
 
   return {
     status,

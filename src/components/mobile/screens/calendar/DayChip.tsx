@@ -13,7 +13,8 @@ export interface DayChipProps {
   hasLessons: boolean;
   /** The lesson/holiday dot. Off in the week view, where the grid says it. */
   showDot: boolean;
-  onClick: () => void;
+  /** Absent in the week view, where a chip is a label, not a control. */
+  onClick?: () => void;
 }
 
 /** One day of the strip — see DayChips for the row around it. */
@@ -40,6 +41,12 @@ export function DayChip({
       aria-pressed={isSelected}
       title={holiday ?? undefined}
       onClick={onClick}
+      // aria-disabled, not `disabled`: a swipe that starts on a chip must still
+      // reach the strip's pointer handlers, and older WebKit (pre-Safari 17
+      // WKWebView, bug 219188) drops pointer events on disabled controls —
+      // which would kill the week swipe in Týden, where every chip is inert.
+      aria-disabled={onClick ? undefined : true}
+      tabIndex={onClick ? undefined : -1}
       // The selection is ink, not colour. It was a lime tonal pill, and on
       // Saturday 3 October the arrow left one on Friday 9 with today in
       // another week: "the 9th of October gets highlighted as the current

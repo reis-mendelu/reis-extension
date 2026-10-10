@@ -54,6 +54,8 @@ describe('CalendarScreen — week view', () => {
       mobileSheets: [],
       mobileTab: 'calendar',
       mobileCalendarView: 'day',
+      savedCalendarView: 'day',
+      calendarViewChosen: true,
       schedule: { data: [java, economics], status: 'success' },
       customEvents: [],
       hiddenItems: { courses: [], events: [] },
@@ -102,15 +104,15 @@ describe('CalendarScreen — week view', () => {
     expect(pills()).toHaveLength(0);
   });
 
-  it('the switch turns the day agenda into the week grid', () => {
+  // Spec 2026-10-09: the view is chosen once and changed in Profile →
+  // Nastavení, so the calendar carries no switch in either view.
+  it('has no view switch on the calendar', () => {
+    const { unmount } = render(<CalendarScreen />);
+    expect(screen.queryByRole('group', { name: 'Zobrazení kalendáře' })).toBeNull();
+    unmount();
+    useAppStore.setState({ mobileCalendarView: 'week' } as never);
     render(<CalendarScreen />);
-    expect(screen.getByTestId('day-body')).toBeTruthy();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Týden' }));
-
-    expect(useAppStore.getState().mobileCalendarView).toBe('week');
-    expect(screen.getByTestId('week-grid')).toBeTruthy();
-    expect(screen.queryByTestId('day-body')).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Zobrazení kalendáře' })).toBeNull();
   });
 
   it('shows the whole week: a lesson on another day is on screen', () => {
@@ -138,12 +140,45 @@ describe('CalendarScreen — week view', () => {
     });
   });
 
-  it('tapping a day in the strip opens that day', () => {
+  /**
+   * Týden is about the week, not a day in it — 10 October 2026. A chip tap
+   * used to peek into Den, then briefly selected a day; swiping to another week
+   * selected one nobody chose, and the chef hat silently depended on it. Now
+   * nothing in Týden is selected, a chip is not a control, and the title names
+   * the week the strip shows.
+   */
+  it('a day in the strip is not a control in the week view', () => {
+    useAppStore.setState({ mobileCalendarView: 'week', savedCalendarView: 'week' } as never);
+    render(<CalendarScreen />);
+    const chip = within(screen.getByTestId('day-strip')).getByRole('button', { name: /Út 6/ });
+    // aria-disabled rather than `disabled`, so a swipe starting on it still
+    // reaches the strip on older WebKit.
+    expect(chip).toHaveAttribute('aria-disabled', 'true');
+    expect(chip).not.toBeDisabled();
+    // And out of the tab order: a keyboard stop that does nothing is a trap.
+    expect(chip).toHaveAttribute('tabindex', '-1');
+    expect(chip).not.toHaveAttribute('aria-pressed');
+    fireEvent.click(chip);
+    expect(useAppStore.getState().mobileCalendarView).toBe('week');
+    expect(useAppStore.getState().mobileSelectedDayIso).toBe('2026-10-07');
+  });
+
+  it('the week view is titled with the week the strip shows', () => {
     useAppStore.setState({ mobileCalendarView: 'week' } as never);
     render(<CalendarScreen />);
-    fireEvent.click(within(screen.getByTestId('day-strip')).getByRole('button', { name: /Út 6/ }));
-    expect(useAppStore.getState().mobileCalendarView).toBe('day');
-    expect(useAppStore.getState().mobileSelectedDayIso).toBe('2026-10-06');
+    expect(screen.getByText('5.–9. 10.')).toBeInTheDocument();
+  });
+
+  // The way back is about the WEEK in Týden: a week holding today is home.
+  it('offers the way back only in a week without today', () => {
+    useAppStore.setState({ mobileCalendarView: 'week' } as never);
+    const { unmount } = render(<CalendarScreen />);
+    expect(screen.queryByLabelText(/Zpět na dnešek/)).toBeNull();
+    unmount();
+    useAppStore.setState({ mobileSelectedDayIso: '2026-10-14' } as never);
+    render(<CalendarScreen />);
+    expect(screen.getByText('12.–16. 10.')).toBeInTheDocument();
+    expect(screen.getByLabelText(/Zpět na dnešek/)).toBeInTheDocument();
   });
 
   it('the Now/Next card belongs to the day view', () => {

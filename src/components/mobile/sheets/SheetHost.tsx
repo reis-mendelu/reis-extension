@@ -6,6 +6,7 @@ import { PersonSheet } from './PersonSheet';
 import { PersonPhotoSheet } from './PersonPhotoSheet';
 import { EduroamSheet } from './EduroamSheet';
 import { DocsSheet } from './DocsSheet';
+import { SettingsSheet } from './SettingsSheet';
 import { SearchSheet } from './SearchSheet';
 import { BulletinSheet } from './BulletinSheet';
 import { MenuSheet } from './MenuSheet';
@@ -43,12 +44,16 @@ export function SheetHost() {
             return <EduroamSheet key={index} onClose={popSheet} />;
           case 'docs':
             return <DocsSheet key={index} onClose={popSheet} />;
+          case 'settings':
+            return <SettingsSheet key={index} onClose={popSheet} />;
           case 'bulletin':
             return <BulletinSheet key={index} onClose={popSheet} />;
           case 'venue':
             return <VenueSheet key={index} sheet={sheet} onClose={popSheet} />;
           case 'menu':
-            return <MenuSheet key={index} dayIso={sheet.dayIso} onClose={popSheet} />;
+            return (
+              <MenuSheet key={index} dayIso={sheet.dayIso} week={sheet.week} onClose={popSheet} />
+            );
           case 'search':
             return <SearchSheet key={index} sheet={sheet} onClose={popSheet} />;
           case 'impersonation':

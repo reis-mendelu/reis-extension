@@ -6,7 +6,12 @@ import { toSocietyRecord } from '../../utils/societies/resolveSociety';
 import { IndexedDBService } from '../../services/storage';
 import { logError } from '../../utils/reportError';
 import type { SocietyInput } from '../../api/societiesAdmin';
-import { saveSociety, setSocietyActive, type SaveSocietyError } from './societies/saveSociety';
+import {
+  saveSociety,
+  setSocietyActive,
+  type PartnerMarks,
+  type SaveSocietyError,
+} from './societies/saveSociety';
 
 export const SOCIETIES_CACHE_KEY = 'societies_catalog';
 
@@ -22,7 +27,8 @@ export interface SocietiesSlice {
   saveSociety: (
     input: SocietyInput,
     logo: Blob | null,
-    isNew: boolean
+    isNew: boolean,
+    marks?: PartnerMarks
   ) => Promise<{ error?: SaveSocietyError }>;
   /** Hide or show; hidden societies still resolve for their old events. */
   setSocietyActive: (id: string, active: boolean) => Promise<boolean>;
@@ -111,8 +117,14 @@ export const createSocietiesSlice: AppSlice<SocietiesSlice> = (set, get) => {
       }
     },
 
-    saveSociety: (input, logo, isNew) =>
-      saveSociety({ societies: () => get().societies, put: get().putSociety }, input, logo, isNew),
+    saveSociety: (input, logo, isNew, marks) =>
+      saveSociety(
+        { societies: () => get().societies, put: get().putSociety },
+        input,
+        logo,
+        isNew,
+        marks
+      ),
 
     setSocietyActive: (id, active) =>
       setSocietyActive({ societies: () => get().societies, put: get().putSociety }, id, active),

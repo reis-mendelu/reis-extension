@@ -59,7 +59,10 @@
     "gen:splash": "tsx scripts/gen-splash.mts",
     "shot:route": "tsx --tsconfig tsconfig.app.json scripts/shot-route.ts",
     "privacy:generate": "tsx scripts/privacy/generate.ts",
-    "privacy:publish": "tsx scripts/privacy/publish.ts"
+    "privacy:publish": "tsx scripts/privacy/publish.ts",
+    "mcp:build": "vite build --config vite.mcp.config.ts",
+    "mcp:smoke": "npm run mcp:build && node scripts/mcp-smoke.mjs",
+    "mcp:pack": "npm run mcp:build && node scripts/mcp-pack.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
@@ -105,6 +108,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "@playwright/test": "^1.57.0",
     "@serenity-js/assertions": "^3.48.0",
     "@serenity-js/console-reporter": "^3.48.0",
@@ -137,6 +141,7 @@
     "globals": "^17.13.0",
     "happy-dom": "^20.14.5",
     "jsdom": "^30.1.1",
+    "officeparser": "^8.1.1",
     "postcss": "^8.5.28",
     "prettier": "^3.9.9",
     "tsx": "^4.23.15",

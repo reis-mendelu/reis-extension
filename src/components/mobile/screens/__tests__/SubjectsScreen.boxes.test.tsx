@@ -55,6 +55,7 @@ describe('SubjectsScreen — odevzdávárny', () => {
         handshakeTimedOut: false,
       },
       odevzdavarny: [box({ name: 'Rozpracovaný projekt', deadline: '08.10.2026 23:59' })],
+      subjects: { data: { 'EBC-PJ': { subjectId: 'P1' } } },
     } as never);
   });
 

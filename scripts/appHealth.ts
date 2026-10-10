@@ -43,6 +43,7 @@ const FORBIDDEN_URL_PATTERNS: { pattern: RegExp; why: string }[] = [
 const READ_ONLY_SUPABASE_RPCS = [
   'usage_stats' /* read-only aggregate, no writes */,
   'usage_retention' /* read-only aggregate, no writes */,
+  'usage_programmes' /* read-only aggregate, no writes */,
 ];
 
 const READ_ONLY_METHODS = ['GET', 'HEAD', 'OPTIONS'];

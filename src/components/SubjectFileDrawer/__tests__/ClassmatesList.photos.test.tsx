@@ -73,10 +73,21 @@ describe('ClassmatesList — photos load only for rows on screen', () => {
       FakeObserver.show(row('Student 001'));
     });
     expect(fetchPersonPhoto.mock.calls.map(([id]) => String(id))).toEqual(['900000', '900001']);
-    expect(screen.getByAltText('Student 000')).toHaveAttribute(
+    expect(row('Student 000').querySelector('img')).toHaveAttribute(
       'src',
       'data:image/jpeg;base64,AA=='
     );
+  });
+
+  // The name is printed beside the photo inside the same button, so an alt
+  // naming the person made a screen reader say it twice.
+  it('names the row once — the photo beside the name is decorative', async () => {
+    render(<ClassmatesList classmates={LECTURE} showStudyInfo={false} onOpen={() => {}} />);
+    await act(async () => {
+      FakeObserver.show(row('Student 000'));
+    });
+    expect(row('Student 000').querySelector('img')).toHaveAttribute('alt', '');
+    expect(row('Student 000')).toHaveAccessibleName('Student 000');
   });
 
   it('loads every photo where IntersectionObserver does not exist', () => {

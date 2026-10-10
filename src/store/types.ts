@@ -380,6 +380,8 @@ export interface ContextSlice {
   obdobiId: string | null;
   facultyId: string | null;
   userFaculty: string | null;
+  /** Base study-programme code from IS ('B-OI'): partner targeting on the device. */
+  userProgramme: string | null;
   userSemester: string | null;
   isErasmus: boolean;
   fullName: string | null;
@@ -483,9 +485,11 @@ export type MobileSheet =
   | { kind: 'personPhoto'; personId: string; name: string }
   | { kind: 'eduroam' }
   | { kind: 'docs' }
+  // Calendar view, language, dark mode — behind one Profile row (spec 2026-10-09).
+  | { kind: 'settings' }
   // reIS admins only: "view as a student" of another programme.
   | { kind: 'impersonation' }
-  | { kind: 'menu'; dayIso: string }
+  | { kind: 'menu'; dayIso: string; week?: string[] }
   | {
       kind: 'venue';
       coord: [number, number];
@@ -546,10 +550,22 @@ export interface MobileUiSlice {
   pullHintSeen: boolean | null;
   hydratePullHint: (o: { demo: boolean }) => Promise<void>;
   markPullHintSeen: () => void;
-  /** The calendar's day agenda or week grid, remembered per device. */
+  /**
+   * What the calendar SHOWS: the saved view, or a view being tried in the
+   * chooser. In memory only.
+   */
   mobileCalendarView: MobileCalendarView;
-  setMobileCalendarView: (view: MobileCalendarView) => void;
-  hydrateCalendarView: () => Promise<void>;
+  /** The student's saved choice, `meta.calendar_view`. 'day' until one is saved. */
+  savedCalendarView: MobileCalendarView;
+  /**
+   * Whether a view has been saved. null = not hydrated yet (never show the
+   * chooser); false = never saved (show it); true = saved.
+   */
+  calendarViewChosen: boolean | null;
+  hydrateCalendarView: (o: { demo: boolean }) => Promise<void>;
+  showCalendarView: (view: MobileCalendarView) => void;
+  saveCalendarView: (view: MobileCalendarView) => void;
+  restoreCalendarView: () => void;
 
   setMobileTab: (tab: MobileTab) => void;
   setMobileSelectedDay: (iso: string | null) => void;

@@ -61,9 +61,17 @@ describe('SocietyForm (new)', () => {
     fireEvent.click(screen.getByRole('button', { name: /save|uložit/i }));
     await waitFor(() => expect(saveSociety).toHaveBeenCalledTimes(1));
     expect(saveSociety).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'kino', name: 'Kino', shortName: 'KINO', color: '#123456' }),
+      expect.objectContaining({
+        id: 'kino',
+        name: 'Kino',
+        shortName: 'KINO',
+        color: '#123456',
+        kind: 'society',
+        audience: null,
+      }),
       logoFile,
-      true
+      true,
+      { light: null, dark: null }
     );
     await waitFor(() => expect(createSocietyAccount).toHaveBeenCalledWith('kino', 'Kino'));
     expect(await screen.findByText('generated-pw-123')).toBeInTheDocument();
@@ -97,7 +105,10 @@ describe('SocietyForm (edit)', () => {
     expect(screen.getByLabelText(/login name|přihlašovací jméno/i)).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: /save|uložit/i }));
     await waitFor(() =>
-      expect(saveSociety).toHaveBeenCalledWith(expect.objectContaining({ id: 'zf' }), null, false)
+      expect(saveSociety).toHaveBeenCalledWith(expect.objectContaining({ id: 'zf' }), null, false, {
+        light: null,
+        dark: null,
+      })
     );
     expect(createSocietyAccount).not.toHaveBeenCalled();
   });
