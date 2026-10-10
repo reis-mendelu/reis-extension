@@ -76,9 +76,15 @@ describe('refreshMenuIfStale — the resume retry', () => {
   });
 
   it('does not stack a second request on one in flight', async () => {
-    vi.mocked(apiFetchMenu).mockReturnValueOnce(new Promise(() => {}));
-    void useAppStore.getState().fetchMenu();
+    let ok!: (m: OutletMenu[]) => void;
+    vi.mocked(apiFetchMenu).mockReturnValueOnce(new Promise((r) => (ok = r)));
+    const boot = useAppStore.getState().fetchMenu();
     await useAppStore.getState().refreshMenuIfStale(GAP);
+    expect(apiFetchMenu).toHaveBeenCalledTimes(1);
+    // Settled before the test ends: the queued resume is module state, and a
+    // request left hanging would hand it to the next test.
+    ok(week('12. 10. 2026'));
+    await boot;
     expect(apiFetchMenu).toHaveBeenCalledTimes(1);
   });
 
