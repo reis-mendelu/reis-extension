@@ -17,8 +17,10 @@ import { menuForDay } from '../../../../utils/menuForDay';
  * menu, and Týden then selected a day on every swipe that nobody had chosen —
  * "unintuitive". Now the sheet gets the whole shown week as tabs and opens on
  * today, or the next day that serves; in another week, on its first serving
- * day. Lunch already eaten is no answer, so late in a week with nothing left
- * to serve, and in a week nothing serves, there is no hat.
+ * day. Days already past are no answer, so late in a week with nothing left
+ * to serve, and in a week nothing serves, there is no hat. Today still counts
+ * after lunch — the hat does not know serving hours, and today's menu is still
+ * the likeliest question that day.
  */
 export function WeekMenuButton({ days, todayIso }: { days: string[]; todayIso: string }) {
   const { t } = useTranslation();

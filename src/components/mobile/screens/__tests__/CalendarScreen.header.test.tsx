@@ -72,6 +72,8 @@ describe('CalendarScreen header', () => {
   // to the jídelníček is a chef hat among the header actions, left of the pin.
   it('puts the menu’s chef hat first among the header actions in the week view', () => {
     useAppStore.setState({
+      // The hat reads the store's clock, not Date: pin it to the same Monday.
+      now: new Date('2026-04-20T10:00:00'),
       mobileCalendarView: 'week',
       menu: [{ outlet: 'X', days: [{ date: '20. 4. 2026', soup: null, mainDishes: ['Guláš'] }] }],
     } as never);

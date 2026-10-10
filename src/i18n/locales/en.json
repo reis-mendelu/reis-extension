@@ -16,6 +16,7 @@
   "menu": {
     "title": "Canteen menu",
     "day": "Day",
+    "outlet": "Canteen",
     "unavailable": "Menu not available",
     "outletOne": "1 outlet",
     "outletFew": "{count} outlets",

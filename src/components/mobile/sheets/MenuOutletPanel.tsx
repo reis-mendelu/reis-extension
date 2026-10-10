@@ -1,4 +1,5 @@
 import { Soup, Utensils } from 'lucide-react';
+import { useTranslation } from '../../../hooks/useTranslation';
 import type { OutletDayMenu } from '../../../utils/menuForDay';
 
 /**
@@ -23,6 +24,7 @@ export function MenuOutletPanel({
   shown: boolean;
   onPick: (index: number) => void;
 }) {
+  const { t } = useTranslation();
   const current = outlets[index]!;
   return (
     <div
@@ -33,12 +35,14 @@ export function MenuOutletPanel({
       {/* One outlet is not a choice, so it gets no tab strip — the header
           already says which day, and the row below says which dishes. */}
       {outlets.length > 1 && (
-        <div role="tablist" className="mb-3 flex gap-2">
+        // A named group of pressed buttons, like the day row above it: a
+        // tablist would promise tab panels and arrow keys (review on #530).
+        <div role="group" aria-label={t('menu.outlet')} className="mb-3 flex gap-2">
           {outlets.map((o, i) => (
             <button
               key={o.outlet}
-              role="tab"
-              aria-selected={i === index}
+              type="button"
+              aria-pressed={i === index}
               tabIndex={shown ? undefined : -1}
               onClick={() => onPick(i)}
               className={`min-h-9 flex-1 rounded-xl border px-3 text-sm font-bold ${

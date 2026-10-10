@@ -151,7 +151,10 @@ describe('CalendarScreen — week view', () => {
     useAppStore.setState({ mobileCalendarView: 'week', savedCalendarView: 'week' } as never);
     render(<CalendarScreen />);
     const chip = within(screen.getByTestId('day-strip')).getByRole('button', { name: /Út 6/ });
-    expect(chip).toBeDisabled();
+    // aria-disabled rather than `disabled`, so a swipe starting on it still
+    // reaches the strip on older WebKit.
+    expect(chip).toHaveAttribute('aria-disabled', 'true');
+    expect(chip).not.toBeDisabled();
     expect(chip).not.toHaveAttribute('aria-pressed');
     fireEvent.click(chip);
     expect(useAppStore.getState().mobileCalendarView).toBe('week');

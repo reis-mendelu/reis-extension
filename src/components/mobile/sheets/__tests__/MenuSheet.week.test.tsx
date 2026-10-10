@@ -17,6 +17,7 @@ const MENU: OutletMenu[] = [
 const WEEK = ['2026-10-12', '2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16'];
 
 const days = () => within(screen.getByRole('group', { name: 'Den' }));
+const canteens = () => within(screen.getByRole('group', { name: 'Výdejna' }));
 
 /**
  * Opened from Týden's chef hat, the sheet carries the whole shown week: a row
@@ -57,7 +58,7 @@ describe('MenuSheet over a week', () => {
   // index pointing past the end.
   it('keeps a valid canteen when the day has fewer of them', () => {
     render(<MenuSheet dayIso="2026-10-12" week={WEEK} onClose={() => {}} />);
-    fireEvent.click(screen.getByRole('tab', { name: 'JAK' }));
+    fireEvent.click(canteens().getByRole('button', { name: 'JAK' }));
     fireEvent.click(days().getByRole('button', { name: /St\s*14/ }));
     expect(screen.getByText('Rizoto')).toBeInTheDocument();
   });
@@ -116,11 +117,11 @@ describe('MenuSheet over a week', () => {
       screen.getAllByTestId('menu-dishes').find((l) => !l.className.includes('invisible'))!;
     render(<MenuSheet dayIso="2026-10-12" week={WEEK} onClose={() => {}} />);
 
-    fireEvent.click(screen.getByRole('tab', { name: 'KA' }));
+    fireEvent.click(canteens().getByRole('button', { name: 'KA' }));
     fireEvent.click(days().getByRole('button', { name: /St\s*14/ }));
     expect(shown()).toHaveTextContent('Rizoto');
 
-    fireEvent.click(screen.getByRole('tab', { name: 'JAK' }));
+    fireEvent.click(canteens().getByRole('button', { name: 'JAK' }));
     fireEvent.click(days().getByRole('button', { name: /Po\s*12/ }));
     expect(shown()).toHaveTextContent('Svíčková');
   });
