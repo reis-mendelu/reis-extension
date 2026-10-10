@@ -34,12 +34,15 @@ export function MenuSheet({ dayIso, week, onClose }: MenuSheetProps) {
   const menu = useAppStore((s) => s.menu);
   const [day, setDay] = useState(dayIso);
   const outlets = menuForDay(menu, new Date(`${day}T00:00:00`));
-  const [active, setActive] = useState(0);
+  // The canteen by NAME, not position: days serve different canteens, so a
+  // position picked on Monday can name another canteen on Wednesday.
+  const [outletName, setOutletName] = useState<string | null>(null);
 
   // The sheet outlives the data it was opened on: a language switch clears
   // `menu` and re-fetches (store/useAppStore.ts), which can empty the day while
   // the sheet is still open.
-  const safe = Math.min(active, Math.max(outlets.length - 1, 0));
+  const picked = outlets.findIndex((o) => o.outlet === outletName);
+  const safe = picked >= 0 ? picked : 0;
   const current = outlets[safe];
   const panels = (week?.length ? week : [day]).flatMap((d) => {
     const all = menuForDay(menu, new Date(`${d}T00:00:00`));
@@ -63,7 +66,7 @@ export function MenuSheet({ dayIso, week, onClose }: MenuSheetProps) {
         onClose={onClose}
       />
       {/* The header names the week, so the row says which day. Picking one
-          keeps the canteen if it serves that day too (`safe` clamps it). */}
+          keeps the canteen if it serves that day too, else shows the first. */}
       {week?.length ? (
         <div className="px-4">
           <MenuDayTabs week={week} day={day} onPick={setDay} />
@@ -85,7 +88,7 @@ export function MenuSheet({ dayIso, week, onClose }: MenuSheetProps) {
               outlets={p.outlets}
               index={p.index}
               shown={p.day === day && p.index === safe}
-              onPick={setActive}
+              onPick={(i) => setOutletName(p.outlets[i]!.outlet)}
             />
           ))}
         </div>

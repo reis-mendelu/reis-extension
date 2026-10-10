@@ -16,7 +16,7 @@ const MENU: OutletMenu[] = [
 ];
 const WEEK = ['2026-10-12', '2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16'];
 
-const days = () => within(screen.getByRole('tablist', { name: 'Den' }));
+const days = () => within(screen.getByRole('group', { name: 'Den' }));
 
 /**
  * Opened from Týden's chef hat, the sheet carries the whole shown week: a row
@@ -31,13 +31,13 @@ describe('MenuSheet over a week', () => {
   it('names the week and opens on the day it was given', () => {
     render(<MenuSheet dayIso="2026-10-12" week={WEEK} onClose={() => {}} />);
     expect(screen.getByText('12.–16. října')).toBeInTheDocument();
-    expect(days().getByRole('tab', { name: /Po\s*12/ })).toHaveAttribute('aria-selected', 'true');
+    expect(days().getByRole('button', { name: /Po\s*12/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText('Guláš')).toBeInTheDocument();
   });
 
   it('switches day in place', () => {
     render(<MenuSheet dayIso="2026-10-12" week={WEEK} onClose={() => {}} />);
-    fireEvent.click(days().getByRole('tab', { name: /St\s*14/ }));
+    fireEvent.click(days().getByRole('button', { name: /St\s*14/ }));
     expect(screen.getByText('Rizoto')).toBeInTheDocument();
     // Monday stays in the layout to hold the height, hidden from sight and AT.
     expect(screen.getByText('Guláš').closest('[data-testid="menu-dishes"]')).toHaveAttribute(
@@ -50,7 +50,7 @@ describe('MenuSheet over a week', () => {
   // picked, so the sheet never lands on "Menu není k dispozici".
   it('shows a day that serves nothing, disabled', () => {
     render(<MenuSheet dayIso="2026-10-12" week={WEEK} onClose={() => {}} />);
-    expect(days().getByRole('tab', { name: /Út\s*13/ })).toBeDisabled();
+    expect(days().getByRole('button', { name: /Út\s*13/ })).toBeDisabled();
   });
 
   // Picking a day where only one canteen serves must not leave the canteen
@@ -58,7 +58,7 @@ describe('MenuSheet over a week', () => {
   it('keeps a valid canteen when the day has fewer of them', () => {
     render(<MenuSheet dayIso="2026-10-12" week={WEEK} onClose={() => {}} />);
     fireEvent.click(screen.getByRole('tab', { name: 'JAK' }));
-    fireEvent.click(days().getByRole('tab', { name: /St\s*14/ }));
+    fireEvent.click(days().getByRole('button', { name: /St\s*14/ }));
     expect(screen.getByText('Rizoto')).toBeInTheDocument();
   });
 
@@ -78,7 +78,7 @@ describe('MenuSheet over a week', () => {
     expect(shown).toHaveLength(1);
     expect(shown[0]).toHaveTextContent('Guláš');
     for (const l of lists) expect(l.className).toContain('row-start-1');
-    fireEvent.click(days().getByRole('tab', { name: /St\s*14/ }));
+    fireEvent.click(days().getByRole('button', { name: /St\s*14/ }));
     expect(
       screen.getAllByTestId('menu-dishes').filter((l) => !l.className.includes('invisible'))
     ).toHaveLength(1);
@@ -87,9 +87,47 @@ describe('MenuSheet over a week', () => {
     ).not.toContain('invisible');
   });
 
+  /**
+   * The canteen is remembered by NAME, not by position (CodeRabbit on #530).
+   * Monday serves X, KA, JAK and Wednesday only X and JAK: by position, KA's
+   * slot on Wednesday is JAK — a canteen the student never picked.
+   */
+  it('keeps the picked canteen by name across days, else the first', () => {
+    useAppStore.setState({
+      menu: [
+        {
+          outlet: 'X',
+          days: [
+            { date: '12. 10. 2026', soup: null, mainDishes: ['Guláš'] },
+            { date: '14. 10. 2026', soup: null, mainDishes: ['Rizoto'] },
+          ],
+        },
+        { outlet: 'KA', days: [{ date: '12. 10. 2026', soup: null, mainDishes: ['Řízek'] }] },
+        {
+          outlet: 'JAK',
+          days: [
+            { date: '12. 10. 2026', soup: null, mainDishes: ['Svíčková'] },
+            { date: '14. 10. 2026', soup: null, mainDishes: ['Knedlíky'] },
+          ],
+        },
+      ],
+    } as never);
+    const shown = () =>
+      screen.getAllByTestId('menu-dishes').find((l) => !l.className.includes('invisible'))!;
+    render(<MenuSheet dayIso="2026-10-12" week={WEEK} onClose={() => {}} />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'KA' }));
+    fireEvent.click(days().getByRole('button', { name: /St\s*14/ }));
+    expect(shown()).toHaveTextContent('Rizoto');
+
+    fireEvent.click(screen.getByRole('tab', { name: 'JAK' }));
+    fireEvent.click(days().getByRole('button', { name: /Po\s*12/ }));
+    expect(shown()).toHaveTextContent('Svíčková');
+  });
+
   // From Den's card the sheet is one day, as before: no day row.
   it('has no day row when opened for a single day', () => {
     render(<MenuSheet dayIso="2026-10-12" onClose={() => {}} />);
-    expect(screen.queryByRole('tablist', { name: 'Den' })).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Den' })).toBeNull();
   });
 });

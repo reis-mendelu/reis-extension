@@ -27,7 +27,11 @@ export function MenuDayTabs({
   });
 
   return (
-    <div role="tablist" aria-label={t('menu.day')} className="mb-2 flex gap-1.5">
+    // A group of pressed/unpressed buttons, not a tablist: tabs promise
+    // arrow-key movement and linked tab panels this row does not have
+    // (CodeRabbit on #530), so screen readers would announce controls that
+    // then do not behave as announced.
+    <div role="group" aria-label={t('menu.day')} className="mb-2 flex gap-1.5">
       {week.map((iso) => {
         const date = new Date(`${iso}T00:00:00`);
         const serves = menuForDay(menu, date).length > 0;
@@ -36,8 +40,7 @@ export function MenuDayTabs({
           <button
             key={iso}
             type="button"
-            role="tab"
-            aria-selected={iso === day}
+            aria-pressed={iso === day}
             disabled={!serves}
             onClick={() => onPick(iso)}
             className={`min-h-11 flex-1 rounded-xl border px-1 text-sm ${
