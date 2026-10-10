@@ -28,6 +28,8 @@ export function ComposerWhenField({
 }) {
   const whenId = useId();
   const endId = useId();
+  const errorId = useId();
+  const endBeforeStart = Boolean(endDate && date && endDate < date);
   return (
     <>
       <label id={whenId} className={LABEL}>
@@ -63,6 +65,7 @@ export function ComposerWhenField({
             value={endDate || null}
             onChange={onEndDate}
             labelledBy={endId}
+            describedBy={endBeforeStart ? errorId : undefined}
             placeholder={t('map.selectDate')}
             t={t}
             locale={locale}
@@ -79,8 +82,11 @@ export function ComposerWhenField({
           </button>
         )}
       </div>
-      {endDate && date && endDate < date && (
-        <p className="mt-1 text-[11px] text-error">{t('map.endBeforeStart')}</p>
+      {/* role="alert": it appears without a focus change, so it has to be announced. */}
+      {endBeforeStart && (
+        <p id={errorId} role="alert" className="mt-1 text-[11px] text-error">
+          {t('map.endBeforeStart')}
+        </p>
       )}
     </>
   );

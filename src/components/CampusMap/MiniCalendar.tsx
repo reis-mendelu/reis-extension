@@ -29,6 +29,7 @@ export function MiniCalendar({
   minDate,
   maxDate,
   labelledBy,
+  describedBy,
 }: {
   value: string | null;
   onChange: (iso: string) => void;
@@ -47,6 +48,8 @@ export function MiniCalendar({
   // otherwise both read as the bare placeholder ("Pick a date"); the trigger's
   // own id follows it so the picked date stays part of the name.
   labelledBy?: string;
+  // Id of an error naming what is wrong with the picked date, when there is one.
+  describedBy?: string;
 }) {
   const triggerId = useId();
   const parsed = value ? parseISO(value) : null;
@@ -139,6 +142,7 @@ export function MiniCalendar({
         type="button"
         id={triggerId}
         aria-labelledby={labelledBy ? `${labelledBy} ${triggerId}` : undefined}
+        aria-describedby={describedBy}
         // No tabIndex: a <button> is already focusable. When this was a DaisyUI
         // `.dropdown` trigger, marking it [tabindex] made
         // `.dropdown:focus-within > [tabindex]:first-child { pointer-events:none }`
