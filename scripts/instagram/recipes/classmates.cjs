@@ -13,5 +13,6 @@ module.exports = async (page) => {
     const s = window.__reisStore.getState();
     return [s.classmates['DEM-STA']?.length ?? 0, s.subjectClassmates['DEM-STA']?.length ?? 0];
   });
-  if (!n[0] || n[1] < 100) throw new Error(`classmates seed did not stick: seminar ${n[0]}, subject ${n[1]}`);
+  if (!n[0] || n[1] < 100)
+    throw new Error(`classmates seed did not stick: seminar ${n[0]}, subject ${n[1]}`);
 };

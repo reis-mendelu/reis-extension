@@ -1,8 +1,8 @@
 {
- "_comment": "No live society events on the map shot.",
- "now": "2026-10-07T10:40:00+02:00",
- "store": {
-  "mapEvents": [],
-  "mapEventsLoaded": true
- }
+  "_comment": "No live society events on the map shot.",
+  "now": "2026-10-07T10:40:00+02:00",
+  "store": {
+    "mapEvents": [],
+    "mapEventsLoaded": true
+  }
 }

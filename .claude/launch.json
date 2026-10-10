@@ -11,7 +11,15 @@
     {
       "name": "reis-demo-preview",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["vite", "preview", "--config", "vite.web.build.config.ts", "--port", "4173", "--strictPort"],
+      "runtimeArgs": [
+        "vite",
+        "preview",
+        "--config",
+        "vite.web.build.config.ts",
+        "--port",
+        "4173",
+        "--strictPort"
+      ],
       "port": 4173
     },
     {

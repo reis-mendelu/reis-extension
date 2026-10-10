@@ -1,94 +1,94 @@
 {
- "_comment": "Fictional submission boxes on the demo subjects (from dev/fixtures/submissionBoxes.json, renamed). Deadlines are relative to 'now'.",
- "now": "2026-10-10T10:00:00+02:00",
- "store": {
-  "odevzdavarny": [
-   {
-    "courseId": "dem-alg",
-    "courseCode": "DEM-ALG",
-    "courseNameCs": "Algoritmizace",
-    "courseNameEn": "Algorithms",
-    "type": "odevzdavarna-individualni",
-    "uploadUrl": "https://is.mendelu.cz/",
-    "name": "Rozpracovaný projekt",
-    "odevzdavarnaId": "fx-b1",
-    "fileCount": 0,
-    "section": "open",
-    "isOpen": true,
-    "deadline": "12.10.2026 23:59"
-   },
-   {
-    "courseId": "dem-alg",
-    "courseCode": "DEM-ALG",
-    "courseNameCs": "Algoritmizace",
-    "courseNameEn": "Algorithms",
-    "type": "odevzdavarna-individualni",
-    "uploadUrl": "https://is.mendelu.cz/",
-    "name": "Zadání projektu",
-    "odevzdavarnaId": "fx-b2",
-    "fileCount": 1,
-    "section": "submitted",
-    "isOpen": true,
-    "deadline": "19.10.2026 12:00"
-   },
-   {
-    "courseId": "dem-alg",
-    "courseCode": "DEM-ALG",
-    "courseNameCs": "Algoritmizace",
-    "courseNameEn": "Algorithms",
-    "type": "odevzdavarna-individualni",
-    "uploadUrl": "https://is.mendelu.cz/",
-    "name": "Domácí úloha 3 – třídění",
-    "odevzdavarnaId": "fx-b3",
-    "fileCount": 0,
-    "section": "open",
-    "isOpen": true,
-    "deadline": "22.10.2026 23:59"
-   },
-   {
-    "courseId": "dem-alg",
-    "courseCode": "DEM-ALG",
-    "courseNameCs": "Algoritmizace",
-    "courseNameEn": "Algorithms",
-    "type": "odevzdavarna-individualni",
-    "uploadUrl": "https://is.mendelu.cz/",
-    "name": "1. projekt",
-    "odevzdavarnaId": "fx-b4",
-    "fileCount": 2,
-    "points": "90",
-    "section": "submitted",
-    "isOpen": false,
-    "deadline": "28.09.2026 23:59"
-   },
-   {
-    "courseId": "dem-eko",
-    "courseCode": "DEM-EKO",
-    "courseNameCs": "Mikroekonomie",
-    "courseNameEn": "Microeconomics",
-    "type": "odevzdavarna-individualni",
-    "uploadUrl": "https://is.mendelu.cz/",
-    "name": "Seminární práce",
-    "odevzdavarnaId": "fx-b7",
-    "fileCount": 0,
-    "section": "open",
-    "isOpen": true,
-    "deadline": "18.12.2026 23:59"
-   },
-   {
-    "courseId": "dem-sta",
-    "courseCode": "DEM-STA",
-    "courseNameCs": "Statistika",
-    "courseNameEn": "Statistics",
-    "type": "odevzdavarna-individualni",
-    "uploadUrl": "https://is.mendelu.cz/",
-    "name": "Semestrální práce",
-    "odevzdavarnaId": "fx-b8",
-    "fileCount": 0,
-    "section": "open",
-    "isOpen": true,
-    "deadline": "15.10.2026 23:59"
-   }
-  ],
-  "odevzdavarnyStatus": "success"
- }
+  "_comment": "Fictional submission boxes on the demo subjects (from dev/fixtures/submissionBoxes.json, renamed). Deadlines are relative to 'now'.",
+  "now": "2026-10-10T10:00:00+02:00",
+  "store": {
+    "odevzdavarny": [
+      {
+        "courseId": "dem-alg",
+        "courseCode": "DEM-ALG",
+        "courseNameCs": "Algoritmizace",
+        "courseNameEn": "Algorithms",
+        "type": "odevzdavarna-individualni",
+        "uploadUrl": "https://is.mendelu.cz/",
+        "name": "Rozpracovaný projekt",
+        "odevzdavarnaId": "fx-b1",
+        "fileCount": 0,
+        "section": "open",
+        "isOpen": true,
+        "deadline": "12.10.2026 23:59"
+      },
+      {
+        "courseId": "dem-alg",
+        "courseCode": "DEM-ALG",
+        "courseNameCs": "Algoritmizace",
+        "courseNameEn": "Algorithms",
+        "type": "odevzdavarna-individualni",
+        "uploadUrl": "https://is.mendelu.cz/",
+        "name": "Zadání projektu",
+        "odevzdavarnaId": "fx-b2",
+        "fileCount": 1,
+        "section": "submitted",
+        "isOpen": true,
+        "deadline": "19.10.2026 12:00"
+      },
+      {
+        "courseId": "dem-alg",
+        "courseCode": "DEM-ALG",
+        "courseNameCs": "Algoritmizace",
+        "courseNameEn": "Algorithms",
+        "type": "odevzdavarna-individualni",
+        "uploadUrl": "https://is.mendelu.cz/",
+        "name": "Domácí úloha 3 – třídění",
+        "odevzdavarnaId": "fx-b3",
+        "fileCount": 0,
+        "section": "open",
+        "isOpen": true,
+        "deadline": "22.10.2026 23:59"
+      },
+      {
+        "courseId": "dem-alg",
+        "courseCode": "DEM-ALG",
+        "courseNameCs": "Algoritmizace",
+        "courseNameEn": "Algorithms",
+        "type": "odevzdavarna-individualni",
+        "uploadUrl": "https://is.mendelu.cz/",
+        "name": "1. projekt",
+        "odevzdavarnaId": "fx-b4",
+        "fileCount": 2,
+        "points": "90",
+        "section": "submitted",
+        "isOpen": false,
+        "deadline": "28.09.2026 23:59"
+      },
+      {
+        "courseId": "dem-eko",
+        "courseCode": "DEM-EKO",
+        "courseNameCs": "Mikroekonomie",
+        "courseNameEn": "Microeconomics",
+        "type": "odevzdavarna-individualni",
+        "uploadUrl": "https://is.mendelu.cz/",
+        "name": "Seminární práce",
+        "odevzdavarnaId": "fx-b7",
+        "fileCount": 0,
+        "section": "open",
+        "isOpen": true,
+        "deadline": "18.12.2026 23:59"
+      },
+      {
+        "courseId": "dem-sta",
+        "courseCode": "DEM-STA",
+        "courseNameCs": "Statistika",
+        "courseNameEn": "Statistics",
+        "type": "odevzdavarna-individualni",
+        "uploadUrl": "https://is.mendelu.cz/",
+        "name": "Semestrální práce",
+        "odevzdavarnaId": "fx-b8",
+        "fileCount": 0,
+        "section": "open",
+        "isOpen": true,
+        "deadline": "15.10.2026 23:59"
+      }
+    ],
+    "odevzdavarnyStatus": "success"
+  }
 }

@@ -10,7 +10,9 @@ const { openDemo, assertClean } = require('./lib/demoPage.cjs');
   const [base, recipeName, out, seedPath] = process.argv.slice(2);
   const file = path.join(__dirname, 'recipes', `${recipeName}.cjs`);
   if (!fs.existsSync(file)) {
-    const have = fs.readdirSync(path.join(__dirname, 'recipes')).map((f) => f.replace(/\.cjs$/, ''));
+    const have = fs
+      .readdirSync(path.join(__dirname, 'recipes'))
+      .map((f) => f.replace(/\.cjs$/, ''));
     throw new Error(`no recipe ${recipeName}; have ${have.join(', ')}`);
   }
   const recipe = require(file);
@@ -22,4 +24,7 @@ const { openDemo, assertClean } = require('./lib/demoPage.cjs');
   await page.screenshot({ path: out });
   console.log('captured', recipeName, '→', out);
   await browser.close();
-})().catch((e) => { console.error(e.message); process.exit(1); });
+})().catch((e) => {
+  console.error(e.message);
+  process.exit(1);
+});

@@ -2,8 +2,16 @@
   "now": "2026-10-07T10:40:00+02:00",
   "monday": "2026-10-05",
   "teachers": {
-    "novak": { "fullName": "doc. Ing. Petr Novák, Ph.D.", "shortName": "Novák", "id": "novak-petr" },
-    "dvorakova": { "fullName": "Ing. Jana Dvořáková, Ph.D.", "shortName": "Dvořáková", "id": "dvorakova-jana" },
+    "novak": {
+      "fullName": "doc. Ing. Petr Novák, Ph.D.",
+      "shortName": "Novák",
+      "id": "novak-petr"
+    },
+    "dvorakova": {
+      "fullName": "Ing. Jana Dvořáková, Ph.D.",
+      "shortName": "Dvořáková",
+      "id": "dvorakova-jana"
+    },
     "kral": { "fullName": "Ing. Tomáš Král", "shortName": "Král", "id": "kral-tomas" },
     "mala": { "fullName": "Mgr. Eva Malá", "shortName": "Malá", "id": "mala-eva" }
   },

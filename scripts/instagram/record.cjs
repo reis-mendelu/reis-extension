@@ -44,8 +44,14 @@ const scripts = {
       background:rgba(121,190,21,.35);border:2px solid #79be15;pointer-events:none;z-index:2147483647;
       animation:reisTap .6s ease-out forwards}@keyframes reisTap{from{transform:scale(.4);opacity:1}to{transform:scale(1.4);opacity:0}}`;
     document.head.appendChild(st);
-    window.__ring = (x, y) => { const d = document.createElement('div'); d.className = 'reis-tap';
-      d.style.left = x + 'px'; d.style.top = y + 'px'; document.body.appendChild(d); setTimeout(() => d.remove(), 700 * 5); };
+    window.__ring = (x, y) => {
+      const d = document.createElement('div');
+      d.className = 'reis-tap';
+      d.style.left = x + 'px';
+      d.style.top = y + 'px';
+      document.body.appendChild(d);
+      setTimeout(() => d.remove(), 700 * 5);
+    };
   });
   await page.waitForTimeout(400);
 
@@ -60,18 +66,29 @@ const scripts = {
       const t = Date.now() / 1000 / SLOW;
       const buf = await page.screenshot({ type: 'png' }).catch(() => null);
       if (buf) frames.push({ buf, t });
-      if (frames.length % 20 === 0) await assertClean(page).catch((e) => { dirty = e; });
+      if (frames.length % 20 === 0)
+        await assertClean(page).catch((e) => {
+          dirty = e;
+        });
     }
   })();
   const tap = async (locator) => {
     const box = await locator.boundingBox();
     if (!box) throw new Error('tap target not visible');
-    await page.evaluate(([x, y]) => window.__ring(x, y), [box.x + box.width / 2, box.y + box.height / 2]);
+    await page.evaluate(
+      ([x, y]) => window.__ring(x, y),
+      [box.x + box.width / 2, box.y + box.height / 2]
+    );
     await wait(250);
     await locator.click({ timeout: 30000 * SLOW });
     await wait(900);
   };
-  try { await run(page, tap); } finally { recording = false; await loop; }
+  try {
+    await run(page, tap);
+  } finally {
+    recording = false;
+    await loop;
+  }
   await browser.close();
   if (dirty) throw dirty;
   if (frames.length < 100) throw new Error(`only ${frames.length} frames captured`);
@@ -85,7 +102,28 @@ const scripts = {
   });
   lines.push(`file '${path.join(framesDir, String(frames.length - 1).padStart(5, '0') + '.png')}'`);
   fs.writeFileSync(path.join(outDir, 'frames.txt'), lines.join('\n'));
-  execFileSync('ffmpeg', ['-v', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', path.join(outDir, 'frames.txt'),
-    '-vf', 'fps=30,format=yuv420p', '-c:v', 'libx264', '-crf', '16', path.join(outDir, 'clip.mp4')]);
-  console.log(`recorded ${frames.length} frames, ${(frames.at(-1).t - frames[0].t).toFixed(1)} s → ${path.join(outDir, 'clip.mp4')}`);
-})().catch((e) => { console.error(e.message); process.exit(1); });
+  execFileSync('ffmpeg', [
+    '-v',
+    'error',
+    '-y',
+    '-f',
+    'concat',
+    '-safe',
+    '0',
+    '-i',
+    path.join(outDir, 'frames.txt'),
+    '-vf',
+    'fps=30,format=yuv420p',
+    '-c:v',
+    'libx264',
+    '-crf',
+    '16',
+    path.join(outDir, 'clip.mp4'),
+  ]);
+  console.log(
+    `recorded ${frames.length} frames, ${(frames.at(-1).t - frames[0].t).toFixed(1)} s → ${path.join(outDir, 'clip.mp4')}`
+  );
+})().catch((e) => {
+  console.error(e.message);
+  process.exit(1);
+});

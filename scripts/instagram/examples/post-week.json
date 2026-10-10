@@ -1,1 +1,7 @@
-{ "kicker": "Novinka", "headline": "Celý *týden* na jeden pohled.", "sub": "Rozvrh po dnech, nebo po týdnech. Vybereš jednou v Nastavení.", "screenshot": "../out/week.png", "phoneTop": 640 }
+{
+  "kicker": "Novinka",
+  "headline": "Celý *týden* na jeden pohled.",
+  "sub": "Rozvrh po dnech, nebo po týdnech. Vybereš jednou v Nastavení.",
+  "screenshot": "../out/week.png",
+  "phoneTop": 640
+}

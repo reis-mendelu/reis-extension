@@ -1,1 +1,6 @@
-{ "kicker": "Novinka", "headline": "Pojmenuj si *předměty* po svém.", "sub": "Nový název uvidíš v kalendáři, zkouškách i předmětech. V ISu se nic nezmění.", "screenshot": "../out/rename.png" }
+{
+  "kicker": "Novinka",
+  "headline": "Pojmenuj si *předměty* po svém.",
+  "sub": "Nový název uvidíš v kalendáři, zkouškách i předmětech. V ISu se nic nezmění.",
+  "screenshot": "../out/rename.png"
+}
