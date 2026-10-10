@@ -18,6 +18,12 @@ describe('toMarkdown', () => {
     expect(toMarkdown([{ n: 'a|b\nc' }])).toContain('a\\|b c');
   });
 
+  it('escapes backslashes before pipes, so a cell cannot open a new column', () => {
+    expect(toMarkdown([{ path: 'C:\\x|y', end: 'a\\' }])).toBe(
+      '| path | end |\n| --- | --- |\n| C:\\\\x\\|y | a\\\\ |'
+    );
+  });
+
   it('renders a nested list of flat rows as an indented table', () => {
     expect(toMarkdown({ grades: [{ code: 'A', grade: 'B' }] })).toBe(
       '- **grades:**\n\n  | code | grade |\n  | --- | --- |\n  | A | B |\n'

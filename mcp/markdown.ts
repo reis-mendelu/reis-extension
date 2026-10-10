@@ -1,8 +1,11 @@
 const isEmpty = (v: unknown) =>
   v === null || v === undefined || v === '' || (Array.isArray(v) && v.length === 0);
 
+// Backslashes first, so a cell's own `\|` cannot turn into an escaped
+// backslash followed by a live column separator.
 const scalar = (v: unknown) =>
   String(v)
+    .replace(/\\/g, '\\\\')
     .replace(/\|/g, '\\|')
     .replace(/\s*\n\s*/g, ' ');
 
