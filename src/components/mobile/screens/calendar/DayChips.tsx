@@ -12,15 +12,11 @@ export interface DayChipsProps {
   /** Compact IS dates (YYYYMMDD) that have at least one lesson. */
   lessonDates: ReadonlySet<string>;
   /**
-   * A tap on a chip, when it means more than "select this day". In the week
-   * view it opens that day, while the arrows and the swipe still only move the
-   * week — so they keep `onSelect`.
-   */
-  onPickDay?: (iso: string) => void;
-  /**
-   * The week view marks no selection and no dots. A chip tap there opens the
-   * day, so the selected day is only the week's anchor, and the grid below
-   * already shows each day's lessons.
+   * The week view marks no selection and no dots, and its chips are not
+   * controls: Týden is about the week, so the selected day is only the week's
+   * anchor, moved by the arrows and the swipe. A chip tap used to open Den,
+   * then to select a day the chef hat depended on — "unintuitive". The grid
+   * below already shows each day's lessons.
    */
   view?: 'day' | 'week';
 }
@@ -48,13 +44,7 @@ export interface DayChipsProps {
  * is the arrow you reach for, and a pill breaks that mapping for the sake of a
  * tidier row. 44px tall now, the touch minimum the old 36px missed.
  */
-export function DayChips({
-  selectedIso,
-  onSelect,
-  lessonDates,
-  onPickDay,
-  view = 'day',
-}: DayChipsProps) {
+export function DayChips({ selectedIso, onSelect, lessonDates, view = 'day' }: DayChipsProps) {
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
   // The store's clock, as the week grid's now-line reads it: the pulse moves it,
@@ -150,7 +140,7 @@ export function DayChips({
               isToday={iso === todayIso}
               hasLessons={lessonDates.has(toCompact(iso))}
               showDot={view === 'day'}
-              onClick={() => (onPickDay ?? onSelect)(iso)}
+              onClick={view === 'day' ? () => onSelect(iso) : undefined}
             />
           );
         })}

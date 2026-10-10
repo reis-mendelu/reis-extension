@@ -15,6 +15,7 @@
   },
   "menu": {
     "title": "Jídelníček",
+    "day": "Den",
     "unavailable": "Menu není k dispozici",
     "outletOne": "1 výdejna",
     "outletFew": "{count} výdejny",

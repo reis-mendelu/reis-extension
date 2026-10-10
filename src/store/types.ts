@@ -489,7 +489,7 @@ export type MobileSheet =
   | { kind: 'settings' }
   // reIS admins only: "view as a student" of another programme.
   | { kind: 'impersonation' }
-  | { kind: 'menu'; dayIso: string }
+  | { kind: 'menu'; dayIso: string; week?: string[] }
   | {
       kind: 'venue';
       coord: [number, number];
@@ -551,8 +551,8 @@ export interface MobileUiSlice {
   hydratePullHint: (o: { demo: boolean }) => Promise<void>;
   markPullHintSeen: () => void;
   /**
-   * What the calendar SHOWS: the saved view, a view being tried in the chooser,
-   * or one day peeked at from the week. In memory only.
+   * What the calendar SHOWS: the saved view, or a view being tried in the
+   * chooser. In memory only.
    */
   mobileCalendarView: MobileCalendarView;
   /** The student's saved choice, `meta.calendar_view`. 'day' until one is saved. */

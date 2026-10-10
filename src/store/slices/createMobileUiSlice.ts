@@ -90,8 +90,7 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
     }
     set({ calendarViewChosen: false });
   },
-  // Trying a view in the chooser, or peeking at one day from the week: the
-  // screen changes, the choice does not.
+  // Trying a view in the chooser: the screen changes, the choice does not.
   showCalendarView: (view) => set({ mobileCalendarView: view }),
   // State first, storage second, like dismissWelcome: the view changes on the
   // tap, and a failed write only means the choice is not remembered.

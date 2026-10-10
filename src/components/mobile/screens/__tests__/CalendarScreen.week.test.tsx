@@ -140,15 +140,40 @@ describe('CalendarScreen — week view', () => {
     });
   });
 
-  // A peek, not a choice: with no switch on screen, saving 'day' here would
-  // strand a Týden student in the day view until they found Profile.
-  it('tapping a day in the strip opens that day without changing the saved view', () => {
+  /**
+   * Týden is about the week, not a day in it — 10 October 2026. A chip tap
+   * used to peek into Den, then briefly selected a day; swiping to another week
+   * selected one nobody chose, and the chef hat silently depended on it. Now
+   * nothing in Týden is selected, a chip is not a control, and the title names
+   * the week the strip shows.
+   */
+  it('a day in the strip is not a control in the week view', () => {
     useAppStore.setState({ mobileCalendarView: 'week', savedCalendarView: 'week' } as never);
     render(<CalendarScreen />);
-    fireEvent.click(within(screen.getByTestId('day-strip')).getByRole('button', { name: /Út 6/ }));
-    expect(useAppStore.getState().mobileCalendarView).toBe('day');
-    expect(useAppStore.getState().savedCalendarView).toBe('week');
-    expect(useAppStore.getState().mobileSelectedDayIso).toBe('2026-10-06');
+    const chip = within(screen.getByTestId('day-strip')).getByRole('button', { name: /Út 6/ });
+    expect(chip).toBeDisabled();
+    expect(chip).not.toHaveAttribute('aria-pressed');
+    fireEvent.click(chip);
+    expect(useAppStore.getState().mobileCalendarView).toBe('week');
+    expect(useAppStore.getState().mobileSelectedDayIso).toBe('2026-10-07');
+  });
+
+  it('the week view is titled with the week the strip shows', () => {
+    useAppStore.setState({ mobileCalendarView: 'week' } as never);
+    render(<CalendarScreen />);
+    expect(screen.getByText('5.–9. 10.')).toBeInTheDocument();
+  });
+
+  // The way back is about the WEEK in Týden: a week holding today is home.
+  it('offers the way back only in a week without today', () => {
+    useAppStore.setState({ mobileCalendarView: 'week' } as never);
+    const { unmount } = render(<CalendarScreen />);
+    expect(screen.queryByLabelText(/Zpět na dnešek/)).toBeNull();
+    unmount();
+    useAppStore.setState({ mobileSelectedDayIso: '2026-10-14' } as never);
+    render(<CalendarScreen />);
+    expect(screen.getByText('12.–16. 10.')).toBeInTheDocument();
+    expect(screen.getByLabelText(/Zpět na dnešek/)).toBeInTheDocument();
   });
 
   it('the Now/Next card belongs to the day view', () => {

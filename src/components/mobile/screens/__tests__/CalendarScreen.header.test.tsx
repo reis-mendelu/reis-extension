@@ -68,6 +68,18 @@ describe('CalendarScreen header', () => {
     expect(screen.getByText('Čt 26. listopadu')).toBeInTheDocument();
   });
 
+  // The week grid has no room for the day's menu card, so the week view's way
+  // to the jídelníček is a chef hat among the header actions, left of the pin.
+  it('puts the menu’s chef hat first among the header actions in the week view', () => {
+    useAppStore.setState({
+      mobileCalendarView: 'week',
+      menu: [{ outlet: 'X', days: [{ date: '20. 4. 2026', soup: null, mainDishes: ['Guláš'] }] }],
+    } as never);
+    render(<CalendarScreen />);
+    const hat = screen.getByRole('button', { name: 'Jídelníček' });
+    expect(hat.nextElementSibling).toBe(screen.getByLabelText('Rozbalit vývěsku'));
+  });
+
   it('opens search from the loading screen', () => {
     // Settings is a bottom-nav tab now, so the header's own destinations are
     // the vývěska, search and notifications.
