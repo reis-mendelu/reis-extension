@@ -1,0 +1,47 @@
+{
+  "skill_name": "instagram-posts",
+  "evals": [
+    {
+      "id": 1,
+      "name": "open-pick",
+      "prompt": "Připrav jeden instagramový post o té nejlepší novince v reISu, o které jsme ještě nic nepostovali.",
+      "expected_output": "One rendered post about a student-facing feature not in posted.json, with caption, alt text and a passing rating.",
+      "files": [],
+      "assertions": [
+        "post.jpg is 1080x1350",
+        "caption ends with 'Odkaz v biu.'",
+        "caption is 100-250 characters",
+        "alt text starts with 'Grafika reIS'",
+        "feature PRs are not in posted.json",
+        "rater pass is true",
+        "independent rater pass is true"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "classmates",
+      "prompt": "Udělej post o spolužácích – že teď uvidíš celý předmět, ne jen svoje cvičení.",
+      "expected_output": "A post about Spolužáci / Celý předmět (#490, #505) whose phone shows the classmates list with fictional names.",
+      "files": [],
+      "assertions": [
+        "post.jpg is 1080x1350",
+        "caption ends with 'Odkaz v biu.'",
+        "caption is 100-250 characters",
+        "alt text starts with 'Grafika reIS'",
+        "rater pass is true",
+        "independent rater pass is true"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "exam-legend",
+      "prompt": "make an IG post about the exam term legend in Zkoušky (PR 483)",
+      "expected_output": "Either a passing post about the exam term legend or a reasoned decision that it is too small to post.",
+      "files": [],
+      "assertions": [
+        "either a 1080x1350 post.jpg with a passing rating, or notes.md explains why it is not worth a post",
+        "independent rater agrees with the decision"
+      ]
+    }
+  ]
+}
