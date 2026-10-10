@@ -17,6 +17,8 @@ export function LogoPreview({ file }: { file: File }) {
 
   useEffect(() => {
     let cancelled = false;
+    // Blank first, so an unreadable replacement never leaves the old logo showing.
+    canvasRef.current?.getContext('2d')?.clearRect(0, 0, SIDE, SIDE);
     void (async () => {
       try {
         const bitmap = await createImageBitmap(file);
@@ -28,8 +30,9 @@ export function LogoPreview({ file }: { file: File }) {
         }
         bitmap.close();
       } catch {
-        // Unreadable image: the preview stays blank and Save reports the
-        // failure through the encoder, which reads the same file.
+        // Unreadable image: the preview was blanked above and stays blank.
+        // Save reports it as save_failed, because the encoder reads the same
+        // file and throws the same way.
       }
     })();
     return () => {
