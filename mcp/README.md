@@ -14,13 +14,13 @@ Then ask Claude things like "what's due this week?" or "explain lecture 7 of PoÄ
 
 | Tool | What it returns |
 | --- | --- |
-| `mendelu_schedule` | Your current-semester timetable |
+| `mendelu_schedule` | Your timetable for today and the next 14 days; ask for any other dates this semester |
 | `mendelu_exams` | Exam and credit terms, registered and still open |
 | `mendelu_subjects` | Subjects you are enrolled in this semester |
 | `mendelu_study_plan` | Your study plan and credits |
 | `mendelu_syllabus` | One subject's syllabus and requirements |
 | `mendelu_subject_files` | Files in a subject's IS document folder |
-| `mendelu_read_file` | The text of one of those files (PDF, Word, PowerPoint, Excel, ODT, text) |
+| `mendelu_read_file` | The text of one of those files: PDF, DOCX, PPTX, XLSX, ODT, ODP, ODS and plain text (not the old .doc/.ppt/.xls), up to 30 MB |
 | `mendelu_success_rates` | Historical pass rates of subjects (public reIS statistics) |
 | `mendelu_grades` | Your grades and credits so far |
 | `mendelu_assignments` | Your submission boxes and their deadlines |
@@ -28,9 +28,9 @@ Then ask Claude things like "what's due this week?" or "explain lecture 7 of PoÄ
 ## What it never does
 
 - It never registers you for anything, never submits anything, and never opens online tests.
-- It never sends anything to reIS. It talks to `is.mendelu.cz` and to the public reIS statistics on `cdn.jsdelivr.net`, nothing else.
+- It never sends anything to reIS. It talks to `is.mendelu.cz` (over HTTPS only) and to the public reIS statistics on `cdn.jsdelivr.net`, nothing else.
 - Your password is stored in your system keychain by Claude Desktop and is sent only to `is.mendelu.cz` to sign in.
-- A wrong password is never retried, so it cannot lock your account.
+- A wrong password is not retried while the extension runs, and any failed sign-in waits a minute before the next one. Restarting Claude Desktop starts a fresh attempt.
 
 Whatever Claude reads goes to Claude like anything else you share in a chat.
 

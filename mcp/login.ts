@@ -67,8 +67,14 @@ export async function loginToIs(
     .find((c) => c.startsWith(prefix));
   if (pair && isPlausibleToken(pair.slice(prefix.length))) return pair;
 
-  const html = res.status === 200 ? await res.text() : '';
-  const otpEnabled = /<input[^>]*name="credential_k"(?![^>]*disabled)[^>]*>/.test(html);
+  // IS has answered with its form under 200 and 403 (live, 2026-10-10); 401 is
+  // read too. Anything else (a 5xx maintenance page) stays unexpected, so it is
+  // never mistaken for bad credentials and made final.
+  const html = [200, 401, 403].includes(res.status) ? await res.text().catch(() => '') : '';
+  // The OTP field ships disabled; it counts as enabled only when the tag has no
+  // disabled attribute anywhere, whatever the attribute order.
+  const otpTag = /<input\b[^>]*\bname="credential_k"[^>]*>/.exec(html)?.[0];
+  const otpEnabled = !!otpTag && !/\bdisabled\b/.test(otpTag);
   const twoFactorType = /name="auth_2fa_type" value="(?!no")/.test(html);
   if (otpEnabled || twoFactorType) throw fail('two-factor');
   if (/name="credential_1"/.test(html)) throw fail('bad-credentials');

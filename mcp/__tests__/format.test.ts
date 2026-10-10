@@ -18,6 +18,7 @@ describe('toResult', () => {
     const r = toResult({ s: 'x'.repeat(CHARACTER_LIMIT + 10) }, 'json');
     expect('structuredContent' in r).toBe(false);
     expect(r.content[0]!.text).toContain('[truncated at');
+    expect(r.content[0]!.text.length).toBeLessThanOrEqual(CHARACTER_LIMIT);
   });
 });
 

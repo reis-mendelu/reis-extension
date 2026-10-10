@@ -1,23 +1,41 @@
-// Spawns the built reIS for Claude bundle and speaks MCP over stdio:
-// initialize, then tools/list. With --live it also calls mendelu_exams against
-// real IS, using MENDELU_USER/MENDELU_PASS from the environment (never printed).
+// Spawns the built reIS for Claude bundle and speaks MCP over stdio.
+//
+//   node scripts/mcp-smoke.mjs                 initialize + tools/list (no IS traffic)
+//   node scripts/mcp-smoke.mjs --live [tool…]  also calls mendelu_exams and the named
+//                                              tools against real IS, with
+//                                              MENDELU_USER/MENDELU_PASS from the
+//                                              environment (never printed)
 import { spawn } from 'node:child_process';
 
 const live = process.argv.includes('--live');
+const extraTools = process.argv.slice(2).filter((a) => a !== '--live');
+
+// Live mode never logs in with placeholder credentials: that would be a failed
+// login against IS. Offline mode never logs in at all, so placeholders are fine.
+if (live && !(process.env.MENDELU_USER && process.env.MENDELU_PASS)) {
+  console.error('smoke: --live needs MENDELU_USER and MENDELU_PASS in the environment');
+  process.exit(1);
+}
+
 const child = spawn(process.execPath, ['dist-mcp/server/index.mjs'], {
   env: {
     ...process.env,
-    MENDELU_USER: process.env.MENDELU_USER ?? 'smoke',
-    MENDELU_PASS: process.env.MENDELU_PASS ?? 'smoke',
+    MENDELU_USER: process.env.MENDELU_USER || 'smoke',
+    MENDELU_PASS: process.env.MENDELU_PASS || 'smoke',
   },
   stdio: ['pipe', 'pipe', 'inherit'],
 });
-child.on('exit', (code) => {
-  if (code) {
-    console.error(`smoke: server exited with ${code}`);
-    process.exit(1);
-  }
-});
+
+/** Every exit path goes through here, so the server never outlives the smoke. */
+function finish(code, message) {
+  if (message) console.error(`smoke: ${message}`);
+  child.removeAllListeners('exit');
+  child.kill();
+  process.exit(code);
+}
+child.on('exit', (code) => finish(1, `server exited with ${code}`));
+child.stdin.on('error', (e) => finish(1, `server stdin: ${e.message}`));
+const timer = setTimeout(() => finish(1, 'timed out'), 90000);
 
 let buf = '';
 const waiters = new Map();
@@ -40,11 +58,6 @@ const call = (method, params) =>
     child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: n, method, params }) + '\n');
   });
 
-const timer = setTimeout(() => {
-  console.error('smoke: timed out');
-  process.exit(1);
-}, 90000);
-
 await call('initialize', {
   protocolVersion: '2025-06-18',
   capabilities: {},
@@ -55,7 +68,7 @@ const tools = (await call('tools/list', {})).result.tools.map((t) => t.name).sor
 console.log('tools:', tools.length, tools.join(', '));
 let failed = tools.length !== 10;
 
-for (const name of live ? process.argv.slice(3).concat(['mendelu_exams']) : []) {
+for (const name of live ? [...extraTools, 'mendelu_exams'] : []) {
   const r = await call('tools/call', { name, arguments: {} });
   const text = r.result.content[0].text;
   const summary = r.result.isError
@@ -66,6 +79,4 @@ for (const name of live ? process.argv.slice(3).concat(['mendelu_exams']) : []) 
 }
 
 clearTimeout(timer);
-child.removeAllListeners('exit');
-child.kill();
-process.exit(failed ? 1 : 0);
+finish(failed ? 1 : 0);

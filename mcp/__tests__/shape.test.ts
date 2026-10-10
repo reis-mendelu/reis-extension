@@ -38,6 +38,7 @@ describe('scheduleRows', () => {
         lesson('20260921'),
         lesson('20261013', '15:00'),
         lesson('20261013', '07:00'),
+        lesson('20261025', '09:00'),
       ],
       '2026-10-10',
       '2026-10-24'
@@ -69,6 +70,13 @@ describe('scheduleRows', () => {
     expect(rows).toHaveLength(156);
     const text = toResult(rows, 'markdown').content[0]!.text;
     expect(text.length).toBeLessThan(CHARACTER_LIMIT);
+  });
+
+  it('keeps a 14-day default across the end of daylight saving time', () => {
+    expect(defaultRange(new Date(2026, 9, 20, 0, 30))).toEqual({
+      from: '2026-10-20',
+      to: '2026-11-03',
+    });
   });
 
   it('defaults to today and the next 14 days', () => {

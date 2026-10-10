@@ -72,6 +72,27 @@ describe('loginToIs', () => {
     expect((err as IsLoginError).kind).toBe('two-factor');
   });
 
+  it('treats a disabled OTP field as no 2FA whatever the attribute order', async () => {
+    const html =
+      '<input type="password" name="credential_1" value="" />' +
+      '<input disabled="disabled" type="text" name="credential_k" />';
+    const f = vi.fn().mockResolvedValue(respond(200, { html }));
+    const err = await loginToIs('x', 'wrong', asFetch(f)).catch((e: unknown) => e);
+    expect((err as IsLoginError).kind).toBe('bad-credentials');
+  });
+
+  it('reads the form from a 403 answer too', async () => {
+    const f = vi.fn().mockResolvedValue(respond(403, { html: WRONG_LOGIN_PAGE }));
+    const err = await loginToIs('x', 'wrong', asFetch(f)).catch((e: unknown) => e);
+    expect((err as IsLoginError).kind).toBe('bad-credentials');
+  });
+
+  it('never reads a 5xx page as bad credentials', async () => {
+    const f = vi.fn().mockResolvedValue(respond(503, { html: WRONG_LOGIN_PAGE }));
+    const err = await loginToIs('x', 'pw', asFetch(f)).catch((e: unknown) => e);
+    expect((err as IsLoginError).kind).toBe('unexpected');
+  });
+
   it('never puts the username or password into the error message', async () => {
     const f = vi.fn().mockResolvedValue(respond(500));
     const err = await loginToIs('xsecretuser', 'hunter2pw', asFetch(f)).catch((e: unknown) => e);

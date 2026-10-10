@@ -20,6 +20,7 @@ import { fetchGradeHistory } from '../../src/api/gradeHistory';
 import { fetchDualLanguageSubjects } from '../../src/api/subjects';
 import { fetchDualLanguageStudyPlan } from '../../src/api/studyPlan';
 import { listFolderFiles } from '../files';
+import { fetchFullSemesterSchedule } from '../../src/injector/dataFetchers';
 
 const ctx = { fetch: vi.fn() as unknown as typeof fetch };
 const tool = (name: string) => {
@@ -110,6 +111,24 @@ describe('TOOLS', () => {
     vi.mocked(fetchDualLanguageStudyPlan).mockResolvedValue({ cz: 'plán', en: 'plan' } as never);
     expect(await tool('mendelu_study_plan').run({ lang: 'en' }, ctx)).toBe('plan');
     expect(await tool('mendelu_study_plan').run({}, ctx)).toBe('plán');
+  });
+
+  it('reports a failed IS fetch instead of an empty answer', async () => {
+    vi.mocked(fetchDualLanguageSubjects).mockResolvedValue(null);
+    await expect(tool('mendelu_subjects').run({}, ctx)).rejects.toThrow(
+      /did not return your subjects/
+    );
+    vi.mocked(fetchFullSemesterSchedule).mockResolvedValue(null as never);
+    await expect(tool('mendelu_schedule').run({}, ctx)).rejects.toThrow(
+      /did not return your timetable/
+    );
+  });
+
+  it('returns an empty timetable window as an empty list', async () => {
+    vi.mocked(fetchFullSemesterSchedule).mockResolvedValue([] as never);
+    expect(
+      await tool('mendelu_schedule').run({ from: '2026-10-10', to: '2026-10-11' }, ctx)
+    ).toEqual([]);
   });
 
   it('describes every tool as read-only', () => {

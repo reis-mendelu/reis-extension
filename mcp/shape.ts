@@ -5,8 +5,6 @@
 
 type Lesson = Record<string, unknown>;
 
-const DAY_MS = 86_400_000;
-
 /** YYYY-MM-DD in local time. */
 export function isoDay(d: Date): string {
   const p = (n: number) => String(n).padStart(2, '0');
@@ -15,7 +13,10 @@ export function isoDay(d: Date): string {
 
 /** Default window: today and the next 14 days. */
 export function defaultRange(now: Date = new Date()): { from: string; to: string } {
-  return { from: isoDay(now), to: isoDay(new Date(now.getTime() + 14 * DAY_MS)) };
+  // Calendar arithmetic, not 14 × 24 h: a DST change would shift the end by a day.
+  const end = new Date(now);
+  end.setDate(end.getDate() + 14);
+  return { from: isoDay(now), to: isoDay(end) };
 }
 
 /** IS writes lesson dates as YYYYMMDD. */

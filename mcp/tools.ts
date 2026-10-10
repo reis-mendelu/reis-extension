@@ -51,7 +51,9 @@ type SubjectsLite = { subjects?: { data?: Record<string, Record<string, unknown>
 async function subjectsData(): Promise<Record<string, Record<string, unknown>>> {
   const { studium, obdobi } = await study();
   const res = (await fetchDualLanguageSubjects(studium, obdobi)) as SubjectsLite;
-  return res?.subjects?.data ?? {};
+  // null is a failed fetch, not an empty enrolment: never report it as one.
+  if (!res?.subjects?.data) throw new Error('IS Mendelu did not return your subjects. Try again.');
+  return res.subjects.data;
 }
 
 export const TOOLS: ToolDef[] = [
@@ -68,7 +70,11 @@ export const TOOLS: ToolDef[] = [
       const range = defaultRange();
       const from = typeof a.from === 'string' ? a.from : range.from;
       const to = typeof a.to === 'string' ? a.to : range.to;
-      return scheduleRows(await fetchFullSemesterSchedule(), from, to);
+      const lessons = await fetchFullSemesterSchedule();
+      // null means IS failed, which must not read as "no classes".
+      if (!Array.isArray(lessons))
+        throw new Error('IS Mendelu did not return your timetable. Try again.');
+      return scheduleRows(lessons, from, to);
     },
   },
   {
@@ -76,8 +82,9 @@ export const TOOLS: ToolDef[] = [
     title: 'My exams',
     description:
       'Your exam and credit (zkouška/zápočet) terms from IS Mendelu: the ones you are registered for and the ones still open, with date, room and capacity. Read-only: it never registers you.',
-    input: { lang },
-    run: async (a) => pickLang(await fetchDualLanguageExams(), a.lang),
+    // No lang option: the exam records already carry both names merged.
+    input: {},
+    run: () => fetchDualLanguageExams(),
   },
   {
     name: 'mendelu_subjects',

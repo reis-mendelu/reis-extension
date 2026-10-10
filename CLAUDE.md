@@ -5,10 +5,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 reIS (REIS.mendelu) simplifies the MENDELU university Information System (IS
-Mendelu) for students. It ships as **three products from one codebase**: a
+Mendelu) for students. It ships as **three UI products from one codebase**: a
 Chrome/Firefox/Edge **browser extension** (WXT, injects an iframe containing the
 React app into IS Mendelu pages), an **iOS app** and an **Android app** (both
-Capacitor, same React app). All processing is client-side — no student data is
+Capacitor, same React app). A fourth, headless one, **reIS for Claude** (`mcp/`),
+is described below. All processing is client-side — no student data is
 intercepted or stored externally.
 
 Read the next section before editing any UI. Three products do **not** mean
@@ -80,12 +81,14 @@ capability" is a valid answer that ends the turn.
 A Claude Desktop extension (`.mcpb`) that signs in to IS as the student on
 their laptop and exposes ten read-only tools over the same `src/api` fetchers.
 It has no UI tree, so the parity rule does not apply to it. It is also the only
-reIS code that handles a password: the password comes from the keychain and
-goes into one login POST. Its standing promises are pinned in
+reIS code that handles a password: it comes from the keychain and is sent only
+to the IS login endpoint, at sign-in and at each automatic re-login. Its standing promises are pinned in
 `src/test/guards/mcpStaysReadOnly.test.ts`.
 
-A `src/api` change reaches it too. Check the change with
-`npm run mcp:smoke` (`npm run mcp:smoke -- --live` calls tools against real IS).
+A `src/api` change reaches it too. `npx vitest run mcp/` covers the tool
+shaping; `npm run mcp:smoke` only proves the server starts and lists its tools.
+To exercise a changed fetcher against real IS, name its tool:
+`npm run mcp:smoke -- --live mendelu_grades` (it always adds `mendelu_exams`).
 
 Build with `npm run mcp:pack`. Its release tags are `mcp-v*`, never `v*`.
 

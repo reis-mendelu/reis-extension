@@ -61,5 +61,7 @@ function bullets(value: unknown, indent: string): string[] {
 export function toMarkdown(value: unknown): string {
   if (isEmpty(value)) return 'Nothing found.';
   if (isTable(value)) return tableLines(value).join('\n');
-  return bullets(value, '').join('\n');
+  const lines = bullets(value, '');
+  // An object whose every value is empty renders nothing at all.
+  return lines.length ? lines.join('\n') : 'Nothing found.';
 }

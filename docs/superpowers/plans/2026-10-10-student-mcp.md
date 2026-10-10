@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-10-student-mcp-design.md`
 
+> **Executed 2026-10-10.** The code in `mcp/` is authoritative where it differs from the snippets below. See "Deviations found during execution" at the end; the lines review flagged as unsafe have been corrected in place.
+
 ## Global Constraints
 
 - Branch from `origin/test`; the PR's base is `test` (`gh pr create --base test`). Push via the `personal` remote (memory `github-push-identity`).
@@ -26,7 +28,7 @@
 - Max ~200 lines per file (repo convention). Test first.
 - Release tags for this product are `mcp-v*`. Never `v*`: those drive the iOS release.
 - Before every commit, run `npx prettier --write` on the files that task created or changed. The plan's code blocks are not prettier-formatted, and CI's `format:check` is repo-wide.
-- Every `mcp/__tests__` file starts with `// @vitest-environment node`. The repo default is happy-dom, whose `Response` may lack `getSetCookie`.
+- The MCP tests run in the repo's default happy-dom environment (`src/test/setup.ts` needs a DOM). happy-dom's `Headers` drop `Set-Cookie`/`Cookie`, so tests fake responses as plain objects.
 - Locally run only the tests you touched (`npx vitest run mcp/`) plus `npm run typecheck`. CI runs the rest.
 
 ## File Structure
@@ -80,7 +82,6 @@ In `vitest.config.ts`, inside `test.include`, add after the `capacitor/**` line:
 - [ ] **Step 2: Write the failing test**
 
 ```ts
-// @vitest-environment node
 // mcp/__tests__/login.test.ts
 import { describe, it, expect, vi } from 'vitest';
 import { loginToIs, IsLoginError } from '../login';
@@ -230,13 +231,13 @@ Expected: PASS (6 tests).
 - [ ] **Step 6: Live check against IS (credentials from reis-scraper's .env, never printed)**
 
 ```bash
-cat > /tmp/mcp-login-live.ts <<'EOF'
-import { loginToIs } from './mcp/login';
+cat > /tmp/mcp-login-live.mts <<EOF
+import { loginToIs } from '$PWD/mcp/login';
 const c = await loginToIs(process.env.MENDELU_USER!, process.env.MENDELU_PASS!, fetch);
 const r = await fetch('https://is.mendelu.cz/auth/student/moje_studium.pl?lang=cz', { headers: { Cookie: c } });
 console.log(r.status, /credential_1/.test(await r.text()) ? 'LOGIN PAGE' : 'AUTHENTICATED');
 EOF
-(set -a; . "$(git rev-parse --path-format=absolute --git-common-dir)/../../reis-scraper/.env"; set +a; npx tsx /tmp/mcp-login-live.ts); rm /tmp/mcp-login-live.ts
+(set -a; . "$(git rev-parse --path-format=absolute --git-common-dir)/../../reis-scraper/.env"; set +a; npx tsx /tmp/mcp-login-live.mts); rm /tmp/mcp-login-live.mts
 ```
 
 Expected: `200 AUTHENTICATED`.
@@ -271,7 +272,6 @@ Behaviour:
 - [ ] **Step 1: Write the failing test**
 
 ```ts
-// @vitest-environment node
 // mcp/__tests__/session.test.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -492,7 +492,6 @@ Why a side-effect module: `src/api/*` reads `window`/`fetch`/IndexedDB when it i
 - [ ] **Step 1: Write the failing tests**
 
 ```ts
-// @vitest-environment node
 // mcp/__tests__/format.test.ts
 import { describe, it, expect } from 'vitest';
 import { toResult, toError, CHARACTER_LIMIT } from '../format';
@@ -525,7 +524,6 @@ describe('toError', () => {
 ```
 
 ```ts
-// @vitest-environment node
 // mcp/__tests__/markdown.test.ts
 import { describe, it, expect } from 'vitest';
 import { toMarkdown } from '../markdown';
@@ -701,13 +699,12 @@ git commit -m "feat(mcp): node globals host, result format and markdown renderer
 Run: `test -L node_modules && echo SHARED` must print nothing (CLAUDE.md: never install through a symlink). Then:
 
 ```bash
-npm install --save-dev unpdf@^1.6.2 officeparser@^7.3.0
+npm install --save-dev officeparser@^8.1.1   # not unpdf, not officeparser 7: both carry a vulnerable pdfjs
 ```
 
 - [ ] **Step 2: Write the failing test**
 
 ```ts
-// @vitest-environment node
 // mcp/__tests__/files.test.ts
 import { describe, it, expect, vi } from 'vitest';
 
@@ -878,7 +875,6 @@ npm install --save-dev @modelcontextprotocol/sdk@^1.32.1
 - [ ] **Step 2: Write the failing test**
 
 ```ts
-// @vitest-environment node
 // mcp/__tests__/tools.test.ts
 import { describe, it, expect, vi } from 'vitest';
 
@@ -1251,6 +1247,7 @@ import { resolve } from 'node:path';
 // dependency is inlined (ssr.noExternal: true) because a .mcpb runs without
 // npm install.
 export default defineConfig({
+  publicDir: false, // public/ holds the dev snapshot (a student's real IS data)
   resolve: { alias: { '@': resolve(__dirname, 'src') } },
   build: {
     ssr: resolve(__dirname, 'mcp/server.ts'),
@@ -1392,7 +1389,7 @@ npm install --save-dev @anthropic-ai/mcpb
 ```
 
 ```json
-"mcp:pack": "npm run mcp:build && cp mcp/manifest.json mcp/icon.png dist-mcp/ && mcpb validate dist-mcp/manifest.json && mcpb pack dist-mcp dist-mcp/reis-for-claude.mcpb"
+"mcp:pack": "npm run mcp:build && node scripts/mcp-pack.mjs"   // cross-platform; copies the icon from public/brand-assets, runs a pinned mcpb, checks the archive
 ```
 
 Run: `npm run mcp:pack`

@@ -23,8 +23,25 @@ function urlOf(input: RequestInfo | URL): string {
 async function isLoginPage(res: Response): Promise<boolean> {
   if (res.url.includes('/system/login.pl')) return true;
   if (!/text\/html/i.test(res.headers.get('content-type') ?? '')) return false;
-  const head = (await res.clone().text()).slice(0, 20000);
-  return /name="credential_1"/.test(head);
+  return /name="credential_1"/.test(await readHead(res.clone(), 20000));
+}
+
+/** The first `limit` bytes of a body, without buffering the rest of it. */
+async function readHead(res: Response, limit: number): Promise<string> {
+  const reader = res.body?.getReader();
+  if (!reader) return (await res.text()).slice(0, limit);
+  const decoder = new TextDecoder();
+  let text = '';
+  while (text.length < limit) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    text += decoder.decode(value, { stream: true });
+  }
+  // Not awaited: cancelling one branch of a cloned (tee'd) body settles only
+  // once the other branch is cancelled too, so awaiting it hangs on any page
+  // longer than `limit` (live, 2026-10-10).
+  void reader.cancel().catch(() => {});
+  return text.slice(0, limit);
 }
 
 /**
@@ -48,6 +65,11 @@ export function createIsSession(
   let lastFailure: { at: number; error: IsLoginError } | null = null;
   let unexpectedInARow = 0;
 
+  const recordFailure = (err: IsLoginError) => {
+    lastFailure = { at: now(), error: err };
+    if (err.kind !== 'unexpected' || ++unexpectedInARow >= MAX_UNEXPECTED) fatal = err;
+  };
+
   const login = (): Promise<string> => {
     if (fatal) return Promise.reject(fatal);
     if (lastFailure && now() - lastFailure.at < LOGIN_FLOOR_MS) {
@@ -64,8 +86,7 @@ export function createIsSession(
           e instanceof IsLoginError
             ? e
             : new IsLoginError('unexpected', 'IS Mendelu did not start a session.');
-        lastFailure = { at: now(), error: err };
-        if (err.kind !== 'unexpected' || ++unexpectedInARow >= MAX_UNEXPECTED) fatal = err;
+        recordFailure(err);
         throw err;
       })
       .finally(() => {
@@ -89,13 +110,15 @@ export function createIsSession(
     input: RequestInfo | URL,
     init: RequestInit = {}
   ): Promise<Response> => {
-    let host = '';
+    let url: URL | null = null;
     try {
-      host = new URL(urlOf(input)).host;
+      url = new URL(urlOf(input));
     } catch {
-      host = '';
+      url = null;
     }
-    if (host !== IS_HOST) return nativeFetch(input, init);
+    if (url?.host !== IS_HOST) return nativeFetch(input, init);
+    // The session cookie never travels in clear text.
+    if (url.protocol !== 'https:') throw new Error('Refusing a non-HTTPS request to IS Mendelu.');
 
     const first = await send(input, init, cookie ?? (await login()));
     const method = (init.method ?? 'GET').toUpperCase();
@@ -104,7 +127,15 @@ export function createIsSession(
     cookie = null;
     const retry = await send(input, init, await login());
     if (await isLoginPage(retry)) {
-      throw new IsLoginError('unexpected', 'IS Mendelu keeps asking to sign in. Try again later.');
+      // A fresh cookie that IS still rejects is a failed login: drop it and
+      // ration the next attempt like any other failure.
+      cookie = null;
+      const err = new IsLoginError(
+        'unexpected',
+        'IS Mendelu keeps asking to sign in. Try again later.'
+      );
+      recordFailure(err);
+      throw err;
     }
     return retry;
   };

@@ -40,6 +40,35 @@ describe('createIsSession', () => {
     expect(JSON.stringify(cdnInit?.[1] ?? {})).not.toContain('UISAuth');
   });
 
+  it('never sends the cookie over plain HTTP', async () => {
+    login.mockResolvedValue('UISAuth=tok1');
+    const native = vi.fn(async () => page('<html>ok</html>'));
+    const s = createIsSession({ user: 'u', pass: 'p' }, asFetch(native));
+    await expect(s.fetch('http://is.mendelu.cz/auth/a.pl')).rejects.toThrow(/HTTPS/);
+    expect(native).not.toHaveBeenCalled();
+    expect(login).not.toHaveBeenCalled();
+  });
+
+  it('drops a rejected fresh cookie and rations the next login', async () => {
+    let t = 0;
+    login.mockResolvedValue('UISAuth=t');
+    const native = vi.fn().mockImplementation(async () => LOGIN_PAGE());
+    const s = createIsSession({ user: 'u', pass: 'p' }, asFetch(native), () => t);
+    await expect(s.fetch(IS_URL)).rejects.toMatchObject({ kind: 'unexpected' });
+    t = 10_000;
+    await expect(s.fetch(IS_URL)).rejects.toMatchObject({ kind: 'unexpected' });
+    expect(login).toHaveBeenCalledTimes(2);
+  });
+
+  it('returns a page longer than the login-form probe whole', async () => {
+    login.mockResolvedValue('UISAuth=tok1');
+    const long = '<html>' + 'x'.repeat(60_000) + '</html>';
+    const native = vi.fn(async () => page(long));
+    const s = createIsSession({ user: 'u', pass: 'p' }, asFetch(native));
+    const res = await s.fetch(IS_URL);
+    expect((await res.text()).length).toBe(long.length);
+  }, 5000);
+
   it('keeps headers the caller passed', async () => {
     login.mockResolvedValue('UISAuth=tok1');
     const native = vi.fn(async () => page('<html>ok</html>'));

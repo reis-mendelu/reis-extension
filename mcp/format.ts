@@ -11,7 +11,9 @@ export function toResult(data: unknown, format: ResponseFormat) {
   let text = format === 'json' ? JSON.stringify(data, null, 2) : toMarkdown(data);
   const truncated = text.length > CHARACTER_LIMIT;
   if (truncated) {
-    text = `${text.slice(0, CHARACTER_LIMIT)}\n\n[truncated at ${CHARACTER_LIMIT} chars — ask a narrower question]`;
+    // The marker counts toward the limit, so the whole text stays within it.
+    const marker = `\n\n[truncated at ${CHARACTER_LIMIT} chars — ask a narrower question]`;
+    text = text.slice(0, CHARACTER_LIMIT - marker.length) + marker;
   }
   const content = [{ type: 'text' as const, text }];
   if (format !== 'json' || truncated) return { content };

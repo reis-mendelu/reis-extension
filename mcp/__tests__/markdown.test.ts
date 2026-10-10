@@ -39,5 +39,6 @@ describe('toMarkdown', () => {
   it('says so when there is nothing', () => {
     expect(toMarkdown([])).toBe('Nothing found.');
     expect(toMarkdown(null)).toBe('Nothing found.');
+    expect(toMarkdown({ a: null, b: [] })).toBe('Nothing found.');
   });
 });
