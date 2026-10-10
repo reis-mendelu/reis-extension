@@ -5,6 +5,9 @@ import { resolve } from 'node:path';
 // Every dependency is inlined (ssr.noExternal) because a .mcpb runs without
 // npm install.
 export default defineConfig({
+  // Never copy public/: it holds the dev snapshot (a student's real IS data)
+  // and app assets the server does not use.
+  publicDir: false,
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),

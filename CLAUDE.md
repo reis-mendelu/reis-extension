@@ -75,6 +75,20 @@ capability" is a valid answer that ends the turn.
    crash in PR #266 happened. `src/api/` and `src/utils/parsers/` are shared, so
    a "scraper" edit hits BOTH products.
 
+### A fourth product, headless: reIS for Claude (`mcp/`)
+
+A Claude Desktop extension (`.mcpb`) that signs in to IS as the student on
+their laptop and exposes ten read-only tools over the same `src/api` fetchers.
+It has no UI tree, so the parity rule does not apply to it. It is also the only
+reIS code that handles a password: the password comes from the keychain and
+goes into one login POST. Its standing promises are pinned in
+`src/test/guards/mcpStaysReadOnly.test.ts`.
+
+A `src/api` change reaches it too. Check the change with
+`npm run mcp:smoke` (add `--live` to call tools against real IS).
+
+Build with `npm run mcp:pack`. Its release tags are `mcp-v*`, never `v*`.
+
 ## Multi-Repo Organization
 
 Four repos sit side by side, next to the **main checkout**: **reis-extension** (this repo), **reis-scraper**, **reis-data**, **reis-page**. The admin console is not a sibling repo; it lives here, in `src/components/AdminConsole/`. `../` in this file and in `/repos` means relative to the main checkout. From a worktree, `../` is inside `.claude/worktrees/`, so resolve a sibling as `"$(git rev-parse --path-format=absolute --git-common-dir)/../../reis-scraper"`.

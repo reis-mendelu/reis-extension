@@ -483,7 +483,7 @@ git commit -m "feat(mcp): session fetch with single-flight login and one re-logi
 
 **Interfaces:**
 - Produces:
-  - `globals.ts` (side-effect module) exports `nativeFetch: typeof fetch` (the real fetch, captured before any override) and `useSessionFetch(f: typeof fetch): void`.
+  - `globals.ts` (side-effect module) exports `nativeFetch: typeof fetch` (the real fetch, captured before any override) and `setSessionFetch(f: typeof fetch): void`.
   - `format.ts` exports `CHARACTER_LIMIT = 25000`, `type ResponseFormat = 'markdown' | 'json'`, `toResult(data: unknown, format: ResponseFormat)` and `toError(tool: string, e: unknown)`.
   - `markdown.ts` exports `toMarkdown(value: unknown): string`.
 
@@ -646,7 +646,7 @@ export const nativeFetch: typeof fetch = globalThis.fetch.bind(globalThis);
 
 let current: typeof fetch = nativeFetch;
 /** Point the global fetch at the IS session. The global itself is set once, here. */
-export function useSessionFetch(f: typeof fetch): void {
+export function setSessionFetch(f: typeof fetch): void {
   current = f;
 }
 
@@ -1140,7 +1140,7 @@ git commit -m "feat(mcp): ten read-only student tools over reIS fetchers"
 - Modify: `tsconfig.json` (add reference), `package.json` (scripts), `.gitignore` (`dist-mcp/`)
 
 **Interfaces:**
-- Consumes: `nativeFetch`, `useSessionFetch` (Task 3); `createIsSession` (Task 2); `registerTools` (Task 5).
+- Consumes: `nativeFetch`, `setSessionFetch` (Task 3); `createIsSession` (Task 2); `registerTools` (Task 5).
 - Produces: `dist-mcp/server/index.mjs`, which runs under plain `node` with env `MENDELU_USER` and `MENDELU_PASS`. Also the npm scripts `mcp:build` and `mcp:smoke`.
 
 - [ ] **Step 1: Write the smoke script (the failing check)**
@@ -1209,7 +1209,7 @@ Expected: FAIL (no `vite.mcp.config.ts` yet).
 // mcp/server.ts
 // FIRST import: installs DOM/IndexedDB globals and the delegating fetch before
 // any src/api module is evaluated.
-import { nativeFetch, useSessionFetch } from './globals';
+import { nativeFetch, setSessionFetch } from './globals';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createIsSession } from './session';
@@ -1224,7 +1224,7 @@ if (!user || !pass) {
 }
 
 const session = createIsSession({ user, pass }, nativeFetch);
-useSessionFetch(session.fetch);
+setSessionFetch(session.fetch);
 
 const server = new McpServer({ name: 'reis-mendelu', version: '0.1.0' });
 registerTools(server, { fetch: session.fetch });
@@ -1452,3 +1452,21 @@ Not automatic. Ask Dominik first, because a release is public.
 - [ ] Confirm that no workflow fires on a tag or release push. Run `grep -nE "^\s*(release|push):" -A4 .github/workflows/*.yml` and read every match. On 2026-10-10 none matched `mcp-v*` or `release:`.
 - [ ] After the PR merges to `test`: `git tag mcp-v0.1.0 <merge sha> && git push personal mcp-v0.1.0`, then `gh release create mcp-v0.1.0 dist-mcp/reis-for-claude.mcpb --title "reIS for Claude 0.1.0" --notes-file mcp/README.md`.
 - [ ] Verify no workflow ran for the tag: `gh run list --limit 5`.
+
+---
+
+## Deviations found during execution (2026-10-10)
+
+- **No `// @vitest-environment node`.** `src/test/setup.ts` needs a DOM. The MCP tests stay in happy-dom and fake responses as plain objects, because happy-dom's `Headers` drops `Set-Cookie`/`Cookie` just like a browser's. `session.ts` sends headers as a plain record for the same reason.
+- **`beforeEach(() => m.mockReset())` is a trap.** It returns the mock, and vitest runs a returned function as teardown. Use a block body.
+- **`IsLoginError` declares `kind` as a field.** `erasableSyntaxOnly` forbids constructor parameter properties.
+- **unpdf removed; officeparser `^8.1.1` reads PDFs too.**
+  - officeparser 7.x pins pdfjs-dist 6.1.200, which is affected by GHSA-hq66-cqwq-w95j.
+  - unpdf bundles its own vulnerable pdfjs, which `npm audit` can't see.
+  - Two pdfjs copies in one bundle fail with an API/worker version mismatch.
+  - v8 removed `ast.toText()`. Use `(await ast.to('text')).value`.
+- **officeparser's optional peers are aliased to `mcp/optionalPeerStub.ts`** (pdf-lib, puppeteer, tesseract.js). The single-file bundle evaluates their lazy imports eagerly and would throw at load.
+- **`useSessionFetch` is renamed `setSessionFetch`.** The React hooks lint rule fires on any `use*` call at top level.
+- **`publicDir: false` in `vite.mcp.config.ts`.** Vite copied `public/` into the bundle, including `dev-real-data.json`, a student's real IS snapshot. `scripts/mcp-check-pack.mjs` now fails the pack unless the archive holds exactly `icon.png`, `manifest.json` and `server/index.mjs`.
+- **The icon is copied at pack time** from `public/brand-assets/reIS_logo_512.png`, so there is no `mcp/icon.png`. The manifest license is `Apache-2.0`, matching the repo's LICENSE.
+- **The markdown renderer keeps multi-line text as a block,** so extracted lecture text keeps its lines.

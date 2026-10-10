@@ -61,7 +61,8 @@
     "privacy:generate": "tsx scripts/privacy/generate.ts",
     "privacy:publish": "tsx scripts/privacy/publish.ts",
     "mcp:build": "vite build --config vite.mcp.config.ts",
-    "mcp:smoke": "npm run mcp:build && node scripts/mcp-smoke.mjs"
+    "mcp:smoke": "npm run mcp:build && node scripts/mcp-smoke.mjs",
+    "mcp:pack": "npm run mcp:build && cp mcp/manifest.json dist-mcp/ && cp public/brand-assets/reIS_logo_512.png dist-mcp/icon.png && mcpb validate dist-mcp/manifest.json && mcpb pack dist-mcp dist-mcp/reis-for-claude.mcpb && node scripts/mcp-check-pack.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
@@ -106,6 +107,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@anthropic-ai/mcpb": "^2.1.2",
     "@eslint/js": "^9.39.5",
     "@modelcontextprotocol/sdk": "^1.32.1",
     "@playwright/test": "^1.57.0",
