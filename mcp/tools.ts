@@ -9,6 +9,7 @@ import { fetchSubjectSuccessRates } from '../src/api/successRate';
 import { fetchGradeHistory } from '../src/api/gradeHistory';
 import { fetchOdevzdavarny } from '../src/api/odevzdavarny';
 import { listFolderFiles, readDokServerFile } from './files';
+import { scheduleRows, defaultRange, compactStudyPlan } from './shape';
 
 export type ToolCtx = { fetch: typeof fetch };
 export type ToolDef = {
@@ -23,6 +24,8 @@ const lang = z
   .enum(['cz', 'en'])
   .default('cz')
   .describe('Language of names and texts: "cz" (default) or "en".');
+
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD.');
 
 async function study(): Promise<{ studium: string; obdobi: string }> {
   const p = await getUserParams();
@@ -56,9 +59,17 @@ export const TOOLS: ToolDef[] = [
     name: 'mendelu_schedule',
     title: 'My timetable',
     description:
-      'Your full current-semester timetable from IS Mendelu: lectures, seminars and exams already on it, with date, time, room and subject. Read-only.',
-    input: {},
-    run: () => fetchFullSemesterSchedule(),
+      'Your timetable from IS Mendelu for a date range (default: today and the next 14 days): lectures, seminars and consultations with date, time, subject, room and teachers. Pass from/to to look further ahead or back within this semester. Read-only.',
+    input: {
+      from: isoDate.optional().describe('First day, YYYY-MM-DD. Default: today.'),
+      to: isoDate.optional().describe('Last day, YYYY-MM-DD. Default: 14 days from today.'),
+    },
+    run: async (a) => {
+      const range = defaultRange();
+      const from = typeof a.from === 'string' ? a.from : range.from;
+      const to = typeof a.to === 'string' ? a.to : range.to;
+      return scheduleRows(await fetchFullSemesterSchedule(), from, to);
+    },
   },
   {
     name: 'mendelu_exams',
@@ -85,7 +96,8 @@ export const TOOLS: ToolDef[] = [
     description:
       'Your study plan: required subject groups per semester, credits earned and required, and which subjects you have completed. Read-only.',
     input: { lang },
-    run: async (a) => pickLang(await fetchDualLanguageStudyPlan((await study()).studium), a.lang),
+    run: async (a) =>
+      compactStudyPlan(pickLang(await fetchDualLanguageStudyPlan((await study()).studium), a.lang)),
   },
   {
     name: 'mendelu_syllabus',

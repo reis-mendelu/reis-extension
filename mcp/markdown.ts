@@ -15,15 +15,18 @@ function isFlatRow(v: unknown): v is Record<string, unknown> {
   );
 }
 
-function table(rows: Record<string, unknown>[]): string {
+function tableLines(rows: Record<string, unknown>[], indent = ''): string[] {
   const headers = [...new Set(rows.flatMap((r) => Object.keys(r)))];
-  const line = (cells: string[]) => `| ${cells.join(' | ')} |`;
+  const line = (cells: string[]) => `${indent}| ${cells.join(' | ')} |`;
   return [
     line(headers),
     line(headers.map(() => '---')),
     ...rows.map((r) => line(headers.map((h) => (isEmpty(r[h]) ? '' : scalar(r[h]))))),
-  ].join('\n');
+  ];
 }
+
+const isTable = (v: unknown): v is Record<string, unknown>[] =>
+  Array.isArray(v) && v.length > 0 && v.every(isFlatRow);
 
 function bullets(value: unknown, indent: string): string[] {
   if (Array.isArray(value)) {
@@ -36,6 +39,9 @@ function bullets(value: unknown, indent: string): string[] {
   if (value && typeof value === 'object') {
     return Object.entries(value).flatMap(([k, v]) => {
       if (isEmpty(v)) return [];
+      // A list of flat rows (subjects, grades, assignments) is a table, not a
+      // bullet per field: several times shorter, and easier to read.
+      if (isTable(v)) return [`${indent}- **${k}:**`, '', ...tableLines(v, indent + '  '), ''];
       if (typeof v === 'object') return [`${indent}- **${k}:**`, ...bullets(v, indent + '  ')];
       // Multi-line text (a lecture's extracted text, a syllabus section)
       // keeps its line breaks as a block under its key.
@@ -51,6 +57,6 @@ function bullets(value: unknown, indent: string): string[] {
 /** Generic, predictable rendering: tables for lists of flat rows, bullets otherwise. */
 export function toMarkdown(value: unknown): string {
   if (isEmpty(value)) return 'Nothing found.';
-  if (Array.isArray(value) && value.every(isFlatRow)) return table(value);
+  if (isTable(value)) return tableLines(value).join('\n');
   return bullets(value, '').join('\n');
 }

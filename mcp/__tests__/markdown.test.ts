@@ -18,6 +18,12 @@ describe('toMarkdown', () => {
     expect(toMarkdown([{ n: 'a|b\nc' }])).toContain('a\\|b c');
   });
 
+  it('renders a nested list of flat rows as an indented table', () => {
+    expect(toMarkdown({ grades: [{ code: 'A', grade: 'B' }] })).toBe(
+      '- **grades:**\n\n  | code | grade |\n  | --- | --- |\n  | A | B |\n'
+    );
+  });
+
   it('keeps the line breaks of multi-line text values', () => {
     expect(toMarkdown({ kind: 'pdf', text: 'Slide 1\nSlide 2' })).toBe(
       '- **kind:** pdf\n- **text:**\n\n  Slide 1\n  Slide 2\n'
