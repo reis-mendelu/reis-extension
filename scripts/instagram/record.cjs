@@ -14,18 +14,10 @@ const { openDemo, assertClean } = require('./lib/demoPage.cjs');
 const SLOW = 5;
 const wait = (ms) => new Promise((r) => setTimeout(r, ms * SLOW));
 
-const scripts = {
-  // Day view → Profil → Nastavení → Týden → back to the calendar, now a week.
-  week: async (page, tap) => {
-    await wait(1200);
-    await tap(page.getByRole('button', { name: 'Profil' }).last());
-    await tap(page.getByText('Nastavení', { exact: true }));
-    await tap(page.getByRole('button', { name: 'Týden', exact: true }));
-    await tap(page.getByRole('button', { name: 'Zavřít' }));
-    await tap(page.getByRole('button', { name: 'Kalendář' }).last());
-    await wait(1400);
-  },
-};
+// One entry per Reel: a function that taps through a flow with `tap(locator)`.
+// None ships right now — the only one drove the week view's Nastavení switch,
+// which is gone (the phone calendar is Den only). Add one per Reel you make.
+const scripts = {};
 
 (async () => {
   const [base, scriptName, outArg, seedPath] = process.argv.slice(2);

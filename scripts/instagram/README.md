@@ -16,12 +16,13 @@ npm run build:web                       # demo build into dist-web/
 npx vite preview --config vite.web.build.config.ts --port 4173 --strictPort
 
 # feed post: phone still → post
-node scripts/instagram/capture.cjs http://localhost:4173 week scripts/instagram/out/week.png scripts/instagram/data/demo-week.json
-node scripts/instagram/render.cjs scripts/instagram/examples/post-week.json scripts/instagram/out/post-week.jpg
+node scripts/instagram/capture.cjs http://localhost:4173 rename scripts/instagram/out/rename.png
+node scripts/instagram/render.cjs scripts/instagram/examples/post-rename.json scripts/instagram/out/post-rename.jpg
 
-# Reel: recorded tap-through → intro / phone / outro
-node scripts/instagram/record.cjs http://localhost:4173 week scripts/instagram/out/clip scripts/instagram/data/demo-week.json
-node scripts/instagram/reel.cjs scripts/instagram/examples/reel-week.json scripts/instagram/out/clip/clip.mp4 scripts/instagram/out/reel-week.mp4
+# Reel: recorded tap-through → intro / phone / outro. record.cjs has no script
+# right now; add one (see its `scripts` object), then:
+node scripts/instagram/record.cjs http://localhost:4173 <script> scripts/instagram/out/clip scripts/instagram/data/demo-week.json
+node scripts/instagram/reel.cjs <reel-spec.json> scripts/instagram/out/clip/clip.mp4 scripts/instagram/out/reel.mp4
 ```
 
 `out/` is gitignored. Needs `ffmpeg` on PATH and the repo's Playwright Chromium.

@@ -1,5 +1,7 @@
 # Calendar view choice Implementation Plan
 
+> **Superseded 2026-10-11.** The phone and iPad calendar is Den only; the week grid, this chooser and the Nastavení calendar row were removed (see `src/test/guards/phoneHasNoWeekView.test.ts`). Kept as a record of what was tried.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** The phone calendar asks once "Den nebo Týden?" (try both live, then Uložit), the floating view switch is removed, and the choice lives in a new Nastavení sheet reached from one Profile row.
