@@ -148,9 +148,52 @@ describe('submitIosVersion', () => {
     expect(out.status).toBe('submitted');
     expect(calls.some((c) => c.path.startsWith('/v1/reviewSubmissionItems'))).toBe(false);
   });
+
+  it('refuses to submit a review submission that also holds something else', async () => {
+    const { asc, calls } = fakeAsc({
+      'GET /v1/builds': build,
+      'GET /v1/apps/APP/appStoreVersions': versions([['V1', '5.4.1', 'PREPARE_FOR_SUBMISSION']]),
+      'GET /v1/appStoreVersions/V1/appStoreVersionLocalizations': {
+        data: [{ id: 'L1', attributes: { locale: 'cs' } }],
+      },
+      'PATCH /v1/appStoreVersionLocalizations/L1': {},
+      'PATCH /v1/appStoreVersions/V1/relationships/build': {},
+      'GET /v1/appStoreVersions/V1/build': { data: { id: 'B1' } },
+      'GET /v1/reviewSubmissions?': { data: [{ id: 'R1' }] },
+      'GET /v1/reviewSubmissions/R1/items': {
+        data: [{ id: 'I9', relationships: { appStoreVersion: { data: { id: 'OTHER' } } } }],
+      },
+    });
+    await expect(submitIosVersion({ ...base, asc, dryRun: false })).rejects.toThrow(/not 5\.4\.1/);
+    expect(calls.some((c) => c.method === 'PATCH' && c.path === '/v1/reviewSubmissions/R1')).toBe(
+      false
+    );
+  });
 });
 
 describe('versions list pagination', () => {
+  it.each(['PROCESSING_FOR_APP_STORE', 'REPLACED_WITH_NEW_VERSION'])(
+    'counts %s as already submitted',
+    async (state) => {
+      const { asc } = fakeAsc({
+        'GET /v1/apps/APP/appStoreVersions': versions([['V1', '5.4.1', state]]),
+      });
+      expect(await submittedVersionState(asc, 'APP', '5.4.1')).toBe(state);
+    }
+  );
+
+  it('stops instead of looping when ASC repeats the same next link', async () => {
+    const page = {
+      ...versions([['V0', '5.4.0', 'READY_FOR_SALE']]),
+      links: { next: 'https://api.appstoreconnect.apple.com/v1/apps/APP/appStoreVersions?page=2' },
+    };
+    const { asc } = fakeAsc({
+      'GET /v1/apps/APP/appStoreVersions?filter': page,
+      'GET /v1/apps/APP/appStoreVersions?page=2': page,
+    });
+    await expect(submittedVersionState(asc, 'APP', '5.4.1')).rejects.toThrow(/repeated/);
+  });
+
   it('follows links.next, so a version beyond the first page is still found', async () => {
     const { asc } = fakeAsc({
       'GET /v1/apps/APP/appStoreVersions?': (() => {

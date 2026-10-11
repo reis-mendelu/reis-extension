@@ -9,7 +9,9 @@ export const DONE = [
   'PENDING_APPLE_RELEASE',
   'PENDING_DEVELOPER_RELEASE',
   'PROCESSING_FOR_DISTRIBUTION',
+  'PROCESSING_FOR_APP_STORE',
   'READY_FOR_SALE',
+  'REPLACED_WITH_NEW_VERSION',
 ];
 /** States of a different version that block creating this one. */
 export const BLOCKING = [
@@ -27,8 +29,12 @@ const ASC_ORIGIN = 'https://api.appstoreconnect.apple.com';
 /** Every page of a list endpoint: a missed row reads as "not there". */
 export async function listAll(asc: AscHttp, firstPath: string): Promise<AscResource[]> {
   const rows: AscResource[] = [];
+  const seen = new Set<string>();
   let next: string | undefined = firstPath;
   while (next) {
+    if (seen.has(next))
+      throw new Error(`App Store Connect repeated the page ${next.split('?')[0]}.`);
+    seen.add(next);
     const { data } = await asc('GET', next);
     rows.push(...listOf(data));
     next = data?.links?.next?.replace(ASC_ORIGIN, '');

@@ -74,11 +74,20 @@ export async function releaseToTrack(a: ReleaseArgs): Promise<ReleaseResult> {
           `${tracks.map((t) => t.track).join(', ') || 'none'}. Set PLAY_TRACK to the closed-testing one.`
       );
     }
-    // A draft is not a release: it reaches no tester, so it must not count as done.
-    const onTrack = (mine.releases ?? []).some(
-      (r) => r.status !== 'draft' && (r.versionCodes ?? []).includes(String(code))
+    const sameCode = (mine.releases ?? []).filter((r) =>
+      (r.versionCodes ?? []).includes(String(code))
     );
-    if (onTrack) {
+    // A draft or a halted release reaches no tester, so it is not "done"; and
+    // the bundle is already on Play, so uploading it again would only fail.
+    // Stop with the instruction instead.
+    const stuck = sameCode.find((r) => r.status === 'draft' || r.status === 'halted');
+    if (stuck) {
+      throw new Error(
+        `versionCode ${code} is on ${a.track} as a ${stuck.status} release. ` +
+          'Finish or resume it in Play Console; this pipeline will not upload it again.'
+      );
+    }
+    if (sameCode.length > 0) {
       return { status: 'already-released', detail: `versionCode ${code} is already on ${a.track}` };
     }
     if (a.dryRun) {

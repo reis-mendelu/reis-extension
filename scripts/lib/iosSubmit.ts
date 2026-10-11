@@ -149,7 +149,16 @@ export async function submitIosVersion(a: SubmitArgs): Promise<SubmitResult> {
   // A run that died after adding the item but before submitting leaves it on
   // this submission; adding it again would fail as a duplicate.
   const items = await listAll(a.asc, `/v1/reviewSubmissions/${submissionId}/items?limit=50`);
-  const hasItem = items.some((i) => i.relationships?.appStoreVersion?.data?.id === versionId);
+  const isMine = (i: AscResource) => i.relationships?.appStoreVersion?.data?.id === versionId;
+  // Submitting sends EVERYTHING on the submission to Apple. Something else on it
+  // (another version, an in-app purchase) is not ours to ship: stop and say so.
+  if (items.some((i) => !isMine(i))) {
+    throw new Error(
+      `Review submission ${submissionId} already holds items that are not ${a.version}. ` +
+        'Not submitting them with this release; remove them in App Store Connect and re-run.'
+    );
+  }
+  const hasItem = items.some(isMine);
   if (!hasItem) {
     await a.asc('POST', '/v1/reviewSubmissionItems', {
       data: {

@@ -58,18 +58,22 @@ describe('releaseToTrack', () => {
     expect(calls.some((c) => c.method === 'PUT' || c.path.includes(':commit'))).toBe(false);
   });
 
-  it('does not treat a draft release of that versionCode as already released', async () => {
-    const { play, calls } = fakePlay({
-      'POST /edits': { id: 'E1' },
-      'GET /edits/E1/tracks': tracks([{ track: 'alpha', codes: ['50401'], status: 'draft' }]),
-      'POST /edits/E1/bundles': { versionCode: 50401 },
-      'PUT /edits/E1/tracks/alpha': {},
-      'POST /edits/E1:commit': { id: 'E1' },
-    });
-    const out = await releaseToTrack({ ...args, expectedVersionCode: 50401, play, dryRun: false });
-    expect(out.status).toBe('released');
-    expect(calls.some((c) => c.path.includes(':commit'))).toBe(true);
-  });
+  it.each(['draft', 'halted'])(
+    'stops with an instruction when that versionCode sits on the track as a %s release',
+    async (status) => {
+      const { play, calls } = fakePlay({
+        'POST /edits': { id: 'E1' },
+        'GET /edits/E1/tracks': tracks([{ track: 'alpha', codes: ['50401'], status }]),
+        'DELETE /edits/E1': {},
+      });
+      await expect(
+        releaseToTrack({ ...args, expectedVersionCode: 50401, play, dryRun: false })
+      ).rejects.toThrow(new RegExp(`${status} release`));
+      expect(calls.some((c) => c.path.includes('bundles') || c.path.includes(':commit'))).toBe(
+        false
+      );
+    }
+  );
 
   it('fails clearly and lists the real track names when the track does not exist', async () => {
     const { play } = fakePlay({
