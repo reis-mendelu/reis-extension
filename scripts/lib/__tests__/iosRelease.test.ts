@@ -6,6 +6,7 @@ import {
   parseReleaseArgs,
   parseSigningAuthority,
   reserveBundleVersion,
+  xcodeAuthArgs,
 } from '../iosRelease';
 
 describe('nextBundleVersion', () => {
@@ -126,5 +127,18 @@ describe('reserveBundleVersion', () => {
 
   it('copes with an unstamped project', () => {
     expect(reserveBundleVersion('50101', ['50101'], null)).toBe('50101.1');
+  });
+});
+
+describe('xcodeAuthArgs', () => {
+  it('signs with the API key: path, key id and issuer, in the flags xcodebuild reads', () => {
+    expect(xcodeAuthArgs({ keyId: 'K1', issuerId: 'I1', keyPath: '/k/AuthKey_K1.p8' })).toEqual([
+      '-authenticationKeyPath',
+      '/k/AuthKey_K1.p8',
+      '-authenticationKeyID',
+      'K1',
+      '-authenticationKeyIssuerID',
+      'I1',
+    ]);
   });
 });
