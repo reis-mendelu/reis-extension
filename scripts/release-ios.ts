@@ -26,6 +26,7 @@ import {
   xcodeAuthArgs,
 } from './lib/iosRelease';
 import { manualExportOptionsPlist } from './lib/iosManualExport';
+import { withManualSigning } from './lib/iosManualPbxproj';
 import { deriveIosVersion, readBundleVersion } from './lib/iosVersion';
 import { assertUploadable, inspectIpa } from './lib/verifyIpa';
 
@@ -159,13 +160,12 @@ async function main() {
   const cloudArgs = profileName
     ? []
     : ['-allowProvisioningUpdates', ...(USE_API_KEY_AUTH ? xcodeAuthArgs(creds) : [])];
-  const manualArchiveArgs = profileName
-    ? [
-        'CODE_SIGN_STYLE=Manual',
-        'CODE_SIGN_IDENTITY=Apple Distribution',
-        `PROVISIONING_PROFILE_SPECIFIER=${profileName}`,
-      ]
-    : [];
+  if (profileName) {
+    writeFileSync(
+      PBXPROJ,
+      withManualSigning(readFileSync(PBXPROJ, 'utf8'), 'cz.reis.app', profileName)
+    );
+  }
 
   step(`Archiving ${version} (${bundleVersion})`);
   sh('xcodebuild', [
@@ -180,7 +180,6 @@ async function main() {
     '-archivePath',
     archivePath,
     `DEVELOPMENT_TEAM=${TEAM_ID}`,
-    ...manualArchiveArgs,
     ...cloudArgs,
     'archive',
   ]);

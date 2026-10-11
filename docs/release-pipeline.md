@@ -60,8 +60,8 @@ for `cz.reis.app`:
 | `IOS_DIST_P12_PASSWORD` | the password the `.p12` was exported with (generated with it) |
 | `IOS_STORE_PROFILE_B64` | the App Store profile "reIS CI App Store", base64 |
 
-`ship.yml` imports them into a temporary keychain; `release-ios.ts` then archives with
-manual signing and exports with `scripts/lib/iosManualExport.ts`. Without the secrets
+`ship.yml` imports them into a temporary keychain; `release-ios.ts` then switches the app target's Release
+configuration to manual signing (`scripts/lib/iosManualPbxproj.ts`), archives and exports with `scripts/lib/iosManualExport.ts`. Without the secrets
 it falls back to cloud signing. The certificate and profile expire on 2027-10-11
 (re-create both through `POST /v1/certificates` and `POST /v1/profiles`, then reset
 the secrets) and the profile goes stale if the app's entitlements change.
