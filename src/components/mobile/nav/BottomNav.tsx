@@ -35,7 +35,6 @@ export function BottomNav() {
   const setMobileTab = useAppStore((s) => s.setMobileTab);
   const keyboardOpen = useAppStore((s) => s.keyboardOpen);
   const { goToday } = useCalendarToday();
-  const restoreCalendarView = useAppStore((s) => s.restoreCalendarView);
   const { t } = useTranslation();
 
   if (keyboardOpen) return null;
@@ -64,12 +63,7 @@ export function BottomNav() {
             // From another tab the calendar opens where the student left it.
             onClick={() => {
               setMobileTab(id);
-              if (active && id === 'calendar') {
-                goToday();
-                // Home is today in the saved view, not one being tried in
-                // the chooser.
-                restoreCalendarView();
-              }
+              if (active && id === 'calendar') goToday();
             }}
             className={`flex min-h-11 min-w-11 items-center gap-1.5 rounded-full px-3 transition-colors max-[359px]:px-2 ${
               active ? 'bg-primary/15 text-[var(--tone-primary)]' : 'text-base-content/60'

@@ -11,7 +11,6 @@ import { useShowLessonOnMap } from './useShowLessonOnMap';
 import { useOpenLesson } from './useOpenLesson';
 import { AlwaysScrollable } from '../../primitives/AlwaysScrollable';
 import { PullRefreshIndicator } from '../../primitives/PullRefreshIndicator';
-import { useCalendarBottomPad } from './calendarBottomPad';
 
 export interface DayBodyProps {
   agenda: AgendaRow[];
@@ -75,7 +74,6 @@ export function DayBody({
   const showOnMap = useShowLessonOnMap();
   const openLesson = useOpenLesson();
   const bodyRef = useRef<HTMLDivElement>(null);
-  const bottomPad = useCalendarBottomPad();
 
   /**
    * Written straight to the node, never through state — the same rule DayChips
@@ -128,7 +126,8 @@ export function DayBody({
         {...handlers}
         className="flex-1 touch-pan-y overflow-y-auto transition-transform duration-200 ease-out"
       >
-        <AlwaysScrollable className={bottomPad}>
+        {/* Clears the floating tab bar (76px measured, +20). */}
+        <AlwaysScrollable className="pb-[calc(6rem_+_var(--safe-bottom,0px))]">
           {agenda.length === 0 ? (
             <CalendarEmptyDay
               holiday={holiday}

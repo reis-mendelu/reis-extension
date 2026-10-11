@@ -4,8 +4,9 @@ import { SettingsSheet } from '../SettingsSheet';
 import { useAppStore } from '../../../../store/useAppStore';
 
 /**
- * Nastavení (spec 2026-10-09): the three things a student sets once —
- * calendar view, language, dark mode — behind one Profile row.
+ * Nastavení: the two things a student sets once — language and dark mode —
+ * behind one Profile row. (It also held the calendar view until 2026-10-11,
+ * when the phone calendar became Den only.)
  */
 describe('SettingsSheet', () => {
   beforeEach(() => {
@@ -13,24 +14,7 @@ describe('SettingsSheet', () => {
       language: 'cz',
       theme: 'mendelu-dark',
       isThemeLoading: false,
-      mobileCalendarView: 'day',
-      savedCalendarView: 'day',
-      calendarViewChosen: true,
     } as never);
-  });
-
-  it('saves the calendar view', () => {
-    render(<SettingsSheet onClose={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Týden' }));
-    expect(useAppStore.getState().savedCalendarView).toBe('week');
-    expect(useAppStore.getState().mobileCalendarView).toBe('week');
-  });
-
-  it('saving here also answers the first-open chooser', () => {
-    useAppStore.setState({ calendarViewChosen: false } as never);
-    render(<SettingsSheet onClose={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Den' }));
-    expect(useAppStore.getState().calendarViewChosen).toBe(true);
   });
 
   it('flips the theme between mendelu-dark and mendelu', async () => {
