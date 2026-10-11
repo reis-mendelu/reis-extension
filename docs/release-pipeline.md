@@ -47,20 +47,24 @@ are missing fails first and names the missing ones.
 | `ANDROID_KEY_ALIAS` | `reis-upload` | `android/keystore.properties` (`keyAlias`) |
 | `ANDROID_KEY_PASSWORD` | only if different from the store password | `android/keystore.properties` (`keyPassword`) |
 
-**iOS signing: pick one.** The first dry run showed the export fails with *Cloud
-signing permission error* when the API key has only the App Manager role. Either
-make the key **Admin** (nothing else to set), or hand the runner a certificate:
+**iOS signing.** An App Manager API key cannot use Apple's cloud signing for the
+export (*Cloud signing permission error*), and each cloud-signed run also leaves a
+"Created via API" development certificate behind. So CI signs archive and export
+itself, with a distribution certificate made for CI through the API (own CSR, so
+its private key was never only in someone's keychain) and an App Store profile
+for `cz.reis.app`:
 
 | Secret | What it is |
 | --- | --- |
-| `IOS_DIST_P12_B64` | the Apple Distribution certificate + private key, `.p12`, base64 |
-| `IOS_DIST_P12_PASSWORD` | the password the `.p12` was exported with (the export script generates it) |
-| `IOS_STORE_PROFILE_B64` | the App Store provisioning profile for `cz.reis.app`, base64 |
+| `IOS_DIST_P12_B64` | the CI Apple Distribution certificate + private key, `.p12`, base64 |
+| `IOS_DIST_P12_PASSWORD` | the password the `.p12` was exported with (generated with it) |
+| `IOS_STORE_PROFILE_B64` | the App Store profile "reIS CI App Store", base64 |
 
-With all three present, `ship.yml` imports them into a temporary keychain and the
-export signs locally (`scripts/lib/iosManualExport.ts`); without them it uses cloud
-signing. The profile expires (2027-09 for the current one) and goes stale when an
-entitlement changes: re-export the secrets then.
+`ship.yml` imports them into a temporary keychain; `release-ios.ts` then archives with
+manual signing and exports with `scripts/lib/iosManualExport.ts`. Without the secrets
+it falls back to cloud signing. The certificate and profile expire on 2027-10-11
+(re-create both through `POST /v1/certificates` and `POST /v1/profiles`, then reset
+the secrets) and the profile goes stale if the app's entitlements change.
 
 Already present and reused: `CHROME_*`, `FIREFOX_*`, and the Google service
 account `CHROME_SERVICE_ACCOUNT_*`, which also calls the Play Developer API.

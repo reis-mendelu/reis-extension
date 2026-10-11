@@ -46,6 +46,12 @@ const { tag: wantedTag, skipUpload } = parseReleaseArgs(process.argv.slice(2));
 // with the App Store Connect API key instead. On this Mac it stays off.
 const USE_API_KEY_AUTH = process.env.REIS_XCODE_API_KEY_AUTH === '1';
 
+// On CI, ship.yml may hand over a distribution certificate and App Store profile
+// (REIS_IOS_PROFILE_NAME). Then archive and export both sign with them and never
+// call Apple's cloud signing, which needs an API key above App Manager and leaves a
+// new "Created via API" development certificate behind on every run.
+const profileName = process.env.REIS_IOS_PROFILE_NAME;
+
 const step = (msg: string) => console.log(`\n\x1b[1m> ${msg}\x1b[0m`);
 const sh = (cmd: string, cmdArgs: string[], env?: NodeJS.ProcessEnv) =>
   execFileSync(cmd, cmdArgs, { cwd: ROOT, stdio: 'inherit', env: { ...process.env, ...env } });
@@ -143,15 +149,23 @@ async function main() {
   const archivePath = join(work, 'reIS.xcarchive');
   const exportDir = join(work, 'export');
   const optionsPath = join(work, 'exportOptions.plist');
-  // On CI, ship.yml may hand over a distribution certificate and App Store profile
-  // (REIS_IOS_PROFILE_NAME); otherwise Apple's cloud signing does the export.
-  const profileName = process.env.REIS_IOS_PROFILE_NAME;
   writeFileSync(
     optionsPath,
     profileName
       ? manualExportOptionsPlist(TEAM_ID, 'cz.reis.app', profileName)
       : exportOptionsPlist(TEAM_ID)
   );
+
+  const cloudArgs = profileName
+    ? []
+    : ['-allowProvisioningUpdates', ...(USE_API_KEY_AUTH ? xcodeAuthArgs(creds) : [])];
+  const manualArchiveArgs = profileName
+    ? [
+        'CODE_SIGN_STYLE=Manual',
+        'CODE_SIGN_IDENTITY=Apple Distribution',
+        `PROVISIONING_PROFILE_SPECIFIER=${profileName}`,
+      ]
+    : [];
 
   step(`Archiving ${version} (${bundleVersion})`);
   sh('xcodebuild', [
@@ -166,8 +180,8 @@ async function main() {
     '-archivePath',
     archivePath,
     `DEVELOPMENT_TEAM=${TEAM_ID}`,
-    '-allowProvisioningUpdates',
-    ...(USE_API_KEY_AUTH ? xcodeAuthArgs(creds) : []),
+    ...manualArchiveArgs,
+    ...cloudArgs,
     'archive',
   ]);
 
@@ -180,8 +194,7 @@ async function main() {
     optionsPath,
     '-exportPath',
     exportDir,
-    '-allowProvisioningUpdates',
-    ...(USE_API_KEY_AUTH ? xcodeAuthArgs(creds) : []),
+    ...cloudArgs,
   ]);
 
   step('Verifying the .ipa');
