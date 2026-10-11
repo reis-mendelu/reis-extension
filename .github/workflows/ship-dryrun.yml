@@ -3,11 +3,13 @@ name: Ship dry run
 # Proves the release pipeline on the PR that changes it, not on the next real
 # release. Runs ship.yml with dry_run=true: the Android AAB and the iOS archive
 # are built and signed for real (so a broken keystore, key or signing setup
-# fails HERE), and the three stores are only read: Play opens and deletes an
-# edit, App Store Connect is queried, the extension submit is `--dry-run`.
+# fails HERE). Nothing is released or submitted: Play opens a temporary edit and
+# deletes it, App Store Connect is queried, the extension submit is `--dry-run`.
+# The extension leg builds the latest existing tag, not the PR's code.
 #
-# Only for PRs from this repository: a fork's PR gets no secrets, and a
-# Dependabot PR does not touch these paths.
+# Only for PRs from this repository and not from Dependabot: a fork's PR gets no
+# secrets, and Dependabot's run could bump a dependency that the build scripts
+# then execute with the store credentials in reach.
 on:
   pull_request:
     branches: [test, main]
@@ -37,7 +39,9 @@ jobs:
   latest-tag:
     name: Latest release tag
     runs-on: ubuntu-latest
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository
+      && github.event.pull_request.user.login != 'dependabot[bot]'
     outputs:
       tag: ${{ steps.t.outputs.tag }}
     steps:

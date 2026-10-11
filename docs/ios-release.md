@@ -10,7 +10,7 @@ feature PR → test → (bump version) → release PR → main
                                                    │
                                     release-tag.yml│ pushes vX.Y.Z, then ship.yml (same run)
                                                    ▼
-                        ship.yml, macOS job: npm run release:ios --tag vX.Y.Z
+                        ship.yml, macOS job: npm run release:ios -- --tag vX.Y.Z
                         sync → pick build no. → archive → export → verify → upload
                                                    ▼
                         scripts/release/ios-submit.ts: version → What's new →

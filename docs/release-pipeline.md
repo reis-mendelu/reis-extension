@@ -18,12 +18,10 @@ The stores are **independent jobs**. One failing never stops the others, and
 "Re-run failed jobs" is safe: the two **submission** steps (`ios-submit.ts`,
 `play-upload.ts`) read the store first and report a step already done instead of
 repeating it (a version already waiting for review, a versionCode already on
-the track). The iOS **build** step is the exception: `release:ios` always
-archives and uploads a new build under the next free build number, so re-running
-the iOS job uploads another binary even when the version is already in review.
-It is wasted, not harmful: the submission then reports `already-submitted`. If
-only the submit step failed, re-run just that by hand:
-`npx tsx scripts/release/ios-submit.ts --version X.Y.Z`.
+the track). The iOS job asks first (`ios-submit.ts --check`) and skips the
+archive and upload when the version is already submitted, so a re-run never
+sends a duplicate binary. If only the submit step failed, re-run just that by
+hand: `npx tsx scripts/release/ios-submit.ts --version X.Y.Z`.
 
 ## What a release needs in the PR
 
@@ -62,24 +60,27 @@ fails with the real track names listed.
 
 `ship-dryrun.yml` runs the whole pipeline with `dry_run: true` on every PR that
 touches it (and `Actions → Ship → Run workflow` does the same by hand). A dry run
-builds and signs for real, and only **reads** from the stores:
+builds and signs for real and **releases nothing**:
 
-- Android: builds the signed AAB, opens a Play edit, lists the tracks, deletes the edit.
+- Android: builds the signed AAB, opens a temporary Play edit, lists the tracks,
+  deletes the edit.
 - iOS: archives and exports a distribution-signed `.ipa` (`--skip-upload`),
   queries App Store Connect.
-- Extension: `wxt submit --dry-run`.
+- Extension: `wxt submit --dry-run`, on the **latest existing tag**, not the PR's
+  code (the extension leg is not exercised by a change to it).
 
 If iOS signing fails here, that is the one real unknown: a CI runner has no
 Apple ID, so `xcodebuild` signs with the API key
 (`REIS_XCODE_API_KEY_AUTH=1`, scripts/lib/iosRelease.ts `xcodeAuthArgs`).
 Cloud-managed distribution signing may need a role above App Manager on the key.
+The dry run skips Dependabot PRs and PRs from forks.
 The fallback is a distribution certificate (`.p12`) and provisioning profile
 imported into a temporary keychain.
 
 ## What it does not do
 
-- **Android production.** Only the closed-testing track. Production needs the
-  12-testers-for-14-days gate (see the Play notes in `docs/android-beta-release.md`).
+- **Android production.** Only the closed-testing track. Production needs Google's
+  closed-test requirement first: 12 testers opted in for 14 days.
 - **The Play Data safety form.** Still `play-data-safety.yml`.
 - **Recall.** A store submission cannot be taken back. The gates are the release
   PR (the diff, the notes, CI, the privacy block) and the merge itself.

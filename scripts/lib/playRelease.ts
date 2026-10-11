@@ -3,11 +3,13 @@
 // put it on the track with the release notes, commit.
 //
 // Safe to run unattended and to re-run:
-//  * a versionCode already on the track is reported as done, nothing is touched;
+//  * a versionCode already RELEASED on the track (not a draft) is reported as done,
+//    nothing is touched;
 //  * a wrong track name fails with the REAL track names listed;
 //  * whatever happens after the edit opens, an uncommitted edit is deleted, so
 //    Play never keeps a half-finished one around;
-//  * a dry run proves the credentials and the track, and writes nothing.
+//  * a dry run proves the credentials and the track, and releases nothing (it
+//    opens a temporary edit and deletes it).
 //
 // A commit sends the release to Google's review for that track; it reaches
 // testers when Google has passed it, not when this returns.
@@ -19,7 +21,10 @@
 export interface PlayResponse {
   id?: string;
   versionCode?: number | string;
-  tracks?: Array<{ track: string; releases?: Array<{ versionCodes?: string[] }> }>;
+  tracks?: Array<{
+    track: string;
+    releases?: Array<{ status?: string; versionCodes?: string[] }>;
+  }>;
 }
 
 export type PlayHttp = (
@@ -69,8 +74,9 @@ export async function releaseToTrack(a: ReleaseArgs): Promise<ReleaseResult> {
           `${tracks.map((t) => t.track).join(', ') || 'none'}. Set PLAY_TRACK to the closed-testing one.`
       );
     }
-    const onTrack = (mine.releases ?? []).some((r) =>
-      (r.versionCodes ?? []).includes(String(code))
+    // A draft is not a release: it reaches no tester, so it must not count as done.
+    const onTrack = (mine.releases ?? []).some(
+      (r) => r.status !== 'draft' && (r.versionCodes ?? []).includes(String(code))
     );
     if (onTrack) {
       return { status: 'already-released', detail: `versionCode ${code} is already on ${a.track}` };

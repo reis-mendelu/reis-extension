@@ -13,8 +13,10 @@
 // The HTTP client is injected so the sequence is testable without Apple.
 
 import { listOf, oneOf, type AscHttp, type AscResource } from './ascJson';
+import { BLOCKING, DONE, listAll, versionsPath } from './iosSubmitState';
 
 export type { AscHttp } from './ascJson';
+export { submittedVersionState } from './iosSubmitState';
 
 export interface SubmitArgs {
   asc: AscHttp;
@@ -32,26 +34,6 @@ export interface SubmitResult {
   status: 'submitted' | 'already-submitted' | 'dry-run-ok';
   detail: string;
 }
-
-/** States that already hold (or have passed) a submission for that version. */
-const DONE = [
-  'WAITING_FOR_REVIEW',
-  'IN_REVIEW',
-  'PENDING_APPLE_RELEASE',
-  'PENDING_DEVELOPER_RELEASE',
-  'PROCESSING_FOR_DISTRIBUTION',
-  'READY_FOR_SALE',
-];
-/** States of a different version that block creating this one. */
-const BLOCKING = [
-  'PREPARE_FOR_SUBMISSION',
-  'WAITING_FOR_REVIEW',
-  'IN_REVIEW',
-  'DEVELOPER_REJECTED',
-  'REJECTED',
-  'METADATA_REJECTED',
-  'INVALID_BINARY',
-];
 
 async function waitForBuild(a: SubmitArgs): Promise<string> {
   const sleep = a.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
@@ -90,12 +72,7 @@ export async function submitIosVersion(a: SubmitArgs): Promise<SubmitResult> {
     }
     throw err;
   }
-  const vs = await a.asc(
-    'GET',
-    `/v1/apps/${a.appId}/appStoreVersions?filter[platform]=IOS` +
-      '&fields[appStoreVersions]=versionString,appStoreState&limit=10'
-  );
-  const rows = listOf(vs.data);
+  const rows = await listAll(a.asc, versionsPath(a.appId));
   const stateOf = (r: AscResource) => r.attributes?.appStoreState ?? '';
   const mine = rows.find((r) => r.attributes?.versionString === a.version);
   const blocker = rows.find(
@@ -169,15 +146,21 @@ export async function submitIosVersion(a: SubmitArgs): Promise<SubmitResult> {
     if (!submissionId)
       throw new Error('App Store Connect returned no id for the review submission.');
   }
-  await a.asc('POST', '/v1/reviewSubmissionItems', {
-    data: {
-      type: 'reviewSubmissionItems',
-      relationships: {
-        reviewSubmission: { data: { type: 'reviewSubmissions', id: submissionId } },
-        appStoreVersion: { data: { type: 'appStoreVersions', id: versionId } },
+  // A run that died after adding the item but before submitting leaves it on
+  // this submission; adding it again would fail as a duplicate.
+  const items = await listAll(a.asc, `/v1/reviewSubmissions/${submissionId}/items?limit=50`);
+  const hasItem = items.some((i) => i.relationships?.appStoreVersion?.data?.id === versionId);
+  if (!hasItem) {
+    await a.asc('POST', '/v1/reviewSubmissionItems', {
+      data: {
+        type: 'reviewSubmissionItems',
+        relationships: {
+          reviewSubmission: { data: { type: 'reviewSubmissions', id: submissionId } },
+          appStoreVersion: { data: { type: 'appStoreVersions', id: versionId } },
+        },
       },
-    },
-  });
+    });
+  }
   const done = await a.asc('PATCH', `/v1/reviewSubmissions/${submissionId}`, {
     data: { type: 'reviewSubmissions', id: submissionId, attributes: { submitted: true } },
   });

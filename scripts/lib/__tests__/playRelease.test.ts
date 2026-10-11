@@ -22,10 +22,10 @@ const args = {
   notes: 'Rozvrh je znovu jen po dnech.',
   bundle: Buffer.from('aab'),
 };
-const tracks = (list: Array<{ track: string; codes?: string[] }>) => ({
+const tracks = (list: Array<{ track: string; codes?: string[]; status?: string }>) => ({
   tracks: list.map((t) => ({
     track: t.track,
-    releases: t.codes ? [{ versionCodes: t.codes, status: 'completed' }] : [],
+    releases: t.codes ? [{ versionCodes: t.codes, status: t.status ?? 'completed' }] : [],
   })),
 });
 
@@ -42,7 +42,8 @@ describe('releaseToTrack', () => {
     expect(out.status).toBe('released');
     const put = calls.find((c) => c.method === 'PUT');
     expect(JSON.stringify(put?.body)).toContain('50401');
-    expect(JSON.stringify(put?.body)).toContain('cs-CZ');
+    const release = (put?.body as { releases: Array<{ releaseNotes: unknown }> }).releases[0];
+    expect(release?.releaseNotes).toEqual([{ language: 'cs-CZ', text: args.notes }]);
     expect(calls.at(-1)?.path).toContain(':commit');
   });
 
@@ -55,6 +56,19 @@ describe('releaseToTrack', () => {
     const out = await releaseToTrack({ ...args, expectedVersionCode: 50401, play, dryRun: false });
     expect(out.status).toBe('already-released');
     expect(calls.some((c) => c.method === 'PUT' || c.path.includes(':commit'))).toBe(false);
+  });
+
+  it('does not treat a draft release of that versionCode as already released', async () => {
+    const { play, calls } = fakePlay({
+      'POST /edits': { id: 'E1' },
+      'GET /edits/E1/tracks': tracks([{ track: 'alpha', codes: ['50401'], status: 'draft' }]),
+      'POST /edits/E1/bundles': { versionCode: 50401 },
+      'PUT /edits/E1/tracks/alpha': {},
+      'POST /edits/E1:commit': { id: 'E1' },
+    });
+    const out = await releaseToTrack({ ...args, expectedVersionCode: 50401, play, dryRun: false });
+    expect(out.status).toBe('released');
+    expect(calls.some((c) => c.path.includes(':commit'))).toBe(true);
   });
 
   it('fails clearly and lists the real track names when the track does not exist', async () => {

@@ -59,8 +59,8 @@ release PR is the last gate: walk its checklist before merging.
 - Merging without a version change releases nothing, on purpose. The bump is the release.
 - The release notes file is part of the release PR. No notes, no tag.
 - A change to the pipeline itself (`ship.yml` and friends) is exercised by
-  `ship-dryrun.yml` on its own PR: it builds and signs for real and only reads
-  from the stores. Do not merge it red.
+  `ship-dryrun.yml` on its own PR: it builds and signs for real and releases
+  nothing (Play opens and deletes a temporary edit). Do not merge it red.
 
 ## Running the pieces by hand
 

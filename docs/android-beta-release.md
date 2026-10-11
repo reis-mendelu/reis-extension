@@ -3,7 +3,7 @@
 > **Automated.** A release uploads the signed bundle to the Play closed-testing
 > track by itself (`ship.yml` → `scripts/release/play-upload.ts`); see
 > `docs/release-pipeline.md`. The rest of this page is the signing key, the
-> manual path, and the Play gate for production.
+> manual path.
 
 The Capacitor app ships from the same repo and the same React tree as the
 extension. Its version is **not** a second number to maintain: `android/app/build.gradle`

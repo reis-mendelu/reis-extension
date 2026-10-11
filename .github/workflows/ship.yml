@@ -8,8 +8,9 @@ name: Ship
 #   Summary    one table, red if any store failed
 #
 # The three are independent jobs: one store failing never stops the others, and
-# "Re-run failed jobs" is safe, because every submission step reads the store's
-# state first and reports an already-done step instead of repeating it.
+# "Re-run failed jobs" is safe, because every step reads the store's state first
+# and reports an already-done step instead of repeating it (the iOS build is
+# skipped when the version is already submitted).
 #
 # Called by release-tag.yml right after it pushes the tag. It has to be a called
 # workflow rather than a tag-triggered one: a tag pushed with GITHUB_TOKEN does
@@ -17,7 +18,8 @@ name: Ship
 #
 # Also runs with dry_run=true, on every PR that touches the pipeline
 # (ship-dryrun.yml) and by hand. A dry run signs and builds for real (Android
-# AAB, iOS archive + export) and only reads from the stores, so it proves the
+# AAB, iOS archive + export) and releases nothing (Play opens and deletes a
+# temporary edit; App Store Connect is only queried), so it proves the
 # credentials and the signing before a real release depends on them.
 #
 # Secrets the pipeline needs, and what each is for, are listed in
@@ -46,7 +48,7 @@ on:
         required: true
         type: string
       dry_run:
-        description: 'Build and sign for real, but only READ from the stores'
+        description: 'Build and sign for real, but release and submit nothing'
         required: false
         default: true
         type: boolean
@@ -170,7 +172,15 @@ jobs:
           mkdir -p ~/.appstoreconnect/private_keys
           umask 077
           printf '%s\n' "$ASC_KEY_P8" > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+      - name: Already submitted? Then do not build again
+        id: done
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          TAG: ${{ inputs.tag }}
+        run: npx tsx scripts/release/ios-submit.ts --version "${TAG#v}" --check
       - name: Archive, sign, verify (and upload unless a dry run)
+        if: steps.done.outputs.done != 'true' || inputs.dry_run
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}

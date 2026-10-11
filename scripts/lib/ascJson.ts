@@ -4,10 +4,12 @@
 export interface AscResource {
   id: string;
   attributes?: Record<string, string | undefined>;
+  relationships?: Record<string, { data?: { id: string } | null }>;
 }
 /** A JSON:API document: one resource or a list, depending on the endpoint. */
 export interface AscBody {
   data?: AscResource | AscResource[];
+  links?: { next?: string };
 }
 
 export type AscHttp = (
