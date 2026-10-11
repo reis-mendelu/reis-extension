@@ -69,6 +69,9 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref || format('refs/tags/{0}', inputs.tag) }}
+          # Neither job pushes, and both run dependency scripts (npm ci,
+          # Gradle, Xcode): no stored git token for them to find.
+          persist-credentials: false
       - name: Check secrets
         env:
           ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
@@ -130,6 +133,9 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref || format('refs/tags/{0}', inputs.tag) }}
+          # Neither job pushes, and both run dependency scripts (npm ci,
+          # Gradle, Xcode): no stored git token for them to find.
+          persist-credentials: false
       - name: Check secrets
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}

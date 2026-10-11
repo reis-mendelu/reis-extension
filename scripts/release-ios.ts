@@ -203,9 +203,10 @@ async function main() {
 
   console.log(
     `\n\x1b[32mOK ${version} (${bundleVersion}) uploaded.\x1b[0m Processing takes ~3 minutes.\n` +
-      'Nothing is submitted: in App Store Connect, add the build to the version and\n' +
-      'submit for review by hand - check the build picker actually selected\n' +
-      `${bundleVersion}, it offers stale builds first.`
+      'This script submits nothing. Next, scripts/release/ios-submit.ts attaches the\n' +
+      'newest build for this version, reads it back, and submits it for review:\n' +
+      `  npx tsx scripts/release/ios-submit.ts --version ${version}\n` +
+      '(ship.yml runs it right after this step.)'
   );
 }
 

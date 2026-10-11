@@ -15,9 +15,15 @@ release PR merged into main
 ```
 
 The stores are **independent jobs**. One failing never stops the others, and
-"Re-run failed jobs" is safe: every submission step reads the store first and
-reports a step already done instead of repeating it (a version already waiting
-for review, a versionCode already on the track).
+"Re-run failed jobs" is safe: the two **submission** steps (`ios-submit.ts`,
+`play-upload.ts`) read the store first and report a step already done instead of
+repeating it (a version already waiting for review, a versionCode already on
+the track). The iOS **build** step is the exception: `release:ios` always
+archives and uploads a new build under the next free build number, so re-running
+the iOS job uploads another binary even when the version is already in review.
+It is wasted, not harmful: the submission then reports `already-submitted`. If
+only the submit step failed, re-run just that by hand:
+`npx tsx scripts/release/ios-submit.ts --version X.Y.Z`.
 
 ## What a release needs in the PR
 

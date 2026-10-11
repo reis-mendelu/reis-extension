@@ -1,8 +1,9 @@
 # Releasing reIS to the App Store
 
-The release train drives **iOS only**. `test` → `main` with a version bump
-pushes `vX.Y.Z`; `npm run release:ios` turns that tag into a build in App Store
-Connect. Nothing submits anything for review automatically.
+`test` → `main` with a version bump pushes `vX.Y.Z`, and `ship.yml` (same run)
+turns that tag into a build in App Store Connect and submits it for review
+(`npm run release:ios`, then `scripts/release/ios-submit.ts`). Android and the
+extension go out in the same run: `docs/release-pipeline.md`.
 
 ```text
 feature PR → test → (bump version) → release PR → main
@@ -29,8 +30,11 @@ Android go out in the same run.
 **Done on 2026-09-05.** Team key `reis-release`, role App Manager, key id
 `2LV44GFJUP`. The private key is `~/.appstoreconnect/private_keys/AuthKey_2LV44GFJUP.p8`
 (mode 600), which is where `xcrun altool` looks for it too, and the identifiers
-are in the gitignored root `.env` that `release-ios.ts` loads. The `.p8` is
-never copied into a variable, a secret store or the repo.
+are in the gitignored root `.env` that `release-ios.ts` loads. On this Mac the
+`.p8` is never copied into a variable or the repo. For the CI release it is also
+stored as the `ASC_KEY_P8` repository secret (with `ASC_KEY_ID` and
+`ASC_ISSUER_ID`), and `ship.yml` writes it to the same
+`~/.appstoreconnect/private_keys/` path on the runner.
 
 **This is what removed the Organizer step.** Before the key, uploading was
 GUI-only: `xcodebuild -exportArchive` with `destination upload` fails with
@@ -56,8 +60,12 @@ chmod 600 ~/.appstoreconnect/private_keys/AuthKey_<KEYID>.p8
 and update `ASC_KEY_ID` / `ASC_ISSUER_ID` in `.env` — or delete them, since a
 single installed `.p8` has its key id inferred from the filename.
 
-The key authorises the whole team account. It is deliberately **not** in GitHub
-Actions: CI still cannot sign an iOS build here, which is why the cut is local.
+The key authorises the whole team account. It now lives in GitHub Actions as a
+repository secret because `ship.yml` cuts and submits the build on a macOS
+runner, signing with the API key (`REIS_XCODE_API_KEY_AUTH=1`). Whether the key's
+App Manager role is enough for cloud-managed distribution signing is proven by
+the pipeline's dry run (`docs/release-pipeline.md`); the local cut on this Mac
+still works and is the fallback.
 
 ## What the script guarantees
 
@@ -75,9 +83,10 @@ Actions: CI still cannot sign an iOS build here, which is why the cut is local.
   exact `CFBundleVersion` that was reserved, and no `report_error` /
   `sendTelemetry` string anywhere in the bundle. Any of these failing aborts
   before the upload.
-- **It stops at upload.** `test` is not a protected branch, so no push should be
-  able to reach App Review. Adding the build to a version and submitting is
-  done by a person.
+- **It stops at upload.** `release-ios.ts` itself never submits. Attaching the
+  build to a version and submitting is the next step in the pipeline,
+  `scripts/release/ios-submit.ts`, which reads the store first, refuses another
+  editable version, and reads the attached build back before it submits.
 - **It leaves the tree clean, until the upload starts.** The version stamp it
   writes into `project.pbxproj` is a build artifact, and a dirty tree blocks the
   next release's preflight, so it is reverted — reverting after a failed archive
