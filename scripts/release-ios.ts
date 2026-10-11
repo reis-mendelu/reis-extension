@@ -25,6 +25,7 @@ import {
   reserveBundleVersion,
   xcodeAuthArgs,
 } from './lib/iosRelease';
+import { manualExportOptionsPlist } from './lib/iosManualExport';
 import { deriveIosVersion, readBundleVersion } from './lib/iosVersion';
 import { assertUploadable, inspectIpa } from './lib/verifyIpa';
 
@@ -142,7 +143,15 @@ async function main() {
   const archivePath = join(work, 'reIS.xcarchive');
   const exportDir = join(work, 'export');
   const optionsPath = join(work, 'exportOptions.plist');
-  writeFileSync(optionsPath, exportOptionsPlist(TEAM_ID));
+  // On CI, ship.yml may hand over a distribution certificate and App Store profile
+  // (REIS_IOS_PROFILE_NAME); otherwise Apple's cloud signing does the export.
+  const profileName = process.env.REIS_IOS_PROFILE_NAME;
+  writeFileSync(
+    optionsPath,
+    profileName
+      ? manualExportOptionsPlist(TEAM_ID, 'cz.reis.app', profileName)
+      : exportOptionsPlist(TEAM_ID)
+  );
 
   step(`Archiving ${version} (${bundleVersion})`);
   sh('xcodebuild', [

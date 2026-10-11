@@ -172,6 +172,35 @@ jobs:
           mkdir -p ~/.appstoreconnect/private_keys
           umask 077
           printf '%s\n' "$ASC_KEY_P8" > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+      - name: Import the distribution certificate and profile (when provided)
+        # Without them the export asks Apple's cloud signing, which needs an API
+        # key above App Manager. With them, the export signs locally.
+        env:
+          IOS_DIST_P12_B64: ${{ secrets.IOS_DIST_P12_B64 }}
+          IOS_DIST_P12_PASSWORD: ${{ secrets.IOS_DIST_P12_PASSWORD }}
+          IOS_STORE_PROFILE_B64: ${{ secrets.IOS_STORE_PROFILE_B64 }}
+        run: |
+          if [ -z "${IOS_DIST_P12_B64:-}" ] || [ -z "${IOS_STORE_PROFILE_B64:-}" ]; then
+            echo "No distribution certificate secrets: the export uses Apple cloud signing."
+            exit 0
+          fi
+          kc="$RUNNER_TEMP/reis.keychain-db"
+          pw="$(uuidgen)"
+          security create-keychain -p "$pw" "$kc"
+          security set-keychain-settings -lut 21600 "$kc"
+          security unlock-keychain -p "$pw" "$kc"
+          printf '%s' "$IOS_DIST_P12_B64" | base64 -d > "$RUNNER_TEMP/dist.p12"
+          security import "$RUNNER_TEMP/dist.p12" -k "$kc" -P "$IOS_DIST_P12_PASSWORD" -T /usr/bin/codesign
+          rm -f "$RUNNER_TEMP/dist.p12"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$pw" "$kc" > /dev/null
+          security list-keychains -d user -s "$kc" $(security list-keychains -d user | tr -d '"')
+          printf '%s' "$IOS_STORE_PROFILE_B64" | base64 -d > "$RUNNER_TEMP/store.mobileprovision"
+          uuid="$(security cms -D -i "$RUNNER_TEMP/store.mobileprovision" | plutil -extract UUID raw -)"
+          name="$(security cms -D -i "$RUNNER_TEMP/store.mobileprovision" | plutil -extract Name raw -)"
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$RUNNER_TEMP/store.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$uuid.mobileprovision"
+          echo "REIS_IOS_PROFILE_NAME=$name" >> "$GITHUB_ENV"
+          echo "Signing the export with the imported certificate and profile: $name"
       - name: Already submitted? Then do not build again
         id: done
         env:
