@@ -10,6 +10,11 @@ describe('manualExportOptionsPlist', () => {
     expect(plist).toContain('<key>signingCertificate</key>\n\t<string>Apple Distribution</string>');
   });
 
+  it('escapes XML in the profile name so the plist stays valid', () => {
+    const odd = manualExportOptionsPlist('T', 'cz.reis.app', 'A & B <store>');
+    expect(odd).toContain('<string>A &amp; B &lt;store&gt;</string>');
+  });
+
   it('still exports without uploading, for the App Store', () => {
     expect(plist).toContain('<key>destination</key>\n\t<string>export</string>');
     expect(plist).toContain('<string>app-store-connect</string>');

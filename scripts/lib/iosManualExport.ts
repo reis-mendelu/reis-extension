@@ -2,6 +2,8 @@
 // certificate and App Store profile it was handed (ship.yml imports them), instead
 // of asking Apple's cloud signing. Cloud signing needs an API key above App Manager;
 // this needs none. Used only when REIS_IOS_PROFILE_NAME is set.
+const xml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 export function manualExportOptionsPlist(
   teamId: string,
   bundleId: string,
@@ -24,8 +26,8 @@ export function manualExportOptionsPlist(
     `\t<string>${teamId}</string>`,
     '\t<key>provisioningProfiles</key>',
     '\t<dict>',
-    `\t\t<key>${bundleId}</key>`,
-    `\t\t<string>${profileName}</string>`,
+    `\t\t<key>${xml(bundleId)}</key>`,
+    `\t\t<string>${xml(profileName)}</string>`,
     '\t</dict>',
     '\t<key>uploadSymbols</key>',
     '\t<true/>',
