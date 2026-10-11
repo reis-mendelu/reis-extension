@@ -43,7 +43,8 @@ async function main(): Promise<void> {
   const version = arg('--version');
   if (!version) throw new Error('--version x.y.z is required.');
   const dryRun = process.argv.includes('--dry-run');
-  const track = arg('--track') ?? process.env.PLAY_TRACK ?? 'alpha';
+  // `||`, not `??`: an unset repository variable reaches the job as an empty string.
+  const track = arg('--track') || process.env.PLAY_TRACK || 'alpha';
   const aab = resolve(arg('--aab') ?? 'android/app/build/outputs/bundle/release/app-release.aab');
   const notes = loadReleaseNotes(version);
   const bundle = readFileSync(aab);
