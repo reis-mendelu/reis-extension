@@ -20,8 +20,6 @@ export interface ScreenHeaderProps {
    * date and three actions, and "Dnes" beside the date never fit at 375.
    */
   titleAction?: { label: string; onClick: () => void };
-  /** A round action of this screen's own, first in the action cluster. */
-  leadingAction?: ReactNode;
 }
 
 const TITLE_CLASS =
@@ -36,13 +34,7 @@ const TITLE_CLASS =
  * three destinations were reachable from one of five tabs; making the actions
  * part of the header means a screen cannot render one without them.
  */
-export function ScreenHeader({
-  eyebrow,
-  title,
-  below,
-  titleAction,
-  leadingAction,
-}: ScreenHeaderProps) {
+export function ScreenHeader({ eyebrow, title, below, titleAction }: ScreenHeaderProps) {
   return (
     // The top padding carries --safe-top because this is the topmost element on
     // every mobile screen and targetSdk 36 forces edge-to-edge: without it the
@@ -83,7 +75,7 @@ export function ScreenHeader({
             <span className={TITLE_CLASS}>{title}</span>
           )}
         </div>
-        <HeaderActions leading={leadingAction} />
+        <HeaderActions />
       </div>
       {below}
     </div>
