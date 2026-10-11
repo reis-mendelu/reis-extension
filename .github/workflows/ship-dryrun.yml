@@ -1,0 +1,62 @@
+name: Ship dry run
+
+# Proves the release pipeline on the PR that changes it, not on the next real
+# release. Runs ship.yml with dry_run=true: the Android AAB and the iOS archive
+# are built and signed for real (so a broken keystore, key or signing setup
+# fails HERE), and the three stores are only read: Play opens and deletes an
+# edit, App Store Connect is queried, the extension submit is `--dry-run`.
+#
+# Only for PRs from this repository: a fork's PR gets no secrets, and a
+# Dependabot PR does not touch these paths.
+on:
+  pull_request:
+    branches: [test, main]
+    paths:
+      - '.github/workflows/ship.yml'
+      - '.github/workflows/ship-dryrun.yml'
+      - '.github/workflows/publish.yml'
+      - '.github/workflows/release-tag.yml'
+      - 'scripts/release/**'
+      - 'scripts/release-ios.ts'
+      - 'scripts/android-release.mjs'
+      - 'scripts/lib/playRelease.ts'
+      - 'scripts/lib/iosSubmit.ts'
+      - 'scripts/lib/iosRelease.ts'
+      - 'scripts/lib/releaseNotes.ts'
+      - 'scripts/lib/ascApi.ts'
+      - 'release-notes/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ship-dryrun-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  latest-tag:
+    name: Latest release tag
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    outputs:
+      tag: ${{ steps.t.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: t
+        run: |
+          git fetch --tags --quiet
+          echo "tag=$(git tag --list 'v*' --sort=-v:refname | head -1)" >> "$GITHUB_OUTPUT"
+
+  dry-run:
+    name: Ship (dry run)
+    needs: latest-tag
+    uses: ./.github/workflows/ship.yml
+    with:
+      # The extension dry run builds from a tag; the Android and iOS jobs build
+      # the PR's own head, so changed scripts are what get exercised.
+      tag: ${{ needs.latest-tag.outputs.tag }}
+      ref: ${{ github.event.pull_request.head.sha }}
+      dry_run: true
+    secrets: inherit

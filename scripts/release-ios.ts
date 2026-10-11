@@ -5,8 +5,8 @@
 // This is the iOS half of the release train. `test` -> `main` with a version
 // bump pushes `vX.Y.Z` (release-tag.yml); this turns that tag into a binary in
 // App Store Connect. It deliberately STOPS at upload — attaching the build to
-// a version and submitting for review stays a human decision, because a
-// submission cannot be recalled and `test` is not a protected branch.
+// a version and submitting for review is scripts/release/ios-submit.ts, run by
+// the same pipeline (.github/workflows/ship.yml) right after this.
 //
 //   npm run release:ios                 # cut from HEAD
 //   npm run release:ios -- --tag v5.1.1 # ...and assert HEAD is that tag
@@ -19,7 +19,12 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { listBuildVersions, resolveAscCredentials } from './lib/ascApi';
-import { exportOptionsPlist, parseReleaseArgs, reserveBundleVersion } from './lib/iosRelease';
+import {
+  exportOptionsPlist,
+  parseReleaseArgs,
+  reserveBundleVersion,
+  xcodeAuthArgs,
+} from './lib/iosRelease';
 import { deriveIosVersion, readBundleVersion } from './lib/iosVersion';
 import { assertUploadable, inspectIpa } from './lib/verifyIpa';
 
@@ -36,6 +41,9 @@ const TEAM_ID = process.env.REIS_IOS_TEAM ?? 'RG38V3SV8X';
 const APP_ID = process.env.REIS_ASC_APP_ID ?? '6804832714';
 
 const { tag: wantedTag, skipUpload } = parseReleaseArgs(process.argv.slice(2));
+// On a CI runner there is no Apple ID in Xcode; ship.yml sets this so xcodebuild signs
+// with the App Store Connect API key instead. On this Mac it stays off.
+const USE_API_KEY_AUTH = process.env.REIS_XCODE_API_KEY_AUTH === '1';
 
 const step = (msg: string) => console.log(`\n\x1b[1m> ${msg}\x1b[0m`);
 const sh = (cmd: string, cmdArgs: string[], env?: NodeJS.ProcessEnv) =>
@@ -150,6 +158,7 @@ async function main() {
     archivePath,
     `DEVELOPMENT_TEAM=${TEAM_ID}`,
     '-allowProvisioningUpdates',
+    ...(USE_API_KEY_AUTH ? xcodeAuthArgs(creds) : []),
     'archive',
   ]);
 
@@ -163,6 +172,7 @@ async function main() {
     '-exportPath',
     exportDir,
     '-allowProvisioningUpdates',
+    ...(USE_API_KEY_AUTH ? xcodeAuthArgs(creds) : []),
   ]);
 
   step('Verifying the .ipa');

@@ -7,16 +7,22 @@ Connect. Nothing submits anything for review automatically.
 ```text
 feature PR → test → (bump version) → release PR → main
                                                    │
-                                    release-tag.yml│ pushes vX.Y.Z, then stops
+                                    release-tag.yml│ pushes vX.Y.Z, then ship.yml (same run)
                                                    ▼
-                        npm run release:ios --tag vX.Y.Z   (on a Mac)
+                        ship.yml, macOS job: npm run release:ios --tag vX.Y.Z
                         sync → pick build no. → archive → export → verify → upload
                                                    ▼
-                        App Store Connect: add build to version, submit  (by hand)
+                        scripts/release/ios-submit.ts: version → What's new →
+                        attach build → read it back → submit for review
 ```
 
-The browser extension is not on this train. `publish.yml` is dispatch-only:
-`gh workflow run publish.yml --ref vX.Y.Z -f tag=vX.Y.Z`.
+**This whole chain runs in CI now** (`docs/release-pipeline.md`): `release:ios`
+signs with the App Store Connect API key (`REIS_XCODE_API_KEY_AUTH=1`) and
+`ios-submit.ts` does what used to be done by hand in App Store Connect. The
+Mac-only recipe below still works for a manual cut or a retry
+(`npm run release:ios -- --tag vX.Y.Z`, then
+`npx tsx scripts/release/ios-submit.ts --version X.Y.Z`). The extension and
+Android go out in the same run.
 
 ## The App Store Connect API key — already set up
 
