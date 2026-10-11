@@ -277,15 +277,19 @@ jobs:
             echo "| App Store, submit for review | $IOS |"
             echo "| Chrome + Firefox | $EXTENSION |"
           } >> "$GITHUB_STEP_SUMMARY"
-          # A skip is fine only when `stores` chose it, and at least one store must have
-          # succeeded: a mistyped `stores` value skips everything and must not look green.
+          # A store the `stores` input selected must have succeeded; one it did not select
+          # must have been skipped. Anything else (a selected store skipped, a typo that
+          # selects nothing) is red, so a run that shipped nothing never looks green.
           case "$STORES" in
             all|android|ios|extension) ;;
             *) echo "::error::Unknown stores value '$STORES' (all, android, ios, extension). Nothing was shipped."; exit 1 ;;
           esac
-          ok=0
-          for r in "$ANDROID" "$IOS" "$EXTENSION"; do
-            [ "$r" = "success" ] && ok=$((ok + 1))
-            [ "$r" = "success" ] || [ "$r" = "skipped" ] || { echo "::error::At least one store did not succeed. See the table above."; exit 1; }
-          done
-          [ "$ok" -ge 1 ] || { echo "::error::No store ran. Nothing was shipped."; exit 1; }
+          check() {
+            if [ "$STORES" = all ] || [ "$STORES" = "$1" ]; then want=success; else want=skipped; fi
+            [ "$2" = "$want" ] || { echo "::error::$1 was $2, expected $want. See the table above."; bad=1; }
+          }
+          bad=0
+          check android "$ANDROID"
+          check ios "$IOS"
+          check extension "$EXTENSION"
+          [ "$bad" -eq 0 ] || exit 1
