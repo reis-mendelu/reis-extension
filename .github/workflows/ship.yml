@@ -22,6 +22,9 @@ name: Ship
 # temporary edit; App Store Connect is only queried), so it proves the
 # credentials and the signing before a real release depends on them.
 #
+# By hand, `stores` runs just one of them (e.g. Play only, when only Play failed or
+# is behind); the others are skipped and the summary does not count a skip as a failure.
+#
 # Secrets the pipeline needs, and what each is for, are listed in
 # docs/release-pipeline.md. A job whose secrets are missing fails FIRST and says
 # which ones.
@@ -41,6 +44,11 @@ on:
         required: false
         type: boolean
         default: false
+      stores:
+        description: 'Which stores: all, android, ios or extension'
+        required: false
+        type: string
+        default: all
   workflow_dispatch:
     inputs:
       tag:
@@ -52,6 +60,12 @@ on:
         required: false
         default: true
         type: boolean
+      stores:
+        description: 'Which stores to run (a re-run of one, e.g. Play only)'
+        required: false
+        default: all
+        type: choice
+        options: [all, android, ios, extension]
 
 permissions:
   contents: read
@@ -59,6 +73,7 @@ permissions:
 jobs:
   android:
     name: Google Play (closed testing)
+    if: inputs.stores == 'all' || inputs.stores == 'android'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -123,6 +138,7 @@ jobs:
 
   ios:
     name: App Store (submit for review)
+    if: inputs.stores == 'all' || inputs.stores == 'ios'
     runs-on: macos-latest
     timeout-minutes: 60
     steps:
@@ -230,6 +246,7 @@ jobs:
 
   extension:
     name: Chrome and Firefox
+    if: inputs.stores == 'all' || inputs.stores == 'extension'
     uses: ./.github/workflows/publish.yml
     with:
       tag: ${{ inputs.tag }}
@@ -260,5 +277,5 @@ jobs:
             echo "| Chrome + Firefox | $EXTENSION |"
           } >> "$GITHUB_STEP_SUMMARY"
           for r in "$ANDROID" "$IOS" "$EXTENSION"; do
-            [ "$r" = "success" ] || { echo "::error::At least one store did not succeed. See the table above."; exit 1; }
+            [ "$r" = "success" ] || [ "$r" = "skipped" ] || { echo "::error::At least one store did not succeed. See the table above."; exit 1; }
           done
