@@ -15,6 +15,7 @@ import { setSessionExpiredHandler } from '@/services/sessionExpiry';
 import { setDemoErrorHandler } from '@/utils/reportError';
 import { handleDemoError } from '@/mobile/demoToast';
 import { useAppStore } from '@/store/useAppStore';
+import { trackDailyUsage } from '@/api/feedback';
 
 /**
  * Whether `entrypoints/main/main` has been evaluated.
@@ -129,5 +130,8 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
     // A second chance for `loadContext()` if it lost the boot race against
     // `getUserParams()` — the event audience reads the faculty it sets.
     if (!useAppStore.getState().contextResolved) void useAppStore.getState().loadContext();
+    // Returning to the app is a day of use: this process can outlive many
+    // days, and only boots used to be counted. Writes at most once a day.
+    void trackDailyUsage();
   });
 }
