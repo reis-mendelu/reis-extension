@@ -27,6 +27,12 @@
 -- Bodies are 20261013130000_usage_functions_captured.sql plus the marked lines.
 -- CREATE OR REPLACE keeps the existing grants. Applied by hand with
 -- `npx supabase db query --linked -f <this file>`, never `db push`.
+--
+-- APPLIED 2026-10-13 against the linked project (zvbpgkmnrqyprtkyxkwn), before
+-- the branch merged: it changes only what the console reads, so no build is
+-- affected. Verified after applying: both functions contain the filter; 30 dní
+-- 3,178, Odešli 143 / 2,533; anon and authenticated still cannot execute either
+-- _unchecked function, and authenticated still can execute usage_stats().
 
 CREATE OR REPLACE FUNCTION public.usage_stats_unchecked(p_days integer, p_day date DEFAULT NULL::date)
  RETURNS json
