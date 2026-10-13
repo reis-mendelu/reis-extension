@@ -3,6 +3,15 @@ import { useAppStore } from '../store/useAppStore';
 import { FACULTY_LABEL_TO_KEY } from '../types/events';
 import type { Viewer } from '../utils/eventAudience';
 
+/**
+ * IS's exchange programme. The `isErasmus` text test reads studium.pl in the
+ * session's language, and the Czech name of this programme ("Zahraniční
+ * studenti - krátkodobé studijní pobyty") matches none of its words, so a
+ * student with IS in Czech was never shown ESN's Erasmus-only events. The code
+ * is the same in both languages.
+ */
+const EXCHANGE_PROGRAMME = 'Z-EXC';
+
 export function viewerFrom(
   facultyLabel: string | null,
   erasmus: boolean,
@@ -10,7 +19,7 @@ export function viewerFrom(
 ): Viewer {
   return {
     facultyKey: (facultyLabel && FACULTY_LABEL_TO_KEY[facultyLabel]) || null,
-    erasmus,
+    erasmus: erasmus || programme === EXCHANGE_PROGRAMME,
     programme,
   };
 }
