@@ -72,13 +72,13 @@ requested does reveal which courses you take. **Supabase** hosts reIS's own
 database — infrastructure, not a recipient doing anything of its own.
 
 **WebISKAM** (the university's accommodation and canteen system) receives, only
-in the phone app and only when you ask for your ISIC balance or a top-up, the
-MENDELU sign-in you make on MENDELU's own page — your password goes to MENDELU,
-never to reIS. reIS keeps the sign-in encrypted on your device; while you are
-signed in the phone's own web-cookie store holds it too, like any browser, and
-signing out deletes both. The balance is shown, never stored. A top-up opens **GoPay**'s payment
-page in your phone's browser view; your card or Google Pay details go to GoPay
-and never to reIS.
+in the mobile app (Android, iPhone, iPad) and only when you ask for your ISIC
+balance or a top-up, the MENDELU sign-in you make on MENDELU's own page — your
+password goes to MENDELU, never to reIS. reIS keeps the sign-in encrypted on your
+device; while you are signed in the device's own web-cookie store holds it too,
+like any browser, and signing out deletes both. The balance is shown, never
+stored. A top-up opens **GoPay**'s payment page in your device's browser view;
+your card or Google Pay details go to GoPay and never to reIS.
 
 We do **not** sell or trade your personal information, and transfer it to no one
 else.
