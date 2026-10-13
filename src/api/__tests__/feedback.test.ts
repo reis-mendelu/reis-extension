@@ -238,7 +238,7 @@ describe('feedback', () => {
   // no row. The student number is the gate and is never part of the payload.
   it('writes nothing until IS has named a student on this device', async () => {
     getUserParams.mockResolvedValueOnce(null);
-    getUserParams.mockResolvedValueOnce({ facultyId: '', facultyLabel: 'PEF' });
+    getUserParams.mockResolvedValueOnce({ studentId: '', facultyId: '', facultyLabel: 'PEF' });
 
     await trackDailyUsage();
     await trackDailyUsage();
