@@ -85,4 +85,26 @@ describe('iskamCookieStore', () => {
     expect(await clearJar(gen)).toBe(false);
     expect(await loadJar()).toEqual(JAR);
   });
+
+  // PR #548 review: loadJar bypassed the write lane, so a read issued while a
+  // sign-out's remove was still landing returned the pre-sign-out jar.
+  it('a read issued after a clear waits for it and sees the cleared store', async () => {
+    await saveJar(JAR);
+    let release!: () => void;
+    secureStorage.remove.mockImplementationOnce(
+      (k: string) =>
+        new Promise<void>((r) => {
+          release = () => {
+            store.delete(k);
+            r();
+          };
+        })
+    );
+    const clearing = clearJar();
+    const reading = loadJar();
+    await new Promise((r) => setTimeout(r, 0));
+    release();
+    await clearing;
+    expect(await reading).toEqual([]);
+  });
 });

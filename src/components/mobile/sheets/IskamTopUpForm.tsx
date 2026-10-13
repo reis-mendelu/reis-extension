@@ -34,10 +34,15 @@ export function IskamTopUpForm() {
           className="input input-bordered input-sm w-full"
           value={text}
           aria-invalid={invalid}
+          aria-describedby={invalid ? 'iskam-amount-error' : undefined}
           onChange={(e) => setText(e.target.value)}
         />
       </label>
-      {invalid && <p className="text-2sm text-[var(--tone-error)]">{t('iskam.invalid')}</p>}
+      {invalid && (
+        <p id="iskam-amount-error" className="text-2sm text-[var(--tone-error)]">
+          {t('iskam.invalid')}
+        </p>
+      )}
       {phase === 'failed' && (
         <p role="alert" className="text-2sm text-[var(--tone-error)]">
           {t('iskam.failed')}

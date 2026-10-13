@@ -57,7 +57,15 @@ async function reauthenticate(
   };
   const ticketBefore = ticketOf(jar);
   for (let i = 0; i < MAX_HOPS; i++) {
-    const hop = await iskamHop(http, jar, req.url, { method: req.method, body: req.body });
+    let hop: Awaited<ReturnType<typeof iskamHop>>;
+    try {
+      hop = await iskamHop(http, jar, req.url, { method: req.method, body: req.body });
+    } catch (e) {
+      // The network, not an answer: keep what earlier hops rotated (alibaba
+      // rewrites shib_idp_session_ss on every SSO) for the caller to save.
+      logError('Iskam.reauthenticate', e);
+      return { jar, outcome: 'unreachable' };
+    }
     jar = hop.jar;
     const { res } = hop;
     const host = new URL(res.url).hostname;

@@ -149,12 +149,15 @@ Dobít expands the row in place:
 
 On a pay button:
 
-1. Silent chain; `dead` → the popup first, then continue.
-2. `InitGopayPayment?CastkaZadana=<n>&VybranaMetoda=<GPAY|PAYMENT_CARD>&TypKonta=0&…`
-   with `X-Requested-With: XMLHttpRequest`. Empty body → chain once more, then a
-   message.
-3. Gateway URL fails validation → error message, nothing opened.
-4. `Browser.open({ url })` (`@capacitor/browser`).
+1. `InitGopayPayment?CastkaZadana=<n>&VybranaMetoda=<GPAY|PAYMENT_CARD>&TypKonta=0&…`
+   with `X-Requested-With: XMLHttpRequest`, straight away: Dobít is only enabled
+   beside a balance WebISKAM just confirmed, so the session is almost always live.
+2. Answer expired (empty 200 or a 302 to `/Home/Index`) → the silent chain;
+   `dead` → the popup; then init once more. Still not a gateway → a message.
+3. Gateway URL fails validation (origin `https://gate.gopay.com`, path `/gw-ui/`)
+   → error message, nothing opened.
+4. `Browser.open({ url })` (`@capacitor/browser`). The form stays disabled from
+   here until step 5 has finished.
 5. `browserFinished` → `checking` → `/Konta`. Unchanged balance → one re-check
    after ~3 s, then show whatever WebISKAM says. The app never claims the payment
    succeeded — closing the tab without paying looks the same.

@@ -69,4 +69,13 @@ describe('IskamTopUpForm', () => {
     render(<IskamTopUpForm />);
     expect(screen.getByRole('alert')).toHaveTextContent('Platbu se nepodařilo zahájit');
   });
+
+  it('the invalid-amount message describes the field, for screen readers', () => {
+    render(<IskamTopUpForm />);
+    const input = screen.getByLabelText('Částka (Kč)');
+    fireEvent.change(input, { target: { value: '0' } });
+    const id = input.getAttribute('aria-describedby');
+    expect(id).toBeTruthy();
+    expect(document.getElementById(id!)).toHaveTextContent('Zadej celé číslo od 1 do 15 000 Kč');
+  });
 });

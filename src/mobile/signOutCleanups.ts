@@ -19,7 +19,8 @@ export function registerSignOutCleanup(cleanup: Cleanup): void {
 
 /** Runs every cleanup; one failing does not skip the others, and is rethrown. */
 export async function runSignOutCleanups(): Promise<void> {
-  const results = await Promise.allSettled(cleanups.map((c) => c()));
+  // Each through a promise, so one that throws synchronously cannot abort the map.
+  const results = await Promise.allSettled(cleanups.map((c) => Promise.resolve().then(c)));
   const failed = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
   if (failed) throw failed.reason;
 }

@@ -86,4 +86,12 @@ describe('iskamJar', () => {
       },
     ]);
   });
+
+  // PR #548 review: alibaba cookies are documented as /idp-only; a Path=/ in
+  // a response used to widen one to the whole host.
+  it('keeps alibaba cookies inside /idp even when the response says Path=/', () => {
+    const jar = applySetCookies([], IDP, ['wide=1; Path=/'], NOW);
+    expect(cookieHeader(jar, 'https://alibaba.mendelu.cz/other', NOW)).toBe('');
+    expect(cookieHeader(jar, 'https://alibaba.mendelu.cz/idp/x', NOW)).toBe('wide=1');
+  });
 });

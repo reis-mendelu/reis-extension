@@ -251,4 +251,25 @@ describe('runSilentChain', () => {
     });
     expect((await runSilentChain(deps)).state).toBe('dead');
   });
+
+  // PR #548 review: a network error after alibaba rotated its cookies threw out
+  // of reauthenticate and the rotated jar was never saved.
+  it('keeps cookies the IdP rotated even when a later hop fails on the network', async () => {
+    const { deps } = http((url, method) => {
+      const u = new URL(url);
+      if (u.pathname === '/Konta') return toHomeIndex;
+      if (u.pathname === '/Prihlaseni/AuthShibb')
+        return { status: 302, headers: { Location: 'https://alibaba.mendelu.cz/idp/x' }, data: '' };
+      if (u.host === 'alibaba.mendelu.cz')
+        return {
+          status: 200,
+          headers: { 'Set-Cookie': 'shib_idp_session_ss=rot; Path=/idp' },
+          data: SAML,
+        };
+      if (method === 'POST') throw new Error('The network connection was lost.');
+      return { status: 500 };
+    });
+    expect((await runSilentChain(deps)).state).toBe('unreachable');
+    expect((await loadJar()).find((c) => c.name === 'shib_idp_session_ss')?.value).toBe('rot');
+  });
 });

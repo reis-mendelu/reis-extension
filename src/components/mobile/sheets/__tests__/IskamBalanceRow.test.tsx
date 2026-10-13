@@ -91,4 +91,10 @@ describe('IskamBalanceRow', () => {
     expect(screen.queryByText(/Kč/)).toBeNull();
     expect(screen.getByRole('button', { name: 'Dobít' })).toBeDisabled();
   });
+
+  it('checking: screen readers hear that the balance is loading', () => {
+    setState({ status: 'checking' });
+    render(<IskamBalanceRow />);
+    expect(screen.getByRole('status')).toHaveTextContent('Načítám zůstatek');
+  });
 });

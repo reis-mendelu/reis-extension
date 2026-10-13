@@ -93,6 +93,9 @@ export function applySetCookies(
     }
     // Max-Age wins over Expires (RFC 6265 §5.3).
     if (maxAge !== null) expires = now + maxAge * 1000;
+    // alibaba's cookies belong to its IdP under /idp; a wider Path from a
+    // response is narrowed rather than trusted.
+    if (u.hostname === IDP_HOST && !(path === '/idp' || path.startsWith('/idp/'))) path = '/idp';
     out = out.filter((c) => !(c.name === name && c.host === u.hostname && c.path === path));
     const dead = value === '' || (expires !== null && expires <= now);
     if (!dead) out.push({ name, value, host: u.hostname, path, expires });

@@ -66,11 +66,14 @@ export function IskamBalanceRow() {
                 {formatKc(balance.amount, language)}
               </span>
             ) : (
-              <span
-                data-testid="iskam-skeleton"
-                className="skeleton my-0.5 h-4 w-24"
-                aria-label={t('iskam.checking')}
-              />
+              <span role="status" className="my-0.5 block">
+                <span
+                  data-testid="iskam-skeleton"
+                  className="skeleton block h-4 w-24"
+                  aria-hidden
+                />
+                <span className="sr-only">{t('iskam.checking')}</span>
+              </span>
             )}
           </span>
         )}

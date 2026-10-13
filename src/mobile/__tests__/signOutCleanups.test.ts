@@ -31,4 +31,14 @@ describe('signOutCleanups', () => {
   it('is a no-op with nothing registered (the extension, the MCP server)', async () => {
     await expect(runSignOutCleanups()).resolves.toBeUndefined();
   });
+
+  it('a cleanup that throws synchronously does not skip the ones after it', async () => {
+    const b = vi.fn(async () => {});
+    registerSignOutCleanup((() => {
+      throw new Error('sync');
+    }) as () => Promise<void>);
+    registerSignOutCleanup(b);
+    await expect(runSignOutCleanups()).rejects.toThrow('sync');
+    expect(b).toHaveBeenCalled();
+  });
 });

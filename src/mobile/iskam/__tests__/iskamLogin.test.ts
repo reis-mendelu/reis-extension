@@ -20,7 +20,8 @@ function harness(cookies: Cookies[]) {
       return { remove: vi.fn(async () => {}) };
     }),
     readCookies: vi.fn(async (): Promise<Cookies> => reads.shift() ?? { iskam: {}, idp: {} }),
-    save: vi.fn(async (_jar: IskamJar) => {}),
+    save: vi.fn(async (_jar: IskamJar, _basedOn: number) => true),
+    generation: vi.fn(() => 0),
     forgetIskamCookies: vi.fn(async () => {}),
     close: vi.fn(async () => {}),
     firstLoadTimeoutMs: 50,
@@ -122,5 +123,47 @@ describe('signInToIskam', () => {
     expect(h.deps.forgetIskamCookies.mock.invocationCallOrder[0]).toBeLessThan(
       h.deps.open.mock.invocationCallOrder[0]!
     );
+  });
+
+  // PR #548 review: a login finishing after a sign-out wrote its jar back.
+  // The save is based on the jar generation from before the popup opened.
+  it('saves against the jar generation read before the popup opened', async () => {
+    const h = harness([{ iskam: { '.ISKAMASPXAUTH': 't' }, idp: {} }]);
+    h.deps.generation.mockReturnValueOnce(7).mockReturnValue(8);
+    const done = signInToIskam(h.deps);
+    await tick();
+    h.load();
+    await done;
+    expect(h.deps.save.mock.calls[0]![1]).toBe(7);
+  });
+
+  it('a sign-out that landed during the login turns the late save into a cancellation', async () => {
+    const h = harness([{ iskam: { '.ISKAMASPXAUTH': 't' }, idp: {} }]);
+    h.deps.save.mockResolvedValueOnce(false);
+    const done = signInToIskam(h.deps);
+    await tick();
+    h.load();
+    await expect(done).rejects.toBeInstanceOf(LoginCancelledError);
+    expect(h.deps.close).toHaveBeenCalled();
+  });
+
+  it('a cookie read that fails rejects, and closes the popup', async () => {
+    const h = harness([]);
+    h.deps.readCookies.mockRejectedValueOnce(new Error('WebView gone'));
+    const done = signInToIskam(h.deps);
+    await tick();
+    h.load();
+    await expect(done).rejects.toThrow('WebView gone');
+    expect(h.deps.close).toHaveBeenCalled();
+  });
+
+  it('a save that fails still closes the popup before rejecting', async () => {
+    const h = harness([{ iskam: { '.ISKAMASPXAUTH': 't' }, idp: {} }]);
+    h.deps.save.mockRejectedValueOnce(new Error('keystore'));
+    const done = signInToIskam(h.deps);
+    await tick();
+    h.load();
+    await expect(done).rejects.toThrow('keystore');
+    expect(h.deps.close).toHaveBeenCalled();
   });
 });

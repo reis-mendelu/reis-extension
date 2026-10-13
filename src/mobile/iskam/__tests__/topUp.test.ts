@@ -47,6 +47,7 @@ describe('parseGatewayUrl', () => {
 
   it.each([
     'https://gate.gopay.com.evil.example/gw-ui/rest/v3/1',
+    'https://gate.gopay.com:8443/gw-ui/rest/v3/1',
     'http://gate.gopay.com/gw-ui/rest/v3/1',
     'https://gate.gopay.com/other/1',
     'https://evil.example/gw-ui/1',

@@ -88,4 +88,20 @@ describe('iskamHop', () => {
     const { res } = await iskamHop(d, [], 'https://webiskam.mendelu.cz/x');
     expect(res.body).toBe('{"a":1}');
   });
+
+  // PR #548 review: only the exact spelling "Cookie" was dropped; a caller's
+  // lowercase "cookie" would have gone out alongside (or instead of) the jar.
+  it.each(['ios', 'android'] as const)(
+    '%s: drops a caller cookie header in any letter case',
+    async (p) => {
+      const d = deps(p);
+      await iskamHop(d, JAR, 'https://webiskam.mendelu.cz/Konta', {
+        headers: { cookie: 'x=1', COOKIE: 'y=2' },
+      });
+      const keys = Object.keys(d.request.mock.calls[0]![0].headers).filter(
+        (k) => k.toLowerCase() === 'cookie'
+      );
+      expect(keys).toEqual(p === 'ios' ? ['Cookie'] : []);
+    }
+  );
 });

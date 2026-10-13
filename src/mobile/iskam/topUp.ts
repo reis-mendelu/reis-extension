@@ -56,8 +56,8 @@ export function parseGatewayUrl(html: string): string | null {
     return null;
   }
   if (
-    u.protocol !== 'https:' ||
-    u.hostname !== 'gate.gopay.com' ||
+    // origin, not hostname: hostname ignores the port, and :8443 is another server.
+    u.origin !== 'https://gate.gopay.com' ||
     !u.pathname.startsWith('/gw-ui/')
   ) {
     return null;

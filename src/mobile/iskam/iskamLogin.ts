@@ -1,5 +1,5 @@
 import { LoginCancelledError, LoginUnreachableError, type ListenerHandle } from '../ensureSession';
-import { saveJar } from './iskamCookieStore';
+import { jarGeneration, saveJar } from './iskamCookieStore';
 import {
   IDP_COOKIE_URL,
   IDP_HOST,
@@ -16,7 +16,12 @@ export interface IskamLoginDeps {
   onPageLoaded(cb: () => void): Promise<ListenerHandle>;
   onDismissed(cb: () => void): Promise<ListenerHandle>;
   readCookies(): Promise<{ iskam: Record<string, string>; idp: Record<string, string> }>;
-  save(jar: IskamJar): Promise<void>;
+  /**
+   * Writes the captured jar based on `basedOn`, the jar generation read before
+   * the popup opened; false when a sign-out (or another login) landed since.
+   */
+  save(jar: IskamJar, basedOn: number): Promise<boolean>;
+  generation(): number;
   /**
    * Drops webiskam's cookies from the WebView jar before the popup opens. The
    * popup only opens once the stored login is known dead, and the jar can
@@ -65,24 +70,45 @@ export function signInToIskam(deps: IskamLoginDeps): Promise<void> {
       reject(e);
     };
 
+    /** Every exit after the popup is up closes it: a stray one would block the next. */
+    const finish = async (error?: unknown) => {
+      try {
+        await deps.close();
+      } catch {
+        // Best-effort: the outcome below matters more than the cleanup.
+      }
+      await cleanup();
+      if (error === undefined) resolve();
+      else reject(error);
+    };
+
     const onLoad = () => {
       clearTimeout(deadline);
       void (async () => {
         if (settled) return;
-        const { iskam, idp } = await deps.readCookies();
+        let cookies: { iskam: Record<string, string>; idp: Record<string, string> };
+        try {
+          cookies = await deps.readCookies();
+        } catch (e) {
+          if (settled) return;
+          settled = true;
+          await finish(e);
+          return;
+        }
+        const { iskam, idp } = cookies;
         // Absent is the normal case: alibaba's own pages load before the ticket exists.
         if (!iskam[TICKET_COOKIE] || settled) return;
         settled = true;
         try {
-          await deps.save([
-            ...jarFromRecord(ISKAM_HOST, '/', iskam),
-            ...jarFromRecord(IDP_HOST, '/idp', idp),
-          ]);
-          await deps.close();
-          await cleanup();
-          resolve();
+          const saved = await deps.save(
+            [...jarFromRecord(ISKAM_HOST, '/', iskam), ...jarFromRecord(IDP_HOST, '/idp', idp)],
+            basedOn
+          );
+          // A sign-out landed while the student was typing: the app is on its
+          // way out of this account, so the login is dropped, not resurrected.
+          await finish(saved ? undefined : new LoginCancelledError());
         } catch (e) {
-          reject(e);
+          await finish(e);
         }
       })();
     };
@@ -108,6 +134,7 @@ export function signInToIskam(deps: IskamLoginDeps): Promise<void> {
       deps.firstLoadTimeoutMs ?? DEFAULT_FIRST_LOAD_TIMEOUT_MS
     );
 
+    const basedOn = deps.generation();
     void (async () => {
       try {
         loadHandle = await deps.onPageLoaded(onLoad);
@@ -144,9 +171,8 @@ export async function buildIskamLoginDeps(): Promise<IskamLoginDeps> {
       ]);
       return { iskam: iskam as Record<string, string>, idp: idp as Record<string, string> };
     },
-    save: async (jar) => {
-      await saveJar(jar);
-    },
+    save: async (jar, basedOn) => (await saveJar(jar, basedOn)) !== null,
+    generation: () => jarGeneration(),
     // Both jars, best-effort, as in signOut: CapacitorCookies reaches the
     // process-wide jar on Android with no dialog open, InAppBrowser its own
     // store on iOS 17+.

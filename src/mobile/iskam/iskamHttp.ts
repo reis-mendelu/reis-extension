@@ -80,7 +80,9 @@ export async function iskamHop(
     ...(method === 'POST' ? { 'Content-Type': 'application/x-www-form-urlencoded' } : {}),
     ...opts.headers,
   };
-  delete headers.Cookie;
+  // Any letter case: header names are case-insensitive, and a caller's
+  // "cookie" must not ride along beside (or instead of) the jar's.
+  for (const k of Object.keys(headers)) if (k.toLowerCase() === 'cookie') delete headers[k];
   if (deps.platform === 'android') {
     for (const c of cookiesFor(jar, url)) {
       await deps.setCookie({

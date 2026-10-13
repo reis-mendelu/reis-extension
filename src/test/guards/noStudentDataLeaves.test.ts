@@ -177,7 +177,7 @@ const ALLOWED_HOSTS = [
   'supef.cz',
   'instagram.com', // a society's profile, the "details" link on an event with none
   'creativecommons.org', // the Twemoji licence, linked from the map's credit line
-  'gopay.com', // the GoPay payment page for an ISIC top-up, opened in the system browser view
+  'gate.gopay.com', // the GoPay payment page for an ISIC top-up, opened in the system browser view
 
   // --- not destinations ---
   'localhost.that.never.exists', // CORS sentinel in capacitorTransport

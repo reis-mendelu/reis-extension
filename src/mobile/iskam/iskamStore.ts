@@ -137,12 +137,15 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
       if (init.kind !== 'ok') throw new Error(`top-up init: ${init.kind}`);
       set({ topUp: 'paying' });
       await openGateway(init.url);
-      set({ topUp: 'idle' });
+      // Still 'paying' through the re-checks: the form stays disabled until the
+      // credit has had its chance to show, so a slow one cannot invite a
+      // second order.
       await get().check();
       if (get().status === 'balance' && get().balance?.amount === before) {
         await delay(RECHECK_MS);
         await get().check();
       }
+      set({ topUp: 'idle' });
     } catch (e) {
       if (e instanceof LoginCancelledError) {
         set({ topUp: 'idle' });

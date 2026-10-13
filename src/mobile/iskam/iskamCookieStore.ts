@@ -32,10 +32,14 @@ export function jarGeneration(): number {
   return generation;
 }
 
+/**
+ * Through the write lane too: a read issued while a sign-out's remove is still
+ * landing must see the cleared store, not the jar it is about to delete.
+ */
 export async function loadJar(): Promise<IskamJar> {
   let raw: unknown;
   try {
-    raw = await getPlatform().secureStorage.get(KEY);
+    raw = await serialized(() => getPlatform().secureStorage.get(KEY));
   } catch {
     return [];
   }

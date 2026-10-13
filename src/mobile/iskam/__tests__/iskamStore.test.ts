@@ -181,10 +181,15 @@ describe('startTopUp', () => {
         .mockResolvedValueOnce({ state: 'live', kontaHtml: BALANCE('100') })
         .mockResolvedValueOnce({ state: 'live', kontaHtml: BALANCE('350') });
       const p = s().startTopUp(250, 'card');
+      await vi.advanceTimersByTimeAsync(10);
+      // PR #548 review: the form was payable again during this window, inviting
+      // a second order while a slow credit had not shown yet.
+      expect(s().topUp).toBe('paying');
       await vi.advanceTimersByTimeAsync(3000);
       await p;
       expect(s().balance?.amount).toBe(350);
       expect(runSilentChain).toHaveBeenCalledTimes(3);
+      expect(s().topUp).toBe('idle');
     } finally {
       vi.useRealTimers();
     }

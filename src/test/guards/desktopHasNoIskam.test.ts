@@ -97,7 +97,10 @@ describe('WebISKAM stays on the phone tree', () => {
   it('nothing else imports the WebISKAM code or names its host', () => {
     // Imports (static and dynamic) and the host name — not prose: comments
     // such as IndexedDBService's note on deleting the old `iskam` store are fine.
-    const REACHES = /(from\s+|import\(\s*)['"][^'"]*\/iskam\/[^'"]*['"]|webiskam\.mendelu\.cz/i;
+    // `import '…'` (side effect only) counts too.
+    const REACHES =
+      /(from\s+|import\s*\(\s*|import\s+)['"][^'"]*\/iskam\/[^'"]*['"]|webiskam\.mendelu\.cz/i;
+    expect(REACHES.test("import '@/mobile/iskam/iskamStore';")).toBe(true);
     const offenders = walk(join(root, 'src'))
       .filter((f) => !f.startsWith('src/mobile/iskam/') && !ALLOWED_IMPORTERS.has(f))
       .filter((f) => REACHES.test(readFileSync(join(root, f), 'utf8')));
