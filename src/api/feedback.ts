@@ -7,6 +7,7 @@ import { usagePlatform, type UsagePlatform } from '../utils/usagePlatform';
 import { isHarnessEnabled } from '../utils/harnessEnabled';
 import { hasDataConsent } from '../utils/firefoxDataConsent';
 import { baseProgramme } from '../utils/partnerAudience';
+import { getAppVersion } from '../utils/appIdentity';
 
 /**
  * Both writes here identify the DEVICE, never the student.
@@ -82,7 +83,7 @@ export function __resetUsageTrackedForTests(): void {
 }
 
 /**
- * Faculty and platform are GROUP labels (six faculties, four platforms) on
+ * Faculty, platform, programme and app version are GROUP labels on
  * the same random install id — a count, not a record. Disclosed in
  * PRIVACY.md ("Daily Usage & NPS Feedback").
  */
@@ -133,11 +134,17 @@ async function writeDailyUsage(): Promise<void> {
     platform = usagePlatform(kind, () => 'web');
   }
 
+  // The release this install runs ('5.4.1'): the same string on every install
+  // of that release, so a group label like platform. '0.0.0' is
+  // getAppVersion's fallback for "unknown", not a release.
+  const version = getAppVersion();
+
   const { error } = await supabase.rpc('track_daily_usage', {
     p_student_id: await getInstallId(),
     p_faculty: faculty,
     p_platform: platform,
     p_programme: programme,
+    p_app_version: version === '0.0.0' ? null : version,
   });
   // Thrown, not swallowed: the caller above clears the memo on a rejection so
   // a later call can still count this device. Nothing about the failure is

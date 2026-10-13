@@ -337,8 +337,8 @@ the start of a semester.
 Only these, all disclosed in `docs/privacy-policy-app.md`:
 
 1. **Daily install count** — a random per-install UUID (`services/identity/installId.ts`),
-   plus faculty, base programme code and platform as labels; nothing else derived from the
-   student. Deliberately counts installs, not people. The UUID is stable, so daily rows link
+   plus faculty, base programme code, platform and app version as labels; nothing else derived
+   from the student. Deliberately counts installs, not people. The UUID is stable, so daily rows link
    across days, and the same UUID is on the survey and the feature counters (4), so those rows
    join per install to faculty, platform and programme. The policy says so; none of it carries
    a name, student number or IS account.
