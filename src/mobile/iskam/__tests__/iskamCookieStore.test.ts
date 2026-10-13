@@ -3,8 +3,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const store = new Map<string, unknown>();
 const secureStorage = {
   get: vi.fn(async (k: string) => store.get(k)),
-  set: vi.fn(async (k: string, v: unknown) => void store.set(k, v)),
-  remove: vi.fn(async (k: string) => void store.delete(k)),
+  set: vi.fn(async (k: string, v: unknown): Promise<void> => {
+    store.set(k, v);
+  }),
+  remove: vi.fn(async (k: string): Promise<void> => {
+    store.delete(k);
+  }),
 };
 vi.mock('../../../platform', () => ({
   getPlatform: () => ({ kind: 'capacitor', secureStorage }),
