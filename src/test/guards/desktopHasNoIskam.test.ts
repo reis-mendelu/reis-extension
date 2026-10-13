@@ -25,7 +25,9 @@ const MOBILE_ONLY = [
   'src/mobile/iskam/iskamLogin.ts',
   'src/mobile/iskam/iskamStore.ts',
   'src/mobile/iskam/clearIskam.ts',
+  'src/mobile/iskam/iskamTopUp.ts',
   'src/components/mobile/sheets/IskamBalanceRow.tsx',
+  'src/components/mobile/sheets/IskamTopUpForm.tsx',
   'src/components/mobile/sheets/MenuSheet.tsx',
   'src/components/mobile/screens/calendar/MenuCard.tsx',
 ];
@@ -34,6 +36,7 @@ const MOBILE_ONLY = [
 const ALLOWED_IMPORTERS = new Set([
   'src/mobile/signOut.ts',
   'src/components/mobile/sheets/IskamBalanceRow.tsx',
+  'src/components/mobile/sheets/IskamTopUpForm.tsx',
   'src/components/mobile/sheets/MenuSheet.tsx',
   'src/components/mobile/screens/calendar/MenuCard.tsx',
 ]);

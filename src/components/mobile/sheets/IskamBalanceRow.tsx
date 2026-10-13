@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CreditCard } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useIskamStore } from '../../../mobile/iskam/iskamStore';
+import { IskamTopUpForm } from './IskamTopUpForm';
 
 /** In the APP's language — WebISKAM's own text follows the phone's instead. */
 function formatKc(amount: number, language: string): string {
@@ -82,6 +83,7 @@ export function IskamBalanceRow() {
           {t('iskam.topUp')}
         </button>
       </div>
+      {open && canTopUp && <IskamTopUpForm />}
     </div>
   );
 }

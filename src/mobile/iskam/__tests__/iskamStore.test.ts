@@ -12,6 +12,12 @@ vi.mock('../iskamLogin', () => ({
   signInToIskam: (...a: unknown[]) => signInToIskam(...a),
   buildIskamLoginDeps: async () => ({}),
 }));
+const initTopUp = vi.fn();
+const openGateway = vi.fn();
+vi.mock('../iskamTopUp', () => ({
+  initTopUp: (...a: unknown[]) => initTopUp(...a),
+  openGateway: (...a: unknown[]) => openGateway(...a),
+}));
 vi.mock('../../../platform', () => ({ getPlatform: () => ({ kind: platformKind }) }));
 vi.mock('../../../errors/demoMode', () => ({ isDemoMode: () => demo }));
 vi.mock('../../../utils/reportError', () => ({ logError: vi.fn() }));
@@ -26,6 +32,8 @@ describe('useIskamStore', () => {
   beforeEach(() => {
     runSilentChain.mockReset();
     signInToIskam.mockReset();
+    initTopUp.mockReset();
+    openGateway.mockReset();
     platformKind = 'capacitor';
     demo = false;
     s().reset();
@@ -109,5 +117,93 @@ describe('useIskamStore', () => {
     void s().signIn();
     await new Promise((r) => setTimeout(r, 0));
     expect(signInToIskam).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('startTopUp', () => {
+  const GATE = 'https://gate.gopay.com/gw-ui/rest/v3/1';
+  const BALANCE = (n: string) =>
+    `<div class="vyskaRiadkuKonto"><div>Hlavní konto</div><div>${n} Kč</div><a href="/Platby/NabitiKonta/0">Nabít</a></div>`;
+
+  beforeEach(() => {
+    runSilentChain.mockReset();
+    signInToIskam.mockReset();
+    initTopUp.mockReset();
+    openGateway.mockReset();
+    platformKind = 'capacitor';
+    demo = false;
+    s().reset();
+  });
+
+  it('opens the gateway, then re-reads the balance once the browser closes', async () => {
+    runSilentChain.mockResolvedValueOnce({ state: 'live', kontaHtml: BALANCE('100') });
+    await s().check();
+    initTopUp.mockResolvedValue({ kind: 'ok', url: GATE });
+    openGateway.mockResolvedValue(undefined);
+    runSilentChain.mockResolvedValueOnce({ state: 'live', kontaHtml: BALANCE('350') });
+    await s().startTopUp(250, 'gpay');
+    expect(initTopUp).toHaveBeenCalledWith(expect.anything(), 250, 'gpay');
+    expect(openGateway).toHaveBeenCalledWith(GATE);
+    expect(s().balance?.amount).toBe(350);
+    expect(s().topUp).toBe('idle');
+  });
+
+  it('re-checks once more after a short wait when the balance has not moved yet', async () => {
+    vi.useFakeTimers();
+    try {
+      runSilentChain.mockResolvedValueOnce({ state: 'live', kontaHtml: BALANCE('100') });
+      await s().check();
+      initTopUp.mockResolvedValue({ kind: 'ok', url: GATE });
+      openGateway.mockResolvedValue(undefined);
+      runSilentChain
+        .mockResolvedValueOnce({ state: 'live', kontaHtml: BALANCE('100') })
+        .mockResolvedValueOnce({ state: 'live', kontaHtml: BALANCE('350') });
+      const p = s().startTopUp(250, 'card');
+      await vi.advanceTimersByTimeAsync(3000);
+      await p;
+      expect(s().balance?.amount).toBe(350);
+      expect(runSilentChain).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('an expired session runs the chain, and the popup if the chain is dead, then inits again', async () => {
+    initTopUp
+      .mockResolvedValueOnce({ kind: 'expired' })
+      .mockResolvedValueOnce({ kind: 'ok', url: GATE });
+    runSilentChain
+      .mockResolvedValueOnce({ state: 'dead' })
+      .mockResolvedValue({ state: 'live', kontaHtml: BALANCE('1') });
+    signInToIskam.mockResolvedValue(undefined);
+    openGateway.mockResolvedValue(undefined);
+    await s().startTopUp(10, 'card');
+    expect(signInToIskam).toHaveBeenCalledTimes(1);
+    expect(initTopUp).toHaveBeenCalledTimes(2);
+    expect(openGateway).toHaveBeenCalledWith(GATE);
+  });
+
+  it('a rejected gateway URL opens nothing and shows the failure', async () => {
+    initTopUp.mockResolvedValue({ kind: 'rejected' });
+    await s().startTopUp(10, 'card');
+    expect(openGateway).not.toHaveBeenCalled();
+    expect(s().topUp).toBe('failed');
+  });
+
+  it('ignores a second startTopUp while the first is starting (double tap)', async () => {
+    initTopUp.mockReturnValue(new Promise(() => {}));
+    void s().startTopUp(10, 'card');
+    void s().startTopUp(10, 'card');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(initTopUp).toHaveBeenCalledTimes(1);
+  });
+
+  it('dismissing the popup mid top-up is not an error', async () => {
+    initTopUp.mockResolvedValue({ kind: 'expired' });
+    runSilentChain.mockResolvedValue({ state: 'dead' });
+    signInToIskam.mockRejectedValue(new LoginCancelledError());
+    await s().startTopUp(10, 'card');
+    expect(s().topUp).toBe('idle');
+    expect(openGateway).not.toHaveBeenCalled();
   });
 });

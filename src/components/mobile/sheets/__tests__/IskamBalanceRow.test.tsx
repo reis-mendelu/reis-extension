@@ -3,6 +3,10 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 
 vi.mock('../../../../mobile/iskam/iskamSession', () => ({ runSilentChain: vi.fn() }));
 vi.mock('../../../../mobile/iskam/iskamHttp', () => ({ buildIskamHttpDeps: async () => ({}) }));
+vi.mock('../../../../mobile/iskam/iskamTopUp', () => ({
+  initTopUp: vi.fn(),
+  openGateway: vi.fn(),
+}));
 vi.mock('../../../../mobile/iskam/iskamLogin', () => ({
   signInToIskam: vi.fn(),
   buildIskamLoginDeps: async () => ({}),
@@ -57,6 +61,16 @@ describe('IskamBalanceRow', () => {
     setState({ status: 'balance', balance: { amount: 1234.5 } });
     render(<IskamBalanceRow />);
     expect(screen.getByTestId('iskam-amount')).toHaveTextContent(/1,234\.50/);
+  });
+
+  it('Dobít opens the top-up form, and a second tap closes it', () => {
+    setState({ status: 'balance', balance: { amount: 10 } });
+    render(<IskamBalanceRow />);
+    expect(screen.queryByLabelText('Částka (Kč)')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Dobít' }));
+    expect(screen.getByLabelText('Částka (Kč)')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Dobít' }));
+    expect(screen.queryByLabelText('Částka (Kč)')).toBeNull();
   });
 
   it('unavailable: a retry, no amount, Dobít disabled', () => {
