@@ -1,10 +1,17 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { isTrustedHostOrigin } from '../../utils/trustedOrigin';
 
 /**
  * The ISIC balance and top-up are on the PHONE/iPad tree only, by decision.
+ *
+ * What "only" means, precisely: the extension's iframe app imports App.tsx,
+ * which imports the whole phone tree (it forks on isPhone at runtime), so this
+ * code is IN the extension bundle like every phone feature — and cannot run
+ * there: the store does nothing off Capacitor, and the extension has no host
+ * permission for webiskam. reIS for Claude is stricter: it handles the
+ * student's password, so its server graph must not reach this code at all.
  *
  * WebISKAM was removed from reIS in #247 (2026-08-30) because that integration
  * was not implemented well enough and its scope was far too large. It came back
@@ -34,7 +41,6 @@ const MOBILE_ONLY = [
 
 /** Files outside src/mobile/iskam that may reach it, each on the phone tree. */
 const ALLOWED_IMPORTERS = new Set([
-  'src/mobile/signOut.ts',
   'src/components/mobile/sheets/IskamBalanceRow.tsx',
   'src/components/mobile/sheets/IskamTopUpForm.tsx',
   'src/components/mobile/sheets/MenuSheet.tsx',
@@ -55,6 +61,34 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
+/** Import closure from an entry, the way mcpStaysReadOnly computes it (dynamic imports included). */
+function importClosure(entry: string): Set<string> {
+  const seen = new Set<string>();
+  const resolveImport = (from: string, spec: string): string | null => {
+    let base: string;
+    if (spec.startsWith('@/')) base = join(root, 'src', spec.slice(2));
+    else if (spec.startsWith('.')) base = resolve(dirname(from), spec);
+    else return null;
+    for (const c of [base, `${base}.ts`, `${base}.tsx`, join(base, 'index.ts')]) {
+      if (existsSync(c) && /\.tsx?$/.test(c)) return c;
+    }
+    return null;
+  };
+  const visit = (file: string) => {
+    const r = relative(root, file);
+    if (seen.has(r)) return;
+    seen.add(r);
+    for (const m of readFileSync(file, 'utf8').matchAll(
+      /(?:from|import)\s*\(?\s*['"]([^'"]+)['"]/g
+    )) {
+      const next = resolveImport(file, m[1]!);
+      if (next) visit(next);
+    }
+  };
+  visit(entry);
+  return seen;
+}
+
 describe('WebISKAM stays on the phone tree', () => {
   it.each(MOBILE_ONLY)('%s exists (a rename must update this guard)', (f) => {
     expect(existsSync(join(root, f))).toBe(true);
@@ -68,6 +102,26 @@ describe('WebISKAM stays on the phone tree', () => {
       .filter((f) => !f.startsWith('src/mobile/iskam/') && !ALLOWED_IMPORTERS.has(f))
       .filter((f) => REACHES.test(readFileSync(join(root, f), 'utf8')));
     expect(offenders).toEqual([]);
+  });
+
+  it('reIS for Claude cannot reach the WebISKAM code, through any import chain', () => {
+    const reached = [...importClosure(join(root, 'mcp/server.ts'))].filter((f) =>
+      f.startsWith('src/mobile/iskam/')
+    );
+    expect(reached).toEqual([]);
+  });
+
+  it('the extension asks for no webiskam host permission', () => {
+    expect(readFileSync(join(root, 'wxt.config.ts'), 'utf8')).not.toMatch(/webiskam/i);
+  });
+
+  // Sign-out reaches the WebISKAM login through this registration, not an
+  // import: src/mobile/signOut.ts is in the shared graph (proxyClient imports
+  // it), and an import there put this code inside reIS for Claude.
+  it('the Capacitor entry registers the WebISKAM sign-out cleanup', () => {
+    const entry = readFileSync(join(root, 'capacitor/main.capacitor.tsx'), 'utf8');
+    expect(entry).toMatch(/registerSignOutCleanup\(/);
+    expect(entry).toContain('@/mobile/iskam/clearIskam');
   });
 
   it('the extension still rejects the webiskam origin (#247)', () => {

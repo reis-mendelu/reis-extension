@@ -32,6 +32,14 @@ import { useAppStore } from '@/store/useAppStore';
 import { startApp } from './startApp';
 import { showLoginGate, showFatalError } from './bootScreens';
 import { syncSystemBarsToTheme } from '@/mobile/systemBarsTheme';
+import { registerSignOutCleanup } from '@/mobile/signOutCleanups';
+
+// The WebISKAM login is cleared on sign-out through this registration, not an
+// import in mobile/signOut.ts, which shared code reaches (see signOutCleanups).
+registerSignOutCleanup(async () => {
+  const { clearIskam } = await import('@/mobile/iskam/clearIskam');
+  await clearIskam();
+});
 
 // Android only: the status bar sits transparent over the app there (see
 // MainActivity), so its icons must follow the reIS theme, not the system one.

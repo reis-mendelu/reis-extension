@@ -3,14 +3,18 @@ import { clearUserParamsCache } from '../utils/userParams';
 import { IndexedDBService } from '../services/storage';
 import { logError } from '../utils/reportError';
 import { IS_COOKIE_URL } from './inAppLoginDeps';
+import { runSignOutCleanups } from './signOutCleanups';
 
 export interface SignOutDeps {
   /** Removes the replayed UISAuth credential from secure storage. */
   clearToken(): Promise<void>;
   /** Empties the WebView cookie jar for is.mendelu.cz. */
   clearIsCookies(): Promise<void>;
-  /** Removes the WebISKAM + alibaba login (mobile/iskam/clearIskam). */
-  clearIskam(): Promise<void>;
+  /**
+   * Second logins only the phone app has — today the WebISKAM + alibaba jar —
+   * registered at boot through `signOutCleanups`, never imported here.
+   */
+  clearOtherLogins(): Promise<void>;
   clearUserParams(): void;
   /** Drops the society/admin login, which supabase-js keeps outside IndexedDB. */
   clearAdminSession(): Promise<void>;
@@ -77,9 +81,9 @@ export async function signOutMobile(deps: SignOutDeps): Promise<void> {
   // Its own block: the ISIC login is a second credential, but failing to clear
   // it must not skip the wipe and restart below.
   try {
-    await deps.clearIskam();
+    await deps.clearOtherLogins();
   } catch (e) {
-    logError('Mobile.signOut:iskam', e);
+    logError('Mobile.signOut:otherLogins', e);
   }
 
   // The society/admin login belongs after the token clear and not before it:
@@ -124,10 +128,7 @@ export function buildSignOutDeps(): SignOutDeps {
         throw first.reason;
       }
     },
-    clearIskam: async () => {
-      const { clearIskam } = await import('./iskam/clearIskam');
-      await clearIskam();
-    },
+    clearOtherLogins: () => runSignOutCleanups(),
     clearUserParams: () => clearUserParamsCache(),
     clearAdminSession: async () => {
       const { clearAdminSession } = await import('../services/admin/clearAdminSession');
