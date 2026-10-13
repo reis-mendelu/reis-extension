@@ -180,10 +180,11 @@ On a pay button:
 - The balance is memory-only and never persisted.
 - Card / Google Pay data is entered on GoPay's page in the system browser view;
   reIS sees only the gateway URL.
-- `privacy/disclosures.ts`: WebISKAM added as a university system the app talks to
-  as the student (like IS), and the GoPay handoff; `npm run privacy:generate`.
-  `PRIVACY.md` and `docs/privacy-policy-app.md` updated to match (balance and
-  cookies stay on the device). The gist is published at release.
+- `privacy/disclosures.ts` describes Supabase flows only (FLOWS/EXEMPT), so
+  WebISKAM and GoPay add no entry there; `PLATFORM_PERMISSIONS` changes only if
+  a plugin adds an Android permission (`privacyDisclosures.test.ts` checks it).
+  `PRIVACY.md` and `docs/privacy-policy-app.md` say what the app sends where
+  (balance and cookies stay on the device). The gist is published at release.
 - `noStudentDataLeaves`: `webiskam.mendelu.cz` listed explicitly under "carrying
   student data" (it already passes via the `mendelu.cz` suffix); `gate.gopay.com`
   under "links the student opens".

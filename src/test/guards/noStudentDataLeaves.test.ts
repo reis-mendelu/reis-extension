@@ -147,7 +147,8 @@ const files = walk(SRC).map((f) => ({ path: relative(ROOT, f), text: readFileSyn
  * Microsoft, Komoot and a personal HuggingFace Space while
  * PRIVACY.md claimed it spoke "exclusively" to IS Mendelu, WebISKAM and
  * Supabase. Adding a destination now means adding it here AND to PRIVACY.md.
- * WebISKAM left the list when the integration was removed.
+ * WebISKAM left the list when the integration was removed (#247) and came
+ * back, phone-only and narrow, for the ISIC balance and top-up (2026-10-13).
  */
 const ALLOWED_HOSTS = [
   // --- reIS's own / the university's ---
@@ -164,6 +165,9 @@ const ALLOWED_HOSTS = [
   'hei.api.uni-foundation.eu', // public Erasmus university directory (read-only)
 
   // --- fetched from, carrying student data. Each must stay disclosed. ---
+  'webiskam.mendelu.cz', // phone/iPad only: the ISIC Hlavní konto balance and the GoPay
+  // top-up start, signed in as the student via alibaba.mendelu.cz (also mendelu.cz).
+  // Already covered by the mendelu.cz suffix; listed so the disclosure is explicit.
 
   // --- deep links the STUDENT opens; no background request is made ---
   'google.com', // maps links, Play Store, Chrome Web Store, a society's Apps Script
@@ -173,6 +177,7 @@ const ALLOWED_HOSTS = [
   'supef.cz',
   'instagram.com', // a society's profile, the "details" link on an event with none
   'creativecommons.org', // the Twemoji licence, linked from the map's credit line
+  'gopay.com', // the GoPay payment page for an ISIC top-up, opened in the system browser view
 
   // --- not destinations ---
   'localhost.that.never.exists', // CORS sentinel in capacitorTransport
