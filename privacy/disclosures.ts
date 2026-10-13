@@ -48,7 +48,7 @@ const INSTALL_ID_APPLE: AppleType = {
 export const FLOWS: Flow[] = [
   {
     id: 'daily_count',
-    what: 'One row per install per day: random install id, faculty, base study-programme code and platform labels.',
+    what: 'One row per install per day: random install id, faculty, base study-programme code, platform and app version labels.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/feedback.ts'],
@@ -57,7 +57,7 @@ export const FLOWS: Flow[] = [
       [
         'Daily count',
         'once a day',
-        'a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI) and platform as group labels. The survey and the feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation.',
+        'a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI), platform and app version (e.g. 5.4.1) as group labels. The survey and the feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation.',
       ],
     ],
     stores: {

@@ -121,11 +121,13 @@ When a task involves IS Mendelu data, a new scraper, or the CDN data shape: read
 ## Local dev, release, and commands
 
 - Local dev against real IS data (`npm run dev:web` at `localhost:3000`) → the `dev-real-data` skill.
-- Releasing (version bump → `test` → `main` → a `vX.Y.Z` tag) → `/release`. The
-  tag drives **iOS only**. The extension is published **separately and by hand**:
-  `gh workflow run publish.yml --ref vX.Y.Z -f tag=vX.Y.Z`, to Chrome and Firefox
-  (Edge is not a target — Edge users install from the CWS). The `push: tags`
-  trigger was removed on purpose: a store submission cannot be recalled.
+- Releasing (version bump + `release-notes/X.Y.Z.cs.txt` → `test` → `main`) →
+  `/release`. Merging the release PR pushes `vX.Y.Z` and, **in the same run**,
+  takes it to all three stores: the App Store (upload and submit for review),
+  Google Play's closed-testing track, and Chrome + Firefox (Edge is not a
+  target). One summary table says what reached each. It has to be one run: a tag
+  pushed with `GITHUB_TOKEN` starts no other workflow. Secrets, the dry run and
+  what it does not do: `docs/release-pipeline.md`.
 - Everything else is in `package.json` scripts.
 - Verifying a UI change (screenshots at 320/390/430 + overflow, collision and contrast assertions) → the `verify-ui` skill. Never judge a UI change from a screenshot alone.
 
@@ -223,7 +225,9 @@ there never reach Supabase, so never cite them as evidence a write works.
   and `format:check` are **repo-wide**, not changed-files, and `nuia:gate` is a
   ratchet — a new `noUncheckedIndexedAccess` error fails even if the count drops.
 - `main` accepts only the `test` → `main` release PR. Merging it pushes the
-  `vX.Y.Z` tag and stops — **no workflow submits to any store**. Use `/release`.
+  `vX.Y.Z` tag and **submits to all three stores** (`ship.yml`). A submission
+  cannot be recalled, so the release PR (diff, notes, CI, privacy block) is the
+  last gate. Use `/release`.
 - **Do not merge into `test` while a release PR is open.**
 - **Testing against your own data is local.** `npm run preview:real` scrapes
   your IS data, strips other students' identities, builds the production bundle
@@ -333,10 +337,10 @@ the start of a semester.
 Only these, all disclosed in `docs/privacy-policy-app.md`:
 
 1. **Daily install count** — a random per-install UUID (`services/identity/installId.ts`),
-   plus faculty, base programme code and platform as labels; nothing else derived from the
-   student. Deliberately counts installs, not people. The UUID is stable, so daily rows link
+   plus faculty, base programme code, platform and app version as labels; nothing else derived
+   from the student. Deliberately counts installs, not people. The UUID is stable, so daily rows link
    across days, and the same UUID is on the survey and the feature counters (4), so those rows
-   join per install to faculty, platform and programme. The policy says so; none of it carries
+   join per install to faculty, platform, programme and app version. The policy says so; none of it carries
    a name, student number or IS account.
 2. **Feedback the student typed** — via the `submit_suggestion` RPC (`src/api/suggestions.ts`),
    with screen name, app version, browser and viewport.

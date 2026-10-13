@@ -1,15 +1,25 @@
 name: Publish
 
-# NOT part of the release train any more. The train (test -> main -> a v* tag)
-# drives iOS only; the browser extension is published by running this workflow
-# by hand against a tag. The `push: tags` trigger was REMOVED on purpose: with
-# it, every iOS release tag also submitted the extension to three review queues,
-# and a store submission cannot be recalled.
+# Part of the release run: release-tag.yml -> ship.yml calls this for every
+# release. (It used to be a manual step after the iOS cut; the `push: tags`
+# trigger stays removed, because a tag pushed with GITHUB_TOKEN would not fire it
+# anyway and the coupling lives in ship.yml.)
 #
-# To publish the extension: Actions -> Publish -> Run workflow, using the tag as
-# both the ref and the `tag` input. Or:
+# To publish the extension on its own: Actions -> Publish -> Run workflow, using
+# the tag as both the ref and the `tag` input. Or:
 #   gh workflow run publish.yml --ref v5.1.1 -f tag=v5.1.1
 on:
+  # Also called by ship.yml, so a release run drives the extension too. A tag
+  # still never triggers it by itself.
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+      dry_run:
+        required: false
+        default: false
+        type: boolean
   workflow_dispatch:
     inputs:
       tag:
