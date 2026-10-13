@@ -17,6 +17,15 @@ export interface IskamLoginDeps {
   onDismissed(cb: () => void): Promise<ListenerHandle>;
   readCookies(): Promise<{ iskam: Record<string, string>; idp: Record<string, string> }>;
   save(jar: IskamJar): Promise<void>;
+  /**
+   * Drops webiskam's cookies from the WebView jar before the popup opens. The
+   * popup only opens once the stored login is known dead, and the jar can
+   * still hold that dead ticket: on Android it is shared with the app's native
+   * HTTP, and WebISKAM never deletes an expired ticket, it only redirects. Left
+   * there, the first page "found" it and the popup closed itself at once.
+   * alibaba's cookies stay: they hold the student's attribute-release consent.
+   */
+  forgetIskamCookies(): Promise<void>;
   close(): Promise<void>;
   /** Tests only. */
   firstLoadTimeoutMs?: number;
@@ -103,6 +112,7 @@ export function signInToIskam(deps: IskamLoginDeps): Promise<void> {
       try {
         loadHandle = await deps.onPageLoaded(onLoad);
         dismissHandle = await deps.onDismissed(() => fail(new LoginCancelledError()));
+        await deps.forgetIskamCookies();
         await deps.open();
       } catch (e) {
         fail(e);
@@ -136,6 +146,16 @@ export async function buildIskamLoginDeps(): Promise<IskamLoginDeps> {
     },
     save: async (jar) => {
       await saveJar(jar);
+    },
+    // Both jars, best-effort, as in signOut: CapacitorCookies reaches the
+    // process-wide jar on Android with no dialog open, InAppBrowser its own
+    // store on iOS 17+.
+    forgetIskamCookies: async () => {
+      const { CapacitorCookies } = await import('@capacitor/core');
+      await Promise.allSettled([
+        CapacitorCookies.clearCookies({ url: ISKAM_COOKIE_URL }),
+        InAppBrowser.clearCookies({ url: ISKAM_COOKIE_URL }),
+      ]);
     },
     close: async () => {
       await InAppBrowser.close();

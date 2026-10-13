@@ -21,6 +21,7 @@ function harness(cookies: Cookies[]) {
     }),
     readCookies: vi.fn(async (): Promise<Cookies> => reads.shift() ?? { iskam: {}, idp: {} }),
     save: vi.fn(async (_jar: IskamJar) => {}),
+    forgetIskamCookies: vi.fn(async () => {}),
     close: vi.fn(async () => {}),
     firstLoadTimeoutMs: 50,
   } satisfies IskamLoginDeps;
@@ -93,5 +94,33 @@ describe('signInToIskam', () => {
     await tick();
     h.load();
     await expect(done).resolves.toBeUndefined();
+  });
+
+  // Found on the Pixel, 2026-10-13: the WebView jar is shared with the app's
+  // native HTTP and still held the EXPIRED ticket. The first page of the popup
+  // (alibaba's password form) "found" it, the popup saved the dead jar and
+  // closed itself ~50 ms after opening — every tap on "Zobrazit zůstatek ISIC"
+  // looked like nothing happened.
+  it('forgets the stale webiskam cookies before opening, so an old ticket is not taken for a login', async () => {
+    let webviewJar: Record<string, string> = { '.ISKAMASPXAUTH': 'expired' };
+    const h = harness([]);
+    h.deps.forgetIskamCookies.mockImplementation(async () => {
+      webviewJar = {};
+    });
+    h.deps.readCookies.mockImplementation(async () => ({ iskam: webviewJar, idp: {} }));
+    const done = signInToIskam(h.deps);
+    await tick();
+    h.load(); // the password form
+    await tick();
+    expect(h.deps.close).not.toHaveBeenCalled();
+    webviewJar = { '.ISKAMASPXAUTH': 'fresh' }; // the student signs in
+    h.load();
+    await done;
+    expect(h.deps.save.mock.calls[0]![0].find((c) => c.name === '.ISKAMASPXAUTH')?.value).toBe(
+      'fresh'
+    );
+    expect(h.deps.forgetIskamCookies.mock.invocationCallOrder[0]).toBeLessThan(
+      h.deps.open.mock.invocationCallOrder[0]!
+    );
   });
 });
