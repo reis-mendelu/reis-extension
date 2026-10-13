@@ -39,7 +39,8 @@ export function assertJarUrl(url: string): URL {
   } catch {
     throw new Error('reIS: refusing an unparseable WebISKAM URL');
   }
-  if (u.protocol !== 'https:' || !ALLOWED_HOSTS.has(u.hostname)) {
+  // `u.port` too: hostname ignores it, and :8443 would be another service.
+  if (u.protocol !== 'https:' || u.port !== '' || !ALLOWED_HOSTS.has(u.hostname)) {
     throw new Error(`reIS: refusing to send WebISKAM cookies to ${u.origin}`);
   }
   return u;

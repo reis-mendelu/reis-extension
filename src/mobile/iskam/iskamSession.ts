@@ -28,7 +28,11 @@ export function isLiveKonta(res: IskamResponse): boolean {
 export function isAuthRedirect(res: IskamResponse): boolean {
   if (res.status < 300 || res.status >= 400 || !res.location) return false;
   const u = new URL(res.location);
-  return u.hostname === IDP_HOST || /^\/(Home\/Index|Prihlaseni|Shibboleth\.sso)/i.test(u.pathname);
+  // The path only means "log in again" on webiskam itself.
+  return (
+    u.hostname === IDP_HOST ||
+    (u.hostname === ISKAM_HOST && /^\/(Home\/Index|Prihlaseni|Shibboleth\.sso)/i.test(u.pathname))
+  );
 }
 
 type Outcome = 'ok' | 'dead' | 'unreachable';

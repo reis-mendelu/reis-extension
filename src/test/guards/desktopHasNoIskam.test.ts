@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { isTrustedHostOrigin } from '../../utils/trustedOrigin';
 
@@ -55,7 +55,7 @@ function walk(dir: string, out: string[] = []): string[] {
       if (e.name === '__tests__' || e.name === 'test') continue;
       walk(p, out);
     } else if (/\.tsx?$/.test(e.name) && !/\.test\.tsx?$/.test(e.name)) {
-      out.push(relative(root, p));
+      out.push(relative(root, p).split(sep).join('/'));
     }
   }
   return out;
@@ -75,7 +75,7 @@ function importClosure(entry: string): Set<string> {
     return null;
   };
   const visit = (file: string) => {
-    const r = relative(root, file);
+    const r = relative(root, file).split(sep).join('/');
     if (seen.has(r)) return;
     seen.add(r);
     for (const m of readFileSync(file, 'utf8').matchAll(

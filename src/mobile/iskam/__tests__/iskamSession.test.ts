@@ -279,4 +279,16 @@ describe('runSilentChain', () => {
     spy.mockRestore();
     expect(await loadJar()).toEqual(STORED);
   });
+
+  // PR #548 review: an auth-looking path is only auth on webiskam itself.
+  it('a redirect to /Home/Index on another host is not a lapsed login', async () => {
+    const { deps, calls } = http(() => ({
+      status: 302,
+      headers: { Location: 'https://example.org/Home/Index' },
+      data: '',
+    }));
+    expect((await runSilentChain(deps)).state).toBe('unreachable');
+    expect(calls).toEqual(['GET webiskam.mendelu.cz/Konta']);
+    expect(await loadJar()).toEqual(STORED);
+  });
 });

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { UtensilsCrossed } from 'lucide-react';
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
@@ -41,21 +41,20 @@ export function MenuSheet({ dayIso, onClose }: MenuSheetProps) {
   const picked = outlets.findIndex((o) => o.outlet === outletName);
   const safe = picked >= 0 ? picked : 0;
   const current = outlets[safe];
-  // The balance is never kept past the sheet: closing drops it, so the next
-  // open shows "checking", not a number from minutes ago.
-  const close = () => {
-    useIskamStore.getState().reset();
-    onClose();
-  };
+  // The balance is never kept past the sheet: leaving drops it, so the next
+  // open shows "checking", not a number from minutes ago. On unmount, not in
+  // onClose: Android back and a tab switch remove the sheet without calling it.
+  // A cleanup, not a fetch — the check itself starts from MenuCard's tap.
+  useEffect(() => () => useIskamStore.getState().reset(), []);
   return (
-    <Sheet size="content" onClose={close}>
+    <Sheet size="content" onClose={onClose}>
       <SheetHeader
         title={t('menu.title')}
         subtitle={formatHeaderDate(
           new Date(`${dayIso}T00:00:00`),
           language === 'cz' ? 'cs' : language
         )}
-        onClose={close}
+        onClose={onClose}
       />
       <IskamBalanceRow />
       {!current ? (

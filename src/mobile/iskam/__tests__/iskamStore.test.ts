@@ -260,4 +260,20 @@ describe('startTopUp', () => {
     expect(s().topUp).toBe('idle');
     expect(s().status).toBe('hidden');
   });
+
+  // PR #548 review: closing the sheet mid-payment used to let the post-payment
+  // check put the balance back into memory with nothing showing it.
+  it('closing the sheet during the payment skips the post-payment balance check', async () => {
+    let finishGateway!: () => void;
+    initTopUp.mockResolvedValue({ kind: 'ok', url: GATE });
+    openGateway.mockReturnValue(new Promise<void>((r) => (finishGateway = r)));
+    const p = s().startTopUp(10, 'card');
+    await new Promise((r) => setTimeout(r, 0));
+    s().reset();
+    finishGateway();
+    await p;
+    expect(runSilentChain).not.toHaveBeenCalled();
+    expect(s().balance).toBeNull();
+    expect(s().topUp).toBe('idle');
+  });
 });

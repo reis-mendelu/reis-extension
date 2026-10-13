@@ -42,6 +42,8 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 let seq = 0;
 /** Bumped by signOut(); a top-up that sees it change stops where it is. */
 let account = 0;
+/** Bumped by reset() (the sheet went away); a payment that sees it change skips its balance re-read. */
+let sheet = 0;
 
 function available(): boolean {
   if (isDemoMode()) return false;
@@ -130,6 +132,7 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
     set({ topUp: 'starting' });
     const before = get().balance?.amount ?? null;
     const mine = account;
+    const openSheet = sheet;
     const abandoned = () => mine !== account;
     try {
       const http = await buildIskamHttpDeps();
@@ -146,6 +149,12 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
       set({ topUp: 'paying' });
       await openGateway(init.url);
       if (abandoned()) return;
+      if (openSheet !== sheet) {
+        // The sheet closed while the student paid: nothing shows a balance now,
+        // so it is not fetched into memory. Reopening checks afresh.
+        set({ topUp: 'idle' });
+        return;
+      }
       // Still 'paying' through the re-checks: the form stays disabled until the
       // credit has had its chance to show, so a slow one cannot invite a
       // second order.
@@ -168,6 +177,7 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
 
   reset() {
     seq++;
+    sheet++;
     // A top-up already starting or on the payment page outlives the sheet:
     // clearing its phase here let a reopened sheet start a second payment.
     const inFlight = get().topUp === 'starting' || get().topUp === 'paying';

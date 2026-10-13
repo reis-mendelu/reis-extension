@@ -94,4 +94,10 @@ describe('iskamJar', () => {
     expect(cookieHeader(jar, 'https://alibaba.mendelu.cz/other', NOW)).toBe('');
     expect(cookieHeader(jar, 'https://alibaba.mendelu.cz/idp/x', NOW)).toBe('wide=1');
   });
+
+  // PR #548 review: hostname ignores the port, so :8443 was another service.
+  it('refuses the right host on another port', () => {
+    expect(() => assertJarUrl('https://webiskam.mendelu.cz:8443/Konta')).toThrow();
+    expect(() => assertJarUrl('https://alibaba.mendelu.cz:444/idp/x')).toThrow();
+  });
 });
