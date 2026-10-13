@@ -245,4 +245,19 @@ describe('startTopUp', () => {
     expect(s().topUp).toBe('idle');
     expect(openGateway).not.toHaveBeenCalled();
   });
+
+  // PR #548 review (CodeRabbit): a top-up in flight at sign-out must not go on
+  // to open the previous student's payment page or restore their balance.
+  it('sign-out abandons an in-flight top-up before it opens the gateway', async () => {
+    let finishInit!: (v: unknown) => void;
+    initTopUp.mockReturnValue(new Promise((r) => (finishInit = r)));
+    const p = s().startTopUp(10, 'card');
+    await new Promise((r) => setTimeout(r, 0));
+    s().signOut();
+    finishInit({ kind: 'ok', url: GATE });
+    await p;
+    expect(openGateway).not.toHaveBeenCalled();
+    expect(s().topUp).toBe('idle');
+    expect(s().status).toBe('hidden');
+  });
 });

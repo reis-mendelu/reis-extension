@@ -2,6 +2,13 @@ import { getPlatform } from '../../platform';
 import { isIskamCookie, type IskamJar } from './iskamJar';
 
 const KEY = 'reis.iskam.jar';
+/**
+ * A non-secret flag in plain `platform.storage`, set when a sign-out could not
+ * remove the jar from the secure store. While it is set the jar is treated as
+ * gone, so the next student on the device never gets the previous one's
+ * WebISKAM login; the next successful save or removal lifts it.
+ */
+const REVOKED = 'reis.iskam.revoked';
 
 /**
  * The ONLY module that writes the WebISKAM login to disk.
@@ -37,12 +44,16 @@ export function jarGeneration(): number {
  * landing must see the cleared store, not the jar it is about to delete.
  */
 export async function loadJar(): Promise<IskamJar> {
-  let raw: unknown;
-  try {
-    raw = await serialized(() => getPlatform().secureStorage.get(KEY));
-  } catch {
+  if (await isRevoked()) {
+    // Try the removal the sign-out could not do; the jar stays unusable either way.
+    await serialized(() => getPlatform().secureStorage.remove(KEY))
+      .then(() => liftRevocation())
+      .catch(() => undefined);
     return [];
   }
+  // A failed READ is not "no login" — the Keychain/Keystore may answer next
+  // time. It throws, and the chain reports unreachable instead of a popup.
+  const raw: unknown = await serialized(() => getPlatform().secureStorage.get(KEY));
   if (typeof raw !== 'string') return [];
   try {
     const parsed: unknown = JSON.parse(raw);
@@ -52,17 +63,42 @@ export async function loadJar(): Promise<IskamJar> {
   }
 }
 
+async function isRevoked(): Promise<boolean> {
+  try {
+    return (await getPlatform().storage.get(REVOKED)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+async function liftRevocation(): Promise<void> {
+  try {
+    await getPlatform().storage.remove(REVOKED);
+  } catch {
+    // The flag only ever errs towards "no login"; a stale one costs a sign-in.
+  }
+}
+
 export async function saveJar(jar: IskamJar, basedOn?: number): Promise<number | null> {
   if (basedOn !== undefined && basedOn !== generation) return null;
   const mine = ++generation;
   await serialized(() => getPlatform().secureStorage.set(KEY, JSON.stringify(jar)));
+  await liftRevocation();
   return mine;
 }
 
 export async function clearJar(basedOn?: number): Promise<boolean> {
   if (basedOn !== undefined && basedOn !== generation) return false;
   generation++;
-  await serialized(() => getPlatform().secureStorage.remove(KEY));
+  try {
+    await serialized(() => getPlatform().secureStorage.remove(KEY));
+  } catch (e) {
+    // Could not delete it: revoke it instead, then report the failure.
+    await getPlatform()
+      .storage.set(REVOKED, '1')
+      .catch(() => undefined);
+    throw e;
+  }
   return true;
 }
 

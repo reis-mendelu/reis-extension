@@ -12,7 +12,7 @@ vi.mock('@capacitor/core', async (orig) => ({
 vi.mock('@capgo/capacitor-inappbrowser', () => ({ InAppBrowser: { clearCookies: inAppClear } }));
 const clearJar = vi.fn(async () => true);
 vi.mock('../iskamCookieStore', () => ({ clearJar: () => clearJar() }));
-vi.mock('../iskamStore', () => ({ useIskamStore: { getState: () => ({ reset: vi.fn() }) } }));
+vi.mock('../iskamStore', () => ({ useIskamStore: { getState: () => ({ signOut: vi.fn() }) } }));
 
 import { clearIskam } from '../clearIskam';
 
@@ -33,5 +33,22 @@ describe('clearIskam', () => {
     clearJar.mockRejectedValueOnce(new Error('keystore'));
     await expect(clearIskam()).rejects.toThrow('keystore');
     expect(capClear).toHaveBeenCalled();
+  });
+
+  // PR #548 review (CodeRabbit): a native jar that could not be cleared is a
+  // failed sign-out step, reported, not a quiet success.
+  it('reports Android failing to empty the WebView jar', async () => {
+    platform = 'android';
+    capClearAll.mockRejectedValueOnce(new Error('no cookie manager'));
+    await expect(clearIskam()).rejects.toThrow('no cookie manager');
+  });
+
+  it('reports a WebISKAM URL that neither store could clear', async () => {
+    platform = 'ios';
+    capClear.mockRejectedValue(new Error('cap'));
+    inAppClear.mockRejectedValue(new Error('inapp'));
+    await expect(clearIskam()).rejects.toThrow();
+    capClear.mockReset();
+    inAppClear.mockReset();
   });
 });

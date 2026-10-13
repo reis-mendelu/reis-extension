@@ -22,6 +22,8 @@ export interface IskamState {
   signIn(): Promise<void>;
   startTopUp(amount: number, method: PayMethod): Promise<void>;
   reset(): void;
+  /** Sign-out: like reset, and also abandons a top-up in flight. */
+  signOut(): void;
 }
 
 /** One more look at the balance when it has not moved yet after the payment page closed. */
@@ -38,6 +40,8 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * never sees a number WebISKAM did not just confirm.
  */
 let seq = 0;
+/** Bumped by signOut(); a top-up that sees it change stops where it is. */
+let account = 0;
 
 function available(): boolean {
   if (isDemoMode()) return false;
@@ -125,6 +129,8 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
     if (phase === 'starting' || phase === 'paying' || !available()) return;
     set({ topUp: 'starting' });
     const before = get().balance?.amount ?? null;
+    const mine = account;
+    const abandoned = () => mine !== account;
     try {
       const http = await buildIskamHttpDeps();
       let init = await initTopUp(http, amount, method);
@@ -134,9 +140,12 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
         else if (chain.state === 'unreachable') throw new Error('WebISKAM unreachable');
         init = await initTopUp(http, amount, method);
       }
+      // Signed out meanwhile: never open the previous student's payment page.
+      if (abandoned()) return;
       if (init.kind !== 'ok') throw new Error(`top-up init: ${init.kind}`);
       set({ topUp: 'paying' });
       await openGateway(init.url);
+      if (abandoned()) return;
       // Still 'paying' through the re-checks: the form stays disabled until the
       // credit has had its chance to show, so a slow one cannot invite a
       // second order.
@@ -147,6 +156,7 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
       }
       set({ topUp: 'idle' });
     } catch (e) {
+      if (abandoned()) return;
       if (e instanceof LoginCancelledError) {
         set({ topUp: 'idle' });
         return;
@@ -167,5 +177,11 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
       signingIn: false,
       ...(inFlight ? {} : { topUp: 'idle' as const }),
     });
+  },
+
+  signOut() {
+    account++;
+    seq++;
+    set({ status: 'hidden', balance: null, signingIn: false, topUp: 'idle' });
   },
 }));

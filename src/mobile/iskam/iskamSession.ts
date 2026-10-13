@@ -112,7 +112,14 @@ async function reauthenticate(
  */
 export async function runSilentChain(http: IskamHttpDeps): Promise<ChainResult> {
   const gen = jarGeneration();
-  let jar = await loadJar();
+  let jar: IskamJar;
+  try {
+    jar = await loadJar();
+  } catch (e) {
+    // The Keychain/Keystore could not be READ: not proof there is no login.
+    logError('Iskam.loadJar', e);
+    return { state: 'unreachable' };
+  }
   if (jar.length === 0) return { state: 'dead' };
   try {
     let konta = await iskamHop(http, jar, KONTA);

@@ -3,19 +3,17 @@ import type { IskamHttpDeps, NativeHttpResponse } from '../iskamHttp';
 import type { IskamJar } from '../iskamJar';
 
 const store = new Map<string, unknown>();
+const secureStorage = {
+  get: async (k: string) => store.get(k),
+  set: async (k: string, v: unknown) => {
+    store.set(k, v);
+  },
+  remove: async (k: string) => {
+    store.delete(k);
+  },
+};
 vi.mock('../../../platform', () => ({
-  getPlatform: () => ({
-    kind: 'capacitor',
-    secureStorage: {
-      get: async (k: string) => store.get(k),
-      set: async (k: string, v: unknown) => {
-        store.set(k, v);
-      },
-      remove: async (k: string) => {
-        store.delete(k);
-      },
-    },
-  }),
+  getPlatform: () => ({ kind: 'capacitor', secureStorage }),
 }));
 vi.mock('../../../utils/reportError', () => ({ logError: vi.fn() }));
 
@@ -271,5 +269,14 @@ describe('runSilentChain', () => {
     });
     expect((await runSilentChain(deps)).state).toBe('unreachable');
     expect((await loadJar()).find((c) => c.name === 'shib_idp_session_ss')?.value).toBe('rot');
+  });
+
+  it('a secure-store read failure is unreachable, not signed out, and keeps the login', async () => {
+    const spy = vi.spyOn(secureStorage, 'get').mockRejectedValueOnce(new Error('keystore'));
+    const { deps, calls } = http(() => ({ status: 500 }));
+    expect((await runSilentChain(deps)).state).toBe('unreachable');
+    expect(calls).toEqual([]);
+    spy.mockRestore();
+    expect(await loadJar()).toEqual(STORED);
   });
 });

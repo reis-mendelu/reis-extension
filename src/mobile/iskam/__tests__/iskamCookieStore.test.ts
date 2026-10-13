@@ -10,8 +10,18 @@ const secureStorage = {
     store.delete(k);
   }),
 };
+const prefs = new Map<string, unknown>();
+const storage = {
+  get: vi.fn(async (k: string) => prefs.get(k)),
+  set: vi.fn(async (k: string, v: unknown): Promise<void> => {
+    prefs.set(k, v);
+  }),
+  remove: vi.fn(async (k: string): Promise<void> => {
+    prefs.delete(k);
+  }),
+};
 vi.mock('../../../platform', () => ({
-  getPlatform: () => ({ kind: 'capacitor', secureStorage }),
+  getPlatform: () => ({ kind: 'capacitor', secureStorage, storage }),
 }));
 
 import {
@@ -30,6 +40,7 @@ const JAR: IskamJar = [
 describe('iskamCookieStore', () => {
   beforeEach(() => {
     store.clear();
+    prefs.clear();
     vi.clearAllMocks();
     __resetIskamJarForTests();
   });
@@ -48,8 +59,6 @@ describe('iskamCookieStore', () => {
       'reis.iskam.jar',
       JSON.stringify([{ name: 'x', value: 'y', host: 'evil.example', path: '/', expires: null }])
     );
-    expect(await loadJar()).toEqual([]);
-    secureStorage.get.mockRejectedValueOnce(new Error('keystore'));
     expect(await loadJar()).toEqual([]);
   });
 
@@ -106,5 +115,24 @@ describe('iskamCookieStore', () => {
     release();
     await clearing;
     expect(await reading).toEqual([]);
+  });
+
+  // PR #548 review: a failed Keychain/Keystore READ is not "signed out" — the
+  // login may still be there. It throws, and the chain reports unreachable.
+  it('a secure-store read failure throws instead of reading as no login', async () => {
+    secureStorage.get.mockRejectedValueOnce(new Error('keystore'));
+    await expect(loadJar()).rejects.toThrow('keystore');
+  });
+
+  // PR #548 review (CodeRabbit): a sign-out whose remove fails must not leave
+  // the jar usable by the next student on the device.
+  it('a clear that fails still revokes the stored jar until a later save', async () => {
+    await saveJar(JAR);
+    secureStorage.remove.mockRejectedValueOnce(new Error('keystore'));
+    await expect(clearJar()).rejects.toThrow('keystore');
+    expect(store.has('reis.iskam.jar')).toBe(true);
+    expect(await loadJar()).toEqual([]);
+    await saveJar(JAR);
+    expect(await loadJar()).toEqual(JAR);
   });
 });

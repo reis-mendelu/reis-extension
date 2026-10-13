@@ -16,20 +16,36 @@ import { useIskamStore } from './iskamStore';
  * copies for the next student on the device.
  */
 export async function clearIskam(): Promise<void> {
-  useIskamStore.getState().reset();
-  try {
-    await clearJar();
-  } finally {
-    const [{ InAppBrowser }, { Capacitor, CapacitorCookies }] = await Promise.all([
-      import('@capgo/capacitor-inappbrowser'),
-      import('@capacitor/core'),
-    ]);
-    await Promise.allSettled([
-      ...(Capacitor.getPlatform() === 'android' ? [CapacitorCookies.clearAllCookies()] : []),
-      ...[ISKAM_COOKIE_URL, IDP_COOKIE_URL].flatMap((url) => [
-        InAppBrowser.clearCookies({ url }),
-        CapacitorCookies.clearCookies({ url }),
-      ]),
-    ]);
-  }
+  useIskamStore.getState().signOut();
+  // The native clears run whatever the secure store says; the first failure is
+  // reported afterwards (signOut logs it) rather than swallowed.
+  const jarError = await settle(clearJar());
+  const [{ InAppBrowser }, { Capacitor, CapacitorCookies }] = await Promise.all([
+    import('@capgo/capacitor-inappbrowser'),
+    import('@capacitor/core'),
+  ]);
+  const android = Capacitor.getPlatform() === 'android';
+  const [all, ...perUrl] = await Promise.all([
+    android ? settle(CapacitorCookies.clearAllCookies()) : Promise.resolve(null),
+    ...[ISKAM_COOKIE_URL, IDP_COOKIE_URL].map((url) =>
+      Promise.all([
+        settle(InAppBrowser.clearCookies({ url })),
+        settle(CapacitorCookies.clearCookies({ url })),
+      ])
+    ),
+  ]);
+  if (jarError) throw jarError;
+  // Android's whole jar must go (it also holds app-origin copies); per URL, one
+  // store succeeding is a normal sign-out (InAppBrowser rejects with no dialog).
+  if (all) throw all;
+  const stuck = perUrl.find((pair) => pair.every((err) => err !== null));
+  if (stuck) throw stuck[0];
+}
+
+/** The error a promise rejected with, or null. */
+function settle(p: Promise<unknown>): Promise<unknown> {
+  return p.then(
+    () => null,
+    (e: unknown) => e ?? new Error('cookie clear failed')
+  );
 }

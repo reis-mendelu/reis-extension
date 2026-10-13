@@ -140,6 +140,12 @@ export function signInToIskam(deps: IskamLoginDeps): Promise<void> {
         loadHandle = await deps.onPageLoaded(onLoad);
         dismissHandle = await deps.onDismissed(() => fail(new LoginCancelledError()));
         await deps.forgetIskamCookies();
+        // The deadline may have given up while setup was slow: no popup then,
+        // or it would sit open behind an "unavailable" row.
+        if (settled) {
+          await cleanup();
+          return;
+        }
         await deps.open();
       } catch (e) {
         fail(e);

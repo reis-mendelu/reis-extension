@@ -166,4 +166,23 @@ describe('signInToIskam', () => {
     await expect(done).rejects.toThrow('keystore');
     expect(h.deps.close).toHaveBeenCalled();
   });
+
+  // PR #548 review: when setup is slow, the deadline can reject first — the
+  // popup must then not open behind an "unavailable" row.
+  it('does not open the popup once the deadline has already given up', async () => {
+    const h = harness([]);
+    let releaseSetup!: () => void;
+    h.deps.onDismissed.mockImplementationOnce(
+      (cb: () => void) =>
+        new Promise((r) => {
+          releaseSetup = () => r({ remove: vi.fn(async () => {}) });
+          void cb;
+        })
+    );
+    const done = signInToIskam(h.deps);
+    await expect(done).rejects.toBeInstanceOf(LoginUnreachableError);
+    releaseSetup();
+    await tick();
+    expect(h.deps.open).not.toHaveBeenCalled();
+  });
 });
