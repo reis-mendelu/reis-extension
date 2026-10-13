@@ -71,6 +71,17 @@ course-difficulty statistics; no identifier is sent, though the set of subjects
 requested does reveal which courses you take. **Supabase** hosts reIS's own
 database — infrastructure, not a recipient doing anything of its own.
 
+**WebISKAM** (the university's accommodation and canteen system) receives, only
+in the mobile app (Android, iPhone, iPad) and only when you ask for your ISIC
+balance or a top-up, the MENDELU sign-in you make on MENDELU's own page — your
+password goes to MENDELU, never to reIS. reIS keeps the sign-in encrypted on your
+device; while you are signed in the device's own web-cookie store holds it too,
+like any browser, and signing out deletes both. The balance is shown, never
+stored. A top-up sends WebISKAM the amount you typed and whether you chose card or
+Google Pay, so it can create the payment; it then opens **GoPay**'s payment page
+in your device's browser view, and your card or Google Pay details go to GoPay
+and never to reIS.
+
 We do **not** sell or trade your personal information, and transfer it to no one
 else.
 
@@ -98,9 +109,11 @@ and we will delete it; the daily-count rows hold nothing that identifies you.
 ## Changes
 
 We may update this policy; changes appear here with a new date. Google Drive
-backup, Outlook calendar sync, WebISKAM, library study-room booking, AI syllabus
-comparison and automatic error reporting have all been removed from reIS, along
-with everything they sent.
+backup, Outlook calendar sync, the earlier WebISKAM integration (dorm, meals and
+the rest), library study-room booking, AI syllabus comparison and automatic error
+reporting have all been removed from reIS, along with everything they sent. In
+October 2026 WebISKAM came back for one thing only — the ISIC balance and its
+top-up, described above.
 
 ## Contact
 
