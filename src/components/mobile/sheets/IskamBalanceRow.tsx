@@ -3,6 +3,14 @@ import { CreditCard } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useIskamStore } from '../../../mobile/iskam/iskamStore';
 
+/** In the APP's language — WebISKAM's own text follows the phone's instead. */
+function formatKc(amount: number, language: string): string {
+  return new Intl.NumberFormat(language === 'cz' ? 'cs-CZ' : 'en-GB', {
+    style: 'currency',
+    currency: 'CZK',
+  }).format(amount);
+}
+
 /**
  * The ISIC Hlavní konto balance, at the top of the jídelníček sheet.
  *
@@ -12,7 +20,7 @@ import { useIskamStore } from '../../../mobile/iskam/iskamStore';
  * src/test/guards/desktopHasNoIskam.test.ts.
  */
 export function IskamBalanceRow() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const status = useIskamStore((s) => s.status);
   const balance = useIskamStore((s) => s.balance);
   const signingIn = useIskamStore((s) => s.signingIn);
@@ -57,8 +65,11 @@ export function IskamBalanceRow() {
           />
         )}
         {canTopUp && (
-          <span className="whitespace-nowrap text-md font-bold text-base-content">
-            {balance.text}
+          <span
+            data-testid="iskam-amount"
+            className="whitespace-nowrap text-md font-bold text-base-content"
+          >
+            {formatKc(balance.amount, language)}
           </span>
         )}
         <button

@@ -37,7 +37,7 @@ describe('useIskamStore', () => {
     expect(s().status).toBe('checking');
     await p;
     expect(s().status).toBe('balance');
-    expect(s().balance).toEqual({ amount: 245, text: '245,00 Kč' });
+    expect(s().balance).toEqual({ amount: 245 });
   });
 
   it.each([

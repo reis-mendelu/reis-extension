@@ -43,10 +43,20 @@ describe('IskamBalanceRow', () => {
   });
 
   it('balance: the amount and an enabled Dobít', () => {
-    setState({ status: 'balance', balance: { amount: 245, text: '245,00 Kč' } });
+    setState({ status: 'balance', balance: { amount: 1234.5 } });
     render(<IskamBalanceRow />);
-    expect(screen.getByText('245,00 Kč')).toBeInTheDocument();
+    expect(screen.getByTestId('iskam-amount').textContent?.replace(/\s/g, ' ')).toBe('1 234,50 Kč');
     expect(screen.getByRole('button', { name: 'Dobít' })).toBeEnabled();
+  });
+
+  // The amount is formatted in the APP's language, never copied from the page:
+  // WebISKAM answers in the phone's language, so a Czech UI would otherwise show
+  // "1,234.50 Kč" to a student whose phone is set to English.
+  it('formats the amount in the app language, not the page language', () => {
+    useAppStore.setState({ language: 'en' } as never);
+    setState({ status: 'balance', balance: { amount: 1234.5 } });
+    render(<IskamBalanceRow />);
+    expect(screen.getByTestId('iskam-amount')).toHaveTextContent(/1,234\.50/);
   });
 
   it('unavailable: a retry, no amount, Dobít disabled', () => {

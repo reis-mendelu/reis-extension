@@ -11,7 +11,7 @@ const row = (name: string, amount: string, href = '') =>
 
 describe('parseHlavniKonto', () => {
   it('reads the Hlavní konto row by its NabitiKonta/0 link, with an NBSP thousands separator', () => {
-    expect(parseHlavniKonto(fixture)).toEqual({ amount: 1234.56, text: '1 234,56 Kč' });
+    expect(parseHlavniKonto(fixture)).toEqual({ amount: 1234.56 });
   });
 
   it('finds the row by link even when the name is translated', () => {
@@ -22,6 +22,23 @@ describe('parseHlavniKonto', () => {
 
   it('falls back to the name when the top-up link is missing', () => {
     expect(parseHlavniKonto(row('Hlavní konto', '0 Kč'))?.amount).toBe(0);
+  });
+
+  // Measured on a Pixel 9a, 2026-10-13: a phone set to English gets WebISKAM in
+  // English (`<html lang="en">`, "Main account"), and the amount comes as
+  // "N,NNN.NN Kč" — comma thousands, dot decimals. Read as Czech, that was null.
+  it('reads the English page, where the comma is the thousands separator', () => {
+    const en = (amount: string) =>
+      `<html lang="en"><body>${row('Main account', amount, '/Platby/NabitiKonta/0')}</body></html>`;
+    expect(parseHlavniKonto(en('1,234.56 Kč'))?.amount).toBe(1234.56);
+    expect(parseHlavniKonto(en('5,000 Kč'))?.amount).toBe(5000);
+    expect(parseHlavniKonto(en('-12.00 Kč'))?.amount).toBe(-12);
+    expect(parseHlavniKonto(en('0 Kč'))?.amount).toBe(0);
+  });
+
+  it('reads a Czech page as Czech even when it says so explicitly', () => {
+    const cs = `<html lang="cs"><body>${row('Hlavní konto', '1 234,56 Kč', '/Platby/NabitiKonta/0')}</body></html>`;
+    expect(parseHlavniKonto(cs)?.amount).toBe(1234.56);
   });
 
   it('reads a negative balance', () => {
