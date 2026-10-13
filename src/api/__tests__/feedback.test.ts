@@ -3,7 +3,8 @@ import { useAppStore } from '../../store/useAppStore';
 
 // Hoisted so the vi.mock factories below (which vitest hoists above these
 // imports) can close over it without a temporal-dead-zone error.
-const { hasDataConsent, rpc, getUserParams, isHarnessEnabled } = vi.hoisted(() => ({
+const { hasDataConsent, rpc, getUserParams, isHarnessEnabled, getAppVersion } = vi.hoisted(() => ({
+  getAppVersion: vi.fn<() => string>(() => '5.4.1'),
   isHarnessEnabled: vi.fn<(...args: unknown[]) => boolean>(() => false),
   hasDataConsent: vi.fn<(...args: unknown[]) => Promise<boolean>>(async () => true),
   rpc: vi.fn<(...args: unknown[]) => Promise<{ error: { message: string } | null }>>(async () => ({
@@ -31,6 +32,9 @@ vi.mock('../../platform', () => ({
 }));
 vi.mock('../../utils/userParams', () => ({
   getUserParams,
+}));
+vi.mock('../../utils/appIdentity', () => ({
+  getAppVersion: () => getAppVersion(),
 }));
 // A real student's build, unless a test says otherwise. Mocked rather than
 // stubbed through `import.meta.env`, because vitest itself runs with DEV true —
@@ -102,6 +106,7 @@ describe('feedback', () => {
       p_faculty: 'PEF',
       p_platform: 'extension',
       p_programme: null,
+      p_app_version: '5.4.1',
     });
   });
 
@@ -121,7 +126,22 @@ describe('feedback', () => {
       p_faculty: 'PEF',
       p_platform: 'extension',
       p_programme: 'B-OI',
+      p_app_version: '5.4.1',
     });
+  });
+
+  // The release a device runs is one more GROUP label: every install of a
+  // release reports the same string, so it says which build, not who.
+  // '0.0.0' is getAppVersion's "unknown" fallback, never a shipped release.
+  it('sends null instead of the unknown-version fallback', async () => {
+    getAppVersion.mockReturnValueOnce('0.0.0');
+
+    await trackDailyUsage();
+
+    expect(rpc).toHaveBeenCalledWith(
+      'track_daily_usage',
+      expect.objectContaining({ p_app_version: null })
+    );
   });
 
   // getUserParams()?.facultyId is always '' (see fetchers.ts); the acronym
@@ -137,6 +157,7 @@ describe('feedback', () => {
       p_faculty: null,
       p_platform: 'extension',
       p_programme: null,
+      p_app_version: '5.4.1',
     });
   });
 
