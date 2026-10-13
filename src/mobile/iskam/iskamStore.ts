@@ -155,6 +155,14 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
 
   reset() {
     seq++;
-    set({ status: 'hidden', balance: null, signingIn: false, topUp: 'idle' });
+    // A top-up already starting or on the payment page outlives the sheet:
+    // clearing its phase here let a reopened sheet start a second payment.
+    const inFlight = get().topUp === 'starting' || get().topUp === 'paying';
+    set({
+      status: 'hidden',
+      balance: null,
+      signingIn: false,
+      ...(inFlight ? {} : { topUp: 'idle' as const }),
+    });
   },
 }));

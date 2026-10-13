@@ -41,6 +41,22 @@ describe('parseHlavniKonto', () => {
     expect(parseHlavniKonto(cs)?.amount).toBe(1234.56);
   });
 
+  // Review finding I1: with a format-agnostic pattern, a page whose lang and
+  // number format disagreed read "5,000 Kč" as 5 and "234,56 Kč" as 23456 —
+  // a wrong number beside a Dobít button. Each format now matches only itself;
+  // anything ambiguous is null ("unavailable"), never a guess.
+  it('returns null, never a wrong number, when the format does not match the page language', () => {
+    const page = (lang: string, amount: string) =>
+      `<html lang="${lang}"><body>${row('x', amount, '/Platby/NabitiKonta/0')}</body></html>`;
+    expect(parseHlavniKonto(page('cs', '5,000 Kč'))).toBeNull();
+    expect(parseHlavniKonto(page('cs', '1,234 Kč'))).toBeNull();
+    expect(parseHlavniKonto(page('en', '234,56 Kč'))).toBeNull();
+    expect(parseHlavniKonto(page('en', '12,00 Kč'))).toBeNull();
+    expect(parseHlavniKonto(page('en', '1 234.56 Kč'))).toBeNull();
+    expect(parseHlavniKonto(page('cs', '5 000 Kč'))?.amount).toBe(5000);
+    expect(parseHlavniKonto(page('en', '12.5 Kč'))?.amount).toBe(12.5);
+  });
+
   it('reads a negative balance', () => {
     expect(
       parseHlavniKonto(row('Hlavní konto', '-12,00 Kč', '/Platby/NabitiKonta/0'))?.amount

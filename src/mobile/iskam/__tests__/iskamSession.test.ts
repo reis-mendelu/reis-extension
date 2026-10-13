@@ -202,4 +202,53 @@ describe('runSilentChain', () => {
     await runSilentChain(deps);
     expect(await loadJar()).toEqual([]);
   });
+
+  // Review finding I4: a Set-Cookie that DELETES the ticket used to count as a
+  // new one, so the chain said "ok", /Konta 302'd, and the result was
+  // "unreachable" forever — the IdP leg was never tried.
+  it('a Set-Cookie that deletes the ticket is not a new ticket: the chain goes on to the IdP', async () => {
+    let konta = 0;
+    let authShibb = 0;
+    const { deps, calls } = http((url, method) => {
+      const u = new URL(url);
+      if (u.pathname === '/Konta')
+        return konta++ === 0 ? toHomeIndex : { status: 200, data: KONTA_OK };
+      if (u.pathname === '/Prihlaseni/AuthShibb')
+        return authShibb++ === 0
+          ? {
+              status: 302,
+              headers: {
+                'Set-Cookie': '.ISKAMASPXAUTH=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/',
+                Location: 'https://alibaba.mendelu.cz/idp/profile/SAML2/Redirect/SSO',
+              },
+              data: '',
+            }
+          : {
+              status: 302,
+              headers: { 'Set-Cookie': '.ISKAMASPXAUTH=new; path=/', Location: '/' },
+              data: '',
+            };
+      if (u.host === 'alibaba.mendelu.cz') return { status: 200, data: SAML };
+      if (method === 'POST')
+        return { status: 302, headers: { Location: '/Prihlaseni/AuthShibb' }, data: '' };
+      return { status: 500 };
+    });
+    expect((await runSilentChain(deps)).state).toBe('live');
+    expect(calls).toContain('GET alibaba.mendelu.cz/idp/profile/SAML2/Redirect/SSO');
+  });
+
+  // Review finding M1: alibaba re-asks attribute consent when the attributes
+  // change. That page has a form but no SAML response and no password field;
+  // it used to be "unreachable" (retry only), which no retry could fix.
+  it('an IdP page that needs the student (consent) sends them to the popup', async () => {
+    const CONSENT = `<form method="post"><input type="hidden" name="_shib_idp_consentIds" value="mail"/><button name="_eventId_proceed">OK</button></form>`;
+    const { deps } = http((url) => {
+      const u = new URL(url);
+      if (u.pathname === '/Konta') return toHomeIndex;
+      if (u.pathname === '/Prihlaseni/AuthShibb')
+        return { status: 302, headers: { Location: 'https://alibaba.mendelu.cz/idp/x' }, data: '' };
+      return { status: 200, data: CONSENT };
+    });
+    expect((await runSilentChain(deps)).state).toBe('dead');
+  });
 });

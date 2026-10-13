@@ -23,8 +23,11 @@ export interface KontoBalance {
 const ROW = '.vyskaRiadkuKonto';
 const MAIN_TOP_UP = /\/Platby\/NabitiKonta\/0(?:$|[?#])/;
 const MAIN_NAME = /^(Hlavní konto|Main account)$/i;
-const AMOUNT_CS = /^(-?\d[\d\s]*(?:,\d+)?)\s*Kč$/;
-const AMOUNT_EN = /^(-?\d[\d,]*(?:\.\d+)?)\s*Kč$/;
+// Structurally strict, so a string matches at most one of the two: thousands
+// groups of exactly three, at most two decimals. A page whose language and
+// number format disagree yields null ("unavailable"), never a number 100× off.
+const AMOUNT_CS = /^(-?(?:\d{1,3}(?:\s\d{3})+|\d+)(?:,\d{1,2})?)\s*Kč$/;
+const AMOUNT_EN = /^(-?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s*Kč$/;
 
 export function parseHlavniKonto(html: string): KontoBalance | null {
   const doc = new DOMParser().parseFromString(html, 'text/html');

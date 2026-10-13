@@ -62,9 +62,10 @@ function bodyText(data: unknown): string {
  * Cookie delivery is the split `api/capacitorTransport.ts` measured on device
  * for IS, and it is not to be unified: iOS needs the explicit header (seeding
  * alone 403'd); Android ignores a hand-set header and needs the native jar
- * seeded. Seeded WITHOUT an expiry, so the WebView never writes the 1-year
- * `shib_idp_persistent_ss` into its plaintext cookie database — the real
- * expiry is kept in secure storage. The header goes LAST so a caller cannot
+ * seeded. The secure jar is the copy reIS keeps; the native stores also keep
+ * what they see (Android's CookieHandler writes every response cookie into the
+ * WebView jar, iOS URLSession into HTTPCookieStorage), which is why sign-out
+ * clears them too (clearIskam). The header goes LAST so a caller cannot
  * replace it.
  */
 export async function iskamHop(

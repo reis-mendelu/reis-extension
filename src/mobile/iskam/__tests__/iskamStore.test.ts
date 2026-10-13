@@ -37,6 +37,8 @@ describe('useIskamStore', () => {
     platformKind = 'capacitor';
     demo = false;
     s().reset();
+    // reset() keeps an in-flight top-up on purpose; a test's never-ending one must not leak.
+    useIskamStore.setState({ topUp: 'idle' });
   });
 
   it('shows the balance when the chain is live', async () => {
@@ -151,6 +153,8 @@ describe('startTopUp', () => {
     platformKind = 'capacitor';
     demo = false;
     s().reset();
+    // reset() keeps an in-flight top-up on purpose; a test's never-ending one must not leak.
+    useIskamStore.setState({ topUp: 'idle' });
   });
 
   it('opens the gateway, then re-reads the balance once the browser closes', async () => {
@@ -211,6 +215,18 @@ describe('startTopUp', () => {
   it('ignores a second startTopUp while the first is starting (double tap)', async () => {
     initTopUp.mockReturnValue(new Promise(() => {}));
     void s().startTopUp(10, 'card');
+    void s().startTopUp(10, 'card');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(initTopUp).toHaveBeenCalledTimes(1);
+  });
+
+  // Review finding I3: closing the sheet (reset) mid-start used to clear the
+  // in-flight guard, so reopening and paying again sent a second init.
+  it('closing and reopening the sheet mid-start does not start a second payment', async () => {
+    initTopUp.mockReturnValue(new Promise(() => {}));
+    void s().startTopUp(10, 'card');
+    await new Promise((r) => setTimeout(r, 0));
+    s().reset();
     void s().startTopUp(10, 'card');
     await new Promise((r) => setTimeout(r, 0));
     expect(initTopUp).toHaveBeenCalledTimes(1);

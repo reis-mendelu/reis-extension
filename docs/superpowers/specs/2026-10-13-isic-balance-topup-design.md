@@ -101,7 +101,7 @@ the webiskam origin is **rejected** by `trustedOrigin.ts` stays as it is.
 |---|---|---|
 | `iskamJar.ts` (pure) | Cookie records `{name, value, host, path, expires}`; `Set-Cookie` parsing (handles the ", " join, including commas inside `Expires`); `Cookie` header for a URL. Webiskam cookies only to `webiskam.mendelu.cz`, alibaba cookies only to `alibaba.mendelu.cz` under `/idp`; any other host throws. | nothing |
 | `iskamCookieStore.ts` | The ONLY writer of the jar to `platform.secureStorage` (one JSON entry). Copies `tokenStore`'s ordering guarantees: generation counter, one serialized write lane, a clear wins over a write that lands after it, read de-duplication. | `platform`, `iskamJar` |
-| `iskamHttp.ts` | One request, `disableRedirects: true`, returns `{status, location, setCookies, body}`. Cookie delivery mirrors the measured split in `api/capacitorTransport.ts`: explicit `Cookie` header on iOS; seeded native jar on Android (seeded as **session** cookies, so the WebView never persists `shib_idp_persistent_ss` to its plaintext cookie DB). `Set-Cookie` is folded back into the JS jar on both. | `@capacitor/core`, `iskamJar` |
+| `iskamHttp.ts` | One request, `disableRedirects: true`, returns `{status, location, setCookies, body}`. Cookie delivery mirrors the measured split in `api/capacitorTransport.ts`: explicit `Cookie` header on iOS; seeded native jar on Android. `Set-Cookie` is folded back into the JS jar on both. The native stores also keep the cookies they see (Android's Capacitor CookieHandler writes every response cookie into the WebView jar, iOS URLSession into HTTPCookieStorage); sign-out clears them (final review, I2). | `@capacitor/core`, `iskamJar` |
 | `iskamSession.ts` | The silent chain (below). Returns `live` / `dead` / `unreachable`. | `iskamHttp`, `iskamCookieStore` |
 | `iskamLogin.ts` | The popup: `InAppBrowser.openWebView` on `AuthShibb`; a copy of `ensureSession`'s contract (poll cookies on each page load, reject on dismiss, first-load deadline). Reads `getCookies` for `https://webiskam.mendelu.cz/` and `https://alibaba.mendelu.cz/idp/` (path-scoped). No `clearCookiesOnOpen`. | InAppBrowser (lazy import), `iskamCookieStore` |
 | `iskamApi.ts` | `fetchHlavniKonto()` (`/Konta` → `{balance, raw}`) and `initTopUp(amount, method)` (`InitGopayPayment` → validated gateway URL). | `iskamHttp` |
@@ -175,8 +175,9 @@ On a pay button:
 
 ## Privacy and isolation
 
-- Cookies only in `secureStorage` (Keychain / Keystore AES-GCM); never in
-  Preferences, IndexedDB or logs. `logError` contexts carry no cookie or balance.
+- reIS keeps the cookies in `secureStorage` (Keychain / Keystore AES-GCM), never in
+  Preferences, IndexedDB or logs; the system web-cookie stores also hold the
+  session while the student is signed in, and sign-out clears them. `logError` contexts carry no cookie or balance.
 - The balance is memory-only and never persisted.
 - Card / Google Pay data is entered on GoPay's page in the system browser view;
   reIS sees only the gateway URL.

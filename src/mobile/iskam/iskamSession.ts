@@ -1,7 +1,15 @@
 import { logError } from '../../utils/reportError';
 import { clearJar, jarGeneration, loadJar, saveJar } from './iskamCookieStore';
 import { iskamHop, type IskamHttpDeps, type IskamResponse } from './iskamHttp';
-import { IDP_HOST, ISKAM_HOST, ISKAM_ORIGIN, TICKET_COOKIE, type IskamJar } from './iskamJar';
+import {
+  IDP_HOST,
+  ISKAM_COOKIE_URL,
+  ISKAM_HOST,
+  ISKAM_ORIGIN,
+  TICKET_COOKIE,
+  cookiesFor,
+  type IskamJar,
+} from './iskamJar';
 import { findSamlPostForm, hasPasswordForm } from './samlForm';
 
 export type ChainResult =
@@ -25,6 +33,10 @@ export function isAuthRedirect(res: IskamResponse): boolean {
 
 type Outcome = 'ok' | 'dead' | 'unreachable';
 
+function ticketOf(jar: IskamJar): string | null {
+  return cookiesFor(jar, ISKAM_COOKIE_URL).find((c) => c.name === TICKET_COOKIE)?.value ?? null;
+}
+
 /**
  * AuthShibb, and wherever it leads, until webiskam issues a ticket.
  *
@@ -43,12 +55,16 @@ async function reauthenticate(
     url: AUTH_SHIBB,
     method: 'GET',
   };
+  const ticketBefore = ticketOf(jar);
   for (let i = 0; i < MAX_HOPS; i++) {
     const hop = await iskamHop(http, jar, req.url, { method: req.method, body: req.body });
     jar = hop.jar;
     const { res } = hop;
     const host = new URL(res.url).hostname;
-    if (host === ISKAM_HOST && res.setCookieNames.includes(TICKET_COOKIE)) {
+    // A NEW ticket, not just a Set-Cookie naming it: a deleting one
+    // (`.ISKAMASPXAUTH=; expires=<past>`) also names it.
+    const after = ticketOf(jar);
+    if (host === ISKAM_HOST && after !== null && after !== ticketBefore) {
       return { jar, outcome: 'ok' };
     }
     if (res.status >= 300 && res.status < 400 && res.location) {
@@ -64,7 +80,9 @@ async function reauthenticate(
         req = { url: form.action, method: 'POST', body: form.body };
         continue;
       }
-      if (form) return { jar, outcome: 'dead' };
+      // A form that is neither — attribute consent asked again, a notice — is
+      // a page for the student, so the popup, not a retry that cannot help.
+      if (form || /<form\b/i.test(res.body)) return { jar, outcome: 'dead' };
     }
     // A 5xx, an IdP error page, something new: not proof the login is gone.
     return { jar, outcome: 'unreachable' };
