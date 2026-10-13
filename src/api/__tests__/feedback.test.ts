@@ -13,9 +13,17 @@ const { hasDataConsent, rpc, getUserParams, isHarnessEnabled, getAppVersion } = 
   // Real shape: `facultyId` is always '' (see src/utils/userParams/fetchers.ts);
   // the faculty acronym ('PEF', 'AF', ...) lives in `facultyLabel`, optional
   // exactly like the real UserParams type.
+  // `studentId` is what says IS has named a student on this device; it is
+  // read as a gate and never sent.
   getUserParams: vi.fn<
-    () => Promise<{ facultyLabel?: string; facultyId: string; studyProgram?: string }>
+    () => Promise<{
+      studentId?: string;
+      facultyLabel?: string;
+      facultyId: string;
+      studyProgram?: string;
+    } | null>
   >(async () => ({
+    studentId: '123456',
     facultyLabel: 'PEF',
     facultyId: '',
   })),
@@ -114,6 +122,7 @@ describe('feedback', () => {
   // the specialisation suffix, and never sent with anything else.
   it('sends the base programme code beside the faculty', async () => {
     getUserParams.mockResolvedValueOnce({
+      studentId: '123456',
       facultyLabel: 'PEF',
       facultyId: '',
       studyProgram: 'B-OI-ZBOI',
@@ -148,7 +157,7 @@ describe('feedback', () => {
   // lives in facultyLabel. A student with no label yet (params not hydrated,
   // or the field genuinely missing) must send NULL, never ''.
   it('sends a null faculty when facultyLabel is missing', async () => {
-    getUserParams.mockResolvedValueOnce({ facultyId: '' });
+    getUserParams.mockResolvedValueOnce({ studentId: '123456', facultyId: '' });
 
     await trackDailyUsage();
 
@@ -191,12 +200,54 @@ describe('feedback', () => {
   // `initializeStore()` runs from a bare `useEffect(..., [])` under
   // <StrictMode>, which double-invokes effects in development. That turned one
   // boot into two RPCs and left `open_count` at roughly twice the real number.
-  // One write per page session, so a boot is a boot whatever the build does.
-  it('writes at most once per page session', async () => {
+  // The app's resume handler calls this too, on every return to the app, so a
+  // session writes once per day it is used, however often it is reopened.
+  it('writes at most once per day in a session', async () => {
     await trackDailyUsage();
     await trackDailyUsage();
 
     expect(rpc).toHaveBeenCalledTimes(1);
+  });
+
+  // The phone app lives in the background for days, and only a cold start
+  // used to count, so a student who switched back to reIS every morning was
+  // counted on the day iOS last killed it. A new day in the same session
+  // counts again. The day is Prague's, as the server stamps usage_date:
+  // 22:30 UTC is already tomorrow in Brno in October.
+  describe('across midnight in Prague', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('writes again once the Prague day changes, even when the UTC day has not', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-10-13T21:30:00Z')); // 23:30 in Prague
+      await trackDailyUsage();
+      vi.setSystemTime(new Date('2026-10-13T21:59:00Z')); // 23:59, same day
+      await trackDailyUsage();
+      vi.setSystemTime(new Date('2026-10-13T22:30:00Z')); // 00:30 on the 14th
+      await trackDailyUsage();
+
+      expect(rpc).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  // The phone counts a device only after the IS login; the extension ran for
+  // anyone on is.mendelu.cz, and 47 devices that never named a student (staff,
+  // mostly seen once) sat in the console's totals. No student on the device,
+  // no row. The student number is the gate and is never part of the payload.
+  it('writes nothing until IS has named a student on this device', async () => {
+    getUserParams.mockResolvedValueOnce(null);
+    getUserParams.mockResolvedValueOnce({ facultyId: '', facultyLabel: 'PEF' });
+
+    await trackDailyUsage();
+    await trackDailyUsage();
+    expect(rpc).not.toHaveBeenCalled();
+
+    // Not latched: once IS names the student, the same day still counts.
+    await trackDailyUsage();
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(rpc.mock.calls[0])).not.toContain('123456');
   });
 });
 
@@ -214,7 +265,7 @@ describe('feedback — no student identity leaves the device', () => {
   });
 
   it('does not count this install on Firefox while the technical-data toggle is off', async () => {
-    // This describe block does not reset the once-per-session memo.
+    // This describe block does not reset the once-per-day memo.
     __resetUsageTrackedForTests();
     hasDataConsent.mockResolvedValue(false);
     await trackDailyUsage();
