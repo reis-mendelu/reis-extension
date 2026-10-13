@@ -37,9 +37,9 @@ export function IskamTopUpForm() {
           onChange={(e) => setText(e.target.value)}
         />
       </label>
-      {invalid && <p className="text-2sm text-error">{t('iskam.invalid')}</p>}
+      {invalid && <p className="text-2sm text-[var(--tone-error)]">{t('iskam.invalid')}</p>}
       {phase === 'failed' && (
-        <p role="alert" className="text-2sm text-error">
+        <p role="alert" className="text-2sm text-[var(--tone-error)]">
           {t('iskam.failed')}
         </p>
       )}

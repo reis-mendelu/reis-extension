@@ -39,7 +39,7 @@ export function IskamBalanceRow() {
         {status === 'signed-out' ? (
           <button
             type="button"
-            className="min-w-0 flex-1 truncate text-left text-md font-bold text-primary"
+            className="min-w-0 flex-1 text-left text-md font-bold leading-snug text-[var(--tone-primary)]"
             disabled={signingIn}
             onClick={() => void useIskamStore.getState().signIn()}
           >
@@ -48,29 +48,30 @@ export function IskamBalanceRow() {
         ) : status === 'unavailable' ? (
           <button
             type="button"
-            className="min-w-0 flex-1 truncate text-left text-md text-base-content/70"
+            className="min-w-0 flex-1 text-left text-md leading-snug text-base-content/70"
             onClick={() => void useIskamStore.getState().check()}
           >
             {t('iskam.unavailable')}
           </button>
         ) : (
-          <span className="min-w-0 flex-1 truncate text-md font-bold text-base-content">
-            {t('iskam.label')}
-          </span>
-        )}
-        {status === 'checking' && (
-          <span
-            data-testid="iskam-skeleton"
-            className="skeleton h-4 w-16"
-            aria-label={t('iskam.checking')}
-          />
-        )}
-        {canTopUp && (
-          <span
-            data-testid="iskam-amount"
-            className="whitespace-nowrap text-md font-bold text-base-content"
-          >
-            {formatKc(balance.amount, language)}
+          // Label over amount, as MenuCard stacks title over summary: on one
+          // line, 320px cut the label to "ISIC · …" and lost which account.
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="truncate text-2sm text-base-content/70">{t('iskam.label')}</span>
+            {canTopUp ? (
+              <span
+                data-testid="iskam-amount"
+                className="truncate text-md font-bold text-base-content"
+              >
+                {formatKc(balance.amount, language)}
+              </span>
+            ) : (
+              <span
+                data-testid="iskam-skeleton"
+                className="skeleton my-0.5 h-4 w-24"
+                aria-label={t('iskam.checking')}
+              />
+            )}
           </span>
         )}
         <button

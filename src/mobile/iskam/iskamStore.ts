@@ -48,6 +48,22 @@ function available(): boolean {
   }
 }
 
+/**
+ * `?iskam=balance|signed-out|checking|unavailable` on the dev webapp, and
+ * nothing anywhere else — `import.meta.env.DEV` strips it from every shipped
+ * build, like `?eduroam=` in eduroamNative. The row is Capacitor-gated, so
+ * without this verify-ui could only ever report it absent.
+ */
+function devForcedState(): Pick<IskamState, 'status' | 'balance'> | null {
+  if (!import.meta.env.DEV || typeof window === 'undefined') return null;
+  const v = new URLSearchParams(window.location.search).get('iskam');
+  if (v === 'balance') return { status: 'balance', balance: { amount: 2825.58 } };
+  if (v === 'signed-out' || v === 'checking' || v === 'unavailable') {
+    return { status: v, balance: null };
+  }
+  return null;
+}
+
 function fromChain(r: ChainResult): Pick<IskamState, 'status' | 'balance'> {
   if (r.state === 'dead') return { status: 'signed-out', balance: null };
   if (r.state === 'unreachable') return { status: 'unavailable', balance: null };
@@ -62,6 +78,11 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
   topUp: 'idle',
 
   async check() {
+    const forced = devForcedState();
+    if (forced) {
+      set(forced);
+      return;
+    }
     if (!available()) {
       set({ status: 'hidden', balance: null });
       return;

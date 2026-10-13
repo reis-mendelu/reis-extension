@@ -62,6 +62,24 @@ describe('useIskamStore', () => {
     expect(s().balance).toBeNull();
   });
 
+  // DEV-only, like `?eduroam=`: the row is Capacitor-gated, so verify-ui could
+  // never measure it in the dev webapp without this.
+  it('renders a forced state from ?iskam= on the dev webapp, without touching WebISKAM', async () => {
+    platformKind = 'web';
+    window.history.replaceState(null, '', '/?iskam=balance');
+    try {
+      await s().check();
+      expect(s().status).toBe('balance');
+      expect(s().balance?.amount).toBeGreaterThan(0);
+      window.history.replaceState(null, '', '/?iskam=signed-out');
+      await s().check();
+      expect(s().status).toBe('signed-out');
+      expect(runSilentChain).not.toHaveBeenCalled();
+    } finally {
+      window.history.replaceState(null, '', '/');
+    }
+  });
+
   it('stays hidden in demo mode and off Capacitor, without touching WebISKAM', async () => {
     demo = true;
     await s().check();
