@@ -7,6 +7,8 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { menuForDay } from '../../../utils/menuForDay';
 import { formatHeaderDate } from '../../../utils/mobile/formatHeaderDate';
 import { MenuOutletPanel } from './MenuOutletPanel';
+import { IskamBalanceRow } from './IskamBalanceRow';
+import { useIskamStore } from '../../../mobile/iskam/iskamStore';
 
 export interface MenuSheetProps {
   dayIso: string;
@@ -39,16 +41,23 @@ export function MenuSheet({ dayIso, onClose }: MenuSheetProps) {
   const picked = outlets.findIndex((o) => o.outlet === outletName);
   const safe = picked >= 0 ? picked : 0;
   const current = outlets[safe];
+  // The balance is never kept past the sheet: closing drops it, so the next
+  // open shows "checking", not a number from minutes ago.
+  const close = () => {
+    useIskamStore.getState().reset();
+    onClose();
+  };
   return (
-    <Sheet size="content" onClose={onClose}>
+    <Sheet size="content" onClose={close}>
       <SheetHeader
         title={t('menu.title')}
         subtitle={formatHeaderDate(
           new Date(`${dayIso}T00:00:00`),
           language === 'cz' ? 'cs' : language
         )}
-        onClose={onClose}
+        onClose={close}
       />
+      <IskamBalanceRow />
       {!current ? (
         <div className="flex flex-col items-center gap-2 px-4 pb-8 pt-2 text-center text-base-content/60">
           <UtensilsCrossed size={32} className="opacity-40" />

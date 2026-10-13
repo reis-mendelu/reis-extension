@@ -7,7 +7,7 @@ describe('validateAmount', () => {
     ['15000', 15000],
     [' 50 ', 50],
     ['1 500', 1500],
-    ['1 500', 1500],
+    ['1\u00a0500', 1500],
   ])('accepts %j', (text, amount) => {
     expect(validateAmount(text)).toEqual({ ok: true, amount });
   });

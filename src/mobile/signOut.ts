@@ -9,6 +9,8 @@ export interface SignOutDeps {
   clearToken(): Promise<void>;
   /** Empties the WebView cookie jar for is.mendelu.cz. */
   clearIsCookies(): Promise<void>;
+  /** Removes the WebISKAM + alibaba login (mobile/iskam/clearIskam). */
+  clearIskam(): Promise<void>;
   clearUserParams(): void;
   /** Drops the society/admin login, which supabase-js keeps outside IndexedDB. */
   clearAdminSession(): Promise<void>;
@@ -72,6 +74,14 @@ export async function signOutMobile(deps: SignOutDeps): Promise<void> {
     logError('Mobile.signOut:cookies', e);
   }
 
+  // Its own block: the ISIC login is a second credential, but failing to clear
+  // it must not skip the wipe and restart below.
+  try {
+    await deps.clearIskam();
+  } catch (e) {
+    logError('Mobile.signOut:iskam', e);
+  }
+
   // The society/admin login belongs after the token clear and not before it:
   // it is a second credential, kept by supabase-js outside
   // IndexedDB, and it has to go — but a sign-out this function REFUSES must
@@ -113,6 +123,10 @@ export function buildSignOutDeps(): SignOutDeps {
       if (first?.status === 'rejected' && results.every((r) => r.status === 'rejected')) {
         throw first.reason;
       }
+    },
+    clearIskam: async () => {
+      const { clearIskam } = await import('./iskam/clearIskam');
+      await clearIskam();
     },
     clearUserParams: () => clearUserParamsCache(),
     clearAdminSession: async () => {

@@ -30,7 +30,7 @@ export function parseHlavniKonto(html: string): KontoBalance | null {
         MAIN_TOP_UP.test(a.getAttribute('href') ?? '')
       )
     ) ?? rows.find((r) => MAIN_NAME.test(r.children[0]?.textContent?.trim() ?? ''));
-  const text = row?.children[1]?.textContent?.replace(/[\s ]+/g, ' ').trim();
+  const text = row?.children[1]?.textContent?.replace(/\s+/g, ' ').trim();
   if (!text) return null;
   const m = text.match(AMOUNT);
   if (!m?.[1]) return null;

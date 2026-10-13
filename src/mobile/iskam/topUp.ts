@@ -8,7 +8,7 @@ export type PayMethod = 'card' | 'gpay';
 
 /** Whole crowns, 1 – 15 000; spaces and NBSP allowed as thousands separators. */
 export function validateAmount(text: string): AmountCheck {
-  const t = text.replace(/[\s ]/g, '');
+  const t = text.replace(/\s/g, '');
   if (!/^\d+$/.test(t)) return { ok: false };
   const amount = Number(t);
   return amount >= TOP_UP_MIN && amount <= TOP_UP_MAX ? { ok: true, amount } : { ok: false };

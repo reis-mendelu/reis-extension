@@ -5,6 +5,7 @@ function makeDeps(over: Partial<SignOutDeps> = {}): SignOutDeps {
   return {
     clearToken: vi.fn(async () => {}),
     clearIsCookies: vi.fn(async () => {}),
+    clearIskam: vi.fn(async () => {}),
     clearUserParams: vi.fn(),
     clearAdminSession: vi.fn(async () => {}),
     clearLocalData: vi.fn(async () => {}),
@@ -132,5 +133,26 @@ describe('signOutMobile', () => {
     expect(deps.clearAdminSession).toHaveBeenCalled();
     expect(deps.clearLocalData).toHaveBeenCalled();
     expect(deps.restart).toHaveBeenCalled();
+  });
+  it('clears the WebISKAM login too, and a failure there still restarts', async () => {
+    const deps = makeDeps({
+      clearIskam: vi.fn(async () => {
+        throw new Error('keystore');
+      }),
+    });
+    await signOutMobile(deps);
+    expect(deps.clearIskam).toHaveBeenCalled();
+    expect(deps.clearLocalData).toHaveBeenCalled();
+    expect(deps.restart).toHaveBeenCalled();
+  });
+
+  it('does not touch the WebISKAM login when the sign-out is refused', async () => {
+    const deps = makeDeps({
+      clearToken: vi.fn(async () => {
+        throw new Error('keystore unavailable');
+      }),
+    });
+    await expect(signOutMobile(deps)).rejects.toThrow();
+    expect(deps.clearIskam).not.toHaveBeenCalled();
   });
 });

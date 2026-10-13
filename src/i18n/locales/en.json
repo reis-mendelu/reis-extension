@@ -22,6 +22,18 @@
     "outletFew": "{count} outlets",
     "outletOther": "{count} outlets"
   },
+  "iskam": {
+    "show": "Show ISIC balance",
+    "label": "ISIC · Main account",
+    "checking": "Loading balance",
+    "unavailable": "Balance unavailable right now",
+    "topUp": "Top up",
+    "amount": "Amount (CZK)",
+    "card": "Pay by card",
+    "gpay": "Google Pay",
+    "invalid": "Enter a whole amount from 1 to 15,000 CZK",
+    "failed": "Could not start the payment"
+  },
   "settings": {
     "title": "Settings",
     "reportBug": "Report Bug / Idea",
