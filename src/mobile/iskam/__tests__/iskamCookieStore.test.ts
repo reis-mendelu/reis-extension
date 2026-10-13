@@ -32,6 +32,7 @@ import {
   saveJar,
 } from '../iskamCookieStore';
 import type { IskamJar } from '../iskamJar';
+import { SignOutBlockedError } from '../../signOutCleanups';
 
 const JAR: IskamJar = [
   { name: '.ISKAMASPXAUTH', value: 't', host: 'webiskam.mendelu.cz', path: '/', expires: null },
@@ -134,5 +135,19 @@ describe('iskamCookieStore', () => {
     expect(await loadJar()).toEqual([]);
     await saveJar(JAR);
     expect(await loadJar()).toEqual(JAR);
+  });
+
+  // PR #548 review (CodeRabbit, second round): the revocation must fail closed.
+  it('a revocation flag that cannot be read blocks the stored login', async () => {
+    await saveJar(JAR);
+    storage.get.mockRejectedValueOnce(new Error('prefs'));
+    await expect(loadJar()).rejects.toThrow();
+  });
+
+  it('when neither removal nor revocation succeeds, the clear blocks the sign-out', async () => {
+    await saveJar(JAR);
+    secureStorage.remove.mockRejectedValueOnce(new Error('keystore'));
+    storage.set.mockRejectedValueOnce(new Error('prefs'));
+    await expect(clearJar()).rejects.toBeInstanceOf(SignOutBlockedError);
   });
 });

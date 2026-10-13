@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   __resetSignOutCleanupsForTests,
+  SignOutBlockedError,
   registerSignOutCleanup,
   runSignOutCleanups,
 } from '../signOutCleanups';
@@ -40,5 +41,15 @@ describe('signOutCleanups', () => {
     registerSignOutCleanup(b);
     await expect(runSignOutCleanups()).rejects.toThrow('sync');
     expect(b).toHaveBeenCalled();
+  });
+
+  it('a cleanup that blocks the sign-out wins over an ordinary failure', async () => {
+    registerSignOutCleanup(async () => {
+      throw new Error('ordinary');
+    });
+    registerSignOutCleanup(async () => {
+      throw new SignOutBlockedError('credential stuck');
+    });
+    await expect(runSignOutCleanups()).rejects.toBeInstanceOf(SignOutBlockedError);
   });
 });

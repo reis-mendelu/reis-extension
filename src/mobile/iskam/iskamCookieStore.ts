@@ -1,4 +1,5 @@
 import { getPlatform } from '../../platform';
+import { SignOutBlockedError } from '../signOutCleanups';
 import { isIskamCookie, type IskamJar } from './iskamJar';
 
 const KEY = 'reis.iskam.jar';
@@ -63,12 +64,9 @@ export async function loadJar(): Promise<IskamJar> {
   }
 }
 
+/** Throws when the flag cannot be read: an unknown revocation fails closed. */
 async function isRevoked(): Promise<boolean> {
-  try {
-    return (await getPlatform().storage.get(REVOKED)) === '1';
-  } catch {
-    return false;
-  }
+  return (await getPlatform().storage.get(REVOKED)) === '1';
 }
 
 async function liftRevocation(): Promise<void> {
@@ -93,10 +91,16 @@ export async function clearJar(basedOn?: number): Promise<boolean> {
   try {
     await serialized(() => getPlatform().secureStorage.remove(KEY));
   } catch (e) {
-    // Could not delete it: revoke it instead, then report the failure.
-    await getPlatform()
-      .storage.set(REVOKED, '1')
-      .catch(() => undefined);
+    // Could not delete it: revoke it instead, then report the failure. If the
+    // revocation cannot be written either, the jar is still usable, so the
+    // sign-out is blocked rather than allowed to hand the device on.
+    try {
+      await getPlatform().storage.set(REVOKED, '1');
+    } catch (flagError) {
+      throw new SignOutBlockedError('WebISKAM login could be neither deleted nor revoked', {
+        cause: flagError,
+      });
+    }
     throw e;
   }
   return true;

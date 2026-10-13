@@ -3,7 +3,7 @@ import { clearUserParamsCache } from '../utils/userParams';
 import { IndexedDBService } from '../services/storage';
 import { logError } from '../utils/reportError';
 import { IS_COOKIE_URL } from './inAppLoginDeps';
-import { runSignOutCleanups } from './signOutCleanups';
+import { runSignOutCleanups, SignOutBlockedError } from './signOutCleanups';
 
 export interface SignOutDeps {
   /** Removes the replayed UISAuth credential from secure storage. */
@@ -83,6 +83,9 @@ export async function signOutMobile(deps: SignOutDeps): Promise<void> {
   try {
     await deps.clearOtherLogins();
   } catch (e) {
+    // A second login that is still usable refuses the sign-out, before the
+    // wipe, exactly like a stuck UISAuth above. Anything else is best-effort.
+    if (e instanceof SignOutBlockedError) throw e;
     logError('Mobile.signOut:otherLogins', e);
   }
 

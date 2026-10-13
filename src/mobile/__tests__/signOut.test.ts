@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { signOutMobile, type SignOutDeps } from '../signOut';
+import { SignOutBlockedError } from '../signOutCleanups';
 
 function makeDeps(over: Partial<SignOutDeps> = {}): SignOutDeps {
   return {
@@ -154,5 +155,19 @@ describe('signOutMobile', () => {
     });
     await expect(signOutMobile(deps)).rejects.toThrow();
     expect(deps.clearOtherLogins).not.toHaveBeenCalled();
+  });
+
+  // PR #548 review: a second login that can be neither deleted nor revoked
+  // refuses the sign-out, like a stuck UISAuth does — the device must not pass
+  // to the next student with a usable WebISKAM login.
+  it('refuses, before wiping, when a second login can be neither deleted nor revoked', async () => {
+    const deps = makeDeps({
+      clearOtherLogins: vi.fn(async () => {
+        throw new SignOutBlockedError('stuck');
+      }),
+    });
+    await expect(signOutMobile(deps)).rejects.toBeInstanceOf(SignOutBlockedError);
+    expect(deps.clearLocalData).not.toHaveBeenCalled();
+    expect(deps.restart).not.toHaveBeenCalled();
   });
 });

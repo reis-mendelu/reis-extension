@@ -13,7 +13,12 @@ const secureStorage = {
   },
 };
 vi.mock('../../../platform', () => ({
-  getPlatform: () => ({ kind: 'capacitor', secureStorage }),
+  // `storage` holds only the revocation flag, never set in these tests.
+  getPlatform: () => ({
+    kind: 'capacitor',
+    secureStorage,
+    storage: { get: async () => undefined },
+  }),
 }));
 vi.mock('../../../utils/reportError', () => ({ logError: vi.fn() }));
 

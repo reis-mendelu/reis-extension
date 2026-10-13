@@ -5,6 +5,7 @@ const store = new Map<string, unknown>();
 vi.mock('../../../platform', () => ({
   getPlatform: () => ({
     kind: 'capacitor',
+    storage: { get: async () => undefined },
     secureStorage: {
       get: async (k: string) => store.get(k),
       set: async (k: string, v: unknown) => {
