@@ -75,7 +75,7 @@ export function IskamBalanceRow() {
         )}
         <button
           type="button"
-          className="btn btn-primary btn-sm flex-shrink-0"
+          className="btn btn-primary btn-sm flex-shrink-0 disabled:opacity-40"
           disabled={!canTopUp}
           aria-expanded={open && canTopUp}
           onClick={() => setOpen((o) => !o)}

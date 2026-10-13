@@ -41,6 +41,15 @@ describe('IskamTopUpForm', () => {
     expect(screen.getByRole('button', { name: 'Zaplatit kartou' })).toBeEnabled();
   });
 
+  it('both pay buttons share the tonal style and dim when disabled', () => {
+    render(<IskamTopUpForm />);
+    for (const name of ['Google Pay', 'Zaplatit kartou']) {
+      const b = screen.getByRole('button', { name });
+      expect(b).toHaveClass('btn-primary');
+      expect(b).toHaveClass('disabled:opacity-40');
+    }
+  });
+
   it('pays with the parsed amount and the chosen method', () => {
     render(<IskamTopUpForm />);
     fireEvent.change(screen.getByLabelText('Částka (Kč)'), { target: { value: '1 500' } });

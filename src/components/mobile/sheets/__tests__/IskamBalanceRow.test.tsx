@@ -63,6 +63,15 @@ describe('IskamBalanceRow', () => {
     expect(screen.getByTestId('iskam-amount')).toHaveTextContent(/1,234\.50/);
   });
 
+  // index.css restyles .btn-primary outside any layer, which overrides
+  // DaisyUI's disabled look — a disabled Dobít looked exactly like an enabled
+  // one on the Pixel. Only opacity survives, so the dimming is ours to add.
+  it('Dobít visibly dims until a balance is confirmed', () => {
+    setState({ status: 'signed-out' });
+    render(<IskamBalanceRow />);
+    expect(screen.getByRole('button', { name: 'Dobít' })).toHaveClass('disabled:opacity-40');
+  });
+
   it('Dobít opens the top-up form, and a second tap closes it', () => {
     setState({ status: 'balance', balance: { amount: 10 } });
     render(<IskamBalanceRow />);

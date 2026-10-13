@@ -7,6 +7,9 @@ import { validateAmount, type PayMethod } from '../../../mobile/iskam/topUp';
 /**
  * One amount, two ways to pay. Google Pay only on Android: WebISKAM offers no
  * Apple Pay, and Google Pay is an Android wallet.
+ *
+ * `disabled:opacity-40` because index.css restyles .btn-primary outside any
+ * layer, which hides DaisyUI's own disabled look.
  */
 export function IskamTopUpForm() {
   const { t } = useTranslation();
@@ -44,7 +47,7 @@ export function IskamTopUpForm() {
         {gpay && (
           <button
             type="button"
-            className="btn btn-sm flex-1"
+            className="btn btn-primary btn-sm flex-1 disabled:opacity-40"
             disabled={!checked.ok || busy}
             onClick={() => pay('gpay')}
           >
@@ -53,7 +56,7 @@ export function IskamTopUpForm() {
         )}
         <button
           type="button"
-          className="btn btn-primary btn-sm flex-1"
+          className="btn btn-primary btn-sm flex-1 disabled:opacity-40"
           disabled={!checked.ok || busy}
           onClick={() => pay('card')}
         >
