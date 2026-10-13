@@ -57,23 +57,37 @@ Full write-up: `reis-scraper/docs/webiskam.md` (reis-mendelu/reis-scraper#22).
   cell 1 `"N,NN Kč"`; Hlavní konto carries `href="/Platby/NabitiKonta/0"`.
 - Capacitor 8.5.2 passes `Set-Cookie` to JS on both platforms (Android
   `buildResponseHeaders` and iOS `allHeaderFields`, multiple values joined with
-  ", "), and supports `disableRedirects`. **Unverified on device** — Task 1 of
-  the plan.
+  ", "), and supports `disableRedirects`.
+- **Device gate, Android (Pixel 9a, Android 16, release build, 2026-10-13):**
+  the popup login captured all 8 cookies (4 webiskam, 4 alibaba `/idp`); after
+  a force-stop and relaunch the stored jar reached `/Konta` through the seeded
+  native jar and returned the page — balance shown with no popup. **iOS not
+  yet checked on a device.**
+- **WebISKAM answers in the phone's language.** On that Pixel (English) the
+  page was `<html lang="en">`, "Main account", amount `N,NNN.NN Kč`; the
+  Czech-only parser returned null and the row said "unavailable" after a good
+  login. The parser now reads the page's `lang`, and the row formats the
+  amount itself in the app's language.
 
 ### Session lifetimes
 
-Measured by an overnight probe started 2026-10-13 13:38 (growing idle gaps
+Measured by a probe started 2026-10-13 13:38 (growing idle gaps
 10/20/40/80/160/320/640 min per layer, plus a 5-minute keep-alive session).
-Results are added here and to `reis-scraper/docs/webiskam.md` when it finishes.
 The design does not depend on them; they decide only how often the silent chain
 saves the student a password.
 
 | Layer | Cookie(s) | Idle timeout | Notes |
 |---|---|---|---|
-| ASP.NET ticket | `.ISKAMASPXAUTH` | _pending_ | |
-| Shibboleth SP | `_shibsession_<hex>` | _pending_ | |
-| IdP | `shib_idp_session` (+`_ss`) | _pending_ | |
-| Keep-alive (5 min pings) | all webiskam | _pending_ | not used by the design; measured for the record |
+| ASP.NET ticket | `.ISKAMASPXAUTH` | alive at 10 min, dead at 328 min | re-issued by a request at 10 min but not at 5 → sliding, probably ~20 min |
+| Shibboleth SP | `_shibsession_<hex>` | alive at 10 min, dead at 328 min | the server deletes the cookie when it has expired |
+| IdP | `shib_idp_session` (+`_ss`) | alive at 10 min, dead at 328 min | dead = the password form |
+| Keep-alive (5 min pings) | all webiskam | not measured | not used by the design |
+
+The first run was cut short at 13:49 (lid closed → clamshell sleep → a DNS
+failure crashed the probe); the 328-minute point is a single check of the
+untouched sessions afterwards. Practical reading until a full run narrows it:
+**a student who opens the sheet within minutes of the last use sees the balance
+at once; after a few hours away, the popup.**
 
 ## Architecture
 
