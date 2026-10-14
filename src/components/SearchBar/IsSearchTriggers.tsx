@@ -37,9 +37,5 @@ export function IsSearchTriggers({ onOpen, buttonClassName }: IsSearchTriggersPr
  * (PeopleSearchPopover's useSearch subscribes to the store).
  */
 export function IsSearchPopovers({ open, onClose }: { open: IsSearchTarget; onClose: () => void }) {
-  return (
-    <>
-      {open === 'people' && <PeopleSearchPopover isOpen onClose={onClose} />}
-    </>
-  );
+  return <>{open === 'people' && <PeopleSearchPopover isOpen onClose={onClose} />}</>;
 }

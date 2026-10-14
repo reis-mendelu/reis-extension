@@ -157,7 +157,6 @@ export function NavItem({
                     </a>
                   ))}
             </div>
-
           </motion.div>
         )}
       </AnimatePresence>
