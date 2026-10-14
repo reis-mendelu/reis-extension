@@ -102,6 +102,12 @@ export function NavItem({
                   : 'flex flex-col'
               }`}
             >
+              {item.id === 'is' && (
+                <IsSearchTriggers
+                  onOpen={setIsSearchOpen}
+                  buttonClassName="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-base-content/70 hover:bg-base-200 hover:text-primary transition-colors cursor-pointer"
+                />
+              )}
               {!item.children || item.children.length === 0
                 ? Array.from({ length: 4 }).map((_, i) => (
                     <div key={i} className="flex items-center gap-3 px-3 py-2">
@@ -152,12 +158,6 @@ export function NavItem({
                   ))}
             </div>
 
-            {item.id === 'is' && (
-              <IsSearchTriggers
-                onOpen={setIsSearchOpen}
-                buttonClassName="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-base-content/40 hover:bg-base-200 hover:text-primary transition-colors relative"
-              />
-            )}
           </motion.div>
         )}
       </AnimatePresence>

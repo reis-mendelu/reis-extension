@@ -1,26 +1,9 @@
 import { useState, useMemo } from 'react';
-import {
-  Info,
-  GraduationCap,
-  Microscope,
-  Monitor,
-  Calendar,
-  FileText,
-  Cpu,
-  Database,
-  BookOpen,
-  Gamepad2,
-  User,
-  ShieldCheck,
-  Settings,
-  X,
-  ChevronDown,
-  ChevronUp,
-  Search,
-} from 'lucide-react';
+import { Info, X, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { pagesData } from '../../data/pages';
 import { injectUserParams } from '../../data/pages/types';
+import { PAGE_CATEGORY_ICONS } from '../../data/pages/categoryIcons';
 import { filterPageCategories, normalizePageQuery } from '../../data/pages/filterPages';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
@@ -30,29 +13,13 @@ interface IsPortalPopoverProps {
   onClose: () => void;
 }
 
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  'portal-info': Info,
-  'moje-studium': GraduationCap,
-  'veda-vyzkum': Microscope,
-  elearning: Monitor,
-  'osobni-management': Calendar,
-  'e-agenda': FileText,
-  technologie: Cpu,
-  'sprava-is': Database,
-  dokumentace: BookOpen,
-  herna: Gamepad2,
-  personalizace: User,
-  'nastaveni-is': Settings,
-  'ochrana-udaju': ShieldCheck,
-};
-
 export function IsPortalPopover({ isOpen, onClose }: IsPortalPopoverProps) {
   const { t, language } = useTranslation();
   const studiumId = useAppStore((s) => s.studiumId);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState('');
 
-  // Shared with the phone's "Starý IS" segment, so both trees match the same way.
+  // Shared with the phone's "StarĂ˝ IS" segment, so both trees match the same way.
   const normalizedFilter = normalizePageQuery(filter);
   const filteredCategories = useMemo(
     () => filterPageCategories(pagesData, filter, language),
@@ -116,7 +83,7 @@ export function IsPortalPopover({ isOpen, onClose }: IsPortalPopoverProps) {
             )}
 
             {filteredCategories.map((category) => {
-              const Icon = ICON_MAP[category.id] || Info;
+              const Icon = PAGE_CATEGORY_ICONS[category.id] || Info;
               const title =
                 language === 'en' && category.labelEn ? category.labelEn : category.label;
               const isFiltering = normalizedFilter.length > 0;
@@ -129,7 +96,7 @@ export function IsPortalPopover({ isOpen, onClose }: IsPortalPopoverProps) {
                   key={category.id}
                   className="card bg-base-200/30 border border-base-300 overflow-hidden"
                 >
-                  {/* Category header — mimics IS grey bar */}
+                  {/* Category header â€” mimics IS grey bar */}
                   <div className="flex items-center gap-3 px-4 py-3 bg-base-200">
                     <Icon className="w-5 h-5 text-base-content/70" />
                     <h3 className="font-bold text-sm text-base-content">{title}</h3>
@@ -163,14 +130,14 @@ export function IsPortalPopover({ isOpen, onClose }: IsPortalPopoverProps) {
                     >
                       {expandedCategories.has(category.id) ? (
                         <>
-                          {language === 'en' ? 'Show less' : 'Zobrazit méně'}
+                          {language === 'en' ? 'Show less' : 'Zobrazit mĂ©nÄ›'}
                           <ChevronUp className="w-3 h-3" />
                         </>
                       ) : (
                         <>
                           {language === 'en'
                             ? `Show ${hiddenCount} more`
-                            : `Zobrazit dalších ${hiddenCount}`}
+                            : `Zobrazit dalĹˇĂ­ch ${hiddenCount}`}
                           <ChevronDown className="w-3 h-3" />
                         </>
                       )}

@@ -86,6 +86,8 @@
     "contactCenter": "Kontaktní centrum",
     "slides": "snímků",
     "isPages": "Starý IS",
+    "oldIsHint": "Původní IS Mendelu – všechny stránky na jednom místě. Otevírají se v nové kartě.",
+    "oldIsCount": "Stránek: {count}",
     "people": "Lidé",
     "map": "Mapa"
   },

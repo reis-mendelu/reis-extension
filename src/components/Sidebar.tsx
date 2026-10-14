@@ -74,6 +74,7 @@ export const Sidebar = ({ currentView, onViewChange, onOpenSubject, items }: Sid
                 else if (item.id === 'subjects') onViewChange('subjects');
                 else if (item.id === 'erasmus') onViewChange('erasmus');
                 else if (item.id === 'map') onViewChange('map');
+                else if (item.id === 'oldIs') onViewChange('oldIs');
                 else if (item.href) window.open(item.href, '_blank');
               }}
               onViewChange={onViewChange}
