@@ -21,13 +21,20 @@ describe('OldIsPanel', () => {
     expect(screen.queryByText(/Zobrazit dalších/)).not.toBeInTheDocument();
   });
 
-  it('opens pages in a new tab with studium and faculty filled in', () => {
+  it('opens every page in a new tab with no placeholder left unresolved', () => {
     render(<OldIsPanel />);
     for (const link of screen.getAllByRole('link')) {
       expect(link).toHaveAttribute('target', '_blank');
       expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
       expect(link.getAttribute('href')).not.toContain('{{');
     }
+  });
+
+  it('fills the actual studium and faculty into the links that need them', () => {
+    render(<OldIsPanel />);
+    const hrefOf = (name: RegExp) => screen.getByRole('link', { name }).getAttribute('href');
+    expect(hrefOf(/E-index/)).toContain('studium=4321');
+    expect(hrefOf(/Harmonogram akademického roku/)).toContain('fakulta=2');
   });
 
   it('filters accent-insensitively', () => {

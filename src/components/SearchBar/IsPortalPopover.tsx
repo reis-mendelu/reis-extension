@@ -19,7 +19,7 @@ export function IsPortalPopover({ isOpen, onClose }: IsPortalPopoverProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState('');
 
-  // Shared with the phone's "StarĂ˝ IS" segment, so both trees match the same way.
+  // Shared with the phone's "Starý IS" segment, so both trees match the same way.
   const normalizedFilter = normalizePageQuery(filter);
   const filteredCategories = useMemo(
     () => filterPageCategories(pagesData, filter, language),
@@ -96,7 +96,7 @@ export function IsPortalPopover({ isOpen, onClose }: IsPortalPopoverProps) {
                   key={category.id}
                   className="card bg-base-200/30 border border-base-300 overflow-hidden"
                 >
-                  {/* Category header â€” mimics IS grey bar */}
+                  {/* Category header — mimics IS grey bar */}
                   <div className="flex items-center gap-3 px-4 py-3 bg-base-200">
                     <Icon className="w-5 h-5 text-base-content/70" />
                     <h3 className="font-bold text-sm text-base-content">{title}</h3>
@@ -130,14 +130,14 @@ export function IsPortalPopover({ isOpen, onClose }: IsPortalPopoverProps) {
                     >
                       {expandedCategories.has(category.id) ? (
                         <>
-                          {language === 'en' ? 'Show less' : 'Zobrazit mĂ©nÄ›'}
+                          {language === 'en' ? 'Show less' : 'Zobrazit méně'}
                           <ChevronUp className="w-3 h-3" />
                         </>
                       ) : (
                         <>
                           {language === 'en'
                             ? `Show ${hiddenCount} more`
-                            : `Zobrazit dalĹˇĂ­ch ${hiddenCount}`}
+                            : `Zobrazit dalších ${hiddenCount}`}
                           <ChevronDown className="w-3 h-3" />
                         </>
                       )}
