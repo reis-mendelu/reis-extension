@@ -987,6 +987,8 @@
     "publish": "Zveřejnit akci",
     "clickToPlace": "Klepněte na tlačítko a poté označte místo v mapě",
     "draftPinLabel": "Místo akce — klikněte pro změnu",
+    "placeName": "Název místa",
+    "placeNameHint": "Zobrazí se na kartě akce, např. Yak",
     "venueLabel": "Kde",
     "venueOffcampus": "Ve městě",
     "venueCampus": "Kampus",
