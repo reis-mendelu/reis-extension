@@ -7,13 +7,17 @@ name: Release tag
 # (a doc fix, a back-merge) from tagging whatever version happens to be sitting
 # in package.json at HEAD.
 #
-# THE TAG IS THE iOS RELEASE. It no longer dispatches publish.yml: the release
-# train drives the App Store only, and the browser extension is published by
-# running publish.yml by hand. Cutting the build from the tag is
-# `npm run release:ios` on a Mac — it cannot run here, because uploading to App
-# Store Connect needs a signing identity this repo deliberately does not carry.
-# So this job pushes the tag and then tells you the one command left to run;
-# nothing is submitted to any store by any workflow.
+# THE TAG IS THE RELEASE. This job pushes it, and the `ship` job below, in the
+# SAME run, takes it to all three stores (ship.yml): the App Store (build,
+# upload, submit for review), Google Play's closed-testing track, and Chrome +
+# Firefox. It is a called workflow and not a tag-triggered one because a tag
+# pushed with GITHUB_TOKEN does not start other workflows.
+#
+# Everything the stores need to know is decided before the merge: the version
+# bump is in the release PR's diff, and so are the "What's new" words
+# (release-notes/<version>.cs.txt). The Release gate fails the PR without that
+# file, and this job checks again before tagging, because a pushed tag cannot
+# move.
 
 on:
   push:
@@ -36,6 +40,9 @@ jobs:
       # Pushing a tag is a write to the repository.
       contents: write
     timeout-minutes: 10
+    outputs:
+      tagged: ${{ steps.push.outputs.tagged }}
+      tag: ${{ steps.push.outputs.tag }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -43,7 +50,12 @@ jobs:
           # tell an already-released version from a new one.
           fetch-depth: 0
 
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
       - name: Push v<version> if it does not exist yet AND the version changed
+        id: push
         env:
           BEFORE_SHA: ${{ github.event.before }}
           GH_TOKEN: ${{ github.token }}
@@ -133,27 +145,34 @@ jobs:
           # stale version; a store submission cannot be taken back.
           node scripts/assert-manifest-version-matches.mjs
 
+          # Agreed "What's new" must be in this commit: every store submission
+          # reads it from the tagged commit, and a tag cannot move.
+          npx --yes tsx@4 scripts/release/assert-notes.ts "$version"
+
           git tag "$tag"
           git push origin "$tag"
           echo "Pushed $tag."
 
-          # Deliberately the end of the automation. What used to follow was a
-          # dispatch of publish.yml, which submitted the extension to Chrome,
-          # Firefox and Edge. The train is iOS-only now, and the iOS cut needs
-          # a Mac with a signing identity, so it is a person running one
-          # command. Say so loudly rather than leaving a green tick that looks
-          # like something shipped.
+          echo "tagged=true" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
           {
             echo "### $tag pushed"
             echo ""
-            echo "Nothing has been submitted to any store. To cut the App Store build:"
-            echo ""
-            echo '```bash'
-            echo "git fetch --tags && git checkout $tag && npm ci"
-            echo "npm run release:ios -- --tag $tag"
-            echo '```'
-            echo ""
-            echo "That uploads the build; attaching it to the version and submitting for"
-            echo "review stays manual. To publish the browser extension for this tag:"
-            echo "\`gh workflow run publish.yml --ref $tag -f tag=$tag\`."
+            echo "The \`ship\` job below takes it to the App Store, Google Play (closed"
+            echo "testing) and the Chrome and Firefox stores. Its summary table says what"
+            echo "reached each one."
           } >> "$GITHUB_STEP_SUMMARY"
+
+  ship:
+    name: Ship ${{ needs.tag.outputs.tag }}
+    needs: tag
+    # Only when this push really cut a tag: an unrelated push to main, or a
+    # version that did not change, exits the tag job without one.
+    if: needs.tag.outputs.tagged == 'true'
+    uses: ./.github/workflows/ship.yml
+    with:
+      tag: ${{ needs.tag.outputs.tag }}
+      dry_run: false
+    secrets: inherit
+    permissions:
+      contents: read

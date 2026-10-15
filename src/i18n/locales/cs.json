@@ -22,6 +22,18 @@
     "outletFew": "{count} výdejny",
     "outletOther": "{count} výdejen"
   },
+  "iskam": {
+    "show": "Zobrazit zůstatek ISIC",
+    "label": "ISIC · Hlavní konto",
+    "checking": "Načítám zůstatek",
+    "unavailable": "Zůstatek teď nejde načíst",
+    "topUp": "Dobít",
+    "amount": "Částka (Kč)",
+    "card": "Zaplatit kartou",
+    "gpay": "Google Pay",
+    "invalid": "Zadej celé číslo od 1 do 15 000 Kč",
+    "failed": "Platbu se nepodařilo zahájit"
+  },
   "settings": {
     "title": "Nastavení",
     "reportBug": "Nahlásit chybu / Nápad",

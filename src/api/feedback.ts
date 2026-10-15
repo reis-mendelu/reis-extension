@@ -7,6 +7,7 @@ import { usagePlatform, type UsagePlatform } from '../utils/usagePlatform';
 import { isHarnessEnabled } from '../utils/harnessEnabled';
 import { hasDataConsent } from '../utils/firefoxDataConsent';
 import { baseProgramme } from '../utils/partnerAudience';
+import { getAppVersion } from '../utils/appIdentity';
 
 /**
  * Both writes here identify the DEVICE, never the student.
@@ -55,7 +56,8 @@ export async function submitFeedback(
 }
 
 /**
- * One write per page session, memoised the same way `getInstallId` is.
+ * One write per Prague day per page session, memoised the same way
+ * `getInstallId` is.
  *
  * `initializeStore()` is fire-and-forgotten from a bare `useEffect(..., [])` in
  * `hooks/useAppLogic.ts`, under <StrictMode> — which double-invokes effects in
@@ -73,16 +75,33 @@ export async function submitFeedback(
  * a silent undercount of real students, which is the thing this whole change
  * exists to stop. Concurrent callers share the in-flight promise; a rejected
  * one clears itself, exactly as `services/identity/installId.ts` does.
+ *
+ * Keyed on the DAY because the phone app's resume handler calls this as well:
+ * a Capacitor process lives in the background for days, and counting only cold
+ * starts left a student who switched back to reIS every morning counted on
+ * whichever day iOS last killed the app. `open_count` keeps meaning "sessions
+ * that day"; a session that runs past midnight adds one more.
  */
-let inFlight: Promise<void> | null = null;
+let counted: { day: string; write: Promise<void> } | null = null;
 
-/** Test-only: drop the once-per-session memo. */
+/** Test-only: drop the once-per-day memo. */
 export function __resetUsageTrackedForTests(): void {
-  inFlight = null;
+  counted = null;
+}
+
+/** The Prague calendar day, the same day the server stamps on `usage_date`. */
+function pragueDay(): string {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Prague' }).format(new Date());
+  } catch {
+    // A runtime without time-zone data: the device's own day is the same in
+    // Brno, which is where nearly every one of these devices is.
+    return new Date().toLocaleDateString('en-CA');
+  }
 }
 
 /**
- * Faculty and platform are GROUP labels (six faculties, four platforms) on
+ * Faculty, platform, programme and app version are GROUP labels on
  * the same random install id — a count, not a record. Disclosed in
  * PRIVACY.md ("Daily Usage & NPS Feedback").
  */
@@ -99,24 +118,35 @@ export function trackDailyUsage(): Promise<void> {
   // way, none by a student.
   if (isHarnessEnabled(import.meta.env)) return Promise.resolve();
 
-  if (!inFlight) {
-    inFlight = writeDailyUsage().catch(() => {
-      inFlight = null;
-    });
-  }
-  return inFlight;
+  const day = pragueDay();
+  if (counted?.day === day) return counted.write;
+  const entry = { day, write: Promise.resolve() };
+  // Released unless the row was written, so a later call can still count
+  // today — and only if it is still this day's entry.
+  const release = () => {
+    if (counted === entry) counted = null;
+  };
+  entry.write = writeDailyUsage().then((wrote) => {
+    if (!wrote) release();
+  }, release);
+  counted = entry;
+  return entry.write;
 }
 
-async function writeDailyUsage(): Promise<void> {
+/** Resolves true once today's row is written, false when nothing was sent. */
+async function writeDailyUsage(): Promise<boolean> {
   // Firefox: the daily count is the "technical and interaction" data its
   // install-time toggle governs. Off means this install is not counted — so
-  // Firefox figures are a lower bound. The memo is released rather than kept,
-  // so switching the toggle back on counts this session at the next call.
-  if (!(await hasDataConsent('technicalAndInteraction'))) {
-    inFlight = null;
-    return;
-  }
+  // Firefox figures are a lower bound. Nothing is latched, so switching the
+  // toggle back on counts this session at the next call.
+  if (!(await hasDataConsent('technicalAndInteraction'))) return false;
   const params = await getUserParams();
+  // No student, no row. The phone counts a device only after the IS login,
+  // but the extension runs for anyone on is.mendelu.cz: 47 devices that never
+  // named a student (mostly staff, mostly seen once) sat in the console's
+  // totals until 2026-10-13. The student number is read as a gate only and is
+  // never sent.
+  if (!params?.studentId) return false;
   const faculty = params?.facultyLabel ?? null;
   // The base code only ('B-OI', never 'B-OI-ZBOI'): an aggregate label like
   // faculty, disclosed in privacy/disclosures.ts and sent nowhere else.
@@ -133,14 +163,21 @@ async function writeDailyUsage(): Promise<void> {
     platform = usagePlatform(kind, () => 'web');
   }
 
+  // The release this install runs ('5.4.1'): the same string on every install
+  // of that release, so a group label like platform. '0.0.0' is
+  // getAppVersion's fallback for "unknown", not a release.
+  const version = getAppVersion();
+
   const { error } = await supabase.rpc('track_daily_usage', {
     p_student_id: await getInstallId(),
     p_faculty: faculty,
     p_platform: platform,
     p_programme: programme,
+    p_app_version: version === '0.0.0' ? null : version,
   });
   // Thrown, not swallowed: the caller above clears the memo on a rejection so
   // a later call can still count this device. Nothing about the failure is
   // reported anywhere — see the Error Reporting section of CLAUDE.md.
   if (error) throw new Error('track_daily_usage failed');
+  return true;
 }
