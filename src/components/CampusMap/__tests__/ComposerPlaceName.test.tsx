@@ -42,12 +42,14 @@ beforeEach(() => {
 
 const publish = async () => {
   fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Grill' } });
-  fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
+  fireEvent.click(screen.getAllByText('Vyberte datum')[0] as HTMLElement);
   fireEvent.click(screen.getByRole('button', { name: '15' }));
   fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
   fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
   await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
-  return createPost.mock.calls[0][0];
+  const call = createPost.mock.calls[0];
+  if (!call) throw new Error('createPost was not called');
+  return call[0];
 };
 
 // A place the search cannot find ("Yak"): the society drops the pin and names
