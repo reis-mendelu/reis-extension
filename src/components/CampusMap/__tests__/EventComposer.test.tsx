@@ -986,3 +986,58 @@ describe('EventComposer — a society the catalog does not know', () => {
     expect(updatePost.mock.calls[0][1].subscribers_only).toBe(true);
   });
 });
+
+// A place the search cannot find ("Yak"): the society drops the pin and names
+// it by hand. Without the name the card said "Vybrané místo na mapě".
+describe('EventComposer — naming a hand-placed pin', () => {
+  const fillAndPublish = async () => {
+    fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Grill' } });
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
+    fireEvent.click(screen.getByRole('button', { name: '15' }));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    return createPost.mock.calls[0][0];
+  };
+
+  it('offers no name field until there is a pin', () => {
+    render(<EventComposer onDone={() => {}} />);
+    expect(screen.queryByLabelText('Název místa')).toBeNull();
+  });
+
+  it('saves the typed name as the location of a hand-dropped pin', async () => {
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.change(screen.getByLabelText('Název místa'), { target: { value: '  Yak ' } });
+    const input = await fillAndPublish();
+    expect(input.venueKind).toBe('offcampus');
+    expect(input.location).toBe('Yak');
+    expect(input.coordLng).toBe(16.61);
+  });
+
+  it('leaves the location empty when no name is typed', async () => {
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    render(<EventComposer onDone={() => {}} />);
+    const input = await fillAndPublish();
+    expect(input.location).toBeNull();
+  });
+
+  it('keeps the typed name when the pin is moved', async () => {
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.change(screen.getByLabelText('Název místa'), { target: { value: 'Yak' } });
+    act(() => useAppStore.getState().placeDraftCoord([16.62, 49.22]));
+    const input = await fillAndPublish();
+    expect(input.location).toBe('Yak');
+    expect(input.coordLng).toBe(16.62);
+  });
+
+  it('lets the name of a searched place be corrected', async () => {
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.change(screen.getByLabelText('Název místa'), { target: { value: 'Yak' } });
+    fireEvent.change(screen.getByLabelText('Název místa'), { target: { value: '' } });
+    const input = await fillAndPublish();
+    expect(input.location).toBeNull();
+  });
+});

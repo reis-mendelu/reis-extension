@@ -8,6 +8,7 @@ import { isComposerReady, isUrlInvalid, buildPostInput } from './composerRules';
 import { useVenuePicker } from './useVenuePicker';
 import { ComposerWhenField } from './ComposerWhenField';
 import { ComposerVenueSearch } from './ComposerVenueSearch';
+import { ComposerPlaceNameField } from './ComposerPlaceNameField';
 import { ComposerAudienceField } from './ComposerAudienceField';
 import { audienceOf } from '../../utils/eventAudience';
 import { ComposerEmojiField } from './ComposerEmojiField';
@@ -83,6 +84,8 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
   const {
     room,
     placeName,
+    placeNameField,
+    setTypedName,
     coord,
     isPhone,
     previewDraftOnMap,
@@ -213,6 +216,10 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
         >
           <MapPin size={13} /> {t('map.showOnMap')}
         </button>
+      )}
+
+      {coord && !room && (
+        <ComposerPlaceNameField value={placeNameField} onChange={setTypedName} t={t} />
       )}
 
       <label className={LABEL}>{t('map.emojiPickerLabel')}</label>

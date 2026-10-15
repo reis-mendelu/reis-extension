@@ -975,6 +975,8 @@
     "publish": "Publish event",
     "clickToPlace": "Tap the button, then mark the spot on the map",
     "draftPinLabel": "Event location — click to change",
+    "placeName": "Place name",
+    "placeNameHint": "Shown on the event card, e.g. Yak",
     "venueLabel": "Where",
     "venueOffcampus": "In town",
     "venueCampus": "Campus",
