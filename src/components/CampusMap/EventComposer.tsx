@@ -76,9 +76,14 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
     source?.coord ?? null
   );
   const { room, placeName, coord, clearDraftCoord } = venue;
-  // A notice has no place: switching to one drops the venue and its draft pin.
+  const cancelPlacing = useAppStore((s) => s.cancelPlacing);
+  // A notice has no place: switching to one drops the venue, its draft pin and
+  // a pending "pick on map", whose next click would drop the pin again.
   const changeKind = (next: typeof kind) => {
-    if (next === 'notice') venue.clearVenue();
+    if (next === 'notice') {
+      venue.clearVenue();
+      cancelPlacing();
+    }
     setKind(next);
   };
   // url is optional, but once something is typed it must be a URL openExternal
@@ -161,6 +166,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
         t={t}
         locale={locale}
         endLabel={notice ? 'map.noticeEndDate' : undefined}
+        withTime={!notice}
       />
 
       {/* Novinky draws no picture, so a notice is not asked for one either. */}

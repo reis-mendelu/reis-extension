@@ -61,7 +61,8 @@ export function buildPostInput(d: ComposerDraft): PostInput {
   const venueKind = deriveVenue(room, coord);
   return {
     title: d.title.trim(),
-    body: d.description.trim(),
+    // Hidden for a notice and shown nowhere for one (Novinky draws the title).
+    body: notice ? '' : d.description.trim(),
     // The catalog decides the category older builds file it under.
     // An untouched picture keeps the event's category: the backfill files the
     // Finland trip under 'trip', while 🇫🇮 alone means 'culture'.
@@ -73,7 +74,7 @@ export function buildPostInput(d: ComposerDraft): PostInput {
     emoji: notice ? null : d.emoji,
     date: d.date,
     endDate: d.endDate && d.endDate > d.date ? d.endDate : null,
-    time: d.time || null,
+    time: notice ? null : d.time || null,
     venueKind,
     roomCode: room?.code ?? null,
     coordLng: coord?.[0] ?? null,

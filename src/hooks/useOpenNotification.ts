@@ -48,9 +48,12 @@ export function useOpenNotification({
 
   // The same question the tap asks, asked for the affordance: a row that opens
   // something has to look like it does. While the map feed is still outstanding
-  // the answer is "assume it does" — every notification IS an event row, so a
-  // match is the overwhelmingly common case, and guessing the other way paints
-  // the row as dead for as long as the fetch takes.
+  // the answer is "assume it does" — nearly every society row is an event, so
+  // a match is the overwhelmingly common case, and guessing the other way paints
+  // the row as dead for as long as the fetch takes. A NOTICE without a link is
+  // the exception: it looks tappable until the feed lands, then goes still.
+  // Accepted rather than selecting `kind` in fetchNotifications, which would
+  // fail every Novinky read against a database without the column.
   const opensSomewhere = (n: SpolekNotification) =>
     !!n.link || !mapEventsLoaded || mapEvents.some((e) => e.id === n.id);
 

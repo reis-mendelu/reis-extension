@@ -132,6 +132,18 @@ describe('buildPostInput — a notice has no place', () => {
 
   // Novinky draws no picture. A party popper left on a notice is what an old
   // build, still listing it in Akce, would draw beside "Hledáš bydlení?".
+  // Its description field is hidden and nothing shows a notice's body, so an
+  // event's old text must not ride along unseen (an old build's card shows it).
+  it('carries no description and no time', () => {
+    const out = buildPostInput({
+      ...draft,
+      description: 'Bring a pen',
+      time: '18:00',
+      kind: 'notice',
+    });
+    expect(out).toMatchObject({ body: '', time: null });
+  });
+
   it('carries no picture: no emoji, filed under other', () => {
     const out = buildPostInput({ ...draft, emoji: '1f389', kind: 'notice' });
     expect(out).toMatchObject({ emoji: null, category: 'other' });

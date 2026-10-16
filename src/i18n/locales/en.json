@@ -956,7 +956,7 @@
     "kindEvent": "Event",
     "kindNotice": "Notice",
     "kindEventHint": "In Events, on the map and in News.",
-    "kindNoticeHint": "Only in News — not in Events or on the map. Students see the title and the link.",
+    "kindNoticeHint": "Only in News — not in Events or on the map. Students see the title and the date; a link, if given, opens on tap.",
     "createNotice": "New notice",
     "editNotice": "Edit notice",
     "noticeName": "Notice title",

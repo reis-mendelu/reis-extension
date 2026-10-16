@@ -84,10 +84,12 @@ describe('EventComposer — event or notice', () => {
     // Novinky shows a notice's title and opens its link; a description would
     // be asked for and never shown, so it is not asked, and the hint says so.
     expect(screen.queryByText('Popis (nepovinný)')).not.toBeInTheDocument();
-    expect(screen.getByText(/Studenti uvidí název a odkaz/)).toBeInTheDocument();
+    expect(screen.getByText(/Studenti uvidí název a datum/)).toBeInTheDocument();
     // A notice's end date is how long Novinky keeps it, not a multi-day event.
     expect(screen.getByText('Zobrazovat do (nepovinné)')).toBeInTheDocument();
     expect(screen.queryByText('Konec (vícedenní akce)')).not.toBeInTheDocument();
+    // Novinky shows a notice's day, never a time.
+    expect(screen.queryByRole('combobox', { name: 'Čas' })).not.toBeInTheDocument();
   });
 
   it('publishes a notice as a notice, with no place', async () => {
@@ -121,6 +123,15 @@ describe('EventComposer — event or notice', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
     await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
     expect(updatePost.mock.calls.at(0)?.[1].kind).toBe('event');
+  });
+
+  // "Vybrat na mapě", then Oznámení: the next map click must not drop a
+  // draft pin for a post that has no place.
+  it('switching to a notice leaves map-placing mode', () => {
+    useAppStore.setState({ placingEvent: true });
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Oznámení' }));
+    expect(useAppStore.getState().placingEvent).toBe(false);
   });
 
   it('a duplicate of a notice is a notice', () => {

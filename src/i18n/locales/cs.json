@@ -956,7 +956,7 @@
     "kindEvent": "Akce",
     "kindNotice": "Oznámení",
     "kindEventHint": "V Akcích, na mapě i v Novinkách.",
-    "kindNoticeHint": "Jen v Novinkách — ne v Akcích ani na mapě. Studenti uvidí název a odkaz.",
+    "kindNoticeHint": "Jen v Novinkách — ne v Akcích ani na mapě. Studenti uvidí název a datum; je-li vyplněný odkaz, otevře se klepnutím.",
     "createNotice": "Nové oznámení",
     "editNotice": "Upravit oznámení",
     "noticeName": "Název oznámení",
