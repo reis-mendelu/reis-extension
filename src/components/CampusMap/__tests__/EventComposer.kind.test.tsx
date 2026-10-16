@@ -58,7 +58,7 @@ beforeEach(() => {
 });
 
 const pickDate = () => {
-  fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
+  fireEvent.click(screen.getAllByText('Vyberte datum').at(0)!);
   fireEvent.click(screen.getByRole('button', { name: '15' }));
 };
 
@@ -70,7 +70,7 @@ describe('EventComposer — event or notice', () => {
   });
 
   // A notice is never on the map, so asking where it is would be a lie.
-  it('a notice hides the venue and the picture, and keeps the date and the link', () => {
+  it('a notice hides the venue, the picture and the description, and keeps the date and the link', () => {
     render(<EventComposer onDone={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: 'Oznámení' }));
     expect(screen.getByRole('button', { name: 'Oznámení' })).toHaveAttribute(
@@ -81,7 +81,10 @@ describe('EventComposer — event or notice', () => {
     expect(screen.queryByText('Obrázek akce')).not.toBeInTheDocument();
     expect(screen.getAllByText('Vyberte datum').length).toBeGreaterThan(0);
     expect(screen.getByText(/Jen v Novinkách/)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Co mají studenti vědět…')).toBeInTheDocument();
+    // Novinky shows a notice's title and opens its link; a description would
+    // be asked for and never shown, so it is not asked, and the hint says so.
+    expect(screen.queryByText('Popis (nepovinný)')).not.toBeInTheDocument();
+    expect(screen.getByText(/Studenti uvidí název a odkaz/)).toBeInTheDocument();
     // A notice's end date is how long Novinky keeps it, not a multi-day event.
     expect(screen.getByText('Zobrazovat do (nepovinné)')).toBeInTheDocument();
     expect(screen.queryByText('Konec (vícedenní akce)')).not.toBeInTheDocument();
@@ -97,7 +100,7 @@ describe('EventComposer — event or notice', () => {
     pickDate();
     fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit oznámení' }));
     await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
-    expect(createPost.mock.calls[0][0]).toMatchObject({
+    expect(createPost.mock.calls.at(0)?.[0]).toMatchObject({
       kind: 'notice',
       venueKind: 'tba',
       coordLng: null,
@@ -117,7 +120,7 @@ describe('EventComposer — event or notice', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Akce' }));
     fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
     await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
-    expect(updatePost.mock.calls[0][1].kind).toBe('event');
+    expect(updatePost.mock.calls.at(0)?.[1].kind).toBe('event');
   });
 
   it('a duplicate of a notice is a notice', () => {

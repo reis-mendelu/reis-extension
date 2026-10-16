@@ -38,7 +38,6 @@ describe('toPatch', () => {
       location: 'Klub',
       url: null,
       subscribers_only: true,
-      kind: 'event',
     });
   });
 

@@ -101,6 +101,11 @@ export function AdminEventList() {
     return undefined;
   };
 
+  // A row flies the map to its event. A notice is on no map (Novinky only),
+  // so its row opens it for editing instead of an event card with no place.
+  const openRow = (e: MapEvent) =>
+    e.kind === 'notice' ? openComposer(e.id) : focusEvent(e.id, { fly: true });
+
   // A notice is listed with the events (it is how the society edits it) and
   // says so: students see it in Novinky only, never in Akce or on the map.
   const withKind = (e: MapEvent, line: string | undefined) =>
@@ -124,7 +129,7 @@ export function AdminEventList() {
             t={t}
             selected={selectedId === e.id}
             subline={withKind(e, subline?.(e))}
-            onClick={() => !busyIds.has(e.id) && focusEvent(e.id, { fly: true })}
+            onClick={() => !busyIds.has(e.id) && openRow(e)}
             actions={rowActions(e)}
             footer={<EventStats eventId={e.id} />}
           />

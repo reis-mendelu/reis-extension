@@ -76,8 +76,10 @@ export function toRow(input: PostInput, associationId: string, createdBy: string
     url: input.url ?? null,
     visible_from: input.visibleFrom ?? null,
     subscribers_only: input.subscribersOnly ?? false,
-    // Always sent, so this build needs the column: apply the migration first.
-    kind: input.kind ?? 'event',
+    // Only a notice names its kind; an event is the column's default. So an
+    // event still publishes against a database without the column (the
+    // 20261017120000 migration), and only a notice needs it applied first.
+    ...(input.kind === 'notice' ? { kind: 'notice' as const } : {}),
   };
 }
 
@@ -101,7 +103,11 @@ export async function createPost(
 
 export async function updatePost(
   id: string,
-  patch: Partial<Omit<ReturnType<typeof toRow>, 'association_id' | 'created_by'>>
+  // `kind` widened: an edit can turn a notice back into an event, which a new
+  // row never needs to say.
+  patch: Partial<Omit<ReturnType<typeof toRow>, 'association_id' | 'created_by' | 'kind'>> & {
+    kind?: PostKind;
+  }
 ): Promise<{ error?: string }> {
   if (DEV_SOCIETY) return devSocietyStore.update(id, patch as Partial<SpolkyEventRow>);
   const { error } = await adminAuthClient.from('spolky_events').update(patch).eq('id', id);

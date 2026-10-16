@@ -43,7 +43,7 @@ export function initialKind(source: MapEvent | null): PostKind {
  * which the composer has no field for: writing it would null a value the
  * society never saw.
  */
-export function toPatch(input: PostInput) {
+export function toPatch(input: PostInput, sourceKind: PostKind = 'event') {
   return {
     title: input.title,
     body: input.body,
@@ -62,9 +62,12 @@ export function toPatch(input: PostInput) {
     // saved cleanly and kept the old value in the database while the form
     // showed the society its new choice.
     subscribers_only: input.subscribersOnly ?? false,
-    // Editable both ways, so always written (an old console's patch omits it,
-    // and the row keeps what it was).
-    kind: input.kind ?? 'event',
+    // Written whenever a notice is involved, either way round. An event that
+    // stays one leaves it out, as an old console's patch does, so editing one
+    // works against a database the migration has not reached yet.
+    ...(input.kind === 'notice' || sourceKind === 'notice'
+      ? { kind: input.kind ?? ('event' as const) }
+      : {}),
   };
 }
 

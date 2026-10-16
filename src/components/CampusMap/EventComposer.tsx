@@ -8,6 +8,7 @@ import { useVenuePicker } from './useVenuePicker';
 import { ComposerWhenField } from './ComposerWhenField';
 import { ComposerVenueFields } from './ComposerVenueFields';
 import { ComposerKindField } from './ComposerKindField';
+import { ComposerTextFields } from './ComposerTextFields';
 import { ComposerAudienceField } from './ComposerAudienceField';
 import { ComposerEmojiField } from './ComposerEmojiField';
 import { ComposerLinkField } from './ComposerLinkField';
@@ -116,7 +117,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
     });
     try {
       const res = editId
-        ? await updatePost(editId, toPatch(input))
+        ? await updatePost(editId, toPatch(input, initialKind(source)))
         : await createPost(input, associationId, email);
       if (res.error) {
         setError(true);
@@ -141,24 +142,14 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
 
       <ComposerKindField value={kind} onChange={changeKind} t={t} />
 
-      <label className={LABEL}>{t(notice ? 'map.noticeName' : 'map.eventName')}</label>
-      <input
-        className="input input-bordered w-full"
-        placeholder={t(notice ? 'map.noticeName' : 'map.eventName')}
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
+      <ComposerTextFields
+        kind={kind}
+        title={title}
+        description={description}
+        onTitle={setTitle}
+        onDescription={setDescription}
+        t={t}
       />
-
-      <label className="flex w-full flex-col">
-        <span className={LABEL}>{t('map.description')}</span>
-        <textarea
-          className="textarea textarea-bordered w-full"
-          rows={3}
-          placeholder={t(notice ? 'map.noticeDescriptionHint' : 'map.descriptionHint')}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-      </label>
 
       <ComposerWhenField
         date={date}

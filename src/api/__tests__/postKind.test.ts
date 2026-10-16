@@ -69,15 +69,24 @@ describe('fetchMapEvents — notices never reach the map', () => {
 });
 
 describe('writing the kind', () => {
-  it('a new post is an event unless the composer says otherwise', () => {
-    expect(toRow(input, 'reis', 'a@b').kind).toBe('event');
+  // The column's default makes an event. Sent only for a notice, so an event
+  // still publishes against a database the migration has not reached yet.
+  it('a new event leaves kind to the default; a notice names itself', () => {
+    expect('kind' in toRow(input, 'reis', 'a@b')).toBe(false);
+    expect('kind' in toRow({ ...input, kind: 'event' }, 'reis', 'a@b')).toBe(false);
     expect(toRow({ ...input, kind: 'notice' }, 'reis', 'a@b').kind).toBe('notice');
   });
 
   // Left out of the patch, switching a post's kind saved cleanly and changed nothing.
-  it('an edit writes the kind, both ways', () => {
-    expect(toPatch({ ...input, kind: 'notice' }).kind).toBe('notice');
-    expect(toPatch({ ...input, kind: 'event' }).kind).toBe('event');
+  it('an edit writes the kind whenever a notice is involved, both ways', () => {
+    expect(toPatch({ ...input, kind: 'notice' }, 'event').kind).toBe('notice');
+    expect(toPatch({ ...input, kind: 'event' }, 'notice').kind).toBe('event');
+    expect(toPatch({ ...input, kind: 'notice' }, 'notice').kind).toBe('notice');
+  });
+
+  it('an edit of an event that stays one leaves kind alone', () => {
+    expect('kind' in toPatch({ ...input, kind: 'event' }, 'event')).toBe(false);
+    expect('kind' in toPatch(input)).toBe(false);
   });
 
   it('the dev store keeps the kind it was given', () => {
