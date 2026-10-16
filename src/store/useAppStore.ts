@@ -329,6 +329,7 @@ export const initializeStore = async () => {
     unsubscribe();
     bcTheme.close();
     bcLang.close();
+    bcStudy.close();
     bcFiles.close();
   };
 };

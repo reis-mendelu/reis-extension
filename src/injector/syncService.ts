@@ -624,6 +624,8 @@ export async function refreshExams(): Promise<void> {
   // answer — "none" included — and may release the failed state. Data only
   // when there is some: an empty read must not wipe what is on screen.
   const params = await getUserParams();
+  const studium = params?.studium;
+  const obdobi = params?.obdobi;
   const fresh = await fetchDualLanguageExams();
   if (fresh.length === 0) {
     sendToIframe(
@@ -634,14 +636,17 @@ export async function refreshExams(): Promise<void> {
   const enriched = await enrichExamsWithDurations(
     fresh,
     cachedExams(),
-    params?.studium ?? '',
-    params?.obdobi ?? ''
+    studium ?? '',
+    obdobi ?? ''
   );
-  cachedData = { ...cachedData, exams: enriched };
+  // The student may have switched study while IS answered: the cache then
+  // belongs to the new study, and these are the old one's (the push below
+  // is stamped with it, so the app drops it too).
+  if ((await getUserParams())?.studium === studium) cachedData = { ...cachedData, exams: enriched };
   sendToIframe(
     Messages.syncUpdate({
       exams: enriched,
-      studium: params?.studium,
+      studium,
       loaded: ['exams'],
       isSyncing,
       lastSync: cachedData.lastSync,

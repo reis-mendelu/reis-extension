@@ -180,4 +180,30 @@ describe('a crawl after a study switch', () => {
     await flush();
     expect(api.studyPlan.mock.calls.length).toBe(before + 1);
   });
+
+  // An exam refresh started on the old study and answered after the switch
+  // must not put the old study's terms into the new study's cache.
+  it("keeps a late exam refresh of the old study out of the new study's cache", async () => {
+    const { syncAllData, refreshExams } = await loadSync();
+    await syncAllData();
+    await flush();
+
+    let answer!: (v: unknown) => void;
+    api.exams.mockImplementationOnce(() => new Promise((r) => (answer = r)));
+    const refresh = refreshExams();
+    await flush();
+    userParams.studium = 'st2';
+    api.exams.mockResolvedValue([]);
+    await syncAllData();
+    await flush();
+    answer([{ code: 'OLD', sections: [] }]);
+    await refresh;
+
+    const { sendToIframe } = await import('../iframeManager');
+    vi.mocked(sendToIframe).mockClear();
+    await syncAllData();
+    await flush();
+    for (const m of await updates())
+      if (m.data.studium === 'st2') expect(JSON.stringify(m.data.exams ?? [])).not.toContain('OLD');
+  });
 });
