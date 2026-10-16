@@ -155,9 +155,10 @@ describe('TermRow — details', () => {
     expect(screen.getByText('45 min')).toBeInTheDocument();
   });
 
-  // The detail page is fetched for the length alone — the phone shows no
-  // Poznámka — so a length the sync already has makes the request pointless.
-  it('do not fetch the detail page when the sync already attached the length', () => {
+  // Sprint 13: the phone read the detail page for the length alone and dropped
+  // the teacher's Poznámka the desktop shows. Opening a term now always asks
+  // for its page (cached 6 h by the slice), because the note is on it.
+  it('fetch the detail page for the note even when the sync attached the length', () => {
     const fetchExamNotePriority = vi.fn();
     useAppStore.setState({ fetchExamNotePriority } as never);
     render(
@@ -170,7 +171,36 @@ describe('TermRow — details', () => {
       />
     );
     openDetails();
-    expect(fetchExamNotePriority).not.toHaveBeenCalled();
+    expect(fetchExamNotePriority).toHaveBeenCalledWith(term.id);
+  });
+
+  it("show the teacher's Poznámka under the term", () => {
+    useAppStore.setState({
+      examNotes: { [term.id]: { text: 'S sebou kalkulačku.', isEmphasized: false } },
+    } as never);
+    renderRow(openSection);
+    openDetails();
+    const note = within(screen.getByTestId('term-details')).getByTestId('term-note');
+    expect(note).toHaveTextContent('S sebou kalkulačku.');
+    expect(note.querySelector('svg')).not.toHaveClass('text-[var(--tone-warning)]');
+  });
+
+  // IS writes rules with pass/fail consequences in red; the phone keeps that.
+  it('mark a note IS wrote in red as a warning', () => {
+    useAppStore.setState({
+      examNotes: { [term.id]: { text: 'Bez AI, jinak F.', isEmphasized: true } },
+    } as never);
+    renderRow(openSection);
+    openDetails();
+    const note = screen.getByTestId('term-note');
+    expect(note.querySelector('svg')).toHaveClass('text-[var(--tone-warning)]');
+  });
+
+  it('show no note block when the term has no note', () => {
+    useAppStore.setState({ examNotes: { [term.id]: null } } as never);
+    renderRow(openSection);
+    openDetails();
+    expect(screen.queryByTestId('term-note')).not.toBeInTheDocument();
   });
 
   // null is "IS had none at the last sync"; a teacher can have filled it in
