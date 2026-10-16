@@ -15,6 +15,7 @@ on:
     branches: [test, main]
     paths:
       - '.github/workflows/ship.yml'
+      - '.github/workflows/db-migrate.yml'
       - '.github/workflows/ship-dryrun.yml'
       - '.github/workflows/publish.yml'
       - '.github/workflows/release-tag.yml'
