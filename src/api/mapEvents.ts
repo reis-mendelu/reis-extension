@@ -93,11 +93,12 @@ export async function fetchMapEvents(
     (data ?? [])
       .map((row) => row as SpolkyEventRow)
       // A notice is Novinky-only. Dropped here, the one door the student map has,
-      // so the Akce list, the pins, the peek band and map search never see one.
+      // so the Akce list, the pins and the peek band never see one.
       // On the device rather than `.eq('kind', …)` in the query: the filter then
       // works before the migration is applied and after, against any database.
       .filter((row) => postKind(row.kind) === 'event')
       .map((row) => toMapEvent(row, societies))
+      // Local day; the server bound is UTC-agnostic but coarse.
       .filter((e) => !isFinishedEvent(e))
-  ); // local day; the server bound is UTC-agnostic but coarse
+  );
 }

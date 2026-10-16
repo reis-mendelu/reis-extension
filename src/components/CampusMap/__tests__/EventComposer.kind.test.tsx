@@ -52,6 +52,7 @@ beforeEach(() => {
     societyPosts: [],
     composerOpen: true,
     societyMapEvents: [],
+    placingEvent: false,
     loadSocietyPosts: vi.fn(async () => {}),
     reloadMapEvents: vi.fn(async () => {}),
   });
@@ -132,6 +133,39 @@ describe('EventComposer — event or notice', () => {
     render(<EventComposer onDone={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: 'Oznámení' }));
     expect(useAppStore.getState().placingEvent).toBe(false);
+  });
+
+  // A mistaken tap on Oznámení and back must not cost an event its room: a
+  // saved event without one silently leaves the student map.
+  it('an event switched to a notice and back keeps its room', async () => {
+    const campus: MapEvent = {
+      ...notice,
+      id: 'c1',
+      title: 'Deskovky',
+      kind: 'event',
+      venueKind: 'campus',
+      roomCode: 'BA39N6006',
+      location: 'Q6.06',
+      coord: [16.614, 49.209],
+      time: '18:00',
+    };
+    // As openComposer leaves it: the event's pin is the draft pin.
+    useAppStore.setState({
+      editEventId: 'c1',
+      societyMapEvents: [campus],
+      draftCoord: campus.coord,
+    });
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Oznámení' }));
+    expect(useAppStore.getState().draftCoord).toBeNull(); // no pin while a notice
+    fireEvent.click(screen.getByRole('button', { name: 'Akce' }));
+    expect(useAppStore.getState().draftCoord).toEqual([16.614, 49.209]);
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
+    await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
+    expect(updatePost.mock.calls.at(0)?.[1]).toMatchObject({
+      venue_kind: 'campus',
+      room_code: 'BA39N6006',
+    });
   });
 
   it('a duplicate of a notice is a notice', () => {

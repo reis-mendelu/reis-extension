@@ -9,6 +9,7 @@ import { ComposerWhenField } from './ComposerWhenField';
 import { ComposerVenueFields } from './ComposerVenueFields';
 import { ComposerKindField } from './ComposerKindField';
 import { ComposerTextFields } from './ComposerTextFields';
+import { useComposerKind } from './useComposerKind';
 import { ComposerAudienceField } from './ComposerAudienceField';
 import { ComposerEmojiField } from './ComposerEmojiField';
 import { ComposerLinkField } from './ComposerLinkField';
@@ -65,7 +66,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
     startEmoji ?? latestEmoji(posts) ?? CATEGORY_EMOJI_CODE.party
   );
   const [subscribersOnly, setSubscribersOnly] = useState(source?.subscribersOnly ?? false);
-  const [kind, setKind] = useState(() => initialKind(source));
+  const [kind, changeKind] = useComposerKind(source);
   const notice = kind === 'notice';
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
@@ -76,16 +77,6 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
     source?.coord ?? null
   );
   const { room, placeName, coord, clearDraftCoord } = venue;
-  const cancelPlacing = useAppStore((s) => s.cancelPlacing);
-  // A notice has no place: switching to one drops the venue, its draft pin and
-  // a pending "pick on map", whose next click would drop the pin again.
-  const changeKind = (next: typeof kind) => {
-    if (next === 'notice') {
-      venue.clearVenue();
-      cancelPlacing();
-    }
-    setKind(next);
-  };
   // url is optional, but once something is typed it must be a URL openExternal
   // will actually open — the same rule EventDetailCard enforces on the way OUT.
   const urlInvalid = isUrlInvalid(url);
