@@ -377,9 +377,10 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
     // mapFocusRequest so the canvas flies to its coordinate; off-campus events
     // have no coord, so they only open the panel wherever the map already is.
     const fly = opts?.fly === true && !!event.coord;
+    // A pin tapped INSIDE an open building selects in place: leaving would
+    // re-run the canvas draw, whose event branch zooms out to the event.
     set({
-      activeBuildingId: null,
-      activeFloorId: null,
+      ...(opts?.keepBuilding ? {} : { activeBuildingId: null, activeFloorId: null }),
       mapSelection: { kind: 'event', event },
       ...(fly
         ? { mapFocusRequest: get().mapFocusRequest + 1, mapFocusTarget: 'campus' as const }
