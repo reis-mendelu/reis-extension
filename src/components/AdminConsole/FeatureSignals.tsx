@@ -4,14 +4,11 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { buildTrendSeries } from '../../utils/trendSeries';
 import { SignalTrend } from './SignalTrend';
 import type { FeatureSignalCount } from '../../api/featureStats';
+import { SIGNAL_LABEL_KEY } from './featureSignalLabels';
 
 /** The label each database key is shown under. An unknown key is not rendered:
  *  a future deployment's signal with no copy for it would read as a bug. */
-const LABEL_KEY: Record<string, string> = {
-  map_dwell_3s: 'signalMapDwell',
-  eduroam_wifi_configured: 'signalEduroamConfigured',
-  eduroam_profile_delivered: 'signalEduroamDelivered',
-};
+const LABEL_KEY: Record<string, string> = SIGNAL_LABEL_KEY;
 /** Fixed order, so a signal that dropped to zero still holds its place rather
  *  than vanishing and making the panel look like it lost a feature. */
 const ORDER = Object.keys(LABEL_KEY);
@@ -28,7 +25,7 @@ const SELECTED = 'bg-base-300 border-l-2 border-primary';
 const UNSELECTED = 'bg-base-200 border-l-2 border-transparent hover:bg-base-300';
 
 /**
- * The three feature counters and the most-opened events on the map, each row a
+ * The feature counters and the most-opened events on the map, each row a
  * selector for the trend drawn beneath it.
  *
  * Installs, never people — said in the note, not implied — and `< 5` is

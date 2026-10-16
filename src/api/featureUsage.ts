@@ -6,8 +6,8 @@ import { logError } from '../utils/reportError';
 import { hasDataConsent } from '../utils/firefoxDataConsent';
 
 /**
- * The three counters reIS keeps about its own features, and the per-event map
- * view counter beside them.
+ * The counters reIS keeps about its own features, and the per-event map view
+ * counter beside them.
  *
  * Both writes here identify the DEVICE or the EVENT, never the student. The
  * feature signals carry the random per-install UUID
@@ -22,13 +22,21 @@ import { hasDataConsent } from '../utils/firefoxDataConsent';
  * Pairing the install id with an event id would be a behavioural profile, so
  * the two counters are kept in separate shapes that cannot be joined.
  */
-export type FeatureSignal =
+export const FEATURE_SIGNALS = [
   /** Spent at least three seconds on the campus map. */
-  | 'map_dwell_3s'
+  'map_dwell_3s',
   /** The app configured the eduroam network itself (iOS/Android). */
-  | 'eduroam_wifi_configured'
+  'eduroam_wifi_configured',
   /** A profile was handed over, which the student must still install (mac/windows). */
-  | 'eduroam_profile_delivered';
+  'eduroam_profile_delivered',
+  /** The "would you support reIS?" question was on screen (2026-10-16 test). */
+  'support_prompt_seen',
+  /** The student answered "Ano" to it. Nothing is charged; no payment exists. */
+  'support_prompt_yes',
+] as const;
+
+/** Each label must also be in the database whitelist (featureSignalWhitelist.test.ts). */
+export type FeatureSignal = (typeof FEATURE_SIGNALS)[number];
 
 /**
  * Whether this build may write a counter at all.
