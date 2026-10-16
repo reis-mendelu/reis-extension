@@ -8,6 +8,16 @@ import type { SyncedData } from '../../types/messages/base';
 const META_KEY_PREFIX = 'past_semester_';
 
 /**
+ * Where a past semester is cached. Per study for a student with several —
+ * two studies at one faculty share period ids, and one key per period made
+ * every switch refetch and overwrite the lot — and per period alone for
+ * everyone else, which is the key every existing install already holds.
+ */
+export function pastSemesterKey(periodId: string, studium: string, multiStudy: boolean): string {
+  return multiStudy ? `${META_KEY_PREFIX}${studium}_${periodId}` : `${META_KEY_PREFIX}${periodId}`;
+}
+
+/**
  * Is a cached past semester this study's? The key is the period alone, and a
  * student with two studies at one faculty has the same period ids in both.
  * An entry without a study predates the stamp. It is kept for a student with
@@ -36,7 +46,7 @@ export async function syncPastSemesters(
   const mergedPastAttendance: Record<string, SubjectAttendance[]> = {};
 
   for (const period of pastPeriods) {
-    const cacheKey = `${META_KEY_PREFIX}${period.id}`;
+    const cacheKey = pastSemesterKey(period.id, studium, multiStudy);
 
     // Permanent cache — past semesters are immutable facts
     const cached = (await IndexedDBService.get('meta', cacheKey)) as

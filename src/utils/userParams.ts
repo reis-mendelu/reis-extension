@@ -196,9 +196,20 @@ export async function getUserParams(): Promise<UserParams | null> {
         // Same student. Serve the record as it stands rather than rebuilding
         // it — the rebuild below is two more IS pages, on every boot. With
         // more than one study it is only re-pointed, from what IS just said.
-        const same = multi ? withStudy(stored as UserParams, multi) : (stored as UserParams);
-        if (JSON.stringify(same) !== JSON.stringify(stored))
-          await IndexedDBService.set('meta', STORAGE_KEYS.USER_PARAMS, same);
+        let same = multi ? withStudy(stored as UserParams, multi) : (stored as UserParams);
+        if (JSON.stringify(same) !== JSON.stringify(stored)) {
+          // The study pages took a while: another context (another IS tab)
+          // may have switched study meanwhile. Its choice wins over a write
+          // built from the record as it was before.
+          const now = (await IndexedDBService.get('meta', STORAGE_KEYS.USER_PARAMS)) as
+            UserParams | undefined;
+          if (
+            now?.studium !== stored?.studium &&
+            now?.studies?.some((s) => s.studium === now.studium)
+          )
+            same = now;
+          else await IndexedDBService.set('meta', STORAGE_KEYS.USER_PARAMS, same);
+        }
         _cached = same;
         return _cached;
       }
@@ -303,9 +314,17 @@ export function clearUserParamsCache() {
  * one switch at no cost. `studium` arrives over postMessage, so anything
  * that is not one of the stored active studies is refused.
  */
-export async function selectStudy(
-  studium: string
-): Promise<{ params: UserParams; changed: boolean }> {
+export function selectStudy(studium: string): Promise<{ params: UserParams; changed: boolean }> {
+  // One at a time. A forward switch and the rollback the caller sends after
+  // a timeout can both be queued here; read-then-write interleaved, the
+  // rollback saw the old study, did nothing, and the forward one landed.
+  const next = _selecting.then(() => selectStudyNow(studium));
+  _selecting = next.catch(() => undefined);
+  return next;
+}
+let _selecting: Promise<unknown> = Promise.resolve();
+
+async function selectStudyNow(studium: string): Promise<{ params: UserParams; changed: boolean }> {
   if (_inflight) await _inflight.catch(() => null);
   const current =
     _cached ??

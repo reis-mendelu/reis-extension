@@ -1,6 +1,7 @@
 import type { AppSlice } from '../types';
 import { executeAction } from '../../api/proxyClient';
-import { selectStudy } from '../../utils/userParams';
+import { selectStudy, adoptStoredStudy } from '../../utils/userParams';
+import { IndexedDBService } from '../../services/storage';
 import { logError } from '../../utils/reportError';
 
 export interface StudySwitchSlice {
@@ -12,7 +13,14 @@ export interface StudySwitchSlice {
    * the new study runs after that and lands like any sync.
    */
   switchStudy: (studium: string) => Promise<boolean>;
+  /** Another reIS tab switched study: follow it from the shared database. */
+  followStudySwitch: () => Promise<void>;
 }
+
+/** Tells this browser's other reIS tabs that the study changed. */
+export const STUDY_CHANNEL = 'reis_study_sync';
+/** This tab's id on that channel, so it ignores its own announcement. */
+export const STUDY_CHANNEL_SENDER = Math.random().toString(36).slice(2);
 
 export const createStudySwitchSlice: AppSlice<StudySwitchSlice> = (set, get) => ({
   studySwitching: false,
@@ -41,6 +49,20 @@ export const createStudySwitchSlice: AppSlice<StudySwitchSlice> = (set, get) => 
       }
       await selectStudy(studium);
       await get().loadContext();
+      // What the store holds for the previous study, by study-keyed reads
+      // where there are some; exams are not keyed, and setExams keeps a list
+      // over an empty push, so they are emptied until the crawl lands.
+      set((s) => ({ exams: { ...s.exams, data: [] } }));
+      await IndexedDBService.set('exams', 'current', []).catch(() => {});
+      void get().fetchCvicneTests();
+      void get().fetchOdevzdavarny();
+      try {
+        const bc = new BroadcastChannel(STUDY_CHANNEL);
+        bc.postMessage({ from: STUDY_CHANNEL_SENDER });
+        bc.close();
+      } catch {
+        // No BroadcastChannel: other tabs follow on their next start.
+      }
       return true;
     } catch (e) {
       // This context could not follow: put the crawling one back, so the two
@@ -52,5 +74,18 @@ export const createStudySwitchSlice: AppSlice<StudySwitchSlice> = (set, get) => 
     } finally {
       set({ studySwitching: false });
     }
+  },
+  followStudySwitch: async () => {
+    if (get().demoMode || get().impersonation) return;
+    await adoptStoredStudy();
+    await get().loadContext();
+    // The switching tab's iframe wrote the new study's data to the shared
+    // extension-origin database; read it back. This tab's content script
+    // follows at its next crawl (adoptStoredStudy in syncAllData).
+    void get().fetchExams();
+    void get().fetchSubjects();
+    void get().fetchStudyPlan();
+    void get().fetchCvicneTests();
+    void get().fetchOdevzdavarny();
   },
 });

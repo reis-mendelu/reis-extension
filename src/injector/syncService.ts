@@ -14,14 +14,18 @@ import { syncCvicneTests } from '../services/sync/syncCvicneTests';
 import { syncOdevzdavarny } from '../services/sync/syncOdevzdavarny';
 import { fetchSeminarGroupIds, fetchClassmates } from '../api/classmates';
 import { mergePastSubjects } from '../services/sync/mergePastSubjects';
-import { syncPastSemesters, pastSemesterIsFor } from '../services/sync/syncPastSemesters';
+import {
+  syncPastSemesters,
+  pastSemesterIsFor,
+  pastSemesterKey,
+} from '../services/sync/syncPastSemesters';
 
 import { getUserParams, adoptStoredStudy } from '../utils/userParams';
 import { enrichExamsWithDurations } from '../services/sync/examDurations';
 import type { ExamSubject } from '../types/exams';
 import { fetchFullSemesterSchedule } from './dataFetchers';
 import { sendToIframe } from './iframeManager';
-import { TTL, ttlGated, isFresh, markFetched } from './syncTtl';
+import { TTL, ttlGated, isFresh, markFetched, resetSyncTtl } from './syncTtl';
 import type { SyncedData } from '../types/messages';
 import { IndexedDBService } from '../services/storage/IndexedDBService';
 import type { SubjectsData } from '../types/documents';
@@ -48,6 +52,30 @@ let currentSemesterCodes: string[] | null = null;
  * the UI until the longer TTL expired.
  */
 let lastPastSubjects: { cz: Record<string, unknown>; en: Record<string, unknown> } | null = null;
+
+/** The study `cachedData`'s study-scoped fields were fetched for. */
+let cachedForStudium: string | null = null;
+
+/**
+ * The student switched study — here, or in another IS tab whose switch this
+ * one has just adopted. Everything `cachedData` holds for the previous study
+ * goes, with the freshness stamps: otherwise every "keep the cached value on
+ * an empty or failed read" fallback below, and every TTL skip, hands the UI
+ * the previous programme's subjects, exams and tests as the new one's.
+ * The timetable stays: it is keyed on the student, and holds both studies.
+ */
+function forgetOtherStudy(studium: string | undefined): boolean {
+  if (!studium) return false;
+  const previous = cachedForStudium;
+  cachedForStudium = studium;
+  if (previous === null || previous === studium) return false;
+  const { schedule, lastSync } = cachedData;
+  cachedData = { schedule, lastSync };
+  currentSemesterCodes = null;
+  lastPastSubjects = null;
+  resetSyncTtl();
+  return true;
+}
 
 export async function syncAllData() {
   if (isSyncing) return;
@@ -81,6 +109,7 @@ export async function syncAllData() {
     await adoptStoredStudy();
     const userParams = await getUserParams();
     const studium = userParams?.studium;
+    const studyChanged = forgetOtherStudy(studium);
 
     // Which core fetches actually ran, as opposed to being TTL-skipped — both
     // come back null, and only a fetch that ran can say IS was unreachable.
@@ -262,7 +291,10 @@ export async function syncAllData() {
           (p) => p.id !== userParams!.obdobi
         );
         for (const period of pastPeriods) {
-          const cached = (await IndexedDBService.get('meta', `past_semester_${period.id}`)) as
+          const cached = (await IndexedDBService.get(
+            'meta',
+            pastSemesterKey(period.id, studium, !!userParams?.studies)
+          )) as
             | {
                 studium?: string;
                 subjects: { data: typeof subjects.value.subjects.data };
@@ -341,7 +373,9 @@ export async function syncAllData() {
     // before the slow per-subject Phase 3 (files, classmates, zazramnik).
     sendToIframe(
       Messages.syncUpdate({
-        exams: cachedData.exams,
+        // After a switch an empty read is a real answer, not "keep what you
+        // have": the UI's exams are the previous study's until told otherwise.
+        exams: cachedData.exams ?? (studyChanged ? [] : undefined),
         schedule: cachedData.schedule,
         subjects: cachedData.subjects,
         attendance: cachedData.attendance,

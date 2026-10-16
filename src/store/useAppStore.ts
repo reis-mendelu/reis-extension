@@ -26,7 +26,11 @@ import { createHiddenItemsSlice } from './slices/createHiddenItemsSlice';
 import { createTeachingWeekSlice } from './slices/createTeachingWeekSlice';
 import { createNavPagesSlice } from './slices/createNavPagesSlice';
 import { createContextSlice } from './slices/createContextSlice';
-import { createStudySwitchSlice } from './slices/createStudySwitchSlice';
+import {
+  createStudySwitchSlice,
+  STUDY_CHANNEL,
+  STUDY_CHANNEL_SENDER,
+} from './slices/createStudySwitchSlice';
 import { createPulseSlice } from './slices/createPulseSlice';
 import { createCustomEventsSlice } from './slices/createCustomEventsSlice';
 import { createNotificationSlice } from './slices/createNotificationSlice';
@@ -273,6 +277,13 @@ export const initializeStore = async () => {
     // audience depends on it). Once answered, it is not asked again.
     if (!st.contextResolved) void st.loadContext();
   });
+
+  // Cross-tab study switch: another tab's switcher re-pointed the shared
+  // record; this tab follows it rather than keep showing the old study.
+  const bcStudy = new BroadcastChannel(STUDY_CHANNEL);
+  bcStudy.onmessage = (e: MessageEvent<{ from?: string }>) => {
+    if (e.data?.from !== STUDY_CHANNEL_SENDER) void useAppStore.getState().followStudySwitch();
+  };
 
   // Cross-tab theme listener — use loadTheme() to also update DOM data-theme attribute
   const bcTheme = new BroadcastChannel('reis_theme_sync');

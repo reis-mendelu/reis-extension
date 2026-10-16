@@ -160,6 +160,19 @@ describe('getUserParams with more than one study', () => {
     expect(idbClearAll).not.toHaveBeenCalled();
   });
 
+  // A boot in one IS tab must not write back the study the student has just
+  // switched away from in another, because its study pages were slow.
+  it('keeps a switch another context made while the study pages loaded', async () => {
+    const INTERRUPTED: StudyOption = { ...EM, studium: '900003', obdobi: '815' };
+    idbGet.mockResolvedValueOnce(stored(INTERRUPTED));
+    idbGet.mockResolvedValue(stored(EM, [AII, EM]));
+    fetchUserBaseIds.mockResolvedValue(base('900003', '815'));
+    resolveStudies.mockResolvedValue({ active: [AII, EM], chosen: AII });
+    const params = await getUserParams();
+    expect(params?.studium).toBe('900012');
+    expect(idbSet).not.toHaveBeenCalled();
+  });
+
   it('keeps a usable record when the study pages cannot be read', async () => {
     idbGet.mockResolvedValue(stored(EM, [AII, EM]));
     fetchUserBaseIds.mockResolvedValue(base('900011'));
@@ -209,6 +222,14 @@ describe('selectStudy', () => {
     await selectStudy('900012');
     expect(idbClearAll).not.toHaveBeenCalled();
     expect(announced).not.toHaveBeenCalled();
+  });
+
+  it('applies a forward switch and its rollback in the order they were sent', async () => {
+    const forward = selectStudy('900012');
+    const back = selectStudy('900011');
+    await expect(forward).resolves.toMatchObject({ changed: true });
+    await expect(back).resolves.toMatchObject({ changed: true });
+    expect((await getUserParams())?.studium).toBe('900011');
   });
 
   // Another IS tab switched; this tab's crawl must follow, not keep the old one.

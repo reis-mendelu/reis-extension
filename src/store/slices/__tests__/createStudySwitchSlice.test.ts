@@ -12,6 +12,7 @@ const { calls, getUserParams, selectStudy, executeAction } = vi.hoisted(() => {
 vi.mock('../../../utils/userParams', () => ({
   getUserParams,
   selectStudy,
+  adoptStoredStudy: vi.fn(async () => {}),
   isIdentityConfirmed: () => true,
 }));
 vi.mock('../../../api/proxyClient', () => ({ executeAction }));
@@ -60,6 +61,25 @@ describe('switchStudy', () => {
       studentId: '100001',
       studySwitching: false,
     });
+  });
+
+  // The previous study's exam terms are not this one's; the crawl refills.
+  it("empties the previous study's exams and tells the other tabs", async () => {
+    const heard = vi.fn();
+    const bc = new BroadcastChannel('reis_study_sync');
+    bc.onmessage = (e) => heard(e.data);
+    useAppStore.setState((s) => ({ exams: { ...s.exams, data: [{ code: 'OLD' }] as never } }));
+    getUserParams.mockResolvedValue(params(EM));
+    await useAppStore.getState().switchStudy('900012');
+    expect(useAppStore.getState().exams.data).toEqual([]);
+    await vi.waitFor(() => expect(heard).toHaveBeenCalledWith({ from: expect.any(String) }));
+    bc.close();
+  });
+
+  it("follows another tab's switch from the shared record", async () => {
+    getUserParams.mockResolvedValue(params(EM));
+    await useAppStore.getState().followStudySwitch();
+    expect(useAppStore.getState().studiumId).toBe('900012');
   });
 
   it('leaves this context alone when the crawling one refuses, and undoes a late switch', async () => {

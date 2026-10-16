@@ -252,6 +252,25 @@ describe('requestSync', () => {
       expect(isFresh('subjects', TTL.DAILY)).toBe(false);
     });
 
+    it('runs a switch straight away when nothing else is going', async () => {
+      await expect(requestSync('study')).resolves.toBe(true);
+      expect(mockedSync).toHaveBeenCalledTimes(1);
+    });
+
+    it('lets quick switches share one crawl instead of queueing one each', async () => {
+      const { gate, release } = blockingSync();
+      mockedSync.mockImplementationOnce(async () => {
+        await gate;
+      });
+      const boot = requestSync('boot');
+      const a = requestSync('study');
+      const b = requestSync('study');
+      const c = requestSync('study');
+      release();
+      await Promise.all([boot, a, b, c]);
+      expect(mockedSync).toHaveBeenCalledTimes(2);
+    });
+
     it('drops an automatic run while one is already in flight', async () => {
       const { gate, release } = blockingSync();
       mockedSync.mockImplementationOnce(async () => {

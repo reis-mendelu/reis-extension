@@ -60,10 +60,14 @@ let inFlight: Promise<void> | null = null;
  */
 let fullCrawl: Promise<boolean> | null = null;
 
+/** A `study` crawl waiting for the crawls ahead of it — see requestSync. */
+let pendingStudy: Promise<boolean> | null = null;
+
 export function __resetSyncGateForTests(): void {
   lastRunAt = 0;
   inFlight = null;
   fullCrawl = null;
+  pendingStudy = null;
   resetSyncTtl();
 }
 
@@ -156,10 +160,21 @@ export async function requestSync(reason: SyncReason): Promise<boolean> {
   // The student switched study. Every crawl already queued or running read
   // the previous study's params when it started, so none of them answers
   // this: wait them out, then run a full crawl of the new study.
+  // A second switch while the first is still waiting rides with it: neither
+  // has read params yet, so one crawl answers both (quick toggles would
+  // otherwise queue a full crawl each).
   if (reason === 'study') {
-    if (fullCrawl) await fullCrawl.catch(() => false);
-    if (inFlight) await inFlight;
-    return trackFullCrawl(reason);
+    if (pendingStudy) return pendingStudy;
+    pendingStudy = (async () => {
+      // Yield first, so `pendingStudy` is set before anything below runs.
+      await Promise.resolve();
+      if (fullCrawl) await fullCrawl.catch(() => false);
+      if (inFlight) await inFlight;
+      // From here a new switch waits for this crawl instead of joining it.
+      pendingStudy = null;
+      return trackFullCrawl(reason);
+    })();
+    return pendingStudy;
   }
 
   // boot and user both mean "everything, now", so one already under way answers
