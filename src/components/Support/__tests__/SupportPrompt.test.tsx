@@ -1,0 +1,108 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import cs from '../../../i18n/locales/cs.json';
+import { useAppStore } from '../../../store/useAppStore';
+
+const trackFeatureSignal = vi.hoisted(() => vi.fn(async () => {}));
+vi.mock('../../../api/featureUsage', () => ({ trackFeatureSignal }));
+
+import { SupportPrompt, SEEN_DWELL_MS } from '../SupportPrompt';
+
+/** The prompt scrolled into view by hand; happy-dom has no layout to do it. */
+class FakeObserver {
+  static all: FakeObserver[] = [];
+  targets = new Set<Element>();
+  cb: IntersectionObserverCallback;
+  constructor(cb: IntersectionObserverCallback) {
+    this.cb = cb;
+    FakeObserver.all.push(this);
+  }
+  observe = (el: Element) => void this.targets.add(el);
+  unobserve = (el: Element) => void this.targets.delete(el);
+  disconnect = () => this.targets.clear();
+  static report(isIntersecting: boolean) {
+    for (const o of FakeObserver.all) {
+      for (const el of o.targets) {
+        const entry = { target: el, isIntersecting } as IntersectionObserverEntry;
+        o.cb([entry], o as unknown as IntersectionObserver);
+      }
+    }
+  }
+}
+
+const support = cs.support;
+
+/**
+ * The willingness-to-pay test (2026-10-16): a question with a price and one
+ * answer, counted as two install-level signals — seen and yes — so the result
+ * is a share of the students who actually had the question in front of them.
+ */
+describe('SupportPrompt', () => {
+  beforeEach(() => {
+    FakeObserver.all = [];
+    vi.stubGlobal('IntersectionObserver', FakeObserver);
+    useAppStore.setState({ language: 'cz' });
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it('asks the question with the price and says nothing will be charged', () => {
+    render(<SupportPrompt />);
+
+    expect(screen.getByText(support.question)).toBeTruthy();
+    // The price keeps "99 Kč" together with a no-break space, which the
+    // default text matcher normalises to a plain one.
+    expect(screen.getByText(support.note.replace(/\s+/g, ' '))).toBeTruthy();
+    expect(screen.getByRole('button', { name: support.yes })).toBeTruthy();
+  });
+
+  it('counts "seen" only after the question has stayed on screen', () => {
+    vi.useFakeTimers();
+    try {
+      render(<SupportPrompt />);
+      FakeObserver.report(false);
+      vi.advanceTimersByTime(SEEN_DWELL_MS * 2);
+      expect(trackFeatureSignal).not.toHaveBeenCalled();
+
+      FakeObserver.report(true);
+      vi.advanceTimersByTime(SEEN_DWELL_MS - 1);
+      expect(trackFeatureSignal).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
+      expect(trackFeatureSignal).toHaveBeenCalledExactlyOnceWith('support_prompt_seen');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // The extension's popup opens on hover: a pointer passing over it is not a
+  // student who read the question.
+  it('does not count a glance that leaves before the threshold', () => {
+    vi.useFakeTimers();
+    try {
+      render(<SupportPrompt />);
+      FakeObserver.report(true);
+      vi.advanceTimersByTime(SEEN_DWELL_MS - 100);
+      FakeObserver.report(false);
+      vi.advanceTimersByTime(SEEN_DWELL_MS * 2);
+      expect(trackFeatureSignal).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('counts "yes" on the tap and thanks without claiming a payment', () => {
+    render(<SupportPrompt />);
+
+    fireEvent.click(screen.getByRole('button', { name: support.yes }));
+
+    expect(trackFeatureSignal).toHaveBeenCalledWith('support_prompt_yes');
+    expect(screen.getByText(support.thanks)).toBeTruthy();
+    expect(screen.getByText(support.thanksNote)).toBeTruthy();
+    // Answered: no second button to tap.
+    expect(screen.queryByRole('button', { name: support.yes })).toBeNull();
+  });
+});

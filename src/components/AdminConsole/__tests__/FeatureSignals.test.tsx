@@ -3,6 +3,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { FeatureSignals } from '../FeatureSignals';
 import type { FeatureStats } from '../../../api/featureStats';
+import { FEATURE_SIGNALS } from '../../../api/featureUsage';
 
 /**
  * The payload here is the one `feature_stats` actually returned over HTTP in
@@ -95,7 +96,8 @@ describe('FeatureSignals', () => {
     seed({ byFeature: [], daily: [], topEvents: [], eventDaily: [] });
     render(<FeatureSignals />);
 
-    expect(screen.getAllByText(/^0 instalací$/)).toHaveLength(3);
+    // Every signal holds its row, so one per label the client can send.
+    expect(screen.getAllByText(/^0 instalací$/)).toHaveLength(FEATURE_SIGNALS.length);
   });
 
   // The chart must never open on a series whose total was withheld, and never

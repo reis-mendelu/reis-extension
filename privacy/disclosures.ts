@@ -164,7 +164,7 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'feature_counters',
-    what: 'Three feature counters on the random install id, one whitelisted label each.',
+    what: 'Five feature counters on the random install id, one whitelisted label each.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/featureUsage.ts'],
@@ -184,6 +184,16 @@ export const FLOWS: Flow[] = [
         'eduroam profile handed over',
         'a profile is prepared for you to install (Mac, Windows)',
         'the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it',
+      ],
+      [
+        'Support question shown',
+        'the question whether you would support reIS is on your screen (Profil)',
+        'the random install identifier and the fixed `support_prompt_seen` label',
+      ],
+      [
+        'Support question answered',
+        'you answer "Yes" to it. Nothing is charged; reIS has no way to take a payment from you',
+        'the random install identifier and the fixed `support_prompt_yes` label',
       ],
     ],
     stores: {
