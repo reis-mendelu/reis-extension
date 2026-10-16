@@ -8,6 +8,7 @@ export type ActionType =
   | 'download_file'
   | 'download_document'
   | 'trigger_sync'
+  | 'select_study'
   | 'refresh_exams'
   | 'refresh_schedule'
   | 'get_diagnostics'
@@ -31,6 +32,12 @@ export type ActionType =
 export type SyncDomain = 'schedule' | 'exams';
 
 export interface SyncedData {
+  /**
+   * The study this push was crawled for. A crawl that was already running
+   * when the student switched study keeps pushing the old one; the app drops
+   * the study-scoped part of any push that is not for its current study.
+   */
+  studium?: string;
   /** Domains whose fetch has completed in this run, empty results included. */
   loaded?: SyncDomain[];
   schedule?: unknown;

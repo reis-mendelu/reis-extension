@@ -51,10 +51,14 @@ clear the other. Consequences that have already cost a bug:
 | `poke` | `bgPokeListener` (background alarm) | yes | yes | no |
 | `resume` | Capacitor `resume` | no — resume *is* foreground | yes | no |
 | `user` | `trigger_sync` action, post-re-login resync | no | no | **yes** |
+| `study` | `select_study` action (the study switcher) | no | no | **yes** |
 
 - Automatic runs also take a per-origin Web Lock (`SYNC_LOCK_NAME`) with
   `ifAvailable`, so where Web Locks exist, N open IS tabs never crawl at the same time. `boot`
   and `user` queue for it instead, bounded by `SYNC_LOCK_WAIT_MS`.
+- `study` is a full crawl that **never joins** one already queued or running:
+  those read the previous study's params when they started, so it waits them
+  out and then runs its own.
 - `boot` and `user` are the **full crawls**: both mean "fetch everything, now",
   both clear the TTL stamps, and only one runs at a time — a second such request
   joins the one already going (`fullCrawl`, which spans the lock wait as well as

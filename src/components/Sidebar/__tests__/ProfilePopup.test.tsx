@@ -71,3 +71,33 @@ describe('ProfilePopup — view as a student', () => {
     expect(onClose).toHaveBeenCalled();
   });
 });
+
+// The desktop tree's half of the study switcher (decision 2026-10-16); the
+// phone's is in StudySwitcher.test.tsx. Both trees, or one student goes without.
+describe('ProfilePopup — study switcher', () => {
+  const study = (studium: string, label: string) => ({
+    studium,
+    obdobi: '829',
+    label,
+    isErasmus: false,
+  });
+
+  it('offers the switch under the name when there are two active studies', () => {
+    useAppStore.setState({
+      studiumId: '900011',
+      studies: [
+        study('900011', 'PEF B-AII prez [sem 1, roč 1]'),
+        study('900012', 'PEF B-EM komb [sem 1, roč 1]'),
+      ],
+    });
+    render(<ProfilePopup isOpen />);
+    const group = screen.getByRole('group', { name: 'Study' });
+    expect(group.querySelectorAll('button[aria-pressed]')).toHaveLength(2);
+  });
+
+  it('shows nothing new with one study', () => {
+    useAppStore.setState({ studies: [study('900011', 'PEF B-AII prez [sem 1, roč 1]')] });
+    render(<ProfilePopup isOpen />);
+    expect(screen.queryByTestId('study-switcher')).toBeNull();
+  });
+});

@@ -61,7 +61,8 @@ export interface ExamSlice {
   lastExamsFetchedAt: number | null;
   examsRefreshing: boolean;
   fetchExams: () => Promise<void>;
-  setExams: (data: ExamSubject[]) => void;
+  /** `replace`: take an empty list too — the first push of a newly chosen study. */
+  setExams: (data: ExamSubject[], opts?: { replace?: boolean }) => void;
   triggerExamsRefresh: () => void;
   /** terminId → flat classmate list */
   examClassmates: Record<string, Classmate[]>;
@@ -392,6 +393,8 @@ export interface ContextSlice {
   userEmail: string | null;
   /** IS has named the faculty this session; until then loadContext is worth re-asking. */
   contextResolved: boolean;
+  /** Active studies to switch between; fewer than two means no switcher. */
+  studies: import('../utils/userParams/studies').StudyOption[];
   loadContext: () => Promise<void>;
 }
 
@@ -712,6 +715,7 @@ export type AppState = ScheduleSlice &
   TeachingWeekSlice &
   NavPagesSlice &
   ContextSlice &
+  import('./slices/createStudySwitchSlice').StudySwitchSlice &
   PulseSlice &
   NotificationSlice &
   BulletinSlice &

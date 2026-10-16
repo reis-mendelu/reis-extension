@@ -4,6 +4,7 @@ import { usePersonPhoto } from '../../../../hooks/data/usePersonPhoto';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { personInitials } from '../../../../utils/mobile/personInitials';
 import { useLongPress } from '../../../../hooks/ui/useLongPress';
+import { StudySwitcher } from '../../../StudySwitcher/StudySwitcher';
 
 const AVATAR =
   'flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-base-200 font-display text-base font-bold text-[var(--tone-primary)]';
@@ -78,6 +79,12 @@ export function ProfileIdentity() {
             </span>
           )}
         </div>
+      </div>
+      {/* Below the name block, not inside it: the line under the name stays
+          the student ID alone. Only with two or more active studies
+          (decision 2026-10-16); nothing otherwise. */}
+      <div className="px-4 pb-3 empty:hidden">
+        <StudySwitcher />
       </div>
     </div>
   );

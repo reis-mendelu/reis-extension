@@ -34,6 +34,13 @@
     "invalid": "Zadej celé číslo od 1 do 15 000 Kč",
     "failed": "Platbu se nepodařilo zahájit"
   },
+  "studySwitcher": {
+    "label": "Studium",
+    "failed": "Studium se nepodařilo přepnout. Zkus to znovu.",
+    "switching": "Přepínám studium…",
+    "loading": "Načítám data studia…",
+    "detail": "{semester}. semestr, {year}. ročník"
+  },
   "settings": {
     "title": "Nastavení",
     "reportBug": "Nahlásit chybu / Nápad",

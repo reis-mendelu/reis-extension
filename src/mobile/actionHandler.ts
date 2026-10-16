@@ -2,6 +2,7 @@ import { Messages, isIframeMessage } from '../types/messages';
 import type { ActionResultMessage } from '../types/messages/base';
 import { sendToIframe } from '../injector/iframeManager';
 import { DemoModeError } from '../errors/demoMode';
+import { applyStudySwitch } from '../utils/userParams/applyStudySwitch';
 
 /**
  * The app-side responder for `REIS_ACTION`.
@@ -28,10 +29,14 @@ export interface MobileActionDeps {
   refreshExams(): Promise<void>;
   refreshSchedule(): Promise<void>;
   syncAllData(): Promise<void>;
+  /** The study switcher's half in this context — see `selectStudy`. */
+  selectStudy(studium: string): Promise<{ changed: boolean }>;
+  /** A full crawl that starts after the switch — `requestSync('study')`. */
+  syncNewStudy(): Promise<unknown>;
 }
 
 /**
- * Only four of the eleven actions in `ActionType` are reachable from the app:
+ * Only five of the actions in `ActionType` are reachable from the app:
  * `register_exam`/`unregister_exam` are called in-process by `useExamActions`,
  * `open_url` has no callers, `download_file` has no case
  * on any platform, and the Drive actions are broken on mobile (#168).
@@ -66,6 +71,8 @@ export async function runMobileAction(
     case 'trigger_sync':
       await deps.syncAllData();
       return { success: true };
+    case 'select_study':
+      return applyStudySwitch(p.studium, deps.selectStudy, deps.syncNewStudy);
     default:
       throw new Error(`Action "${action}" is not available in the reIS mobile app`);
   }
@@ -131,6 +138,14 @@ export function installMobileActionHandler(): void {
       // gate and the minimum gap, and clears the freshness stamps first.
       const { requestSync } = await import('../injector/syncGate');
       await requestSync('user');
+    },
+    selectStudy: async (studium) => {
+      const { selectStudy } = await import('../utils/userParams');
+      return selectStudy(studium);
+    },
+    syncNewStudy: async () => {
+      const { requestSync } = await import('../injector/syncGate');
+      return requestSync('study');
     },
   };
 

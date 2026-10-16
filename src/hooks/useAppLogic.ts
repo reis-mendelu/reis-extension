@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { getSmartWeekRange } from '../utils/calendar';
 import { IndexedDBService } from '../services/storage';
+import { pushForStudy } from '../utils/userParams/pushForStudy';
+import { forgetPreviousStudy } from './forgetPreviousStudy';
 import { syncService, syncGradeHistory } from '../services/sync';
 
 import { useAppStore, initializeStore } from '../store/useAppStore';
@@ -29,6 +31,8 @@ import { isHarnessEnabled } from '../utils/harnessEnabled';
 import type { SyncDomain } from '../types/messages/base';
 
 interface SyncedData {
+  /** The study this push was crawled for — see pushForStudy. */
+  studium?: string;
   schedule?: BlockLesson[];
   exams?: ExamSubject[];
   subjects?: SubjectsData;
@@ -53,6 +57,11 @@ interface SyncedData {
   /** Domains whose fetch finished in this run — empty answers included. */
   loaded?: SyncDomain[];
 }
+
+/** The study the last accepted sync push was for — see the exams rule below. */
+let appliedStudium: string | undefined;
+/** When a push for another study last made this app re-ask its own. */
+let lastOwnRecheck = 0;
 
 export function useAppLogic() {
   const [currentDate, setCurrentDate] = useState<Date>(() => getSmartWeekRange().start);
@@ -144,6 +153,14 @@ export function useAppLogic() {
     // loops its updates back via window.postMessage (see sendToIframe).
     const isCapacitor = getPlatform().kind === 'capacitor';
     if (!isInIframe() && !realDataMode && !isCapacitor) return;
+    // The study this app's data is for, as it mounts: the start that corrects
+    // a stored interrupted study is a change too, and must clear like one.
+    appliedStudium = undefined;
+    void IndexedDBService.get('meta', 'reis_user_params')
+      .then((p) => {
+        appliedStudium ??= (p as { studium?: string } | undefined)?.studium;
+      })
+      .catch(() => {});
     const handle = async (e: MessageEvent) => {
       if (e.source !== window.parent) return;
       // Origin check, not just source. This handler writes REIS_SYNC_UPDATE
@@ -170,13 +187,40 @@ export function useAppLogic() {
         return;
       }
 
-      const r =
+      const raw =
         d.type === 'REIS_SYNC_UPDATE'
           ? (d.data as unknown as SyncedData)
           : d.type === 'REIS_DATA' && d.dataType === 'all'
             ? (d.data as unknown as SyncedData)
             : null;
-      if (!r) return;
+      if (!raw) return;
+      // A push for a study the student has switched away from keeps only its
+      // timetable — see pushForStudy. Only stamped pushes pay the read.
+      const own = raw.studium
+        ? ((await IndexedDBService.get('meta', 'reis_user_params')) as { studium?: string })
+            ?.studium
+        : undefined;
+      const r = raw.studium ? pushForStudy(raw, own) : raw;
+      // The crawl is on another study than this app's record. During a
+      // switch that is the crawl being waited out; otherwise this record is
+      // the one behind (its own study pages failed on the correcting start),
+      // and only asking IS again moves it — at most once a minute.
+      if (raw.studium && own && raw.studium !== own && Date.now() - lastOwnRecheck > 60_000) {
+        lastOwnRecheck = Date.now();
+        void useAppStore.getState().loadContext();
+      }
+      // The first push for the study the student switched to: whatever it
+      // does not carry is the previous study's — see forgetPreviousStudy.
+      // (Pushes for the study they left were dropped just above.)
+      if (raw.studium && raw.studium === own) {
+        // Claimed before the await, so two pushes landing together do not
+        // both clear what the first one just brought.
+        const previous = appliedStudium;
+        appliedStudium = own;
+        if (previous && previous !== own) await forgetPreviousStudy(r);
+        if (useAppStore.getState().studyPendingFor === own)
+          useAppStore.setState({ studyPendingFor: null });
+      }
 
       // Instantly update store for reactivity, then persist to IDB in background
       // Before the data branches: a domain can finish with nothing to send

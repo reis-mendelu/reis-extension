@@ -13,6 +13,9 @@ import { signOutFromHostPage } from './hostSignOut';
 import { readBytesBody } from './readBytesBody';
 import { fetchFileForIframe } from './fetchFileForIframe';
 import { getDiagnostics } from '../utils/diagnostics/diagnosticLog';
+import { selectStudy } from '../utils/userParams';
+import { applyStudySwitch } from '../utils/userParams/applyStudySwitch';
+import { cachedStudy } from './studyCache';
 
 let topUpPopupRef: Window | null = null;
 
@@ -29,7 +32,8 @@ export async function handleMessage(event: MessageEvent) {
       // Flush any messages queued before the iframe was ready
       markIframeReady();
       // Send current state as a guarantee (may duplicate queued data, which is safe)
-      sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing }));
+      // Stamped like every crawl push, so the app can tell whose data it is.
+      sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing, studium: cachedStudy() }));
       if (scrapedNavMenu) sendToIframe(Messages.navMenu(scrapedNavMenu));
       break;
     case 'REIS_REQUEST_DATA':
@@ -170,6 +174,13 @@ async function handleAction(id: string, action: string, payload: unknown) {
         // minimum gap, and clears every freshness stamp first.
         await requestSync('user');
         result = { success: true };
+        break;
+      case 'select_study':
+        // The study switcher. This context keeps its OWN user params (the
+        // host-origin database), and every crawl reads them, so it is
+        // switched here first — then a full crawl of the new study that never
+        // joins one already running (see `requestSync('study')`).
+        result = await applyStudySwitch(p.studium, selectStudy, () => requestSync('study'));
         break;
       case 'refresh_exams':
         await refreshExams();

@@ -14,14 +14,19 @@ import { syncCvicneTests } from '../services/sync/syncCvicneTests';
 import { syncOdevzdavarny } from '../services/sync/syncOdevzdavarny';
 import { fetchSeminarGroupIds, fetchClassmates } from '../api/classmates';
 import { mergePastSubjects } from '../services/sync/mergePastSubjects';
-import { syncPastSemesters } from '../services/sync/syncPastSemesters';
+import {
+  syncPastSemesters,
+  pastSemesterIsFor,
+  pastSemesterKey,
+} from '../services/sync/syncPastSemesters';
 
-import { getUserParams } from '../utils/userParams';
+import { getUserParams, adoptStoredStudy } from '../utils/userParams';
 import { enrichExamsWithDurations } from '../services/sync/examDurations';
 import type { ExamSubject } from '../types/exams';
 import { fetchFullSemesterSchedule } from './dataFetchers';
 import { sendToIframe } from './iframeManager';
 import { TTL, ttlGated, isFresh, markFetched } from './syncTtl';
+import { studyChanged } from './studyCache';
 import type { SyncedData } from '../types/messages';
 import { IndexedDBService } from '../services/storage/IndexedDBService';
 import type { SubjectsData } from '../types/documents';
@@ -49,10 +54,27 @@ let currentSemesterCodes: string[] | null = null;
  */
 let lastPastSubjects: { cz: Record<string, unknown>; en: Record<string, unknown> } | null = null;
 
+/**
+ * The student switched study (see studyChanged). Everything `cachedData`
+ * holds for the previous study goes: otherwise every "keep the cached value
+ * on an empty or failed read" fallback below hands the UI the previous
+ * programme's subjects, exams and tests as the new one's. The timetable
+ * stays: it is keyed on the student, and holds both studies.
+ */
+function forgetOtherStudy(studium: string | undefined): boolean {
+  if (!studyChanged(studium)) return false;
+  const { schedule, lastSync } = cachedData;
+  cachedData = { schedule, lastSync };
+  currentSemesterCodes = null;
+  lastPastSubjects = null;
+  return true;
+}
+
 export async function syncAllData() {
   if (isSyncing) return;
 
   isSyncing = true;
+  let crawlStudium: string | undefined;
 
   try {
     // Inside the try on purpose: this used to sit above it, so a throw here
@@ -73,11 +95,19 @@ export async function syncAllData() {
      */
     const pushEarly = (partial: Partial<SyncedData>) =>
       sendToIframe(
-        Messages.syncUpdate({ ...partial, isSyncing: true, lastSync: cachedData.lastSync })
+        Messages.syncUpdate({ ...partial, studium, isSyncing: true, lastSync: cachedData.lastSync })
       );
 
+    // Another IS tab may have switched study since this one's params were
+    // confirmed; its record is the student's choice now.
+    await adoptStoredStudy();
     const userParams = await getUserParams();
     const studium = userParams?.studium;
+    crawlStudium = studium;
+    // Every push from here on — pushEarly's too, which runs only after this
+    // line — carries the study it was crawled for (SyncedData.studium). Read
+    // once: the student can switch mid-crawl.
+    const studyChanged = forgetOtherStudy(studium);
 
     // Which core fetches actually ran, as opposed to being TTL-skipped — both
     // come back null, and only a fetch that ran can say IS was unreachable.
@@ -259,10 +289,17 @@ export async function syncAllData() {
           (p) => p.id !== userParams!.obdobi
         );
         for (const period of pastPeriods) {
-          const cached = (await IndexedDBService.get('meta', `past_semester_${period.id}`)) as
-            | { subjects: { data: typeof subjects.value.subjects.data }; attendance: unknown }
+          const cached = (await IndexedDBService.get(
+            'meta',
+            pastSemesterKey(period.id, studium, !!userParams?.studies)
+          )) as
+            | {
+                studium?: string;
+                subjects: { data: typeof subjects.value.subjects.data };
+                attendance: unknown;
+              }
             | undefined;
-          if (cached?.subjects?.data) {
+          if (cached?.subjects?.data && pastSemesterIsFor(cached, studium, !!userParams?.studies)) {
             for (const [code, info] of Object.entries(cached.subjects.data)) {
               if (!subjects.value.subjects.data[code]) {
                 subjects.value.subjects.data[code] = info;
@@ -334,7 +371,9 @@ export async function syncAllData() {
     // before the slow per-subject Phase 3 (files, classmates, zazramnik).
     sendToIframe(
       Messages.syncUpdate({
-        exams: cachedData.exams,
+        // After a switch an empty read is a real answer, not "keep what you
+        // have": the UI's exams are the previous study's until told otherwise.
+        exams: cachedData.exams ?? (studyChanged ? [] : undefined),
         schedule: cachedData.schedule,
         subjects: cachedData.subjects,
         attendance: cachedData.attendance,
@@ -343,6 +382,7 @@ export async function syncAllData() {
         studyComparison: cachedData.studyComparison,
         cvicneTests: cachedData.cvicneTests,
         odevzdavarny: cachedData.odevzdavarny,
+        studium,
         isSyncing: true,
         lastSync: cachedData.lastSync,
       })
@@ -357,7 +397,8 @@ export async function syncAllData() {
     if (subjectsForDetails) {
       await syncSubjectDetails(
         subjectsForDetails,
-        fullSchedule.status === 'fulfilled' ? fullSchedule.value : null
+        fullSchedule.status === 'fulfilled' ? fullSchedule.value : null,
+        userParams
       );
     }
 
@@ -365,6 +406,7 @@ export async function syncAllData() {
     sendToIframe(
       Messages.syncUpdate({
         ...cachedData,
+        studium,
         isSyncing: false,
         ...(reachedNothing ? { error: 'IS Mendelu unreachable' } : {}),
       })
@@ -377,13 +419,23 @@ export async function syncAllData() {
       subjects.status === 'fulfilled' &&
       subjects.value?.availablePeriods.length
     ) {
-      syncPastSemesters(studium, userParams.obdobi, subjects.value.availablePeriods).catch(
-        () => {}
-      );
+      syncPastSemesters(
+        studium,
+        userParams.obdobi,
+        subjects.value.availablePeriods,
+        !!userParams.studies
+      ).catch(() => {});
     }
   } catch (e) {
     sendToIframe(
-      Messages.syncUpdate({ isSyncing: false, error: String(e), lastSync: cachedData.lastSync })
+      Messages.syncUpdate({
+        isSyncing: false,
+        error: String(e),
+        lastSync: cachedData.lastSync,
+        // A crawl that failed outright still tells the app which study it
+        // was for, so a switch is still followed (forgetPreviousStudy).
+        studium: crawlStudium,
+      })
     );
   } finally {
     isSyncing = false;
@@ -394,7 +446,10 @@ async function syncSubjectDetails(
   subjectsValue: {
     data: Record<string, { folderUrl?: string; subjectId?: string; skupinaId?: string }>;
   },
-  scheduleValue: { studyId?: string; periodId?: string }[] | null
+  scheduleValue: { studyId?: string; periodId?: string }[] | null,
+  // The crawl's own params, not a fresh read: a switch mid-crawl would
+  // otherwise send the old study's subjects out under the new study's ids.
+  userParams: { studium?: string; obdobi?: string } | null
 ) {
   // Scoped, not everything in the map: `subjects.data` has been through
   // mergePastSubjects by now and holds every subject the student ever took.
@@ -405,7 +460,6 @@ async function syncSubjectDetails(
     Object.entries(subjectsValue.data),
     currentSemesterCodes
   );
-  const userParams = await getUserParams();
   let studium = userParams?.studium;
   let obdobi = userParams?.obdobi;
 
@@ -553,6 +607,7 @@ async function syncSubjectDetails(
  * that happens to be in flight must not be reported as finished by it.
  */
 export async function refreshSchedule(): Promise<void> {
+  const studium = (await getUserParams())?.studium;
   const value = await fetchFullSemesterSchedule();
   if (!value) return;
   if (value.length > 0) {
@@ -561,6 +616,7 @@ export async function refreshSchedule(): Promise<void> {
     sendToIframe(
       Messages.syncUpdate({
         schedule: value,
+        studium,
         loaded: ['schedule'],
         isSyncing,
         lastSync: cachedData.lastSync,
@@ -577,6 +633,9 @@ export async function refreshExams(): Promise<void> {
   // Rejects when IS could not be reached, so anything past this line is an
   // answer — "none" included — and may release the failed state. Data only
   // when there is some: an empty read must not wipe what is on screen.
+  const params = await getUserParams();
+  const studium = params?.studium;
+  const obdobi = params?.obdobi;
   const fresh = await fetchDualLanguageExams();
   if (fresh.length === 0) {
     sendToIframe(
@@ -584,17 +643,20 @@ export async function refreshExams(): Promise<void> {
     );
     return;
   }
-  const params = await getUserParams();
   const enriched = await enrichExamsWithDurations(
     fresh,
     cachedExams(),
-    params?.studium ?? '',
-    params?.obdobi ?? ''
+    studium ?? '',
+    obdobi ?? ''
   );
-  cachedData = { ...cachedData, exams: enriched };
+  // The student may have switched study while IS answered: the cache then
+  // belongs to the new study, and these are the old one's (the push below
+  // is stamped with it, so the app drops it too).
+  if ((await getUserParams())?.studium === studium) cachedData = { ...cachedData, exams: enriched };
   sendToIframe(
     Messages.syncUpdate({
       exams: enriched,
+      studium,
       loaded: ['exams'],
       isSyncing,
       lastSync: cachedData.lastSync,

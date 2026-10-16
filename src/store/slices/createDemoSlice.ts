@@ -88,6 +88,8 @@ export const createDemoSlice: AppSlice<DemoSlice> = (set) => ({
     set((state) => ({
       demoMode: true,
       ...demoContext,
+      // One fabricated study: the real student's switcher never shows here.
+      studies: [],
       syncStatus: { ...state.syncStatus, handshakeDone: true },
       // For the same reason, one step further: the demo dataset is already
       // complete, and no sync will ever run to set this, so without it every
@@ -111,6 +113,7 @@ export const createDemoSlice: AppSlice<DemoSlice> = (set) => ({
       userFaculty: null,
       userProgramme: null,
       userSemester: null,
+      studies: [],
     });
   },
 });
