@@ -1,4 +1,4 @@
-import { IndexedDBService } from '../src/services/storage';
+import { IndexedDBService } from '../src/services/storage/IndexedDBService';
 import { clearUserParamsCache } from '../src/utils/userParams';
 import { useAppStore } from '../src/store/useAppStore';
 

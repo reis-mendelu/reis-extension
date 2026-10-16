@@ -25,7 +25,8 @@ import { enrichExamsWithDurations } from '../services/sync/examDurations';
 import type { ExamSubject } from '../types/exams';
 import { fetchFullSemesterSchedule } from './dataFetchers';
 import { sendToIframe } from './iframeManager';
-import { TTL, ttlGated, isFresh, markFetched, resetSyncTtl } from './syncTtl';
+import { TTL, ttlGated, isFresh, markFetched } from './syncTtl';
+import { studyChanged } from './studyCache';
 import type { SyncedData } from '../types/messages';
 import { IndexedDBService } from '../services/storage/IndexedDBService';
 import type { SubjectsData } from '../types/documents';
@@ -53,27 +54,19 @@ let currentSemesterCodes: string[] | null = null;
  */
 let lastPastSubjects: { cz: Record<string, unknown>; en: Record<string, unknown> } | null = null;
 
-/** The study `cachedData`'s study-scoped fields were fetched for. */
-let cachedForStudium: string | null = null;
-
 /**
- * The student switched study — here, or in another IS tab whose switch this
- * one has just adopted. Everything `cachedData` holds for the previous study
- * goes, with the freshness stamps: otherwise every "keep the cached value on
- * an empty or failed read" fallback below, and every TTL skip, hands the UI
- * the previous programme's subjects, exams and tests as the new one's.
- * The timetable stays: it is keyed on the student, and holds both studies.
+ * The student switched study (see studyChanged). Everything `cachedData`
+ * holds for the previous study goes: otherwise every "keep the cached value
+ * on an empty or failed read" fallback below hands the UI the previous
+ * programme's subjects, exams and tests as the new one's. The timetable
+ * stays: it is keyed on the student, and holds both studies.
  */
 function forgetOtherStudy(studium: string | undefined): boolean {
-  if (!studium) return false;
-  const previous = cachedForStudium;
-  cachedForStudium = studium;
-  if (previous === null || previous === studium) return false;
+  if (!studyChanged(studium)) return false;
   const { schedule, lastSync } = cachedData;
   cachedData = { schedule, lastSync };
   currentSemesterCodes = null;
   lastPastSubjects = null;
-  resetSyncTtl();
   return true;
 }
 

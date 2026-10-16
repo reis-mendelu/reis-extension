@@ -289,11 +289,13 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
       .finally(stop);
     setTimeout(stop, 15_000);
   },
-  setExams: (data) => {
+  setExams: (data, opts) => {
     // A transient/failed IS fetch resolves to [] (see fetchExamData), and a
     // sync push would otherwise wipe the currently-displayed exams. Keep old
     // data on screen until real new data is available to replace it.
-    if (data.length === 0 && get().exams.data.length > 0) return;
+    // Except right after a study switch, when the list on screen is the
+    // previous study's and "none" is this one's real answer.
+    if (data.length === 0 && get().exams.data.length > 0 && !opts?.replace) return;
     // "Zápis na cvičení" arrives through IS's exam-terms table but is not an
     // exam — drop it before anything in the app can treat it as one.
     data = stripGroupSignupSections(data);

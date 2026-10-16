@@ -63,15 +63,12 @@ describe('switchStudy', () => {
     });
   });
 
-  // The previous study's exam terms are not this one's; the crawl refills.
-  it("empties the previous study's exams and tells the other tabs", async () => {
+  it('tells the other reIS tabs', async () => {
     const heard = vi.fn();
     const bc = new BroadcastChannel('reis_study_sync');
     bc.onmessage = (e) => heard(e.data);
-    useAppStore.setState((s) => ({ exams: { ...s.exams, data: [{ code: 'OLD' }] as never } }));
     getUserParams.mockResolvedValue(params(EM));
     await useAppStore.getState().switchStudy('900012');
-    expect(useAppStore.getState().exams.data).toEqual([]);
     await vi.waitFor(() => expect(heard).toHaveBeenCalledWith({ from: expect.any(String) }));
     bc.close();
   });

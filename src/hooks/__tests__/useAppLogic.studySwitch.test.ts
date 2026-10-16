@@ -33,11 +33,16 @@ vi.mock('../../store/useAppStore', () => ({
   initializeStore: vi.fn(async () => vi.fn()),
 }));
 
-const { idbSet } = vi.hoisted(() => ({ idbSet: vi.fn(async () => undefined) }));
+const { idbSet, own } = vi.hoisted(() => ({
+  idbSet: vi.fn(async () => undefined),
+  own: { studium: 'st' },
+}));
 vi.mock('../../services/storage', () => ({
   IndexedDBService: {
     get: vi.fn(async (store: string, key: string) =>
-      store === 'meta' && key === 'reis_user_params' ? { studium: 'st', obdobi: 'ob' } : undefined
+      store === 'meta' && key === 'reis_user_params'
+        ? { studium: own.studium, obdobi: 'ob' }
+        : undefined
     ),
     set: idbSet,
   },
@@ -74,6 +79,7 @@ async function push(data: Record<string, unknown>): Promise<void> {
 describe('a sync push for the study the student switched away from', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    own.studium = 'st';
     vi.stubEnv('DEV', true);
     vi.stubEnv('VITE_USE_MOCK_DATA', '');
     renderHook(() => useAppLogic());
@@ -100,6 +106,19 @@ describe('a sync push for the study the student switched away from', () => {
     expect(store.setCvicneTests).not.toHaveBeenCalled();
     expect(store.setOdevzdavarny).not.toHaveBeenCalled();
     expect(idbSet).not.toHaveBeenCalledWith('cvicne_tests', expect.anything(), expect.anything());
+  });
+
+  // The new study has no exam terms: "none" must replace the old study's
+  // list, which setExams otherwise keeps over an empty answer.
+  it("replaces the previous study's exams with the new study's first answer", async () => {
+    await push({ studium: 'st', exams: [{ code: 'OLD' }] });
+    own.studium = 'st2';
+    store.setExams.mockClear();
+    await push({ studium: 'st2', schedule: [{ id: 'l1' }] });
+    expect(store.setExams).toHaveBeenCalledWith([], { replace: true });
+    store.setExams.mockClear();
+    await push({ studium: 'st2', exams: [] });
+    expect(store.setExams).not.toHaveBeenCalledWith([], { replace: true });
   });
 
   it('takes a push for the study in use as before', async () => {

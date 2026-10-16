@@ -57,6 +57,9 @@ interface SyncedData {
   loaded?: SyncDomain[];
 }
 
+/** The study the last accepted sync push was for — see the exams rule below. */
+let appliedStudium: string | undefined;
+
 export function useAppLogic() {
   const [currentDate, setCurrentDate] = useState<Date>(() => getSmartWeekRange().start);
   const [currentView, setCurrentView] = useState<AppView>('calendar');
@@ -182,13 +185,20 @@ export function useAppLogic() {
       if (!raw) return;
       // A push for a study the student has switched away from keeps only its
       // timetable — see pushForStudy. Only stamped pushes pay the read.
-      const r = raw.studium
-        ? pushForStudy(
-            raw,
-            ((await IndexedDBService.get('meta', 'reis_user_params')) as { studium?: string })
-              ?.studium
-          )
-        : raw;
+      const own = raw.studium
+        ? ((await IndexedDBService.get('meta', 'reis_user_params')) as { studium?: string })
+            ?.studium
+        : undefined;
+      const r = raw.studium ? pushForStudy(raw, own) : raw;
+      // The first push for the study the student switched to replaces the
+      // exams outright: the list on screen is the previous study's, and
+      // setExams otherwise keeps a list over an empty answer. (Pushes for
+      // the study they left were dropped just above.)
+      if (raw.studium && raw.studium === own) {
+        if (appliedStudium && appliedStudium !== own)
+          useAppStore.getState().setExams(r.exams ?? [], { replace: true });
+        appliedStudium = own;
+      }
 
       // Instantly update store for reactivity, then persist to IDB in background
       // Before the data branches: a domain can finish with nothing to send

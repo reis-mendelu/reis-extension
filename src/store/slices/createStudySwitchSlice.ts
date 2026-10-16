@@ -1,7 +1,6 @@
 import type { AppSlice } from '../types';
 import { executeAction } from '../../api/proxyClient';
 import { selectStudy, adoptStoredStudy } from '../../utils/userParams';
-import { IndexedDBService } from '../../services/storage';
 import { logError } from '../../utils/reportError';
 
 export interface StudySwitchSlice {
@@ -56,11 +55,9 @@ export const createStudySwitchSlice: AppSlice<StudySwitchSlice> = (set, get) => 
       }
       await selectStudy(studium);
       await get().loadContext();
-      // What the store holds for the previous study, by study-keyed reads
-      // where there are some; exams are not keyed, and setExams keeps a list
-      // over an empty push, so they are emptied until the crawl lands.
-      set((s) => ({ exams: { ...s.exams, data: [] } }));
-      await IndexedDBService.set('exams', 'current', []).catch(() => {});
+      // The study-keyed lists, re-read for the new study. Exams are not
+      // keyed: the first push of the new study replaces them (useAppLogic).
+      // Emptied here they could also erase the new study's, landed first.
       void get().fetchCvicneTests();
       void get().fetchOdevzdavarny();
       try {

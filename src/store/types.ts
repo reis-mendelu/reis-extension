@@ -61,7 +61,8 @@ export interface ExamSlice {
   lastExamsFetchedAt: number | null;
   examsRefreshing: boolean;
   fetchExams: () => Promise<void>;
-  setExams: (data: ExamSubject[]) => void;
+  /** `replace`: take an empty list too — the first push of a newly chosen study. */
+  setExams: (data: ExamSubject[], opts?: { replace?: boolean }) => void;
   triggerExamsRefresh: () => void;
   /** terminId → flat classmate list */
   examClassmates: Record<string, Classmate[]>;
