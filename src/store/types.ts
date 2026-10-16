@@ -634,8 +634,8 @@ export interface MapSlice {
   reloadMapEvents: () => Promise<void>;
   /** Refetch only if `minGapMs` has passed since the last successful fetch — for a resume hook on a long-lived Capacitor process. A stale-but-recent fetch is a no-op. */
   refreshMapEventsIfStale: (minGapMs: number) => Promise<void>;
-  /** Select an event for the detail panel. Pass `{ fly: true }` (list click) to also fly the camera to its coordinate; a pin click omits it and the camera stays put. */
-  focusEventById: (id: string, opts?: { fly?: boolean }) => void;
+  /** Select an event for the detail panel. Pass `{ fly: true }` (list click) to also fly the camera to its coordinate; a pin click omits it and the camera stays put. `keepBuilding` (a pin in an open floor view) selects without leaving the building or floor. */
+  focusEventById: (id: string, opts?: { fly?: boolean; keepBuilding?: boolean }) => void;
   // --- Society authoring ---
   /** The active society's own events (all dates), mapped from societyPosts. Drawn
    *  by the admin console's map; the student map draws `mapEvents` instead. Which
