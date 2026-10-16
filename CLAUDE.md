@@ -220,8 +220,8 @@ read it for the reasoning, never apply it.
   step by Dominik, followed by `migration repair --linked --status applied <version>`
   so prod's ledger records it. Never `db push` or `migration repair --linked` from a
   session. Ledger history: `docs/runbooks/migration-baseline-repair.md`.
-- `supabase db diff --linked` checks the schema; `supabase/scripts/catalog_fingerprint.sql`,
-  run against both and diffed, checks the grants, policies, buckets and cron job it does not.
+- `supabase db diff --linked` checks the schema; `npm run db:fingerprint` (prod vs a
+  running local stack) checks the grants, policies, buckets and cron job it does not.
 
 ## Branches and releasing
 

@@ -19,22 +19,16 @@ would be marked applied while not matching. Re-run the proof first:
 npx supabase db diff --linked -s public
 ```
 
-Expect `No schema changes found`. Then the catalog check, from a running local
-stack (`npx supabase start`):
+Expect `No schema changes found`. Then the catalog check (grants, policies,
+buckets, cron), from a running local stack (`npx supabase start`):
 
 ```bash
-npx supabase db query --linked -f supabase/scripts/catalog_fingerprint.sql | sed -n '/^{/,$p' | jq -r '.rows[].line' > /tmp/fp_prod.txt
+npm run db:fingerprint
 ```
 
-```bash
-npx supabase db query --local -f supabase/scripts/catalog_fingerprint.sql | sed -n '/^{/,$p' | jq -r '.rows[].line' > /tmp/fp_local.txt
-```
-
-```bash
-diff /tmp/fp_prod.txt /tmp/fp_local.txt && echo SAME
-```
-
-Expect `SAME`. Anything else: stop, the baseline needs regenerating first.
+Expect `SAME: 359 lines, prod = local`. It fails closed: a CLI error or an empty
+result prints `FAILED` and exits non-zero rather than comparing. Anything but
+`SAME`: stop, the baseline needs regenerating first.
 
 And the ledger as it is now (29 rows, the last `20260907130000`):
 
@@ -88,7 +82,7 @@ not yet applied in prod shows local only, which is correct):
 npx supabase migration list --linked
 ```
 
-And repeat step 0's `db diff` and fingerprint diff: both still empty.
+And repeat step 0's `db diff` and `npm run db:fingerprint`: no changes, `SAME`.
 
 ## What it was rehearsed on
 

@@ -1,9 +1,7 @@
 -- What `supabase db diff` does not compare: who may call or read what, and the
 -- state that lives in rows (buckets, the cron job). Reads the catalogs only, no
--- table data. Run it against prod and against a local build and diff the two:
---
---   npx supabase db query --linked -f supabase/scripts/catalog_fingerprint.sql
---   npx supabase db query --local  -f supabase/scripts/catalog_fingerprint.sql
+-- table data. `npm run db:fingerprint` (compare-fingerprint.sh) runs it against
+-- prod and against the local stack and diffs the two, failing closed.
 --
 -- Empty diff = the local build grants, stores and schedules what prod does.
 with acl as (

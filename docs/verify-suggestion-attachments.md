@@ -1,5 +1,11 @@
 # Verifying `20260925120000_suggestion_attachments.sql`
 
+> **Historical, kept as a record (2026-10-16).** These steps already ran. The
+> migration file it names now lives in `supabase/migrations_archive/` and is
+> part of `supabase/migrations/20261016000000_baseline.sql`: never apply it
+> again. For applying a new migration today, see the "Database migrations"
+> section of `CLAUDE.md`.
+
 The migration history cannot be replayed (see `verify-supabase-sql-locally` in
 the team notes), so this migration was checked on a throwaway container of the
 **same image prod runs** — `supabase/postgres:17.6.1.063`, which ships pg_cron
