@@ -1,16 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import type L from 'leaflet';
 import { useVisibleMapEvents } from '../../hooks/useVisibleMapEvents';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { groupEventsByVenue, parseEventDate, type VenueGroup } from './eventHelpers';
+import { groupEventsByVenue, parseEventDate } from './eventHelpers';
 import { groupEventsInBuilding } from './inBuildingEvents';
 import { floorText } from './floorText';
 import roomsIndexJson from '../../data/map/rooms-index.json';
 import type { RoomIndexEntry } from '../../types/campusMap';
-import { subscribeMapInstance } from './mapInstance';
-import { EVENTS_PANE, ensurePane } from './mapPanes';
+import { useEventPinPlacement } from './useEventPinPlacement';
 import { EventPin } from './EventPin';
 import { DraftPin } from './DraftPin';
 import { useSociety } from '../../hooks/useSociety';
@@ -18,22 +16,6 @@ import { isSoonEvent, localTodayIso } from './eventWindow';
 import { trackMapEventView } from '../../api/featureUsage';
 
 const ROOM_INDEX = roomsIndexJson as RoomIndexEntry[];
-
-interface Placed {
-  key: string;
-  x: number;
-  y: number;
-  group: VenueGroup;
-}
-
-// Leaflet's private projection used by its own markers to animate on zoom.
-type ZoomAnimMap = {
-  _latLngToNewLayerPoint(
-    latlng: L.LatLngExpression,
-    zoom: number,
-    center: L.LatLngExpression
-  ): L.Point;
-};
 
 // The pins live in their own Leaflet pane — a child of the map pane, so Leaflet
 // translates it for free while panning and pins stay glued with no JS. Which
@@ -96,9 +78,6 @@ export function EventLayer() {
   const assocId = useAppStore((s) => s.adminActiveAssociationId);
   const beginPlacing = useAppStore((s) => s.beginPlacing);
   const { language, t } = useTranslation();
-  const [placed, setPlaced] = useState<Placed[]>([]);
-  const [draftPt, setDraftPt] = useState<{ x: number; y: number } | null>(null);
-  const [pane, setPane] = useState<HTMLElement | null>(null);
   const activeDraft = composerOpen ? draftCoord : null;
   // A pin opened on the student map is the map-view signal. NOT while
   // authoring: the admin console renders this same layer over a society's own
@@ -126,103 +105,7 @@ export function EventLayer() {
       ? groupEventsByVenue(events)
       : groupEventsInBuilding(events, activeBuildingId, activeFloorId, buildingRooms, ROOM_INDEX);
   }, [events, activeBuildingId, activeFloorId, buildingRooms]);
-
-  // Re-place pins when the visible groups change (filter toggle, data load).
-  const groupsRef = useRef(groups);
-  const draftRef = useRef<[number, number] | null>(activeDraft);
-  const scheduleRef = useRef<(() => void) | null>(null);
-  useEffect(() => {
-    groupsRef.current = groups;
-    scheduleRef.current?.();
-  }, [groups]);
-  // Re-project the draft point when it's placed/moved/cleared or the composer
-  // opens/closes, so the pin appears (and disappears) immediately.
-  useEffect(() => {
-    draftRef.current = activeDraft;
-    scheduleRef.current?.();
-  }, [activeDraft]);
-
-  useEffect(() => {
-    let map: L.Map | null = null;
-    // Zoom at which `placed` was last computed — lets the `move` handler tell a
-    // pure pan (zoom unchanged → pane rides the transform, skip) apart from a
-    // fly's continuous zoom change (recompute each frame so pins stay glued).
-    let placedZoom = NaN;
-    const recompute = () => {
-      if (!map) {
-        setPlaced([]);
-        setDraftPt(null);
-        return;
-      }
-      placedZoom = map.getZoom();
-      const next: Placed[] = groupsRef.current.map((g) => {
-        const pt = map!.latLngToLayerPoint([g.coord[1], g.coord[0]]);
-        return { key: g.key, x: pt.x, y: pt.y, group: g };
-      });
-      setPlaced(next);
-      const d = draftRef.current;
-      if (d) {
-        const pt = map.latLngToLayerPoint([d[1], d[0]]);
-        setDraftPt({ x: pt.x, y: pt.y });
-      } else setDraftPt(null);
-    };
-    scheduleRef.current = recompute;
-    // Pure panning needs no handler — the pane is a child of the map pane and
-    // rides its transform. A `flyTo` (clicking an event) animates pan AND zoom
-    // but does NOT fire `zoomanim`; it fires `move` per frame with a changing
-    // zoom, so re-project on `move` whenever the zoom differs from what's drawn —
-    // that keeps fly'd pins glued while leaving plain drags on the free path.
-    const onMove = () => {
-      if (map && map.getZoom() !== placedZoom) recompute();
-    };
-    // On a stepped zoom, move each pin to its post-zoom layer point so the
-    // `leaflet-zoom-animated` transform transitions in sync with the basemap;
-    // zoomend/viewreset then settle the exact (rounded) positions.
-    const onZoomAnim = (e: L.ZoomAnimEvent) => {
-      if (!map) return;
-      const proj = map as unknown as ZoomAnimMap;
-      setPlaced(
-        groupsRef.current.map((g) => {
-          const pt = proj
-            ._latLngToNewLayerPoint([g.coord[1], g.coord[0]], e.zoom, e.center)
-            .round();
-          return { key: g.key, x: pt.x, y: pt.y, group: g };
-        })
-      );
-      const d = draftRef.current;
-      if (d) {
-        const pt = proj._latLngToNewLayerPoint([d[1], d[0]], e.zoom, e.center).round();
-        setDraftPt({ x: pt.x, y: pt.y });
-      }
-    };
-    const bind = (m: L.Map) => {
-      setPane(ensurePane(m, EVENTS_PANE));
-      m.on('zoomanim', onZoomAnim);
-      m.on('move', onMove);
-      m.on('zoomend viewreset', recompute);
-      recompute();
-    };
-    const unbind = (m: L.Map) => {
-      m.off('zoomanim', onZoomAnim);
-      m.off('move', onMove);
-      m.off('zoomend viewreset', recompute);
-    };
-    const unsub = subscribeMapInstance((m) => {
-      if (map) unbind(map);
-      map = m;
-      if (map) bind(map);
-      else {
-        setPane(null);
-        setPlaced([]);
-        setDraftPt(null);
-      }
-    });
-    return () => {
-      scheduleRef.current = null;
-      if (map) unbind(map);
-      unsub();
-    };
-  }, []);
+  const { placed, draftPt, pane } = useEventPinPlacement(groups, activeDraft);
 
   // The draft pin can be the only thing to show (placing a first event with no
   // saved events yet), so don't bail on an empty `placed` when a draft exists.

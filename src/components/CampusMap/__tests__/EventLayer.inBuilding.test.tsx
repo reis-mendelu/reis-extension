@@ -4,83 +4,21 @@ import { EventLayer } from '../EventLayer';
 import { setMapInstance } from '../mapInstance';
 import { useAppStore } from '../../../store/useAppStore';
 import { EVENTS_PANE } from '../mapPanes';
-import type { MapEvent } from '../../../types/events';
-import type { RoomFeature, RoomsCollection } from '../../../types/campusMap';
 
 // Opening a building used to unmount the whole pin layer, so an event in Q02
 // vanished the moment a student walked into PEF. These pin the new rule: while
 // a building is open, the events whose room is IN it stay, at their room;
 // events elsewhere stay hidden.
-
-// Q (buildings.json id 0): Q02 is floor 5 (ground, level 0), placeId 599.
-const Q = 0;
-const Q02_FLOOR = 5;
-const Q_OTHER_FLOOR = 4;
-// Its building centre, which is where locateEvent puts a Q02 event's coord.
-const BUILDING_CENTRE: [number, number] = [16.6142, 49.2096];
-// Where the room itself is drawn: deliberately NOT the building centre.
-const ROOM_RING = [
-  [16.615, 49.21],
-  [16.6152, 49.21],
-  [16.6152, 49.2102],
-  [16.615, 49.2102],
-];
-
-function room(id: number, floorId: number, floorLevel: number): RoomFeature {
-  return {
-    type: 'Feature',
-    geometry: { type: 'Polygon', coordinates: [ROOM_RING] },
-    properties: {
-      id,
-      buildingId: Q,
-      floorId,
-      floorLevel,
-      name: 'Q02',
-      type: 'lecture',
-      category: 'classroom',
-      label: 'Q02',
-      passportNumber: 'BA39N1010',
-      seats: null,
-      hasProjector: false,
-      hasWhiteboard: false,
-      code: null,
-    },
-  } as unknown as RoomFeature;
-}
-const Q_ROOMS: RoomsCollection = { type: 'FeatureCollection', features: [room(599, 5, 0)] };
-
-function inTwoDays(): string {
-  const d = new Date();
-  d.setHours(12, 0, 0, 0);
-  d.setDate(d.getDate() + 2);
-  return d.toISOString().slice(0, 10);
-}
-
-function inDays(n: number): string {
-  const d = new Date();
-  d.setHours(12, 0, 0, 0);
-  d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
-}
-
-function event(id: string, roomCode: string, coord: [number, number]): MapEvent {
-  return {
-    id,
-    title: id,
-    url: '',
-    date: inTwoDays(),
-    endDate: null,
-    time: '18:00',
-    location: roomCode,
-    imageUrl: null,
-    organizerKey: 'pef',
-    societyId: 'supef',
-    coord,
-    roomCode,
-    venueKind: 'campus',
-    category: 'party',
-  };
-}
+import {
+  Q,
+  Q02_FLOOR,
+  Q_OTHER_FLOOR,
+  BUILDING_CENTRE,
+  room,
+  Q_ROOMS,
+  inDays,
+  event,
+} from './fixtures/inBuildingFixtures';
 
 let paneEl: HTMLElement;
 const pins = () => Array.from(paneEl.querySelectorAll('button'));
