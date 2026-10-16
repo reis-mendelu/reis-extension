@@ -81,7 +81,7 @@ jobs:
   database:
     name: Database migrations (prod)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     # One apply at a time, whatever starts it.
     concurrency:
       group: supabase-prod-migrations
@@ -113,11 +113,24 @@ jobs:
           MODE: ${{ (!inputs.dry_run && (inputs.ref || '') == '') && 'apply' || 'dry-run' }}
         run: |
           set -euo pipefail
-          supabase migration list --linked --project-ref zvbpgkmnrqyprtkyxkwn
+          # Every CLI call signs in through a temporary login role whose password
+          # it resets, so two jobs reaching prod at once (the nightly drift
+          # check, a re-run) can lock each other out: "failed to connect as temp
+          # role". A connection that never opened changed nothing, and a push
+          # resumes where it stopped (each file commits with its ledger row), so
+          # retrying is safe.
+          retry() {
+            for i in 1 2 3; do
+              "$@" && return 0
+              [ "$i" -lt 3 ] && { echo "::warning::attempt $i failed; retrying in 45s"; sleep 45; }
+            done
+            return 1
+          }
+          retry supabase migration list --linked --project-ref zvbpgkmnrqyprtkyxkwn
           if [ "$MODE" = apply ]; then
-            supabase db push --linked --project-ref zvbpgkmnrqyprtkyxkwn --skip-vault --yes
+            retry supabase db push --linked --project-ref zvbpgkmnrqyprtkyxkwn --skip-vault --yes
           else
-            supabase db push --linked --project-ref zvbpgkmnrqyprtkyxkwn --skip-vault --dry-run
+            retry supabase db push --linked --project-ref zvbpgkmnrqyprtkyxkwn --skip-vault --dry-run
           fi
           echo "### Database: $MODE" >> "$GITHUB_STEP_SUMMARY"
 

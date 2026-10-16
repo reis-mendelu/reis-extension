@@ -18,6 +18,17 @@ trap 'rm -rf "$OUT"' EXIT
 
 # CI installs a pinned CLI; locally npx resolves one.
 sb() { if command -v supabase >/dev/null; then supabase "$@"; else npx supabase "$@"; fi; }
+# Each CLI call to prod resets a temporary login role's password, so a second
+# job reaching prod at the same moment can make this one fail to connect.
+# Read-only here, so trying again is always safe.
+retry() {
+  local i
+  for i in 1 2 3; do
+    "$@" && return 0
+    [ "$i" -lt 3 ] && { echo "attempt $i failed; retrying in 30s" >&2; sleep 30; }
+  done
+  return 1
+}
 
 fingerprint() { # $1 = prod | local, $2 = output file
   local raw target
@@ -25,7 +36,7 @@ fingerprint() { # $1 = prod | local, $2 = output file
   else target=(--local ${SUPABASE_WORKDIR:+--workdir "$SUPABASE_WORKDIR"}); fi
   # --agent no: the CLI otherwise picks its output shape from whoever runs it
   # (an AI agent gets {rows:[...]}, CI a table). JSON on stdout, logs on stderr.
-  if ! raw=$(sb db query "${target[@]}" --agent no --output-format json -f "$SQL" 2>"$OUT/err"); then
+  if ! raw=$(retry sb db query "${target[@]}" --agent no --output-format json -f "$SQL" 2>"$OUT/err"); then
     echo "FAILED: supabase db query $1 exited non-zero:" >&2
     cat "$OUT/err" >&2; echo "$raw" >&2
     exit 1

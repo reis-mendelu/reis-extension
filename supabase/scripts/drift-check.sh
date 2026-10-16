@@ -16,12 +16,22 @@ cd "$(git rev-parse --show-toplevel)"
 REF="${SUPABASE_PROJECT_REF:-zvbpgkmnrqyprtkyxkwn}"
 W=$(mktemp -d)
 sb() { if command -v supabase >/dev/null; then supabase "$@"; else npx supabase "$@"; fi; }
+# Prod calls retry: a concurrent job's login can lock this one out (see
+# compare-fingerprint.sh). All of them are reads.
+retry() {
+  local i
+  for i in 1 2 3; do
+    "$@" && return 0
+    [ "$i" -lt 3 ] && { echo "attempt $i failed; retrying in 30s" >&2; sleep 30; }
+  done
+  return 1
+}
 cleanup() { sb stop --workdir "$W" --no-backup >/dev/null 2>&1 || true; rm -rf "$W"; }
 trap cleanup EXIT
 
 # 1. What prod says it has applied.
 # --agent no: fixed output shapes whoever runs it (see compare-fingerprint.sh).
-raw=$(sb db query --linked --project-ref "$REF" --agent no --output-format json \
+raw=$(retry sb db query --linked --project-ref "$REF" --agent no --output-format json \
   "select version from supabase_migrations.schema_migrations order by version" 2>"$W/err") \
   || { echo "FAILED: could not read prod's ledger:" >&2; cat "$W/err" >&2; echo "$raw" >&2; exit 1; }
 applied=$(jq -er '(if type == "array" then .[] else .rows[] end).version' <<<"$raw") \
@@ -63,7 +73,7 @@ done
 
 # 3. Schema.
 # The diff SQL goes to stdout, empty when nothing differs; progress to stderr.
-diff_sql=$(sb db diff --linked --project-ref "$REF" --workdir "$W" -s public --agent no 2>"$W/err") \
+diff_sql=$(retry sb db diff --linked --project-ref "$REF" --workdir "$W" -s public --agent no 2>"$W/err") \
   || { echo "FAILED: db diff errored:" >&2; cat "$W/err" >&2; exit 1; }
 if [ -n "$(tr -d '[:space:]' <<<"$diff_sql")" ]; then
   echo "DRIFT: prod's public schema differs from its applied migrations. To make the files match prod:" >&2
