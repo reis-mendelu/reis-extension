@@ -51,6 +51,25 @@ describe('fetchUserBaseIds', () => {
     expect(params?.fullName).toBe('Jan Novák');
   });
 
+  // IS greets a female student in the feminine: `Přihlášena:`, read off two
+  // students' real Czech pages (October 2026). The regex only knew the
+  // masculine form, so every woman in a Czech session got fullName '' — no name
+  // on the profile, and an identity that never counted as complete, which sent
+  // every boot down the full rebuild path.
+  it('reads the name from a Czech page that greets a female student', async () => {
+    respond(
+      page({
+        greeting: 'Přihlášena:',
+        idLabel: 'Identifikační číslo uživatele: ',
+        name: 'Jana Nováková',
+        id: '120345',
+      })
+    );
+    const params = await fetchUserBaseIds();
+    expect(params?.studentId).toBe('120345');
+    expect(params?.fullName).toBe('Jana Nováková');
+  });
+
   // The regression. An English session made the profile photo unreachable —
   // PersonPhoto is handed `studentId`, and '' resolves to no photo at all.
   it('reads the id and the name from an English page', async () => {
