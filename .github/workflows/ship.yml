@@ -2,6 +2,7 @@ name: Ship
 
 # The release pipeline: one run takes a vX.Y.Z tag to all three stores.
 #
+#   Database   pending supabase/migrations -> prod, FIRST; the stores wait on it
 #   Android    signed AAB -> Google Play closed-testing track (Alpha)
 #   iOS        archive -> upload -> attach to the version -> submit for review
 #   Extension  Chrome Web Store + Firefox Add-ons (publish.yml)
@@ -71,8 +72,58 @@ permissions:
   contents: read
 
 jobs:
+  # Prod's database gets the release's migrations BEFORE any store does, so a
+  # build that needs a new column or RPC never reaches a student ahead of it.
+  # Old builds keep working because the PR check's linter lets only additive
+  # migrations through (scripts/db/migrationLint.mjs). If the apply fails, the
+  # CLI rolls that file back, records nothing, and every store job is skipped.
+  # Idempotent: with nothing pending it changes nothing, so re-runs are safe.
+  database:
+    name: Database migrations (prod)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # One apply at a time, whatever starts it.
+    concurrency:
+      group: supabase-prod-migrations
+      cancel-in-progress: false
+    steps:
+      - name: Refuse anything but a vX.Y.Z tag
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            || { echo "::error::'$TAG' is not a release tag (vX.Y.Z)."; exit 1; }
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || format('refs/tags/{0}', inputs.tag) }}
+          persist-credentials: false
+      - name: Check secrets
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          [ -n "$SUPABASE_ACCESS_TOKEN" ] || { echo "::error::Missing secret: SUPABASE_ACCESS_TOKEN"; exit 1; }
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 2.121.0
+      # A real push only from a real release: the tag itself (no `ref`
+      # override, which is how a PR dry run builds its head) and dry_run off.
+      - name: Apply pending migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          MODE: ${{ (!inputs.dry_run && (inputs.ref || '') == '') && 'apply' || 'dry-run' }}
+        run: |
+          set -euo pipefail
+          supabase migration list --linked --project-ref zvbpgkmnrqyprtkyxkwn
+          if [ "$MODE" = apply ]; then
+            supabase db push --linked --project-ref zvbpgkmnrqyprtkyxkwn --skip-vault --yes
+          else
+            supabase db push --linked --project-ref zvbpgkmnrqyprtkyxkwn --skip-vault --dry-run
+          fi
+          echo "### Database: $MODE" >> "$GITHUB_STEP_SUMMARY"
+
   android:
     name: Google Play (closed testing)
+    needs: database
     if: inputs.stores == 'all' || inputs.stores == 'android'
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -138,6 +189,7 @@ jobs:
 
   ios:
     name: App Store (submit for review)
+    needs: database
     if: inputs.stores == 'all' || inputs.stores == 'ios'
     runs-on: macos-latest
     timeout-minutes: 60
@@ -246,6 +298,7 @@ jobs:
 
   extension:
     name: Chrome and Firefox
+    needs: database
     if: inputs.stores == 'all' || inputs.stores == 'extension'
     uses: ./.github/workflows/publish.yml
     with:
@@ -255,7 +308,7 @@ jobs:
 
   summary:
     name: Release summary
-    needs: [android, ios, extension]
+    needs: [database, android, ios, extension]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -267,12 +320,14 @@ jobs:
           IOS: ${{ needs.ios.result }}
           EXTENSION: ${{ needs.extension.result }}
           STORES: ${{ inputs.stores }}
+          DATABASE: ${{ needs.database.result }}
         run: |
           {
             echo "## $TAG: $MODE"
             echo
             echo "| Store | Result |"
             echo "| --- | --- |"
+            echo "| Database migrations (prod) | $DATABASE |"
             echo "| Google Play, closed testing | $ANDROID |"
             echo "| App Store, submit for review | $IOS |"
             echo "| Chrome + Firefox | $EXTENSION |"
@@ -289,6 +344,8 @@ jobs:
             [ "$2" = "$want" ] || { echo "::error::$1 was $2, expected $want. See the table above."; bad=1; }
           }
           bad=0
+          # Every mode runs the database first; the stores wait on it.
+          [ "$DATABASE" = success ] || { echo "::error::Database migrations were $DATABASE, so no store was submitted. See the database job."; bad=1; }
           check android "$ANDROID"
           check ios "$IOS"
           check extension "$EXTENSION"

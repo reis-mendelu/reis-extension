@@ -5,16 +5,25 @@
 # "match". Needs a running local stack (`npx supabase start`).
 #
 #   npm run db:fingerprint
+#
+# SUPABASE_WORKDIR points the local side at another stack (the drift check
+# builds one from prod's ledger in a temp dir, with its own project_id).
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
-SQL=supabase/scripts/catalog_fingerprint.sql
+SQL="$PWD/supabase/scripts/catalog_fingerprint.sql"
+REF="${SUPABASE_PROJECT_REF:-zvbpgkmnrqyprtkyxkwn}"
 OUT=$(mktemp -d)
 trap 'rm -rf "$OUT"' EXIT
 
-fingerprint() { # $1 = --linked | --local, $2 = output file
-  local raw
-  if ! raw=$(npx supabase db query "$1" -f "$SQL" 2>&1); then
+# CI installs a pinned CLI; locally npx resolves one.
+sb() { if command -v supabase >/dev/null; then supabase "$@"; else npx supabase "$@"; fi; }
+
+fingerprint() { # $1 = prod | local, $2 = output file
+  local raw target
+  if [ "$1" = prod ]; then target=(--linked --project-ref "$REF")
+  else target=(--local ${SUPABASE_WORKDIR:+--workdir "$SUPABASE_WORKDIR"}); fi
+  if ! raw=$(sb db query "${target[@]}" -f "$SQL" 2>&1); then
     echo "FAILED: supabase db query $1 exited non-zero:" >&2
     echo "$raw" >&2
     exit 1
@@ -31,8 +40,8 @@ fingerprint() { # $1 = --linked | --local, $2 = output file
   fi
 }
 
-fingerprint --linked "$OUT/prod.txt"
-fingerprint --local "$OUT/local.txt"
+fingerprint prod "$OUT/prod.txt"
+fingerprint local "$OUT/local.txt"
 
 if diff "$OUT/prod.txt" "$OUT/local.txt"; then
   echo "SAME: $(wc -l <"$OUT/prod.txt" | tr -d ' ') lines, prod = local"

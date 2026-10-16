@@ -213,15 +213,37 @@ dumped on 2026-10-16, so `npx supabase start` / `npx supabase db reset` build th
 whole database locally. The history before it is in `supabase/migrations_archive/`:
 read it for the reasoning, never apply it.
 
-- A new migration is a new file on top, with a timestamp newer than the newest one there.
-- Nothing is changed in prod by hand: no dashboard edits, no `db query --linked -f`
-  of a file that is not a migration here. That is how prod drifted from the files.
-- Nothing applies a migration on merge yet, so applying one is still a deliberate
-  step by Dominik, followed by `migration repair --linked --status applied <version>`
-  so prod's ledger records it. Never `db push` or `migration repair --linked` from a
-  session. Ledger history: `docs/runbooks/migration-baseline-repair.md`.
-- `supabase db diff --linked` checks the schema; `npm run db:fingerprint` (prod vs a
-  running local stack) checks the grants, policies, buckets and cron job it does not.
+**Migrations apply themselves; nobody applies one by hand.**
+
+- **PR:** the required "Unit tests" job runs `npm run db:lint` (expand/contract,
+  `scripts/db/migrationLint.mjs`), builds a throwaway database from the branch's
+  migrations and runs `supabase/tests`. Only when `supabase/` or `scripts/db/` changed.
+- **Release:** `ship.yml`'s first job runs `supabase db push` against prod; the
+  three stores wait for it, so a build never reaches students ahead of its schema.
+  A failed file rolls back, is not recorded, and holds every store.
+- **Nightly:** `db-drift.yml` (`npm run db:drift`) rebuilds what prod's ledger says
+  it has and compares schema and grants/policies/buckets/cron. Red = prod was
+  changed outside this directory.
+
+Writing one:
+
+- A new file on top, timestamp newer than the newest there. Never edit or rename a
+  merged one: it may already be in prod.
+- **Additive only.** An old build stays installed for weeks and runs against the new
+  schema. The linter flags drops, renames, type changes, new NOT NULL/CHECK
+  constraints, revokes, row changes and DO blocks; a flagged statement needs
+  `-- migration-lint: allow <rule>: <why every released build survives it>`.
+  Removing something is two releases: stop using it, then drop it.
+- No `begin;`/`commit;`: the CLI runs each file in one transaction, and a COMMIT
+  inside it leaves a failed file half-applied.
+- The CI database is empty. A constraint that prod's existing rows violate passes
+  CI and fails at release (stores held, nothing half-done); check prod's rows
+  read-only before adding one.
+- Nothing is changed in prod by hand: no dashboard edits, no `db query --linked -f`,
+  no `db push` or `migration repair --linked` from a session.
+- `project_id` is `reis-extension` in every worktree, so `npx supabase start` is one
+  stack per machine: check `docker ps` before starting or stopping one. The drift
+  check uses its own project id and ports.
 
 ## Branches and releasing
 
@@ -242,7 +264,7 @@ read it for the reasoning, never apply it.
   and `format:check` are **repo-wide**, not changed-files, and `nuia:gate` is a
   ratchet — a new `noUncheckedIndexedAccess` error fails even if the count drops.
 - `main` accepts only the `test` → `main` release PR. Merging it pushes the
-  `vX.Y.Z` tag and **submits to all three stores** (`ship.yml`). A submission
+  `vX.Y.Z` tag, **applies pending migrations to prod** and **submits to all three stores** (`ship.yml`). A submission
   cannot be recalled, so the release PR (diff, notes, CI, privacy block) is the
   last gate. Use `/release`.
 - **Do not merge into `test` while a release PR is open.**

@@ -8,6 +8,7 @@ release PR merged into main
   └─ release-tag.yml   pushes vX.Y.Z (only if package.json's version changed,
   │                    and release-notes/X.Y.Z.cs.txt exists)
   └─ ship.yml          (same run: a tag pushed with GITHUB_TOKEN starts no workflow)
+       ├─ Database      supabase db push → prod, FIRST; every store waits on it
        ├─ Google Play   signed AAB → closed-testing track (Alpha)
        ├─ App Store     archive → upload → attach to version → submit for review
        ├─ Extension     Chrome Web Store + Firefox Add-ons (publish.yml)
@@ -22,6 +23,17 @@ the track). The iOS job asks first (`ios-submit.ts --check`) and skips the
 archive and upload when the version is already submitted, so a re-run never
 sends a duplicate binary. If only the submit step failed, re-run just that by
 hand: `npx tsx scripts/release/ios-submit.ts --version X.Y.Z`.
+
+The **database** job is the exception: it runs before the stores and they
+`need` it. It applies every migration merged since the last release
+(`supabase db push`, CLI pinned to 2.121.0), so a build never reaches a student
+ahead of the column or RPC it calls. A file that fails is rolled back and not
+recorded, the job goes red and no store is submitted; fix it with a new
+migration in a new release. It is idempotent: with nothing pending (a re-run,
+a release without migrations) it changes nothing. It uses
+`SUPABASE_ACCESS_TOKEN`, the secret the edge-function deploy already has. A dry
+run and a PR's dry run only list what would be applied (`--dry-run`). How
+migrations are written so old builds survive: CLAUDE.md, "Database migrations".
 
 ## What a release needs in the PR
 
