@@ -10,7 +10,7 @@ const Schema = z.array(z.object({ key: z.string(), devices: z.number() }));
  * Admin-only aggregate read: DEVICES per faculty and base study programme
  * ('PEF B-OI'; 'PEF ?' = programme not sent by an older build, or not parsed).
  * -1 means "under 5" and is passed through as-is. Definitions live in
- * supabase/migrations_archive/20261011120000_partner_targeting.sql.
+ * supabase/migrations/20261016000000_baseline.sql.
  */
 export async function fetchUsageProgrammes(days: number): Promise<UsageGroup[] | null> {
   if (DEV_SOCIETY) return null;

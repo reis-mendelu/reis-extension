@@ -217,7 +217,9 @@ read it for the reasoning, never apply it.
 - Nothing is changed in prod by hand: no dashboard edits, no `db query --linked -f`
   of a file that is not a migration here. That is how prod drifted from the files.
 - Nothing applies a migration on merge yet, so applying one is still a deliberate
-  step by Dominik. Never `db push` or `migration repair` from a session.
+  step by Dominik, followed by `migration repair --linked --status applied <version>`
+  so prod's ledger records it. Never `db push` or `migration repair --linked` from a
+  session. Ledger history: `docs/runbooks/migration-baseline-repair.md`.
 - `supabase db diff --linked` checks the schema; `supabase/scripts/catalog_fingerprint.sql`,
   run against both and diffed, checks the grants, policies, buckets and cron job it does not.
 

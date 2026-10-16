@@ -1,6 +1,6 @@
 /**
  * The society-logos bucket's file_size_limit
- * (supabase/migrations_archive/20260926120000_societies_catalog.sql). Storage refuses a
+ * (supabase/migrations/20261016000000_baseline.sql). Storage refuses a
  * bigger file with an error the console can only report as "upload failed".
  */
 export const LOGO_MAX_BYTES = 262_144;

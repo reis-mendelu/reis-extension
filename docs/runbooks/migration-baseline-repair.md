@@ -56,15 +56,33 @@ Record the baseline as applied (this does not run it):
 npx supabase migration repair --linked --status applied 20261016000000
 ```
 
+**Any migration newer than the baseline that prod already has** — e.g. #556's
+`20261016120000_support_prompt_signals.sql` if it was applied by hand with
+`db query -f` before this repair — gets recorded the same way, one command per
+file, or a later automatic apply would run it a second time:
+
+```bash
+npx supabase migration repair --linked --status applied 20261016120000
+```
+
+Skip that last command if the file is not applied in prod yet (then it is simply
+pending, which is correct). Step 0's `db diff` tells you which: run it on a
+checkout that contains the file; no changes means prod has it.
+
+The same holds afterwards, until CI applies migrations itself: a migration
+applied by hand also needs `migration repair --linked --status applied <its
+version>`, or the ledger drifts from prod again.
+
 ## 2. After: verify
 
-Exactly one row, the baseline:
+The baseline, plus any later version you recorded above, and nothing older:
 
 ```bash
 npx supabase db query --linked "select version, name from supabase_migrations.schema_migrations order by version"
 ```
 
-Local and remote agree (one line, `20261016000000` on both sides):
+Local and remote agree: every row has the same version on both sides (a file
+not yet applied in prod shows local only, which is correct):
 
 ```bash
 npx supabase migration list --linked
