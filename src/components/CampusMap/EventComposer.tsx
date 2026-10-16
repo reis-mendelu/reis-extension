@@ -75,8 +75,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
     source?.coord ?? null
   );
   const { room, placeName, coord, clearDraftCoord } = venue;
-  // A notice has no place: switching to one drops the venue and its draft pin
-  // (buildPostInput drops it from the saved row either way).
+  // A notice has no place: switching to one drops the venue and its draft pin.
   const changeKind = (next: typeof kind) => {
     if (next === 'notice') venue.clearVenue();
     setKind(next);
@@ -125,7 +124,9 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       }
       await loadSocietyPosts();
       void reloadMapEvents(); // surface the change on the public "Akce" feed too
-      toast.success(editId ? t('map.toastSaved') : t('map.toastPublished'));
+      toast.success(
+        t(editId ? 'map.toastSaved' : notice ? 'map.toastPublishedNotice' : 'map.toastPublished')
+      );
       close();
     } catch {
       setError(true);
@@ -153,7 +154,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
         <textarea
           className="textarea textarea-bordered w-full"
           rows={3}
-          placeholder={t('map.descriptionHint')}
+          placeholder={t(notice ? 'map.noticeDescriptionHint' : 'map.descriptionHint')}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
@@ -168,6 +169,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
         onEndDate={setEndDate}
         t={t}
         locale={locale}
+        endLabel={notice ? 'map.noticeEndDate' : undefined}
       />
 
       {/* Novinky draws no picture, so a notice is not asked for one either. */}

@@ -16,6 +16,7 @@ export function ComposerWhenField({
   onEndDate,
   t,
   locale,
+  endLabel = 'map.endDate',
 }: {
   date: string;
   time: string;
@@ -25,6 +26,8 @@ export function ComposerWhenField({
   onEndDate: (v: string) => void;
   t: (k: string) => string;
   locale: string;
+  /** The end date's label key: a notice's end is how long Novinky shows it. */
+  endLabel?: string;
 }) {
   const whenId = useId();
   const endId = useId();
@@ -55,7 +58,7 @@ export function ComposerWhenField({
       </div>
 
       <label id={endId} className={LABEL}>
-        {t('map.endDate')}
+        {t(endLabel)}
       </label>
       {/* MiniCalendar has no way to clear a picked date on its own, so the
           clear control lives here, shown only once an end date is set. */}

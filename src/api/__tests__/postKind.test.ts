@@ -121,6 +121,13 @@ describe('buildPostInput — a notice has no place', () => {
     });
   });
 
+  // Novinky draws no picture. A party popper left on a notice is what an old
+  // build, still listing it in Akce, would draw beside "Hledáš bydlení?".
+  it('carries no picture: no emoji, filed under other', () => {
+    const out = buildPostInput({ ...draft, emoji: '1f389', kind: 'notice' });
+    expect(out).toMatchObject({ emoji: null, category: 'other' });
+  });
+
   it('an event keeps its venue', () => {
     const out = buildPostInput({ ...draft, kind: 'event' });
     expect(out).toMatchObject({ kind: 'event', venueKind: 'campus', roomCode: 'Q01' });

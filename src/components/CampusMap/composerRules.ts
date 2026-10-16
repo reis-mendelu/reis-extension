@@ -50,12 +50,14 @@ export const isUrlInvalid = (url: string) => url.trim() !== '' && !validateExter
 
 export function buildPostInput(d: ComposerDraft): PostInput {
   const kind = d.kind ?? 'event';
-  // A notice has no place. Its venue fields are hidden, but a room or pin
-  // picked before switching to it is still in the draft: drop it here, or an
-  // event turned notice keeps its room and an old build pins it.
-  const room = kind === 'notice' ? null : d.room;
-  const coord = kind === 'notice' ? null : d.coord;
-  const placeName = kind === 'notice' ? null : d.placeName;
+  const notice = kind === 'notice';
+  // A notice has no place and no picture. Those fields are hidden, but what
+  // was picked before switching to it is still in the draft: drop it here, or
+  // an event turned notice keeps its room and an old build pins it (and draws
+  // a party popper beside "Hledáš bydlení?" in its Akce list).
+  const room = notice ? null : d.room;
+  const coord = notice ? null : d.coord;
+  const placeName = notice ? null : d.placeName;
   const venueKind = deriveVenue(room, coord);
   return {
     title: d.title.trim(),
@@ -63,11 +65,12 @@ export function buildPostInput(d: ComposerDraft): PostInput {
     // The catalog decides the category older builds file it under.
     // An untouched picture keeps the event's category: the backfill files the
     // Finland trip under 'trip', while 🇫🇮 alone means 'culture'.
-    category:
-      d.emoji === d.startEmoji
+    category: notice
+      ? 'other'
+      : d.emoji === d.startEmoji
         ? d.fallbackCategory
         : (findEventEmoji(d.emoji)?.category ?? d.fallbackCategory),
-    emoji: d.emoji,
+    emoji: notice ? null : d.emoji,
     date: d.date,
     endDate: d.endDate && d.endDate > d.date ? d.endDate : null,
     time: d.time || null,

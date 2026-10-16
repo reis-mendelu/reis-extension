@@ -16,6 +16,7 @@ vi.mock('../../../api/societyPosts', () => ({
   updatePost: (...a: Parameters<typeof updatePost>) => updatePost(...a),
 }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+import { toast } from 'sonner';
 vi.mock('../../../api/placeSearch', () => ({ searchPlaces: vi.fn(async () => []) }));
 vi.mock('../../../hooks/ui/usePhoneViewport', () => ({ usePhoneViewport: () => false }));
 
@@ -80,6 +81,10 @@ describe('EventComposer — event or notice', () => {
     expect(screen.queryByText('Obrázek akce')).not.toBeInTheDocument();
     expect(screen.getAllByText('Vyberte datum').length).toBeGreaterThan(0);
     expect(screen.getByText(/Jen v Novinkách/)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Co mají studenti vědět…')).toBeInTheDocument();
+    // A notice's end date is how long Novinky keeps it, not a multi-day event.
+    expect(screen.getByText('Zobrazovat do (nepovinné)')).toBeInTheDocument();
+    expect(screen.queryByText('Konec (vícedenní akce)')).not.toBeInTheDocument();
   });
 
   it('publishes a notice as a notice, with no place', async () => {
@@ -97,6 +102,8 @@ describe('EventComposer — event or notice', () => {
       venueKind: 'tba',
       coordLng: null,
     });
+    // Not "Akce zveřejněna": it was not an event.
+    expect(toast.success).toHaveBeenCalledWith('Oznámení zveřejněno');
   });
 
   it('opens an existing notice as a notice, and an edit can turn it into an event', async () => {
