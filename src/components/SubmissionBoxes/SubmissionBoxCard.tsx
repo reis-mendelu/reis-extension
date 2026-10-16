@@ -1,6 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 import type { Odevzdavarna } from '../../api/odevzdavarny';
-import { boxDeadline } from '../../utils/submissionBoxes';
+import { boxDeadline, boxState } from '../../utils/submissionBoxes';
 import { daysUntil, useBoxLabels } from './useBoxLabels';
 
 interface SubmissionBoxCardProps {
@@ -16,8 +16,8 @@ interface SubmissionBoxCardProps {
 export function SubmissionBoxCard({ box, now, testId }: SubmissionBoxCardProps) {
   const L = useBoxLabels();
   const deadline = boxDeadline(box);
-  const uploaded = box.fileCount > 0;
-  const urgent = !uploaded && deadline !== null && daysUntil(deadline, now) <= 2;
+  const state = boxState(box);
+  const urgent = state !== 'confirmed' && deadline !== null && daysUntil(deadline, now) <= 2;
 
   return (
     <a
@@ -48,15 +48,31 @@ export function SubmissionBoxCard({ box, now, testId }: SubmissionBoxCardProps) 
       <div className="mt-1 flex flex-wrap gap-x-1.5 text-xs text-base-content/70">
         {deadline && <span>{L.until(deadline)}</span>}
         {deadline && <span aria-hidden>·</span>}
-        <span className={uploaded ? 'font-medium text-[var(--tone-success)]' : undefined}>
-          {uploaded
+        <span
+          className={
+            state === 'confirmed'
+              ? 'font-medium text-[var(--tone-success)]'
+              : state === 'unconfirmed'
+                ? 'font-medium text-[var(--tone-warning)]'
+                : undefined
+          }
+        >
+          {state === 'confirmed'
             ? `${L.t('odevzdavarny.uploaded')} · ${L.files(box.fileCount)}`
-            : L.t('odevzdavarny.nothingUploaded')}
+            : state === 'unconfirmed'
+              ? `${L.t('odevzdavarny.unconfirmed')} · ${L.files(box.fileCount)}`
+              : L.t('odevzdavarny.nothingUploaded')}
         </span>
         {box.points && <span>· {L.t('odevzdavarny.points', { n: box.points })}</span>}
       </div>
       <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-[var(--tone-primary)]">
-        {L.t(uploaded ? 'odevzdavarny.openInIs' : 'odevzdavarny.submitInIs')}
+        {L.t(
+          state === 'confirmed'
+            ? 'odevzdavarny.openInIs'
+            : state === 'unconfirmed'
+              ? 'odevzdavarny.confirmInIs'
+              : 'odevzdavarny.submitInIs'
+        )}
         <ExternalLink size={12} aria-hidden />
       </span>
     </a>

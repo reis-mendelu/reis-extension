@@ -1,5 +1,5 @@
 {
-  "_comment": "Synthetic submission boxes in every state IS has (open, uploaded, closed; see src/utils/parsers/odevzdavarnyParser.ts) on real subject ids from the snapshot, so the Záznamník section and the Subjects-screen card can be measured. Box names and ids are invented. Deadlines are deadlineDayOffset from now (scripts/lib/fixtureRebase.ts). Serve with: npm run dev:web:boxes",
+  "_comment": "Synthetic submission boxes in every state IS has (open, uploaded but not confirmed, confirmed, closed; see src/utils/parsers/odevzdavarnyParser.ts) on real subject ids from the snapshot, so the Záznamník section and the Subjects-screen card can be measured. Box names and ids are invented. Deadlines are deadlineDayOffset from now (scripts/lib/fixtureRebase.ts). Serve with: npm run dev:web:boxes",
   "odevzdavarny": [
     {
       "courseId": "164077",
@@ -29,6 +29,21 @@
       "deadlineDayOffset": 9,
       "fileCount": 1,
       "section": "submitted",
+      "isOpen": true
+    },
+    {
+      "courseId": "164077",
+      "courseCode": "EBC-PJ",
+      "courseNameCs": "Programovací jazyk Java",
+      "courseNameEn": "Java Programming Language",
+      "type": "odevzdavarna-individualni",
+      "uploadUrl": "https://is.mendelu.cz/auth/student/odevzdavarny_odevzdani.pl?odevzdavarna=fx-b9",
+      "deadlineTime": "18:00",
+      "name": "Domácí úloha 2 – nahráno, nepotvrzeno",
+      "odevzdavarnaId": "fx-b9",
+      "deadlineDayOffset": 1,
+      "fileCount": 2,
+      "section": "open",
       "isOpen": true
     },
     {

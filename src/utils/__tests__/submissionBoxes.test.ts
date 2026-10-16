@@ -5,6 +5,7 @@ import {
   isBoxOpen,
   splitBoxes,
   boxesDueSoon,
+  boxState,
 } from '../submissionBoxes';
 import type { Odevzdavarna } from '../../api/odevzdavarny';
 
@@ -60,7 +61,7 @@ describe('submission boxes', () => {
     const due = boxesDueSoon(
       [
         box({ name: 'in 5 days', deadline: '08.10.2026 23:59' }),
-        box({ name: 'uploaded', deadline: '06.10.2026 23:59', fileCount: 1 }),
+        box({ name: 'confirmed', deadline: '06.10.2026 23:59', fileCount: 1, section: 'submitted' }),
         box({ name: 'all year', deadline: '31.01.2027 04:27' }),
         box({ name: 'closed', deadline: '04.10.2026 10:00', isOpen: false }),
       ],
@@ -68,6 +69,46 @@ describe('submission boxes', () => {
       14
     );
     expect(due.map((b) => b.name)).toEqual(['in 5 days']);
+  });
+
+  it('due soon: a box uploaded but not confirmed is still due — IS has not got it yet', () => {
+    const due = boxesDueSoon(
+      [
+        box({ name: 'unconfirmed', deadline: '06.10.2026 23:59', fileCount: 2, section: 'open' }),
+        box({ name: 'confirmed', deadline: '06.10.2026 23:59', fileCount: 2, section: 'submitted' }),
+      ],
+      NOW,
+      14
+    );
+    expect(due.map((b) => b.name)).toEqual(['unconfirmed']);
+  });
+
+  it('due soon: a row cached with no section keeps reading files as done', () => {
+    const due = boxesDueSoon(
+      [box({ name: 'old row', deadline: '06.10.2026 23:59', fileCount: 1, section: undefined })],
+      NOW,
+      14
+    );
+    expect(due).toEqual([]);
+  });
+});
+
+describe('boxState', () => {
+  it('empty: nothing uploaded', () => {
+    expect(boxState(box({ section: 'open', fileCount: 0 }))).toBe('empty');
+  });
+
+  it('unconfirmed: files uploaded, but IS still lists the box under "Kam mohu odevzdávat"', () => {
+    expect(boxState(box({ section: 'open', fileCount: 1 }))).toBe('unconfirmed');
+  });
+
+  it('confirmed: IS moved the box to the submitted table', () => {
+    expect(boxState(box({ section: 'submitted', fileCount: 1 }))).toBe('confirmed');
+  });
+
+  it('a row cached by an older build (no section) reads by its files, as before', () => {
+    expect(boxState(box({ section: undefined, fileCount: 1 }))).toBe('confirmed');
+    expect(boxState(box({ section: undefined, fileCount: 0 }))).toBe('empty');
   });
 });
 

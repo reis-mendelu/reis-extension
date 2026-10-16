@@ -33,15 +33,31 @@ export function splitBoxes(boxes: Odevzdavarna[], now: number) {
   return { open, closed };
 }
 
+export type BoxState = 'empty' | 'unconfirmed' | 'confirmed';
+
 /**
- * Open boxes with nothing uploaded and a deadline within `days`. Teachers
- * leave some boxes open for the whole year, so "open" alone is not "due".
+ * IS takes a submission in two steps: upload files, then confirm. A box moves
+ * to the "s odevzdanými soubory" table only on the second, so a box that is
+ * still under "Kam mohu odevzdávat" with files in it was uploaded to, not
+ * handed in. Any other row (a closed box, or one cached before the parser kept
+ * `section`) has no such table to go by and reads by its files, as it always did.
+ */
+export function boxState(box: Odevzdavarna): BoxState {
+  if (box.section === 'submitted') return 'confirmed';
+  if (box.fileCount === 0) return 'empty';
+  return box.section === 'open' ? 'unconfirmed' : 'confirmed';
+}
+
+/**
+ * Open boxes the student has not handed in (nothing uploaded, or uploaded but
+ * not confirmed) with a deadline within `days`. Teachers leave some boxes open
+ * for the whole year, so "open" alone is not "due".
  */
 export function boxesDueSoon(boxes: Odevzdavarna[], now: number, days: number) {
   const until = now + days * 86_400_000;
   return splitBoxes(boxes, now).open.filter((b) => {
     const t = boxDeadline(b)?.getTime();
-    return b.fileCount === 0 && t !== undefined && t <= until;
+    return boxState(b) !== 'confirmed' && t !== undefined && t <= until;
   });
 }
 
