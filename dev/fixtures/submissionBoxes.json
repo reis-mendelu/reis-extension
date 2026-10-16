@@ -39,7 +39,7 @@
       "type": "odevzdavarna-individualni",
       "uploadUrl": "https://is.mendelu.cz/auth/student/odevzdavarny_odevzdani.pl?odevzdavarna=fx-b9",
       "deadlineTime": "18:00",
-      "name": "Domácí úloha 2 – nahráno, nepotvrzeno",
+      "name": "Domácí úloha 2 – kolekce",
       "odevzdavarnaId": "fx-b9",
       "deadlineDayOffset": 1,
       "fileCount": 2,
