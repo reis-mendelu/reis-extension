@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { parseDate } from '../utils/date';
 import { courseDisplayName } from '../utils/courseDisplayName';
-import { boxCourseCode } from '../utils/submissionBoxes';
+import { boxCourseCode, boxState } from '../utils/submissionBoxes';
 
 export interface DeadlineAlert {
   id: string;
@@ -105,7 +105,9 @@ export function useDeadlineAlerts() {
 
     for (const a of odevzdavarny) {
       // The list also holds boxes IS will not take files for ("Kam nemohu").
-      if (a.fileCount > 0 || !a.deadline || a.isOpen === false) continue;
+      // Files alone do not silence it: until the student confirms in IS, the
+      // box is not handed in (see boxState).
+      if (boxState(a) === 'confirmed' || !a.deadline || a.isOpen === false) continue;
       const deadline = parseCzDateTime(a.deadline);
       if (!deadline) continue;
       const h = (deadline.getTime() - now) / H;
