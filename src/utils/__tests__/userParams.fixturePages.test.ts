@@ -28,7 +28,7 @@ vi.mock('../../api/client', () => ({
   BASE_URL: 'https://is.mendelu.cz',
 }));
 
-const { getUserParams, clearUserParamsCache } = await import('../userParams');
+const { getUserParams, clearUserParamsCache, selectStudy } = await import('../userParams');
 const { onIdentityChange } = await import('../userParams/identityEvents');
 const { IndexedDBService } = await import('../../services/storage');
 
@@ -99,5 +99,37 @@ describe('getUserParams over the reported pages', () => {
     expect(params?.studium).toBe('900011');
     expect(params?.studyProgram).toBe('B-AII');
     expect(params?.studies?.map((s) => s.studium)).toEqual(['900011', '900012']);
+  });
+
+  /**
+   * Starts, not one start. The fixtures greet "Přihlášena:" as the real
+   * pages do, and the name regex does not read that yet, so these records
+   * are incomplete and rebuild on every start — the path that, with the
+   * daily resolution cache, used to write IS's default study back on every
+   * second start.
+   */
+  it('stays on the current study across starts (interrupted-study student)', async () => {
+    serveIs(INTERRUPTED, '900003', {
+      '900001': 'řádně zapsán',
+      '900002': 'studium ukončeno',
+      '900003': 'studium přerušeno',
+    });
+    for (let start = 1; start <= 3; start++) {
+      clearUserParamsCache();
+      expect((await getUserParams())?.studium, `start ${start}`).toBe('900001');
+    }
+  });
+
+  it("keeps the concurrent-study student's choice across starts", async () => {
+    serveIs(CONCURRENT, '900011', { '900011': 'řádně zapsán', '900012': 'řádně zapsán' });
+    await getUserParams();
+    await selectStudy('900012');
+    for (let start = 1; start <= 3; start++) {
+      clearUserParamsCache();
+      const params = await getUserParams();
+      expect(params?.studium, `start ${start}`).toBe('900012');
+      expect(params?.studyProgram).toBe('B-EM');
+      expect(params?.studies).toHaveLength(2);
+    }
   });
 });

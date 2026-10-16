@@ -314,6 +314,25 @@ describe('selectStudy', () => {
     expect(idbClearAll).not.toHaveBeenCalled();
   });
 
+  // The same, with a resolution from earlier today on the record: the
+  // retry must not be answered from the daily cache.
+  it('asks IS again past the daily cache', async () => {
+    clearUserParamsCache();
+    resolveStudies.mockClear();
+    idbGet.mockResolvedValue({
+      ...stored(AII),
+      studiesResolvedFor: '900011,900012',
+      studiesResolvedAt: Date.now() - 60_000,
+    });
+    fetchUserBaseIds.mockResolvedValue(base('900011'));
+    await getUserParams();
+    expect(resolveStudies).not.toHaveBeenCalled();
+
+    resolveStudies.mockResolvedValue({ active: [AII, EM], chosen: AII });
+    await expect(selectStudy('900012')).resolves.toMatchObject({ changed: true });
+    expect(resolveStudies).toHaveBeenCalledTimes(1);
+  });
+
   // The id arrives over postMessage from the other context.
   it('refuses a study that is not one of the active ones', async () => {
     await expect(selectStudy('900003')).rejects.toThrow();

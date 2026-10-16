@@ -123,8 +123,20 @@ describe('resolveStudies', () => {
     expect(r.chosen.studium).toBe('900001');
   });
 
-  it("rejects when the kept study's own page fails: keeping it cannot be decided", async () => {
-    serve(CONCURRENT, { '900011': 'řádně zapsán', '900012': 'řádně zapsán' });
+  // IS answering an error for the interrupted study's own page must not
+  // keep the student on it: another active study wins.
+  it("moves to an active study when the kept study's own page fails", async () => {
+    serve(INTERRUPTED, { '900001': 'řádně zapsán', '900002': 'studium ukončeno' });
+    const inner = fetchWithAuth.getMockImplementation()!;
+    fetchWithAuth.mockImplementation((url: string) =>
+      url?.includes('studium=900003') ? Promise.reject(new Error('HTTP 500')) : inner(url)
+    );
+    const r = await resolveStudies(options(INTERRUPTED), '900003');
+    expect(r.chosen.studium).toBe('900001');
+  });
+
+  it("rejects when the kept study's page fails and nothing else is active", async () => {
+    serve(CONCURRENT, { '900011': 'neznámý stav' });
     const inner = fetchWithAuth.getMockImplementation()!;
     fetchWithAuth.mockImplementation((url: string) =>
       url?.includes('studium=900012') ? Promise.reject(new Error('HTTP 500')) : inner(url)

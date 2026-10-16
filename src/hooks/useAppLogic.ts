@@ -60,6 +60,8 @@ interface SyncedData {
 
 /** The study the last accepted sync push was for — see the exams rule below. */
 let appliedStudium: string | undefined;
+/** When a push for another study last made this app re-ask its own. */
+let lastOwnRecheck = 0;
 
 export function useAppLogic() {
   const [currentDate, setCurrentDate] = useState<Date>(() => getSmartWeekRange().start);
@@ -199,6 +201,14 @@ export function useAppLogic() {
             ?.studium
         : undefined;
       const r = raw.studium ? pushForStudy(raw, own) : raw;
+      // The crawl is on another study than this app's record. During a
+      // switch that is the crawl being waited out; otherwise this record is
+      // the one behind (its own study pages failed on the correcting start),
+      // and only asking IS again moves it — at most once a minute.
+      if (raw.studium && own && raw.studium !== own && Date.now() - lastOwnRecheck > 60_000) {
+        lastOwnRecheck = Date.now();
+        void useAppStore.getState().loadContext();
+      }
       // The first push for the study the student switched to: whatever it
       // does not carry is the previous study's — see forgetPreviousStudy.
       // (Pushes for the study they left were dropped just above.)

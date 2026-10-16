@@ -10,6 +10,7 @@ import { renderHook, cleanup } from '@testing-library/react';
  */
 
 const store = {
+  loadContext: vi.fn(async () => {}),
   loadGradeHistory: vi.fn(),
   setPastAttendance: vi.fn(),
   setNavPages: vi.fn(),
@@ -113,6 +114,8 @@ describe('a sync push for the study the student switched away from', () => {
     expect(store.setCvicneTests).not.toHaveBeenCalled();
     expect(store.setOdevzdavarny).not.toHaveBeenCalled();
     expect(idbSet).not.toHaveBeenCalledWith('cvicne_tests', expect.anything(), expect.anything());
+    // And the app re-asks IS for its own study, in case it is the one behind.
+    expect(store.loadContext).toHaveBeenCalled();
   });
 
   // The new study has no exam terms: "none" must replace the old study's

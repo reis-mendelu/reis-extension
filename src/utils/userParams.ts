@@ -65,6 +65,32 @@ let _wrongStudentOnDisk = false;
  */
 let _studiesPending = false;
 
+/** The next resolution ignores the daily cache — the switcher's retry. */
+let _forceResolve = false;
+
+/** The fields a record holds for its study, as opposed to its student. */
+const STUDY_FIELDS = [
+  'studium',
+  'obdobi',
+  'studyCode',
+  'facultyLabel',
+  'studyProgram',
+  'studyForm',
+  'studySemester',
+  'studyYear',
+  'periodLabel',
+  'isErasmus',
+  'studies',
+  'studiesResolvedFor',
+  'studiesResolvedAt',
+] as const;
+
+function studyFieldsOf(p: Partial<UserParams>): Partial<UserParams> {
+  return Object.fromEntries(
+    STUDY_FIELDS.filter((k) => p[k] !== undefined).map((k) => [k, p[k]])
+  ) as Partial<UserParams>;
+}
+
 /**
  * How long a resolved study select is trusted. Every IS page load is a new
  * content script and a new app, and resolving costs a request per study;
@@ -202,6 +228,7 @@ export async function getUserParams(): Promise<UserParams | null> {
       const optionsKey = options.map((o) => o.studium).join(',');
       const resolvedRecently =
         !switched &&
+        !_forceResolve &&
         stored?.studiesResolvedFor === optionsKey &&
         Date.now() - (stored.studiesResolvedAt ?? 0) < STUDIES_RECHECK_MS;
       let multi: ResolvedStudies | null = null;
@@ -209,6 +236,7 @@ export async function getUserParams(): Promise<UserParams | null> {
         try {
           multi = await resolveStudies(options, switched ? undefined : stored?.studium);
           _studiesPending = false;
+          _forceResolve = false;
         } catch (e) {
           // With a record of this student's, keep its study: the catch
           // below serves it, and the recheck gap asks again. With none — a
@@ -255,7 +283,15 @@ export async function getUserParams(): Promise<UserParams | null> {
         email: net.username ? `${net.username}@mendelu.cz` : '',
         isErasmus: base.isErasmus,
       };
-      let params = multi ? resolved(withStudy(built, multi)) : built;
+      // Not re-resolved because the stored resolution is recent: the study
+      // is the stored one, not IS's default that `built` was read from.
+      // (Incomplete records — no parsed name — rebuild on every start, and
+      // without this, every other start wrote the default study back.)
+      let params = multi
+        ? resolved(withStudy(built, multi))
+        : resolvedRecently && stored
+          ? { ...built, ...studyFieldsOf(stored) }
+          : built;
       // Same guard as the branch above, for records that are not complete
       // (no parsed name): a switch another context made while this rebuild
       // read IS wins over a record built from before it.
@@ -355,6 +391,7 @@ export function clearUserParamsCache() {
   _lastIdentityAttempt = 0;
   _wrongStudentOnDisk = false;
   _studiesPending = false;
+  _forceResolve = false;
 }
 
 /**
@@ -379,6 +416,8 @@ let _selecting: Promise<unknown> = Promise.resolve();
 
 async function selectStudyNow(studium: string): Promise<{ params: UserParams; changed: boolean }> {
   if (_inflight) await _inflight.catch(() => null);
+  // Never act on a record this context has not checked against IS.
+  if (!_cached) await getUserParams();
   // The shared record first: another IS tab may have switched it since this
   // context cached its own, and a switch "back" to what this one caches
   // would otherwise be a no-op that leaves the record on the other study.
@@ -394,7 +433,9 @@ async function selectStudyNow(studium: string): Promise<{ params: UserParams; ch
     _cached = null;
     _identityChecked = false;
     _lastIdentityAttempt = 0;
+    _forceResolve = true;
     current = (await getUserParams()) ?? undefined;
+    _forceResolve = false;
     target = current?.studies?.find((s) => s.studium === studium);
   }
   if (!current?.studies || !target) throw new Error('selectStudy: not an active study');

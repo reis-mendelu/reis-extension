@@ -65,8 +65,17 @@ export async function resolveStudies(
       return [o.studium, r.status === 'fulfilled' ? r.value : null];
     })
   );
-  // Rejects if it fails: whether to keep the study in use cannot be decided.
-  if (kept) byId.set(kept.studium, await readOne(kept));
+  // If the kept study's own page fails, keeping it cannot be confirmed: an
+  // active study among the others wins (IS refusing an interrupted study's
+  // page would otherwise block the correction for good); with none, reject
+  // and the caller keeps what it has.
+  if (kept) {
+    try {
+      byId.set(kept.studium, await readOne(kept));
+    } catch (e) {
+      if (![...byId.values()].some((r) => r?.active)) throw e;
+    }
+  }
   const read = options.map((o) => byId.get(o.studium)).filter((r): r is Read => !!r);
   if (read.length === 0) throw new Error('resolveStudies: no study page could be read');
 
