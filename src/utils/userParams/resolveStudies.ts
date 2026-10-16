@@ -13,6 +13,11 @@ export interface ResolvedStudies {
   active: StudyOption[];
   /** The study reIS reads everything for. Always one of `active`. */
   chosen: StudyOption;
+  /**
+   * Every page was read. A partial answer is used for now but must not be
+   * trusted as the day's resolution: the caller asks again soon.
+   */
+  complete?: boolean;
 }
 
 /**
@@ -39,7 +44,13 @@ export interface ResolvedStudies {
  */
 export async function resolveStudies(
   options: { studium: string; label: string }[],
-  keep?: string
+  keep?: string,
+  /**
+   * The studies the stored record already confirmed active. A page of one of
+   * these that fails this time keeps its stored entry: one failed request
+   * must not drop a concurrent study, the switcher, or the student's choice.
+   */
+  known: StudyOption[] = []
 ): Promise<ResolvedStudies> {
   const readOne = async (o: { studium: string; label: string }) => {
     const res = await fetchWithAuth(
@@ -65,23 +76,31 @@ export async function resolveStudies(
       return [o.studium, r.status === 'fulfilled' ? r.value : null];
     })
   );
-  // If the kept study's own page fails, keeping it cannot be confirmed: an
-  // active study among the others wins (IS refusing an interrupted study's
-  // page would otherwise block the correction for good); with none, reject
-  // and the caller keeps what it has.
+  // If the kept study's own page fails: a study the record already knows
+  // as active stays as it was. Otherwise keeping it cannot be confirmed,
+  // and an active study among the others wins (IS refusing an interrupted
+  // study's page would otherwise block the correction for good); with
+  // none, reject and the caller keeps what it has.
   if (kept) {
     try {
       byId.set(kept.studium, await readOne(kept));
     } catch (e) {
-      if (![...byId.values()].some((r) => r?.active)) throw e;
+      byId.set(kept.studium, null);
+      const knowsKept = known.some((s) => s.studium === kept.studium);
+      if (!knowsKept && ![...byId.values()].some((r) => r?.active)) throw e;
     }
+  }
+  const complete = [...byId.values()].every((r) => r !== null);
+  for (const [studium, r] of byId) {
+    const stored = known.find((s) => s.studium === studium);
+    if (r === null && stored) byId.set(studium, { study: stored, active: true });
   }
   const read = options.map((o) => byId.get(o.studium)).filter((r): r is Read => !!r);
   if (read.length === 0) throw new Error('resolveStudies: no study page could be read');
 
   const active = read.filter((r) => r.active).map((r) => r.study);
   if (active.length > 0) {
-    return { active, chosen: active.find((s) => s.studium === keep) ?? active[0]! };
+    return { active, chosen: active.find((s) => s.studium === keep) ?? active[0]!, complete };
   }
 
   // No status recognised: the rule does not know this IS wording. Do what
@@ -90,5 +109,5 @@ export async function resolveStudies(
   const all = read.map((r) => r.study);
   const chosen = all.find((s) => s.studium === keep && s.obdobi) ?? all.find((s) => s.obdobi);
   if (!chosen) throw new Error('resolveStudies: no study page had a period');
-  return { active: [chosen], chosen };
+  return { active: [chosen], chosen, complete };
 }

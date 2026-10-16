@@ -15,6 +15,7 @@ import { fetchFileForIframe } from './fetchFileForIframe';
 import { getDiagnostics } from '../utils/diagnostics/diagnosticLog';
 import { selectStudy } from '../utils/userParams';
 import { applyStudySwitch } from '../utils/userParams/applyStudySwitch';
+import { cachedStudy } from './studyCache';
 
 let topUpPopupRef: Window | null = null;
 
@@ -31,7 +32,8 @@ export async function handleMessage(event: MessageEvent) {
       // Flush any messages queued before the iframe was ready
       markIframeReady();
       // Send current state as a guarantee (may duplicate queued data, which is safe)
-      sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing }));
+      // Stamped like every crawl push, so the app can tell whose data it is.
+      sendToIframe(Messages.syncUpdate({ ...cachedData, isSyncing, studium: cachedStudy() }));
       if (scrapedNavMenu) sendToIframe(Messages.navMenu(scrapedNavMenu));
       break;
     case 'REIS_REQUEST_DATA':

@@ -109,7 +109,7 @@ describe('getUserParams with more than one study', () => {
 
     const params = await getUserParams();
 
-    expect(resolveStudies).toHaveBeenCalledWith(OPTIONS, '900003');
+    expect(resolveStudies).toHaveBeenCalledWith(OPTIONS, '900003', []);
     expect(params).toMatchObject({
       studium: '900011',
       obdobi: '829',
@@ -188,6 +188,17 @@ describe('getUserParams with more than one study', () => {
     expect(params?.studies).toBeUndefined();
     await getUserParams();
     expect(fetchUserBaseIds).toHaveBeenCalledTimes(1);
+  });
+
+  // One study, but IS names another than the stored record (the extension's
+  // two databases reset apart): rebuilt so the contexts agree. A healthy
+  // single-study record (same studium) is served untouched — see above.
+  it('rebuilds a single-study record whose study IS no longer names', async () => {
+    idbGet.mockResolvedValue(stored(AII));
+    fetchUserBaseIds.mockResolvedValue({ ...base('900099'), options: [] });
+    const params = await getUserParams();
+    expect(params?.studium).toBe('900099');
+    expect(idbClearAll).not.toHaveBeenCalled();
   });
 
   it('drops the study list once IS shows only one study', async () => {

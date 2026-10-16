@@ -10,6 +10,11 @@ let cachedForStudium: string | null = null;
  * young one would skip the new study's fetch. The first crawl of a context
  * is not a change. The caller drops its study-scoped cache on `true`.
  */
+/** The study the cached data is for, for a push that has no crawl of its own. */
+export function cachedStudy(): string | undefined {
+  return cachedForStudium ?? undefined;
+}
+
 export function studyChanged(studium: string | undefined): boolean {
   if (!studium) return false;
   const previous = cachedForStudium;

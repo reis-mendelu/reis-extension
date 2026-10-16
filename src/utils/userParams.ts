@@ -234,8 +234,14 @@ export async function getUserParams(): Promise<UserParams | null> {
       let multi: ResolvedStudies | null = null;
       if (options.length > 1 && !resolvedRecently) {
         try {
-          multi = await resolveStudies(options, switched ? undefined : stored?.studium);
-          _studiesPending = false;
+          multi = await resolveStudies(
+            options,
+            switched ? undefined : stored?.studium,
+            switched ? [] : (stored?.studies ?? [])
+          );
+          // A partial answer is used, but re-asked after the recheck gap,
+          // and not stamped as the day's resolution (see `resolved`).
+          _studiesPending = multi.complete === false;
           _forceResolve = false;
         } catch (e) {
           // With a record of this student's, keep its study: the catch
@@ -246,16 +252,29 @@ export async function getUserParams(): Promise<UserParams | null> {
             _studiesPending = true;
             throw e;
           }
+          // Still unconfirmed: ask again after the gap rather than keep IS's
+          // default — an interrupted study, maybe — for the whole session.
+          _studiesPending = true;
           logError('getUserParams.resolveStudies', e);
         }
       }
       const resolved = <T extends UserParams>(p: T): T =>
-        multi ? { ...p, studiesResolvedFor: optionsKey, studiesResolvedAt: Date.now() } : p;
+        multi && multi.complete !== false
+          ? { ...p, studiesResolvedFor: optionsKey, studiesResolvedAt: Date.now() }
+          : p;
       // A record with studies whose page no longer has a select (a study
       // ended): rebuilt once from IS's one study, and the switcher goes.
       const staleStudies = options.length <= 1 && !!stored?.studies;
+      // One study, but not the stored one (the extension's two databases
+      // can be reset apart): rebuilt from IS's, so the two contexts agree.
+      // A healthy single-study record never takes this — same studium.
+      const studyMoved =
+        options.length <= 1 &&
+        !!stored?.studium &&
+        !!base.studium &&
+        stored.studium !== base.studium;
 
-      if (!switched && complete(stored) && !staleStudies) {
+      if (!switched && complete(stored) && !staleStudies && !studyMoved) {
         // Same student. Serve the record as it stands rather than rebuilding
         // it — the rebuild below is two more IS pages, on every boot. With
         // more than one study it is only re-pointed, from what IS just said.
@@ -364,7 +383,9 @@ async function readStoredSwitch(before?: Partial<UserParams>): Promise<UserParam
  * on the next boot.
  */
 function serveStored(stored?: Partial<UserParams>): UserParams | null {
-  if (complete(stored)) _cached = stored as UserParams;
+  // An incomplete record too, while its studies are pending: uncached, each
+  // of the ~20 call sites would re-send the study pages, not wait the gap.
+  if (complete(stored) || (_studiesPending && stored?.studium)) _cached = stored as UserParams;
   return (stored as UserParams | undefined) ?? null;
 }
 

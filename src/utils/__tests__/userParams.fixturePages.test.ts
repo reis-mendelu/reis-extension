@@ -132,4 +132,61 @@ describe('getUserParams over the reported pages', () => {
       expect(params?.studies).toHaveLength(2);
     }
   });
+
+  /**
+   * One failed request after the daily window. A partial answer used to be
+   * stored as the day's resolution: the chosen study's page failing dropped
+   * it, the switcher and the choice for 24 hours. A study the record already
+   * knows as active keeps its stored entry, and a partial answer is re-asked.
+   */
+  describe('a study page failing once', () => {
+    const DAY = 24 * 60 * 60 * 1000;
+    const failOnce = (id: string) => {
+      const inner = fetchWithAuth.getMockImplementation()!;
+      let failed = false;
+      fetchWithAuth.mockImplementation((url: string) => {
+        if (!failed && url?.includes(`studium=${id}`)) {
+          failed = true;
+          return Promise.reject(new Error('HTTP 503'));
+        }
+        return inner(url);
+      });
+    };
+
+    async function chooseEmThenExpireTheDay() {
+      serveIs(CONCURRENT, '900011', { '900011': 'řádně zapsán', '900012': 'řádně zapsán' });
+      await getUserParams();
+      await selectStudy('900012');
+      const rec = idb.get('reis_user_params') as { studiesResolvedAt: number };
+      idb.set('reis_user_params', { ...rec, studiesResolvedAt: rec.studiesResolvedAt - DAY - 1 });
+      clearUserParamsCache();
+    }
+
+    it("keeps the student's choice and the switcher when the chosen study's page fails", async () => {
+      await chooseEmThenExpireTheDay();
+      failOnce('900012');
+      const params = await getUserParams();
+      expect(params?.studium).toBe('900012');
+      expect(params?.studies).toHaveLength(2);
+      clearUserParamsCache();
+      expect((await getUserParams())?.studium, 'next start').toBe('900012');
+    });
+
+    it("keeps both studies when the other study's page fails", async () => {
+      await chooseEmThenExpireTheDay();
+      failOnce('900011');
+      const params = await getUserParams();
+      expect(params?.studium).toBe('900012');
+      expect(params?.studies).toHaveLength(2);
+    });
+
+    it('does not trust a partial answer for the day', async () => {
+      await chooseEmThenExpireTheDay();
+      failOnce('900011');
+      await getUserParams();
+      // No fresh stamp: the next start (or the recheck gap) asks again.
+      const rec = idb.get('reis_user_params') as { studiesResolvedAt?: number };
+      expect(Date.now() - (rec.studiesResolvedAt ?? 0)).toBeGreaterThan(DAY);
+    });
+  });
 });
