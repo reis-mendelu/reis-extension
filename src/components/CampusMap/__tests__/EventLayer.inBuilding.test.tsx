@@ -206,11 +206,26 @@ describe('EventLayer with a building open', () => {
     expect(pin.style.transform).not.toContain('16.7px');
   });
 
-  it('still hides an event that is not soon, and still pins the selected far one', () => {
+  it('still hides an event that is not soon', () => {
     useAppStore.setState({
       mapEvents: [{ ...event('q02-party', 'Q02', BUILDING_CENTRE), date: inDays(40) }],
     });
     render(<EventLayer />);
+    expect(pins()).toHaveLength(0);
+  });
+
+  it('pins a far event while it is selected in the floor view, and only then', () => {
+    const far = { ...event('q02-party', 'Q02', BUILDING_CENTRE), date: inDays(40) };
+    useAppStore.setState({ mapEvents: [far] });
+    render(<EventLayer />);
+    expect(pins()).toHaveLength(0);
+    act(() => {
+      useAppStore.setState({ mapSelection: { kind: 'event', event: far } });
+    });
+    expect(pins()).toHaveLength(1);
+    act(() => {
+      useAppStore.setState({ mapSelection: null });
+    });
     expect(pins()).toHaveLength(0);
   });
 
