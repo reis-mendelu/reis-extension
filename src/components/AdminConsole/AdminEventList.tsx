@@ -101,6 +101,11 @@ export function AdminEventList() {
     return undefined;
   };
 
+  // A notice is listed with the events (it is how the society edits it) and
+  // says so: students see it in Novinky only, never in Akce or on the map.
+  const withKind = (e: MapEvent, line: string | undefined) =>
+    e.kind === 'notice' ? `${line ?? eventWhenLabel(e, locale, t)} · ${t('map.kindNotice')}` : line;
+
   const section = (
     label: string,
     rows: MapEvent[],
@@ -118,7 +123,7 @@ export function AdminEventList() {
             locale={locale}
             t={t}
             selected={selectedId === e.id}
-            subline={subline?.(e)}
+            subline={withKind(e, subline?.(e))}
             onClick={() => !busyIds.has(e.id) && focusEvent(e.id, { fly: true })}
             actions={rowActions(e)}
             footer={<EventStats eventId={e.id} />}

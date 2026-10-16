@@ -17,6 +17,9 @@ import { resolveSociety } from '../utils/societies/resolveSociety';
  * that link meant every society event without one, which is most of them, was
  * announced and could not be opened.
  *
+ * A NOTICE row (`kind = 'notice'`, Novinky only) is never a map event —
+ * fetchMapEvents drops it — so its tap always takes the link fallback below.
+ *
  * The row's id is the map event's id (one `spolky_events` id space, mapped by
  * `toMapEvent`), so `focusEventById` opens the same EventDetailCard a pin does,
  * with the venue and the event's own URL on it — unless that card would add

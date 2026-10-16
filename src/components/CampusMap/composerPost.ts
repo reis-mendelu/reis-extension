@@ -1,5 +1,5 @@
 import type { PostInput } from '../../api/societyPosts';
-import type { EventCategory, MapEvent } from '../../types/events';
+import type { EventCategory, MapEvent, PostKind } from '../../types/events';
 import type { RoomIndexEntry } from '../../types/campusMap';
 import { eventEmojiCode } from '../../data/eventEmoji';
 import { roomCodeToName } from './mapHelpers';
@@ -30,6 +30,11 @@ export function initialPlaceName(source: MapEvent | null): string | null {
   return source && source.venueKind !== 'campus' ? (source.location ?? null) : null;
 }
 
+/** What the composer starts as: the edited or duplicated post's kind, else an event. */
+export function initialKind(source: MapEvent | null): PostKind {
+  return source?.kind === 'notice' ? 'notice' : 'event';
+}
+
 /**
  * The columns an edit writes — exactly the fields the composer shows, and no
  * others. `toRow` (societyPosts) is the create-side mapping and stamps the
@@ -57,6 +62,9 @@ export function toPatch(input: PostInput) {
     // saved cleanly and kept the old value in the database while the form
     // showed the society its new choice.
     subscribers_only: input.subscribersOnly ?? false,
+    // Editable both ways, so always written (an old console's patch omits it,
+    // and the row keeps what it was).
+    kind: input.kind ?? 'event',
   };
 }
 

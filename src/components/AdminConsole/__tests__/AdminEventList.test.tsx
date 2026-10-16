@@ -64,6 +64,21 @@ describe('AdminEventList', () => {
     expect(within(pastSection).queryByText('E-sched')).toBeNull();
   });
 
+  // A notice stays in the society's own list (it is how they edit it), and
+  // says what it is: students see it in News only, never among the events.
+  it('labels a notice, and only a notice', () => {
+    useAppStore.setState({
+      societyMapEvents: [
+        { ...mk('n', iso(2)), title: 'Housing', kind: 'notice' },
+        { ...mk('e', iso(3)), title: 'Party', kind: 'event' },
+      ],
+    });
+    render(<AdminEventList />);
+    const row = screen.getByText('Housing').closest('button') as HTMLElement;
+    expect(within(row).getByText(/· Notice$/)).toBeInTheDocument();
+    expect(screen.getAllByText(/· Notice$/)).toHaveLength(1);
+  });
+
   // An unplaced event shows no place at all: neither the shared row's old
   // "Venue TBA by …" nor a "· No place yet" suffix on the subline.
   it('says nothing about the place of a tba row', () => {
