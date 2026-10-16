@@ -5,6 +5,9 @@ import { useVisibleMapEvents } from '../../hooks/useVisibleMapEvents';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { groupEventsByVenue, parseEventDate, type VenueGroup } from './eventHelpers';
+import { groupEventsInBuilding } from './inBuildingEvents';
+import roomsIndexJson from '../../data/map/rooms-index.json';
+import type { RoomIndexEntry } from '../../types/campusMap';
 import { subscribeMapInstance } from './mapInstance';
 import { EVENTS_PANE, ensurePane } from './mapPanes';
 import { EventPin } from './EventPin';
@@ -12,6 +15,8 @@ import { DraftPin } from './DraftPin';
 import { useSociety } from '../../hooks/useSociety';
 import { isSoonEvent, localTodayIso } from './eventWindow';
 import { trackMapEventView } from '../../api/featureUsage';
+
+const ROOM_INDEX = roomsIndexJson as RoomIndexEntry[];
 
 interface Placed {
   key: string;
@@ -41,7 +46,8 @@ type ZoomAnimMap = {
 // zoom they ride the animation exactly like native markers: `zoomanim` moves
 // each pin to its post-zoom layer point and the `leaflet-zoom-animated` class
 // transitions the transform in sync with the basemap. zoomend/viewreset settle
-// the exact positions. Pins only show in campus overview, not floor-view.
+// the exact positions. In a building's floor view only the events whose room is
+// in THAT building stay, each at its room (see inBuildingEvents).
 export function EventLayer() {
   // One layer, two hosts: the student map draws the public feed, the admin
   // console's map draws the active society's own events (all of them, whatever
@@ -78,6 +84,10 @@ export function EventLayer() {
     [authoring, societyEvents, publicEvents, selectedId, todayIso]
   );
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
+  const activeFloorId = useAppStore((s) => s.activeFloorId);
+  const buildingRooms = useAppStore((s) =>
+    s.activeBuildingId === null ? undefined : s.roomsByBuilding[s.activeBuildingId]
+  );
   const focusEvent = useAppStore((s) => s.focusEventById);
   // The in-progress event location: only meaningful while the composer is open.
   const composerOpen = useAppStore((s) => s.composerOpen);
@@ -109,8 +119,10 @@ export function EventLayer() {
     // narrow this is gone with its chips, which also ends the class of bug it
     // kept producing: a stored choice applied to a surface with no control to
     // clear it, so the pins and the list beside them disagreed.
-    return groupEventsByVenue(events);
-  }, [events]);
+    return activeBuildingId === null
+      ? groupEventsByVenue(events)
+      : groupEventsInBuilding(events, activeBuildingId, activeFloorId, buildingRooms, ROOM_INDEX);
+  }, [events, activeBuildingId, activeFloorId, buildingRooms]);
 
   // Re-place pins when the visible groups change (filter toggle, data load).
   const groupsRef = useRef(groups);
@@ -211,7 +223,10 @@ export function EventLayer() {
 
   // The draft pin can be the only thing to show (placing a first event with no
   // saved events yet), so don't bail on an empty `placed` when a draft exists.
-  if (activeBuildingId !== null || !pane || (placed.length === 0 && !draftPt)) return null;
+  // The draft is a campus-overview placement: placing and previewing both leave
+  // floor view first, so it is not drawn over a floor plan.
+  const shownDraft = activeBuildingId === null ? draftPt : null;
+  if (!pane || (placed.length === 0 && !shownDraft)) return null;
 
   return createPortal(
     <>
@@ -222,14 +237,16 @@ export function EventLayer() {
           x={p.x}
           y={p.y}
           selected={p.group.events.some((e) => e.id === selectedId)}
+          otherFloor={p.group.otherFloor}
+          floorLevel={p.group.floorLevel}
           locale={language === 'en' ? 'en-US' : 'cs-CZ'}
           onSelect={selectEvent}
         />
       ))}
-      {draftPt && (
+      {shownDraft && (
         <DraftPin
-          x={draftPt.x}
-          y={draftPt.y}
+          x={shownDraft.x}
+          y={shownDraft.y}
           color={draftColor}
           label={t('map.draftPinLabel')}
           onClick={beginPlacing}
