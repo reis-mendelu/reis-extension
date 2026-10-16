@@ -47,27 +47,40 @@ export function SupportPrompt({
   useEffect(() => {
     const el = ref.current;
     if (!el || typeof IntersectionObserver === 'undefined') return;
+    // Seen = at least half the row on screen AND the page in the foreground,
+    // for SEEN_DWELL_MS without a break. An observer reports geometry only, so a
+    // backgrounded tab is tracked separately, as useMapDwell does for the map.
+    let inView = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
     const stop = () => {
       if (timer !== null) clearTimeout(timer);
       timer = null;
     };
+    const sync = () => {
+      if (!inView || document.visibilityState !== 'visible') return stop();
+      if (timer !== null) return;
+      timer = setTimeout(() => {
+        timer = null;
+        void trackFeatureSignal('support_prompt_seen');
+        io.disconnect();
+        document.removeEventListener('visibilitychange', sync);
+      }, SEEN_DWELL_MS);
+    };
     const io = new IntersectionObserver(
       (entries) => {
-        if (!entries.some((e) => e.isIntersecting)) return stop();
-        if (timer !== null) return;
-        timer = setTimeout(() => {
-          timer = null;
-          void trackFeatureSignal('support_prompt_seen');
-          io.disconnect();
-        }, SEEN_DWELL_MS);
+        // `threshold` only decides WHEN the callback fires; a first report can
+        // still be a thin slice with isIntersecting true, so check the ratio.
+        inView = entries.some((e) => e.isIntersecting && e.intersectionRatio >= 0.5);
+        sync();
       },
       { threshold: 0.5 }
     );
     io.observe(el);
+    document.addEventListener('visibilitychange', sync);
     return () => {
       stop();
       io.disconnect();
+      document.removeEventListener('visibilitychange', sync);
     };
   }, []);
 
@@ -105,6 +118,10 @@ export function SupportPrompt({
           <button
             type="button"
             onClick={() => {
+              // An answer is proof it was read: count it as seen too, so a quick
+              // tap-and-leave cannot put a "yes" outside the denominator (the
+              // session latch in featureUsage keeps this to one write).
+              void trackFeatureSignal('support_prompt_seen');
               void trackFeatureSignal('support_prompt_yes');
               setAnswered(true);
             }}

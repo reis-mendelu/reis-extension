@@ -20,10 +20,14 @@ class FakeObserver {
   observe = (el: Element) => void this.targets.add(el);
   unobserve = (el: Element) => void this.targets.delete(el);
   disconnect = () => this.targets.clear();
-  static report(isIntersecting: boolean) {
+  static report(isIntersecting: boolean, intersectionRatio = isIntersecting ? 1 : 0) {
     for (const o of FakeObserver.all) {
       for (const el of o.targets) {
-        const entry = { target: el, isIntersecting } as IntersectionObserverEntry;
+        const entry = {
+          target: el,
+          isIntersecting,
+          intersectionRatio,
+        } as IntersectionObserverEntry;
         o.cb([entry], o as unknown as IntersectionObserver);
       }
     }
@@ -92,6 +96,50 @@ describe('SupportPrompt', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('does not count a mostly clipped question as seen', () => {
+    vi.useFakeTimers();
+    try {
+      render(<SupportPrompt />);
+      FakeObserver.report(true, 0.2);
+      vi.advanceTimersByTime(SEEN_DWELL_MS * 2);
+      expect(trackFeatureSignal).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not count time while the page is in the background', () => {
+    vi.useFakeTimers();
+    const visibility = vi.spyOn(document, 'visibilityState', 'get');
+    try {
+      render(<SupportPrompt />);
+      FakeObserver.report(true);
+      vi.advanceTimersByTime(SEEN_DWELL_MS - 100);
+      visibility.mockReturnValue('hidden');
+      document.dispatchEvent(new Event('visibilitychange'));
+      vi.advanceTimersByTime(SEEN_DWELL_MS * 2);
+      expect(trackFeatureSignal).not.toHaveBeenCalled();
+
+      visibility.mockReturnValue('visible');
+      document.dispatchEvent(new Event('visibilitychange'));
+      vi.advanceTimersByTime(SEEN_DWELL_MS);
+      expect(trackFeatureSignal).toHaveBeenCalledExactlyOnceWith('support_prompt_seen');
+    } finally {
+      visibility.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  // A "yes" outside the denominator would push the share past what it means.
+  it('counts an answer as seen even when the student leaves at once', () => {
+    const { unmount } = render(<SupportPrompt />);
+    fireEvent.click(screen.getByRole('button', { name: support.yes }));
+    unmount();
+
+    expect(trackFeatureSignal).toHaveBeenCalledWith('support_prompt_seen');
+    expect(trackFeatureSignal).toHaveBeenCalledWith('support_prompt_yes');
   });
 
   it('counts "yes" on the tap and thanks without claiming a payment', () => {
