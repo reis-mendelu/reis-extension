@@ -3,8 +3,8 @@
 > **Historical, kept as a record (2026-10-16).** These steps already ran. The
 > migration file it names now lives in `supabase/migrations_archive/` and is
 > part of `supabase/migrations/20261016000000_baseline.sql`: never apply it
-> again. For applying a new migration today, see the "Database migrations"
-> section of `CLAUDE.md`.
+> again. For applying a new migration today, see
+> `docs/database-migrations.md`.
 
 The steps that change production when the societies-in-Supabase PR ships. **No
 CI applies migrations** and nothing here runs by itself. Each step is a

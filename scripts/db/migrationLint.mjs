@@ -72,103 +72,91 @@ export function allowedRules(sql) {
   return allowed;
 }
 
-const created = (s) =>
-  [
-    ...s.matchAll(
-      /\bcreate\s+(?:or\s+replace\s+)?(?:function|table|view)\s+(?:if\s+not\s+exists\s+)?([\w."]+)/gi
-    ),
-  ].map((m) =>
-    (m[1] ?? '')
-      .replace(/"/g, '')
-      .replace(/^public\./, '')
-      .toLowerCase()
-  );
+/** `"Public".T` and `t` both become `public.t`. */
+const qualify = (name) => {
+  const n = (name ?? '').replace(/"/g, '').toLowerCase();
+  return n.includes('.') ? n : `public.${n}`;
+};
+
+/** Tables and functions a migration defines, by kind, whatever the CREATE's form. */
+export function definedIn(stripped) {
+  const names = (re) => new Set([...stripped.matchAll(re)].map((m) => qualify(m[1])));
+  return {
+    tables: names(/\bcreate\s+table\s+(?:if\s+not\s+exists\s+)?([\w."]+)/gi),
+    functions: names(/\bcreate\s+(?:or\s+replace\s+)?function\s+([\w."]+)/gi),
+  };
+}
+
+const NONE = { tables: new Set(), functions: new Set() };
+
+/**
+ * Objects this file brings into existence: defined here and in no other
+ * migration. `create table if not exists` or `create or replace function` on
+ * something prod already has is not new, and a released build already uses it.
+ */
+export function createdHere(stripped, existing = NONE) {
+  const mine = definedIn(stripped);
+  const fresh = (set, old) => new Set([...set].filter((n) => !old.has(n)));
+  return {
+    tables: fresh(mine.tables, existing.tables),
+    functions: fresh(mine.functions, existing.functions),
+  };
+}
 
 /** @returns {string[]} every rule this one statement breaks */
-export function statementRules(stmt, createdHere) {
+export function statementRules(stmt, created) {
   const s = stmt.replace(/\s+/g, ' ').trim().toLowerCase();
   const rules = [];
   if (/^(begin|start transaction|commit|end|rollback|savepoint|release)\b/.test(s))
     rules.push('transaction');
   // A table this same file creates has no released build reading it yet.
-  const altered = /^alter table (?:only )?(?:if exists )?([\w."]+)/
-    .exec(s)?.[1]
-    ?.replace(/"/g, '')
-    .replace(/^public\./, '');
-  if (altered && createdHere.includes(altered)) return rules;
+  const altered = /^alter table (?:only )?(?:if exists )?([\w."]+)/.exec(s)?.[1];
+  if (altered && created.tables.has(qualify(altered))) return rules;
   if (/^drop\b/.test(s) || /^alter table\b.*\bdrop\b/.test(s)) rules.push('drop');
   if (/^alter\b.*\brename\b/.test(s)) rules.push('rename');
-  if (/^alter table\b.*\balter column\b.*\btype\b/.test(s)) rules.push('alter-type');
+  // COLUMN is optional in both: `alter t alter c type x`, `alter t add c int not null`.
+  if (/^alter table\b.*\balter (column )?\S+ (set data )?type\b/.test(s)) rules.push('alter-type');
   if (/^alter table\b.*\bset not null\b/.test(s)) rules.push('not-null');
-  if (/^alter table\b.*\badd column\b.*\bnot null\b/.test(s) && !/\bdefault\b/.test(s))
+  const addsColumn =
+    /^alter table\b.*\badd (?!constraint\b|check\b|unique\b|primary key\b|foreign key\b|exclude\b)/;
+  if (addsColumn.test(s) && /\bnot null\b/.test(s) && !/\bdefault\b/.test(s))
     rules.push('not-null');
   if (/^alter table\b.*\badd (constraint|check|unique|primary key|foreign key)\b/.test(s))
     rules.push('add-constraint');
   if (/^alter policy\b/.test(s)) rules.push('alter-policy');
   if (/^revoke\b.*\bfrom\b.*\b(anon|authenticated)\b/.test(s)) {
-    const target = /\bon\s+(?:function|table)?\s*([\w."]+)/
-      .exec(s)?.[1]
-      ?.replace(/"/g, '')
-      .replace(/^public\./, '');
-    if (!target || !createdHere.includes(target)) rules.push('revoke');
+    const on = /\bon (function |table )?([\w."]+)/.exec(s);
+    const kind = on?.[1] === 'function ' ? created.functions : created.tables;
+    if (!on || !kind.has(qualify(on[2]))) rules.push('revoke');
   }
-  if (/^(delete from|truncate|update)\b/.test(s)) rules.push('data');
+  if (/^(delete from|truncate|update|merge)\b/.test(s)) rules.push('data');
+  // `with x as (...) delete ...`: a CTE can change rows too.
+  if (/^with\b/.test(s) && /\b(delete from|update|merge into|insert into)\b/.test(s))
+    rules.push('data');
   // A DO block's body is hidden from these rules, so it has to say what it changes.
   if (/^do\b/.test(s)) rules.push('do-block');
   return rules;
 }
 
-/** @returns {Finding[]} the statements that are not allowed as written */
-export function lintSql(sql) {
+/**
+ * @param {string} sql the migration
+ * @param {{ tables: Set<string>, functions: Set<string> }} [existing] what the
+ *   OTHER migrations define (definedIn over each), so "new" objects really are
+ * @returns {Finding[]} the statements that are not allowed as written
+ */
+export function lintSql(sql, existing = NONE) {
   const stripped = stripSql(sql);
   const allowed = allowedRules(sql);
-  const createdHere = created(stripped);
+  const created = createdHere(stripped, existing);
   const findings = [];
   for (const raw of stripped.split(';')) {
     const statement = raw.replace(/\s+/g, ' ').trim();
     if (!statement) continue;
-    for (const rule of statementRules(statement, createdHere)) {
+    for (const rule of statementRules(statement, created)) {
       const allowable = rule !== 'transaction';
       if (allowable && allowed.has(rule)) continue;
       findings.push({ rule, statement: statement.slice(0, 160), allowable });
     }
   }
   return findings;
-}
-
-const NAME = /^(\d{14})_[a-z0-9_]+\.sql$/;
-
-/**
- * File-level rules, from `git diff --name-status <base>` over supabase/migrations.
- * @param {{ status: string, path: string }[]} changes
- * @param {string[]} baseFiles file names in supabase/migrations on the base branch
- * @returns {string[]} problems
- */
-export function checkFileChanges(changes, baseFiles) {
-  const problems = [];
-  const newest =
-    baseFiles
-      .map((f) => NAME.exec(f)?.[1] ?? '')
-      .sort()
-      .pop() ?? '';
-  for (const { status, path } of changes) {
-    const file = path.split('/').pop() ?? path;
-    if (status !== 'A') {
-      problems.push(
-        `${path}: ${status === 'D' ? 'deleted' : 'changed'}. A merged migration may already be in prod; add a new file instead.`
-      );
-      continue;
-    }
-    const m = NAME.exec(file);
-    if (!m) {
-      problems.push(`${path}: name it <14-digit timestamp>_<snake_case>.sql.`);
-      continue;
-    }
-    if ((m[1] ?? '') <= newest) {
-      problems.push(
-        `${path}: timestamp ${m[1]} is not newer than ${newest}, the newest migration on the base branch. Rename it.`
-      );
-    }
-  }
-  return problems;
 }

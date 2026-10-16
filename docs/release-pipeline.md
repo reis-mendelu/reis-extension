@@ -28,12 +28,13 @@ The **database** job is the exception: it runs before the stores and they
 `need` it. It applies every migration merged since the last release
 (`supabase db push`, CLI pinned to 2.121.0), so a build never reaches a student
 ahead of the column or RPC it calls. A file that fails is rolled back and not
-recorded, the job goes red and no store is submitted; fix it with a new
-migration in a new release. It is idempotent: with nothing pending (a re-run,
+recorded, the job goes red and no store is submitted. The failed file stays
+pending and the next release tries it first, so fix that file itself, as
+`docs/database-migrations.md` describes. It is idempotent: with nothing pending (a re-run,
 a release without migrations) it changes nothing. It uses
 `SUPABASE_ACCESS_TOKEN`, the secret the edge-function deploy already has. A dry
 run and a PR's dry run only list what would be applied (`--dry-run`). How
-migrations are written so old builds survive: CLAUDE.md, "Database migrations".
+migrations are written so old builds survive: `docs/database-migrations.md`.
 
 ## What a release needs in the PR
 

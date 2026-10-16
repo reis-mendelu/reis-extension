@@ -208,42 +208,12 @@ there never reach Supabase, so never cite them as evidence a write works.
 
 ### Database migrations
 
-`supabase/migrations/` starts with `20261016000000_baseline.sql`, prod's schema
-dumped on 2026-10-16, so `npx supabase start` / `npx supabase db reset` build the
-whole database locally. The history before it is in `supabase/migrations_archive/`:
-read it for the reasoning, never apply it.
-
-**Migrations apply themselves; nobody applies one by hand.**
-
-- **PR:** the required "Unit tests" job runs `npm run db:lint` (expand/contract,
-  `scripts/db/migrationLint.mjs`), builds a throwaway database from the branch's
-  migrations and runs `supabase/tests`. Only when `supabase/` or `scripts/db/` changed.
-- **Release:** `ship.yml`'s first job runs `supabase db push` against prod; the
-  three stores wait for it, so a build never reaches students ahead of its schema.
-  A failed file rolls back, is not recorded, and holds every store.
-- **Nightly:** `db-drift.yml` (`npm run db:drift`) rebuilds what prod's ledger says
-  it has and compares schema and grants/policies/buckets/cron. Red = prod was
-  changed outside this directory.
-
-Writing one:
-
-- A new file on top, timestamp newer than the newest there. Never edit or rename a
-  merged one: it may already be in prod.
-- **Additive only.** An old build stays installed for weeks and runs against the new
-  schema. The linter flags drops, renames, type changes, new NOT NULL/CHECK
-  constraints, revokes, row changes and DO blocks; a flagged statement needs
-  `-- migration-lint: allow <rule>: <why every released build survives it>`.
-  Removing something is two releases: stop using it, then drop it.
-- No `begin;`/`commit;`: the CLI runs each file in one transaction, and a COMMIT
-  inside it leaves a failed file half-applied.
-- The CI database is empty. A constraint that prod's existing rows violate passes
-  CI and fails at release (stores held, nothing half-done); check prod's rows
-  read-only before adding one.
-- Nothing is changed in prod by hand: no dashboard edits, no `db query --linked -f`,
-  no `db push` or `migration repair --linked` from a session.
-- `project_id` is `reis-extension` in every worktree, so `npx supabase start` is one
-  stack per machine: check `docker ps` before starting or stopping one. The drift
-  check uses its own project id and ports.
+Read `docs/database-migrations.md` before writing one. In short: a release
+applies `supabase/migrations/` to prod itself (before the stores), so nobody
+applies one by hand; a migration is a new file on top and **additive only**,
+because old builds run against the new schema for weeks; the PR check's linter
+holds anything that takes something away until the file says why it is safe;
+no `begin;`/`commit;` inside a file.
 
 ## Branches and releasing
 

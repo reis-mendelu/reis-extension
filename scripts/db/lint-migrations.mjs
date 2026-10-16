@@ -2,14 +2,17 @@
 //
 //   node scripts/db/lint-migrations.mjs [base-ref]     (default origin/test)
 //
-// The rules and why are in migrationLint.mjs. Exits 1 on any problem.
+// The rules and why are in migrationLint.mjs and migrationFiles.mjs. Exits 1
+// on any problem.
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { checkFileChanges, lintSql, ALLOWABLE_RULES } from './migrationLint.mjs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { lintSql, definedIn, stripSql, ALLOWABLE_RULES } from './migrationLint.mjs';
+import { checkFileChanges } from './migrationFiles.mjs';
 
 const DIR = 'supabase/migrations';
 const base = process.argv[2] || process.env.MIGRATION_LINT_BASE || 'origin/test';
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8' });
+const read = (path) => readFileSync(path, 'utf8');
 
 const changes = git('diff', '--name-status', `${base}...HEAD`, '--', DIR)
   .split('\n')
@@ -20,10 +23,23 @@ const changes = git('diff', '--name-status', `${base}...HEAD`, '--', DIR)
   });
 const baseFiles = git('ls-tree', '--name-only', `${base}:${DIR}`).split('\n').filter(Boolean);
 
-const problems = checkFileChanges(changes, baseFiles);
+/** What every migration except `path` defines: those objects are not new. */
+const definedElsewhere = (path) => {
+  const out = { tables: new Set(), functions: new Set() };
+  for (const f of readdirSync(DIR).filter((n) => n.endsWith('.sql'))) {
+    if (`${DIR}/${f}` === path) continue;
+    const d = definedIn(stripSql(read(`${DIR}/${f}`)));
+    d.tables.forEach((t) => out.tables.add(t));
+    d.functions.forEach((fn) => out.functions.add(fn));
+  }
+  return out;
+};
+
+const problems = checkFileChanges(changes, baseFiles, read);
 for (const { status, path } of changes) {
-  if (status !== 'A') continue;
-  for (const f of lintSql(readFileSync(path, 'utf8'))) {
+  // New files, and a failed file fixed in place (checkFileChanges vetted it).
+  if (status !== 'A' && status !== 'M') continue;
+  for (const f of lintSql(read(path), definedElsewhere(path))) {
     const how = f.allowable
       ? `If it is safe for every released build, add: -- migration-lint: allow ${f.rule}: <why>`
       : 'Remove it: the CLI already runs each file in one transaction.';

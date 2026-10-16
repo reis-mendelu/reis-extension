@@ -7,22 +7,21 @@ name: Database drift
 # prod outside supabase/migrations; GitHub emails the failure.
 #
 # Migrations merged but not yet released are listed as pending, not as drift.
-# Also runs on a PR that changes the check itself, so it is proven before it
-# runs unattended (a schedule only ever runs the default branch's copy).
+#
+# Never on pull_request: this job holds SUPABASE_ACCESS_TOKEN, and a PR's code
+# must not run with it. A schedule and a manual dispatch both run a trusted
+# branch's copy (the default branch, or one picked by someone with write
+# access). To try a changed drift-check.sh, run `npm run db:drift` locally.
 on:
   schedule:
     - cron: '23 4 * * *'
   workflow_dispatch:
-  pull_request:
-    paths:
-      - '.github/workflows/db-drift.yml'
-      - 'supabase/scripts/**'
 
 permissions:
   contents: read
 
 concurrency:
-  group: db-drift-${{ github.ref }}
+  group: db-drift
   cancel-in-progress: true
 
 jobs:
@@ -30,11 +29,6 @@ jobs:
     name: Prod equals its migrations
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # Needs the access token: not for forks or Dependabot.
-    if: >-
-      github.event_name != 'pull_request'
-      || (github.event.pull_request.head.repo.full_name == github.repository
-          && github.event.pull_request.user.login != 'dependabot[bot]')
     steps:
       - uses: actions/checkout@v7
         with:

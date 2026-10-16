@@ -205,8 +205,8 @@ npx supabase db query --linked -f supabase/migrations/<file>.sql
 ```
 
 Superseded: from the first release after 2026-10-17, the release applies
-migrations itself (`ship.yml`) and nothing is applied by hand. See CLAUDE.md,
-"Database migrations".
+migrations itself (`ship.yml`) and nothing is applied by hand. See
+`docs/database-migrations.md`.
 
 Use `-f`. Passing the SQL as a positional argument (`"$(cat <file>)"`) makes the
 CLI read a leading `--` comment line as a flag and refuse to run. And never

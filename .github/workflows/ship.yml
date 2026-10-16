@@ -72,67 +72,15 @@ permissions:
   contents: read
 
 jobs:
-  # Prod's database gets the release's migrations BEFORE any store does, so a
-  # build that needs a new column or RPC never reaches a student ahead of it.
-  # Old builds keep working because the PR check's linter lets only additive
-  # migrations through (scripts/db/migrationLint.mjs). If the apply fails, the
-  # CLI rolls that file back, records nothing, and every store job is skipped.
-  # Idempotent: with nothing pending it changes nothing, so re-runs are safe.
+  # Prod's database first; every store `needs` it (db-migrate.yml says why).
   database:
-    name: Database migrations (prod)
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    # One apply at a time, whatever starts it.
-    concurrency:
-      group: supabase-prod-migrations
-      cancel-in-progress: false
-    steps:
-      - name: Refuse anything but a vX.Y.Z tag
-        env:
-          TAG: ${{ inputs.tag }}
-        run: |
-          printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' \
-            || { echo "::error::'$TAG' is not a release tag (vX.Y.Z)."; exit 1; }
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.ref || format('refs/tags/{0}', inputs.tag) }}
-          persist-credentials: false
-      - name: Check secrets
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-        run: |
-          [ -n "$SUPABASE_ACCESS_TOKEN" ] || { echo "::error::Missing secret: SUPABASE_ACCESS_TOKEN"; exit 1; }
-      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
-        with:
-          version: 2.121.0
-      # A real push only from a real release: the tag itself (no `ref`
-      # override, which is how a PR dry run builds its head) and dry_run off.
-      - name: Apply pending migrations
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          MODE: ${{ (!inputs.dry_run && (inputs.ref || '') == '') && 'apply' || 'dry-run' }}
-        run: |
-          set -euo pipefail
-          # Every CLI call signs in through a temporary login role whose password
-          # it resets, so two jobs reaching prod at once (the nightly drift
-          # check, a re-run) can lock each other out: "failed to connect as temp
-          # role". A connection that never opened changed nothing, and a push
-          # resumes where it stopped (each file commits with its ledger row), so
-          # retrying is safe.
-          retry() {
-            for i in 1 2 3; do
-              "$@" && return 0
-              [ "$i" -lt 3 ] && { echo "::warning::attempt $i failed; retrying in 45s"; sleep 45; }
-            done
-            return 1
-          }
-          retry supabase migration list --linked --project-ref zvbpgkmnrqyprtkyxkwn
-          if [ "$MODE" = apply ]; then
-            retry supabase db push --linked --project-ref zvbpgkmnrqyprtkyxkwn --skip-vault --yes
-          else
-            retry supabase db push --linked --project-ref zvbpgkmnrqyprtkyxkwn --skip-vault --dry-run
-          fi
-          echo "### Database: $MODE" >> "$GITHUB_STEP_SUMMARY"
+    name: Database
+    uses: ./.github/workflows/db-migrate.yml
+    with:
+      tag: ${{ inputs.tag }}
+      ref: ${{ inputs.ref }}
+      dry_run: ${{ inputs.dry_run }}
+    secrets: inherit
 
   android:
     name: Google Play (closed testing)
