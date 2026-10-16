@@ -12,9 +12,9 @@ docker run -d --name reis-attach-check -e POSTGRES_PASSWORD=pw -p 55441:5432 sup
 P='docker exec -i -e PGPASSWORD=pw reis-attach-check psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -q'
 # get_my_role() stub reading a session setting
 echo "create or replace function public.get_my_role() returns text language sql stable as \$\$ select current_setting('test.role', true) \$\$;" | $P
-$P < supabase/migrations/20260803120000_suggestions.sql
-$P < supabase/migrations/20260903130000_submit_suggestion_rpc.sql
-$P < supabase/migrations/20260925120000_suggestion_attachments.sql   # twice: idempotent
+$P < supabase/migrations_archive/20260803120000_suggestions.sql
+$P < supabase/migrations_archive/20260903130000_submit_suggestion_rpc.sql
+$P < supabase/migrations_archive/20260925120000_suggestion_attachments.sql   # twice: idempotent
 ```
 
 (Under zsh, put `$P` in a script — zsh does not word-split it.)
@@ -127,7 +127,7 @@ select has_function_privilege('anon', 'public.drop_attachments_when_done()', 'EX
 Migrations do not apply themselves. Run by hand, with `-f`:
 
 ```bash
-npx supabase db query --linked -f supabase/migrations/20260925120000_suggestion_attachments.sql
+npx supabase db query --linked -f supabase/migrations_archive/20260925120000_suggestion_attachments.sql
 ```
 
 It only adds objects, so it is safe before the client ships. Then smoke-test

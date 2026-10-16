@@ -27,7 +27,7 @@ always reached. Re-check that if the migration ever changes.
 
 ```bash
 { echo 'do $dry$ begin';
-  sed -e '/^begin;$/d' -e '/^commit;$/d' supabase/migrations/20260926120000_societies_catalog.sql;
+  sed -e '/^begin;$/d' -e '/^commit;$/d' supabase/migrations_archive/20260926120000_societies_catalog.sql;
   echo "raise exception 'DRY RUN OK >> societies=% fk=% logo_policies=%', (select count(*) from public.societies), (select count(*) from pg_constraint where conname = 'spolky_accounts_association_id_fkey'), (select count(*) from pg_policies where schemaname = 'storage' and policyname like 'society_logos_%');";
   echo 'end $dry$;'; } > "$SCRATCH/societies-dryrun.sql"
 npx supabase db query --linked -f "$SCRATCH/societies-dryrun.sql"
@@ -41,7 +41,7 @@ This is the only step that proves the CLI's prod role may `create policy on stor
 ## 3. Apply
 
 ```bash
-npx supabase db query --linked -f supabase/migrations/20260926120000_societies_catalog.sql
+npx supabase db query --linked -f supabase/migrations_archive/20260926120000_societies_catalog.sql
 ```
 
 ## 4. Verify through the public API, as the app does

@@ -206,6 +206,21 @@ fakes a session **and routes every write to an in-memory store** — publishes
 there never reach Supabase, so never cite them as evidence a write works.
 `dev:web:admin` clears that flag.
 
+### Database migrations
+
+`supabase/migrations/` starts with `20261016000000_baseline.sql`, prod's schema
+dumped on 2026-10-16, so `npx supabase start` / `npx supabase db reset` build the
+whole database locally. The history before it is in `supabase/migrations_archive/`:
+read it for the reasoning, never apply it.
+
+- A new migration is a new file on top, with a timestamp newer than the newest one there.
+- Nothing is changed in prod by hand: no dashboard edits, no `db query --linked -f`
+  of a file that is not a migration here. That is how prod drifted from the files.
+- Nothing applies a migration on merge yet, so applying one is still a deliberate
+  step by Dominik. Never `db push` or `migration repair` from a session.
+- `supabase db diff --linked` checks the schema; `supabase/scripts/catalog_fingerprint.sql`,
+  run against both and diffed, checks the grants, policies, buckets and cron job it does not.
+
 ## Branches and releasing
 
 `feature branch → test → main`. Never commit directly on `test` or `main`.
@@ -310,7 +325,7 @@ file in the same PR** (the `disclosure-drift` Stop hook asks if you forget), the
 stack, file path or session id leaves a device unless the student attaches it to
 a report (item 6 below). There is no error-reporting service, no background
 collection, and no Supabase table or RPC behind one — `error_reports`, `error_groups`, `report_error` and
-`report_error_v2` were all dropped in `supabase/migrations/20260904120000_drop_error_telemetry.sql`.
+`report_error_v2` were all dropped in `supabase/migrations_archive/20260904120000_drop_error_telemetry.sql`.
 
 `logError(context, err, extra?)` (`src/utils/reportError.ts`) is the single
 funnel for non-fatal errors. It writes a local `console.error` with the stack and

@@ -1,0 +1,17 @@
+# Local Supabase for reIS — only what differs from the CLI's defaults.
+# `npx supabase start` builds the database from supabase/migrations/, starting
+# with the baseline dumped from prod (reis-notifications, zvbpgkmnrqyprtkyxkwn).
+# The full list of settings: `npx supabase init` in an empty folder.
+project_id = "reis-extension"
+
+[db]
+# Prod runs Postgres 17 (17.6.1.063 on 2026-10-16).
+major_version = 17
+
+[db.seed]
+# There is no seed.sql: the baseline is schema only, and prod's rows are
+# student-derived, so none are copied here.
+enabled = false
+
+[analytics]
+enabled = false

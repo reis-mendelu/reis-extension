@@ -3,7 +3,7 @@ import { ORGANIZERS, type FacultyKey, type Society } from '../types/events';
 /**
  * Who a partner company is shown to (spec 2026-10-09). Matching happens on the
  * student's device; a partner never learns who matched. Both regexes must stay
- * identical to the CHECKs in supabase/migrations/20261011120000_partner_targeting.sql.
+ * identical to the CHECKs in supabase/migrations_archive/20261011120000_partner_targeting.sql.
  */
 // 'mendelu' (everyone) takes no programme: a programme belongs to a faculty.
 export const AUDIENCE_TOKEN_RE = /^(mendelu|(pef|af|ldf|zf|frrms)(:[A-Z]-[A-Z0-9]{1,10})?)$/;
