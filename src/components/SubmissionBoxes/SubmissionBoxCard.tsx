@@ -1,7 +1,19 @@
 import { ExternalLink } from 'lucide-react';
 import type { Odevzdavarna } from '../../api/odevzdavarny';
-import { boxDeadline, boxState } from '../../utils/submissionBoxes';
+import { boxDeadline, boxState, type BoxState } from '../../utils/submissionBoxes';
 import { daysUntil, useBoxLabels } from './useBoxLabels';
+
+const STATUS_TONE: Record<BoxState, string | undefined> = {
+  empty: undefined,
+  unconfirmed: 'font-medium text-[var(--tone-warning)]',
+  confirmed: 'font-medium text-[var(--tone-success)]',
+};
+
+const ACTION_LABEL: Record<BoxState, string> = {
+  empty: 'odevzdavarny.submitInIs',
+  unconfirmed: 'odevzdavarny.confirmInIs',
+  confirmed: 'odevzdavarny.openInIs',
+};
 
 interface SubmissionBoxCardProps {
   box: Odevzdavarna;
@@ -48,31 +60,15 @@ export function SubmissionBoxCard({ box, now, testId }: SubmissionBoxCardProps) 
       <div className="mt-1 flex flex-wrap gap-x-1.5 text-xs text-base-content/70">
         {deadline && <span>{L.until(deadline)}</span>}
         {deadline && <span aria-hidden>·</span>}
-        <span
-          className={
-            state === 'confirmed'
-              ? 'font-medium text-[var(--tone-success)]'
-              : state === 'unconfirmed'
-                ? 'font-medium text-[var(--tone-warning)]'
-                : undefined
-          }
-        >
-          {state === 'confirmed'
-            ? `${L.t('odevzdavarny.uploaded')} · ${L.files(box.fileCount)}`
-            : state === 'unconfirmed'
-              ? `${L.t('odevzdavarny.unconfirmed')} · ${L.files(box.fileCount)}`
-              : L.t('odevzdavarny.nothingUploaded')}
+        <span className={STATUS_TONE[state]}>
+          {state === 'empty'
+            ? L.t('odevzdavarny.nothingUploaded')
+            : `${L.t(state === 'confirmed' ? 'odevzdavarny.uploaded' : 'odevzdavarny.unconfirmed')} · ${L.files(box.fileCount)}`}
         </span>
         {box.points && <span>· {L.t('odevzdavarny.points', { n: box.points })}</span>}
       </div>
       <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-[var(--tone-primary)]">
-        {L.t(
-          state === 'confirmed'
-            ? 'odevzdavarny.openInIs'
-            : state === 'unconfirmed'
-              ? 'odevzdavarny.confirmInIs'
-              : 'odevzdavarny.submitInIs'
-        )}
+        {L.t(ACTION_LABEL[state])}
         <ExternalLink size={12} aria-hidden />
       </span>
     </a>

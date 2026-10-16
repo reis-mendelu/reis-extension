@@ -21,7 +21,12 @@ describe('submission boxes — uploaded but not confirmed', () => {
       zaznamnikHydrated: true,
       subjects: { data: { 'EBC-PJ': { hasPrubezne: true, hasTest: false, subjectId: 'P1' } } },
       odevzdavarny: [
-        box({ name: 'Nepotvrzený', deadline: '05.10.2026 10:00', fileCount: 2, odevzdavarnaId: '1' }),
+        box({
+          name: 'Nepotvrzený',
+          deadline: '05.10.2026 10:00',
+          fileCount: 2,
+          odevzdavarnaId: '1',
+        }),
         box({
           name: 'Potvrzený',
           deadline: '06.10.2026 10:00',
@@ -62,8 +67,12 @@ describe('submission boxes — uploaded but not confirmed', () => {
 
     it('leaves an empty box and a row cached with no section as they were', () => {
       render(<ZaznamnikTab courseCode="EBC-PJ" />);
-      expect(within(screen.getByTestId('submission-box-3')).getByText(/Nic neodevzdáno/)).toBeTruthy();
-      expect(within(screen.getByTestId('submission-box-4')).getByText(/Odevzdáno · 1 soubor$/)).toBeTruthy();
+      expect(
+        within(screen.getByTestId('submission-box-3')).getByText(/Nic neodevzdáno/)
+      ).toBeTruthy();
+      expect(
+        within(screen.getByTestId('submission-box-4')).getByText(/Odevzdáno · 1 soubor$/)
+      ).toBeTruthy();
     });
 
     it('speaks English too', () => {
@@ -72,6 +81,15 @@ describe('submission boxes — uploaded but not confirmed', () => {
       const card = screen.getByTestId('submission-box-1');
       expect(within(card).getByText(/Uploaded, not confirmed/)).toBeTruthy();
       expect(within(card).getByText('Confirm in IS')).toBeTruthy();
+    });
+
+    it('summary row speaks English too', () => {
+      useAppStore.setState({ language: 'en' } as never);
+      render(<SubmissionBoxesSummary onOpen={vi.fn()} />);
+      const row = screen
+        .getAllByTestId('submission-due-row')
+        .find((r) => r.textContent?.includes('Nepotvrzený'))!;
+      expect(row.textContent).toContain('Not confirmed');
     });
 
     it('stresses an unconfirmed box near its deadline like an empty one', () => {

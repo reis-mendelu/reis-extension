@@ -61,7 +61,12 @@ describe('submission boxes', () => {
     const due = boxesDueSoon(
       [
         box({ name: 'in 5 days', deadline: '08.10.2026 23:59' }),
-        box({ name: 'confirmed', deadline: '06.10.2026 23:59', fileCount: 1, section: 'submitted' }),
+        box({
+          name: 'confirmed',
+          deadline: '06.10.2026 23:59',
+          fileCount: 1,
+          section: 'submitted',
+        }),
         box({ name: 'all year', deadline: '31.01.2027 04:27' }),
         box({ name: 'closed', deadline: '04.10.2026 10:00', isOpen: false }),
       ],
@@ -75,7 +80,12 @@ describe('submission boxes', () => {
     const due = boxesDueSoon(
       [
         box({ name: 'unconfirmed', deadline: '06.10.2026 23:59', fileCount: 2, section: 'open' }),
-        box({ name: 'confirmed', deadline: '06.10.2026 23:59', fileCount: 2, section: 'submitted' }),
+        box({
+          name: 'confirmed',
+          deadline: '06.10.2026 23:59',
+          fileCount: 2,
+          section: 'submitted',
+        }),
       ],
       NOW,
       14
