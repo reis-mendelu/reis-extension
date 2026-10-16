@@ -51,7 +51,7 @@ export function EventPin({
       className="group pointer-events-auto absolute left-0 top-0 flex items-center justify-center leaflet-zoom-animated"
       style={{ transform: `translate(${x}px, ${y}px) translate(-50%, -50%)` }}
       title={floorLabel ? `${lead.title} · ${floorLabel}` : lead.title}
-      aria-label={floorLabel ? `${lead.title} · ${floorLabel}` : lead.title}
+      aria-label={floorLabel ? `${lead.title} · ${floorLabel}` : undefined}
       data-other-floor={otherFloor ? 'true' : undefined}
       onClick={() => onSelect(lead.id)}
     >
@@ -72,7 +72,10 @@ export function EventPin({
       >
         <img src={emojiSrc} alt="" width={18} height={18} draggable={false} />
         {otherFloor && (
-          <span className="pointer-events-none absolute -bottom-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-neutral px-1 text-[9px] font-bold leading-none text-neutral-content">
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-neutral px-1 text-[9px] font-bold leading-none text-neutral-content"
+          >
             {floorLevel ?? '?'}
           </span>
         )}
