@@ -20,11 +20,12 @@ cleanup() { sb stop --workdir "$W" --no-backup >/dev/null 2>&1 || true; rm -rf "
 trap cleanup EXIT
 
 # 1. What prod says it has applied.
-raw=$(sb db query --linked --project-ref "$REF" \
-  "select version from supabase_migrations.schema_migrations order by version" 2>&1) \
-  || { echo "FAILED: could not read prod's ledger:" >&2; echo "$raw" >&2; exit 1; }
-applied=$(sed -n '/^{/,$p' <<<"$raw" | jq -er '.rows[].version') \
-  || { echo "FAILED: no ledger rows in:" >&2; echo "$raw" >&2; exit 1; }
+# --agent no: fixed output shapes whoever runs it (see compare-fingerprint.sh).
+raw=$(sb db query --linked --project-ref "$REF" --agent no --output-format json \
+  "select version from supabase_migrations.schema_migrations order by version" 2>"$W/err") \
+  || { echo "FAILED: could not read prod's ledger:" >&2; cat "$W/err" >&2; echo "$raw" >&2; exit 1; }
+applied=$(jq -er '(if type == "array" then .[] else .rows[] end).version' <<<"$raw") \
+  || { echo "FAILED: no ledger rows in:" >&2; cat "$W/err" >&2; echo "$raw" >&2; exit 1; }
 
 # 2. Those files, and only those, into a separate workdir.
 mkdir -p "$W/supabase/migrations"
@@ -61,11 +62,12 @@ for f in supabase/migrations/*.sql; do
 done
 
 # 3. Schema.
-diff_out=$(sb db diff --linked --project-ref "$REF" --workdir "$W" -s public 2>&1) \
-  || { echo "FAILED: db diff errored:" >&2; echo "$diff_out" >&2; exit 1; }
-if ! grep -q "No schema changes found" <<<"$diff_out"; then
-  echo "DRIFT: prod's public schema differs from its applied migrations:" >&2
-  echo "$diff_out" >&2
+# The diff SQL goes to stdout, empty when nothing differs; progress to stderr.
+diff_sql=$(sb db diff --linked --project-ref "$REF" --workdir "$W" -s public --agent no 2>"$W/err") \
+  || { echo "FAILED: db diff errored:" >&2; cat "$W/err" >&2; exit 1; }
+if [ -n "$(tr -d '[:space:]' <<<"$diff_sql")" ]; then
+  echo "DRIFT: prod's public schema differs from its applied migrations. To make the files match prod:" >&2
+  echo "$diff_sql" >&2
   exit 1
 fi
 echo "schema: no changes"

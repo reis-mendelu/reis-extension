@@ -23,14 +23,16 @@ fingerprint() { # $1 = prod | local, $2 = output file
   local raw target
   if [ "$1" = prod ]; then target=(--linked --project-ref "$REF")
   else target=(--local ${SUPABASE_WORKDIR:+--workdir "$SUPABASE_WORKDIR"}); fi
-  if ! raw=$(sb db query "${target[@]}" -f "$SQL" 2>&1); then
+  # --agent no: the CLI otherwise picks its output shape from whoever runs it
+  # (an AI agent gets {rows:[...]}, CI a table). JSON on stdout, logs on stderr.
+  if ! raw=$(sb db query "${target[@]}" --agent no --output-format json -f "$SQL" 2>"$OUT/err"); then
     echo "FAILED: supabase db query $1 exited non-zero:" >&2
-    echo "$raw" >&2
+    cat "$OUT/err" >&2; echo "$raw" >&2
     exit 1
   fi
-  if ! sed -n '/^{/,$p' <<<"$raw" | jq -er '.rows[].line' >"$2"; then
+  if ! jq -er '(if type == "array" then .[] else .rows[] end).line' <<<"$raw" >"$2"; then
     echo "FAILED: no fingerprint rows in the $1 output:" >&2
-    echo "$raw" >&2
+    cat "$OUT/err" >&2; echo "$raw" >&2
     exit 1
   fi
   # Prod had 359 lines on 2026-10-16; every build has the cron job and a bucket.

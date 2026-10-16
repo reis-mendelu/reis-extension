@@ -82,7 +82,7 @@ jobs:
       - name: Migration lint (expand/contract)
         if: steps.db.outputs.changed == 'true'
         run: node scripts/db/lint-migrations.mjs HEAD^1
-      - uses: supabase/setup-cli@v3
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
         if: steps.db.outputs.changed == 'true'
         with:
           version: 2.121.0
