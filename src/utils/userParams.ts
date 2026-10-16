@@ -341,10 +341,20 @@ let _selecting: Promise<unknown> = Promise.resolve();
 
 async function selectStudyNow(studium: string): Promise<{ params: UserParams; changed: boolean }> {
   if (_inflight) await _inflight.catch(() => null);
-  const current =
+  let current =
     _cached ??
     ((await IndexedDBService.get('meta', STORAGE_KEYS.USER_PARAMS)) as UserParams | undefined);
-  const target = current?.studies?.find((s) => s.studium === studium);
+  let target = current?.studies?.find((s) => s.studium === studium);
+  if (current && !target) {
+    // This context's list may be missing or stale: its study pages failed
+    // when the record was built, while the other context's did not. Ask IS
+    // once more before refusing — the same check a new session runs.
+    _cached = null;
+    _identityChecked = false;
+    _lastIdentityAttempt = 0;
+    current = (await getUserParams()) ?? undefined;
+    target = current?.studies?.find((s) => s.studium === studium);
+  }
   if (!current?.studies || !target) throw new Error('selectStudy: not an active study');
   if (current.studium === studium) return { params: current, changed: false };
   const next = withStudy(current, { active: current.studies, chosen: target });

@@ -247,6 +247,20 @@ describe('selectStudy', () => {
     expect((await getUserParams())?.studium).toBe('900011');
   });
 
+  // The content script's study pages failed when its record was built, so it
+  // has no list, while the app's did and offered the switch.
+  it('asks IS again before refusing a study its own list does not have', async () => {
+    clearUserParamsCache();
+    idbGet.mockResolvedValue(stored(AII));
+    fetchUserBaseIds.mockResolvedValue(base('900011'));
+    resolveStudies.mockRejectedValueOnce(new Error('offline'));
+    expect((await getUserParams())?.studies).toBeUndefined();
+
+    resolveStudies.mockResolvedValue({ active: [AII, EM], chosen: AII });
+    await expect(selectStudy('900012')).resolves.toMatchObject({ changed: true });
+    expect(idbClearAll).not.toHaveBeenCalled();
+  });
+
   // The id arrives over postMessage from the other context.
   it('refuses a study that is not one of the active ones', async () => {
     await expect(selectStudy('900003')).rejects.toThrow();

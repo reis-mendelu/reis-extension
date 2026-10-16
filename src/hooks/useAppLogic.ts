@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { getSmartWeekRange } from '../utils/calendar';
 import { IndexedDBService } from '../services/storage';
 import { pushForStudy } from '../utils/userParams/pushForStudy';
+import { forgetPreviousStudy } from './forgetPreviousStudy';
 import { syncService, syncGradeHistory } from '../services/sync';
 
 import { useAppStore, initializeStore } from '../store/useAppStore';
@@ -190,13 +191,11 @@ export function useAppLogic() {
             ?.studium
         : undefined;
       const r = raw.studium ? pushForStudy(raw, own) : raw;
-      // The first push for the study the student switched to replaces the
-      // exams outright: the list on screen is the previous study's, and
-      // setExams otherwise keeps a list over an empty answer. (Pushes for
-      // the study they left were dropped just above.)
+      // The first push for the study the student switched to: whatever it
+      // does not carry is the previous study's — see forgetPreviousStudy.
+      // (Pushes for the study they left were dropped just above.)
       if (raw.studium && raw.studium === own) {
-        if (appliedStudium && appliedStudium !== own)
-          useAppStore.getState().setExams(r.exams ?? [], { replace: true });
+        if (appliedStudium && appliedStudium !== own) await forgetPreviousStudy(r);
         appliedStudium = own;
       }
 

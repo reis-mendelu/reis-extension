@@ -74,6 +74,7 @@ export async function syncAllData() {
   if (isSyncing) return;
 
   isSyncing = true;
+  let crawlStudium: string | undefined;
 
   try {
     // Inside the try on purpose: this used to sit above it, so a throw here
@@ -104,6 +105,7 @@ export async function syncAllData() {
     await adoptStoredStudy();
     const userParams = await getUserParams();
     const studium = userParams?.studium;
+    crawlStudium = studium;
     const studyChanged = forgetOtherStudy(studium);
 
     // Which core fetches actually ran, as opposed to being TTL-skipped — both
@@ -425,7 +427,14 @@ export async function syncAllData() {
     }
   } catch (e) {
     sendToIframe(
-      Messages.syncUpdate({ isSyncing: false, error: String(e), lastSync: cachedData.lastSync })
+      Messages.syncUpdate({
+        isSyncing: false,
+        error: String(e),
+        lastSync: cachedData.lastSync,
+        // A crawl that failed outright still tells the app which study it
+        // was for, so a switch is still followed (forgetPreviousStudy).
+        studium: crawlStudium,
+      })
     );
   } finally {
     isSyncing = false;

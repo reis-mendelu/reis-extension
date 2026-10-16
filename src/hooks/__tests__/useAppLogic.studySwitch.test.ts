@@ -29,12 +29,14 @@ const store = {
 };
 
 vi.mock('../../store/useAppStore', () => ({
-  useAppStore: { getState: () => store, subscribe: vi.fn(() => vi.fn()) },
+  useAppStore: { getState: () => store, setState: setState, subscribe: vi.fn(() => vi.fn()) },
   initializeStore: vi.fn(async () => vi.fn()),
 }));
 
-const { idbSet, own } = vi.hoisted(() => ({
+const { idbSet, idbDelete, own, setState } = vi.hoisted(() => ({
   idbSet: vi.fn(async () => undefined),
+  idbDelete: vi.fn(async () => undefined),
+  setState: vi.fn(),
   own: { studium: 'st' },
 }));
 vi.mock('../../services/storage', () => ({
@@ -45,9 +47,14 @@ vi.mock('../../services/storage', () => ({
         : undefined
     ),
     set: idbSet,
+    delete: idbDelete,
   },
 }));
 
+// forgetPreviousStudy imports the implementation file directly.
+vi.mock('../../services/storage/IndexedDBService', () => ({
+  IndexedDBService: { delete: idbDelete, set: idbSet, get: vi.fn(async () => undefined) },
+}));
 vi.mock('../../services/sync', () => ({
   syncService: { triggerRefresh: vi.fn() },
   syncGradeHistory: vi.fn(async () => undefined),
@@ -116,6 +123,12 @@ describe('a sync push for the study the student switched away from', () => {
     store.setExams.mockClear();
     await push({ studium: 'st2', schedule: [{ id: 'l1' }] });
     expect(store.setExams).toHaveBeenCalledWith([], { replace: true });
+    // Not carried by that push, and not keyed by study: the previous
+    // study's subjects and plan go rather than stand under the new name.
+    expect(setState).toHaveBeenCalledWith({ subjects: null });
+    expect(setState).toHaveBeenCalledWith({ studyPlanDual: null });
+    expect(idbDelete).toHaveBeenCalledWith('subjects', 'current');
+    expect(idbDelete).toHaveBeenCalledWith('study_plan', 'current');
     store.setExams.mockClear();
     await push({ studium: 'st2', exams: [] });
     expect(store.setExams).not.toHaveBeenCalledWith([], { replace: true });
