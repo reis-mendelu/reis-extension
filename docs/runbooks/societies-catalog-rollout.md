@@ -1,5 +1,11 @@
 # Rolling out the societies catalog
 
+> **Historical, kept as a record (2026-10-16).** These steps already ran. The
+> migration file it names now lives in `supabase/migrations_archive/` and is
+> part of `supabase/migrations/20261016000000_baseline.sql`: never apply it
+> again. For applying a new migration today, see the "Database migrations"
+> section of `CLAUDE.md`.
+
 The steps that change production when the societies-in-Supabase PR ships. **No
 CI applies migrations** and nothing here runs by itself. Each step is a
 deliberate hand action, and steps 2–5 are Dominik's call.
@@ -27,7 +33,7 @@ always reached. Re-check that if the migration ever changes.
 
 ```bash
 { echo 'do $dry$ begin';
-  sed -e '/^begin;$/d' -e '/^commit;$/d' supabase/migrations/20260926120000_societies_catalog.sql;
+  sed -e '/^begin;$/d' -e '/^commit;$/d' supabase/migrations_archive/20260926120000_societies_catalog.sql;
   echo "raise exception 'DRY RUN OK >> societies=% fk=% logo_policies=%', (select count(*) from public.societies), (select count(*) from pg_constraint where conname = 'spolky_accounts_association_id_fkey'), (select count(*) from pg_policies where schemaname = 'storage' and policyname like 'society_logos_%');";
   echo 'end $dry$;'; } > "$SCRATCH/societies-dryrun.sql"
 npx supabase db query --linked -f "$SCRATCH/societies-dryrun.sql"
@@ -41,7 +47,7 @@ This is the only step that proves the CLI's prod role may `create policy on stor
 ## 3. Apply
 
 ```bash
-npx supabase db query --linked -f supabase/migrations/20260926120000_societies_catalog.sql
+npx supabase db query --linked -f supabase/migrations_archive/20260926120000_societies_catalog.sql
 ```
 
 ## 4. Verify through the public API, as the app does

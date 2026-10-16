@@ -23,6 +23,7 @@
     "test:smoke": "xvfb-run -a playwright test e2e/serenity/specs/smoke.spec.ts",
     "test:e2e:setup": "playwright install chromium",
     "typecheck": "tsc -b",
+    "db:fingerprint": "bash supabase/scripts/compare-fingerprint.sh",
     "typecheck:nuia": "tsc -p tsconfig.app.json --noUncheckedIndexedAccess --noEmit",
     "nuia:gate": "node scripts/nuia-gate.mjs",
     "scrape:real": "tsx --tsconfig tsconfig.app.json scripts/scrape-real-data.ts",
