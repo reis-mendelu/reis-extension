@@ -76,6 +76,17 @@ describe('switchStudy', () => {
     bc.close();
   });
 
+  it('puts the crawling context on the study shown here, at start', async () => {
+    await useAppStore.getState().reconcileStudy();
+    expect(executeAction).toHaveBeenCalledWith('select_study', { studium: '900011' });
+  });
+
+  it('asks nothing of a single-study student at start', async () => {
+    useAppStore.setState({ studies: [AII] });
+    await useAppStore.getState().reconcileStudy();
+    expect(executeAction).not.toHaveBeenCalled();
+  });
+
   it("follows another tab's switch from the shared record", async () => {
     getUserParams.mockResolvedValue(params(EM));
     await useAppStore.getState().followStudySwitch();

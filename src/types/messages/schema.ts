@@ -22,6 +22,7 @@ import { z } from 'zod';
 // (StoreSchemas); guarding their shape here would risk dropping a whole payload.
 // z.object passes extra keys, so all of them (and future additions) flow through.
 const SyncedDataSchema = z.object({
+  studium: z.string().optional(),
   lastSync: z.number().optional(),
   isSyncing: z.boolean().optional(),
   error: z.string().optional(),

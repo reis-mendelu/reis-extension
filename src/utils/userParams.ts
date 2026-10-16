@@ -201,13 +201,8 @@ export async function getUserParams(): Promise<UserParams | null> {
           // The study pages took a while: another context (another IS tab)
           // may have switched study meanwhile. Its choice wins over a write
           // built from the record as it was before.
-          const now = (await IndexedDBService.get('meta', STORAGE_KEYS.USER_PARAMS)) as
-            UserParams | undefined;
-          if (
-            now?.studium !== stored?.studium &&
-            now?.studies?.some((s) => s.studium === now.studium)
-          )
-            same = now;
+          const now = await readStoredSwitch(stored);
+          if (now) same = now;
           else await IndexedDBService.set('meta', STORAGE_KEYS.USER_PARAMS, same);
         }
         _cached = same;
@@ -223,8 +218,13 @@ export async function getUserParams(): Promise<UserParams | null> {
         email: net.username ? `${net.username}@mendelu.cz` : '',
         isErasmus: base.isErasmus,
       };
-      const params = multi ? withStudy(built, multi) : built;
-      await IndexedDBService.set('meta', STORAGE_KEYS.USER_PARAMS, params);
+      let params = multi ? withStudy(built, multi) : built;
+      // Same guard as the branch above, for records that are not complete
+      // (no parsed name): a switch another context made while this rebuild
+      // read IS wins over a record built from before it.
+      const now = multi && !switched ? await readStoredSwitch(stored) : null;
+      if (now) params = now;
+      else await IndexedDBService.set('meta', STORAGE_KEYS.USER_PARAMS, params);
       _cached = params;
       if (switched) announceIdentityChange(params, { wiped: true });
       return params;
@@ -264,6 +264,21 @@ export async function getUserParams(): Promise<UserParams | null> {
   } finally {
     _inflight = null;
   }
+}
+
+/**
+ * The stored record, if another context switched study since `before` was
+ * read — the student's newer choice, which a write built from `before`
+ * would otherwise undo.
+ */
+async function readStoredSwitch(before?: Partial<UserParams>): Promise<UserParams | null> {
+  const now = (await IndexedDBService.get('meta', STORAGE_KEYS.USER_PARAMS)) as
+    UserParams | undefined;
+  return now &&
+    now.studium !== before?.studium &&
+    now.studies?.some((s) => s.studium === now.studium)
+    ? now
+    : null;
 }
 
 /**

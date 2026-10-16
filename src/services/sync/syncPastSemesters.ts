@@ -83,6 +83,7 @@ export async function syncPastSemesters(
 
   const update: Partial<SyncedData> = {
     pastAttendance: mergedPastAttendance,
+    studium,
     lastSync: Date.now(),
   };
 

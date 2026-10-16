@@ -161,7 +161,9 @@ export const initializeStore = async () => {
   // — and then the store's own guard (`if (get().menu) return`) would block
   // the correction forever.
   const languageReady = s.loadLanguage();
-  s.loadContext();
+  // Then the crawling context is told which study this one shows — see
+  // reconcileStudy. Nothing for a single-study student.
+  void s.loadContext().then(() => useAppStore.getState().reconcileStudy());
   const devSeed = devAdminSeed();
   if (devSeed) {
     // Dev-only: seed a persistent society/admin session so the organizer and

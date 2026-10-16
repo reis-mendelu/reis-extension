@@ -15,6 +15,13 @@ export interface StudySwitchSlice {
   switchStudy: (studium: string) => Promise<boolean>;
   /** Another reIS tab switched study: follow it from the shared database. */
   followStudySwitch: () => Promise<void>;
+  /**
+   * At start: put the crawling context on the study this one shows. The two
+   * records live in two databases in the extension, and clearing the IS
+   * site's data or reinstalling resets only one of them; each then resolved
+   * its own default, and nothing brought them back together.
+   */
+  reconcileStudy: () => Promise<void>;
 }
 
 /** Tells this browser's other reIS tabs that the study changed. */
@@ -74,6 +81,15 @@ export const createStudySwitchSlice: AppSlice<StudySwitchSlice> = (set, get) => 
     } finally {
       set({ studySwitching: false });
     }
+  },
+  reconcileStudy: async () => {
+    const { demoMode, impersonation, studies, studiumId } = get();
+    if (demoMode || impersonation || studies.length < 2 || !studiumId) return;
+    // A no-op that starts no crawl when they already agree (and always on
+    // the phone, where the two are one context).
+    await executeAction('select_study', { studium: studiumId }).catch((e) =>
+      logError('StudySwitchSlice.reconcileStudy', e)
+    );
   },
   followStudySwitch: async () => {
     if (get().demoMode || get().impersonation) return;

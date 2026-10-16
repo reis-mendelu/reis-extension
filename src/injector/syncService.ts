@@ -86,6 +86,8 @@ export async function syncAllData() {
     // Inside the try on purpose: this used to sit above it, so a throw here
     // left isSyncing stuck true and no sync ever ran again.
     sendToIframe(Messages.syncUpdate({ isSyncing: true, lastSync: cachedData.lastSync }));
+    // Every push below carries the study it was crawled for — see
+    // SyncedData.studium. Read once: the student can switch mid-crawl.
 
     /**
      * Hands one Phase 2 result to the UI the moment it lands.
@@ -101,7 +103,7 @@ export async function syncAllData() {
      */
     const pushEarly = (partial: Partial<SyncedData>) =>
       sendToIframe(
-        Messages.syncUpdate({ ...partial, isSyncing: true, lastSync: cachedData.lastSync })
+        Messages.syncUpdate({ ...partial, studium, isSyncing: true, lastSync: cachedData.lastSync })
       );
 
     // Another IS tab may have switched study since this one's params were
@@ -384,6 +386,7 @@ export async function syncAllData() {
         studyComparison: cachedData.studyComparison,
         cvicneTests: cachedData.cvicneTests,
         odevzdavarny: cachedData.odevzdavarny,
+        studium,
         isSyncing: true,
         lastSync: cachedData.lastSync,
       })
@@ -398,7 +401,8 @@ export async function syncAllData() {
     if (subjectsForDetails) {
       await syncSubjectDetails(
         subjectsForDetails,
-        fullSchedule.status === 'fulfilled' ? fullSchedule.value : null
+        fullSchedule.status === 'fulfilled' ? fullSchedule.value : null,
+        userParams
       );
     }
 
@@ -406,6 +410,7 @@ export async function syncAllData() {
     sendToIframe(
       Messages.syncUpdate({
         ...cachedData,
+        studium,
         isSyncing: false,
         ...(reachedNothing ? { error: 'IS Mendelu unreachable' } : {}),
       })
@@ -438,7 +443,10 @@ async function syncSubjectDetails(
   subjectsValue: {
     data: Record<string, { folderUrl?: string; subjectId?: string; skupinaId?: string }>;
   },
-  scheduleValue: { studyId?: string; periodId?: string }[] | null
+  scheduleValue: { studyId?: string; periodId?: string }[] | null,
+  // The crawl's own params, not a fresh read: a switch mid-crawl would
+  // otherwise send the old study's subjects out under the new study's ids.
+  userParams: { studium?: string; obdobi?: string } | null
 ) {
   // Scoped, not everything in the map: `subjects.data` has been through
   // mergePastSubjects by now and holds every subject the student ever took.
@@ -449,7 +457,6 @@ async function syncSubjectDetails(
     Object.entries(subjectsValue.data),
     currentSemesterCodes
   );
-  const userParams = await getUserParams();
   let studium = userParams?.studium;
   let obdobi = userParams?.obdobi;
 
@@ -597,6 +604,7 @@ async function syncSubjectDetails(
  * that happens to be in flight must not be reported as finished by it.
  */
 export async function refreshSchedule(): Promise<void> {
+  const studium = (await getUserParams())?.studium;
   const value = await fetchFullSemesterSchedule();
   if (!value) return;
   if (value.length > 0) {
@@ -605,6 +613,7 @@ export async function refreshSchedule(): Promise<void> {
     sendToIframe(
       Messages.syncUpdate({
         schedule: value,
+        studium,
         loaded: ['schedule'],
         isSyncing,
         lastSync: cachedData.lastSync,
@@ -621,6 +630,7 @@ export async function refreshExams(): Promise<void> {
   // Rejects when IS could not be reached, so anything past this line is an
   // answer — "none" included — and may release the failed state. Data only
   // when there is some: an empty read must not wipe what is on screen.
+  const params = await getUserParams();
   const fresh = await fetchDualLanguageExams();
   if (fresh.length === 0) {
     sendToIframe(
@@ -628,7 +638,6 @@ export async function refreshExams(): Promise<void> {
     );
     return;
   }
-  const params = await getUserParams();
   const enriched = await enrichExamsWithDurations(
     fresh,
     cachedExams(),
@@ -639,6 +648,7 @@ export async function refreshExams(): Promise<void> {
   sendToIframe(
     Messages.syncUpdate({
       exams: enriched,
+      studium: params?.studium,
       loaded: ['exams'],
       isSyncing,
       lastSync: cachedData.lastSync,

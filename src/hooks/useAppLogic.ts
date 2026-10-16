@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { getSmartWeekRange } from '../utils/calendar';
 import { IndexedDBService } from '../services/storage';
+import { pushForStudy } from '../utils/userParams/pushForStudy';
 import { syncService, syncGradeHistory } from '../services/sync';
 
 import { useAppStore, initializeStore } from '../store/useAppStore';
@@ -29,6 +30,8 @@ import { isHarnessEnabled } from '../utils/harnessEnabled';
 import type { SyncDomain } from '../types/messages/base';
 
 interface SyncedData {
+  /** The study this push was crawled for — see pushForStudy. */
+  studium?: string;
   schedule?: BlockLesson[];
   exams?: ExamSubject[];
   subjects?: SubjectsData;
@@ -170,13 +173,22 @@ export function useAppLogic() {
         return;
       }
 
-      const r =
+      const raw =
         d.type === 'REIS_SYNC_UPDATE'
           ? (d.data as unknown as SyncedData)
           : d.type === 'REIS_DATA' && d.dataType === 'all'
             ? (d.data as unknown as SyncedData)
             : null;
-      if (!r) return;
+      if (!raw) return;
+      // A push for a study the student has switched away from keeps only its
+      // timetable — see pushForStudy. Only stamped pushes pay the read.
+      const r = raw.studium
+        ? pushForStudy(
+            raw,
+            ((await IndexedDBService.get('meta', 'reis_user_params')) as { studium?: string })
+              ?.studium
+          )
+        : raw;
 
       // Instantly update store for reactivity, then persist to IDB in background
       // Before the data branches: a domain can finish with nothing to send
