@@ -392,6 +392,8 @@ export interface ContextSlice {
   userEmail: string | null;
   /** IS has named the faculty this session; until then loadContext is worth re-asking. */
   contextResolved: boolean;
+  /** Active studies to switch between; fewer than two means no switcher. */
+  studies: import('../utils/userParams/studies').StudyOption[];
   loadContext: () => Promise<void>;
 }
 
@@ -712,6 +714,7 @@ export type AppState = ScheduleSlice &
   TeachingWeekSlice &
   NavPagesSlice &
   ContextSlice &
+  import('./slices/createStudySwitchSlice').StudySwitchSlice &
   PulseSlice &
   NotificationSlice &
   BulletinSlice &

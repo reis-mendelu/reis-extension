@@ -34,6 +34,11 @@
     "invalid": "Enter a whole amount from 1 to 15,000 CZK",
     "failed": "Could not start the payment"
   },
+  "studySwitcher": {
+    "label": "Study",
+    "failed": "Couldn't switch the study. Try again.",
+    "switching": "Switching study…"
+  },
   "settings": {
     "title": "Settings",
     "reportBug": "Report Bug / Idea",

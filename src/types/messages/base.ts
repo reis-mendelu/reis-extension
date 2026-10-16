@@ -8,6 +8,7 @@ export type ActionType =
   | 'download_file'
   | 'download_document'
   | 'trigger_sync'
+  | 'select_study'
   | 'refresh_exams'
   | 'refresh_schedule'
   | 'get_diagnostics'

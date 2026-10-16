@@ -7,6 +7,16 @@ import type { SyncedData } from '../../types/messages/base';
 
 const META_KEY_PREFIX = 'past_semester_';
 
+/**
+ * Is a cached past semester this study's? The key is the period alone, and a
+ * student with two studies at one faculty has the same period ids in both.
+ * An entry without a study predates the stamp and is kept: refetching all of
+ * them would put every student's whole past at IS on one boot.
+ */
+export function pastSemesterIsFor(cached: { studium?: string } | undefined, studium: string) {
+  return !!cached && (cached.studium === undefined || cached.studium === studium);
+}
+
 export async function syncPastSemesters(
   studium: string,
   currentObdobi: string,
@@ -22,12 +32,17 @@ export async function syncPastSemesters(
 
     // Permanent cache — past semesters are immutable facts
     const cached = (await IndexedDBService.get('meta', cacheKey)) as
-      { subjects: SubjectsData; attendance: Record<string, SubjectAttendance[]> } | undefined;
+      | {
+          studium?: string;
+          subjects: SubjectsData;
+          attendance: Record<string, SubjectAttendance[]>;
+        }
+      | undefined;
 
     let subjects: SubjectsData | null = null;
     let attendance: Record<string, SubjectAttendance[]> = {};
 
-    if (cached?.subjects && cached?.attendance) {
+    if (cached?.subjects && cached?.attendance && pastSemesterIsFor(cached, studium)) {
       subjects = cached.subjects;
       attendance = cached.attendance;
     } else {
@@ -35,7 +50,7 @@ export async function syncPastSemesters(
       if (result) {
         subjects = result.subjects;
         attendance = result.attendance;
-        await IndexedDBService.set('meta', cacheKey, { subjects, attendance });
+        await IndexedDBService.set('meta', cacheKey, { studium, subjects, attendance });
       }
     }
 

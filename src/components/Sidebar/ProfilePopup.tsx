@@ -19,6 +19,7 @@ import { HiddenItemsSection } from './Profile/HiddenItemsSection';
 import { PartnersBlock } from '../Partners/PartnersBlock';
 import { desktopEduroamTarget } from '../../utils/desktopEduroamTarget';
 import { useLongPress } from '../../hooks/ui/useLongPress';
+import { StudySwitcher } from '../StudySwitcher/StudySwitcher';
 
 export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: () => void }) {
   const { isDark, isLoading: tLoading, toggle: tTheme } = useTheme();
@@ -78,6 +79,11 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
               </div>
             </div>
           )}
+          {/* Only for two or more active studies; nothing otherwise. Same
+              component as the phone's Profile tab. */}
+          <div className="mt-3 empty:hidden">
+            <StudySwitcher compact />
+          </div>
         </div>
         {/* Preferences Section */}
         <div className="py-1 border-b border-base-200">

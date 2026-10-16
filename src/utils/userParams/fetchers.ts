@@ -1,4 +1,5 @@
 import { fetchWithAuth, BASE_URL } from '../../api/client';
+import { detectErasmus, parseStudyOptions } from './studies';
 
 export async function fetchUserBaseIds() {
   const res = await fetchWithAuth(`${BASE_URL}/auth/student/studium.pl`),
@@ -16,15 +17,8 @@ export async function fetchUserBaseIds() {
     );
   const nm = h.match(/id="prihlasen"[^>]*>\s*(?:Přihlášen|Logged\s+in):&nbsp;([^&]+)/i);
 
-  // Stricter Erasmus detection:
-  // Usually, Erasmus students have 'Erasmus+' in their study program name or a specific active study row.
-  // We sanitize the HTML by removing sidebars (e.g., Zapsané termíny) that might contain course names with "Erasmus".
-  const sanitizedHtml = h.replace(/<div class="sideportlet">[\s\S]*?<\/div>/g, '');
-
-  const isErasmus =
-    /Erasmus\s*\+/i.test(sanitizedHtml) ||
-    /exchange\s+programs?/i.test(sanitizedHtml) ||
-    /výměnné\s+programy/i.test(sanitizedHtml);
+  // Stricter Erasmus detection — see detectErasmus.
+  const isErasmus = detectErasmus(h);
 
   // safe: each regex above has its capturing groups required, not optional
   return m
@@ -35,6 +29,8 @@ export async function fetchUserBaseIds() {
         fullName: nm ? nm[1]!.trim() : '',
         isErasmus,
         html: h,
+        // More than one entry: a multi-study student (see resolveStudies).
+        options: parseStudyOptions(h),
       }
     : null;
 }

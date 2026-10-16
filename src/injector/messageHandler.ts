@@ -13,6 +13,8 @@ import { signOutFromHostPage } from './hostSignOut';
 import { readBytesBody } from './readBytesBody';
 import { fetchFileForIframe } from './fetchFileForIframe';
 import { getDiagnostics } from '../utils/diagnostics/diagnosticLog';
+import { selectStudy } from '../utils/userParams';
+import { logError } from '../utils/reportError';
 
 let topUpPopupRef: Window | null = null;
 
@@ -169,6 +171,16 @@ async function handleAction(id: string, action: string, payload: unknown) {
         // The student asked, so this bypasses the foreground gate and the
         // minimum gap, and clears every freshness stamp first.
         await requestSync('user');
+        result = { success: true };
+        break;
+      case 'select_study':
+        // The study switcher. This context keeps its OWN user params (the
+        // host-origin database), and every crawl reads them, so it is
+        // switched here first — then a full crawl of the new study, not
+        // awaited: the reply only says the record names it now.
+        if (!p.studium) throw new Error('select_study: missing studium');
+        await selectStudy(p.studium);
+        void requestSync('user').catch((e) => logError('select_study.sync', e));
         result = { success: true };
         break;
       case 'refresh_exams':

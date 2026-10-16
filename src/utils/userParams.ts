@@ -3,6 +3,8 @@ import { STORAGE_KEYS } from '../services/storage/keys';
 import { fetchUserBaseIds, fetchUserStudyDetails, fetchUserNetId } from './userParams/fetchers';
 import { logError } from './reportError';
 import { announceIdentityChange } from './userParams/identityEvents';
+import { resolveStudies } from './userParams/resolveStudies';
+import { withStudy, type StudyOption } from './userParams/studies';
 
 export interface UserParams {
   studium: string;
@@ -20,6 +22,11 @@ export interface UserParams {
   studyYear?: number;
   periodLabel?: string;
   isErasmus: boolean;
+  /**
+   * The ACTIVE studies a multi-study student can switch between, IS order.
+   * Absent for a single-study student — IS shows them no study select.
+   */
+  studies?: StudyOption[];
 }
 
 // In-memory cache — avoids redundant IDB reads across 20+ call sites per session.
@@ -162,22 +169,39 @@ export async function getUserParams(): Promise<UserParams | null> {
         // boot would have nothing to check against.
         await IndexedDBService.clearAll();
         wiped = true;
-      } else if (complete(stored)) {
+      }
+
+      // More than one study in IS: which one reIS reads, decided from IS
+      // every session — so a record left on an interrupted study (installs
+      // from before this check) corrects itself on the next start. A
+      // single-study page has no select, and that path is unchanged.
+      const { options = [], ...baseFields } = base;
+      const multi =
+        options.length > 1
+          ? await resolveStudies(options, switched ? undefined : stored?.studium)
+          : null;
+
+      if (!switched && complete(stored)) {
         // Same student. Serve the record as it stands rather than rebuilding
-        // it — the rebuild below is two more IS pages, on every boot.
-        _cached = stored as UserParams;
+        // it — the rebuild below is two more IS pages, on every boot. With
+        // more than one study it is only re-pointed, from what IS just said.
+        const same = multi ? withStudy(stored as UserParams, multi) : (stored as UserParams);
+        if (JSON.stringify(same) !== JSON.stringify(stored))
+          await IndexedDBService.set('meta', STORAGE_KEYS.USER_PARAMS, same);
+        _cached = same;
         return _cached;
       }
 
       const study = await fetchUserStudyDetails(),
         net = await fetchUserNetId();
-      const params: UserParams = {
-        ...base,
+      const built: UserParams = {
+        ...baseFields,
         ...study,
         ...net,
         email: net.username ? `${net.username}@mendelu.cz` : '',
         isErasmus: base.isErasmus,
       };
+      const params = multi ? withStudy(built, multi) : built;
       await IndexedDBService.set('meta', STORAGE_KEYS.USER_PARAMS, params);
       _cached = params;
       if (switched) announceIdentityChange(params, { wiped: true });
@@ -256,6 +280,30 @@ export function clearUserParamsCache() {
   _identityChecked = false;
   _lastIdentityAttempt = 0;
   _wrongStudentOnDisk = false;
+}
+
+/**
+ * Point reIS at another of the student's ACTIVE studies (the switcher).
+ *
+ * The same student, so none of the identity machinery runs: no wipe, no
+ * announcement — the record is re-pointed and written back. No network
+ * either: the studies were resolved from IS when the record was built, which
+ * is what lets the extension's two contexts and the phone call it twice for
+ * one switch at no cost. `studium` arrives over postMessage, so anything
+ * that is not one of the stored active studies is refused.
+ */
+export async function selectStudy(studium: string): Promise<UserParams> {
+  if (_inflight) await _inflight.catch(() => null);
+  const current =
+    _cached ??
+    ((await IndexedDBService.get('meta', STORAGE_KEYS.USER_PARAMS)) as UserParams | undefined);
+  const target = current?.studies?.find((s) => s.studium === studium);
+  if (!current?.studies || !target) throw new Error('selectStudy: not an active study');
+  if (current.studium === studium) return current;
+  const next = withStudy(current, { active: current.studies, chosen: target });
+  await IndexedDBService.set('meta', STORAGE_KEYS.USER_PARAMS, next);
+  _cached = next;
+  return next;
 }
 
 export async function getStudium(): Promise<string | null> {

@@ -21,6 +21,7 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
   fullName: null,
   userEmail: null,
   contextResolved: false,
+  studies: [],
   loadContext: async () => {
     // getUserParams reads IS, which demo mode blocks. Returning early rather
     // than letting it throw: the rejection surfaced a toast nobody asked for,
@@ -83,6 +84,7 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
           isErasmus: params.isErasmus,
           fullName: params.fullName ?? null,
           userEmail: params.email ?? null,
+          studies: params.studies ?? [],
           // Answered by IS this session (not a persisted record from an earlier
           // one): later re-asks (sync, resume) are free.
           ...(params.facultyLabel && isIdentityConfirmed() ? { contextResolved: true } : {}),

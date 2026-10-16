@@ -26,6 +26,7 @@ import { createHiddenItemsSlice } from './slices/createHiddenItemsSlice';
 import { createTeachingWeekSlice } from './slices/createTeachingWeekSlice';
 import { createNavPagesSlice } from './slices/createNavPagesSlice';
 import { createContextSlice } from './slices/createContextSlice';
+import { createStudySwitchSlice } from './slices/createStudySwitchSlice';
 import { createPulseSlice } from './slices/createPulseSlice';
 import { createCustomEventsSlice } from './slices/createCustomEventsSlice';
 import { createNotificationSlice } from './slices/createNotificationSlice';
@@ -83,6 +84,7 @@ export const useAppStore = create<AppState>()(
     ...createTeachingWeekSlice(...a),
     ...createNavPagesSlice(...a),
     ...createContextSlice(...a),
+    ...createStudySwitchSlice(...a),
     ...createPulseSlice(...a),
     ...createCustomEventsSlice(...a),
     ...createNotificationSlice(...a),

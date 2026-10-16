@@ -14,7 +14,7 @@ import { syncCvicneTests } from '../services/sync/syncCvicneTests';
 import { syncOdevzdavarny } from '../services/sync/syncOdevzdavarny';
 import { fetchSeminarGroupIds, fetchClassmates } from '../api/classmates';
 import { mergePastSubjects } from '../services/sync/mergePastSubjects';
-import { syncPastSemesters } from '../services/sync/syncPastSemesters';
+import { syncPastSemesters, pastSemesterIsFor } from '../services/sync/syncPastSemesters';
 
 import { getUserParams } from '../utils/userParams';
 import { enrichExamsWithDurations } from '../services/sync/examDurations';
@@ -260,9 +260,13 @@ export async function syncAllData() {
         );
         for (const period of pastPeriods) {
           const cached = (await IndexedDBService.get('meta', `past_semester_${period.id}`)) as
-            | { subjects: { data: typeof subjects.value.subjects.data }; attendance: unknown }
+            | {
+                studium?: string;
+                subjects: { data: typeof subjects.value.subjects.data };
+                attendance: unknown;
+              }
             | undefined;
-          if (cached?.subjects?.data) {
+          if (cached?.subjects?.data && pastSemesterIsFor(cached, studium)) {
             for (const [code, info] of Object.entries(cached.subjects.data)) {
               if (!subjects.value.subjects.data[code]) {
                 subjects.value.subjects.data[code] = info;

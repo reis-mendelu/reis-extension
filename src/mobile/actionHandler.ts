@@ -2,6 +2,7 @@ import { Messages, isIframeMessage } from '../types/messages';
 import type { ActionResultMessage } from '../types/messages/base';
 import { sendToIframe } from '../injector/iframeManager';
 import { DemoModeError } from '../errors/demoMode';
+import { logError } from '../utils/reportError';
 
 /**
  * The app-side responder for `REIS_ACTION`.
@@ -28,10 +29,12 @@ export interface MobileActionDeps {
   refreshExams(): Promise<void>;
   refreshSchedule(): Promise<void>;
   syncAllData(): Promise<void>;
+  /** The study switcher's half in this context — see `selectStudy`. */
+  selectStudy(studium: string): Promise<unknown>;
 }
 
 /**
- * Only four of the eleven actions in `ActionType` are reachable from the app:
+ * Only five of the actions in `ActionType` are reachable from the app:
  * `register_exam`/`unregister_exam` are called in-process by `useExamActions`,
  * `open_url` has no callers, `download_file` has no case
  * on any platform, and the Drive actions are broken on mobile (#168).
@@ -65,6 +68,13 @@ export async function runMobileAction(
       return { success: true };
     case 'trigger_sync':
       await deps.syncAllData();
+      return { success: true };
+    case 'select_study':
+      if (!p.studium) throw new Error('select_study: missing studium');
+      await deps.selectStudy(p.studium);
+      // Not awaited: the reply is "the record now names that study", and the
+      // crawl that follows can take a while. Its own failure is the sync's.
+      void deps.syncAllData().catch((e) => logError('select_study.sync', e));
       return { success: true };
     default:
       throw new Error(`Action "${action}" is not available in the reIS mobile app`);
@@ -131,6 +141,10 @@ export function installMobileActionHandler(): void {
       // gate and the minimum gap, and clears the freshness stamps first.
       const { requestSync } = await import('../injector/syncGate');
       await requestSync('user');
+    },
+    selectStudy: async (studium) => {
+      const { selectStudy } = await import('../utils/userParams');
+      return selectStudy(studium);
     },
   };
 

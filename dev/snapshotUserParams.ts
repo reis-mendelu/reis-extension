@@ -1,5 +1,6 @@
 import { IndexedDBService } from '../src/services/storage';
 import { loadRealDataSnapshot } from '../src/services/loadRealDataSnapshot';
+import { applyStudiesOverride } from './studiesOverride';
 
 /**
  * Give the dev webapp a `reis_user_params` so the snapshot's assignments and
@@ -47,12 +48,15 @@ if (import.meta.env.DEV) {
       const missing = Object.entries(defaults).filter(
         ([key]) => (existing as Record<string, unknown>)[key] == null
       );
-      if (missing.length === 0) return;
-      await IndexedDBService.set('meta', 'reis_user_params', {
-        ...existing,
-        ...Object.fromEntries(missing),
-      });
-      await loadRealDataSnapshot();
+      if (missing.length > 0) {
+        await IndexedDBService.set('meta', 'reis_user_params', {
+          ...existing,
+          ...Object.fromEntries(missing),
+        });
+        await loadRealDataSnapshot();
+      }
+      // After the write above, never alongside it: both rewrite the record.
+      await applyStudiesOverride();
     } catch {
       // A dev convenience: if IDB is unavailable the app still boots, just
       // without assignments — exactly the state this file was added to fix.
