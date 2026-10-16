@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { render, fireEvent } from '@testing-library/react';
+import { render, fireEvent, act } from '@testing-library/react';
 import { EventLayer } from '../EventLayer';
 import { setMapInstance } from '../mapInstance';
 import { useAppStore } from '../../../store/useAppStore';
@@ -53,6 +53,13 @@ function inTwoDays(): string {
   const d = new Date();
   d.setHours(12, 0, 0, 0);
   d.setDate(d.getDate() + 2);
+  return d.toISOString().slice(0, 10);
+}
+
+function inDays(n: number): string {
+  const d = new Date();
+  d.setHours(12, 0, 0, 0);
+  d.setDate(d.getDate() + n);
   return d.toISOString().slice(0, 10);
 }
 
@@ -134,19 +141,87 @@ describe('EventLayer with a building open', () => {
     expect(pins()).toHaveLength(1);
   });
 
-  it('selects the event when its pin is tapped, as in the campus overview', () => {
+  it('selects the event when its pin is tapped, and stays in the floor view', () => {
+    useAppStore.setState({ mapFocusRequest: 7 });
     render(<EventLayer />);
     fireEvent.click(paneEl.querySelector('button[title="q02-party"]') as HTMLElement);
-    const sel = useAppStore.getState().mapSelection;
-    expect(sel?.kind === 'event' && sel.event.id).toBe('q02-party');
+    const st = useAppStore.getState();
+    expect(st.mapSelection?.kind === 'event' && st.mapSelection.event.id).toBe('q02-party');
+    // Leaving would re-run the canvas draw and zoom the camera out to the event.
+    expect(st.activeBuildingId).toBe(Q);
+    expect(st.activeFloorId).toBe(Q02_FLOOR);
+    expect(st.mapFocusRequest).toBe(7);
+  });
+
+  it('still leaves the building when a list click selects the event with fly', () => {
+    render(<EventLayer />);
+    act(() => useAppStore.getState().focusEventById('q02-party', { fly: true }));
+    expect(useAppStore.getState().activeBuildingId).toBeNull();
   });
 
   it('still shows it, marked, when the floor view is a different floor from its room', () => {
     useAppStore.setState({ activeFloorId: Q_OTHER_FLOOR });
     render(<EventLayer />);
-    const pin = paneEl.querySelector('button[title="q02-party"]') as HTMLElement;
+    const pin = paneEl.querySelector('button[title^="q02-party"]') as HTMLElement;
     expect(pin).toBeTruthy();
     expect(pin.getAttribute('data-other-floor')).toBe('true');
+  });
+
+  it('words the other-floor pin: title and badge name the floor, dimmed pin is not a bare numeral', () => {
+    useAppStore.setState({ activeFloorId: Q_OTHER_FLOOR });
+    render(<EventLayer />);
+    const pin = paneEl.querySelector('button[title^="q02-party"]') as HTMLElement;
+    expect(pin.getAttribute('title')).toMatch(/q02-party · .+/);
+    expect(pin.getAttribute('aria-label')).toBe(pin.getAttribute('title'));
+  });
+
+  it('paints a pin for another floor underneath one on the shown floor when they share a spot', () => {
+    // Two rooms stacked on the same x/y: the first pin in the DOM is painted
+    // first, so the on-floor one must come last or it is covered and untappable.
+    const upstairs = room(405, Q_OTHER_FLOOR, 1); // Q2.43, floor 4 in the real index
+    useAppStore.setState({
+      activeFloorId: Q02_FLOOR,
+      roomsByBuilding: { [Q]: { ...Q_ROOMS, features: [upstairs, ...Q_ROOMS.features] } },
+      // Earliest date first would otherwise draw the upstairs event first AND last.
+      mapEvents: [
+        { ...event('q02-party', 'Q02', BUILDING_CENTRE), date: inDays(3) },
+        { ...event('q2-up', 'Q2.43', BUILDING_CENTRE), date: inDays(1) },
+      ],
+    });
+    render(<EventLayer />);
+    const order = pins().map((b) => b.getAttribute('title'));
+    expect(order[order.length - 1]).toBe('q02-party');
+  });
+
+  it('falls back to the event coordinate when the plan is loaded but lacks the room', () => {
+    useAppStore.setState({ roomsByBuilding: { [Q]: { ...Q_ROOMS, features: [] } } });
+    render(<EventLayer />);
+    expect(paneEl.querySelector('button[title="q02-party"]')).toBeTruthy();
+  });
+
+  it('puts a hand-placed event with a room at the room, not at its own coord', () => {
+    useAppStore.setState({ mapEvents: [event('q02-party', 'Q02', [16.7, 49.3])] });
+    render(<EventLayer />);
+    const pin = paneEl.querySelector('button[title="q02-party"]') as HTMLElement;
+    expect(pin.style.transform).not.toContain('16.7px');
+  });
+
+  it('still hides an event that is not soon, and still pins the selected far one', () => {
+    useAppStore.setState({
+      mapEvents: [{ ...event('q02-party', 'Q02', BUILDING_CENTRE), date: inDays(40) }],
+    });
+    render(<EventLayer />);
+    expect(pins()).toHaveLength(0);
+  });
+
+  it('shows the society event at its room while authoring in the console', () => {
+    useAppStore.setState({
+      adminConsoleOpen: true,
+      societyMapEvents: [event('own', 'Q02', BUILDING_CENTRE)],
+      mapEvents: [],
+    });
+    render(<EventLayer />);
+    expect(paneEl.querySelector('button[title="own"]')).toBeTruthy();
   });
 
   it('falls back to the event coordinate while the floor plan is still loading', () => {

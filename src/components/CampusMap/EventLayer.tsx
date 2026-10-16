@@ -6,6 +6,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { groupEventsByVenue, parseEventDate, type VenueGroup } from './eventHelpers';
 import { groupEventsInBuilding } from './inBuildingEvents';
+import { floorText } from './floorText';
 import roomsIndexJson from '../../data/map/rooms-index.json';
 import type { RoomIndexEntry } from '../../types/campusMap';
 import { subscribeMapInstance } from './mapInstance';
@@ -107,7 +108,9 @@ export function EventLayer() {
   // event — both of which would arrive as map views.
   const selectEvent = (id: string) => {
     if (!authoring) void trackMapEventView(id);
-    focusEvent(id);
+    // In a floor view the tap selects in place; the overview call is unchanged.
+    if (activeBuildingId === null) focusEvent(id);
+    else focusEvent(id, { keepBuilding: true });
   };
   const draftSociety = useSociety(assocId);
   const draftColor = draftSociety?.color ?? '#0046a0';
@@ -226,11 +229,20 @@ export function EventLayer() {
   // The draft is a campus-overview placement: placing and previewing both leave
   // floor view first, so it is not drawn over a floor plan.
   const shownDraft = activeBuildingId === null ? draftPt : null;
-  if (!pane || (placed.length === 0 && !shownDraft)) return null;
+  // `placed` is rebuilt in an effect, one frame behind `groups`. On a building
+  // change that frame would draw the previous view's pins (the overview's, or
+  // the other floor's flags), so draw only what the current groups still hold,
+  // from the current group.
+  const liveGroups = new Map(groups.map((g) => [g.key, g]));
+  const visible = placed.flatMap((p) => {
+    const group = liveGroups.get(p.key);
+    return group ? [{ ...p, group }] : [];
+  });
+  if (!pane || (visible.length === 0 && !shownDraft)) return null;
 
   return createPortal(
     <>
-      {placed.map((p) => (
+      {visible.map((p) => (
         <EventPin
           key={p.key}
           group={p.group}
@@ -239,6 +251,11 @@ export function EventLayer() {
           selected={p.group.events.some((e) => e.id === selectedId)}
           otherFloor={p.group.otherFloor}
           floorLevel={p.group.floorLevel}
+          floorLabel={
+            p.group.otherFloor && p.group.floorLevel != null
+              ? floorText(p.group.floorLevel, t)
+              : undefined
+          }
           locale={language === 'en' ? 'en-US' : 'cs-CZ'}
           onSelect={selectEvent}
         />

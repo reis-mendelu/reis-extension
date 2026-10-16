@@ -52,5 +52,8 @@ export function groupEventsInBuilding(
       });
   }
   for (const g of groups.values()) g.events = sortByDate(g.events);
-  return [...groups.values()];
+  // A room above or below the one shown can share its x/y; the DOM paints later
+  // children on top, so the on-floor pins go last or they would sit under a
+  // dimmed pin that intercepts their taps.
+  return [...groups.values()].sort((a, b) => Number(!!b.otherFloor) - Number(!!a.otherFloor));
 }

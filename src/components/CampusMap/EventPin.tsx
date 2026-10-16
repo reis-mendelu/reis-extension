@@ -11,6 +11,8 @@ interface EventPinProps {
   /** Floor view: the event's room is on a floor other than the one shown. */
   otherFloor?: boolean;
   floorLevel?: number | null;
+  /** "3. floor", worded for the title and bubble: the badge alone is just a numeral. */
+  floorLabel?: string;
   locale: string;
   onSelect: (id: string) => void;
 }
@@ -30,6 +32,7 @@ export function EventPin({
   selected,
   otherFloor = false,
   floorLevel = null,
+  floorLabel,
   locale,
   onSelect,
 }: EventPinProps) {
@@ -47,7 +50,8 @@ export function EventPin({
       type="button"
       className="group pointer-events-auto absolute left-0 top-0 flex items-center justify-center leaflet-zoom-animated"
       style={{ transform: `translate(${x}px, ${y}px) translate(-50%, -50%)` }}
-      title={lead.title}
+      title={floorLabel ? `${lead.title} · ${floorLabel}` : lead.title}
+      aria-label={floorLabel ? `${lead.title} · ${floorLabel}` : lead.title}
       data-other-floor={otherFloor ? 'true' : undefined}
       onClick={() => onSelect(lead.id)}
     >
@@ -67,9 +71,9 @@ export function EventPin({
         }}
       >
         <img src={emojiSrc} alt="" width={18} height={18} draggable={false} />
-        {otherFloor && floorLevel !== null && (
+        {otherFloor && (
           <span className="pointer-events-none absolute -bottom-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-neutral px-1 text-[9px] font-bold leading-none text-neutral-content">
-            {floorLevel}
+            {floorLevel ?? '?'}
           </span>
         )}
 
@@ -81,6 +85,11 @@ export function EventPin({
             {lead.time ? ` · ${lead.time}` : ''}
             {count > 1 ? ` · +${count - 1}` : ''}
           </span>
+          {floorLabel && (
+            <span className="block text-[10px] font-semibold leading-tight text-base-content/70">
+              {floorLabel}
+            </span>
+          )}
         </span>
       </span>
     </button>
