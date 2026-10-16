@@ -92,7 +92,9 @@ export function TermDetails({ term, section, isRegHere, now }: TermDetailsProps)
             size={14}
             className={`mt-0.5 shrink-0 ${note.isEmphasized ? 'text-[var(--tone-warning)]' : 'text-base-content/60'}`}
           />
-          <div className="whitespace-pre-wrap text-base-content/80">{note.text}</div>
+          <div className="min-w-0 whitespace-pre-wrap break-words text-base-content/80">
+            {note.text}
+          </div>
         </div>
       )}
       <div className="flex flex-col gap-2">

@@ -2,7 +2,7 @@
  * useFileActions - Hook for file operations (open, download, download ZIP).
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { normalizeFileUrl } from '../../utils/fileUrl';
 import { createLogger } from '../../utils/logger';
 import { isNativeHost } from '../../mobile/openIsFile';
@@ -15,6 +15,7 @@ import { downloadZipFiles } from './downloadZipFiles';
 import type { DownloadTick } from './readBlobWithProgress';
 import { fetchIsFile } from './fetchIsFile';
 import { opensInTab, saveIsFile } from './saveBlob';
+import { useRowDownloads } from './useRowDownloads';
 import type { FileRowHint } from '../../utils/contentDisposition';
 
 const log = createLogger('useFileActions');
@@ -43,48 +44,8 @@ interface UseFileActionsResult {
 export function useFileActions(): UseFileActionsResult {
   const [isZipping, setIsZipping] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
-  const [activeDownloads, setActiveDownloads] = useState<Record<string, DownloadTick>>({});
-  // A ref, not `activeDownloads`: a second click landing before React commits
-  // the first `setActiveDownloads` would read an empty map and fire a duplicate
-  // request. Same reasoning as useDocumentDownload's `inFlight`.
-  const inFlight = useRef<Set<string>>(new Set());
+  const { activeDownloads, claimRow, tickRow, clearRowProgress, releaseRow } = useRowDownloads();
   const { t } = useTranslation();
-
-  /** Ends the row's INDICATOR only. The lock is `releaseRow`'s. */
-  const clearRowProgress = useCallback((link: string) => {
-    setActiveDownloads((d) => {
-      if (!(link in d)) return d;
-      const next = { ...d };
-      delete next[link];
-      return next;
-    });
-  }, []);
-
-  /** Ends the indicator AND releases the lock — only once delivery has settled. */
-  const releaseRow = useCallback(
-    (link: string) => {
-      inFlight.current.delete(link);
-      clearRowProgress(link);
-    },
-    [clearRowProgress]
-  );
-
-  /**
-   * Claims the row for one download and starts its indicator; false when a
-   * download of it is already running.
-   */
-  const claimRow = useCallback((link: string): boolean => {
-    if (inFlight.current.has(link)) return false;
-    inFlight.current.add(link);
-    setActiveDownloads((d) => ({ ...d, [link]: { loaded: 0, total: null } }));
-    return true;
-  }, []);
-
-  const tickRow = useCallback(
-    (link: string) => (tick: DownloadTick) =>
-      setActiveDownloads((d) => (link in d ? { ...d, [link]: tick } : d)),
-    []
-  );
 
   const openFile = useCallback(
     async (link: string, row?: FileRowHint) => {
