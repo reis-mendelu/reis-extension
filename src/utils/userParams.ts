@@ -27,6 +27,9 @@ export interface UserParams {
    * Absent for a single-study student — IS shows them no study select.
    */
   studies?: StudyOption[];
+  /** Which study select the studies were last resolved for, and when. */
+  studiesResolvedFor?: string;
+  studiesResolvedAt?: number;
 }
 
 // In-memory cache — avoids redundant IDB reads across 20+ call sites per session.
@@ -53,6 +56,22 @@ let _lastIdentityAttempt = 0;
  * the wipe; otherwise the next boot does.
  */
 let _wrongStudentOnDisk = false;
+
+/**
+ * The study pages failed this session, so the study in use is unconfirmed.
+ * Served like an unconfirmed identity — re-asked after the recheck gap —
+ * rather than pinned for the session: the correcting start is exactly the
+ * one where a page failing would otherwise keep the interrupted study.
+ */
+let _studiesPending = false;
+
+/**
+ * How long a resolved study select is trusted. Every IS page load is a new
+ * content script and a new app, and resolving costs a request per study;
+ * a study is interrupted or ended rarely, and a changed select (a study
+ * added or dropped) is resolved at once.
+ */
+const STUDIES_RECHECK_MS = 24 * 60 * 60 * 1000;
 
 /**
  * How long an UNCONFIRMED record is served before the check is tried again.
@@ -105,7 +124,11 @@ export async function getUserParams(): Promise<UserParams | null> {
   // The cached record is served straight back once the identity behind it has
   // been confirmed. Until then it is only the best guess available, so a later
   // call is allowed to try the check again — see IDENTITY_RECHECK_GAP_MS.
-  if (_cached && (_identityChecked || Date.now() - _lastIdentityAttempt < IDENTITY_RECHECK_GAP_MS))
+  if (
+    _cached &&
+    ((_identityChecked && !_studiesPending) ||
+      Date.now() - _lastIdentityAttempt < IDENTITY_RECHECK_GAP_MS)
+  )
     return _cached;
 
   _inflight = (async () => {
@@ -125,7 +148,7 @@ export async function getUserParams(): Promise<UserParams | null> {
       stored = (await IndexedDBService.get('meta', STORAGE_KEYS.USER_PARAMS)) as
         Partial<UserParams> | undefined;
       // Already confirmed against the live session in this context.
-      if (complete(stored) && _identityChecked) {
+      if (complete(stored) && _identityChecked && !_studiesPending) {
         _cached = stored as UserParams;
         return _cached;
       }
@@ -176,18 +199,30 @@ export async function getUserParams(): Promise<UserParams | null> {
       // from before this check) corrects itself on the next start. A
       // single-study page has no select, and that path is unchanged.
       const { options = [], ...baseFields } = base;
+      const optionsKey = options.map((o) => o.studium).join(',');
+      const resolvedRecently =
+        !switched &&
+        stored?.studiesResolvedFor === optionsKey &&
+        Date.now() - (stored.studiesResolvedAt ?? 0) < STUDIES_RECHECK_MS;
       let multi: ResolvedStudies | null = null;
-      if (options.length > 1) {
+      if (options.length > 1 && !resolvedRecently) {
         try {
           multi = await resolveStudies(options, switched ? undefined : stored?.studium);
+          _studiesPending = false;
         } catch (e) {
-          // With a usable record, keep it: the catch below serves it. With
-          // none — a first install, a new student — IS's own default study
-          // beats nothing, which is what reIS used before it read studies.
-          if (!switched && complete(stored)) throw e;
+          // With a record of this student's, keep its study: the catch
+          // below serves it, and the recheck gap asks again. With none — a
+          // first install, a new student — IS's own default study beats
+          // nothing, which is what reIS used before it read studies.
+          if (!switched && stored?.studium) {
+            _studiesPending = true;
+            throw e;
+          }
           logError('getUserParams.resolveStudies', e);
         }
       }
+      const resolved = <T extends UserParams>(p: T): T =>
+        multi ? { ...p, studiesResolvedFor: optionsKey, studiesResolvedAt: Date.now() } : p;
       // A record with studies whose page no longer has a select (a study
       // ended): rebuilt once from IS's one study, and the switcher goes.
       const staleStudies = options.length <= 1 && !!stored?.studies;
@@ -196,7 +231,9 @@ export async function getUserParams(): Promise<UserParams | null> {
         // Same student. Serve the record as it stands rather than rebuilding
         // it — the rebuild below is two more IS pages, on every boot. With
         // more than one study it is only re-pointed, from what IS just said.
-        let same = multi ? withStudy(stored as UserParams, multi) : (stored as UserParams);
+        let same = multi
+          ? resolved(withStudy(stored as UserParams, multi))
+          : (stored as UserParams);
         if (JSON.stringify(same) !== JSON.stringify(stored)) {
           // The study pages took a while: another context (another IS tab)
           // may have switched study meanwhile. Its choice wins over a write
@@ -218,7 +255,7 @@ export async function getUserParams(): Promise<UserParams | null> {
         email: net.username ? `${net.username}@mendelu.cz` : '',
         isErasmus: base.isErasmus,
       };
-      let params = multi ? withStudy(built, multi) : built;
+      let params = multi ? resolved(withStudy(built, multi)) : built;
       // Same guard as the branch above, for records that are not complete
       // (no parsed name): a switch another context made while this rebuild
       // read IS wins over a record built from before it.
@@ -317,6 +354,7 @@ export function clearUserParamsCache() {
   _identityChecked = false;
   _lastIdentityAttempt = 0;
   _wrongStudentOnDisk = false;
+  _studiesPending = false;
 }
 
 /**
@@ -341,9 +379,13 @@ let _selecting: Promise<unknown> = Promise.resolve();
 
 async function selectStudyNow(studium: string): Promise<{ params: UserParams; changed: boolean }> {
   if (_inflight) await _inflight.catch(() => null);
+  // The shared record first: another IS tab may have switched it since this
+  // context cached its own, and a switch "back" to what this one caches
+  // would otherwise be a no-op that leaves the record on the other study.
+  const shared = (await IndexedDBService.get('meta', STORAGE_KEYS.USER_PARAMS)) as
+    UserParams | undefined;
   let current =
-    _cached ??
-    ((await IndexedDBService.get('meta', STORAGE_KEYS.USER_PARAMS)) as UserParams | undefined);
+    shared && (!_cached || shared.studentId === _cached.studentId) ? shared : (_cached ?? shared);
   let target = current?.studies?.find((s) => s.studium === studium);
   if (current && !target) {
     // This context's list may be missing or stale: its study pages failed

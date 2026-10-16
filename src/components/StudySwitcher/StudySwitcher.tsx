@@ -24,6 +24,7 @@ export function StudySwitcher({ compact = false }: { compact?: boolean }) {
   const studies = useAppStore((s) => s.studies);
   const studiumId = useAppStore((s) => s.studiumId);
   const switching = useAppStore((s) => s.studySwitching);
+  const loadingFor = useAppStore((s) => s.studyPendingFor);
   const switchStudy = useAppStore((s) => s.switchStudy);
   const [pending, setPending] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -62,8 +63,14 @@ export function StudySwitcher({ compact = false }: { compact?: boolean }) {
         className="flex flex-col overflow-hidden rounded-lg border border-base-300"
       >
         {studies.map((s) => {
-          const [name, detail] = splitLabel(s.label);
+          const [name, rawDetail] = splitLabel(s.label);
+          // IS writes the detail in Czech whatever the UI language is.
+          const sy = /^sem\s+(\d+),\s+roč\s+(\d+)$/.exec(rawDetail);
+          const detail = sy
+            ? t('studySwitcher.detail', { semester: sy[1]!, year: sy[2]! }) // safe: both groups required
+            : rawDetail;
           const selected = s.studium === studiumId;
+          const busy = pending === s.studium || (selected && loadingFor === s.studium);
           return (
             <button
               key={s.studium}
@@ -81,10 +88,12 @@ export function StudySwitcher({ compact = false }: { compact?: boolean }) {
                   <span className="text-base-content/70 leading-tight tabular-nums">{detail}</span>
                 )}
               </span>
-              {pending === s.studium ? (
+              {busy ? (
                 <span role="status" className="flex items-center">
                   <span className="loading loading-spinner loading-xs text-primary" />
-                  <span className="sr-only">{t('studySwitcher.switching')}</span>
+                  <span className="sr-only">
+                    {t(pending === s.studium ? 'studySwitcher.switching' : 'studySwitcher.loading')}
+                  </span>
                 </span>
               ) : (
                 selected && <Check size={16} className="text-primary" aria-hidden="true" />

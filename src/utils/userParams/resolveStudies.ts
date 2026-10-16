@@ -28,29 +28,47 @@ export interface ResolvedStudies {
  * replaced by the first active study when it is not, which is how a record
  * left on an interrupted study corrects itself on the next start.
  *
- * Rejects when any page cannot be read: the caller then keeps the record it
- * has, the way every other refetch in `getUserParams` does.
+ * A page that cannot be read counts as a study of unknown status — one IS
+ * refusing an old study's page must not stop the correction for good. It
+ * rejects only when nothing can be decided: the kept study's own page, or
+ * every page, failed. The caller then keeps the record it has.
+ *
+ * The kept study's page is read LAST. Whether opening `studium.pl?studium=X`
+ * makes X the study IS's session shows is unverified; if it does, the
+ * session then ends on the study reIS is going to use.
  */
 export async function resolveStudies(
   options: { studium: string; label: string }[],
   keep?: string
 ): Promise<ResolvedStudies> {
-  const read = await Promise.all(
-    options.map(async (o) => {
-      const res = await fetchWithAuth(
-        `${BASE_URL}/auth/student/studium.pl?studium=${o.studium};lang=cz`
-      );
-      const html = await res.text();
-      const own = parseStudyOptions(html).find((x) => x.studium === o.studium);
-      const study: StudyOption = {
-        studium: o.studium,
-        obdobi: parseStudyObdobi(html, o.studium) ?? '',
-        label: own?.label ?? o.label,
-        isErasmus: detectErasmus(html),
-      };
-      return { study, active: isActiveStudyStatus(parseStudyStatus(html)) && !!study.obdobi };
+  const readOne = async (o: { studium: string; label: string }) => {
+    const res = await fetchWithAuth(
+      `${BASE_URL}/auth/student/studium.pl?studium=${o.studium};lang=cz`
+    );
+    const html = await res.text();
+    const own = parseStudyOptions(html).find((x) => x.studium === o.studium);
+    const study: StudyOption = {
+      studium: o.studium,
+      obdobi: parseStudyObdobi(html, o.studium) ?? '',
+      label: own?.label ?? o.label,
+      isErasmus: detectErasmus(html),
+    };
+    return { study, active: isActiveStudyStatus(parseStudyStatus(html)) && !!study.obdobi };
+  };
+  type Read = Awaited<ReturnType<typeof readOne>>;
+  const kept = options.find((o) => o.studium === keep);
+  const rest = options.filter((o) => o !== kept);
+  const settled = await Promise.allSettled(rest.map(readOne));
+  const byId = new Map<string, Read | null>(
+    rest.map((o, i) => {
+      const r = settled[i]!; // safe: allSettled answers once per input, in order
+      return [o.studium, r.status === 'fulfilled' ? r.value : null];
     })
   );
+  // Rejects if it fails: whether to keep the study in use cannot be decided.
+  if (kept) byId.set(kept.studium, await readOne(kept));
+  const read = options.map((o) => byId.get(o.studium)).filter((r): r is Read => !!r);
+  if (read.length === 0) throw new Error('resolveStudies: no study page could be read');
 
   const active = read.filter((r) => r.active).map((r) => r.study);
   if (active.length > 0) {

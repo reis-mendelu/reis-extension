@@ -121,7 +121,7 @@ const PERIOD = /^(?:ZS|LS)\s+\d{4}\/\d{4}/;
  */
 export function withStudy<
   P extends { studium: string; obdobi: string; isErasmus: boolean; periodLabel?: string },
->(p: P, s: { active: StudyOption[]; chosen: StudyOption }): P & { studies: StudyOption[] } {
+>(p: P, s: { active: StudyOption[]; chosen: StudyOption }): P & { studies?: StudyOption[] } {
   const fields = parseStudyLabel(s.chosen.label);
   return {
     ...p,
@@ -140,6 +140,9 @@ export function withStudy<
       p.periodLabel && PERIOD.test(p.periodLabel) && p.obdobi === s.chosen.obdobi
         ? p.periodLabel
         : undefined,
-    studies: s.active,
+    // Only for a choice to make: a student whose select also lists a
+    // finished or interrupted study has one active study, and is a
+    // single-study student everywhere else (no switcher, per-period caches).
+    studies: s.active.length > 1 ? s.active : undefined,
   };
 }

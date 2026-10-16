@@ -7,6 +7,12 @@ export interface StudySwitchSlice {
   /** A switch is in flight: the switcher shows it and takes no second tap. */
   studySwitching: boolean;
   /**
+   * Switched to this study; its first data has not arrived yet. What the
+   * screens show until then is the previous study's, so the switcher says
+   * it is still loading. Cleared by the first push for it (useAppLogic).
+   */
+  studyPendingFor: string | null;
+  /**
    * Point reIS at another of the student's active studies (`studies` on the
    * context slice). Resolves true once both contexts name it; the crawl of
    * the new study runs after that and lands like any sync.
@@ -23,6 +29,9 @@ export interface StudySwitchSlice {
   reconcileStudy: () => Promise<void>;
 }
 
+/** How long the switcher waits for the new study's first data. */
+const PENDING_LIMIT_MS = 90_000;
+
 /** Tells this browser's other reIS tabs that the study changed. */
 export const STUDY_CHANNEL = 'reis_study_sync';
 /** This tab's id on that channel, so it ignores its own announcement. */
@@ -30,6 +39,7 @@ export const STUDY_CHANNEL_SENDER = Math.random().toString(36).slice(2);
 
 export const createStudySwitchSlice: AppSlice<StudySwitchSlice> = (set, get) => ({
   studySwitching: false,
+  studyPendingFor: null,
   switchStudy: async (studium) => {
     // Impersonation shows another student's data over this one's record;
     // switching would re-point the admin's own study underneath it.
@@ -54,6 +64,11 @@ export const createStudySwitchSlice: AppSlice<StudySwitchSlice> = (set, get) => 
         throw e;
       }
       await selectStudy(studium);
+      set({ studyPendingFor: studium });
+      // A crawl that never answers must not leave it loading for good.
+      setTimeout(() => {
+        if (get().studyPendingFor === studium) set({ studyPendingFor: null });
+      }, PENDING_LIMIT_MS);
       await get().loadContext();
       // The study-keyed lists, re-read for the new study. Exams are not
       // keyed: the first push of the new study replaces them (useAppLogic).

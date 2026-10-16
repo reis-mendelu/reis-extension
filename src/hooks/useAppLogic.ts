@@ -151,6 +151,14 @@ export function useAppLogic() {
     // loops its updates back via window.postMessage (see sendToIframe).
     const isCapacitor = getPlatform().kind === 'capacitor';
     if (!isInIframe() && !realDataMode && !isCapacitor) return;
+    // The study this app's data is for, as it mounts: the start that corrects
+    // a stored interrupted study is a change too, and must clear like one.
+    appliedStudium = undefined;
+    void IndexedDBService.get('meta', 'reis_user_params')
+      .then((p) => {
+        appliedStudium ??= (p as { studium?: string } | undefined)?.studium;
+      })
+      .catch(() => {});
     const handle = async (e: MessageEvent) => {
       if (e.source !== window.parent) return;
       // Origin check, not just source. This handler writes REIS_SYNC_UPDATE
@@ -195,8 +203,13 @@ export function useAppLogic() {
       // does not carry is the previous study's — see forgetPreviousStudy.
       // (Pushes for the study they left were dropped just above.)
       if (raw.studium && raw.studium === own) {
-        if (appliedStudium && appliedStudium !== own) await forgetPreviousStudy(r);
+        // Claimed before the await, so two pushes landing together do not
+        // both clear what the first one just brought.
+        const previous = appliedStudium;
         appliedStudium = own;
+        if (previous && previous !== own) await forgetPreviousStudy(r);
+        if (useAppStore.getState().studyPendingFor === own)
+          useAppStore.setState({ studyPendingFor: null });
       }
 
       // Instantly update store for reactivity, then persist to IDB in background

@@ -37,7 +37,9 @@
   "studySwitcher": {
     "label": "Studium",
     "failed": "Studium se nepodařilo přepnout. Zkus to znovu.",
-    "switching": "Přepínám studium…"
+    "switching": "Přepínám studium…",
+    "loading": "Načítám data studia…",
+    "detail": "{semester}. semestr, {year}. ročník"
   },
   "settings": {
     "title": "Nastavení",

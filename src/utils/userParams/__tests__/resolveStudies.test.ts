@@ -109,6 +109,35 @@ describe('resolveStudies', () => {
         ? Promise.reject(new Error('offline'))
         : Promise.resolve({ text: () => '' })
     );
-    await expect(resolveStudies(options(CONCURRENT))).rejects.toThrow('offline');
+    await expect(resolveStudies(options(CONCURRENT))).rejects.toThrow();
+  });
+
+  // IS refusing an old study's page must not block the correction for good.
+  it('decides from the pages it could read when another one fails', async () => {
+    serve(INTERRUPTED, { '900001': 'řádně zapsán', '900002': 'studium ukončeno' });
+    const inner = fetchWithAuth.getMockImplementation()!;
+    fetchWithAuth.mockImplementation((url: string) =>
+      url?.includes('studium=900002') ? Promise.reject(new Error('HTTP 500')) : inner(url)
+    );
+    const r = await resolveStudies(options(INTERRUPTED), '900003');
+    expect(r.chosen.studium).toBe('900001');
+  });
+
+  it("rejects when the kept study's own page fails: keeping it cannot be decided", async () => {
+    serve(CONCURRENT, { '900011': 'řádně zapsán', '900012': 'řádně zapsán' });
+    const inner = fetchWithAuth.getMockImplementation()!;
+    fetchWithAuth.mockImplementation((url: string) =>
+      url?.includes('studium=900012') ? Promise.reject(new Error('HTTP 500')) : inner(url)
+    );
+    await expect(resolveStudies(options(CONCURRENT), '900012')).rejects.toThrow('HTTP 500');
+  });
+
+  it("reads the kept study's page last", async () => {
+    serve(CONCURRENT, { '900011': 'řádně zapsán', '900012': 'řádně zapsán' });
+    await resolveStudies(options(CONCURRENT), '900011');
+    const urls = fetchWithAuth.mock.calls
+      .map((c) => c[0] as string)
+      .filter((u) => u?.includes('studium='));
+    expect(urls.at(-1)).toContain('studium=900011');
   });
 });

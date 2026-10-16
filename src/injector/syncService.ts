@@ -80,8 +80,6 @@ export async function syncAllData() {
     // Inside the try on purpose: this used to sit above it, so a throw here
     // left isSyncing stuck true and no sync ever ran again.
     sendToIframe(Messages.syncUpdate({ isSyncing: true, lastSync: cachedData.lastSync }));
-    // Every push below carries the study it was crawled for — see
-    // SyncedData.studium. Read once: the student can switch mid-crawl.
 
     /**
      * Hands one Phase 2 result to the UI the moment it lands.
@@ -106,6 +104,9 @@ export async function syncAllData() {
     const userParams = await getUserParams();
     const studium = userParams?.studium;
     crawlStudium = studium;
+    // Every push from here on — pushEarly's too, which runs only after this
+    // line — carries the study it was crawled for (SyncedData.studium). Read
+    // once: the student can switch mid-crawl.
     const studyChanged = forgetOtherStudy(studium);
 
     // Which core fetches actually ran, as opposed to being TTL-skipped — both

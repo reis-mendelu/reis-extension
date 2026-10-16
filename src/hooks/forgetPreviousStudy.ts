@@ -20,6 +20,7 @@ export async function forgetPreviousStudy(push: {
   studyPlan?: unknown;
   studyStats?: unknown;
   studyComparison?: unknown;
+  pastAttendance?: unknown;
 }): Promise<void> {
   useAppStore.getState().setExams((push.exams as ExamSubject[] | undefined) ?? [], {
     replace: true,
@@ -40,6 +41,10 @@ export async function forgetPreviousStudy(push: {
   if (!push.studyComparison) {
     useAppStore.setState({ studyComparison: null });
     gone.push(IndexedDBService.delete('meta', 'study_comparison'));
+  }
+  if (!push.pastAttendance) {
+    useAppStore.getState().setPastAttendance({});
+    gone.push(IndexedDBService.delete('meta', 'past_attendance_merged'));
   }
   await Promise.all(gone.map((p) => p.catch(() => {})));
 }

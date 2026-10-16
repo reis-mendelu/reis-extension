@@ -118,20 +118,60 @@ describe('getUserParams with more than one study', () => {
       studyProgram: 'B-AII',
       studyForm: 'prez',
       studentId: '100001',
-      studies: [AII],
+      studiesResolvedFor: '900011,900012',
     });
+    // One active study: nothing to choose, so no list and no switcher.
+    expect(params?.studies).toBeUndefined();
     expect(idbSet).toHaveBeenCalledWith('meta', expect.anything(), params);
     expect(idbClearAll).not.toHaveBeenCalled();
     expect(announced).not.toHaveBeenCalled();
   });
 
-  it('serves the stored record when it already names the chosen study', async () => {
-    idbGet.mockResolvedValue(stored(EM, [AII, EM]));
+  // Every IS page load is a new context; resolving costs a request per
+  // study, so a select resolved today is trusted until tomorrow.
+  it('does not re-resolve the same study select within a day', async () => {
+    idbGet.mockResolvedValue({
+      ...stored(EM, [AII, EM]),
+      studiesResolvedFor: '900011,900012',
+      studiesResolvedAt: Date.now() - 60_000,
+    });
     fetchUserBaseIds.mockResolvedValue(base('900011'));
-    resolveStudies.mockResolvedValue({ active: [AII, EM], chosen: EM });
     const params = await getUserParams();
     expect(params?.studium).toBe('900012');
+    expect(resolveStudies).not.toHaveBeenCalled();
     expect(idbSet).not.toHaveBeenCalled();
+  });
+
+  it('re-resolves at once when the select itself changed', async () => {
+    idbGet.mockResolvedValue({
+      ...stored(EM, [AII, EM]),
+      studiesResolvedFor: '900011,900012,900013',
+      studiesResolvedAt: Date.now() - 60_000,
+    });
+    fetchUserBaseIds.mockResolvedValue(base('900011'));
+    resolveStudies.mockResolvedValue({ active: [AII, EM], chosen: EM });
+    await getUserParams();
+    expect(resolveStudies).toHaveBeenCalled();
+  });
+
+  /**
+   * The correcting start, with a study page failing: the record is served,
+   * but not pinned for the session — the next read after the recheck gap
+   * asks IS again, instead of keeping the interrupted study until reload.
+   */
+  it('asks again after a failed resolution instead of pinning the session', async () => {
+    vi.useFakeTimers();
+    const INTERRUPTED: StudyOption = { ...EM, studium: '900003', obdobi: '815' };
+    idbGet.mockResolvedValue(stored(INTERRUPTED));
+    fetchUserBaseIds.mockResolvedValue(base('900003', '815'));
+    resolveStudies.mockRejectedValueOnce(new Error('timeout'));
+    expect((await getUserParams())?.studium).toBe('900003');
+
+    resolveStudies.mockResolvedValue({ active: [AII], chosen: AII });
+    expect((await getUserParams())?.studium, 'within the gap: served').toBe('900003');
+    vi.advanceTimersByTime(61_000);
+    expect((await getUserParams())?.studium).toBe('900011');
+    vi.useRealTimers();
   });
 
   /**
@@ -191,11 +231,14 @@ describe('selectStudy', () => {
     clearUserParamsCache();
     announced.mockReset();
     for (const m of [idbGet, idbSet, idbClearAll, fetchUserBaseIds, resolveStudies]) m.mockReset();
-    idbGet.mockResolvedValue(stored(AII, [AII, EM]));
+    // A real store here: selectStudy reads the shared record back.
+    const db = new Map<string, unknown>([['reis_user_params', stored(AII, [AII, EM])]]);
+    idbGet.mockImplementation(async (_s: string, k: string) => db.get(k));
+    idbSet.mockImplementation(async (_s: string, k: string, v: unknown) => void db.set(k, v));
     fetchUserBaseIds.mockResolvedValue(base('900011'));
     resolveStudies.mockResolvedValue({ active: [AII, EM], chosen: AII });
     await getUserParams();
-    idbSet.mockReset();
+    idbSet.mockClear();
   });
 
   it("switches to the other study's ids and fields, and nothing else", async () => {
@@ -232,6 +275,16 @@ describe('selectStudy', () => {
     expect((await getUserParams())?.studium).toBe('900011');
   });
 
+  // Tab 1 switched the shared record to EM; this context still caches AII.
+  // Switching "back" to AII here must write it, not no-op on the cache.
+  it("switches the shared record even when this context's cache already names the study", async () => {
+    const db = new Map<string, unknown>([['reis_user_params', stored(EM, [AII, EM])]]);
+    idbGet.mockImplementation(async (_s: string, k: string) => db.get(k));
+    idbSet.mockImplementation(async (_s: string, k: string, v: unknown) => void db.set(k, v));
+    await expect(selectStudy('900011')).resolves.toMatchObject({ changed: true });
+    expect((db.get('reis_user_params') as { studium: string }).studium).toBe('900011');
+  });
+
   // Another IS tab switched; this tab's crawl must follow, not keep the old one.
   it("adopts a switch made in another tab's context", async () => {
     idbGet.mockResolvedValue({ ...stored(EM, [AII, EM]) });
@@ -264,7 +317,11 @@ describe('selectStudy', () => {
   // The id arrives over postMessage from the other context.
   it('refuses a study that is not one of the active ones', async () => {
     await expect(selectStudy('900003')).rejects.toThrow();
-    expect(idbSet).not.toHaveBeenCalled();
+    expect(idbSet).not.toHaveBeenCalledWith(
+      'meta',
+      expect.anything(),
+      expect.objectContaining({ studium: '900003' })
+    );
     expect((await getUserParams())?.studium).toBe('900011');
   });
 });

@@ -134,6 +134,26 @@ describe('a sync push for the study the student switched away from', () => {
     expect(store.setExams).not.toHaveBeenCalledWith([], { replace: true });
   });
 
+  // Done-when 4: an install left on an interrupted study is corrected at
+  // start. The app mounted on the old record, so that is a switch too.
+  it('treats the correcting start like a switch', async () => {
+    cleanup();
+    own.studium = 'old';
+    renderHook(() => useAppLogic());
+    for (let i = 0; i < 4; i++) await new Promise((r) => setTimeout(r, 0));
+    own.studium = 'st';
+    await push({ studium: 'st', schedule: [{ id: 'l1' }] });
+    expect(store.setExams).toHaveBeenCalledWith([], { replace: true });
+    expect(setState).toHaveBeenCalledWith({ subjects: null });
+  });
+
+  it("ends the switcher's loading state on the new study's first push", async () => {
+    (store as Record<string, unknown>).studyPendingFor = 'st';
+    await push({ studium: 'st', schedule: [{ id: 'l1' }] });
+    expect(setState).toHaveBeenCalledWith({ studyPendingFor: null });
+    delete (store as Record<string, unknown>).studyPendingFor;
+  });
+
   it('takes a push for the study in use as before', async () => {
     await push({ studium: 'st', exams: [{ code: 'NEW' }], cvicneTests: [{ id: 't2' }] });
     expect(store.setExams).toHaveBeenCalledWith([{ code: 'NEW' }]);

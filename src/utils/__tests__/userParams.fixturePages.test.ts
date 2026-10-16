@@ -85,7 +85,8 @@ describe('getUserParams over the reported pages', () => {
       studyProgram: 'B-EM',
       studentId: '100001',
     });
-    expect(params?.studies?.map((s) => s.studium)).toEqual(['900001']);
+    // One active study: nothing to switch to.
+    expect(params?.studies).toBeUndefined();
     expect(idb.get('reis_user_params')).toEqual(params);
     expect(IndexedDBService.clearAll).not.toHaveBeenCalled();
     expect(announced).not.toHaveBeenCalled();

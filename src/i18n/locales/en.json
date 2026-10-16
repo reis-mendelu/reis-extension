@@ -37,7 +37,9 @@
   "studySwitcher": {
     "label": "Study",
     "failed": "Couldn't switch the study. Try again.",
-    "switching": "Switching study…"
+    "switching": "Switching study…",
+    "loading": "Loading this study's data…",
+    "detail": "Term {semester}, year {year}"
   },
   "settings": {
     "title": "Settings",

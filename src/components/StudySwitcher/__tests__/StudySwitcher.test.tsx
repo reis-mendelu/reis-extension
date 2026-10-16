@@ -27,6 +27,7 @@ describe('StudySwitcher', () => {
       studies: [AII, EM],
       studiumId: '900011',
       studySwitching: false,
+      studyPendingFor: null,
       switchStudy,
     } as never);
   });
@@ -42,8 +43,8 @@ describe('StudySwitcher', () => {
     render(<StudySwitcher />);
     const radios = screen.getAllByRole('button');
     expect(radios.map((r) => r.textContent)).toEqual([
-      'PEF B-AII prezsem 1, roč 1',
-      'PEF B-EM kombsem 1, roč 1',
+      'PEF B-AII prez1. semestr, 1. ročník',
+      'PEF B-EM komb1. semestr, 1. ročník',
     ]);
     expect(radios[0]).toHaveAttribute('aria-pressed', 'true');
     expect(radios[1]).toHaveAttribute('aria-pressed', 'false');
@@ -57,6 +58,20 @@ describe('StudySwitcher', () => {
     fireEvent.click(screen.getByRole('button', { name: /B-EM/ }));
     await waitFor(() => expect(switchStudy).toHaveBeenCalledWith('900012'));
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  // Switched; the new study's first data has not arrived, and the screens
+  // still show the previous study's.
+  it('shows the study as loading until its first data arrives', () => {
+    useAppStore.setState({ studyPendingFor: '900011' } as never);
+    render(<StudySwitcher />);
+    expect(screen.getByRole('status')).toHaveTextContent('Načítám data studia');
+  });
+
+  it('writes the term and year in the UI language', () => {
+    useAppStore.setState({ language: 'en' } as never);
+    render(<StudySwitcher />);
+    expect(screen.getAllByRole('button')[0]).toHaveTextContent('Term 1, year 1');
   });
 
   it('says so when the switch failed', async () => {
