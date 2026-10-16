@@ -1,5 +1,11 @@
 # Verifying `20260925120000_suggestion_attachments.sql`
 
+> **Historical, kept as a record (2026-10-16).** These steps already ran. The
+> migration file it names now lives in `supabase/migrations_archive/` and is
+> part of `supabase/migrations/20261016000000_baseline.sql`: never apply it
+> again. For applying a new migration today, see the "Database migrations"
+> section of `CLAUDE.md`.
+
 The migration history cannot be replayed (see `verify-supabase-sql-locally` in
 the team notes), so this migration was checked on a throwaway container of the
 **same image prod runs** — `supabase/postgres:17.6.1.063`, which ships pg_cron
@@ -12,9 +18,9 @@ docker run -d --name reis-attach-check -e POSTGRES_PASSWORD=pw -p 55441:5432 sup
 P='docker exec -i -e PGPASSWORD=pw reis-attach-check psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -q'
 # get_my_role() stub reading a session setting
 echo "create or replace function public.get_my_role() returns text language sql stable as \$\$ select current_setting('test.role', true) \$\$;" | $P
-$P < supabase/migrations/20260803120000_suggestions.sql
-$P < supabase/migrations/20260903130000_submit_suggestion_rpc.sql
-$P < supabase/migrations/20260925120000_suggestion_attachments.sql   # twice: idempotent
+$P < supabase/migrations_archive/20260803120000_suggestions.sql
+$P < supabase/migrations_archive/20260903130000_submit_suggestion_rpc.sql
+$P < supabase/migrations_archive/20260925120000_suggestion_attachments.sql   # twice: idempotent
 ```
 
 (Under zsh, put `$P` in a script — zsh does not word-split it.)
@@ -127,7 +133,7 @@ select has_function_privilege('anon', 'public.drop_attachments_when_done()', 'EX
 Migrations do not apply themselves. Run by hand, with `-f`:
 
 ```bash
-npx supabase db query --linked -f supabase/migrations/20260925120000_suggestion_attachments.sql
+npx supabase db query --linked -f supabase/migrations_archive/20260925120000_suggestion_attachments.sql
 ```
 
 It only adds objects, so it is safe before the client ships. Then smoke-test
