@@ -40,20 +40,21 @@ describe('StudySwitcher', () => {
 
   it('lists both active studies and marks the one in use', () => {
     render(<StudySwitcher />);
-    const radios = screen.getAllByRole('radio');
+    const radios = screen.getAllByRole('button');
     expect(radios.map((r) => r.textContent)).toEqual([
       'PEF B-AII prezsem 1, roč 1',
       'PEF B-EM kombsem 1, roč 1',
     ]);
-    expect(radios[0]).toHaveAttribute('aria-checked', 'true');
-    expect(radios[1]).toHaveAttribute('aria-checked', 'false');
+    expect(radios[0]).toHaveAttribute('aria-pressed', 'true');
+    expect(radios[1]).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('group', { name: 'Studium' })).toBeInTheDocument();
   });
 
   it('switches when the other study is picked, and not for the current one', async () => {
     render(<StudySwitcher />);
-    fireEvent.click(screen.getByRole('radio', { name: /B-AII/ }));
+    fireEvent.click(screen.getByRole('button', { name: /B-AII/ }));
     expect(switchStudy).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('radio', { name: /B-EM/ }));
+    fireEvent.click(screen.getByRole('button', { name: /B-EM/ }));
     await waitFor(() => expect(switchStudy).toHaveBeenCalledWith('900012'));
     expect(screen.queryByRole('alert')).toBeNull();
   });
@@ -61,12 +62,12 @@ describe('StudySwitcher', () => {
   it('says so when the switch failed', async () => {
     switchStudy.mockResolvedValue(false);
     render(<StudySwitcher />);
-    fireEvent.click(screen.getByRole('radio', { name: /B-EM/ }));
+    fireEvent.click(screen.getByRole('button', { name: /B-EM/ }));
     expect(await screen.findByRole('alert')).toHaveTextContent('nepodařilo');
   });
 
   // The phone/iPad tree. The desktop tree's ProfilePopup renders the same
-  // component (compact) — see desktopHasStudySwitcher in the guards.
+  // component (compact) — see ProfilePopup.test.tsx.
   it('is on the phone Profile tab under the name', () => {
     useAppStore.setState({ fullName: 'Jana Nováková', studentId: '100001' } as never);
     render(<ProfileIdentity />);

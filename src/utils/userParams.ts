@@ -3,7 +3,7 @@ import { STORAGE_KEYS } from '../services/storage/keys';
 import { fetchUserBaseIds, fetchUserStudyDetails, fetchUserNetId } from './userParams/fetchers';
 import { logError } from './reportError';
 import { announceIdentityChange } from './userParams/identityEvents';
-import { resolveStudies } from './userParams/resolveStudies';
+import { resolveStudies, type ResolvedStudies } from './userParams/resolveStudies';
 import { withStudy, type StudyOption } from './userParams/studies';
 
 export interface UserParams {
@@ -176,12 +176,23 @@ export async function getUserParams(): Promise<UserParams | null> {
       // from before this check) corrects itself on the next start. A
       // single-study page has no select, and that path is unchanged.
       const { options = [], ...baseFields } = base;
-      const multi =
-        options.length > 1
-          ? await resolveStudies(options, switched ? undefined : stored?.studium)
-          : null;
+      let multi: ResolvedStudies | null = null;
+      if (options.length > 1) {
+        try {
+          multi = await resolveStudies(options, switched ? undefined : stored?.studium);
+        } catch (e) {
+          // With a usable record, keep it: the catch below serves it. With
+          // none — a first install, a new student — IS's own default study
+          // beats nothing, which is what reIS used before it read studies.
+          if (!switched && complete(stored)) throw e;
+          logError('getUserParams.resolveStudies', e);
+        }
+      }
+      // A record with studies whose page no longer has a select (a study
+      // ended): rebuilt once from IS's one study, and the switcher goes.
+      const staleStudies = options.length <= 1 && !!stored?.studies;
 
-      if (!switched && complete(stored)) {
+      if (!switched && complete(stored) && !staleStudies) {
         // Same student. Serve the record as it stands rather than rebuilding
         // it — the rebuild below is two more IS pages, on every boot. With
         // more than one study it is only re-pointed, from what IS just said.
@@ -292,18 +303,41 @@ export function clearUserParamsCache() {
  * one switch at no cost. `studium` arrives over postMessage, so anything
  * that is not one of the stored active studies is refused.
  */
-export async function selectStudy(studium: string): Promise<UserParams> {
+export async function selectStudy(
+  studium: string
+): Promise<{ params: UserParams; changed: boolean }> {
   if (_inflight) await _inflight.catch(() => null);
   const current =
     _cached ??
     ((await IndexedDBService.get('meta', STORAGE_KEYS.USER_PARAMS)) as UserParams | undefined);
   const target = current?.studies?.find((s) => s.studium === studium);
   if (!current?.studies || !target) throw new Error('selectStudy: not an active study');
-  if (current.studium === studium) return current;
+  if (current.studium === studium) return { params: current, changed: false };
   const next = withStudy(current, { active: current.studies, chosen: target });
   await IndexedDBService.set('meta', STORAGE_KEYS.USER_PARAMS, next);
   _cached = next;
-  return next;
+  return { params: next, changed: true };
+}
+
+/**
+ * Follow a switch made in ANOTHER context of the same origin — another IS
+ * tab's content script. Each holds its own confirmed `_cached` for the whole
+ * session, so without this its crawls kept fetching the study the student
+ * had just left. Called at the start of each crawl; only a multi-study
+ * record pays the one IndexedDB read.
+ */
+export async function adoptStoredStudy(): Promise<void> {
+  if (_inflight || !_cached?.studies) return;
+  const stored = (await IndexedDBService.get('meta', STORAGE_KEYS.USER_PARAMS)) as
+    UserParams | undefined;
+  if (
+    stored &&
+    _cached &&
+    stored.studentId === _cached.studentId &&
+    stored.studium !== _cached.studium &&
+    stored.studies?.some((s) => s.studium === stored.studium)
+  )
+    _cached = stored;
 }
 
 export async function getStudium(): Promise<string | null> {

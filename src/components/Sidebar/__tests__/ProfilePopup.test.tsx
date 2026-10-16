@@ -91,7 +91,8 @@ describe('ProfilePopup — study switcher', () => {
       ],
     });
     render(<ProfilePopup isOpen />);
-    expect(screen.getAllByRole('radio')).toHaveLength(2);
+    const group = screen.getByRole('group', { name: 'Study' });
+    expect(group.querySelectorAll('button[aria-pressed]')).toHaveLength(2);
   });
 
   it('shows nothing new with one study', () => {

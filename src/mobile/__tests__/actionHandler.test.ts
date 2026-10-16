@@ -11,7 +11,8 @@ function deps(over: Partial<MobileActionDeps> = {}): MobileActionDeps {
     refreshExams: vi.fn(async () => {}),
     refreshSchedule: vi.fn(async () => {}),
     syncAllData: vi.fn(async () => {}),
-    selectStudy: vi.fn(async () => {}),
+    selectStudy: vi.fn(async () => ({ changed: true })),
+    syncNewStudy: vi.fn(async () => {}),
     ...over,
   };
 }
@@ -66,13 +67,15 @@ describe('runMobileAction', () => {
 
   // The study switcher. The record is re-pointed BEFORE the reply, so the
   // app's own context reads the new study; the crawl runs after it.
-  it('routes select_study to the study switch, then a full sync', async () => {
+  it('routes select_study to the study switch, then a crawl of the new study', async () => {
     const d = deps();
     expect(await runMobileAction('select_study', { studium: '900012' }, d)).toEqual({
       success: true,
+      changed: true,
     });
     expect(d.selectStudy).toHaveBeenCalledWith('900012');
-    expect(d.syncAllData).toHaveBeenCalledOnce();
+    expect(d.syncNewStudy).toHaveBeenCalledOnce();
+    expect(d.syncAllData).not.toHaveBeenCalled();
   });
 
   it('refuses select_study without a study, and a study the switch refuses', async () => {
@@ -81,7 +84,7 @@ describe('runMobileAction', () => {
     await expect(runMobileAction('select_study', { studium: '1' }, d)).rejects.toThrow(
       'not active'
     );
-    expect(d.syncAllData).not.toHaveBeenCalled();
+    expect(d.syncNewStudy).not.toHaveBeenCalled();
   });
 
   it('routes refresh_schedule to the schedule-only refresh, not the full sync', async () => {

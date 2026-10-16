@@ -34,13 +34,21 @@ describe('syncPastSemesters across studies', () => {
 
   it("refetches a past semester cached for the student's other study", async () => {
     idb.set('past_semester_815', { studium: '900011', subjects: { data: {} }, attendance: {} });
-    await syncPastSemesters('900012', '829', PERIODS);
+    await syncPastSemesters('900012', '829', PERIODS, true);
     expect(fetchPastSemesterData).toHaveBeenCalledWith('900012', '815');
     expect(idb.get('past_semester_815')).toMatchObject({ studium: '900012' });
   });
 
   // Entries written before this change carry no study. Refetching all of
   // them would send every student's whole past at IS on the first boot.
+  // The concurrent-study student's install wrote unstamped entries under her
+  // first study before this change; after a switch they are not the other's.
+  it('refetches an unstamped entry for a student with several studies', async () => {
+    idb.set('past_semester_815', { subjects: { data: {} }, attendance: {} });
+    await syncPastSemesters('900012', '829', PERIODS, true);
+    expect(fetchPastSemesterData).toHaveBeenCalledWith('900012', '815');
+  });
+
   it('keeps an unstamped entry from before, and an entry for this study', async () => {
     idb.set('past_semester_815', { subjects: { data: {} }, attendance: {} });
     await syncPastSemesters('900012', '829', PERIODS);

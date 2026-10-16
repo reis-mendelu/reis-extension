@@ -76,6 +76,7 @@ vi.mock('../../api/classmates', () => ({
 }));
 vi.mock('../../utils/userParams', () => ({
   getUserParams: async () => ({ studium: 'st1', obdobi: 'ob1' }),
+  adoptStoredStudy: async () => {},
 }));
 vi.mock('../iframeManager', () => ({ sendToIframe: vi.fn() }));
 vi.mock('../../services/sync/mergePastSubjects', () => ({ mergePastSubjects: vi.fn() }));

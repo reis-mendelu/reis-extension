@@ -19,10 +19,10 @@ describe('parseStudyOptions', () => {
   });
 
   // A single-study page names the study in a <b> beside a hidden input, with
-  // no select at all (real shape, Dominik's account, October 2026). That is
+  // no select at all (real shape from a single-study account, October 2026; made-up id). That is
   // the signal for "nothing to choose": the old code path, untouched.
   it('finds nothing on a single-study page', () => {
-    const single = `<div id="titulek"><h1>Portál studenta</h1><div style="font-size: 11px;"><input type="hidden" name="studium" value="149707" />Studium – <b>PEF B-OI-ZBOI prez [sem 3, roč 2]</b>, období – <b>ZS 2026/2027 - PEF</b></div></div>`;
+    const single = `<div id="titulek"><h1>Portál studenta</h1><div style="font-size: 11px;"><input type="hidden" name="studium" value="900021" />Studium – <b>PEF B-OI-ZBOI prez [sem 3, roč 2]</b>, období – <b>ZS 2026/2027 - PEF</b></div></div>`;
     expect(parseStudyOptions(single)).toEqual([]);
   });
 

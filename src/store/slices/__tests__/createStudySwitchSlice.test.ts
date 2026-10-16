@@ -34,7 +34,7 @@ describe('switchStudy', () => {
   beforeEach(async () => {
     calls.length = 0;
     for (const m of [getUserParams, selectStudy, executeAction]) m.mockClear();
-    useAppStore.setState({ demoMode: false, studySwitching: false });
+    useAppStore.setState({ demoMode: false, studySwitching: false, impersonation: null });
     getUserParams.mockResolvedValue(params(AII));
     await useAppStore.getState().loadContext();
   });
@@ -62,12 +62,30 @@ describe('switchStudy', () => {
     });
   });
 
-  it('leaves this context alone when the crawling one refuses', async () => {
-    executeAction.mockRejectedValueOnce(new Error('not active'));
+  it('leaves this context alone when the crawling one refuses, and undoes a late switch', async () => {
+    executeAction.mockRejectedValueOnce(new Error('timeout'));
     expect(await useAppStore.getState().switchStudy('900012')).toBe(false);
     expect(selectStudy).not.toHaveBeenCalled();
+    expect(executeAction).toHaveBeenLastCalledWith('select_study', { studium: '900011' });
     expect(useAppStore.getState().studiumId).toBe('900011');
     expect(useAppStore.getState().studySwitching).toBe(false);
+  });
+
+  it('puts the crawling context back when this one cannot follow', async () => {
+    selectStudy.mockRejectedValueOnce(new Error('idb'));
+    expect(await useAppStore.getState().switchStudy('900012')).toBe(false);
+    expect(executeAction.mock.calls).toEqual([
+      ['select_study', { studium: '900012' }],
+      ['select_study', { studium: '900011' }],
+    ]);
+    expect(useAppStore.getState().studiumId).toBe('900011');
+  });
+
+  it('refuses while an admin is impersonating a student', async () => {
+    useAppStore.setState({ impersonation: {} as never });
+    expect(await useAppStore.getState().switchStudy('900012')).toBe(false);
+    expect(executeAction).not.toHaveBeenCalled();
+    useAppStore.setState({ impersonation: null });
   });
 
   it('does nothing for the study already in use, or in demo mode', async () => {

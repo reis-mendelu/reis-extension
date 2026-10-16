@@ -227,6 +227,31 @@ describe('requestSync', () => {
       expect(mockedSync).toHaveBeenCalledTimes(1);
     });
 
+    /**
+     * The study switcher. A crawl already under way read the OLD study's
+     * params when it started, so joining it — what `user` does — would hand
+     * the student the previous programme's subjects, stamped fresh. A switch
+     * waits for that crawl and then always runs its own.
+     */
+    it('runs a fresh crawl after a switch, never joining one already under way', async () => {
+      const { gate, release } = blockingSync();
+      mockedSync.mockImplementationOnce(async () => {
+        await gate;
+      });
+      markFetched('subjects');
+
+      const boot = requestSync('boot');
+      const study = requestSync('study');
+      await Promise.resolve();
+      expect(mockedSync).toHaveBeenCalledTimes(1);
+      release();
+
+      await expect(boot).resolves.toBe(true);
+      await expect(study, 'the switch ran its own crawl').resolves.toBe(true);
+      expect(mockedSync).toHaveBeenCalledTimes(2);
+      expect(isFresh('subjects', TTL.DAILY)).toBe(false);
+    });
+
     it('drops an automatic run while one is already in flight', async () => {
       const { gate, release } = blockingSync();
       mockedSync.mockImplementationOnce(async () => {

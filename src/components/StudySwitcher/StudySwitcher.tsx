@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Check, GraduationCap } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -27,6 +27,7 @@ export function StudySwitcher({ compact = false }: { compact?: boolean }) {
   const switchStudy = useAppStore((s) => s.switchStudy);
   const [pending, setPending] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  const labelId = useId();
 
   if (studies.length < 2) return null;
 
@@ -47,15 +48,17 @@ export function StudySwitcher({ compact = false }: { compact?: boolean }) {
       className={`flex flex-col gap-1.5 ${compact ? '' : 'md:max-w-md'}`}
     >
       <span
-        id="study-switcher-label"
+        id={labelId}
         className={`flex items-center gap-1.5 font-semibold text-base-content/70 ${compact ? 'text-xs' : 'text-sm'}`}
       >
         <GraduationCap size={compact ? 14 : 16} aria-hidden="true" />
         {t('studySwitcher.label')}
       </span>
       <div
-        role="radiogroup"
-        aria-labelledby="study-switcher-label"
+        // Toggle buttons, not radios: a radio group moves its choice with the
+        // arrow keys, and each choice here is a switch that re-syncs a study.
+        role="group"
+        aria-labelledby={labelId}
         className="flex flex-col overflow-hidden rounded-lg border border-base-300"
       >
         {studies.map((s) => {
@@ -65,8 +68,7 @@ export function StudySwitcher({ compact = false }: { compact?: boolean }) {
             <button
               key={s.studium}
               type="button"
-              role="radio"
-              aria-checked={selected}
+              aria-pressed={selected}
               disabled={switching}
               onClick={() => void choose(s.studium)}
               className={`flex w-full items-center gap-2 border-b border-base-300 text-left last:border-b-0 disabled:cursor-wait ${row} ${
@@ -80,10 +82,10 @@ export function StudySwitcher({ compact = false }: { compact?: boolean }) {
                 )}
               </span>
               {pending === s.studium ? (
-                <span
-                  className="loading loading-spinner loading-xs text-primary"
-                  aria-label={t('studySwitcher.switching')}
-                />
+                <span role="status" className="flex items-center">
+                  <span className="loading loading-spinner loading-xs text-primary" />
+                  <span className="sr-only">{t('studySwitcher.switching')}</span>
+                </span>
               ) : (
                 selected && <Check size={16} className="text-primary" aria-hidden="true" />
               )}

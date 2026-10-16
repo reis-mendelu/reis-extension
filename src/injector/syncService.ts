@@ -16,7 +16,7 @@ import { fetchSeminarGroupIds, fetchClassmates } from '../api/classmates';
 import { mergePastSubjects } from '../services/sync/mergePastSubjects';
 import { syncPastSemesters, pastSemesterIsFor } from '../services/sync/syncPastSemesters';
 
-import { getUserParams } from '../utils/userParams';
+import { getUserParams, adoptStoredStudy } from '../utils/userParams';
 import { enrichExamsWithDurations } from '../services/sync/examDurations';
 import type { ExamSubject } from '../types/exams';
 import { fetchFullSemesterSchedule } from './dataFetchers';
@@ -76,6 +76,9 @@ export async function syncAllData() {
         Messages.syncUpdate({ ...partial, isSyncing: true, lastSync: cachedData.lastSync })
       );
 
+    // Another IS tab may have switched study since this one's params were
+    // confirmed; its record is the student's choice now.
+    await adoptStoredStudy();
     const userParams = await getUserParams();
     const studium = userParams?.studium;
 
@@ -266,7 +269,7 @@ export async function syncAllData() {
                 attendance: unknown;
               }
             | undefined;
-          if (cached?.subjects?.data && pastSemesterIsFor(cached, studium)) {
+          if (cached?.subjects?.data && pastSemesterIsFor(cached, studium, !!userParams?.studies)) {
             for (const [code, info] of Object.entries(cached.subjects.data)) {
               if (!subjects.value.subjects.data[code]) {
                 subjects.value.subjects.data[code] = info;
@@ -381,9 +384,12 @@ export async function syncAllData() {
       subjects.status === 'fulfilled' &&
       subjects.value?.availablePeriods.length
     ) {
-      syncPastSemesters(studium, userParams.obdobi, subjects.value.availablePeriods).catch(
-        () => {}
-      );
+      syncPastSemesters(
+        studium,
+        userParams.obdobi,
+        subjects.value.availablePeriods,
+        !!userParams.studies
+      ).catch(() => {});
     }
   } catch (e) {
     sendToIframe(

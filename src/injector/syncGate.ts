@@ -14,7 +14,7 @@ import { resetSyncTtl } from './syncTtl';
  * Shared by the extension content script and the Capacitor app, which run the
  * same `syncAllData`.
  */
-export type SyncReason = 'boot' | 'tick' | 'poke' | 'resume' | 'user';
+export type SyncReason = 'boot' | 'tick' | 'poke' | 'resume' | 'user' | 'study';
 
 /** Runs nobody asked for: subject to the minimum gap. */
 const AUTOMATIC: ReadonlySet<SyncReason> = new Set(['tick', 'poke', 'resume']);
@@ -85,7 +85,7 @@ async function run(reason: SyncReason): Promise<true> {
   // is a no-op — but it also makes "a full crawl fetches everything" true by
   // construction, which is what lets a `user` request join a `boot` instead of
   // running a second crawl behind it.
-  if (reason === 'boot' || reason === 'user') resetSyncTtl();
+  if (reason === 'boot' || reason === 'user' || reason === 'study') resetSyncTtl();
 
   const active = (async () => {
     try {
@@ -151,6 +151,15 @@ export async function requestSync(reason: SyncReason): Promise<boolean> {
     if (active) return false;
     if (Date.now() - lastRunAt < MIN_SYNC_GAP) return false;
     return runUnderLock(reason);
+  }
+
+  // The student switched study. Every crawl already queued or running read
+  // the previous study's params when it started, so none of them answers
+  // this: wait them out, then run a full crawl of the new study.
+  if (reason === 'study') {
+    if (fullCrawl) await fullCrawl.catch(() => false);
+    if (inFlight) await inFlight;
+    return trackFullCrawl(reason);
   }
 
   // boot and user both mean "everything, now", so one already under way answers

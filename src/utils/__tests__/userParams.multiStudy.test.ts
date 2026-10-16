@@ -25,7 +25,8 @@ vi.mock('../userParams/resolveStudies', () => ({
   resolveStudies: (...a: unknown[]) => resolveStudies(...a),
 }));
 
-const { getUserParams, clearUserParamsCache, selectStudy } = await import('../userParams');
+const { getUserParams, clearUserParamsCache, selectStudy, adoptStoredStudy } =
+  await import('../userParams');
 const { onIdentityChange } = await import('../userParams/identityEvents');
 
 const AII: StudyOption = {
@@ -133,6 +134,32 @@ describe('getUserParams with more than one study', () => {
     expect(idbSet).not.toHaveBeenCalled();
   });
 
+  /**
+   * A first install has nothing to fall back on. Before studies were read it
+   * got IS's default study; a failed study page must not leave it with none
+   * (and every call site asking IS again).
+   */
+  it("uses IS's default study on a first install when the study pages fail", async () => {
+    idbGet.mockResolvedValue(undefined);
+    fetchUserBaseIds.mockResolvedValue(base('900011'));
+    resolveStudies.mockRejectedValue(new Error('offline'));
+    const params = await getUserParams();
+    expect(params).toMatchObject({ studium: '900011', studentId: '100001' });
+    expect(params?.studies).toBeUndefined();
+    await getUserParams();
+    expect(fetchUserBaseIds).toHaveBeenCalledTimes(1);
+  });
+
+  it('drops the study list once IS shows only one study', async () => {
+    idbGet.mockResolvedValue(stored(EM, [AII, EM]));
+    fetchUserBaseIds.mockResolvedValue({ ...base('900011'), options: [] });
+    const params = await getUserParams();
+    expect(resolveStudies).not.toHaveBeenCalled();
+    expect(params?.studium).toBe('900011');
+    expect(params?.studies).toBeUndefined();
+    expect(idbClearAll).not.toHaveBeenCalled();
+  });
+
   it('keeps a usable record when the study pages cannot be read', async () => {
     idbGet.mockResolvedValue(stored(EM, [AII, EM]));
     fetchUserBaseIds.mockResolvedValue(base('900011'));
@@ -159,7 +186,8 @@ describe('selectStudy', () => {
   });
 
   it("switches to the other study's ids and fields, and nothing else", async () => {
-    const next = await selectStudy('900012');
+    const { params: next, changed } = await selectStudy('900012');
+    expect(changed).toBe(true);
     expect(next).toMatchObject({
       studium: '900012',
       obdobi: '829',
@@ -181,6 +209,21 @@ describe('selectStudy', () => {
     await selectStudy('900012');
     expect(idbClearAll).not.toHaveBeenCalled();
     expect(announced).not.toHaveBeenCalled();
+  });
+
+  // Another IS tab switched; this tab's crawl must follow, not keep the old one.
+  it("adopts a switch made in another tab's context", async () => {
+    idbGet.mockResolvedValue({ ...stored(EM, [AII, EM]) });
+    await adoptStoredStudy();
+    expect((await getUserParams())?.studium).toBe('900012');
+  });
+
+  it('adopts nothing that is not one of the studies, or another student', async () => {
+    idbGet.mockResolvedValue({ ...stored(EM, [AII]) });
+    await adoptStoredStudy();
+    idbGet.mockResolvedValue({ ...stored(EM, [AII, EM]), studentId: '999999' });
+    await adoptStoredStudy();
+    expect((await getUserParams())?.studium).toBe('900011');
   });
 
   // The id arrives over postMessage from the other context.

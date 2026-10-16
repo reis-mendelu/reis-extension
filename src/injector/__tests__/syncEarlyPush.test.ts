@@ -74,6 +74,7 @@ vi.mock('../../api/classmates', () => ({
 const userParams: { studium?: string; obdobi?: string } | null = { studium: 'st1', obdobi: 'ob1' };
 vi.mock('../../utils/userParams', () => ({
   getUserParams: async () => userParams,
+  adoptStoredStudy: async () => {},
 }));
 vi.mock('../iframeManager', () => ({ sendToIframe: vi.fn() }));
 const mergePastSubjectsMock = vi.fn();

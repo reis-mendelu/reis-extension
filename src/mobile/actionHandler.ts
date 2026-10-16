@@ -2,7 +2,7 @@ import { Messages, isIframeMessage } from '../types/messages';
 import type { ActionResultMessage } from '../types/messages/base';
 import { sendToIframe } from '../injector/iframeManager';
 import { DemoModeError } from '../errors/demoMode';
-import { logError } from '../utils/reportError';
+import { applyStudySwitch } from '../utils/userParams/applyStudySwitch';
 
 /**
  * The app-side responder for `REIS_ACTION`.
@@ -30,7 +30,9 @@ export interface MobileActionDeps {
   refreshSchedule(): Promise<void>;
   syncAllData(): Promise<void>;
   /** The study switcher's half in this context — see `selectStudy`. */
-  selectStudy(studium: string): Promise<unknown>;
+  selectStudy(studium: string): Promise<{ changed: boolean }>;
+  /** A full crawl that starts after the switch — `requestSync('study')`. */
+  syncNewStudy(): Promise<unknown>;
 }
 
 /**
@@ -70,12 +72,7 @@ export async function runMobileAction(
       await deps.syncAllData();
       return { success: true };
     case 'select_study':
-      if (!p.studium) throw new Error('select_study: missing studium');
-      await deps.selectStudy(p.studium);
-      // Not awaited: the reply is "the record now names that study", and the
-      // crawl that follows can take a while. Its own failure is the sync's.
-      void deps.syncAllData().catch((e) => logError('select_study.sync', e));
-      return { success: true };
+      return applyStudySwitch(p.studium, deps.selectStudy, deps.syncNewStudy);
     default:
       throw new Error(`Action "${action}" is not available in the reIS mobile app`);
   }
@@ -145,6 +142,10 @@ export function installMobileActionHandler(): void {
     selectStudy: async (studium) => {
       const { selectStudy } = await import('../utils/userParams');
       return selectStudy(studium);
+    },
+    syncNewStudy: async () => {
+      const { requestSync } = await import('../injector/syncGate');
+      return requestSync('study');
     },
   };
 
