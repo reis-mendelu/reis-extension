@@ -32,6 +32,13 @@ jobs:
       group: supabase-prod-migrations
       cancel-in-progress: false
     steps:
+      # Before anything touches prod: only a reIS release tag (not mcp-v*).
+      - name: Refuse anything but a vX.Y.Z tag
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            || { echo "::error::'$TAG' is not a release tag (vX.Y.Z)."; exit 1; }
       - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref || format('refs/tags/{0}', inputs.tag) }}
