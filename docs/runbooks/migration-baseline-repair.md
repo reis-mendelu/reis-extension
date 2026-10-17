@@ -1,5 +1,10 @@
 # Pointing prod's migration history at the baseline
 
+> **Done 2026-10-17, kept as a record.** Dominik ran step 1; step 2's checks
+> passed (one ledger row, `migration list` aligned, diff and fingerprint `SAME`).
+> From the next release on, the release applies migrations and records them (`ship.yml`),
+> so nothing here is part of normal work. `migration repair` is for emergencies.
+
 `supabase/migrations/20261016000000_baseline.sql` is prod's schema as it stood on
 2026-10-16. Prod's own ledger (`supabase_migrations.schema_migrations`) still
 lists 29 of the old files, the last `20260907130000`, and not the baseline.
@@ -62,10 +67,6 @@ npx supabase migration repair --linked --status applied 20261016120000
 Skip that last command if the file is not applied in prod yet (then it is simply
 pending, which is correct). Step 0's `db diff` tells you which: run it on a
 checkout that contains the file; no changes means prod has it.
-
-The same holds afterwards, until CI applies migrations itself: a migration
-applied by hand also needs `migration repair --linked --status applied <its
-version>`, or the ledger drifts from prod again.
 
 ## 2. After: verify
 
