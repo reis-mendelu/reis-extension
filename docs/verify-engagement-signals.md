@@ -210,5 +210,5 @@ migrations itself (`ship.yml`) and nothing is applied by hand. See
 
 Use `-f`. Passing the SQL as a positional argument (`"$(cat <file>)"`) makes the
 CLI read a leading `--` comment line as a flag and refuse to run. And never
-`db push`: this directory is a log of hand-applied changes, not a replayable
+`db push` on that history: it was a log of hand-applied changes, not a replayable
 schema, so push has nothing reliable to reconcile against.

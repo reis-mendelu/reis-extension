@@ -14,10 +14,12 @@ Writing one:
 - **Additive only.** Old builds stay installed for weeks and run against the new
   schema, so add columns, tables and functions; don't drop, rename or tighten
   what a released build uses. Removing something takes two releases.
-- No `begin;`/`commit;` in the file: the CLI already runs each file in one
-  transaction, and a COMMIT inside it can leave a failed file half-applied.
+- No `begin;`/`commit;` and no `create index concurrently` in the file: the CLI
+  runs each file in one transaction, and anything that steps outside it can
+  leave a failed file half-applied.
 - Nothing is changed in prod by hand: no dashboard edits, no `db query --linked -f`.
 
 If a release's migration fails, it is rolled back, nothing is recorded and no
 store is submitted. The next release would try the same file first, so fix
-**that file** (it never ran, so editing it is safe) and release again.
+**that file** (it was rolled back, so editing it is safe; check prod first if it
+broke the rule above) and release again.
