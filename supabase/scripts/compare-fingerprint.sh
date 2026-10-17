@@ -5,45 +5,26 @@
 # "match". Needs a running local stack (`npx supabase start`).
 #
 #   npm run db:fingerprint
-#
-# SUPABASE_WORKDIR points the local side at another stack (the drift check
-# builds one from prod's ledger in a temp dir, with its own project_id).
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
-SQL="$PWD/supabase/scripts/catalog_fingerprint.sql"
-REF="${SUPABASE_PROJECT_REF:-zvbpgkmnrqyprtkyxkwn}"
+SQL=supabase/scripts/catalog_fingerprint.sql
 OUT=$(mktemp -d)
 trap 'rm -rf "$OUT"' EXIT
 
-# CI installs a pinned CLI; locally npx resolves one.
-sb() { if command -v supabase >/dev/null; then supabase "$@"; else npx supabase "$@"; fi; }
-# Each CLI call to prod resets a temporary login role's password, so a second
-# job reaching prod at the same moment can make this one fail to connect.
-# Read-only here, so trying again is always safe.
-retry() {
-  local i
-  for i in 1 2 3; do
-    "$@" && return 0
-    [ "$i" -lt 3 ] && { echo "attempt $i failed; retrying in 30s" >&2; sleep 30; }
-  done
-  return 1
-}
-
-fingerprint() { # $1 = prod | local, $2 = output file
-  local raw target
-  if [ "$1" = prod ]; then target=(--linked --project-ref "$REF")
-  else target=(--local ${SUPABASE_WORKDIR:+--workdir "$SUPABASE_WORKDIR"}); fi
+fingerprint() { # $1 = --linked | --local, $2 = output file
+  local raw
   # --agent no: the CLI otherwise picks its output shape from whoever runs it
-  # (an AI agent gets {rows:[...]}, CI a table). JSON on stdout, logs on stderr.
-  if ! raw=$(retry sb db query "${target[@]}" --agent no --output-format json -f "$SQL" 2>"$OUT/err"); then
+  # (an AI agent gets {rows:[...]}, a terminal a table). JSON on stdout.
+  if ! raw=$(npx supabase db query "$1" --agent no --output-format json -f "$SQL" 2>"$OUT/err"); then
     echo "FAILED: supabase db query $1 exited non-zero:" >&2
-    cat "$OUT/err" >&2; echo "$raw" >&2
+    cat "$OUT/err" >&2
     exit 1
   fi
   if ! jq -er '(if type == "array" then .[] else .rows[] end).line' <<<"$raw" >"$2"; then
     echo "FAILED: no fingerprint rows in the $1 output:" >&2
-    cat "$OUT/err" >&2; echo "$raw" >&2
+    cat "$OUT/err" >&2
+    echo "$raw" >&2
     exit 1
   fi
   # Prod had 359 lines on 2026-10-16; every build has the cron job and a bucket.
@@ -53,8 +34,8 @@ fingerprint() { # $1 = prod | local, $2 = output file
   fi
 }
 
-fingerprint prod "$OUT/prod.txt"
-fingerprint local "$OUT/local.txt"
+fingerprint --linked "$OUT/prod.txt"
+fingerprint --local "$OUT/local.txt"
 
 if diff "$OUT/prod.txt" "$OUT/local.txt"; then
   echo "SAME: $(wc -l <"$OUT/prod.txt" | tr -d ' ') lines, prod = local"

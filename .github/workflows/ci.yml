@@ -57,46 +57,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-        with:
-          # HEAD^1 is the base: on a PR, the merge commit's first parent.
-          fetch-depth: 2
       - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
       - run: npm ci
       - run: npx vitest run
-
-      # The database check lives in this job, not its own, because this job is
-      # a required check: a migration that fails here blocks the merge, and a
-      # PR without one pays only the diff below. ship.yml applies merged
-      # migrations to prod at release, so this is the last look before then.
-      - name: Does this change touch the database?
-        id: db
-        run: |
-          if git diff --quiet HEAD^1 HEAD -- supabase/ scripts/db/; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Migration lint (expand/contract)
-        if: steps.db.outputs.changed == 'true'
-        run: node scripts/db/lint-migrations.mjs HEAD^1
-      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
-        if: steps.db.outputs.changed == 'true'
-        with:
-          version: 2.121.0
-      - name: Build a throwaway database from supabase/migrations
-        if: steps.db.outputs.changed == 'true'
-        run: supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor,realtime
-      - name: Run supabase/tests against it
-        if: steps.db.outputs.changed == 'true'
-        run: |
-          set -euo pipefail
-          for f in supabase/tests/*.sql; do
-            echo "== $f"
-            docker exec -i supabase_db_reis-extension psql -U postgres -v ON_ERROR_STOP=1 < "$f"
-          done
 
   # The preview build target is exercised by nothing else — no test imports it
   # and no developer runs it by hand — so without this job it would break

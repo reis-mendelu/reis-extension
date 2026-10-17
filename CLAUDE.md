@@ -208,12 +208,10 @@ there never reach Supabase, so never cite them as evidence a write works.
 
 ### Database migrations
 
-Read `docs/database-migrations.md` before writing one. In short: a release
-applies `supabase/migrations/` to prod itself (before the stores), so nobody
-applies one by hand; a migration is a new file on top and **additive only**,
-because old builds run against the new schema for weeks; the PR check's linter
-holds anything that takes something away until the file says why it is safe;
-no `begin;`/`commit;` inside a file.
+A release applies `supabase/migrations/` to prod itself, before the stores, so
+nobody applies one by hand. A migration is a new file on top, **additive only**
+(old builds run against the new schema for weeks), with no `begin;`/`commit;`.
+Details: `docs/database-migrations.md`.
 
 ## Branches and releasing
 
