@@ -17,6 +17,13 @@ describe('viewerFrom', () => {
     expect(viewerFrom(null, true)).toEqual({ facultyKey: null, erasmus: true, programme: null });
     expect(viewerFrom('XYZ', false)).toEqual({ facultyKey: null, erasmus: false, programme: null });
   });
+
+  // The text test on studium.pl misses Z-EXC when IS is in Czech: the
+  // programme is "Zahraniční studenti - krátkodobé studijní pobyty" there.
+  it('the exchange programme Z-EXC is Erasmus even when the text test said no', () => {
+    expect(viewerFrom('LDF', false, 'Z-EXC')).toMatchObject({ erasmus: true });
+    expect(viewerFrom('PEF', false, 'B-EM')).toMatchObject({ erasmus: false });
+  });
 });
 
 describe('useViewer', () => {
