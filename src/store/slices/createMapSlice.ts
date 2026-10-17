@@ -56,6 +56,11 @@ function locateEvent(e: MapEvent): MapEvent {
 // response can neither overwrite a newer list nor stamp it as fresh.
 let mapEventsGeneration = 0;
 
+/** Where the composer's draft pin starts for a post: nowhere for a notice
+ *  (Novinky only), even one an old console gave a place. */
+const placeOf = (ev: MapEvent | null | undefined): [number, number] | null =>
+  ev?.kind === 'notice' ? null : (ev?.coord ?? null);
+
 export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   // Loading a building's floor plan lives next door, so this file does not
   // carry that responsibility too — see buildingGeometryActions.ts.
@@ -301,7 +306,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
       composerOpen: true,
       editEventId: editId ?? null,
       duplicateEventId: null,
-      draftCoord: ev?.coord ?? null,
+      draftCoord: placeOf(ev),
     });
   },
   duplicateEvent: (id) => {
@@ -310,7 +315,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
       composerOpen: true,
       editEventId: null,
       duplicateEventId: id,
-      draftCoord: ev?.coord ?? null,
+      draftCoord: placeOf(ev),
     });
   },
   closeComposer: () =>

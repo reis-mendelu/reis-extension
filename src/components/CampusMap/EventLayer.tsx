@@ -60,7 +60,9 @@ export function EventLayer() {
   const events = useMemo(
     () =>
       authoring
-        ? societyEvents
+        ? // A notice is Novinky-only; the public feed never carries one, and
+          // the society's map must not pin what students will not see there.
+          societyEvents.filter((e) => e.kind !== 'notice')
         : publicEvents.filter(
             (e) => isSoonEvent(e, parseEventDate(todayIso)) || e.id === selectedId
           ),
