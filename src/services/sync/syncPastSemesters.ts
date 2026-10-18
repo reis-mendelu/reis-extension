@@ -1,57 +1,29 @@
 import { fetchPastSemesterData } from '../../api/subjects';
 import { IndexedDBService } from '../storage';
-import { sendToIframe } from '../../injector/iframeManager';
-import { Messages } from '../../types/messages';
-import type { AvailablePeriod, SubjectAttendance, SubjectsData } from '../../types/documents';
-import type { SyncedData } from '../../types/messages/base';
+import type { AvailablePeriod, SubjectsData } from '../../types/documents';
 
 const META_KEY_PREFIX = 'past_semester_';
 
+/**
+ * Caches each past period's subjects, which syncService merges into the subject
+ * list on the next sync. Past attendance used to ride along, but no screen has
+ * shown it since the study plan redesign, so it is no longer read or sent.
+ */
 export async function syncPastSemesters(
   studium: string,
   currentObdobi: string,
   allPeriods: AvailablePeriod[]
 ): Promise<void> {
-  const pastPeriods = allPeriods.filter((p) => p.id !== currentObdobi);
-  if (pastPeriods.length === 0) return;
-
-  const mergedPastAttendance: Record<string, SubjectAttendance[]> = {};
-
-  for (const period of pastPeriods) {
+  for (const period of allPeriods) {
+    if (period.id === currentObdobi) continue;
     const cacheKey = `${META_KEY_PREFIX}${period.id}`;
 
     // Permanent cache — past semesters are immutable facts
     const cached = (await IndexedDBService.get('meta', cacheKey)) as
-      { subjects: SubjectsData; attendance: Record<string, SubjectAttendance[]> } | undefined;
+      { subjects?: SubjectsData } | undefined;
+    if (cached?.subjects) continue;
 
-    let subjects: SubjectsData | null = null;
-    let attendance: Record<string, SubjectAttendance[]> = {};
-
-    if (cached?.subjects && cached?.attendance) {
-      subjects = cached.subjects;
-      attendance = cached.attendance;
-    } else {
-      const result = await fetchPastSemesterData(studium, period.id);
-      if (result) {
-        subjects = result.subjects;
-        attendance = result.attendance;
-        await IndexedDBService.set('meta', cacheKey, { subjects, attendance });
-      }
-    }
-
-    for (const [code, records] of Object.entries(attendance)) {
-      if (mergedPastAttendance[code]) {
-        mergedPastAttendance[code] = [...mergedPastAttendance[code], ...records];
-      } else {
-        mergedPastAttendance[code] = records;
-      }
-    }
+    const subjects = await fetchPastSemesterData(studium, period.id);
+    if (subjects) await IndexedDBService.set('meta', cacheKey, { subjects });
   }
-
-  const update: Partial<SyncedData> = {
-    pastAttendance: mergedPastAttendance,
-    lastSync: Date.now(),
-  };
-
-  sendToIframe(Messages.syncUpdate(update as SyncedData));
 }

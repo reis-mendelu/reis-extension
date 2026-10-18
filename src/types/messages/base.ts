@@ -42,7 +42,6 @@ export interface SyncedData {
   odevzdavarny?: unknown;
   classmates?: Record<string, unknown>;
   attendance?: Record<string, unknown>;
-  pastAttendance?: Record<string, unknown>;
   zaznamnik?: Record<string, SubjectZaznamnik | null>;
   studyPlan?: DualLanguageStudyPlan;
   studyStats?: StudyStats;

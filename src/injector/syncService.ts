@@ -260,8 +260,7 @@ export async function syncAllData() {
         );
         for (const period of pastPeriods) {
           const cached = (await IndexedDBService.get('meta', `past_semester_${period.id}`)) as
-            | { subjects: { data: typeof subjects.value.subjects.data }; attendance: unknown }
-            | undefined;
+            { subjects: { data: typeof subjects.value.subjects.data } } | undefined;
           if (cached?.subjects?.data) {
             for (const [code, info] of Object.entries(cached.subjects.data)) {
               if (!subjects.value.subjects.data[code]) {
