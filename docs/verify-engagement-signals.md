@@ -204,11 +204,11 @@ no-op — the intended failure mode, not an outage.
 npx supabase db query --linked -f supabase/migrations/<file>.sql
 ```
 
-Since the 2026-10-16 baseline, record each hand apply in the ledger as well,
-with `npx supabase migration repair --linked --status applied <version>`
-(`docs/runbooks/migration-baseline-repair.md`).
+Superseded: from the first release after 2026-10-17, the release applies
+migrations itself (`ship.yml`) and nothing is applied by hand. See
+`docs/database-migrations.md`.
 
 Use `-f`. Passing the SQL as a positional argument (`"$(cat <file>)"`) makes the
 CLI read a leading `--` comment line as a flag and refuse to run. And never
-`db push`: this directory is a log of hand-applied changes, not a replayable
+`db push` on that history: it was a log of hand-applied changes, not a replayable
 schema, so push has nothing reliable to reconcile against.

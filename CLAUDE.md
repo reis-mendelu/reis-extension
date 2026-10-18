@@ -208,20 +208,10 @@ there never reach Supabase, so never cite them as evidence a write works.
 
 ### Database migrations
 
-`supabase/migrations/` starts with `20261016000000_baseline.sql`, prod's schema
-dumped on 2026-10-16, so `npx supabase start` / `npx supabase db reset` build the
-whole database locally. The history before it is in `supabase/migrations_archive/`:
-read it for the reasoning, never apply it.
-
-- A new migration is a new file on top, with a timestamp newer than the newest one there.
-- Nothing is changed in prod by hand: no dashboard edits, no `db query --linked -f`
-  of a file that is not a migration here. That is how prod drifted from the files.
-- Nothing applies a migration on merge yet, so applying one is still a deliberate
-  step by Dominik, followed by `migration repair --linked --status applied <version>`
-  so prod's ledger records it. Never `db push` or `migration repair --linked` from a
-  session. Ledger history: `docs/runbooks/migration-baseline-repair.md`.
-- `supabase db diff --linked` checks the schema; `npm run db:fingerprint` (prod vs a
-  running local stack) checks the grants, policies, buckets and cron job it does not.
+A release applies `supabase/migrations/` to prod itself, before the stores, so
+nobody applies one by hand. A migration is a new file on top, **additive only**
+(old builds run against the new schema for weeks), with no `begin;`/`commit;`.
+Details: `docs/database-migrations.md`.
 
 ## Branches and releasing
 
@@ -242,7 +232,7 @@ read it for the reasoning, never apply it.
   and `format:check` are **repo-wide**, not changed-files, and `nuia:gate` is a
   ratchet — a new `noUncheckedIndexedAccess` error fails even if the count drops.
 - `main` accepts only the `test` → `main` release PR. Merging it pushes the
-  `vX.Y.Z` tag and **submits to all three stores** (`ship.yml`). A submission
+  `vX.Y.Z` tag, **applies pending migrations to prod** and **submits to all three stores** (`ship.yml`). A submission
   cannot be recalled, so the release PR (diff, notes, CI, privacy block) is the
   last gate. Use `/release`.
 - **Do not merge into `test` while a release PR is open.**
