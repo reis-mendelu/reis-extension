@@ -1,4 +1,5 @@
 import { getPlatform } from '@/platform';
+import { osOf, platformOf, type ReportPlatform } from '@/utils/reportEnvironment';
 import { executeAction } from '@/api/proxyClient';
 import { useAppStore } from '@/store/useAppStore';
 import { getDiagnostics, DIAGNOSTIC_CAP, type DiagnosticEntry } from './diagnosticLog';
@@ -11,7 +12,7 @@ import { getDiagnostics, DIAGNOSTIC_CAP, type DiagnosticEntry } from './diagnost
 export interface DiagnosticsPayload {
   entries: DiagnosticEntry[];
   env: {
-    platform: 'extension' | 'ios' | 'android' | 'web';
+    platform: ReportPlatform;
     os: string;
     lang: 'cz' | 'en';
     online: boolean;
@@ -44,28 +45,6 @@ export interface DiagnosticsPayload {
 }
 
 const CONTENT_TIMEOUT_MS = 1500;
-
-/** OS family and, where the UA carries one, the major version. */
-export function osOf(ua: string): string {
-  let m: RegExpMatchArray | null;
-  // safe: each regex has exactly one required capturing group
-  if ((m = ua.match(/(?:iPhone )?OS (\d+)_\d+ like Mac OS X/))) return `iOS ${m[1]!}`;
-  if ((m = ua.match(/Android (\d+)/))) return `Android ${m[1]!}`;
-  if (/Mac OS X/.test(ua)) return 'macOS';
-  if (/Windows/.test(ua)) return 'Windows';
-  if (/Linux|X11/.test(ua)) return 'Linux';
-  return 'unknown';
-}
-
-async function platformOf(): Promise<DiagnosticsPayload['env']['platform']> {
-  const kind = getPlatform().kind;
-  if (kind !== 'capacitor') return kind;
-  // Lazy for the same reason as api/personPhoto: keeps @capacitor/core out of
-  // the extension's static graph.
-  const { Capacitor } = await import('@capacitor/core');
-  const p = Capacitor.getPlatform();
-  return p === 'ios' || p === 'android' ? p : 'web';
-}
 
 async function contentEntries(
   fetchContent: () => Promise<DiagnosticEntry[]>,

@@ -220,7 +220,18 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
                       className="textarea textarea-bordered h-32 w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors leading-relaxed resize-none"
                       required
                       maxLength={2000}
+                      aria-describedby={type === 'bug' ? 'feedback-bug-hint' : undefined}
                     />
+                    {/* Visible text, not a placeholder: that vanishes as soon as
+                        they type. Only for Chyba — ideas arrive understandable. */}
+                    {type === 'bug' && (
+                      <p
+                        id="feedback-bug-hint"
+                        className="mt-1.5 ml-1 text-xs leading-snug text-base-content/70"
+                      >
+                        {t('feedback.bugHint')}
+                      </p>
+                    )}
                   </div>
 
                   {/* Contact (Optional) */}

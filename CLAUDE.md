@@ -363,10 +363,10 @@ Only these, all disclosed in `docs/privacy-policy-app.md`:
    Also once per device per event ever (same `countedOpens.ts`), so it reads as devices, not taps.
    The server stamps the date; the request carries only the event id.
 
-6. **Report attachments** (`submit_suggestion_v2`, September 2026) — only what the student
+6. **Report attachments** (`submit_suggestion_v3`; v2 for older builds, September 2026) — only what the student
    adds to a report: a screenshot they pick (re-encoded to JPEG on device, no EXIF/GPS) and,
    if they tick an unticked-by-default box, the cleaned diagnostic log (collected at Send, not
-   listed in the form — the cleaning is what makes it safe to send unread). No install id. Deleted after 90 days or on `done` (pg_cron + a trigger).
+   listed in the form — the cleaning is what makes it safe to send unread). No install id. Kept, not deleted automatically (the 90-day pg_cron job and the `done` trigger were removed in October 2026); deleted on request. Every report also carries the platform and OS version it was sent from (no device model).
    The guard allows diagnostics to reach Supabase through `src/api/suggestions.ts` only, and
    no Supabase caller may import `utils/diagnostics/`.
 

@@ -3,6 +3,7 @@ import { buildSuggestionPayload, resolveScreen, submitSuggestion } from '../sugg
 import { supabase } from '@/services/spolky/supabaseClient';
 import { IndexedDBService } from '@/services/storage';
 import { useAppStore } from '@/store/useAppStore';
+import { reportEnvironment } from '@/utils/reportEnvironment';
 import { setPlatform, __resetPlatformForTests } from '@/platform';
 
 describe('buildSuggestionPayload', () => {
@@ -37,6 +38,14 @@ describe('resolveScreen', () => {
 vi.mock('@/services/spolky/supabaseClient', () => ({
   supabase: { rpc: vi.fn() },
 }));
+vi.mock('@/utils/reportEnvironment', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/reportEnvironment')>();
+  return { ...actual, reportEnvironment: vi.fn(actual.reportEnvironment) };
+});
+vi.mock('@capacitor/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@capacitor/core')>()),
+  Capacitor: { getPlatform: () => 'ios' },
+}));
 
 describe('submitSuggestion', () => {
   beforeEach(() => {
@@ -56,7 +65,7 @@ describe('submitSuggestion', () => {
 
     expect(r).toEqual({ ok: true });
     const [fn, args] = vi.mocked(supabase.rpc).mock.calls[0]!;
-    expect(fn).toBe('submit_suggestion_v2');
+    expect(fn).toBe('submit_suggestion_v3');
     expect(args).toMatchObject({
       p_type: 'bug',
       p_title: 'T',
@@ -159,10 +168,26 @@ describe('the screen a report records', () => {
     expect(await sentScreen()).toBe('calendar');
   });
 
-  it('on the phone app, names Profil, where most phone reports are written', async () => {
+  // Profil is the only general entry point on the phone, so a report written
+  // there says nothing about where the student was. The tab they came from does.
+  it('on the phone app, names the tab the student came from when opened from Profil', async () => {
     asPlatform('capacitor');
-    useAppStore.setState({ mobileTab: 'profile' });
+    useAppStore.setState({ mobileTab: 'profile', lastNonProfileTab: 'exams' });
+    expect(await sentScreen()).toBe('exams');
+  });
+
+  it('on the phone app, says profile only when the student never left it', async () => {
+    asPlatform('capacitor');
+    useAppStore.setState({ mobileTab: 'profile', lastNonProfileTab: 'profile' });
     expect(await sentScreen()).toBe('profile');
+  });
+
+  // ReportMissingLink and the exam-failure toast open the form in place, so
+  // their reports keep naming their own tab.
+  it('on the phone app, a report opened in place keeps its own tab', async () => {
+    asPlatform('capacitor');
+    useAppStore.setState({ mobileTab: 'subjects', lastNonProfileTab: 'exams' });
+    expect(await sentScreen()).toBe('subjects');
   });
 
   it('follows the phone tree in a browser too (touch + narrow)', async () => {
@@ -176,5 +201,50 @@ describe('the screen a report records', () => {
     await IndexedDBService.set('meta', 'reis_current_view', 'studyPlan');
     useAppStore.setState({ mobileTab: 'profile' });
     expect(await sentScreen()).toBe('studyPlan');
+  });
+});
+
+// Row 21 typed their macOS version because nothing else told us; the iPad rows
+// all say browser "Unknown". The platform and OS the report was sent from are
+// two short labels, sent with every report.
+describe('the environment a report records', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    __resetPlatformForTests();
+    useAppStore.setState({ isTouch: false, isNarrow: false, devPhoneOverride: null });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    __resetPlatformForTests();
+  });
+
+  async function sentArgs(): Promise<Record<string, unknown>> {
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: 'ok', error: null } as never);
+    await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
+    return vi.mocked(supabase.rpc).mock.calls[0]![1] as Record<string, unknown>;
+  }
+
+  it('sends the platform and the OS', async () => {
+    setPlatform({ kind: 'capacitor' } as unknown as Parameters<typeof setPlatform>[0]);
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
+      'Mozilla/5.0 (iPad; CPU OS 18_5 like Mac OS X)'
+    );
+    const args = await sentArgs();
+    expect(args.p_platform).toBe('ios');
+    expect(args.p_os_version).toBe('iOS 18');
+  });
+
+  it('calls the browser extension an extension', async () => {
+    setPlatform({ kind: 'extension' } as unknown as Parameters<typeof setPlatform>[0]);
+    expect((await sentArgs()).p_platform).toBe('extension');
+  });
+
+  it('still sends the report when the environment cannot be read', async () => {
+    vi.mocked(reportEnvironment).mockRejectedValueOnce(new Error('no platform'));
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: 'ok', error: null } as never);
+    const r = await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
+    expect(r).toEqual({ ok: true });
+    expect(vi.mocked(supabase.rpc).mock.calls[0]![1]).toMatchObject({ p_platform: '' });
   });
 });

@@ -317,14 +317,14 @@ describe('no student data leaves the device', () => {
 
   // The one sanctioned exception to "nothing about a failure leaves": the
   // student attaches it to a report themselves. These two tests keep it the
-  // ONLY path. Diagnostics may reach Supabase through submit_suggestion_v2 and
+  // ONLY path. Diagnostics may reach Supabase through submit_suggestion_v3 (v2 for older builds) and
   // nowhere else, and no file that talks to Supabase may read the log itself —
   // so it can only ever arrive as what the report form was handed.
   it('sends diagnostics only through the report form, as the student chose', () => {
     const offenders: string[] = [];
     for (const f of files) {
       if (f.path === 'src/api/suggestions.ts') continue;
-      if (/submit_suggestion_v2|p_diagnostics|p_screenshot/.test(f.text)) {
+      if (/submit_suggestion_v[23]|p_diagnostics|p_screenshot/.test(f.text)) {
         offenders.push(`${f.path} → names the attachment RPC`);
       }
     }
@@ -338,7 +338,7 @@ describe('no student data leaves the device', () => {
       offenders,
       `Diagnostics are leaving by a path the student did not choose. The only ` +
         `sanctioned route is FeedbackModal → submitSuggestion(draft, attachments) ` +
-        `→ submit_suggestion_v2, and only after the student ticks the box:\n` +
+        `→ submit_suggestion_v3, and only after the student ticks the box:\n` +
         offenders.join('\n')
     ).toEqual([]);
   });

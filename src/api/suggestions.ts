@@ -6,6 +6,7 @@ import { IndexedDBService } from '@/services/storage';
 import { isAppView, type AppView } from '@/types/app';
 import { useAppStore } from '@/store/useAppStore';
 import { readPhoneViewport } from '@/hooks/ui/usePhoneViewport';
+import { reportEnvironment } from '@/utils/reportEnvironment';
 import type {
   ReportScreen,
   SuggestionDraft,
@@ -46,9 +47,17 @@ export function buildSuggestionPayload(
 // desktop tree: useAppLogic still runs above the phone fork, and on the phone
 // the only thing that moves its view is a map focus — so reading the key there
 // reported every phone and iPad report from 5.3.0 as "map".
+//
+// But the only GENERAL entry point on the phone is a row on the Profil tab, so
+// the bare tab said `profile` for nearly every report from 5.4.0 on. From
+// Profil the screen is the tab the student came from; a report opened in place
+// (ReportMissingLink, the exam-failure toast) keeps the tab it was opened on.
 async function currentScreen(): Promise<ReportScreen> {
   try {
-    if (readPhoneViewport()) return useAppStore.getState().mobileTab;
+    if (readPhoneViewport()) {
+      const { mobileTab, lastNonProfileTab } = useAppStore.getState();
+      return mobileTab === 'profile' ? lastNonProfileTab : mobileTab;
+    }
   } catch {
     // No platform installed: not the phone app, so the desktop answer stands.
   }
@@ -60,10 +69,11 @@ async function currentScreen(): Promise<ReportScreen> {
 }
 
 /**
- * Writes a suggestion through the `submit_suggestion_v2` RPC: a SECURITY
+ * Writes a suggestion through the `submit_suggestion_v3` RPC: a SECURITY
  * DEFINER function granted to `anon`, because an anonymous write needs no
  * shared secret. This is the ONLY thing reIS sends that a student composed.
- * v1 (`submit_suggestion`) stays deployed for builds that have not updated.
+ * v3 adds the platform and OS the report was sent from. v1 and v2 stay
+ * deployed for builds that have not updated.
  *
  * `attachments` is what the student chose to add: a screenshot they picked and,
  * only if they ticked the box, the cleaned diagnostics. Neither
@@ -87,8 +97,9 @@ export async function submitSuggestion(
 ): Promise<SubmitResult> {
   try {
     const payload = buildSuggestionPayload(draft, await currentScreen());
+    const env = await reportEnvironment().catch(() => ({ platform: '', os: '' }));
     const screenshot = attachments.screenshotBase64 ?? null;
-    const { data, error } = await supabase.rpc('submit_suggestion_v2', {
+    const { data, error } = await supabase.rpc('submit_suggestion_v3', {
       p_type: payload.type,
       p_title: payload.title,
       p_body: payload.body,
@@ -98,6 +109,8 @@ export async function submitSuggestion(
       p_browser_name: payload.browser_name,
       p_browser_version: payload.browser_version,
       p_viewport: payload.viewport,
+      p_platform: env.platform,
+      p_os_version: env.os,
       p_diagnostics: attachments.diagnostics ?? null,
       p_screenshot: screenshot,
     });

@@ -44,6 +44,43 @@ describe('FeedbackModal', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
+  // 4 of the 6 bugs that needed more detail had no contact, so we could not ask.
+  it('says why the contact is asked for', () => {
+    render(<FeedbackModal isOpen onClose={vi.fn()} />);
+    expect(screen.getByText('Email, in case we need to ask (optional)')).toBeInTheDocument();
+  });
+
+  // A placeholder vanishes as soon as the student types, so the help under the
+  // description is visible text — and only for Chyba.
+  describe('the help under the description', () => {
+    const hint = /Helps us: where in the app/i;
+
+    it('shows for a bug, and stays while the student types', () => {
+      render(<FeedbackModal isOpen onClose={vi.fn()} />);
+      expect(screen.getByText(hint)).toBeInTheDocument();
+      fireEvent.change(screen.getByPlaceholderText(/What happened/i), {
+        target: { value: 'Something broke' },
+      });
+      expect(screen.getByText(hint)).toBeInTheDocument();
+    });
+
+    it('is tied to the description field for screen readers', () => {
+      render(<FeedbackModal isOpen onClose={vi.fn()} />);
+      const field = screen.getByPlaceholderText(/What happened/i);
+      expect(field.getAttribute('aria-describedby')).toBe(screen.getByText(hint).id);
+    });
+
+    it('is gone for an idea and for other', () => {
+      render(<FeedbackModal isOpen onClose={vi.fn()} />);
+      fireEvent.click(screen.getByRole('button', { name: /Idea/ }));
+      expect(screen.queryByText(hint)).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: /Other/ }));
+      expect(screen.queryByText(hint)).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: /Bug/ }));
+      expect(screen.getByText(hint)).toBeInTheDocument();
+    });
+  });
+
   it('shows the success state when the submission lands', async () => {
     render(<FeedbackModal isOpen onClose={vi.fn()} />);
     fireEvent.change(screen.getByPlaceholderText(/Briefly describe/i), {

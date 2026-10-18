@@ -43,6 +43,9 @@ export interface SuggestionRow {
   browser_name: string;
   browser_version: string;
   viewport: string;
+  /** Sent by builds after 5.4.1. Empty or missing on a report from an older build. */
+  platform?: string;
+  os_version?: string;
   status: SuggestionStatus;
   created_at: string;
   /** Counts only — the bytes load on demand. Null when the report has none. */

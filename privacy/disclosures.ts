@@ -69,16 +69,16 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'report',
-    what: 'A report the student writes: type, title, message, optional contact, screen, app version, browser, viewport.',
+    what: 'A report the student writes: type, title, message, optional contact, screen, app version, browser, viewport, and the platform and OS version it was sent from (no device model).',
     when: 'student-action',
     identifier: 'contact',
     files: ['src/api/suggestions.ts'],
-    calls: ['submit_suggestion_v2'],
+    calls: ['submit_suggestion_v3'],
     policyRows: [
       [
         'Feedback',
         'you press send',
-        'your message, any contact detail you type, the screen name, app version, browser, window size',
+        'your message, any contact detail you type, the screen name, app version, browser, window size, platform and OS version (no device model)',
       ],
     ],
     stores: {
@@ -93,11 +93,11 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'report_attachments',
-    what: 'Only what the student adds to a report: a picked screenshot (re-encoded JPEG), and — if ticked — the cleaned error/warning log with environment and sync flags. Kept 90 days or until resolved.',
+    what: 'Only what the student adds to a report: a picked screenshot (re-encoded JPEG), and — if ticked — the cleaned error/warning log with environment and sync flags. Kept until the student asks us to delete them; not deleted automatically.',
     when: 'student-action',
     identifier: 'contact',
     files: ['src/api/suggestions.ts'],
-    calls: ['submit_suggestion_v2'],
+    calls: ['submit_suggestion_v3'],
     policyRows: [
       [
         'Report attachments',

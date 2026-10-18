@@ -54,6 +54,9 @@ export function SuggestionsInbox() {
               <span>
                 {s.browser_name} {s.browser_version}
               </span>
+              {(s.platform || s.os_version) && (
+                <span>{[s.platform, s.os_version].filter(Boolean).join(' · ')}</span>
+              )}
               <span>{s.viewport}</span>
               <span>{new Date(s.created_at).toLocaleDateString()}</span>
               {s.contact && <span className="break-all">{s.contact}</span>}

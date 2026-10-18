@@ -13,6 +13,7 @@ import { clampRailWidth, RAIL_PX } from '../../utils/mapRail';
  */
 export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
   mobileTab: 'calendar',
+  lastNonProfileTab: 'calendar',
   mobileSelectedDayIso: null,
   mobileSheets: [],
   // Opens at the PEEK stop.
@@ -82,7 +83,12 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
     // looks like it should be: this app runs under StrictMode, so effects are
     // double-invoked and that cleanup ran milliseconds after the pin set the
     // suggestion. The chip never appeared at all.
-    set({ mobileTab: tab, mobileSheets: [], ...(tab === 'map' ? {} : { routeSuggestion: null }) });
+    set({
+      mobileTab: tab,
+      mobileSheets: [],
+      ...(tab === 'profile' ? {} : { lastNonProfileTab: tab }),
+      ...(tab === 'map' ? {} : { routeSuggestion: null }),
+    });
     // A file opened from the Subjects tab should be in the calendar's
     // "recently opened" strip by the time the student gets there.
     if (tab === 'calendar') void get().refreshRecentPdfs();
