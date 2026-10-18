@@ -63,7 +63,7 @@ export function logError(context: string, err: unknown, extra?: Record<string, u
   if (stack) payload.stack = stack;
   if (extra) Object.assign(payload, extra);
   // Kept in memory for the report form, which sends it only if the student
-  // ticks "Přiložit technické údaje". Context, message and status only — the
+  // chooses to attach it (ReportSendButtons). Context, message and status only — the
   // stack and `extra` stay in the console.
   recordDiagnostic({ level: 'error', ctx: context, msg: err, status: statusOf(err) });
   asLogErrorConsoleCall(() => console.error(`[reIS:error] ${context}: ${msg}`, payload));
