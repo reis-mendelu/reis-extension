@@ -30,7 +30,9 @@ export function ReportSendButtons({
   onSend,
 }: Props) {
   const { t } = useTranslation();
-  // Which button was pressed, so only that one shows the spinner.
+  // Which of a Chyba's two buttons was pressed, so only that one spins. A
+  // single button spins on any send: Enter sends a Nápad or Jiné without
+  // pressing it.
   const [pressed, setPressed] = useState<boolean | null>(null);
 
   const send = (withDiagnostics: boolean) => {
@@ -39,7 +41,7 @@ export function ReportSendButtons({
   };
 
   const label = (text: string, mine: boolean) =>
-    isSending && pressed === mine ? (
+    isSending && (!isBug || pressed === mine) ? (
       <>
         <Loader2 className="w-5 h-5 animate-spin" />
         {t('feedback.sending')}

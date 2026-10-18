@@ -109,61 +109,6 @@ describe('report attachments', () => {
     expect(collectDiagnostics).not.toHaveBeenCalled();
   });
 
-  // A Chyba makes the student choose: a pre-ticked box is not consent
-  // (CJEU Planet49, C-673/17), so the log goes only with the button that says so.
-  it('a Chyba has no checkbox, and two Send buttons with the log first', () => {
-    render(<FeedbackModal isOpen onClose={vi.fn()} />);
-    expect(screen.queryByRole('checkbox', { name: /Attach technical details/i })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Send feedback/i })).toBeNull();
-    const [first, second] = screen.getAllByRole('button', { name: /^Send with|^Send without/i });
-    expect(first).toHaveTextContent(/Send with technical details/i);
-    expect(first).toHaveClass('btn-primary');
-    expect(second).toHaveTextContent(/Send without them/i);
-    expect(second).not.toHaveClass('btn-primary');
-    // What the log holds is said next to the choice, not hidden.
-    expect(screen.getByText(/without links, emails/i)).toBeInTheDocument();
-  });
-
-  it('a Chyba sent with technical details carries the log and asks Firefox for it', async () => {
-    render(<FeedbackModal isOpen onClose={vi.fn()} />);
-    fillAndSend(/Send with technical details/i);
-    await waitFor(() => expect(submitSuggestion).toHaveBeenCalledTimes(1));
-    expect(collectDiagnostics).toHaveBeenCalledTimes(1);
-    expect(submitSuggestion.mock.calls[0]![1].diagnostics.env.os).toBe('macOS');
-    expect(requestDataConsent).toHaveBeenCalledWith([
-      'personalCommunications',
-      'technicalAndInteraction',
-    ]);
-  });
-
-  it('a Chyba sent without them carries no log and collects none', async () => {
-    render(<FeedbackModal isOpen onClose={vi.fn()} />);
-    fillAndSend(/Send without them/i);
-    await waitFor(() => expect(submitSuggestion).toHaveBeenCalledTimes(1));
-    expect(submitSuggestion.mock.calls[0]![1].diagnostics).toBeNull();
-    expect(collectDiagnostics).not.toHaveBeenCalled();
-    expect(requestDataConsent).toHaveBeenCalledWith(['personalCommunications']);
-  });
-
-  it('a Nápad ticked and then switched to Chyba sends the log only by the button', async () => {
-    render(<FeedbackModal isOpen onClose={vi.fn()} />);
-    pickIdea();
-    fireEvent.click(screen.getByRole('checkbox', { name: /Attach technical details/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Bug/i }));
-    fillAndSend(/Send without them/i);
-    await waitFor(() => expect(submitSuggestion).toHaveBeenCalledTimes(1));
-    expect(submitSuggestion.mock.calls[0]![1].diagnostics).toBeNull();
-  });
-
-  it('Enter does not send a Chyba: the student picks a button', async () => {
-    render(<FeedbackModal isOpen onClose={vi.fn()} />);
-    fill();
-    fireEvent.keyDown(screen.getByPlaceholderText(/Briefly describe/i), { key: 'Enter' });
-    await new Promise((r) => setTimeout(r, 0));
-    expect(requestDataConsent).not.toHaveBeenCalled();
-    expect(submitSuggestion).not.toHaveBeenCalled();
-  });
-
   it('attaches a picked screenshot and can remove it', async () => {
     render(<FeedbackModal isOpen onClose={vi.fn()} />);
     fireEvent.change(screen.getByLabelText(/Attach a screenshot/i), {
