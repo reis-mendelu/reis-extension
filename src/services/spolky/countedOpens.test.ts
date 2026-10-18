@@ -2,12 +2,14 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { IndexedDBService } from '../storage';
 import {
   claimFirstOpen,
+  confirmOpen,
   releaseOpen,
   __resetCountedOpensForTests,
   __forgetCountedOpensMemoryForTests,
 } from './countedOpens';
 
 const DAY = 24 * 60 * 60 * 1000;
+const restart = __forgetCountedOpensMemoryForTests;
 
 describe('countedOpens', () => {
   beforeEach(async () => {
@@ -40,26 +42,47 @@ describe('countedOpens', () => {
     expect(results.filter(Boolean)).toHaveLength(1);
   });
 
-  it('remembers across a restart (reads it back from IndexedDB)', async () => {
+  it('remembers a confirmed open across a restart', async () => {
     await claimFirstOpen('novinky_click', 'ev1');
-    __forgetCountedOpensMemoryForTests();
+    await confirmOpen('novinky_click', 'ev1');
+    restart();
     expect(await claimFirstOpen('novinky_click', 'ev1')).toBe(false);
   });
 
-  it('gives the open back when the write failed, so the next tap counts', async () => {
+  // The tab closed between the claim and the server's answer: nothing was
+  // written down, so the next launch counts this device.
+  it('retries an open that was claimed but never confirmed', async () => {
+    await claimFirstOpen('map_open', 'ev1');
+    restart();
     expect(await claimFirstOpen('map_open', 'ev1')).toBe(true);
-    await releaseOpen('map_open', 'ev1');
-    __forgetCountedOpensMemoryForTests();
+  });
+
+  it('gives the open back when the request failed, so the next tap counts', async () => {
+    await claimFirstOpen('map_open', 'ev1');
+    releaseOpen('map_open', 'ev1');
     expect(await claimFirstOpen('map_open', 'ev1')).toBe(true);
+  });
+
+  // Another tab confirmed this event after this tab started: the saved map is
+  // read fresh at claim time, not trusted from an earlier read.
+  it('sees what another tab confirmed, and does not erase it', async () => {
+    await claimFirstOpen('map_open', 'ev1');
+    await IndexedDBService.set('meta', 'counted_opens_map_open', { ev2: Date.now() });
+    expect(await claimFirstOpen('map_open', 'ev2')).toBe(false);
+    await confirmOpen('map_open', 'ev1');
+    const stored = (await IndexedDBService.get('meta', 'counted_opens_map_open')) as Record<
+      string,
+      number
+    >;
+    expect(Object.keys(stored).sort()).toEqual(['ev1', 'ev2']);
   });
 
   it('forgets an event counted more than half a year ago', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
-    await claimFirstOpen('map_open', 'old');
+    await confirmOpen('map_open', 'old');
     vi.setSystemTime(Date.now() + 200 * DAY);
-    __forgetCountedOpensMemoryForTests();
-    await claimFirstOpen('map_open', 'fresh');
+    await confirmOpen('map_open', 'fresh');
     const stored = (await IndexedDBService.get('meta', 'counted_opens_map_open')) as Record<
       string,
       number
@@ -67,12 +90,16 @@ describe('countedOpens', () => {
     expect(Object.keys(stored)).toEqual(['fresh']);
   });
 
-  it('still dedupes inside the session when IndexedDB is unusable', async () => {
+  it('still dedupes inside the session when IndexedDB is unusable, and says so locally', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
     const get = vi.spyOn(IndexedDBService, 'get').mockRejectedValue(new Error('blocked'));
     const set = vi.spyOn(IndexedDBService, 'set').mockRejectedValue(new Error('blocked'));
     expect(await claimFirstOpen('map_open', 'ev1')).toBe(true);
+    await confirmOpen('map_open', 'ev1');
     expect(await claimFirstOpen('map_open', 'ev1')).toBe(false);
+    expect(err).toHaveBeenCalled();
     get.mockRestore();
     set.mockRestore();
+    err.mockRestore();
   });
 });

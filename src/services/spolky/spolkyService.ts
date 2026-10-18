@@ -3,7 +3,7 @@ import type { SpolekNotification } from './types';
 import { supabase } from './supabaseClient';
 import { logError } from '../../utils/reportError';
 import { hasDataConsent } from '../../utils/firefoxDataConsent';
-import { claimFirstOpen, releaseOpen } from './countedOpens';
+import { claimFirstOpen, confirmOpen, releaseOpen } from './countedOpens';
 import { localTodayIso, NOVINKY_WINDOW_DAYS } from '../../components/CampusMap/eventWindow';
 
 // Runtime shape of a `spolky_events` row used by the notification feed. Supabase
@@ -43,14 +43,9 @@ export async function trackNotificationsViewed(notificationIds: string[]): Promi
 }
 
 /**
- * Track that a notification was opened, once per DEVICE per post.
- *
- * The click counter used to move on every tap, so a student who reopened a post
- * five times was five clicks. It now answers "how many devices opened this":
- * `claimFirstOpen` remembers on the device which posts it was already counted
- * for, and nothing about that memory is sent. Consent is asked first, so a
- * refusal does not use up the one count a device gets.
- * @param notificationId - ID of the notification that was clicked
+ * Track that a notification was opened, once per DEVICE per post: the device
+ * remembers which posts it was counted for (`countedOpens.ts`) and sends
+ * nothing about that. Consent is asked first, so a refusal keeps the count.
  */
 export async function trackNotificationClick(notificationId: string): Promise<void> {
   if (!notificationId) return;
@@ -59,9 +54,10 @@ export async function trackNotificationClick(notificationId: string): Promise<vo
 
   try {
     const res = await supabase.rpc('increment_post_click', { row_id: notificationId });
-    if (res?.error) await releaseOpen('novinky_click', notificationId);
+    if (res?.error) releaseOpen('novinky_click', notificationId);
+    else await confirmOpen('novinky_click', notificationId);
   } catch (error) {
-    await releaseOpen('novinky_click', notificationId);
+    releaseOpen('novinky_click', notificationId);
     logError('Spolky.trackNotificationClick', error);
   }
 }

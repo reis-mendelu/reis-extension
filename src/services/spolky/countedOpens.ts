@@ -1,4 +1,5 @@
 import { IndexedDBService } from '../storage';
+import { logError } from '../../utils/reportError';
 
 /**
  * Which society events this DEVICE has already been counted for, per surface.
@@ -13,9 +14,16 @@ import { IndexedDBService } from '../storage';
  * per day: the question is how many devices opened an event, and a second visit
  * tomorrow is the same device. A reinstall or a second device counts again.
  *
- * Remembered in IndexedDB (`meta`) as `{ eventId: countedAtMs }`. Entries older
- * than ~6 months are dropped on load: an event's post is long past by then, and
- * the set cannot grow without bound.
+ * The protocol is claim → send → confirm. A claim only reserves the id in
+ * memory, so a tab closed mid-request leaves nothing on disk and the next open
+ * retries; `confirmOpen` writes it down once the server has answered, and
+ * `releaseOpen` gives the reservation back when it failed. Every disk access
+ * reads the saved map fresh under a Web Lock, so two extension tabs share one
+ * truth instead of each trusting a stale copy.
+ *
+ * Stored in IndexedDB (`meta`) as `{ eventId: countedAtMs }`; entries older than
+ * ~6 months are dropped on read (the post is long past, and the set stays small).
+ * If IndexedDB is unusable the dedupe still holds for the session.
  */
 export type OpenSurface = 'novinky_click' | 'map_open';
 
@@ -23,53 +31,70 @@ const KEY = (surface: OpenSurface) => `counted_opens_${surface}`;
 const FORGET_AFTER_MS = 180 * 24 * 60 * 60 * 1000;
 
 type Counted = Record<string, number>;
-const loaded = new Map<OpenSurface, Promise<Counted>>();
+/** Reserved or confirmed this session; the fallback when the disk is unusable. */
+const session: Record<OpenSurface, Set<string>> = {
+  novinky_click: new Set(),
+  map_open: new Set(),
+};
 
-function load(surface: OpenSurface): Promise<Counted> {
-  let p = loaded.get(surface);
-  if (!p) {
-    p = (async () => {
-      // A blocked or failing IndexedDB must not cost a count: dedupe then holds
-      // for the session only.
-      const saved = (await IndexedDBService.get('meta', KEY(surface)).catch(() => undefined)) as
-        Counted | undefined;
-      const cutoff = Date.now() - FORGET_AFTER_MS;
-      return Object.fromEntries(Object.entries(saved ?? {}).filter(([, at]) => at > cutoff));
-    })();
-    loaded.set(surface, p);
+async function readSaved(surface: OpenSurface): Promise<Counted> {
+  try {
+    const saved = (await IndexedDBService.get('meta', KEY(surface))) as Counted | undefined;
+    const cutoff = Date.now() - FORGET_AFTER_MS;
+    return Object.fromEntries(Object.entries(saved ?? {}).filter(([, at]) => at > cutoff));
+  } catch (err) {
+    logError('Spolky.countedOpens.read', err);
+    return {};
   }
-  return p;
 }
 
-const persist = (surface: OpenSurface, counted: Counted) =>
-  IndexedDBService.set('meta', KEY(surface), { ...counted }).catch(() => undefined);
+async function writeSaved(surface: OpenSurface, counted: Counted): Promise<void> {
+  try {
+    await IndexedDBService.set('meta', KEY(surface), counted);
+  } catch (err) {
+    logError('Spolky.countedOpens.write', err);
+  }
+}
 
-/** True the first time this device opens `id` on `surface`, false ever after. */
+/** One read-modify-write at a time across tabs (Web Locks where they exist). */
+async function exclusive<T>(fn: () => Promise<T>): Promise<T> {
+  const locks = typeof navigator === 'undefined' ? undefined : navigator.locks;
+  return locks ? await locks.request('reis_counted_opens', fn) : fn();
+}
+
+/** True if this device has not been counted for `id` on `surface`; reserves it. */
 export async function claimFirstOpen(surface: OpenSurface, id: string): Promise<boolean> {
-  const counted = await load(surface);
-  // No await between this check and the write, so two simultaneous taps cannot
-  // both pass.
-  if (id in counted) return false;
-  counted[id] = Date.now();
-  await persist(surface, counted);
-  return true;
+  // Checked and reserved with no await between, so two simultaneous taps in one
+  // tab cannot both pass.
+  if (session[surface].has(id)) return false;
+  session[surface].add(id);
+  const saved = await exclusive(() => readSaved(surface));
+  return !(id in saved);
 }
 
-/** Take a claim back after the write that justified it failed, so a retry counts. */
-export async function releaseOpen(surface: OpenSurface, id: string): Promise<void> {
-  const counted = await load(surface);
-  delete counted[id];
-  await persist(surface, counted);
+/** The server has the count: write it down so later launches skip it. */
+export async function confirmOpen(surface: OpenSurface, id: string): Promise<void> {
+  await exclusive(async () => {
+    const saved = await readSaved(surface);
+    saved[id] = Date.now();
+    await writeSaved(surface, saved);
+  });
 }
 
-/** Test-only: drop the in-memory copy, as a restart would. */
+/** The request failed: give the reservation back so the next open retries. */
+export function releaseOpen(surface: OpenSurface, id: string): void {
+  session[surface].delete(id);
+}
+
+/** Test-only: drop the in-memory reservations, as a restart would. */
 export function __forgetCountedOpensMemoryForTests(): void {
-  loaded.clear();
+  session.novinky_click.clear();
+  session.map_open.clear();
 }
 
 /** Test-only: forget everything, memory and disk. */
 export async function __resetCountedOpensForTests(): Promise<void> {
-  loaded.clear();
+  __forgetCountedOpensMemoryForTests();
   await Promise.all(
     (['novinky_click', 'map_open'] as const).map((s) =>
       IndexedDBService.delete('meta', KEY(s)).catch(() => undefined)

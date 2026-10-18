@@ -4,7 +4,7 @@ import { getInstallId } from '../services/identity/installId';
 import { isHarnessEnabled } from '../utils/harnessEnabled';
 import { logError } from '../utils/reportError';
 import { hasDataConsent } from '../utils/firefoxDataConsent';
-import { claimFirstOpen, releaseOpen } from '../services/spolky/countedOpens';
+import { claimFirstOpen, confirmOpen, releaseOpen } from '../services/spolky/countedOpens';
 
 /**
  * The three counters reIS keeps about its own features, and the per-event map
@@ -131,12 +131,14 @@ export async function trackMapEventView(eventId: string): Promise<void> {
     const { error } = await supabase.rpc('increment_event_map_view', { row_id: eventId });
     if (error) {
       viewedEvents.delete(eventId);
-      await releaseOpen('map_open', eventId);
+      releaseOpen('map_open', eventId);
       logError('Api.trackMapEventView', new Error(error.message));
+    } else {
+      await confirmOpen('map_open', eventId);
     }
   } catch (err) {
     viewedEvents.delete(eventId);
-    await releaseOpen('map_open', eventId);
+    releaseOpen('map_open', eventId);
     logError('Api.trackMapEventView', err);
   }
 }
