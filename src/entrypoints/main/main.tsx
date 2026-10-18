@@ -29,7 +29,7 @@ import { initDataConsent } from '@/utils/firefoxDataConsent';
 installExternalLinkHandler();
 
 // Keeps recent console warnings and errors in memory for the report form, which
-// sends them only if the student ticks "Přiložit technické údaje". This entry
+// sends them only if the student chooses to attach them. This entry
 // runs on every host (extension iframe, Capacitor, dev webapp).
 installConsoleCapture();
 

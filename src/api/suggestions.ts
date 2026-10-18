@@ -76,7 +76,7 @@ async function currentScreen(): Promise<ReportScreen> {
  * deployed for builds that have not updated.
  *
  * `attachments` is what the student chose to add: a screenshot they picked and,
- * only if they ticked the box, the cleaned diagnostics. Neither
+ * only if they chose to, the cleaned diagnostics. Neither
  * is ever gathered here on its own initiative. The install id is deliberately
  * not sent, so a report cannot be joined to the daily-usage rows.
  *

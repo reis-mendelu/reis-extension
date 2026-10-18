@@ -34,7 +34,7 @@ describe('FeedbackModal', () => {
     fireEvent.change(screen.getByPlaceholderText(/What happened/i), {
       target: { value: 'Panel stayed empty' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /Send feedback/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Send without them/i }));
 
     await waitFor(() => expect(submitSuggestion).toHaveBeenCalledTimes(1));
     expect(submitSuggestion).toHaveBeenCalledWith(
@@ -89,7 +89,7 @@ describe('FeedbackModal', () => {
     fireEvent.change(screen.getByPlaceholderText(/What happened/i), {
       target: { value: 'B' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /Send feedback/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Send without them/i }));
     expect(await screen.findByText('Sent!')).toBeInTheDocument();
   });
 
@@ -105,6 +105,8 @@ describe('FeedbackModal', () => {
   // student got the generic failure toast for input the UI should have caught.
   it('does not submit on Enter when the message is empty', () => {
     render(<FeedbackModal isOpen onClose={vi.fn()} />);
+    // Enter sends only a Nápad or Jiné; a Chyba always waits for a button.
+    fireEvent.click(screen.getByRole('button', { name: /Idea/i }));
     const titleInput = screen.getByPlaceholderText(/Briefly describe/i);
     fireEvent.change(titleInput, { target: { value: 'T' } });
     fireEvent.keyDown(titleInput, { key: 'Enter' });
@@ -120,7 +122,7 @@ describe('FeedbackModal', () => {
     });
     fireEvent.keyDown(titleInput, { key: 'Enter' });
     expect(submitSuggestion).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: /Send feedback/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Send without them/i })).toBeDisabled();
   });
 
   it('stays on the form when the submission fails', async () => {
@@ -132,7 +134,7 @@ describe('FeedbackModal', () => {
     fireEvent.change(screen.getByPlaceholderText(/What happened/i), {
       target: { value: 'B' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /Send feedback/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Send without them/i }));
     await waitFor(() => expect(submitSuggestion).toHaveBeenCalled());
     expect(screen.queryByText('Sent!')).not.toBeInTheDocument();
   });

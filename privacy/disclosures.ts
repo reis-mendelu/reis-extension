@@ -93,7 +93,7 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'report_attachments',
-    what: 'Only what the student adds to a report: a picked screenshot (re-encoded JPEG), and — if ticked — the cleaned error/warning log with environment and sync flags. Kept until the student asks us to delete them; not deleted automatically.',
+    what: 'Only what the student adds to a report: a picked screenshot (re-encoded JPEG), and — only if the student chooses it (a box on an idea, the "Odeslat s technickými údaji" button on a bug) — the cleaned error/warning log with environment and sync flags. Kept until the student asks us to delete them; not deleted automatically.',
     when: 'student-action',
     identifier: 'contact',
     files: ['src/api/suggestions.ts'],
@@ -102,7 +102,7 @@ export const FLOWS: Flow[] = [
       [
         'Report attachments',
         'only what you add to a report, when you press send',
-        'a **screenshot you pick** yourself, re-encoded on your device so photo metadata and location are removed; and, **only if you tick the box**, the recent reIS errors and warnings from this session, with link parameters, email addresses, long numbers and coordinates already blanked out, plus platform, OS version, language and sync status. **Not linked to the install identifier.**',
+        'a **screenshot you pick** yourself, re-encoded on your device so photo metadata and location are removed; and, **only if you choose it** (tick the box, or press *Send with technical details* on a bug report), the recent reIS errors and warnings from this session, with link parameters, email addresses, long numbers and coordinates already blanked out, plus platform, OS version, language and sync status. **Not linked to the install identifier.**',
       ],
     ],
     stores: {

@@ -5,7 +5,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { getDiagnostics, DIAGNOSTIC_CAP, type DiagnosticEntry } from './diagnosticLog';
 
 /**
- * What "Přiložit technické údaje" attaches: the session's cleaned errors and
+ * What "Přiložit technické údaje" / "Odeslat s technickými údaji" attaches: the session's cleaned errors and
  * warnings, plus the environment and sync state as flags, timestamps and
  * counts. Never content — not a subject, an exam, a URL or an id.
  */

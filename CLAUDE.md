@@ -365,8 +365,11 @@ Only these, all disclosed in `docs/privacy-policy-app.md`:
 
 6. **Report attachments** (`submit_suggestion_v3`; v2 for older builds, September 2026) — only what the student
    adds to a report: a screenshot they pick (re-encoded to JPEG on device, no EXIF/GPS) and,
-   if they tick an unticked-by-default box, the cleaned diagnostic log (collected at Send, not
-   listed in the form — the cleaning is what makes it safe to send unread). No install id. Kept, not deleted automatically (the 90-day pg_cron job and the `done` trigger were removed in October 2026); deleted on request. Every report also carries the platform and OS version it was sent from (no device model).
+   only if they choose it, the cleaned diagnostic log (collected at Send, not listed in the
+   form — the cleaning is what makes it safe to send unread). On a Chyba the choice is two
+   Send buttons, "Odeslat s technickými údaji" first; on a Nápad or Jiné an unticked box.
+   Never preselect it: a pre-ticked box is not consent (CJEU Planet49), and the policy's
+   legal basis for attachments is consent. No install id. Kept, not deleted automatically (the 90-day pg_cron job and the `done` trigger were removed in October 2026); deleted on request. Every report also carries the platform and OS version it was sent from (no device model).
    The guard allows diagnostics to reach Supabase through `src/api/suggestions.ts` only, and
    no Supabase caller may import `utils/diagnostics/`.
 

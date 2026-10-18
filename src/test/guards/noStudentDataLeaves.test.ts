@@ -59,8 +59,9 @@ const SUPABASE_CALLERS = new Set([
   //
   // Since September 2026 (submit_suggestion_v2) a report may also carry what
   // the STUDENT chose to attach: a screenshot they picked, re-encoded on the
-  // device (no EXIF/GPS), and — only if they tick an unticked-by-default box —
-  // the cleaned diagnostic log, collected at Send. The log is not listed in the
+  // device (no EXIF/GPS), and — only if they choose it (the unticked box on a
+  // Nápad/Jiné, the "with technical details" button on a Chyba) — the cleaned
+  // diagnostic log, collected at Send. The log is not listed in the
   // form, so the record-time cleaning in utils/diagnostics/diagnosticLog is the
   // whole of what keeps it safe; do not loosen it on the grounds of consent.
   // The file receives both as arguments; it does not gather them, and no
