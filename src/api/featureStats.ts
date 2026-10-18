@@ -61,8 +61,8 @@ export interface EventMapViews {
 /**
  * One post as both surfaces saw it. `views`/`clicks` are the Novinky counters
  * on the row (views once per DEVICE, clicks every tap) and `mapViews` is every
- * map open summed over ALL days — all three since publication, so they can sit
- * side by side. Counts of opens: nothing here says which install did which.
+ * map open summed over ALL days. The first two count since publication; the map
+ * table only began on 2026-09-22, so older posts undercount on the map. Counts of opens: nothing here says which install did which.
  */
 export interface EventReach {
   id: string;
