@@ -53,22 +53,35 @@ describe('suggestion attachments in the store', () => {
     expect(getSuggestionAttachments).toHaveBeenCalledTimes(2);
   });
 
-  it('marking done forgets the attachments, as the server trigger deletes them', async () => {
+  // Attachments are kept (Oct 2026): the server no longer deletes them on
+  // `done`, so neither may the admin store pretend it does.
+  it('marking done keeps the attachments', async () => {
     setSuggestionStatus.mockResolvedValue(true);
-    useAppStore.setState({ suggestionAttachments: { 1: { screenshot: null, diagnostics: null } } });
+    const cached = { screenshot: null, diagnostics: null };
+    useAppStore.setState({ suggestionAttachments: { 1: cached } });
     await useAppStore.getState().updateSuggestionStatus(1, 'done');
-    expect(useAppStore.getState().suggestions[0]!.attachments).toBeNull();
-    expect(useAppStore.getState().suggestionAttachments[1]).toBeUndefined();
+    expect(useAppStore.getState().suggestions[0]!.status).toBe('done');
+    expect(useAppStore.getState().suggestions[0]!.attachments).toEqual(row.attachments);
+    expect(useAppStore.getState().suggestionAttachments[1]).toBe(cached);
   });
 
-  it('drops an attachment read that lands after the report was marked done', async () => {
+  it('opens the attachments of a report that is already done', async () => {
+    const a = { screenshot: 'data:image/jpeg;base64,/9j/', diagnostics: null };
+    getSuggestionAttachments.mockResolvedValue(a);
+    useAppStore.setState({ suggestions: [{ ...row, status: 'done' }] });
+    await useAppStore.getState().loadSuggestionAttachments(1);
+    expect(useAppStore.getState().suggestionAttachments[1]).toBe(a);
+  });
+
+  it('keeps an attachment read that lands after the report was marked done', async () => {
     let finish: (v: unknown) => void = () => {};
     getSuggestionAttachments.mockImplementation(() => new Promise((r) => (finish = r)));
     setSuggestionStatus.mockResolvedValue(true);
     const loading = useAppStore.getState().loadSuggestionAttachments(1);
     await useAppStore.getState().updateSuggestionStatus(1, 'done');
-    finish({ screenshot: 'data:image/jpeg;base64,/9j/', diagnostics: null });
+    const a = { screenshot: 'data:image/jpeg;base64,/9j/', diagnostics: null };
+    finish(a);
     await loading;
-    expect(useAppStore.getState().suggestionAttachments[1]).toBeUndefined();
+    expect(useAppStore.getState().suggestionAttachments[1]).toBe(a);
   });
 });
