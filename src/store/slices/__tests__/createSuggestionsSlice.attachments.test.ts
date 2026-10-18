@@ -53,7 +53,7 @@ describe('suggestion attachments in the store', () => {
     expect(getSuggestionAttachments).toHaveBeenCalledTimes(2);
   });
 
-  // Attachments are kept (Oct 2026): the server no longer deletes them on
+  // Attachments are kept 2 years (Oct 2026): the server no longer deletes them on
   // `done`, so neither may the admin store pretend it does.
   it('marking done keeps the attachments', async () => {
     setSuggestionStatus.mockResolvedValue(true);

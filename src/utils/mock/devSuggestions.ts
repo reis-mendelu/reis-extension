@@ -112,7 +112,7 @@ rows = rows.map((r) =>
 export const devSuggestionsStore = {
   list: (): SuggestionRow[] => [...rows],
   setStatus: (id: number, status: SuggestionStatus): void => {
-    // Attachments are kept whatever the status, as on the server.
+    // Attachments outlive the status, as on the server (2 years).
     rows = rows.map((r) => (r.id === id ? { ...r, status } : r));
   },
   attachments: (id: number): SuggestionAttachment => {

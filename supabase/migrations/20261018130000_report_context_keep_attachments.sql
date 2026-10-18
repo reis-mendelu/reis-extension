@@ -8,12 +8,15 @@
 --    have not updated; it now just forwards to v3 with empty labels, so there is
 --    one implementation of the validation and the flood guard.
 --
--- 2. Attachments are kept (Dominik, 18 Oct 2026). A screenshot or technical log
---    a student chose to send is no longer deleted after 90 days or when the
---    report is marked `done`. This removes the daily pg_cron job, the status
---    trigger, and the prune the v2 write path ran on every submit. Nothing
---    existing is affected retroactively: prod suggestion_attachments was empty
---    when this was written. Student-facing wording changed in the same PR
+-- 2. Attachments are kept for 2 years (Dominik, 18 Oct 2026). A screenshot or
+--    technical log a student chose to send is no longer deleted after 90 days
+--    or when the report is marked `done`: a bug often comes back the same time
+--    next year, and the log is what traces it. Not forever either: GDPR's
+--    storage limitation (Art. 5(1)(e)) wants a stated end, so the daily pg_cron
+--    prune stays and now deletes at 2 years. This removes the status trigger
+--    and the prune the v2 write path ran on every submit. Nothing existing is
+--    affected retroactively: prod suggestion_attachments was empty when this
+--    was written. Student-facing wording changed in the same PR
 --    (PRIVACY.md, docs/privacy-policy-app.md, privacy/disclosures.ts).
 --    Access is unchanged: reis_admin read only, deny-all RLS otherwise.
 
@@ -171,14 +174,21 @@ as $$
   );
 $$;
 
--- 3. Retention: gone ---------------------------------------------------------
+-- 3. Retention: 2 years ---------------------------------------------------------
 --
--- The cron job first, then the trigger, then the functions they ran. The v2
--- write path no longer calls the prune, so dropping it breaks nothing; neither
--- function was ever executable by anon or authenticated.
-
-select cron.unschedule(jobid) from cron.job where jobname = 'prune-suggestion-attachments';
+-- The `done` trigger and its function go. The daily `prune-suggestion-attachments`
+-- job stays as it is and runs the same function, which now keeps 2 years
+-- instead of 90 days. CREATE OR REPLACE keeps its owner and grants (service_role
+-- only; never anon or authenticated). The v2 write path no longer calls it.
 
 drop trigger if exists suggestions_drop_attachments_when_done on public.suggestions;
 drop function if exists public.drop_attachments_when_done();
-drop function if exists public.prune_suggestion_attachments();
+
+create or replace function public.prune_suggestion_attachments() returns void
+language sql
+security definer
+set search_path = public
+as $$
+  delete from public.suggestion_attachments
+   where created_at < now() - interval '2 years';
+$$;

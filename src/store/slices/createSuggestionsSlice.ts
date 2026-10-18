@@ -59,7 +59,7 @@ export const createSuggestionsSlice: AppSlice<SuggestionsSlice> = (set, get) => 
     // last wins, and a failure on the first would resync away the second.
     if (get().suggestionsPending.includes(id)) return;
 
-    // Optimistic: triaging should feel instant. Attachments are kept whatever
+    // Optimistic: triaging should feel instant. Attachments outlive the status (2 years, server-side), whatever
     // the status, so only the status changes.
     const after = get().suggestions.map((r) => (r.id === id ? { ...r, status } : r));
     set({

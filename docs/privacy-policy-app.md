@@ -51,8 +51,8 @@ the usage count and counters follow the technical-data switch in `about:addons`,
 and a report asks for consent when you press send.
 
 Nothing else. Feedback is read by the developers and passed to nobody. Report
-attachments are **kept**: they are not deleted automatically, neither after a
-set time nor when the report is resolved, and we delete them when you ask.
+attachments are kept for **2 years** after the report, also once it is
+resolved, and then deleted automatically; we delete them sooner when you ask.
 
 **Your network address is not recorded** — this version writes straight to the
 database, which cannot see your connection. Versions released before September

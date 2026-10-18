@@ -369,7 +369,7 @@ Only these, all disclosed in `docs/privacy-policy-app.md`:
    form — the cleaning is what makes it safe to send unread). On a Chyba the choice is two
    Send buttons, "Odeslat s technickými údaji" first; on a Nápad or Jiné an unticked box.
    Never preselect it: a pre-ticked box is not consent (CJEU Planet49), and the policy's
-   legal basis for attachments is consent. No install id. Kept, not deleted automatically (the 90-day pg_cron job and the `done` trigger were removed in October 2026); deleted on request. Every report also carries the platform and OS version it was sent from (no device model).
+   legal basis for attachments is consent. No install id. Kept 2 years (the daily pg_cron prune; the `done` trigger and the 90-day limit were removed in October 2026, and GDPR's storage limitation is why there is still an end); deleted sooner on request. Every report also carries the platform and OS version it was sent from (no device model).
    The guard allows diagnostics to reach Supabase through `src/api/suggestions.ts` only, and
    no Supabase caller may import `utils/diagnostics/`.
 

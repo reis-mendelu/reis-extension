@@ -93,7 +93,7 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'report_attachments',
-    what: 'Only what the student adds to a report: a picked screenshot (re-encoded JPEG), and — only if the student chooses it (a box on an idea, the "Odeslat s technickými údaji" button on a bug) — the cleaned error/warning log with environment and sync flags. Kept until the student asks us to delete them; not deleted automatically.',
+    what: 'Only what the student adds to a report: a picked screenshot (re-encoded JPEG), and — only if the student chooses it (a box on an idea, the "Odeslat s technickými údaji" button on a bug) — the cleaned error/warning log with environment and sync flags. Kept 2 years, then deleted automatically; sooner on request.',
     when: 'student-action',
     identifier: 'contact',
     files: ['src/api/suggestions.ts'],
