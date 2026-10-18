@@ -9,7 +9,6 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
   courseNicknames: {},
   courseDeadlines: {},
   attendance: {},
-  pastAttendance: {},
   fetchSubjects: async () => {
     // Only show loading on the first call. Subsequent sync-driven refreshes
     // must not flip isLoaded and cause a UI flash while cached data is visible.
@@ -56,7 +55,6 @@ export const createSubjectsSlice: AppSlice<SubjectsSlice> = (set, get) => ({
     set({ attendance: data });
     IndexedDBService.set('meta', 'current_attendance', data).catch(() => {});
   },
-  setPastAttendance: (data) => set({ pastAttendance: data }),
   setCourseNickname: (courseCode, nickname) => {
     const currentNicknames = get().courseNicknames;
     const newNicknames = { ...currentNicknames };

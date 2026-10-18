@@ -88,6 +88,62 @@ describe('TOOLS', () => {
     expect(out.assignments[0]).not.toHaveProperty('odevzdavarnaId');
   });
 
+  describe('assignments: uploaded is not handed in', () => {
+    const box = (over: Record<string, unknown>) => ({
+      courseId: '1',
+      courseNameCs: 'A',
+      courseNameEn: 'A',
+      name: 'HW',
+      type: 't',
+      deadline: '01.01.2099 12:00',
+      odevzdavarnaId: '9',
+      fileCount: 0,
+      uploadUrl: 'https://is.mendelu.cz/x',
+      ...over,
+    });
+    const run = async (rows: Record<string, unknown>[]) => {
+      vi.mocked(fetchOdevzdavarny).mockResolvedValue({
+        assignments: rows,
+        lastFetched: 0,
+        periods: [],
+      } as never);
+      const out = (await tool('mendelu_assignments').run({}, ctx)) as {
+        assignments: Record<string, unknown>[];
+      };
+      return out.assignments;
+    };
+
+    it('says an open box with files is uploaded but NOT confirmed in IS', async () => {
+      const [row] = await run([box({ section: 'open', fileCount: 2 })]);
+      expect(row).toMatchObject({ submission: 'uploaded_not_confirmed', fileCount: 2 });
+      expect(String(row?.submissionNote)).toMatch(/NOT confirmed/);
+      expect(String(row?.submissionNote)).toMatch(/confirm/i);
+    });
+
+    it('calls only a box in the submitted section handed in', async () => {
+      const [row] = await run([box({ section: 'submitted', fileCount: 1 })]);
+      expect(row).toMatchObject({ submission: 'handed_in' });
+      expect(row).not.toHaveProperty('submissionNote');
+    });
+
+    it('reads an empty box as nothing uploaded', async () => {
+      const [row] = await run([box({ section: 'open', fileCount: 0 })]);
+      expect(row).toMatchObject({ submission: 'nothing_uploaded' });
+    });
+
+    it('keeps reading a row with no section by its files', async () => {
+      const [row] = await run([box({ fileCount: 1 })]);
+      expect(row).toMatchObject({ submission: 'handed_in' });
+    });
+
+    it('describes the two-step submission instead of "files handed in"', () => {
+      const d = tool('mendelu_assignments').description;
+      expect(d).not.toMatch(/files handed in/);
+      expect(d).toMatch(/NOT confirmed/);
+      expect(d).toMatch(/submitted/);
+    });
+  });
+
   it('resolves a subject code to its folder before listing files', async () => {
     vi.mocked(fetchDualLanguageSubjects).mockResolvedValue({
       subjects: {

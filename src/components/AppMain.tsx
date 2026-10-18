@@ -6,6 +6,7 @@ import { SubjectsPanel } from './SubjectsPanel';
 import { StudyPlanPage } from './SubjectsPanel/StudyPlanPage';
 import { ErasmusPanel } from './ErasmusPanel';
 import { CampusMapView } from './CampusMap/CampusMapView';
+import { OldIsPanel } from './OldIsPanel';
 import { NpsBanner } from './Feedback/NpsBanner';
 
 interface AppMainProps {
@@ -83,6 +84,7 @@ export function AppMain({
             />
           )}
           {currentView === 'map' && <CampusMapView />}
+          {currentView === 'oldIs' && <OldIsPanel />}
         </div>
       </div>
     </main>

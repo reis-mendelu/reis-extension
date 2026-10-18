@@ -2,7 +2,7 @@
  * useFileActions - Hook for file operations (open, download, download ZIP).
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { normalizeFileUrl } from '../../utils/fileUrl';
 import { createLogger } from '../../utils/logger';
 import { isNativeHost } from '../../mobile/openIsFile';
@@ -15,6 +15,7 @@ import { downloadZipFiles } from './downloadZipFiles';
 import type { DownloadTick } from './readBlobWithProgress';
 import { fetchIsFile } from './fetchIsFile';
 import { opensInTab, saveIsFile } from './saveBlob';
+import { useRowDownloads } from './useRowDownloads';
 import type { FileRowHint } from '../../utils/contentDisposition';
 
 const log = createLogger('useFileActions');
@@ -43,28 +44,34 @@ interface UseFileActionsResult {
 export function useFileActions(): UseFileActionsResult {
   const [isZipping, setIsZipping] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
-  const [activeDownloads, setActiveDownloads] = useState<Record<string, DownloadTick>>({});
-  // A ref, not `activeDownloads`: a second click landing before React commits
-  // the first `setActiveDownloads` would read an empty map and fire a duplicate
-  // request. Same reasoning as useDocumentDownload's `inFlight`.
-  const inFlight = useRef<Set<string>>(new Set());
+  const { activeDownloads, claimRow, tickRow, clearRowProgress, releaseRow } = useRowDownloads();
   const { t } = useTranslation();
 
   const openFile = useCallback(
     async (link: string, row?: FileRowHint) => {
+      // A row click downloads too, so it gets the row's indicator and lock just
+      // as the download icon does — a .pptx row clicked on its body used to
+      // fetch with nothing on screen saying so.
+      if (!claimRow(link)) return;
       const fullUrl = normalizeFileUrl(link);
 
-      // Capacitor: IS denies CORS to every origin, so the browser fetch below
-      // always fails here — and its window.open fallback hands the URL to the
-      // SYSTEM BROWSER, which has no IS session. Fetch natively instead.
-      if (isNativeHost()) {
-        await openNativeFile(fullUrl, 'useFileActions.openFile', t, undefined, row);
-        return;
-      }
-
       try {
+        // Capacitor: IS denies CORS to every origin, so the browser fetch below
+        // always fails here — and its window.open fallback hands the URL to the
+        // SYSTEM BROWSER, which has no IS session. Fetch natively instead.
+        if (isNativeHost()) {
+          await openNativeFile(
+            fullUrl,
+            'useFileActions.openFile',
+            t,
+            () => clearRowProgress(link),
+            row
+          );
+          return;
+        }
+
         assertNotDemo();
-        const file = await fetchIsFile(fullUrl);
+        const file = await fetchIsFile(fullUrl, tickRow(link));
         // A tab only for what a tab can show: a .pptx opened this way was saved
         // by the browser under the blob URL's GUID instead of its name.
         if (!opensInTab(file.blob)) {
@@ -87,9 +94,11 @@ export function useFileActions(): UseFileActionsResult {
         // a top-level tab is first-party, so it carries the session.
         log.error('Failed to fetch file as blob, falling back to direct link', e);
         window.open(fullUrl, '_blank', 'noopener,noreferrer');
+      } finally {
+        releaseRow(link);
       }
     },
-    [t]
+    [t, claimRow, tickRow, clearRowProgress, releaseRow]
   );
 
   /**
@@ -141,25 +150,6 @@ export function useFileActions(): UseFileActionsResult {
     [fetchPdfBlob]
   );
 
-  /** Ends the row's INDICATOR only. The lock is `releaseRow`'s. */
-  const clearRowProgress = useCallback((link: string) => {
-    setActiveDownloads((d) => {
-      if (!(link in d)) return d;
-      const next = { ...d };
-      delete next[link];
-      return next;
-    });
-  }, []);
-
-  /** Ends the indicator AND releases the lock — only once delivery has settled. */
-  const releaseRow = useCallback(
-    (link: string) => {
-      inFlight.current.delete(link);
-      clearRowProgress(link);
-    },
-    [clearRowProgress]
-  );
-
   /**
    * The row's own download. Every exit clears the row: a spinner that never
    * stops is worse than the missing spinner this replaced.
@@ -169,10 +159,7 @@ export function useFileActions(): UseFileActionsResult {
    */
   const downloadSingle = useCallback(
     async (link: string, row?: FileRowHint) => {
-      if (inFlight.current.has(link)) return;
-      inFlight.current.add(link);
-      setActiveDownloads((d) => ({ ...d, [link]: { loaded: 0, total: null } }));
-
+      if (!claimRow(link)) return;
       const fullUrl = normalizeFileUrl(link);
       try {
         // See openFile: the browser fetch and its window.open fallback are both
@@ -197,9 +184,7 @@ export function useFileActions(): UseFileActionsResult {
           return;
         }
         assertNotDemo();
-        const file = await fetchIsFile(fullUrl, (tick) =>
-          setActiveDownloads((d) => (link in d ? { ...d, [link]: tick } : d))
-        );
+        const file = await fetchIsFile(fullUrl, tickRow(link));
         saveIsFile(file, row);
       } catch (e) {
         // See openFile: the direct-link fallback would bypass the demo guard.
@@ -213,7 +198,7 @@ export function useFileActions(): UseFileActionsResult {
         releaseRow(link);
       }
     },
-    [t, clearRowProgress, releaseRow]
+    [t, claimRow, tickRow, clearRowProgress, releaseRow]
   );
 
   const downloadZip = useCallback(async (fileLinks: string[], zipFileName: string) => {

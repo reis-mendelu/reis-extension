@@ -114,7 +114,12 @@ export function probeSource(): ProbeResult {
     // the whole marker pane, record the relationship and let the overflow rule
     // decide: the icon itself is Leaflet's, a descendant is only excused while
     // it sits inside the icon's own box (displacement it merely inherited).
-    const markerIcon = node.closest<HTMLElement>('.leaflet-marker-icon');
+    // Society event pins are the same case: reIS places them by map coordinate
+    // in its own pane (EventLayer), so one for an event outside the campus view
+    // sits off a 320px viewport for the same reason a marker icon does.
+    const markerIcon = node.closest<HTMLElement>(
+      '.leaflet-marker-icon, .leaflet-reisEvents-pane > button'
+    );
     const isLeafletMarker = markerIcon === node;
     const leafletMarkerIdx =
       markerIcon && markerIcon !== node ? (indexOf.get(markerIcon) ?? null) : null;

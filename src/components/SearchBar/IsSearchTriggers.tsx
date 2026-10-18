@@ -1,10 +1,9 @@
-import { Search, UserSearch } from 'lucide-react';
+import { UserSearch } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
-import { IsPortalPopover } from './IsPortalPopover';
 import { PeopleSearchPopover } from './PeopleSearchPopover';
 
 /** Which IS-flyout search popover is open, if any. */
-export type IsSearchTarget = 'pages' | 'people' | null;
+export type IsSearchTarget = 'people' | null;
 
 interface IsSearchTriggersProps {
   onOpen: (target: IsSearchTarget) => void;
@@ -12,7 +11,7 @@ interface IsSearchTriggersProps {
   buttonClassName: string;
 }
 
-/** The "Starý IS" + "Lidé" trigger rows shown in the IS flyout (desktop sidebar and mobile sheet). */
+/** The "Lidé" trigger row shown in the desktop IS flyout. ("Starý IS" is its own sidebar item.) */
 export function IsSearchTriggers({ onOpen, buttonClassName }: IsSearchTriggersProps) {
   const { t } = useTranslation();
   return (
@@ -20,22 +19,12 @@ export function IsSearchTriggers({ onOpen, buttonClassName }: IsSearchTriggersPr
       <button
         onClick={(e) => {
           e.stopPropagation();
-          onOpen('pages');
-        }}
-        className={buttonClassName}
-      >
-        <Search className="w-4 h-4" />
-        <span>{t('sidebar.isPages')}</span>
-      </button>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
           onOpen('people');
         }}
         className={buttonClassName}
       >
-        <UserSearch className="w-4 h-4" />
-        <span>{t('sidebar.people')}</span>
+        <UserSearch className="w-4 h-4 text-base-content/50" />
+        <span className="font-medium truncate">{t('sidebar.people')}</span>
       </button>
     </>
   );
@@ -48,10 +37,5 @@ export function IsSearchTriggers({ onOpen, buttonClassName }: IsSearchTriggersPr
  * (PeopleSearchPopover's useSearch subscribes to the store).
  */
 export function IsSearchPopovers({ open, onClose }: { open: IsSearchTarget; onClose: () => void }) {
-  return (
-    <>
-      {open === 'pages' && <IsPortalPopover isOpen onClose={onClose} />}
-      {open === 'people' && <PeopleSearchPopover isOpen onClose={onClose} />}
-    </>
-  );
+  return <>{open === 'people' && <PeopleSearchPopover isOpen onClose={onClose} />}</>;
 }

@@ -3,12 +3,11 @@ import type {
   SubjectInfo,
   SubjectsData,
   SubjectAttendance,
-  AttendanceRecord,
-  AttendanceStatus,
   AvailablePeriod,
 } from '../types/documents';
 import { SubjectsDataSchema } from '../schemas/subjectSchema';
 import { logError } from '../utils/reportError';
+import { parseAttendance } from './attendance';
 
 const STUDENT_LIST_URL = `${BASE_URL}/auth/student/list.pl`;
 
@@ -66,13 +65,13 @@ export function parseAvailablePeriods(html: string): AvailablePeriod[] {
 }
 
 /**
- * Fetches subjects + attendance for a specific past semester (no periods list).
+ * Fetches the subjects of a specific past semester (no periods list).
  * Result is cached in IDB by the caller — this function is pure fetch+parse.
  */
 export async function fetchPastSemesterData(
   studium: string,
   obdobi: string
-): Promise<SubjectsFetchResult | null> {
+): Promise<SubjectsData | null> {
   try {
     const [czRes, enRes] = await Promise.all([
       fetchWithAuth(buildListUrl('cz', studium, obdobi)),
@@ -81,7 +80,6 @@ export async function fetchPastSemesterData(
     const czHtml = await czRes.text();
     const enHtml = await enRes.text();
 
-    const attendance = parseAttendance(czHtml);
     const czMap = parseSubjectFolders(czHtml);
     const enMap = parseSubjectFolders(enHtml);
 
@@ -107,12 +105,11 @@ export async function fetchPastSemesterData(
       if (merged[code]) merged[code].nameEn = extractCleanName(fullName);
     }
 
-    const subjectsData: SubjectsData = {
+    return {
       version: 1,
       lastUpdated: new Date().toISOString(),
       data: merged,
     };
-    return { subjects: subjectsData, attendance, availablePeriods: [] };
   } catch (e) {
     logError('Api.fetchPastSemesterData', e);
     return null;
@@ -253,79 +250,6 @@ function parseSubjectFolders(htmlString: string): Record<string, SubjectLinkData
     }
   });
   return subjectMap;
-}
-
-const SYSID_TO_STATUS: Record<string, AttendanceStatus> = {
-  'doch-pritomen': 'present',
-  'doch-neomluven': 'absent',
-  'doch-omluven': 'excused',
-  'doch-pozde': 'late',
-  'doch-drivejsi-odchod': 'early-leave',
-  'doch-vyloucen': 'excluded',
-  'doch-pritomen-jinde': 'elsewhere',
-};
-
-export function parseAttendance(htmlString: string): Record<string, SubjectAttendance[]> {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(htmlString, 'text/html');
-  const table = doc.querySelector('#tmtab_1');
-  if (!table) return {};
-
-  const result: Record<string, SubjectAttendance[]> = {};
-  let currentCode: string | null = null;
-
-  const rows = table.querySelectorAll('tr.uis-hl-table');
-  for (const row of rows) {
-    const syllabusLink = row.querySelector('a[href*="/auth/katalog/syllabus.pl"]');
-
-    if (syllabusLink) {
-      const fullName = syllabusLink.textContent?.trim() || '';
-      currentCode = fullName.split(' ')[0] || null;
-      continue;
-    }
-
-    if (!currentCode) continue;
-
-    const imgs = row.querySelectorAll('img[sysid^="doch-"]');
-    if (imgs.length === 0) continue;
-
-    const cells = row.querySelectorAll('td');
-    const label =
-      cells[1]?.textContent
-        ?.trim()
-        .replace(/\s*Každý týden\s*/g, '')
-        .trim() ||
-      cells[0]?.textContent
-        ?.trim()
-        .replace(/\s*Každý týden\s*/g, '')
-        .trim() ||
-      '';
-
-    const records: AttendanceRecord[] = [];
-    for (const img of imgs) {
-      const sysid = img.getAttribute('sysid') || '';
-      const status = SYSID_TO_STATUS[sysid];
-      if (!status) continue;
-
-      const title = img.getAttribute('title') || '';
-      const parts = title.split(', ');
-      if (parts.length < 3) continue;
-
-      const datePart = parts[0];
-      const timePart = parts[1];
-      const roomAndStatus = parts.slice(2).join(', ');
-      const room = roomAndStatus.split(' - ')[0];
-
-      records.push({ date: datePart, time: timePart, room, status });
-    }
-
-    if (records.length > 0) {
-      if (!result[currentCode]) result[currentCode] = [];
-      result[currentCode].push({ label, records });
-    }
-  }
-
-  return result;
 }
 
 function extractSubjectCode(subjectName: string): string {

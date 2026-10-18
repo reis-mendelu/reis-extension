@@ -29,7 +29,8 @@ describe('showOnMap placement', () => {
 
   it.each([
     'components/mobile/screens/calendar/AgendaEvent.tsx',
-    'components/CampusMap/EventComposer.tsx',
+    // The composer's venue block (EventComposer hosts it; a notice hides it).
+    'components/CampusMap/ComposerVenueFields.tsx',
   ])('%s still does', (file) => {
     expect(read(file)).toContain('showOnMap');
   });
