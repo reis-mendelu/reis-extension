@@ -3,6 +3,7 @@ import type { SpolekNotification } from './types';
 import { supabase } from './supabaseClient';
 import { logError } from '../../utils/reportError';
 import { hasDataConsent } from '../../utils/firefoxDataConsent';
+import { claimFirstOpen, confirmOpen, releaseOpen } from './countedOpens';
 import { localTodayIso, NOVINKY_WINDOW_DAYS } from '../../components/CampusMap/eventWindow';
 
 // Runtime shape of a `spolky_events` row used by the notification feed. Supabase
@@ -42,16 +43,21 @@ export async function trackNotificationsViewed(notificationIds: string[]): Promi
 }
 
 /**
- * Track that a notification was clicked
- * @param notificationId - ID of the notification that was clicked
+ * Track that a notification was opened, once per DEVICE per post: the device
+ * remembers which posts it was counted for (`countedOpens.ts`) and sends
+ * nothing about that. Consent is asked first, so a refusal keeps the count.
  */
 export async function trackNotificationClick(notificationId: string): Promise<void> {
   if (!notificationId) return;
   if (!(await hasDataConsent('technicalAndInteraction'))) return;
+  if (!(await claimFirstOpen('novinky_click', notificationId))) return;
 
   try {
-    await supabase.rpc('increment_post_click', { row_id: notificationId });
+    const res = await supabase.rpc('increment_post_click', { row_id: notificationId });
+    if (res?.error) releaseOpen('novinky_click', notificationId);
+    else await confirmOpen('novinky_click', notificationId);
   } catch (error) {
+    releaseOpen('novinky_click', notificationId);
     logError('Spolky.trackNotificationClick', error);
   }
 }
