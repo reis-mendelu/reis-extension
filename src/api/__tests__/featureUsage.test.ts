@@ -28,14 +28,19 @@ vi.mock('../../utils/harnessEnabled', () => ({
 }));
 
 import {
+  __resetCountedOpensForTests,
+  __forgetCountedOpensMemoryForTests,
+} from '../../services/spolky/countedOpens';
+import {
   trackFeatureSignal,
   trackMapEventView,
   __resetFeatureSignalsForTests,
 } from '../featureUsage';
 
 describe('featureUsage', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     __resetFeatureSignalsForTests();
+    await __resetCountedOpensForTests();
     isHarnessEnabled.mockReturnValue(false);
     hasDataConsent.mockResolvedValue(true);
   });
@@ -155,5 +160,33 @@ describe('featureUsage', () => {
     hasDataConsent.mockResolvedValue(true);
     await trackMapEventView('event-1');
     expect(rpc).toHaveBeenCalledTimes(1);
+  });
+  // "Opened" means this device opened the event, not that it did so this
+  // session: the session latch resets on every launch, this one does not.
+  it('counts a device once per event, even after a restart', async () => {
+    await trackMapEventView('event-1');
+    __resetFeatureSignalsForTests();
+    __forgetCountedOpensMemoryForTests();
+    await trackMapEventView('event-1');
+
+    expect(rpc).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves the device free to count again when the write fails', async () => {
+    rpc.mockResolvedValueOnce({ error: { message: 'down' } });
+    await trackMapEventView('event-1');
+    await trackMapEventView('event-1');
+
+    expect(rpc).toHaveBeenCalledTimes(2);
+  });
+
+  it('writes nothing for an event this device was already counted for, consent or not', async () => {
+    await trackMapEventView('event-1');
+    __resetFeatureSignalsForTests();
+    rpc.mockClear();
+    hasDataConsent.mockResolvedValue(false);
+    await trackMapEventView('event-1');
+
+    expect(rpc).not.toHaveBeenCalled();
   });
 });

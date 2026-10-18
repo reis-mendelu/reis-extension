@@ -99,6 +99,55 @@ describe('useFileActions inside the extension iframe', () => {
     expect(result.current.activeDownloads[link]).toBeUndefined();
   });
 
+  // Sprint 13: a .pptx row clicked anywhere but its download icon showed no
+  // progress at all — only downloadSingle fed the row. The row is one control,
+  // so a click on its body has to look like the download it starts.
+  it("openFile shows the proxy's byte ticks on the row too", async () => {
+    let resolve!: (v: string) => void;
+    fetchViaProxy.mockImplementation(
+      (_u: string, _o: unknown, onTick: (t: { loaded: number; total: number | null }) => void) => {
+        onTick({ loaded: 40, total: 100 });
+        return new Promise<string>((r) => (resolve = r));
+      }
+    );
+    spyOnSaves();
+    const { result } = renderHook(() => useFileActions());
+    const link = 'https://is.mendelu.cz/a';
+
+    let done!: Promise<void>;
+    act(() => {
+      done = result.current.openFile(link, { name: 'algo05', type: 'pptx' });
+    });
+    await vi.waitFor(() =>
+      expect(result.current.activeDownloads[link]).toEqual({ loaded: 40, total: 100 })
+    );
+    await act(async () => {
+      resolve(pptx('attachment; filename="algo05.pptx"'));
+      await done;
+    });
+    expect(result.current.activeDownloads[link]).toBeUndefined();
+  });
+
+  it('openFile ignores a second click while the row is still downloading', async () => {
+    let resolve!: (v: string) => void;
+    fetchViaProxy.mockImplementation(() => new Promise<string>((r) => (resolve = r)));
+    const saved = spyOnSaves();
+    const { result } = renderHook(() => useFileActions());
+    const link = 'https://is.mendelu.cz/a';
+
+    let first!: Promise<void>;
+    act(() => {
+      first = result.current.openFile(link);
+    });
+    await act(() => result.current.openFile(link));
+    await act(async () => {
+      resolve(pptx('attachment; filename="algo05.pptx"'));
+      await first;
+    });
+    expect(fetchViaProxy).toHaveBeenCalledTimes(1);
+    expect(saved).toEqual(['algo05.pptx']);
+  });
+
   // Across postMessage a rejection is only a string, so the 5xx retry reads
   // the status out of it.
   it('downloadZip retries a file once when the proxy reports an IS 5xx', async () => {

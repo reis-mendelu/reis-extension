@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 /**
  * End-to-end proof that the counters in `api/featureUsage.ts` actually land in
  * a database — the real supabase-js client, over real HTTP, into the real SQL
- * from `supabase/migrations/20260922120000_engagement_signals.sql`. Everything
+ * from `supabase/migrations_archive/20260922120000_engagement_signals.sql`. Everything
  * the unit tests next door assert is a mock; this file asserts the effect.
  *
  * SKIPPED unless a local stack is pointed at, so CI (which has none) stays

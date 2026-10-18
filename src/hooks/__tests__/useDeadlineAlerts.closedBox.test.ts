@@ -47,4 +47,19 @@ describe('useDeadlineAlerts — submission boxes', () => {
   it('does not alert for a box IS lists as closed to the student', () => {
     expect(alertsFor([box({ section: 'closed', isOpen: false })])).toEqual([]);
   });
+
+  // IS needs two steps — upload, then confirm — and lists a box under "Kam mohu
+  // odevzdávat" until the second. A student who stopped after the first is
+  // exactly who the warning is for.
+  it('still alerts for a box uploaded but not confirmed', () => {
+    expect(alertsFor([box({ section: 'open', isOpen: true, fileCount: 2 })])).toHaveLength(1);
+  });
+
+  it('does not alert for a box whose submission IS has confirmed', () => {
+    expect(alertsFor([box({ section: 'submitted', isOpen: true, fileCount: 2 })])).toEqual([]);
+  });
+
+  it('a row cached with no section keeps reading files as done', () => {
+    expect(alertsFor([box({ fileCount: 2 })])).toEqual([]);
+  });
 });

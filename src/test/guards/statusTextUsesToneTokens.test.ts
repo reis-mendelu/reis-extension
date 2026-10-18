@@ -25,6 +25,8 @@ const SWEPT = [
   'src/components/mobile/screens/calendar/DayChips.tsx',
   'src/components/mobile/screens/ProfileScreen.tsx',
   'src/components/mobile/screens/HeaderActions.tsx',
+  'src/components/mobile/sheets/IskamBalanceRow.tsx',
+  'src/components/mobile/sheets/IskamTopUpForm.tsx',
   // desktop tree (the extension)
   'src/components/Exams/Timeline/ExamItem.tsx',
   'src/components/ExamPanel/TermsSummary.tsx',

@@ -1,7 +1,19 @@
 import { ExternalLink } from 'lucide-react';
 import type { Odevzdavarna } from '../../api/odevzdavarny';
-import { boxDeadline } from '../../utils/submissionBoxes';
+import { boxDeadline, boxState, type BoxState } from '../../utils/submissionBoxes';
 import { daysUntil, useBoxLabels } from './useBoxLabels';
+
+const STATUS_TONE: Record<BoxState, string | undefined> = {
+  empty: undefined,
+  unconfirmed: 'font-medium text-[var(--tone-warning)]',
+  confirmed: 'font-medium text-[var(--tone-success)]',
+};
+
+const ACTION_LABEL: Record<BoxState, string> = {
+  empty: 'odevzdavarny.submitInIs',
+  unconfirmed: 'odevzdavarny.confirmInIs',
+  confirmed: 'odevzdavarny.openInIs',
+};
 
 interface SubmissionBoxCardProps {
   box: Odevzdavarna;
@@ -16,8 +28,8 @@ interface SubmissionBoxCardProps {
 export function SubmissionBoxCard({ box, now, testId }: SubmissionBoxCardProps) {
   const L = useBoxLabels();
   const deadline = boxDeadline(box);
-  const uploaded = box.fileCount > 0;
-  const urgent = !uploaded && deadline !== null && daysUntil(deadline, now) <= 2;
+  const state = boxState(box);
+  const urgent = state !== 'confirmed' && deadline !== null && daysUntil(deadline, now) <= 2;
 
   return (
     <a
@@ -48,15 +60,15 @@ export function SubmissionBoxCard({ box, now, testId }: SubmissionBoxCardProps) 
       <div className="mt-1 flex flex-wrap gap-x-1.5 text-xs text-base-content/70">
         {deadline && <span>{L.until(deadline)}</span>}
         {deadline && <span aria-hidden>·</span>}
-        <span className={uploaded ? 'font-medium text-[var(--tone-success)]' : undefined}>
-          {uploaded
-            ? `${L.t('odevzdavarny.uploaded')} · ${L.files(box.fileCount)}`
-            : L.t('odevzdavarny.nothingUploaded')}
+        <span className={STATUS_TONE[state]}>
+          {state === 'empty'
+            ? L.t('odevzdavarny.nothingUploaded')
+            : `${L.t(state === 'confirmed' ? 'odevzdavarny.uploaded' : 'odevzdavarny.unconfirmed')} · ${L.files(box.fileCount)}`}
         </span>
         {box.points && <span>· {L.t('odevzdavarny.points', { n: box.points })}</span>}
       </div>
       <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-[var(--tone-primary)]">
-        {L.t(uploaded ? 'odevzdavarny.openInIs' : 'odevzdavarny.submitInIs')}
+        {L.t(ACTION_LABEL[state])}
         <ExternalLink size={12} aria-hidden />
       </span>
     </a>

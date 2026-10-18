@@ -17,7 +17,6 @@ import { renderHook, cleanup } from '@testing-library/react';
 
 const store = {
   loadGradeHistory: vi.fn(),
-  setPastAttendance: vi.fn(),
   markSyncLoaded: vi.fn(),
   setSchedule: vi.fn(),
   setExams: vi.fn(),

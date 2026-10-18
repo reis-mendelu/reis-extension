@@ -18,7 +18,7 @@ export interface UsageRetention {
 
 /**
  * Admin-only aggregate read: how many of our regulars we have lost.
- * Definitions live in supabase/migrations/20261008120000_usage_retention.sql.
+ * Definitions live in supabase/migrations/20261016000000_baseline.sql.
  */
 export async function fetchUsageRetention(): Promise<UsageRetention | null> {
   if (DEV_SOCIETY) return null;

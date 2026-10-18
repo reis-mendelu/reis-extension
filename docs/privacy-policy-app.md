@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: 10 October 2026**
+**Last Updated: 13 October 2026**
 
 reIS is a student-built project that simplifies the Mendel University in Brno
 Information System (IS Mendelu). It is a browser extension (Chrome, Edge,
@@ -31,7 +31,7 @@ yourself — see *Report attachments* below.
 <!-- BEGIN generated:flows (npm run privacy:generate) -->
 | what | when | what it carries |
 |---|---|---|
-| Daily count | once a day | a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI) and platform as group labels. The survey and the feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation. |
+| Daily count | once a day | a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI), platform and app version (e.g. 5.4.1) as group labels. The survey and the feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation. |
 | Feedback | you press send | your message, any contact detail you type, the screen name, app version, browser, window size |
 | Report attachments | only what you add to a report, when you press send | a **screenshot you pick** yourself, re-encoded on your device so photo metadata and location are removed; and, **only if you tick the box**, the recent reIS errors and warnings from this session, with link parameters, email addresses, long numbers and coordinates already blanked out, plus platform, OS version, language and sync status. **Not linked to the install identifier.** |
 | In-app survey | you answer | the same random install identifier |
@@ -71,6 +71,17 @@ course-difficulty statistics; no identifier is sent, though the set of subjects
 requested does reveal which courses you take. **Supabase** hosts reIS's own
 database — infrastructure, not a recipient doing anything of its own.
 
+**WebISKAM** (the university's accommodation and canteen system) receives, only
+in the mobile app (Android, iPhone, iPad) and only when you ask for your ISIC
+balance or a top-up, the MENDELU sign-in you make on MENDELU's own page — your
+password goes to MENDELU, never to reIS. reIS keeps the sign-in encrypted on your
+device; while you are signed in the device's own web-cookie store holds it too,
+like any browser, and signing out deletes both. The balance is shown, never
+stored. A top-up sends WebISKAM the amount you typed and whether you chose card or
+Google Pay, so it can create the payment; it then opens **GoPay**'s payment page
+in your device's browser view, and your card or Google Pay details go to GoPay
+and never to reIS.
+
 We do **not** sell or trade your personal information, and transfer it to no one
 else.
 
@@ -98,9 +109,11 @@ and we will delete it; the daily-count rows hold nothing that identifies you.
 ## Changes
 
 We may update this policy; changes appear here with a new date. Google Drive
-backup, Outlook calendar sync, WebISKAM, library study-room booking, AI syllabus
-comparison and automatic error reporting have all been removed from reIS, along
-with everything they sent.
+backup, Outlook calendar sync, the earlier WebISKAM integration (dorm, meals and
+the rest), library study-room booking, AI syllabus comparison and automatic error
+reporting have all been removed from reIS, along with everything they sent. In
+October 2026 WebISKAM came back for one thing only — the ISIC balance and its
+top-up, described above.
 
 ## Contact
 

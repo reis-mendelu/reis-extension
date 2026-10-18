@@ -34,8 +34,8 @@ interface SubmissionBoxesSummaryProps {
  *
  * Compact by default: teachers leave some boxes open all year, so listing
  * every open box up front would become a permanent wall. Collapsed, rows are
- * only boxes with nothing uploaded and a deadline in the next 14 days, at
- * most three. But "3 open" with nothing listed left the student asking which
+ * only boxes not yet handed in (nothing uploaded, or uploaded but not
+ * confirmed in IS) with a deadline in the next 14 days, at most three. But "3 open" with nothing listed left the student asking which
  * ones, so the open count is a disclosure: expanded, it replaces those rows
  * with every open box, soonest first, with its upload state. It is offered
  * only when it would show something the collapsed card does not.

@@ -7,9 +7,25 @@ import { fetchDualLanguageStudyPlan } from '../src/api/studyPlan';
 import { fetchSyllabus, SYLLABUS_FETCH_FAILED } from '../src/api/syllabus';
 import { fetchSubjectSuccessRates } from '../src/api/successRate';
 import { fetchGradeHistory } from '../src/api/gradeHistory';
-import { fetchOdevzdavarny } from '../src/api/odevzdavarny';
+import { fetchOdevzdavarny, type Odevzdavarna } from '../src/api/odevzdavarny';
+import { boxState } from '../src/utils/submissionBoxes';
 import { listFolderFiles, readDokServerFile } from './files';
 import { scheduleRows, defaultRange, compactStudyPlan } from './shape';
+
+const UNCONFIRMED_NOTE =
+  'Files are uploaded but the submission is NOT confirmed in IS, so the teacher does not see it as handed in. The student must open the box in IS and confirm it.';
+
+/** Spell out the two-step IS submission so a model cannot read an upload as a hand-in. */
+function submissionOf(box: Odevzdavarna) {
+  switch (boxState(box)) {
+    case 'confirmed':
+      return { submission: 'handed_in' };
+    case 'unconfirmed':
+      return { submission: 'uploaded_not_confirmed', submissionNote: UNCONFIRMED_NOTE };
+    case 'empty':
+      return { submission: 'nothing_uploaded' };
+  }
+}
 
 export type ToolCtx = { fetch: typeof fetch };
 export type ToolDef = {
@@ -175,7 +191,7 @@ export const TOOLS: ToolDef[] = [
     name: 'mendelu_assignments',
     title: 'My assignment deadlines',
     description:
-      'Your submission boxes (Odevzdávárny): subject, assignment, deadline, whether it is still open, files handed in and points. Read-only: it never submits anything.',
+      'Your submission boxes (Odevzdávárny): subject, assignment, deadline, whether it is still open, files uploaded and points. IS takes a submission in two steps, upload then confirm, so each box has a `submission` field: only "handed_in" (section "submitted") means it is handed in. "uploaded_not_confirmed" is an open box with files that is NOT confirmed in IS: tell the student to confirm it in IS, never that it is handed in. Read-only: it never submits or confirms anything.',
     input: {},
     run: async () => {
       const { studium, obdobi } = await study();
@@ -183,7 +199,10 @@ export const TOOLS: ToolDef[] = [
       if (!res) return null;
       return {
         ...res,
-        assignments: res.assignments.map((r) => omit(r, ['uploadUrl', 'odevzdavarnaId'])),
+        assignments: res.assignments.map((r) => ({
+          ...omit(r, ['uploadUrl', 'odevzdavarnaId']),
+          ...submissionOf(r),
+        })),
       };
     },
   },

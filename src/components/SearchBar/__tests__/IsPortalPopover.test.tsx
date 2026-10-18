@@ -46,14 +46,10 @@ describe('IsPortalPopover', () => {
 });
 
 describe('IS flyout trigger', () => {
-  it('is labelled "Starý IS", matching the phone segment', () => {
+  it('only offers the people search; "Starý IS" is its own sidebar item now', () => {
     useAppStore.setState({ language: 'cz' } as never);
-    const { unmount } = render(<IsSearchTriggers onOpen={() => {}} buttonClassName="" />);
-    expect(screen.getByRole('button', { name: 'Starý IS' })).toBeInTheDocument();
-    unmount();
-
-    useAppStore.setState({ language: 'en' } as never);
     render(<IsSearchTriggers onOpen={() => {}} buttonClassName="" />);
-    expect(screen.getByRole('button', { name: 'Old IS' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Lidé' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Starý IS' })).not.toBeInTheDocument();
   });
 });
