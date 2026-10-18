@@ -516,6 +516,9 @@ export type MobileSheet =
 
 export interface MobileUiSlice {
   mobileTab: MobileTab;
+  /** The last tab that was not Profil. A report is written from Profil (the one
+   *  general entry point on the phone), so this is where the student was. */
+  lastNonProfileTab: MobileTab;
   mobileSelectedDayIso: string | null;
   mobileSheets: MobileSheet[];
   mapSheetState: MapSheetState;

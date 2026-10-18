@@ -11,6 +11,7 @@ import { desktopDialogMotion, phoneSheetMotion } from './feedbackModalMotion';
 import { useReportAttachments } from './useReportAttachments';
 import { ReportAttachments } from './ReportAttachments';
 import { ReportSendButtons } from './ReportSendButtons';
+import { ReportFormFields, type ReportType } from './ReportFormFields';
 import { requestDataConsent, reportConsentCategories } from '../../utils/firefoxDataConsent';
 
 interface FeedbackModalProps {
@@ -21,7 +22,7 @@ interface FeedbackModalProps {
 }
 
 export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalProps) {
-  const [type, setType] = useState<'bug' | 'idea' | 'other'>('bug');
+  const [type, setType] = useState<ReportType>('bug');
   const [title, setTitle] = useState(initialTitle ?? '');
   const [message, setMessage] = useState('');
   const [contact, setContact] = useState('');
@@ -165,88 +166,17 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
                 // onPaste on the whole form: a screenshot pasted into any field
                 // is attached rather than dropped as text.
                 <div className="space-y-4" onPaste={attachments.onPaste}>
-                  {/* Type Selection */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium text-base-content/60 ml-1">
-                      {t('feedback.typeLabel')}
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setType('bug')}
-                        className={`btn btn-sm border-0 ${type === 'bug' ? 'bg-error/20 text-base-content hover:bg-error/30' : 'bg-base-200 text-base-content/75 hover:bg-base-300 hover:text-base-content'}`}
-                      >
-                        {t('feedback.bug')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setType('idea')}
-                        className={`btn btn-sm border-0 ${type === 'idea' ? 'bg-warning/20 text-base-content hover:bg-warning/30' : 'bg-base-200 text-base-content/75 hover:bg-base-300 hover:text-base-content'}`}
-                      >
-                        {t('feedback.idea')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setType('other')}
-                        className={`btn btn-sm border-0 ${type === 'other' ? 'bg-neutral text-neutral-content hover:bg-neutral/80' : 'bg-base-200 text-base-content/75 hover:bg-base-300 hover:text-base-content'}`}
-                      >
-                        {t('feedback.other')}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Title */}
-                  <div className="form-control">
-                    <label className="label pt-0 pb-1">
-                      <span className="text-sm font-medium text-base-content/60">
-                        {t('feedback.subject')}
-                      </span>
-                    </label>
-                    <input
-                      type="text"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder={t('feedback.subjectPlaceholder')}
-                      className="input input-bordered w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors"
-                      required
-                      maxLength={120}
-                      onKeyDown={onEnter}
-                    />
-                  </div>
-
-                  {/* Message */}
-                  <div className="form-control">
-                    <label className="label pt-0 pb-1">
-                      <span className="text-sm font-medium text-base-content/60">
-                        {t('feedback.description')}
-                      </span>
-                    </label>
-                    <textarea
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      placeholder={t('feedback.descriptionPlaceholder')}
-                      className="textarea textarea-bordered h-32 w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors leading-relaxed resize-none"
-                      required
-                      maxLength={2000}
-                    />
-                  </div>
-
-                  {/* Contact (Optional) */}
-                  <div className="form-control">
-                    <label className="label pt-0 pb-1">
-                      <span className="text-sm font-medium text-base-content/60">
-                        {t('feedback.contact')}
-                      </span>
-                    </label>
-                    <input
-                      type="text"
-                      value={contact}
-                      onChange={(e) => setContact(e.target.value)}
-                      placeholder={t('feedback.contactPlaceholder')}
-                      className="input input-bordered w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors"
-                      onKeyDown={onEnter}
-                    />
-                  </div>
+                  <ReportFormFields
+                    type={type}
+                    setType={setType}
+                    title={title}
+                    setTitle={setTitle}
+                    message={message}
+                    setMessage={setMessage}
+                    contact={contact}
+                    setContact={setContact}
+                    onEnter={onEnter}
+                  />
 
                   <ReportAttachments
                     state={attachments}

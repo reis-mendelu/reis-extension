@@ -32,7 +32,7 @@ yourself — see *Report attachments* below.
 | what | when | what it carries |
 |---|---|---|
 | Daily count | once a day | a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI), platform and app version (e.g. 5.4.1) as group labels. The survey and the feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation. |
-| Feedback | you press send | your message, any contact detail you type, the screen name, app version, browser, window size |
+| Feedback | you press send | your message, any contact detail you type, the screen name, app version, browser, window size, platform and OS version (no device model) |
 | Report attachments | only what you add to a report, when you press send | a **screenshot you pick** yourself, re-encoded on your device so photo metadata and location are removed; and, **only if you choose it** (tick the box, or press *Send with technical details* on a bug report), the recent reIS errors and warnings from this session, with link parameters, email addresses, long numbers and coordinates already blanked out, plus platform, OS version, language and sync status. **Not linked to the install identifier.** |
 | In-app survey | you answer | the same random install identifier |
 | Society post view or click | you open one | a post id |
@@ -51,8 +51,8 @@ the usage count and counters follow the technical-data switch in `about:addons`,
 and a report asks for consent when you press send.
 
 Nothing else. Feedback is read by the developers and passed to nobody. Report
-attachments are deleted **90 days** after the report, or as soon as it is
-resolved, whichever comes first.
+attachments are kept for **2 years** after the report, also once it is
+resolved, and then deleted automatically; we delete them sooner when you ask.
 
 **Your network address is not recorded** — this version writes straight to the
 database, which cannot see your connection. Versions released before September
