@@ -163,6 +163,7 @@ describe('AdminStatsPanel', () => {
         daily: [{ day: '2026-09-22', feature: 'map_dwell_3s', installs: 7 }],
         topEvents: [],
         eventDaily: [],
+        eventReach: [],
       },
     } as never);
 
@@ -181,6 +182,7 @@ describe('AdminStatsPanel', () => {
         daily: [],
         topEvents: [],
         eventDaily: [],
+        eventReach: [],
       },
     } as never);
 
