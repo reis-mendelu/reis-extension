@@ -236,7 +236,9 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
 
                   {/* Contact (Optional) */}
                   <div className="form-control">
-                    <label className="label pt-0 pb-1">
+                    {/* whitespace-normal: daisyUI's .label never wraps, and this
+                        one says why we ask, which is longer than a word. */}
+                    <label className="label pt-0 pb-1 whitespace-normal">
                       <span className="text-sm font-medium text-base-content/60">
                         {t('feedback.contact')}
                       </span>
