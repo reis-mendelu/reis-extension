@@ -40,7 +40,6 @@ interface SyncedData {
   classmates?: Record<string, ClassmatesData>;
   zaznamnik?: Record<string, SubjectZaznamnik | null>;
   attendance?: Record<string, SubjectAttendance[]>;
-  pastAttendance?: Record<string, SubjectAttendance[]>;
   studyPlan?: DualLanguageStudyPlan;
   studyStats?: unknown;
   studyComparison?: unknown;
@@ -85,15 +84,6 @@ export function useAppLogic() {
         if (typeof v === 'number') useAppStore.getState().seedLastSync(v);
       })
       .catch((e) => logError('useAppLogic.seedLastSync', e));
-
-    // Hydrate past attendance from iframe-side IDB cache
-    IndexedDBService.get('meta', 'past_attendance_merged')
-      .then((data) => {
-        if (data && typeof data === 'object' && !Array.isArray(data)) {
-          useAppStore.getState().setPastAttendance(data as Record<string, SubjectAttendance[]>);
-        }
-      })
-      .catch((e) => logError('useAppLogic.hydratePastAttendance', e));
 
     let unsub: (() => void) | undefined;
     initializeStore().then((unsubscribe) => {
@@ -251,11 +241,6 @@ export function useAppLogic() {
 
         if (r.attendance) {
           useAppStore.getState().setAttendance(r.attendance);
-        }
-
-        if (r.pastAttendance) {
-          useAppStore.getState().setPastAttendance(r.pastAttendance);
-          await IndexedDBService.set('meta', 'past_attendance_merged', r.pastAttendance);
         }
 
         if (r.files) {

@@ -66,13 +66,13 @@ export function parseAvailablePeriods(html: string): AvailablePeriod[] {
 }
 
 /**
- * Fetches subjects + attendance for a specific past semester (no periods list).
+ * Fetches the subjects of a specific past semester (no periods list).
  * Result is cached in IDB by the caller — this function is pure fetch+parse.
  */
 export async function fetchPastSemesterData(
   studium: string,
   obdobi: string
-): Promise<SubjectsFetchResult | null> {
+): Promise<SubjectsData | null> {
   try {
     const [czRes, enRes] = await Promise.all([
       fetchWithAuth(buildListUrl('cz', studium, obdobi)),
@@ -81,7 +81,6 @@ export async function fetchPastSemesterData(
     const czHtml = await czRes.text();
     const enHtml = await enRes.text();
 
-    const attendance = parseAttendance(czHtml);
     const czMap = parseSubjectFolders(czHtml);
     const enMap = parseSubjectFolders(enHtml);
 
@@ -107,12 +106,11 @@ export async function fetchPastSemesterData(
       if (merged[code]) merged[code].nameEn = extractCleanName(fullName);
     }
 
-    const subjectsData: SubjectsData = {
+    return {
       version: 1,
       lastUpdated: new Date().toISOString(),
       data: merged,
     };
-    return { subjects: subjectsData, attendance, availablePeriods: [] };
   } catch (e) {
     logError('Api.fetchPastSemesterData', e);
     return null;
