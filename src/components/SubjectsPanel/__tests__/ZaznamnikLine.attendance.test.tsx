@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { render, screen } from '@testing-library/react';
 import { ZaznamnikLine } from '../ZaznamnikLine';
 import { useAppStore } from '../../../store/useAppStore';
-import { parseAttendance } from '../../../api/subjects';
+import { parseAttendance } from '../../../api/attendance';
 
 // A real list.pl page, through the parser, into the drawer header's dots. When IS
 // switched to span icons the parse came back empty and the dots silently vanished.

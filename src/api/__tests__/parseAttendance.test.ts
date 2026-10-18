@@ -1,12 +1,8 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-vi.mock('../../services/storage/IndexedDBService', () => ({
-  IndexedDBService: {},
-}));
-
-import { parseAttendance } from '../subjects';
+import { parseAttendance } from '../attendance';
 
 // Real list.pl pages (trimmed to #tmtab_1, ids scrubbed), three students, ZS 2026/27.
 // All three carry IS's new icons: <span data-sysid="doch-…"> wrapping inline SVG.
