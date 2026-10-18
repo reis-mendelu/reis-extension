@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Send, Loader2, CheckCircle2 } from 'lucide-react';
+import { X, CheckCircle2 } from 'lucide-react';
 import { submitSuggestion } from '../../api/suggestions';
 import { toast } from 'sonner';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -10,6 +10,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { desktopDialogMotion, phoneSheetMotion } from './feedbackModalMotion';
 import { useReportAttachments } from './useReportAttachments';
 import { ReportAttachments } from './ReportAttachments';
+import { ReportSendButtons } from './ReportSendButtons';
 import { requestDataConsent, reportConsentCategories } from '../../utils/firefoxDataConsent';
 
 interface FeedbackModalProps {
@@ -36,8 +37,9 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
   // Chyba/Nápad/Jiné, and on a phone a focused field raised the soft keyboard
   // mid-slide, resized the WebView and made the sheet jump.
 
-  const handleSubmit = async (e?: React.SyntheticEvent) => {
-    if (e) e.preventDefault();
+  const isBug = type === 'bug';
+
+  const handleSubmit = async (withDiagnostics: boolean) => {
     // The Send button's `disabled` is not the only entry point: Enter in the
     // title or contact field calls this directly. Without its own check, Enter
     // on a half-filled form posts an empty body, the function 400s it, and the
@@ -51,7 +53,7 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
       reportConsentCategories({
         contact,
         screenshot: attachments.screenshot !== null,
-        diagnostics: attachments.includeDiagnostics,
+        diagnostics: withDiagnostics,
       })
     );
     setIsSending(true);
@@ -72,7 +74,7 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
       }
       const result = await submitSuggestion(
         { type, title, body: message, contact },
-        await attachments.draft()
+        await attachments.draft(withDiagnostics)
       );
 
       if (result.ok) {
@@ -88,6 +90,12 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
     } finally {
       setIsSending(false);
     }
+  };
+
+  // Enter sends a Nápad or Jiné as the box says. A Chyba waits for one of its
+  // two buttons: the log goes only with the one that says so.
+  const onEnter = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !isBug) void handleSubmit(attachments.includeDiagnostics);
   };
 
   const handleClose = () => {
@@ -202,7 +210,7 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
                       className="input input-bordered w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors"
                       required
                       maxLength={120}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+                      onKeyDown={onEnter}
                     />
                   </div>
 
@@ -236,35 +244,23 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
                       onChange={(e) => setContact(e.target.value)}
                       placeholder={t('feedback.contactPlaceholder')}
                       className="input input-bordered w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors"
-                      onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+                      onKeyDown={onEnter}
                     />
                   </div>
 
-                  <ReportAttachments state={attachments} showPasteHint={!isPhone} />
+                  <ReportAttachments
+                    state={attachments}
+                    showPasteHint={!isPhone}
+                    showDiagnosticsBox={!isBug}
+                  />
 
-                  {/* Submit Button */}
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={handleSubmit}
-                      disabled={
-                        isSending || attachments.encoding || !title.trim() || !message.trim()
-                      }
-                      className="btn btn-primary w-full gap-2 font-semibold no-animation"
-                    >
-                      {isSending ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          {t('feedback.sending')}
-                        </>
-                      ) : (
-                        <>
-                          <Send className="w-5 h-5" />
-                          {t('feedback.submit')}
-                        </>
-                      )}
-                    </button>
-                  </div>
+                  <ReportSendButtons
+                    isBug={isBug}
+                    includeDiagnostics={attachments.includeDiagnostics}
+                    isSending={isSending}
+                    disabled={isSending || attachments.encoding || !title.trim() || !message.trim()}
+                    onSend={(withDiagnostics) => void handleSubmit(withDiagnostics)}
+                  />
 
                   <p className="text-[10px] text-center text-base-content/75 mt-2">
                     {t('feedback.footer')}
