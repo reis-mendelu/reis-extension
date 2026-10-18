@@ -1136,7 +1136,7 @@
       "reachRatio": "Kliky na zobrazení",
       "reachAll": "Zobrazit všech {count}",
       "reachFewer": "Zobrazit méně",
-      "reachNote": "Počty otevření, ne lidí. Zobrazení v Novinkách se počítá jednou za zařízení, klik při každém klepnutí (podíl proto může přesáhnout 100 %), mapa při každém otevření. Vše od zveřejnění. Novinky a mapa se nepropojují: nikde se neeviduje, kdo co viděl, takže součet ani průnik lidí z nich vyčíst nejde.",
+      "reachNote": "Počty otevření, ne lidí. Zobrazení v Novinkách se počítá jednou za zařízení, klik při každém klepnutí (podíl proto může přesáhnout 100 %), mapa při každém otevření. Novinky se počítají od zveřejnění, mapa až od 22. 9. 2026, takže u starších akcí je mapa podhodnocená. Novinky a mapa se nepropojují: nikde se neeviduje, kdo co viděl, takže součet ani průnik lidí z nich vyčíst nejde.",
       "mapViews": "otevření",
       "trendAria": "Vývoj: {label}, posledních {days} dní, celkem {total} {unit}, maximum {max} za den.",
       "trendWithheld": "Pro tento signál zatím graf nezobrazujeme — méně než 5 instalací za 30 dní.",

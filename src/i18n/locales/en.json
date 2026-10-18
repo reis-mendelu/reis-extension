@@ -1136,7 +1136,7 @@
       "reachRatio": "Clicks per view",
       "reachAll": "Show all {count}",
       "reachFewer": "Show fewer",
-      "reachNote": "Counts of opens, not people. News views count once per device, a click counts every tap (so the ratio can pass 100 %), the map counts every open. All since publication. News and map are not joined: nothing records who saw what, so neither a total nor an overlap of people can be read from them.",
+      "reachNote": "Counts of opens, not people. News views count once per device, a click counts every tap (so the ratio can pass 100 %), the map counts every open. News counts since publication, the map only since 22 Sep 2026, so the map figure undercounts older events. News and map are not joined: nothing records who saw what, so neither a total nor an overlap of people can be read from them.",
       "mapViews": "opens",
       "trendAria": "Trend: {label}, last {days} days, {total} {unit} in total, peak {max} in a day.",
       "trendWithheld": "No chart for this signal yet — under 5 installs in 30 days.",
