@@ -86,6 +86,8 @@
     "contactCenter": "Contact Center",
     "slides": "slides",
     "isPages": "Old IS",
+    "oldIsHint": "The original IS Mendelu – every page in one place. Pages open in a new tab.",
+    "oldIsCount": "Pages: {count}",
     "people": "People",
     "map": "Map"
   },
