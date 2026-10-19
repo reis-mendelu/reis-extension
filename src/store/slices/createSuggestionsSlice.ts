@@ -48,16 +48,6 @@ export const createSuggestionsSlice: AppSlice<SuggestionsSlice> = (set, get) => 
     if (current && current !== 'error') return;
     set({ suggestionAttachments: { ...get().suggestionAttachments, [id]: 'loading' } });
     const a = await getSuggestionAttachments(id);
-    // The report may have been resolved while this read was in flight. The
-    // server's trigger has deleted its attachments by then, so keeping the
-    // late bytes would hold deleted data in memory.
-    const row = get().suggestions.find((r) => r.id === id);
-    if (!row || row.status === 'done' || !row.attachments) {
-      const { [id]: _stale, ...rest } = get().suggestionAttachments;
-      void _stale;
-      set({ suggestionAttachments: rest });
-      return;
-    }
     set({ suggestionAttachments: { ...get().suggestionAttachments, [id]: a ?? 'error' } });
   },
 
@@ -69,11 +59,9 @@ export const createSuggestionsSlice: AppSlice<SuggestionsSlice> = (set, get) => 
     // last wins, and a failure on the first would resync away the second.
     if (get().suggestionsPending.includes(id)) return;
 
-    // Optimistic: triaging should feel instant. `done` also clears the
-    // attachments locally, because the server's trigger deletes them.
-    const after = get().suggestions.map((r) =>
-      r.id === id ? { ...r, status, ...(status === 'done' ? { attachments: null } : {}) } : r
-    );
+    // Optimistic: triaging should feel instant. Attachments outlive the status (2 years, server-side), whatever
+    // the status, so only the status changes.
+    const after = get().suggestions.map((r) => (r.id === id ? { ...r, status } : r));
     set({
       suggestions: after,
       suggestionsUnread: unread(after),
@@ -85,11 +73,6 @@ export const createSuggestionsSlice: AppSlice<SuggestionsSlice> = (set, get) => 
       ok = await apiSetStatus(id, status);
     } finally {
       set({ suggestionsPending: get().suggestionsPending.filter((p) => p !== id) });
-    }
-    if (ok && status === 'done') {
-      const { [id]: _dropped, ...rest } = get().suggestionAttachments;
-      void _dropped;
-      set({ suggestionAttachments: rest });
     }
     if (!ok) {
       // Do not try to reconstruct the previous state locally — with two

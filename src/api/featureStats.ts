@@ -23,11 +23,24 @@ const EventDailyRow = z.object({
   event_id: z.string(),
   views: z.number(),
 });
+const ReachRow = z.object({
+  id: z.string(),
+  title: z.string(),
+  association_id: z.string(),
+  kind: z.string(),
+  view_count: z.number(),
+  click_count: z.number(),
+  map_views: z.number(),
+});
 const Schema = z.object({
   by_feature: z.array(FeatureRow),
   daily: z.array(DailyRow),
   top_events: z.array(EventRow),
   event_daily: z.array(EventDailyRow),
+  // Added by 20261018120000_feature_stats_event_reach.sql, which lands at
+  // release, not on merge. A database without it answers without the key, and
+  // that must not take the whole feature block down with it.
+  event_reach: z.array(ReachRow).optional().default([]),
 });
 
 export interface FeatureSignalCount {
@@ -42,6 +55,23 @@ export interface FeatureSignalCount {
 export interface EventMapViews {
   id: string;
   title: string;
+  mapViews: number;
+}
+
+/**
+ * One post as both surfaces saw it. `views`/`clicks` are the Novinky counters
+ * on the row (views once per DEVICE, clicks every tap) and `mapViews` is every
+ * map open summed over ALL days. The first two count since publication; the map
+ * table only began on 2026-09-22, so older posts undercount on the map. Counts of opens: nothing here says which install did which.
+ */
+export interface EventReach {
+  id: string;
+  title: string;
+  societyId: string;
+  /** 'event' has a pin on the map; 'notice' is Novinky only. */
+  kind: string;
+  views: number;
+  clicks: number;
   mapViews: number;
 }
 
@@ -73,9 +103,17 @@ export interface FeatureStats {
   topEvents: EventMapViews[];
   /** Daily opens for those ten events. Sparse, like `daily`. */
   eventDaily: EventDailyPoint[];
+  /** Every post with any activity, Novinky and map side by side. */
+  eventReach: EventReach[];
 }
 
-const EMPTY: FeatureStats = { byFeature: [], daily: [], topEvents: [], eventDaily: [] };
+const EMPTY: FeatureStats = {
+  byFeature: [],
+  daily: [],
+  topEvents: [],
+  eventDaily: [],
+  eventReach: [],
+};
 
 /**
  * Admin-only aggregate read for the three feature signals and the per-event map
@@ -113,6 +151,15 @@ export async function fetchFeatureStats(days: number): Promise<FeatureStats | nu
       day: d.day,
       eventId: d.event_id,
       views: d.views,
+    })),
+    eventReach: parsed.data.event_reach.map((e) => ({
+      id: e.id,
+      title: e.title,
+      societyId: e.association_id,
+      kind: e.kind,
+      views: e.view_count,
+      clicks: e.click_count,
+      mapViews: e.map_views,
     })),
   };
 }

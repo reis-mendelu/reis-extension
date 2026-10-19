@@ -1,7 +1,7 @@
 import type { Society } from '../types/events';
 
 // The catalog a first-ever launch starts from, before the societies table
-// (supabase/migrations/20260926120000_societies_catalog.sql) has been fetched.
+// (supabase/migrations_archive/20260926120000_societies_catalog.sql) has been fetched.
 // It must match that migration's seed rows. After the first fetch the cached
 // catalog replaces it, so editing a society here changes nothing for students:
 // edit it in the admin console instead.

@@ -4,6 +4,7 @@ import { getInstallId } from '../services/identity/installId';
 import { isHarnessEnabled } from '../utils/harnessEnabled';
 import { logError } from '../utils/reportError';
 import { hasDataConsent } from '../utils/firefoxDataConsent';
+import { claimFirstOpen, confirmOpen, releaseOpen } from '../services/spolky/countedOpens';
 
 /**
  * The counters reIS keeps about its own features, and the per-event map view
@@ -102,7 +103,15 @@ export async function trackFeatureSignal(signal: FeatureSignal): Promise<void> {
 }
 
 /**
- * Bump the map-view counter on one society event, at most once per session.
+ * Bump the map-view counter on one society event, once per DEVICE.
+ *
+ * The session latch below only keeps one launch from counting twice; the
+ * on-device memory (`claimFirstOpen`) is what makes the number "devices that
+ * opened this event" rather than "opens". Once per device per event EVER, not
+ * per day, even though the rollup row is per day: the day column exists for the
+ * trend of FIRST opens, and a second visit tomorrow is the same device. No
+ * identifier is added — the memory never leaves the device, so the request is
+ * still an event id and nothing else.
  *
  * The view lands in `event_map_views`, a rollup keyed on (event, day), NOT in
  * `view_count` — that is the Novinky feed metric
@@ -118,18 +127,26 @@ export async function trackMapEventView(eventId: string): Promise<void> {
   // Gated although it carries no identifier: Mozilla counts interaction metrics
   // as technicalAndInteraction data, and the student opened a card, not a
   // counter — the card works without it, so this is no implicit-consent send.
+  // Asked BEFORE the device memory, so a refusal does not use up the one count.
   if (!(await hasDataConsent('technicalAndInteraction'))) {
     viewedEvents.delete(eventId);
     return;
   }
+  // Already counted on an earlier launch: keep the session latch so the next tap
+  // does not even reach the memory.
+  if (!(await claimFirstOpen('map_open', eventId))) return;
   try {
     const { error } = await supabase.rpc('increment_event_map_view', { row_id: eventId });
     if (error) {
       viewedEvents.delete(eventId);
+      releaseOpen('map_open', eventId);
       logError('Api.trackMapEventView', new Error(error.message));
+    } else {
+      await confirmOpen('map_open', eventId);
     }
   } catch (err) {
     viewedEvents.delete(eventId);
+    releaseOpen('map_open', eventId);
     logError('Api.trackMapEventView', err);
   }
 }

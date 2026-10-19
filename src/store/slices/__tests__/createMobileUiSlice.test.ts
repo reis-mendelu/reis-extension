@@ -34,6 +34,22 @@ describe('createMobileUiSlice', () => {
     expect(state.devPhoneOverride).toBeNull();
   });
 
+  // The report form is opened from Profil, the only general entry point on the
+  // phone, so the tab alone says nothing about where the student was.
+  describe('lastNonProfileTab', () => {
+    it('starts on the default tab', () => {
+      expect(state.lastNonProfileTab).toBe('calendar');
+    });
+
+    it('follows every tab except Profil', () => {
+      state.setMobileTab('exams');
+      expect(state.lastNonProfileTab).toBe('exams');
+      state.setMobileTab('profile');
+      expect(state.mobileTab).toBe('profile');
+      expect(state.lastNonProfileTab).toBe('exams');
+    });
+  });
+
   it('setMobileTab switches the tab', () => {
     state.setMobileTab('exams');
     expect(state.mobileTab).toBe('exams');

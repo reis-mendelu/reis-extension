@@ -2,6 +2,7 @@ name: Ship
 
 # The release pipeline: one run takes a vX.Y.Z tag to all three stores.
 #
+#   Database   pending supabase/migrations -> prod, FIRST; the stores wait on it
 #   Android    signed AAB -> Google Play closed-testing track (Alpha)
 #   iOS        archive -> upload -> attach to the version -> submit for review
 #   Extension  Chrome Web Store + Firefox Add-ons (publish.yml)
@@ -71,8 +72,19 @@ permissions:
   contents: read
 
 jobs:
+  # Prod's database first; every store `needs` it (db-migrate.yml says why).
+  database:
+    name: Database
+    uses: ./.github/workflows/db-migrate.yml
+    with:
+      tag: ${{ inputs.tag }}
+      ref: ${{ inputs.ref }}
+      dry_run: ${{ inputs.dry_run }}
+    secrets: inherit
+
   android:
     name: Google Play (closed testing)
+    needs: database
     if: inputs.stores == 'all' || inputs.stores == 'android'
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -110,7 +122,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
@@ -138,6 +150,7 @@ jobs:
 
   ios:
     name: App Store (submit for review)
+    needs: database
     if: inputs.stores == 'all' || inputs.stores == 'ios'
     runs-on: macos-latest
     timeout-minutes: 60
@@ -246,6 +259,7 @@ jobs:
 
   extension:
     name: Chrome and Firefox
+    needs: database
     if: inputs.stores == 'all' || inputs.stores == 'extension'
     uses: ./.github/workflows/publish.yml
     with:
@@ -255,7 +269,7 @@ jobs:
 
   summary:
     name: Release summary
-    needs: [android, ios, extension]
+    needs: [database, android, ios, extension]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -267,12 +281,14 @@ jobs:
           IOS: ${{ needs.ios.result }}
           EXTENSION: ${{ needs.extension.result }}
           STORES: ${{ inputs.stores }}
+          DATABASE: ${{ needs.database.result }}
         run: |
           {
             echo "## $TAG: $MODE"
             echo
             echo "| Store | Result |"
             echo "| --- | --- |"
+            echo "| Database migrations (prod) | $DATABASE |"
             echo "| Google Play, closed testing | $ANDROID |"
             echo "| App Store, submit for review | $IOS |"
             echo "| Chrome + Firefox | $EXTENSION |"
@@ -289,6 +305,8 @@ jobs:
             [ "$2" = "$want" ] || { echo "::error::$1 was $2, expected $want. See the table above."; bad=1; }
           }
           bad=0
+          # Every mode runs the database first; the stores wait on it.
+          [ "$DATABASE" = success ] || { echo "::error::Database migrations were $DATABASE, so no store was submitted. See the database job."; bad=1; }
           check android "$ANDROID"
           check ios "$IOS"
           check extension "$EXTENSION"

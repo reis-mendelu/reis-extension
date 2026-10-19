@@ -5,6 +5,7 @@ import {
   dropBeyondNovinkyWindow,
 } from './spolkyService';
 import { supabase } from './supabaseClient';
+import { __resetCountedOpensForTests, __forgetCountedOpensMemoryForTests } from './countedOpens';
 
 const { hasDataConsent } = vi.hoisted(() => ({
   hasDataConsent: vi.fn<(...args: unknown[]) => Promise<boolean>>(async () => true),
@@ -24,9 +25,10 @@ vi.mock('./supabaseClient', () => ({
 }));
 
 describe('spolkyService', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     hasDataConsent.mockResolvedValue(true);
+    await __resetCountedOpensForTests();
   });
 
   // A post id is not an identifier, but a view or click count is interaction
@@ -87,6 +89,48 @@ describe('spolkyService', () => {
 
       expect(supabase.rpc).toHaveBeenCalledTimes(1);
       expect(supabase.rpc).toHaveBeenCalledWith('increment_post_click', { row_id: 'id1' });
+    });
+
+    // "Clicked" means this device opened the post, not that it was tapped.
+    it('counts a device once per post: the second tap calls nothing', async () => {
+      await trackNotificationClick('id1');
+      await trackNotificationClick('id1');
+
+      expect(supabase.rpc).toHaveBeenCalledTimes(1);
+    });
+
+    it('still counts a different post', async () => {
+      await trackNotificationClick('id1');
+      await trackNotificationClick('id2');
+
+      expect(supabase.rpc).toHaveBeenCalledTimes(2);
+    });
+
+    it('remembers across a restart', async () => {
+      await trackNotificationClick('id1');
+      __forgetCountedOpensMemoryForTests();
+      await trackNotificationClick('id1');
+
+      expect(supabase.rpc).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not use up the count while consent is off', async () => {
+      hasDataConsent.mockResolvedValue(false);
+      await trackNotificationClick('id1');
+      expect(supabase.rpc).not.toHaveBeenCalled();
+
+      hasDataConsent.mockResolvedValue(true);
+      await trackNotificationClick('id1');
+      expect(supabase.rpc).toHaveBeenCalledTimes(1);
+    });
+
+    it('gives the count back when the write fails, so the next tap retries', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase.rpc as any).mockResolvedValueOnce({ data: null, error: { message: 'down' } });
+      await trackNotificationClick('id1');
+      await trackNotificationClick('id1');
+
+      expect(supabase.rpc).toHaveBeenCalledTimes(2);
     });
 
     it('should not call RPC if notificationId is empty', async () => {

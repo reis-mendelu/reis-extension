@@ -14,7 +14,9 @@ export async function fetchUserBaseIds() {
     idm = h.match(
       /(?:Identifikační\s+číslo\s+uživatele|User's\s+identification\s+number):\s*<\/td>\s*<td[^>]*>\s*(\d+)/i
     );
-  const nm = h.match(/id="prihlasen"[^>]*>\s*(?:Přihlášen|Logged\s+in):&nbsp;([^&]+)/i);
+  // `Přihlášena:` is how IS greets a female student (seen on real pages,
+  // October 2026); without the optional `a` her name was always ''.
+  const nm = h.match(/id="prihlasen"[^>]*>\s*(?:Přihlášena?|Logged\s+in):&nbsp;([^&]+)/i);
 
   // Stricter Erasmus detection:
   // Usually, Erasmus students have 'Erasmus+' in their study program name or a specific active study row.

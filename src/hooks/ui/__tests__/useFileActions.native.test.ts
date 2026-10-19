@@ -56,11 +56,12 @@ describe('useFileActions on Capacitor', () => {
       // The trailing args are the filename override, the unsealed fallback and
       // `onFetched` — the last is how the ROW's progress indicator stops when
       // the bytes land rather than when iOS's share sheet is finally answered.
+      // Both paths pass it: a row click downloads as much as the icon does.
       expect(openIsFileNatively).toHaveBeenCalledWith(
         'slozka.pl?download=1',
         undefined,
         undefined,
-        method === 'downloadSingle' ? expect.any(Function) : undefined,
+        expect.any(Function),
         undefined
       );
       expect(global.fetch).not.toHaveBeenCalled();

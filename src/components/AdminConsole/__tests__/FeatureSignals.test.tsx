@@ -33,6 +33,17 @@ const STATS: FeatureStats = {
     { day: '2026-09-22', eventId: 'ev-1', views: 2 },
     { day: '2026-09-22', eventId: 'ev-2', views: 12 },
   ],
+  eventReach: [
+    {
+      id: 'ev-1',
+      title: 'Mezinárodní večer',
+      societyId: 'esn',
+      kind: 'event',
+      views: 300,
+      clicks: 30,
+      mapViews: 45,
+    },
+  ],
 };
 
 const seed = (stats: FeatureStats | null = STATS) =>
@@ -84,16 +95,17 @@ describe('FeatureSignals', () => {
     expect(screen.getByText('eduroam profil předán')).toBeInTheDocument();
   });
 
-  it('lists the most-opened events with their counts', () => {
+  // The old per-event list is gone, not duplicated: one table, one place.
+  it('hands the per-event numbers to the one table', () => {
     seed();
     render(<FeatureSignals />);
 
-    expect(screen.getByRole('button', { name: /Mezinárodní večer/ })).toBeInTheDocument();
-    expect(screen.getByText(/^45 otevření$/)).toBeInTheDocument();
+    expect(screen.getByText('Mezinárodní večer')).toBeInTheDocument();
+    expect(screen.getAllByText('Mezinárodní večer')).toHaveLength(1);
   });
 
   it('shows a signal the RPC returned no row for as zero', () => {
-    seed({ byFeature: [], daily: [], topEvents: [], eventDaily: [] });
+    seed({ byFeature: [], daily: [], topEvents: [], eventDaily: [], eventReach: [] });
     render(<FeatureSignals />);
 
     // Every signal holds its row, so one per label the client can send.
@@ -136,28 +148,12 @@ describe('FeatureSignals', () => {
     expect(screen.queryByRole('img', { name: /eduroam profil předán/ })).not.toBeInTheDocument();
   });
 
-  it('opens on the most-opened event and follows the one you pick', () => {
-    seed();
-    render(<FeatureSignals />);
-
-    expect(
-      screen.getByRole('img', { name: /Mezinárodní večer.*celkem 45 otevření/ })
-    ).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText('Deskovky v klubu'));
-
-    expect(
-      screen.getByRole('img', { name: /Deskovky v klubu.*celkem 12 otevření/ })
-    ).toBeInTheDocument();
-  });
-
   // The RPC omits a day with no activity. If the chart skipped those days too,
   // a quiet fortnight and a busy one would draw the same picture.
   it('spans the whole 30-day window, not just the days with rows', () => {
     seed();
     render(<FeatureSignals />);
 
-    // Both charts span the same window, so both captions say so.
-    expect(screen.getAllByText('24.8. – 22.9.')).toHaveLength(2);
+    expect(screen.getByText('24.8. – 22.9.')).toBeInTheDocument();
   });
 });

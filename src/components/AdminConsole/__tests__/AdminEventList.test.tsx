@@ -64,6 +64,39 @@ describe('AdminEventList', () => {
     expect(within(pastSection).queryByText('E-sched')).toBeNull();
   });
 
+  // A notice stays in the society's own list (it is how they edit it), and
+  // says what it is: students see it in News only, never among the events.
+  it('labels a notice, and only a notice', () => {
+    useAppStore.setState({
+      societyMapEvents: [
+        { ...mk('n', iso(2)), title: 'Housing', kind: 'notice' },
+        { ...mk('e', iso(3)), title: 'Party', kind: 'event' },
+      ],
+    });
+    render(<AdminEventList />);
+    const row = screen.getByText('Housing').closest('button') as HTMLElement;
+    expect(within(row).getByText(/· Notice$/)).toBeInTheDocument();
+    expect(screen.getAllByText(/· Notice$/)).toHaveLength(1);
+  });
+
+  // An event row flies the console map to it. A notice is on no map, so its
+  // row opens it for editing instead of an event card with no place.
+  it('opens a notice for editing rather than on the map', () => {
+    useAppStore.setState({
+      societyMapEvents: [{ ...mk('n', iso(2)), title: 'Housing', kind: 'notice' }],
+      mapSelection: null,
+      composerOpen: false,
+      editEventId: null,
+    });
+    render(<AdminEventList />);
+    fireEvent.click(screen.getByText('Housing'));
+    const st = useAppStore.getState();
+    expect(st.mapSelection).toBeNull();
+    expect(st.composerOpen).toBe(true);
+    expect(st.editEventId).toBe('n');
+    st.closeComposer(); // the store is shared: leave the next test a list
+  });
+
   // An unplaced event shows no place at all: neither the shared row's old
   // "Venue TBA by …" nor a "· No place yet" suffix on the subline.
   it('says nothing about the place of a tba row', () => {
