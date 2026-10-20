@@ -30,6 +30,9 @@ export function TermNoteBlock({ terminId }: { terminId: string }) {
       onClick={(e) => e.stopPropagation()}
       className="px-3 py-2 border-t text-xs leading-relaxed bg-base-200/30 border-base-200/60"
     >
+      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-base-content/60">
+        {t('mobile.exams.detailNote')}
+      </div>
       <div className="flex items-start gap-1.5">
         <AlertTriangle
           size={12}

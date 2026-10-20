@@ -1255,6 +1255,7 @@
       "detailForm": "Forma termínu",
       "detailDuration": "Délka trvání",
       "detailRoom": "Místnost",
+      "detailNote": "Poznámka ke zkoušce",
       "durationMin": "{count} min",
       "whoIsGoing": "Kdo jde se mnou na termín?",
       "cannotRegister": "nelze se přihlásit",

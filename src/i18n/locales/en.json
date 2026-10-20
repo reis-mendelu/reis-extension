@@ -1255,6 +1255,7 @@
       "detailForm": "Form",
       "detailDuration": "Length",
       "detailRoom": "Room",
+      "detailNote": "Exam note",
       "durationMin": "{count} min",
       "whoIsGoing": "Who is going with me?",
       "cannotRegister": "can't register",
