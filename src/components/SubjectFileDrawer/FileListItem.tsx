@@ -67,11 +67,14 @@ export function FileListItem({
 }: FileListItemProps) {
   const { t } = useTranslation();
   const isDownloading = downloadTick != null;
+  // Opening a PDF in the reader fetches it just the same, so it looks the same:
+  // with only the xs spinner, a PDF tap on a phone read as "nothing happened".
+  const isBusy = isDownloading || isOpening;
 
   // Click and Enter/Space must do the same thing, so the decision lives once.
   const activate = (e: React.SyntheticEvent & { ctrlKey?: boolean; metaKey?: boolean }) => {
     if (ignoreClickRef.current) return;
-    if (isOpening) return;
+    if (isBusy) return;
     if (e.ctrlKey || e.metaKey) {
       onToggleSelect(subFile.link, e);
     } else if (onViewPdf && opensInReader(subFile)) {
@@ -105,7 +108,7 @@ export function FileListItem({
           relative overflow-hidden flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer group hover:shadow-sm
           focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none
           ${
-            isSelected || isDownloading
+            isSelected || isBusy
               ? 'bg-primary/10 border-primary/20 shadow-sm'
               : 'bg-base-100 border-transparent hover:bg-base-200/50 hover:border-base-300'
           }
@@ -133,11 +136,11 @@ export function FileListItem({
             )}
           </div>
           <div className="text-xs text-base-content/50 truncate flex items-center gap-2">
-            {isDownloading ? (
+            {isBusy ? (
               // The tonal token, not raw `text-primary`: that measured 2.29:1
               // on the light theme's white row (see DownloadProgress).
               <span className="shrink-0 font-medium text-[var(--btn-tonal-primary)]">
-                {t('course.file.downloading')}
+                {t(isDownloading ? 'course.file.downloading' : 'course.file.opening')}
               </span>
             ) : (
               date && <span className="shrink-0">{date}</span>
@@ -165,10 +168,12 @@ export function FileListItem({
             sends no length for the PDFs it generates. Hidden from assistive
             tech: the ring in the button is the announced progressbar, and a
             second one would read the same download out twice. */}
-        {downloadTick && (
+        {isBusy && (
           <progress
             aria-hidden="true"
-            {...(downloadTick.total ? { value: downloadTick.loaded, max: downloadTick.total } : {})}
+            {...(downloadTick?.total
+              ? { value: downloadTick.loaded, max: downloadTick.total }
+              : {})}
             className="progress progress-primary absolute inset-x-0 bottom-0 h-1 rounded-none"
           />
         )}

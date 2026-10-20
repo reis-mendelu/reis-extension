@@ -191,7 +191,7 @@ export const TOOLS: ToolDef[] = [
     name: 'mendelu_assignments',
     title: 'My assignment deadlines',
     description:
-      'Your submission boxes (Odevzdávárny): subject, assignment, deadline, whether it is still open, files uploaded and points. IS takes a submission in two steps, upload then confirm, so each box has a `submission` field: only "handed_in" (section "submitted") means it is handed in. "uploaded_not_confirmed" is an open box with files that is NOT confirmed in IS: tell the student to confirm it in IS, never that it is handed in. Read-only: it never submits or confirms anything.',
+      'Your submission boxes (Odevzdávárny): subject, assignment, deadline, whether it is still open, files uploaded, points, and the teacher `instructions` (IS "Pokyny": what to hand in and how) when the box has any. Pass the instructions on when the student asks what to submit. IS takes a submission in two steps, upload then confirm, so each box has a `submission` field: only "handed_in" (section "submitted") means it is handed in. "uploaded_not_confirmed" is an open box with files that is NOT confirmed in IS: tell the student to confirm it in IS, never that it is handed in. Read-only: it never submits or confirms anything.',
     input: {},
     run: async () => {
       const { studium, obdobi } = await study();

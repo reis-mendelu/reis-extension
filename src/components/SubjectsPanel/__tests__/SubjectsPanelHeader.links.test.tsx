@@ -18,9 +18,7 @@ let mockParams: { studium?: string } | null = { studium: '99999' };
 import { SubjectsPanelHeader } from '../SubjectsPanelHeader';
 
 const renderHeader = () =>
-  render(
-    <SubjectsPanelHeader creditsAcquired={30} creditsRequired={180} studyStats={null} plan={null} />
-  );
+  render(<SubjectsPanelHeader creditsAcquired={30} creditsRequired={180} plan={null} />);
 
 const linkByLabel = (label: string) => screen.getByRole('link', { name: label });
 

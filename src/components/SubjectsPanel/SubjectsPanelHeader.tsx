@@ -1,6 +1,6 @@
 import { useTranslation } from '@/hooks/useTranslation';
 import { useUserParams } from '@/hooks/useUserParams';
-import type { StudyPlan, StudyStats } from '@/types/studyPlan';
+import type { StudyPlan } from '@/types/studyPlan';
 import { GraduationCap, Layers, ClipboardList, Star, type LucideIcon } from 'lucide-react';
 import { Fragment } from 'react';
 
@@ -14,7 +14,6 @@ export interface ZameraniProgress {
 interface SubjectsPanelHeaderProps {
   creditsAcquired: number;
   creditsRequired: number;
-  studyStats: StudyStats | null;
   plan: StudyPlan | null;
   zameraniProgress?: Map<string, ZameraniProgress>;
   enrolledCredits?: number;
@@ -97,7 +96,6 @@ function ISShortcutGroup({ items }: { items: ISShortcut[] }) {
 export function SubjectsPanelHeader({
   creditsAcquired,
   creditsRequired,
-  studyStats,
   plan,
   zameraniProgress,
   enrolledCredits,
@@ -117,10 +115,7 @@ export function SubjectsPanelHeader({
 
   const pct =
     creditsRequired > 0 ? Math.min(100, Math.round((creditsAcquired / creditsRequired) * 100)) : 0;
-  const lastTwoPeriods = studyStats?.creditsLastTwoPeriods ?? null;
-  const hasDetailLine =
-    (lastTwoPeriods != null && lastTwoPeriods > 0) ||
-    (enrolledCredits != null && enrolledCredits > 0);
+  const hasDetailLine = enrolledCredits != null && enrolledCredits > 0;
 
   return (
     <div className="px-4 py-2.5 border-b border-base-300 shrink-0">
@@ -178,12 +173,6 @@ export function SubjectsPanelHeader({
                 <span className="hidden md:inline">
                   {t('subjects.zameraniProgress', { touched: zameraniTouched, min: zameraniMin })}
                 </span>
-              </span>
-            ) : lastTwoPeriods != null && lastTwoPeriods > 0 ? (
-              // The count, with no denominator: IS publishes how many credits
-              // the last two periods earned and not how many they had to.
-              <span>
-                {t('subjects.creditsLastTwo')}: {lastTwoPeriods}
               </span>
             ) : null}
             <span className="flex items-center gap-2 ml-auto">

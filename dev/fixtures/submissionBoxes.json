@@ -1,5 +1,5 @@
 {
-  "_comment": "Synthetic submission boxes in every state IS has (open, uploaded but not confirmed, confirmed, closed; see src/utils/parsers/odevzdavarnyParser.ts) on real subject ids from the snapshot, so the Záznamník section and the Subjects-screen card can be measured. Box names and ids are invented. Deadlines are deadlineDayOffset from now (scripts/lib/fixtureRebase.ts). Serve with: npm run dev:web:boxes",
+  "_comment": "Synthetic submission boxes in every state IS has (open, uploaded but not confirmed, confirmed, closed; see src/utils/parsers/odevzdavarnyParser.ts) on real subject ids from the snapshot, so the Záznamník section and the Subjects-screen card can be measured. Box names, ids and instructions (Pokyny) are invented. Deadlines are deadlineDayOffset from now (scripts/lib/fixtureRebase.ts). Serve with: npm run dev:web:boxes",
   "odevzdavarny": [
     {
       "courseId": "164077",
@@ -14,7 +14,8 @@
       "deadlineDayOffset": 2,
       "fileCount": 0,
       "section": "open",
-      "isOpen": true
+      "isOpen": true,
+      "instructions": "Odevzdejte rozpracovaný projekt jako ZIP se zdrojovými kódy. Pokud používáte knihovny, které je potřeba doinstalovat, přiložte i soubor README s návodem, jak program spustit."
     },
     {
       "courseId": "164077",
@@ -59,7 +60,8 @@
       "deadlineDayOffset": 12,
       "fileCount": 0,
       "section": "open",
-      "isOpen": true
+      "isOpen": true,
+      "instructions": "Do odevzdávárny vložte následující soubory:\n- zdrojové kódy všech tříd,\n- ukázku výstupu programu,\n- krátký popis použitých kolekcí.\n\nNení možné používat nástroje umělé inteligence."
     },
     {
       "courseId": "164077",

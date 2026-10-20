@@ -86,8 +86,10 @@ const SUPABASE_CALLERS = new Set([
   // section 2 and docs/privacy-policy-app.md BEFORE this entry was added.
   //
   // `track_feature_usage` sends the random per-install UUID and one label from
-  // a three-value whitelist enforced in the database ('map_dwell_3s',
-  // 'eduroam_wifi_configured', 'eduroam_profile_delivered'). Same identifier
+  // a whitelist enforced in the database ('map_dwell_3s',
+  // 'eduroam_wifi_configured', 'eduroam_profile_delivered', and since October
+  // 2026 'support_prompt_seen' / 'support_prompt_yes', disclosed first the same
+  // way; featureSignalWhitelist.test.ts pins the list). Same identifier
   // and same posture as `feedback.ts`: it counts INSTALLS, not people.
   //
   // `increment_event_map_view` sends a society event's row id and NO
