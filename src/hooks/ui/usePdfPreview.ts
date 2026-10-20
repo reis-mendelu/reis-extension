@@ -65,7 +65,7 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
   const [openingLink, setOpeningLink] = useState<string | null>(null);
   // Row downloads are NOT tracked here. `useFileActions.activeDownloads` does
   // it, per link and with byte counts where the transport has them — and ends
-  // on `onFetched`, before iOS opens the share sheet. A wrapper here awaited
+  // on `onHandoff`, as iOS opens the share sheet. A wrapper here awaited
   // `downloadSingle` whole, so it spun on through the student's own dialog.
 
   // Blob URLs are held by the document until revoked; a drawer opened and

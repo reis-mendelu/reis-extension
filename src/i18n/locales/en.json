@@ -367,6 +367,7 @@
     "file": {
       "openFailed": "Couldn't open the file.",
       "downloading": "Downloading…",
+      "opening": "Opening…",
       "savedToDownloads": "Saved to Downloads"
     },
     "documentNote": {
