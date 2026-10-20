@@ -55,4 +55,20 @@ describe('newPointsAlerts', () => {
     );
     expect(b!.title).toBe('Computer Networks');
   });
+
+  it('the same value found again by a later sync is a new row id too', () => {
+    const first = newPointsAlerts(
+      { X: [{ label: 'Test 1', value: '9/10', at: 1 }] },
+      {},
+      {},
+      false
+    );
+    const again = newPointsAlerts(
+      { X: [{ label: 'Test 1', value: '9/10', at: 2 }] },
+      {},
+      {},
+      false
+    );
+    expect(first[0]!.id).not.toBe(again[0]!.id);
+  });
 });

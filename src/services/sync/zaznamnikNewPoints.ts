@@ -31,9 +31,10 @@ async function persist(batch: Record<string, SubjectZaznamnik | null>) {
   const previous = await Promise.all(
     entries.map(([code]) => IndexedDBService.get('zaznamnik', code))
   );
+  const at = Date.now();
   entries.forEach(([code, fresh], i) => {
     const points = diffZaznamnik(previous[i], fresh);
-    if (points.length > 0) found[code] = points;
+    if (points.length > 0) found[code] = points.map((p) => ({ ...p, at }));
   });
   const stored = ((await IndexedDBService.get('meta', NEW_POINTS_META_KEY)) ??
     {}) as NewPointsBySubject;

@@ -6,6 +6,11 @@ export interface NewPoint {
   label: string;
   /** The cell exactly as IS shows it ("9", "4,5", "započteno"), or "score/max" for a test. */
   value: string;
+  /**
+   * When the sync found it (set by services/sync, never by the diff). Two
+   * attempts can both read "Test 1: 9/10"; this is what tells them apart.
+   */
+  at?: number;
 }
 
 // A sum column moves with every other cell; it is news only when nothing else is.

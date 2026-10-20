@@ -8,8 +8,9 @@ import { listPoints } from './newPointsText';
  * "Nové body" as Novinky rows, one per subject, on both trees: Novinky is where
  * a message lives in reIS, and the bell's badge counts it.
  *
- * The id carries the points themselves, so a subject that gets more points
- * after the student saw its row is counted by the bell again. The row stays
+ * The id carries the points and when each was found, so a subject that gets
+ * more points after the student saw its row, even the same score again for a
+ * new attempt, is counted by the bell again. The row stays
  * until that subject's Záznamník is opened (markZaznamnikSeen).
  */
 export function newPointsAlerts(
@@ -23,7 +24,7 @@ export function newPointsAlerts(
     .map(([code, points]) => {
       const s = subjects?.[code];
       return {
-        id: `zaznamnik-${code}-${points.map((p) => `${p.label}=${p.value}`).join('|')}`,
+        id: `zaznamnik-${code}-${points.map((p) => `${p.label}=${p.value}@${p.at ?? ''}`).join('|')}`,
         type: 'zaznamnik-points' as const,
         title: courseDisplayName(nicknames, code, (isEn ? s?.nameEn : s?.nameCs) ?? s?.displayName),
         body: listPoints(points),

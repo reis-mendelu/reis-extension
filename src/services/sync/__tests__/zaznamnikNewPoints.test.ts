@@ -58,10 +58,14 @@ const EMPTY: SubjectZaznamnik = {
   vt: { tests: [], fetchedAt: 1 },
 };
 
+const NOW = 1_000;
+const FOUND_9 = { label: 'IPv4-subnt-NAOPAK', value: '9', at: NOW };
+
 describe('persistZaznamnikBatch', () => {
   beforeEach(() => {
     db.clear();
     failMeta.on = false;
+    vi.spyOn(Date, 'now').mockReturnValue(NOW);
   });
 
   it('stores the first copy and announces nothing', async () => {
@@ -73,7 +77,7 @@ describe('persistZaznamnikBatch', () => {
   it('finds new points against the stored copy, then stores the fresh one', async () => {
     db.set('zaznamnik/EBC-PS', ps(''));
     const out = await persistZaznamnikBatch({ 'EBC-PS': ps('9') });
-    expect(out.found).toEqual({ 'EBC-PS': [{ label: 'IPv4-subnt-NAOPAK', value: '9' }] });
+    expect(out.found).toEqual({ 'EBC-PS': [FOUND_9] });
     expect(out.unseen).toEqual(out.found);
     expect(db.get('zaznamnik/EBC-PS')).toEqual(ps('9'));
     expect(db.get(`meta/${NEW_POINTS_META_KEY}`)).toEqual(out.found);
@@ -96,7 +100,7 @@ describe('persistZaznamnikBatch', () => {
     const out = await persistZaznamnikBatch({ 'EBC-PS': ps('9') });
     expect(out.unseen).toEqual({
       'EBC-VWA': [{ label: '2', value: '1' }],
-      'EBC-PS': [{ label: 'IPv4-subnt-NAOPAK', value: '9' }],
+      'EBC-PS': [FOUND_9],
     });
   });
 
@@ -106,7 +110,7 @@ describe('persistZaznamnikBatch', () => {
       persistZaznamnikBatch({ 'EBC-PS': ps('9') }),
       persistZaznamnikBatch({ 'EBC-PS': ps('9') }),
     ]);
-    expect(a.found).toEqual({ 'EBC-PS': [{ label: 'IPv4-subnt-NAOPAK', value: '9' }] });
+    expect(a.found).toEqual({ 'EBC-PS': [FOUND_9] });
     expect(b.found).toEqual({});
   });
 
@@ -118,6 +122,12 @@ describe('persistZaznamnikBatch', () => {
 
     failMeta.on = false;
     const out = await persistZaznamnikBatch({ 'EBC-PS': ps('9') });
-    expect(out.found).toEqual({ 'EBC-PS': [{ label: 'IPv4-subnt-NAOPAK', value: '9' }] });
+    expect(out.found).toEqual({ 'EBC-PS': [FOUND_9] });
+  });
+
+  it('stamps what a sync found with when it found it', async () => {
+    db.set('zaznamnik/EBC-PS', ps(''));
+    const out = await persistZaznamnikBatch({ 'EBC-PS': ps('9') });
+    expect(out.found['EBC-PS']![0]!.at).toBe(NOW);
   });
 });
