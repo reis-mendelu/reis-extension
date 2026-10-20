@@ -16,6 +16,7 @@ import type { DownloadTick } from './readBlobWithProgress';
 import { fetchIsFile } from './fetchIsFile';
 import { opensInTab, saveIsFile } from './saveBlob';
 import { useRowDownloads } from './useRowDownloads';
+import { noPdf, pdfOrNull } from './pdfOrNull';
 import type { FileRowHint } from '../../utils/contentDisposition';
 
 const log = createLogger('useFileActions');
@@ -101,16 +102,6 @@ export function useFileActions(): UseFileActionsResult {
     [t, claimRow, tickRow, clearRowProgress, releaseRow]
   );
 
-  /**
-   * IS serves viewer pages, and Office files, under anchors that look the same
-   * as a document download — and reports no usable type for many of them. The
-   * bytes are the only reliable answer, so a copy that is not a PDF is null and
-   * the caller downloads it instead. It also keeps non-PDF bytes out of the iPad
-   * reader's cache, which stores what it is given under a `.pdf` name.
-   */
-  const looksLikePdf = async (blob: Blob): Promise<boolean> =>
-    (await blob.slice(0, 1024).text()).includes('%PDF-');
-
   const fetchPdfBlob = useCallback(async (link: string): Promise<Blob | null> => {
     const fullUrl = normalizeFileUrl(link);
     try {
@@ -127,14 +118,19 @@ export function useFileActions(): UseFileActionsResult {
         // A viewer page is not a PDF — null lets the caller fall back to its
         // normal "can't preview" path. Neither are the Office files IS serves
         // through the same anchors, hence the byte check.
-        if (result.kind !== 'binary') return null;
-        return (await looksLikePdf(result.blob)) ? result.blob : null;
+        if (result.kind !== 'binary') return noPdf(`IS served a ${result.kind}, not a file`);
+        return pdfOrNull(result.blob);
       }
       assertNotDemo();
       const { blob } = await fetchIsFile(fullUrl);
-      return (await looksLikePdf(blob)) ? blob : null;
+      return pdfOrNull(blob);
     } catch (e) {
-      log.error('Failed to fetch PDF inline', e);
+      // Demo mode is not a failure: the download it falls back to says so.
+      if (e instanceof DemoModeError) {
+        log.error('Failed to fetch PDF inline', e);
+        return null;
+      }
+      logError('useFileActions.fetchPdfBlob', e);
       return null;
     }
   }, []);

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { memFs } from './memPdfCacheFs';
+import { logError } from '../../utils/reportError';
 import { pdfPath, readIndex, recordPositions, store } from '../pdfCache';
 import {
   openPdfWithInk,
@@ -333,6 +334,26 @@ describe('openPdfWithInk', () => {
     expect(deliverFile).not.toHaveBeenCalled();
     expect(fileUnavailable).toHaveBeenCalledWith({ link: LINK_B });
     expect(fileUnavailable).toHaveBeenCalledWith({ link: LINK_C });
+  });
+
+  /**
+   * The reader then shows "Soubor se nepodařilo otevřít" in place of the file,
+   * and suggestion #32 (iPad, 16 Oct) reported exactly that with nothing to go
+   * on. The miss has to reach the diagnostic log a report can attach, or the
+   * next such report is as blind as that one.
+   */
+  it('leaves a diagnostic when a sidebar file cannot be served', async () => {
+    const { deps, input, open, trigger, fetchPdf } = harness();
+    open.mockImplementationOnce(async () => {
+      fetchPdf.mockResolvedValueOnce(null);
+      await trigger(LINK_B);
+      return { shown: [LINK] };
+    });
+    vi.mocked(logError).mockClear();
+
+    await openPdfWithInk(deps, input);
+
+    expect(logError).toHaveBeenCalledWith('PdfInk.serveFile', expect.any(Error));
   });
 
   it('delivers a stale cached copy of a sidebar file when IS is unreachable or serves a page', async () => {
