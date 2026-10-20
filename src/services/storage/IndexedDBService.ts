@@ -315,19 +315,22 @@ class IndexedDBServiceImpl {
     await this.run(async (db) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const tx = db.transaction(stores as any, 'readwrite');
+      // Every put is its own promise; an aborted transaction rejects each of
+      // them, so each needs a handler or it surfaces as an unhandled rejection.
+      const puts: Promise<unknown>[] = [];
       try {
         for (const w of validated) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          tx.objectStore(w.store as any).put(w.value as any, w.key);
+          puts.push(tx.objectStore(w.store as any).put(w.value as any, w.key));
         }
       } catch (err) {
         // A put that throws does not abort on its own: the puts before it
         // would still commit. Abort, so it really is all or nothing.
-        tx.done.catch(() => {});
+        for (const p of [...puts, tx.done]) p.catch(() => {});
         tx.abort();
         throw err;
       }
-      await tx.done;
+      await Promise.all([...puts, tx.done]);
     });
   }
 
