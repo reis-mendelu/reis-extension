@@ -728,6 +728,7 @@ export type AppState = ScheduleSlice &
   import('./slices/createAdminSlice').AdminSlice &
   import('./slices/createSuggestionsSlice').SuggestionsSlice &
   import('./slices/createRouteSlice').RouteSlice &
+  import('./slices/createOsmTileAccessSlice').OsmTileAccessSlice &
   import('./slices/createReportSlice').ReportSlice &
   import('./slices/createImpersonationSlice').ImpersonationSlice &
   DemoSlice;

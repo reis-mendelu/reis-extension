@@ -1055,6 +1055,11 @@
         "ground": "the ground floor",
         "below": "basement {n}"
       }
+    },
+    "osmAccess": {
+      "title": "The map needs one permission",
+      "text": "OpenStreetMap blocks the map tiles when it can't tell who is asking. Allow reIS to introduce itself.",
+      "allow": "Allow"
     }
   },
   "admin": {

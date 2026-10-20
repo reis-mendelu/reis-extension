@@ -1055,6 +1055,11 @@
         "ground": "přízemí",
         "below": "{n}. podzemního podlaží"
       }
+    },
+    "osmAccess": {
+      "title": "Mapa potřebuje jedno povolení",
+      "text": "OpenStreetMap blokuje podklad mapy, když neví, kdo se ptá. Povolte reIS, ať se mu může představit.",
+      "allow": "Povolit"
     }
   },
   "admin": {
