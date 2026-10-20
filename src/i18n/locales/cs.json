@@ -1488,7 +1488,8 @@
     "openOne": "{n} otevřená",
     "openFew": "{n} otevřené",
     "openOther": "{n} otevřených",
-    "nothingDueSoon": "Nic k odevzdání do 14 dní"
+    "nothingDueSoon": "Nic k odevzdání do 14 dní",
+    "instructions": "Pokyny"
   },
   "support": {
     "question": "Podpořil/a bys reIS?",

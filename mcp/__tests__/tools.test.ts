@@ -88,6 +88,32 @@ describe('TOOLS', () => {
     expect(out.assignments[0]).not.toHaveProperty('odevzdavarnaId');
   });
 
+  it("passes on the teacher's instructions (Pokyny) where a box has them", async () => {
+    const base = {
+      courseId: '1',
+      courseNameCs: 'A',
+      courseNameEn: 'A',
+      type: 't',
+      deadline: 'd',
+      fileCount: 0,
+      uploadUrl: 'https://is.mendelu.cz/x',
+    };
+    vi.mocked(fetchOdevzdavarny).mockResolvedValue({
+      assignments: [
+        { ...base, name: 'Projects', odevzdavarnaId: '1', instructions: 'PDF, three days before.' },
+        { ...base, name: 'HW', odevzdavarnaId: '2' },
+      ],
+      lastFetched: 0,
+      periods: [],
+    });
+    const out = (await tool('mendelu_assignments').run({}, ctx)) as {
+      assignments: Record<string, unknown>[];
+    };
+    expect(out.assignments[0]).toMatchObject({ instructions: 'PDF, three days before.' });
+    expect(out.assignments[1]).not.toHaveProperty('instructions');
+    expect(tool('mendelu_assignments').description).toContain('instructions');
+  });
+
   describe('assignments: uploaded is not handed in', () => {
     const box = (over: Record<string, unknown>) => ({
       courseId: '1',
