@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { requestOsmTileAccess, watchOsmTileAccess } from '../osmTileAccess';
 
 type Listener = () => void;
 
@@ -25,11 +26,6 @@ function fakeBrowser(granted: boolean) {
   };
 }
 
-async function load() {
-  vi.resetModules();
-  return import('../osmTileAccess');
-}
-
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
 describe('osmTileAccess', () => {
@@ -41,54 +37,47 @@ describe('osmTileAccess', () => {
   });
 
   it('is unsupported where there is no permissions API (the apps, the dev webapp)', async () => {
-    const m = await load();
-    const stop = m.subscribeOsmTileAccess(() => {});
+    const seen = vi.fn();
+    watchOsmTileAccess(seen);
     await settle();
-    expect(m.getOsmTileAccess()).toBe('unsupported');
-    stop();
+    expect(seen).toHaveBeenLastCalledWith('unsupported');
   });
 
   it('is missing when the browser has not granted the OSM tile host', async () => {
     const b = fakeBrowser(false);
-    const m = await load();
-    const stop = m.subscribeOsmTileAccess(() => {});
+    const seen = vi.fn();
+    watchOsmTileAccess(seen);
     await settle();
-    expect(m.getOsmTileAccess()).toBe('missing');
+    expect(seen).toHaveBeenLastCalledWith('missing');
     expect(b.permissions.contains).toHaveBeenCalledWith({
       origins: ['https://tile.openstreetmap.org/*'],
     });
-    stop();
   });
 
   it('is granted when it has', async () => {
     fakeBrowser(true);
-    const m = await load();
-    const stop = m.subscribeOsmTileAccess(() => {});
+    const seen = vi.fn();
+    watchOsmTileAccess(seen);
     await settle();
-    expect(m.getOsmTileAccess()).toBe('granted');
-    stop();
+    expect(seen).toHaveBeenLastCalledWith('granted');
   });
 
   it('follows a grant or revoke made elsewhere (about:addons)', async () => {
     const b = fakeBrowser(false);
-    const m = await load();
     const seen = vi.fn();
-    const stop = m.subscribeOsmTileAccess(seen);
+    watchOsmTileAccess(seen);
     await settle();
     b.grant();
     await settle();
-    expect(m.getOsmTileAccess()).toBe('granted');
+    expect(seen).toHaveBeenLastCalledWith('granted');
     b.revoke();
     await settle();
-    expect(m.getOsmTileAccess()).toBe('missing');
-    expect(seen).toHaveBeenCalled();
-    stop();
+    expect(seen).toHaveBeenLastCalledWith('missing');
   });
 
-  it('asks for exactly the tile host, synchronously, so Firefox still sees the click', async () => {
+  it('asks for exactly the tile host, synchronously, so Firefox still sees the click', () => {
     const b = fakeBrowser(false);
-    const m = await load();
-    void m.requestOsmTileAccess();
+    void requestOsmTileAccess();
     // No await before this line: the request must already have been made.
     expect(b.permissions.request).toHaveBeenCalledWith({
       origins: ['https://tile.openstreetmap.org/*'],
@@ -98,7 +87,6 @@ describe('osmTileAccess', () => {
   it('reports a refused or failed request as not granted', async () => {
     const b = fakeBrowser(false);
     b.permissions.request.mockRejectedValueOnce(new Error('not user input'));
-    const m = await load();
-    await expect(m.requestOsmTileAccess()).resolves.toBe(false);
+    await expect(requestOsmTileAccess()).resolves.toBe(false);
   });
 });

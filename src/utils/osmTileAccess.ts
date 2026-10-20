@@ -31,47 +31,24 @@ function permissionsApi(): PermissionsApi | null {
   return g.browser?.permissions ?? g.chrome?.permissions ?? null;
 }
 
-let state: OsmTileAccess = 'checking';
-let started = false;
-const listeners = new Set<() => void>();
-
-function set(next: OsmTileAccess): void {
-  if (next === state) return;
-  state = next;
-  for (const cb of listeners) cb();
-}
-
-async function check(): Promise<void> {
+/**
+ * Reports the current access, then every change made anywhere — the banner,
+ * about:addons, Chrome's site-access menu. Started once, at boot, by main.tsx,
+ * which forwards it to the store (createOsmTileAccessSlice).
+ */
+export function watchOsmTileAccess(onChange: (access: OsmTileAccess) => void): void {
   const api = permissionsApi();
-  if (!api) return set('unsupported');
-  try {
-    set((await api.contains({ origins: OSM_TILE_ORIGINS })) ? 'granted' : 'missing');
-  } catch {
-    set('unsupported');
-  }
-}
-
-function start(): void {
-  if (started) return;
-  started = true;
-  const api = permissionsApi();
-  // The student can grant or revoke it in about:addons while the map is open.
-  api?.onAdded?.addListener(() => void check());
-  api?.onRemoved?.addListener(() => void check());
-  void check();
-}
-
-export function getOsmTileAccess(): OsmTileAccess {
-  return state;
-}
-
-/** For useSyncExternalStore. The first subscriber starts the check. */
-export function subscribeOsmTileAccess(cb: () => void): () => void {
-  listeners.add(cb);
-  start();
-  return () => {
-    listeners.delete(cb);
+  if (!api) return onChange('unsupported');
+  const check = async () => {
+    try {
+      onChange((await api.contains({ origins: OSM_TILE_ORIGINS })) ? 'granted' : 'missing');
+    } catch {
+      onChange('unsupported');
+    }
   };
+  api.onAdded?.addListener(() => void check());
+  api.onRemoved?.addListener(() => void check());
+  void check();
 }
 
 /**
@@ -83,10 +60,7 @@ export function requestOsmTileAccess(): Promise<boolean> {
   if (!api) return Promise.resolve(false);
   try {
     return api.request({ origins: OSM_TILE_ORIGINS }).then(
-      (ok) => {
-        void check();
-        return ok === true;
-      },
+      (ok) => ok === true,
       () => false
     );
   } catch {

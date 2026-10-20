@@ -15,6 +15,8 @@ import { AppShell } from '@/components/AppShell';
 import { installExternalLinkHandler } from '@/mobile/openExternal';
 import { installConsoleCapture } from '@/utils/diagnostics/consoleCapture';
 import { initDataConsent } from '@/utils/firefoxDataConsent';
+import { watchOsmTileAccess } from '@/utils/osmTileAccess';
+import { useAppStore } from '@/store/useAppStore';
 
 // At module load, before the first render, because a `target="_blank"` anchor
 // does NOTHING on its own inside the Capacitor WebView: there is no tab to open
@@ -37,6 +39,10 @@ installConsoleCapture();
 // form asks for consent inside the click, where an extra await would cost
 // Firefox's user-action status. Resolves to "no such API" everywhere else.
 void initDataConsent();
+
+// Whether OSM tile requests can carry reIS's name (osmTileAccess.ts). Watched
+// for the life of the page, so a grant made in about:addons lands too.
+watchOsmTileAccess((access) => useAppStore.getState().setOsmTileAccess(access));
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
