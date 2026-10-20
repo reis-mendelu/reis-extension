@@ -367,6 +367,7 @@
     "file": {
       "openFailed": "Soubor se nepodařilo otevřít.",
       "downloading": "Stahuji…",
+      "opening": "Otevírám…",
       "savedToDownloads": "Uloženo do Stažených souborů"
     },
     "documentNote": {

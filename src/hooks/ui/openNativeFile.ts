@@ -19,19 +19,20 @@ import type { FileRowHint } from '../../utils/contentDisposition';
  * `t` is passed in rather than read from useTranslation here so this stays a
  * plain function — the caller is already a hook and owns the subscription.
  *
- * `onFetched` is forwarded to openIsFileNatively so a caller showing a progress
- * indicator can stop it when the BYTES land rather than when this promise
- * settles — on iOS the tail of that promise is the student's own share sheet.
+ * `onHandoff` is forwarded to openIsFileNatively so a caller showing a progress
+ * indicator can stop it when the student has something else to look at — not
+ * when the bytes land (the slow write is still ahead) and not when this promise
+ * settles (on iOS its tail is the student's own share sheet).
  */
 export async function openNativeFile(
   fullUrl: string,
   context: string,
   t: (key: string) => string,
-  onFetched?: () => void,
+  onHandoff?: () => void,
   row?: FileRowHint
 ): Promise<void> {
   try {
-    const { delivered } = await openIsFileNatively(fullUrl, undefined, undefined, onFetched, row);
+    const { delivered } = await openIsFileNatively(fullUrl, undefined, undefined, onHandoff, row);
     // Android saves into Downloads and posts a notification — but
     // POST_NOTIFICATIONS is a runtime grant, and a student who declined it (or
     // was never asked, which was the case) got NO signal at all while the file
