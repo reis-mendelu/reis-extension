@@ -58,6 +58,18 @@ describe('fetchPdfBlob on Capacitor leaves a diagnostic for every null', () => {
     expect(logError).toHaveBeenCalledWith('useFileActions.fetchPdfBlob', expect.any(Error));
   });
 
+  it('when the bytes cannot even be read, without rejecting', async () => {
+    const unreadable = { slice: () => ({ text: () => Promise.reject(new Error('read failed')) }) };
+    vi.mocked(fetchIsBinary).mockResolvedValue({
+      kind: 'binary',
+      blob: unreadable,
+      filename: 'a.pdf',
+    } as never);
+    const { result } = renderHook(() => useFileActions());
+    await expect(result.current.fetchPdfBlob('slozka.pl?download=1')).resolves.toBeNull();
+    expect(logError).toHaveBeenCalledWith('useFileActions.fetchPdfBlob', expect.any(Error));
+  });
+
   it('but returns a real PDF without a word', async () => {
     vi.mocked(fetchIsBinary).mockResolvedValue({
       kind: 'binary',

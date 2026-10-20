@@ -119,11 +119,12 @@ export function useFileActions(): UseFileActionsResult {
         // normal "can't preview" path. Neither are the Office files IS serves
         // through the same anchors, hence the byte check.
         if (result.kind !== 'binary') return noPdf(`IS served a ${result.kind}, not a file`);
-        return pdfOrNull(result.blob);
+        // Awaited inside the try: a failed byte read must land in the catch.
+        return await pdfOrNull(result.blob);
       }
       assertNotDemo();
       const { blob } = await fetchIsFile(fullUrl);
-      return pdfOrNull(blob);
+      return await pdfOrNull(blob);
     } catch (e) {
       // Demo mode is not a failure: the download it falls back to says so.
       if (e instanceof DemoModeError) {

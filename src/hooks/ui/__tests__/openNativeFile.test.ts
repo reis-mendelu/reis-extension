@@ -2,6 +2,8 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { toast } from 'sonner';
 import { openNativeFile } from '../openNativeFile';
 import { openIsFileNatively } from '../../../mobile/openIsFile';
+import { ShareCanceledError } from '../../../errors/shareCanceled';
+import { logError } from '../../../utils/reportError';
 
 vi.mock('../../../mobile/openIsFile', () => ({
   openIsFileNatively: vi.fn(async () => ({ usedFallback: false, delivered: 'downloads' })),
@@ -77,5 +79,22 @@ describe('openNativeFile success feedback', () => {
 
     expect(toast.error).not.toHaveBeenCalled();
     expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  /**
+   * Suggestion #32 (iPad, 16 Oct): "opening a subject's material says the file
+   * couldn't be opened; the only way is to download it". On iOS "open" IS the
+   * share sheet, with the file already written to Documents. Closing the sheet
+   * without picking a destination is the student's choice, and it drew
+   * "Soubor se nepodařilo otevřít". Only "Save to Files" — her "download it" —
+   * avoided the toast. Caught on Dominik's iPad, 2026-10-20.
+   */
+  it('stays silent when the student closes the share sheet', async () => {
+    vi.mocked(openIsFileNatively).mockRejectedValue(new ShareCanceledError());
+
+    await openNativeFile('slozka.pl?download=1', 'Test.open', t);
+
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(logError).not.toHaveBeenCalled();
   });
 });
