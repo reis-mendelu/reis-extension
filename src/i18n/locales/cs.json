@@ -57,7 +57,11 @@
     "foodDebit": "Inkaso za stravu",
     "logoutConfirmTitle": "Odhlásit se z aplikace?",
     "logoutConfirmBody": "Z telefonu smažeme tvoje přihlášení i stažená data. Příště se budeš muset znovu přihlásit do IS.",
-    "logoutFailed": "Odhlášení se nepovedlo. Zkus to prosím znovu."
+    "logoutFailed": "Odhlášení se nepovedlo. Zkus to prosím znovu.",
+    "study": "Studium",
+    "studyHint": "Máte v IS víc studií. reIS ukazuje předměty, zkoušky a plán toho vybraného.",
+    "studySwitching": "Přepínám studium…",
+    "studySwitchFailed": "Studium se nepodařilo přepnout. Zkuste to znovu."
   },
   "sidebar": {
     "profile": "Profil",

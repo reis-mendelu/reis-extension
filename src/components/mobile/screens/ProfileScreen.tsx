@@ -12,6 +12,7 @@ import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { SignOutConfirm } from '../sheets/SignOutConfirm';
 import { AboutSection } from './profile/AboutSection';
+import { StudySwitcher } from '../../StudySwitcher/StudySwitcher';
 import { SupportPrompt } from '../../Support/SupportPrompt';
 import { ProfileIdentity } from './profile/ProfileIdentity';
 import { NavRow } from '../primitives/NavRow';
@@ -59,6 +60,9 @@ export function ProfileScreen() {
             keeps its room for things a student comes here to do. The second
             line names what is inside, like every row here — the bare values
             ("Den · Čeština · Tmavý") read as noise out of context. */}
+          {/* First, above Nastavení: for the few students with two studies it
+              decides what every other tab shows. Renders nothing otherwise. */}
+          <StudySwitcher className="px-4 pb-1 pt-2" />
           <div className="pt-2">
             <NavRow
               icon={Settings}

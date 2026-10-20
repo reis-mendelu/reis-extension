@@ -20,6 +20,7 @@ import { PartnersBlock } from '../Partners/PartnersBlock';
 import { SupportPrompt } from '../Support/SupportPrompt';
 import { desktopEduroamTarget } from '../../utils/desktopEduroamTarget';
 import { useLongPress } from '../../hooks/ui/useLongPress';
+import { StudySwitcher } from '../StudySwitcher/StudySwitcher';
 
 export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: () => void }) {
   const { isDark, isLoading: tLoading, toggle: tTheme } = useTheme();
@@ -48,7 +49,7 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
         initial={{ opacity: 0, x: 10, scale: 0.95 }}
         animate={{ opacity: 1, x: 0, scale: 1 }}
         exit={{ opacity: 0, x: 10, scale: 0.95 }}
-        className="absolute left-14 bottom-0 w-80 max-w-[calc(100vw-5rem)] bg-base-100 rounded-xl shadow-popover-heavy border border-base-300 p-3 z-50"
+        className="absolute left-14 bottom-0 w-80 max-w-[calc(100vw-5rem)] max-h-[calc(100dvh-1.5rem)] overflow-y-auto bg-base-100 rounded-xl shadow-popover-heavy border border-base-300 p-3 z-50"
       >
         <div className="px-1 pt-1 pb-3 border-b border-base-200">
           <h3 className="font-bold text-base mb-3 ">{t('sidebar.profile')}</h3>
@@ -80,6 +81,8 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
             </div>
           )}
         </div>
+        {/* Only for a student with more than one study in IS. */}
+        <StudySwitcher className="border-b border-base-200 px-1 py-2.5" />
         {/* Preferences Section */}
         <div className="py-1 border-b border-base-200">
           <div className="flex items-center justify-between gap-3 px-1 py-2 hover:bg-base-200 rounded-lg group transition-colors">

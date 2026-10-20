@@ -12,7 +12,8 @@ export type ActionType =
   | 'refresh_schedule'
   | 'get_diagnostics'
   | 'open_url'
-  | 'logout';
+  | 'logout'
+  | 'switch_study';
 
 /**
  * A Phase 2 domain whose fetch can finish with a legitimately empty answer.

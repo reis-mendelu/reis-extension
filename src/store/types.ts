@@ -1,3 +1,4 @@
+import type { StudyOption } from '../utils/userParams/studyOptions';
 import type { SimilarSuggestion } from '../types/schemas/similarSubjects.schema';
 import type { StateCreator } from 'zustand';
 import type { BlockLesson, HiddenItems, CalendarCustomEvent } from '../types/calendarTypes';
@@ -390,6 +391,12 @@ export interface ContextSlice {
   userEmail: string | null;
   /** IS has named the faculty this session; until then loadContext is worth re-asking. */
   contextResolved: boolean;
+  /** IS's study switcher, for a student with more than one study; else empty. */
+  studies: StudyOption[];
+  /** A switch to another study is under way, or the last one failed. */
+  studySwitch: 'idle' | 'switching' | 'failed';
+  /** Run the app on the student's other study. Restarts the app on success. */
+  switchStudy: (studium: string) => Promise<void>;
   loadContext: () => Promise<void>;
 }
 
