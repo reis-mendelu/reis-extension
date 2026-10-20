@@ -33,15 +33,28 @@ describe('syncPastSemesters', () => {
     await syncPastSemesters('100000', '829', periods);
 
     expect(fetchPastSemesterData).toHaveBeenCalledExactlyOnceWith('100000', '812');
-    expect(store.get('past_semester_812')).toEqual({ subjects });
+    expect(store.get('past_semester_100000_812')).toEqual({ subjects });
     expect(sendToIframe).not.toHaveBeenCalled();
   });
 
   it('reuses a cached period, including one cached with attendance', async () => {
-    store.set('past_semester_812', { subjects, attendance: {} });
+    store.set('past_semester_100000_812', { subjects, attendance: {} });
 
     await syncPastSemesters('100000', '829', periods);
 
     expect(fetchPastSemesterData).not.toHaveBeenCalled();
+  });
+
+  // Two studies at one faculty share their obdobi ids. Keyed by the period
+  // alone, one study's past semesters were served as the other's — and a late
+  // write from a crawl of the study just left put them back after a switch.
+  // An entry written before the study was part of the key cannot be told
+  // apart from the other study's, so it is not trusted.
+  it("keeps each study's past semesters apart", async () => {
+    store.set('past_semester_812', { subjects });
+
+    await syncPastSemesters('100000', '829', periods);
+
+    expect(fetchPastSemesterData).toHaveBeenCalledExactlyOnceWith('100000', '812');
   });
 });

@@ -29,6 +29,8 @@ import { isHarnessEnabled } from '../utils/harnessEnabled';
 import type { SyncDomain } from '../types/messages/base';
 
 interface SyncedData {
+  /** The study the per-study data belongs to; see the guard in the listener. */
+  studium?: string;
   schedule?: BlockLesson[];
   exams?: ExamSubject[];
   subjects?: SubjectsData;
@@ -167,6 +169,15 @@ export function useAppLogic() {
             ? (d.data as unknown as SyncedData)
             : null;
       if (!r) return;
+
+      // Crawled for a study this context is not on — a switch half done (see
+      // services/identity/switchStudy). Stored, it would land under this
+      // study's keys: the other study's tests and boxes as this one's.
+      if (r.studium) {
+        const own = (await IndexedDBService.get('meta', 'reis_user_params')) as
+          { studium?: string } | undefined;
+        if (own?.studium && own.studium !== r.studium) return;
+      }
 
       // Instantly update store for reactivity, then persist to IDB in background
       // Before the data branches: a domain can finish with nothing to send

@@ -48,6 +48,8 @@ export interface SyncedData {
   studyStats?: StudyStats;
   studyComparison?: StudyComparison;
   notes?: Record<string, Record<string, { note: string; fileName: string }>>;
+  /** The study the per-study data in this update belongs to (see chooseStudy). */
+  studium?: string;
   isSyncing?: boolean;
   lastSync: number;
   error?: string;

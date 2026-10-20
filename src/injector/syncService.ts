@@ -105,7 +105,12 @@ export async function syncAllData() {
     const pushEarly = (partial: Partial<SyncedData>) => {
       if (live())
         sendToIframe(
-          Messages.syncUpdate({ ...partial, isSyncing: true, lastSync: cachedData.lastSync })
+          Messages.syncUpdate({
+            ...partial,
+            studium: cachedData.studium,
+            isSyncing: true,
+            lastSync: cachedData.lastSync,
+          })
         );
     };
 
@@ -114,6 +119,9 @@ export async function syncAllData() {
     if (studium && syncedStudium && studium !== syncedStudium) forgetStudyData();
     if (studium) syncedStudium = studium;
     generation = studyGeneration;
+    // Every update this run sends names its study, so a context still on the
+    // other one after a half-done switch can refuse it (useAppLogic).
+    if (studium) cachedData = { ...cachedData, studium };
 
     // Which core fetches actually ran, as opposed to being TTL-skipped — both
     // come back null, and only a fetch that ran can say IS was unreachable.
@@ -156,7 +164,7 @@ export async function syncAllData() {
     const pastSubjectsPromise = ttlGated('pastSubjects', TTL.SEMESTER, !!lastPastSubjects, () =>
       fetchDualLanguagePastSubjects()
     ).then((value) => {
-      if (value) lastPastSubjects = value as typeof lastPastSubjects;
+      if (value && live()) lastPastSubjects = value as typeof lastPastSubjects;
       return value;
     });
 
@@ -295,8 +303,10 @@ export async function syncAllData() {
           (p) => p.id !== userParams!.obdobi
         );
         for (const period of pastPeriods) {
-          const cached = (await IndexedDBService.get('meta', `past_semester_${period.id}`)) as
-            { subjects: { data: typeof subjects.value.subjects.data } } | undefined;
+          const cached = (await IndexedDBService.get(
+            'meta',
+            `past_semester_${studium}_${period.id}`
+          )) as { subjects: { data: typeof subjects.value.subjects.data } } | undefined;
           if (cached?.subjects?.data) {
             for (const [code, info] of Object.entries(cached.subjects.data)) {
               if (!subjects.value.subjects.data[code]) {
@@ -385,6 +395,7 @@ export async function syncAllData() {
           studyComparison: cachedData.studyComparison,
           cvicneTests: cachedData.cvicneTests,
           odevzdavarny: cachedData.odevzdavarny,
+          studium: cachedData.studium,
           isSyncing: true,
           lastSync: cachedData.lastSync,
         })
@@ -646,6 +657,7 @@ export async function refreshExams(): Promise<void> {
   sendToIframe(
     Messages.syncUpdate({
       exams: enriched,
+      studium: params?.studium,
       loaded: ['exams'],
       isSyncing,
       lastSync: cachedData.lastSync,
