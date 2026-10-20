@@ -9,6 +9,8 @@
 // src/api/__tests__/fixtures/odevzdavarny/). Each table has its own layout,
 // so the column indices below are per table and load-bearing.
 
+import { instructionsFromOnclick } from './boxInstructions';
+
 export type OdevzdavarnaSection = 'open' | 'submitted' | 'closed';
 
 export interface ParsedOdevzdavarna {
@@ -28,6 +30,8 @@ export interface ParsedOdevzdavarna {
   isOpen: boolean;
   /** Upload / view-files page for this box; '' when IS gives none. */
   uploadUrl: string;
+  /** The teacher's "Pokyny", as plain text; absent when the box has none. */
+  instructions?: string;
 }
 
 interface Layout {
@@ -38,6 +42,8 @@ interface Layout {
   details: number;
   files: number;
   link: number;
+  /** The "Pokyny" icon. */
+  instructions: number;
 }
 
 // Header row, cz/en (verified 2026-10-03):
@@ -45,9 +51,9 @@ interface Layout {
 // submitted: … | Téma | Otevřená | Body | Podrobnosti | Počet souborů | Pokyny | Vypsal | Zobrazit soubory
 // closed:    … | Téma | Otevřená | Podrobnosti | Počet souborů | Pokyny | Vypsal | Zobrazit soubory
 const LAYOUTS: Record<OdevzdavarnaSection, Layout> = {
-  open: { cells: 11, deadline: 4, status: null, points: null, details: 6, files: 7, link: 10 },
-  submitted: { cells: 13, deadline: 4, status: 6, points: 7, details: 8, files: 9, link: 12 },
-  closed: { cells: 12, deadline: 4, status: 6, points: null, details: 7, files: 8, link: 11 },
+  open: { cells: 11, deadline: 4, status: null, points: null, details: 6, files: 7, link: 10, instructions: 8 },
+  submitted: { cells: 13, deadline: 4, status: 6, points: 7, details: 8, files: 9, link: 12, instructions: 10 },
+  closed: { cells: 12, deadline: 4, status: 6, points: null, details: 7, files: 8, link: 11, instructions: 9 },
 };
 
 const MARKERS: Record<'cz' | 'en', Record<OdevzdavarnaSection, string>> = {
@@ -116,6 +122,9 @@ function parseRow(cols: HTMLCollectionOf<Element>, section: OdevzdavarnaSection)
     uploadUrl: absolute(linkHref),
   };
   if (points) row.points = points;
+  const pokyny = cols[L.instructions]!.querySelector('[data-sysid="prohlizeni-info"]');
+  const instructions = instructionsFromOnclick(pokyny?.getAttribute('onclick') ?? null, row.name);
+  if (instructions) row.instructions = instructions;
   return row;
 }
 

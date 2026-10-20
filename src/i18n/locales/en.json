@@ -1486,6 +1486,7 @@
     "openOne": "{n} open",
     "openFew": "{n} open",
     "openOther": "{n} open",
-    "nothingDueSoon": "Nothing due in the next 14 days"
+    "nothingDueSoon": "Nothing due in the next 14 days",
+    "instructions": "Instructions"
   }
 }
