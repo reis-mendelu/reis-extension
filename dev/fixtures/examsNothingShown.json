@@ -1,0 +1,43 @@
+{
+  "_comment": "Synthetic, NO real student data. The shape behind Návrhy #33: one exam subject whose only section is a registered seminar-group signup ('Zápis na cvičení'). stripGroupSignupSections removes the section and keeps the subject, so exams.length is 1 and no row renders — the screen must show its empty state, not a blank body. Serve with: REIS_FIXTURE=examsNothingShown npm run dev:web.",
+  "exams": [
+    {
+      "version": 1,
+      "id": "fx-tv",
+      "code": "EBC-TV",
+      "name": "Tělesná výchova",
+      "nameCs": "Tělesná výchova",
+      "nameEn": "Physical Education",
+      "sections": [
+        {
+          "id": "fx-tv-zc",
+          "name": "Zápis na cvičení",
+          "nameCs": "Zápis na cvičení",
+          "nameEn": "Seminar enrolment",
+          "type": "Zápis na cvičení",
+          "status": "registered",
+          "registeredTerm": {
+            "id": "fx-tv-zc-t1",
+            "dayOffset": 2,
+            "time": "14:00",
+            "room": "Q01",
+            "roomCs": "Q01",
+            "roomEn": "Q01",
+            "teacher": "Mgr. Eva Svobodová"
+          },
+          "terms": [
+            {
+              "id": "fx-tv-zc-t1",
+              "dayOffset": 2,
+              "time": "14:00",
+              "room": "Q01",
+              "teacher": "Mgr. Eva Svobodová",
+              "capacity": { "occupied": 18, "total": 20, "raw": "18/20" },
+              "canRegisterNow": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
