@@ -5,16 +5,18 @@
 --   support_prompt_seen  the question was on screen (the denominator)
 --   support_prompt_yes   the student tapped "Ano" (nothing is charged)
 --
--- APPLY THIS BEFORE any build that sends them ships: track_feature_usage drops
--- an unknown label silently, so a build ahead of this migration would count
--- zero and read as "nobody wants it". Old builds are unaffected; this only adds
--- values. src/api/__tests__/featureSignalWhitelist.test.ts pins both lists below
--- to the client's FEATURE_SIGNALS.
+-- The release applies this before any store gets the build (db-migrate.yml),
+-- which matters: track_feature_usage drops an unknown label silently, so a
+-- build ahead of it would count zero and read as "nobody wants it".
+--
+-- Additive: both lists below are the baseline's three labels plus the two new
+-- ones, and no later migration changed either. Old builds are unaffected.
+-- Safe to re-run (the constraint is dropped and re-added with the full list).
+-- src/api/__tests__/featureSignalWhitelist.test.ts pins both lists to the
+-- client's FEATURE_SIGNALS; supabase/tests/support_prompt_signals.test.sql
+-- checks the behaviour.
 
-begin;
-
--- The column check, by its real name in prod (read 2026-10-16).
-alter table public.feature_usage drop constraint feature_usage_feature_check;
+alter table public.feature_usage drop constraint if exists feature_usage_feature_check;
 alter table public.feature_usage add constraint feature_usage_feature_check
   check (feature in ('map_dwell_3s','eduroam_wifi_configured','eduroam_profile_delivered','support_prompt_seen','support_prompt_yes'));
 
@@ -38,5 +40,3 @@ $$;
 -- describes who may call it.
 revoke all on function public.track_feature_usage(text, text) from public;
 grant execute on function public.track_feature_usage(text, text) to anon, authenticated;
-
-commit;
