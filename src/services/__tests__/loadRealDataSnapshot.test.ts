@@ -6,6 +6,20 @@ vi.mock('../storage', () => ({
   IndexedDBService: { clear: vi.fn(async () => {}) },
 }));
 vi.mock('../../api/proxyClient', () => ({ isInIframe: () => false }));
+// A stand-in store: the real one boots the Supabase auth client, which needs an
+// installed platform and rejected unhandled after the tests (CI, PR #579).
+vi.mock('../../store/useAppStore', () => {
+  let state: Record<string, unknown> = { examNotes: {}, lastExamNotesFetchedAt: {} };
+  return {
+    useAppStore: {
+      getState: () => state,
+      setState: (u: unknown) => {
+        const patch = typeof u === 'function' ? (u as (s: typeof state) => object)(state) : u;
+        state = { ...state, ...(patch as object) };
+      },
+    },
+  };
+});
 
 describe('loadRealDataSnapshot', () => {
   beforeEach(() => vi.restoreAllMocks());

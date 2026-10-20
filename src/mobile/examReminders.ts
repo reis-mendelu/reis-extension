@@ -15,9 +15,12 @@ function wanted(): ExamOpeningReminder[] {
   return examOpeningReminders(exams.data, new Date(), language);
 }
 
-const clock = (d: Date) => `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+// Set at sign-out: nothing more is scheduled for a student who has left.
+let signedOut = false;
+let unsubscribe: (() => void) | null = null;
 
 async function reconcile(): Promise<void> {
+  if (signedOut) return;
   const reminders = wanted();
   const { notifications } = await LocalNotifications.getPending();
   const ours = notifications.filter((n) => n.extra?.kind === EXAM_OPENING_KIND);
@@ -49,7 +52,7 @@ async function reconcile(): Promise<void> {
       body: translate(language, 'examReminders.body', {
         subject: r.subjectName,
         section: r.sectionName,
-        time: clock(r.opensAt),
+        time: r.opensAtClock,
       }),
       schedule: { at: r.fireAt, allowWhileIdle: true },
       channelId: CHANNEL_ID,
@@ -100,12 +103,16 @@ export function installExamReminders(): () => void {
     }
   });
 
+  signedOut = false;
+  unsubscribe?.();
   let exams = useAppStore.getState().exams.data;
   let tab = useAppStore.getState().mobileTab;
-  const unsubscribe = useAppStore.subscribe((state) => {
+  unsubscribe = useAppStore.subscribe((state) => {
     if (state.exams.data !== exams) {
       exams = state.exams.data;
       void reconcileExamReminders();
+      // Zkoušky opened before the exams loaded found nothing to ask about.
+      if (state.mobileTab === 'exams') void askIfDue();
     }
     if (state.mobileTab !== tab) {
       tab = state.mobileTab;
@@ -113,5 +120,29 @@ export function installExamReminders(): () => void {
     }
   });
   void reconcileExamReminders();
-  return unsubscribe;
+  return () => unsubscribe?.();
+}
+
+/**
+ * Sign-out: the next person on this phone must not be told about this
+ * student's exams. Stops scheduling, cancels what is pending and clears what
+ * already sits in the tray — ours only. Registered in capacitor/main.capacitor.
+ */
+export async function clearExamReminders(): Promise<void> {
+  signedOut = true;
+  unsubscribe?.();
+  unsubscribe = null;
+  // Let a reconcile already in flight finish, so it cannot schedule after this.
+  await queue;
+  const { notifications } = await LocalNotifications.getPending();
+  const pending = notifications.filter((n) => n.extra?.kind === EXAM_OPENING_KIND);
+  if (pending.length > 0) {
+    await LocalNotifications.cancel({ notifications: pending.map((n) => ({ id: n.id })) });
+  }
+  const delivered = (await LocalNotifications.getDeliveredNotifications()).notifications.filter(
+    (n) => n.extra?.kind === EXAM_OPENING_KIND
+  );
+  if (delivered.length > 0) {
+    await LocalNotifications.removeDeliveredNotifications({ notifications: delivered });
+  }
 }

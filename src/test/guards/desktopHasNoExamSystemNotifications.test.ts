@@ -26,14 +26,15 @@ const grep = (pattern: string, paths: string) => {
 };
 
 describe('exam-opening reminders stay on the phone', () => {
-  it('src/mobile/examReminders.ts is installed from the Capacitor boot only', () => {
+  it('src/mobile/examReminders.ts is reached from the Capacitor entry only', () => {
     const importers = grep(
       'mobile/examReminders',
       'src capacitor ":!*__tests__*" ":!src/test/guards"'
     )
       .split('\n')
       .filter(Boolean);
-    expect(importers).toEqual(['capacitor/startApp.ts']);
+    // startApp installs it; main.capacitor registers its sign-out cleanup.
+    expect(importers.sort()).toEqual(['capacitor/main.capacitor.tsx', 'capacitor/startApp.ts']);
   });
 
   it('the extension asks for no notification permission', () => {

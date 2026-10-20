@@ -41,6 +41,13 @@ registerSignOutCleanup(async () => {
   await clearIskam();
 });
 
+// Exam-opening reminders name this student's exams; the next person on the
+// device must not get them. Registered here for the same reason as above.
+registerSignOutCleanup(async () => {
+  const { clearExamReminders } = await import('@/mobile/examReminders');
+  await clearExamReminders();
+});
+
 // Android only: the status bar sits transparent over the app there (see
 // MainActivity), so its icons must follow the reIS theme, not the system one.
 // iOS is left on its current behaviour.

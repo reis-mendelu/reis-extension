@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { examOpeningReminders } from '../examOpeningReminders';
+import { examOpeningReminders, pragueToInstant } from '../examOpeningReminders';
 import type { ExamSection, ExamSubject, ExamTerm } from '../../types/exams';
 
-const NOW = new Date(2026, 11, 1, 9, 0);
+// Absolute instants throughout: 1. 12. 9:00 in Prague (CET, UTC+1), whatever
+// time zone the test machine — or the student's phone — is in.
+const NOW = new Date(Date.UTC(2026, 11, 1, 8, 0));
 
 const term = (id: string, registrationStart?: string, extra: Partial<ExamTerm> = {}): ExamTerm => ({
   id,
@@ -47,9 +49,10 @@ describe('examOpeningReminders', () => {
       key: 'EBC-EKM|s1|2026-12-02T13:00',
       subjectName: 'Ekonometrie 1',
       sectionName: 'Zkouška',
+      opensAtClock: '13:00',
     });
-    expect(r!.opensAt).toEqual(new Date(2026, 11, 2, 13, 0));
-    expect(r!.fireAt).toEqual(new Date(2026, 11, 2, 12, 0));
+    expect(r!.opensAt).toEqual(new Date(Date.UTC(2026, 11, 2, 12, 0)));
+    expect(r!.fireAt).toEqual(new Date(Date.UTC(2026, 11, 2, 11, 0)));
   });
 
   it('gives terms opening together one reminder per section', () => {
@@ -100,5 +103,23 @@ describe('examOpeningReminders', () => {
     expect(at('02.12.2026 13:00')).not.toBe(at('02.12.2026 14:00'));
     expect(Number.isInteger(at('02.12.2026 13:00'))).toBe(true);
     expect(Math.abs(at('02.12.2026 13:00'))).toBeLessThan(2 ** 31);
+  });
+});
+
+/**
+ * IS writes Prague wall-clock times. A phone in London read "13:00" as 13:00
+ * London, an hour late — the reminder then fired as registration opened.
+ */
+describe('pragueToInstant', () => {
+  it('reads an IS time as Prague time in winter (UTC+1)', () => {
+    expect(pragueToInstant(new Date(2026, 11, 2, 13, 0))).toEqual(
+      new Date(Date.UTC(2026, 11, 2, 12, 0))
+    );
+  });
+
+  it('and in summer (UTC+2)', () => {
+    expect(pragueToInstant(new Date(2026, 5, 2, 13, 0))).toEqual(
+      new Date(Date.UTC(2026, 5, 2, 11, 0))
+    );
   });
 });

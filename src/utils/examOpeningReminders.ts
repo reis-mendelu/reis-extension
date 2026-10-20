@@ -15,6 +15,8 @@ export interface ExamOpeningReminder {
   key: string;
   subjectName: string;
   sectionName: string;
+  /** IS's own "13:00" — Prague time, as the student reads it in IS. */
+  opensAtClock: string;
   opensAt: Date;
   fireAt: Date;
 }
@@ -22,6 +24,44 @@ export interface ExamOpeningReminder {
 const pad = (n: number) => String(n).padStart(2, '0');
 const localStamp = (d: Date) =>
   `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+/** How far Prague is ahead of UTC at `at`, in milliseconds. */
+function pragueOffsetMs(at: number): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Prague',
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+  }).formatToParts(new Date(at));
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  return Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute')) - at;
+}
+
+/**
+ * The moment an IS time happens. `parseRegistrationStart` builds the Date from
+ * IS's wall clock in the PHONE's time zone; IS means Prague. On a phone abroad
+ * that put the reminder an hour or more off — in London it fired as
+ * registration opened. Falls back to the phone's reading without zone data.
+ */
+export function pragueToInstant(wallClock: Date): Date {
+  try {
+    const asUtc = Date.UTC(
+      wallClock.getFullYear(),
+      wallClock.getMonth(),
+      wallClock.getDate(),
+      wallClock.getHours(),
+      wallClock.getMinutes()
+    );
+    // Twice: the first guess can sit across a DST switch from the answer.
+    const first = asUtc - pragueOffsetMs(asUtc);
+    return new Date(asUtc - pragueOffsetMs(first));
+  } catch {
+    return wallClock;
+  }
+}
 
 /** FNV-1a, kept to 31 bits: Android takes a notification id as a Java int. */
 function idOf(key: string): number {
@@ -54,20 +94,25 @@ export function examOpeningReminders(
   for (const subject of exams) {
     for (const section of subject.sections) {
       if (section.status === 'registered') continue;
-      const opensAt = section.terms
+      const next = section.terms
         .filter((t) => !t.cannotRegister && t.registrationStart)
         .map((t) => parseRegistrationStart(t.registrationStart!))
-        .filter((d): d is Date => d !== null && d.getTime() > now.getTime())
-        .sort((a, b) => a.getTime() - b.getTime())[0];
-      if (!opensAt) continue;
+        .filter((d): d is Date => d !== null)
+        .map((wall) => ({ wall, at: pragueToInstant(wall) }))
+        .filter(({ at }) => at.getTime() > now.getTime())
+        .sort((a, b) => a.at.getTime() - b.at.getTime())[0];
+      if (!next) continue;
+      const opensAt = next.at;
       const fireAt = new Date(opensAt.getTime() - REMIND_BEFORE_MS);
       if (fireAt.getTime() <= now.getTime()) continue;
-      const key = `${subject.code}|${section.id}|${localStamp(opensAt)}`;
+      // From IS's wall clock, so the id is the same on every phone, anywhere.
+      const key = `${subject.code}|${section.id}|${localStamp(next.wall)}`;
       result.push({
         id: idOf(key),
         key,
         subjectName: (isEn ? subject.nameEn : subject.nameCs) ?? subject.name,
         sectionName: (isEn ? section.nameEn : section.nameCs) ?? section.name,
+        opensAtClock: `${next.wall.getHours()}:${pad(next.wall.getMinutes())}`,
         opensAt,
         fireAt,
       });
