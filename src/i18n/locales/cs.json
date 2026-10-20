@@ -483,6 +483,11 @@
     "sectionDeadlines": "Blížící se termíny",
     "sectionSocieties": "Od spolků"
   },
+  "examReminders": {
+    "title": "Za chvíli se otvírá zkouška",
+    "body": "{subject} – {section} · přihlašování v {time}",
+    "channel": "Otevírání zkoušek"
+  },
   "deadlines": {
     "title": "Blížící se termíny",
     "examRegOpens": "Otevírá se přihlašování",

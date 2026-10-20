@@ -15,7 +15,7 @@ vi.mock('../../storage', () => ({
   },
 }));
 
-import { retireSocietyFeatures } from '../retireSocietyFeatures';
+import { retireSocietyFeatures, retiredPending } from '../retireSocietyFeatures';
 
 const RETIRED = [
   'event_rsvps_mine',
@@ -68,5 +68,18 @@ describe('retireSocietyFeatures', () => {
     await retireSocietyFeatures({ clearScheduledNotifications: clear });
     expect(clear).toHaveBeenCalledTimes(2);
     expect(stores.meta.get('retired_society_features_v1')).toBe(true);
+  });
+});
+
+// Spec 2026-10-20: a phone updating straight to a build with exam-opening
+// reminders runs this once, possibly after they are scheduled.
+describe('retiredPending', () => {
+  it('cancels the old reminders and keeps exam-opening ones', () => {
+    const pending = [
+      { id: 1 },
+      { id: 2, extra: { kind: 'event' } },
+      { id: 3, extra: { kind: 'exam-opening' } },
+    ];
+    expect(retiredPending(pending).map((n) => n.id)).toEqual([1, 2]);
   });
 });

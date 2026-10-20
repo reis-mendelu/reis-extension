@@ -254,7 +254,9 @@ export const PLATFORM_PERMISSIONS = {
   /**
    * What the merged release manifest requests (app manifest + every Capacitor
    * plugin's, minus tools:node="remove"), without the android.permission. prefix.
-   * RECEIVE_BOOT_COMPLETED and WAKE_LOCK come from @capacitor/local-notifications.
+   * RECEIVE_BOOT_COMPLETED and WAKE_LOCK come from @capacitor/local-notifications,
+   * which stays for the exam-opening reminders (spec 2026-10-20): scheduled on
+   * the phone from its own exam list, nothing sent anywhere.
    */
   android: [
     'INTERNET',

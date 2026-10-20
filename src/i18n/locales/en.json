@@ -483,6 +483,11 @@
     "sectionDeadlines": "Upcoming deadlines",
     "sectionSocieties": "From societies"
   },
+  "examReminders": {
+    "title": "An exam opens soon",
+    "body": "{subject} – {section} · registration opens at {time}",
+    "channel": "Exam openings"
+  },
   "deadlines": {
     "title": "Upcoming deadlines",
     "examRegOpens": "Registration opens",

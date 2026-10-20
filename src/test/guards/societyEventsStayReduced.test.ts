@@ -11,13 +11,14 @@ import { execSync } from 'node:child_process';
  * The patterns match comments too: reword a doc comment that names a removed
  * call rather than weakening the guard.
  */
-const grep = (pattern: string) => {
+const grep = (pattern: string, alsoExclude: string[] = []) => {
   try {
     // The cleanup module names retired keys on purpose; it is the one exception.
-    return execSync(
-      `git grep -n -E "${pattern}" -- src ':!src/test/guards' ':!src/services/cleanup'`,
-      { encoding: 'utf8' }
-    );
+    const excludes = ['src/test/guards', 'src/services/cleanup', ...alsoExclude]
+      // Double quotes: execSync runs cmd.exe on Windows, where single quotes are literal.
+      .map((p) => `":!${p}"`)
+      .join(' ');
+    return execSync(`git grep -n -E "${pattern}" -- src ${excludes}`, { encoding: 'utf8' });
   } catch (err) {
     // git grep exits 1 when nothing matches — the passing case. Anything else
     // (no git, a bad pattern) must fail loudly, not pass as "no matches".
@@ -31,8 +32,10 @@ describe('society events stay reduced', () => {
     expect(grep('set_event_rsvp|get_event_rsvps')).toBe('');
   });
 
-  it('no scheduled local notifications', () => {
-    expect(grep('LocalNotifications\\.schedule')).toBe('');
+  // Exam-opening reminders (spec 2026-10-20) are the one scheduler, and they
+  // are about IS registration, not societies. Nothing else may schedule.
+  it('no scheduled local notifications besides the exam-opening reminders', () => {
+    expect(grep('LocalNotifications\\.schedule', ['src/mobile/examReminders.ts'])).toBe('');
   });
 
   it('no follow store', () => {

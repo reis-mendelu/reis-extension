@@ -16,6 +16,7 @@ import { setDemoErrorHandler } from '@/utils/reportError';
 import { handleDemoError } from '@/mobile/demoToast';
 import { useAppStore } from '@/store/useAppStore';
 import { trackDailyUsage } from '@/api/feedback';
+import { installExamReminders } from '@/mobile/examReminders';
 
 /**
  * Whether `entrypoints/main/main` has been evaluated.
@@ -97,6 +98,11 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // Demo data is seeded, static and complete. Syncing would only produce
   // failed IS requests, and fetchWithAuth throws DemoModeError anyway.
   if (demo) return;
+
+  // "Za chvíli se otvírá zkouška" (spec 2026-10-20). After the demo return:
+  // the demo's exams are seeded, and a reviewer's phone must not be reminded of
+  // them. Reschedules on every exam sync from here on.
+  installExamReminders();
 
   // In the extension the CONTENT SCRIPT drives this and posts results into the
   // iframe. Capacitor has neither, so the app drives its own sync; sendToIframe
