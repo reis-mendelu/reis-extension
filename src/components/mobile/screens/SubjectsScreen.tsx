@@ -50,7 +50,6 @@ export function SubjectsScreen() {
   const studyStats = useAppStore((s) => s.studyStats);
   const studyComparison = useAppStore((s) => s.studyComparison);
   const pushSheet = useAppStore((s) => s.pushSheet);
-  const newPoints = useAppStore((s) => s.zaznamnikNewPoints);
   const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
@@ -128,8 +127,6 @@ export function SubjectsScreen() {
       courseCode: subject.code,
       courseName: subject.name,
       courseId: subject.id,
-      // New points open the drawer where they are, which is also what clears them.
-      ...(newPoints[subject.code]?.length ? { initialTab: 'zaznamnik' as const } : {}),
     });
   };
 

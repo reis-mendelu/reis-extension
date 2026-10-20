@@ -13,7 +13,7 @@ interface Props {
     courseName: string,
     courseId: string,
     facultyCode?: string,
-    initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik',
+    initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates',
     isFulfilled?: boolean
   ) => void;
   onSearchSubject: (name: string) => void;

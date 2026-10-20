@@ -6,7 +6,6 @@ import { computeFailRate } from '../../../SubjectsPanel/computeFailRate';
 import { failRateTone } from '../../../SubjectsPanel/failRateTone';
 import { orderHardestFirst } from '../../../SubjectsPanel/orderHardestFirst';
 import { FailRateLegend } from '../../../SubjectsPanel/FailRateLegend';
-import { NewPointsBadge } from '../../../SubjectsPanel/NewPointsBadge';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useCourseName } from '../../../../hooks/ui/useCourseName';
 import { pluralSuffix } from '../../../../utils/plural';
@@ -129,12 +128,7 @@ function SemesterRow({
           mid-word ("Databázové systémy a návrh d…"), losing the half that
           distinguishes one subject from another. */}
       <span className="flex min-w-0 flex-1 flex-row items-start justify-between gap-2.5">
-        {/* Under the name, not beside it: at 320px a pill in the row squeezed
-            the name to a syllable per line. */}
-        <span className="flex min-w-0 flex-col items-start gap-1">
-          <span className="min-w-0 break-words text-md font-medium text-base-content">{name}</span>
-          <NewPointsBadge courseCode={subject.code} className="px-1.5 py-0.5 text-xs" />
-        </span>
+        <span className="min-w-0 break-words text-md font-medium text-base-content">{name}</span>
         <FailRate subject={subject} />
       </span>
       <GradeChip subject={subject} />

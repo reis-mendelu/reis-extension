@@ -63,9 +63,8 @@ describe('SemesterCard fail rate', () => {
     render(<SemesterCard enrolled={[enrolledOf(subj())]} semester={3} onOpenSubject={() => {}} />);
     const chip = screen.getByTestId('subject-fail-rate');
     const name = screen.getByText('Počítačové sítě');
-    // Same row means the same flex parent, side by side. The name sits in a
-    // column of its own so "Nové body" can go under it; the chip is beside that.
-    expect(chip.parentElement).toBe(name.parentElement?.parentElement);
+    // Same row means the same flex parent, side by side.
+    expect(chip.parentElement).toBe(name.parentElement);
   });
 
   beforeEach(() => {

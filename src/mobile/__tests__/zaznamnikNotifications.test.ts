@@ -86,10 +86,9 @@ describe('záznamník notifications on the phone', () => {
     });
   });
 
-  it('a summary tap opens Předměty; another feature’s tap is not ours', () => {
+  it('a summary tap opens Novinky; another feature’s tap is not ours', () => {
     openFromNotification({ kind: NEW_POINTS_KIND, courseCode: null });
-    expect(store.setMobileTab).toHaveBeenCalledWith('subjects');
-    expect(store.pushSheet).not.toHaveBeenCalled();
+    expect(store.pushSheet).toHaveBeenCalledWith({ kind: 'notifications' });
 
     vi.clearAllMocks();
     openFromNotification({ kind: 'exam-opening' });

@@ -54,13 +54,16 @@ async function show(found: NewPointsBySubject): Promise<void> {
   });
 }
 
-/** A tap opens that subject's záznamník, or Předměty for a summary. */
+/** A tap opens that subject's záznamník, or Novinky (one row per subject) for a summary. */
 export function openFromNotification(extra: unknown): void {
   const e = extra as { kind?: unknown; courseCode?: unknown } | null | undefined;
   if (e?.kind !== NEW_POINTS_KIND) return;
   const store = useAppStore.getState();
   store.setMobileTab('subjects');
-  if (typeof e.courseCode !== 'string') return;
+  if (typeof e.courseCode !== 'string') {
+    store.pushSheet({ kind: 'notifications' });
+    return;
+  }
   store.pushSheet({
     kind: 'subjectDrawer',
     courseCode: e.courseCode,
@@ -73,7 +76,7 @@ export function openFromNotification(extra: unknown): void {
 /**
  * "Nové body" as a system notification, on iOS and Android only. Installed
  * from capacitor/startApp; the extension keeps the in-app highlight alone
- * (src/test/guards/desktopHasNoNewPointsNotification.test.ts).
+ * (src/test/guards/desktopHasNoNewPointsNotification.test.ts) and Novinky.
  */
 export function installZaznamnikNotifications(): void {
   void LocalNotifications.addListener('localNotificationActionPerformed', (event) =>

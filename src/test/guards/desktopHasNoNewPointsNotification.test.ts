@@ -10,8 +10,8 @@ import { describe, expect, it } from 'vitest';
  * The extension deliberately has none: it would need the `notifications`
  * permission, which changes the Chrome and Firefox store declarations and sends
  * the extension back through store review, for something that could only fire
- * while the browser runs anyway. Both trees keep the in-app "Nové body"
- * highlight on the subject row. Both halves are pinned here.
+ * while the browser runs anyway. Both trees list "Nové body" in Novinky,
+ * where every message in reIS lives. Both halves are pinned here.
  */
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), 'utf8');
 const grep = (pattern: string, paths: string) => {
@@ -43,12 +43,15 @@ describe('záznamník new points: system notification on the phone only', () => 
     expect(read('wxt.config.ts')).not.toMatch(/['"]notifications['"]/);
   });
 
-  it.each([
-    // desktop
-    'src/components/SubjectsPanel/SubjectRow.tsx',
-    // phone and iPad
-    'src/components/mobile/screens/subjects/SemesterCard.tsx',
-  ])('%s still shows the in-app highlight', (file) => {
-    expect(read(file)).toContain('<NewPointsBadge');
+  it('both trees list the new points in Novinky, and a row opens the subject', () => {
+    expect(read('src/hooks/useDeadlineAlerts.ts')).toContain('newPointsAlerts(');
+    // desktop: the bell dropdown, fed from the header that can open a drawer
+    expect(read('src/components/AppHeader.tsx')).toContain(
+      "onOpenSubject?.(a.courseCode, a.title, a.courseId, undefined, 'zaznamnik')"
+    );
+    // phone and iPad: the Novinky sheet
+    expect(read('src/components/mobile/sheets/NotificationsSheet.tsx')).toContain(
+      "initialTab: 'zaznamnik'"
+    );
   });
 });
