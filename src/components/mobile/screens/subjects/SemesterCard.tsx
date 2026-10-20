@@ -129,10 +129,14 @@ function SemesterRow({
           mid-word ("Databázové systémy a návrh d…"), losing the half that
           distinguishes one subject from another. */}
       <span className="flex min-w-0 flex-1 flex-row items-start justify-between gap-2.5">
-        <span className="min-w-0 break-words text-md font-medium text-base-content">{name}</span>
+        {/* Under the name, not beside it: at 320px a pill in the row squeezed
+            the name to a syllable per line. */}
+        <span className="flex min-w-0 flex-col items-start gap-1">
+          <span className="min-w-0 break-words text-md font-medium text-base-content">{name}</span>
+          <NewPointsBadge courseCode={subject.code} className="px-1.5 py-0.5 text-xs" />
+        </span>
         <FailRate subject={subject} />
       </span>
-      <NewPointsBadge courseCode={subject.code} className="px-1.5 py-0.5 text-xs" />
       <GradeChip subject={subject} />
       {isRealCredits(subject.credits) && (
         <span className="flex-shrink-0 text-sm font-semibold text-base-content/80">

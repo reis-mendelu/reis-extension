@@ -19,7 +19,7 @@ export function NewPointsBadge({
   return (
     <span
       data-testid="new-points-badge"
-      className={`shrink-0 whitespace-nowrap rounded font-semibold bg-success/15 text-[var(--tone-success)] ${className}`}
+      className={`shrink-0 whitespace-nowrap rounded border border-success/40 font-semibold text-[var(--tone-success)] ${className}`}
     >
       {t('zaznamnik.newPoints')}
     </span>
