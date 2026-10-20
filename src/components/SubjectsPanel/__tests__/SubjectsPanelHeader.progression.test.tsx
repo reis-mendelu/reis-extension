@@ -10,28 +10,6 @@ vi.mock('@/hooks/useTranslation', () => ({
 vi.mock('@/hooks/useUserParams', () => ({ useUserParams: () => ({ params: { studium: '1' } }) }));
 
 import { SubjectsPanelHeader } from '../SubjectsPanelHeader';
-import type { StudyStats } from '@/types/studyPlan';
-
-const semester = {
-  enrolledCredits: 20,
-  earnedCredits: 6,
-  unearnedCredits: 0,
-  completedSubjects: 2,
-  gpa: 2,
-  gpaWithFails: 2,
-};
-
-const firstSemester: StudyStats = {
-  currentSemester: semester,
-  previousSemester: null,
-  totalEarnedCredits: 6,
-  creditsLastTwoPeriods: 6,
-  repeatedSubjects: 0,
-  registrationVouchersInitial: 0,
-  registrationVouchersCurrent: 0,
-  gpaTotal: 2,
-  weightedGpaTotal: 2,
-};
 
 /**
  * reIS used to judge progression against 12 credits in a first semester and 40
@@ -45,19 +23,18 @@ const firstSemester: StudyStats = {
  * the safe/warning/danger sentence go.
  */
 describe('the progression verdict', () => {
-  const renderHeader = (studyStats: StudyStats | null) =>
+  const renderHeader = () =>
     render(
       <SubjectsPanelHeader
         creditsAcquired={6}
         creditsRequired={180}
-        studyStats={studyStats}
         plan={null}
         enrolledCredits={20}
       />
     );
 
   it('passes no verdict on a student six credits into a first semester', () => {
-    renderHeader(firstSemester);
+    renderHeader();
     expect(screen.queryByText(/progressionSafe/)).not.toBeInTheDocument();
     expect(screen.queryByText(/progressionWarning/)).not.toBeInTheDocument();
     expect(screen.queryByText(/progressionDanger/)).not.toBeInTheDocument();
@@ -66,15 +43,13 @@ describe('the progression verdict', () => {
   });
 
   it('quotes no threshold it cannot source', () => {
-    renderHeader(firstSemester);
+    renderHeader();
     expect(screen.queryByText(/\/\s*12\b/)).not.toBeInTheDocument();
     expect(screen.queryByText(/\/\s*40\b/)).not.toBeInTheDocument();
   });
 
-  it('still reports the credits IS does publish', () => {
-    renderHeader(firstSemester);
-    // Earned over the last two periods, and what is enrolled right now.
-    expect(screen.getByText(/subjects\.creditsLastTwo/)).toBeInTheDocument();
+  it('still reports what is enrolled right now', () => {
+    renderHeader();
     expect(screen.getByText(/subjects\.enrolledCreditsLabel/)).toBeInTheDocument();
   });
 });

@@ -163,16 +163,16 @@ export function useFileActions(): UseFileActionsResult {
       const fullUrl = normalizeFileUrl(link);
       try {
         // See openFile: the browser fetch and its window.open fallback are both
-        // dead ends on Capacitor. `onFetched` ends the row's busy state as soon
-        // as the bytes are in hand, because what follows is DELIVERY, not
-        // download: on iOS that is the share sheet, which only settles once the
-        // student picks a folder — the file is already saved by then, and a row
-        // spinning through their own dialog says the app is still working when
-        // it is waiting for them.
+        // dead ends on Capacitor. `onHandoff` ends the row's busy state as the
+        // share sheet opens (iOS) or the save finishes (Android) — NOT when the
+        // bytes land: the base64 round trip and the write after that are the
+        // slow part on a phone, and a row that went idle there while the lock
+        // below still refused taps looked like a dead button. Nor on this
+        // promise: on iOS it settles only once the student picks a folder, and a
+        // row spinning through their own dialog says the app is still working.
         //
-        // The indicator only. The lock is held until `finally`: on Android the
-        // base64 conversion and `Downloads.save` are still running here, and
-        // releasing it early let a second tap start a duplicate download.
+        // The indicator only. The lock is held until `finally`, so a tap under
+        // a dismissing share sheet cannot start a duplicate download.
         if (isNativeHost()) {
           await openNativeFile(
             fullUrl,

@@ -367,6 +367,7 @@
     "file": {
       "openFailed": "Soubor se nepodařilo otevřít.",
       "downloading": "Stahuji…",
+      "opening": "Otevírám…",
       "savedToDownloads": "Uloženo do Stažených souborů"
     },
     "documentNote": {
@@ -528,7 +529,6 @@
     "semester": "semestr",
     "wholePlan": "Celý plán",
     "subjectCount": "předmětů",
-    "creditsLastTwo": "Kredity za poslední 2 semestry",
     "creditsTitle": "Kredity",
     "repeatWarning": "2. zápis",
     "gpa": "Průměr",
@@ -1128,10 +1128,12 @@
       "unknown": "neuvedeno",
       "loadFailed": "Statistiky se nepodařilo načíst.",
       "signals": "Funkce (30 dní)",
-      "signalsNote": "Instalace, ne lidé. Mapa se počítá po třech sekundách na obrazovce; eduroam zvlášť pro „aplikace síť nastavila“ a „profil jsme předali k instalaci“ — předaný profil ještě musí student sám nainstalovat.",
+      "signalsNote": "Instalace, ne lidé. Mapa se počítá po třech sekundách na obrazovce; eduroam zvlášť pro „aplikace síť nastavila“ a „profil jsme předali k instalaci“ — předaný profil ještě musí student sám nainstalovat. Podpora: kolik instalací otázku vidělo a kolik odpovědělo „Ano“ – nic se neplatí.",
       "signalMapDwell": "Mapa aspoň 3 sekundy",
       "signalEduroamConfigured": "eduroam nastaven aplikací",
       "signalEduroamDelivered": "eduroam profil předán",
+      "signalSupportSeen": "Otázka na podporu zobrazena",
+      "signalSupportYes": "„Ano“ na podporu 99 Kč",
       "signalInstalls": "instalací",
       "reachTitle": "Akce: Novinky a mapa vedle sebe",
       "reachNotice": "oznámení",
@@ -1488,5 +1490,12 @@
     "openOther": "{n} otevřených",
     "nothingDueSoon": "Nic k odevzdání do 14 dní",
     "instructions": "Pokyny"
+  },
+  "support": {
+    "question": "Podpořil/a bys reIS?",
+    "note": "Jednorázově 99 Kč. Jen se ptáme.",
+    "yes": "Ano",
+    "thanks": "Díky! Tvůj zájem jsme započítali.",
+    "thanksNote": "Jen se ptáme, nic se nestrhlo."
   }
 }
