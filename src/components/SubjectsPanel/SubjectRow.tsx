@@ -13,6 +13,7 @@ import { resolvePredmetId } from './resolvePredmetId';
 import { failRateTone } from './failRateTone';
 import { FailRatePill } from './FailRatePill';
 import { SubjectCredits } from './SubjectCredits';
+import { NewPointsBadge } from './NewPointsBadge';
 
 interface SubjectRowProps {
   subject: SubjectStatus;
@@ -24,7 +25,7 @@ interface SubjectRowProps {
     courseName: string,
     courseId: string,
     facultyCode?: string,
-    initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates',
+    initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik',
     isFulfilled?: boolean
   ) => void;
   onSearchSubject: (name: string) => void;
@@ -108,6 +109,8 @@ export function SubjectRow({
       </span>
     ) : null;
 
+  // New points open the drawer where they are, which is also what clears them.
+  const hasNewPoints = useAppStore((s) => !!s.zaznamnikNewPoints[subject.code]?.length);
   const handleClick = () => {
     if (isZamerani) return; // pseudo-row, not openable
     if (hasId) {
@@ -116,7 +119,7 @@ export function SubjectRow({
         subject.name,
         resolvedId,
         undefined,
-        undefined,
+        hasNewPoints ? 'zaznamnik' : undefined,
         subject.isFulfilled
       );
     } else {
@@ -143,6 +146,7 @@ export function SubjectRow({
               {timeline.formatted}
             </span>
           )}
+          <NewPointsBadge courseCode={subject.code} />
           {badgeEl}
           {typeEl}
           <span className="flex items-center gap-1 shrink-0">
@@ -253,6 +257,7 @@ export function SubjectRow({
             </div>
           )}
         </div>
+        <NewPointsBadge courseCode={subject.code} />
         {badgeEl}
         {typeEl}
         {failRate != null && !subject.isFulfilled && !badge && (

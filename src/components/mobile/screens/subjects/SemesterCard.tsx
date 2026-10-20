@@ -6,6 +6,7 @@ import { computeFailRate } from '../../../SubjectsPanel/computeFailRate';
 import { failRateTone } from '../../../SubjectsPanel/failRateTone';
 import { orderHardestFirst } from '../../../SubjectsPanel/orderHardestFirst';
 import { FailRateLegend } from '../../../SubjectsPanel/FailRateLegend';
+import { NewPointsBadge } from '../../../SubjectsPanel/NewPointsBadge';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useCourseName } from '../../../../hooks/ui/useCourseName';
 import { pluralSuffix } from '../../../../utils/plural';
@@ -131,6 +132,7 @@ function SemesterRow({
         <span className="min-w-0 break-words text-md font-medium text-base-content">{name}</span>
         <FailRate subject={subject} />
       </span>
+      <NewPointsBadge courseCode={subject.code} className="px-1.5 py-0.5 text-xs" />
       <GradeChip subject={subject} />
       {isRealCredits(subject.credits) && (
         <span className="flex-shrink-0 text-sm font-semibold text-base-content/80">

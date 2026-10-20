@@ -16,6 +16,7 @@ import { setDemoErrorHandler } from '@/utils/reportError';
 import { handleDemoError } from '@/mobile/demoToast';
 import { useAppStore } from '@/store/useAppStore';
 import { trackDailyUsage } from '@/api/feedback';
+import { installZaznamnikNotifications } from '@/mobile/zaznamnikNotifications';
 
 /**
  * Whether `entrypoints/main/main` has been evaluated.
@@ -97,6 +98,11 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // Demo data is seeded, static and complete. Syncing would only produce
   // failed IS requests, and fetchWithAuth throws DemoModeError anyway.
   if (demo) return;
+
+  // "Nové body" from the záznamník as a system notification. After the demo
+  // return (the demo never syncs, so it has nothing new) and before the sync
+  // starts, so its first batch already has somewhere to go.
+  installZaznamnikNotifications();
 
   // In the extension the CONTENT SCRIPT drives this and posts results into the
   // iframe. Capacitor has neither, so the app drives its own sync; sendToIframe

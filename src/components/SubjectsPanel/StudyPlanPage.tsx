@@ -35,7 +35,7 @@ interface StudyPlanPageProps {
     courseName: string,
     courseId: string,
     facultyCode?: string,
-    initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates',
+    initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik',
     isFulfilled?: boolean
   ) => void;
 }

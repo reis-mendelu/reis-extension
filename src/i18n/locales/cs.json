@@ -388,6 +388,10 @@
     }
   },
   "zaznamnik": {
+    "newPoints": "Nové body",
+    "notifyTitleOne": "Nové body: {subject}",
+    "notifyTitleMany": "Nové body v záznamníku",
+    "notifyChannel": "Nové body v záznamníku",
     "noData": "Žádná data hodnocení.",
     "noAssessment": "Tento předmět nemá průběžné hodnocení ani testy.",
     "nothingYet": "Zatím nic zapsáno.",

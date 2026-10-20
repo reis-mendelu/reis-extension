@@ -122,6 +122,7 @@ update. So:
   - Capacitor only: `LocalNotifications.cancel` on every pending notification, and `deleteChannel` for `reis-event-reminders` and `reis-society-digest`, so Android settings no longer list them.
   - Keep `seen_deadline_alerts`, because deadline badges depend on it.
 - `@capacitor/local-notifications` and Android `POST_NOTIFICATIONS` stay for this one release, because the cleanup needs them. Remove them in the next release, together with the permission entry in the disclosures.
+  - **Superseded 2026-10-20:** both stay. The záznamník "Nové body" notification (`src/mobile/zaznamnikNotifications.ts`) uses them on the phone. Society reminders stay removed.
 
 ### 4. Novinky: 7 days, filtered by audience (shared, both trees)
 - `services/spolky/spolkyService.ts`:

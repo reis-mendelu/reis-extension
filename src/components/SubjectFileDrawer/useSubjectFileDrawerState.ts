@@ -8,6 +8,7 @@ import {
   useClassmates,
 } from '../../hooks/data';
 import { useDragSelection } from './useDragSelection';
+import { useMarkZaznamnikSeen } from '../../hooks/ui/useMarkZaznamnikSeen';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { SelectedSubject } from '../../types/app';
 
@@ -27,6 +28,8 @@ export function useSubjectFileDrawerState(
   useEffect(() => {
     if (requestedTab) queueMicrotask(() => setActiveTab(requestedTab));
   }, [requestedTab, lesson?.courseCode]);
+
+  useMarkZaznamnikSeen(lesson?.courseCode, activeTab, isOpen);
 
   const { files, isLoading: isFilesLoading } = useFiles(isOpen ? lesson?.courseCode : undefined);
   const { isSyncing } = useSyncStatus();
