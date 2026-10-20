@@ -388,6 +388,10 @@
     }
   },
   "zaznamnik": {
+    "newPoints": "New points",
+    "notifyTitleOne": "New points: {subject}",
+    "notifyTitleMany": "New points in Záznamník",
+    "notifyChannel": "New points in Záznamník",
     "noData": "No assessment data.",
     "noAssessment": "This course has no continuous assessment or tests.",
     "nothingYet": "Nothing recorded yet.",

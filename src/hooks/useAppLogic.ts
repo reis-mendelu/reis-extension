@@ -3,6 +3,8 @@ import { useState, useEffect, useRef } from 'react';
 import { getSmartWeekRange } from '../utils/calendar';
 import { IndexedDBService } from '../services/storage';
 import { syncService, syncGradeHistory } from '../services/sync';
+import { persistZaznamnikBatch } from '../services/sync/zaznamnikNewPoints';
+import { notifyNewPoints } from '../services/newPointsNotifier';
 
 import { useAppStore, initializeStore } from '../store/useAppStore';
 import { signalReady, requestData, isInIframe } from '../api/proxyClient';
@@ -305,12 +307,11 @@ export function useAppLogic() {
 
         if (r.zaznamnik) {
           useAppStore.getState().setZaznamnikBatch(r.zaznamnik);
-          const persistEntries = Object.entries(r.zaznamnik).filter(
-            ([, v]) => v && (v.ph.sections.length > 0 || v.vt.tests.length > 0)
-          );
-          if (persistEntries.length > 0) {
-            await IndexedDBService.setMany('zaznamnik', persistEntries);
-          }
+          // Compared with the stored copy before replacing it: what the teacher
+          // added since is highlighted, and on the phone also notified.
+          const { found, unseen } = await persistZaznamnikBatch(r.zaznamnik);
+          useAppStore.getState().setZaznamnikNewPoints(unseen);
+          notifyNewPoints(found);
         }
 
         if (r.lastSync) await IndexedDBService.set('meta', 'last_sync', r.lastSync);

@@ -41,6 +41,10 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
   const { alerts, markAllSeen } = useDeadlineAlerts();
   const hasContent = notifications.length > 0 || alerts.length > 0;
   const setMobileTab = useAppStore((s) => s.setMobileTab);
+  const pushSheet = useAppStore((s) => s.pushSheet);
+  // New points already happened; the deadlines are still ahead. Two sections.
+  const points = alerts.filter((a) => a.type === 'zaznamnik-points');
+  const deadlines = alerts.filter((a) => a.type !== 'zaznamnik-points');
   const markNotificationsRead = useAppStore((s) => s.markNotificationsRead);
 
   /**
@@ -85,11 +89,34 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
     <Sheet size="full" onClose={onClose}>
       <SheetHeader title={t('notifications.title')} onClose={onClose} />
       <div className="flex-1 overflow-y-auto px-4 pb-6 pt-1">
-        {alerts.length > 0 && (
+        {points.length > 0 && (
+          <>
+            <SectionLabel>{t('course.tabs.zaznamnik')}</SectionLabel>
+            <div className="flex flex-col gap-2">
+              {points.map((alert) => (
+                <DeadlineAlertItem
+                  key={alert.id}
+                  alert={alert}
+                  onOpenSubject={(a) =>
+                    a.courseCode &&
+                    pushSheet({
+                      kind: 'subjectDrawer',
+                      courseCode: a.courseCode,
+                      courseName: a.title,
+                      courseId: a.courseId,
+                      initialTab: 'zaznamnik',
+                    })
+                  }
+                />
+              ))}
+            </div>
+          </>
+        )}
+        {deadlines.length > 0 && (
           <>
             <SectionLabel>{t('notifications.sectionDeadlines')}</SectionLabel>
             <div className="flex flex-col gap-2">
-              {alerts.map((alert) => (
+              {deadlines.map((alert) => (
                 <DeadlineAlertItem key={alert.id} alert={alert} />
               ))}
             </div>
