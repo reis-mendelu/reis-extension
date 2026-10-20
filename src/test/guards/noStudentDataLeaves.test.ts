@@ -184,6 +184,8 @@ const ALLOWED_HOSTS = [
   'localhost.that.never.exists', // CORS sentinel in capacitorTransport
   'is.mendelu.cz.evil.com', // negative example in the URL validator
   'is.mendelu.cz.evil.example', // ditto, in trustedOrigin
+  'github.com', // the contact URL INSIDE the OSM tile User-Agent (osmTileIdentity.ts),
+  // never requested — OSM's tile policy asks apps to name themselves that way
 ];
 
 describe('no student data leaves the device', () => {

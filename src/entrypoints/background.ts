@@ -1,4 +1,5 @@
 import { defineBackground } from 'wxt/utils/define-background';
+import { identifyTileRequest, OSM_TILE_ORIGINS } from '../utils/osmTileIdentity';
 
 const POKE_ALARM = 'reis-bg-poke';
 const POKE_PERIOD_MINUTES = 15;
@@ -24,6 +25,19 @@ export default defineBackground(() => {
 
     return true; // keep the message channel open for async sendResponse
   });
+
+  // Firefox only: name reIS on the campus map's OpenStreetMap tile requests.
+  // Chrome does this with a declarativeNetRequest rule and has no webRequest
+  // permission, so `chrome.webRequest` is undefined there. Inert until the
+  // student grants the optional tile host from the map (osmTileAccess.ts).
+  chrome.webRequest?.onBeforeSendHeaders.addListener(
+    (details) => {
+      const requestHeaders = identifyTileRequest(details, chrome.runtime.getURL(''));
+      return requestHeaders ? { requestHeaders } : {};
+    },
+    { urls: OSM_TILE_ORIGINS, types: ['image', 'xmlhttprequest'] },
+    ['blocking', 'requestHeaders']
+  );
 
   // Register a periodic alarm to poke any open IS Mendelu tab to re-sync.
   // Cannot fetch IS Mendelu from the SW directly (no session cookies), so the
