@@ -55,14 +55,17 @@ Record the baseline as applied (this does not run it):
 npx supabase migration repair --linked --status applied 20261016000000
 ```
 
-**Any migration newer than the baseline that prod already has** — e.g. #556's
-`20261016120000_support_prompt_signals.sql` if it was applied by hand with
-`db query -f` before this repair — gets recorded the same way, one command per
-file, or a later automatic apply would run it a second time:
+**Any migration newer than the baseline that prod already has** — e.g. one
+applied by hand with `db query -f` before this repair — gets recorded the same
+way, one command per file, or a later automatic apply would run it a second time:
 
 ```bash
-npx supabase migration repair --linked --status applied 20261016120000
+npx supabase migration repair --linked --status applied <version>
 ```
+
+(On 2026-10-17 there was none: the ledger got the baseline alone. #556's file,
+then `20261016120000`, was renamed to `20261020120000` to sort after the
+migrations that merged before it, and the release applies it.)
 
 Skip that last command if the file is not applied in prod yet (then it is simply
 pending, which is correct). Step 0's `db diff` tells you which: run it on a
