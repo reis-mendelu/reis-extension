@@ -35,13 +35,16 @@ async function persist(batch: Record<string, SubjectZaznamnik | null>) {
     const points = diffZaznamnik(previous[i], fresh);
     if (points.length > 0) found[code] = points;
   });
-  if (entries.length > 0) await IndexedDBService.setMany('zaznamnik', entries);
-
   const stored = ((await IndexedDBService.get('meta', NEW_POINTS_META_KEY)) ??
     {}) as NewPointsBySubject;
-  if (Object.keys(found).length === 0) return { found, unseen: stored };
-  const unseen = merge(stored, found);
-  await IndexedDBService.set('meta', NEW_POINTS_META_KEY, unseen);
+  const isNews = Object.keys(found).length > 0;
+  const unseen = isNews ? merge(stored, found) : stored;
+  // One transaction: a save interrupted between the fresh copy and the entry
+  // would leave the copy saying "already seen" and the points announced nowhere.
+  await IndexedDBService.setAcross([
+    ...entries.map(([key, value]) => ({ store: 'zaznamnik' as const, key, value })),
+    ...(isNews ? [{ store: 'meta' as const, key: NEW_POINTS_META_KEY, value: unseen }] : []),
+  ]);
   return { found, unseen };
 }
 

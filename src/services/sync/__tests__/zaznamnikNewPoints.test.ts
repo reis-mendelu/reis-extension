@@ -6,13 +6,26 @@ import type { SubjectZaznamnik } from '../../../types/zaznamnik';
  * first and remembers what the student has not seen yet. Real IndexedDB is not
  * the point here; a map stands in for it.
  */
-const { db } = vi.hoisted(() => ({ db: new Map<string, unknown>() }));
+const { db, failMeta } = vi.hoisted(() => ({
+  db: new Map<string, unknown>(),
+  // A write that touches meta fails: an interrupted save, a full disk.
+  failMeta: { on: false },
+}));
+type Write = { store: string; key: string; value: unknown };
 vi.mock('../../storage/IndexedDBService', () => ({
   IndexedDBService: {
     get: vi.fn(async (store: string, key: string) => db.get(`${store}/${key}`)),
-    set: vi.fn(async (store: string, key: string, v: unknown) => void db.set(`${store}/${key}`, v)),
+    set: vi.fn(async (store: string, key: string, v: unknown) => {
+      if (failMeta.on && store === 'meta') throw new Error('aborted');
+      db.set(`${store}/${key}`, v);
+    }),
     setMany: vi.fn(async (store: string, entries: [string, unknown][]) => {
       for (const [k, v] of entries) db.set(`${store}/${k}`, v);
+    }),
+    // One transaction: all of it lands or none of it does.
+    setAcross: vi.fn(async (writes: Write[]) => {
+      if (failMeta.on && writes.some((w) => w.store === 'meta')) throw new Error('aborted');
+      for (const w of writes) db.set(`${w.store}/${w.key}`, w.value);
     }),
   },
 }));
@@ -46,7 +59,10 @@ const EMPTY: SubjectZaznamnik = {
 };
 
 describe('persistZaznamnikBatch', () => {
-  beforeEach(() => db.clear());
+  beforeEach(() => {
+    db.clear();
+    failMeta.on = false;
+  });
 
   it('stores the first copy and announces nothing', async () => {
     const out = await persistZaznamnikBatch({ 'EBC-PS': ps('') });
@@ -92,5 +108,16 @@ describe('persistZaznamnikBatch', () => {
     ]);
     expect(a.found).toEqual({ 'EBC-PS': [{ label: 'IPv4-subnt-NAOPAK', value: '9' }] });
     expect(b.found).toEqual({});
+  });
+
+  it('a save that fails stores neither half, so the next sync finds the points again', async () => {
+    db.set('zaznamnik/EBC-PS', ps(''));
+    failMeta.on = true;
+    await expect(persistZaznamnikBatch({ 'EBC-PS': ps('9') })).rejects.toThrow();
+    expect(db.get('zaznamnik/EBC-PS')).toEqual(ps(''));
+
+    failMeta.on = false;
+    const out = await persistZaznamnikBatch({ 'EBC-PS': ps('9') });
+    expect(out.found).toEqual({ 'EBC-PS': [{ label: 'IPv4-subnt-NAOPAK', value: '9' }] });
   });
 });

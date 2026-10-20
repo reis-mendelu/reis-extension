@@ -29,6 +29,17 @@ export function useSubjectFileDrawerState(
     if (requestedTab) queueMicrotask(() => setActiveTab(requestedTab));
   }, [requestedTab, lesson?.courseCode]);
 
+  // The drawer outlives a close, and its tab used to as well: opening B while
+  // A's Záznamník was the leftover tab showed B on it for one commit, long
+  // enough for the seen-hook to clear B's new points. So the tab is reset
+  // during render whenever a new opening starts, before any effect runs.
+  const openingKey = isOpen && lesson ? `${lesson.id}|${lesson.courseCode}` : null;
+  const [tabOpening, setTabOpening] = useState(openingKey);
+  if (openingKey !== tabOpening) {
+    setTabOpening(openingKey);
+    if (openingKey) setActiveTab(requestedTab ?? (isExam || !isEnrolled ? 'stats' : 'files'));
+  }
+
   useMarkZaznamnikSeen(lesson?.courseCode, activeTab, isOpen);
 
   const { files, isLoading: isFilesLoading } = useFiles(isOpen ? lesson?.courseCode : undefined);

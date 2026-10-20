@@ -296,6 +296,41 @@ class IndexedDBServiceImpl {
     });
   }
 
+  /**
+   * Puts into several stores in ONE readwrite transaction: all of it lands or
+   * none of it does. For writes that only make sense together, like a fresh
+   * záznamník and the "Nové body" entry derived from comparing it.
+   */
+  async setAcross(
+    writes: Array<
+      { [K in StoreName]: { store: K; key: string; value: ReisDB[K]['value'] } }[StoreName]
+    >
+  ): Promise<void> {
+    const validated = writes
+      .map((w) => ({ ...w, value: this.validate(w.store, w.value) }))
+      .filter((w) => w.value !== undefined);
+    if (validated.length === 0) return;
+    const stores = [...new Set(validated.map((w) => w.store))];
+
+    await this.run(async (db) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tx = db.transaction(stores as any, 'readwrite');
+      try {
+        for (const w of validated) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          tx.objectStore(w.store as any).put(w.value as any, w.key);
+        }
+      } catch (err) {
+        // A put that throws does not abort on its own: the puts before it
+        // would still commit. Abort, so it really is all or nothing.
+        tx.done.catch(() => {});
+        tx.abort();
+        throw err;
+      }
+      await tx.done;
+    });
+  }
+
   async delete<K extends keyof ReisDB>(storeName: K, key: string): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await this.run((db) => db.delete(storeName as any, key));

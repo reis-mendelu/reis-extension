@@ -106,4 +106,38 @@ describe('záznamník notifications on the phone', () => {
     await settle();
     expect(ln.schedule).not.toHaveBeenCalled();
   });
+
+  it('a notification still asking for permission at sign-out is never shown', async () => {
+    let grant!: (v: { display: string }) => void;
+    ln.checkPermissions.mockResolvedValue({ display: 'prompt' });
+    ln.requestPermissions.mockReturnValue(new Promise((r) => (grant = r)));
+    ln.getDeliveredNotifications.mockResolvedValue({ notifications: [] });
+
+    notifyNewPoints(FOUND);
+    await settle();
+    const signedOut = clearZaznamnikNotifications();
+    grant({ display: 'granted' });
+    await signedOut;
+    await settle();
+
+    expect(ln.schedule).not.toHaveBeenCalled();
+  });
+
+  it('sign-out waits for a notification being posted, then clears it from the tray', async () => {
+    let posted!: () => void;
+    ln.checkPermissions.mockResolvedValue({ display: 'granted' });
+    ln.schedule.mockReturnValue(new Promise<void>((r) => (posted = r)));
+    const ours = { id: 1, extra: { kind: NEW_POINTS_KIND } };
+    ln.getDeliveredNotifications.mockResolvedValue({ notifications: [ours] });
+
+    notifyNewPoints(FOUND);
+    await settle();
+    const signedOut = clearZaznamnikNotifications();
+    await settle();
+    expect(ln.getDeliveredNotifications).not.toHaveBeenCalled();
+    posted();
+    await signedOut;
+
+    expect(ln.removeDeliveredNotifications).toHaveBeenCalledWith({ notifications: [ours] });
+  });
 });

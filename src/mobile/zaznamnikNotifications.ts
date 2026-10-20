@@ -25,9 +25,14 @@ async function permitted(): Promise<boolean> {
   return (await LocalNotifications.requestPermissions()).display === 'granted';
 }
 
-async function show(found: NewPointsBySubject): Promise<void> {
-  // Denied is fine: the "Nové body" highlight in the app does not depend on it.
-  if (!(await permitted())) return;
+// Bumped at sign-out: a call that started for the previous student checks it
+// after every await and stops, so it can never post their points to the next.
+let generation = 0;
+const inFlight = new Set<Promise<void>>();
+
+async function show(found: NewPointsBySubject, gen: number): Promise<void> {
+  // Denied is fine: the "Nové body" row in Novinky does not depend on it.
+  if (!(await permitted()) || gen !== generation) return;
   const { language } = useAppStore.getState();
   // iOS has no channels; the call rejects there.
   if (Capacitor.getPlatform() === 'android') {
@@ -37,6 +42,7 @@ async function show(found: NewPointsBySubject): Promise<void> {
       importance: 4,
     });
   }
+  if (gen !== generation) return;
   const codes = Object.keys(found);
   const { title, body } = newPointsNotification(found, subjectName, language);
   await LocalNotifications.schedule({
@@ -83,13 +89,20 @@ export function installZaznamnikNotifications(): void {
     openFromNotification(event.notification.extra)
   );
   setNewPointsNotifier((found) => {
-    show(found).catch((err) => logError('Mobile.zaznamnikNotifications', err));
+    const run = show(found, generation).catch((err) =>
+      logError('Mobile.zaznamnikNotifications', err)
+    );
+    inFlight.add(run);
+    void run.finally(() => inFlight.delete(run));
   });
 }
 
 /** Sign-out: the next person on this phone must not see this student's points. */
 export async function clearZaznamnikNotifications(): Promise<void> {
   setNewPointsNotifier(null);
+  generation++;
+  // One already handed to the plugin lands in the tray; wait for it, then clear.
+  await Promise.all(inFlight);
   const delivered = (await LocalNotifications.getDeliveredNotifications()).notifications.filter(
     (n) => (n.extra as { kind?: unknown } | undefined)?.kind === NEW_POINTS_KIND
   );
