@@ -135,11 +135,7 @@ export function SubjectsScreen() {
       {/* Always draggable, even when it fits — see AlwaysScrollable. */}
       <div data-testid="subjects-scroll" className="flex-1 overflow-y-auto">
         <AlwaysScrollable className="gap-2.5 px-4 pb-[calc(6rem_+_var(--safe-bottom,0px))] pt-3.5">
-          <CreditRing
-            earned={plan.creditsAcquired}
-            total={plan.creditsRequired}
-            lastTwoPeriods={studyStats?.creditsLastTwoPeriods ?? null}
-          />
+          <CreditRing earned={plan.creditsAcquired} total={plan.creditsRequired} />
           {enrolled.length > 0 ? (
             <SemesterCard enrolled={enrolled} semester={semester} onOpenSubject={openSubject} />
           ) : (
