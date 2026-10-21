@@ -70,10 +70,12 @@
 
     <!-- Plugin manifests merge their own permissions in; privacy:check reads them
          (scripts/privacy/androidPermissions.ts). @capacitor/local-notifications
-         adds RECEIVE_BOOT_COMPLETED and WAKE_LOCK, both kept. reIS schedules no
-         local notifications (src/test/guards/societyEventsStayReduced.test.ts);
-         the plugin stays only so src/services/cleanup/retireSocietyFeatures.ts
-         can cancel the reminders 5.3.0 scheduled and delete its channels. That
+         adds RECEIVE_BOOT_COMPLETED and WAKE_LOCK, both kept. The plugin shows
+         one thing now: "Nové body" from the záznamník, at once, after a sync
+         (src/mobile/zaznamnikNotifications.ts; nothing is scheduled for later,
+         src/test/guards/societyEventsStayReduced.test.ts). It also lets
+         src/services/cleanup/retireSocietyFeatures.ts cancel the reminders
+         5.3.0 scheduled and delete its channels. That
          runs on the first launch after the update; a phone rebooted before it
          can still have the plugin's boot receiver restore a stored 5.3.0
          reminder, and after it the receiver has nothing of ours to restore.

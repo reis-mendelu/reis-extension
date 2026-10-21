@@ -17,6 +17,7 @@ import type { ErasmusCountryData } from '../../types/erasmus';
 import type { HiddenItems, CalendarCustomEvent } from '../../types/calendarTypes';
 import type { SubjectZaznamnik } from '../../types/zaznamnik';
 import { StoreSchemas, type StoreName } from '../../types/storage';
+import { putAcross } from './putAcross';
 
 interface ReisDB extends DBSchema {
   files: {
@@ -294,6 +295,24 @@ class IndexedDBServiceImpl {
       }
       await tx.done;
     });
+  }
+
+  /**
+   * Puts into several stores in ONE readwrite transaction: all of it lands or
+   * none of it does. For writes that only make sense together, like a fresh
+   * záznamník and the "Nové body" entry derived from comparing it.
+   */
+  async setAcross(
+    writes: Array<
+      { [K in StoreName]: { store: K; key: string; value: ReisDB[K]['value'] } }[StoreName]
+    >
+  ): Promise<void> {
+    const validated = writes
+      .map((w) => ({ ...w, value: this.validate(w.store, w.value) }))
+      .filter((w) => w.value !== undefined);
+    if (validated.length === 0) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await this.run((db) => putAcross(db as any, validated));
   }
 
   async delete<K extends keyof ReisDB>(storeName: K, key: string): Promise<void> {

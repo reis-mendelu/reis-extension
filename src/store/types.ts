@@ -22,6 +22,7 @@ import type { OutletMenu } from '../types/menuTypes';
 import type { PageCategory } from '../data/pages/types';
 import type { SpolekNotification } from '../services/spolky/types';
 import type { SubjectZaznamnik } from '../types/zaznamnik';
+import type { NewPoint } from '../utils/zaznamnik/newPoints';
 import type {
   RoomsCollection,
   MapSelection,
@@ -91,6 +92,11 @@ export interface ZaznamnikSlice {
   fetchZaznamnik: () => Promise<void>;
   /** Refetch one subject on demand — the failed state's retry. */
   refetchZaznamnik: (courseCode: string) => Promise<void>;
+  /** Points the teacher added since the last sync, per subject, until its záznamník is opened. */
+  zaznamnikNewPoints: Record<string, NewPoint[]>;
+  setZaznamnikNewPoints: (unseen: Record<string, NewPoint[]>) => void;
+  /** The student opened this subject's záznamník: its highlight goes. */
+  markZaznamnikSeen: (courseCode: string) => Promise<void>;
 }
 
 export interface SyllabusSlice {
@@ -728,6 +734,7 @@ export type AppState = ScheduleSlice &
   import('./slices/createAdminSlice').AdminSlice &
   import('./slices/createSuggestionsSlice').SuggestionsSlice &
   import('./slices/createRouteSlice').RouteSlice &
+  import('./slices/createOsmTileAccessSlice').OsmTileAccessSlice &
   import('./slices/createReportSlice').ReportSlice &
   import('./slices/createImpersonationSlice').ImpersonationSlice &
   DemoSlice;

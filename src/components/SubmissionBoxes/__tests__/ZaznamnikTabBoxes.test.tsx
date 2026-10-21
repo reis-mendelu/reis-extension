@@ -59,7 +59,7 @@ describe('ZaznamnikTab — odevzdávárny', () => {
     const due = screen.getByTestId('submission-box-1');
     expect(within(due).getByText(/Nic neodevzdáno/)).toBeTruthy();
     expect(within(due).getByText('za 5 d')).toBeTruthy();
-    expect(due.closest('a')?.getAttribute('href')).toContain('odevzdavarna=1');
+    expect(due.querySelector('a')?.getAttribute('href')).toContain('odevzdavarna=1');
 
     const handedIn = screen.getByTestId('submission-box-2');
     expect(within(handedIn).getByText(/Odevzdáno · 1 soubor$/)).toBeTruthy();

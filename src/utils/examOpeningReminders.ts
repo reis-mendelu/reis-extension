@@ -9,7 +9,7 @@ export const EXAM_OPENING_KIND = 'exam-opening';
 export const REMIND_BEFORE_MS = 60 * 60 * 1000;
 
 export interface ExamOpeningReminder {
-  /** Stable 31-bit id: the scheduler tells "already scheduled" from "new" by it. */
+  /** Stable id below 10⁹: the scheduler tells "already scheduled" from "new" by it. */
   id: number;
   /** subject code | section id | opening, local time. */
   key: string;
@@ -63,14 +63,18 @@ export function pragueToInstant(wallClock: Date): Date {
   }
 }
 
-/** FNV-1a, kept to 31 bits: Android takes a notification id as a Java int. */
+/**
+ * FNV-1a, kept below 10⁹: an int32 for the plugin, and clear of the záznamník's
+ * ids, which are epoch seconds (above 10⁹ for good) — a shared id would replace
+ * one notification with the other.
+ */
 function idOf(key: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < key.length; i++) {
     h ^= key.charCodeAt(i);
     h = Math.imul(h, 0x01000193);
   }
-  return (h >>> 0) & 0x7fffffff;
+  return (h >>> 0) % 1_000_000_000;
 }
 
 /**

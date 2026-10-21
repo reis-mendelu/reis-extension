@@ -86,8 +86,10 @@ const SUPABASE_CALLERS = new Set([
   // section 2 and docs/privacy-policy-app.md BEFORE this entry was added.
   //
   // `track_feature_usage` sends the random per-install UUID and one label from
-  // a three-value whitelist enforced in the database ('map_dwell_3s',
-  // 'eduroam_wifi_configured', 'eduroam_profile_delivered'). Same identifier
+  // a whitelist enforced in the database ('map_dwell_3s',
+  // 'eduroam_wifi_configured', 'eduroam_profile_delivered', and since October
+  // 2026 'support_prompt_seen' / 'support_prompt_yes', disclosed first the same
+  // way; featureSignalWhitelist.test.ts pins the list). Same identifier
   // and same posture as `feedback.ts`: it counts INSTALLS, not people.
   //
   // `increment_event_map_view` sends a society event's row id and NO
@@ -186,12 +188,24 @@ const ALLOWED_HOSTS = [
   'is.mendelu.cz.evil.example', // ditto, in trustedOrigin
 ];
 
+/**
+ * URLs that are text, not requests, exempted one file and one exact URL at a
+ * time so the host itself stays undeclared everywhere else.
+ */
+const NOT_REQUESTED: Array<{ file: string; url: string }> = [
+  // The contact URL INSIDE the OSM tile User-Agent. OSM's tile policy asks
+  // apps to name themselves that way; nothing ever fetches it.
+  { file: 'src/utils/osmTileIdentity.ts', url: 'https://github.com/reis-mendelu/reis-extension' },
+];
+
 describe('no student data leaves the device', () => {
   it('contacts no undeclared third-party host', () => {
     const offences: string[] = [];
     for (const f of files) {
       for (const m of f.text.matchAll(/https:\/\/([a-z0-9.-]+\.[a-z]{2,})/gi)) {
         const host = m[1]!.toLowerCase();
+        if (NOT_REQUESTED.some((n) => n.file === f.path && f.text.startsWith(n.url, m.index)))
+          continue;
         if (ALLOWED_HOSTS.some((a) => host === a || host.endsWith('.' + a))) continue;
         offences.push(`${f.path}  ${host}`);
       }

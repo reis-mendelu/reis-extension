@@ -16,6 +16,7 @@ import type { DownloadTick } from './readBlobWithProgress';
 import { fetchIsFile } from './fetchIsFile';
 import { opensInTab, saveIsFile } from './saveBlob';
 import { useRowDownloads } from './useRowDownloads';
+import { noPdf, pdfOrNull } from './pdfOrNull';
 import type { FileRowHint } from '../../utils/contentDisposition';
 
 const log = createLogger('useFileActions');
@@ -101,16 +102,6 @@ export function useFileActions(): UseFileActionsResult {
     [t, claimRow, tickRow, clearRowProgress, releaseRow]
   );
 
-  /**
-   * IS serves viewer pages, and Office files, under anchors that look the same
-   * as a document download — and reports no usable type for many of them. The
-   * bytes are the only reliable answer, so a copy that is not a PDF is null and
-   * the caller downloads it instead. It also keeps non-PDF bytes out of the iPad
-   * reader's cache, which stores what it is given under a `.pdf` name.
-   */
-  const looksLikePdf = async (blob: Blob): Promise<boolean> =>
-    (await blob.slice(0, 1024).text()).includes('%PDF-');
-
   const fetchPdfBlob = useCallback(async (link: string): Promise<Blob | null> => {
     const fullUrl = normalizeFileUrl(link);
     try {
@@ -127,14 +118,20 @@ export function useFileActions(): UseFileActionsResult {
         // A viewer page is not a PDF — null lets the caller fall back to its
         // normal "can't preview" path. Neither are the Office files IS serves
         // through the same anchors, hence the byte check.
-        if (result.kind !== 'binary') return null;
-        return (await looksLikePdf(result.blob)) ? result.blob : null;
+        if (result.kind !== 'binary') return noPdf(`IS served a ${result.kind}, not a file`);
+        // Awaited inside the try: a failed byte read must land in the catch.
+        return await pdfOrNull(result.blob);
       }
       assertNotDemo();
       const { blob } = await fetchIsFile(fullUrl);
-      return (await looksLikePdf(blob)) ? blob : null;
+      return await pdfOrNull(blob);
     } catch (e) {
-      log.error('Failed to fetch PDF inline', e);
+      // Demo mode is not a failure: the download it falls back to says so.
+      if (e instanceof DemoModeError) {
+        log.error('Failed to fetch PDF inline', e);
+        return null;
+      }
+      logError('useFileActions.fetchPdfBlob', e);
       return null;
     }
   }, []);
@@ -163,16 +160,16 @@ export function useFileActions(): UseFileActionsResult {
       const fullUrl = normalizeFileUrl(link);
       try {
         // See openFile: the browser fetch and its window.open fallback are both
-        // dead ends on Capacitor. `onFetched` ends the row's busy state as soon
-        // as the bytes are in hand, because what follows is DELIVERY, not
-        // download: on iOS that is the share sheet, which only settles once the
-        // student picks a folder — the file is already saved by then, and a row
-        // spinning through their own dialog says the app is still working when
-        // it is waiting for them.
+        // dead ends on Capacitor. `onHandoff` ends the row's busy state as the
+        // share sheet opens (iOS) or the save finishes (Android) — NOT when the
+        // bytes land: the base64 round trip and the write after that are the
+        // slow part on a phone, and a row that went idle there while the lock
+        // below still refused taps looked like a dead button. Nor on this
+        // promise: on iOS it settles only once the student picks a folder, and a
+        // row spinning through their own dialog says the app is still working.
         //
-        // The indicator only. The lock is held until `finally`: on Android the
-        // base64 conversion and `Downloads.save` are still running here, and
-        // releasing it early let a second tap start a duplicate download.
+        // The indicator only. The lock is held until `finally`, so a tap under
+        // a dismissing share sheet cannot start a duplicate download.
         if (isNativeHost()) {
           await openNativeFile(
             fullUrl,

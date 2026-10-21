@@ -24,6 +24,7 @@ import { listSubjectPdfs } from '../../SubjectFileDrawer/utils/listSubjectPdfs';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
 import { useCourseName } from '../../../hooks/ui/useCourseName';
+import { useMarkZaznamnikSeen } from '../../../hooks/ui/useMarkZaznamnikSeen';
 import { syllabusUrl } from '../../../utils/syllabusUrl';
 
 // pdf.js and its worker are the heaviest thing the app can load; a student who
@@ -69,6 +70,8 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
       return sheet.initialTab;
     return enrolled ? 'files' : 'stats';
   });
+  // A sheet on the stack is open; its Záznamník tab on screen means seen.
+  useMarkZaznamnikSeen(courseCode, activeTab, true);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const fileRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const ignoreClickRef = useRef(false);

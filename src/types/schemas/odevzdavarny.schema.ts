@@ -30,6 +30,7 @@ const OdevzdavarnaSchema = z
     isOpen: z.boolean().optional(),
     points: z.string().optional(),
     obdobi: z.string().optional(),
+    instructions: z.string().optional(),
   })
   .passthrough();
 

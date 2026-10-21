@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 import { logError } from '../../utils/reportError';
 import { openIsFileNatively } from '../../mobile/openIsFile';
+import { isShareCancellation } from '../../errors/shareCanceled';
 import type { FileRowHint } from '../../utils/contentDisposition';
 
 /**
@@ -19,19 +20,20 @@ import type { FileRowHint } from '../../utils/contentDisposition';
  * `t` is passed in rather than read from useTranslation here so this stays a
  * plain function — the caller is already a hook and owns the subscription.
  *
- * `onFetched` is forwarded to openIsFileNatively so a caller showing a progress
- * indicator can stop it when the BYTES land rather than when this promise
- * settles — on iOS the tail of that promise is the student's own share sheet.
+ * `onHandoff` is forwarded to openIsFileNatively so a caller showing a progress
+ * indicator can stop it when the student has something else to look at — not
+ * when the bytes land (the slow write is still ahead) and not when this promise
+ * settles (on iOS its tail is the student's own share sheet).
  */
 export async function openNativeFile(
   fullUrl: string,
   context: string,
   t: (key: string) => string,
-  onFetched?: () => void,
+  onHandoff?: () => void,
   row?: FileRowHint
 ): Promise<void> {
   try {
-    const { delivered } = await openIsFileNatively(fullUrl, undefined, undefined, onFetched, row);
+    const { delivered } = await openIsFileNatively(fullUrl, undefined, undefined, onHandoff, row);
     // Android saves into Downloads and posts a notification — but
     // POST_NOTIFICATIONS is a runtime grant, and a student who declined it (or
     // was never asked, which was the case) got NO signal at all while the file
@@ -39,6 +41,11 @@ export async function openNativeFile(
     // iOS is deliberately silent: its share sheet is already the confirmation.
     if (delivered === 'downloads') toast.success(t('course.file.savedToDownloads'));
   } catch (e) {
+    // The student closed the iOS share sheet. The file is already in Documents
+    // and declining a destination is not a failure — this toast is what
+    // suggestion #32 (iPad, 16 Oct) reported as "the file couldn't be opened".
+    // Same call as useDocumentDownload's.
+    if (isShareCancellation(e)) return;
     logError(context, e);
     // A lapsed session returns silently here on purpose: `fetchIsBinary`
     // already raised the recovery prompt when it minted the error, and it did

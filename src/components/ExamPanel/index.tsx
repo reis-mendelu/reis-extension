@@ -227,7 +227,13 @@ export function ExamPanel() {
               </span>
             </div>
           </>
-        ) : null}
+        ) : (
+          // Subjects, but none with a row: a "Zápis na cvičení" section is
+          // stripped and its subject kept. `null` here was a blank panel (#33).
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <EmptyExamsState />
+          </div>
+        )}
       </div>
       <ConfirmationModal
         isOpen={!!pendingAction}

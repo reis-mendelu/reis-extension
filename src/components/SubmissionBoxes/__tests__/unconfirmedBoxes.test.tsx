@@ -55,7 +55,7 @@ describe('submission boxes — uploaded but not confirmed', () => {
       expect(within(card).getByText(/2 soubory/)).toBeTruthy();
       expect(card.textContent).not.toContain('Odevzdáno');
       expect(within(card).getByText('Potvrdit v IS')).toBeTruthy();
-      expect(card.getAttribute('href')).toContain('odevzdavarna=1');
+      expect(card.querySelector('a')?.getAttribute('href')).toContain('odevzdavarna=1');
     });
 
     it('keeps "Odevzdáno" for a box IS lists as submitted', () => {

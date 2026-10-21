@@ -17,6 +17,8 @@ interface NotificationDropdownProps {
   onShowMap: () => void;
   dropdownRef: React.RefObject<HTMLDivElement | null>;
   deadlineAlerts: DeadlineAlert[];
+  /** Opens a subject's drawer on Záznamník: the "Nové body" row. */
+  onOpenSubject?: (alert: DeadlineAlert) => void;
 }
 
 export function NotificationDropdown({
@@ -27,6 +29,7 @@ export function NotificationDropdown({
   onShowMap,
   dropdownRef,
   deadlineAlerts,
+  onOpenSubject,
 }: NotificationDropdownProps) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
@@ -46,7 +49,17 @@ export function NotificationDropdown({
       {deadlineAlerts.length > 0 && (
         <div className="flex flex-col gap-2">
           {deadlineAlerts.map((alert) => (
-            <DeadlineAlertItem key={alert.id} alert={alert} />
+            <DeadlineAlertItem
+              key={alert.id}
+              alert={alert}
+              onOpenSubject={
+                onOpenSubject &&
+                ((a) => {
+                  onClose();
+                  onOpenSubject(a);
+                })
+              }
+            />
           ))}
         </div>
       )}

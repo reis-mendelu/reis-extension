@@ -15,7 +15,13 @@ interface AppHeaderProps {
   onPrevWeek: () => void;
   onNextWeek: () => void;
   onToday: () => void;
-  onOpenSubject?: (courseCode: string, courseName?: string, courseId?: string) => void;
+  onOpenSubject?: (
+    courseCode: string,
+    courseName?: string,
+    courseId?: string,
+    facultyCode?: string,
+    initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik'
+  ) => void;
   searchPrefillRef?: React.MutableRefObject<((query: string) => void) | null>;
   onShowMap: () => void;
 }
@@ -134,7 +140,13 @@ export function AppHeader({
             </button>
 
             <div className="flex items-center gap-1">
-              <NotificationFeed onShowMap={onShowMap} />
+              <NotificationFeed
+                onShowMap={onShowMap}
+                onOpenSubject={(a) =>
+                  a.courseCode &&
+                  onOpenSubject?.(a.courseCode, a.title, a.courseId, undefined, 'zaznamnik')
+                }
+              />
             </div>
           </div>
         </div>

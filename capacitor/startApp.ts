@@ -17,6 +17,7 @@ import { handleDemoError } from '@/mobile/demoToast';
 import { useAppStore } from '@/store/useAppStore';
 import { trackDailyUsage } from '@/api/feedback';
 import { installExamReminders } from '@/mobile/examReminders';
+import { installZaznamnikNotifications } from '@/mobile/zaznamnikNotifications';
 
 /**
  * Whether `entrypoints/main/main` has been evaluated.
@@ -103,6 +104,11 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // the demo's exams are seeded, and a reviewer's phone must not be reminded of
   // them. Reschedules on every exam sync from here on.
   installExamReminders();
+
+  // "Nové body" from the záznamník as a system notification. After the demo
+  // return (the demo never syncs, so it has nothing new) and before the sync
+  // starts, so its first batch already has somewhere to go.
+  installZaznamnikNotifications();
 
   // In the extension the CONTENT SCRIPT drives this and posts results into the
   // iframe. Capacitor has neither, so the app drives its own sync; sendToIframe

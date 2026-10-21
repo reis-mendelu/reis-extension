@@ -48,12 +48,15 @@ export function isNativeHost(): boolean {
  * 3. **On Android it lands in Downloads with a notification**, like any
  *    browser — not a share sheet. See deliverFile for the iOS asymmetry.
  *
- * `onFetched` fires the moment the bytes are in hand, before delivery. The two
- * are not the same wait and must not share one indicator: on iOS delivery is
- * the share sheet, which settles only when the student picks a destination for
- * a file that is ALREADY written to Documents. A caller that ends its spinner
- * on the returned promise therefore shows "downloading" while the student is
- * busy answering their own dialog.
+ * `onHandoff` fires once, when the student has something else to look at: on
+ * iOS just before the share sheet opens, on Android once the file is saved. It
+ * is NOT when the bytes land. On a phone that is the start of the slow part —
+ * the blob goes back to base64 and crosses the bridge again to be written —
+ * and a row that went idle there, while its lock still refused every tap, read
+ * as a dead button and got hammered (Task List, 2026-10-20). Nor is it when the
+ * returned promise settles: on iOS that waits for the student to pick a
+ * destination in the share sheet, for a file already written to Documents, and
+ * "downloading" must not spin through their own dialog.
  *
  * `filenameOverride` exists for the study documents: `tisk_dokumentu.pl`
  * returns IS's own Content-Disposition name, but STUDY_DOCUMENTS defines what
@@ -68,9 +71,15 @@ export async function openIsFileNatively(
   url: string,
   filenameOverride?: string,
   fallbackUrl?: string,
-  onFetched?: () => void,
+  onHandoff?: () => void,
   row?: FileRowHint
 ): Promise<{ usedFallback: boolean; delivered: DeliveryKind }> {
+  let handedOff = false;
+  const handOff = () => {
+    if (handedOff) return;
+    handedOff = true;
+    onHandoff?.();
+  };
   const token = await loadStoredToken();
   const { Capacitor, CapacitorHttp, CapacitorCookies } = await import('@capacitor/core');
   const platform = Capacitor.getPlatform() as 'ios' | 'android' | 'web';
@@ -102,9 +111,8 @@ export async function openIsFileNatively(
     throw new Error(`IS did not return a file for ${url}`);
   }
 
-  // The download is over here; everything below is delivery. See `onFetched`.
-  onFetched?.();
-
+  // Still busy: the bytes are in hand, but the base64 and the write below are
+  // the slow part on a phone. See `onHandoff`.
   const base64 = await blobToBase64(result.blob);
   // The delivery kind is returned rather than discarded: it is what tells the
   // caller whether the student has already SEEN confirmation (iOS share sheet)
@@ -138,6 +146,8 @@ export async function openIsFileNatively(
           path: o.filename,
         });
         const { Share } = await import('@capacitor/share');
+        // The sheet is about to cover the screen; the row has nothing left to say.
+        handOff();
         // The file is ALREADY saved by this point — the share sheet only picks
         // a destination. So a dismissal is normalised into a typed
         // cancellation rather than left as a bare rejection: as a bare one it
@@ -153,5 +163,7 @@ export async function openIsFileNatively(
     }
   );
 
+  // Android: the save is done and the toast is next. iOS already handed off.
+  handOff();
   return { usedFallback, delivered };
 }

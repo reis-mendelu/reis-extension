@@ -102,7 +102,10 @@ describe('examOpeningReminders', () => {
     expect(at('02.12.2026 13:00')).toBe(at('02.12.2026 13:00'));
     expect(at('02.12.2026 13:00')).not.toBe(at('02.12.2026 14:00'));
     expect(Number.isInteger(at('02.12.2026 13:00'))).toBe(true);
-    expect(Math.abs(at('02.12.2026 13:00'))).toBeLessThan(2 ** 31);
+    // Below 10⁹: the záznamník's notifications take epoch seconds (above 10⁹ for
+    // good) as their id, and a shared id would replace one with the other.
+    expect(at('02.12.2026 13:00')).toBeGreaterThanOrEqual(0);
+    expect(at('02.12.2026 13:00')).toBeLessThan(1_000_000_000);
   });
 });
 

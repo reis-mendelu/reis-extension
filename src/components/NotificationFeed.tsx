@@ -1,15 +1,17 @@
 import { useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { useNotificationFeed } from '../hooks/useNotificationFeed';
-import { useDeadlineAlerts } from '../hooks/useDeadlineAlerts';
+import { useDeadlineAlerts, type DeadlineAlert } from '../hooks/useDeadlineAlerts';
 import { NotificationDropdown } from './Notifications/NotificationDropdown';
 
 export function NotificationFeed({
   className = '',
   onShowMap,
+  onOpenSubject,
 }: {
   className?: string;
   onShowMap: () => void;
+  onOpenSubject?: (alert: DeadlineAlert) => void;
 }) {
   const { isOpen, setIsOpen, notifications, loading, readIds, toggle, markVisible } =
     useNotificationFeed();
@@ -64,6 +66,7 @@ export function NotificationFeed({
           onVisible={markVisible}
           onShowMap={onShowMap}
           deadlineAlerts={deadlineAlerts}
+          onOpenSubject={onOpenSubject}
         />
       )}
     </div>

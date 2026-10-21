@@ -355,9 +355,9 @@ Only these, all disclosed in `docs/privacy-policy-app.md`:
    counted once per device (`viewedIds`); clicks too, since PR #566: the device remembers
    in IndexedDB which ids it already counted (`services/spolky/countedOpens.ts`) and
    nothing about that is sent.
-4. **Three feature counters** (`src/api/featureUsage.ts`, September 2026) — the same random
-   install UUID plus one label from a database-enforced whitelist: `map_dwell_3s`,
-   `eduroam_wifi_configured`, `eduroam_profile_delivered`. Counts installs, not people.
+4. **Feature counters** (`src/api/featureUsage.ts`) — the same random install UUID plus
+   one label from `FEATURE_SIGNALS`, a database-enforced whitelist pinned by
+   `featureSignalWhitelist.test.ts`. Counts installs, not people.
 5. **Map views per event** (same file) — a society event's row id and *no* identifier at all,
    rolled up per event per day in `event_map_views`, kept clear of the Novinky `view_count`.
    Also once per device per event ever (same `countedOpens.ts`), so it reads as devices, not taps.

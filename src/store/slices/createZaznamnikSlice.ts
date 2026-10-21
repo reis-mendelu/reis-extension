@@ -2,6 +2,11 @@ import type { AppSlice, ZaznamnikSlice } from '../types';
 import type { SubjectZaznamnik } from '../../types/zaznamnik';
 import { IndexedDBService } from '../../services/storage';
 import { logError } from '../../utils/reportError';
+import {
+  clearNewPoints,
+  NEW_POINTS_META_KEY,
+  type NewPointsBySubject,
+} from '../../services/sync/zaznamnikNewPoints';
 
 const isEmpty = (z: SubjectZaznamnik | null | undefined): boolean =>
   !z || (z.ph.sections.length === 0 && z.vt.tests.length === 0);
@@ -10,6 +15,21 @@ export const createZaznamnikSlice: AppSlice<ZaznamnikSlice> = (set, get) => ({
   zaznamnik: {},
   zaznamnikHydrated: false,
   zaznamnikLoading: {},
+  zaznamnikNewPoints: {},
+  setZaznamnikNewPoints: (unseen) => set({ zaznamnikNewPoints: unseen }),
+  markZaznamnikSeen: async (courseCode) => {
+    if (!get().zaznamnikNewPoints[courseCode]) return;
+    set((s) => {
+      const { [courseCode]: _seen, ...rest } = s.zaznamnikNewPoints;
+      return { zaznamnikNewPoints: rest };
+    });
+    try {
+      // Through the sync layer, the one writer to what is stored.
+      await clearNewPoints(courseCode);
+    } catch (err) {
+      logError('ZaznamnikSlice.markZaznamnikSeen', err);
+    }
+  },
   setZaznamnikBatch: (data) => {
     set((state) => {
       const next = { ...state.zaznamnik };
@@ -26,7 +46,9 @@ export const createZaznamnikSlice: AppSlice<ZaznamnikSlice> = (set, get) => ({
       const entries = await IndexedDBService.getAllWithKeys('zaznamnik');
       const map: Record<string, SubjectZaznamnik | null> = {};
       for (const { key, value } of entries) map[key] = value;
-      set({ zaznamnik: map, zaznamnikHydrated: true });
+      const unseen = (await IndexedDBService.get('meta', NEW_POINTS_META_KEY)) as
+        NewPointsBySubject | undefined;
+      set({ zaznamnik: map, zaznamnikHydrated: true, zaznamnikNewPoints: unseen ?? {} });
     } catch (err) {
       logError('ZaznamnikSlice.fetchZaznamnik', err);
       set({ zaznamnikHydrated: true });
