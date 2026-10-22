@@ -219,19 +219,6 @@
     "footer": "Every message includes the app version, browser, system, window size and screen name.",
     "toastSuccess": "Thanks for your feedback!",
     "toastError": "Couldn't send feedback.",
-    "npsQuestion": "Would you recommend reIS to a friend? (1 - worst, 5 - best)",
-    "npsThank": "Thanks for the rating!",
-    "sharePrompt": "Send it to a classmate still on raw IS.",
-    "shareCopy": "Copy link",
-    "shareCopied": "Copied!",
-    "reasonPrompt": "What went wrong?",
-    "reason": {
-      "missing_feature": "Doesn't have what I need",
-      "bug": "Doesn't work",
-      "confusing": "Confusing",
-      "slow": "Too slow",
-      "other": "Other"
-    },
     "toastOffline": "You're offline. Try again once you're connected.",
     "toastRateLimited": "We've had a lot of messages just now. Please try again in a bit.",
     "reportLink": "Something missing? Report it",
@@ -1222,6 +1209,52 @@
       "programmesPlaceholder": "Programme codes (optional)",
       "markLight": "Partner logo – light mode (transparent PNG)",
       "markDark": "Partner logo – dark mode (optional)"
+    },
+    "questions": {
+      "tab": "Questions",
+      "new": "New question",
+      "preset": "Type",
+      "presets": {
+        "yesno": "Yes / No",
+        "scale": "1–5",
+        "thumbs": "👍 / 👎",
+        "link": "Link"
+      },
+      "promptCz": "Question in Czech",
+      "promptEn": "Question in English",
+      "noteCz": "Note in Czech (optional)",
+      "noteEn": "Note in English (optional)",
+      "buttons": "Buttons",
+      "url": "Link address",
+      "startsAt": "From",
+      "endsAt": "Until",
+      "faculties": "Only for faculties (none = everyone)",
+      "publish": "Publish",
+      "cancel": "Cancel",
+      "published": "The question is in Novinky.",
+      "saveError": "Could not save the question.",
+      "rule": "Nobody reviews it before it goes live. For money, ask a question, state the price and that nothing is charged. A link to another app goes to its website or store page.",
+      "errPrompt": "Write the question in Czech and English (up to 200 characters).",
+      "errLabels": "Every button needs a Czech and an English label (up to 40 characters).",
+      "errUrl": "The link must start with https:// and be at most 500 characters.",
+      "errDates": "The end must be after the start.",
+      "empty": "No questions yet.",
+      "loadError": "Could not load the results.",
+      "live": "Live",
+      "scheduled": "Scheduled",
+      "ended": "Ended",
+      "seen": "Seen by {n}",
+      "answered": "answered by {n}",
+      "ofSeen": "{pct} of those who saw it",
+      "ofAnswered": "{pct} of answers",
+      "clicked": "clicked",
+      "end": "End",
+      "endError": "Could not end the question.",
+      "suspicious": "There are more answers than views. The numbers may have been spoofed.",
+      "daily": "By day",
+      "day": "Day",
+      "devices": "Counts devices, not people. Students on 5.4.1 or older do not see questions.",
+      "errNote": "A note can be at most 300 characters."
     }
   },
   "mobile": {
@@ -1511,5 +1544,8 @@
     "no": "No",
     "thanks": "Thanks! We've counted your interest.",
     "thanksNote": "Just asking, nothing was charged."
+  },
+  "questions": {
+    "thanks": "Thanks for answering: {answer}"
   }
 }

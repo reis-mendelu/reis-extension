@@ -72,8 +72,17 @@ const SUPABASE_CALLERS = new Set([
   // Random install id only, since the privacy refactor. Since September 2026
   // the daily-usage event also carries two GROUP labels (faculty, platform) —
   // counts over thousands of installs, not per-student data. Disclosed in
-  // PRIVACY.md ("Daily Usage & NPS Feedback") and docs/privacy-policy-app.md.
+  // PRIVACY.md ("Daily Usage") and docs/privacy-policy-app.md. The NPS rating
+  // that also lived here was retired in October 2026 for the questions below.
   'src/api/feedback.ts',
+  // Novinky questions (October 2026), disclosed in PRIVACY.md section 2 and
+  // docs/privacy-policy-app.md BEFORE this entry was added. A public read of
+  // the live questions, and `count_question`, which sends a question id and a
+  // key ('seen' or the button tapped) and NO identifier: not the install id,
+  // not a faculty. Questions are written ad hoc and can be about anything;
+  // on one id the answers would add up to an opinion history per install, so
+  // the dedupe lives on the device (countedOpens) and nothing joins them.
+  'src/api/questions.ts',
   // Society post view/click counters; sends a post row id and nothing else.
   'src/services/spolky/spolkyService.ts',
   // Reads the public society events feed. No student data in either direction.

@@ -57,7 +57,7 @@ export const FLOWS: Flow[] = [
       [
         'Daily count',
         'once a day',
-        'a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI), platform and app version (e.g. 5.4.1) as group labels. The survey and the feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation.',
+        'a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI), platform and app version (e.g. 5.4.1) as group labels. The feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation. Novinky questions do not.',
       ],
     ],
     stores: {
@@ -122,21 +122,6 @@ export const FLOWS: Flow[] = [
     },
   },
   {
-    id: 'survey',
-    what: 'An NPS answer on the random install id.',
-    when: 'student-action',
-    identifier: 'install_id',
-    files: ['src/api/feedback.ts'],
-    calls: ['submit_feedback'],
-    policyRows: [['In-app survey', 'you answer', 'the same random install identifier']],
-    stores: {
-      apple: [INSTALL_ID_APPLE],
-      play: ['PSL_USER_ACCOUNT'],
-      firefox: ['technicalAndInteraction'],
-      cws: ['User activity'],
-    },
-  },
-  {
     id: 'society_post_counters',
     what: 'A view or click counter on a society post; the post id and nothing else.',
     when: 'student-action',
@@ -158,6 +143,22 @@ export const FLOWS: Flow[] = [
         'Map event opened',
         'you open an event on the campus map',
         "that event's id and nothing else — a counter on the event, with no identifier of yours attached",
+      ],
+    ],
+    stores: { apple: [], play: [], firefox: ['technicalAndInteraction'], cws: [] },
+  },
+  {
+    id: 'questions',
+    what: 'A per-question, per-day counter of devices that saw a Novinky question and of the button tapped; the question id and the button key, no identifier.',
+    when: 'student-action',
+    identifier: 'none',
+    files: ['src/api/questions.ts'],
+    calls: ['count_question'],
+    policyRows: [
+      [
+        'Novinky question seen or answered',
+        'a question from reIS is on your screen in Novinky, or you tap one of its buttons',
+        "that question's id and which button you tapped — a counter on the question, with no identifier of yours attached. Your device remembers that it answered; we cannot tell who did",
       ],
     ],
     stores: { apple: [], play: [], firefox: ['technicalAndInteraction'], cws: [] },
@@ -220,6 +221,16 @@ export const EXEMPT: Exempt[] = [
     call: 'societies',
     files: ['src/api/societies.ts', 'src/api/societiesAdmin.ts'],
     why: 'Public society catalog read (names, colours, logo paths); writes are by a signed-in reis_admin, not a student.',
+  },
+  {
+    call: 'reis_questions',
+    files: ['src/api/questions.ts', 'src/api/adminQuestions.ts'],
+    why: 'Public read of the live Novinky questions; writes are by a signed-in reis_admin, never a student.',
+  },
+  {
+    call: 'question_results',
+    files: ['src/api/adminQuestions.ts'],
+    why: 'Admin console read, signed-in reis_admin.',
   },
   {
     call: 'usage_stats',

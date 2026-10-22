@@ -25,17 +25,22 @@ import { logError } from '../../utils/reportError';
  * ~6 months are dropped on read (the post is long past, and the set stays small).
  * If IndexedDB is unusable the dedupe still holds for the session.
  */
-export type OpenSurface = 'novinky_click' | 'map_open';
+const SURFACES = ['novinky_click', 'map_open', 'question_seen', 'question_answer'] as const;
+/**
+ * `question_*` (2026-10): a Novinky question (`api/questions.ts`) is counted as
+ * seen once and answered once per device, keyed by the question id.
+ */
+export type OpenSurface = (typeof SURFACES)[number];
 
 const KEY = (surface: OpenSurface) => `counted_opens_${surface}`;
 const FORGET_AFTER_MS = 180 * 24 * 60 * 60 * 1000;
 
 type Counted = Record<string, number>;
 /** Reserved or confirmed this session; the fallback when the disk is unusable. */
-const session: Record<OpenSurface, Set<string>> = {
-  novinky_click: new Set(),
-  map_open: new Set(),
-};
+const session = Object.fromEntries(SURFACES.map((s) => [s, new Set<string>()])) as Record<
+  OpenSurface,
+  Set<string>
+>;
 
 async function readSaved(surface: OpenSurface): Promise<Counted> {
   try {
@@ -88,16 +93,13 @@ export function releaseOpen(surface: OpenSurface, id: string): void {
 
 /** Test-only: drop the in-memory reservations, as a restart would. */
 export function __forgetCountedOpensMemoryForTests(): void {
-  session.novinky_click.clear();
-  session.map_open.clear();
+  for (const s of SURFACES) session[s].clear();
 }
 
 /** Test-only: forget everything, memory and disk. */
 export async function __resetCountedOpensForTests(): Promise<void> {
   __forgetCountedOpensMemoryForTests();
   await Promise.all(
-    (['novinky_click', 'map_open'] as const).map((s) =>
-      IndexedDBService.delete('meta', KEY(s)).catch(() => undefined)
-    )
+    SURFACES.map((s) => IndexedDBService.delete('meta', KEY(s)).catch(() => undefined))
   );
 }

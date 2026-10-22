@@ -9,6 +9,8 @@ import { NotificationItem } from '../../Notifications/NotificationItem';
 import { DeadlineAlertItem } from '../../Notifications/DeadlineAlertItem';
 import { SupportPrompt } from '../../Support/SupportPrompt';
 import { useSupportQuestion } from '../../../hooks/useSupportQuestion';
+import { QuestionList } from '../../Questions/QuestionList';
+import { useQuestions } from '../../../hooks/useQuestions';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
 
@@ -42,7 +44,12 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
   const { notifications, loading, markVisible, readIds } = useNotificationFeed();
   const { alerts, markAllSeen } = useDeadlineAlerts();
   const support = useSupportQuestion();
-  const hasContent = notifications.length > 0 || alerts.length > 0 || support.visible;
+  const questions = useQuestions();
+  const hasContent =
+    notifications.length > 0 ||
+    alerts.length > 0 ||
+    support.visible ||
+    questions.visible.length > 0;
   const setMobileTab = useAppStore((s) => s.setMobileTab);
   const pushSheet = useAppStore((s) => s.pushSheet);
   // New points already happened; the deadlines are still ahead. Two sections.
@@ -102,6 +109,11 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
             />
           </div>
         )}
+        {/* The console's questions, under the support question for as long as
+            that one runs on its own counters (until ~2026-11-21). */}
+        <div className="pb-1 pt-1 empty:hidden">
+          <QuestionList />
+        </div>
         {points.length > 0 && (
           <>
             <SectionLabel>{t('course.tabs.zaznamnik')}</SectionLabel>

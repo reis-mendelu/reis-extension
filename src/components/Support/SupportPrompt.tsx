@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useOnScreenDwell } from '../../hooks/ui/useOnScreenDwell';
 import { Check, Heart } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { trackFeatureSignal } from '../../api/featureUsage';
@@ -15,7 +16,7 @@ import { trackFeatureSignal } from '../../api/featureUsage';
  *
  * Two counters, both install-level labels on the existing feature counters:
  * `support_prompt_seen` once the question has been on screen for
- * {@link SEEN_DWELL_MS} — the denominator — and `support_prompt_yes` on the
+ * `SEEN_DWELL_MS` (`useOnScreenDwell`) — the denominator — and `support_prompt_yes` on the
  * tap. The observer is what keeps a row scrolled out of a long feed out of the
  * denominator. "Ne" sends nothing: it only closes the row, on this device
  * (`createSupportQuestionSlice`). No price variant, no faculty, no timing.
@@ -25,13 +26,7 @@ import { trackFeatureSignal } from '../../api/featureUsage';
  * lived in Profil until 2026-10-22. This is an observer over what is already
  * on screen, not a data fetch.
  */
-/**
- * How long the question must stay on screen to count as seen. Novinky opened
- * and closed again on the way to something else would otherwise put an
- * install in the denominator that never read the question. Both trees use
- * the same threshold, so their shares mean the same thing.
- */
-export const SEEN_DWELL_MS = 1500;
+const countSeen = () => void trackFeatureSignal('support_prompt_seen');
 
 export function SupportPrompt({
   answered,
@@ -52,45 +47,7 @@ export function SupportPrompt({
     onShown();
   }, [onShown]);
 
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof IntersectionObserver === 'undefined') return;
-    // Seen = at least half the row on screen AND the page in the foreground,
-    // for SEEN_DWELL_MS without a break. An observer reports geometry only, so a
-    // backgrounded tab is tracked separately, as useMapDwell does for the map.
-    let inView = false;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const stop = () => {
-      if (timer !== null) clearTimeout(timer);
-      timer = null;
-    };
-    const sync = () => {
-      if (!inView || document.visibilityState !== 'visible') return stop();
-      if (timer !== null) return;
-      timer = setTimeout(() => {
-        timer = null;
-        void trackFeatureSignal('support_prompt_seen');
-        io.disconnect();
-        document.removeEventListener('visibilitychange', sync);
-      }, SEEN_DWELL_MS);
-    };
-    const io = new IntersectionObserver(
-      (entries) => {
-        // `threshold` only decides WHEN the callback fires; a first report can
-        // still be a thin slice with isIntersecting true, so check the ratio.
-        inView = entries.some((e) => e.isIntersecting && e.intersectionRatio >= 0.5);
-        sync();
-      },
-      { threshold: 0.5 }
-    );
-    io.observe(el);
-    document.addEventListener('visibilitychange', sync);
-    return () => {
-      stop();
-      io.disconnect();
-      document.removeEventListener('visibilitychange', sync);
-    };
-  }, []);
+  useOnScreenDwell(ref, countSeen);
 
   // `DeadlineAlertItem`'s card and its 32px slot, so the question shares one
   // left edge with every other row in Novinky.

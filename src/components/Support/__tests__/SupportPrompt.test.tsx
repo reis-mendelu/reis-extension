@@ -6,7 +6,8 @@ import { useAppStore } from '../../../store/useAppStore';
 const trackFeatureSignal = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock('../../../api/featureUsage', () => ({ trackFeatureSignal }));
 
-import { SupportPrompt, SEEN_DWELL_MS } from '../SupportPrompt';
+import { SupportPrompt } from '../SupportPrompt';
+import { SEEN_DWELL_MS } from '../../../hooks/ui/useOnScreenDwell';
 
 /** The prompt scrolled into view by hand; happy-dom has no layout to do it. */
 class FakeObserver {

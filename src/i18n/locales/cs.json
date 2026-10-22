@@ -265,19 +265,6 @@
     "footer": "Ke každé zprávě přidáme verzi aplikace, prohlížeč, systém, velikost okna a název obrazovky.",
     "toastSuccess": "Díky za zpětnou vazbu!",
     "toastError": "Nepodařilo se odeslat zpětnou vazbu.",
-    "npsQuestion": "Doporučil/a bys reIS kamarádovi? (1 - nejhorší, 5 - nejlepší)",
-    "npsThank": "Díky za hodnocení!",
-    "sharePrompt": "Pošli to spolužákovi, co ještě bojuje s IS.",
-    "shareCopy": "Kopírovat odkaz",
-    "shareCopied": "Zkopírováno!",
-    "reasonPrompt": "Co bylo špatně?",
-    "reason": {
-      "missing_feature": "Nemá to co potřebuji",
-      "bug": "Nefunguje to",
-      "confusing": "Nepřehledné",
-      "slow": "Pomalé",
-      "other": "Jiné"
-    },
     "toastOffline": "Nejsi online. Zkus to znovu, až budeš připojený.",
     "toastRateLimited": "Teď jsme přijali hodně zpráv. Zkus to prosím za chvíli.",
     "reportLink": "Chybí tu něco? Nahlásit",
@@ -1222,6 +1209,52 @@
       "programmesPlaceholder": "Kódy programů (nepovinné)",
       "markLight": "Logo partnera – světlý režim (průhledné PNG)",
       "markDark": "Logo partnera – tmavý režim (nepovinné)"
+    },
+    "questions": {
+      "tab": "Otázky",
+      "new": "Nová otázka",
+      "preset": "Typ",
+      "presets": {
+        "yesno": "Ano / Ne",
+        "scale": "1–5",
+        "thumbs": "👍 / 👎",
+        "link": "Odkaz"
+      },
+      "promptCz": "Otázka česky",
+      "promptEn": "Otázka anglicky",
+      "noteCz": "Poznámka česky (nepovinná)",
+      "noteEn": "Poznámka anglicky (nepovinná)",
+      "buttons": "Tlačítka",
+      "url": "Adresa odkazu",
+      "startsAt": "Od",
+      "endsAt": "Do",
+      "faculties": "Jen pro fakulty (nic = všichni)",
+      "publish": "Zveřejnit",
+      "cancel": "Zrušit",
+      "published": "Otázka je v Novinkách.",
+      "saveError": "Otázku se nepodařilo uložit.",
+      "rule": "Nikdo ji před zveřejněním nekontroluje. U peněz se ptej otázkou, napiš cenu a že se nic nestrhne. Odkaz na jinou aplikaci vede na její web nebo do obchodu.",
+      "errPrompt": "Napiš otázku česky i anglicky (do 200 znaků).",
+      "errLabels": "Každé tlačítko potřebuje popisek česky i anglicky (do 40 znaků).",
+      "errUrl": "Odkaz musí začínat https:// a mít nejvýš 500 znaků.",
+      "errDates": "Konec musí být po začátku.",
+      "empty": "Zatím žádná otázka.",
+      "loadError": "Výsledky se nepodařilo načíst.",
+      "live": "Běží",
+      "scheduled": "Naplánovaná",
+      "ended": "Skončila",
+      "seen": "Vidělo {n}",
+      "answered": "odpovědělo {n}",
+      "ofSeen": "{pct} z těch, co ji viděli",
+      "ofAnswered": "{pct} z odpovědí",
+      "clicked": "kliklo",
+      "end": "Ukončit",
+      "endError": "Otázku se nepodařilo ukončit.",
+      "suspicious": "Odpovědí je víc než zobrazení. Čísla mohla být podvržená.",
+      "daily": "Po dnech",
+      "day": "Den",
+      "devices": "Počítá zařízení, ne lidi. Studenti s verzí do 5.4.1 otázky nevidí.",
+      "errNote": "Poznámka může mít nejvýš 300 znaků."
     }
   },
   "mobile": {
@@ -1511,5 +1544,8 @@
     "no": "Ne",
     "thanks": "Díky! Tvůj zájem jsme započítali.",
     "thanksNote": "Jen se ptáme, nic se nestrhlo."
+  },
+  "questions": {
+    "thanks": "Díky za odpověď: {answer}"
   }
 }

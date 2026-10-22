@@ -57,7 +57,7 @@ vi.mock('../../utils/harnessEnabled', () => ({
   isHarnessEnabled: (...a: unknown[]) => isHarnessEnabled(...a),
 }));
 
-import { submitFeedback, trackDailyUsage, __resetUsageTrackedForTests } from '../feedback';
+import { trackDailyUsage, __resetUsageTrackedForTests } from '../feedback';
 
 describe('feedback', () => {
   beforeEach(() => {
@@ -69,30 +69,6 @@ describe('feedback', () => {
   afterEach(() => {
     vi.clearAllMocks();
     useAppStore.setState({ demoMode: false });
-  });
-
-  // The demo student is fabricated, so a demo submission would pollute the real
-  // feedback table — the same reasoning that already guards trackDailyUsage,
-  // applied to the other write it shares a file with.
-  it('does not submit feedback in demo mode', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    useAppStore.setState({ demoMode: true });
-
-    await expect(submitFeedback('nps', '9', 'ZS2026')).resolves.toBe(false);
-
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
-
-  // The desktop NPS prompt is a row of plain buttons, so anything that clicks
-  // through the dev webapp — a verify-ui --click, an exploratory Playwright
-  // run — filed a real rating against production. Caught on 2026-09-24 by a
-  // click-through that blocked the POST before it left.
-  it('does not submit feedback from a development or preview build', async () => {
-    isHarnessEnabled.mockReturnValue(true);
-
-    await expect(submitFeedback('nps', '9', 'ZS2026')).resolves.toBe(false);
-
-    expect(rpc).not.toHaveBeenCalled();
   });
 
   it('does not track usage in demo mode', async () => {
@@ -252,16 +228,14 @@ describe('feedback', () => {
 });
 
 /**
- * These two writes are the last places student identity reached Supabase.
- * They now identify the DEVICE, so neither call should be able to see, take,
- * or transmit anything about the student.
+ * This write (and the retired NPS one beside it) was the last place student
+ * identity reached Supabase. It now identifies the DEVICE, so it should not be
+ * able to see, take, or transmit anything about the student.
  */
 describe('feedback — no student identity leaves the device', () => {
   it('takes no student identifier as an argument at all', () => {
     // Arity is the guard: a caller cannot pass a student id even by mistake.
     expect(trackDailyUsage.length).toBe(0);
-    // type, value, semester, reason — none of which identify the student.
-    expect(submitFeedback.length).toBe(4);
   });
 
   it('does not count this install on Firefox while the technical-data toggle is off', async () => {
@@ -270,12 +244,6 @@ describe('feedback — no student identity leaves the device', () => {
     hasDataConsent.mockResolvedValue(false);
     await trackDailyUsage();
     expect(hasDataConsent).toHaveBeenCalledWith('technicalAndInteraction');
-    expect(rpc).not.toHaveBeenCalled();
-  });
-
-  it('does not file an NPS rating on Firefox while the technical-data toggle is off', async () => {
-    hasDataConsent.mockResolvedValue(false);
-    await expect(submitFeedback('nps', '9', 'ZS2026')).resolves.toBe(false);
     expect(rpc).not.toHaveBeenCalled();
   });
 });
