@@ -466,8 +466,7 @@ a všechno podstatné máš hned po ruce.
 
 CO UMÍ
 
-• Rozvrh — aktuální týden, přepínání mezi dny i týdny, detail každé hodiny
-  včetně místnosti a vyučujícího.
+• Rozvrh — den po dni, s detailem každé hodiny včetně místnosti a vyučujícího.
 • Známky a průběžné hodnocení — bez proklikávání se do hloubky IS.
 • Zkoušky — termíny, přihlášení i odhlášení přímo z telefonu.
 • Předměty a soubory — studijní materiály stáhneš na pár klepnutí.
@@ -503,8 +502,7 @@ your password — and everything you need is one tap away.
 
 WHAT IT DOES
 
-• Timetable — the current week, day and week switching, and full lesson detail
-  including room and teacher.
+• Timetable — day by day, with full lesson detail including room and teacher.
 • Grades and continuous assessment, without digging through IS.
 • Exams — dates, sign-up and sign-off straight from your phone.
 • Courses and files — download study materials in a couple of taps.
