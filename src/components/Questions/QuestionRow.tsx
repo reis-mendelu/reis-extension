@@ -54,7 +54,11 @@ export function QuestionRow({
       className="flex items-start gap-2.5 rounded-2xl border border-base-300 bg-base-100 px-3.5 py-2.5"
     >
       <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-[var(--tone-primary)]">
-        {answered ? <Check size={16} aria-hidden /> : <MessageCircleQuestion size={16} aria-hidden />}
+        {answered ? (
+          <Check size={16} aria-hidden />
+        ) : (
+          <MessageCircleQuestion size={16} aria-hidden />
+        )}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <p className="text-md font-bold text-base-content">{prompt}</p>

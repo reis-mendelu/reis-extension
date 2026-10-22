@@ -67,8 +67,18 @@ export function QuestionForm({ onDone }: { onDone: () => void }) {
           <legend className="text-xs text-base-content/70">{t('admin.questions.buttons')}</legend>
           {d.buttons.map((b, i) => (
             <div key={b.key} className="flex gap-1">
-              <input className={field} aria-label={`${b.key} cz`} value={b.cz} onChange={(e) => putButton(i, { cz: e.target.value })} />
-              <input className={field} aria-label={`${b.key} en`} value={b.en} onChange={(e) => putButton(i, { en: e.target.value })} />
+              <input
+                className={field}
+                aria-label={`${b.key} cz`}
+                value={b.cz}
+                onChange={(e) => putButton(i, { cz: e.target.value })}
+              />
+              <input
+                className={field}
+                aria-label={`${b.key} en`}
+                value={b.en}
+                onChange={(e) => putButton(i, { en: e.target.value })}
+              />
             </div>
           ))}
           {d.preset === 'link' && (
@@ -85,12 +95,19 @@ export function QuestionForm({ onDone }: { onDone: () => void }) {
         {(['startsAt', 'endsAt'] as const).map((k) => (
           <label key={k} className="flex flex-1 flex-col gap-1 text-xs text-base-content/70">
             {t(`admin.questions.${k}`)}
-            <input type="datetime-local" className={field} value={d[k]} onChange={(e) => put({ [k]: e.target.value })} />
+            <input
+              type="datetime-local"
+              className={field}
+              value={d[k]}
+              onChange={(e) => put({ [k]: e.target.value })}
+            />
           </label>
         ))}
       </div>
       <fieldset className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-base-content">
-        <legend className="mb-1 text-xs text-base-content/70">{t('admin.questions.faculties')}</legend>
+        <legend className="mb-1 text-xs text-base-content/70">
+          {t('admin.questions.faculties')}
+        </legend>
         {ALL_FACULTY_KEYS.filter((f) => f !== 'mendelu').map((f) => (
           <label key={f} className="flex items-center gap-1">
             <input
@@ -98,7 +115,11 @@ export function QuestionForm({ onDone }: { onDone: () => void }) {
               className="checkbox checkbox-xs"
               checked={d.faculties.includes(f)}
               onChange={(e) =>
-                put({ faculties: e.target.checked ? [...d.faculties, f] : d.faculties.filter((x) => x !== f) })
+                put({
+                  faculties: e.target.checked
+                    ? [...d.faculties, f]
+                    : d.faculties.filter((x) => x !== f),
+                })
               }
             />
             {f.toUpperCase()}
@@ -111,7 +132,12 @@ export function QuestionForm({ onDone }: { onDone: () => void }) {
         <button type="button" className="btn btn-ghost btn-sm" onClick={onDone}>
           {t('admin.questions.cancel')}
         </button>
-        <button type="button" className="btn btn-primary btn-sm" disabled={!!error || busy} onClick={publish}>
+        <button
+          type="button"
+          className="btn btn-primary btn-sm"
+          disabled={!!error || busy}
+          onClick={publish}
+        >
           {t('admin.questions.publish')}
         </button>
       </div>

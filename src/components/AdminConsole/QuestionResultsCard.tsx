@@ -50,7 +50,8 @@ export function QuestionResultsCard({ q }: { q: QuestionResult }) {
         {q.faculties && ` · ${q.faculties.map((f) => f.toUpperCase()).join(', ')}`}
       </p>
       <p className="text-xs text-base-content">
-        {t('admin.questions.seen', { n: s.seen })} · {t('admin.questions.answered', { n: s.answered })}
+        {t('admin.questions.seen', { n: s.seen })} ·{' '}
+        {t('admin.questions.answered', { n: s.answered })}
       </p>
       <ul className="flex flex-col gap-1.5">
         {s.buttons.map((b) => (
@@ -62,7 +63,8 @@ export function QuestionResultsCard({ q }: { q: QuestionResult }) {
               </span>
               <span className="tabular-nums">
                 {b.n} · {t('admin.questions.ofSeen', { pct: pct(b.ofSeen, language) })}
-                {!b.isLink && ` · ${t('admin.questions.ofAnswered', { pct: pct(b.ofAnswered, language) })}`}
+                {!b.isLink &&
+                  ` · ${t('admin.questions.ofAnswered', { pct: pct(b.ofAnswered, language) })}`}
               </span>
             </div>
             <progress
@@ -74,19 +76,26 @@ export function QuestionResultsCard({ q }: { q: QuestionResult }) {
         ))}
       </ul>
       {s.suspicious && (
-        <p role="alert" className="rounded bg-warning/20 px-2 py-1 text-xs font-medium text-base-content">
+        <p
+          role="alert"
+          className="rounded bg-warning/20 px-2 py-1 text-xs font-medium text-base-content"
+        >
           {t('admin.questions.suspicious')}
         </p>
       )}
       {daily.rows.length > 0 && (
         <details className="text-xs">
-          <summary className="cursor-pointer text-base-content/70">{t('admin.questions.daily')}</summary>
+          <summary className="cursor-pointer text-base-content/70">
+            {t('admin.questions.daily')}
+          </summary>
           <table className="table table-xs mt-1">
             <thead>
               <tr>
                 <th>{t('admin.questions.day')}</th>
                 {daily.keys.map((k) => (
-                  <th key={k}>{k === 'seen' ? '👁' : (q.buttons.find((b) => b.key === k)?.cz ?? k)}</th>
+                  <th key={k}>
+                    {k === 'seen' ? '👁' : (q.buttons.find((b) => b.key === k)?.cz ?? k)}
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -95,7 +104,9 @@ export function QuestionResultsCard({ q }: { q: QuestionResult }) {
                 <tr key={r.day}>
                   <td>{r.day}</td>
                   {r.counts.map((n, i) => (
-                    <td key={daily.keys[i]} className="tabular-nums">{n}</td>
+                    <td key={daily.keys[i]} className="tabular-nums">
+                      {n}
+                    </td>
                   ))}
                 </tr>
               ))}

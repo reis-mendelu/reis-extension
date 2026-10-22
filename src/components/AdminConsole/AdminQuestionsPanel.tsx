@@ -21,7 +21,11 @@ export function AdminQuestionsPanel() {
       {writing ? (
         <QuestionForm onDone={() => setWriting(false)} />
       ) : (
-        <button type="button" className="btn btn-primary btn-sm self-start" onClick={() => setWriting(true)}>
+        <button
+          type="button"
+          className="btn btn-primary btn-sm self-start"
+          onClick={() => setWriting(true)}
+        >
           <Plus size={14} aria-hidden />
           {t('admin.questions.new')}
         </button>
@@ -30,8 +34,12 @@ export function AdminQuestionsPanel() {
       {list === null && !loading && (
         <p className="text-sm text-base-content/70">{t('admin.questions.loadError')}</p>
       )}
-      {list?.length === 0 && <p className="text-sm text-base-content/70">{t('admin.questions.empty')}</p>}
-      {list?.map((q) => <QuestionResultsCard key={q.id} q={q} />)}
+      {list?.length === 0 && (
+        <p className="text-sm text-base-content/70">{t('admin.questions.empty')}</p>
+      )}
+      {list?.map((q) => (
+        <QuestionResultsCard key={q.id} q={q} />
+      ))}
     </div>
   );
 }

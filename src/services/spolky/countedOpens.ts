@@ -100,8 +100,6 @@ export function __forgetCountedOpensMemoryForTests(): void {
 export async function __resetCountedOpensForTests(): Promise<void> {
   __forgetCountedOpensMemoryForTests();
   await Promise.all(
-    SURFACES.map((s) =>
-      IndexedDBService.delete('meta', KEY(s)).catch(() => undefined)
-    )
+    SURFACES.map((s) => IndexedDBService.delete('meta', KEY(s)).catch(() => undefined))
   );
 }

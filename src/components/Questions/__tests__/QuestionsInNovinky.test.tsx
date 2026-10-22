@@ -6,7 +6,10 @@ import { useAppStore } from '../../../store/useAppStore';
 import type { Question } from '../../../types/questions';
 
 const countQuestion = vi.hoisted(() => vi.fn(async () => true));
-vi.mock('../../../api/questions', () => ({ countQuestion, fetchQuestions: vi.fn(async () => null) }));
+vi.mock('../../../api/questions', () => ({
+  countQuestion,
+  fetchQuestions: vi.fn(async () => null),
+}));
 vi.mock('../../../api/featureUsage', () => ({ trackFeatureSignal: vi.fn(async () => {}) }));
 vi.mock('../../../services/storage/IndexedDBService', () => ({
   IndexedDBService: {
@@ -44,7 +47,14 @@ function state(over: Partial<{ allowed: boolean; list: Question[] }> = {}) {
       seenDeadlineAlertIds: new Set<string>(),
     },
     supportQuestion: { status: 'dismissed', badgeSeen: true },
-    questions: { status: 'ready', list: [scale], answers: {}, badgeSeen: [], allowed: true, ...over },
+    questions: {
+      status: 'ready',
+      list: [scale],
+      answers: {},
+      badgeSeen: [],
+      allowed: true,
+      ...over,
+    },
     exams: { data: [] },
     odevzdavarny: [],
     cvicneTests: [],

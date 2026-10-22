@@ -67,7 +67,10 @@ describe('fetchQuestions', () => {
   });
 
   it('drops a row it cannot render instead of the whole list', async () => {
-    select.mockResolvedValueOnce({ data: [row, { ...row, id: 'q2', buttons: 'nope' }], error: null });
+    select.mockResolvedValueOnce({
+      data: [row, { ...row, id: 'q2', buttons: 'nope' }],
+      error: null,
+    });
     expect((await fetchQuestions())?.map((q) => q.id)).toEqual(['q1']);
   });
 });

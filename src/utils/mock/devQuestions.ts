@@ -19,9 +19,7 @@ export const devQuestionsStore = {
   },
   end(id: string, patch: { ends_at: string; starts_at?: string }): boolean {
     questions = questions.map((q) =>
-      q.id === id
-        ? { ...q, endsAt: patch.ends_at, startsAt: patch.starts_at ?? q.startsAt }
-        : q
+      q.id === id ? { ...q, endsAt: patch.ends_at, startsAt: patch.starts_at ?? q.startsAt } : q
     );
     return true;
   },

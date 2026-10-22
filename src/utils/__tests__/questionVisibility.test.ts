@@ -25,7 +25,10 @@ describe('visibleQuestions', () => {
 
   // The list comes from a cache as well as a fetch, so time is judged here.
   it('hides one that has not started or has ended', () => {
-    const list = [q({ id: 'early', startsAt: '2026-11-02T00:00:00Z' }), q({ id: 'over', endsAt: '2026-11-01T00:00:00Z' })];
+    const list = [
+      q({ id: 'early', startsAt: '2026-11-02T00:00:00Z' }),
+      q({ id: 'over', endsAt: '2026-11-01T00:00:00Z' }),
+    ];
     expect(visibleQuestions(list, { nowMs: NOW, facultyKey: 'pef' })).toEqual([]);
   });
 

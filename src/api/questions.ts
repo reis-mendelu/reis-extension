@@ -44,9 +44,7 @@ export async function fetchQuestions(): Promise<Question[] | null> {
   try {
     const { data, error } = await supabase
       .from('reis_questions')
-      .select(
-        'id, prompt_cz, prompt_en, note_cz, note_en, buttons, starts_at, ends_at, faculties'
-      )
+      .select('id, prompt_cz, prompt_en, note_cz, note_en, buttons, starts_at, ends_at, faculties')
       .order('starts_at', { ascending: false });
     if (error || !Array.isArray(data)) {
       if (error) logError('Api.fetchQuestions', error);

@@ -39,7 +39,9 @@ afterEach(() => {
 describe('QuestionRow', () => {
   it('asks in the student’s language and answers with the tapped key', () => {
     const onAnswer = vi.fn();
-    render(<QuestionRow question={base} language="en" answeredKey={undefined} onAnswer={onAnswer} />);
+    render(
+      <QuestionRow question={base} language="en" answeredKey={undefined} onAnswer={onAnswer} />
+    );
     expect(screen.getByText('Do you want dark mode?')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'No' }));
     expect(onAnswer).toHaveBeenCalledWith('no');
@@ -53,13 +55,18 @@ describe('QuestionRow', () => {
   });
 
   it('renders a 1–5 scale as five buttons', () => {
-    render(<QuestionRow question={scale} language="cz" answeredKey={undefined} onAnswer={vi.fn()} />);
-    for (const k of ['1', '2', '3', '4', '5']) expect(screen.getByRole('button', { name: k })).toBeTruthy();
+    render(
+      <QuestionRow question={scale} language="cz" answeredKey={undefined} onAnswer={vi.fn()} />
+    );
+    for (const k of ['1', '2', '3', '4', '5'])
+      expect(screen.getByRole('button', { name: k })).toBeTruthy();
   });
 
   it('counts and opens a link, and keeps the row', () => {
     const onAnswer = vi.fn();
-    render(<QuestionRow question={link} language="cz" answeredKey={undefined} onAnswer={onAnswer} />);
+    render(
+      <QuestionRow question={link} language="cz" answeredKey={undefined} onAnswer={onAnswer} />
+    );
     fireEvent.click(screen.getByRole('button', { name: /Otevřít reByt/ }));
     expect(onAnswer).toHaveBeenCalledWith('open');
     expect(openExternal).toHaveBeenCalledWith('https://rebyt.example');

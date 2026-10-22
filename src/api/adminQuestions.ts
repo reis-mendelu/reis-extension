@@ -89,7 +89,8 @@ export async function endQuestion(
   now: Date = new Date()
 ): Promise<boolean> {
   const at = now.toISOString();
-  const patch = Date.parse(q.startsAt) > now.getTime() ? { ends_at: at, starts_at: at } : { ends_at: at };
+  const patch =
+    Date.parse(q.startsAt) > now.getTime() ? { ends_at: at, starts_at: at } : { ends_at: at };
   if (DEV_SOCIETY) return devQuestionsStore.end(q.id, patch);
   const { error } = await adminAuthClient.from('reis_questions').update(patch).eq('id', q.id);
   if (error) logError('Api.endQuestion', error);

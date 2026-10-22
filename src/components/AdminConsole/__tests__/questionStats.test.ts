@@ -28,8 +28,14 @@ describe('questionStats', () => {
     const s = questionStats(q);
     expect(s.seen).toBe(200);
     expect(s.answered).toBe(40);
-    expect(s.buttons.find((b) => b.key === 'yes')).toMatchObject({ ofSeen: 0.15, ofAnswered: 0.75 });
-    expect(s.buttons.find((b) => b.key === 'open')).toMatchObject({ isLink: true, ofAnswered: null });
+    expect(s.buttons.find((b) => b.key === 'yes')).toMatchObject({
+      ofSeen: 0.15,
+      ofAnswered: 0.75,
+    });
+    expect(s.buttons.find((b) => b.key === 'open')).toMatchObject({
+      isLink: true,
+      ofAnswered: null,
+    });
     expect(s.suspicious).toBe(false);
   });
 
