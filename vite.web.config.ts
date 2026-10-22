@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { reisSnapshotPlugin } from './dev/snapshotPlugin';
 import { reisAdminSessionPlugin } from './dev/adminSessionPlugin';
+import { pdfjsLegacyAliases } from './scripts/pdfjsLegacyAlias';
 
 // Where npm actually installed the dependencies. Identical to `<root>/node_modules`
 // in a normal checkout; in a git worktree it points at the MAIN checkout instead.
@@ -25,9 +26,7 @@ export default defineConfig({
   envDir: __dirname,
   plugins: [react(), tailwindcss(), reisSnapshotPlugin(), reisAdminSessionPlugin()],
   resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src'),
-    },
+    alias: [{ find: '@', replacement: resolve(__dirname, 'src') }, ...pdfjsLegacyAliases],
   },
   define: {
     // Default the dev-only "reIS" test society ON for the webapp harness so the

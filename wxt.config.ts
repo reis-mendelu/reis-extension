@@ -2,6 +2,7 @@ import { defineConfig } from 'wxt';
 import path from 'path';
 import tailwindcss from '@tailwindcss/vite';
 import { SNAPSHOT_FILENAMES } from './scripts/stripDevRealData.mjs';
+import { pdfjsLegacyAliases } from './scripts/pdfjsLegacyAlias';
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
@@ -174,9 +175,7 @@ export default defineConfig({
   vite: () => ({
     plugins: [tailwindcss()],
     resolve: {
-      alias: {
-        '@': path.resolve(__dirname, './src'),
-      },
+      alias: [{ find: '@', replacement: path.resolve(__dirname, './src') }, ...pdfjsLegacyAliases],
     },
   }),
 });
