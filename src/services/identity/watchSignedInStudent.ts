@@ -56,12 +56,15 @@ export function watchSignedInStudent(
   }: { attempts?: number; gapMs?: number; clearAdmin?: () => Promise<void> } = {}
 ): () => void {
   let stopped = false;
-  const off = onIdentityChange((_params, { wiped }) => {
+  const off = onIdentityChange((_params, { wiped, studyOnly }) => {
     void (async () => {
-      try {
-        await clearAdmin();
-      } catch (e) {
-        logError('watchSignedInStudent.clearAdmin', e);
+      // Another study of the same student is not another person.
+      if (!studyOnly) {
+        try {
+          await clearAdmin();
+        } catch (e) {
+          logError('watchSignedInStudent.clearAdmin', e);
+        }
       }
       if (wiped) restart();
     })();

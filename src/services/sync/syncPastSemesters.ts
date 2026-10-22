@@ -16,7 +16,11 @@ export async function syncPastSemesters(
 ): Promise<void> {
   for (const period of allPeriods) {
     if (period.id === currentObdobi) continue;
-    const cacheKey = `${META_KEY_PREFIX}${period.id}`;
+    // The study is part of the key: two studies at one faculty share their
+    // obdobi ids, and keyed by the period alone one study's past semesters
+    // were served as the other's (see utils/userParams/chooseStudy). Entries
+    // from before that are never read again; a study switch clears them.
+    const cacheKey = `${META_KEY_PREFIX}${studium}_${period.id}`;
 
     // Permanent cache — past semesters are immutable facts
     const cached = (await IndexedDBService.get('meta', cacheKey)) as

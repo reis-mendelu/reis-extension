@@ -70,10 +70,16 @@ vi.mock('../../api/classmates', () => ({
   fetchClassmates: (...a: unknown[]) => api.classmates(...a),
 }));
 
+const params = { studium: 'st1', obdobi: 'ob1' };
 vi.mock('../../utils/userParams', () => ({
-  getUserParams: async () => ({ studium: 'st1', obdobi: 'ob1' }),
+  getUserParams: async () => ({ ...params }),
 }));
 vi.mock('../iframeManager', () => ({ sendToIframe: vi.fn() }));
+// Passes the exams through; one test holds it open to switch study mid-await.
+const enrichExams = vi.fn(async (exams: unknown) => exams);
+vi.mock('../../services/sync/examDurations', () => ({
+  enrichExamsWithDurations: (exams: unknown) => enrichExams(exams),
+}));
 const mergePastSubjectsMock = vi.fn();
 vi.mock('../../services/sync/mergePastSubjects', () => ({
   mergePastSubjects: (...a: unknown[]) => mergePastSubjectsMock(...a),
@@ -136,6 +142,63 @@ describe('sync tiers across consecutive runs', () => {
     vi.clearAllMocks();
     mergePastSubjectsMock.mockReset();
     primeResponses();
+    params.studium = 'st1';
+  });
+
+  // A student with two studies switched (see chooseStudy). Everything this
+  // context holds is the other study's, and a fresh TTL stamp must not let it
+  // stand in for the new study's data.
+  it('refetches everything for the new study after a study change', async () => {
+    const { syncAllData } = await loadSync();
+    await syncAllData();
+    params.studium = 'st2';
+    await syncAllData();
+
+    for (const name of [...COLD, ...HOT]) {
+      expect(api[name], `${name} after a study change`).toHaveBeenCalledTimes(2);
+    }
+    expect(api.subjects).toHaveBeenLastCalledWith('st2', 'ob1');
+  });
+
+  // The student switched while a crawl for the previous study was still out.
+  // Its answers arrive after the switch; the iframe has already moved on and
+  // would store them as the new study's, so they must go nowhere.
+  it('lets a run for the study the student left push and keep nothing', async () => {
+    let release!: () => void;
+    api.schedule.mockImplementation(() => new Promise((r) => (release = () => r([{ id: 'l1' }]))));
+    const sync = await loadSync();
+    const { sendToIframe } = await import('../iframeManager');
+    const run = sync.syncAllData();
+    await vi.waitFor(() => expect(api.schedule).toHaveBeenCalled());
+
+    sync.forgetStudyData();
+    vi.mocked(sendToIframe).mockClear();
+    release();
+    await run;
+
+    expect(sendToIframe).not.toHaveBeenCalled();
+    expect(sync.cachedData).toEqual({ lastSync: 0 });
+  });
+
+  // The same, for the one await that sat INSIDE a guarded cache write: the
+  // check passed before it, and the old study's data landed after the switch.
+  it('keeps nothing when the switch lands while exam durations are being read', async () => {
+    let release!: () => void;
+    enrichExams.mockImplementationOnce(
+      (exams: unknown) => new Promise((r) => (release = () => r(exams)))
+    );
+    const sync = await loadSync();
+    const { sendToIframe } = await import('../iframeManager');
+    const run = sync.syncAllData();
+    await vi.waitFor(() => expect(enrichExams).toHaveBeenCalled());
+
+    sync.forgetStudyData();
+    vi.mocked(sendToIframe).mockClear();
+    release();
+    await run;
+
+    expect(sendToIframe).not.toHaveBeenCalled();
+    expect(sync.cachedData).toEqual({ lastSync: 0 });
   });
 
   it('fetches everything on the first run', async () => {

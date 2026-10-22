@@ -91,6 +91,23 @@ describe('a sync push carrying the submission-box list', () => {
     expect(idbSet).toHaveBeenCalledWith('odevzdavarny', 'st_ob', []);
   });
 
+  // A switch half done: the host page already crawls the other study while
+  // this context still runs on 'st'. Stored, the other study's boxes would land
+  // under this study's key (see services/identity/switchStudy).
+  it('drops a push tagged with a study this context is not on', async () => {
+    await push({ studium: 'other', odevzdavarny: [{ id: 'a1' }], cvicneTests: [{ id: 't1' }] });
+
+    expect(store.setOdevzdavarny).not.toHaveBeenCalled();
+    expect(store.setCvicneTests).not.toHaveBeenCalled();
+    expect(idbSet).not.toHaveBeenCalled();
+  });
+
+  it('takes a push tagged with its own study', async () => {
+    await push({ studium: 'st', odevzdavarny: [] });
+
+    expect(idbSet).toHaveBeenCalledWith('odevzdavarny', 'st_ob', []);
+  });
+
   it('leaves both alone when the message does not carry the list', async () => {
     await push({ exams: [] });
 

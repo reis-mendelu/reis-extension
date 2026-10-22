@@ -39,6 +39,7 @@ const actionType = z.enum([
   'get_diagnostics',
   'open_url',
   'logout',
+  'switch_study',
 ]);
 
 // ── Iframe → Content ────────────────────────────────────────────────────────

@@ -57,7 +57,11 @@
     "foodDebit": "Food Debit",
     "logoutConfirmTitle": "Sign out of the app?",
     "logoutConfirmBody": "Your sign-in and downloaded data are removed from this phone. You'll need to sign in to IS again next time.",
-    "logoutFailed": "Signing out failed. Please try again."
+    "logoutFailed": "Signing out failed. Please try again.",
+    "study": "Study",
+    "studyHint": "You have more than one study in IS. reIS shows the subjects, exams and plan of the one selected.",
+    "studySwitching": "Switching study…",
+    "studySwitchFailed": "Could not switch study. Please try again."
   },
   "sidebar": {
     "profile": "Profile",
