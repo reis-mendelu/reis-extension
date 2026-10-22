@@ -4,6 +4,7 @@ import { createRequire } from 'module';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { stripDevRealDataPlugin } from './scripts/stripDevRealData.mjs';
+import { pdfjsLegacyAliases } from './scripts/pdfjsLegacyAlias';
 
 // Where npm actually installed the dependencies. Identical to `<root>/node_modules`
 // in a normal checkout; in a git worktree it points at the MAIN checkout instead.
@@ -35,9 +36,7 @@ export default defineConfig({
     __REIS_APP_VERSION__: JSON.stringify(createRequire(import.meta.url)('./package.json').version),
   },
   resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src'),
-    },
+    alias: [{ find: '@', replacement: resolve(__dirname, 'src') }, ...pdfjsLegacyAliases],
   },
   build: {
     outDir: resolve(__dirname, 'dist-capacitor'),
