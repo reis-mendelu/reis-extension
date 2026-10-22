@@ -5,16 +5,16 @@ import { parsePersonProfile } from '../personProfile';
 
 const fixture = (name: string) => readFileSync(resolve(__dirname, 'fixtures', name), 'utf-8');
 
-const JANDA = fixture('clovek-janda.html');
-const KUNRTOVA = fixture('clovek-kunrtova.html');
+const WITH_PRIVATE_EMAIL = fixture('clovek-private-email.html');
+const NO_PRIVATE_EMAIL = fixture('clovek-no-private-email.html');
 
 describe('parsePersonProfile', () => {
-  it('extracts the universal fields from Janda profile', () => {
-    const r = parsePersonProfile(JANDA, 120349);
+  it('extracts the universal fields from Dvořák profile', () => {
+    const r = parsePersonProfile(WITH_PRIVATE_EMAIL, 900349);
     expect(r).not.toBeNull();
-    expect(r!.name).toMatch(/Janda/);
-    expect(r!.universityEmail).toBe('xjanda@node.mendelu.cz');
-    expect(r!.privateEmail).toBe('krystofjanda@protonmail.com');
+    expect(r!.name).toMatch(/Dvořák/);
+    expect(r!.universityEmail).toBe('xdvorak@node.mendelu.cz');
+    expect(r!.privateEmail).toBe('jakubdvorak@protonmail.com');
     expect(r!.programmeCode).toBe('B0613A140025');
     expect(r!.programmeName).toMatch(/Otevřená informatika/);
     expect(r!.studyTypeSentence).toMatch(/Bakalářský/);
@@ -23,8 +23,8 @@ describe('parsePersonProfile', () => {
     expect(r!.yearSemesterSentence).toMatch(/\d+\.\s*semestr studia/);
   });
 
-  it('handles missing private email (Kunrtová)', () => {
-    const r = parsePersonProfile(KUNRTOVA, 121037);
+  it('handles missing private email (Svobodová)', () => {
+    const r = parsePersonProfile(NO_PRIVATE_EMAIL, 901037);
     expect(r).not.toBeNull();
     expect(r!.name.length).toBeGreaterThan(0);
     expect(r!.universityEmail).toBeTruthy();

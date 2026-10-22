@@ -4,6 +4,7 @@ import { MapSidePanel } from './MapSidePanel';
 import { DetailPanel } from './DetailPanel';
 import { RoomSearch } from './RoomSearch';
 import { EventLayer } from './EventLayer';
+import { OsmTileAccessBanner } from './OsmTileAccessBanner';
 import { useAppStore } from '../../store/useAppStore';
 import { useMapDwell } from '../../hooks/useMapDwell';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -36,6 +37,11 @@ export function CampusMapView() {
       {selection && (
         <div className="absolute bottom-3 left-3 z-[1000] w-72">
           <DetailPanel />
+        </div>
+      )}
+      {!placing && (
+        <div className="absolute bottom-8 left-1/2 z-[1000] -translate-x-1/2">
+          <OsmTileAccessBanner />
         </div>
       )}
       {placing && (

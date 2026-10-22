@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Send, Loader2, CheckCircle2 } from 'lucide-react';
+import { X, CheckCircle2 } from 'lucide-react';
 import { submitSuggestion } from '../../api/suggestions';
 import { toast } from 'sonner';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -10,6 +10,8 @@ import { useAppStore } from '../../store/useAppStore';
 import { desktopDialogMotion, phoneSheetMotion } from './feedbackModalMotion';
 import { useReportAttachments } from './useReportAttachments';
 import { ReportAttachments } from './ReportAttachments';
+import { ReportSendButtons } from './ReportSendButtons';
+import { ReportFormFields, type ReportType } from './ReportFormFields';
 import { requestDataConsent, reportConsentCategories } from '../../utils/firefoxDataConsent';
 
 interface FeedbackModalProps {
@@ -20,7 +22,7 @@ interface FeedbackModalProps {
 }
 
 export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalProps) {
-  const [type, setType] = useState<'bug' | 'idea' | 'other'>('bug');
+  const [type, setType] = useState<ReportType>('bug');
   const [title, setTitle] = useState(initialTitle ?? '');
   const [message, setMessage] = useState('');
   const [contact, setContact] = useState('');
@@ -36,8 +38,9 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
   // Chyba/Nápad/Jiné, and on a phone a focused field raised the soft keyboard
   // mid-slide, resized the WebView and made the sheet jump.
 
-  const handleSubmit = async (e?: React.SyntheticEvent) => {
-    if (e) e.preventDefault();
+  const isBug = type === 'bug';
+
+  const handleSubmit = async (withDiagnostics: boolean) => {
     // The Send button's `disabled` is not the only entry point: Enter in the
     // title or contact field calls this directly. Without its own check, Enter
     // on a half-filled form posts an empty body, the function 400s it, and the
@@ -51,7 +54,7 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
       reportConsentCategories({
         contact,
         screenshot: attachments.screenshot !== null,
-        diagnostics: attachments.includeDiagnostics,
+        diagnostics: withDiagnostics,
       })
     );
     setIsSending(true);
@@ -72,7 +75,7 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
       }
       const result = await submitSuggestion(
         { type, title, body: message, contact },
-        await attachments.draft()
+        await attachments.draft(withDiagnostics)
       );
 
       if (result.ok) {
@@ -88,6 +91,12 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
     } finally {
       setIsSending(false);
     }
+  };
+
+  // Enter sends a Nápad or Jiné as the box says. A Chyba waits for one of its
+  // two buttons: the log goes only with the one that says so.
+  const onEnter = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !isBug) void handleSubmit(attachments.includeDiagnostics);
   };
 
   const handleClose = () => {
@@ -157,114 +166,31 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
                 // onPaste on the whole form: a screenshot pasted into any field
                 // is attached rather than dropped as text.
                 <div className="space-y-4" onPaste={attachments.onPaste}>
-                  {/* Type Selection */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium text-base-content/60 ml-1">
-                      {t('feedback.typeLabel')}
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setType('bug')}
-                        className={`btn btn-sm border-0 ${type === 'bug' ? 'bg-error/20 text-base-content hover:bg-error/30' : 'bg-base-200 text-base-content/75 hover:bg-base-300 hover:text-base-content'}`}
-                      >
-                        {t('feedback.bug')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setType('idea')}
-                        className={`btn btn-sm border-0 ${type === 'idea' ? 'bg-warning/20 text-base-content hover:bg-warning/30' : 'bg-base-200 text-base-content/75 hover:bg-base-300 hover:text-base-content'}`}
-                      >
-                        {t('feedback.idea')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setType('other')}
-                        className={`btn btn-sm border-0 ${type === 'other' ? 'bg-neutral text-neutral-content hover:bg-neutral/80' : 'bg-base-200 text-base-content/75 hover:bg-base-300 hover:text-base-content'}`}
-                      >
-                        {t('feedback.other')}
-                      </button>
-                    </div>
-                  </div>
+                  <ReportFormFields
+                    type={type}
+                    setType={setType}
+                    title={title}
+                    setTitle={setTitle}
+                    message={message}
+                    setMessage={setMessage}
+                    contact={contact}
+                    setContact={setContact}
+                    onEnter={onEnter}
+                  />
 
-                  {/* Title */}
-                  <div className="form-control">
-                    <label className="label pt-0 pb-1">
-                      <span className="text-sm font-medium text-base-content/60">
-                        {t('feedback.subject')}
-                      </span>
-                    </label>
-                    <input
-                      type="text"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder={t('feedback.subjectPlaceholder')}
-                      className="input input-bordered w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors"
-                      required
-                      maxLength={120}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                    />
-                  </div>
+                  <ReportAttachments
+                    state={attachments}
+                    showPasteHint={!isPhone}
+                    showDiagnosticsBox={!isBug}
+                  />
 
-                  {/* Message */}
-                  <div className="form-control">
-                    <label className="label pt-0 pb-1">
-                      <span className="text-sm font-medium text-base-content/60">
-                        {t('feedback.description')}
-                      </span>
-                    </label>
-                    <textarea
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      placeholder={t('feedback.descriptionPlaceholder')}
-                      className="textarea textarea-bordered h-32 w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors leading-relaxed resize-none"
-                      required
-                      maxLength={2000}
-                    />
-                  </div>
-
-                  {/* Contact (Optional) */}
-                  <div className="form-control">
-                    <label className="label pt-0 pb-1">
-                      <span className="text-sm font-medium text-base-content/60">
-                        {t('feedback.contact')}
-                      </span>
-                    </label>
-                    <input
-                      type="text"
-                      value={contact}
-                      onChange={(e) => setContact(e.target.value)}
-                      placeholder={t('feedback.contactPlaceholder')}
-                      className="input input-bordered w-full bg-base-200 border-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 text-base-content transition-colors"
-                      onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                    />
-                  </div>
-
-                  <ReportAttachments state={attachments} showPasteHint={!isPhone} />
-
-                  {/* Submit Button */}
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={handleSubmit}
-                      disabled={
-                        isSending || attachments.encoding || !title.trim() || !message.trim()
-                      }
-                      className="btn btn-primary w-full gap-2 font-semibold no-animation"
-                    >
-                      {isSending ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          {t('feedback.sending')}
-                        </>
-                      ) : (
-                        <>
-                          <Send className="w-5 h-5" />
-                          {t('feedback.submit')}
-                        </>
-                      )}
-                    </button>
-                  </div>
+                  <ReportSendButtons
+                    isBug={isBug}
+                    includeDiagnostics={attachments.includeDiagnostics}
+                    isSending={isSending}
+                    disabled={isSending || attachments.encoding || !title.trim() || !message.trim()}
+                    onSend={(withDiagnostics) => void handleSubmit(withDiagnostics)}
+                  />
 
                   <p className="text-[10px] text-center text-base-content/75 mt-2">
                     {t('feedback.footer')}

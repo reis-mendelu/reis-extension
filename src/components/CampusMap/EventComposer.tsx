@@ -1,34 +1,35 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { CalendarPlus, MapPin, X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { createPost, updatePost } from '../../api/societyPosts';
 import { isComposerReady, isUrlInvalid, buildPostInput } from './composerRules';
 import { useVenuePicker } from './useVenuePicker';
 import { ComposerWhenField } from './ComposerWhenField';
-import { ComposerVenueSearch } from './ComposerVenueSearch';
+import { ComposerVenueFields } from './ComposerVenueFields';
+import { ComposerKindField } from './ComposerKindField';
+import { ComposerTextFields } from './ComposerTextFields';
+import { useComposerKind } from './useComposerKind';
 import { ComposerAudienceField } from './ComposerAudienceField';
-import { audienceOf } from '../../utils/eventAudience';
 import { ComposerEmojiField } from './ComposerEmojiField';
 import { ComposerLinkField } from './ComposerLinkField';
-import { toPatch, latestEmoji, initialRoom, initialPlaceName } from './composerPost';
+import { toPatch, latestEmoji, initialRoom, initialPlaceName, initialKind } from './composerPost';
 import { eventEmojiCode, CATEGORY_EMOJI_CODE } from '../../data/eventEmoji';
 import roomsIndexJson from '../../data/map/rooms-index.json';
 import type { RoomIndexEntry } from '../../types/campusMap';
-import { isPartner } from '../../utils/partnerAudience';
+import { ComposerHeader, ComposerActions } from './ComposerChrome';
+import { useComposerAuthor } from './useComposerAuthor';
 
 const INDEX = roomsIndexJson as RoomIndexEntry[];
 const LABEL = 'mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wide text-base-content/60';
 
-// Create, edit or duplicate a society event, asked in the order a society
-// thinks it: what → when → where → what kind → for whom → link. No <form>
-// submit (sandboxed iframe blocks it); Publish/Save is a button.
-//
-// The venue KIND is derived, never asked: a picked room makes a campus event,
-// a searched place or a hand-dropped pin (draftCoord) an off-campus one, and
-// no place at all a 'tba' one. Editing keeps the event's room/emoji rather
-// than overwriting them.
+// Create, edit or duplicate a society post, asked in the order a society
+// thinks it: event or notice → what → when → where → picture → for whom →
+// link. A notice (Novinky only) has no place, so it skips where and picture.
+// No <form> submit (sandboxed iframe blocks it); Publish/Save is a button.
+// The venue KIND is derived, never asked: a room makes a campus event, a place
+// or a dropped pin (draftCoord) an off-campus one, no place a 'tba' one.
+// Editing keeps the event's room/emoji rather than overwriting them.
 export function EventComposer({ onDone }: { onDone: () => void }) {
   // The society being authored, not the account's own — a reIS admin belongs to
   // no society and picks one in the console header. RLS accepts either.
@@ -44,19 +45,7 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
     (s) => s.societyMapEvents.find((e) => e.id === (s.editEventId ?? s.duplicateEventId)) ?? null
   );
   const posts = useAppStore((s) => s.societyPosts);
-  // Only a society the catalog KNOWS to be university-wide (reIS) cannot
-  // restrict. A society missing from a stale catalog keeps the stored flag
-  // rather than having it cleared blind.
-  const cannotRestrict = useAppStore((s) => {
-    const society = s.societies[associationId ?? ''];
-    return !!society && audienceOf(society) === 'everyone';
-  });
-  const authorIsPartner = useAppStore((s) => isPartner(s.societies[associationId ?? '']));
-  // Unknown author = unknown audience: it may be a partner whose events must
-  // be restricted, so nothing NEW is published until the catalog names it.
-  // An edit keeps its stored flag instead (see cannotRestrict above), and a
-  // partner's stored flag is always restricted.
-  const authorKnown = useAppStore((s) => Boolean(s.societies[associationId ?? '']));
+  const { cannotRestrict, authorIsPartner, authorKnown } = useComposerAuthor(associationId);
   const blockedUnknownAuthor = !authorKnown && !editId;
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
@@ -77,23 +66,17 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
     startEmoji ?? latestEmoji(posts) ?? CATEGORY_EMOJI_CODE.party
   );
   const [subscribersOnly, setSubscribersOnly] = useState(source?.subscribersOnly ?? false);
+  const [kind, changeKind] = useComposerKind(source);
+  const notice = kind === 'notice';
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
 
-  const {
-    room,
-    placeName,
-    coord,
-    isPhone,
-    previewDraftOnMap,
-    clearDraftCoord,
-    pickRoom,
-    pickPlace,
-    pickPoint,
-    clearVenue,
-    pickOnMap,
-  } = useVenuePicker(initialRoom(source, INDEX), initialPlaceName(source), source?.coord ?? null);
-  const venueName = room?.name ?? placeName ?? (coord ? t('map.mapPoint') : null);
+  const venue = useVenuePicker(
+    initialRoom(source, INDEX),
+    initialPlaceName(source),
+    source?.coord ?? null
+  );
+  const { room, placeName, coord, clearDraftCoord } = venue;
   // url is optional, but once something is typed it must be a URL openExternal
   // will actually open — the same rule EventDetailCard enforces on the way OUT.
   const urlInvalid = isUrlInvalid(url);
@@ -126,10 +109,11 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       // Partners are always restricted: released builds without the audience
       // rule then show the event only to the partner's faculty, never to all.
       subscribersOnly: authorIsPartner || (!cannotRestrict && subscribersOnly),
+      kind,
     });
     try {
       const res = editId
-        ? await updatePost(editId, toPatch(input))
+        ? await updatePost(editId, toPatch(input, initialKind(source)))
         : await createPost(input, associationId, email);
       if (res.error) {
         setError(true);
@@ -137,7 +121,9 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
       }
       await loadSocietyPosts();
       void reloadMapEvents(); // surface the change on the public "Akce" feed too
-      toast.success(editId ? t('map.toastSaved') : t('map.toastPublished'));
+      toast.success(
+        t(editId ? 'map.toastSaved' : notice ? 'map.toastPublishedNotice' : 'map.toastPublished')
+      );
       close();
     } catch {
       setError(true);
@@ -148,41 +134,18 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="border-b border-base-300 bg-base-200/60 p-3">
-      <div className="mb-3 flex items-center gap-2">
-        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/20">
-          <CalendarPlus size={14} className="text-primary" />
-        </span>
-        <span className="text-sm font-bold">
-          {editId ? t('map.editEvent') : t('map.createEvent')}
-        </span>
-        <button
-          type="button"
-          className="btn btn-ghost btn-xs ml-auto"
-          aria-label={t('common.cancel')}
-          onClick={close}
-        >
-          <X size={15} />
-        </button>
-      </div>
+      <ComposerHeader kind={kind} editing={!!editId} onClose={close} t={t} />
 
-      <label className={LABEL}>{t('map.eventName')}</label>
-      <input
-        className="input input-bordered w-full"
-        placeholder={t('map.eventName')}
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
+      <ComposerKindField value={kind} onChange={changeKind} t={t} />
+
+      <ComposerTextFields
+        kind={kind}
+        title={title}
+        description={description}
+        onTitle={setTitle}
+        onDescription={setDescription}
+        t={t}
       />
-
-      <label className="flex w-full flex-col">
-        <span className={LABEL}>{t('map.description')}</span>
-        <textarea
-          className="textarea textarea-bordered w-full"
-          rows={3}
-          placeholder={t('map.descriptionHint')}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-      </label>
 
       <ComposerWhenField
         date={date}
@@ -193,30 +156,18 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
         onEndDate={setEndDate}
         t={t}
         locale={locale}
+        endLabel={notice ? 'map.noticeEndDate' : undefined}
+        withTime={!notice}
       />
 
-      <label className={LABEL}>{t('map.venueLabel')}</label>
-      <ComposerVenueSearch
-        selected={venueName}
-        onSelectRoom={pickRoom}
-        onSelectPlace={pickPlace}
-        onSelectPoint={pickPoint}
-        onClear={clearVenue}
-        onPickOnMap={pickOnMap}
-        t={t}
-      />
-      {isPhone && coord && (
-        <button
-          type="button"
-          className="btn btn-ghost btn-xs mt-1.5 w-full gap-1.5 text-base-content/70"
-          onClick={previewDraftOnMap}
-        >
-          <MapPin size={13} /> {t('map.showOnMap')}
-        </button>
+      {/* Novinky draws no picture, so a notice is not asked for one either. */}
+      {!notice && (
+        <>
+          <ComposerVenueFields venue={venue} t={t} />
+          <label className={LABEL}>{t('map.emojiPickerLabel')}</label>
+          <ComposerEmojiField value={emoji} onChange={setEmoji} t={t} language={language} />
+        </>
       )}
-
-      <label className={LABEL}>{t('map.emojiPickerLabel')}</label>
-      <ComposerEmojiField value={emoji} onChange={setEmoji} t={t} language={language} />
 
       <ComposerAudienceField
         societyId={associationId ?? ''}
@@ -226,20 +177,15 @@ export function EventComposer({ onDone }: { onDone: () => void }) {
 
       <ComposerLinkField url={url} onChange={setUrl} urlInvalid={urlInvalid} t={t} />
 
-      {error && <p className="mt-2 text-[11px] text-error">{t('admin.saveError')}</p>}
-      <div className="mt-3 flex gap-2">
-        <button type="button" className="btn btn-ghost btn-sm" onClick={close}>
-          {t('common.cancel')}
-        </button>
-        <button
-          type="button"
-          className="btn btn-primary btn-sm flex-1 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={!ready || busy || blockedUnknownAuthor}
-          onClick={publish}
-        >
-          {editId ? t('map.saveChanges') : t('map.publish')}
-        </button>
-      </div>
+      <ComposerActions
+        kind={kind}
+        editing={!!editId}
+        disabled={!ready || busy || blockedUnknownAuthor}
+        error={error}
+        onClose={close}
+        onPublish={publish}
+        t={t}
+      />
     </div>
   );
 }

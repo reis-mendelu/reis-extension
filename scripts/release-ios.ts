@@ -5,8 +5,8 @@
 // This is the iOS half of the release train. `test` -> `main` with a version
 // bump pushes `vX.Y.Z` (release-tag.yml); this turns that tag into a binary in
 // App Store Connect. It deliberately STOPS at upload — attaching the build to
-// a version and submitting for review stays a human decision, because a
-// submission cannot be recalled and `test` is not a protected branch.
+// a version and submitting for review is scripts/release/ios-submit.ts, run by
+// the same pipeline (.github/workflows/ship.yml) right after this.
 //
 //   npm run release:ios                 # cut from HEAD
 //   npm run release:ios -- --tag v5.1.1 # ...and assert HEAD is that tag
@@ -19,7 +19,14 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { listBuildVersions, resolveAscCredentials } from './lib/ascApi';
-import { exportOptionsPlist, parseReleaseArgs, reserveBundleVersion } from './lib/iosRelease';
+import {
+  exportOptionsPlist,
+  parseReleaseArgs,
+  reserveBundleVersion,
+  xcodeAuthArgs,
+} from './lib/iosRelease';
+import { manualExportOptionsPlist } from './lib/iosManualExport';
+import { withManualSigning } from './lib/iosManualPbxproj';
 import { deriveIosVersion, readBundleVersion } from './lib/iosVersion';
 import { assertUploadable, inspectIpa } from './lib/verifyIpa';
 
@@ -36,6 +43,15 @@ const TEAM_ID = process.env.REIS_IOS_TEAM ?? 'RG38V3SV8X';
 const APP_ID = process.env.REIS_ASC_APP_ID ?? '6804832714';
 
 const { tag: wantedTag, skipUpload } = parseReleaseArgs(process.argv.slice(2));
+// On a CI runner there is no Apple ID in Xcode; ship.yml sets this so xcodebuild signs
+// with the App Store Connect API key instead. On this Mac it stays off.
+const USE_API_KEY_AUTH = process.env.REIS_XCODE_API_KEY_AUTH === '1';
+
+// On CI, ship.yml may hand over a distribution certificate and App Store profile
+// (REIS_IOS_PROFILE_NAME). Then archive and export both sign with them and never
+// call Apple's cloud signing, which needs an API key above App Manager and leaves a
+// new "Created via API" development certificate behind on every run.
+const profileName = process.env.REIS_IOS_PROFILE_NAME;
 
 const step = (msg: string) => console.log(`\n\x1b[1m> ${msg}\x1b[0m`);
 const sh = (cmd: string, cmdArgs: string[], env?: NodeJS.ProcessEnv) =>
@@ -134,7 +150,22 @@ async function main() {
   const archivePath = join(work, 'reIS.xcarchive');
   const exportDir = join(work, 'export');
   const optionsPath = join(work, 'exportOptions.plist');
-  writeFileSync(optionsPath, exportOptionsPlist(TEAM_ID));
+  writeFileSync(
+    optionsPath,
+    profileName
+      ? manualExportOptionsPlist(TEAM_ID, 'cz.reis.app', profileName)
+      : exportOptionsPlist(TEAM_ID)
+  );
+
+  const cloudArgs = profileName
+    ? []
+    : ['-allowProvisioningUpdates', ...(USE_API_KEY_AUTH ? xcodeAuthArgs(creds) : [])];
+  if (profileName) {
+    writeFileSync(
+      PBXPROJ,
+      withManualSigning(readFileSync(PBXPROJ, 'utf8'), 'cz.reis.app', profileName)
+    );
+  }
 
   step(`Archiving ${version} (${bundleVersion})`);
   sh('xcodebuild', [
@@ -149,7 +180,7 @@ async function main() {
     '-archivePath',
     archivePath,
     `DEVELOPMENT_TEAM=${TEAM_ID}`,
-    '-allowProvisioningUpdates',
+    ...cloudArgs,
     'archive',
   ]);
 
@@ -162,7 +193,7 @@ async function main() {
     optionsPath,
     '-exportPath',
     exportDir,
-    '-allowProvisioningUpdates',
+    ...cloudArgs,
   ]);
 
   step('Verifying the .ipa');
@@ -193,9 +224,10 @@ async function main() {
 
   console.log(
     `\n\x1b[32mOK ${version} (${bundleVersion}) uploaded.\x1b[0m Processing takes ~3 minutes.\n` +
-      'Nothing is submitted: in App Store Connect, add the build to the version and\n' +
-      'submit for review by hand - check the build picker actually selected\n' +
-      `${bundleVersion}, it offers stale builds first.`
+      'This script submits nothing. Next, scripts/release/ios-submit.ts attaches the\n' +
+      'newest build for this version, reads it back, and submits it for review:\n' +
+      `  npx tsx scripts/release/ios-submit.ts --version ${version}\n` +
+      '(ship.yml runs it right after this step.)'
   );
 }
 

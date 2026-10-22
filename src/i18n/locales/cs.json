@@ -22,6 +22,18 @@
     "outletFew": "{count} výdejny",
     "outletOther": "{count} výdejen"
   },
+  "iskam": {
+    "show": "Zobrazit zůstatek ISIC",
+    "label": "ISIC · Hlavní konto",
+    "checking": "Načítám zůstatek",
+    "unavailable": "Zůstatek teď nejde načíst",
+    "topUp": "Dobít",
+    "amount": "Částka (Kč)",
+    "card": "Zaplatit kartou",
+    "gpay": "Google Pay",
+    "invalid": "Zadej celé číslo od 1 do 15 000 Kč",
+    "failed": "Platbu se nepodařilo zahájit"
+  },
   "settings": {
     "title": "Nastavení",
     "reportBug": "Nahlásit chybu / Nápad",
@@ -45,7 +57,11 @@
     "foodDebit": "Inkaso za stravu",
     "logoutConfirmTitle": "Odhlásit se z aplikace?",
     "logoutConfirmBody": "Z telefonu smažeme tvoje přihlášení i stažená data. Příště se budeš muset znovu přihlásit do IS.",
-    "logoutFailed": "Odhlášení se nepovedlo. Zkus to prosím znovu."
+    "logoutFailed": "Odhlášení se nepovedlo. Zkus to prosím znovu.",
+    "study": "Studium",
+    "studyHint": "Máte v IS víc studií. reIS ukazuje předměty, zkoušky a plán toho vybraného.",
+    "studySwitching": "Přepínám studium…",
+    "studySwitchFailed": "Studium se nepodařilo přepnout. Zkuste to znovu."
   },
   "sidebar": {
     "profile": "Profil",
@@ -74,6 +90,8 @@
     "contactCenter": "Kontaktní centrum",
     "slides": "snímků",
     "isPages": "Starý IS",
+    "oldIsHint": "Původní IS Mendelu – všechny stránky na jednom místě. Otevírají se v nové kartě.",
+    "oldIsCount": "Stránek: {count}",
     "people": "Lidé",
     "map": "Mapa"
   },
@@ -234,14 +252,17 @@
     "subjectPlaceholder": "Stručně popiš problém...",
     "description": "Detailní popis",
     "descriptionPlaceholder": "Co se stalo? Kde? Jak to zopakovat?",
-    "contact": "Kontakt (nepovinné)",
+    "bugHint": "Pomůže: kde v aplikaci to bylo, který předmět nebo soubor, co jsi čekal(a), co se stalo a na jakém zařízení.",
+    "contact": "E-mail, kdybychom se potřebovali doptat (nepovinné)",
     "contactPlaceholder": "Email",
     "submit": "Odeslat zpětnou vazbu",
+    "submitWithDiagnostics": "Odeslat s technickými údaji",
+    "submitWithoutDiagnostics": "Odeslat bez nich",
     "sending": "Odesílání...",
     "successTitle": "Super, odesláno!",
     "successText": "Díky za pomoc. Tvou zpětnou vazbu jsme úspěšně přijali.",
     "close": "Zavřít",
-    "footer": "Automaticky odesíláme technické info (verze, prohlížeč) pro rychlejší opravu.",
+    "footer": "Ke každé zprávě přidáme verzi aplikace, prohlížeč, systém, velikost okna a název obrazovky.",
     "toastSuccess": "Díky za zpětnou vazbu!",
     "toastError": "Nepodařilo se odeslat zpětnou vazbu.",
     "npsQuestion": "Doporučil/a bys reIS kamarádovi? (1 - nejhorší, 5 - nejlepší)",
@@ -350,6 +371,7 @@
     "file": {
       "openFailed": "Soubor se nepodařilo otevřít.",
       "downloading": "Stahuji…",
+      "opening": "Otevírám…",
       "savedToDownloads": "Uloženo do Stažených souborů"
     },
     "documentNote": {
@@ -370,6 +392,10 @@
     }
   },
   "zaznamnik": {
+    "newPoints": "Nové body",
+    "notifyTitleOne": "Nové body: {subject}",
+    "notifyTitleMany": "Nové body v záznamníku",
+    "notifyChannel": "Nové body v záznamníku",
     "noData": "Žádná data hodnocení.",
     "noAssessment": "Tento předmět nemá průběžné hodnocení ani testy.",
     "nothingYet": "Zatím nic zapsáno.",
@@ -511,7 +537,6 @@
     "semester": "semestr",
     "wholePlan": "Celý plán",
     "subjectCount": "předmětů",
-    "creditsLastTwo": "Kredity za poslední 2 semestry",
     "creditsTitle": "Kredity",
     "repeatWarning": "2. zápis",
     "gpa": "Průměr",
@@ -925,8 +950,8 @@
     "allSocieties": "Vše",
     "myFaculty": "Moje fakulta",
     "noEvents": "Žádné akce",
-    "thisWeek": "Tento týden",
-    "nextWeek": "Příští týden",
+    "thisWeek": "Příštích 7 dní",
+    "nextWeek": "Za 1–2 týdny",
     "later": "Později",
     "today": "Dnes",
     "tomorrow": "Zítra",
@@ -940,6 +965,17 @@
     "nextMonth": "Další měsíc",
     "createEvent": "Vytvořit akci",
     "editEvent": "Upravit akci",
+    "kindLabel": "Co zveřejňujete",
+    "kindEvent": "Akce",
+    "kindNotice": "Oznámení",
+    "kindEventHint": "V Akcích, na mapě i v Novinkách.",
+    "kindNoticeHint": "Jen v Novinkách — ne v Akcích ani na mapě. Studenti uvidí název a datum; je-li vyplněný odkaz, otevře se klepnutím.",
+    "createNotice": "Nové oznámení",
+    "editNotice": "Upravit oznámení",
+    "noticeName": "Název oznámení",
+    "publishNotice": "Zveřejnit oznámení",
+    "toastPublishedNotice": "Oznámení zveřejněno",
+    "noticeEndDate": "Zobrazovat do (nepovinné)",
     "saveChanges": "Uložit změny",
     "upcoming": "Nadcházející",
     "past": "Proběhlé",
@@ -975,6 +1011,8 @@
     "publish": "Zveřejnit akci",
     "clickToPlace": "Klepněte na tlačítko a poté označte místo v mapě",
     "draftPinLabel": "Místo akce — klikněte pro změnu",
+    "placeName": "Název místa",
+    "placeNameHint": "Zobrazí se na kartě akce, např. Yak",
     "venueLabel": "Kde",
     "venueOffcampus": "Ve městě",
     "venueCampus": "Kampus",
@@ -1025,6 +1063,11 @@
         "ground": "přízemí",
         "below": "{n}. podzemního podlaží"
       }
+    },
+    "osmAccess": {
+      "title": "Mapa potřebuje jedno povolení",
+      "text": "OpenStreetMap blokuje podklad mapy, když neví, kdo se ptá. Povolte reIS, ať se mu může představit.",
+      "allow": "Povolit"
     }
   },
   "admin": {
@@ -1098,14 +1141,23 @@
       "unknown": "neuvedeno",
       "loadFailed": "Statistiky se nepodařilo načíst.",
       "signals": "Funkce (30 dní)",
-      "signalsNote": "Instalace, ne lidé. Mapa se počítá po třech sekundách na obrazovce; eduroam zvlášť pro „aplikace síť nastavila“ a „profil jsme předali k instalaci“ — předaný profil ještě musí student sám nainstalovat.",
+      "signalsNote": "Instalace, ne lidé. Mapa se počítá po třech sekundách na obrazovce; eduroam zvlášť pro „aplikace síť nastavila“ a „profil jsme předali k instalaci“ — předaný profil ještě musí student sám nainstalovat. Podpora: kolik instalací otázku vidělo a kolik odpovědělo „Ano“ – nic se neplatí.",
       "signalMapDwell": "Mapa aspoň 3 sekundy",
       "signalEduroamConfigured": "eduroam nastaven aplikací",
       "signalEduroamDelivered": "eduroam profil předán",
+      "signalSupportSeen": "Otázka na podporu zobrazena",
+      "signalSupportYes": "„Ano“ na podporu 99 Kč",
       "signalInstalls": "instalací",
-      "topEvents": "Nejotevíranější akce na mapě",
+      "reachTitle": "Akce: Novinky a mapa vedle sebe",
+      "reachNotice": "oznámení",
+      "reachViews": "Zobrazení v Novinkách",
+      "reachClicks": "Kliky v Novinkách",
+      "reachMap": "Otevření na mapě",
+      "reachRatio": "Kliky na zobrazení",
+      "reachAll": "Zobrazit všech {count}",
+      "reachFewer": "Zobrazit méně",
+      "reachNote": "Počty otevření, ne lidí. Zobrazení v Novinkách se počítá jednou za zařízení, klik při každém klepnutí (podíl proto může přesáhnout 100 %), mapa při každém otevření. Novinky se počítají od zveřejnění, mapa až od 22. 9. 2026, takže u starších akcí je mapa podhodnocená. Novinky a mapa se nepropojují: nikde se neeviduje, kdo co viděl, takže součet ani průnik lidí z nich vyčíst nejde.",
       "mapViews": "otevření",
-      "mapViewsNote": "Počet otevření, ne lidí — u těchto čísel není žádný identifikátor.",
       "trendAria": "Vývoj: {label}, posledních {days} dní, celkem {total} {unit}, maximum {max} za den.",
       "trendWithheld": "Pro tento signál zatím graf nezobrazujeme — méně než 5 instalací za 30 dní.",
       "goneQuietHint": "Podíl zařízení, která reIS aspoň jeden týden používala 2 a více dní, ale 14 dní ho neotevřela. Zařízení, ne lidé — přeinstalace se počítá taky.",
@@ -1435,6 +1487,9 @@
     "closed": "Uzavřené",
     "nothingUploaded": "Nic neodevzdáno",
     "uploaded": "Odevzdáno",
+    "unconfirmed": "Nahráno, nepotvrzeno",
+    "unconfirmedShort": "Nepotvrzeno",
+    "confirmInIs": "Potvrdit v IS",
     "until": "do {date}",
     "points": "{n} b.",
     "submitInIs": "Odevzdat v IS",
@@ -1446,6 +1501,15 @@
     "openOne": "{n} otevřená",
     "openFew": "{n} otevřené",
     "openOther": "{n} otevřených",
-    "nothingDueSoon": "Nic k odevzdání do 14 dní"
+    "nothingDueSoon": "Nic k odevzdání do 14 dní",
+    "instructions": "Pokyny"
+  },
+  "support": {
+    "question": "Podpořil/a bys reIS?",
+    "note": "Jednorázově 99 Kč. Jen se ptáme.",
+    "yes": "Ano",
+    "no": "Ne",
+    "thanks": "Díky! Tvůj zájem jsme započítali.",
+    "thanksNote": "Jen se ptáme, nic se nestrhlo."
   }
 }

@@ -22,6 +22,18 @@
     "outletFew": "{count} outlets",
     "outletOther": "{count} outlets"
   },
+  "iskam": {
+    "show": "Show ISIC balance",
+    "label": "ISIC · Main account",
+    "checking": "Loading balance",
+    "unavailable": "Balance unavailable right now",
+    "topUp": "Top up",
+    "amount": "Amount (CZK)",
+    "card": "Pay by card",
+    "gpay": "Google Pay",
+    "invalid": "Enter a whole amount from 1 to 15,000 CZK",
+    "failed": "Could not start the payment"
+  },
   "settings": {
     "title": "Settings",
     "reportBug": "Report Bug / Idea",
@@ -45,7 +57,11 @@
     "foodDebit": "Food Debit",
     "logoutConfirmTitle": "Sign out of the app?",
     "logoutConfirmBody": "Your sign-in and downloaded data are removed from this phone. You'll need to sign in to IS again next time.",
-    "logoutFailed": "Signing out failed. Please try again."
+    "logoutFailed": "Signing out failed. Please try again.",
+    "study": "Study",
+    "studyHint": "You have more than one study in IS. reIS shows the subjects, exams and plan of the one selected.",
+    "studySwitching": "Switching study…",
+    "studySwitchFailed": "Could not switch study. Please try again."
   },
   "sidebar": {
     "profile": "Profile",
@@ -74,6 +90,8 @@
     "contactCenter": "Contact Center",
     "slides": "slides",
     "isPages": "Old IS",
+    "oldIsHint": "The original IS Mendelu – every page in one place. Pages open in a new tab.",
+    "oldIsCount": "Pages: {count}",
     "people": "People",
     "map": "Map"
   },
@@ -188,14 +206,17 @@
     "subjectPlaceholder": "Briefly describe the issue...",
     "description": "Details",
     "descriptionPlaceholder": "What happened? Where? How to reproduce?",
-    "contact": "Contact (optional)",
+    "bugHint": "Helps us: where in the app it was, which subject or file, what you expected, what happened, and on which device.",
+    "contact": "Email, in case we need to ask (optional)",
     "contactPlaceholder": "Email",
     "submit": "Send feedback",
+    "submitWithDiagnostics": "Send with technical details",
+    "submitWithoutDiagnostics": "Send without them",
     "sending": "Sending...",
     "successTitle": "Sent!",
     "successText": "Thanks for the help! We got your feedback.",
     "close": "Close",
-    "footer": "We automatically include technical info (version, browser) for faster fixes.",
+    "footer": "Every message includes the app version, browser, system, window size and screen name.",
     "toastSuccess": "Thanks for your feedback!",
     "toastError": "Couldn't send feedback.",
     "npsQuestion": "Would you recommend reIS to a friend? (1 - worst, 5 - best)",
@@ -350,6 +371,7 @@
     "file": {
       "openFailed": "Couldn't open the file.",
       "downloading": "Downloading…",
+      "opening": "Opening…",
       "savedToDownloads": "Saved to Downloads"
     },
     "documentNote": {
@@ -370,6 +392,10 @@
     }
   },
   "zaznamnik": {
+    "newPoints": "New points",
+    "notifyTitleOne": "New points: {subject}",
+    "notifyTitleMany": "New points in Záznamník",
+    "notifyChannel": "New points in Záznamník",
     "noData": "No assessment data.",
     "noAssessment": "This course has no continuous assessment or tests.",
     "nothingYet": "Nothing recorded yet.",
@@ -511,7 +537,6 @@
     "semester": "semester",
     "wholePlan": "Entire plan",
     "subjectCount": "subjects",
-    "creditsLastTwo": "Credits in the last 2 semesters",
     "creditsTitle": "Credits",
     "repeatWarning": "2nd enrollment",
     "gpa": "GPA",
@@ -925,8 +950,8 @@
     "allSocieties": "All",
     "myFaculty": "My faculty",
     "noEvents": "No events",
-    "thisWeek": "This week",
-    "nextWeek": "Next week",
+    "thisWeek": "Next 7 days",
+    "nextWeek": "In 1–2 weeks",
     "later": "Later",
     "today": "Today",
     "tomorrow": "Tomorrow",
@@ -940,6 +965,17 @@
     "nextMonth": "Next month",
     "createEvent": "Create event",
     "editEvent": "Edit event",
+    "kindLabel": "What you are posting",
+    "kindEvent": "Event",
+    "kindNotice": "Notice",
+    "kindEventHint": "In Events, on the map and in News.",
+    "kindNoticeHint": "Only in News — not in Events or on the map. Students see the title and the date; a link, if given, opens on tap.",
+    "createNotice": "New notice",
+    "editNotice": "Edit notice",
+    "noticeName": "Notice title",
+    "publishNotice": "Publish notice",
+    "toastPublishedNotice": "Notice published",
+    "noticeEndDate": "Show until (optional)",
     "saveChanges": "Save changes",
     "upcoming": "Upcoming",
     "past": "Past",
@@ -975,6 +1011,8 @@
     "publish": "Publish event",
     "clickToPlace": "Tap the button, then mark the spot on the map",
     "draftPinLabel": "Event location — click to change",
+    "placeName": "Place name",
+    "placeNameHint": "Shown on the event card, e.g. Yak",
     "venueLabel": "Where",
     "venueOffcampus": "In town",
     "venueCampus": "Campus",
@@ -1025,6 +1063,11 @@
         "ground": "the ground floor",
         "below": "basement {n}"
       }
+    },
+    "osmAccess": {
+      "title": "The map needs one permission",
+      "text": "OpenStreetMap blocks the map tiles when it can't tell who is asking. Allow reIS to introduce itself.",
+      "allow": "Allow"
     }
   },
   "admin": {
@@ -1098,14 +1141,23 @@
       "unknown": "not set",
       "loadFailed": "Could not load statistics.",
       "signals": "Features (30 days)",
-      "signalsNote": "Installs, not people. The map counts after three seconds on screen; eduroam is split between “the app configured the network” and “we handed over a profile” — a handed-over profile still has to be installed by the student.",
+      "signalsNote": "Installs, not people. The map counts after three seconds on screen; eduroam is split between “the app configured the network” and “we handed over a profile” — a handed-over profile still has to be installed by the student. Support: how many installs saw the question and how many answered “Yes” – nothing is paid.",
       "signalMapDwell": "Map for 3+ seconds",
       "signalEduroamConfigured": "eduroam configured by the app",
       "signalEduroamDelivered": "eduroam profile handed over",
+      "signalSupportSeen": "Support question shown",
+      "signalSupportYes": "“Yes” to 99 CZK support",
       "signalInstalls": "installs",
-      "topEvents": "Most-opened events on the map",
+      "reachTitle": "Events: News and map side by side",
+      "reachNotice": "notice",
+      "reachViews": "Views in News",
+      "reachClicks": "Clicks in News",
+      "reachMap": "Opens on the map",
+      "reachRatio": "Clicks per view",
+      "reachAll": "Show all {count}",
+      "reachFewer": "Show fewer",
+      "reachNote": "Counts of opens, not people. News views count once per device, a click counts every tap (so the ratio can pass 100 %), the map counts every open. News counts since publication, the map only since 22 Sep 2026, so the map figure undercounts older events. News and map are not joined: nothing records who saw what, so neither a total nor an overlap of people can be read from them.",
       "mapViews": "opens",
-      "mapViewsNote": "A count of opens, not of people — no identifier sits behind these numbers.",
       "trendAria": "Trend: {label}, last {days} days, {total} {unit} in total, peak {max} in a day.",
       "trendWithheld": "No chart for this signal yet — under 5 installs in 30 days.",
       "goneQuietHint": "Share of devices that used reIS on 2+ days of at least one week but have not opened it for 14 days. Devices, not people — a reinstall counts too.",
@@ -1435,6 +1487,9 @@
     "closed": "Closed",
     "nothingUploaded": "Nothing uploaded",
     "uploaded": "Submitted",
+    "unconfirmed": "Uploaded, not confirmed",
+    "unconfirmedShort": "Not confirmed",
+    "confirmInIs": "Confirm in IS",
     "until": "due {date}",
     "points": "{n} pts",
     "submitInIs": "Submit in IS",
@@ -1446,6 +1501,15 @@
     "openOne": "{n} open",
     "openFew": "{n} open",
     "openOther": "{n} open",
-    "nothingDueSoon": "Nothing due in the next 14 days"
+    "nothingDueSoon": "Nothing due in the next 14 days",
+    "instructions": "Instructions"
+  },
+  "support": {
+    "question": "Would you support reIS?",
+    "note": "One-time 99 CZK. Just asking.",
+    "yes": "Yes",
+    "no": "No",
+    "thanks": "Thanks! We've counted your interest.",
+    "thanksNote": "Just asking, nothing was charged."
   }
 }

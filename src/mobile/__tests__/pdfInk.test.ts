@@ -276,14 +276,50 @@ describe('openPdfWithInk', () => {
     expect((await readIndex(fs))[key]?.date).toBe('12. 3. 2026');
   });
 
-  it('opens the stale copy when IS is unreachable', async () => {
+  // The fake `open` above resolves whatever it is handed; the plugin does not.
+  // PdfInkPlugin.swift rejects `badArguments` when the current file has no
+  // pdfPath, so the stale copy must reach it WITH its path — report #32.
+  it.each([
+    [
+      'the fetch throws',
+      (f: ReturnType<typeof harness>['fetchPdf']) => f.mockRejectedValueOnce(new Error('offline')),
+    ],
+    [
+      'IS serves a page instead of the file',
+      (f: ReturnType<typeof harness>['fetchPdf']) => f.mockResolvedValueOnce(null),
+    ],
+  ])('hands the plugin the stale copy as the current file when %s', async (_, failFetch) => {
     const { deps, input, open, fetchPdf, fs } = harness();
     const key = await pdfInkKey(input.courseCode, input.fileLink);
     await store(fs, key, pdf(), { date: 'old date', name: input.name }, 1000);
-    fetchPdf.mockRejectedValueOnce(new Error('offline'));
+    failFetch(fetchPdf);
+    open.mockImplementationOnce(async (o) => {
+      const { currentLink, files } = o as {
+        currentLink: string;
+        files: { link: string; pdfPath: string | null }[];
+      };
+      if (!files.find((f) => f.link === currentLink)?.pdfPath) {
+        throw Object.assign(new Error('currentLink has no cached pdfPath'), {
+          code: 'badArguments',
+        });
+      }
+      return { shown: [currentLink] };
+    });
 
     expect((await openPdfWithInk(deps, input)).kind).toBe('shown');
-    expect(open).toHaveBeenCalledTimes(1);
+    // Still stale: the next online open must refetch.
+    expect((await readIndex(fs))[key]?.date).toBe('old date');
+  });
+
+  it('falls back to the download when only an index entry is left and IS serves a page', async () => {
+    const { deps, input, open, fetchPdf, fs } = harness();
+    const key = await pdfInkKey(input.courseCode, input.fileLink);
+    await store(fs, key, pdf(), { date: 'old date', name: input.name }, 1000);
+    await fs.remove(pdfPath(key));
+    fetchPdf.mockResolvedValueOnce(null);
+
+    expect(await openPdfWithInk(deps, input)).toEqual({ kind: 'notPdf' });
+    expect(open).not.toHaveBeenCalled();
   });
 
   it('fails without opening when nothing is cached and the fetch throws', async () => {

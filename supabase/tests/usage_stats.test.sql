@@ -16,7 +16,7 @@ begin
   perform public.track_daily_usage('22222222-2222-2222-2222-222222222222', 'PEF', 'ios');
   reset role;
   select faculty, platform, open_count into v_f, v_p, v_n from public.daily_active_usage
-   where student_id = '22222222-2222-2222-2222-222222222222' and usage_date = current_date;
+   where student_id = '22222222-2222-2222-2222-222222222222' and usage_date = (now() at time zone 'Europe/Prague')::date;
   if v_n is distinct from 2 then raise exception 'open_count not incremented: %', v_n; end if;
   if v_f is distinct from 'PEF' or v_p is distinct from 'ios' then raise exception 'dimensions not stored: % %', v_f, v_p; end if;
 end $$;
@@ -29,7 +29,7 @@ begin
   perform public.track_daily_usage('33333333-3333-3333-3333-333333333333', null, 'toaster');
   reset role;
   select count(*), max(platform) into v_n, v_p from public.daily_active_usage
-   where student_id = '33333333-3333-3333-3333-333333333333' and usage_date = current_date;
+   where student_id = '33333333-3333-3333-3333-333333333333' and usage_date = (now() at time zone 'Europe/Prague')::date;
   if v_n <> 1 then raise exception 'row not counted: % rows', v_n; end if;
   if v_p is not null then raise exception 'invalid platform stored'; end if;
 end $$;
@@ -42,7 +42,7 @@ begin
   perform public.track_daily_usage('44444444-4444-4444-4444-444444444444', 'HOGWARTS', null);
   reset role;
   select count(*), max(faculty) into v_n, v_f from public.daily_active_usage
-   where student_id = '44444444-4444-4444-4444-444444444444' and usage_date = current_date;
+   where student_id = '44444444-4444-4444-4444-444444444444' and usage_date = (now() at time zone 'Europe/Prague')::date;
   if v_n <> 1 then raise exception 'row not counted: % rows', v_n; end if;
   if v_f is not null then raise exception 'invalid faculty stored'; end if;
 end $$;

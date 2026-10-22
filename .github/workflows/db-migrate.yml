@@ -1,0 +1,62 @@
+name: Database migrations
+
+# Called by ship.yml before the three stores, which `need` it: prod gets the
+# release's new supabase/migrations files BEFORE any store gets the build, so a
+# build never reaches a student ahead of the column or RPC it calls. A file
+# that fails is rolled back and not recorded, and no store is submitted.
+# With nothing pending it changes nothing, so re-running is safe.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+      ref:
+        required: false
+        type: string
+        default: ''
+      dry_run:
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  database:
+    name: Database migrations (prod)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: supabase-prod-migrations
+      cancel-in-progress: false
+    steps:
+      # Before anything touches prod: only a reIS release tag (not mcp-v*).
+      - name: Refuse anything but a vX.Y.Z tag
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            || { echo "::error::'$TAG' is not a release tag (vX.Y.Z)."; exit 1; }
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || format('refs/tags/{0}', inputs.tag) }}
+          persist-credentials: false
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: 2.121.0
+      # Writes only for a real release: the tag itself (a PR dry run passes a
+      # `ref`) with dry_run off. Everything else lists what would apply.
+      - name: Apply pending migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          MODE: ${{ (!inputs.dry_run && (inputs.ref || '') == '') && 'apply' || 'dry-run' }}
+        run: |
+          set -euo pipefail
+          [ -n "$SUPABASE_ACCESS_TOKEN" ] || { echo "::error::Missing secret: SUPABASE_ACCESS_TOKEN"; exit 1; }
+          if [ "$MODE" = apply ]; then
+            supabase db push --linked --project-ref zvbpgkmnrqyprtkyxkwn --skip-vault --yes
+          else
+            supabase db push --linked --project-ref zvbpgkmnrqyprtkyxkwn --skip-vault --dry-run
+          fi

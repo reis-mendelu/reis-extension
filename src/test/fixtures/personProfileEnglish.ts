@@ -4,7 +4,7 @@
  *
  * These are the evidence for teaching the parser the English page (#206). The
  * Czech twins already live in `personProfileTeacher.ts` and in
- * `src/api/__tests__/fixtures/clovek-janda.html`, so every assertion below has
+ * `src/api/__tests__/fixtures/clovek-private-email.html`, so every assertion below has
  * a matched pair and a language flip can be proven not to lose a field.
  *
  * Verbatim apart from the page chrome (head, nav, portlets, footer) and the
@@ -41,6 +41,6 @@ export const TEACHER_PROFILE_HTML_EN = `
 
 /** Student profile — programme, study type and year/semester sentences. */
 export const STUDENT_PROFILE_HTML_EN = `
-<table><tbody ><tr class="" ><td class="odsazena" valign="top" width="250" align="left"><img src="foto.pl?id=120349;lang=en" width="154" height="192" alt=""   /></td><td class="odsazena" valign="top" align="left"><table><tbody ><tr class="" ><td class="odsazena" align="left"><b><font size="+1">Kryštof Janda</font></b></td></tr><tr class="" ><td class="odsazena" align="left">Identification number: 120349</td></tr><tr class="" ><td class="odsazena" align="left">University e-mail: <a href="../posta/nova_zprava.pl?uzivatel=120349;lang=en">xjanda [at] node.mendelu.cz</a></td></tr><tr class="" ><td class="odsazena" align="left">&nbsp;</td></tr><tr class="" ><td class="odsazena" align="left"><b>B0613A140025&nbsp;&nbsp;Open Informatics B-OI</b></td></tr><tr class="" ><td class="odsazena" align="left">FBE B-OI-ZBOI pres [term 2, year 1]</td></tr><tr class="" ><td class="odsazena" align="left">Bachelor type of study, full-time form</td></tr><tr class="" ><td class="odsazena" align="left">1st year of study / 2nd semester of study</td></tr></tbody></table><p></p></td></tr></tbody></table>
+<table><tbody ><tr class="" ><td class="odsazena" valign="top" width="250" align="left"><img src="foto.pl?id=900349;lang=en" width="154" height="192" alt=""   /></td><td class="odsazena" valign="top" align="left"><table><tbody ><tr class="" ><td class="odsazena" align="left"><b><font size="+1">Jakub Dvořák</font></b></td></tr><tr class="" ><td class="odsazena" align="left">Identification number: 900349</td></tr><tr class="" ><td class="odsazena" align="left">University e-mail: <a href="../posta/nova_zprava.pl?uzivatel=900349;lang=en">xdvorak [at] node.mendelu.cz</a></td></tr><tr class="" ><td class="odsazena" align="left">&nbsp;</td></tr><tr class="" ><td class="odsazena" align="left"><b>B0613A140025&nbsp;&nbsp;Open Informatics B-OI</b></td></tr><tr class="" ><td class="odsazena" align="left">FBE B-OI-ZBOI pres [term 2, year 1]</td></tr><tr class="" ><td class="odsazena" align="left">Bachelor type of study, full-time form</td></tr><tr class="" ><td class="odsazena" align="left">1st year of study / 2nd semester of study</td></tr></tbody></table><p></p></td></tr></tbody></table>
 <table><tbody ><tr class="" ><td class="odsazena" colspan="2" align="left">User forwards the university mail to a&nbsp;different address (distribution server&nbsp;office365).</td></tr><tr class="" ><td class="odsazena" colspan="2" align="left">&nbsp;</td></tr><tr class="" ><td class="odsazena" valign="top" align="left">Private e-mail:</td><td class="odsazena" align="left"><a href="mailto:test.student@example.com">test.student [at] example.com</a></td></tr></tbody></table>
 `;

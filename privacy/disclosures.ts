@@ -48,7 +48,7 @@ const INSTALL_ID_APPLE: AppleType = {
 export const FLOWS: Flow[] = [
   {
     id: 'daily_count',
-    what: 'One row per install per day: random install id, faculty, base study-programme code and platform labels.',
+    what: 'One row per install per day: random install id, faculty, base study-programme code, platform and app version labels.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/feedback.ts'],
@@ -57,7 +57,7 @@ export const FLOWS: Flow[] = [
       [
         'Daily count',
         'once a day',
-        'a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI) and platform as group labels. The survey and the feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation.',
+        'a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI), platform and app version (e.g. 5.4.1) as group labels. The survey and the feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation.',
       ],
     ],
     stores: {
@@ -69,16 +69,16 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'report',
-    what: 'A report the student writes: type, title, message, optional contact, screen, app version, browser, viewport.',
+    what: 'A report the student writes: type, title, message, optional contact, screen, app version, browser, viewport, and the platform and OS version it was sent from (no device model).',
     when: 'student-action',
     identifier: 'contact',
     files: ['src/api/suggestions.ts'],
-    calls: ['submit_suggestion_v2'],
+    calls: ['submit_suggestion_v3'],
     policyRows: [
       [
         'Feedback',
         'you press send',
-        'your message, any contact detail you type, the screen name, app version, browser, window size',
+        'your message, any contact detail you type, the screen name, app version, browser, window size, platform and OS version (no device model)',
       ],
     ],
     stores: {
@@ -93,16 +93,16 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'report_attachments',
-    what: 'Only what the student adds to a report: a picked screenshot (re-encoded JPEG), and — if ticked — the cleaned error/warning log with environment and sync flags. Kept 90 days or until resolved.',
+    what: 'Only what the student adds to a report: a picked screenshot (re-encoded JPEG), and — only if the student chooses it (a box on an idea, the "Odeslat s technickými údaji" button on a bug) — the cleaned error/warning log with environment and sync flags. Kept 2 years, then deleted automatically; sooner on request.',
     when: 'student-action',
     identifier: 'contact',
     files: ['src/api/suggestions.ts'],
-    calls: ['submit_suggestion_v2'],
+    calls: ['submit_suggestion_v3'],
     policyRows: [
       [
         'Report attachments',
         'only what you add to a report, when you press send',
-        'a **screenshot you pick** yourself, re-encoded on your device so photo metadata and location are removed; and, **only if you tick the box**, the recent reIS errors and warnings from this session, with link parameters, email addresses, long numbers and coordinates already blanked out, plus platform, OS version, language and sync status. **Not linked to the install identifier.**',
+        'a **screenshot you pick** yourself, re-encoded on your device so photo metadata and location are removed; and, **only if you choose it** (tick the box, or press *Send with technical details* on a bug report), the recent reIS errors and warnings from this session, with link parameters, email addresses, long numbers and coordinates already blanked out, plus platform, OS version, language and sync status. **Not linked to the install identifier.**',
       ],
     ],
     stores: {
@@ -164,7 +164,7 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'feature_counters',
-    what: 'Three feature counters on the random install id, one whitelisted label each.',
+    what: 'Five feature counters on the random install id, one whitelisted label each.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/featureUsage.ts'],
@@ -184,6 +184,16 @@ export const FLOWS: Flow[] = [
         'eduroam profile handed over',
         'a profile is prepared for you to install (Mac, Windows)',
         'the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it',
+      ],
+      [
+        'Support question shown',
+        'the question whether you would support reIS is on your screen (Novinky)',
+        'the random install identifier and the fixed `support_prompt_seen` label',
+      ],
+      [
+        'Support question answered',
+        'you answer "Yes" to it. Nothing is charged; reIS has no way to take a payment from you',
+        'the random install identifier and the fixed `support_prompt_yes` label',
       ],
     ],
     stores: {

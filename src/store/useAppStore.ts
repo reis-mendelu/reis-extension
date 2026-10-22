@@ -29,6 +29,7 @@ import { createContextSlice } from './slices/createContextSlice';
 import { createPulseSlice } from './slices/createPulseSlice';
 import { createCustomEventsSlice } from './slices/createCustomEventsSlice';
 import { createNotificationSlice } from './slices/createNotificationSlice';
+import { createSupportQuestionSlice } from './slices/createSupportQuestionSlice';
 import { createSearchSlice } from './slices/createSearchSlice';
 import { createRecentPdfsSlice } from './slices/createRecentPdfsSlice';
 import { createPdfPositionsSlice } from './slices/createPdfPositionsSlice';
@@ -47,6 +48,7 @@ import { logError } from '../utils/reportError';
 import { createImpersonationSlice } from './slices/createImpersonationSlice';
 import { createReportSlice } from './slices/createReportSlice';
 import { createRouteSlice } from './slices/createRouteSlice';
+import { createOsmTileAccessSlice } from './slices/createOsmTileAccessSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 import { resetRealDataStores } from '../services/loadRealDataSnapshot';
@@ -86,6 +88,7 @@ export const useAppStore = create<AppState>()(
     ...createPulseSlice(...a),
     ...createCustomEventsSlice(...a),
     ...createNotificationSlice(...a),
+    ...createSupportQuestionSlice(...a),
     ...createSearchSlice(...a),
     ...createRecentPdfsSlice(...a),
     ...createPdfPositionsSlice(...a),
@@ -99,6 +102,7 @@ export const useAppStore = create<AppState>()(
     ...createAdminStatsSlice(...a),
     ...createSuggestionsSlice(...a),
     ...createRouteSlice(...a),
+    ...createOsmTileAccessSlice(...a),
     ...createDemoSlice(...a),
     ...createImpersonationSlice(...a),
     ...createReportSlice(...a),
@@ -144,6 +148,7 @@ export const initializeStore = async () => {
 
   // Tier 1: User-visible data — load immediately
   s.loadNotificationState();
+  s.loadSupportQuestion();
   s.fetchNotifications();
   s.fetchSchedule();
   s.fetchExams();

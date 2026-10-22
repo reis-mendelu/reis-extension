@@ -49,8 +49,13 @@ export function useVenuePicker(
   // old room and its coordinate under the new pin.
   const current = draftCoord === null || sameCoord(draftCoord, pick.at);
   const room = current ? pick.room : null;
-  const placeName = current ? pick.placeName : null;
+  const pickedName = current ? pick.placeName : null;
   const coord = room?.coord ?? draftCoord;
+  // A name typed by hand, for a place the search cannot find. Unlike the
+  // picked name it is the society's own words, so it stays when the pin moves.
+  // null = untouched, so the picked name (or none) applies; '' = cleared.
+  const [typedName, setTypedName] = useState<string | null>(null);
+  const placeName = room ? null : typedName !== null ? typedName.trim() || null : pickedName;
 
   // The draft pin shows every venue before publishing. Beside the map the
   // camera just goes there; on a phone the map is behind a tab, so going
@@ -61,10 +66,12 @@ export function useVenuePicker(
     if (!isPhone) previewDraftOnMap();
   };
   const pickRoom = (sel: Room) => {
+    setTypedName(null);
     setPick({ room: sel, placeName: null, at: sel.coord });
     pinned(sel.coord);
   };
   const pickPlace = (sel: { name: string; coord: Coord }) => {
+    setTypedName(null);
     setPick({ room: null, placeName: sel.name, at: sel.coord });
     pinned(sel.coord);
   };
@@ -75,6 +82,7 @@ export function useVenuePicker(
     pinned(c);
   };
   const clearVenue = () => {
+    setTypedName(null);
     setPick({ room: null, placeName: null, at: null });
     clearDraftCoord();
   };
@@ -86,6 +94,9 @@ export function useVenuePicker(
   return {
     room,
     placeName,
+    // What the name field shows: what was typed, else the picked name.
+    placeNameField: typedName ?? pickedName ?? '',
+    setTypedName,
     coord,
     isPhone,
     previewDraftOnMap,

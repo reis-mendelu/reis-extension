@@ -86,8 +86,9 @@ export function FileRowActions({
           // sitting beside it: the row is already several controls wide at
           // 320px, and an extra element would push the type badge off.
           // Disabled while it runs so the affordance stops claiming to start
-          // something the hook would refuse anyway.
-          disabled={isDownloading}
+          // something the hook would refuse anyway — and while the reader is
+          // fetching the same file, which would be a second copy of it.
+          disabled={isDownloading || isOpening}
           aria-busy={isDownloading || undefined}
           data-testid={`file-download-${subFile.link}`}
           onClick={(e) => {
@@ -110,7 +111,7 @@ export function FileRowActions({
           // while the first is in flight, so this is about the affordance,
           // not the fetch: the row is showing a spinner and this button
           // should not still look like it is offering to do something.
-          disabled={isOpening}
+          disabled={isOpening || isDownloading}
           onClick={(e) => {
             e.stopPropagation();
             onViewPdf(subFile.link, { name: displayName, date });

@@ -41,6 +41,14 @@ describe('SuggestionsInbox', () => {
     expect(screen.getByText('student@mendelu.cz')).toBeInTheDocument();
   });
 
+  it('shows the platform and OS a report was sent from, when it has them', () => {
+    useAppStore.setState({
+      suggestions: [{ ...row, platform: 'ios', os_version: 'iOS 18' }],
+    });
+    render(<SuggestionsInbox />);
+    expect(screen.getByText('ios · iOS 18')).toBeInTheDocument();
+  });
+
   // jsdom has no layout, so the wrap itself cannot be asserted here — it was
   // measured in a real browser (title span scrollWidth 1250 → 239 at 320px).
   // This pins the class that makes it possible: without min-w-0 the flex item's

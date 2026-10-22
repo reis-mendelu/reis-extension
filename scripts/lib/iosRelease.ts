@@ -166,3 +166,25 @@ export function parseReleaseArgs(argv: string[]): ReleaseArgs {
   }
   return args;
 }
+
+/**
+ * `xcodebuild` flags that sign with the App Store Connect API key instead of an
+ * Apple ID signed in to Xcode. A CI runner has no Apple ID, so with automatic
+ * signing and `-allowProvisioningUpdates` this is the only way it can fetch or
+ * create the distribution certificate and profile. Pass them to BOTH the archive
+ * and the export.
+ */
+export function xcodeAuthArgs(creds: {
+  keyId: string;
+  issuerId: string;
+  keyPath: string;
+}): string[] {
+  return [
+    '-authenticationKeyPath',
+    creds.keyPath,
+    '-authenticationKeyID',
+    creds.keyId,
+    '-authenticationKeyIssuerID',
+    creds.issuerId,
+  ];
+}

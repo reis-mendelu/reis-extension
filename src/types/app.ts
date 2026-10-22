@@ -12,6 +12,7 @@ export const APP_VIEWS = [
   'studyPlan',
   'erasmus',
   'map',
+  'oldIs',
 ] as const;
 
 export type AppView = (typeof APP_VIEWS)[number];
