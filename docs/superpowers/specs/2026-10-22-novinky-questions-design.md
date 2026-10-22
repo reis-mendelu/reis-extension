@@ -64,17 +64,49 @@ of the 1–5 row at 320px.
 
 ## Decision 2: satisfaction, which of these?
 
-reIS already asks for satisfaction: the NPS prompt asks for a 1–5 rating and
-a reason once per semester, on the install id. It has 131 answers since
-March; 88 of them are a 5.
+**What exists today** (checked 2026-10-22 on `origin/test` and in prod):
+- **The rating prompt reaches only the extension.** `NpsBanner` asks for a
+  1–5 rating once per semester, plus a fixed reason after a 1–3. It is
+  mounted only in `src/components/AppMain.tsx`, the extension's tree. The
+  phone and iPad apps, about 86% of installs, have never shown it, and no
+  guard records that as a decision.
+- **Its answers are extension-only.** There are 131 in prod, averaging
+  4.40: 69 in September, 28 in October, the latest today. 16 of them carry a
+  reason.
+- **Nobody can see them.** The admin console has no view of
+  `feedback_responses`. The old reis-admin `/analytics` NPS chart was lost
+  in the merge (`docs/superpowers/specs/2026-07-05-reis-admin-merge-audit.md:38`).
 
-- **(a) Keep the NPS prompt as the satisfaction number** and use Novinky
-  only for specific questions ("Chceš X?"). That avoids two satisfaction
-  numbers that disagree. *(My lean.)*
+So today's satisfaction number speaks for one student in seven, and nobody
+can see it.
+
+The options:
+- **(a) Keep the banner as it is.** It costs nothing, but the number stays
+  extension-only and invisible.
+- **(a′) Mount the banner on the phone tree too, and add an admin view of
+  `feedback_responses`.** This keeps the reason step, the per-semester
+  cadence and comparability with the 131 answers. The cost is two pieces of
+  UI and one new console card, separate from this feature, and the answers
+  stay on the install id.
 - **(b) 👍/👎 in Novinky.** It is quicker to answer and costs the same as
-  Ano/Ne, but it duplicates NPS with a cruder scale.
-- **(c) 1–5 in Novinky.** It is the same scale as NPS on a second surface,
-  and its answers per value are too few to read.
+  Ano/Ne, but the scale is cruder than what we have.
+- **(d) A 1–5 question in Novinky on both trees, and retire the banner.**
+  *(My lean, if Decision 1 is (i).)*
+  - **What it gains:** one mechanism, both trees, and no install id. B's
+    results card is also the admin view that is missing today.
+  - **What it costs:**
+    - The reason step goes; the existing Report form covers "why".
+    - The per-semester cadence becomes "post a new question each semester"
+      in the console.
+    - The 131 old answers are not comparable, because the surface and the
+      identifier differ.
+    - It needs the buttons list from Decision 1. With Ano/Ne only, (d) is
+      not possible, and (a′) is the fix.
+  - **Retiring the banner** means removing `NpsBanner` and its slice in the
+    same PR. Keep `submit_feedback` in the DB while released extension
+    builds still call it.
+- **(c) 1–5 in Novinky beside the banner.** Two satisfaction numbers on two
+  surfaces that can disagree. Not recommended.
 
 ## Decision 3: reByt now or later?
 
@@ -158,7 +190,8 @@ At 100–200 answers that is not worth it; target the question instead.
 ## To decide together
 
 1. **Shape:** a buttons list (i), Ano/Ne only (ii), or a type per kind (iii)?
-2. **Satisfaction:** keep NPS (a), 👍/👎 in Novinky (b), or 1–5 in Novinky (c)?
+2. **Satisfaction:** keep the banner (a), banner on both trees plus an admin
+   view (a′), 👍/👎 (b), or a 1–5 question that retires the banner (d)?
 3. **reByt:** a notice now, or wait for the link button?
 4. ~~**After answering:** does the row stay as "Díky" until it ends, or
    disappear?~~ **Decided 2026-10-22:** it stays as "Díky" until the question
