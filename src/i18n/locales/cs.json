@@ -265,19 +265,6 @@
     "footer": "Ke každé zprávě přidáme verzi aplikace, prohlížeč, systém, velikost okna a název obrazovky.",
     "toastSuccess": "Díky za zpětnou vazbu!",
     "toastError": "Nepodařilo se odeslat zpětnou vazbu.",
-    "npsQuestion": "Doporučil/a bys reIS kamarádovi? (1 - nejhorší, 5 - nejlepší)",
-    "npsThank": "Díky za hodnocení!",
-    "sharePrompt": "Pošli to spolužákovi, co ještě bojuje s IS.",
-    "shareCopy": "Kopírovat odkaz",
-    "shareCopied": "Zkopírováno!",
-    "reasonPrompt": "Co bylo špatně?",
-    "reason": {
-      "missing_feature": "Nemá to co potřebuji",
-      "bug": "Nefunguje to",
-      "confusing": "Nepřehledné",
-      "slow": "Pomalé",
-      "other": "Jiné"
-    },
     "toastOffline": "Nejsi online. Zkus to znovu, až budeš připojený.",
     "toastRateLimited": "Teď jsme přijali hodně zpráv. Zkus to prosím za chvíli.",
     "reportLink": "Chybí tu něco? Nahlásit",
@@ -1511,5 +1498,8 @@
     "no": "Ne",
     "thanks": "Díky! Tvůj zájem jsme započítali.",
     "thanksNote": "Jen se ptáme, nic se nestrhlo."
+  },
+  "questions": {
+    "thanks": "Díky za odpověď: {answer}"
   }
 }

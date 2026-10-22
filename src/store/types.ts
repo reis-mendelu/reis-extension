@@ -229,14 +229,6 @@ export interface DocumentsSlice {
   setIsDocumentsOpen: (open: boolean) => void;
 }
 
-export interface FeedbackSlice {
-  feedbackEligible: boolean;
-  feedbackDismissed: boolean;
-  loadFeedbackState: () => Promise<void>;
-  submitNps: (rating: number, reason?: string) => Promise<void>;
-  dismissFeedback: () => Promise<void>;
-}
-
 export interface StudyPlanSlice {
   studyPlanDual: DualLanguageStudyPlan | null;
   /** true once the first fetchStudyPlan() call has fully resolved */
@@ -716,7 +708,6 @@ export type AppState = ScheduleSlice &
   SimilarSubjectsSlice &
   EduroamSlice &
   DocumentsSlice &
-  FeedbackSlice &
   StudyPlanSlice &
   CvicneTestsSlice &
   ErasmusSlice &
@@ -729,6 +720,7 @@ export type AppState = ScheduleSlice &
   PulseSlice &
   NotificationSlice &
   import('./slices/createSupportQuestionSlice').SupportQuestionSlice &
+  import('./slices/createQuestionsSlice').QuestionsSlice &
   BulletinSlice &
   ViewportSlice &
   MobileUiSlice &

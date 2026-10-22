@@ -10,9 +10,9 @@ import { baseProgramme } from '../utils/partnerAudience';
 import { getAppVersion } from '../utils/appIdentity';
 
 /**
- * Both writes here identify the DEVICE, never the student.
+ * The daily install count. It identifies the DEVICE, never the student.
  *
- * They used to send `SHA-256(studentId)`, which reads as anonymisation and is
+ * It used to send `SHA-256(studentId)`, which reads as anonymisation and is
  * not: IS student ids are six or seven digits, so the whole preimage space is
  * under ten million and a rainbow table reverses the digest in seconds. That
  * made every row a recoverable student identifier sitting in Supabase, which is
@@ -20,41 +20,16 @@ import { getAppVersion } from '../utils/appIdentity';
  *
  * The replacement is a random per-install UUID (see services/identity). The
  * consequence is deliberate and must be read that way in any dashboard built on
- * these tables: they count INSTALLS, not people. One student on a phone and a
- * laptop is two rows, and a reinstall is a third. Where a per-person number is
- * needed, ask the student — an estimate that can be defended beats an exact
- * number that cannot.
+ * it: it counts INSTALLS, not people. One student on a phone and a laptop is
+ * two rows, and a reinstall is a third. Where a per-person number is needed,
+ * ask the student — an estimate that can be defended beats an exact number
+ * that cannot.
+ *
+ * The extension's NPS banner (`submit_feedback`) also lived here until it was
+ * retired for the console's 1–5 question in Novinky (`api/questions.ts`,
+ * 2026-10). Its 131 rows stay in `feedback_responses` as history; released
+ * extension builds up to 5.5.0 still call `submit_feedback` until they update.
  */
-export async function submitFeedback(
-  feedbackType: 'nps' | 'one_change',
-  value: string,
-  semesterCode: string,
-  reason?: string
-): Promise<boolean> {
-  // Demo mode is a fabricated student; its feedback would pollute real rows.
-  if (isDemoMode()) return false;
-  // Same reason as trackDailyUsage below: `dev:web` and the preview are not
-  // students, and the NPS prompt is plain buttons any click-through will hit.
-  if (isHarnessEnabled(import.meta.env)) return false;
-  // Firefox: an NPS rating on the install id is "extension usage" data, which
-  // the student can switch off at install or in about:addons. Always true
-  // elsewhere — see utils/firefoxDataConsent.
-  if (!(await hasDataConsent('technicalAndInteraction'))) return false;
-
-  const { error } = await supabase.rpc('submit_feedback', {
-    p_student_id: await getInstallId(),
-    p_faculty_id: null,
-    p_study_semester: null,
-    p_feedback_type: feedbackType,
-    p_value: value,
-    p_semester_code: semesterCode,
-    p_reason: reason ?? null,
-  });
-  if (error) return false;
-
-  return true;
-}
-
 /**
  * One write per Prague day per page session, memoised the same way
  * `getInstallId` is.

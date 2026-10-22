@@ -7,7 +7,6 @@ import { StudyPlanPage } from './SubjectsPanel/StudyPlanPage';
 import { ErasmusPanel } from './ErasmusPanel';
 import { CampusMapView } from './CampusMap/CampusMapView';
 import { OldIsPanel } from './OldIsPanel';
-import { NpsBanner } from './Feedback/NpsBanner';
 
 interface AppMainProps {
   currentView: AppView;
@@ -52,7 +51,6 @@ export function AppMain({
         searchPrefillRef={searchPrefillRef}
         onShowMap={() => setCurrentView?.('map')}
       />
-      <NpsBanner />
       <div className="flex-1 pt-3 px-4 pb-1 overflow-hidden flex flex-col">
         <div className="flex-1 bg-base-100 rounded-lg shadow-sm border border-base-300 overflow-hidden">
           {currentView === 'calendar' && (

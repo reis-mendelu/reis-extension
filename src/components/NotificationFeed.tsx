@@ -4,6 +4,7 @@ import { useNotificationFeed } from '../hooks/useNotificationFeed';
 import { useDeadlineAlerts, type DeadlineAlert } from '../hooks/useDeadlineAlerts';
 import { NotificationDropdown } from './Notifications/NotificationDropdown';
 import { useSupportQuestion } from '../hooks/useSupportQuestion';
+import { useQuestions } from '../hooks/useQuestions';
 
 export function NotificationFeed({
   className = '',
@@ -18,6 +19,7 @@ export function NotificationFeed({
     useNotificationFeed();
   const { alerts: deadlineAlerts, markAllSeen, unseenCount } = useDeadlineAlerts();
   const support = useSupportQuestion();
+  const questions = useQuestions();
   useEffect(() => {
     if (isOpen) markAllSeen(deadlineAlerts.map((a) => a.id));
   }, [isOpen, markAllSeen, deadlineAlerts]);
@@ -43,10 +45,13 @@ export function NotificationFeed({
     };
   }, [isOpen, setIsOpen]);
 
-  // The support question counts until the dropdown is opened with it in, as
-  // on the phone's HeaderActions.
+  // The support question and console questions count until the dropdown is
+  // opened with them in, as on the phone's HeaderActions.
   const unreadCount =
-    notifications.filter((n) => !readIds.has(n.id)).length + unseenCount + support.badge;
+    notifications.filter((n) => !readIds.has(n.id)).length +
+    unseenCount +
+    support.badge +
+    questions.badge;
 
   return (
     <div className={`relative ${className}`}>

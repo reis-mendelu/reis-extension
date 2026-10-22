@@ -24,6 +24,7 @@ export function useNotificationFeed() {
   const markNotificationsRead = useAppStore((s) => s.markNotificationsRead);
   const markNotificationViewed = useAppStore((s) => s.markNotificationViewed);
   const fetchNotifications = useAppStore((s) => s.fetchNotifications);
+  const refreshQuestions = useAppStore((s) => s.refreshQuestions);
 
   const societies = useAppStore((s) => s.societies);
   const viewer = useViewer();
@@ -66,9 +67,10 @@ export function useNotificationFeed() {
     [allNotifications, societies, viewer, todayIso]
   );
 
+  // Novinky's questions refresh with the feed they sit in.
   const load = useCallback(async () => {
-    await fetchNotifications();
-  }, [fetchNotifications]);
+    await Promise.all([fetchNotifications(), refreshQuestions()]);
+  }, [fetchNotifications, refreshQuestions]);
 
   useEffect(() => {
     const id = setInterval(load, 300000);

@@ -3,6 +3,7 @@ import { useAppStore } from '../../../store/useAppStore';
 import { useNotificationFeed } from '../../../hooks/useNotificationFeed';
 import { useDeadlineAlerts } from '../../../hooks/useDeadlineAlerts';
 import { useSupportQuestion } from '../../../hooks/useSupportQuestion';
+import { useQuestions } from '../../../hooks/useQuestions';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 /**
@@ -29,15 +30,20 @@ export function HeaderActions() {
   const { notifications, readIds } = useNotificationFeed();
   const { unseenCount } = useDeadlineAlerts();
   const support = useSupportQuestion();
+  const questions = useQuestions();
 
   // Deadlines count too, exactly as they do on desktop's NotificationFeed. The
   // calendar used to carry them in a strip above the day chips; that strip is
   // gone — Novinky is the one place for a deadline now — so without this a
   // closing registration or an assignment due in four hours would arrive with
   // no signal anywhere in the app.
-  // So does an unanswered support question, until Novinky is opened with it in.
+  // So does an unanswered support question or console question, until Novinky
+  // is opened with it in.
   const unreadCount =
-    notifications.filter((n) => !readIds.has(n.id)).length + unseenCount + support.badge;
+    notifications.filter((n) => !readIds.has(n.id)).length +
+    unseenCount +
+    support.badge +
+    questions.badge;
 
   const openBulletin = () => {
     // pushSheet, not the old `bulletinExpanded` flag: that flag was only read

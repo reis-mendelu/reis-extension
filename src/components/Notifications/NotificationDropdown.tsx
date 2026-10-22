@@ -4,6 +4,8 @@ import { NotificationItem } from './NotificationItem';
 import { DeadlineAlertItem } from './DeadlineAlertItem';
 import { SupportPrompt } from '../Support/SupportPrompt';
 import { useSupportQuestion } from '../../hooks/useSupportQuestion';
+import { QuestionList } from '../Questions/QuestionList';
+import { useQuestions } from '../../hooks/useQuestions';
 import { useOpenNotification } from '../../hooks/useOpenNotification';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { SpolekNotification } from '../../services/spolky';
@@ -37,7 +39,12 @@ export function NotificationDropdown({
   const isMobile = useIsMobile();
   // The phone's Novinky sheet asks it too (supportPromptOnBothTrees.test.ts).
   const support = useSupportQuestion();
-  const hasContent = notifications.length > 0 || deadlineAlerts.length > 0 || support.visible;
+  const questions = useQuestions();
+  const hasContent =
+    notifications.length > 0 ||
+    deadlineAlerts.length > 0 ||
+    support.visible ||
+    questions.visible.length > 0;
   // The phone's Novinky sheet runs this same hook. A row without a link used to
   // be a disabled button here while the phone opened it on the map.
   const { opensSomewhere, openNotification } = useOpenNotification({
@@ -58,6 +65,8 @@ export function NotificationDropdown({
           onShown={support.markSeen}
         />
       )}
+      {/* The phone's Novinky sheet mounts it too (questionsOnBothTrees.test.ts). */}
+      <QuestionList />
       {deadlineAlerts.length > 0 && (
         <div className="flex flex-col gap-2">
           {deadlineAlerts.map((alert) => (

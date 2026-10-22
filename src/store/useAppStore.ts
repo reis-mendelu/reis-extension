@@ -17,7 +17,6 @@ import { createSuccessRateSlice } from './slices/createSuccessRateSlice';
 import { createSimilarSubjectsSlice } from './slices/createSimilarSubjectsSlice';
 import { createEduroamSlice } from './slices/createEduroamSlice';
 import { createDocumentsSlice } from './slices/createDocumentsSlice';
-import { createFeedbackSlice } from './slices/createFeedbackSlice';
 import { createStudyPlanSlice } from './slices/createStudyPlanSlice';
 import { createCvicneTestsSlice } from './slices/createCvicneTestsSlice';
 import { createErasmusSlice } from './slices/createErasmusSlice';
@@ -30,6 +29,7 @@ import { createPulseSlice } from './slices/createPulseSlice';
 import { createCustomEventsSlice } from './slices/createCustomEventsSlice';
 import { createNotificationSlice } from './slices/createNotificationSlice';
 import { createSupportQuestionSlice } from './slices/createSupportQuestionSlice';
+import { createQuestionsSlice } from './slices/createQuestionsSlice';
 import { createSearchSlice } from './slices/createSearchSlice';
 import { createRecentPdfsSlice } from './slices/createRecentPdfsSlice';
 import { createPdfPositionsSlice } from './slices/createPdfPositionsSlice';
@@ -76,7 +76,6 @@ export const useAppStore = create<AppState>()(
     ...createSimilarSubjectsSlice(...a),
     ...createEduroamSlice(...a),
     ...createDocumentsSlice(...a),
-    ...createFeedbackSlice(...a),
     ...createStudyPlanSlice(...a),
     ...createCvicneTestsSlice(...a),
     ...createErasmusSlice(...a),
@@ -89,6 +88,7 @@ export const useAppStore = create<AppState>()(
     ...createCustomEventsSlice(...a),
     ...createNotificationSlice(...a),
     ...createSupportQuestionSlice(...a),
+    ...createQuestionsSlice(...a),
     ...createSearchSlice(...a),
     ...createRecentPdfsSlice(...a),
     ...createPdfPositionsSlice(...a),
@@ -149,6 +149,7 @@ export const initializeStore = async () => {
   // Tier 1: User-visible data — load immediately
   s.loadNotificationState();
   s.loadSupportQuestion();
+  s.loadQuestions();
   s.fetchNotifications();
   s.fetchSchedule();
   s.fetchExams();
@@ -202,7 +203,6 @@ export const initializeStore = async () => {
     await s2.hydrateLastClassmatesFetchedAt();
     await s2.hydrateLastExamClassmatesFetchedAt();
     s2.fetchZaznamnik();
-    s2.loadFeedbackState();
     s2.loadHiddenItems();
     // Before the calendar loads its blocks, so a retired RSVP block is never
     // drawn once (see retireSocietyFeatures). Never rejects.
