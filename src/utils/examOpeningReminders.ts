@@ -86,12 +86,15 @@ function idOf(key: string): number {
  * that open together therefore share a reminder. A term from "Kam se přihlásit
  * nemohu?" keeps IS's dates but never opens for this student, so it is skipped,
  * as in `getSectionState`. A reminder whose time has passed is not returned: the
- * bell already shows that opening.
+ * bell already shows that opening. `includeDue` returns it anyway while the
+ * opening is still ahead, for a scheduler deciding what to KEEP: inexact delivery
+ * can show a reminder after its time, and cancelling it then would lose it.
  */
 export function examOpeningReminders(
   exams: readonly ExamSubject[],
   now: Date,
-  language: Language
+  language: Language,
+  { includeDue = false }: { includeDue?: boolean } = {}
 ): ExamOpeningReminder[] {
   const isEn = language === 'en';
   const result: ExamOpeningReminder[] = [];
@@ -108,7 +111,7 @@ export function examOpeningReminders(
       if (!next) continue;
       const opensAt = next.at;
       const fireAt = new Date(opensAt.getTime() - REMIND_BEFORE_MS);
-      if (fireAt.getTime() <= now.getTime()) continue;
+      if (!includeDue && fireAt.getTime() <= now.getTime()) continue;
       // From IS's wall clock, so the id is the same on every phone, anywhere.
       const key = `${subject.code}|${section.id}|${localStamp(next.wall)}`;
       result.push({

@@ -10,9 +10,9 @@ import {
 } from '../utils/examOpeningReminders';
 const CHANNEL_ID = 'reis-exam-openings';
 
-function wanted(): ExamOpeningReminder[] {
+function wanted(includeDue = false): ExamOpeningReminder[] {
   const { exams, language } = useAppStore.getState();
-  return examOpeningReminders(exams.data, new Date(), language);
+  return examOpeningReminders(exams.data, new Date(), language, { includeDue });
 }
 
 // Set at sign-out: nothing more is scheduled for a student who has left.
@@ -24,8 +24,10 @@ async function reconcile(): Promise<void> {
   const reminders = wanted();
   const { notifications } = await LocalNotifications.getPending();
   const ours = notifications.filter((n) => n.extra?.kind === EXAM_OPENING_KIND);
-  const wantedIds = new Set(reminders.map((r) => r.id));
-  const stale = ours.filter((n) => !wantedIds.has(n.id));
+  // Past its time but before the opening, a pending reminder may simply not be
+  // shown yet (isExactNotification: false lets delivery run late): keep it.
+  const keepIds = new Set(wanted(true).map((r) => r.id));
+  const stale = ours.filter((n) => !keepIds.has(n.id));
   if (stale.length > 0) {
     await LocalNotifications.cancel({ notifications: stale.map((n) => ({ id: n.id })) });
   }

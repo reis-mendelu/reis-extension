@@ -101,6 +101,19 @@ describe('exam-opening reminders on the phone', () => {
     expect(ln.cancel).not.toHaveBeenCalled();
   });
 
+  // Inexact delivery can run late: a sync between the reminder time and the
+  // opening must not cancel a reminder the phone has not shown yet.
+  it('keeps a pending reminder whose time has passed until registration opens', async () => {
+    const id = wantedId();
+    vi.setSystemTime(new Date(Date.UTC(2026, 11, 2, 11, 30))); // 12:30 in Prague, opens 13:00
+    ln.getPending.mockResolvedValue({
+      notifications: [{ id, extra: { kind: EXAM_OPENING_KIND } }],
+    });
+    await reconcileExamReminders();
+    expect(ln.cancel).not.toHaveBeenCalled();
+    expect(ln.schedule).not.toHaveBeenCalled();
+  });
+
   // Registered since, or the date moved: the old reminder would be a lie.
   it('cancels a reminder that no longer applies, and leaves other notifications alone', async () => {
     ln.getPending.mockResolvedValue({
