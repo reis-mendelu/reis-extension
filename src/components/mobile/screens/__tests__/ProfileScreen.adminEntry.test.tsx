@@ -6,11 +6,11 @@ import { useAppStore } from '../../../../store/useAppStore';
 vi.mock('../../../../hooks/data/usePersonPhoto', () => ({ usePersonPhoto: () => null }));
 
 /**
- * The admin console left Profile (spec 2026-10-08): societies no longer
- * self-post. The way in is holding your name; once signed in, a "Správa" row
- * stays visible on that device.
+ * The admin console has no door in any build (Signal 2026-10-22, "admin =
+ * supabase"; adminConsoleIsDormant.test.ts). Holding the name used to open it,
+ * and a "Správa" row stayed once signed in; neither does any more.
  */
-describe('ProfileScreen — the hidden way into admin', () => {
+describe('ProfileScreen — no way into admin', () => {
   const open = vi.fn();
   beforeEach(() => {
     open.mockReset();
@@ -25,12 +25,12 @@ describe('ProfileScreen — the hidden way into admin', () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  it('holding the name opens the console', () => {
+  it('holding the name does not open the console', () => {
     vi.useFakeTimers();
     render(<ProfileScreen />);
     fireEvent.pointerDown(screen.getByTestId('profile-identity-name'), { clientX: 0, clientY: 0 });
     act(() => void vi.advanceTimersByTime(700));
-    expect(open).toHaveBeenCalledOnce();
+    expect(open).not.toHaveBeenCalled();
   });
 
   it('shows no Správa row to a student', () => {
@@ -38,10 +38,9 @@ describe('ProfileScreen — the hidden way into admin', () => {
     expect(screen.queryByText('Správa')).toBeNull();
   });
 
-  it('shows a Správa row once an admin session exists', () => {
+  it('shows no Správa row even with an admin session on the device', () => {
     useAppStore.setState({ adminSession: {} as never });
     render(<ProfileScreen />);
-    fireEvent.click(screen.getByText('Správa'));
-    expect(open).toHaveBeenCalledOnce();
+    expect(screen.queryByText('Správa')).toBeNull();
   });
 });
