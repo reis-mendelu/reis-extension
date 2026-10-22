@@ -1236,7 +1236,7 @@
       "rule": "Nikdo ji před zveřejněním nekontroluje. U peněz se ptej otázkou, napiš cenu a že se nic nestrhne. Odkaz na jinou aplikaci vede na její web nebo do obchodu.",
       "errPrompt": "Napiš otázku česky i anglicky (do 200 znaků).",
       "errLabels": "Každé tlačítko potřebuje popisek česky i anglicky (do 40 znaků).",
-      "errUrl": "Odkaz musí začínat https://.",
+      "errUrl": "Odkaz musí začínat https:// a mít nejvýš 500 znaků.",
       "errDates": "Konec musí být po začátku.",
       "empty": "Zatím žádná otázka.",
       "loadError": "Výsledky se nepodařilo načíst.",
@@ -1253,7 +1253,8 @@
       "suspicious": "Odpovědí je víc než zobrazení. Čísla mohla být podvržená.",
       "daily": "Po dnech",
       "day": "Den",
-      "devices": "Počítá zařízení, ne lidi. Studenti s verzí do 5.4.1 otázky nevidí."
+      "devices": "Počítá zařízení, ne lidi. Studenti s verzí do 5.4.1 otázky nevidí.",
+      "errNote": "Poznámka může mít nejvýš 300 znaků."
     }
   },
   "mobile": {

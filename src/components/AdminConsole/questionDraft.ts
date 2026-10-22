@@ -93,7 +93,13 @@ export function draftError(d: QuestionDraft): string | null {
   if (d.promptCz.length > 200 || d.promptEn.length > 200) return 'errPrompt';
   if (d.buttons.some((b) => !b.cz.trim() || !b.en.trim() || b.cz.length > 40 || b.en.length > 40))
     return 'errLabels';
-  if (d.buttons.some((b) => b.url !== undefined && !/^https:\/\/\S{4,}$/.test(b.url)))
+  // The database's own limits (reis_questions), caught before Publish.
+  if (d.noteCz.length > 300 || d.noteEn.length > 300) return 'errNote';
+  if (
+    d.buttons.some(
+      (b) => b.url !== undefined && (!/^https:\/\/\S{4,}$/.test(b.url) || b.url.length > 500)
+    )
+  )
     return 'errUrl';
   const start = Date.parse(d.startsAt);
   const end = Date.parse(d.endsAt);

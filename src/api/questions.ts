@@ -93,10 +93,28 @@ function writesAllowed(): boolean {
  * so a later try counts). Nothing to send — a harness, no Firefox consent, or
  * already counted — is settled, `true`.
  */
-export async function countQuestion(questionId: string, key: QuestionCountKey): Promise<boolean> {
+export function countQuestion(questionId: string, key: QuestionCountKey): Promise<boolean> {
+  // One request per surface and question at a time, and every caller awaits
+  // it: an answer that asks for 'seen' while the dwell's count is still in
+  // flight must learn whether it landed (review #587), not be told "settled".
+  const surface = key === 'seen' ? 'question_seen' : 'question_answer';
+  const slot = `${surface}:${questionId}`;
+  const running = inFlight.get(slot);
+  if (running) return running;
+  const sent = send(questionId, key, surface).finally(() => inFlight.delete(slot));
+  inFlight.set(slot, sent);
+  return sent;
+}
+
+const inFlight = new Map<string, Promise<boolean>>();
+
+async function send(
+  questionId: string,
+  key: QuestionCountKey,
+  surface: 'question_seen' | 'question_answer'
+): Promise<boolean> {
   if (!writesAllowed()) return true;
   if (!(await hasDataConsent('technicalAndInteraction'))) return true;
-  const surface = key === 'seen' ? 'question_seen' : 'question_answer';
   if (!(await claimFirstOpen(surface, questionId))) return true;
   try {
     const { error } = await supabase.rpc('count_question', {

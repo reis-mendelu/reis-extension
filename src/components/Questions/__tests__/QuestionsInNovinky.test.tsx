@@ -2,14 +2,15 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { NotificationsSheet } from '../../mobile/sheets/NotificationsSheet';
 import { NotificationFeed } from '../../NotificationFeed';
+import { HeaderActions } from '../../mobile/screens/HeaderActions';
 import { useAppStore } from '../../../store/useAppStore';
 import type { Question } from '../../../types/questions';
 
-const countQuestion = vi.hoisted(() => vi.fn(async () => true));
-vi.mock('../../../api/questions', () => ({
-  countQuestion,
+const { countQuestion, fetchQuestions } = vi.hoisted(() => ({
+  countQuestion: vi.fn(async () => true),
   fetchQuestions: vi.fn(async () => null),
 }));
+vi.mock('../../../api/questions', () => ({ countQuestion, fetchQuestions }));
 vi.mock('../../../api/featureUsage', () => ({ trackFeatureSignal: vi.fn(async () => {}) }));
 vi.mock('../../../services/storage/IndexedDBService', () => ({
   IndexedDBService: {
@@ -104,6 +105,13 @@ describe('a console question in the extension (NotificationFeed)', () => {
     await waitFor(() => expect(bell()).not.toHaveTextContent('1'));
   });
 
+  // Review #587: a question published a moment ago shows on the next open.
+  it('fetches questions again when the bell opens Novinky', async () => {
+    render(<NotificationFeed onShowMap={vi.fn()} />);
+    fireEvent.click(bell());
+    await waitFor(() => expect(fetchQuestions).toHaveBeenCalled());
+  });
+
   it('does not count an answered question', () => {
     state();
     useAppStore.setState({
@@ -111,5 +119,17 @@ describe('a console question in the extension (NotificationFeed)', () => {
     } as never);
     render(<NotificationFeed onShowMap={vi.fn()} />);
     expect(bell()).not.toHaveTextContent('1');
+  });
+});
+
+describe('the phone bell (HeaderActions)', () => {
+  beforeEach(() => state());
+
+  it('counts the question and fetches questions again when it opens Novinky', async () => {
+    render(<HeaderActions />);
+    const phoneBell = screen.getByRole('button', { name: 'Oznámení' });
+    expect(phoneBell).toHaveTextContent('1');
+    fireEvent.click(phoneBell);
+    await waitFor(() => expect(fetchQuestions).toHaveBeenCalled());
   });
 });

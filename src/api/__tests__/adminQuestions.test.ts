@@ -96,6 +96,12 @@ describe('adminQuestions', () => {
     expect(r?.daily).toEqual([{ day: '2026-10-25', key: 'seen', n: 10 }]);
     expect(rpc).toHaveBeenCalledWith('question_results');
 
+    // Review #587: one malformed row must not hide every other result.
+    const good = (rpc.mock.results[0]?.value as Promise<{ data: unknown[] }>) ?? null;
+    const [goodRow] = (await good).data;
+    rpc.mockResolvedValueOnce({ data: [{ id: 'bad' }, goodRow], error: null });
+    expect((await fetchQuestionResults())?.map((x) => x.id)).toEqual(['q1']);
+
     rpc.mockResolvedValueOnce({ data: null, error: { message: 'forbidden' } });
     expect(await fetchQuestionResults()).toBeNull();
   });

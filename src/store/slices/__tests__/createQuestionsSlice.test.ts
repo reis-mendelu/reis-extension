@@ -78,7 +78,7 @@ describe('createQuestionsSlice', () => {
   // Firefox with technical data off: asking and then dropping the answer would
   // be a fake, so the question is not asked at all.
   it('marks questions as not allowed without Firefox consent', async () => {
-    hasDataConsent.mockResolvedValueOnce(false);
+    hasDataConsent.mockResolvedValue(false);
     const get = makeSlice();
     await get().loadQuestions();
     expect(get().questions.allowed).toBe(false);
@@ -96,6 +96,51 @@ describe('createQuestionsSlice', () => {
     const again = makeSlice();
     await again().loadQuestions();
     expect(again().questions.answers).toEqual({ q1: 'yes' });
+  });
+
+  // Review #587: an answer whose view did not reach the server would count an
+  // answer outside the denominator.
+  it('sends no answer while its seen count failed', async () => {
+    countQuestion.mockImplementation(async (_id, key) => key !== 'seen');
+    const get = makeSlice();
+    await get().loadQuestions();
+    await get().answerQuestion('q1', 'yes');
+    expect(countQuestion.mock.calls).toEqual([['q1', 'seen']]);
+    const again = makeSlice();
+    await again().loadQuestions();
+    expect(again().questions.answers).toEqual({});
+  });
+
+  // Review #587: two extension tabs share one device; the first answer saved
+  // on it wins, and the second tab shows that one instead of sending its own.
+  it('adopts an answer another tab saved first, and sends nothing', async () => {
+    const get = makeSlice();
+    await get().loadQuestions();
+    disk.set('question_answers', { q1: 'no' });
+    await get().answerQuestion('q1', 'yes');
+    expect(countQuestion).not.toHaveBeenCalled();
+    expect(get().questions.answers).toEqual({ q1: 'no' });
+  });
+
+  // Review #587: the Firefox switch can change while reIS runs.
+  it('takes no answer once consent is withdrawn, and hides the questions', async () => {
+    const get = makeSlice();
+    await get().loadQuestions();
+    hasDataConsent.mockResolvedValue(false);
+    await get().answerQuestion('q1', 'yes');
+    expect(countQuestion).not.toHaveBeenCalled();
+    expect(get().questions.answers).toEqual({});
+    expect(get().questions.allowed).toBe(false);
+  });
+
+  it('re-reads consent on every refresh', async () => {
+    hasDataConsent.mockResolvedValue(false);
+    const get = makeSlice();
+    await get().loadQuestions();
+    expect(get().questions.allowed).toBe(false);
+    hasDataConsent.mockResolvedValue(true);
+    await get().refreshQuestions();
+    expect(get().questions.allowed).toBe(true);
   });
 
   it('keeps an answer whose count failed for this session only', async () => {

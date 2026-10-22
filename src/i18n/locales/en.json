@@ -1236,7 +1236,7 @@
       "rule": "Nobody reviews it before it goes live. For money, ask a question, state the price and that nothing is charged. A link to another app goes to its website or store page.",
       "errPrompt": "Write the question in Czech and English (up to 200 characters).",
       "errLabels": "Every button needs a Czech and an English label (up to 40 characters).",
-      "errUrl": "The link must start with https://.",
+      "errUrl": "The link must start with https:// and be at most 500 characters.",
       "errDates": "The end must be after the start.",
       "empty": "No questions yet.",
       "loadError": "Could not load the results.",
@@ -1253,7 +1253,8 @@
       "suspicious": "There are more answers than views. The numbers may have been spoofed.",
       "daily": "By day",
       "day": "Day",
-      "devices": "Counts devices, not people. Students on 5.4.1 or older do not see questions."
+      "devices": "Counts devices, not people. Students on 5.4.1 or older do not see questions.",
+      "errNote": "A note can be at most 300 characters."
     }
   },
   "mobile": {

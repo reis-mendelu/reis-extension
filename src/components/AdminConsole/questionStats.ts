@@ -20,8 +20,9 @@ export interface ButtonStat {
 
 /**
  * What the results card shows. Every device that answered also counted 'seen'
- * (an answer counts seen first), so answers above seen can only come from a
- * caller that is not reIS: the anon counter is spoofable, as post views are.
+ * (an answer is sent only once its seen count landed), so answers above seen
+ * can only come from a caller that is not reIS: the anon counter is
+ * spoofable, as post views are.
  */
 export function questionStats(q: QuestionResult) {
   const seen = q.totals.seen ?? 0;
@@ -38,7 +39,10 @@ export function questionStats(q: QuestionResult) {
       ofAnswered: !b.url && answered ? n / answered : null,
     };
   });
-  return { seen, answered, buttons, suspicious: answered > seen };
+  // A link tap counts seen first as well, so its clicks can't exceed views either.
+  // Totals, not days: a device may see a question one day and answer the next.
+  const clickedMost = Math.max(0, ...buttons.filter((b) => b.isLink).map((b) => b.n));
+  return { seen, answered, buttons, suspicious: answered > seen || clickedMost > seen };
 }
 
 /** One row per day, a column per key ('seen' first), for the trend table. */

@@ -27,6 +27,14 @@ returns boolean language sql immutable set search_path = '' as $$
      and not exists (
        select 1 from jsonb_array_elements(b) e
         where jsonb_typeof(e) <> 'object'
+           -- Strings, not just values that read as text: the clients parse
+           -- every field as a string and drop a question that is not.
+           or coalesce(jsonb_typeof(e->'key'), '') <> 'string'
+           or coalesce(jsonb_typeof(e->'cz'), '') <> 'string'
+           or coalesce(jsonb_typeof(e->'en'), '') <> 'string'
+           or (e ? 'url' and jsonb_typeof(e->'url') <> 'string')
+           or (e ? 'hintCz' and jsonb_typeof(e->'hintCz') <> 'string')
+           or (e ? 'hintEn' and jsonb_typeof(e->'hintEn') <> 'string')
            or coalesce(e->>'key', '') !~ '^[a-z0-9_]{1,20}$'
            or e->>'key' = 'seen'
            or length(trim(coalesce(e->>'cz', ''))) not between 1 and 40

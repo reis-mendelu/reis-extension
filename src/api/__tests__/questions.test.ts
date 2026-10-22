@@ -97,6 +97,21 @@ describe('countQuestion', () => {
     expect(rpc).toHaveBeenCalledTimes(2);
   });
 
+  // Review #587: the dwell's seen count may still be in flight when an answer
+  // asks for it; the answer must learn whether it landed, not assume it did.
+  it('shares an in-flight count, so a second caller sees its failure', async () => {
+    let fail!: (v: { error: { message: string } }) => void;
+    rpc.mockImplementationOnce(() => new Promise((r) => (fail = r)));
+    const first = countQuestion('q1', 'seen');
+    const second = countQuestion('q1', 'seen');
+    await Promise.resolve();
+    await new Promise((r) => setTimeout(r, 0));
+    fail({ error: { message: 'offline' } });
+    expect(await first).toBe(false);
+    expect(await second).toBe(false);
+    expect(rpc).toHaveBeenCalledTimes(1);
+  });
+
   it('reports a failed write and lets the next try count', async () => {
     rpc.mockResolvedValueOnce({ error: { message: 'boom' } });
     expect(await countQuestion('q1', 'yes')).toBe(false);

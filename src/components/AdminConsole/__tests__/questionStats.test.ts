@@ -43,6 +43,11 @@ describe('questionStats', () => {
     expect(questionStats({ ...q, totals: { seen: 3, yes: 9 } }).suspicious).toBe(true);
   });
 
+  // A link tap counts seen first too, so more clicks than views is also spoofing.
+  it('flags more link clicks than views', () => {
+    expect(questionStats({ ...q, totals: { seen: 3, open: 9 } }).suspicious).toBe(true);
+  });
+
   it('has no shares before anyone saw it', () => {
     expect(questionStats({ ...q, totals: {} }).buttons[0]?.ofSeen).toBeNull();
   });

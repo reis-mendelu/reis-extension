@@ -56,12 +56,18 @@ async function write(key: string, value: unknown): Promise<void> {
   }
 }
 
+/** One holder at a time across extension tabs (Web Locks where they exist). */
+async function exclusive<T>(name: string, fn: () => Promise<T>): Promise<T> {
+  const locks = typeof navigator === 'undefined' ? undefined : navigator.locks;
+  return locks ? await locks.request(name, fn) : fn();
+}
+
 /** Read fresh, merge, write: a second extension tab's answer is not overwritten. */
 async function merge<T>(key: string, fallback: T, fn: (saved: T) => T): Promise<void> {
-  const run = async () => write(key, fn(await read(key, fallback)));
-  const locks = typeof navigator === 'undefined' ? undefined : navigator.locks;
-  await (locks ? locks.request(`reis_${key}`, run) : run());
+  await exclusive(`reis_${key}`, async () => write(key, fn(await read(key, fallback))));
 }
+
+const consent = () => hasDataConsent('technicalAndInteraction').catch(() => false);
 
 export const createQuestionsSlice: AppSlice<QuestionsSlice> = (set, get) => ({
   questions: { status: 'loading', list: [], answers: {}, badgeSeen: [], allowed: false },
@@ -71,7 +77,7 @@ export const createQuestionsSlice: AppSlice<QuestionsSlice> = (set, get) => ({
       read<Question[]>(CACHE_KEY, []),
       read<Record<string, string>>(ANSWERS_KEY, {}),
       read<string[]>(BADGE_KEY, []),
-      hasDataConsent('technicalAndInteraction').catch(() => false),
+      consent(),
     ]);
     set({
       questions: {
@@ -88,7 +94,9 @@ export const createQuestionsSlice: AppSlice<QuestionsSlice> = (set, get) => ({
   },
 
   refreshQuestions: async () => {
-    const list = await fetchQuestions();
+    // Firefox's switch can change while reIS runs, so every refresh asks again.
+    const [list, allowed] = await Promise.all([fetchQuestions(), consent()]);
+    set({ questions: { ...get().questions, allowed } });
     // null is "ask again later": the cache survives a failed request.
     if (list === null) return;
     set({ questions: { ...get().questions, list } });
@@ -99,23 +107,36 @@ export const createQuestionsSlice: AppSlice<QuestionsSlice> = (set, get) => ({
     const question = get().questions.list.find((q) => q.id === id);
     const button = question?.buttons.find((b) => b.key === key);
     if (!button || get().questions.answers[id]) return;
+    // Consent withdrawn since the last refresh: no thanks for an answer that
+    // would not be sent, and the questions go.
+    if (!(await consent())) {
+      set({ questions: { ...get().questions, allowed: false } });
+      return;
+    }
     if (button.url) {
       // Seen first, as for an answer: the link opens a browser, which hides
       // the page and stops the on-screen dwell before it could count.
       // A link shares the answer claim, so a link tap followed by another
       // button counts only the first; the presets give a link question one
       // button, so that cannot happen from the console today.
-      await countQuestion(id, 'seen');
-      await countQuestion(id, key);
+      if (await countQuestion(id, 'seen')) await countQuestion(id, key);
       return;
     }
-    set({ questions: { ...get().questions, answers: { ...get().questions.answers, [id]: key } } });
-    // An answer is proof it was read: seen first, so no answer falls outside
-    // the denominator.
-    await countQuestion(id, 'seen');
-    if (await countQuestion(id, key)) {
+    const answer = (k: string) =>
+      set({ questions: { ...get().questions, answers: { ...get().questions.answers, [id]: k } } });
+    answer(key);
+    // Per question across tabs: the first answer saved on this device wins, and
+    // a later tab shows it instead of sending its own (review #587).
+    await exclusive(`reis_question_${id}`, async () => {
+      const earlier = (await read<Record<string, string>>(ANSWERS_KEY, {}))[id];
+      if (earlier) return answer(earlier);
+      // An answer is proof it was read, so it is sent only once 'seen' landed:
+      // no answer falls outside the denominator. Either failing keeps the
+      // answer for this session only, and a later launch asks again.
+      if (!(await countQuestion(id, 'seen'))) return;
+      if (!(await countQuestion(id, key))) return;
       await merge<Record<string, string>>(ANSWERS_KEY, {}, (saved) => ({ ...saved, [id]: key }));
-    }
+    });
   },
 
   markQuestionsBadgeSeen: async (ids) => {

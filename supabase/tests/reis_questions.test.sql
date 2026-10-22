@@ -146,6 +146,8 @@ begin
     '[{"key":"Bad Key","cz":"A","en":"A"}]',
     '[{"key":"a","cz":"","en":"A"}]',
     '[{"key":"a","cz":"A","en":"A","url":"http://insecure.example"}]',
+    '[{"key":"1","cz":1,"en":1}]',
+    '[{"key":"a","cz":"A","en":"A","url":42}]',
     '[{"key":"1","cz":"1","en":"1","hintCz":"tohle je moc dlouhý popisek konce"}]',
     '[{"key":"a","cz":"1","en":"1"},{"key":"b","cz":"2","en":"2"},{"key":"c","cz":"3","en":"3"},{"key":"d","cz":"4","en":"4"},{"key":"e","cz":"5","en":"5"},{"key":"f","cz":"6","en":"6"}]'
   ] loop

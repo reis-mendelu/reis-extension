@@ -31,6 +31,7 @@ export function HeaderActions() {
   const { unseenCount } = useDeadlineAlerts();
   const support = useSupportQuestion();
   const questions = useQuestions();
+  const refreshQuestions = useAppStore((s) => s.refreshQuestions);
 
   // Deadlines count too, exactly as they do on desktop's NotificationFeed. The
   // calendar used to carry them in a strip above the day chips; that strip is
@@ -85,7 +86,12 @@ export function HeaderActions() {
       </button>
       <button
         type="button"
-        onClick={() => pushSheet({ kind: 'notifications' })}
+        onClick={() => {
+          // A question published a moment ago shows on this open, as on the
+          // extension's bell (useNotificationFeed.toggle).
+          void refreshQuestions();
+          pushSheet({ kind: 'notifications' });
+        }}
         aria-label={t('mobile.calendar.notifications')}
         className="relative flex h-10 w-10 items-center justify-center rounded-full border border-base-300 bg-base-100 max-[359px]:h-9 max-[359px]:w-9"
       >

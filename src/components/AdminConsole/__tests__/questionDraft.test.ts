@@ -39,6 +39,15 @@ describe('question drafts', () => {
       'errUrl'
     );
     expect(draftError({ ...ok, endsAt: ok.startsAt })).toBe('errDates');
+    // Review #587: the database's own limits, caught before Publish.
+    expect(draftError({ ...ok, noteCz: 'x'.repeat(301) })).toBe('errNote');
+    expect(
+      draftError({
+        ...ok,
+        preset: 'link',
+        buttons: [{ key: 'open', cz: 'A', en: 'A', url: `https://x.cz/${'a'.repeat(500)}` }],
+      })
+    ).toBe('errUrl');
   });
 
   it('turns a draft into the row: trimmed, ISO dates, empty notes and faculties as null', () => {

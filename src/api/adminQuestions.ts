@@ -50,12 +50,17 @@ export async function fetchQuestionResults(): Promise<QuestionResult[] | null> {
     logError('Api.fetchQuestionResults', error);
     return null;
   }
-  const parsed = z.array(ResultSchema).safeParse(data);
-  if (!parsed.success) {
+  if (!Array.isArray(data)) {
     logError('Api.fetchQuestionResults', new Error('malformed question_results'));
     return null;
   }
-  return parsed.data.map((r) => ({
+  // Row by row: one malformed question must not hide every other result.
+  const rows = data.flatMap((raw) => {
+    const r = ResultSchema.safeParse(raw);
+    if (!r.success) logError('Api.fetchQuestionResults', new Error('malformed question row'));
+    return r.success ? [r.data] : [];
+  });
+  return rows.map((r) => ({
     id: r.id,
     promptCz: r.prompt_cz,
     promptEn: r.prompt_en,

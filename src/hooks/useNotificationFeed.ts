@@ -79,6 +79,9 @@ export function useNotificationFeed() {
 
   const toggle = () => {
     setIsOpen(!isOpen);
+    // A question published a moment ago shows on the next open, not at the
+    // next five-minute refresh (review #587). The phone's bell does the same.
+    if (!isOpen) void refreshQuestions();
     if (!isOpen && notifications.length > 0) {
       markNotificationsRead(notifications.map((n) => n.id));
     }
