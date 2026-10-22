@@ -8,9 +8,18 @@ feature with different buttons. Counting sends the question id and the button
 only, no identifier. It ships once, in the release after 5.5.0. Nothing is
 decided until we have been through the questions at the end.
 
-Status: options only, nothing built. Written 2026-10-22. The 99 Kč question
+Status: partly decided, nothing built. Written 2026-10-22. The 99 Kč question
 ships in 5.5.0 (Sat 2026-10-24) on the existing counters. This replaces that
 mechanism afterwards.
+
+**Decided by Dominik (2026-10-22):**
+- **Build it as described in "How it works" below**: a separate
+  `reis_questions` table and a counter that sends no identifier. It was
+  option B in the first draft.
+- **When:** after 5.5.0 is released, as its own PR against `test`.
+- **After answering**, the row stays as "Díky" until the question ends.
+
+Decisions 1–3 below are still open.
 
 ## The three kinds Dominik named
 
@@ -91,8 +100,9 @@ now, and move it into questions only if (i) ships.
   `markVisible` counts a post view today. An answer also counts as seen, as
   in `SupportPrompt`, so no answer falls outside the denominator.
 - **Both trees.** The row shows on the phone (`NotificationsSheet`) and in the
-  extension (`NotificationDropdown`). After a tap the row turns into "Díky",
-  and an answer is final.
+  extension (`NotificationDropdown`). After a tap the row turns into "Díky"
+  and stays that way until the question's `ends_at` (decided). An answer is
+  final.
 - **Admin console** (`reis_admin` only). Fields: prompt, optional note, a
   buttons preset, Czech **and** English labels, start and end date, optional
   faculties. Results show seen, the count per button, each button's share of
@@ -150,4 +160,6 @@ At 100–200 answers that is not worth it; target the question instead.
 1. **Shape:** a buttons list (i), Ano/Ne only (ii), or a type per kind (iii)?
 2. **Satisfaction:** keep NPS (a), 👍/👎 in Novinky (b), or 1–5 in Novinky (c)?
 3. **reByt:** a notice now, or wait for the link button?
-4. **After answering:** does the row stay as "Díky" until it ends, or disappear?
+4. ~~**After answering:** does the row stay as "Díky" until it ends, or
+   disappear?~~ **Decided 2026-10-22:** it stays as "Díky" until the question
+   ends.
