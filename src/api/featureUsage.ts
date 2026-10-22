@@ -76,16 +76,21 @@ export function __resetFeatureSignalsForTests(): void {
  * map and comes back five times is still one install that looked at the map.
  * The database keeps one row per install per day regardless, so a second
  * session tomorrow is counted and a second session today only bumps `hits`.
+ *
+ * Resolves `false` only when the write was attempted and failed — the one case
+ * a caller may want to retry later (the support question's "yes" does). Every
+ * other outcome, including a build that never writes and declined consent, is
+ * settled and resolves `true`.
  */
-export async function trackFeatureSignal(signal: FeatureSignal): Promise<void> {
-  if (!writesAllowed()) return;
-  if (sentSignals.has(signal)) return;
+export async function trackFeatureSignal(signal: FeatureSignal): Promise<boolean> {
+  if (!writesAllowed()) return true;
+  if (sentSignals.has(signal)) return true;
   sentSignals.add(signal);
   // Latched before the await so two concurrent calls cannot both send; released
   // when Firefox's technical-data toggle is off, so turning it on counts again.
   if (!(await hasDataConsent('technicalAndInteraction'))) {
     sentSignals.delete(signal);
-    return;
+    return true;
   }
   try {
     const { error } = await supabase.rpc('track_feature_usage', {
@@ -95,10 +100,13 @@ export async function trackFeatureSignal(signal: FeatureSignal): Promise<void> {
     if (error) {
       sentSignals.delete(signal);
       logError('Api.trackFeatureSignal', new Error(error.message));
+      return false;
     }
+    return true;
   } catch (err) {
     sentSignals.delete(signal);
     logError('Api.trackFeatureSignal', err);
+    return false;
   }
 }
 
