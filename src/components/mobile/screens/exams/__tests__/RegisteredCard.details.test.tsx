@@ -98,6 +98,30 @@ describe('RegisteredCard — details', () => {
     expect(screen.getByText(/^Přihlášení do/)).toHaveTextContent('Přihlášení do 8. 11. 20:00');
   });
 
+  // Review: an unparseable date became an Invalid Date and printed "NaN".
+  it("shows IS's own deadline text when it is not a date it can read", () => {
+    render(
+      <RegisteredCard
+        row={
+          {
+            ...row,
+            section: { ...row.section, terms: [term, { ...other, registrationEnd: 'dle dohody' }] },
+          } as RegisteredExam
+        }
+        locale="cs-CZ"
+        now={NOW}
+        expanded
+        onToggle={() => {}}
+        isProcessing={false}
+        onUnregister={() => {}}
+        onRegister={() => {}}
+      />
+    );
+    const line = screen.getByText(/^Přihlášení do/);
+    expect(line).toHaveTextContent('Přihlášení do dle dohody');
+    expect(line).not.toHaveTextContent('NaN');
+  });
+
   it('shows the note as "Poznámka ke zkoušce" under Více', () => {
     useAppStore.setState({
       examNotes: { [term.id]: { text: 'S sebou kalkulačku.', isEmphasized: false } },

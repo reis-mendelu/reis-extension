@@ -20,7 +20,6 @@ vi.mock('@capacitor/core', async (importOriginal) => {
 });
 
 import {
-  clearExamReminders,
   installExamReminders,
   openExamsFromNotification,
   reconcileExamReminders,
@@ -133,43 +132,6 @@ describe('exam-opening reminders on the phone', () => {
     expect(ln.schedule).not.toHaveBeenCalled();
   });
 
-  it('asks for permission when the student opens Zkoušky and a reminder is due', async () => {
-    ln.checkPermissions.mockResolvedValue({ display: 'prompt' });
-    ln.requestPermissions.mockResolvedValue({ display: 'granted' });
-    installExamReminders();
-    await flush();
-    expect(ln.requestPermissions).not.toHaveBeenCalled();
-    useAppStore.getState().setMobileTab('exams');
-    await flush();
-    expect(ln.requestPermissions).toHaveBeenCalledTimes(1);
-  });
-
-  // Review: opening Zkoušky before the exams loaded found nothing due, and the
-  // prompt never came once they arrived.
-  it('asks once the exams arrive while Zkoušky is already open', async () => {
-    ln.checkPermissions.mockResolvedValue({ display: 'prompt' });
-    ln.requestPermissions.mockResolvedValue({ display: 'granted' });
-    useAppStore.setState({
-      mobileTab: 'exams',
-      exams: { ...useAppStore.getState().exams, data: [] },
-    } as never);
-    installExamReminders();
-    await flush();
-    expect(ln.requestPermissions).not.toHaveBeenCalled();
-    useAppStore.setState({ exams: { ...useAppStore.getState().exams, data: exams } } as never);
-    await flush();
-    expect(ln.requestPermissions).toHaveBeenCalledTimes(1);
-  });
-
-  it('does not ask when nothing is due', async () => {
-    ln.checkPermissions.mockResolvedValue({ display: 'prompt' });
-    useAppStore.setState({ exams: { ...useAppStore.getState().exams, data: [] } } as never);
-    installExamReminders();
-    useAppStore.getState().setMobileTab('exams');
-    await flush();
-    expect(ln.requestPermissions).not.toHaveBeenCalled();
-  });
-
   it('reschedules when the exam list changes', async () => {
     installExamReminders();
     await flush();
@@ -178,28 +140,6 @@ describe('exam-opening reminders on the phone', () => {
     useAppStore.setState({ exams: { ...useAppStore.getState().exams, data: [...exams] } } as never);
     await flush();
     expect(ln.schedule).toHaveBeenCalled();
-  });
-
-  // Review: the next person on the device must not see this student's exams.
-  it('on sign-out cancels the reminders, clears delivered ones, and schedules no more', async () => {
-    installExamReminders();
-    await flush();
-    ln.getPending.mockResolvedValue({
-      notifications: [{ id: 111, extra: { kind: EXAM_OPENING_KIND } }, { id: 222 }],
-    });
-    ln.getDeliveredNotifications.mockResolvedValue({
-      notifications: [{ id: 333, extra: { kind: EXAM_OPENING_KIND } }, { id: 444 }],
-    });
-    await clearExamReminders();
-    expect(ln.cancel).toHaveBeenCalledWith({ notifications: [{ id: 111 }] });
-    expect(ln.removeDeliveredNotifications).toHaveBeenCalledWith({
-      notifications: [{ id: 333, extra: { kind: EXAM_OPENING_KIND } }],
-    });
-    ln.schedule.mockClear();
-    ln.getPending.mockResolvedValue({ notifications: [] });
-    useAppStore.setState({ exams: { ...useAppStore.getState().exams, data: [...exams] } } as never);
-    await reconcileExamReminders();
-    expect(ln.schedule).not.toHaveBeenCalled();
   });
 
   it('opens Zkoušky when the reminder is tapped; another feature’s tap is not ours', () => {

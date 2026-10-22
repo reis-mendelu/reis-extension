@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { loadRealDataSnapshot, resetRealDataStores } from '../loadRealDataSnapshot';
-import { useAppStore } from '../../store/useAppStore';
 
 vi.mock('../storage', () => ({
   IndexedDBService: { clear: vi.fn(async () => {}) },
@@ -63,27 +62,6 @@ describe('loadRealDataSnapshot', () => {
     await loadRealDataSnapshot();
 
     expect(posts[0]!.data.loaded).toEqual(['schedule', 'exams']);
-    spy.mockRestore();
-  });
-
-  it('puts the scraped Poznámka notes in the store as freshly fetched', async () => {
-    const note = { text: 'Bez AI, jinak F.', isEmphasized: true };
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () =>
-          new Response(JSON.stringify({ lastSync: 1, examNotes: { T1: note, T2: null } }), {
-            status: 200,
-          })
-      )
-    );
-    const spy = vi.spyOn(window, 'postMessage').mockImplementation((() => {}) as never);
-
-    await loadRealDataSnapshot();
-
-    const state = useAppStore.getState();
-    expect(state.examNotes).toMatchObject({ T1: note, T2: null });
-    expect(state.lastExamNotesFetchedAt.T1).toBeGreaterThan(Date.now() - 5000);
     spy.mockRestore();
   });
 

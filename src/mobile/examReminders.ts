@@ -21,6 +21,12 @@ let unsubscribe: (() => void) | null = null;
 
 async function reconcile(): Promise<void> {
   if (signedOut) return;
+  // At boot the exams are still coming from IndexedDB: an empty list then is
+  // not "no exams", and reconciling with it cancelled every pending reminder.
+  // A list with exams in it is an answer however it arrived (setExams leaves
+  // the status alone); an empty one only once the load has succeeded.
+  const { exams } = useAppStore.getState();
+  if (exams.data.length === 0 && exams.status !== 'success') return;
   const reminders = wanted();
   const { notifications } = await LocalNotifications.getPending();
   const ours = notifications.filter((n) => n.extra?.kind === EXAM_OPENING_KIND);
@@ -113,9 +119,14 @@ export function installExamReminders(): () => void {
   signedOut = false;
   unsubscribe?.();
   let exams = useAppStore.getState().exams.data;
+  let status = useAppStore.getState().exams.status;
   let tab = useAppStore.getState().mobileTab;
   unsubscribe = useAppStore.subscribe((state) => {
-    if (state.exams.data !== exams) {
+    // The boot load can finish with the very list it started with (empty), so
+    // the status settling is a change worth reconciling on too.
+    const loaded = state.exams.status !== status && state.exams.status === 'success';
+    status = state.exams.status;
+    if (state.exams.data !== exams || loaded) {
       exams = state.exams.data;
       void reconcileExamReminders();
       // Zkoušky opened before the exams loaded found nothing to ask about.

@@ -89,7 +89,10 @@ export function TermRow({
   // Under a registered card the row opens nothing, so the one detail it still
   // needs is on the row: until when the student can move onto this term.
   const bookBy = showDetails ? null : termDeadline(term, section, isRegHere, now);
-  const bookByAt = bookBy?.kind === 'registerUntil' ? parseRegistrationStart(bookBy.value) : null;
+  const parsedBookBy =
+    bookBy?.kind === 'registerUntil' ? parseRegistrationStart(bookBy.value) : null;
+  // An unreadable IS date parses to an Invalid Date, not null: show IS's own text.
+  const bookByAt = parsedBookBy && !Number.isNaN(parsedBookBy.getTime()) ? parsedBookBy : null;
 
   // Which attempts this term counts as. IS can list more than one, and
   // sometimes none.

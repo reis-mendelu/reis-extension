@@ -15,7 +15,8 @@ vi.mock('../../storage', () => ({
   },
 }));
 
-import { retireSocietyFeatures, retiredPending } from '../retireSocietyFeatures';
+import { retireSocietyFeatures, retiredNotifications } from '../retireSocietyFeatures';
+import { NEW_POINTS_KIND } from '../../../mobile/zaznamnikNotifications';
 
 const RETIRED = [
   'event_rsvps_mine',
@@ -71,15 +72,17 @@ describe('retireSocietyFeatures', () => {
   });
 });
 
-// Spec 2026-10-20: a phone updating straight to a build with exam-opening
-// reminders runs this once, possibly after they are scheduled.
-describe('retiredPending', () => {
-  it('cancels the old reminders and keeps exam-opening ones', () => {
-    const pending = [
+// Spec 2026-10-20: a phone updating straight to a build with today's
+// notifications runs this once, possibly after they exist — pending or already
+// in the tray (a retry after a failed run). Only 5.3.0's are retired.
+describe('retiredNotifications', () => {
+  it("retires 5.3.0's and keeps exam openings and záznamník points", () => {
+    const shown = [
       { id: 1 },
       { id: 2, extra: { kind: 'event' } },
       { id: 3, extra: { kind: 'exam-opening' } },
+      { id: 4, extra: { kind: NEW_POINTS_KIND } },
     ];
-    expect(retiredPending(pending).map((n) => n.id)).toEqual([1, 2]);
+    expect(retiredNotifications(shown).map((n) => n.id)).toEqual([1, 2]);
   });
 });
