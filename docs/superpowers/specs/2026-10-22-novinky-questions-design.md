@@ -39,12 +39,34 @@ Only Decision 3 (reByt) is still open.
   returns false). The extension updates itself within days, so the trickle
   stops on its own. Revoke it in a later migration, once no released build
   in use calls it.
-- **The `survey` disclosure stays** in `privacy/disclosures.ts` until that
-  revoke, because the flow still exists until then.
+- **The `survey` entry leaves `privacy/disclosures.ts` in the build PR.**
+  *(Corrected while building.)* The privacy check fails when a disclosed
+  call is no longer in `src/`, so the entry can't outlive the code.
+  - The policy still covers the older builds in prose:
+    `docs/privacy-policy-app.md` and PRIVACY.md say that extension versions
+    up to 5.5.0 send the rating with the install id until they update.
 - **Open, my suggestion only:** once `submit_feedback` is revoked, null out
   `feedback_responses.student_id`. The ratings stay as history, and 131
   install ids we no longer need do not stay forever. Nothing in reIS reads
   that column.
+
+### Built 2026-10-22 (draft PR against `test`; must not merge before 5.5.0 ships)
+
+- **The 1–5 preset defaults to the banner's own question:** "Doporučil/a
+  bys reIS kamarádovi?" (1 = nejhorší, 5 = nejlepší). It is not "Jak jsi
+  spokojený/á", so the new answers compare in wording with the 131 old ones.
+  It stays editable in the form.
+- **The donate question moves into this system after its window.** 5.5.0's
+  `SupportPrompt` keeps running on its own counters for the agreed 4 weeks
+  (until about 2026-11-21) and is shown above the console's questions.
+  After that:
+  1. A follow-up PR removes `SupportPrompt` and its slice.
+  2. If it is asked again, it is an Ano/Ne question in the console.
+  3. The `support_prompt_*` labels stay in the DB whitelist until no
+     installed 5.5.0 build is left.
+  4. Its numbers are never added to these.
+- **Answer buttons are all outlined, none primary,** so the row nudges
+  toward no answer. A link button is primary.
 
 ## The three kinds Dominik named
 
