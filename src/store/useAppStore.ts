@@ -41,6 +41,7 @@ import { createMapSlice } from './slices/createMapSlice';
 import { createSocietiesSlice } from './slices/createSocietiesSlice';
 import { createAdminSlice } from './slices/createAdminSlice';
 import { createAdminStatsSlice } from './slices/createAdminStatsSlice';
+import { createAdminQuestionsSlice } from './slices/createAdminQuestionsSlice';
 import { createSuggestionsSlice } from './slices/createSuggestionsSlice';
 import { createDemoSlice } from './slices/createDemoSlice';
 import { overlayGuard } from './overlay/overlayGuard';
@@ -100,6 +101,7 @@ export const useAppStore = create<AppState>()(
     ...createSocietiesSlice(...a),
     ...createAdminSlice(...a),
     ...createAdminStatsSlice(...a),
+    ...createAdminQuestionsSlice(...a),
     ...createSuggestionsSlice(...a),
     ...createRouteSlice(...a),
     ...createOsmTileAccessSlice(...a),

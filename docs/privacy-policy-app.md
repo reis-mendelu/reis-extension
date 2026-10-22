@@ -31,12 +31,12 @@ yourself — see *Report attachments* below.
 <!-- BEGIN generated:flows (npm run privacy:generate) -->
 | what | when | what it carries |
 |---|---|---|
-| Daily count | once a day | a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI), platform and app version (e.g. 5.4.1) as group labels. The survey and the feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation. |
+| Daily count | once a day | a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI), platform and app version (e.g. 5.4.1) as group labels. The feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation. Novinky questions do not. |
 | Feedback | you press send | your message, any contact detail you type, the screen name, app version, browser, window size, platform and OS version (no device model) |
 | Report attachments | only what you add to a report, when you press send | a **screenshot you pick** yourself, re-encoded on your device so photo metadata and location are removed; and, **only if you choose it** (tick the box, or press *Send with technical details* on a bug report), the recent reIS errors and warnings from this session, with link parameters, email addresses, long numbers and coordinates already blanked out, plus platform, OS version, language and sync status. **Not linked to the install identifier.** |
-| In-app survey | you answer | the same random install identifier |
 | Society post view or click | you open one | a post id |
 | Map event opened | you open an event on the campus map | that event's id and nothing else — a counter on the event, with no identifier of yours attached |
+| Novinky question seen or answered | a question from reIS is on your screen in Novinky, or you tap one of its buttons | that question's id and which button you tapped — a counter on the question, with no identifier of yours attached. Your device remembers that it answered; we cannot tell who did |
 | Map used for 3 seconds | at most once a day, after three seconds on the map | the random install identifier and the fixed `map_dwell_3s` label |
 | eduroam network configured | the app itself saves the eduroam network (phone) | the random install identifier and the fixed `eduroam_wifi_configured` label |
 | eduroam profile handed over | a profile is prepared for you to install (Mac, Windows) | the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it |
@@ -60,6 +60,11 @@ resolved, and then deleted automatically; we delete them sooner when you ask.
 database, which cannot see your connection. Versions released before September
 2026 store a salted hash of it for up to an hour to limit the form; never the
 address, never beside your message. That component goes when those versions do.
+
+Extension versions up to 5.5.0 also show a satisfaction rating once a semester.
+If you rate, your rating is sent with the same random install identifier as the
+daily count. Current versions ask in Novinky instead, without the identifier, and
+the rating goes when those versions do.
 
 *Lawful basis: legitimate interest, GDPR Art. 6(1)(f) — knowing the project is
 used, and fixing what you report. Report attachments: your consent, Art. 6(1)(a),
