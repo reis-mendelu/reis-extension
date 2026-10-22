@@ -80,7 +80,7 @@ export async function releaseToTrack(a: ReleaseArgs): Promise<ReleaseResult> {
     if (!mine) {
       throw new Error(
         `Play has no track "${a.track}". Tracks on cz.reis.app: ` +
-          `${tracks.map((t) => t.track).join(', ') || 'none'}. Set PLAY_TRACK to one of them.`
+          `${tracks.map((t) => t.track).join(', ') || 'none'}. Fix or drop --track, or set PLAY_TRACK when no --track is passed (--track wins).`
       );
     }
     const sameCode = (mine.releases ?? []).filter((r) =>
@@ -126,7 +126,7 @@ export async function releaseToTrack(a: ReleaseArgs): Promise<ReleaseResult> {
     committed = true;
     return {
       status: 'released',
-      detail: `versionCode ${uploadedCode} committed to ${a.track}; Google reviews it before testers get it`,
+      detail: `versionCode ${uploadedCode} committed to ${a.track}; Google reviews it before anyone gets it`,
     };
   } finally {
     if (!committed) await a.play('DELETE', `/edits/${editId}`).catch(() => {});
