@@ -57,6 +57,19 @@ describe('záznamník notifications on the phone', () => {
     expect(n.id).toBeLessThan(2 ** 31);
   });
 
+  it('never asks Android for an exact alarm', async () => {
+    // The plugin defaults isExactNotification to true and, on Android 12+
+    // without SCHEDULE_EXACT_ALARM (stripped in AndroidManifest.xml), opens the
+    // "Alarms & reminders" settings screen before posting, even with no
+    // `schedule.at`. Inexact must be asked for explicitly.
+    ln.checkPermissions.mockResolvedValue({ display: 'granted' });
+    notifyNewPoints(FOUND);
+    await settle();
+
+    const [n] = ln.schedule.mock.calls[0]![0].notifications;
+    expect(n.isExactNotification).toBe(false);
+  });
+
   it('asks once when the student has not decided, and shows it on a yes', async () => {
     ln.checkPermissions.mockResolvedValue({ display: 'prompt' });
     ln.requestPermissions.mockResolvedValue({ display: 'granted' });
