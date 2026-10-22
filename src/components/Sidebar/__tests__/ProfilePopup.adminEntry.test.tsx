@@ -7,8 +7,8 @@ vi.mock('../../../hooks/useUserParams', () => ({
   useUserParams: () => ({ params: { fullName: 'Jana Nováková', email: null, studentId: '1' } }),
 }));
 
-/** Desktop half of the hidden way into admin (spec 2026-10-08). */
-describe('ProfilePopup — the hidden way into admin', () => {
+/** Desktop half: the admin console has no door (adminConsoleIsDormant.test.ts). */
+describe('ProfilePopup — no way into admin', () => {
   const open = vi.fn();
   beforeEach(() => {
     open.mockReset();
@@ -24,23 +24,19 @@ describe('ProfilePopup — the hidden way into admin', () => {
     cleanup();
   });
 
-  it('holding the name opens the console and closes the popup', () => {
+  it('holding the name does not open the console', () => {
     vi.useFakeTimers();
     const onClose = vi.fn();
     render(<ProfilePopup isOpen onClose={onClose} />);
     fireEvent.pointerDown(screen.getByTestId('profile-popup-name'), { clientX: 0, clientY: 0 });
     act(() => void vi.advanceTimersByTime(700));
-    expect(open).toHaveBeenCalledOnce();
-    expect(onClose).toHaveBeenCalled();
+    expect(open).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('shows Správa only once an admin session exists', () => {
-    const { unmount } = render(<ProfilePopup isOpen />);
-    expect(screen.queryByText('Správa')).toBeNull();
-    unmount();
+  it('shows no Správa even with an admin session on the device', () => {
     useAppStore.setState({ adminSession: {} as never });
     render(<ProfilePopup isOpen />);
-    fireEvent.click(screen.getByText('Správa'));
-    expect(open).toHaveBeenCalledOnce();
+    expect(screen.queryByText('Správa')).toBeNull();
   });
 });
