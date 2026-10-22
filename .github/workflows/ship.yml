@@ -3,7 +3,7 @@ name: Ship
 # The release pipeline: one run takes a vX.Y.Z tag to all three stores.
 #
 #   Database   pending supabase/migrations -> prod, FIRST; the stores wait on it
-#   Android    signed AAB -> Google Play closed-testing track (Alpha)
+#   Android    signed AAB -> Google Play production, full rollout
 #   iOS        archive -> upload -> attach to the version -> submit for review
 #   Extension  Chrome Web Store + Firefox Add-ons (publish.yml)
 #   Summary    one table, red if any store failed
@@ -83,7 +83,7 @@ jobs:
     secrets: inherit
 
   android:
-    name: Google Play (closed testing)
+    name: Google Play (production)
     needs: database
     if: inputs.stores == 'all' || inputs.stores == 'android'
     runs-on: ubuntu-latest
@@ -137,7 +137,7 @@ jobs:
           printf '%s' "$ANDROID_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
           export REIS_KEYSTORE_FILE="$RUNNER_TEMP/upload.jks"
           node scripts/android-release.mjs aab
-      - name: Release to the closed-testing track
+      - name: Release to production
         env:
           SA_EMAIL: ${{ secrets.CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL }}
           SA_PRIVATE_KEY: ${{ secrets.CHROME_SERVICE_ACCOUNT_PRIVATE_KEY }}
@@ -289,7 +289,7 @@ jobs:
             echo "| Store | Result |"
             echo "| --- | --- |"
             echo "| Database migrations (prod) | $DATABASE |"
-            echo "| Google Play, closed testing | $ANDROID |"
+            echo "| Google Play, production | $ANDROID |"
             echo "| App Store, submit for review | $IOS |"
             echo "| Chrome + Firefox | $EXTENSION |"
           } >> "$GITHUB_STEP_SUMMARY"

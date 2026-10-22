@@ -1,4 +1,4 @@
-// Release an Android App Bundle to a Google Play testing track through the Play
+// Release an Android App Bundle to a Google Play track (production) through the Play
 // Developer API (androidpublisher v3 "edits"): open an edit, upload the bundle,
 // put it on the track with the release notes, commit.
 //
@@ -12,7 +12,7 @@
 //    opens a temporary edit and deletes it).
 //
 // A commit sends the release to Google's review for that track; it reaches
-// testers when Google has passed it, not when this returns.
+// users when Google has passed it, not when this returns.
 //
 // The HTTP client is injected (see scripts/release/play-upload.ts for the real
 // one) so the sequence is testable without Google.
@@ -58,6 +58,15 @@ export function versionCodeFor(version: string): number {
   return Number(m[1]) * 10000 + Number(m[2]) * 100 + Number(m[3]);
 }
 
+/**
+ * The track a release goes to: --track, then the PLAY_TRACK repository variable,
+ * then production. `||`, not `??`: an unset repository variable reaches the job
+ * as an empty string.
+ */
+export function resolveTrack(argTrack: string | undefined, envTrack: string | undefined): string {
+  return argTrack || envTrack || 'production';
+}
+
 export async function releaseToTrack(a: ReleaseArgs): Promise<ReleaseResult> {
   const code = a.expectedVersionCode ?? versionCodeFor(a.versionName);
   const edit = await a.play('POST', '/edits', {});
@@ -71,7 +80,7 @@ export async function releaseToTrack(a: ReleaseArgs): Promise<ReleaseResult> {
     if (!mine) {
       throw new Error(
         `Play has no track "${a.track}". Tracks on cz.reis.app: ` +
-          `${tracks.map((t) => t.track).join(', ') || 'none'}. Set PLAY_TRACK to the closed-testing one.`
+          `${tracks.map((t) => t.track).join(', ') || 'none'}. Set PLAY_TRACK to one of them.`
       );
     }
     const sameCode = (mine.releases ?? []).filter((r) =>

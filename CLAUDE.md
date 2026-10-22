@@ -124,7 +124,7 @@ When a task involves IS Mendelu data, a new scraper, or the CDN data shape: read
 - Releasing (version bump + `release-notes/X.Y.Z.cs.txt` → `test` → `main`) →
   `/release`. Merging the release PR pushes `vX.Y.Z` and, **in the same run**,
   takes it to all three stores: the App Store (upload and submit for review),
-  Google Play's closed-testing track, and Chrome + Firefox (Edge is not a
+  Google Play production, and Chrome + Firefox (Edge is not a
   target). One summary table says what reached each. It has to be one run: a tag
   pushed with `GITHUB_TOKEN` starts no other workflow. Secrets, the dry run and
   what it does not do: `docs/release-pipeline.md`.
