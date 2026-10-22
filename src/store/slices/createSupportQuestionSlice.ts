@@ -1,5 +1,6 @@
 import type { AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage/IndexedDBService';
+import { logError } from '../../utils/reportError';
 
 /**
  * The "would you support reIS?" question, asked as a row in Novinky on both
@@ -25,51 +26,60 @@ export interface SupportQuestionSlice {
   answerSupportQuestion: (answer: 'yes' | 'dismissed') => Promise<void>;
 }
 
-interface SavedRecord {
-  answer?: 'yes' | 'dismissed';
-  badgeSeen?: boolean;
-}
-
-const KEY = 'support_question';
-
-async function readSaved(): Promise<SavedRecord> {
-  // A failed read falls back to "never asked": the worst case is the row
-  // once more, never a lost answer, because every write merges with disk.
-  const saved = (await IndexedDBService.get('meta', KEY).catch(() => undefined)) as
-    SavedRecord | undefined;
-  return saved ?? {};
-}
+/**
+ * Two keys, not one record. Each write then touches only its own key, so no
+ * write has to read-merge-write anything: a second extension tab clearing its
+ * badge cannot put back a record without the answer another tab just saved.
+ */
+const ANSWER_KEY = 'support_question_answer';
+const BADGE_KEY = 'support_question_badge_seen';
 
 /**
- * Merged with what is on disk, not just what is in memory: Novinky can open
- * before boot's read has landed, and writing only memory would erase an
- * answer already saved — the same trap `markNotificationsRead` documents.
+ * Failures are logged locally and swallowed. A failed read falls back to
+ * "never asked" — the worst case is the row once more; a failed write leaves
+ * the answer in memory for this session. Neither may surface as an unhandled
+ * rejection from a tap.
  */
-async function save(patch: SavedRecord): Promise<SavedRecord> {
-  const next = { ...(await readSaved()), ...patch };
-  await IndexedDBService.set('meta', KEY, next);
-  return next;
+async function readSaved(): Promise<SupportQuestionSlice['supportQuestion']> {
+  try {
+    const [answer, badgeSeen] = await Promise.all([
+      IndexedDBService.get('meta', ANSWER_KEY),
+      IndexedDBService.get('meta', BADGE_KEY),
+    ]);
+    const status = answer === 'yes' || answer === 'dismissed' ? answer : 'open';
+    return { status, badgeSeen: badgeSeen === true };
+  } catch (err) {
+    logError('SupportQuestionSlice.load', err);
+    return { status: 'open', badgeSeen: false };
+  }
 }
 
-function toState(saved: SavedRecord): SupportQuestionSlice['supportQuestion'] {
-  return { status: saved.answer ?? 'open', badgeSeen: saved.badgeSeen === true };
+async function write(context: string, entries: Array<readonly [string, unknown]>): Promise<void> {
+  try {
+    await IndexedDBService.setMany('meta', entries);
+  } catch (err) {
+    logError(context, err);
+  }
 }
 
 export const createSupportQuestionSlice: AppSlice<SupportQuestionSlice> = (set, get) => ({
   supportQuestion: { status: 'loading', badgeSeen: false },
 
   loadSupportQuestion: async () => {
-    set({ supportQuestion: toState(await readSaved()) });
+    set({ supportQuestion: await readSaved() });
   },
 
   markSupportQuestionSeen: async () => {
     if (get().supportQuestion.badgeSeen) return;
     set({ supportQuestion: { ...get().supportQuestion, badgeSeen: true } });
-    await save({ badgeSeen: true });
+    await write('SupportQuestionSlice.markSeen', [[BADGE_KEY, true]]);
   },
 
   answerSupportQuestion: async (answer) => {
     set({ supportQuestion: { status: answer, badgeSeen: true } });
-    await save({ answer, badgeSeen: true });
+    await write('SupportQuestionSlice.answer', [
+      [ANSWER_KEY, answer],
+      [BADGE_KEY, true],
+    ]);
   },
 });

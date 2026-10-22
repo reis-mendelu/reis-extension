@@ -6,7 +6,11 @@ import { useAppStore } from '../store/useAppStore';
 
 vi.mock('../api/featureUsage', () => ({ trackFeatureSignal: vi.fn(async () => {}) }));
 vi.mock('../services/storage/IndexedDBService', () => ({
-  IndexedDBService: { get: vi.fn(async () => undefined), set: vi.fn(async () => {}) },
+  IndexedDBService: {
+    get: vi.fn(async () => undefined),
+    set: vi.fn(async () => {}),
+    setMany: vi.fn(async () => {}),
+  },
 }));
 vi.mock('../services/spolky', () => ({
   fetchNotifications: vi.fn(async () => []),

@@ -8,7 +8,11 @@ import type { SpolekNotification } from '../../../../services/spolky';
 const trackFeatureSignal = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock('../../../../api/featureUsage', () => ({ trackFeatureSignal }));
 vi.mock('../../../../services/storage/IndexedDBService', () => ({
-  IndexedDBService: { get: vi.fn(async () => undefined), set: vi.fn(async () => {}) },
+  IndexedDBService: {
+    get: vi.fn(async () => undefined),
+    set: vi.fn(async () => {}),
+    setMany: vi.fn(async () => {}),
+  },
 }));
 
 const support = cs.support;

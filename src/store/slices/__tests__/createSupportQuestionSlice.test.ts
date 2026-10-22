@@ -9,9 +9,13 @@ const disk = vi.hoisted(() => new Map<string, unknown>());
 vi.mock('../../../services/storage/IndexedDBService', () => ({
   IndexedDBService: {
     get: vi.fn(async (_store: string, key: string) => disk.get(key)),
-    set: vi.fn(async (_store: string, key: string, value: unknown) => void disk.set(key, value)),
+    setMany: vi.fn(async (_store: string, entries: Array<[string, unknown]>) => {
+      for (const [key, value] of entries) disk.set(key, value);
+    }),
   },
 }));
+const logError = vi.hoisted(() => vi.fn());
+vi.mock('../../../utils/reportError', () => ({ logError }));
 
 function makeSlice(): () => SupportQuestionSlice {
   let state: SupportQuestionSlice;
@@ -33,7 +37,7 @@ function makeSlice(): () => SupportQuestionSlice {
 describe('createSupportQuestionSlice', () => {
   beforeEach(() => {
     disk.clear();
-    vi.mocked(IndexedDBService.set).mockClear();
+    vi.clearAllMocks();
   });
 
   // Until the saved answer is read, nothing may show: a student who answered
@@ -70,12 +74,39 @@ describe('createSupportQuestionSlice', () => {
     expect(next().supportQuestion).toEqual({ status: 'open', badgeSeen: true });
   });
 
-  // Novinky can open before boot's read has landed. Writing only what is in
-  // memory then would erase an answer already on disk.
-  it('merges with the saved record rather than overwriting it', async () => {
-    disk.set('support_question', { answer: 'dismissed' });
+  // Two extension tabs share the device's storage. A tab clearing its badge
+  // after another tab answered must not bring the question back.
+  it('a badge write from another tab cannot erase an answer', async () => {
+    const tabA = makeSlice();
+    const tabB = makeSlice();
+    await tabA().loadSupportQuestion();
+    await tabB().loadSupportQuestion();
+
+    await Promise.all([
+      tabB().answerSupportQuestion('dismissed'),
+      tabA().markSupportQuestionSeen(),
+    ]);
+
+    const next = makeSlice();
+    await next().loadSupportQuestion();
+    expect(next().supportQuestion).toEqual({ status: 'dismissed', badgeSeen: true });
+  });
+
+  // A tap must never end in an unhandled rejection: a full disk is logged
+  // locally and the answer still holds for this session.
+  it('logs a failed write and keeps the answer in memory', async () => {
+    vi.mocked(IndexedDBService.setMany).mockRejectedValueOnce(new Error('QuotaExceededError'));
     const get = makeSlice();
-    await get().markSupportQuestionSeen();
-    expect(disk.get('support_question')).toEqual({ answer: 'dismissed', badgeSeen: true });
+    await expect(get().answerSupportQuestion('yes')).resolves.toBeUndefined();
+    expect(get().supportQuestion.status).toBe('yes');
+    expect(logError).toHaveBeenCalledWith('SupportQuestionSlice.answer', expect.any(Error));
+  });
+
+  it('logs a failed read and asks', async () => {
+    vi.mocked(IndexedDBService.get).mockRejectedValueOnce(new Error('blocked'));
+    const get = makeSlice();
+    await get().loadSupportQuestion();
+    expect(get().supportQuestion).toEqual({ status: 'open', badgeSeen: false });
+    expect(logError).toHaveBeenCalledWith('SupportQuestionSlice.load', expect.any(Error));
   });
 });
