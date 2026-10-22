@@ -21,7 +21,7 @@ import { enrichExamsWithDurations } from '../services/sync/examDurations';
 import type { ExamSubject } from '../types/exams';
 import { fetchFullSemesterSchedule } from './dataFetchers';
 import { sendToIframe } from './iframeManager';
-import { TTL, ttlGated, isFresh, markFetched } from './syncTtl';
+import { TTL, ttlGated, isFresh, markFetched, resetSyncTtl } from './syncTtl';
 import type { SyncedData } from '../types/messages';
 import { IndexedDBService } from '../services/storage/IndexedDBService';
 import type { SubjectsData } from '../types/documents';
@@ -49,10 +49,39 @@ let currentSemesterCodes: string[] | null = null;
  */
 let lastPastSubjects: { cz: Record<string, unknown>; en: Record<string, unknown> } | null = null;
 
+/** The study the data in this module belongs to. */
+let syncedStudium: string | null = null;
+
+/**
+ * Bumped by `forgetStudyData`. A run started before the bump belongs to the
+ * study the student just left: it is allowed to finish — its requests are
+ * already out — but nothing it produces may reach `cachedData` or the iframe,
+ * which has already moved on and would store it as the new study's.
+ */
+let studyGeneration = 0;
+
+/**
+ * Drop everything this context holds about the study it is leaving — a student
+ * with two studies switched (see `chooseStudy`). Without it, `cachedData` is
+ * re-sent to a reloaded iframe as if it were the new study's, and the TTL
+ * stamps skip the new study's fetches as fresh.
+ */
+export function forgetStudyData(): void {
+  cachedData = { lastSync: 0 };
+  currentSemesterCodes = null;
+  lastPastSubjects = null;
+  studyGeneration++;
+  // `syncedStudium` stays: a run still in flight for the old study refills
+  // `cachedData`, and the next run must still see the change and drop it.
+  resetSyncTtl();
+}
+
 export async function syncAllData() {
   if (isSyncing) return;
 
   isSyncing = true;
+  // `generation` lives inside the try; the catch needs its own copy.
+  const syncStartGeneration = studyGeneration;
 
   try {
     // Inside the try on purpose: this used to sit above it, so a throw here
@@ -71,13 +100,28 @@ export async function syncAllData() {
      * `isSyncing` stays true: the crawl is not over, and the app's
      * `firstSyncSettled` latch keys off the false that ends it.
      */
-    const pushEarly = (partial: Partial<SyncedData>) =>
-      sendToIframe(
-        Messages.syncUpdate({ ...partial, isSyncing: true, lastSync: cachedData.lastSync })
-      );
+    let generation = studyGeneration;
+    const live = () => generation === studyGeneration;
+    const pushEarly = (partial: Partial<SyncedData>) => {
+      if (live())
+        sendToIframe(
+          Messages.syncUpdate({
+            ...partial,
+            studium: cachedData.studium,
+            isSyncing: true,
+            lastSync: cachedData.lastSync,
+          })
+        );
+    };
 
     const userParams = await getUserParams();
     const studium = userParams?.studium;
+    if (studium && syncedStudium && studium !== syncedStudium) forgetStudyData();
+    if (studium) syncedStudium = studium;
+    generation = studyGeneration;
+    // Every update this run sends names its study, so a context still on the
+    // other one after a half-done switch can refuse it (useAppLogic).
+    if (studium) cachedData = { ...cachedData, studium };
 
     // Which core fetches actually ran, as opposed to being TTL-skipped — both
     // come back null, and only a fetch that ran can say IS was unreachable.
@@ -88,7 +132,7 @@ export async function syncAllData() {
       attempted.add('subjects');
       return fetchDualLanguageSubjects(studium || undefined, userParams?.obdobi || undefined);
     }).then((result) => {
-      if (result) {
+      if (result && live()) {
         cachedData = { ...cachedData, subjects: result.subjects, attendance: result.attendance };
         // Capture current-semester codes BEFORE mergePastSubjects adds past ones,
         // so consumers can tell this semester's subjects from fulfilled ones.
@@ -104,7 +148,7 @@ export async function syncAllData() {
           return fetchDualLanguageStudyPlan(studium);
         }).then((plan) => {
           if (plan) {
-            cachedData = { ...cachedData, studyPlan: plan };
+            if (live()) cachedData = { ...cachedData, studyPlan: plan };
             // Data only, no arrival flag: see SyncDomain. A null here is
             // ambiguous (fresh / absent / not fetched), and the screen must not
             // be released by an ambiguous signal.
@@ -120,7 +164,7 @@ export async function syncAllData() {
     const pastSubjectsPromise = ttlGated('pastSubjects', TTL.SEMESTER, !!lastPastSubjects, () =>
       fetchDualLanguagePastSubjects()
     ).then((value) => {
-      if (value) lastPastSubjects = value as typeof lastPastSubjects;
+      if (value && live()) lastPastSubjects = value as typeof lastPastSubjects;
       return value;
     });
 
@@ -130,7 +174,7 @@ export async function syncAllData() {
             fetchStudyStats(studium, userParams.obdobi!)
           ).then((stats) => {
             if (stats) {
-              cachedData = { ...cachedData, studyStats: stats };
+              if (live()) cachedData = { ...cachedData, studyStats: stats };
               pushEarly({ studyStats: stats });
             }
             return stats;
@@ -142,7 +186,7 @@ export async function syncAllData() {
         ? ttlGated('studyComparison', TTL.DAILY, !!cachedData.studyComparison, () =>
             fetchStudyComparison(studium, userParams.obdobi!)
           ).then((c) => {
-            if (c) cachedData = { ...cachedData, studyComparison: c };
+            if (c && live()) cachedData = { ...cachedData, studyComparison: c };
             return c;
           })
         : Promise.resolve(null);
@@ -152,7 +196,7 @@ export async function syncAllData() {
           syncCvicneTests(studium)
         ).then((result) => {
           if (result) {
-            cachedData = { ...cachedData, cvicneTests: result.tests };
+            if (live()) cachedData = { ...cachedData, cvicneTests: result.tests };
           }
           return result;
         })
@@ -162,7 +206,7 @@ export async function syncAllData() {
       studium && userParams?.obdobi
         ? syncOdevzdavarny(studium, userParams.obdobi).then((result) => {
             if (result) {
-              cachedData = { ...cachedData, odevzdavarny: result.assignments };
+              if (live()) cachedData = { ...cachedData, odevzdavarny: result.assignments };
             }
             return result;
           })
@@ -176,7 +220,7 @@ export async function syncAllData() {
       return fetchFullSemesterSchedule();
     }).then((value) => {
       if (value && value.length > 0) {
-        cachedData = { ...cachedData, schedule: value };
+        if (live()) cachedData = { ...cachedData, schedule: value };
         pushEarly({ schedule: value, loaded: ['schedule'] });
       } else if (value) {
         // The fetch finished and the answer is "no lessons in the whole
@@ -198,7 +242,7 @@ export async function syncAllData() {
     // deadlines are the two things that genuinely move within a day.
     const examsPromise = fetchDualLanguageExams().then((value) => {
       if (value.length > 0) {
-        cachedData = { ...cachedData, exams: value };
+        if (live()) cachedData = { ...cachedData, exams: value };
         pushEarly({ exams: value, loaded: ['exams'] });
       } else {
         // The fetch finished and the answer is "none" — which is the common
@@ -259,8 +303,10 @@ export async function syncAllData() {
           (p) => p.id !== userParams!.obdobi
         );
         for (const period of pastPeriods) {
-          const cached = (await IndexedDBService.get('meta', `past_semester_${period.id}`)) as
-            { subjects: { data: typeof subjects.value.subjects.data } } | undefined;
+          const cached = (await IndexedDBService.get(
+            'meta',
+            `past_semester_${studium}_${period.id}`
+          )) as { subjects: { data: typeof subjects.value.subjects.data } } | undefined;
           if (cached?.subjects?.data) {
             for (const [code, info] of Object.entries(cached.subjects.data)) {
               if (!subjects.value.subjects.data[code]) {
@@ -278,74 +324,82 @@ export async function syncAllData() {
       );
     }
 
-    cachedData = {
-      ...cachedData,
-      // `.length > 0`, like exams below: an empty read keeps the cached
-      // timetable. This is the contract syncTtl.ts already documents ("it
-      // keeps the previous value for a null result or an empty list") — the
-      // truthiness of [] is what made schedule the one resource that broke it.
-      schedule:
-        fullSchedule.status === 'fulfilled' && fullSchedule.value && fullSchedule.value.length > 0
-          ? fullSchedule.value
-          : cachedData.schedule,
-      exams:
-        exams.status === 'fulfilled' && exams.value.length > 0
-          ? await enrichExamsWithDurations(
-              exams.value,
-              cachedExams(),
-              studium ?? '',
-              userParams?.obdobi ?? ''
-            )
-          : cachedData.exams,
-      subjects:
-        subjects.status === 'fulfilled' && subjects.value
-          ? subjects.value.subjects
-          : cachedData.subjects,
-      attendance:
-        subjects.status === 'fulfilled' && subjects.value
-          ? subjects.value.attendance
-          : cachedData.attendance,
-      studyPlan:
-        studyPlan.status === 'fulfilled' && studyPlan.value
-          ? studyPlan.value
-          : cachedData.studyPlan,
-      studyStats:
-        studyStats.status === 'fulfilled' && studyStats.value
-          ? studyStats.value
-          : cachedData.studyStats,
-      studyComparison:
-        studyComparison.status === 'fulfilled' && studyComparison.value
-          ? studyComparison.value
-          : cachedData.studyComparison,
-      cvicneTests:
-        cvicneTests.status === 'fulfilled' && cvicneTests.value?.tests?.length
-          ? cvicneTests.value.tests
-          : cachedData.cvicneTests,
-      odevzdavarny:
-        odevzdavarnyResult.status === 'fulfilled' && odevzdavarnyResult.value
-          ? odevzdavarnyResult.value.assignments
-          : cachedData.odevzdavarny,
-      files: cachedData.files || {},
-      lastSync: Date.now(),
-    };
+    // Awaited BEFORE the generation check, never inside the assignment: a
+    // switch landing during this await would otherwise pass the check first and
+    // write the old study's data into the cleared cache.
+    const enrichedExams =
+      exams.status === 'fulfilled' && exams.value.length > 0
+        ? await enrichExamsWithDurations(
+            exams.value,
+            cachedExams(),
+            studium ?? '',
+            userParams?.obdobi ?? ''
+          )
+        : null;
+
+    if (live())
+      cachedData = {
+        ...cachedData,
+        // `.length > 0`, like exams below: an empty read keeps the cached
+        // timetable. This is the contract syncTtl.ts already documents ("it
+        // keeps the previous value for a null result or an empty list") — the
+        // truthiness of [] is what made schedule the one resource that broke it.
+        schedule:
+          fullSchedule.status === 'fulfilled' && fullSchedule.value && fullSchedule.value.length > 0
+            ? fullSchedule.value
+            : cachedData.schedule,
+        exams: enrichedExams ?? cachedData.exams,
+        subjects:
+          subjects.status === 'fulfilled' && subjects.value
+            ? subjects.value.subjects
+            : cachedData.subjects,
+        attendance:
+          subjects.status === 'fulfilled' && subjects.value
+            ? subjects.value.attendance
+            : cachedData.attendance,
+        studyPlan:
+          studyPlan.status === 'fulfilled' && studyPlan.value
+            ? studyPlan.value
+            : cachedData.studyPlan,
+        studyStats:
+          studyStats.status === 'fulfilled' && studyStats.value
+            ? studyStats.value
+            : cachedData.studyStats,
+        studyComparison:
+          studyComparison.status === 'fulfilled' && studyComparison.value
+            ? studyComparison.value
+            : cachedData.studyComparison,
+        cvicneTests:
+          cvicneTests.status === 'fulfilled' && cvicneTests.value?.tests?.length
+            ? cvicneTests.value.tests
+            : cachedData.cvicneTests,
+        odevzdavarny:
+          odevzdavarnyResult.status === 'fulfilled' && odevzdavarnyResult.value
+            ? odevzdavarnyResult.value.assignments
+            : cachedData.odevzdavarny,
+        files: cachedData.files || {},
+        lastSync: Date.now(),
+      };
 
     // Push Phase 2 data (exams, schedule, subjects) to the iframe immediately,
     // before the slow per-subject Phase 3 (files, classmates, zazramnik).
-    sendToIframe(
-      Messages.syncUpdate({
-        exams: cachedData.exams,
-        schedule: cachedData.schedule,
-        subjects: cachedData.subjects,
-        attendance: cachedData.attendance,
-        studyPlan: cachedData.studyPlan,
-        studyStats: cachedData.studyStats,
-        studyComparison: cachedData.studyComparison,
-        cvicneTests: cachedData.cvicneTests,
-        odevzdavarny: cachedData.odevzdavarny,
-        isSyncing: true,
-        lastSync: cachedData.lastSync,
-      })
-    );
+    if (live())
+      sendToIframe(
+        Messages.syncUpdate({
+          exams: cachedData.exams,
+          schedule: cachedData.schedule,
+          subjects: cachedData.subjects,
+          attendance: cachedData.attendance,
+          studyPlan: cachedData.studyPlan,
+          studyStats: cachedData.studyStats,
+          studyComparison: cachedData.studyComparison,
+          cvicneTests: cachedData.cvicneTests,
+          odevzdavarny: cachedData.odevzdavarny,
+          studium: cachedData.studium,
+          isSyncing: true,
+          lastSync: cachedData.lastSync,
+        })
+      );
 
     // Falls back to the cached list when the subjects fetch was skipped as
     // fresh — Phase 3 keys off the enrolled subjects, not off a new fetch.
@@ -356,18 +410,20 @@ export async function syncAllData() {
     if (subjectsForDetails) {
       await syncSubjectDetails(
         subjectsForDetails,
-        fullSchedule.status === 'fulfilled' ? fullSchedule.value : null
+        fullSchedule.status === 'fulfilled' ? fullSchedule.value : null,
+        live
       );
     }
 
-    cachedData.lastSync = Date.now();
-    sendToIframe(
-      Messages.syncUpdate({
-        ...cachedData,
-        isSyncing: false,
-        ...(reachedNothing ? { error: 'IS Mendelu unreachable' } : {}),
-      })
-    );
+    if (live()) cachedData.lastSync = Date.now();
+    if (live())
+      sendToIframe(
+        Messages.syncUpdate({
+          ...cachedData,
+          isSyncing: false,
+          ...(reachedNothing ? { error: 'IS Mendelu unreachable' } : {}),
+        })
+      );
 
     // Fire-and-forget: fetch past semesters once, permanently cache in IDB
     if (
@@ -381,9 +437,11 @@ export async function syncAllData() {
       );
     }
   } catch (e) {
-    sendToIframe(
-      Messages.syncUpdate({ isSyncing: false, error: String(e), lastSync: cachedData.lastSync })
-    );
+    // A run for a study the student left reports nothing, failures included.
+    if (studyGeneration === syncStartGeneration)
+      sendToIframe(
+        Messages.syncUpdate({ isSyncing: false, error: String(e), lastSync: cachedData.lastSync })
+      );
   } finally {
     isSyncing = false;
   }
@@ -393,8 +451,11 @@ async function syncSubjectDetails(
   subjectsValue: {
     data: Record<string, { folderUrl?: string; subjectId?: string; skupinaId?: string }>;
   },
-  scheduleValue: { studyId?: string; periodId?: string }[] | null
+  scheduleValue: { studyId?: string; periodId?: string }[] | null,
+  /** False once the student has moved study — see `studyGeneration`. */
+  live: () => boolean = () => true
 ) {
+  if (!live()) return;
   // Scoped, not everything in the map: `subjects.data` has been through
   // mergePastSubjects by now and holds every subject the student ever took.
   // See subjectScope for what that cost and where past subjects are fetched
@@ -429,7 +490,7 @@ async function syncSubjectDetails(
             fetchFilesFromFolder(subjectFull.folderUrl!)
           )
             .then((f) => {
-              if (f) (cachedData.files as Record<string, unknown>)[code] = f;
+              if (f && live()) (cachedData.files as Record<string, unknown>)[code] = f;
             })
             .catch(() => {})
         );
@@ -443,7 +504,7 @@ async function syncSubjectDetails(
             return syllabus.requirementsText === SYLLABUS_FETCH_FAILED ? null : syllabus;
           })
             .then((s) => {
-              if (!s) return;
+              if (!s || !live()) return;
               if (!cachedData.syllabuses) cachedData.syllabuses = {};
               (cachedData.syllabuses as Record<string, unknown>)[code] = s;
             })
@@ -470,7 +531,7 @@ async function syncSubjectDetails(
           })
         )
           .then((z) => {
-            cachedData.zaznamnik = z;
+            if (live()) cachedData.zaznamnik = z;
           })
           .catch(() => {})
       : Promise.resolve();
@@ -501,6 +562,7 @@ async function syncSubjectDetails(
       await new Promise((r) => setTimeout(r, 2000));
       predmetIdMap = await fetchSeminarGroupIds(studium, obdobi);
     }
+    if (!live()) return;
     if (!cachedData.classmates) cachedData.classmates = {};
 
     // Build tasks by iterating enrolled subjects and matching their subjectId.
@@ -515,6 +577,7 @@ async function syncSubjectDetails(
           const skupinaId = predmetIdMap[predmetId]!;
           try {
             const data = await fetchClassmates(predmetId, studium!, obdobi!, skupinaId);
+            if (!live()) return;
             await IndexedDBService.set('classmates', courseCode, data);
             (cachedData.classmates as Record<string, unknown>)[courseCode] = data;
             markFetched(`classmates:${courseCode}`);
@@ -594,6 +657,7 @@ export async function refreshExams(): Promise<void> {
   sendToIframe(
     Messages.syncUpdate({
       exams: enriched,
+      studium: params?.studium,
       loaded: ['exams'],
       isSyncing,
       lastSync: cachedData.lastSync,

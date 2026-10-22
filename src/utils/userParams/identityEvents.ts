@@ -8,6 +8,12 @@ import type { UserParams } from '../userParams';
  */
 export interface IdentityChange {
   wiped: boolean;
+  /**
+   * The same student moved to their other study (see `chooseStudy`): only that
+   * study's cached data was dropped, and everything that belongs to the
+   * person — the society login among it — stays.
+   */
+  studyOnly?: boolean;
 }
 
 type IdentityListener = (params: UserParams | null, change: IdentityChange) => void;

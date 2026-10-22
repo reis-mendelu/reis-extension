@@ -10,6 +10,7 @@ import { scrapedNavMenu } from './sniper';
 import { downloadDocumentInPage } from './documentDownloader';
 import { isIsMendeluUrl } from './isMendeluUrl';
 import { signOutFromHostPage } from './hostSignOut';
+import { switchStudyOnHost } from './switchStudyOnHost';
 import { readBytesBody } from './readBytesBody';
 import { fetchFileForIframe } from './fetchFileForIframe';
 import { getDiagnostics } from '../utils/diagnostics/diagnosticLog';
@@ -231,6 +232,12 @@ async function handleAction(id: string, action: string, payload: unknown) {
         result = { success: true };
         break;
       }
+      case 'switch_study':
+        // The student picked their other study in the iframe. See switchStudyOnHost.
+        if (!p.studium) throw new Error('switch_study: missing studium');
+        await switchStudyOnHost(p.studium);
+        result = { success: true };
+        break;
       case 'logout': {
         // Host-page half of the sign-out — the logout form AND the host-origin
         // database, which no other context can reach. See hostSignOut.ts.

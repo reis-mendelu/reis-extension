@@ -1,13 +1,13 @@
 ---
-description: Cut a reIS release — version bump and agreed What's new on test, the test→main release PR; merging it ships to the App Store, Google Play (closed testing) and Chrome/Firefox in one run.
+description: Cut a reIS release — version bump and agreed What's new on test, the test→main release PR; merging it ships to the App Store, Google Play (production) and Chrome/Firefox in one run.
 ---
 
 # /release
 
 Ships a release off `test`: version bump + release notes → release PR into
 `main` → merge tags `vX.Y.Z` → **`ship.yml` takes it to all three stores in the
-same run**: the App Store (build, upload, submit for review), Google Play's
-closed-testing track, and Chrome + Firefox. One summary table says what reached
+same run**: the App Store (build, upload, submit for review), Google Play
+production, and Chrome + Firefox. One summary table says what reached
 each. Setup, secrets and the dry run: `docs/release-pipeline.md`.
 
 A store submission cannot be recalled, and the merge is what triggers it. So the

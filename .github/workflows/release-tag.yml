@@ -9,7 +9,7 @@ name: Release tag
 #
 # THE TAG IS THE RELEASE. This job pushes it, and the `ship` job below, in the
 # SAME run, takes it to all three stores (ship.yml): the App Store (build,
-# upload, submit for review), Google Play's closed-testing track, and Chrome +
+# upload, submit for review), Google Play production, and Chrome +
 # Firefox. It is a called workflow and not a tag-triggered one because a tag
 # pushed with GITHUB_TOKEN does not start other workflows.
 #

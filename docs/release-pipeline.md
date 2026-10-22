@@ -9,7 +9,7 @@ release PR merged into main
   │                    and release-notes/X.Y.Z.cs.txt exists)
   └─ ship.yml          (same run: a tag pushed with GITHUB_TOKEN starts no workflow)
        ├─ Database      supabase db push → prod, FIRST; every store waits on it
-       ├─ Google Play   signed AAB → closed-testing track (Alpha)
+       ├─ Google Play   signed AAB → production, full rollout
        ├─ App Store     archive → upload → attach to version → submit for review
        ├─ Extension     Chrome Web Store + Firefox Add-ons (publish.yml)
        └─ Summary       one table; red if any store failed
@@ -77,11 +77,15 @@ the secrets) and the profile goes stale if the app's entitlements change.
 Already present and reused: `CHROME_*`, `FIREFOX_*`, and the Google service
 account `CHROME_SERVICE_ACCOUNT_*`, which also calls the Play Developer API.
 
-**Play Console, once:** Users and permissions → the service account → grant the
-app permission **Release to testing tracks** for `cz.reis.app`. It already holds
-the Data safety permission, which is a different one. If the closed track's API
-name is not `alpha`, set the repository **variable** `PLAY_TRACK`; a wrong name
-fails with the real track names listed.
+**Play Console, once:** Users and permissions → the service account → app
+permissions for `cz.reis.app` → **Release to production, exclude devices and use
+Play app signing** (it also holds **Release apps to testing tracks** and the Data
+safety permission). Without it the commit fails with a 403. Releases go to
+**production** at full rollout; to send one to another track instead, set the
+repository **variable** `PLAY_TRACK` (e.g. `alpha`) or pass `--track`. A wrong
+name fails with the real track names listed. A newer production version also
+reaches the Alpha testers: Play gives everyone the highest versionCode they can
+see, so the closed track needs no upload of its own.
 
 ## Proving it before a release depends on it
 
@@ -90,7 +94,8 @@ touches it (and `Actions → Ship → Run workflow` does the same by hand). A dr
 builds and signs for real and **releases nothing**:
 
 - Android: builds the signed AAB, opens a temporary Play edit, lists the tracks,
-  deletes the edit.
+  deletes the edit. It does not prove the production permission: only a commit
+  needs it, so a missing grant first shows on a real release.
 - iOS: archives and exports a distribution-signed `.ipa` (`--skip-upload`),
   queries App Store Connect.
 - Extension: `wxt submit --dry-run`, on the **latest existing tag**, not the PR's
@@ -106,10 +111,10 @@ imported into a temporary keychain.
 
 ## What it does not do
 
-- **Android production.** Only the closed-testing track. Production needs Google's
-  closed-test requirement first: 12 testers opted in for 14 days.
+- **Staged rollout.** Production goes to 100% at once. A bad build is stopped
+  in Play Console (halt the rollout), not by this pipeline.
 - **The Play Data safety form.** Still `play-data-safety.yml`.
 - **Recall.** A store submission cannot be taken back. The gates are the release
   PR (the diff, the notes, CI, the privacy block) and the merge itself.
-- A Play release is committed, not live: Google reviews a closed-track release
-  before testers get it.
+- A Play release is committed, not live: Google reviews it before anyone gets
+  it (the first production release, 5.4.1, cleared in about 5 hours).

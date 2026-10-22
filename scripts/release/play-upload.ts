@@ -1,15 +1,15 @@
-// Release the signed AAB to a Play testing track. Runs in .github/workflows/ship.yml
+// Release the signed AAB to Google Play (production). Runs in .github/workflows/ship.yml
 // after `android-release.mjs aab`, with the service account the Chrome publish
 // and the Data safety push already use (SA_EMAIL / SA_PRIVATE_KEY).
 //
-//   npx tsx scripts/release/play-upload.ts --version 5.4.1 [--aab path] [--track alpha] [--dry-run]
+//   npx tsx scripts/release/play-upload.ts --version 5.4.1 [--aab path] [--track production] [--dry-run]
 //
-// The track defaults to PLAY_TRACK, then "alpha" (the closed-testing track).
+// The track is --track, then PLAY_TRACK, then "production" (resolveTrack).
 // Sequence and safety rules: scripts/lib/playRelease.ts.
 import { appendFileSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { serviceAccountJwt } from '../privacy/play-push';
-import { releaseToTrack, type PlayHttp } from '../lib/playRelease';
+import { releaseToTrack, resolveTrack, type PlayHttp } from '../lib/playRelease';
 import { loadReleaseNotes } from '../lib/releaseNotes';
 
 const PACKAGE = 'cz.reis.app';
@@ -43,8 +43,7 @@ async function main(): Promise<void> {
   const version = arg('--version');
   if (!version) throw new Error('--version x.y.z is required.');
   const dryRun = process.argv.includes('--dry-run');
-  // `||`, not `??`: an unset repository variable reaches the job as an empty string.
-  const track = arg('--track') || process.env.PLAY_TRACK || 'alpha';
+  const track = resolveTrack(arg('--track'), process.env.PLAY_TRACK);
   const aab = resolve(arg('--aab') ?? 'android/app/build/outputs/bundle/release/app-release.aab');
   const notes = loadReleaseNotes(version);
   const bundle = readFileSync(aab);
