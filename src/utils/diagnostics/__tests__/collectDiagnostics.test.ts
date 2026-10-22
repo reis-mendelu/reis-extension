@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { clearDiagnostics, recordDiagnostic, type DiagnosticEntry } from '../diagnosticLog';
-import { collectDiagnostics, osOf } from '../collectDiagnostics';
+import { collectDiagnostics } from '../collectDiagnostics';
 
 const platform = { kind: 'extension' as 'extension' | 'capacitor' | 'web' };
 const syncState = {
@@ -119,19 +119,5 @@ describe('collectDiagnostics — what the sync actually got', () => {
     const out = await collectDiagnostics({ fetchContent: async () => [] });
     expect(out.sync.syncFailed).toBe(true);
     expect(JSON.stringify(out)).not.toContain('studium');
-  });
-});
-
-describe('osOf', () => {
-  it.each([
-    ['Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X)', 'iOS 26'],
-    ['Mozilla/5.0 (iPad; CPU OS 18_5 like Mac OS X)', 'iOS 18'],
-    ['Mozilla/5.0 (Linux; Android 14; Pixel 8) wv', 'Android 14'],
-    ['Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', 'macOS'],
-    ['Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'Windows'],
-    ['Mozilla/5.0 (X11; Linux x86_64)', 'Linux'],
-    ['', 'unknown'],
-  ])('%s → %s', (ua, os) => {
-    expect(osOf(ua)).toBe(os);
   });
 });

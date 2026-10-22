@@ -39,6 +39,7 @@ function rowFrom(input: PostInput, associationId: string, createdBy: string): Sp
     created_by: createdBy,
     visible_from: input.visibleFrom ?? null,
     subscribers_only: input.subscribersOnly ?? false,
+    kind: input.kind ?? 'event',
     view_count: 0,
     click_count: 0,
   };

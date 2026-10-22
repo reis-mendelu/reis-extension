@@ -113,6 +113,13 @@ export function ExamsScreen() {
   // used to be prefixed to is real information, so that survives on its own —
   // and where there is none, the row goes away and gives the title its width
   // back, which matters at 320px.
+  // A subject can be present and still yield no row: a "Zápis na cvičení"
+  // section is stripped but its subject kept, and a registered exam whose day
+  // is over is hidden. Keyed on `exams.length` alone, that rendered the header
+  // over a blank body (Návrhy #33) — so the empty state follows what renders.
+  const nothingToShow =
+    registered.length + notYetOpen.length + bookable.length + blocked.length === 0;
+
   const eyebrow = userSemester || undefined;
   const toggle = (id: string) => setExpandedId((cur) => (cur === id ? null : id));
 
@@ -211,7 +218,7 @@ export function ExamsScreen() {
 
   return shell(
     <>
-      {exams.length === 0 ? (
+      {nothingToShow ? (
         <ExamsPullArea
           surfaceRef={screenRef}
           className="items-center justify-center gap-3 px-6 text-center"

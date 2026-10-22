@@ -54,13 +54,14 @@ describe('useFileActions on Capacitor', () => {
       });
 
       // The trailing args are the filename override, the unsealed fallback and
-      // `onFetched` — the last is how the ROW's progress indicator stops when
-      // the bytes land rather than when iOS's share sheet is finally answered.
+      // `onHandoff` — the last is how the ROW's progress indicator stops as the
+      // share sheet opens rather than when it is finally answered.
+      // Both paths pass it: a row click downloads as much as the icon does.
       expect(openIsFileNatively).toHaveBeenCalledWith(
         'slozka.pl?download=1',
         undefined,
         undefined,
-        method === 'downloadSingle' ? expect.any(Function) : undefined,
+        expect.any(Function),
         undefined
       );
       expect(global.fetch).not.toHaveBeenCalled();
@@ -160,16 +161,16 @@ describe('useFileActions on Capacitor', () => {
   });
 
   /**
-   * `onFetched` ends the row's INDICATOR — the bytes are in hand, and on iOS
-   * what follows is the student's own share sheet. It must not end the LOCK.
-   * On Android the base64 conversion and `Downloads.save` are still running at
-   * that point, and releasing the lock there re-enabled the button: a second
-   * tap started a duplicate download of the same file.
+   * `onHandoff` ends the row's INDICATOR — on iOS the share sheet is opening,
+   * and what follows is the student's own dialog. It must not end the LOCK: the
+   * promise settles only when that sheet is answered, and a tap landing under a
+   * dismissing sheet must not start a duplicate download of the same file.
+   * (When the handoff fires is openIsFile.handoff.test.ts's business.)
    */
-  it('ends the indicator on onFetched but keeps refusing the row until delivery settles', async () => {
+  it('ends the indicator on onHandoff but keeps refusing the row until delivery settles', async () => {
     let finishDelivery: () => void = () => {};
-    vi.mocked(openIsFileNatively).mockImplementation(async (_url, _name, _fallback, onFetched) => {
-      onFetched?.();
+    vi.mocked(openIsFileNatively).mockImplementation(async (_url, _name, _fallback, onHandoff) => {
+      onHandoff?.();
       await new Promise<void>((resolve) => {
         finishDelivery = resolve;
       });
@@ -183,7 +184,7 @@ describe('useFileActions on Capacitor', () => {
       await Promise.resolve();
     });
 
-    // Indicator gone — the bytes have landed…
+    // Indicator gone — the share sheet is up…
     expect(result.current.activeDownloads['slozka.pl?download=1']).toBeUndefined();
     // …but a second tap while delivery is still in flight is refused. Not
     // awaited: a duplicate that DID start would hang on its own delivery.

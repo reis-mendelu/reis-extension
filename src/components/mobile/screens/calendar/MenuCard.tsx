@@ -3,6 +3,7 @@ import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { menuForDay } from '../../../../utils/menuForDay';
 import { pluralSuffix } from '../../../../utils/plural';
+import { useIskamStore } from '../../../../mobile/iskam/iskamStore';
 
 /**
  * What the menzas are serving on the selected day, under that day's agenda.
@@ -54,7 +55,12 @@ export function MenuCard({ dayIso }: { dayIso: string }) {
       <button
         type="button"
         data-testid="menu-card"
-        onClick={() => pushSheet({ kind: 'menu', dayIso })}
+        onClick={() => {
+          pushSheet({ kind: 'menu', dayIso });
+          // From the tap, not an effect in the sheet (CLAUDE.md: no useEffect
+          // fetching). Hidden in demo mode / off Capacitor inside check().
+          void useIskamStore.getState().check();
+        }}
         // `border-base-content/10`, not `border-base-300`: this card sits on the
         // calendar's base-200 backdrop, where a base-100 surface measures
         // 1.045:1 — verify:ui flags it as invisible, and in the light theme it

@@ -1,6 +1,7 @@
 import { adminAuthClient } from '@/services/admin/authClient';
 import { logError } from '@/utils/reportError';
 import { DEV_SOCIETY, devSocietyStore } from '@/utils/mock/devSociety';
+import type { PostKind } from '@/types/events';
 
 export type VenueKind = 'campus' | 'online' | 'offcampus' | 'tba';
 
@@ -24,6 +25,8 @@ export interface PostInput {
    *  everyone — so an event published without thinking about it reaches the
    *  whole map, exactly as every event did before the column existed. */
   subscribersOnly?: boolean;
+  /** 'notice' = Novinky only, never on the map. Defaults to 'event'. */
+  kind?: PostKind;
 }
 
 export interface SpolkyEventRow {
@@ -45,6 +48,8 @@ export interface SpolkyEventRow {
   created_by: string | null;
   visible_from: string | null;
   subscribers_only: boolean;
+  /** Absent until the 20261017120000 migration is applied. */
+  kind?: PostKind;
   /** Novinky rows that scrolled into view, once per device (markNotificationViewed). */
   view_count?: number;
   /** Taps on the Novinky row, every tap (useOpenNotification). */
@@ -71,6 +76,10 @@ export function toRow(input: PostInput, associationId: string, createdBy: string
     url: input.url ?? null,
     visible_from: input.visibleFrom ?? null,
     subscribers_only: input.subscribersOnly ?? false,
+    // Only a notice names its kind; an event is the column's default. So an
+    // event still publishes against a database without the column (the
+    // 20261017120000 migration), and only a notice needs it applied first.
+    ...(input.kind === 'notice' ? { kind: 'notice' as const } : {}),
   };
 }
 
@@ -94,7 +103,11 @@ export async function createPost(
 
 export async function updatePost(
   id: string,
-  patch: Partial<Omit<ReturnType<typeof toRow>, 'association_id' | 'created_by'>>
+  // `kind` widened: an edit can turn a notice back into an event, which a new
+  // row never needs to say.
+  patch: Partial<Omit<ReturnType<typeof toRow>, 'association_id' | 'created_by' | 'kind'>> & {
+    kind?: PostKind;
+  }
 ): Promise<{ error?: string }> {
   if (DEV_SOCIETY) return devSocietyStore.update(id, patch as Partial<SpolkyEventRow>);
   const { error } = await adminAuthClient.from('spolky_events').update(patch).eq('id', id);

@@ -4,10 +4,11 @@ import { getInstallId } from '../services/identity/installId';
 import { isHarnessEnabled } from '../utils/harnessEnabled';
 import { logError } from '../utils/reportError';
 import { hasDataConsent } from '../utils/firefoxDataConsent';
+import { claimFirstOpen, confirmOpen, releaseOpen } from '../services/spolky/countedOpens';
 
 /**
- * The three counters reIS keeps about its own features, and the per-event map
- * view counter beside them.
+ * The counters reIS keeps about its own features, and the per-event map view
+ * counter beside them.
  *
  * Both writes here identify the DEVICE or the EVENT, never the student. The
  * feature signals carry the random per-install UUID
@@ -22,13 +23,21 @@ import { hasDataConsent } from '../utils/firefoxDataConsent';
  * Pairing the install id with an event id would be a behavioural profile, so
  * the two counters are kept in separate shapes that cannot be joined.
  */
-export type FeatureSignal =
+export const FEATURE_SIGNALS = [
   /** Spent at least three seconds on the campus map. */
-  | 'map_dwell_3s'
+  'map_dwell_3s',
   /** The app configured the eduroam network itself (iOS/Android). */
-  | 'eduroam_wifi_configured'
+  'eduroam_wifi_configured',
   /** A profile was handed over, which the student must still install (mac/windows). */
-  | 'eduroam_profile_delivered';
+  'eduroam_profile_delivered',
+  /** The "would you support reIS?" question was on screen (2026-10-16 test). */
+  'support_prompt_seen',
+  /** The student answered "Ano" to it. Nothing is charged; no payment exists. */
+  'support_prompt_yes',
+] as const;
+
+/** Each label must also be in the database whitelist (featureSignalWhitelist.test.ts). */
+export type FeatureSignal = (typeof FEATURE_SIGNALS)[number];
 
 /**
  * Whether this build may write a counter at all.
@@ -94,7 +103,15 @@ export async function trackFeatureSignal(signal: FeatureSignal): Promise<void> {
 }
 
 /**
- * Bump the map-view counter on one society event, at most once per session.
+ * Bump the map-view counter on one society event, once per DEVICE.
+ *
+ * The session latch below only keeps one launch from counting twice; the
+ * on-device memory (`claimFirstOpen`) is what makes the number "devices that
+ * opened this event" rather than "opens". Once per device per event EVER, not
+ * per day, even though the rollup row is per day: the day column exists for the
+ * trend of FIRST opens, and a second visit tomorrow is the same device. No
+ * identifier is added — the memory never leaves the device, so the request is
+ * still an event id and nothing else.
  *
  * The view lands in `event_map_views`, a rollup keyed on (event, day), NOT in
  * `view_count` — that is the Novinky feed metric
@@ -110,18 +127,26 @@ export async function trackMapEventView(eventId: string): Promise<void> {
   // Gated although it carries no identifier: Mozilla counts interaction metrics
   // as technicalAndInteraction data, and the student opened a card, not a
   // counter — the card works without it, so this is no implicit-consent send.
+  // Asked BEFORE the device memory, so a refusal does not use up the one count.
   if (!(await hasDataConsent('technicalAndInteraction'))) {
     viewedEvents.delete(eventId);
     return;
   }
+  // Already counted on an earlier launch: keep the session latch so the next tap
+  // does not even reach the memory.
+  if (!(await claimFirstOpen('map_open', eventId))) return;
   try {
     const { error } = await supabase.rpc('increment_event_map_view', { row_id: eventId });
     if (error) {
       viewedEvents.delete(eventId);
+      releaseOpen('map_open', eventId);
       logError('Api.trackMapEventView', new Error(error.message));
+    } else {
+      await confirmOpen('map_open', eventId);
     }
   } catch (err) {
     viewedEvents.delete(eventId);
+    releaseOpen('map_open', eventId);
     logError('Api.trackMapEventView', err);
   }
 }

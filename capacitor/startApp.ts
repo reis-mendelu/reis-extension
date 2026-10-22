@@ -15,6 +15,8 @@ import { setSessionExpiredHandler } from '@/services/sessionExpiry';
 import { setDemoErrorHandler } from '@/utils/reportError';
 import { handleDemoError } from '@/mobile/demoToast';
 import { useAppStore } from '@/store/useAppStore';
+import { trackDailyUsage } from '@/api/feedback';
+import { installZaznamnikNotifications } from '@/mobile/zaznamnikNotifications';
 
 /**
  * Whether `entrypoints/main/main` has been evaluated.
@@ -97,6 +99,11 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // failed IS requests, and fetchWithAuth throws DemoModeError anyway.
   if (demo) return;
 
+  // "Nové body" from the záznamník as a system notification. After the demo
+  // return (the demo never syncs, so it has nothing new) and before the sync
+  // starts, so its first batch already has somewhere to go.
+  installZaznamnikNotifications();
+
   // In the extension the CONTENT SCRIPT drives this and posts results into the
   // iframe. Capacitor has neither, so the app drives its own sync; sendToIframe
   // loops the results back to this same window, where useAppLogic's existing
@@ -129,5 +136,8 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
     // A second chance for `loadContext()` if it lost the boot race against
     // `getUserParams()` — the event audience reads the faculty it sets.
     if (!useAppStore.getState().contextResolved) void useAppStore.getState().loadContext();
+    // Returning to the app is a day of use: this process can outlive many
+    // days, and only boots used to be counted. Writes at most once a day.
+    void trackDailyUsage();
   });
 }

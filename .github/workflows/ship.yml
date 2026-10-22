@@ -1,0 +1,313 @@
+name: Ship
+
+# The release pipeline: one run takes a vX.Y.Z tag to all three stores.
+#
+#   Database   pending supabase/migrations -> prod, FIRST; the stores wait on it
+#   Android    signed AAB -> Google Play closed-testing track (Alpha)
+#   iOS        archive -> upload -> attach to the version -> submit for review
+#   Extension  Chrome Web Store + Firefox Add-ons (publish.yml)
+#   Summary    one table, red if any store failed
+#
+# The three are independent jobs: one store failing never stops the others, and
+# "Re-run failed jobs" is safe, because every step reads the store's state first
+# and reports an already-done step instead of repeating it (the iOS build is
+# skipped when the version is already submitted).
+#
+# Called by release-tag.yml right after it pushes the tag. It has to be a called
+# workflow rather than a tag-triggered one: a tag pushed with GITHUB_TOKEN does
+# not start other workflows.
+#
+# Also runs with dry_run=true, on every PR that touches the pipeline
+# (ship-dryrun.yml) and by hand. A dry run signs and builds for real (Android
+# AAB, iOS archive + export) and releases nothing (Play opens and deletes a
+# temporary edit; App Store Connect is only queried), so it proves the
+# credentials and the signing before a real release depends on them.
+#
+# By hand, `stores` runs just one of them (e.g. Play only, when only Play failed or
+# is behind); the others are skipped and the summary does not count a skip as a failure.
+#
+# Secrets the pipeline needs, and what each is for, are listed in
+# docs/release-pipeline.md. A job whose secrets are missing fails FIRST and says
+# which ones.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Release tag, vX.Y.Z (a dry run uses the latest existing tag)'
+        required: true
+        type: string
+      ref:
+        description: 'Git ref to build. Empty: the tag. A dry run on a PR builds the PR head.'
+        required: false
+        type: string
+        default: ''
+      dry_run:
+        required: false
+        type: boolean
+        default: false
+      stores:
+        description: 'Which stores: all, android, ios or extension'
+        required: false
+        type: string
+        default: all
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to ship, vX.Y.Z'
+        required: true
+        type: string
+      dry_run:
+        description: 'Build and sign for real, but release and submit nothing'
+        required: false
+        default: true
+        type: boolean
+      stores:
+        description: 'Which stores to run (a re-run of one, e.g. Play only)'
+        required: false
+        default: all
+        type: choice
+        options: [all, android, ios, extension]
+
+permissions:
+  contents: read
+
+jobs:
+  # Prod's database first; every store `needs` it (db-migrate.yml says why).
+  database:
+    name: Database
+    uses: ./.github/workflows/db-migrate.yml
+    with:
+      tag: ${{ inputs.tag }}
+      ref: ${{ inputs.ref }}
+      dry_run: ${{ inputs.dry_run }}
+    secrets: inherit
+
+  android:
+    name: Google Play (closed testing)
+    needs: database
+    if: inputs.stores == 'all' || inputs.stores == 'android'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Refuse anything but a vX.Y.Z tag
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            || { echo "::error::'$TAG' is not a release tag (vX.Y.Z)."; exit 1; }
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || format('refs/tags/{0}', inputs.tag) }}
+          # Neither job pushes, and both run dependency scripts (npm ci,
+          # Gradle, Xcode): no stored git token for them to find.
+          persist-credentials: false
+      - name: Check secrets
+        env:
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL: ${{ secrets.CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL }}
+          CHROME_SERVICE_ACCOUNT_PRIVATE_KEY: ${{ secrets.CHROME_SERVICE_ACCOUNT_PRIVATE_KEY }}
+        run: |
+          missing=""
+          for v in ANDROID_KEYSTORE_B64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS \
+                   CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL CHROME_SERVICE_ACCOUNT_PRIVATE_KEY; do
+            [ -n "${!v:-}" ] || missing="$missing $v"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secrets:$missing. See docs/release-pipeline.md."
+            exit 1
+          fi
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci
+      - name: Build the signed bundle
+        env:
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          REIS_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          REIS_KEYSTORE_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          REIS_KEYSTORE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          printf '%s' "$ANDROID_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          export REIS_KEYSTORE_FILE="$RUNNER_TEMP/upload.jks"
+          node scripts/android-release.mjs aab
+      - name: Release to the closed-testing track
+        env:
+          SA_EMAIL: ${{ secrets.CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL }}
+          SA_PRIVATE_KEY: ${{ secrets.CHROME_SERVICE_ACCOUNT_PRIVATE_KEY }}
+          PLAY_TRACK: ${{ vars.PLAY_TRACK }}
+          TAG: ${{ inputs.tag }}
+        run: >
+          npx --yes tsx@4 scripts/release/play-upload.ts
+          --version "${TAG#v}"
+          ${{ inputs.dry_run && '--dry-run' || '' }}
+
+  ios:
+    name: App Store (submit for review)
+    needs: database
+    if: inputs.stores == 'all' || inputs.stores == 'ios'
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - name: Refuse anything but a vX.Y.Z tag
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            || { echo "::error::'$TAG' is not a release tag (vX.Y.Z)."; exit 1; }
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || format('refs/tags/{0}', inputs.tag) }}
+          # Neither job pushes, and both run dependency scripts (npm ci,
+          # Gradle, Xcode): no stored git token for them to find.
+          persist-credentials: false
+      - name: Check secrets
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          missing=""
+          for v in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8; do
+            [ -n "${!v:-}" ] || missing="$missing $v"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secrets:$missing. See docs/release-pipeline.md."
+            exit 1
+          fi
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Use the newest installed Xcode 26+
+        run: |
+          best="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1 || true)"
+          [ -n "$best" ] && sudo xcode-select -s "$best"
+          xcodebuild -version
+          major="$(xcodebuild -version | head -1 | sed -E 's/Xcode ([0-9]+).*/\1/')"
+          [ "$major" -ge 26 ] || { echo "::error::Xcode $major is too old for the current iOS SDK requirement."; exit 1; }
+      - run: npm ci
+      - name: Install the App Store Connect key
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          umask 077
+          printf '%s\n' "$ASC_KEY_P8" > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+      - name: Import the distribution certificate and profile (when provided)
+        # Without them the export asks Apple's cloud signing, which needs an API
+        # key above App Manager. With them, the export signs locally.
+        env:
+          IOS_DIST_P12_B64: ${{ secrets.IOS_DIST_P12_B64 }}
+          IOS_DIST_P12_PASSWORD: ${{ secrets.IOS_DIST_P12_PASSWORD }}
+          IOS_STORE_PROFILE_B64: ${{ secrets.IOS_STORE_PROFILE_B64 }}
+        run: |
+          if [ -z "${IOS_DIST_P12_B64:-}" ] || [ -z "${IOS_STORE_PROFILE_B64:-}" ]; then
+            echo "No distribution certificate secrets: the export uses Apple cloud signing."
+            exit 0
+          fi
+          kc="$RUNNER_TEMP/reis.keychain-db"
+          pw="$(uuidgen)"
+          security create-keychain -p "$pw" "$kc"
+          security set-keychain-settings -lut 21600 "$kc"
+          security unlock-keychain -p "$pw" "$kc"
+          printf '%s' "$IOS_DIST_P12_B64" | base64 -d > "$RUNNER_TEMP/dist.p12"
+          security import "$RUNNER_TEMP/dist.p12" -k "$kc" -P "$IOS_DIST_P12_PASSWORD" -T /usr/bin/codesign
+          rm -f "$RUNNER_TEMP/dist.p12"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$pw" "$kc" > /dev/null
+          security list-keychains -d user -s "$kc" $(security list-keychains -d user | tr -d '"')
+          printf '%s' "$IOS_STORE_PROFILE_B64" | base64 -d > "$RUNNER_TEMP/store.mobileprovision"
+          uuid="$(security cms -D -i "$RUNNER_TEMP/store.mobileprovision" | plutil -extract UUID raw -)"
+          name="$(security cms -D -i "$RUNNER_TEMP/store.mobileprovision" | plutil -extract Name raw -)"
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$RUNNER_TEMP/store.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$uuid.mobileprovision"
+          echo "REIS_IOS_PROFILE_NAME=$name" >> "$GITHUB_ENV"
+          echo "Signing the export with the imported certificate and profile: $name"
+      - name: Already submitted? Then do not build again
+        id: done
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          TAG: ${{ inputs.tag }}
+        run: npx tsx scripts/release/ios-submit.ts --version "${TAG#v}" --check
+      - name: Archive, sign, verify (and upload unless a dry run)
+        if: steps.done.outputs.done != 'true' || inputs.dry_run
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          REIS_XCODE_API_KEY_AUTH: '1'
+          TAG: ${{ inputs.tag }}
+        run: >
+          npm run release:ios --
+          ${{ inputs.dry_run && '--skip-upload' || '--tag "$TAG"' }}
+      - name: Submit for review
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          TAG: ${{ inputs.tag }}
+        run: >
+          npx tsx scripts/release/ios-submit.ts
+          --version "${TAG#v}"
+          ${{ inputs.dry_run && '--dry-run' || '' }}
+
+  extension:
+    name: Chrome and Firefox
+    needs: database
+    if: inputs.stores == 'all' || inputs.stores == 'extension'
+    uses: ./.github/workflows/publish.yml
+    with:
+      tag: ${{ inputs.tag }}
+      dry_run: ${{ inputs.dry_run }}
+    secrets: inherit
+
+  summary:
+    name: Release summary
+    needs: [database, android, ios, extension]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: One table, red if any store failed
+        env:
+          TAG: ${{ inputs.tag }}
+          MODE: ${{ inputs.dry_run && 'DRY RUN (nothing submitted)' || 'RELEASE' }}
+          ANDROID: ${{ needs.android.result }}
+          IOS: ${{ needs.ios.result }}
+          EXTENSION: ${{ needs.extension.result }}
+          STORES: ${{ inputs.stores }}
+          DATABASE: ${{ needs.database.result }}
+        run: |
+          {
+            echo "## $TAG: $MODE"
+            echo
+            echo "| Store | Result |"
+            echo "| --- | --- |"
+            echo "| Database migrations (prod) | $DATABASE |"
+            echo "| Google Play, closed testing | $ANDROID |"
+            echo "| App Store, submit for review | $IOS |"
+            echo "| Chrome + Firefox | $EXTENSION |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          # A store the `stores` input selected must have succeeded; one it did not select
+          # must have been skipped. Anything else (a selected store skipped, a typo that
+          # selects nothing) is red, so a run that shipped nothing never looks green.
+          case "$STORES" in
+            all|android|ios|extension) ;;
+            *) echo "::error::Unknown stores value '$STORES' (all, android, ios, extension). Nothing was shipped."; exit 1 ;;
+          esac
+          check() {
+            if [ "$STORES" = all ] || [ "$STORES" = "$1" ]; then want=success; else want=skipped; fi
+            [ "$2" = "$want" ] || { echo "::error::$1 was $2, expected $want. See the table above."; bad=1; }
+          }
+          bad=0
+          # Every mode runs the database first; the stores wait on it.
+          [ "$DATABASE" = success ] || { echo "::error::Database migrations were $DATABASE, so no store was submitted. See the database job."; bad=1; }
+          check android "$ANDROID"
+          check ios "$IOS"
+          check extension "$EXTENSION"
+          [ "$bad" -eq 0 ] || exit 1

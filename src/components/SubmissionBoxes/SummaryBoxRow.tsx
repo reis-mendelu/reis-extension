@@ -1,5 +1,5 @@
 import type { Odevzdavarna } from '../../api/odevzdavarny';
-import { boxDeadline } from '../../utils/submissionBoxes';
+import { boxDeadline, boxState } from '../../utils/submissionBoxes';
 import { daysUntil, useBoxLabels } from './useBoxLabels';
 import { useCourseName } from '../../hooks/ui/useCourseName';
 
@@ -15,9 +15,11 @@ interface SummaryBoxRowProps {
   opensSubject: boolean;
   onOpen: (courseCode: string, box: Odevzdavarna) => void;
   /**
-   * Mark an uploaded box. Due rows never have files, so only the full open
-   * list asks. Only "Odevzdáno" is marked: a "Nic neodevzdáno" on every other
-   * row left the subject three letters wide at 320px.
+   * Mark a handed-in box "Odevzdáno". Due rows never are, so only the full
+   * open list asks. "Nepotvrzeno" is marked wherever the row shows: it is the
+   * to-do, and a due row that looked like any other would hide it. A
+   * "Nic neodevzdáno" on every other row left the subject three letters wide
+   * at 320px.
    */
   showUpload: boolean;
   testId: string;
@@ -36,9 +38,9 @@ export function SummaryBoxRow({
   const L = useBoxLabels();
   const subjectName = useCourseName(courseCode ?? undefined, L.courseName(box));
   const deadline = boxDeadline(box);
-  const uploaded = box.fileCount > 0;
+  const state = boxState(box);
   const days = deadline ? daysUntil(deadline, now) : null;
-  const urgent = !uploaded && days !== null && days <= 2;
+  const urgent = state !== 'confirmed' && days !== null && days <= 2;
   const rowClass =
     'flex min-h-11 w-full items-center justify-between gap-2 rounded-lg py-1 text-left text-xs hover:bg-base-200';
   const content = (
@@ -50,9 +52,14 @@ export function SummaryBoxRow({
         <span className="truncate font-semibold">{box.name}</span>
         <span className="flex min-w-0 gap-1 text-[11px] text-base-content/70">
           <span className="truncate">{subjectName}</span>
-          {showUpload && uploaded && (
+          {showUpload && state === 'confirmed' && (
             <span className="shrink-0 whitespace-nowrap font-medium text-[var(--tone-success)]">
               · {L.t('odevzdavarny.uploaded')}
+            </span>
+          )}
+          {state === 'unconfirmed' && (
+            <span className="shrink-0 whitespace-nowrap font-medium text-[var(--tone-warning)]">
+              · {L.t('odevzdavarny.unconfirmedShort')}
             </span>
           )}
         </span>

@@ -22,6 +22,7 @@ import type { OutletMenu } from '../types/menuTypes';
 import type { PageCategory } from '../data/pages/types';
 import type { SpolekNotification } from '../services/spolky/types';
 import type { SubjectZaznamnik } from '../types/zaznamnik';
+import type { NewPoint } from '../utils/zaznamnik/newPoints';
 import type {
   RoomsCollection,
   MapSelection,
@@ -91,6 +92,11 @@ export interface ZaznamnikSlice {
   fetchZaznamnik: () => Promise<void>;
   /** Refetch one subject on demand — the failed state's retry. */
   refetchZaznamnik: (courseCode: string) => Promise<void>;
+  /** Points the teacher added since the last sync, per subject, until its záznamník is opened. */
+  zaznamnikNewPoints: Record<string, NewPoint[]>;
+  setZaznamnikNewPoints: (unseen: Record<string, NewPoint[]>) => void;
+  /** The student opened this subject's záznamník: its highlight goes. */
+  markZaznamnikSeen: (courseCode: string) => Promise<void>;
 }
 
 export interface SyllabusSlice {
@@ -149,10 +155,8 @@ export interface SubjectsSlice {
   courseNicknames: Record<string, string>;
   courseDeadlines: Record<string, CourseDeadline[]>;
   attendance: Record<string, SubjectAttendance[]>;
-  pastAttendance: Record<string, SubjectAttendance[]>;
   fetchSubjects: () => Promise<void>;
   setAttendance: (data: Record<string, SubjectAttendance[]>) => void;
-  setPastAttendance: (data: Record<string, SubjectAttendance[]>) => void;
   setCourseNickname: (courseCode: string, nickname: string | null) => void;
   setCourseDeadlines: (courseCode: string, deadlines: CourseDeadline[] | null) => void;
 }
@@ -518,6 +522,9 @@ export type MobileSheet =
 
 export interface MobileUiSlice {
   mobileTab: MobileTab;
+  /** The last tab that was not Profil. A report is written from Profil (the one
+   *  general entry point on the phone), so this is where the student was. */
+  lastNonProfileTab: MobileTab;
   mobileSelectedDayIso: string | null;
   mobileSheets: MobileSheet[];
   mapSheetState: MapSheetState;
@@ -632,8 +639,8 @@ export interface MapSlice {
   reloadMapEvents: () => Promise<void>;
   /** Refetch only if `minGapMs` has passed since the last successful fetch — for a resume hook on a long-lived Capacitor process. A stale-but-recent fetch is a no-op. */
   refreshMapEventsIfStale: (minGapMs: number) => Promise<void>;
-  /** Select an event for the detail panel. Pass `{ fly: true }` (list click) to also fly the camera to its coordinate; a pin click omits it and the camera stays put. */
-  focusEventById: (id: string, opts?: { fly?: boolean }) => void;
+  /** Select an event for the detail panel. Pass `{ fly: true }` (list click) to also fly the camera to its coordinate; a pin click omits it and the camera stays put. `keepBuilding` (a pin in an open floor view) selects without leaving the building or floor. */
+  focusEventById: (id: string, opts?: { fly?: boolean; keepBuilding?: boolean }) => void;
   // --- Society authoring ---
   /** The active society's own events (all dates), mapped from societyPosts. Drawn
    *  by the admin console's map; the student map draws `mapEvents` instead. Which
@@ -727,6 +734,7 @@ export type AppState = ScheduleSlice &
   import('./slices/createAdminSlice').AdminSlice &
   import('./slices/createSuggestionsSlice').SuggestionsSlice &
   import('./slices/createRouteSlice').RouteSlice &
+  import('./slices/createOsmTileAccessSlice').OsmTileAccessSlice &
   import('./slices/createReportSlice').ReportSlice &
   import('./slices/createImpersonationSlice').ImpersonationSlice &
   DemoSlice;

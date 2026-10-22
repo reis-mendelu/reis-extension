@@ -59,8 +59,9 @@ const SUPABASE_CALLERS = new Set([
   //
   // Since September 2026 (submit_suggestion_v2) a report may also carry what
   // the STUDENT chose to attach: a screenshot they picked, re-encoded on the
-  // device (no EXIF/GPS), and — only if they tick an unticked-by-default box —
-  // the cleaned diagnostic log, collected at Send. The log is not listed in the
+  // device (no EXIF/GPS), and — only if they choose it (the unticked box on a
+  // Nápad/Jiné, the "with technical details" button on a Chyba) — the cleaned
+  // diagnostic log, collected at Send. The log is not listed in the
   // form, so the record-time cleaning in utils/diagnostics/diagnosticLog is the
   // whole of what keeps it safe; do not loosen it on the grounds of consent.
   // The file receives both as arguments; it does not gather them, and no
@@ -85,8 +86,10 @@ const SUPABASE_CALLERS = new Set([
   // section 2 and docs/privacy-policy-app.md BEFORE this entry was added.
   //
   // `track_feature_usage` sends the random per-install UUID and one label from
-  // a three-value whitelist enforced in the database ('map_dwell_3s',
-  // 'eduroam_wifi_configured', 'eduroam_profile_delivered'). Same identifier
+  // a whitelist enforced in the database ('map_dwell_3s',
+  // 'eduroam_wifi_configured', 'eduroam_profile_delivered', and since October
+  // 2026 'support_prompt_seen' / 'support_prompt_yes', disclosed first the same
+  // way; featureSignalWhitelist.test.ts pins the list). Same identifier
   // and same posture as `feedback.ts`: it counts INSTALLS, not people.
   //
   // `increment_event_map_view` sends a society event's row id and NO
@@ -147,7 +150,8 @@ const files = walk(SRC).map((f) => ({ path: relative(ROOT, f), text: readFileSyn
  * Microsoft, Komoot and a personal HuggingFace Space while
  * PRIVACY.md claimed it spoke "exclusively" to IS Mendelu, WebISKAM and
  * Supabase. Adding a destination now means adding it here AND to PRIVACY.md.
- * WebISKAM left the list when the integration was removed.
+ * WebISKAM left the list when the integration was removed (#247) and came
+ * back, phone-only and narrow, for the ISIC balance and top-up (2026-10-13).
  */
 const ALLOWED_HOSTS = [
   // --- reIS's own / the university's ---
@@ -164,6 +168,9 @@ const ALLOWED_HOSTS = [
   'hei.api.uni-foundation.eu', // public Erasmus university directory (read-only)
 
   // --- fetched from, carrying student data. Each must stay disclosed. ---
+  'webiskam.mendelu.cz', // phone/iPad only: the ISIC Hlavní konto balance and the GoPay
+  // top-up start, signed in as the student via alibaba.mendelu.cz (also mendelu.cz).
+  // Already covered by the mendelu.cz suffix; listed so the disclosure is explicit.
 
   // --- deep links the STUDENT opens; no background request is made ---
   'google.com', // maps links, Play Store, Chrome Web Store, a society's Apps Script
@@ -173,11 +180,22 @@ const ALLOWED_HOSTS = [
   'supef.cz',
   'instagram.com', // a society's profile, the "details" link on an event with none
   'creativecommons.org', // the Twemoji licence, linked from the map's credit line
+  'gate.gopay.com', // the GoPay payment page for an ISIC top-up, opened in the system browser view
 
   // --- not destinations ---
   'localhost.that.never.exists', // CORS sentinel in capacitorTransport
   'is.mendelu.cz.evil.com', // negative example in the URL validator
   'is.mendelu.cz.evil.example', // ditto, in trustedOrigin
+];
+
+/**
+ * URLs that are text, not requests, exempted one file and one exact URL at a
+ * time so the host itself stays undeclared everywhere else.
+ */
+const NOT_REQUESTED: Array<{ file: string; url: string }> = [
+  // The contact URL INSIDE the OSM tile User-Agent. OSM's tile policy asks
+  // apps to name themselves that way; nothing ever fetches it.
+  { file: 'src/utils/osmTileIdentity.ts', url: 'https://github.com/reis-mendelu/reis-extension' },
 ];
 
 describe('no student data leaves the device', () => {
@@ -186,6 +204,8 @@ describe('no student data leaves the device', () => {
     for (const f of files) {
       for (const m of f.text.matchAll(/https:\/\/([a-z0-9.-]+\.[a-z]{2,})/gi)) {
         const host = m[1]!.toLowerCase();
+        if (NOT_REQUESTED.some((n) => n.file === f.path && f.text.startsWith(n.url, m.index)))
+          continue;
         if (ALLOWED_HOSTS.some((a) => host === a || host.endsWith('.' + a))) continue;
         offences.push(`${f.path}  ${host}`);
       }
@@ -312,14 +332,14 @@ describe('no student data leaves the device', () => {
 
   // The one sanctioned exception to "nothing about a failure leaves": the
   // student attaches it to a report themselves. These two tests keep it the
-  // ONLY path. Diagnostics may reach Supabase through submit_suggestion_v2 and
+  // ONLY path. Diagnostics may reach Supabase through submit_suggestion_v3 (v2 for older builds) and
   // nowhere else, and no file that talks to Supabase may read the log itself —
   // so it can only ever arrive as what the report form was handed.
   it('sends diagnostics only through the report form, as the student chose', () => {
     const offenders: string[] = [];
     for (const f of files) {
       if (f.path === 'src/api/suggestions.ts') continue;
-      if (/submit_suggestion_v2|p_diagnostics|p_screenshot/.test(f.text)) {
+      if (/submit_suggestion_v[23]|p_diagnostics|p_screenshot/.test(f.text)) {
         offenders.push(`${f.path} → names the attachment RPC`);
       }
     }
@@ -333,7 +353,7 @@ describe('no student data leaves the device', () => {
       offenders,
       `Diagnostics are leaving by a path the student did not choose. The only ` +
         `sanctioned route is FeedbackModal → submitSuggestion(draft, attachments) ` +
-        `→ submit_suggestion_v2, and only after the student ticks the box:\n` +
+        `→ submit_suggestion_v3, and only after the student ticks the box:\n` +
         offenders.join('\n')
     ).toEqual([]);
   });

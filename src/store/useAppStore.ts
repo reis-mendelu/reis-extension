@@ -47,6 +47,7 @@ import { logError } from '../utils/reportError';
 import { createImpersonationSlice } from './slices/createImpersonationSlice';
 import { createReportSlice } from './slices/createReportSlice';
 import { createRouteSlice } from './slices/createRouteSlice';
+import { createOsmTileAccessSlice } from './slices/createOsmTileAccessSlice';
 import { syncService } from '../services/sync';
 import { initMockData } from '../utils/initMockData';
 import { resetRealDataStores } from '../services/loadRealDataSnapshot';
@@ -99,6 +100,7 @@ export const useAppStore = create<AppState>()(
     ...createAdminStatsSlice(...a),
     ...createSuggestionsSlice(...a),
     ...createRouteSlice(...a),
+    ...createOsmTileAccessSlice(...a),
     ...createDemoSlice(...a),
     ...createImpersonationSlice(...a),
     ...createReportSlice(...a),

@@ -38,17 +38,25 @@ export default defineConfig({
     'build:manifestGenerated'(wxt, manifest) {
       if (wxt.config.manifestVersion === 3) return;
       delete manifest.declarative_net_request;
-      const dropped = ['declarativeNetRequestWithHostAccess', 'https://tile.openstreetmap.org/*'];
+      const osmTiles = 'https://tile.openstreetmap.org/*';
+      const dropped = ['declarativeNetRequestWithHostAccess', osmTiles];
       // MV2 has no declarativeNetRequest at all, so the permission would be an
-      // unknown string in front of an AMO reviewer and the host permission
-      // would buy nothing (tiles are plain <img> loads). WXT folds
-      // host_permissions into permissions for MV2, so filter both.
+      // unknown string in front of an AMO reviewer. WXT folds host_permissions
+      // into permissions for MV2, so filter both.
       if (manifest.permissions)
         manifest.permissions = manifest.permissions.filter((p: string) => !dropped.includes(p));
       if (manifest.host_permissions)
         manifest.host_permissions = manifest.host_permissions.filter(
           (p: string) => !dropped.includes(p)
         );
+      // Firefox's half of the tile identity instead: a blocking webRequest
+      // listener in the background page (src/utils/osmTileIdentity.ts). Neither
+      // webRequest permission carries an install warning. The tile host does,
+      // so it is OPTIONAL: required, it would hold every Firefox install's
+      // update behind a permission prompt. The student grants it with one
+      // click on the map's banner (src/utils/osmTileAccess.ts).
+      manifest.permissions = [...(manifest.permissions ?? []), 'webRequest', 'webRequestBlocking'];
+      manifest.optional_permissions = [...(manifest.optional_permissions ?? []), osmTiles];
     },
   },
   webExt: {

@@ -24,8 +24,9 @@ export interface ReisPlatform {
    * and its threat model is the browser profile rather than a lost handset.
    * The dev webapp is in-memory, like the rest of its storage.
    *
-   * Only `tokenStore` should touch this. It exists for UISAuth, which
-   * authenticates as the student on its own and never rotates.
+   * Two modules touch this and nothing else may: `tokenStore` (UISAuth, which
+   * authenticates as the student on its own and never rotates) and
+   * `mobile/iskam/iskamCookieStore` (the WebISKAM + alibaba login jar).
    */
   secureStorage: PlatformStorage;
   /** Resolve a bundled asset to a loadable URL. */
