@@ -58,7 +58,7 @@ create table if not exists public.reis_questions (
 );
 
 comment on table public.reis_questions is
-  'Ano/Ne, 1–5 or link questions shown in Novinky by builds after 5.5.0. Counts: reis_question_counts.';
+  'Ano/Ne, 1–5 or link questions shown in Novinky by builds from 5.5.0 on. Counts: reis_question_counts.';
 
 create table if not exists public.reis_question_counts (
   question_id uuid not null references public.reis_questions(id) on delete cascade,

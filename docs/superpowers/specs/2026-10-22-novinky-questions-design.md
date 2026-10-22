@@ -5,7 +5,7 @@
 same minute. Each button is either an answer, which is counted, or a link,
 which is counted and opened. Ano/Ne, 👍/👎, 1–5 and "Otevřít reByt" are the
 same feature with different buttons. Counting sends the question id and the
-button only, no identifier. It ships once, in the release after 5.5.0.
+button only, no identifier. It ships once, in 5.5.0.
 
 Status: partly decided, nothing built. Written 2026-10-22. The 99 Kč question
 ships in 5.5.0 (Sat 2026-10-24) on the existing counters. This replaces that
@@ -15,7 +15,8 @@ mechanism afterwards.
 - **Build it as described in "How it works" below**: a separate
   `reis_questions` table and a counter that sends no identifier. It was
   option B in the first draft.
-- **When:** after 5.5.0 is released, as its own PR against `test`.
+- **When:** in 5.5.0 (Sat 2026-10-24), as its own PR against `test`. Changed
+  on 2026-10-22 from "after 5.5.0": Dominik turned on auto-merge for #587.
 - **After answering**, the row stays as "Díky" until the question ends.
 - **Satisfaction (Decision 2 → d).** It becomes a 1–5 question on both trees,
   in the same PR. Its results card in the admin console is the
@@ -34,7 +35,7 @@ Only Decision 3 (reByt) is still open.
   (once per semester vs. per question). The B PR reads nothing from them
   and needs no console view of them; SQL is enough for history.
 - **`submit_feedback` stays callable after the B PR.** Released extension
-  builds (5.4.1, 5.5.0) still show the banner and call it. Dropping or
+  builds (5.4.1 and older) still show the banner and call it. Dropping or
   revoking it would turn their submits into silent failures (the client
   returns false). The extension updates itself within days, so the trickle
   stops on its own. Revoke it in a later migration, once no released build
@@ -44,13 +45,13 @@ Only Decision 3 (reByt) is still open.
   call is no longer in `src/`, so the entry can't outlive the code.
   - The policy still covers the older builds in prose:
     `docs/privacy-policy-app.md` and PRIVACY.md say that extension versions
-    up to 5.5.0 send the rating with the install id until they update.
+    up to 5.4.1 send the rating with the install id until they update.
 - **Open, my suggestion only:** once `submit_feedback` is revoked, null out
   `feedback_responses.student_id`. The ratings stay as history, and 131
   install ids we no longer need do not stay forever. Nothing in reIS reads
   that column.
 
-### Built 2026-10-22 (draft PR against `test`; must not merge before 5.5.0 ships)
+### Built 2026-10-22 (#587, ships in 5.5.0)
 
 - **The 1–5 preset defaults to the banner's own question:** "Doporučil/a
   bys reIS kamarádovi?" (1 = nejhorší, 5 = nejlepší). It is not "Jak jsi

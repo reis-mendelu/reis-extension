@@ -1253,7 +1253,7 @@
       "suspicious": "There are more answers than views. The numbers may have been spoofed.",
       "daily": "By day",
       "day": "Day",
-      "devices": "Counts devices, not people. Students on 5.5.0 or older do not see questions."
+      "devices": "Counts devices, not people. Students on 5.4.1 or older do not see questions."
     }
   },
   "mobile": {

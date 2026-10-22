@@ -61,7 +61,7 @@ database, which cannot see your connection. Versions released before September
 2026 store a salted hash of it for up to an hour to limit the form; never the
 address, never beside your message. That component goes when those versions do.
 
-Extension versions up to 5.5.0 also show a satisfaction rating once a semester.
+Extension versions up to 5.4.1 also show a satisfaction rating once a semester.
 If you rate, your rating is sent with the same random install identifier as the
 daily count. Current versions ask in Novinky instead, without the identifier, and
 the rating goes when those versions do.

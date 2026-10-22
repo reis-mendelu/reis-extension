@@ -28,7 +28,7 @@ import { getAppVersion } from '../utils/appIdentity';
  * The extension's NPS banner (`submit_feedback`) also lived here until it was
  * retired for the console's 1–5 question in Novinky (`api/questions.ts`,
  * 2026-10). Its 131 rows stay in `feedback_responses` as history; released
- * extension builds up to 5.5.0 still call `submit_feedback` until they update.
+ * extension builds up to 5.4.1 still call `submit_feedback` until they update.
  */
 /**
  * One write per Prague day per page session, memoised the same way

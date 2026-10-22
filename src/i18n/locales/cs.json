@@ -1253,7 +1253,7 @@
       "suspicious": "Odpovědí je víc než zobrazení. Čísla mohla být podvržená.",
       "daily": "Po dnech",
       "day": "Den",
-      "devices": "Počítá zařízení, ne lidi. Studenti s verzí do 5.5.0 otázky nevidí."
+      "devices": "Počítá zařízení, ne lidi. Studenti s verzí do 5.4.1 otázky nevidí."
     }
   },
   "mobile": {

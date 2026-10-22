@@ -1,7 +1,7 @@
 /**
  * A question reIS asks in Novinky (`reis_questions`, 20261025120000). Written in
  * the admin console, live between `startsAt` and `endsAt`, and shown by builds
- * after 5.5.0 only. See docs/superpowers/specs/2026-10-22-novinky-questions-design.md.
+ * from 5.5.0 on. See docs/superpowers/specs/2026-10-22-novinky-questions-design.md.
  */
 export interface QuestionButton {
   /** Counted as-is. Never 'seen', which is the denominator. */
