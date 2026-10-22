@@ -84,16 +84,20 @@ export function TermDetails({ term, section, isRegHere, now }: TermDetailsProps)
       {note && (
         // The desktop's TermNoteBlock, at the phone's type size. IS writes
         // rules with pass/fail consequences in red; the warning tone keeps that.
-        <div
-          data-testid="term-note"
-          className="flex items-start gap-1.5 rounded-lg bg-base-200/60 px-2.5 py-2 text-2sm leading-relaxed"
-        >
-          <AlertTriangle
-            size={14}
-            className={`mt-0.5 shrink-0 ${note.isEmphasized ? 'text-[var(--tone-warning)]' : 'text-base-content/60'}`}
-          />
-          <div className="min-w-0 whitespace-pre-wrap break-words text-base-content/80">
-            {note.text}
+        // Headed like the facts above, so it reads as the teacher's note.
+        <div className="flex flex-col gap-1">
+          <span className="text-2sm text-base-content/60">{t('mobile.exams.detailNote')}</span>
+          <div
+            data-testid="term-note"
+            className="flex items-start gap-1.5 rounded-lg bg-base-200/60 px-2.5 py-2 text-2sm leading-relaxed"
+          >
+            <AlertTriangle
+              size={14}
+              className={`mt-0.5 shrink-0 ${note.isEmphasized ? 'text-[var(--tone-warning)]' : 'text-base-content/60'}`}
+            />
+            <div className="min-w-0 whitespace-pre-wrap break-words text-base-content/80">
+              {note.text}
+            </div>
           </div>
         </div>
       )}

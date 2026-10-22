@@ -1,6 +1,7 @@
 import { IndexedDBService } from '../storage';
 import { getPlatform } from '../../platform';
 import { logError } from '../../utils/reportError';
+import { EXAM_OPENING_KIND } from '../../utils/examOpeningReminders';
 
 /**
  * Removes what follow, RSVP and the reminders left on a device (spec
@@ -24,16 +25,41 @@ const RETIRED_META_KEYS = [
 ];
 const RETIRED_CHANNELS = ['reis-event-reminders', 'reis-society-digest'];
 
+/**
+ * The kinds today's builds schedule: exam openings (spec 2026-10-20) and the
+ * záznamník's "Nové body" — the latter spelled out, since its constant lives in
+ * src/mobile, which shared code must not import. A test pins it to that constant.
+ */
+const CURRENT_KINDS: readonly unknown[] = [EXAM_OPENING_KIND, 'zaznamnik-new-points'];
+
+/**
+ * What 5.3.0 left behind, pending or in the tray: everything but today's kinds.
+ * A phone updating straight to a build that schedules them can run this cleanup
+ * after they exist — and again on the next boot, if a step failed.
+ */
+export function retiredNotifications<T extends { id: number; extra?: { kind?: unknown } }>(
+  shown: readonly T[]
+): T[] {
+  return shown.filter((n) => !CURRENT_KINDS.includes(n.extra?.kind));
+}
+
 /** 5.3.0 scheduled reminders and created two Android channels; both go. */
 async function clearScheduledNotifications(): Promise<void> {
   if (getPlatform().kind !== 'capacitor') return;
   const { LocalNotifications } = await import('@capacitor/local-notifications');
   const { notifications } = await LocalNotifications.getPending();
-  if (notifications.length > 0) {
-    await LocalNotifications.cancel({ notifications: notifications.map((n) => ({ id: n.id })) });
+  const retired = retiredNotifications(notifications);
+  if (retired.length > 0) {
+    await LocalNotifications.cancel({ notifications: retired.map((n) => ({ id: n.id })) });
   }
   // Reminders 5.3.0 already delivered would sit in the tray with no tap handler.
-  await LocalNotifications.removeAllDeliveredNotifications();
+  // Not all of the tray: a retry after a failed run can find today's there too.
+  const delivered = retiredNotifications(
+    (await LocalNotifications.getDeliveredNotifications()).notifications
+  );
+  if (delivered.length > 0) {
+    await LocalNotifications.removeDeliveredNotifications({ notifications: delivered });
+  }
   // iOS has no channel concept; the plugin call would reject there.
   const { Capacitor } = await import('@capacitor/core');
   if (Capacitor.getPlatform() !== 'android') return;

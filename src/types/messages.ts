@@ -1,5 +1,6 @@
 import * as T from './messages/base';
 import { IframeToContentSchema, ContentToIframeSchema } from './messages/schema';
+import type { TermNote } from '../api/terminyInfo';
 
 export * from './messages/base';
 export type { ActionType, DataRequestType } from './messages/base';
@@ -69,4 +70,11 @@ export const Messages = {
     type: 'REIS_NAV_MENU',
     categories,
   }),
+};
+
+/** The dev scrape (public/dev-real-data.json): a sync's data, plus what the
+ *  app otherwise reads from live IS on demand — each term's Poznámka
+ *  (scripts/lib/collectExamNotes.ts). */
+export type RealDataSnapshot = T.SyncedData & {
+  examNotes?: Record<string, TermNote | null>;
 };

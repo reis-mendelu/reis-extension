@@ -85,13 +85,11 @@ export function openFromNotification(extra: unknown): void {
 
 /**
  * "Nové body" as a system notification, on iOS and Android only. Installed
- * from capacitor/startApp; the extension keeps the in-app highlight alone
+ * from capacitor/startApp; taps reach `openFromNotification` through
+ * notificationTaps.ts; the extension keeps the in-app highlight alone
  * (src/test/guards/desktopHasNoNewPointsNotification.test.ts) and Novinky.
  */
 export function installZaznamnikNotifications(): void {
-  void LocalNotifications.addListener('localNotificationActionPerformed', (event) =>
-    openFromNotification(event.notification.extra)
-  );
   setNewPointsNotifier((found) => {
     const run = show(found, generation).catch((err) =>
       logError('Mobile.zaznamnikNotifications', err)

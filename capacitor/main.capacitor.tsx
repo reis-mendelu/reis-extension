@@ -41,6 +41,13 @@ registerSignOutCleanup(async () => {
   await clearIskam();
 });
 
+// Exam-opening reminders name this student's exams; the next person on the
+// device must not get them. Registered here for the same reason as above.
+registerSignOutCleanup(async () => {
+  const { clearExamReminders } = await import('@/mobile/examReminders');
+  await clearExamReminders();
+});
+
 // A notification names this student's subjects and points; the next person on
 // the device must not see it. Registered here for the same reason as above.
 registerSignOutCleanup(async () => {

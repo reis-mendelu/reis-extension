@@ -32,13 +32,16 @@ describe('society events stay reduced', () => {
     expect(grep('set_event_rsvp|get_event_rsvps')).toBe('');
   });
 
-  // "Nové body" from the záznamník (decided 2026-10-20) shows one notification
-  // per sync batch, and it is about IS points, not societies. Nothing else may
-  // schedule: event reminders stay gone.
-  it('no scheduled local notifications besides the záznamník new points', () => {
-    expect(grep('LocalNotifications\\.schedule', ['src/mobile/zaznamnikNotifications.ts'])).toBe(
-      ''
-    );
+  // Two schedulers, both about IS, neither about societies: exam-opening
+  // reminders (spec 2026-10-20) and the záznamník's "Nové body" (decided
+  // 2026-10-20). Nothing else may schedule: event reminders stay gone.
+  it('no scheduled local notifications besides exam openings and záznamník points', () => {
+    expect(
+      grep('LocalNotifications\\.schedule', [
+        'src/mobile/examReminders.ts',
+        'src/mobile/zaznamnikNotifications.ts',
+      ])
+    ).toBe('');
   });
 
   it('no follow store', () => {

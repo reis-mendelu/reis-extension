@@ -479,6 +479,11 @@
     "sectionDeadlines": "Blížící se termíny",
     "sectionSocieties": "Od spolků"
   },
+  "examReminders": {
+    "title": "Za chvíli se otvírá zkouška",
+    "body": "{subject} – {section} · přihlašování v {time}",
+    "channel": "Otevírání zkoušek"
+  },
   "deadlines": {
     "title": "Blížící se termíny",
     "examRegOpens": "Otevírá se přihlašování",
@@ -1303,6 +1308,7 @@
       "detailForm": "Forma termínu",
       "detailDuration": "Délka trvání",
       "detailRoom": "Místnost",
+      "detailNote": "Poznámka ke zkoušce",
       "durationMin": "{count} min",
       "whoIsGoing": "Kdo jde se mnou na termín?",
       "cannotRegister": "nelze se přihlásit",

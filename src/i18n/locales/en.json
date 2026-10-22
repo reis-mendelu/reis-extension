@@ -479,6 +479,11 @@
     "sectionDeadlines": "Upcoming deadlines",
     "sectionSocieties": "From societies"
   },
+  "examReminders": {
+    "title": "An exam opens soon",
+    "body": "{subject} – {section} · registration opens at {time}",
+    "channel": "Exam openings"
+  },
   "deadlines": {
     "title": "Upcoming deadlines",
     "examRegOpens": "Registration opens",
@@ -1303,6 +1308,7 @@
       "detailForm": "Form",
       "detailDuration": "Length",
       "detailRoom": "Room",
+      "detailNote": "Exam note",
       "durationMin": "{count} min",
       "whoIsGoing": "Who is going with me?",
       "cannotRegister": "can't register",
