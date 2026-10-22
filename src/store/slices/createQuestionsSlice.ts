@@ -100,7 +100,13 @@ export const createQuestionsSlice: AppSlice<QuestionsSlice> = (set, get) => ({
     const button = question?.buttons.find((b) => b.key === key);
     if (!button || get().questions.answers[id]) return;
     if (button.url) {
-      void countQuestion(id, key);
+      // Seen first, as for an answer: the link opens a browser, which hides
+      // the page and stops the on-screen dwell before it could count.
+      // A link shares the answer claim, so a link tap followed by another
+      // button counts only the first; the presets give a link question one
+      // button, so that cannot happen from the console today.
+      await countQuestion(id, 'seen');
+      await countQuestion(id, key);
       return;
     }
     set({ questions: { ...get().questions, answers: { ...get().questions.answers, [id]: key } } });

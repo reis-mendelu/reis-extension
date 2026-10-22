@@ -114,7 +114,11 @@ describe('createQuestionsSlice', () => {
     const get = makeSlice();
     await get().loadQuestions();
     await get().answerQuestion('q1', 'open');
-    expect(countQuestion).toHaveBeenCalledWith('q1', 'open');
+    // Seen first: the link opens a browser, which stops the on-screen dwell.
+    expect(countQuestion.mock.calls).toEqual([
+      ['q1', 'seen'],
+      ['q1', 'open'],
+    ]);
     expect(get().questions.answers).toEqual({});
   });
 
