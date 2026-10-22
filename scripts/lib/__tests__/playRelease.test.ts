@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { releaseToTrack, type PlayHttp, type PlayResponse } from '../playRelease';
+import { releaseToTrack, resolveTrack, type PlayHttp, type PlayResponse } from '../playRelease';
 
 type Call = { method: string; path: string; body?: unknown };
 
@@ -112,5 +112,20 @@ describe('releaseToTrack', () => {
     };
     await expect(releaseToTrack({ ...args, play: failing, dryRun: false })).rejects.toThrow('boom');
     expect(calls.at(-1)?.method).toBe('DELETE');
+  });
+});
+
+describe('resolveTrack', () => {
+  it('releases to production unless something says otherwise', () => {
+    expect(resolveTrack(undefined, undefined)).toBe('production');
+  });
+
+  it('treats an unset repository variable (an empty string) as unset', () => {
+    expect(resolveTrack(undefined, '')).toBe('production');
+  });
+
+  it('lets PLAY_TRACK and then --track override it', () => {
+    expect(resolveTrack(undefined, 'alpha')).toBe('alpha');
+    expect(resolveTrack('internal', 'alpha')).toBe('internal');
   });
 });
