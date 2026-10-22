@@ -78,8 +78,8 @@ Already present and reused: `CHROME_*`, `FIREFOX_*`, and the Google service
 account `CHROME_SERVICE_ACCOUNT_*`, which also calls the Play Developer API.
 
 **Play Console, once:** Users and permissions → the service account → app
-permissions for `cz.reis.app` → **Release to production, exclude devices, and use
-Play App Signing** (it also holds **Release apps to testing tracks** and the Data
+permissions for `cz.reis.app` → **Release to production, exclude devices and use
+Play app signing** (it also holds **Release apps to testing tracks** and the Data
 safety permission). Without it the commit fails with a 403. Releases go to
 **production** at full rollout; to send one to another track instead, set the
 repository **variable** `PLAY_TRACK` (e.g. `alpha`) or pass `--track`. A wrong
