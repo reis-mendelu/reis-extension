@@ -146,6 +146,7 @@ begin
     '[{"key":"Bad Key","cz":"A","en":"A"}]',
     '[{"key":"a","cz":"","en":"A"}]',
     '[{"key":"a","cz":"A","en":"A","url":"http://insecure.example"}]',
+    '[{"key":"1","cz":"1","en":"1","hintCz":"tohle je moc dlouhý popisek konce"}]',
     '[{"key":"a","cz":"1","en":"1"},{"key":"b","cz":"2","en":"2"},{"key":"c","cz":"3","en":"3"},{"key":"d","cz":"4","en":"4"},{"key":"e","cz":"5","en":"5"},{"key":"f","cz":"6","en":"6"}]'
   ] loop
     begin
@@ -159,7 +160,7 @@ end $$;
 
 -- a 1–5 scale is a valid list
 insert into public.reis_questions (prompt_cz, prompt_en, buttons, ends_at) values ('x', 'x',
-  '[{"key":"1","cz":"1","en":"1"},{"key":"2","cz":"2","en":"2"},{"key":"3","cz":"3","en":"3"},{"key":"4","cz":"4","en":"4"},{"key":"5","cz":"5","en":"5"}]',
+  '[{"key":"1","cz":"1","en":"1","hintCz":"nejhorší","hintEn":"worst"},{"key":"2","cz":"2","en":"2"},{"key":"3","cz":"3","en":"3"},{"key":"4","cz":"4","en":"4"},{"key":"5","cz":"5","en":"5","hintCz":"nejlepší","hintEn":"best"}]',
   now() + interval '1 day');
 
 rollback;

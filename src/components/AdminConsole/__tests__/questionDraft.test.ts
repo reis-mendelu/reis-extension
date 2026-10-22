@@ -20,6 +20,9 @@ describe('question drafts', () => {
     const d = newDraft('scale', NOW);
     expect(d.promptCz).toBe('Doporučil/a bys reIS kamarádovi?');
     expect(draftError(d)).toBeNull();
+    // Both ends labelled on the buttons, in both languages (Tonda, 2026-10-22).
+    expect(d.buttons[0]).toMatchObject({ hintCz: 'nejhorší', hintEn: 'worst' });
+    expect(d.buttons[4]).toMatchObject({ hintCz: 'nejlepší', hintEn: 'best' });
   });
 
   it('runs four weeks by default', () => {

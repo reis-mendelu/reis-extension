@@ -22,6 +22,8 @@ const ButtonSchema = z.object({
   cz: z.string(),
   en: z.string(),
   url: z.string().optional(),
+  hintCz: z.string().optional(),
+  hintEn: z.string().optional(),
 });
 const RowSchema = z.object({
   id: z.string(),

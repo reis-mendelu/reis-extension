@@ -23,7 +23,13 @@ const base: Question = {
 const scale: Question = {
   ...base,
   id: 'q2',
-  buttons: ['1', '2', '3', '4', '5'].map((k) => ({ key: k, cz: k, en: k })),
+  buttons: ['1', '2', '3', '4', '5'].map((k) => ({
+    key: k,
+    cz: k,
+    en: k,
+    ...(k === '1' && { hintCz: 'nejhorší', hintEn: 'worst' }),
+    ...(k === '5' && { hintCz: 'nejlepší', hintEn: 'best' }),
+  })),
 };
 const link: Question = {
   ...base,
@@ -60,6 +66,16 @@ describe('QuestionRow', () => {
     );
     for (const k of ['1', '2', '3', '4', '5'])
       expect(screen.getByRole('button', { name: k })).toBeTruthy();
+  });
+
+  // Tonda, 2026-10-22: the first banner said only "(1-5)", and nobody knew
+  // which end was good. The ends are labelled on the scale itself.
+  it('labels both ends of a scale in the student’s language', () => {
+    render(
+      <QuestionRow question={scale} language="en" answeredKey={undefined} onAnswer={vi.fn()} />
+    );
+    expect(screen.getByText('worst')).toBeTruthy();
+    expect(screen.getByText('best')).toBeTruthy();
   });
 
   it('counts and opens a link, and keeps the row', () => {

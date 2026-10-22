@@ -10,6 +10,9 @@ export interface QuestionButton {
   en: string;
   /** A link button: counted, then opened. Answer buttons have none. */
   url?: string;
+  /** What this end of a scale means ("nejhorší" under 1), shown under it. */
+  hintCz?: string;
+  hintEn?: string;
 }
 
 export interface Question {

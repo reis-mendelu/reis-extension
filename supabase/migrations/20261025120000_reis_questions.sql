@@ -33,6 +33,9 @@ returns boolean language sql immutable set search_path = '' as $$
            or length(trim(coalesce(e->>'en', ''))) not between 1 and 40
            or (e ? 'url' and (coalesce(e->>'url', '') !~ '^https://[^\s]{4,}$'
                               or length(e->>'url') > 500))
+           -- The words under a scale's ends ("nejhorší" under 1), optional.
+           or (e ? 'hintCz' and length(trim(coalesce(e->>'hintCz', ''))) not between 1 and 20)
+           or (e ? 'hintEn' and length(trim(coalesce(e->>'hintEn', ''))) not between 1 and 20)
      );
 $$;
 

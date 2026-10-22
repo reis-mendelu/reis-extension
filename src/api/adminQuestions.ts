@@ -27,7 +27,14 @@ const ResultSchema = z.object({
   note_cz: z.string().nullable(),
   note_en: z.string().nullable(),
   buttons: z.array(
-    z.object({ key: z.string(), cz: z.string(), en: z.string(), url: z.string().optional() })
+    z.object({
+      key: z.string(),
+      cz: z.string(),
+      en: z.string(),
+      url: z.string().optional(),
+      hintCz: z.string().optional(),
+      hintEn: z.string().optional(),
+    })
   ),
   starts_at: z.string(),
   ends_at: z.string(),

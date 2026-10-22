@@ -41,6 +41,11 @@ export function QuestionRow({
   const answered = question.buttons.find((b) => b.key === answeredKey);
   // A row of short labels ("1"…"5", "👍") is a scale: square buttons in one line.
   const isScale = question.buttons.every((b) => !b.url && label(b).length <= 2);
+  // What a scale's two ends mean, under them: "(1-5)" alone left students
+  // guessing which end was good (Tonda, 2026-10-22).
+  const hint = (b: QuestionButton | undefined) => (language === 'cz' ? b?.hintCz : b?.hintEn);
+  const low = isScale ? hint(question.buttons[0]) : undefined;
+  const high = isScale ? hint(question.buttons[question.buttons.length - 1]) : undefined;
 
   const tap = (b: QuestionButton) => {
     onAnswer(b.key);
@@ -69,20 +74,29 @@ export function QuestionRow({
         ) : (
           <>
             {note && <p className="text-2sm text-base-content/60">{note}</p>}
-            <div className={`mt-1.5 flex flex-wrap ${isScale ? 'gap-1.5' : 'gap-2'}`}>
-              {question.buttons.map((b) => (
-                <button
-                  key={b.key}
-                  type="button"
-                  onClick={() => tap(b)}
-                  className={`btn btn-sm ${
-                    b.url ? 'btn-primary' : isScale ? 'btn-outline btn-square' : 'btn-outline'
-                  }`}
-                >
-                  {label(b)}
-                  {b.url && <ExternalLink size={14} aria-hidden />}
-                </button>
-              ))}
+            {/* inline-flex, so the end labels span exactly the buttons. */}
+            <div className="mt-1.5 inline-flex flex-col gap-0.5 self-start">
+              <div className={`flex flex-wrap ${isScale ? 'gap-1.5' : 'gap-2'}`}>
+                {question.buttons.map((b) => (
+                  <button
+                    key={b.key}
+                    type="button"
+                    onClick={() => tap(b)}
+                    className={`btn btn-sm ${
+                      b.url ? 'btn-primary' : isScale ? 'btn-outline btn-square' : 'btn-outline'
+                    }`}
+                  >
+                    {label(b)}
+                    {b.url && <ExternalLink size={14} aria-hidden />}
+                  </button>
+                ))}
+              </div>
+              {(low || high) && (
+                <div className="flex justify-between gap-2 text-xs text-base-content/60">
+                  <span>{low}</span>
+                  <span>{high}</span>
+                </div>
+              )}
             </div>
           </>
         )}

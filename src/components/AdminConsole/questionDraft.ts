@@ -18,7 +18,15 @@ export function presetButtons(preset: QuestionPreset): QuestionButton[] {
         { key: 'no', cz: 'Ne', en: 'No' },
       ];
     case 'scale':
-      return ['1', '2', '3', '4', '5'].map((k) => ({ key: k, cz: k, en: k }));
+      // Both ends say what they mean: the first banner asked "(1-5)" and
+      // students could not tell which end was good (Tonda, 2026-10-22).
+      return ['1', '2', '3', '4', '5'].map((k) => ({
+        key: k,
+        cz: k,
+        en: k,
+        ...(k === '1' && { hintCz: 'nejhorší', hintEn: 'worst' }),
+        ...(k === '5' && { hintCz: 'nejlepší', hintEn: 'best' }),
+      }));
     case 'thumbs':
       return [
         { key: 'up', cz: '👍', en: '👍' },
@@ -39,8 +47,9 @@ export function presetPrompt(preset: QuestionPreset) {
     ? {
         promptCz: 'Doporučil/a bys reIS kamarádovi?',
         promptEn: 'Would you recommend reIS to a friend?',
-        noteCz: '1 = nejhorší, 5 = nejlepší',
-        noteEn: '1 = worst, 5 = best',
+        // The ends are labelled on the scale itself (presetButtons).
+        noteCz: '',
+        noteEn: '',
       }
     : { promptCz: '', promptEn: '', noteCz: '', noteEn: '' };
 }
