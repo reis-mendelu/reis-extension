@@ -29,14 +29,18 @@ export function presetButtons(preset: QuestionPreset): QuestionButton[] {
   }
 }
 
-/** The satisfaction question (Decision 2 → d) is the 1–5 preset's default. */
+/**
+ * The satisfaction question (Decision 2 → d) is the 1–5 preset's default, in
+ * the retired NpsBanner's own words, so its answers stay comparable in wording
+ * with the 131 the banner collected (the surface and identifier still differ).
+ */
 export function presetPrompt(preset: QuestionPreset) {
   return preset === 'scale'
     ? {
-        promptCz: 'Jak jsi spokojený/á s reIS?',
-        promptEn: 'How happy are you with reIS?',
-        noteCz: '1 = vůbec, 5 = moc',
-        noteEn: '1 = not at all, 5 = very much',
+        promptCz: 'Doporučil/a bys reIS kamarádovi?',
+        promptEn: 'Would you recommend reIS to a friend?',
+        noteCz: '1 = nejhorší, 5 = nejlepší',
+        noteEn: '1 = worst, 5 = best',
       }
     : { promptCz: '', promptEn: '', noteCz: '', noteEn: '' };
 }

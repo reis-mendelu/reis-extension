@@ -15,9 +15,10 @@ describe('question drafts', () => {
     }
   });
 
+  // The retired NpsBanner's own wording, so the new answers compare with its 131.
   it('the 1–5 preset is the satisfaction question, ready to publish', () => {
     const d = newDraft('scale', NOW);
-    expect(d.promptCz).toBe('Jak jsi spokojený/á s reIS?');
+    expect(d.promptCz).toBe('Doporučil/a bys reIS kamarádovi?');
     expect(draftError(d)).toBeNull();
   });
 

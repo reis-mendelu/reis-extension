@@ -91,9 +91,14 @@ export function QuestionForm({ onDone }: { onDone: () => void }) {
           )}
         </fieldset>
       )}
-      <div className="flex gap-2">
+      {/* Stacked on a phone: two datetime fields side by side at 320px run
+          their text under the picker icon. */}
+      <div className="flex flex-col gap-2 sm:flex-row">
         {(['startsAt', 'endsAt'] as const).map((k) => (
-          <label key={k} className="flex flex-1 flex-col gap-1 text-xs text-base-content/70">
+          <label
+            key={k}
+            className="flex min-w-0 flex-1 flex-col gap-1 text-xs text-base-content/70"
+          >
             {t(`admin.questions.${k}`)}
             <input
               type="datetime-local"

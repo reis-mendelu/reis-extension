@@ -14,7 +14,7 @@ const pct = (x: number | null, lang: string) =>
 
 const STATUS_BADGE = {
   live: 'badge-success',
-  scheduled: 'badge-info',
+  scheduled: 'badge-outline',
   ended: 'badge-ghost',
 } as const;
 
@@ -67,10 +67,12 @@ export function QuestionResultsCard({ q }: { q: QuestionResult }) {
                   ` · ${t('admin.questions.ofAnswered', { pct: pct(b.ofAnswered, language) })}`}
               </span>
             </div>
+            {/* An answer's bar is its share of the answers, so a 1–5 spread reads;
+                a link's is its share of those who saw it. */}
             <progress
               className="progress progress-primary h-1.5 w-full"
               value={b.n}
-              max={Math.max(s.seen, 1)}
+              max={Math.max(b.isLink ? s.seen : s.answered, 1)}
             />
           </li>
         ))}
@@ -117,7 +119,7 @@ export function QuestionResultsCard({ q }: { q: QuestionResult }) {
       {status !== 'ended' && (
         <button
           type="button"
-          className="btn btn-outline btn-error btn-xs self-end"
+          className="btn btn-outline btn-xs self-end"
           onClick={async () => {
             if (!(await end(q))) toast.error(t('admin.questions.endError'));
           }}
