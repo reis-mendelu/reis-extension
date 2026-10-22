@@ -91,6 +91,17 @@ describe('featureUsage', () => {
     expect(rpc).toHaveBeenCalledTimes(2);
   });
 
+  // The support question remembers a "yes" only once it has been counted, so
+  // a failed write leaves it to be asked (and counted) on a later launch.
+  it('reports a failed write as not delivered, and anything else as settled', async () => {
+    rpc.mockResolvedValueOnce({ error: { message: 'network' } });
+    await expect(trackFeatureSignal('support_prompt_yes')).resolves.toBe(false);
+    await expect(trackFeatureSignal('support_prompt_yes')).resolves.toBe(true);
+    // Declined consent is the student's answer, not a failure to retry.
+    hasDataConsent.mockResolvedValue(false);
+    await expect(trackFeatureSignal('support_prompt_seen')).resolves.toBe(true);
+  });
+
   it('writes nothing in demo mode', async () => {
     useAppStore.setState({ demoMode: true });
 

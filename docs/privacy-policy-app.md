@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: 13 October 2026**
+**Last Updated: 22 October 2026**
 
 reIS is a student-built project that simplifies the Mendel University in Brno
 Information System (IS Mendelu). It is a browser extension (Chrome, Edge,

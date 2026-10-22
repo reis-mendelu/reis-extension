@@ -154,7 +154,8 @@ describe('SupportPrompt', () => {
     fireEvent.click(screen.getByRole('button', { name: support.yes }));
 
     expect(trackFeatureSignal).toHaveBeenCalledWith('support_prompt_yes');
-    expect(onAnswer).toHaveBeenCalledExactlyOnceWith('yes');
+    // With the delivery, so the answer is remembered only once it is counted.
+    expect(onAnswer).toHaveBeenCalledExactlyOnceWith('yes', expect.any(Promise));
   });
 
   it('thanks without claiming a payment once answered', () => {

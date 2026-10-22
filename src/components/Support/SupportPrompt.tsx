@@ -40,7 +40,8 @@ export function SupportPrompt({
 }: {
   /** "Ano" was tapped in this Novinky: thank instead of asking. */
   answered: boolean;
-  onAnswer: (answer: 'yes' | 'dismissed') => void;
+  /** `delivered` (with "yes") is the counter's write; see answerSupportQuestion. */
+  onAnswer: (answer: 'yes' | 'dismissed', delivered?: Promise<boolean | void>) => void;
   /** Called once it is on screen: Novinky is open with it in, so its badge is read. */
   onShown: () => void;
 }) {
@@ -122,8 +123,7 @@ export function SupportPrompt({
                 // tap-and-leave cannot put a "yes" outside the denominator (the
                 // session latch in featureUsage keeps this to one write).
                 void trackFeatureSignal('support_prompt_seen');
-                void trackFeatureSignal('support_prompt_yes');
-                onAnswer('yes');
+                onAnswer('yes', trackFeatureSignal('support_prompt_yes'));
               }}
               className="btn btn-primary btn-sm"
             >

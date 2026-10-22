@@ -109,4 +109,17 @@ describe('createSupportQuestionSlice', () => {
     expect(get().supportQuestion).toEqual({ status: 'open', badgeSeen: false });
     expect(logError).toHaveBeenCalledWith('SupportQuestionSlice.load', expect.any(Error));
   });
+
+  // A "yes" whose counter never reached Supabase is not remembered: the row is
+  // gone for this session, and the next launch asks — and counts — again.
+  it('does not remember a "yes" that was not delivered', async () => {
+    const first = makeSlice();
+    await first().loadSupportQuestion();
+    await first().answerSupportQuestion('yes', Promise.resolve(false));
+    expect(first().supportQuestion.status).toBe('yes');
+
+    const next = makeSlice();
+    await next().loadSupportQuestion();
+    expect(next().supportQuestion).toEqual({ status: 'open', badgeSeen: true });
+  });
 });

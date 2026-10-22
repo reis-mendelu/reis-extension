@@ -23,9 +23,9 @@ export function useSupportQuestion() {
     /** What it adds to the bell: 1 until Novinky has been opened with it in. */
     badge: status === 'open' && !badgeSeen ? 1 : 0,
     markSeen,
-    onAnswer: (a: 'yes' | 'dismissed') => {
+    onAnswer: (a: 'yes' | 'dismissed', delivered?: Promise<boolean | void>) => {
       if (a === 'yes') setAnsweredHere(true);
-      void answer(a);
+      void answer(a, delivered);
     },
   };
 }

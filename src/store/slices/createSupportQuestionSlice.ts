@@ -23,7 +23,14 @@ export interface SupportQuestionSlice {
   supportQuestion: { status: SupportQuestionStatus; badgeSeen: boolean };
   loadSupportQuestion: () => Promise<void>;
   markSupportQuestionSeen: () => Promise<void>;
-  answerSupportQuestion: (answer: 'yes' | 'dismissed') => Promise<void>;
+  /**
+   * `delivered` is the "yes" counter's write. A "yes" it reports as failed is
+   * not remembered, so a later launch asks — and counts — again.
+   */
+  answerSupportQuestion: (
+    answer: 'yes' | 'dismissed',
+    delivered?: Promise<boolean | void>
+  ) => Promise<void>;
 }
 
 /**
@@ -75,11 +82,17 @@ export const createSupportQuestionSlice: AppSlice<SupportQuestionSlice> = (set, 
     await write('SupportQuestionSlice.markSeen', [[BADGE_KEY, true]]);
   },
 
-  answerSupportQuestion: async (answer) => {
+  answerSupportQuestion: async (answer, delivered) => {
     set({ supportQuestion: { status: answer, badgeSeen: true } });
-    await write('SupportQuestionSlice.answer', [
-      [ANSWER_KEY, answer],
-      [BADGE_KEY, true],
-    ]);
+    const remembered = (await delivered) !== false;
+    await write(
+      'SupportQuestionSlice.answer',
+      remembered
+        ? [
+            [ANSWER_KEY, answer],
+            [BADGE_KEY, true],
+          ]
+        : [[BADGE_KEY, true]]
+    );
   },
 });
