@@ -19,7 +19,12 @@ vi.mock('@capacitor/core', async (importOriginal) => {
   return { ...real, Capacitor: { ...real.Capacitor, getPlatform: () => 'android' } };
 });
 
-import { clearExamReminders, installExamReminders, reconcileExamReminders } from '../examReminders';
+import {
+  clearExamReminders,
+  installExamReminders,
+  openExamsFromNotification,
+  reconcileExamReminders,
+} from '../examReminders';
 import { EXAM_OPENING_KIND, examOpeningReminders } from '../../utils/examOpeningReminders';
 
 const NOW = new Date(Date.UTC(2026, 11, 1, 8, 0)); // 9:00 in Prague
@@ -79,6 +84,9 @@ describe('exam-opening reminders on the phone', () => {
       body: 'Ekonometrie 1 – Zkouška · přihlašování v 13:00',
       channelId: 'reis-exam-openings',
       extra: { kind: EXAM_OPENING_KIND },
+      // Android 12+ would otherwise open "Alarms & reminders" (no
+      // SCHEDULE_EXACT_ALARM in the manifest); an hour ahead needs no exact alarm.
+      isExactNotification: false,
     });
     // 13:00 in Prague is 12:00 UTC; an hour before.
     expect(n.schedule.at).toEqual(new Date(Date.UTC(2026, 11, 2, 11, 0)));
@@ -181,11 +189,16 @@ describe('exam-opening reminders on the phone', () => {
     expect(ln.schedule).not.toHaveBeenCalled();
   });
 
-  it('opens Zkoušky when the reminder is tapped', async () => {
-    installExamReminders();
-    const [event, handler] = ln.addListener.mock.calls[0]!;
-    expect(event).toBe('localNotificationActionPerformed');
-    handler({ notification: { extra: { kind: EXAM_OPENING_KIND } } });
+  it('opens Zkoušky when the reminder is tapped; another feature’s tap is not ours', () => {
+    useAppStore.getState().setMobileTab('calendar');
+    openExamsFromNotification({ kind: 'zaznamnik-new-points' });
+    expect(useAppStore.getState().mobileTab).toBe('calendar');
+    openExamsFromNotification({ kind: EXAM_OPENING_KIND });
     expect(useAppStore.getState().mobileTab).toBe('exams');
+  });
+
+  it('registers no tap listener of its own (notificationTaps owns the one)', () => {
+    installExamReminders();
+    expect(ln.addListener).not.toHaveBeenCalled();
   });
 });

@@ -17,6 +17,7 @@ import { handleDemoError } from '@/mobile/demoToast';
 import { useAppStore } from '@/store/useAppStore';
 import { trackDailyUsage } from '@/api/feedback';
 import { installExamReminders } from '@/mobile/examReminders';
+import { installNotificationTaps } from '@/mobile/notificationTaps';
 import { installZaznamnikNotifications } from '@/mobile/zaznamnikNotifications';
 
 /**
@@ -103,6 +104,9 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // "Za chvíli se otvírá zkouška" (spec 2026-10-20). After the demo return:
   // the demo's exams are seeded, and a reviewer's phone must not be reminded of
   // them. Reschedules on every exam sync from here on.
+  // One tap listener for every reIS notification, before the features that
+  // post them: a cold-start tap reaches only the first listener registered.
+  installNotificationTaps();
   installExamReminders();
 
   // "Nové body" from the záznamník as a system notification. After the demo

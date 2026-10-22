@@ -55,6 +55,11 @@ async function reconcile(): Promise<void> {
         time: r.opensAtClock,
       }),
       schedule: { at: r.fireAt, allowWhileIdle: true },
+      // The plugin defaults this to true and, on Android 12+ without
+      // SCHEDULE_EXACT_ALARM (stripped in AndroidManifest.xml), opens the
+      // "Alarms & reminders" settings screen first. An hour ahead needs no
+      // exact alarm.
+      isExactNotification: false,
       channelId: CHANNEL_ID,
       extra: { kind: EXAM_OPENING_KIND, key: r.key },
     })),
@@ -73,6 +78,12 @@ let queue: Promise<void> = Promise.resolve();
 export function reconcileExamReminders(): Promise<void> {
   queue = queue.then(reconcile).catch((err) => logError('Mobile.reconcileExamReminders', err));
   return queue;
+}
+
+/** A tap on the reminder opens Zkoušky; other features' taps are ignored. */
+export function openExamsFromNotification(extra: unknown): void {
+  if ((extra as { kind?: unknown } | null | undefined)?.kind !== EXAM_OPENING_KIND) return;
+  useAppStore.getState().setMobileTab('exams');
 }
 
 /** The system prompt, asked where it makes sense: on Zkoušky, with something to remind. */
@@ -97,12 +108,6 @@ async function askIfDue(): Promise<void> {
  * and no system notification (pinned in src/test/guards).
  */
 export function installExamReminders(): () => void {
-  void LocalNotifications.addListener('localNotificationActionPerformed', (event) => {
-    if (event.notification.extra?.kind === EXAM_OPENING_KIND) {
-      useAppStore.getState().setMobileTab('exams');
-    }
-  });
-
   signedOut = false;
   unsubscribe?.();
   let exams = useAppStore.getState().exams.data;
