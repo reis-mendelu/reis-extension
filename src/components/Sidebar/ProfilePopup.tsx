@@ -17,7 +17,6 @@ import { User, Mail, Hash } from 'lucide-react';
 import { logout } from '../../api/proxyClient';
 import { HiddenItemsSection } from './Profile/HiddenItemsSection';
 import { PartnersBlock } from '../Partners/PartnersBlock';
-import { SupportPrompt } from '../Support/SupportPrompt';
 import { desktopEduroamTarget } from '../../utils/desktopEduroamTarget';
 import { useLongPress } from '../../hooks/ui/useLongPress';
 import { StudySwitcher } from '../StudySwitcher/StudySwitcher';
@@ -175,9 +174,6 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
             partners reach their field on every product, the extension too.
             Renders nothing for a field without a partner. */}
         <PartnersBlock compact className="border-b border-base-200 px-1 py-2" />
-
-        {/* The willingness-to-pay question, as on the phone's Profil (2026-10-16). */}
-        <SupportPrompt compact className="border-b border-base-200 px-1 py-2" />
 
         {/* Support Section */}
         <div className="py-1">

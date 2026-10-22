@@ -7,6 +7,8 @@ import { useDeadlineAlerts } from '../../../hooks/useDeadlineAlerts';
 import { useOpenNotification } from '../../../hooks/useOpenNotification';
 import { NotificationItem } from '../../Notifications/NotificationItem';
 import { DeadlineAlertItem } from '../../Notifications/DeadlineAlertItem';
+import { SupportPrompt } from '../../Support/SupportPrompt';
+import { useSupportQuestion } from '../../../hooks/useSupportQuestion';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
 
@@ -39,7 +41,8 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
   const { t } = useTranslation();
   const { notifications, loading, markVisible, readIds } = useNotificationFeed();
   const { alerts, markAllSeen } = useDeadlineAlerts();
-  const hasContent = notifications.length > 0 || alerts.length > 0;
+  const support = useSupportQuestion();
+  const hasContent = notifications.length > 0 || alerts.length > 0 || support.visible;
   const setMobileTab = useAppStore((s) => s.setMobileTab);
   const pushSheet = useAppStore((s) => s.pushSheet);
   // New points already happened; the deadlines are still ahead. Two sections.
@@ -89,6 +92,16 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
     <Sheet size="full" onClose={onClose}>
       <SheetHeader title={t('notifications.title')} onClose={onClose} />
       <div className="flex-1 overflow-y-auto px-4 pb-6 pt-1">
+        {/* First, so it is on screen without scrolling however long the feed. */}
+        {support.visible && (
+          <div className="pb-1 pt-1">
+            <SupportPrompt
+              answered={support.answered}
+              onAnswer={support.onAnswer}
+              onShown={support.markSeen}
+            />
+          </div>
+        )}
         {points.length > 0 && (
           <>
             <SectionLabel>{t('course.tabs.zaznamnik')}</SectionLabel>

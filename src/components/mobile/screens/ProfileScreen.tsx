@@ -13,7 +13,6 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { SignOutConfirm } from '../sheets/SignOutConfirm';
 import { AboutSection } from './profile/AboutSection';
 import { StudySwitcher } from '../../StudySwitcher/StudySwitcher';
-import { SupportPrompt } from '../../Support/SupportPrompt';
 import { ProfileIdentity } from './profile/ProfileIdentity';
 import { NavRow } from '../primitives/NavRow';
 import { ScreenHeader } from './calendar/ScreenHeader';
@@ -129,20 +128,6 @@ export function ProfileScreen() {
             <LogOut size={17} className="flex-shrink-0" />
             <span className="flex-1 text-left text-md font-medium">{t('settings.logout')}</span>
           </button>
-
-          {/* The willingness-to-pay question (2026-10-16), beside the credit
-            that says how reIS is paid for. Profil must not scroll, so it
-            stands down where it does not fit. Measured 2026-10-16 for a
-            student (no admin rows), with real safe areas and the 40px map-app
-            reset row, spare px with the question shown:
-              375×667 (20/0)  +29   ·  390×844 (47/34) +18
-              375×812 (50/34) −17   ·  360×800 (24/48) −17
-              430×932 (59/34) +94   ·  412×915 (24/48) +98
-            The failures are the band where AboutSection (≥780px) has just
-            appeared, so it is hidden from 780 to 829px, and below 667px
-            (320×568) where it does not fit at all. A hidden copy is not
-            counted as seen; SupportPrompt observes what is on screen. */}
-          <SupportPrompt className="[@media(max-height:666px)]:hidden [@media(min-height:780px)_and_(max-height:829px)]:hidden px-4 py-2" />
 
           {/* Open, not behind a row: a credit that has to be opened is a credit
             nobody reads, and a student writing a bug report should find the
