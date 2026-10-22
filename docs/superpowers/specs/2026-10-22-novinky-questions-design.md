@@ -1,12 +1,11 @@
-# Novinky questions: options to decide together
+# Novinky questions
 
-**My lean: one shape for every kind.** A question is a short prompt plus
+**One shape for every kind (decided).** A question is a short prompt plus
 **up to five buttons**, written in the admin console and live in Novinky the
-same minute. Each button is either an answer (counted) or a link (counted
-and opened). Ano/Ne, 👍/👎, 1–5 and "Otevřít reByt" are then the same
-feature with different buttons. Counting sends the question id and the button
-only, no identifier. It ships once, in the release after 5.5.0. Nothing is
-decided until we have been through the questions at the end.
+same minute. Each button is either an answer, which is counted, or a link,
+which is counted and opened. Ano/Ne, 👍/👎, 1–5 and "Otevřít reByt" are the
+same feature with different buttons. Counting sends the question id and the
+button only, no identifier. It ships once, in the release after 5.5.0.
 
 Status: partly decided, nothing built. Written 2026-10-22. The 99 Kč question
 ships in 5.5.0 (Sat 2026-10-24) on the existing counters. This replaces that
@@ -18,8 +17,34 @@ mechanism afterwards.
   option B in the first draft.
 - **When:** after 5.5.0 is released, as its own PR against `test`.
 - **After answering**, the row stays as "Díky" until the question ends.
+- **Satisfaction (Decision 2 → d).** It becomes a 1–5 question on both trees,
+  in the same PR. Its results card in the admin console is the
+  satisfaction view the console lacks today. The extension-only
+  `NpsBanner` is retired in that PR. See "The old rating data" below.
+- **Shape (Decision 1 → i).** A buttons list with presets. This follows from
+  Decision 2: B needs at least a 1–5 preset.
 
-Decisions 1–3 below are still open.
+Only Decision 3 (reByt) is still open.
+
+### The old rating data (`feedback_responses`, `submit_feedback`)
+
+- **Kept as history, not merged.** The 131 rows stay where they are and are
+  never added to B's numbers. They differ in surface (an extension banner
+  vs. Novinky on both trees), identifier (install id vs. none) and cadence
+  (once per semester vs. per question). The B PR reads nothing from them
+  and needs no console view of them; SQL is enough for history.
+- **`submit_feedback` stays callable after the B PR.** Released extension
+  builds (5.4.1, 5.5.0) still show the banner and call it. Dropping or
+  revoking it would turn their submits into silent failures (the client
+  returns false). The extension updates itself within days, so the trickle
+  stops on its own. Revoke it in a later migration, once no released build
+  in use calls it.
+- **The `survey` disclosure stays** in `privacy/disclosures.ts` until that
+  revoke, because the flow still exists until then.
+- **Open, my suggestion only:** once `submit_feedback` is revoked, null out
+  `feedback_responses.student_id`. The ratings stay as history, and 131
+  install ids we no longer need do not stay forever. Nothing in reIS reads
+  that column.
 
 ## The three kinds Dominik named
 
@@ -47,7 +72,7 @@ Decisions 1–3 below are still open.
   5.5.0 reaches most students only once they have updated. "Seen" is counted,
   so the shares stay honest; the totals just grow more slowly.
 
-## Decision 1: how general is a question?
+## Decision 1: how general is a question? (decided: i)
 
 | | **(i) Buttons list** (my lean) | (ii) Ano/Ne only | (iii) A type per kind |
 |---|---|---|---|
@@ -62,7 +87,7 @@ The counter accepts only a key that the question has, plus `seen`.
 Compared with (ii), the extra cost is the presets in the console and a check
 of the 1–5 row at 320px.
 
-## Decision 2: satisfaction, which of these?
+## Decision 2: satisfaction, which of these? (decided: d)
 
 **What exists today** (checked 2026-10-22 on `origin/test` and in prod):
 - **The rating prompt reaches only the extension.** `NpsBanner` asks for a
@@ -189,9 +214,9 @@ At 100–200 answers that is not worth it; target the question instead.
 
 ## To decide together
 
-1. **Shape:** a buttons list (i), Ano/Ne only (ii), or a type per kind (iii)?
-2. **Satisfaction:** keep the banner (a), banner on both trees plus an admin
-   view (a′), 👍/👎 (b), or a 1–5 question that retires the banner (d)?
+1. ~~**Shape**~~ **Decided 2026-10-22:** a buttons list (i).
+2. ~~**Satisfaction**~~ **Decided 2026-10-22:** a 1–5 question on both trees
+   that retires the banner (d).
 3. **reByt:** a notice now, or wait for the link button?
 4. ~~**After answering:** does the row stay as "Díky" until it ends, or
    disappear?~~ **Decided 2026-10-22:** it stays as "Díky" until the question
