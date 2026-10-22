@@ -80,7 +80,15 @@ describe('the pdf.js the app ships', () => {
       const dir = mkdtempSync(join(tmpdir(), 'reis-pdfjs-'));
       const pdf = join(dir, 'doc.pdf');
       writeFileSync(pdf, fixture ? readFileSync(resolve(ROOT, fixture)) : MINIMAL_PDF);
+      // Promise.withResolvers is a floor the legacy build keeps (it does NOT
+      // polyfill it) and every browser in question has (Chrome 119, Firefox
+      // 121, Safari 17.4). CI's Node 20 does not, so the child supplies it.
       const script = `
+      Promise.withResolvers ??= function () {
+        let resolve, reject;
+        const promise = new this((res, rej) => { resolve = res; reject = rej; });
+        return { promise, resolve, reject };
+      };
       delete Map.prototype.getOrInsert;
       delete Map.prototype.getOrInsertComputed;
       delete WeakMap.prototype.getOrInsert;
