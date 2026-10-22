@@ -2,6 +2,8 @@ import { Bell, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { NotificationItem } from './NotificationItem';
 import { DeadlineAlertItem } from './DeadlineAlertItem';
+import { SupportPrompt } from '../Support/SupportPrompt';
+import { useSupportQuestion } from '../../hooks/useSupportQuestion';
 import { useOpenNotification } from '../../hooks/useOpenNotification';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { SpolekNotification } from '../../services/spolky';
@@ -33,7 +35,9 @@ export function NotificationDropdown({
 }: NotificationDropdownProps) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
-  const hasContent = notifications.length > 0 || deadlineAlerts.length > 0;
+  // The phone's Novinky sheet asks it too (supportPromptOnBothTrees.test.ts).
+  const support = useSupportQuestion();
+  const hasContent = notifications.length > 0 || deadlineAlerts.length > 0 || support.visible;
   // The phone's Novinky sheet runs this same hook. A row without a link used to
   // be a disabled button here while the phone opened it on the map.
   const { opensSomewhere, openNotification } = useOpenNotification({
@@ -46,6 +50,14 @@ export function NotificationDropdown({
   // divider between two bordered cards draws a third line between them.
   const notificationList = (
     <div className="flex flex-col gap-2 p-3">
+      {/* First: the dropdown is 320px tall, and only the top fits unscrolled. */}
+      {support.visible && (
+        <SupportPrompt
+          answered={support.answered}
+          onAnswer={support.onAnswer}
+          onShown={support.markSeen}
+        />
+      )}
       {deadlineAlerts.length > 0 && (
         <div className="flex flex-col gap-2">
           {deadlineAlerts.map((alert) => (

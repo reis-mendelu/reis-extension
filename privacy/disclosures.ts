@@ -187,7 +187,7 @@ export const FLOWS: Flow[] = [
       ],
       [
         'Support question shown',
-        'the question whether you would support reIS is on your screen (Profil)',
+        'the question whether you would support reIS is on your screen (Novinky)',
         'the random install identifier and the fixed `support_prompt_seen` label',
       ],
       [

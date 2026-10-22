@@ -46,11 +46,15 @@ async function show(found: NewPointsBySubject, gen: number): Promise<void> {
   const codes = Object.keys(found);
   const { title, body } = newPointsNotification(found, subjectName, language);
   await LocalNotifications.schedule({
-    // No `schedule.at`: shown now, so no exact alarm is involved. Seconds since
-    // the epoch fit the plugin's int32 id and differ between syncs.
+    // No `schedule.at`: shown now. Seconds since the epoch fit the plugin's
+    // int32 id and differ between syncs.
     notifications: [
       {
         id: Math.floor(Date.now() / 1000),
+        // The plugin defaults this to true and, on Android 12+ without
+        // SCHEDULE_EXACT_ALARM (stripped in AndroidManifest.xml), then opens
+        // the "Alarms & reminders" settings screen first, `schedule.at` or not.
+        isExactNotification: false,
         title,
         body,
         channelId: CHANNEL_ID,
