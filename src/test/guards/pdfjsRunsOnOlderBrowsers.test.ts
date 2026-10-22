@@ -26,7 +26,10 @@ function throughAliases(specifier: string): string {
 }
 
 function workerSpecifier(): string {
-  const src = readFileSync(resolve(ROOT, 'src/components/SubjectFileDrawer/pdfWorkerSource.ts'), 'utf8');
+  const src = readFileSync(
+    resolve(ROOT, 'src/components/SubjectFileDrawer/pdfWorkerSource.ts'),
+    'utf8'
+  );
   const m = src.match(/from '(pdfjs-dist\/[^'?]+)\?url'/);
   if (!m?.[1]) throw new Error('pdfWorkerSource.ts no longer imports a pdf.js worker URL');
   return m[1];
@@ -57,18 +60,27 @@ const MINIMAL_PDF = (() => {
 })();
 
 describe('the pdf.js the app ships', () => {
-  it('opens a PDF in a browser without getOrInsertComputed and sumPrecise (Chromium 143)', () => {
-    // The viewer module touches `document` on import, so Node cannot load it;
-    // the alias test below keeps it on the same build as this one.
-    const main = fileUrl(throughAliases('pdfjs-dist'));
-    const worker = fileUrl(workerSpecifier());
-    // By URL, as the viewer gets it (a blob URL): the loader that path takes
-    // is where getOrInsertComputed is first called. getOperatorList is the
-    // render path, which calls it again on the main thread.
-    const dir = mkdtempSync(join(tmpdir(), 'reis-pdfjs-'));
-    const pdf = join(dir, 'doc.pdf');
-    writeFileSync(pdf, MINIMAL_PDF);
-    const script = `
+  // Chromium 143 lacks both APIs; 145 and 146 have getOrInsertComputed but not
+  // sumPrecise, which pdf.js calls while deriving an AES-256 (R6) key — so there
+  // only a PROTECTED PDF fails, at load, with exactly the reported screen.
+  // Lecture slides exported with copy/print restrictions are such files.
+  it.each([
+    ['a plain PDF', null],
+    ['an AES-256 protected PDF (empty user password)', 'src/test/fixtures/protected-aes256.pdf'],
+  ])(
+    'opens %s without getOrInsertComputed and sumPrecise',
+    (_label, fixture) => {
+      // The viewer module touches `document` on import, so Node cannot load it;
+      // the alias test below keeps it on the same build as this one.
+      const main = fileUrl(throughAliases('pdfjs-dist'));
+      const worker = fileUrl(workerSpecifier());
+      // By URL, as the viewer gets it (a blob URL): the loader that path takes
+      // is where getOrInsertComputed is first called. getOperatorList is the
+      // render path, which calls it again on the main thread.
+      const dir = mkdtempSync(join(tmpdir(), 'reis-pdfjs-'));
+      const pdf = join(dir, 'doc.pdf');
+      writeFileSync(pdf, fixture ? readFileSync(resolve(ROOT, fixture)) : MINIMAL_PDF);
+      const script = `
       delete Map.prototype.getOrInsert;
       delete Map.prototype.getOrInsertComputed;
       delete WeakMap.prototype.getOrInsert;
@@ -82,20 +94,25 @@ describe('the pdf.js the app ships', () => {
       const text = await page.getTextContent();
       console.log(JSON.stringify({ pages: doc.numPages, text: text.items.map((i) => i.str).join('') }));
     `;
-    let out: string;
-    try {
-      out = execFileSync(process.execPath, ['--input-type=module', '-e', script], {
-        cwd: ROOT,
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'pipe'],
+      let out: string;
+      try {
+        out = execFileSync(process.execPath, ['--input-type=module', '-e', script], {
+          cwd: ROOT,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+      } catch (e) {
+        throw new Error(String((e as { stderr?: string }).stderr || e));
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+      expect(JSON.parse(out.trim().split('\n').pop() ?? '')).toEqual({
+        pages: 1,
+        text: 'Management',
       });
-    } catch (e) {
-      throw new Error(String((e as { stderr?: string }).stderr || e));
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-    expect(JSON.parse(out.trim().split('\n').pop() ?? '')).toEqual({ pages: 1, text: 'Management' });
-  }, 30_000);
+    },
+    30_000
+  );
 
   it('keeps the worker on the same build as the API', () => {
     // A modern worker under the legacy API fails the same way: the worker
