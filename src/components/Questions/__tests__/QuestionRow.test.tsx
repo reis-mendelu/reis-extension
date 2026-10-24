@@ -39,6 +39,7 @@ const link: Question = {
   buttons: [{ key: 'open', cz: 'Otevřít reByt', en: 'Open reByt', url: 'https://rebyt.example' }],
 };
 
+const playUrl = 'https://play.google.com/store/apps/details?id=cz.reis.app';
 const share: Question = {
   ...base,
   id: 'q4',
@@ -48,7 +49,7 @@ const share: Question = {
       key: 'share',
       cz: 'Sdílet odkaz',
       en: 'Share link',
-      url: 'https://play.google.com/store/apps/details?id=cz.reis.app',
+      url: playUrl,
       share: true,
     },
   ],
@@ -115,7 +116,7 @@ describe('QuestionRow', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /Sdílet odkaz/ }));
     expect(onAnswer).toHaveBeenCalledWith('share');
-    expect(shareLink).toHaveBeenCalledWith(share.buttons[0].url);
+    expect(shareLink).toHaveBeenCalledWith(playUrl);
     expect(openExternal).not.toHaveBeenCalled();
     expect((await screen.findByRole('status')).textContent).toContain('Odkaz zkopírován');
     expect(screen.getByRole('button', { name: /Sdílet odkaz/ })).toBeTruthy();
