@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { requestSync, __resetSyncGateForTests } from '../syncGate';
+import { requestSync, whenSyncIdle, __resetSyncGateForTests } from '../syncGate';
 import { MIN_SYNC_GAP, SYNC_LOCK_WAIT_MS } from '../config';
 import { syncAllData } from '../syncService';
 import { isFresh, markFetched, TTL } from '../syncTtl';
@@ -90,6 +90,30 @@ describe('requestSync', () => {
     vi.useRealTimers();
     Reflect.deleteProperty(navigator, 'locks');
     setVisibility('visible');
+  });
+
+  // A study switch waits out a crawl of the old study, because a 'user'
+  // request would only join it and the new study would never be fetched.
+  describe('whenSyncIdle', () => {
+    it('resolves at once with nothing running', async () => {
+      await expect(whenSyncIdle()).resolves.toBeUndefined();
+    });
+
+    it('waits for a full crawl, so the next request starts its own', async () => {
+      const { gate, release } = blockingSync();
+      mockedSync.mockImplementationOnce(() => gate);
+      void requestSync('user');
+
+      let idle = false;
+      const waiting = whenSyncIdle().then(() => (idle = true));
+      await Promise.resolve();
+      expect(idle).toBe(false);
+
+      release();
+      await waiting;
+      await requestSync('user');
+      expect(mockedSync).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('foreground gate', () => {

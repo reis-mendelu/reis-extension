@@ -1,4 +1,5 @@
-import type { MapEvent, EventCategory, Society } from '../types/events';
+import type { MapEvent, EventCategory, Society, PostKind } from '../types/events';
+import type { SocietyPin } from '../types/campusMap';
 import { resolveSociety } from '../utils/societies/resolveSociety';
 import { supabase } from '../services/spolky/supabaseClient';
 import { logError } from '../utils/reportError';
@@ -22,7 +23,14 @@ interface SpolkyEventRow {
   body?: string | null;
   subscribers_only?: boolean | null;
   created_at?: string | null;
+  /** Absent before the column existed (and in an old console's view of it). */
+  kind?: string | null;
 }
+
+/** Anything but an explicit 'notice' is an event: every row written before the
+ *  column existed is one, and so is a value this build does not know. */
+const postKind = (kind: string | null | undefined): PostKind =>
+  kind === 'notice' ? 'notice' : 'event';
 
 // Pure row -> MapEvent mapping, kept separate from the network call so it's
 // directly unit-testable without hitting Supabase.
@@ -57,6 +65,7 @@ export function toMapEvent(row: SpolkyEventRow, societies: Record<string, Societ
     // been. `visibleToStudent` is the only thing that reads this.
     subscribersOnly: row.subscribers_only ?? false,
     createdAt: row.created_at ?? null,
+    kind: postKind(row.kind),
   };
 }
 
@@ -81,8 +90,50 @@ export async function fetchMapEvents(
     return null;
   }
 
-  return (data ?? [])
-    .map((row) => row as SpolkyEventRow)
-    .map((row) => toMapEvent(row, societies))
-    .filter((e) => !isFinishedEvent(e)); // local day; the server bound is UTC-agnostic but coarse
+  return (
+    (data ?? [])
+      .map((row) => row as SpolkyEventRow)
+      // A notice is Novinky-only. Dropped here, the one door the student map has,
+      // so the Akce list, the pins and the peek band never see one.
+      // On the device rather than `.eq('kind', …)` in the query: the filter then
+      // works before the migration is applied and after, against any database.
+      .filter((row) => postKind(row.kind) === 'event')
+      .map((row) => toMapEvent(row, societies))
+      // Local day; the server bound is UTC-agnostic but coarse.
+      .filter((e) => !isFinishedEvent(e))
+  );
+}
+
+interface MapPinRow {
+  id: string;
+  association_id: string;
+  title: string;
+  body: string | null;
+  url: string | null;
+  coord_lng: number;
+  coord_lat: number;
+}
+
+/**
+ * The society pins running now (`map_pins`; RLS returns only live rows), or
+ * null when the answer is not known — the slice keeps what it had. Read here,
+ * beside the events, because they share the map: but never merged into the
+ * events, so nothing that lists events (Akce, Novinky) can carry a pin.
+ */
+export async function fetchSocietyPins(): Promise<SocietyPin[] | null> {
+  const { data, error } = await supabase
+    .from('map_pins')
+    .select('id, association_id, title, body, url, coord_lng, coord_lat');
+  if (error) {
+    logError('Api.fetchSocietyPins', error);
+    return null;
+  }
+  return ((data ?? []) as MapPinRow[]).map((r) => ({
+    id: r.id,
+    societyId: r.association_id,
+    title: r.title,
+    description: r.body?.trim() || null,
+    url: r.url && /^https:\/\//.test(r.url) ? r.url : null,
+    coord: [r.coord_lng, r.coord_lat],
+  }));
 }

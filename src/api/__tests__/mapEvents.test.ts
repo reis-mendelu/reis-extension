@@ -78,6 +78,8 @@ describe('toMapEvent', () => {
       // every row written before the column existed.
       subscribersOnly: false,
       createdAt: null,
+      // No kind on the row: an event, as every post was before the column.
+      kind: 'event',
     });
   });
 
@@ -118,6 +120,8 @@ describe('toMapEvent', () => {
       // every row written before the column existed.
       subscribersOnly: false,
       createdAt: null,
+      // No kind on the row: an event, as every post was before the column.
+      kind: 'event',
     });
   });
 

@@ -117,9 +117,10 @@ describe('RegisteredCard — classmates', () => {
    */
   it('does not repeat the registered term among the listed ones', () => {
     renderCard();
-    const rows = screen.getAllByRole('button', { name: /Podrobnosti termínu/ });
-    expect(rows).toHaveLength(1);
-    expect(rows[0]!.getAttribute('aria-label')).toContain('10:25');
+    // The other terms are no longer buttons (the card's own "Více" holds the
+    // details), so they are found by their time.
+    expect(screen.getAllByText(/10:25/)).toHaveLength(1);
+    expect(screen.queryByText(/· 11:00/)).not.toBeInTheDocument();
   });
 
   it('keeps the registered term’s own facts behind the same "Více" chip', () => {
@@ -150,7 +151,7 @@ describe('RegisteredCard — classmates', () => {
   it('puts Odhlásit after the other terms, away from the "Více" chip', () => {
     renderCard();
     const unregister = screen.getByRole('button', { name: 'Odhlásit' });
-    const otherRow = screen.getByRole('button', { name: /Podrobnosti termínu.*10:25/ });
+    const otherRow = screen.getByText(/10:25/);
     expect(
       otherRow.compareDocumentPosition(unregister) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();

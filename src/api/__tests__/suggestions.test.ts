@@ -37,6 +37,14 @@ describe('resolveScreen', () => {
 vi.mock('@/services/spolky/supabaseClient', () => ({
   supabase: { rpc: vi.fn() },
 }));
+vi.mock('@/utils/reportEnvironment', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/reportEnvironment')>();
+  return { ...actual, reportEnvironment: vi.fn(actual.reportEnvironment) };
+});
+vi.mock('@capacitor/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@capacitor/core')>()),
+  Capacitor: { getPlatform: () => 'ios' },
+}));
 
 describe('submitSuggestion', () => {
   beforeEach(() => {
@@ -56,7 +64,7 @@ describe('submitSuggestion', () => {
 
     expect(r).toEqual({ ok: true });
     const [fn, args] = vi.mocked(supabase.rpc).mock.calls[0]!;
-    expect(fn).toBe('submit_suggestion_v2');
+    expect(fn).toBe('submit_suggestion_v3');
     expect(args).toMatchObject({
       p_type: 'bug',
       p_title: 'T',
@@ -159,10 +167,26 @@ describe('the screen a report records', () => {
     expect(await sentScreen()).toBe('calendar');
   });
 
-  it('on the phone app, names Profil, where most phone reports are written', async () => {
+  // Profil is the only general entry point on the phone, so a report written
+  // there says nothing about where the student was. The tab they came from does.
+  it('on the phone app, names the tab the student came from when opened from Profil', async () => {
     asPlatform('capacitor');
-    useAppStore.setState({ mobileTab: 'profile' });
+    useAppStore.setState({ mobileTab: 'profile', lastNonProfileTab: 'exams' });
+    expect(await sentScreen()).toBe('exams');
+  });
+
+  it('on the phone app, says profile only when the student never left it', async () => {
+    asPlatform('capacitor');
+    useAppStore.setState({ mobileTab: 'profile', lastNonProfileTab: 'profile' });
     expect(await sentScreen()).toBe('profile');
+  });
+
+  // ReportMissingLink and the exam-failure toast open the form in place, so
+  // their reports keep naming their own tab.
+  it('on the phone app, a report opened in place keeps its own tab', async () => {
+    asPlatform('capacitor');
+    useAppStore.setState({ mobileTab: 'subjects', lastNonProfileTab: 'exams' });
+    expect(await sentScreen()).toBe('subjects');
   });
 
   it('follows the phone tree in a browser too (touch + narrow)', async () => {

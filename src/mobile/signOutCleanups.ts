@@ -1,0 +1,45 @@
+/**
+ * Sign-out steps for logins that only the phone/iPad app has, registered by the
+ * Capacitor entry at boot rather than imported here.
+ *
+ * `mobile/signOut.ts` is reachable from shared code (`api/proxyClient.ts`), so
+ * anything it imports lands in the extension's and reIS for Claude's graphs too.
+ * The WebISKAM login (`mobile/iskam/clearIskam`) must not: reIS for Claude
+ * handles a password and may reach no new POST. So signOut asks this list, which
+ * imports nothing, and `capacitor/main.capacitor.tsx` fills it. Everywhere else
+ * it is empty and the step is a no-op.
+ */
+type Cleanup = () => Promise<void>;
+
+/**
+ * A cleanup that could not make its credential unusable — neither deleted nor
+ * revoked. Sign-out refuses on it, as it does when UISAuth cannot be removed:
+ * the device must not pass to the next student with a usable login.
+ */
+export class SignOutBlockedError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = 'SignOutBlockedError';
+  }
+}
+
+const cleanups: Cleanup[] = [];
+
+export function registerSignOutCleanup(cleanup: Cleanup): void {
+  cleanups.push(cleanup);
+}
+
+/** Runs every cleanup; one failing does not skip the others, and is rethrown. */
+export async function runSignOutCleanups(): Promise<void> {
+  // Each through a promise, so one that throws synchronously cannot abort the map.
+  const results = await Promise.allSettled(cleanups.map((c) => Promise.resolve().then(c)));
+  const failed = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+  const blocking = failed.find((r) => r.reason instanceof SignOutBlockedError);
+  if (blocking) throw blocking.reason;
+  if (failed[0]) throw failed[0].reason;
+}
+
+/** Tests only. */
+export function __resetSignOutCleanupsForTests(): void {
+  cleanups.length = 0;
+}

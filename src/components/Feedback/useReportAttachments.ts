@@ -11,8 +11,10 @@ export interface Screenshot {
 
 /**
  * The report form's two optional attachments. Nothing is gathered until the
- * student acts: the diagnostic log is collected at Send, and only if the box is
- * ticked — so an untouched form holds nothing and sends nothing. The log itself
+ * student acts: the diagnostic log is collected at Send, and only when the
+ * student chose it — the box on a Nápad or Jiné, the "Odeslat s technickými
+ * údaji" button on a Chyba (ReportSendButtons) — so an untouched form holds
+ * nothing and sends nothing. The log itself
  * is not listed in the form (Dominik, 25 Sep 2026: "nobody cares about it");
  * the hint beside the box says what it contains, and the cleaning in
  * utils/diagnostics/diagnosticLog is what keeps it safe to send unread.
@@ -72,8 +74,9 @@ export function useReportAttachments() {
 
   // Collected at Send rather than on tick: the newest entries are the ones
   // closest to what went wrong, and nothing is held while the box sits ticked.
-  const draft = async (): Promise<SuggestionAttachmentsDraft> => ({
-    diagnostics: includeDiagnostics ? await collectDiagnostics() : null,
+  // The caller passes the choice: on a Chyba it is the button, not the box.
+  const draft = async (withDiagnostics: boolean): Promise<SuggestionAttachmentsDraft> => ({
+    diagnostics: withDiagnostics ? await collectDiagnostics() : null,
     screenshotBase64: screenshot?.base64 ?? null,
   });
 

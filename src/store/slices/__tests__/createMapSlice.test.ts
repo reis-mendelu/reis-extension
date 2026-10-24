@@ -624,6 +624,16 @@ describe('duplicateEvent', () => {
     expect(st.draftCoord).toEqual([16.6, 49.2]);
   });
 
+  // A notice has no place. One an old console placed still carries a
+  // coordinate; opening it must not draw a draft pin for a post with no pin.
+  it('puts no draft pin on the map for a notice, editing or duplicating', () => {
+    useAppStore.setState({ societyMapEvents: [{ ...src, kind: 'notice' }], draftCoord: null });
+    useAppStore.getState().openComposer('s1');
+    expect(useAppStore.getState().draftCoord).toBeNull();
+    useAppStore.getState().duplicateEvent('s1');
+    expect(useAppStore.getState().draftCoord).toBeNull();
+  });
+
   it('is forgotten by openComposer and closeComposer', () => {
     useAppStore.setState({ societyMapEvents: [src] });
     useAppStore.getState().duplicateEvent('s1');

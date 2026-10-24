@@ -7,6 +7,7 @@ import { computeRenderWindow } from './pdfWindow';
 import { clampScale } from './pinchZoom';
 import { usePinchZoom } from './usePinchZoom';
 import { usePdfPagePosition } from './usePdfPagePosition';
+import { logError } from '../../utils/reportError';
 
 // Resolving the worker moved to pdfWorkerSource so it goes through the platform
 // seam: the old `chrome.runtime.getURL` here is undefined on Capacitor, which is
@@ -74,7 +75,7 @@ export function PdfViewer({
   useEffect(() => {
     getWorkerReady()
       .then(() => setReady(true))
-      .catch(() => {});
+      .catch((e) => logError('PdfViewer.workerReady', e));
   }, []);
 
   // Single observer for the scroll container; page wrappers register on mount.
@@ -217,7 +218,9 @@ export function PdfViewer({
             // dependency bump. Regression test: __tests__/PdfViewer.suspense.test.tsx
             suspense={false}
             onLoadSuccess={onDocumentLoadSuccess}
-            onLoadError={() => {}}
+            // Into the diagnostic log a report can attach: swallowed, a pdf.js
+            // that cannot run in the student's browser left no trace at all.
+            onLoadError={(e) => logError('PdfViewer.loadDocument', e)}
             loading={
               <div className="flex items-center justify-center h-64">
                 <Loader2 className="animate-spin text-primary" size={24} />

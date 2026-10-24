@@ -1,7 +1,7 @@
 import { validateExternalUrl } from '../../mobile/openExternal';
 import type { PostInput } from '../../api/societyPosts';
 import { findEventEmoji } from '../../data/eventEmoji';
-import type { EventCategory } from '../../types/events';
+import type { EventCategory, PostKind } from '../../types/events';
 
 export interface ComposerDraft {
   title: string;
@@ -21,6 +21,8 @@ export interface ComposerDraft {
   placeName: string | null;
   url: string;
   subscribersOnly: boolean;
+  /** Absent = event, so a draft built before the toggle existed is one. */
+  kind?: PostKind;
 }
 
 // A society publishes what it knows. A semester list has a title and a date;
@@ -47,27 +49,39 @@ export function deriveVenue(
 export const isUrlInvalid = (url: string) => url.trim() !== '' && !validateExternalUrl(url.trim());
 
 export function buildPostInput(d: ComposerDraft): PostInput {
-  const venueKind = deriveVenue(d.room, d.coord);
+  const kind = d.kind ?? 'event';
+  const notice = kind === 'notice';
+  // A notice has no place and no picture. Those fields are hidden, but what
+  // was picked before switching to it is still in the draft: drop it here, or
+  // an event turned notice keeps its room and an old build pins it (and draws
+  // a party popper beside "Hledáš bydlení?" in its Akce list).
+  const room = notice ? null : d.room;
+  const coord = notice ? null : d.coord;
+  const placeName = notice ? null : d.placeName;
+  const venueKind = deriveVenue(room, coord);
   return {
     title: d.title.trim(),
-    body: d.description.trim(),
+    // Hidden for a notice and shown nowhere for one (Novinky draws the title).
+    body: notice ? '' : d.description.trim(),
     // The catalog decides the category older builds file it under.
     // An untouched picture keeps the event's category: the backfill files the
     // Finland trip under 'trip', while 🇫🇮 alone means 'culture'.
-    category:
-      d.emoji === d.startEmoji
+    category: notice
+      ? 'other'
+      : d.emoji === d.startEmoji
         ? d.fallbackCategory
         : (findEventEmoji(d.emoji)?.category ?? d.fallbackCategory),
-    emoji: d.emoji,
+    emoji: notice ? null : d.emoji,
     date: d.date,
     endDate: d.endDate && d.endDate > d.date ? d.endDate : null,
-    time: d.time || null,
+    time: notice ? null : d.time || null,
     venueKind,
-    roomCode: d.room?.code ?? null,
-    coordLng: d.coord?.[0] ?? null,
-    coordLat: d.coord?.[1] ?? null,
-    location: d.room ? null : d.placeName,
+    roomCode: room?.code ?? null,
+    coordLng: coord?.[0] ?? null,
+    coordLat: coord?.[1] ?? null,
+    location: room ? null : placeName,
     url: d.url.trim() || null,
     subscribersOnly: d.subscribersOnly,
+    kind,
   };
 }

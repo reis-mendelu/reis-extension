@@ -379,6 +379,34 @@ describe('EventLayer', () => {
     render(<EventLayer />);
     expect(paneEl.querySelectorAll('button').length).toBe(2);
   });
+  // A notice is Novinky-only. An old console could still have given one a
+  // room, and the society's own map must not pin what students never see there.
+  it('never pins a notice on the console map, even one with a place', () => {
+    const base = {
+      url: '',
+      date: isoInDays(3),
+      endDate: null,
+      time: null,
+      location: null,
+      imageUrl: null,
+      organizerKey: 'pef' as const,
+      societyId: 'supef',
+      roomCode: null,
+      venueKind: 'offcampus' as const,
+      category: 'party' as const,
+    };
+    useAppStore.setState({
+      adminConsoleOpen: true,
+      societyMapEvents: [
+        { ...base, id: 'ev', title: 'Party', coord: [16.61, 49.21], kind: 'event' },
+        { ...base, id: 'no', title: 'Bydlení', coord: [16.7, 49.3], kind: 'notice' },
+      ],
+      mapEvents: [],
+    });
+    render(<EventLayer />);
+    expect(paneEl.querySelectorAll('button').length).toBe(1);
+  });
+
   /**
    * A map left open across midnight. The soon filter used to be memoized on
    * the event list alone and read `new Date()` inside, so it froze at whatever

@@ -376,6 +376,11 @@ export function MapCanvas() {
     // plan feel like it was slipping out from under you. Tested against the
     // outline, not `bounds`: these footprints are L- and U-shaped.
     const onMapClick = (e: L.LeafletMouseEvent) => {
+      // An event pin is HTML in our pane; a tap on it is not a tap on the basemap.
+      // Room pins sit inside the outline, where ringContains already returns, so
+      // this only matters for a pin at the edge of an odd-shaped footprint.
+      if ((e.originalEvent.target as HTMLElement | null)?.closest('.leaflet-reisEvents-pane'))
+        return;
       if (b && ringContains(b.outline.coordinates[0], e.latlng.lng, e.latlng.lat)) return;
       keepViewRef.current = true;
       select.exitToCampus();

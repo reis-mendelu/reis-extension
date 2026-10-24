@@ -8,7 +8,6 @@ vi.mock('../../store/useAppStore', () => ({
   useAppStore: {
     getState: vi.fn(() => ({
       loadGradeHistory: vi.fn(),
-      setPastAttendance: vi.fn(),
       setNavPages: vi.fn(),
       markSyncLoaded: vi.fn(),
       setSchedule: vi.fn(),

@@ -1,6 +1,6 @@
 # Verifying the societies catalog migration
 
-`supabase/migrations/20260926120000_societies_catalog.sql` was checked on a stub
+`supabase/migrations_archive/20260926120000_societies_catalog.sql` was checked on a stub
 Postgres 15, because this project's migration history cannot be replayed from
 scratch (see the header of `20260907130000_usage_dimensions.sql`), and prod is
 not a test rig.
@@ -13,7 +13,7 @@ not a test rig.
 ```bash
 docker run -d --name reis-societies-sql -e POSTGRES_PASSWORD=pw -p 55434:5432 postgres:15
 docker exec -i reis-societies-sql psql -U postgres -v ON_ERROR_STOP=1 < docs/verify/societies-catalog/prereq.sql
-docker exec -i reis-societies-sql psql -U postgres -v ON_ERROR_STOP=1 < supabase/migrations/20260926120000_societies_catalog.sql
+docker exec -i reis-societies-sql psql -U postgres -v ON_ERROR_STOP=1 < supabase/migrations_archive/20260926120000_societies_catalog.sql
 docker exec -i reis-societies-sql psql -U postgres < docs/verify/societies-catalog/claims.sql   # last line: ALL CLAIMS HOLD
 docker rm -f reis-societies-sql
 ```
@@ -51,7 +51,7 @@ The whole migration can be wrapped in a single self-unwinding `DO` block:
 
 ```bash
 { echo 'do $dry$ begin';
-  sed -e '/^begin;$/d' -e '/^commit;$/d' supabase/migrations/20260926120000_societies_catalog.sql;
+  sed -e '/^begin;$/d' -e '/^commit;$/d' supabase/migrations_archive/20260926120000_societies_catalog.sql;
   echo "raise exception 'DRY RUN OK >> societies=% fk=% logo_policies=%', (select count(*) from public.societies), (select count(*) from pg_constraint where conname = 'spolky_accounts_association_id_fkey'), (select count(*) from pg_policies where schemaname = 'storage' and policyname like 'society_logos_%');";
   echo 'end $dry$;'; } > dryrun.sql
 ```

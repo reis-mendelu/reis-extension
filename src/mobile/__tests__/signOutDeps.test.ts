@@ -11,6 +11,7 @@ vi.mock('@capacitor/core', async (orig) => ({
 }));
 
 import { buildSignOutDeps } from '../signOut';
+import { __resetSignOutCleanupsForTests, registerSignOutCleanup } from '../signOutCleanups';
 
 describe('buildSignOutDeps().clearIsCookies', () => {
   beforeEach(() => {
@@ -33,5 +34,17 @@ describe('buildSignOutDeps().clearIsCookies', () => {
     inAppClear.mockRejectedValue(new Error('WebView is not initialized'));
     capClear.mockRejectedValue(new Error('no bridge'));
     await expect(buildSignOutDeps().clearIsCookies()).rejects.toThrow('WebView is not initialized');
+  });
+});
+
+describe('buildSignOutDeps().clearOtherLogins', () => {
+  it('runs what the Capacitor entry registered, and nothing when it registered nothing', async () => {
+    __resetSignOutCleanupsForTests();
+    await expect(buildSignOutDeps().clearOtherLogins()).resolves.toBeUndefined();
+    const clearIskam = vi.fn(async () => {});
+    registerSignOutCleanup(clearIskam);
+    await buildSignOutDeps().clearOtherLogins();
+    expect(clearIskam).toHaveBeenCalledTimes(1);
+    __resetSignOutCleanupsForTests();
   });
 });

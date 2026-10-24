@@ -133,5 +133,8 @@ export async function serveFile(
   if (await deps.fs.exists(pdfPath(key))) {
     return { kind: 'delivered', pdfPath: await deps.fs.uri(pdfPath(key)) };
   }
+  // The reader shows "Soubor se nepodařilo otevřít" for this; leave the reason
+  // where an attached report can carry it (fetchPdf logged why it was null).
+  logError('PdfInk.serveFile', new Error('sidebar file unavailable: no fetch, no copy'));
   return { kind: 'unavailable' };
 }

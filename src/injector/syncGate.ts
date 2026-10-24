@@ -180,6 +180,24 @@ async function trackFullCrawl(reason: SyncReason): Promise<boolean> {
   }
 }
 
+/**
+ * Resolves once no crawl is queued or running in this context.
+ *
+ * For a study switch: `requestSync('user')` JOINS a full crawl already under
+ * way, and one started before the switch is a crawl of the study the student
+ * left (`syncService` discards what it produces). Waiting it out first is what
+ * makes the next request start a crawl of the new study.
+ */
+export async function whenSyncIdle(): Promise<void> {
+  for (let active = fullCrawl ?? inFlight; active; active = fullCrawl ?? inFlight) {
+    try {
+      await active;
+    } catch {
+      // A failed crawl is still a finished one.
+    }
+  }
+}
+
 export function startSyncService(): void {
   void requestSync('boot');
   syncIntervalId = setInterval(() => void requestSync('tick'), SYNC_INTERVAL);

@@ -2,6 +2,7 @@ import { Bell, Pin, Search } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useNotificationFeed } from '../../../hooks/useNotificationFeed';
 import { useDeadlineAlerts } from '../../../hooks/useDeadlineAlerts';
+import { useQuestions } from '../../../hooks/useQuestions';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 /**
@@ -27,13 +28,17 @@ export function HeaderActions() {
   const loadBulletinIfStale = useAppStore((s) => s.loadBulletinIfStale);
   const { notifications, readIds } = useNotificationFeed();
   const { unseenCount } = useDeadlineAlerts();
+  const questions = useQuestions();
+  const refreshQuestions = useAppStore((s) => s.refreshQuestions);
 
   // Deadlines count too, exactly as they do on desktop's NotificationFeed. The
   // calendar used to carry them in a strip above the day chips; that strip is
   // gone — Novinky is the one place for a deadline now — so without this a
   // closing registration or an assignment due in four hours would arrive with
   // no signal anywhere in the app.
-  const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length + unseenCount;
+  // So does an unanswered console question, until Novinky is opened with it in.
+  const unreadCount =
+    notifications.filter((n) => !readIds.has(n.id)).length + unseenCount + questions.badge;
 
   const openBulletin = () => {
     // pushSheet, not the old `bulletinExpanded` flag: that flag was only read
@@ -75,7 +80,12 @@ export function HeaderActions() {
       </button>
       <button
         type="button"
-        onClick={() => pushSheet({ kind: 'notifications' })}
+        onClick={() => {
+          // A question published a moment ago shows on this open, as on the
+          // extension's bell (useNotificationFeed.toggle).
+          void refreshQuestions();
+          pushSheet({ kind: 'notifications' });
+        }}
         aria-label={t('mobile.calendar.notifications')}
         className="relative flex h-10 w-10 items-center justify-center rounded-full border border-base-300 bg-base-100 max-[359px]:h-9 max-[359px]:w-9"
       >

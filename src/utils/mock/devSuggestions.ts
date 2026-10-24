@@ -112,11 +112,8 @@ rows = rows.map((r) =>
 export const devSuggestionsStore = {
   list: (): SuggestionRow[] => [...rows],
   setStatus: (id: number, status: SuggestionStatus): void => {
-    // Mirrors the server's trigger: resolving a report deletes its attachments.
-    rows = rows.map((r) =>
-      r.id === id ? { ...r, status, ...(status === 'done' ? { attachments: null } : {}) } : r
-    );
-    if (status === 'done') delete attachments[id];
+    // Attachments outlive the status, as on the server (2 years).
+    rows = rows.map((r) => (r.id === id ? { ...r, status } : r));
   },
   attachments: (id: number): SuggestionAttachment => {
     const row = rows.find((r) => r.id === id);

@@ -2,7 +2,9 @@ import { Search } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
 import { MapCanvas } from '../../CampusMap/MapCanvas';
+import { OsmTileAccessBanner } from '../../CampusMap/OsmTileAccessBanner';
 import { EventLayer } from '../../CampusMap/EventLayer';
+import { SocietyPinLayer } from '../../CampusMap/SocietyPinLayer';
 import { roomLabel } from '../../CampusMap/mapHelpers';
 import type { MapSelection } from '../../../types/campusMap';
 import { FloorSwitcher } from './map/FloorSwitcher';
@@ -17,6 +19,7 @@ function resultLabel(m: MapSelection): string {
   if (m.kind === 'landmark') return m.landmark.name;
   if (m.kind === 'placedRoom') return m.display;
   if (m.kind === 'gardenPlace') return m.place.name.cz;
+  if (m.kind === 'societyPin') return m.pin.title;
   return '';
 }
 
@@ -77,6 +80,7 @@ export function MapScreen() {
           console use — it portals into a Leaflet pane, so it renders nothing
           here and does not affect this element's layout. */}
       <EventLayer />
+      <SocietyPinLayer />
       <FloorSwitcher />
       {/* marginTop carries --safe-top because this floating bar is the topmost
           element on the map screen and targetSdk 36 forces edge-to-edge: without
@@ -125,6 +129,9 @@ export function MapScreen() {
             ))}
           </ul>
         )}
+        {/* Extension only (Firefox for Android): the apps never report the
+            OSM tile permission missing, so this renders nothing there. */}
+        <OsmTileAccessBanner className="mt-2 w-full md:w-96" />
       </div>
       {/* Two shells, not one with breakpoints. A sheet's vocabulary is
           vertical — grab pill, detents, a chevron pointing down — and none of

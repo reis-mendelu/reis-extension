@@ -3,6 +3,8 @@ import { useState, useEffect, useRef } from 'react';
 import { getSmartWeekRange } from '../utils/calendar';
 import { IndexedDBService } from '../services/storage';
 import { syncService, syncGradeHistory } from '../services/sync';
+import { persistZaznamnikBatch } from '../services/sync/zaznamnikNewPoints';
+import { notifyNewPoints } from '../services/newPointsNotifier';
 
 import { useAppStore, initializeStore } from '../store/useAppStore';
 import { signalReady, requestData, isInIframe } from '../api/proxyClient';
@@ -29,6 +31,8 @@ import { isHarnessEnabled } from '../utils/harnessEnabled';
 import type { SyncDomain } from '../types/messages/base';
 
 interface SyncedData {
+  /** The study the per-study data belongs to; see the guard in the listener. */
+  studium?: string;
   schedule?: BlockLesson[];
   exams?: ExamSubject[];
   subjects?: SubjectsData;
@@ -40,7 +44,6 @@ interface SyncedData {
   classmates?: Record<string, ClassmatesData>;
   zaznamnik?: Record<string, SubjectZaznamnik | null>;
   attendance?: Record<string, SubjectAttendance[]>;
-  pastAttendance?: Record<string, SubjectAttendance[]>;
   studyPlan?: DualLanguageStudyPlan;
   studyStats?: unknown;
   studyComparison?: unknown;
@@ -85,15 +88,6 @@ export function useAppLogic() {
         if (typeof v === 'number') useAppStore.getState().seedLastSync(v);
       })
       .catch((e) => logError('useAppLogic.seedLastSync', e));
-
-    // Hydrate past attendance from iframe-side IDB cache
-    IndexedDBService.get('meta', 'past_attendance_merged')
-      .then((data) => {
-        if (data && typeof data === 'object' && !Array.isArray(data)) {
-          useAppStore.getState().setPastAttendance(data as Record<string, SubjectAttendance[]>);
-        }
-      })
-      .catch((e) => logError('useAppLogic.hydratePastAttendance', e));
 
     let unsub: (() => void) | undefined;
     initializeStore().then((unsubscribe) => {
@@ -178,6 +172,15 @@ export function useAppLogic() {
             : null;
       if (!r) return;
 
+      // Crawled for a study this context is not on — a switch half done (see
+      // services/identity/switchStudy). Stored, it would land under this
+      // study's keys: the other study's tests and boxes as this one's.
+      if (r.studium) {
+        const own = (await IndexedDBService.get('meta', 'reis_user_params')) as
+          { studium?: string } | undefined;
+        if (own?.studium && own.studium !== r.studium) return;
+      }
+
       // Instantly update store for reactivity, then persist to IDB in background
       // Before the data branches: a domain can finish with nothing to send
       // (no exams this month), and the screen still has to stop waiting.
@@ -253,11 +256,6 @@ export function useAppLogic() {
           useAppStore.getState().setAttendance(r.attendance);
         }
 
-        if (r.pastAttendance) {
-          useAppStore.getState().setPastAttendance(r.pastAttendance);
-          await IndexedDBService.set('meta', 'past_attendance_merged', r.pastAttendance);
-        }
-
         if (r.files) {
           const fileEntries = Object.entries(r.files);
           const existingFiles = await Promise.all(
@@ -320,12 +318,11 @@ export function useAppLogic() {
 
         if (r.zaznamnik) {
           useAppStore.getState().setZaznamnikBatch(r.zaznamnik);
-          const persistEntries = Object.entries(r.zaznamnik).filter(
-            ([, v]) => v && (v.ph.sections.length > 0 || v.vt.tests.length > 0)
-          );
-          if (persistEntries.length > 0) {
-            await IndexedDBService.setMany('zaznamnik', persistEntries);
-          }
+          // Compared with the stored copy before replacing it: what the teacher
+          // added since is highlighted, and on the phone also notified.
+          const { found, unseen } = await persistZaznamnikBatch(r.zaznamnik);
+          useAppStore.getState().setZaznamnikNewPoints(unseen);
+          notifyNewPoints(found);
         }
 
         if (r.lastSync) await IndexedDBService.set('meta', 'last_sync', r.lastSync);

@@ -122,3 +122,10 @@ jobs:
           export BASE_TAG="$(git tag --list 'v*' --sort=-v:refname | head -1)"
           export PR_BODY="$(gh pr view "$PR_NUMBER" --json body --jq '.body // ""')"
           npx --yes tsx@4 scripts/privacy/gate.ts
+
+      # The agreed "What's new" words are a release input: every store
+      # submission in ship.yml reads release-notes/<version>.cs.txt from the
+      # tagged commit. Missing, empty or over-long, the release PR goes red here,
+      # before anything is tagged (a tag cannot move).
+      - name: Release notes are written
+        run: npx --yes tsx@4 scripts/release/assert-notes.ts

@@ -1,7 +1,18 @@
 import { fetchWithAuth, BASE_URL } from '../../api/client';
+import { parseStudyOptions, parseStudyStatus } from './studyOptions';
 
-export async function fetchUserBaseIds() {
-  const res = await fetchWithAuth(`${BASE_URL}/auth/student/studium.pl`),
+/**
+ * `studium.pl` — who is signed in, and on which study.
+ *
+ * Without `studium` it is IS's default page, in the session's language: the
+ * identity check every context makes. With one, it is that study's own page in
+ * Czech, which `chooseStudy` reads for the study's `obdobi` and `Stav studia`.
+ */
+export async function fetchUserBaseIds(studium?: string) {
+  const url = studium
+    ? `${BASE_URL}/auth/student/studium.pl?studium=${studium};lang=cz`
+    : `${BASE_URL}/auth/student/studium.pl`;
+  const res = await fetchWithAuth(url),
     h = await res.text();
   // IS serves this page in whichever language the SESSION is in — there is no
   // `lang=` on the request, and the page carries no lang attribute either. Both
@@ -14,7 +25,9 @@ export async function fetchUserBaseIds() {
     idm = h.match(
       /(?:Identifikační\s+číslo\s+uživatele|User's\s+identification\s+number):\s*<\/td>\s*<td[^>]*>\s*(\d+)/i
     );
-  const nm = h.match(/id="prihlasen"[^>]*>\s*(?:Přihlášen|Logged\s+in):&nbsp;([^&]+)/i);
+  // `Přihlášena:` is how IS greets a female student (seen on real pages,
+  // October 2026); without the optional `a` her name was always ''.
+  const nm = h.match(/id="prihlasen"[^>]*>\s*(?:Přihlášena?|Logged\s+in):&nbsp;([^&]+)/i);
 
   // Stricter Erasmus detection:
   // Usually, Erasmus students have 'Erasmus+' in their study program name or a specific active study row.
@@ -35,12 +48,17 @@ export async function fetchUserBaseIds() {
         fullName: nm ? nm[1]!.trim() : '',
         isErasmus,
         html: h,
+        // The switcher: empty for a student with one study.
+        studies: parseStudyOptions(h),
+        studyStatus: parseStudyStatus(h),
       }
     : null;
 }
 
-export async function fetchUserStudyDetails() {
-  const res = await fetchWithAuth(`${BASE_URL}/auth/student/moje_studium.pl?lang=cz`),
+/** `moje_studium.pl` for `studium`, or for IS's default study without one. */
+export async function fetchUserStudyDetails(studium?: string) {
+  const query = studium ? `studium=${studium};lang=cz` : 'lang=cz';
+  const res = await fetchWithAuth(`${BASE_URL}/auth/student/moje_studium.pl?${query}`),
     h = await res.text();
   const doc = new DOMParser().parseFromString(h, 'text/html'),
     t = doc.querySelector('#titulek');

@@ -18,11 +18,11 @@ describe("ProfileScreen — the student's own photo", () => {
   beforeEach(() => {
     photoFor.mockReset();
     photoFor.mockReturnValue(null);
-    useAppStore.setState({ language: 'cz', fullName: 'Jan Novák', studentId: '120344' });
+    useAppStore.setState({ language: 'cz', fullName: 'Jan Novák', studentId: '900344' });
   });
 
   it('renders the photo for the signed-in student', () => {
-    photoFor.mockImplementation((id) => (id === '120344' ? 'data:image/jpeg;base64,AAA' : null));
+    photoFor.mockImplementation((id) => (id === '900344' ? 'data:image/jpeg;base64,AAA' : null));
     render(<ProfileScreen />);
 
     const img = screen.getByAltText('Jan Novák') as HTMLImageElement;
@@ -52,7 +52,7 @@ describe('ProfileScreen', () => {
       mobileSheets: [],
       theme: 'mendelu-dark',
       isThemeLoading: false,
-      fullName: 'Kryštof Janda',
+      fullName: 'Jakub Dvořák',
       studyPlanDual: null,
       hiddenItems: {
         courses: [],

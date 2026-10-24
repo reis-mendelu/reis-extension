@@ -115,7 +115,6 @@ export function SubjectsPanel({
       <SubjectsPanelHeader
         creditsAcquired={effectivePlan.creditsAcquired}
         creditsRequired={effectivePlan.creditsRequired}
-        studyStats={studyStats}
         plan={effectivePlan}
         zameraniProgress={zameraniProgress}
         enrolledCredits={enrolledCredits}

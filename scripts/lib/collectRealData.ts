@@ -4,6 +4,8 @@ import { getUserParams } from '@/utils/userParams';
 import { fetchFullSemesterSchedule } from '@/injector/dataFetchers';
 import { fetchDualLanguageExams } from '@/api/exams';
 import { enrichExamsWithDurations } from '@/services/sync/examDurations';
+import type { RealDataSnapshot } from '@/types/messages';
+import { collectExamNotes } from './collectExamNotes';
 import { fetchDualLanguageSubjects } from '@/api/subjects';
 import { fetchDualLanguagePastSubjects } from '@/api/pastSubjects';
 import { fetchDualLanguageStudyPlan } from '@/api/studyPlan';
@@ -30,7 +32,7 @@ type SubjectInfo = {
   hasTest?: boolean;
 };
 
-export async function collectRealData(): Promise<SyncedData> {
+export async function collectRealData(): Promise<RealDataSnapshot> {
   const params = await getUserParams();
   const studium = params?.studium;
   const obdobi = params?.obdobi;
@@ -71,9 +73,13 @@ export async function collectRealData(): Promise<SyncedData> {
     rawExams && rawExams.length && studium && obdobi
       ? await enrichExamsWithDurations(rawExams, [], studium, obdobi)
       : rawExams;
-  const data: SyncedData = {
+  const data: RealDataSnapshot = {
     schedule: val(schedule) ?? undefined,
     exams: examsVal && examsVal.length ? examsVal : undefined,
+    examNotes:
+      examsVal && examsVal.length && studium && obdobi
+        ? await collectExamNotes(examsVal, studium, obdobi)
+        : undefined,
     subjects: subjects?.subjects,
     attendance: subjects?.attendance as Record<string, unknown> | undefined,
     studyPlan: val(studyPlan) ?? undefined,

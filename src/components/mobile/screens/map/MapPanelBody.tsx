@@ -1,15 +1,18 @@
 import { EventDetailCard } from '../../../CampusMap/EventDetailCard';
 import { GardenPlaceCard } from '../../../CampusMap/GardenPlaceCard';
+import { SocietyPinCard } from '../../../CampusMap/SocietyPinCard';
 import { MapEventsSection } from '../../../CampusMap/MapEventsSection';
 import { RoomDirections } from '../../../CampusMap/RoomDirections';
 import type { MapEvent } from '../../../../types/events';
-import type { GardenPlace } from '../../../../types/campusMap';
+import type { GardenPlace, SocietyPin } from '../../../../types/campusMap';
 
 export interface MapPanelBodyProps {
   selectedEvent: MapEvent | null;
   /** One of the botanical garden's places, tapped on the map. Optional so the
    *  shells that never show one (and their tests) need not pass it. */
   selectedGardenPlace?: GardenPlace | null;
+  /** A society pin (`map_pins`), tapped on the map. Optional, as above. */
+  selectedSocietyPin?: SocietyPin | null;
   /** The rail frames its own content, so the card inside it renders flush. */
   flush?: boolean;
 }
@@ -33,6 +36,7 @@ export interface MapPanelBodyProps {
 export function MapPanelBody({
   selectedEvent,
   selectedGardenPlace = null,
+  selectedSocietyPin = null,
   flush = false,
 }: MapPanelBodyProps) {
   if (selectedEvent) {
@@ -46,6 +50,13 @@ export function MapPanelBody({
     return (
       <div className={flush ? 'px-5' : 'px-4'}>
         <GardenPlaceCard place={selectedGardenPlace} flush={flush} />
+      </div>
+    );
+  }
+  if (selectedSocietyPin) {
+    return (
+      <div className={flush ? 'px-5' : 'px-4'}>
+        <SocietyPinCard pin={selectedSocietyPin} flush={flush} />
       </div>
     );
   }

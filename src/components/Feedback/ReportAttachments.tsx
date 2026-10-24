@@ -6,9 +6,11 @@ interface Props {
   state: ReportAttachmentsState;
   /** Desktop only: a phone has no clipboard shortcut to advertise. */
   showPasteHint: boolean;
+  /** False on a Chyba, where ReportSendButtons asks instead. */
+  showDiagnosticsBox: boolean;
 }
 
-export function ReportAttachments({ state, showPasteHint }: Props) {
+export function ReportAttachments({ state, showPasteHint, showDiagnosticsBox }: Props) {
   const { t } = useTranslation();
 
   return (
@@ -65,22 +67,24 @@ export function ReportAttachments({ state, showPasteHint }: Props) {
       )}
 
       {/* Technical details */}
-      <div>
-        <label className="flex items-start gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            className="checkbox checkbox-sm checkbox-primary mt-0.5"
-            checked={state.includeDiagnostics}
-            onChange={(e) => state.setIncludeDiagnostics(e.target.checked)}
-          />
-          <span className="text-sm text-base-content">
-            {t('feedback.attachDiagnostics')}
-            <span className="block text-xs text-base-content/70">
-              {t('feedback.diagnosticsHint')}
+      {showDiagnosticsBox && (
+        <div>
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              className="checkbox checkbox-sm checkbox-primary mt-0.5"
+              checked={state.includeDiagnostics}
+              onChange={(e) => state.setIncludeDiagnostics(e.target.checked)}
+            />
+            <span className="text-sm text-base-content">
+              {t('feedback.attachDiagnostics')}
+              <span className="block text-xs text-base-content/70">
+                {t('feedback.diagnosticsHint')}
+              </span>
             </span>
-          </span>
-        </label>
-      </div>
+          </label>
+        </div>
+      )}
     </div>
   );
 }

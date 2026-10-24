@@ -1,0 +1,159 @@
+import { logError } from '../../utils/reportError';
+import { clearJar, jarGeneration, loadJar, saveJar } from './iskamCookieStore';
+import { iskamHop, type IskamHttpDeps, type IskamResponse } from './iskamHttp';
+import {
+  IDP_HOST,
+  ISKAM_COOKIE_URL,
+  ISKAM_HOST,
+  ISKAM_ORIGIN,
+  TICKET_COOKIE,
+  cookiesFor,
+  type IskamJar,
+} from './iskamJar';
+import { findSamlPostForm, hasPasswordForm } from './samlForm';
+
+export type ChainResult =
+  { state: 'live'; kontaHtml: string } | { state: 'dead' } | { state: 'unreachable' };
+
+const KONTA = `${ISKAM_ORIGIN}/Konta`;
+const AUTH_SHIBB = `${ISKAM_ORIGIN}/Prihlaseni/AuthShibb`;
+const SP_ENDPOINT = `${ISKAM_ORIGIN}/Shibboleth.sso/`;
+const MAX_HOPS = 10;
+
+export function isLiveKonta(res: IskamResponse): boolean {
+  return res.status === 200 && res.body.includes('vyskaRiadkuKonto');
+}
+
+/** WebISKAM never says 401: a lapsed login is a 302 to /Home/Index or the IdP. */
+export function isAuthRedirect(res: IskamResponse): boolean {
+  if (res.status < 300 || res.status >= 400 || !res.location) return false;
+  const u = new URL(res.location);
+  // The path only means "log in again" on webiskam itself.
+  return (
+    u.hostname === IDP_HOST ||
+    (u.hostname === ISKAM_HOST && /^\/(Home\/Index|Prihlaseni|Shibboleth\.sso)/i.test(u.pathname))
+  );
+}
+
+type Outcome = 'ok' | 'dead' | 'unreachable';
+
+function ticketOf(jar: IskamJar): string | null {
+  return cookiesFor(jar, ISKAM_COOKIE_URL).find((c) => c.name === TICKET_COOKIE)?.value ?? null;
+}
+
+/**
+ * AuthShibb, and wherever it leads, until webiskam issues a ticket.
+ *
+ * With a live SP session that is ONE hop (measured, ~0.5 s). Without one it
+ * bounces through alibaba: a live IdP session answers with a SAMLResponse form
+ * a browser would auto-submit — posted here by hand, and only to webiskam's own
+ * Shibboleth endpoint — and a dead one with the password form, which is where
+ * this stops. It never types anything into it.
+ */
+async function reauthenticate(
+  http: IskamHttpDeps,
+  start: IskamJar
+): Promise<{ jar: IskamJar; outcome: Outcome }> {
+  let jar = start;
+  let req: { url: string; method: 'GET' | 'POST'; body?: string } = {
+    url: AUTH_SHIBB,
+    method: 'GET',
+  };
+  const ticketBefore = ticketOf(jar);
+  for (let i = 0; i < MAX_HOPS; i++) {
+    let hop: Awaited<ReturnType<typeof iskamHop>>;
+    try {
+      hop = await iskamHop(http, jar, req.url, { method: req.method, body: req.body });
+    } catch (e) {
+      // The network, not an answer: keep what earlier hops rotated (alibaba
+      // rewrites shib_idp_session_ss on every SSO) for the caller to save.
+      logError('Iskam.reauthenticate', e);
+      return { jar, outcome: 'unreachable' };
+    }
+    jar = hop.jar;
+    const { res } = hop;
+    const host = new URL(res.url).hostname;
+    // A NEW ticket, not just a Set-Cookie naming it: a deleting one
+    // (`.ISKAMASPXAUTH=; expires=<past>`) also names it.
+    const after = ticketOf(jar);
+    if (host === ISKAM_HOST && after !== null && after !== ticketBefore) {
+      return { jar, outcome: 'ok' };
+    }
+    if (res.status >= 300 && res.status < 400 && res.location) {
+      const next = new URL(res.location).hostname;
+      if (next !== ISKAM_HOST && next !== IDP_HOST) return { jar, outcome: 'dead' };
+      req = { url: res.location, method: 'GET' };
+      continue;
+    }
+    if (res.status === 200 && host === IDP_HOST) {
+      if (hasPasswordForm(res.body)) return { jar, outcome: 'dead' };
+      const form = findSamlPostForm(res.body, res.url);
+      if (form && form.action.startsWith(SP_ENDPOINT)) {
+        req = { url: form.action, method: 'POST', body: form.body };
+        continue;
+      }
+      // A form that is neither — attribute consent asked again, a notice — is
+      // a page for the student, so the popup, not a retry that cannot help.
+      if (form || /<form\b/i.test(res.body)) return { jar, outcome: 'dead' };
+    }
+    // A 5xx, an IdP error page, something new: not proof the login is gone.
+    return { jar, outcome: 'unreachable' };
+  }
+  return { jar, outcome: 'unreachable' };
+}
+
+/**
+ * Is the stored WebISKAM login still good — and if not, can it be made good
+ * without the student? Cheapest step first: the ticket, then the SP session,
+ * then the IdP session. See the spec's "Silent chain".
+ *
+ * Only an AUTHENTICATION answer (the password form, a SAML hand-off to a
+ * stranger) clears the stored jar. A network error, a timeout or a 5xx keeps
+ * it, so bad wi-fi never costs the student their login.
+ *
+ * Every write is based on the generation read at the start, so a sign-out or a
+ * fresh popup login that lands mid-chain wins over whatever this finds.
+ */
+export async function runSilentChain(http: IskamHttpDeps): Promise<ChainResult> {
+  const gen = jarGeneration();
+  let jar: IskamJar;
+  try {
+    jar = await loadJar();
+  } catch (e) {
+    // The Keychain/Keystore could not be READ: not proof there is no login.
+    logError('Iskam.loadJar', e);
+    return { state: 'unreachable' };
+  }
+  if (jar.length === 0) return { state: 'dead' };
+  try {
+    let konta = await iskamHop(http, jar, KONTA);
+    jar = konta.jar;
+    if (isLiveKonta(konta.res)) {
+      await saveJar(jar, gen);
+      return { state: 'live', kontaHtml: konta.res.body };
+    }
+    if (!isAuthRedirect(konta.res)) {
+      await saveJar(jar, gen);
+      return { state: 'unreachable' };
+    }
+    const re = await reauthenticate(http, jar);
+    jar = re.jar;
+    if (re.outcome === 'dead') {
+      await clearJar(gen);
+      return { state: 'dead' };
+    }
+    if (re.outcome === 'unreachable') {
+      await saveJar(jar, gen);
+      return { state: 'unreachable' };
+    }
+    konta = await iskamHop(http, jar, KONTA);
+    jar = konta.jar;
+    await saveJar(jar, gen);
+    return isLiveKonta(konta.res)
+      ? { state: 'live', kontaHtml: konta.res.body }
+      : { state: 'unreachable' };
+  } catch (e) {
+    logError('Iskam.silentChain', e);
+    return { state: 'unreachable' };
+  }
+}
