@@ -32,7 +32,12 @@ export interface Question {
   endsAt: string;
   /** Faculty keys ('pef', 'af', …) as `useViewer` knows them; null = everyone. Decided on the device. */
   faculties: string[] | null;
+  /** Drawn in the row's icon slot instead of the question mark. */
+  icon?: QuestionIcon | null;
 }
+
+/** The icons a client knows how to draw (`reis_questions.icon`'s CHECK). */
+export type QuestionIcon = 'google_play';
 
 /** What a device counts: the question was on screen, or one of its buttons. */
 export type QuestionCountKey = 'seen' | string;

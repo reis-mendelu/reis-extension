@@ -36,6 +36,8 @@ const RowSchema = z.object({
   starts_at: z.string(),
   ends_at: z.string(),
   faculties: z.array(z.string()).nullable(),
+  // An icon this build does not know falls back to the question mark.
+  icon: z.string().nullish().catch(null),
 });
 
 /**
@@ -47,7 +49,9 @@ export async function fetchQuestions(): Promise<Question[] | null> {
   try {
     const { data, error } = await supabase
       .from('reis_questions')
-      .select('id, prompt_cz, prompt_en, note_cz, note_en, buttons, starts_at, ends_at, faculties')
+      .select(
+        'id, prompt_cz, prompt_en, note_cz, note_en, buttons, starts_at, ends_at, faculties, icon'
+      )
       .order('starts_at', { ascending: false });
     if (error || !Array.isArray(data)) {
       if (error) logError('Api.fetchQuestions', error);
@@ -72,6 +76,7 @@ export async function fetchQuestions(): Promise<Question[] | null> {
           startsAt: q.starts_at,
           endsAt: q.ends_at,
           faculties: q.faculties,
+          icon: q.icon === 'google_play' ? q.icon : null,
         },
       ];
     });

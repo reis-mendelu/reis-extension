@@ -42,6 +42,7 @@ const link: Question = {
 const share: Question = {
   ...base,
   id: 'q4',
+  icon: 'google_play',
   buttons: [
     {
       key: 'share',
@@ -128,5 +129,17 @@ describe('QuestionRow', () => {
     fireEvent.click(screen.getByRole('button', { name: /Sdílet odkaz/ }));
     await Promise.resolve();
     expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('draws the Google Play arrow for a google_play question, the question mark otherwise', () => {
+    render(
+      <QuestionRow question={share} language="cz" answeredKey={undefined} onAnswer={vi.fn()} />
+    );
+    expect(screen.getByTestId('google-play-icon')).toBeTruthy();
+    cleanup();
+    render(
+      <QuestionRow question={base} language="cz" answeredKey={undefined} onAnswer={vi.fn()} />
+    );
+    expect(screen.queryByTestId('google-play-icon')).toBeNull();
   });
 });

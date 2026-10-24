@@ -167,6 +167,17 @@ insert into public.reis_questions (prompt_cz, prompt_en, buttons, ends_at) value
   '[{"key":"share","cz":"Sdílet odkaz","en":"Share link","url":"https://example.com/x","share":true}]',
   now() + interval '1 day');
 
+-- only a known icon
+do $$
+begin
+  insert into public.reis_questions (prompt_cz, prompt_en, buttons, ends_at, icon)
+  values ('x', 'x', '[{"key":"a","cz":"A","en":"A"}]', now() + interval '1 day', 'tiktok');
+  raise exception 'accepted an unknown icon';
+exception when check_violation then null;
+end $$;
+insert into public.reis_questions (prompt_cz, prompt_en, buttons, ends_at, icon)
+values ('x', 'x', '[{"key":"a","cz":"A","en":"A"}]', now() + interval '1 day', 'google_play');
+
 -- a 1–5 scale is a valid list
 insert into public.reis_questions (prompt_cz, prompt_en, buttons, ends_at) values ('x', 'x',
   '[{"key":"1","cz":"1","en":"1","hintCz":"nejhorší","hintEn":"worst"},{"key":"2","cz":"2","en":"2"},{"key":"3","cz":"3","en":"3"},{"key":"4","cz":"4","en":"4"},{"key":"5","cz":"5","en":"5","hintCz":"nejlepší","hintEn":"best"}]',

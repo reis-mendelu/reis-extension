@@ -4,6 +4,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useOnScreenDwell } from '../../hooks/ui/useOnScreenDwell';
 import { openExternal } from '../../mobile/openExternal';
 import { shareLink } from '../../mobile/shareLink';
+import { GooglePlayIcon } from './GooglePlayIcon';
 import type { Question, QuestionButton } from '../../types/questions';
 
 /**
@@ -71,6 +72,8 @@ export function QuestionRow({
       <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-[var(--tone-primary)]">
         {answered ? (
           <Check size={16} aria-hidden />
+        ) : question.icon === 'google_play' ? (
+          <GooglePlayIcon size={16} />
         ) : (
           <MessageCircleQuestion size={16} aria-hidden />
         )}

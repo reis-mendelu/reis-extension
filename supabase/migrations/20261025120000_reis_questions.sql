@@ -67,6 +67,11 @@ create table if not exists public.reis_questions (
   constraint reis_questions_dates_chk check (ends_at >= starts_at)
 );
 
+-- The row's icon instead of the question mark, from a fixed list the clients
+-- draw themselves: 'google_play' for 5.5.0's "reIS je teď na Google Play".
+alter table public.reis_questions add column if not exists icon text
+  check (icon is null or icon in ('google_play'));
+
 comment on table public.reis_questions is
   'Ano/Ne, 1–5 or link questions shown in Novinky by builds from 5.5.0 on. Counts: reis_question_counts.';
 

@@ -57,8 +57,20 @@ describe('fetchQuestions', () => {
         startsAt: row.starts_at,
         endsAt: row.ends_at,
         faculties: null,
+        icon: null,
       },
     ]);
+  });
+
+  it('keeps a known icon and drops one this build cannot draw', async () => {
+    select.mockResolvedValueOnce({
+      data: [
+        { ...row, icon: 'google_play' },
+        { ...row, id: 'q2', icon: 'tiktok' },
+      ],
+      error: null,
+    });
+    expect((await fetchQuestions())?.map((q) => q.icon)).toEqual(['google_play', null]);
   });
 
   it('answers null, not [], when the answer is not known', async () => {
