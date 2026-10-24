@@ -25,9 +25,12 @@ export function IskamBalanceRow() {
   const status = useIskamStore((s) => s.status);
   const balance = useIskamStore((s) => s.balance);
   const signingIn = useIskamStore((s) => s.signingIn);
+  const lastTopUp = useIskamStore((s) => s.lastTopUp);
   const [open, setOpen] = useState(false);
   if (status === 'hidden') return null;
   const canTopUp = status === 'balance' && balance !== null;
+  // A credited top-up is done: the form goes, the result says what happened.
+  const formOpen = open && canTopUp && lastTopUp?.kind !== 'added';
 
   return (
     <div
@@ -81,13 +84,29 @@ export function IskamBalanceRow() {
           type="button"
           className="btn btn-primary btn-sm flex-shrink-0 disabled:opacity-40"
           disabled={!canTopUp}
-          aria-expanded={open && canTopUp}
-          onClick={() => setOpen((o) => !o)}
+          aria-expanded={formOpen}
+          onClick={() => {
+            // After a credited top-up the form is closed; Dobít starts afresh.
+            if (lastTopUp?.kind === 'added') {
+              useIskamStore.getState().clearTopUpResult();
+              setOpen(true);
+            } else setOpen((o) => !o);
+          }}
         >
           {t('iskam.topUp')}
         </button>
       </div>
-      {open && canTopUp && <IskamTopUpForm />}
+      {canTopUp && lastTopUp?.kind === 'added' && (
+        <p role="status" className="mt-2 text-2sm font-bold text-[var(--tone-success)]">
+          {t('iskam.added', { amount: formatKc(lastTopUp.amount, language) })}
+        </p>
+      )}
+      {canTopUp && lastTopUp?.kind === 'unseen' && (
+        <p role="status" className="mt-2 text-2sm text-base-content/70">
+          {t('iskam.unseen')}
+        </p>
+      )}
+      {formOpen && <IskamTopUpForm />}
     </div>
   );
 }

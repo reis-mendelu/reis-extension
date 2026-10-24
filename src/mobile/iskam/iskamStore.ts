@@ -12,15 +12,24 @@ import type { PayMethod } from './topUp';
 
 export type IskamStatus = 'hidden' | 'checking' | 'signed-out' | 'balance' | 'unavailable';
 export type TopUpPhase = 'idle' | 'starting' | 'paying' | 'failed';
+/**
+ * What the last top-up came to, as far as the balance can tell: `added` when
+ * it rose (by that much), `unseen` when it had not moved after the re-check —
+ * which is also what closing GoPay without paying looks like.
+ */
+export type TopUpResult = { kind: 'added'; amount: number } | { kind: 'unseen' };
 
 export interface IskamState {
   status: IskamStatus;
   balance: KontoBalance | null;
   signingIn: boolean;
   topUp: TopUpPhase;
+  lastTopUp: TopUpResult | null;
   check(): Promise<void>;
   signIn(): Promise<void>;
   startTopUp(amount: number, method: PayMethod): Promise<void>;
+  /** Dobít pressed again after a credited top-up: the old result goes. */
+  clearTopUpResult(): void;
   reset(): void;
   /** Sign-out: like reset, and also abandons a top-up in flight. */
   signOut(): void;
@@ -55,15 +64,23 @@ function available(): boolean {
 }
 
 /**
- * `?iskam=balance|signed-out|checking|unavailable` on the dev webapp, and
+ * `?iskam=balance|added|unseen|signed-out|checking|unavailable` on the dev webapp, and
  * nothing anywhere else — `import.meta.env.DEV` strips it from every shipped
  * build, like `?eduroam=` in eduroamNative. The row is Capacitor-gated, so
  * without this verify-ui could only ever report it absent.
  */
-function devForcedState(): Pick<IskamState, 'status' | 'balance'> | null {
+function devForcedState(): Partial<IskamState> | null {
   if (!import.meta.env.DEV || typeof window === 'undefined') return null;
   const v = new URLSearchParams(window.location.search).get('iskam');
   if (v === 'balance') return { status: 'balance', balance: { amount: 2825.58 } };
+  // After a top-up: credited, or not showing yet.
+  if (v === 'added') {
+    const lastTopUp = { kind: 'added', amount: 250 } as const;
+    return { status: 'balance', balance: { amount: 3075.58 }, lastTopUp };
+  }
+  if (v === 'unseen') {
+    return { status: 'balance', balance: { amount: 2825.58 }, lastTopUp: { kind: 'unseen' } };
+  }
   if (v === 'signed-out' || v === 'checking' || v === 'unavailable') {
     return { status: v, balance: null };
   }
@@ -82,6 +99,7 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
   balance: null,
   signingIn: false,
   topUp: 'idle',
+  lastTopUp: null,
 
   async check() {
     const forced = devForcedState();
@@ -124,12 +142,13 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
    * more. After the browser view closes the balance is re-read; WebISKAM says
    * gateway payments are credited at once, but if the number has not moved it
    * is read once more after RECHECK_MS. The app never claims the payment
-   * succeeded: closing the tab without paying looks exactly the same.
+   * succeeded: it reports what the balance did (`lastTopUp`), and closing the
+   * tab without paying looks exactly like a credit that has not shown yet.
    */
   async startTopUp(amount, method) {
     const phase = get().topUp;
     if (phase === 'starting' || phase === 'paying' || !available()) return;
-    set({ topUp: 'starting' });
+    set({ topUp: 'starting', lastTopUp: null });
     const before = get().balance?.amount ?? null;
     const mine = account;
     const openSheet = sheet;
@@ -158,12 +177,31 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
       // Still 'paying' through the re-checks: the form stays disabled until the
       // credit has had its chance to show, so a slow one cannot invite a
       // second order.
+      // The sheet closing or a sign-out during the re-checks ends this top-up
+      // here: no balance for a closed sheet, and no result compared against
+      // another account's "before" (review #596).
+      const gone = () => abandoned() || openSheet !== sheet;
       await get().check();
       if (get().status === 'balance' && get().balance?.amount === before) {
         await delay(RECHECK_MS);
+        if (gone()) {
+          if (!abandoned()) set({ topUp: 'idle' });
+          return;
+        }
         await get().check();
       }
-      set({ topUp: 'idle' });
+      if (gone()) {
+        if (!abandoned()) set({ topUp: 'idle' });
+        return;
+      }
+      const after = get().status === 'balance' ? (get().balance?.amount ?? null) : null;
+      const lastTopUp: TopUpResult | null =
+        after === null || before === null
+          ? null
+          : after > before
+            ? { kind: 'added', amount: after - before }
+            : { kind: 'unseen' };
+      set({ topUp: 'idle', lastTopUp });
     } catch (e) {
       if (abandoned()) return;
       if (e instanceof LoginCancelledError) {
@@ -173,6 +211,10 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
       logError('Iskam.topUp', e);
       set({ topUp: 'failed' });
     }
+  },
+
+  clearTopUpResult() {
+    set({ lastTopUp: null });
   },
 
   reset() {
@@ -185,6 +227,7 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
       status: 'hidden',
       balance: null,
       signingIn: false,
+      lastTopUp: null,
       ...(inFlight ? {} : { topUp: 'idle' as const }),
     });
   },
@@ -192,6 +235,6 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
   signOut() {
     account++;
     seq++;
-    set({ status: 'hidden', balance: null, signingIn: false, topUp: 'idle' });
+    set({ status: 'hidden', balance: null, signingIn: false, topUp: 'idle', lastTopUp: null });
   },
 }));
