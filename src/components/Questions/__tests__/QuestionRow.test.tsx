@@ -162,4 +162,38 @@ describe('QuestionRow', () => {
       vi.useRealTimers();
     }
   });
+
+  // Dominik, 2026-10-24: a rating like Google Play's. All five stars show, and
+  // the tapped one fills with every star to its left.
+  describe('as stars', () => {
+    const stars: Question = { ...scale, id: 'q5', display: 'stars' };
+    const filled = () =>
+      screen.getAllByTestId('question-star').filter((s) => s.dataset.filled === 'true').length;
+
+    it('shows five empty stars and answers with the tapped one', () => {
+      const onAnswer = vi.fn();
+      render(
+        <QuestionRow question={stars} language="cz" answeredKey={undefined} onAnswer={onAnswer} />
+      );
+      expect(screen.getAllByTestId('question-star')).toHaveLength(5);
+      expect(filled()).toBe(0);
+      fireEvent.click(screen.getByRole('button', { name: '4 z 5' }));
+      expect(onAnswer).toHaveBeenCalledWith('4');
+    });
+
+    it('previews the fill up to the hovered star', () => {
+      render(
+        <QuestionRow question={stars} language="cz" answeredKey={undefined} onAnswer={vi.fn()} />
+      );
+      fireEvent.mouseEnter(screen.getByRole('button', { name: '3 z 5' }));
+      expect(filled()).toBe(3);
+    });
+
+    it('keeps all five once answered, the answer and those left of it filled', () => {
+      render(<QuestionRow question={stars} language="cz" answeredKey="2" onAnswer={vi.fn()} />);
+      expect(screen.getAllByTestId('question-star')).toHaveLength(5);
+      expect(filled()).toBe(2);
+      expect(screen.queryByRole('button', { name: /z 5/ })).toBeNull();
+    });
+  });
 });

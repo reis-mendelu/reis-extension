@@ -1543,6 +1543,8 @@
   },
   "questions": {
     "thanks": "Thanks for answering: {answer}",
-    "linkCopied": "Link copied, pass it on."
+    "linkCopied": "Link copied, pass it on.",
+    "starsOf": "{n} of {max}",
+    "thanksStars": "Thanks for rating!"
   }
 }

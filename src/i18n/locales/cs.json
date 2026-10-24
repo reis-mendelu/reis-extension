@@ -1543,6 +1543,8 @@
   },
   "questions": {
     "thanks": "Díky za odpověď: {answer}",
-    "linkCopied": "Odkaz zkopírován, pošli ho dál."
+    "linkCopied": "Odkaz zkopírován, pošli ho dál.",
+    "starsOf": "{n} z {max}",
+    "thanksStars": "Díky za hodnocení!"
   }
 }

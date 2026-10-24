@@ -34,7 +34,12 @@ export interface Question {
   faculties: string[] | null;
   /** Drawn in the row's icon slot instead of the question mark. */
   icon?: QuestionIcon | null;
+  /** How a 1–5 scale is drawn: 'stars' like a Google Play rating, else buttons. */
+  display?: QuestionDisplay | null;
 }
+
+/** The scale styles a client knows how to draw (`reis_questions.display`'s CHECK). */
+export type QuestionDisplay = 'stars';
 
 /** The icons a client knows how to draw (`reis_questions.icon`'s CHECK). */
 export type QuestionIcon = 'google_play';

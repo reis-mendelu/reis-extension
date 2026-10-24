@@ -58,8 +58,20 @@ describe('fetchQuestions', () => {
         endsAt: row.ends_at,
         faculties: null,
         icon: null,
+        display: null,
       },
     ]);
+  });
+
+  it('keeps the stars display and drops one this build cannot draw', async () => {
+    select.mockResolvedValueOnce({
+      data: [
+        { ...row, display: 'stars' },
+        { ...row, id: 'q2', display: 'slider' },
+      ],
+      error: null,
+    });
+    expect((await fetchQuestions())?.map((q) => q.display)).toEqual(['stars', null]);
   });
 
   it('keeps a known icon and drops one this build cannot draw', async () => {

@@ -5,6 +5,7 @@ import { useOnScreenDwell } from '../../hooks/ui/useOnScreenDwell';
 import { openExternal } from '../../mobile/openExternal';
 import { shareLink } from '../../mobile/shareLink';
 import { GooglePlayIcon } from './GooglePlayIcon';
+import { StarScale } from './StarScale';
 import type { Question, QuestionButton } from '../../types/questions';
 
 /**
@@ -50,11 +51,14 @@ export function QuestionRow({
   const answered = question.buttons.find((b) => b.key === answeredKey);
   // A row of short labels ("1"…"5", "👍") is a scale: square buttons in one line.
   const isScale = question.buttons.every((b) => !b.url && label(b).length <= 2);
+  // Drawn as stars when the console asks for it; a question with a link stays buttons.
+  const isStars = question.display === 'stars' && question.buttons.every((b) => !b.url);
   // What a scale's two ends mean, under them: "(1-5)" alone left students
   // guessing which end was good (Tonda, 2026-10-22).
   const hint = (b: QuestionButton | undefined) => (language === 'cz' ? b?.hintCz : b?.hintEn);
-  const low = isScale ? hint(question.buttons[0]) : undefined;
-  const high = isScale ? hint(question.buttons[question.buttons.length - 1]) : undefined;
+  const ends = isScale || isStars;
+  const low = ends ? hint(question.buttons[0]) : undefined;
+  const high = ends ? hint(question.buttons[question.buttons.length - 1]) : undefined;
 
   const tap = (b: QuestionButton) => {
     onAnswer(b.key);
@@ -85,7 +89,14 @@ export function QuestionRow({
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <p className="text-md font-bold text-base-content">{prompt}</p>
-        {answered ? (
+        {answered && isStars ? (
+          <>
+            <StarScale buttons={question.buttons} answeredKey={answered.key} onTap={tap} />
+            <p role="status" className="text-2sm text-base-content/60">
+              {t('questions.thanksStars')}
+            </p>
+          </>
+        ) : answered ? (
           <p role="status" className="text-2sm text-base-content/60">
             {t('questions.thanks', { answer: label(answered) })}
           </p>
@@ -94,22 +105,26 @@ export function QuestionRow({
             {note && <p className="text-2sm text-base-content/60">{note}</p>}
             {/* inline-flex, so the end labels span exactly the buttons. */}
             <div className="mt-1.5 inline-flex flex-col gap-0.5 self-start">
-              <div className={`flex flex-wrap ${isScale ? 'gap-1.5' : 'gap-2'}`}>
-                {question.buttons.map((b) => (
-                  <button
-                    key={b.key}
-                    type="button"
-                    onClick={() => tap(b)}
-                    className={`btn btn-sm ${
-                      b.url ? 'btn-primary' : isScale ? 'btn-outline btn-square' : 'btn-outline'
-                    }`}
-                  >
-                    {label(b)}
-                    {b.url && b.share && <Share2 size={14} aria-hidden />}
-                    {b.url && !b.share && <ExternalLink size={14} aria-hidden />}
-                  </button>
-                ))}
-              </div>
+              {isStars ? (
+                <StarScale buttons={question.buttons} answeredKey={undefined} onTap={tap} />
+              ) : (
+                <div className={`flex flex-wrap ${isScale ? 'gap-1.5' : 'gap-2'}`}>
+                  {question.buttons.map((b) => (
+                    <button
+                      key={b.key}
+                      type="button"
+                      onClick={() => tap(b)}
+                      className={`btn btn-sm ${
+                        b.url ? 'btn-primary' : isScale ? 'btn-outline btn-square' : 'btn-outline'
+                      }`}
+                    >
+                      {label(b)}
+                      {b.url && b.share && <Share2 size={14} aria-hidden />}
+                      {b.url && !b.share && <ExternalLink size={14} aria-hidden />}
+                    </button>
+                  ))}
+                </div>
+              )}
               {copied && (
                 <p role="status" className="text-2sm text-base-content/60">
                   {t('questions.linkCopied')}
