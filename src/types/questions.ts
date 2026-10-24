@@ -1,5 +1,5 @@
 /**
- * A question reIS asks in Novinky (`reis_questions`, 20261025120000). Written in
+ * A question reIS asks in Novinky (`reis_questions`, 20261024120000). Written in
  * the admin console, live between `startsAt` and `endsAt`, and shown by builds
  * from 5.5.0 on. See docs/superpowers/specs/2026-10-22-novinky-questions-design.md.
  */
