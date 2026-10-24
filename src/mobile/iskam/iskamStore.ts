@@ -177,10 +177,22 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
       // Still 'paying' through the re-checks: the form stays disabled until the
       // credit has had its chance to show, so a slow one cannot invite a
       // second order.
+      // The sheet closing or a sign-out during the re-checks ends this top-up
+      // here: no balance for a closed sheet, and no result compared against
+      // another account's "before" (review #596).
+      const gone = () => abandoned() || openSheet !== sheet;
       await get().check();
       if (get().status === 'balance' && get().balance?.amount === before) {
         await delay(RECHECK_MS);
+        if (gone()) {
+          if (!abandoned()) set({ topUp: 'idle' });
+          return;
+        }
         await get().check();
+      }
+      if (gone()) {
+        if (!abandoned()) set({ topUp: 'idle' });
+        return;
       }
       const after = get().status === 'balance' ? (get().balance?.amount ?? null) : null;
       const lastTopUp: TopUpResult | null =

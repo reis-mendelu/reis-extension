@@ -189,6 +189,28 @@ describe('startTopUp', () => {
     }
   });
 
+  it('records no result when the sheet closes during the re-check (review #596)', async () => {
+    vi.useFakeTimers();
+    try {
+      runSilentChain.mockResolvedValueOnce({ state: 'live', kontaHtml: BALANCE('100') });
+      await s().check();
+      initTopUp.mockResolvedValue({ kind: 'ok', url: GATE });
+      openGateway.mockResolvedValue(undefined);
+      runSilentChain.mockResolvedValue({ state: 'live', kontaHtml: BALANCE('100') });
+      const p = s().startTopUp(250, 'card');
+      await vi.advanceTimersByTimeAsync(10);
+      s().reset();
+      await vi.advanceTimersByTimeAsync(3100);
+      await p;
+      expect(s().lastTopUp).toBeNull();
+      expect(s().status).toBe('hidden');
+      expect(runSilentChain).toHaveBeenCalledTimes(2);
+      expect(s().topUp).toBe('idle');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('forgets the last result when a new top-up starts or the sheet closes', async () => {
     useIskamStore.setState({ lastTopUp: { kind: 'added', amount: 50 } });
     s().reset();

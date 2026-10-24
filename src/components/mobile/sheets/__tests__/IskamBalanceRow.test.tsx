@@ -119,7 +119,7 @@ describe('IskamBalanceRow', () => {
     render(<IskamBalanceRow />);
     fireEvent.click(screen.getByRole('button', { name: 'Dobít' }));
     act(() => setState({ lastTopUp: { kind: 'unseen' } }));
-    expect(screen.getByRole('status')).toHaveTextContent('Platba se v zůstatku zatím neprojevila');
+    expect(screen.getByRole('status')).toHaveTextContent('Zůstatek se zatím nezměnil');
     expect(screen.getByText('Částka (Kč)')).toBeTruthy();
   });
 });

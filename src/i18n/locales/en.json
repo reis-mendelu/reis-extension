@@ -34,7 +34,7 @@
     "invalid": "Enter a whole amount from 1 to 15,000 CZK",
     "failed": "Could not start the payment",
     "added": "Topped up +{amount}",
-    "unseen": "The payment has not shown in the balance yet. If you paid, it will update shortly."
+    "unseen": "The balance has not changed yet. If you paid, it will update shortly."
   },
   "settings": {
     "title": "Settings",
