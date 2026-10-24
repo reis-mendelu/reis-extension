@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { QuestionRow } from '../QuestionRow';
 import type { Question } from '../../../types/questions';
 
@@ -142,5 +142,24 @@ describe('QuestionRow', () => {
       <QuestionRow question={base} language="cz" answeredKey={undefined} onAnswer={vi.fn()} />
     );
     expect(screen.queryByTestId('google-play-icon')).toBeNull();
+  });
+
+  it('keeps the copy confirmation for its full time after a second copy', async () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <QuestionRow question={share} language="cz" answeredKey={undefined} onAnswer={vi.fn()} />
+      );
+      const button = screen.getByRole('button', { name: /Sdílet odkaz/ });
+      fireEvent.click(button);
+      await act(() => vi.advanceTimersByTimeAsync(2000));
+      fireEvent.click(button);
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+      expect(screen.getByRole('status').textContent).toContain('Odkaz zkopírován');
+      await act(() => vi.advanceTimersByTimeAsync(2000));
+      expect(screen.queryByRole('status')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, ExternalLink, MessageCircleQuestion, Share2 } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useOnScreenDwell } from '../../hooks/ui/useOnScreenDwell';
@@ -38,6 +38,10 @@ export function QuestionRow({
   const { t } = useTranslation();
   const ref = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
+  // One timer: a second copy restarts the confirmation instead of an older
+  // timer hiding it early (review #589).
+  const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(copiedTimer.current), []);
   useOnScreenDwell(ref, () => onSeen?.());
 
   const label = (b: QuestionButton) => (language === 'cz' ? b.cz : b.en);
@@ -58,7 +62,8 @@ export function QuestionRow({
       void shareLink(b.url).then((r) => {
         if (r !== 'copied') return;
         setCopied(true);
-        setTimeout(() => setCopied(false), 2500);
+        clearTimeout(copiedTimer.current);
+        copiedTimer.current = setTimeout(() => setCopied(false), 2500);
       });
     } else if (b.url) void openExternal(b.url);
   };
