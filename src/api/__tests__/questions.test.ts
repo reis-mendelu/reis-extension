@@ -116,8 +116,9 @@ describe('countQuestion', () => {
     rpc.mockImplementationOnce(() => new Promise((r) => (fail = r)));
     const first = countQuestion('q1', 'seen');
     const second = countQuestion('q1', 'seen');
-    await Promise.resolve();
-    await new Promise((r) => setTimeout(r, 0));
+    // Until the request is really out: the device's claim reads IndexedDB first,
+    // which can take more than one tick on a loaded CI runner (5.5.0 release PR).
+    await vi.waitFor(() => expect(rpc).toHaveBeenCalledTimes(1));
     fail({ error: { message: 'offline' } });
     expect(await first).toBe(false);
     expect(await second).toBe(false);
