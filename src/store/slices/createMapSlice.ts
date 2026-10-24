@@ -344,6 +344,8 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
       // The catalog is refetched beside every events load, in parallel, so an
       // event can never be newer than the catalog that names its society. The
       // mapping uses whatever catalog is in hand; display resolves reactively.
+      // Society pins ride along: same map, same refresh, their own list.
+      void get().loadSocietyPins();
       const [events] = await Promise.all([fetchMapEvents(get().societies), get().loadSocieties()]);
       // A failed fetch keeps whatever is on screen: wiping it would show "no
       // events" on every network blip, and the resume refresh makes blips common.

@@ -56,7 +56,9 @@ export function MapSheet() {
   // pin is: the card IS the answer to the tap, so it replaces the list and the
   // sheet hugs it rather than sitting at a detent.
   const selectedGardenPlace = selection?.kind === 'gardenPlace' ? selection.place : null;
-  const selectedCard = selectedEvent || selectedGardenPlace;
+  // A society pin likewise.
+  const selectedSocietyPin = selection?.kind === 'societyPin' ? selection.pin : null;
+  const selectedCard = selectedEvent || selectedGardenPlace || selectedSocietyPin;
 
   // `peek` is the only stop that hides the LIST. It is no longer blank — it
   // shows the next event (`MapSheetPeek`) — but one row is not the week, which
@@ -127,7 +129,13 @@ export function MapSheet() {
   // Keyed on the selection OBJECT, not the event: a second tap on the same pin
   // selects the same event reference, and must still open the card.
   useEffect(() => {
-    if (!selection || (selection.kind !== 'event' && selection.kind !== 'gardenPlace')) return;
+    if (
+      !selection ||
+      (selection.kind !== 'event' &&
+        selection.kind !== 'gardenPlace' &&
+        selection.kind !== 'societyPin')
+    )
+      return;
     // 'half', not 'expanded' — and the height below hugs the card anyway. Any
     // state out of 'peek' will do; what this call is really for is getting the
     // peek row out of the way so the card can render at all.
@@ -290,7 +298,11 @@ export function MapSheet() {
           {/* pb-24 clears the floating BottomNav, which is positioned against
               the SCREEN and draws over the sheet. */}
           <div className="flex-1 overflow-y-auto pb-[calc(6rem_+_var(--safe-bottom,0px))] pt-2">
-            <MapPanelBody selectedEvent={selectedEvent} selectedGardenPlace={selectedGardenPlace} />
+            <MapPanelBody
+              selectedEvent={selectedEvent}
+              selectedGardenPlace={selectedGardenPlace}
+              selectedSocietyPin={selectedSocietyPin}
+            />
           </div>
         </>
       )}

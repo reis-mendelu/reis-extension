@@ -4,6 +4,7 @@ import { MapSidePanel } from './MapSidePanel';
 import { DetailPanel } from './DetailPanel';
 import { RoomSearch } from './RoomSearch';
 import { EventLayer } from './EventLayer';
+import { SocietyPinLayer } from './SocietyPinLayer';
 import { OsmTileAccessBanner } from './OsmTileAccessBanner';
 import { useAppStore } from '../../store/useAppStore';
 import { useMapDwell } from '../../hooks/useMapDwell';
@@ -25,6 +26,7 @@ export function CampusMapView() {
     <div className="relative isolate w-full h-full">
       <MapCanvas />
       <EventLayer />
+      <SocietyPinLayer />
       {/* Floor selector moved off the right edge (it overlapped the Místa panel)
           into the left column under the search. */}
       <div className="absolute top-3 left-3 z-[1000] flex flex-col items-start gap-2">

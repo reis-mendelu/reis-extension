@@ -113,6 +113,20 @@ export interface RemotePlace {
 //
 // The curation line is "somewhere you would send a friend to sit", which is
 // what `why` has to earn — not a description of the plants.
+/**
+ * A society's logo on the student map between two dates (`map_pins`): its name,
+ * a short description and a link. On the map only — never in Novinky or Akce.
+ */
+export interface SocietyPin {
+  id: string;
+  societyId: string;
+  title: string;
+  description: string | null;
+  url: string | null;
+  /** [lng, lat] */
+  coord: [number, number];
+}
+
 export interface GardenPlace {
   /** Stable slug, and the stem of the bundled thumb: `public/garden/<id>.webp`. */
   id: string;
@@ -245,5 +259,6 @@ export type MapSelection =
   // focusRoomByCode so the card names the room over its building
   | { kind: 'placedRoom'; label: string; display: string }
   | { kind: 'gardenPlace'; place: GardenPlace } // one of the botanical garden's places
+  | { kind: 'societyPin'; pin: SocietyPin } // a society's logo on the map for a while
   // a society event pin
   | { kind: 'event'; event: import('./events').MapEvent };

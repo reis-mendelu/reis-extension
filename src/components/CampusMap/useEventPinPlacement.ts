@@ -4,11 +4,17 @@ import type { VenueGroup } from './eventHelpers';
 import { subscribeMapInstance } from './mapInstance';
 import { EVENTS_PANE, ensurePane } from './mapPanes';
 
-export interface Placed {
+/** Anything with a key and a [lng, lat]: an event venue group, or a society pin. */
+export interface Placeable {
+  key: string;
+  coord: [number, number];
+}
+
+export interface Placed<G extends Placeable = VenueGroup> {
   key: string;
   x: number;
   y: number;
-  group: VenueGroup;
+  group: G;
 }
 
 // Leaflet's private projection used by its own markers to animate on zoom.
@@ -25,8 +31,11 @@ type ZoomAnimMap = {
  * keeps them glued through pan, fly and zoom. Split out of EventLayer, which owns
  * WHICH pins there are; this owns WHERE they are on the map.
  */
-export function useEventPinPlacement(groups: VenueGroup[], activeDraft: [number, number] | null) {
-  const [placed, setPlaced] = useState<Placed[]>([]);
+export function useEventPinPlacement<G extends Placeable = VenueGroup>(
+  groups: G[],
+  activeDraft: [number, number] | null
+) {
+  const [placed, setPlaced] = useState<Placed<G>[]>([]);
   const [draftPt, setDraftPt] = useState<{ x: number; y: number } | null>(null);
   const [pane, setPane] = useState<HTMLElement | null>(null);
 
@@ -58,7 +67,7 @@ export function useEventPinPlacement(groups: VenueGroup[], activeDraft: [number,
         return;
       }
       placedZoom = map.getZoom();
-      const next: Placed[] = groupsRef.current.map((g) => {
+      const next: Placed<G>[] = groupsRef.current.map((g) => {
         const pt = map!.latLngToLayerPoint([g.coord[1], g.coord[0]]);
         return { key: g.key, x: pt.x, y: pt.y, group: g };
       });

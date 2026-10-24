@@ -213,6 +213,11 @@ export const EXEMPT: Exempt[] = [
     why: 'Public society catalog read (names, colours, logo paths); writes are by a signed-in reis_admin, not a student.',
   },
   {
+    call: 'map_pins',
+    files: ['src/api/mapEvents.ts'],
+    why: 'Public read of the live society pins on the map; written by reIS staff in Supabase, never a student.',
+  },
+  {
     call: 'reis_questions',
     files: ['src/api/questions.ts', 'src/api/adminQuestions.ts'],
     why: 'Public read of the live Novinky questions; writes are by a signed-in reis_admin, never a student.',
