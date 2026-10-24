@@ -33,6 +33,8 @@ returns boolean language sql immutable set search_path = '' as $$
            or coalesce(jsonb_typeof(e->'cz'), '') <> 'string'
            or coalesce(jsonb_typeof(e->'en'), '') <> 'string'
            or (e ? 'url' and jsonb_typeof(e->'url') <> 'string')
+           -- A share button shares its url, so it must have one.
+           or (e ? 'share' and (jsonb_typeof(e->'share') <> 'boolean' or not e ? 'url'))
            or (e ? 'hintCz' and jsonb_typeof(e->'hintCz') <> 'string')
            or (e ? 'hintEn' and jsonb_typeof(e->'hintEn') <> 'string')
            or coalesce(e->>'key', '') !~ '^[a-z0-9_]{1,20}$'
@@ -64,6 +66,11 @@ create table if not exists public.reis_questions (
   -- one that has not started yet ends as a zero-length window, never shown.
   constraint reis_questions_dates_chk check (ends_at >= starts_at)
 );
+
+-- The row's icon instead of the question mark, from a fixed list the clients
+-- draw themselves: 'google_play' for 5.5.0's "reIS je teď na Google Play".
+alter table public.reis_questions add column if not exists icon text
+  check (icon is null or icon in ('google_play'));
 
 comment on table public.reis_questions is
   'Ano/Ne, 1–5 or link questions shown in Novinky by builds from 5.5.0 on. Counts: reis_question_counts.';

@@ -1552,6 +1552,7 @@
     "thanksNote": "Just asking, nothing was charged."
   },
   "questions": {
-    "thanks": "Thanks for answering: {answer}"
+    "thanks": "Thanks for answering: {answer}",
+    "linkCopied": "Link copied, pass it on."
   }
 }

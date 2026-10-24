@@ -148,6 +148,8 @@ begin
     '[{"key":"a","cz":"A","en":"A","url":"http://insecure.example"}]',
     '[{"key":"1","cz":1,"en":1}]',
     '[{"key":"a","cz":"A","en":"A","url":42}]',
+    '[{"key":"a","cz":"A","en":"A","share":true}]',
+    '[{"key":"a","cz":"A","en":"A","url":"https://example.com/x","share":"yes"}]',
     '[{"key":"1","cz":"1","en":"1","hintCz":"tohle je moc dlouhý popisek konce"}]',
     '[{"key":"a","cz":"1","en":"1"},{"key":"b","cz":"2","en":"2"},{"key":"c","cz":"3","en":"3"},{"key":"d","cz":"4","en":"4"},{"key":"e","cz":"5","en":"5"},{"key":"f","cz":"6","en":"6"}]'
   ] loop
@@ -159,6 +161,22 @@ begin
     end;
   end loop;
 end $$;
+
+-- a share button is a valid list
+insert into public.reis_questions (prompt_cz, prompt_en, buttons, ends_at) values ('x', 'x',
+  '[{"key":"share","cz":"Sdílet odkaz","en":"Share link","url":"https://example.com/x","share":true}]',
+  now() + interval '1 day');
+
+-- only a known icon
+do $$
+begin
+  insert into public.reis_questions (prompt_cz, prompt_en, buttons, ends_at, icon)
+  values ('x', 'x', '[{"key":"a","cz":"A","en":"A"}]', now() + interval '1 day', 'tiktok');
+  raise exception 'accepted an unknown icon';
+exception when check_violation then null;
+end $$;
+insert into public.reis_questions (prompt_cz, prompt_en, buttons, ends_at, icon)
+values ('x', 'x', '[{"key":"a","cz":"A","en":"A"}]', now() + interval '1 day', 'google_play');
 
 -- a 1–5 scale is a valid list
 insert into public.reis_questions (prompt_cz, prompt_en, buttons, ends_at) values ('x', 'x',

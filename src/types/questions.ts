@@ -10,6 +10,11 @@ export interface QuestionButton {
   en: string;
   /** A link button: counted, then opened. Answer buttons have none. */
   url?: string;
+  /**
+   * With `url`: share the link instead of opening it. The share sheet on the
+   * phone and iPad, a copied link on the extension (`shareLink`).
+   */
+  share?: boolean;
   /** What this end of a scale means ("nejhorší" under 1), shown under it. */
   hintCz?: string;
   hintEn?: string;
@@ -27,7 +32,12 @@ export interface Question {
   endsAt: string;
   /** Faculty keys ('pef', 'af', …) as `useViewer` knows them; null = everyone. Decided on the device. */
   faculties: string[] | null;
+  /** Drawn in the row's icon slot instead of the question mark. */
+  icon?: QuestionIcon | null;
 }
+
+/** The icons a client knows how to draw (`reis_questions.icon`'s CHECK). */
+export type QuestionIcon = 'google_play';
 
 /** What a device counts: the question was on screen, or one of its buttons. */
 export type QuestionCountKey = 'seen' | string;
