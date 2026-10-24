@@ -168,6 +168,35 @@ describe('startTopUp', () => {
     expect(openGateway).toHaveBeenCalledWith(GATE);
     expect(s().balance?.amount).toBe(350);
     expect(s().topUp).toBe('idle');
+    // Dominik, 2026-10-24: "it is not explicit whether money was added".
+    expect(s().lastTopUp).toEqual({ kind: 'added', amount: 250 });
+  });
+
+  it('says the payment has not shown yet when the balance never moved', async () => {
+    vi.useFakeTimers();
+    try {
+      runSilentChain.mockResolvedValueOnce({ state: 'live', kontaHtml: BALANCE('100') });
+      await s().check();
+      initTopUp.mockResolvedValue({ kind: 'ok', url: GATE });
+      openGateway.mockResolvedValue(undefined);
+      runSilentChain.mockResolvedValue({ state: 'live', kontaHtml: BALANCE('100') });
+      const p = s().startTopUp(250, 'card');
+      await vi.advanceTimersByTimeAsync(3100);
+      await p;
+      expect(s().lastTopUp).toEqual({ kind: 'unseen' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('forgets the last result when a new top-up starts or the sheet closes', async () => {
+    useIskamStore.setState({ lastTopUp: { kind: 'added', amount: 50 } });
+    s().reset();
+    expect(s().lastTopUp).toBeNull();
+    useIskamStore.setState({ lastTopUp: { kind: 'unseen' } });
+    initTopUp.mockReturnValue(new Promise(() => {}));
+    void s().startTopUp(10, 'card');
+    expect(s().lastTopUp).toBeNull();
   });
 
   it('re-checks once more after a short wait when the balance has not moved yet', async () => {

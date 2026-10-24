@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 
 vi.mock('../../../../mobile/iskam/iskamSession', () => ({ runSilentChain: vi.fn() }));
 vi.mock('../../../../mobile/iskam/iskamHttp', () => ({ buildIskamHttpDeps: async () => ({}) }));
@@ -96,5 +96,30 @@ describe('IskamBalanceRow', () => {
     setState({ status: 'checking' });
     render(<IskamBalanceRow />);
     expect(screen.getByRole('status')).toHaveTextContent('Načítám zůstatek');
+  });
+
+  // Dominik, 2026-10-24: after paying it was not explicit whether money was
+  // added, and the top-up form stayed open.
+  it('after a credited top-up: says how much was added and closes the form', () => {
+    setState({ status: 'balance', balance: { amount: 100 } });
+    render(<IskamBalanceRow />);
+    fireEvent.click(screen.getByRole('button', { name: 'Dobít' }));
+    expect(screen.getByText('Částka (Kč)')).toBeTruthy();
+    act(() => setState({ balance: { amount: 350 }, lastTopUp: { kind: 'added', amount: 250 } }));
+    expect(screen.getByRole('status')).toHaveTextContent('Dobito +250,00 Kč');
+    expect(screen.queryByText('Částka (Kč)')).toBeNull();
+    // Dobít again: a fresh form, the old result gone.
+    fireEvent.click(screen.getByRole('button', { name: 'Dobít' }));
+    expect(screen.getByText('Částka (Kč)')).toBeTruthy();
+    expect(screen.queryByText(/Dobito/)).toBeNull();
+  });
+
+  it('when the balance has not moved: says so honestly and leaves the form', () => {
+    setState({ status: 'balance', balance: { amount: 100 } });
+    render(<IskamBalanceRow />);
+    fireEvent.click(screen.getByRole('button', { name: 'Dobít' }));
+    act(() => setState({ lastTopUp: { kind: 'unseen' } }));
+    expect(screen.getByRole('status')).toHaveTextContent('Platba se v zůstatku zatím neprojevila');
+    expect(screen.getByText('Částka (Kč)')).toBeTruthy();
   });
 });

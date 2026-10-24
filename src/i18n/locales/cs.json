@@ -32,7 +32,9 @@
     "card": "Zaplatit kartou",
     "gpay": "Google Pay",
     "invalid": "Zadej celé číslo od 1 do 15 000 Kč",
-    "failed": "Platbu se nepodařilo zahájit"
+    "failed": "Platbu se nepodařilo zahájit",
+    "added": "Dobito +{amount}",
+    "unseen": "Platba se v zůstatku zatím neprojevila. Pokud jsi zaplatil(a), zůstatek se brzy aktualizuje."
   },
   "settings": {
     "title": "Nastavení",
