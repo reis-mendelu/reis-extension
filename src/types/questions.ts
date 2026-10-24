@@ -10,6 +10,11 @@ export interface QuestionButton {
   en: string;
   /** A link button: counted, then opened. Answer buttons have none. */
   url?: string;
+  /**
+   * With `url`: share the link instead of opening it. The share sheet on the
+   * phone and iPad, a copied link on the extension (`shareLink`).
+   */
+  share?: boolean;
   /** What this end of a scale means ("nejhorší" under 1), shown under it. */
   hintCz?: string;
   hintEn?: string;

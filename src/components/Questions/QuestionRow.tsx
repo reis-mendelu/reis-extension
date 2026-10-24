@@ -1,8 +1,9 @@
-import { useRef } from 'react';
-import { Check, ExternalLink, MessageCircleQuestion } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Check, ExternalLink, MessageCircleQuestion, Share2 } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useOnScreenDwell } from '../../hooks/ui/useOnScreenDwell';
 import { openExternal } from '../../mobile/openExternal';
+import { shareLink } from '../../mobile/shareLink';
 import type { Question, QuestionButton } from '../../types/questions';
 
 /**
@@ -12,7 +13,9 @@ import type { Question, QuestionButton } from '../../types/questions';
  * answer as the default nudges toward it. A link button is primary, because
  * opening it is the point. After an answer the row thanks and says what was
  * chosen, and stays until the question ends (decided 2026-10-22); a link tap
- * keeps the row as it is.
+ * keeps the row as it is. A share button (`share`) hands its link on instead
+ * of opening it, so a student can send it to a friend; a cancelled sheet keeps
+ * the row too, so they can share again.
  *
  * Card and 32px icon slot as `SupportPrompt` and `DeadlineAlertItem`, so every
  * row in Novinky shares one left edge.
@@ -33,6 +36,7 @@ export function QuestionRow({
 }) {
   const { t } = useTranslation();
   const ref = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
   useOnScreenDwell(ref, () => onSeen?.());
 
   const label = (b: QuestionButton) => (language === 'cz' ? b.cz : b.en);
@@ -49,7 +53,13 @@ export function QuestionRow({
 
   const tap = (b: QuestionButton) => {
     onAnswer(b.key);
-    if (b.url) void openExternal(b.url);
+    if (b.url && b.share) {
+      void shareLink(b.url).then((r) => {
+        if (r !== 'copied') return;
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      });
+    } else if (b.url) void openExternal(b.url);
   };
 
   return (
@@ -87,10 +97,16 @@ export function QuestionRow({
                     }`}
                   >
                     {label(b)}
-                    {b.url && <ExternalLink size={14} aria-hidden />}
+                    {b.url && b.share && <Share2 size={14} aria-hidden />}
+                    {b.url && !b.share && <ExternalLink size={14} aria-hidden />}
                   </button>
                 ))}
               </div>
+              {copied && (
+                <p role="status" className="text-2sm text-base-content/60">
+                  {t('questions.linkCopied')}
+                </p>
+              )}
               {(low || high) && (
                 <div className="flex justify-between gap-2 text-xs text-base-content/60">
                   <span>{low}</span>

@@ -33,6 +33,8 @@ returns boolean language sql immutable set search_path = '' as $$
            or coalesce(jsonb_typeof(e->'cz'), '') <> 'string'
            or coalesce(jsonb_typeof(e->'en'), '') <> 'string'
            or (e ? 'url' and jsonb_typeof(e->'url') <> 'string')
+           -- A share button shares its url, so it must have one.
+           or (e ? 'share' and (jsonb_typeof(e->'share') <> 'boolean' or not e ? 'url'))
            or (e ? 'hintCz' and jsonb_typeof(e->'hintCz') <> 'string')
            or (e ? 'hintEn' and jsonb_typeof(e->'hintEn') <> 'string')
            or coalesce(e->>'key', '') !~ '^[a-z0-9_]{1,20}$'

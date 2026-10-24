@@ -22,6 +22,7 @@ const ButtonSchema = z.object({
   cz: z.string(),
   en: z.string(),
   url: z.string().optional(),
+  share: z.boolean().optional(),
   hintCz: z.string().optional(),
   hintEn: z.string().optional(),
 });

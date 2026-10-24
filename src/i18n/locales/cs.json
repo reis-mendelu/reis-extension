@@ -1552,6 +1552,7 @@
     "thanksNote": "Jen se ptáme, nic se nestrhlo."
   },
   "questions": {
-    "thanks": "Díky za odpověď: {answer}"
+    "thanks": "Díky za odpověď: {answer}",
+    "linkCopied": "Odkaz zkopírován, pošli ho dál."
   }
 }
