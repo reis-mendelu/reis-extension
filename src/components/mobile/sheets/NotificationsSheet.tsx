@@ -7,8 +7,6 @@ import { useDeadlineAlerts } from '../../../hooks/useDeadlineAlerts';
 import { useOpenNotification } from '../../../hooks/useOpenNotification';
 import { NotificationItem } from '../../Notifications/NotificationItem';
 import { DeadlineAlertItem } from '../../Notifications/DeadlineAlertItem';
-import { SupportPrompt } from '../../Support/SupportPrompt';
-import { useSupportQuestion } from '../../../hooks/useSupportQuestion';
 import { QuestionList } from '../../Questions/QuestionList';
 import { useQuestions } from '../../../hooks/useQuestions';
 import { useTranslation } from '../../../hooks/useTranslation';
@@ -43,13 +41,8 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
   const { t } = useTranslation();
   const { notifications, loading, markVisible, readIds } = useNotificationFeed();
   const { alerts, markAllSeen } = useDeadlineAlerts();
-  const support = useSupportQuestion();
   const questions = useQuestions();
-  const hasContent =
-    notifications.length > 0 ||
-    alerts.length > 0 ||
-    support.visible ||
-    questions.visible.length > 0;
+  const hasContent = notifications.length > 0 || alerts.length > 0 || questions.visible.length > 0;
   const setMobileTab = useAppStore((s) => s.setMobileTab);
   const pushSheet = useAppStore((s) => s.pushSheet);
   // New points already happened; the deadlines are still ahead. Two sections.
@@ -99,18 +92,8 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
     <Sheet size="full" onClose={onClose}>
       <SheetHeader title={t('notifications.title')} onClose={onClose} />
       <div className="flex-1 overflow-y-auto px-4 pb-6 pt-1">
-        {/* First, so it is on screen without scrolling however long the feed. */}
-        {support.visible && (
-          <div className="pb-1 pt-1">
-            <SupportPrompt
-              answered={support.answered}
-              onAnswer={support.onAnswer}
-              onShown={support.markSeen}
-            />
-          </div>
-        )}
-        {/* The console's questions, under the support question for as long as
-            that one runs on its own counters (until ~2026-11-21). */}
+        {/* The console's questions first, so they are on screen without
+            scrolling however long the feed. */}
         <div className="pb-1 pt-1 empty:hidden">
           <QuestionList />
         </div>

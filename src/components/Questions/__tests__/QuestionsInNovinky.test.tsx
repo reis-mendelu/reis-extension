@@ -47,7 +47,6 @@ function state(over: Partial<{ allowed: boolean; list: Question[] }> = {}) {
       viewedIds: new Set<string>(),
       seenDeadlineAlertIds: new Set<string>(),
     },
-    supportQuestion: { status: 'dismissed', badgeSeen: true },
     questions: {
       status: 'ready',
       list: [scale],

@@ -12,8 +12,8 @@ export const SEEN_DWELL_MS = 1500;
  * Calls `onSeen` once the element has been at least half on screen, with the
  * page in the foreground, for {@link SEEN_DWELL_MS} without a break. An
  * observer reports geometry only, so a backgrounded tab is tracked separately,
- * as useMapDwell does for the map. Shared by the support question and the
- * console's questions (`SupportPrompt`, `QuestionRow`).
+ * as useMapDwell does for the map. Used by the console's questions
+ * (`QuestionRow`).
  */
 export function useOnScreenDwell(ref: RefObject<Element | null>, onSeen: () => void): void {
   // The latest callback, without restarting the observer when it changes.

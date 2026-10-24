@@ -2,8 +2,6 @@ import { Bell, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { NotificationItem } from './NotificationItem';
 import { DeadlineAlertItem } from './DeadlineAlertItem';
-import { SupportPrompt } from '../Support/SupportPrompt';
-import { useSupportQuestion } from '../../hooks/useSupportQuestion';
 import { QuestionList } from '../Questions/QuestionList';
 import { useQuestions } from '../../hooks/useQuestions';
 import { useOpenNotification } from '../../hooks/useOpenNotification';
@@ -37,14 +35,9 @@ export function NotificationDropdown({
 }: NotificationDropdownProps) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
-  // The phone's Novinky sheet asks it too (supportPromptOnBothTrees.test.ts).
-  const support = useSupportQuestion();
   const questions = useQuestions();
   const hasContent =
-    notifications.length > 0 ||
-    deadlineAlerts.length > 0 ||
-    support.visible ||
-    questions.visible.length > 0;
+    notifications.length > 0 || deadlineAlerts.length > 0 || questions.visible.length > 0;
   // The phone's Novinky sheet runs this same hook. A row without a link used to
   // be a disabled button here while the phone opened it on the map.
   const { opensSomewhere, openNotification } = useOpenNotification({
@@ -57,15 +50,8 @@ export function NotificationDropdown({
   // divider between two bordered cards draws a third line between them.
   const notificationList = (
     <div className="flex flex-col gap-2 p-3">
-      {/* First: the dropdown is 320px tall, and only the top fits unscrolled. */}
-      {support.visible && (
-        <SupportPrompt
-          answered={support.answered}
-          onAnswer={support.onAnswer}
-          onShown={support.markSeen}
-        />
-      )}
-      {/* The phone's Novinky sheet mounts it too (questionsOnBothTrees.test.ts). */}
+      {/* First: the dropdown is 320px tall, and only the top fits unscrolled.
+          The phone's Novinky sheet mounts it too (questionsOnBothTrees.test.ts). */}
       <QuestionList />
       {deadlineAlerts.length > 0 && (
         <div className="flex flex-col gap-2">
