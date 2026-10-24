@@ -3,7 +3,6 @@ import { Bell } from 'lucide-react';
 import { useNotificationFeed } from '../hooks/useNotificationFeed';
 import { useDeadlineAlerts, type DeadlineAlert } from '../hooks/useDeadlineAlerts';
 import { NotificationDropdown } from './Notifications/NotificationDropdown';
-import { useSupportQuestion } from '../hooks/useSupportQuestion';
 import { useQuestions } from '../hooks/useQuestions';
 
 export function NotificationFeed({
@@ -18,7 +17,6 @@ export function NotificationFeed({
   const { isOpen, setIsOpen, notifications, loading, readIds, toggle, markVisible } =
     useNotificationFeed();
   const { alerts: deadlineAlerts, markAllSeen, unseenCount } = useDeadlineAlerts();
-  const support = useSupportQuestion();
   const questions = useQuestions();
   useEffect(() => {
     if (isOpen) markAllSeen(deadlineAlerts.map((a) => a.id));
@@ -45,13 +43,10 @@ export function NotificationFeed({
     };
   }, [isOpen, setIsOpen]);
 
-  // The support question and console questions count until the dropdown is
-  // opened with them in, as on the phone's HeaderActions.
+  // Console questions count until the dropdown is opened with them in, as on
+  // the phone's HeaderActions.
   const unreadCount =
-    notifications.filter((n) => !readIds.has(n.id)).length +
-    unseenCount +
-    support.badge +
-    questions.badge;
+    notifications.filter((n) => !readIds.has(n.id)).length + unseenCount + questions.badge;
 
   return (
     <div className={`relative ${className}`}>

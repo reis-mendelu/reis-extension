@@ -6,6 +6,4 @@ export const SIGNAL_LABEL_KEY: Record<FeatureSignal, string> = {
   map_dwell_3s: 'signalMapDwell',
   eduroam_wifi_configured: 'signalEduroamConfigured',
   eduroam_profile_delivered: 'signalEduroamDelivered',
-  support_prompt_seen: 'signalSupportSeen',
-  support_prompt_yes: 'signalSupportYes',
 };

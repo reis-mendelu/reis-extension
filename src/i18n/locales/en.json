@@ -1137,8 +1137,6 @@
       "signalMapDwell": "Map for 3+ seconds",
       "signalEduroamConfigured": "eduroam configured by the app",
       "signalEduroamDelivered": "eduroam profile handed over",
-      "signalSupportSeen": "Support question shown",
-      "signalSupportYes": "“Yes” to 99 CZK support",
       "signalInstalls": "installs",
       "reachTitle": "Events: News and map side by side",
       "reachNotice": "notice",
@@ -1542,14 +1540,6 @@
     "openOther": "{n} open",
     "nothingDueSoon": "Nothing due in the next 14 days",
     "instructions": "Instructions"
-  },
-  "support": {
-    "question": "Would you support reIS?",
-    "note": "One-time 99 CZK. Just asking.",
-    "yes": "Yes",
-    "no": "No",
-    "thanks": "Thanks! We've counted your interest.",
-    "thanksNote": "Just asking, nothing was charged."
   },
   "questions": {
     "thanks": "Thanks for answering: {answer}",

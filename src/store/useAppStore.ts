@@ -28,7 +28,6 @@ import { createContextSlice } from './slices/createContextSlice';
 import { createPulseSlice } from './slices/createPulseSlice';
 import { createCustomEventsSlice } from './slices/createCustomEventsSlice';
 import { createNotificationSlice } from './slices/createNotificationSlice';
-import { createSupportQuestionSlice } from './slices/createSupportQuestionSlice';
 import { createQuestionsSlice } from './slices/createQuestionsSlice';
 import { createSearchSlice } from './slices/createSearchSlice';
 import { createRecentPdfsSlice } from './slices/createRecentPdfsSlice';
@@ -88,7 +87,6 @@ export const useAppStore = create<AppState>()(
     ...createPulseSlice(...a),
     ...createCustomEventsSlice(...a),
     ...createNotificationSlice(...a),
-    ...createSupportQuestionSlice(...a),
     ...createQuestionsSlice(...a),
     ...createSearchSlice(...a),
     ...createRecentPdfsSlice(...a),
@@ -150,7 +148,6 @@ export const initializeStore = async () => {
 
   // Tier 1: User-visible data — load immediately
   s.loadNotificationState();
-  s.loadSupportQuestion();
   s.loadQuestions();
   s.fetchNotifications();
   s.fetchSchedule();

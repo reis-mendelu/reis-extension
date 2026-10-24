@@ -18,7 +18,7 @@ import type { Question, QuestionButton } from '../../types/questions';
  * of opening it, so a student can send it to a friend; a cancelled sheet keeps
  * the row too, so they can share again.
  *
- * Card and 32px icon slot as `SupportPrompt` and `DeadlineAlertItem`, so every
+ * Card and 32px icon slot as `DeadlineAlertItem`, so every
  * row in Novinky shares one left edge.
  */
 export function QuestionRow({

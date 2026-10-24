@@ -25,7 +25,6 @@ describe('HeaderActions badge', () => {
     useAppStore.setState({
       language: 'cz',
       notifications: EMPTY_FEED,
-      supportQuestion: { status: 'loading', badgeSeen: false },
       exams: { data: [] },
       odevzdavarny: [],
       cvicneTests: [],
@@ -76,24 +75,6 @@ describe('HeaderActions badge', () => {
       notifications: { ...EMPTY_FEED, seenDeadlineAlertIds: new Set(['odev-o1']) },
     } as never);
 
-    render(<HeaderActions />);
-    expect(screen.getByLabelText('Oznámení')).not.toHaveTextContent('1');
-  });
-
-  // The support question (2026-10-22) is a Novinky row too: it counts until
-  // Novinky is opened, then the row waits quietly for an answer.
-  it('counts an unseen support question', () => {
-    useAppStore.setState({ supportQuestion: { status: 'open', badgeSeen: false } } as never);
-    render(<HeaderActions />);
-    expect(screen.getByLabelText('Oznámení')).toHaveTextContent('1');
-  });
-
-  it.each([
-    { status: 'open', badgeSeen: true },
-    { status: 'loading', badgeSeen: false },
-    { status: 'yes', badgeSeen: false },
-  ])('does not count the question when %o', (supportQuestion) => {
-    useAppStore.setState({ supportQuestion } as never);
     render(<HeaderActions />);
     expect(screen.getByLabelText('Oznámení')).not.toHaveTextContent('1');
   });

@@ -30,10 +30,6 @@ export const FEATURE_SIGNALS = [
   'eduroam_wifi_configured',
   /** A profile was handed over, which the student must still install (mac/windows). */
   'eduroam_profile_delivered',
-  /** The "would you support reIS?" question was on screen (2026-10-16 test). */
-  'support_prompt_seen',
-  /** The student answered "Ano" to it. Nothing is charged; no payment exists. */
-  'support_prompt_yes',
 ] as const;
 
 /** Each label must also be in the database whitelist (featureSignalWhitelist.test.ts). */

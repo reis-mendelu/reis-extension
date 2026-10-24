@@ -23,7 +23,7 @@ function lastWhitelist(pattern: RegExp): string[] {
   for (const f of files) {
     const sql = readFileSync(join(DIR, f), 'utf8');
     for (const m of sql.matchAll(pattern)) {
-      found = [...m[1]!.matchAll(/'([a-z0-9_]+)'/g)].map((x) => x[1]!);
+      found = [...(m[1] ?? m[2])!.matchAll(/'([a-z0-9_]+)'/g)].map((x) => x[1]!);
     }
   }
   if (!found) throw new Error(`no whitelist matching ${pattern} in ${DIR}`);
@@ -38,7 +38,11 @@ describe('feature signal whitelist', () => {
   });
 
   it('the column check accepts every label the client sends', () => {
-    expect(lastWhitelist(/check \(feature in \(([^)]*)\)\)/g)).toEqual(client);
+    // A hand-written migration says `check (feature in (...))`; the baseline is
+    // a schema dump and says `CHECK (("feature" = ANY (ARRAY[...])))`.
+    expect(
+      lastWhitelist(/check \(feature in \(([^)]*)\)\)|"feature" = ANY \(ARRAY\[([^\]]*)\]/gi)
+    ).toEqual(client);
   });
 
   it('the admin console has a label for every signal, in both languages', () => {

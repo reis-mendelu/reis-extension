@@ -719,7 +719,6 @@ export type AppState = ScheduleSlice &
   ContextSlice &
   PulseSlice &
   NotificationSlice &
-  import('./slices/createSupportQuestionSlice').SupportQuestionSlice &
   import('./slices/createQuestionsSlice').QuestionsSlice &
   BulletinSlice &
   ViewportSlice &

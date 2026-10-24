@@ -2,7 +2,6 @@ import { Bell, Pin, Search } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useNotificationFeed } from '../../../hooks/useNotificationFeed';
 import { useDeadlineAlerts } from '../../../hooks/useDeadlineAlerts';
-import { useSupportQuestion } from '../../../hooks/useSupportQuestion';
 import { useQuestions } from '../../../hooks/useQuestions';
 import { useTranslation } from '../../../hooks/useTranslation';
 
@@ -29,7 +28,6 @@ export function HeaderActions() {
   const loadBulletinIfStale = useAppStore((s) => s.loadBulletinIfStale);
   const { notifications, readIds } = useNotificationFeed();
   const { unseenCount } = useDeadlineAlerts();
-  const support = useSupportQuestion();
   const questions = useQuestions();
   const refreshQuestions = useAppStore((s) => s.refreshQuestions);
 
@@ -38,13 +36,9 @@ export function HeaderActions() {
   // gone — Novinky is the one place for a deadline now — so without this a
   // closing registration or an assignment due in four hours would arrive with
   // no signal anywhere in the app.
-  // So does an unanswered support question or console question, until Novinky
-  // is opened with it in.
+  // So does an unanswered console question, until Novinky is opened with it in.
   const unreadCount =
-    notifications.filter((n) => !readIds.has(n.id)).length +
-    unseenCount +
-    support.badge +
-    questions.badge;
+    notifications.filter((n) => !readIds.has(n.id)).length + unseenCount + questions.badge;
 
   const openBulletin = () => {
     // pushSheet, not the old `bulletinExpanded` flag: that flag was only read

@@ -1137,8 +1137,6 @@
       "signalMapDwell": "Mapa aspoň 3 sekundy",
       "signalEduroamConfigured": "eduroam nastaven aplikací",
       "signalEduroamDelivered": "eduroam profil předán",
-      "signalSupportSeen": "Otázka na podporu zobrazena",
-      "signalSupportYes": "„Ano“ na podporu 99 Kč",
       "signalInstalls": "instalací",
       "reachTitle": "Akce: Novinky a mapa vedle sebe",
       "reachNotice": "oznámení",
@@ -1542,14 +1540,6 @@
     "openOther": "{n} otevřených",
     "nothingDueSoon": "Nic k odevzdání do 14 dní",
     "instructions": "Pokyny"
-  },
-  "support": {
-    "question": "Podpořil/a bys reIS?",
-    "note": "Jednorázově 99 Kč. Jen se ptáme.",
-    "yes": "Ano",
-    "no": "Ne",
-    "thanks": "Díky! Tvůj zájem jsme započítali.",
-    "thanksNote": "Jen se ptáme, nic se nestrhlo."
   },
   "questions": {
     "thanks": "Díky za odpověď: {answer}",
