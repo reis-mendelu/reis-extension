@@ -1,5 +1,7 @@
 # REIS.mendelu
 
+> Browser extension and mobile app that make MENDELU's student information system fast and usable. Used by ~2,600 students.
+
 > **Zjednodušit a měřitelně zrychlit každodenní práci studentů s Informačním systémem MENDELU.**
 
 REIS.mendelu je rozšíření prohlížeče, které zpřehledňuje a personalizuje Informační systém. Pracuje čistě na straně klienta – přímo v prohlížeči studenta – a nijak nezasahuje do samotného IS.
@@ -40,13 +42,9 @@ Dominik Holek, Antonín Dědeček
 
 ---
 
-## 📅 Roadmap
+## 📅 Stav
 
-| Fáze | Období | Status |
-|------|--------|--------|
-| Vývoj a interní testování | ZS 2025/2026 | 🔄 Probíhá |
-| Sběr a analýza zpětné vazby | ZS 2025/2026 | 🔄 Probíhá |
-| Finální úpravy a veřejné vydání | LS 2025/2026 | 🔄 Probíhá |
+Veřejně dostupné: rozšíření pro Chrome, aplikace pro iOS a Android. Používá ~2 600 studentů.
 
 ---
 
