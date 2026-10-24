@@ -57,7 +57,9 @@ export function MapRail() {
   // event pin: the card replaces the list, and opening the rail is what makes
   // it visible at all.
   const selectedGardenPlace = selection?.kind === 'gardenPlace' ? selection.place : null;
-  const selectedCard = selectedEvent || selectedGardenPlace;
+  // A society pin likewise.
+  const selectedSocietyPin = selection?.kind === 'societyPin' ? selection.pin : null;
+  const selectedCard = selectedEvent || selectedGardenPlace || selectedSocietyPin;
   const forRoom = useForRoomSelection();
 
   // Picking a pin while the rail is closed has to bring it back — otherwise the
@@ -69,9 +71,9 @@ export function MapRail() {
   // dependency it reopened the rail the moment the student closed it.
   const showsRoomNote = !!forRoom;
   useEffect(() => {
-    if (selectedEvent || selectedGardenPlace || showsRoomNote) setOpen(true);
+    if (selectedCard || showsRoomNote) setOpen(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `selection` is the trigger; see above
-  }, [selectedEvent, selectedGardenPlace, selection, setOpen]);
+  }, [selectedCard, selection, setOpen]);
 
   if (!open) return <MapRailOpenButton onOpen={() => setOpen(true)} />;
 
@@ -189,6 +191,7 @@ export function MapRail() {
         <MapPanelBody
           selectedEvent={selectedEvent}
           selectedGardenPlace={selectedGardenPlace}
+          selectedSocietyPin={selectedSocietyPin}
           flush
         />
       </div>

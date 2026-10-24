@@ -4,6 +4,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { landmarkGroupLabels, placeTitle, roomLabel } from './mapHelpers';
 import { EventDetailCard } from './EventDetailCard';
 import { GardenPlaceCard } from './GardenPlaceCard';
+import { SocietyPinCard } from './SocietyPinCard';
 import landmarksJson from '../../data/map/landmarks.json';
 import type { Landmark } from '../../types/campusMap';
 
@@ -30,6 +31,8 @@ export function DetailPanel() {
   if (sel.kind === 'event') return <EventDetailCard event={sel.event} />;
 
   if (sel.kind === 'gardenPlace') return <GardenPlaceCard place={sel.place} />;
+
+  if (sel.kind === 'societyPin') return <SocietyPinCard pin={sel.pin} />;
 
   if (sel.kind === 'poi') {
     const p = sel.poi;
