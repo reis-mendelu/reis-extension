@@ -1543,6 +1543,15 @@
   },
   "questions": {
     "thanks": "Thanks for answering: {answer}",
-    "linkCopied": "Link copied, pass it on."
+    "linkCopied": "Link copied, pass it on.",
+    "starsOf": "{n} of {max}",
+    "thanksStars": "Thanks for rating!",
+    "ratingTitle": "Rating {n}/{max}",
+    "whyOpen": "Tell us what you don't like",
+    "whyLabel": "What you don't like",
+    "whyPlaceholder": "What should we improve?",
+    "whySend": "Send",
+    "whySent": "Thanks, we'll read it.",
+    "whyFailed": "Could not send. Please try again."
   }
 }

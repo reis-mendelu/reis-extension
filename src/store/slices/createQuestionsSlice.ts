@@ -24,6 +24,12 @@ export interface QuestionsState {
   answers: Record<string, string>;
   badgeSeen: string[];
   allowed: boolean;
+  /**
+   * Star answers not sent yet: a mis-tapped star can be changed while Novinky
+   * is open, so a star question counts the last choice when it closes
+   * (`flushQuestionAnswers`), not the first tap.
+   */
+  pending?: Record<string, string>;
 }
 
 export interface QuestionsSlice {
@@ -32,6 +38,8 @@ export interface QuestionsSlice {
   refreshQuestions: () => Promise<void>;
   /** An answer button, or a link button (counted, not an answer). */
   answerQuestion: (id: string, key: string) => Promise<void>;
+  /** Novinky closed: send the star answers it held back. */
+  flushQuestionAnswers: () => Promise<void>;
   markQuestionsBadgeSeen: (ids: string[]) => Promise<void>;
 }
 
@@ -69,59 +77,99 @@ async function merge<T>(key: string, fallback: T, fn: (saved: T) => T): Promise<
 
 const consent = () => hasDataConsent('technicalAndInteraction').catch(() => false);
 
-export const createQuestionsSlice: AppSlice<QuestionsSlice> = (set, get) => ({
-  questions: { status: 'loading', list: [], answers: {}, badgeSeen: [], allowed: false },
+export const createQuestionsSlice: AppSlice<QuestionsSlice> = (set, get) => {
+  const commitAnswer = makeCommit(set, get);
+  return {
+    questions: { status: 'loading', list: [], answers: {}, badgeSeen: [], allowed: false },
 
-  loadQuestions: async () => {
-    const [list, answers, badgeSeen, allowed] = await Promise.all([
-      read<Question[]>(CACHE_KEY, []),
-      read<Record<string, string>>(ANSWERS_KEY, {}),
-      read<string[]>(BADGE_KEY, []),
-      consent(),
-    ]);
-    set({
-      questions: {
-        ...get().questions,
-        status: 'ready',
-        list,
-        // Answers given this session before the disk was read are kept.
-        answers: { ...answers, ...get().questions.answers },
-        badgeSeen,
-        allowed,
-      },
-    });
-    await get().refreshQuestions();
-  },
+    loadQuestions: async () => {
+      const [list, answers, badgeSeen, allowed] = await Promise.all([
+        read<Question[]>(CACHE_KEY, []),
+        read<Record<string, string>>(ANSWERS_KEY, {}),
+        read<string[]>(BADGE_KEY, []),
+        consent(),
+      ]);
+      set({
+        questions: {
+          ...get().questions,
+          status: 'ready',
+          list,
+          // Answers given this session before the disk was read are kept.
+          answers: { ...answers, ...get().questions.answers },
+          badgeSeen,
+          allowed,
+        },
+      });
+      await get().refreshQuestions();
+    },
 
-  refreshQuestions: async () => {
-    // Firefox's switch can change while reIS runs, so every refresh asks again.
-    const [list, allowed] = await Promise.all([fetchQuestions(), consent()]);
-    set({ questions: { ...get().questions, allowed } });
-    // null is "ask again later": the cache survives a failed request.
-    if (list === null) return;
-    set({ questions: { ...get().questions, list } });
-    await write(CACHE_KEY, list);
-  },
+    refreshQuestions: async () => {
+      // Firefox's switch can change while reIS runs, so every refresh asks again.
+      const [list, allowed] = await Promise.all([fetchQuestions(), consent()]);
+      set({ questions: { ...get().questions, allowed } });
+      // null is "ask again later": the cache survives a failed request.
+      if (list === null) return;
+      set({ questions: { ...get().questions, list } });
+      await write(CACHE_KEY, list);
+    },
 
-  answerQuestion: async (id, key) => {
-    const question = get().questions.list.find((q) => q.id === id);
-    const button = question?.buttons.find((b) => b.key === key);
-    if (!button || get().questions.answers[id]) return;
-    // Consent withdrawn since the last refresh: no thanks for an answer that
-    // would not be sent, and the questions go.
-    if (!(await consent())) {
-      set({ questions: { ...get().questions, allowed: false } });
-      return;
-    }
-    if (button.url) {
-      // Seen first, as for an answer: the link opens a browser, which hides
-      // the page and stops the on-screen dwell before it could count.
-      // A link shares the answer claim, so a link tap followed by another
-      // button counts only the first; the presets give a link question one
-      // button, so that cannot happen from the console today.
-      if (await countQuestion(id, 'seen')) await countQuestion(id, key);
-      return;
-    }
+    answerQuestion: async (id, key) => {
+      const question = get().questions.list.find((q) => q.id === id);
+      const button = question?.buttons.find((b) => b.key === key);
+      const pending = get().questions.pending ?? {};
+      if (!button || (get().questions.answers[id] && !pending[id])) return;
+      // Consent withdrawn since the last refresh: no thanks for an answer that
+      // would not be sent, and the questions go.
+      if (!(await consent())) {
+        set({ questions: { ...get().questions, allowed: false } });
+        return;
+      }
+      if (button.url) {
+        // Seen first, as for an answer: the link opens a browser, which hides
+        // the page and stops the on-screen dwell before it could count.
+        // A link shares the answer claim, so a link tap followed by another
+        // button counts only the first; the presets give a link question one
+        // button, so that cannot happen from the console today.
+        if (await countQuestion(id, 'seen')) await countQuestion(id, key);
+        return;
+      }
+      if (question?.display === 'stars') {
+        const q = get().questions;
+        set({
+          questions: {
+            ...q,
+            answers: { ...q.answers, [id]: key },
+            pending: { ...(q.pending ?? {}), [id]: key },
+          },
+        });
+        return;
+      }
+      await commitAnswer(id, key);
+    },
+
+    flushQuestionAnswers: async () => {
+      const pending = get().questions.pending ?? {};
+      if (!Object.keys(pending).length) return;
+      set({ questions: { ...get().questions, pending: {} } });
+      await Promise.all(Object.entries(pending).map(([id, key]) => commitAnswer(id, key)));
+    },
+
+    markQuestionsBadgeSeen: async (ids) => {
+      const seen = get().questions.badgeSeen;
+      const fresh = ids.filter((id) => !seen.includes(id));
+      if (!fresh.length) return;
+      set({ questions: { ...get().questions, badgeSeen: [...seen, ...fresh] } });
+      await merge<string[]>(BADGE_KEY, [], (saved) => [...new Set([...saved, ...fresh])]);
+    },
+  };
+};
+
+/** An answer from the student: shown at once, sent once, saved once it landed. */
+function makeCommit(
+  set: Parameters<AppSlice<QuestionsSlice>>[0],
+  get: Parameters<AppSlice<QuestionsSlice>>[1]
+) {
+  return async (id: string, key: string) => {
     const answer = (k: string) =>
       set({ questions: { ...get().questions, answers: { ...get().questions.answers, [id]: k } } });
     answer(key);
@@ -137,13 +185,5 @@ export const createQuestionsSlice: AppSlice<QuestionsSlice> = (set, get) => ({
       if (!(await countQuestion(id, key))) return;
       await merge<Record<string, string>>(ANSWERS_KEY, {}, (saved) => ({ ...saved, [id]: key }));
     });
-  },
-
-  markQuestionsBadgeSeen: async (ids) => {
-    const seen = get().questions.badgeSeen;
-    const fresh = ids.filter((id) => !seen.includes(id));
-    if (!fresh.length) return;
-    set({ questions: { ...get().questions, badgeSeen: [...seen, ...fresh] } });
-    await merge<string[]>(BADGE_KEY, [], (saved) => [...new Set([...saved, ...fresh])]);
-  },
-});
+  };
+}

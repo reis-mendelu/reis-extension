@@ -1543,6 +1543,15 @@
   },
   "questions": {
     "thanks": "Díky za odpověď: {answer}",
-    "linkCopied": "Odkaz zkopírován, pošli ho dál."
+    "linkCopied": "Odkaz zkopírován, pošli ho dál.",
+    "starsOf": "{n} z {max}",
+    "thanksStars": "Díky za hodnocení!",
+    "ratingTitle": "Hodnocení {n}/{max}",
+    "whyOpen": "Napsat, co se ti nelíbí",
+    "whyLabel": "Co se ti nelíbí",
+    "whyPlaceholder": "Co bychom měli zlepšit?",
+    "whySend": "Odeslat",
+    "whySent": "Díky, přečteme si to.",
+    "whyFailed": "Nepodařilo se odeslat. Zkus to prosím znovu."
   }
 }

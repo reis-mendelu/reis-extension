@@ -38,6 +38,7 @@ const RowSchema = z.object({
   faculties: z.array(z.string()).nullable(),
   // An icon this build does not know falls back to the question mark.
   icon: z.string().nullish().catch(null),
+  display: z.string().nullish().catch(null),
 });
 
 /**
@@ -50,7 +51,7 @@ export async function fetchQuestions(): Promise<Question[] | null> {
     const { data, error } = await supabase
       .from('reis_questions')
       .select(
-        'id, prompt_cz, prompt_en, note_cz, note_en, buttons, starts_at, ends_at, faculties, icon'
+        'id, prompt_cz, prompt_en, note_cz, note_en, buttons, starts_at, ends_at, faculties, icon, display'
       )
       .order('starts_at', { ascending: false });
     if (error || !Array.isArray(data)) {
@@ -77,6 +78,7 @@ export async function fetchQuestions(): Promise<Question[] | null> {
           endsAt: q.ends_at,
           faculties: q.faculties,
           icon: q.icon === 'google_play' ? q.icon : null,
+          display: q.display === 'stars' ? q.display : null,
         },
       ];
     });

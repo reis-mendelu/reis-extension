@@ -71,6 +71,9 @@ create table if not exists public.reis_questions (
 -- draw themselves: 'google_play' for 5.5.0's "reIS je teď na Google Play".
 alter table public.reis_questions add column if not exists icon text
   check (icon is null or icon in ('google_play'));
+-- How a 1–5 scale is drawn: 'stars' like a Google Play rating; null = buttons.
+alter table public.reis_questions add column if not exists display text
+  check (display is null or display in ('stars'));
 
 comment on table public.reis_questions is
   'Ano/Ne, 1–5 or link questions shown in Novinky by builds from 5.5.0 on. Counts: reis_question_counts.';

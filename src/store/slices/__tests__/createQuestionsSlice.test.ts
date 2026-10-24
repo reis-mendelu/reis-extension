@@ -183,4 +183,42 @@ describe('createQuestionsSlice', () => {
     await again().loadQuestions();
     expect(again().questions.badgeSeen).toEqual(['q1']);
   });
+
+  // Dominik, 2026-10-24: a mis-tapped star can be changed while Novinky is
+  // open. Nothing is counted until it closes, then the last choice once.
+  describe('a star question', () => {
+    const stars: Question = {
+      ...question,
+      id: 's1',
+      display: 'stars',
+      buttons: ['1', '2', '3', '4', '5'].map((k) => ({ key: k, cz: k, en: k })),
+    };
+    beforeEach(() => fetchQuestions.mockResolvedValue([stars]));
+
+    it('can be changed until Novinky closes, then counts the last choice once', async () => {
+      const get = makeSlice();
+      await get().loadQuestions();
+      await get().answerQuestion('s1', '4');
+      await get().answerQuestion('s1', '2');
+      expect(get().questions.answers.s1).toBe('2');
+      expect(countQuestion).not.toHaveBeenCalled();
+
+      await get().flushQuestionAnswers();
+      expect(countQuestion.mock.calls).toEqual([
+        ['s1', 'seen'],
+        ['s1', '2'],
+      ]);
+      expect(disk.get('question_answers')).toEqual({ s1: '2' });
+
+      await get().answerQuestion('s1', '5');
+      expect(get().questions.answers.s1).toBe('2');
+    });
+
+    it('sends nothing on close when nothing was tapped', async () => {
+      const get = makeSlice();
+      await get().loadQuestions();
+      await get().flushQuestionAnswers();
+      expect(countQuestion).not.toHaveBeenCalled();
+    });
+  });
 });

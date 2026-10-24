@@ -84,6 +84,21 @@ describe('a console question on the phone and iPad (NotificationsSheet)', () => 
     await waitFor(() => expect(useAppStore.getState().questions.badgeSeen).toEqual(['sat']));
   });
 
+  // A star rating can be changed while Novinky is open; closing it sends the
+  // last choice, once.
+  it('counts a star rating when Novinky closes, with the last star tapped', async () => {
+    state({ list: [{ ...scale, display: 'stars' }] });
+    const { unmount } = render(<NotificationsSheet onClose={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: '5 z 5' }));
+    fireEvent.click(screen.getByRole('button', { name: '3 z 5' }));
+    await waitFor(() => expect(useAppStore.getState().questions.answers).toEqual({ sat: '3' }));
+    expect(countQuestion).not.toHaveBeenCalledWith('sat', '5');
+    expect(countQuestion).not.toHaveBeenCalledWith('sat', '3');
+    unmount();
+    await waitFor(() => expect(countQuestion).toHaveBeenCalledWith('sat', '3'));
+    expect(countQuestion).not.toHaveBeenCalledWith('sat', '5');
+  });
+
   // Firefox with technical data off: not asked at all.
   it('is not asked without consent', () => {
     state({ allowed: false });
