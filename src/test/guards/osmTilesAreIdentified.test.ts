@@ -87,4 +87,25 @@ describe('OSM tile requests are identified on every platform', () => {
     // permission string in front of an AMO reviewer and buy nothing.
     expect(cfg).toContain('manifestVersion === 3');
   });
+
+  // Firefox (MV2) has no declarativeNetRequest, so its map went blocked from
+  // #329 until a student reported it (suggestion 34, 2026-10-20). Its half is a
+  // blocking webRequest listener in the background page, live once the student
+  // grants the OPTIONAL tile host from the in-map banner — optional so that the
+  // update does not stall every Firefox install behind a permission prompt.
+  it('identifies Firefox tiles with the same string, from the background page', async () => {
+    const { OSM_TILE_IDENTITY } = await import('../../utils/osmTileIdentity');
+    const cap = readFileSync(join(root, 'capacitor.config.ts'), 'utf-8');
+    expect(cap).toContain(`appendUserAgent: '${OSM_TILE_IDENTITY}'`);
+    const rules = readFileSync(join(root, RULES), 'utf-8');
+    expect(rules).toContain(`"value": "${OSM_TILE_IDENTITY}"`);
+
+    const bg = readFileSync(join(root, 'src/entrypoints/background.ts'), 'utf-8');
+    expect(bg).toContain('onBeforeSendHeaders');
+    expect(bg).toContain('identifyTileRequest');
+
+    const cfg = readFileSync(join(root, 'wxt.config.ts'), 'utf-8');
+    expect(cfg).toContain('webRequestBlocking');
+    expect(cfg).toContain('optional_permissions');
+  });
 });

@@ -28,6 +28,8 @@ export interface Odevzdavarna {
   points?: string;
   /** The IS period the box belongs to — the sync reads two. */
   obdobi?: string;
+  /** The teacher's "Pokyny" for the box, plain text; absent when there are none. */
+  instructions?: string;
 }
 
 /** IS's list of a period's boxes — where a box with no upload link of its own goes. */
@@ -113,6 +115,8 @@ export async function fetchOdevzdavarny(
       obdobi,
     };
     if (cz.points) box.points = cz.points;
+    // The teacher's own words, identical on both pages, so the Czech row's.
+    if (cz.instructions) box.instructions = cz.instructions;
 
     // One box, one row. The real pages never list a box twice, but if IS ever
     // keeps an open box in both tables, the first (open) row wins and borrows

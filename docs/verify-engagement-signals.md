@@ -1,7 +1,7 @@
 # Verifying the engagement signals
 
 The three feature counters and the per-event map views
-(`supabase/migrations/20260922120000_engagement_signals.sql`,
+(`supabase/migrations_archive/20260922120000_engagement_signals.sql`,
 `src/api/featureUsage.ts`) cannot be verified against the deployed project:
 proving the write path works there means writing rows to it. They are verified
 against a throwaway local stack instead.
@@ -15,7 +15,11 @@ are signed with a secret that exists only inside the container.
 docker run -d --name reis-sqlcheck -e POSTGRES_PASSWORD=pw -p 55433:5432 postgres:15
 ```
 
-`supabase/migrations/` is **not** replayable from scratch — several files were
+> Since 2026-10-16 this stub recipe is no longer needed: `supabase/migrations/`
+> starts with a baseline dumped from prod, and `npx supabase start` builds the
+> whole database. What follows is how it was done before that.
+
+The old history (now `supabase/migrations_archive/`) is **not** replayable from scratch — several files were
 written against a schema that already existed (`20260907130000_usage_dimensions.sql`
 says so in its first line), so `supabase start` cannot build this database. Create
 the three objects this migration depends on and nothing else:
@@ -200,7 +204,11 @@ no-op — the intended failure mode, not an outage.
 npx supabase db query --linked -f supabase/migrations/<file>.sql
 ```
 
+Superseded: from the first release after 2026-10-17, the release applies
+migrations itself (`ship.yml`) and nothing is applied by hand. See
+`docs/database-migrations.md`.
+
 Use `-f`. Passing the SQL as a positional argument (`"$(cat <file>)"`) makes the
 CLI read a leading `--` comment line as a flag and refuse to run. And never
-`db push`: this directory is a log of hand-applied changes, not a replayable
+`db push` on that history: it was a log of hand-applied changes, not a replayable
 schema, so push has nothing reliable to reconcile against.

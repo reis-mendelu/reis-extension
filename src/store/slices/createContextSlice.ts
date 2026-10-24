@@ -3,6 +3,7 @@ import { getUserParams, isIdentityConfirmed } from '../../utils/userParams';
 import { IndexedDBService } from '../../services/storage';
 import { logError } from '../../utils/reportError';
 import { baseProgramme } from '../../utils/partnerAudience';
+import { switchStudy } from '../../services/identity/switchStudy';
 
 /** Who the student was last time IS said so — the event audience's fallback. */
 const VIEWER_KEY = 'viewer_audience';
@@ -21,6 +22,20 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
   fullName: null,
   userEmail: null,
   contextResolved: false,
+  studies: [],
+  studySwitch: 'idle',
+  switchStudy: async (studium) => {
+    if (get().studySwitch === 'switching') return;
+    set({ studySwitch: 'switching' });
+    try {
+      // On success the app restarts (watchSignedInStudent); staying on
+      // 'switching' until then keeps the old study's screens from looking live.
+      if (!(await switchStudy(studium))) set({ studySwitch: 'failed' });
+    } catch (err) {
+      logError('ContextSlice.switchStudy', err);
+      set({ studySwitch: 'failed' });
+    }
+  },
   loadContext: async () => {
     // getUserParams reads IS, which demo mode blocks. Returning early rather
     // than letting it throw: the rejection surfaced a toast nobody asked for,
@@ -83,6 +98,7 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
           isErasmus: params.isErasmus,
           fullName: params.fullName ?? null,
           userEmail: params.email ?? null,
+          studies: params.studies ?? [],
           // Answered by IS this session (not a persisted record from an earlier
           // one): later re-asks (sync, resume) are free.
           ...(params.facultyLabel && isIdentityConfirmed() ? { contextResolved: true } : {}),

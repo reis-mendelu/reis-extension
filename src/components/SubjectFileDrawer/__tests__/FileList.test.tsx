@@ -268,6 +268,40 @@ describe('FileList: the row being opened', () => {
     await userEvent.click(screen.getByText('Přednáška 09'));
     expect(onViewPdf).not.toHaveBeenCalled();
   });
+
+  /**
+   * A PDF tapped on its row opens in the reader, so it never reaches the
+   * download path's indicator. All it had was the xs spinner — the same quiet
+   * signal #372 replaced on downloads — and on a phone it read as "nothing
+   * happened" for PDFs while PPT/DOCX showed the bar (Task List, 2026-10-20).
+   */
+  it('says so on the row as loudly as a download does: tint, label and bar', () => {
+    const { container } = renderList({ groups: twoDocs, openingLink: DOWNLOAD });
+    const row = screen.getByTestId(`file-row-${DOWNLOAD}`);
+    expect(row.className).toContain('bg-primary/10');
+    expect(within(row).getByText('Otevírám…')).toBeInTheDocument();
+    expect(within(row).queryByText('12. 3. 2026')).not.toBeInTheDocument();
+    expect(container.querySelector('progress.progress-primary')).not.toBeNull();
+  });
+
+  it('does not offer a download of the file it is already fetching', () => {
+    renderList({ groups: twoDocs, openingLink: DOWNLOAD, onDownloadSingle: vi.fn() });
+    expect(screen.getByTestId(`file-download-${DOWNLOAD}`)).toBeDisabled();
+    expect(screen.getByTestId(`file-download-${OTHER}`)).not.toBeDisabled();
+  });
+
+  // The reverse: a row already downloading must not start a reader fetch of
+  // the same file on a tap to its body.
+  it('ignores a tap on a row whose file is downloading', async () => {
+    const onViewPdf = vi.fn();
+    renderList({
+      groups: twoDocs,
+      onViewPdf,
+      downloadingLinks: { [DOWNLOAD]: { loaded: 0, total: null } },
+    });
+    await userEvent.click(screen.getByText('Přednáška 09'));
+    expect(onViewPdf).not.toHaveBeenCalled();
+  });
 });
 
 /**

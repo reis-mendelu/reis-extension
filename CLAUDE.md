@@ -121,11 +121,13 @@ When a task involves IS Mendelu data, a new scraper, or the CDN data shape: read
 ## Local dev, release, and commands
 
 - Local dev against real IS data (`npm run dev:web` at `localhost:3000`) → the `dev-real-data` skill.
-- Releasing (version bump → `test` → `main` → a `vX.Y.Z` tag) → `/release`. The
-  tag drives **iOS only**. The extension is published **separately and by hand**:
-  `gh workflow run publish.yml --ref vX.Y.Z -f tag=vX.Y.Z`, to Chrome and Firefox
-  (Edge is not a target — Edge users install from the CWS). The `push: tags`
-  trigger was removed on purpose: a store submission cannot be recalled.
+- Releasing (version bump + `release-notes/X.Y.Z.cs.txt` → `test` → `main`) →
+  `/release`. Merging the release PR pushes `vX.Y.Z` and, **in the same run**,
+  takes it to all three stores: the App Store (upload and submit for review),
+  Google Play production, and Chrome + Firefox (Edge is not a
+  target). One summary table says what reached each. It has to be one run: a tag
+  pushed with `GITHUB_TOKEN` starts no other workflow. Secrets, the dry run and
+  what it does not do: `docs/release-pipeline.md`.
 - Everything else is in `package.json` scripts.
 - Verifying a UI change (screenshots at 320/390/430 + overflow, collision and contrast assertions) → the `verify-ui` skill. Never judge a UI change from a screenshot alone.
 
@@ -204,6 +206,13 @@ fakes a session **and routes every write to an in-memory store** — publishes
 there never reach Supabase, so never cite them as evidence a write works.
 `dev:web:admin` clears that flag.
 
+### Database migrations
+
+A release applies `supabase/migrations/` to prod itself, before the stores, so
+nobody applies one by hand. A migration is a new file on top, **additive only**
+(old builds run against the new schema for weeks), with no `begin;`/`commit;`.
+Details: `docs/database-migrations.md`.
+
 ## Branches and releasing
 
 `feature branch → test → main`. Never commit directly on `test` or `main`.
@@ -223,7 +232,9 @@ there never reach Supabase, so never cite them as evidence a write works.
   and `format:check` are **repo-wide**, not changed-files, and `nuia:gate` is a
   ratchet — a new `noUncheckedIndexedAccess` error fails even if the count drops.
 - `main` accepts only the `test` → `main` release PR. Merging it pushes the
-  `vX.Y.Z` tag and stops — **no workflow submits to any store**. Use `/release`.
+  `vX.Y.Z` tag, **applies pending migrations to prod** and **submits to all three stores** (`ship.yml`). A submission
+  cannot be recalled, so the release PR (diff, notes, CI, privacy block) is the
+  last gate. Use `/release`.
 - **Do not merge into `test` while a release PR is open.**
 - **Testing against your own data is local.** `npm run preview:real` scrapes
   your IS data, strips other students' identities, builds the production bundle
@@ -306,7 +317,7 @@ file in the same PR** (the `disclosure-drift` Stop hook asks if you forget), the
 stack, file path or session id leaves a device unless the student attaches it to
 a report (item 6 below). There is no error-reporting service, no background
 collection, and no Supabase table or RPC behind one — `error_reports`, `error_groups`, `report_error` and
-`report_error_v2` were all dropped in `supabase/migrations/20260904120000_drop_error_telemetry.sql`.
+`report_error_v2` were all dropped in `supabase/migrations_archive/20260904120000_drop_error_telemetry.sql`.
 
 `logError(context, err, extra?)` (`src/utils/reportError.ts`) is the single
 funnel for non-fatal errors. It writes a local `console.error` with the stack and
@@ -333,25 +344,32 @@ the start of a semester.
 Only these, all disclosed in `docs/privacy-policy-app.md`:
 
 1. **Daily install count** — a random per-install UUID (`services/identity/installId.ts`),
-   plus faculty, base programme code and platform as labels; nothing else derived from the
-   student. Deliberately counts installs, not people. The UUID is stable, so daily rows link
+   plus faculty, base programme code, platform and app version as labels; nothing else derived
+   from the student. Deliberately counts installs, not people. The UUID is stable, so daily rows link
    across days, and the same UUID is on the survey and the feature counters (4), so those rows
-   join per install to faculty, platform and programme. The policy says so; none of it carries
+   join per install to faculty, platform, programme and app version. The policy says so; none of it carries
    a name, student number or IS account.
 2. **Feedback the student typed** — via the `submit_suggestion` RPC (`src/api/suggestions.ts`),
    with screen name, app version, browser and viewport.
-3. **Society event view/click counters** — a post row id and nothing else.
-4. **Three feature counters** (`src/api/featureUsage.ts`, September 2026) — the same random
-   install UUID plus one label from a database-enforced whitelist: `map_dwell_3s`,
-   `eduroam_wifi_configured`, `eduroam_profile_delivered`. Counts installs, not people.
+3. **Society event view/click counters** — a post row id and nothing else. Views are
+   counted once per device (`viewedIds`); clicks too, since PR #566: the device remembers
+   in IndexedDB which ids it already counted (`services/spolky/countedOpens.ts`) and
+   nothing about that is sent.
+4. **Feature counters** (`src/api/featureUsage.ts`) — the same random install UUID plus
+   one label from `FEATURE_SIGNALS`, a database-enforced whitelist pinned by
+   `featureSignalWhitelist.test.ts`. Counts installs, not people.
 5. **Map views per event** (same file) — a society event's row id and *no* identifier at all,
    rolled up per event per day in `event_map_views`, kept clear of the Novinky `view_count`.
+   Also once per device per event ever (same `countedOpens.ts`), so it reads as devices, not taps.
    The server stamps the date; the request carries only the event id.
 
-6. **Report attachments** (`submit_suggestion_v2`, September 2026) — only what the student
+6. **Report attachments** (`submit_suggestion_v3`; v2 for older builds, September 2026) — only what the student
    adds to a report: a screenshot they pick (re-encoded to JPEG on device, no EXIF/GPS) and,
-   if they tick an unticked-by-default box, the cleaned diagnostic log (collected at Send, not
-   listed in the form — the cleaning is what makes it safe to send unread). No install id. Deleted after 90 days or on `done` (pg_cron + a trigger).
+   only if they choose it, the cleaned diagnostic log (collected at Send, not listed in the
+   form — the cleaning is what makes it safe to send unread). On a Chyba the choice is two
+   Send buttons, "Odeslat s technickými údaji" first; on a Nápad or Jiné an unticked box.
+   Never preselect it: a pre-ticked box is not consent (CJEU Planet49), and the policy's
+   legal basis for attachments is consent. No install id. Kept 2 years (the daily pg_cron prune; the `done` trigger and the 90-day limit were removed in October 2026, and GDPR's storage limitation is why there is still an end); deleted sooner on request. Every report also carries the platform and OS version it was sent from (no device model).
    The guard allows diagnostics to reach Supabase through `src/api/suggestions.ts` only, and
    no Supabase caller may import `utils/diagnostics/`.
 

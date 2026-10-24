@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: 10 October 2026**
+**Last Updated: 22 October 2026**
 
 reIS is a student-built project that simplifies the Mendel University in Brno
 Information System (IS Mendelu). It is a browser extension (Chrome, Edge,
@@ -31,15 +31,17 @@ yourself — see *Report attachments* below.
 <!-- BEGIN generated:flows (npm run privacy:generate) -->
 | what | when | what it carries |
 |---|---|---|
-| Daily count | once a day | a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI) and platform as group labels. The survey and the feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation. |
-| Feedback | you press send | your message, any contact detail you type, the screen name, app version, browser, window size |
-| Report attachments | only what you add to a report, when you press send | a **screenshot you pick** yourself, re-encoded on your device so photo metadata and location are removed; and, **only if you tick the box**, the recent reIS errors and warnings from this session, with link parameters, email addresses, long numbers and coordinates already blanked out, plus platform, OS version, language and sync status. **Not linked to the install identifier.** |
-| In-app survey | you answer | the same random install identifier |
+| Daily count | once a day | a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI), platform and app version (e.g. 5.4.1) as group labels. The feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation. Novinky questions do not. |
+| Feedback | you press send | your message, any contact detail you type, the screen name, app version, browser, window size, platform and OS version (no device model) |
+| Report attachments | only what you add to a report, when you press send | a **screenshot you pick** yourself, re-encoded on your device so photo metadata and location are removed; and, **only if you choose it** (tick the box, or press *Send with technical details* on a bug report), the recent reIS errors and warnings from this session, with link parameters, email addresses, long numbers and coordinates already blanked out, plus platform, OS version, language and sync status. **Not linked to the install identifier.** |
 | Society post view or click | you open one | a post id |
 | Map event opened | you open an event on the campus map | that event's id and nothing else — a counter on the event, with no identifier of yours attached |
+| Novinky question seen or answered | a question from reIS is on your screen in Novinky, or you tap one of its buttons | that question's id and which button you tapped — a counter on the question, with no identifier of yours attached. Your device remembers that it answered; we cannot tell who did |
 | Map used for 3 seconds | at most once a day, after three seconds on the map | the random install identifier and the fixed `map_dwell_3s` label |
 | eduroam network configured | the app itself saves the eduroam network (phone) | the random install identifier and the fixed `eduroam_wifi_configured` label |
 | eduroam profile handed over | a profile is prepared for you to install (Mac, Windows) | the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it |
+| Support question shown | the question whether you would support reIS is on your screen (Novinky) | the random install identifier and the fixed `support_prompt_seen` label |
+| Support question answered | you answer "Yes" to it. Nothing is charged; reIS has no way to take a payment from you | the random install identifier and the fixed `support_prompt_yes` label |
 <!-- END generated:flows -->
 
 Which partner company you are shown, if any, is decided on your device from your
@@ -51,13 +53,18 @@ the usage count and counters follow the technical-data switch in `about:addons`,
 and a report asks for consent when you press send.
 
 Nothing else. Feedback is read by the developers and passed to nobody. Report
-attachments are deleted **90 days** after the report, or as soon as it is
-resolved, whichever comes first.
+attachments are kept for **2 years** after the report, also once it is
+resolved, and then deleted automatically; we delete them sooner when you ask.
 
 **Your network address is not recorded** — this version writes straight to the
 database, which cannot see your connection. Versions released before September
 2026 store a salted hash of it for up to an hour to limit the form; never the
 address, never beside your message. That component goes when those versions do.
+
+Extension versions up to 5.4.1 also show a satisfaction rating once a semester.
+If you rate, your rating is sent with the same random install identifier as the
+daily count. Current versions ask in Novinky instead, without the identifier, and
+the rating goes when those versions do.
 
 *Lawful basis: legitimate interest, GDPR Art. 6(1)(f) — knowing the project is
 used, and fixing what you report. Report attachments: your consent, Art. 6(1)(a),
@@ -70,6 +77,17 @@ university's own system and the only recipient of it. **jsDelivr** serves public
 course-difficulty statistics; no identifier is sent, though the set of subjects
 requested does reveal which courses you take. **Supabase** hosts reIS's own
 database — infrastructure, not a recipient doing anything of its own.
+
+**WebISKAM** (the university's accommodation and canteen system) receives, only
+in the mobile app (Android, iPhone, iPad) and only when you ask for your ISIC
+balance or a top-up, the MENDELU sign-in you make on MENDELU's own page — your
+password goes to MENDELU, never to reIS. reIS keeps the sign-in encrypted on your
+device; while you are signed in the device's own web-cookie store holds it too,
+like any browser, and signing out deletes both. The balance is shown, never
+stored. A top-up sends WebISKAM the amount you typed and whether you chose card or
+Google Pay, so it can create the payment; it then opens **GoPay**'s payment page
+in your device's browser view, and your card or Google Pay details go to GoPay
+and never to reIS.
 
 We do **not** sell or trade your personal information, and transfer it to no one
 else.
@@ -98,9 +116,11 @@ and we will delete it; the daily-count rows hold nothing that identifies you.
 ## Changes
 
 We may update this policy; changes appear here with a new date. Google Drive
-backup, Outlook calendar sync, WebISKAM, library study-room booking, AI syllabus
-comparison and automatic error reporting have all been removed from reIS, along
-with everything they sent.
+backup, Outlook calendar sync, the earlier WebISKAM integration (dorm, meals and
+the rest), library study-room booking, AI syllabus comparison and automatic error
+reporting have all been removed from reIS, along with everything they sent. In
+October 2026 WebISKAM came back for one thing only — the ISIC balance and its
+top-up, described above.
 
 ## Contact
 

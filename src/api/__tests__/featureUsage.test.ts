@@ -28,14 +28,19 @@ vi.mock('../../utils/harnessEnabled', () => ({
 }));
 
 import {
+  __resetCountedOpensForTests,
+  __forgetCountedOpensMemoryForTests,
+} from '../../services/spolky/countedOpens';
+import {
   trackFeatureSignal,
   trackMapEventView,
   __resetFeatureSignalsForTests,
 } from '../featureUsage';
 
 describe('featureUsage', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     __resetFeatureSignalsForTests();
+    await __resetCountedOpensForTests();
     isHarnessEnabled.mockReturnValue(false);
     hasDataConsent.mockResolvedValue(true);
   });
@@ -84,6 +89,17 @@ describe('featureUsage', () => {
     await trackFeatureSignal('map_dwell_3s');
 
     expect(rpc).toHaveBeenCalledTimes(2);
+  });
+
+  // The support question remembers a "yes" only once it has been counted, so
+  // a failed write leaves it to be asked (and counted) on a later launch.
+  it('reports a failed write as not delivered, and anything else as settled', async () => {
+    rpc.mockResolvedValueOnce({ error: { message: 'network' } });
+    await expect(trackFeatureSignal('support_prompt_yes')).resolves.toBe(false);
+    await expect(trackFeatureSignal('support_prompt_yes')).resolves.toBe(true);
+    // Declined consent is the student's answer, not a failure to retry.
+    hasDataConsent.mockResolvedValue(false);
+    await expect(trackFeatureSignal('support_prompt_seen')).resolves.toBe(true);
   });
 
   it('writes nothing in demo mode', async () => {
@@ -155,5 +171,33 @@ describe('featureUsage', () => {
     hasDataConsent.mockResolvedValue(true);
     await trackMapEventView('event-1');
     expect(rpc).toHaveBeenCalledTimes(1);
+  });
+  // "Opened" means this device opened the event, not that it did so this
+  // session: the session latch resets on every launch, this one does not.
+  it('counts a device once per event, even after a restart', async () => {
+    await trackMapEventView('event-1');
+    __resetFeatureSignalsForTests();
+    __forgetCountedOpensMemoryForTests();
+    await trackMapEventView('event-1');
+
+    expect(rpc).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves the device free to count again when the write fails', async () => {
+    rpc.mockResolvedValueOnce({ error: { message: 'down' } });
+    await trackMapEventView('event-1');
+    await trackMapEventView('event-1');
+
+    expect(rpc).toHaveBeenCalledTimes(2);
+  });
+
+  it('writes nothing for an event this device was already counted for, consent or not', async () => {
+    await trackMapEventView('event-1');
+    __resetFeatureSignalsForTests();
+    rpc.mockClear();
+    hasDataConsent.mockResolvedValue(false);
+    await trackMapEventView('event-1');
+
+    expect(rpc).not.toHaveBeenCalled();
   });
 });

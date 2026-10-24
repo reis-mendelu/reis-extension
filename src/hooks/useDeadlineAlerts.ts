@@ -2,16 +2,20 @@ import { useCallback, useMemo } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { parseDate } from '../utils/date';
 import { courseDisplayName } from '../utils/courseDisplayName';
-import { boxCourseCode } from '../utils/submissionBoxes';
+import { boxCourseCode, boxState } from '../utils/submissionBoxes';
+import { newPointsAlerts } from '../utils/zaznamnik/newPointsAlerts';
 
 export interface DeadlineAlert {
   id: string;
-  type: 'exam-reg-opens' | 'exam-reg' | 'assignment' | 'cvicny-test';
+  type: 'exam-reg-opens' | 'exam-reg' | 'assignment' | 'cvicny-test' | 'zaznamnik-points';
   title: string;
   body: string;
   deadline?: Date;
   hoursUntil?: number;
   link?: string;
+  /** Set on a row that opens a subject in reIS rather than a page in IS. */
+  courseCode?: string;
+  courseId?: string;
 }
 
 function parseCzDateTime(s: string): Date | null {
@@ -36,6 +40,7 @@ export function useDeadlineAlerts() {
   const seenIds = useAppStore((s) => s.notifications.seenDeadlineAlertIds);
   const markDeadlineAlertsSeen = useAppStore((s) => s.markDeadlineAlertsSeen);
   const pulseNow = useAppStore((s) => s.now);
+  const newPoints = useAppStore((s) => s.zaznamnikNewPoints);
 
   const markAllSeen = useCallback(
     (ids: string[]) => {
@@ -105,7 +110,9 @@ export function useDeadlineAlerts() {
 
     for (const a of odevzdavarny) {
       // The list also holds boxes IS will not take files for ("Kam nemohu").
-      if (a.fileCount > 0 || !a.deadline || a.isOpen === false) continue;
+      // Files alone do not silence it: until the student confirms in IS, the
+      // box is not handed in (see boxState).
+      if (boxState(a) === 'confirmed' || !a.deadline || a.isOpen === false) continue;
       const deadline = parseCzDateTime(a.deadline);
       if (!deadline) continue;
       const h = (deadline.getTime() - now) / H;
@@ -135,8 +142,9 @@ export function useDeadlineAlerts() {
     }
 
     result.sort((a, b) => (a.hoursUntil ?? Infinity) - (b.hoursUntil ?? Infinity));
-    return result;
-  }, [exams, odevzdavarny, cvicneTests, language, pulseNow, subjects, nicknames]);
+    // Points first: they already happened, the deadlines are still ahead.
+    return [...newPointsAlerts(newPoints, subjects, nicknames, isEn), ...result];
+  }, [exams, odevzdavarny, cvicneTests, language, pulseNow, subjects, nicknames, newPoints]);
 
   const unseenCount = useMemo(
     () => alerts.filter((a) => !seenIds.has(a.id)).length,

@@ -34,6 +34,25 @@ describe('MapEventsSection', () => {
     expect(screen.getByText('Karaoke Night')).toBeTruthy();
   });
 
+  // Sprint 13: the buckets are a rolling window from today, not Mon–Sun, so
+  // "Tento týden" put next Wednesday under this week. The headings say what
+  // the window is instead (Dominik, 2026-10-16).
+  it.each([
+    ['cz', 'Příštích 7 dní', 'Za 1–2 týdny'],
+    ['en', 'Next 7 days', 'In 1–2 weeks'],
+  ] as const)('names the rolling windows for what they are (%s)', (language, first, second) => {
+    useAppStore.setState({
+      language,
+      mapEvents: [
+        { ...MOCK_MAP_EVENTS[0]!, id: 'soon', title: 'Soon', date: isoDaysFromNow(5) },
+        { ...MOCK_MAP_EVENTS[0]!, id: 'after', title: 'After', date: isoDaysFromNow(9) },
+      ],
+    });
+    render(<MapEventsSection />);
+    expect(screen.getByText(first)).toBeTruthy();
+    expect(screen.getByText(second)).toBeTruthy();
+  });
+
   it('clicking a row selects the event in the store', async () => {
     render(<MapEventsSection />);
     await userEvent.click(screen.getByText('PEF Kvíz'));

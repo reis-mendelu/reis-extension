@@ -72,16 +72,19 @@ export function RegisteredCard({
         aria-expanded={showDetails}
         aria-label={t('mobile.exams.myTermDetailsAria')}
         onClick={() => setShowDetails((v) => !v)}
-        className="flex w-fit items-center"
+        className="flex w-full items-center"
       >
-        <MoreChip open={showDetails} />
+        <MoreChip open={showDetails} wide />
       </button>
       {showDetails && <TermDetails term={mine} section={row.section} isRegHere now={now} />}
+      {/* The other terms open nothing: their form and length are the ones the
+          "Více" above already shows. */}
       {others.map((term) => (
         <TermRow
           key={term.id}
           term={term}
           section={row.section}
+          showDetails={false}
           now={now}
           isProcessing={isProcessing}
           onRegister={onRegister}

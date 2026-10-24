@@ -13,6 +13,7 @@ import { SocietyAccountsPanel } from './SocietyAccountsPanel';
 import { SocietiesPanel } from './SocietiesPanel';
 import { ChangeMyPasswordForm } from './ChangeMyPasswordForm';
 import { AdminStatsPanel } from './AdminStatsPanel';
+import { AdminQuestionsPanel } from './AdminQuestionsPanel';
 
 /**
  * The admin surface, reached only through "Spravovat spolky" in the profile
@@ -34,8 +35,12 @@ export function AdminConsole() {
   const isReisAdmin = useAppStore((s) => s.adminRole === 'reis_admin');
   const unread = useAppStore((s) => s.suggestionsUnread);
   const loadAdminStats = useAppStore((s) => s.loadAdminStats);
-  const [pane, setPane] = useState<'events' | 'suggestions' | 'accounts' | 'stats'>('events');
-  const fullWidth = pane === 'stats';
+  const loadAdminQuestions = useAppStore((s) => s.loadAdminQuestions);
+  const [pane, setPane] = useState<'events' | 'suggestions' | 'accounts' | 'stats' | 'questions'>(
+    'events'
+  );
+  // Statistiky and Otázky are pages: the map answers none of their questions.
+  const fullWidth = pane === 'stats' || pane === 'questions';
   const { t } = useTranslation();
 
   if (!session) {
@@ -114,6 +119,20 @@ export function AdminConsole() {
                 {t('admin.statsTab')}
               </button>
             )}
+            {isReisAdmin && (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={pane === 'questions'}
+                onClick={() => {
+                  void loadAdminQuestions();
+                  setPane('questions');
+                }}
+                className={`tab flex-1 ${pane === 'questions' ? 'tab-active font-semibold' : 'text-base-content'}`}
+              >
+                {t('admin.questions.tab')}
+              </button>
+            )}
             <button
               type="button"
               role="tab"
@@ -127,6 +146,11 @@ export function AdminConsole() {
           <div className="min-h-0 flex-1 overflow-y-auto p-2">
             {isReisAdmin && pane === 'suggestions' && <SuggestionsInbox />}
             {isReisAdmin && pane === 'stats' && <AdminStatsPanel />}
+            {isReisAdmin && pane === 'questions' && (
+              <div className="mx-auto w-full max-w-2xl">
+                <AdminQuestionsPanel />
+              </div>
+            )}
             {pane === 'accounts' && (
               <div className="flex flex-col gap-6">
                 {isReisAdmin && <SocietiesPanel />}

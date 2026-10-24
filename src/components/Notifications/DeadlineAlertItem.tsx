@@ -1,4 +1,4 @@
-import { BookOpen, Clock, ExternalLink } from 'lucide-react';
+import { BookOpen, ClipboardList, Clock, ExternalLink } from 'lucide-react';
 import type { DeadlineAlert } from '../../hooks/useDeadlineAlerts';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -7,6 +7,7 @@ const TYPE_KEY: Record<DeadlineAlert['type'], string> = {
   'exam-reg': 'deadlines.examReg',
   assignment: 'deadlines.assignment',
   'cvicny-test': 'deadlines.cvicnyTest',
+  'zaznamnik-points': 'zaznamnik.newPoints',
 };
 
 /** The slot's tint IS the urgency — green for a test that can be taken
@@ -16,6 +17,7 @@ const TINT: Record<DeadlineAlert['type'], string> = {
   'exam-reg': 'bg-warning/10 text-warning',
   assignment: 'bg-warning/10 text-warning',
   'cvicny-test': 'bg-success/10 text-success',
+  'zaznamnik-points': 'bg-success/10 text-success',
 };
 
 /**
@@ -39,7 +41,14 @@ const TINT: Record<DeadlineAlert['type'], string> = {
  * icon in the corner — well under the 44px touch minimum, on the surface most
  * likely to be used one-handed on a phone.
  */
-export function DeadlineAlertItem({ alert }: { alert: DeadlineAlert }) {
+export function DeadlineAlertItem({
+  alert,
+  onOpenSubject,
+}: {
+  alert: DeadlineAlert;
+  /** A row about a subject (new záznamník points) opens it in reIS. */
+  onOpenSubject?: (alert: DeadlineAlert) => void;
+}) {
   const { t } = useTranslation();
 
   const h = alert.hoursUntil !== undefined ? Math.floor(alert.hoursUntil) : null;
@@ -57,7 +66,13 @@ export function DeadlineAlertItem({ alert }: { alert: DeadlineAlert }) {
       <span
         className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${TINT[alert.type]}`}
       >
-        {isCvicny ? <BookOpen size={16} /> : <Clock size={16} />}
+        {alert.type === 'zaznamnik-points' ? (
+          <ClipboardList size={16} />
+        ) : isCvicny ? (
+          <BookOpen size={16} />
+        ) : (
+          <Clock size={16} />
+        )}
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="truncate text-md font-bold text-base-content">{alert.title}</span>
@@ -85,6 +100,18 @@ export function DeadlineAlertItem({ alert }: { alert: DeadlineAlert }) {
 
   const shell =
     'flex items-center gap-2.5 rounded-2xl border border-base-300 bg-base-100 px-3.5 py-2.5';
+
+  if (alert.courseCode && onOpenSubject) {
+    return (
+      <button
+        type="button"
+        onClick={() => onOpenSubject(alert)}
+        className={`${shell} w-full text-left`}
+      >
+        {body}
+      </button>
+    );
+  }
 
   if (!alert.link) return <div className={shell}>{body}</div>;
 

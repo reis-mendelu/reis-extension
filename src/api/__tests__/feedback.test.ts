@@ -3,7 +3,8 @@ import { useAppStore } from '../../store/useAppStore';
 
 // Hoisted so the vi.mock factories below (which vitest hoists above these
 // imports) can close over it without a temporal-dead-zone error.
-const { hasDataConsent, rpc, getUserParams, isHarnessEnabled } = vi.hoisted(() => ({
+const { hasDataConsent, rpc, getUserParams, isHarnessEnabled, getAppVersion } = vi.hoisted(() => ({
+  getAppVersion: vi.fn<() => string>(() => '5.4.1'),
   isHarnessEnabled: vi.fn<(...args: unknown[]) => boolean>(() => false),
   hasDataConsent: vi.fn<(...args: unknown[]) => Promise<boolean>>(async () => true),
   rpc: vi.fn<(...args: unknown[]) => Promise<{ error: { message: string } | null }>>(async () => ({
@@ -12,9 +13,17 @@ const { hasDataConsent, rpc, getUserParams, isHarnessEnabled } = vi.hoisted(() =
   // Real shape: `facultyId` is always '' (see src/utils/userParams/fetchers.ts);
   // the faculty acronym ('PEF', 'AF', ...) lives in `facultyLabel`, optional
   // exactly like the real UserParams type.
+  // `studentId` is what says IS has named a student on this device; it is
+  // read as a gate and never sent.
   getUserParams: vi.fn<
-    () => Promise<{ facultyLabel?: string; facultyId: string; studyProgram?: string }>
+    () => Promise<{
+      studentId?: string;
+      facultyLabel?: string;
+      facultyId: string;
+      studyProgram?: string;
+    } | null>
   >(async () => ({
+    studentId: '123456',
     facultyLabel: 'PEF',
     facultyId: '',
   })),
@@ -32,6 +41,9 @@ vi.mock('../../platform', () => ({
 vi.mock('../../utils/userParams', () => ({
   getUserParams,
 }));
+vi.mock('../../utils/appIdentity', () => ({
+  getAppVersion: () => getAppVersion(),
+}));
 // A real student's build, unless a test says otherwise. Mocked rather than
 // stubbed through `import.meta.env`, because vitest itself runs with DEV true —
 // so without this every test in this file would exercise the harness branch and
@@ -45,7 +57,7 @@ vi.mock('../../utils/harnessEnabled', () => ({
   isHarnessEnabled: (...a: unknown[]) => isHarnessEnabled(...a),
 }));
 
-import { submitFeedback, trackDailyUsage, __resetUsageTrackedForTests } from '../feedback';
+import { trackDailyUsage, __resetUsageTrackedForTests } from '../feedback';
 
 describe('feedback', () => {
   beforeEach(() => {
@@ -57,30 +69,6 @@ describe('feedback', () => {
   afterEach(() => {
     vi.clearAllMocks();
     useAppStore.setState({ demoMode: false });
-  });
-
-  // The demo student is fabricated, so a demo submission would pollute the real
-  // feedback table — the same reasoning that already guards trackDailyUsage,
-  // applied to the other write it shares a file with.
-  it('does not submit feedback in demo mode', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    useAppStore.setState({ demoMode: true });
-
-    await expect(submitFeedback('nps', '9', 'ZS2026')).resolves.toBe(false);
-
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
-
-  // The desktop NPS prompt is a row of plain buttons, so anything that clicks
-  // through the dev webapp — a verify-ui --click, an exploratory Playwright
-  // run — filed a real rating against production. Caught on 2026-09-24 by a
-  // click-through that blocked the POST before it left.
-  it('does not submit feedback from a development or preview build', async () => {
-    isHarnessEnabled.mockReturnValue(true);
-
-    await expect(submitFeedback('nps', '9', 'ZS2026')).resolves.toBe(false);
-
-    expect(rpc).not.toHaveBeenCalled();
   });
 
   it('does not track usage in demo mode', async () => {
@@ -102,6 +90,7 @@ describe('feedback', () => {
       p_faculty: 'PEF',
       p_platform: 'extension',
       p_programme: null,
+      p_app_version: '5.4.1',
     });
   });
 
@@ -109,6 +98,7 @@ describe('feedback', () => {
   // the specialisation suffix, and never sent with anything else.
   it('sends the base programme code beside the faculty', async () => {
     getUserParams.mockResolvedValueOnce({
+      studentId: '123456',
       facultyLabel: 'PEF',
       facultyId: '',
       studyProgram: 'B-OI-ZBOI',
@@ -121,14 +111,29 @@ describe('feedback', () => {
       p_faculty: 'PEF',
       p_platform: 'extension',
       p_programme: 'B-OI',
+      p_app_version: '5.4.1',
     });
+  });
+
+  // The release a device runs is one more GROUP label: every install of a
+  // release reports the same string, so it says which build, not who.
+  // '0.0.0' is getAppVersion's "unknown" fallback, never a shipped release.
+  it('sends null instead of the unknown-version fallback', async () => {
+    getAppVersion.mockReturnValueOnce('0.0.0');
+
+    await trackDailyUsage();
+
+    expect(rpc).toHaveBeenCalledWith(
+      'track_daily_usage',
+      expect.objectContaining({ p_app_version: null })
+    );
   });
 
   // getUserParams()?.facultyId is always '' (see fetchers.ts); the acronym
   // lives in facultyLabel. A student with no label yet (params not hydrated,
   // or the field genuinely missing) must send NULL, never ''.
   it('sends a null faculty when facultyLabel is missing', async () => {
-    getUserParams.mockResolvedValueOnce({ facultyId: '' });
+    getUserParams.mockResolvedValueOnce({ studentId: '123456', facultyId: '' });
 
     await trackDailyUsage();
 
@@ -137,6 +142,7 @@ describe('feedback', () => {
       p_faculty: null,
       p_platform: 'extension',
       p_programme: null,
+      p_app_version: '5.4.1',
     });
   });
 
@@ -170,40 +176,74 @@ describe('feedback', () => {
   // `initializeStore()` runs from a bare `useEffect(..., [])` under
   // <StrictMode>, which double-invokes effects in development. That turned one
   // boot into two RPCs and left `open_count` at roughly twice the real number.
-  // One write per page session, so a boot is a boot whatever the build does.
-  it('writes at most once per page session', async () => {
+  // The app's resume handler calls this too, on every return to the app, so a
+  // session writes once per day it is used, however often it is reopened.
+  it('writes at most once per day in a session', async () => {
     await trackDailyUsage();
     await trackDailyUsage();
 
     expect(rpc).toHaveBeenCalledTimes(1);
   });
+
+  // The phone app lives in the background for days, and only a cold start
+  // used to count, so a student who switched back to reIS every morning was
+  // counted on the day iOS last killed it. A new day in the same session
+  // counts again. The day is Prague's, as the server stamps usage_date:
+  // 22:30 UTC is already tomorrow in Brno in October.
+  describe('across midnight in Prague', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('writes again once the Prague day changes, even when the UTC day has not', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-10-13T21:30:00Z')); // 23:30 in Prague
+      await trackDailyUsage();
+      vi.setSystemTime(new Date('2026-10-13T21:59:00Z')); // 23:59, same day
+      await trackDailyUsage();
+      vi.setSystemTime(new Date('2026-10-13T22:30:00Z')); // 00:30 on the 14th
+      await trackDailyUsage();
+
+      expect(rpc).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  // The phone counts a device only after the IS login; the extension ran for
+  // anyone on is.mendelu.cz, and 47 devices that never named a student (staff,
+  // mostly seen once) sat in the console's totals. No student on the device,
+  // no row. The student number is the gate and is never part of the payload.
+  it('writes nothing until IS has named a student on this device', async () => {
+    getUserParams.mockResolvedValueOnce(null);
+    getUserParams.mockResolvedValueOnce({ studentId: '', facultyId: '', facultyLabel: 'PEF' });
+
+    await trackDailyUsage();
+    await trackDailyUsage();
+    expect(rpc).not.toHaveBeenCalled();
+
+    // Not latched: once IS names the student, the same day still counts.
+    await trackDailyUsage();
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(rpc.mock.calls[0])).not.toContain('123456');
+  });
 });
 
 /**
- * These two writes are the last places student identity reached Supabase.
- * They now identify the DEVICE, so neither call should be able to see, take,
- * or transmit anything about the student.
+ * This write (and the retired NPS one beside it) was the last place student
+ * identity reached Supabase. It now identifies the DEVICE, so it should not be
+ * able to see, take, or transmit anything about the student.
  */
 describe('feedback — no student identity leaves the device', () => {
   it('takes no student identifier as an argument at all', () => {
     // Arity is the guard: a caller cannot pass a student id even by mistake.
     expect(trackDailyUsage.length).toBe(0);
-    // type, value, semester, reason — none of which identify the student.
-    expect(submitFeedback.length).toBe(4);
   });
 
   it('does not count this install on Firefox while the technical-data toggle is off', async () => {
-    // This describe block does not reset the once-per-session memo.
+    // This describe block does not reset the once-per-day memo.
     __resetUsageTrackedForTests();
     hasDataConsent.mockResolvedValue(false);
     await trackDailyUsage();
     expect(hasDataConsent).toHaveBeenCalledWith('technicalAndInteraction');
-    expect(rpc).not.toHaveBeenCalled();
-  });
-
-  it('does not file an NPS rating on Firefox while the technical-data toggle is off', async () => {
-    hasDataConsent.mockResolvedValue(false);
-    await expect(submitFeedback('nps', '9', 'ZS2026')).resolves.toBe(false);
     expect(rpc).not.toHaveBeenCalled();
   });
 });

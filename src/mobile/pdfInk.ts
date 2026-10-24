@@ -2,6 +2,7 @@ import { logError } from '../utils/reportError';
 import {
   enforceCap,
   forget,
+  pdfPath,
   recordOpen,
   recordPositions,
   resolve,
@@ -163,15 +164,17 @@ export async function openPdfWithInk(
   const state = await resolve(deps.fs, key, input.date);
 
   let blob: Blob | null = null;
+  // Stale-if-error: IS is unreachable (or serves a page), but the student has a
+  // copy. An index entry whose PDF is gone is no copy at all.
+  const staleCopy = state === 'stale' && (await deps.fs.exists(pdfPath(key)));
   if (state !== 'fresh') {
     try {
       blob = await input.fetchPdf(input.fileLink);
     } catch (error) {
-      if (state === 'absent') return { kind: 'failed', error };
-      // Stale-if-error: IS is unreachable, but the student has a copy.
+      if (!staleCopy) return { kind: 'failed', error };
       logError('PdfInk.staleIfError', error);
     }
-    if (!blob && state === 'absent') return { kind: 'notPdf' };
+    if (!blob && !staleCopy) return { kind: 'notPdf' };
   }
 
   // From here on every failure is the caller's `failed`: the hook must be
@@ -201,6 +204,11 @@ export async function openPdfWithInk(
     }
     const current = { link: input.fileLink, name: input.name, date: input.date };
     const entries = await buildFileEntries(fileDeps, current, input.files);
+    // buildFileEntries gives a path only to copies fresh for their date, and the
+    // plugin rejects a current file without one (`badArguments`), so the stale
+    // copy has to be handed over here or the student is told it cannot open.
+    const currentEntry = entries.find((e) => e.link === input.fileLink);
+    if (!blob && staleCopy && currentEntry) currentEntry.pdfPath = await deps.fs.uri(pdfPath(key));
     const byLink = new Map(entries.map((e) => [e.link, e]));
     // Only links this subject listed: a key is derived from the link, so an
     // unknown one would land on an index entry nobody can reach.

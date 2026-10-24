@@ -7,6 +7,9 @@ export interface VenueGroup {
   key: string;
   coord: [number, number];
   events: MapEvent[];
+  /** Floor view only: the room's floor level, and whether it is NOT the floor shown. */
+  floorLevel?: number | null;
+  otherFloor?: boolean;
 }
 
 export function parseEventDate(iso: string): Date {

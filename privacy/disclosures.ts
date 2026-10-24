@@ -48,7 +48,7 @@ const INSTALL_ID_APPLE: AppleType = {
 export const FLOWS: Flow[] = [
   {
     id: 'daily_count',
-    what: 'One row per install per day: random install id, faculty, base study-programme code and platform labels.',
+    what: 'One row per install per day: random install id, faculty, base study-programme code, platform and app version labels.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/feedback.ts'],
@@ -57,7 +57,7 @@ export const FLOWS: Flow[] = [
       [
         'Daily count',
         'once a day',
-        'a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI) and platform as group labels. The survey and the feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation.',
+        'a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI), platform and app version (e.g. 5.4.1) as group labels. The feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation. Novinky questions do not.',
       ],
     ],
     stores: {
@@ -69,16 +69,16 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'report',
-    what: 'A report the student writes: type, title, message, optional contact, screen, app version, browser, viewport.',
+    what: 'A report the student writes: type, title, message, optional contact, screen, app version, browser, viewport, and the platform and OS version it was sent from (no device model).',
     when: 'student-action',
     identifier: 'contact',
     files: ['src/api/suggestions.ts'],
-    calls: ['submit_suggestion_v2'],
+    calls: ['submit_suggestion_v3'],
     policyRows: [
       [
         'Feedback',
         'you press send',
-        'your message, any contact detail you type, the screen name, app version, browser, window size',
+        'your message, any contact detail you type, the screen name, app version, browser, window size, platform and OS version (no device model)',
       ],
     ],
     stores: {
@@ -93,16 +93,16 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'report_attachments',
-    what: 'Only what the student adds to a report: a picked screenshot (re-encoded JPEG), and — if ticked — the cleaned error/warning log with environment and sync flags. Kept 90 days or until resolved.',
+    what: 'Only what the student adds to a report: a picked screenshot (re-encoded JPEG), and — only if the student chooses it (a box on an idea, the "Odeslat s technickými údaji" button on a bug) — the cleaned error/warning log with environment and sync flags. Kept 2 years, then deleted automatically; sooner on request.',
     when: 'student-action',
     identifier: 'contact',
     files: ['src/api/suggestions.ts'],
-    calls: ['submit_suggestion_v2'],
+    calls: ['submit_suggestion_v3'],
     policyRows: [
       [
         'Report attachments',
         'only what you add to a report, when you press send',
-        'a **screenshot you pick** yourself, re-encoded on your device so photo metadata and location are removed; and, **only if you tick the box**, the recent reIS errors and warnings from this session, with link parameters, email addresses, long numbers and coordinates already blanked out, plus platform, OS version, language and sync status. **Not linked to the install identifier.**',
+        'a **screenshot you pick** yourself, re-encoded on your device so photo metadata and location are removed; and, **only if you choose it** (tick the box, or press *Send with technical details* on a bug report), the recent reIS errors and warnings from this session, with link parameters, email addresses, long numbers and coordinates already blanked out, plus platform, OS version, language and sync status. **Not linked to the install identifier.**',
       ],
     ],
     stores: {
@@ -119,21 +119,6 @@ export const FLOWS: Flow[] = [
       play: ['PSL_PHOTOS', 'PSL_PERFORMANCE_DIAGNOSTICS', 'PSL_CRASH_LOGS'],
       firefox: ['websiteContent', 'technicalAndInteraction'],
       cws: ['Website content'],
-    },
-  },
-  {
-    id: 'survey',
-    what: 'An NPS answer on the random install id.',
-    when: 'student-action',
-    identifier: 'install_id',
-    files: ['src/api/feedback.ts'],
-    calls: ['submit_feedback'],
-    policyRows: [['In-app survey', 'you answer', 'the same random install identifier']],
-    stores: {
-      apple: [INSTALL_ID_APPLE],
-      play: ['PSL_USER_ACCOUNT'],
-      firefox: ['technicalAndInteraction'],
-      cws: ['User activity'],
     },
   },
   {
@@ -163,8 +148,24 @@ export const FLOWS: Flow[] = [
     stores: { apple: [], play: [], firefox: ['technicalAndInteraction'], cws: [] },
   },
   {
+    id: 'questions',
+    what: 'A per-question, per-day counter of devices that saw a Novinky question and of the button tapped; the question id and the button key, no identifier.',
+    when: 'student-action',
+    identifier: 'none',
+    files: ['src/api/questions.ts'],
+    calls: ['count_question'],
+    policyRows: [
+      [
+        'Novinky question seen or answered',
+        'a question from reIS is on your screen in Novinky, or you tap one of its buttons',
+        "that question's id and which button you tapped — a counter on the question, with no identifier of yours attached. Your device remembers that it answered; we cannot tell who did",
+      ],
+    ],
+    stores: { apple: [], play: [], firefox: ['technicalAndInteraction'], cws: [] },
+  },
+  {
     id: 'feature_counters',
-    what: 'Three feature counters on the random install id, one whitelisted label each.',
+    what: 'Five feature counters on the random install id, one whitelisted label each.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/featureUsage.ts'],
@@ -184,6 +185,16 @@ export const FLOWS: Flow[] = [
         'eduroam profile handed over',
         'a profile is prepared for you to install (Mac, Windows)',
         'the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it',
+      ],
+      [
+        'Support question shown',
+        'the question whether you would support reIS is on your screen (Novinky)',
+        'the random install identifier and the fixed `support_prompt_seen` label',
+      ],
+      [
+        'Support question answered',
+        'you answer "Yes" to it. Nothing is charged; reIS has no way to take a payment from you',
+        'the random install identifier and the fixed `support_prompt_yes` label',
       ],
     ],
     stores: {
@@ -210,6 +221,16 @@ export const EXEMPT: Exempt[] = [
     call: 'societies',
     files: ['src/api/societies.ts', 'src/api/societiesAdmin.ts'],
     why: 'Public society catalog read (names, colours, logo paths); writes are by a signed-in reis_admin, not a student.',
+  },
+  {
+    call: 'reis_questions',
+    files: ['src/api/questions.ts', 'src/api/adminQuestions.ts'],
+    why: 'Public read of the live Novinky questions; writes are by a signed-in reis_admin, never a student.',
+  },
+  {
+    call: 'question_results',
+    files: ['src/api/adminQuestions.ts'],
+    why: 'Admin console read, signed-in reis_admin.',
   },
   {
     call: 'usage_stats',
@@ -254,7 +275,9 @@ export const PLATFORM_PERMISSIONS = {
   /**
    * What the merged release manifest requests (app manifest + every Capacitor
    * plugin's, minus tools:node="remove"), without the android.permission. prefix.
-   * RECEIVE_BOOT_COMPLETED and WAKE_LOCK come from @capacitor/local-notifications.
+   * RECEIVE_BOOT_COMPLETED and WAKE_LOCK come from @capacitor/local-notifications,
+   * which stays for the exam-opening reminders (spec 2026-10-20): scheduled on
+   * the phone from its own exam list, nothing sent anywhere.
    */
   android: [
     'INTERNET',

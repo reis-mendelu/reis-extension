@@ -22,12 +22,18 @@ describe('SubmissionBoxesSummary', () => {
     expect(container.innerHTML).toBe('');
   });
 
-  it('collapsed: rows only for boxes due within 14 days with nothing uploaded', () => {
+  it('collapsed: rows only for boxes due within 14 days and not yet confirmed', () => {
     useAppStore.setState({
       odevzdavarny: [
         box({ name: 'Rozpracovaný projekt', deadline: '08.10.2026 23:59', odevzdavarnaId: '1' }),
         box({ name: 'Projects', deadline: '31.01.2027 04:27', odevzdavarnaId: '2' }),
-        box({ name: 'Hotovo', deadline: '06.10.2026 10:00', fileCount: 1, odevzdavarnaId: '3' }),
+        box({
+          name: 'Hotovo',
+          deadline: '06.10.2026 10:00',
+          fileCount: 1,
+          section: 'submitted',
+          odevzdavarnaId: '3',
+        }),
       ],
     });
     render(<SubmissionBoxesSummary onOpen={vi.fn()} />);
@@ -53,7 +59,13 @@ describe('SubmissionBoxesSummary', () => {
     useAppStore.setState({
       odevzdavarny: [
         box({ name: 'Projects', deadline: '31.01.2027 04:27', odevzdavarnaId: '1' }),
-        box({ name: 'Zadání', deadline: '12.10.2026 12:00', fileCount: 1, odevzdavarnaId: '2' }),
+        box({
+          name: 'Zadání',
+          deadline: '12.10.2026 12:00',
+          fileCount: 1,
+          section: 'submitted',
+          odevzdavarnaId: '2',
+        }),
         box({ name: 'Bez termínu', deadline: '', odevzdavarnaId: '3' }),
         box({ name: 'Uzavřená', isOpen: false, section: 'closed', odevzdavarnaId: '4' }),
       ],

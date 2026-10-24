@@ -1,26 +1,9 @@
 import { useState, useMemo } from 'react';
-import {
-  Info,
-  GraduationCap,
-  Microscope,
-  Monitor,
-  Calendar,
-  FileText,
-  Cpu,
-  Database,
-  BookOpen,
-  Gamepad2,
-  User,
-  ShieldCheck,
-  Settings,
-  X,
-  ChevronDown,
-  ChevronUp,
-  Search,
-} from 'lucide-react';
+import { Info, X, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { pagesData } from '../../data/pages';
 import { injectUserParams } from '../../data/pages/types';
+import { PAGE_CATEGORY_ICONS } from '../../data/pages/categoryIcons';
 import { filterPageCategories, normalizePageQuery } from '../../data/pages/filterPages';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
@@ -29,22 +12,6 @@ interface IsPortalPopoverProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  'portal-info': Info,
-  'moje-studium': GraduationCap,
-  'veda-vyzkum': Microscope,
-  elearning: Monitor,
-  'osobni-management': Calendar,
-  'e-agenda': FileText,
-  technologie: Cpu,
-  'sprava-is': Database,
-  dokumentace: BookOpen,
-  herna: Gamepad2,
-  personalizace: User,
-  'nastaveni-is': Settings,
-  'ochrana-udaju': ShieldCheck,
-};
 
 export function IsPortalPopover({ isOpen, onClose }: IsPortalPopoverProps) {
   const { t, language } = useTranslation();
@@ -116,7 +83,7 @@ export function IsPortalPopover({ isOpen, onClose }: IsPortalPopoverProps) {
             )}
 
             {filteredCategories.map((category) => {
-              const Icon = ICON_MAP[category.id] || Info;
+              const Icon = PAGE_CATEGORY_ICONS[category.id] || Info;
               const title =
                 language === 'en' && category.labelEn ? category.labelEn : category.label;
               const isFiltering = normalizedFilter.length > 0;

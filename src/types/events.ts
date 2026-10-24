@@ -96,6 +96,10 @@ export interface Society {
   markDark?: string;
 }
 
+/** A society post: an EVENT (map pins, the Akce list, Novinky) or a NOTICE
+ *  (an announcement, Novinky only). `spolky_events.kind`, default 'event'. */
+export type PostKind = 'event' | 'notice';
+
 // An event placed on the campus map. Extends the bell-feed event with an
 // explicit picked coordinate (null = off-campus, list-only), the authoring
 // society, and an optional room code for the "fly there" affordance.
@@ -119,6 +123,9 @@ export interface MapEvent extends MendeluEvent {
   subscribersOnly?: boolean;
   /** When the society published it (ISO). Null on fixtures and unknown rows. */
   createdAt?: string | null;
+  /** A 'notice' never reaches the student map (fetchMapEvents drops it); only
+   *  the society's own console list carries one. Absent = event. */
+  kind?: PostKind;
 }
 
 export const FACULTY_LABEL_TO_KEY: Record<string, FacultyKey> = {

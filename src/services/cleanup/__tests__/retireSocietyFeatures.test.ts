@@ -15,7 +15,8 @@ vi.mock('../../storage', () => ({
   },
 }));
 
-import { retireSocietyFeatures } from '../retireSocietyFeatures';
+import { retireSocietyFeatures, retiredNotifications } from '../retireSocietyFeatures';
+import { NEW_POINTS_KIND } from '../../../mobile/zaznamnikNotifications';
 
 const RETIRED = [
   'event_rsvps_mine',
@@ -68,5 +69,20 @@ describe('retireSocietyFeatures', () => {
     await retireSocietyFeatures({ clearScheduledNotifications: clear });
     expect(clear).toHaveBeenCalledTimes(2);
     expect(stores.meta.get('retired_society_features_v1')).toBe(true);
+  });
+});
+
+// Spec 2026-10-20: a phone updating straight to a build with today's
+// notifications runs this once, possibly after they exist — pending or already
+// in the tray (a retry after a failed run). Only 5.3.0's are retired.
+describe('retiredNotifications', () => {
+  it("retires 5.3.0's and keeps exam openings and záznamník points", () => {
+    const shown = [
+      { id: 1 },
+      { id: 2, extra: { kind: 'event' } },
+      { id: 3, extra: { kind: 'exam-opening' } },
+      { id: 4, extra: { kind: NEW_POINTS_KIND } },
+    ];
+    expect(retiredNotifications(shown).map((n) => n.id)).toEqual([1, 2]);
   });
 });
