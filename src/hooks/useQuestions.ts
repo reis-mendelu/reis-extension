@@ -13,7 +13,7 @@ import { visibleQuestions } from '../utils/questionVisibility';
  * question stays, as "Díky", until it ends.
  */
 export function useQuestions() {
-  const { status, list, answers, badgeSeen, allowed } = useAppStore((s) => s.questions);
+  const { status, list, answers, badgeSeen, allowed, pending } = useAppStore((s) => s.questions);
   // Minutes, not the pulse's every second: a start or an end is judged to the
   // minute, and nothing re-renders in between.
   const minute = useAppStore((s) => Math.floor(s.now.getTime() / 60_000));
@@ -32,6 +32,8 @@ export function useQuestions() {
   return {
     visible,
     answers,
+    /** Star answers that can still change: sent when Novinky closes. */
+    pending: pending ?? {},
     /** What they add to the bell: unanswered ones Novinky has not shown yet. */
     badge: visible.filter((q) => !answers[q.id] && !badgeSeen.includes(q.id)).length,
     markShown: (ids: string[]) => void markBadgeSeen(ids),

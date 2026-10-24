@@ -7,24 +7,28 @@ import type { QuestionButton } from '../../types/questions';
  * A scale question drawn as stars, like a Google Play rating (`display:
  * 'stars'`). Every star shows; the tapped one fills with every star to its
  * left. Hover previews that fill on the extension; the phone has no hover, so
- * a tap answers at once. Once answered (`answeredKey`) the stars stay, filled
- * up to the answer, and are no longer buttons.
+ * a tap answers at once. A tap can be changed while Novinky is open
+ * (`changeable`); after that the stars stay, filled up to the answer, and are
+ * no longer buttons.
  *
  * The buttons keep their keys and order, so the counts read as a 1–5 scale.
  */
 export function StarScale({
   buttons,
   answeredKey,
+  changeable = false,
   onTap,
 }: {
   buttons: QuestionButton[];
   answeredKey: string | undefined;
+  /** Answered, but still open to a change of mind until Novinky closes. */
+  changeable?: boolean;
   onTap: (b: QuestionButton) => void;
 }) {
   const { t } = useTranslation();
   const [hover, setHover] = useState<number | null>(null);
   const answered = buttons.findIndex((b) => b.key === answeredKey);
-  const lit = answered >= 0 ? answered : (hover ?? -1);
+  const lit = hover ?? answered;
 
   const star = (i: number) => (
     <Star
@@ -36,7 +40,7 @@ export function StarScale({
     />
   );
 
-  if (answered >= 0) {
+  if (answered >= 0 && !changeable) {
     return (
       <div
         className="flex gap-1"

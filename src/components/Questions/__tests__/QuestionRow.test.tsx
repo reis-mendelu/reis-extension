@@ -5,6 +5,8 @@ import type { Question } from '../../../types/questions';
 
 const openExternal = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock('../../../mobile/openExternal', () => ({ openExternal }));
+const submitSuggestion = vi.hoisted(() => vi.fn(async () => ({ ok: true as const })));
+vi.mock('../../../api/suggestions', () => ({ submitSuggestion }));
 const shareLink = vi.hoisted(() => vi.fn(async (): Promise<string> => 'copied'));
 vi.mock('../../../mobile/shareLink', () => ({ shareLink }));
 
@@ -187,6 +189,42 @@ describe('QuestionRow', () => {
       );
       fireEvent.mouseEnter(screen.getByRole('button', { name: '3 z 5' }));
       expect(filled()).toBe(3);
+    });
+
+    it('takes a change of mind while the answer is not sent yet', () => {
+      const onAnswer = vi.fn();
+      render(
+        <QuestionRow
+          question={stars}
+          language="cz"
+          answeredKey="4"
+          changeable
+          onAnswer={onAnswer}
+        />
+      );
+      expect(filled()).toBe(4);
+      fireEvent.click(screen.getByRole('button', { name: '2 z 5' }));
+      expect(onAnswer).toHaveBeenCalledWith('2');
+    });
+
+    it('offers to say why on 1 or 2 stars, and sends it as a report', async () => {
+      render(<QuestionRow question={stars} language="cz" answeredKey="2" onAnswer={vi.fn()} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Napsat, co se ti nelíbí' }));
+      fireEvent.change(screen.getByLabelText('Co se ti nelíbí'), {
+        target: { value: 'Pomalé načítání' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Odeslat' }));
+      expect(await screen.findByText('Díky, přečteme si to.')).toBeTruthy();
+      expect(submitSuggestion).toHaveBeenCalledWith({
+        type: 'other',
+        title: 'Hodnocení 2/5: Chceš tmavý režim?',
+        body: 'Pomalé načítání',
+      });
+    });
+
+    it('does not ask why from 3 stars up', () => {
+      render(<QuestionRow question={stars} language="cz" answeredKey="3" onAnswer={vi.fn()} />);
+      expect(screen.queryByRole('button', { name: 'Napsat, co se ti nelíbí' })).toBeNull();
     });
 
     it('keeps all five once answered, the answer and those left of it filled', () => {

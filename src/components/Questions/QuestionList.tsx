@@ -3,6 +3,7 @@ import { useQuestions } from '../../hooks/useQuestions';
 import { useTranslation } from '../../hooks/useTranslation';
 import { countQuestion } from '../../api/questions';
 import { QuestionRow } from './QuestionRow';
+import { useAppStore } from '../../store/useAppStore';
 
 /**
  * The console's live questions at the top of Novinky. Mounted on both trees
@@ -11,9 +12,12 @@ import { QuestionRow } from './QuestionRow';
  * their badge, as every other row's.
  */
 export function QuestionList() {
-  const { visible, answers, markShown, answer } = useQuestions();
+  const { visible, answers, pending, markShown, answer } = useQuestions();
   const { language } = useTranslation();
   const ids = visible.map((q) => q.id).join(',');
+
+  // Novinky closing is when a star rating stops being changeable: send it then.
+  useEffect(() => () => void useAppStore.getState().flushQuestionAnswers(), []);
 
   useEffect(() => {
     if (ids) markShown(ids.split(','));
@@ -30,6 +34,7 @@ export function QuestionList() {
           question={q}
           language={language}
           answeredKey={answers[q.id]}
+          changeable={Boolean(pending[q.id])}
           onAnswer={(key) => answer(q.id, key)}
           onSeen={() => void countQuestion(q.id, 'seen')}
         />

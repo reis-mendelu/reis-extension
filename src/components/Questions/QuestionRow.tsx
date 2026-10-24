@@ -6,6 +6,7 @@ import { openExternal } from '../../mobile/openExternal';
 import { shareLink } from '../../mobile/shareLink';
 import { GooglePlayIcon } from './GooglePlayIcon';
 import { StarScale } from './StarScale';
+import { LowRatingFeedback } from './LowRatingFeedback';
 import type { Question, QuestionButton } from '../../types/questions';
 
 /**
@@ -26,12 +27,15 @@ export function QuestionRow({
   question,
   language,
   answeredKey,
+  changeable = false,
   onAnswer,
   onSeen,
 }: {
   question: Question;
   language: 'cz' | 'en';
   answeredKey: string | undefined;
+  /** A star answer not sent yet: the stars still take a tap (`flushQuestionAnswers`). */
+  changeable?: boolean;
   onAnswer: (key: string) => void;
   /** Once on screen for `SEEN_DWELL_MS`: the denominator. */
   onSeen?: () => void;
@@ -91,10 +95,25 @@ export function QuestionRow({
         <p className="text-md font-bold text-base-content">{prompt}</p>
         {answered && isStars ? (
           <>
-            <StarScale buttons={question.buttons} answeredKey={answered.key} onTap={tap} />
+            <StarScale
+              buttons={question.buttons}
+              answeredKey={answered.key}
+              changeable={changeable}
+              onTap={tap}
+            />
             <p role="status" className="text-2sm text-base-content/60">
               {t('questions.thanksStars')}
             </p>
+            {/* 1 or 2 stars: ask why, if they want to say. */}
+            {question.buttons.indexOf(answered) <= 1 && (
+              <LowRatingFeedback
+                key={answered.key}
+                title={`${t('questions.ratingTitle', {
+                  n: question.buttons.indexOf(answered) + 1,
+                  max: question.buttons.length,
+                })}: ${prompt}`}
+              />
+            )}
           </>
         ) : answered ? (
           <p role="status" className="text-2sm text-base-content/60">
