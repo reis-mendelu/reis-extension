@@ -1,4 +1,5 @@
 import { IndexedDBService } from '../../services/storage/IndexedDBService';
+import { NEW_POINTS_META_KEY } from '../../services/sync/zaznamnikNewPoints';
 
 /**
  * Stores whose contents belong to ONE study. Everything else stays: the
@@ -17,8 +18,17 @@ const STUDY_STORES = [
   'classmates',
 ] as const;
 
-/** `meta` is deleted by key, never cleared (see `IndexedDBService.clearAll`). */
-const STUDY_META_KEYS = ['study_stats', 'study_comparison', 'current_attendance'];
+/**
+ * `meta` is deleted by key, never cleared (see `IndexedDBService.clearAll`).
+ * The unread Nové body go too: `fetchZaznamnik` restores them on the next
+ * start, and they are the left study's subjects (review #591).
+ */
+const STUDY_META_KEYS = [
+  'study_stats',
+  'study_comparison',
+  'current_attendance',
+  NEW_POINTS_META_KEY,
+];
 
 /**
  * Past semesters are keyed by `obdobi` alone, and two studies at one faculty
