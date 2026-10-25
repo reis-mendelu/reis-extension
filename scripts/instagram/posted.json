@@ -35,6 +35,20 @@
       "date": "2026-10-30",
       "status": "scheduled",
       "release": "5.4.0"
+    },
+    {
+      "slug": "android",
+      "prs": [582],
+      "date": "2026-10-26",
+      "status": "scheduled",
+      "release": "5.5.0"
+    },
+    {
+      "slug": "isic",
+      "prs": [548],
+      "date": "2026-10-27",
+      "status": "scheduled",
+      "release": "5.5.0"
     }
   ]
 }
