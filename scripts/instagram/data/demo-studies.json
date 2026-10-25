@@ -1,0 +1,16 @@
+{
+  "_comment": "Fictional second study for the study switcher (#572). Labels follow IS's verbatim format.",
+  "store": {
+    "studies": [
+      {
+        "studium": "900001",
+        "label": "PEF B-HI prez [sem 3, roč 2]"
+      },
+      {
+        "studium": "900002",
+        "label": "FRRMS B-RR komb [sem 1, roč 1]"
+      }
+    ],
+    "studiumId": "900001"
+  }
+}

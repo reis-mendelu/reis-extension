@@ -49,6 +49,34 @@
       "date": "2026-10-27",
       "status": "scheduled",
       "release": "5.5.0"
+    },
+    {
+      "slug": "nove-body",
+      "prs": [581],
+      "date": "2026-10-29",
+      "status": "scheduled",
+      "release": "5.5.0"
+    },
+    {
+      "slug": "pokyny",
+      "prs": [575],
+      "date": "2026-11-02",
+      "status": "scheduled",
+      "release": "5.5.0"
+    },
+    {
+      "slug": "dve-studia",
+      "prs": [572],
+      "date": "2026-11-03",
+      "status": "scheduled",
+      "release": "5.5.0"
+    },
+    {
+      "slug": "zkousky-pripominka",
+      "prs": [579],
+      "date": "2026-11-04",
+      "status": "scheduled",
+      "release": "5.5.0"
     }
   ]
 }
