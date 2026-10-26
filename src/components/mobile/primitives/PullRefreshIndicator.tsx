@@ -56,7 +56,18 @@ export function PullRefreshIndicator({
     onRefresh();
   }, [hint, markSeen, onRefresh]);
   usePullToRefresh({ scrollerRef, surfaceRef, indicatorRef, onRefresh: pulled });
-  usePullHint(scrollerRef, indicatorRef, hint && seen === false && !refreshing, markSeen);
+  // No hint without a touch pointer. The iPad app on a Mac reports
+  // `pointer: fine`, and no mouse or trackpad makes this pull: a list sliding
+  // down by itself there teaches a gesture nobody at that machine can make.
+  // The Mac's route is the visible RefreshButton. Left unseen, so the same
+  // account still gets the lesson on an iPad.
+  const isTouch = useAppStore((s) => s.isTouch);
+  usePullHint(
+    scrollerRef,
+    indicatorRef,
+    isTouch && hint && seen === false && !refreshing,
+    markSeen
+  );
   useRefreshHold(scrollerRef, refreshing);
   return (
     <div

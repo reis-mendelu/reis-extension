@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useEscapeLayer } from '../../hooks/ui/useEscapeLayer';
 import type { GardenPlace } from '../../types/campusMap';
 
 export interface GardenPlaceCardProps {
@@ -36,15 +37,9 @@ export function GardenPlaceCard({ place, flush = false }: GardenPlaceCardProps) 
   const loaded = loadedId === place.id;
   const [maximized, setMaximized] = useState(false);
 
-  // Escape closes the full-screen photo, the way every image viewer does.
-  useEffect(() => {
-    if (!maximized) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMaximized(false);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [maximized]);
+  // Escape closes the full-screen photo, the way every image viewer does, and
+  // only the photo: it is an Escape layer over the panel or sheet under it.
+  useEscapeLayer(maximized, () => setMaximized(false));
 
   if (!place.photo) return null;
   const name = place.name[lang];

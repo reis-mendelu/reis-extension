@@ -14,6 +14,8 @@ export const LOADED = {
 export function baseState(overrides: Record<string, unknown> = {}) {
   useAppStore.setState({
     language: 'cz',
+    // A phone: the pull is the visible refresh there. A Mac is `isTouch: false`.
+    isTouch: true,
     mobileSelectedDayIso: '2026-04-20',
     mobileSheets: [],
     firstSyncSettled: true,

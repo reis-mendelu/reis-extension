@@ -1,4 +1,4 @@
-import { lazy, Suspense, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import type { SyntheticEvent } from 'react';
 import { Sheet } from '../primitives/Sheet';
 import { SubjectSheetHeader } from './SubjectSheetHeader';
@@ -6,6 +6,8 @@ import { TeacherList } from './TeacherList';
 import { SubjectDrawerTabs } from './SubjectDrawerTabs';
 import { stepTab, SUBJECT_TAB_ORDER } from './subjectTabStep';
 import { SubjectDrawerScroller } from './SubjectDrawerScroller';
+import { SubjectFilesRefreshButton } from './SubjectFilesRefreshButton';
+import { SubjectPdfOverlay } from './SubjectPdfOverlay';
 import { DrawerTabBody } from '../../SubjectFileDrawer/DrawerTabBody';
 import { groupAndSortFiles } from '../../SubjectFileDrawer/utils/groupFiles';
 import type { DrawerTab } from '../../SubjectFileDrawer/types';
@@ -26,12 +28,6 @@ import { useAppStore } from '../../../store/useAppStore';
 import { useCourseName } from '../../../hooks/ui/useCourseName';
 import { useMarkZaznamnikSeen } from '../../../hooks/ui/useMarkZaznamnikSeen';
 import { syllabusUrl } from '../../../utils/syllabusUrl';
-
-// pdf.js and its worker are the heaviest thing the app can load; a student who
-// never opens a PDF should never pay for it.
-const PdfViewer = lazy(() =>
-  import('../../SubjectFileDrawer/PdfViewer').then((m) => ({ default: m.PdfViewer }))
-);
 
 type SubjectDrawerSheetData = Extract<MobileSheet, { kind: 'subjectDrawer' }>;
 
@@ -158,6 +154,9 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
               isName={courseName || courseCode}
               titleHref={resolvedCourseId ? syllabusUrl(resolvedCourseId, language) : undefined}
               onBack={onClose}
+              action={
+                activeTab === 'files' && <SubjectFilesRefreshButton courseCode={courseCode} />
+              }
             />
             {/* Below the header, not inside it: the header is `touch-none` so the
                 sheet can be dragged by it, and this is a list of things to tap. */}
@@ -217,26 +216,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
         />
       </SubjectDrawerScroller>
       {previewUrl && (
-        // Over the whole screen, not inside the tab body: a phone/tablet has no
-        // room for the desktop's side-by-side drawer, and the reader needs every
-        // pixel. Back closes the reader first, the drawer second.
-        <div
-          className="absolute inset-0 z-20 flex flex-col bg-base-100 pb-[var(--safe-bottom,0px)] pt-[var(--safe-top,0px)]"
-          data-testid="mobile-pdf-preview-overlay"
-        >
-          {/* min-h-0 so the viewer's own scroll container can shrink inside
-              this flex column rather than overflowing past the screen. */}
-          <div className="min-h-0 flex-1">
-            <Suspense fallback={null}>
-              <PdfViewer
-                key={previewUrl}
-                blobUrl={previewUrl}
-                onClose={closePreview}
-                {...previewPosition}
-              />
-            </Suspense>
-          </div>
-        </div>
+        <SubjectPdfOverlay url={previewUrl} position={previewPosition} onClose={closePreview} />
       )}
     </Sheet>
   );

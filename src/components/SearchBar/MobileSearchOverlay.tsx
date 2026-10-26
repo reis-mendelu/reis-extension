@@ -8,6 +8,7 @@ import { SearchFooter } from './SearchFooter';
 import type { SearchResult } from './types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { getModifierKey } from '../../utils/platform';
+import { useEscapeLayer } from '../../hooks/ui/useEscapeLayer';
 
 interface MobileSearchOverlayProps {
   isOpen: boolean;
@@ -66,13 +67,8 @@ export function MobileSearchOverlay({
     }
   }, [isOpen, setIsOpen]);
 
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    if (isOpen) document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+  // Escape closes the overlay, and only it (an Escape layer).
+  useEscapeLayer(isOpen, onClose);
 
   const handleSelect = (result: SearchResult) => {
     saveToHistory(result);

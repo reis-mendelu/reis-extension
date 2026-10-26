@@ -7,6 +7,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { logError } from '../../utils/reportError';
 import { feedbackErrorKey } from './feedbackErrorKey';
 import { useAppStore } from '../../store/useAppStore';
+import { useCloseReport } from './useCloseReport';
 import { desktopDialogMotion, phoneSheetMotion } from './feedbackModalMotion';
 import { useReportAttachments } from './useReportAttachments';
 import { ReportAttachments } from './ReportAttachments';
@@ -99,17 +100,12 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
     if (e.key === 'Enter' && !isBug) void handleSubmit(attachments.includeDiagnostics);
   };
 
-  const handleClose = () => {
-    onClose();
-    // Reset form after delay
-    setTimeout(() => {
-      setIsSuccess(false);
-      setTitle('');
-      setMessage('');
-      setContact('');
-      setType('bug');
-    }, 300);
-  };
+  // Typed text or a screenshot, not yet sent: Escape keeps it (useCloseReport).
+  const hasDraft =
+    !isSuccess &&
+    (attachments.screenshot !== null ||
+      [message, contact, title === (initialTitle ?? '') ? '' : title].some((v) => v.trim()));
+  const handleClose = useCloseReport(isOpen, onClose, hasDraft);
 
   return (
     <AnimatePresence>
