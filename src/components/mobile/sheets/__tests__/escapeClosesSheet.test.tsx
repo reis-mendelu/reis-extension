@@ -82,6 +82,13 @@ describe('Escape and the sheet stack', () => {
     expect(useAppStore.getState().mobileSheets).toEqual([SUBJECT]);
   });
 
+  it('ignores the auto-repeat of a held Escape, so one press pops one sheet', () => {
+    useAppStore.setState({ mobileSheets: [SUBJECT] } as never);
+    render(<SheetHost />);
+    fireEvent.keyDown(document, { key: 'Escape', repeat: true });
+    expect(useAppStore.getState().mobileSheets).toEqual([SUBJECT]);
+  });
+
   it('ignores other keys', () => {
     useAppStore.setState({ mobileSheets: [SUBJECT] } as never);
     render(<SheetHost />);

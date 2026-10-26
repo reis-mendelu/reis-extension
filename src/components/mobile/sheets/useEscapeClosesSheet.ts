@@ -22,7 +22,8 @@ import { hasOpenEscapeLayer } from '../../../hooks/ui/useEscapeLayer';
 export function useEscapeClosesSheet() {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented || e.isComposing) return;
+      // A held key's auto-repeat must not pop the sheets under this one.
+      if (e.key !== 'Escape' || e.repeat || e.defaultPrevented || e.isComposing) return;
       const s = useAppStore.getState();
       if (s.externalOpening || hasOpenEscapeLayer() || s.mobileSheets.length === 0) return;
       e.preventDefault();

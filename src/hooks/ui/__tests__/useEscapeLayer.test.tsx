@@ -80,6 +80,15 @@ describe('useEscapeLayer', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
+  // A held key auto-repeats. One press closes one layer; the repeats must not
+  // walk on down the pile and close everything under it.
+  it('ignores the auto-repeat of a held Escape', () => {
+    const onClose = vi.fn();
+    render(<Layer open onClose={onClose} />);
+    fireEvent.keyDown(document, { key: 'Escape', repeat: true });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it('reports whether any layer is open, for the phone sheet stack to yield', () => {
     const { rerender } = render(<Layer open onClose={() => {}} />);
     expect(hasOpenEscapeLayer()).toBe(true);

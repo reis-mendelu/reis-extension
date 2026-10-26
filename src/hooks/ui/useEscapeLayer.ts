@@ -50,7 +50,9 @@ export function useEscapeLayer(open: boolean, onClose: () => void): void {
     const id = Symbol('escape-layer');
     stack.push({ id, close });
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented || e.isComposing) return;
+      // `repeat`: a held key auto-repeats, and each repeat would close the
+      // next layer down. One press, one layer.
+      if (e.key !== 'Escape' || e.repeat || e.defaultPrevented || e.isComposing) return;
       if (stack[stack.length - 1]?.id !== id) return;
       e.preventDefault();
       close.current();
