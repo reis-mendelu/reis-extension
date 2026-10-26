@@ -44,6 +44,7 @@ Whatever Claude reads goes to Claude like anything else you share in a chat.
 ```bash
 npm run mcp:pack     # → dist-mcp/reis-for-claude.mcpb
 npm run mcp:smoke    # builds, then checks the server over stdio
+npm run mcp:plugin   # → dist-plugin/reis, the Claude Code plugin (hands files over whole, no officeparser)
 ```
 
 Unofficial. IS Mendelu belongs to Mendel University in Brno.
