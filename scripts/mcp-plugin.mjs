@@ -8,11 +8,12 @@
 // never source maps. And every file must stay under the directory's 5 MiB
 // limit, past which validation stops.
 import { execFileSync, spawn } from 'node:child_process';
-import { cpSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { copyFileSync, cpSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
 const OUT = join('dist-plugin', 'reis');
 const EXPECTED = [
+  '.claude-plugin/icon.png',
   '.claude-plugin/plugin.json',
   'LICENSE',
   'README.md',
@@ -26,6 +27,12 @@ const fail = (msg) => {
 };
 
 cpSync(join('mcp', 'plugin'), OUT, { recursive: true });
+// The listing icon (square PNG, 512-2048 px). The directory takes it only on the
+// first save or submit, so it has to be there from the start.
+copyFileSync(
+  join('public', 'brand-assets', 'reIS_logo_1080.png'),
+  join(OUT, '.claude-plugin', 'icon.png')
+);
 // One version for both products: the .mcpb manifest's.
 const { version } = JSON.parse(readFileSync(join('mcp', 'manifest.json'), 'utf8'));
 const pluginJson = join(OUT, '.claude-plugin', 'plugin.json');
