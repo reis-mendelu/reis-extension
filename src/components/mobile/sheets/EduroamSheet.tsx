@@ -47,8 +47,18 @@ function NumberBadge({ n }: { n: number }) {
 export function EduroamSheet({ onClose }: EduroamSheetProps) {
   const { t } = useTranslation();
   const target = detectTarget();
-  const { status, password, error, networkFailure, outcome, expiredAt, expiresSoonAt, run, renew } =
-    useEduroamSetup(target);
+  const {
+    status,
+    password,
+    error,
+    networkFailure,
+    outcome,
+    expiredAt,
+    expiresSoonAt,
+    run,
+    renew,
+    profileRoute,
+  } = useEduroamSetup(target);
   const working = status === 'working';
 
   // On the phone itself Android saves the network directly, so there is no
@@ -135,7 +145,13 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
           <div className="flex items-center gap-3">
             <NumberBadge n={3} />
             <span className="flex-1 text-sm text-base-content/70">
-              {t('eduroam.macApp.installStep')}
+              {/* `saved`: macOS would not open the profile, so the student saved
+                  it with the Save panel and nothing has opened System Settings. */}
+              {t(
+                status === 'done' && profileRoute === 'saved'
+                  ? 'eduroam.macApp.savedStep'
+                  : 'eduroam.macApp.installStep'
+              )}
             </span>
           </div>
         )}

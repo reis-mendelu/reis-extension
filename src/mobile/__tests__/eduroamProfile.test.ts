@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   deliverEduroamProfile,
   PROFILES_DOWNLOADED_URL,
+  PROFILE_SETTLE_MS,
   type ProfileDelivery,
 } from '../eduroamProfile';
 import { ShareCanceledError } from '../../errors/shareCanceled';
@@ -16,6 +17,7 @@ function deps(over: Partial<ProfileDelivery> = {}): ProfileDelivery {
     isMac: vi.fn(async () => false),
     openOnMac: vi.fn(async () => true),
     saveWithPanel: vi.fn(async () => {}),
+    wait: vi.fn(async () => {}),
     ...over,
   };
 }
@@ -93,7 +95,7 @@ describe('deliverEduroamProfile', () => {
    */
   it('treats a dismissed share sheet as done, not as a failure', async () => {
     const d = deps({ share: vi.fn(async () => Promise.reject(new Error('canceled'))) });
-    await expect(deliverEduroamProfile(blob(), 'x.mobileconfig', d)).resolves.toBeUndefined();
+    await expect(deliverEduroamProfile(blob(), 'x.mobileconfig', d)).resolves.toBe('shared');
   });
 
   describe('on a Mac', () => {
@@ -109,7 +111,9 @@ describe('deliverEduroamProfile', () => {
      */
     it('hands the profile to macOS and opens Device Management, with no share sheet', async () => {
       const d = mac();
-      await deliverEduroamProfile(blob(), 'eduroam-reis.mobileconfig', d);
+      await expect(deliverEduroamProfile(blob(), 'eduroam-reis.mobileconfig', d)).resolves.toBe(
+        'opened'
+      );
       expect(d.openOnMac).toHaveBeenNthCalledWith(
         1,
         'file:///c/Documents/eduroam-reis.mobileconfig'
@@ -119,9 +123,44 @@ describe('deliverEduroamProfile', () => {
       expect(d.saveWithPanel).not.toHaveBeenCalled();
     });
 
+    /**
+     * The open resolves when the file is handed over, before macOS has listed
+     * it; the pane opened at once could show nothing yet. So: the open first,
+     * fully, then the settle wait, then the pane — never overlapping.
+     */
+    it('opens the settings pane only after the open resolved and the settle wait', async () => {
+      const order: string[] = [];
+      let finishOpen: (v: boolean) => void = () => {};
+      const d = mac({
+        openOnMac: vi.fn((url: string) => {
+          order.push(url === PROFILES_DOWNLOADED_URL ? 'pane' : 'open:start');
+          if (url === PROFILES_DOWNLOADED_URL) return Promise.resolve(true);
+          return new Promise<boolean>((r) => {
+            finishOpen = (v) => {
+              order.push('open:done');
+              r(v);
+            };
+          });
+        }),
+        wait: vi.fn(async (ms: number) => {
+          order.push(`wait:${ms}`);
+        }),
+      });
+      const done = deliverEduroamProfile(blob(), 'eduroam-reis.mobileconfig', d);
+      await new Promise((r) => setTimeout(r, 0));
+      expect(order).toEqual(['open:start']);
+      finishOpen(true);
+      await done;
+      expect(order).toEqual(['open:start', 'open:done', `wait:${PROFILE_SETTLE_MS}`, 'pane']);
+      expect(PROFILE_SETTLE_MS).toBeGreaterThanOrEqual(1000);
+    });
+
     it('falls back to the Save panel when macOS will not open the profile', async () => {
       const d = mac({ openOnMac: vi.fn(async () => false) });
-      await deliverEduroamProfile(blob(), 'eduroam-reis.mobileconfig', d);
+      await expect(deliverEduroamProfile(blob(), 'eduroam-reis.mobileconfig', d)).resolves.toBe(
+        'saved'
+      );
+      expect(d.wait).not.toHaveBeenCalled();
       expect(d.saveWithPanel).toHaveBeenCalledWith('file:///c/Documents/eduroam-reis.mobileconfig');
       expect(d.openOnMac).toHaveBeenCalledTimes(1);
       expect(d.share).not.toHaveBeenCalled();
@@ -154,7 +193,9 @@ describe('deliverEduroamProfile', () => {
 
     it('keeps the share sheet on an iPhone or iPad', async () => {
       const d = deps({ isMac: vi.fn(async () => false) });
-      await deliverEduroamProfile(blob(), 'eduroam-reis.mobileconfig', d);
+      await expect(deliverEduroamProfile(blob(), 'eduroam-reis.mobileconfig', d)).resolves.toBe(
+        'shared'
+      );
       expect(d.share).toHaveBeenCalled();
       expect(d.openOnMac).not.toHaveBeenCalled();
     });

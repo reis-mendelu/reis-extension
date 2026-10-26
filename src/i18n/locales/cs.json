@@ -712,7 +712,8 @@
     },
     "macApp": {
       "button": "Přidat eduroam profil",
-      "installStep": "macOS otevře Nastavení systému › Obecné › Správa zařízení. Dvakrát klikni na stažený profil eduroam, zvol Instalovat a zadej heslo z prvního kroku."
+      "installStep": "macOS otevře Nastavení systému › Obecné › Správa zařízení. Dvakrát klikni na stažený profil eduroam, zvol Instalovat a zadej heslo z prvního kroku.",
+      "savedStep": "Otevři uložený soubor dvojklikem. macOS ho pak ukáže v Nastavení systému › Obecné › Správa zařízení: tam na něj dvakrát klikni, zvol Instalovat a zadej heslo z prvního kroku."
     },
     "network": {
       "offline": "Jsi offline. K nastavení eduroamu stačí jakýkoli internet — klidně mobilní data, Wi‑Fi není potřeba.",

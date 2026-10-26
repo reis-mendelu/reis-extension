@@ -26,7 +26,7 @@ vi.mock('qrcode', () => ({
 // the app, and the Mac target is now reached from there too. See
 // src/mobile/eduroamProfile.ts.
 vi.mock('../../../mobile/eduroamProfile', () => ({
-  deliverEduroamProfile: vi.fn(async () => {}),
+  deliverEduroamProfile: vi.fn(async () => 'downloaded'),
   buildProfileDelivery: vi.fn(() => ({ kind: 'web' })),
 }));
 
@@ -59,6 +59,17 @@ describe('useEduroamSetup', () => {
    * Closing that panel delivered nothing, but nothing broke either: back to the
    * button, with no error banner and no "done".
    */
+  /** The sheet's next step depends on it: a saved file has to be opened by hand. */
+  it('says how the profile was delivered', async () => {
+    vi.mocked(deliverEduroamProfile).mockResolvedValueOnce('saved');
+    const { result } = renderHook(() => useEduroamSetup());
+    await act(async () => {
+      await result.current.run('mac');
+    });
+    expect(result.current.status).toBe('done');
+    expect(result.current.profileRoute).toBe('saved');
+  });
+
   it('returns to idle, not error, when a Mac Save panel is cancelled', async () => {
     const { ShareCanceledError } = await import('../../../errors/shareCanceled');
     vi.mocked(deliverEduroamProfile).mockRejectedValueOnce(new ShareCanceledError());

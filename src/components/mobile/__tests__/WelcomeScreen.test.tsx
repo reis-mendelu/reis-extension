@@ -28,6 +28,7 @@ function hook(over: Partial<HookState> = {}): HookState {
     renew: vi.fn(),
     reset: vi.fn(),
     openProfilesSettings: vi.fn(),
+    profileRoute: null,
     ...over,
   };
 }

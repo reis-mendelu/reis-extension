@@ -11,6 +11,27 @@ export const PROFILES_DOWNLOADED_URL =
   'x-apple.systempreferences:com.apple.Profiles-Settings.extension?action=showPurgatory';
 
 /**
+ * How long to let macOS file the profile before opening its pane.
+ *
+ * `openOnMac` resolves when LaunchServices has handed the file over, not when
+ * the profile is listed: ProfileHelper and then mdmclient register it after
+ * that (measured 0.3–0.6 s on the Mac app, 2026-10-26). Opened sooner, the pane
+ * could show no downloaded profile yet. The sandbox gives the app nothing to
+ * poll (no `profiles` tool, no notification it can observe), so a fixed wait
+ * with headroom is the simple honest choice. A slow Mac costs at worst a pane
+ * that fills in a moment later.
+ */
+export const PROFILE_SETTLE_MS = 1500;
+
+/**
+ * Where the profile went, so the sheet can say what to do next:
+ * `opened` — macOS took it and Device Management is open (a Mac);
+ * `saved` — the student saved it with the Save panel (a Mac that would not open it);
+ * `shared` — the share sheet (iPhone, iPad); `downloaded` — a browser download.
+ */
+export type ProfileRoute = 'opened' | 'saved' | 'shared' | 'downloaded';
+
+/**
  * How the eduroam profile reaches the student, as data so the rules above it
  * are testable without a plugin.
  *
@@ -29,6 +50,8 @@ export interface ProfileDelivery {
   openOnMac(url: string): Promise<boolean>;
   /** Mac: offer the file to the Save panel. Cancelling rejects with ShareCanceledError. */
   saveWithPanel(uri: string): Promise<void>;
+  /** A plain delay, injected so the settle wait is testable. */
+  wait(ms: number): Promise<void>;
 }
 
 /**
@@ -60,10 +83,10 @@ export async function deliverEduroamProfile(
   blob: Blob,
   filename: string,
   deps: ProfileDelivery
-): Promise<void> {
+): Promise<ProfileRoute> {
   if (deps.kind !== 'capacitor') {
     deps.anchorSave(blob, filename);
-    return;
+    return 'downloaded';
   }
 
   const uri = await deps.nativeSave(blob, filename);
@@ -75,11 +98,13 @@ export async function deliverEduroamProfile(
 
   if (await deps.isMac()) {
     if (filename.endsWith('.mobileconfig') && (await deps.openOnMac(uri))) {
+      // Only after the open has resolved, then a settle: see PROFILE_SETTLE_MS.
+      await deps.wait(PROFILE_SETTLE_MS);
       await deps.openOnMac(PROFILES_DOWNLOADED_URL);
-      return;
+      return 'opened';
     }
     await deps.saveWithPanel(uri);
-    return;
+    return 'saved';
   }
 
   try {
@@ -90,6 +115,7 @@ export async function deliverEduroamProfile(
     // Failing the flow for it would show an error for a deliberate tap.
     logError('Eduroam.shareProfile', e);
   }
+  return 'shared';
 }
 
 /** The real wiring. Lazy plugin import, for the reason `saveDeps` gives. */
@@ -104,5 +130,6 @@ export function buildProfileDelivery(): ProfileDelivery {
     isMac: isMacApp,
     openOnMac,
     saveWithPanel,
+    wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   };
 }
