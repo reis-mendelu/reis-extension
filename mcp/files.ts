@@ -1,5 +1,6 @@
-import { parseOffice } from 'officeparser';
 import { fetchFilesFromFolder } from '../src/api/documents/service';
+// The plugin build aliases this import to ./documentHandover (vite.mcp.plugin.config.ts).
+import { documentResult, MAX_DOCUMENT_BYTES } from './documentText';
 
 export type SubjectFile = { name: string; author: string; date: string; downloadUrl: string };
 export type FileText = {
@@ -9,17 +10,13 @@ export type FileText = {
   note?: string;
   text: string;
 };
+export type DocumentMeta = { filename?: string; mediaType: string; ext: string };
 
-const EMPTY = 'No extractable text — the document may be scanned or image-only.';
-// One extractor for PDF and Office files: officeparser 8 ships the patched
-// pdfjs-dist 6.2.108. unpdf bundled its own pdfjs 6.1.200 (inside the
-// GHSA-hq66-cqwq-w95j range), and two pdfjs copies in one process collide.
 const DOC_EXTENSIONS = ['.pdf', '.docx', '.pptx', '.xlsx', '.odt'];
 const TEXT_EXTENSIONS = ['.txt', '.md', '.csv'];
 
-const clean = (t: string) => t.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
+export const clean = (t: string) => t.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
 const extOf = (name?: string) => /\.[^./\\]+$/.exec(name ?? '')?.[0].toLowerCase() ?? '';
-const withNote = (text: string) => (text.trim() ? {} : { note: EMPTY });
 
 /** One entry per file that has a download link, deduplicated by that link. */
 export async function listFolderFiles(folderUrl: string): Promise<SubjectFile[]> {
@@ -75,7 +72,10 @@ export function assertDokServerUrl(url: string): void {
  * handled by the session fetch (it re-logs in on the login page), so no
  * login-page guard is needed here.
  */
-export async function readDokServerFile(url: string, fetchImpl: typeof fetch): Promise<FileText> {
+export async function readDokServerFile(
+  url: string,
+  fetchImpl: typeof fetch
+): Promise<FileText | Awaited<ReturnType<typeof documentResult>>> {
   assertDokServerUrl(url);
   const res = await fetchImpl(url);
   if (!res.ok) throw new Error(`IS answered HTTP ${res.status} for this file.`);
@@ -103,20 +103,9 @@ export async function readDokServerFile(url: string, fetchImpl: typeof fetch): P
       note: 'No text extractor for this file type. Open it in IS directly.',
     };
   }
-  const bytes = await readCapped(res, MAX_FILE_BYTES);
+  const bytes = await readCapped(res, isDocument ? MAX_DOCUMENT_BYTES : MAX_FILE_BYTES);
 
-  if (isDocument) {
-    const ast = await parseOffice(Buffer.from(bytes));
-    const t = clean((await ast.to('text')).value);
-    const pages = ast.metadata?.pages;
-    return {
-      ...named,
-      kind: ast.type || ext.slice(1) || 'document',
-      ...(pages ? { pages } : {}),
-      text: t,
-      ...withNote(t),
-    };
-  }
+  if (isDocument) return documentResult(bytes, { ...named, mediaType, ext });
   return { ...named, kind: 'text', text: clean(new TextDecoder().decode(bytes)) };
 }
 

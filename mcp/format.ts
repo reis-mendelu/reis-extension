@@ -1,4 +1,5 @@
 import { toMarkdown } from './markdown';
+import type { FileHandover } from './documentHandover';
 
 export const CHARACTER_LIMIT = 25000;
 export type ResponseFormat = 'markdown' | 'json';
@@ -7,6 +8,11 @@ export type ResponseFormat = 'markdown' | 'json';
 // structuredContent in place of the text, so markdown mode must not attach it,
 // and json mode attaches it only while it fits. No tool may declare an
 // outputSchema: the SDK then rejects every result without structuredContent.
+/** What a tool returns: a handed-over file whole, anything else as text. */
+export function toolResult(data: unknown, format: ResponseFormat) {
+  return isHandover(data) ? handoverResult(data) : toResult(data, format);
+}
+
 export function toResult(data: unknown, format: ResponseFormat) {
   let text = format === 'json' ? JSON.stringify(data, null, 2) : toMarkdown(data);
   const truncated = text.length > CHARACTER_LIMIT;
@@ -30,5 +36,26 @@ export function toError(tool: string, e: unknown) {
   return {
     isError: true as const,
     content: [{ type: 'text' as const, text: `Error in ${tool}: ${msg}` }],
+  };
+}
+
+const isHandover = (d: unknown): d is FileHandover =>
+  !!d && typeof d === 'object' && 'handover' in d;
+
+/** A file handed to Claude whole (plugin build): no text limit, no structuredContent. */
+function handoverResult({ handover: h }: FileHandover) {
+  const mb = (h.bytes / 1024 / 1024).toFixed(1);
+  return {
+    content: [
+      { type: 'text' as const, text: `IS file ${h.filename} (${h.mimeType}, ${mb} MB), attached.` },
+      {
+        type: 'resource' as const,
+        resource: {
+          uri: `mendelu-file:///${encodeURIComponent(h.filename)}`,
+          mimeType: h.mimeType,
+          blob: h.base64,
+        },
+      },
+    ],
   };
 }

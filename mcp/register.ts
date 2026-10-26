@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TOOLS, type ToolCtx } from './tools';
-import { toResult, toError } from './format';
+import { toolResult, toError } from './format';
 
 const READ_ONLY = {
   readOnlyHint: true,
@@ -28,7 +28,7 @@ export function registerTools(server: McpServer, ctx: ToolCtx): void {
       },
       async (args: Record<string, unknown>) => {
         try {
-          return toResult(
+          return toolResult(
             await t.run(args, ctx),
             args.response_format === 'json' ? 'json' : 'markdown'
           );
