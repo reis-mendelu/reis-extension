@@ -46,6 +46,7 @@ const PHONE_FILES = [
   'components/mobile/screens/CalendarScreen.tsx',
   'components/mobile/screens/ExamsScreen.tsx',
   'components/mobile/screens/calendar/DayBody.tsx',
+  'components/mobile/screens/calendar/ScreenHeader.tsx',
   'components/mobile/screens/exams/ExamsPullArea.tsx',
   'components/mobile/sheets/SubjectDrawerScroller.tsx',
   'components/mobile/sheets/SubjectDrawerSheet.tsx',

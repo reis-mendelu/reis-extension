@@ -8,6 +8,7 @@ import { clampScale } from './pinchZoom';
 import { usePinchZoom } from './usePinchZoom';
 import { usePdfPagePosition } from './usePdfPagePosition';
 import { logError } from '../../utils/reportError';
+import { useEscapeLayer } from '../../hooks/ui/useEscapeLayer';
 
 // Resolving the worker moved to pdfWorkerSource so it goes through the platform
 // seam: the old `chrome.runtime.getURL` here is undefined on Capacitor, which is
@@ -63,6 +64,9 @@ export function PdfViewer({
   const [baseHeight, setBaseHeight] = useState(0);
   const [pageHeights, setPageHeights] = useState<Map<number, number>>(new Map());
   usePinchZoom(containerRef, contentRef, scale, setScale);
+  // Escape closes the reader before whatever it opened over (the subject sheet
+  // on the phone tree, the side drawer on the extension), as Back does.
+  useEscapeLayer(true, onClose);
   const { trackRow } = usePdfPagePosition({
     containerRef,
     numPages,
