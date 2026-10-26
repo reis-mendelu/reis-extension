@@ -90,6 +90,14 @@ describe('a subject’s Files tab without a pull', () => {
     expect(refreshButton()).toBeDisabled();
   });
 
+  // With no list yet the tab shows its skeleton and "Načítání souborů…", which
+  // already say it is loading; the circle spinning too said it a third time.
+  it('does not spin over the skeleton', () => {
+    useAppStore.setState({ files: { ALG: undefined }, filesLoading: { ALG: true } } as never);
+    renderSheet();
+    expect(refreshButton()!.querySelector('.animate-spin')).toBeNull();
+  });
+
   it('is the Files tab’s only, like the pull', () => {
     renderSheet();
     const statsTab = screen.getAllByRole('button').find((b) => b.textContent.includes('Úspěšnost'));

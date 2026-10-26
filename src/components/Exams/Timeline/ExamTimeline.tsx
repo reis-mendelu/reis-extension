@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import ExamItem from './ExamItem';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useWheelScrollsX } from '../../../hooks/ui/useWheelScrollsX';
 import type { ExamSection } from '../../../types/exams';
 
 export interface TimelineExam {
@@ -26,6 +27,9 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({
   selectedSectionId,
 }) => {
   const { t, language } = useTranslation();
+  // The scrollbar is hidden: a mouse wheel scrolls the horizontal timeline.
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  useWheelScrollsX(scrollerRef, { mode: 'pixel', active: orientation === 'horizontal' });
 
   const resolveSectionName = (item: TimelineExam): string | undefined => {
     const s = item.section;
@@ -101,6 +105,7 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({
 
   return (
     <div
+      ref={scrollerRef}
       className={`overflow-x-auto w-full py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}
     >
       <div className="relative flex flex-row w-full min-w-max">

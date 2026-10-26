@@ -5,10 +5,9 @@ import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { resolvePdfWorkerSource } from './pdfWorkerSource';
 import { computeRenderWindow } from './pdfWindow';
 import { clampScale } from './pinchZoom';
-import { usePinchZoom } from './usePinchZoom';
+import { useReaderInput } from './useReaderInput';
 import { usePdfPagePosition } from './usePdfPagePosition';
 import { logError } from '../../utils/reportError';
-import { useEscapeLayer } from '../../hooks/ui/useEscapeLayer';
 
 // Resolving the worker moved to pdfWorkerSource so it goes through the platform
 // seam: the old `chrome.runtime.getURL` here is undefined on Capacitor, which is
@@ -63,10 +62,7 @@ export function PdfViewer({
   // for mixed-geometry PDFs (e.g. a portrait cover before landscape slides).
   const [baseHeight, setBaseHeight] = useState(0);
   const [pageHeights, setPageHeights] = useState<Map<number, number>>(new Map());
-  usePinchZoom(containerRef, contentRef, scale, setScale);
-  // Escape closes the reader before whatever it opened over (the subject sheet
-  // on the phone tree, the side drawer on the extension), as Back does.
-  useEscapeLayer(true, onClose);
+  useReaderInput(containerRef, contentRef, scale, setScale, onClose);
   const { trackRow } = usePdfPagePosition({
     containerRef,
     numPages,

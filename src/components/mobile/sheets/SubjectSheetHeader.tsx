@@ -24,7 +24,10 @@ export interface SubjectSheetHeaderProps {
  *
  * Not that component reused: its pencil appears on hover and is ~27px, and it
  * leans on Escape to cancel. Here the pencil is always shown and 44px, and
- * Uložit / Zrušit are buttons, because a phone keyboard has neither key.
+ * Uložit / Zrušit are buttons, because an on-screen keyboard has no Escape.
+ * A hardware one (a Mac, an iPad with a keyboard) cancels with Escape as well,
+ * and keeps the key, so the sheet stack does not pop the subject with the
+ * draft in it.
  *
  * With a nickname set, IS's own name stays visible under it, so a renamed
  * subject can still be matched to what the teacher, the timetable and IS call
@@ -84,6 +87,11 @@ export function SubjectSheetHeader({
         aria-describedby={hintId}
         placeholder={isName}
         enterKeyHint="done"
+        onKeyDown={(e) => {
+          if (e.key !== 'Escape') return;
+          e.preventDefault();
+          cancel();
+        }}
         autoComplete="off"
         // text-base is 16px — below that iOS zooms the page in on focus.
         className="input input-bordered h-11 w-full text-base font-semibold"

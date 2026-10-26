@@ -12,13 +12,18 @@ import { useSubjectFilesRefresh } from './useSubjectFilesRefresh';
  * pull and as the extension's FilesFreshness circle, and "Obnovit soubory" is
  * that circle's own label.
  *
- * Disabled for any load, list or not: a second press while one runs would only
- * start the same crawl again.
+ * `refreshing`, not every load: over the skeleton the tab's own "Načítání
+ * souborů…" already says it, and a spinning circle said it a third time. A
+ * press then is harmless — the refresh ignores a second start while one runs.
  */
 export function SubjectFilesRefreshButton({ courseCode }: { courseCode: string }) {
   const { t } = useTranslation();
-  const { loading, refresh } = useSubjectFilesRefresh(courseCode);
+  const { refreshing, refresh } = useSubjectFilesRefresh(courseCode);
   return (
-    <RefreshButton label={t('course.freshness.refresh')} refreshing={loading} onRefresh={refresh} />
+    <RefreshButton
+      label={t('course.freshness.refresh')}
+      refreshing={refreshing}
+      onRefresh={refresh}
+    />
   );
 }

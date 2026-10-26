@@ -18,10 +18,9 @@ export function useSubjectFilesRefresh(courseCode: string) {
   const refreshing = useAppStore(
     (s) => !!s.filesLoading[courseCode] && (s.files[courseCode]?.length ?? 0) > 0
   );
-  const loading = useAppStore((s) => !!s.filesLoading[courseCode]);
   const refresh = useCallback(() => {
     const state = useAppStore.getState();
     if (!state.filesLoading[courseCode]) void state.refreshFilesForSubject(courseCode);
   }, [courseCode]);
-  return { refreshing, loading, refresh };
+  return { refreshing, refresh };
 }

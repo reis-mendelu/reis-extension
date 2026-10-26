@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { EduroamTutorial } from '../EduroamTutorial';
 import { useAppStore } from '../../../store/useAppStore';
+import { useEscapeLayer } from '../../../hooks/ui/useEscapeLayer';
 
 afterEach(() => {
   cleanup();
@@ -62,5 +63,27 @@ describe('EduroamTutorial', () => {
     render(<EduroamTutorial target="mac" {...base} onOpenSettings={onOpenSettings} />);
     fireEvent.click(screen.getByRole('button', { name: /Open Profiles settings/i }));
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
+  });
+
+  // The lightbox opens over the eduroam drawer. Escape closes the picture,
+  // not the drawer under it.
+  it('closes the zoomed screenshot on Escape, and only that', () => {
+    useAppStore.setState({ language: 'en' });
+    const drawer = vi.fn();
+    function Drawer() {
+      useEscapeLayer(true, drawer);
+      return null;
+    }
+    render(
+      <>
+        <Drawer />
+        <EduroamTutorial target="mac" {...base} />
+      </>
+    );
+    fireEvent.click(screen.getAllByRole('button', { name: 'Enlarge screenshot' })[0]!);
+    expect(screen.getByRole('button', { name: 'Close' })).toBeTruthy();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
+    expect(drawer).not.toHaveBeenCalled();
   });
 });

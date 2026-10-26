@@ -89,6 +89,42 @@ describe('useEscapeLayer', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
+  // React runs a child's effects before its parent's, so a parent and the
+  // layer inside it, mounting in one commit, used to register child-first and
+  // leave the PARENT on top: Escape closed the outer one.
+  it('a layer mounted inside another in the same commit is the one on top', () => {
+    const outer = vi.fn();
+    const inner = vi.fn();
+    function Outer() {
+      useEscapeLayer(true, outer);
+      return <Layer open onClose={inner} />;
+    }
+    render(<Outer />);
+    escape();
+    expect(inner).toHaveBeenCalledTimes(1);
+    expect(outer).not.toHaveBeenCalled();
+  });
+
+  it('a layer opened later is on top of one mounted earlier, whatever the mount order', () => {
+    const early = vi.fn();
+    const late = vi.fn();
+    const { rerender } = render(
+      <>
+        <Layer open={false} onClose={early} />
+        <Layer open onClose={late} />
+      </>
+    );
+    rerender(
+      <>
+        <Layer open onClose={early} />
+        <Layer open onClose={late} />
+      </>
+    );
+    escape();
+    expect(early).toHaveBeenCalledTimes(1);
+    expect(late).not.toHaveBeenCalled();
+  });
+
   it('reports whether any layer is open, for the phone sheet stack to yield', () => {
     const { rerender } = render(<Layer open onClose={() => {}} />);
     expect(hasOpenEscapeLayer()).toBe(true);

@@ -24,7 +24,8 @@ import { describe, expect, it } from 'vitest';
  * (`mergeFolderListing`) on both products, and only the trigger differs. On a
  * Mac the Files tab gets the same visible circle as the calendar, beside the
  * rename pencil (SubjectFilesRefreshButton), so the phone tree's Mac half has
- * a control everywhere it has a pull.
+ * a control everywhere it has a pull (rendered and asserted visible in
+ * macRefreshIsVisible.test.tsx).
  *
  * The pull hint (a list nudging itself down once) plays only with a touch
  * pointer: on a Mac it would teach the one gesture that machine cannot make.
@@ -89,14 +90,9 @@ describe('pull-to-refresh placement', () => {
     );
   });
 
-  it('every pull has a visible control where nothing can pull — the Mac', () => {
-    expect(read('components/mobile/screens/CalendarScreen.tsx')).toContain('<RefreshButton');
-    expect(read('components/mobile/screens/ExamsScreen.tsx')).toContain('<RefreshButton');
-    expect(read('components/mobile/sheets/SubjectDrawerSheet.tsx')).toContain(
-      '<SubjectFilesRefreshButton'
-    );
-  });
-
+  // That every pull has a VISIBLE control on a Mac is pinned by rendering, in
+  // macRefreshIsVisible.test.tsx: a grep for `<RefreshButton` passed with the
+  // sr-only button alone.
   it('the pull hint is a touch lesson only', () => {
     expect(read('components/mobile/primitives/PullRefreshIndicator.tsx')).toMatch(
       /isTouch && hint && seen === false/

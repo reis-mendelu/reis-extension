@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import type { RegisteredExam } from '../../../../utils/mobile/examRows';
 import { formatWhenRow } from '../../../../utils/mobile/examWhen';
+import { useWheelScrollsX } from '../../../../hooks/ui/useWheelScrollsX';
 
 export interface RegisteredStripProps {
   rows: RegisteredExam[];
@@ -37,6 +38,9 @@ export function RegisteredStrip({
   renderDetail,
 }: RegisteredStripProps) {
   const selected = rows.find((r) => r.section.id === selectedId);
+  // The scrollbar is hidden, so a mouse wheel is a Mac's only way across.
+  const stripRef = useRef<HTMLDivElement>(null);
+  useWheelScrollsX(stripRef);
   return (
     <div className="flex flex-col gap-2.5">
       {/* Edge to edge, so the next tile peeking in at the right says "swipe".
@@ -44,6 +48,7 @@ export function RegisteredStrip({
           peeking — so 42vw at most, which leaves a peek at every phone width.
           Snapped, so a swipe moves one whole exam. */}
       <div
+        ref={stripRef}
         data-testid="registered-strip"
         className="-mx-4 flex snap-x snap-mandatory scroll-px-4 items-stretch gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >

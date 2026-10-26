@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { GraduationCap, X, ChevronDown } from 'lucide-react';
 import { cn } from '@/components/ui/utils';
 import { useTranslation } from '@/hooks/useTranslation';
+import { pickerKeyDown } from './pickerKeys';
 import { fuzzyMatch } from '@/utils/searchUtils';
 import { useUniversities } from '@/hooks/data/useUniversities';
 import type { University } from '@/types/erasmus';
@@ -75,17 +76,7 @@ export function UniversityPicker({
             setSearch(value);
             setIsOpen(true);
           }}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape' && isOpen) {
-              // Kept while the list is open: it closes the list, not the drawer.
-              e.preventDefault();
-              setIsOpen(false);
-            }
-            if (e.key === 'Enter' && results.length > 0) {
-              onSelect(results[0]);
-              setIsOpen(false);
-            }
-          }}
+          onKeyDown={(e) => pickerKeyDown(e, isOpen, setIsOpen, results[0], onSelect)}
         />
 
         <GraduationCap
