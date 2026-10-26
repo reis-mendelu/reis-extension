@@ -259,7 +259,9 @@
     "czk": "CZK",
     "download": "Download",
     "errorGeneric": "Something went wrong. Please try again.",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "scrollBack": "Scroll back",
+    "scrollForward": "Scroll forward"
   },
   "search": {
     "placeholder": "Search subjects, people, pages... ({shortcut}K)",

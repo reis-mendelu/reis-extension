@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import ExamItem from './ExamItem';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { useWheelScrollsX } from '../../../hooks/ui/useWheelScrollsX';
+import { EdgeScrollButtons } from '../../ui/EdgeScrollButtons';
 import type { ExamSection } from '../../../types/exams';
 
 export interface TimelineExam {
@@ -27,9 +27,8 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({
   selectedSectionId,
 }) => {
   const { t, language } = useTranslation();
-  // The scrollbar is hidden: a mouse wheel scrolls the horizontal timeline.
+  // The scrollbar is hidden: a mouse gets edge buttons (EdgeScrollButtons).
   const scrollerRef = useRef<HTMLDivElement>(null);
-  useWheelScrollsX(scrollerRef, { mode: 'pixel', active: orientation === 'horizontal' });
 
   const resolveSectionName = (item: TimelineExam): string | undefined => {
     const s = item.section;
@@ -104,30 +103,33 @@ const ExamTimeline: React.FC<ExamTimelineProps> = ({
   );
 
   return (
-    <div
-      ref={scrollerRef}
-      className={`overflow-x-auto w-full py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}
-    >
-      <div className="relative flex flex-row w-full min-w-max">
-        <div className="absolute left-0 right-0 bottom-[4px] h-px bg-base-content/15 pointer-events-none" />
-        {sortedExams.map((item, index) => (
-          <ExamItem
-            key={item.term.id || `${item.subjectName}-${index}`}
-            term={item.term}
-            subjectName={item.subjectName}
-            sectionName={resolveSectionName(item)}
-            sectionType={item.section?.type}
-            deadline={item.section?.registeredTerm?.deregistrationDeadline}
-            orientation="horizontal"
-            isFirst={index === 0}
-            isLast={index === sortedExams.length - 1}
-            isSelected={selectedSectionId != null && selectedSectionId === item.section?.id}
-            isNext={nextIndex >= 0 && index === nextIndex}
-            isPast={nextIndex >= 0 ? index < nextIndex : true}
-            onClick={() => handleCardClick(item)}
-          />
-        ))}
+    <div className="relative">
+      <div
+        ref={scrollerRef}
+        className={`overflow-x-auto w-full py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}
+      >
+        <div className="relative flex flex-row w-full min-w-max">
+          <div className="absolute left-0 right-0 bottom-[4px] h-px bg-base-content/15 pointer-events-none" />
+          {sortedExams.map((item, index) => (
+            <ExamItem
+              key={item.term.id || `${item.subjectName}-${index}`}
+              term={item.term}
+              subjectName={item.subjectName}
+              sectionName={resolveSectionName(item)}
+              sectionType={item.section?.type}
+              deadline={item.section?.registeredTerm?.deregistrationDeadline}
+              orientation="horizontal"
+              isFirst={index === 0}
+              isLast={index === sortedExams.length - 1}
+              isSelected={selectedSectionId != null && selectedSectionId === item.section?.id}
+              isNext={nextIndex >= 0 && index === nextIndex}
+              isPast={nextIndex >= 0 ? index < nextIndex : true}
+              onClick={() => handleCardClick(item)}
+            />
+          ))}
+        </div>
       </div>
+      <EdgeScrollButtons scrollerRef={scrollerRef} />
     </div>
   );
 };

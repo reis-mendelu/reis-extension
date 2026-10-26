@@ -100,13 +100,12 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
     if (e.key === 'Enter' && !isBug) void handleSubmit(attachments.includeDiagnostics);
   };
 
-  const handleClose = useCloseReport(isOpen, onClose, () => {
-    setIsSuccess(false);
-    setTitle('');
-    setMessage('');
-    setContact('');
-    setType('bug');
-  });
+  // Typed text or a screenshot, not yet sent: Escape keeps it (useCloseReport).
+  const hasDraft =
+    !isSuccess &&
+    (attachments.screenshot !== null ||
+      [message, contact, title === (initialTitle ?? '') ? '' : title].some((v) => v.trim()));
+  const handleClose = useCloseReport(isOpen, onClose, hasDraft);
 
   return (
     <AnimatePresence>

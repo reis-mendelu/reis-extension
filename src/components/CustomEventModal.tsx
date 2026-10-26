@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Clock, MapPin } from 'lucide-react';
 import type { CalendarCustomEvent } from '../types/calendarTypes';
 import { useTranslation } from '../hooks/useTranslation';
+import { useEscapeLayer } from '../hooks/ui/useEscapeLayer';
 import { popoverPosition, formatDateLabel } from '../utils/calendarPopover';
 
 interface CustomEventModalProps {
@@ -44,13 +45,9 @@ export function CustomEventModal({
   useEffect(() => {
     titleRef.current?.focus();
   }, []);
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [onClose]);
+  // Escape closes the editor, and only it: an Escape layer over the drawer or
+  // panel it opened from.
+  useEscapeLayer(true, onClose);
 
   const handleSave = () => {
     if (!title.trim() || !date || !startTime || !endTime) return;

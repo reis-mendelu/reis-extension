@@ -49,7 +49,7 @@ export function RefreshButton({
         disabled={refreshing}
         aria-label={label}
         title={label}
-        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-base-300 bg-base-100 disabled:opacity-60"
+        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-base-300 bg-base-100 disabled:opacity-60 max-[359px]:h-9 max-[359px]:w-9"
       >
         <RefreshCw size={18} className={refreshing ? 'animate-spin' : undefined} />
       </button>

@@ -126,4 +126,24 @@ describe('Escape inside a layer', () => {
     expect(useAppStore.getState().reportOpen).toBe(false);
     expect(under).not.toHaveBeenCalled();
   });
+
+  // Every open is a fresh form (FeedbackModalHost keys it), so closing one
+  // with text in it throws the text away. An accidental Escape must not:
+  // with anything typed, Escape keeps the form (and the drawer under it).
+  it('FeedbackModal: Escape leaves a form with a typed report open', () => {
+    useAppStore.setState({ reportOpen: false } as never);
+    render(
+      <>
+        <Under onClose={under} />
+        <FeedbackModalHost />
+      </>
+    );
+    act(() => useAppStore.getState().openReport());
+    const body = screen.getByPlaceholderText('Co se stalo? Kde? Jak to zopakovat?');
+    fireEvent.change(body, { target: { value: 'Rozvrh ukazuje špatnou místnost' } });
+    escapeOn(document.body);
+    expect(useAppStore.getState().reportOpen).toBe(true);
+    expect(body).toHaveValue('Rozvrh ukazuje špatnou místnost');
+    expect(under).not.toHaveBeenCalled();
+  });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, fireEvent } from '@testing-library/react';
+import { render, fireEvent, act } from '@testing-library/react';
 import { useEscapeLayer, hasOpenEscapeLayer } from '../useEscapeLayer';
 
 /**
@@ -105,7 +105,9 @@ describe('useEscapeLayer', () => {
     expect(outer).not.toHaveBeenCalled();
   });
 
-  it('a layer opened later is on top of one mounted earlier, whatever the mount order', () => {
+  // Two user actions are two tasks, so the commits are apart; the boundary is
+  // what the stack groups opens by.
+  it('a layer opened later is on top of one mounted earlier, whatever the mount order', async () => {
     const early = vi.fn();
     const late = vi.fn();
     const { rerender } = render(
@@ -114,6 +116,7 @@ describe('useEscapeLayer', () => {
         <Layer open onClose={late} />
       </>
     );
+    await act(async () => {});
     rerender(
       <>
         <Layer open onClose={early} />

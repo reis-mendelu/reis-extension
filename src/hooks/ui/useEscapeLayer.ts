@@ -8,12 +8,13 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
  * Escape shut the whole pile at once. The layer opened last is on top and is
  * the only one that closes.
  *
- * "Opened last" is a sequence number taken while RENDERING, not the order the
- * effects run in. React runs a child's effects before its parent's, so a
- * parent and a layer inside it that open in the same commit registered
- * child-first and left the parent on top. Renders go parent-first, so the
- * number puts the inner layer above the outer one, and a layer that opens in a
- * later commit above both.
+ * "Opened last" is not effect order. React runs a child's effects before its
+ * parent's, so a parent and a layer inside it that open in one commit would
+ * register child-first and leave the parent on top. Layers are grouped by the
+ * flush they register in (a commit's effects run synchronously, so one flush
+ * ends at the next microtask): a later flush is above an earlier one, and
+ * within a flush the layer MOUNTED later is above — mount order is render
+ * order, parent before child, taken once in a `useState` initializer.
  *
  * Bubble phase on `document`, so a control inside that uses Escape for itself
  * (an inline title editor, a picker's open list) runs first through React's
@@ -24,11 +25,26 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
  */
 interface Layer {
   id: symbol;
-  seq: number;
+  flush: number;
+  mount: number;
   close: { current: () => void };
 }
 const stack: Layer[] = [];
-let opened = 0;
+let mounts = 0;
+
+let flush = 0;
+let flushOpen = false;
+/** The current effect flush; it ends at the next microtask. */
+function currentFlush(): number {
+  if (!flushOpen) {
+    flushOpen = true;
+    queueMicrotask(() => {
+      flush++;
+      flushOpen = false;
+    });
+  }
+  return flush;
+}
 
 const top = (): Layer | undefined => stack[stack.length - 1];
 
@@ -55,17 +71,13 @@ export function useEscapeLayer(open: boolean, onClose: () => void): void {
   useLayoutEffect(() => {
     close.current = onClose;
   });
-  // Set during render, React's sanctioned way to derive state from a prop
-  // change; see the header for why the number has to come from render.
-  const [seq, setSeq] = useState<number | null>(null);
-  if (open && seq === null) setSeq(++opened);
-  if (!open && seq !== null) setSeq(null);
+  const [mount] = useState(() => ++mounts);
 
   useEffect(() => {
-    if (seq === null) return;
-    const layer: Layer = { id: Symbol('escape-layer'), seq, close };
+    if (!open) return;
+    const layer: Layer = { id: Symbol('escape-layer'), flush: currentFlush(), mount, close };
     stack.push(layer);
-    stack.sort((a, b) => a.seq - b.seq);
+    stack.sort((x, y) => x.flush - y.flush || x.mount - y.mount);
     const onKeyDown = (e: KeyboardEvent) => {
       // `repeat`: a held key auto-repeats, and each repeat would close the
       // next layer down. One press, one layer.
@@ -80,5 +92,5 @@ export function useEscapeLayer(open: boolean, onClose: () => void): void {
       const at = stack.indexOf(layer);
       if (at !== -1) stack.splice(at, 1);
     };
-  }, [seq]);
+  }, [open, mount]);
 }

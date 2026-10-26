@@ -30,6 +30,9 @@ describe('RefreshButton', () => {
     // The same 40px circle as the pin, search and bell beside it.
     expect(button.className).toContain('h-10');
     expect(button.className).toContain('w-10');
+    // And shrinks with them below 360px, so the row still fits at 320.
+    expect(button.className).toContain('max-[359px]:h-9');
+    expect(button.className).toContain('max-[359px]:w-9');
     expect(button.querySelector('svg')).not.toBeNull();
   });
 

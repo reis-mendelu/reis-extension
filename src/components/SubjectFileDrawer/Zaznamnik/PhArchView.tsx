@@ -1,5 +1,6 @@
 import type { PhSection } from '../../../types/zaznamnik';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { HorizontalScroller } from '../../ui/HorizontalScroller';
 
 interface Props {
   sections: PhSection[];
@@ -32,7 +33,7 @@ export function PhArchView({ sections }: Props) {
                   {arch.values[0]}
                 </p>
               ) : (
-                <div className="overflow-x-auto w-full custom-scrollbar pb-1">
+                <HorizontalScroller className="overflow-x-auto w-full custom-scrollbar pb-1">
                   <div
                     className="grid gap-x-3 gap-y-0.5 w-full"
                     style={{
@@ -54,7 +55,7 @@ export function PhArchView({ sections }: Props) {
                       </p>
                     ))}
                   </div>
-                </div>
+                </HorizontalScroller>
               )}
             </div>
           ))}

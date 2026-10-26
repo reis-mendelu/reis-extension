@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Pin, ExternalLink, X, ArrowUpRight } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useEscapeLayer } from '../../hooks/ui/useEscapeLayer';
 import { MobileBulletinOverlay } from './MobileBulletinOverlay';
 
 const VYVESKA_URL = 'https://is.mendelu.cz/auth/vyveska/nove_prispevky.pl?zalozka=2';
@@ -62,18 +63,11 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
         void setExpanded(false);
       }
     };
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        void setExpanded(false);
-      }
-    };
     document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [expanded, isMobile, setExpanded]);
+  // Escape closes the open dropdown, and only it (an Escape layer).
+  useEscapeLayer(expanded && !isMobile, () => void setExpanded(false));
 
   if (!inline) return null;
 

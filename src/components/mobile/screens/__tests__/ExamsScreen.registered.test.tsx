@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, act } from '@testing-library/react';
 import { ExamsScreen } from '../ExamsScreen';
 import { useAppStore } from '../../../../store/useAppStore';
 import type { ExamSubject } from '../../../../types/exams';
@@ -114,19 +114,25 @@ describe('registered exams', () => {
     }
   });
 
-  // Its scrollbar is hidden, so on a Mac a plain mouse wheel was the only way
-  // across, and it scrolled nothing. A notch now moves the strip one tile.
-  it('step a tile sideways on a vertical mouse wheel', () => {
+  // Its scrollbar is hidden, so a mouse had no way across. Without a touch
+  // pointer the strip offers a forward button once it overflows; the wheel is
+  // never taken, so a trackpad scrolling the page over the strip still does.
+  it('offer a forward button to a mouse, and leave the wheel to the page', () => {
+    useAppStore.setState({ isTouch: false } as never);
     render(<ExamsScreen />);
     const strip = screen.getByTestId('registered-strip');
     Object.defineProperty(strip, 'scrollWidth', { configurable: true, value: 900 });
     Object.defineProperty(strip, 'clientWidth', { configurable: true, value: 300 });
     const scrollBy = vi.fn();
     strip.scrollBy = scrollBy as never;
-    const notch = new WheelEvent('wheel', { deltaY: 100, bubbles: true, cancelable: true });
-    strip.dispatchEvent(notch);
-    expect(notch.defaultPrevented).toBe(true);
+    act(() => {
+      fireEvent.scroll(strip);
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Posunout dál' }));
     expect(scrollBy).toHaveBeenCalledTimes(1);
+    const trackpad = new WheelEvent('wheel', { deltaY: 7.5, bubbles: true, cancelable: true });
+    strip.dispatchEvent(trackpad);
+    expect(trackpad.defaultPrevented).toBe(false);
   });
 
   // "Aby se přihlášené zkoušky neukazovaly defaultně" — only the tiles, until
