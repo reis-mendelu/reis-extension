@@ -149,3 +149,31 @@ export function floorColumnRightPx(
   if (viewportHeight < FLOOR_BESIDE_RAIL_MIN_HEIGHT) return FLOOR_COLUMN_RIGHT_PX;
   return railWidth + RAIL_INSET_PX + FLOOR_COLUMN_RIGHT_PX;
 }
+
+export type FloorColumnPlacement =
+  { side: 'left'; size: 'sm' } | { side: 'right'; rightPx: number; size: 'xs' };
+
+/**
+ * Where the floor column stands, and how big its buttons are.
+ *
+ * Without a touch screen it is the iPad app on a Mac: the phone tree, a mouse,
+ * and a window around 1782x919 that the system draws at 0.825. The rail rule
+ * above then put the column 368px off the right edge — in the middle of the
+ * map, beside the building it belongs to — with 24px buttons that show as 20pt.
+ * So there it goes under the search bar on the left, where the extension's map
+ * already keeps it and nothing else on this screen lives, and takes btn-sm.
+ *
+ * `isTouch` is the store's `pointer: coarse`, the same test the Mac's visible
+ * refresh button uses. Every touch screen keeps `floorColumnRightPx` as it was.
+ */
+export function floorColumnPlacement(
+  viewportWidth: number,
+  viewportHeight: number,
+  railOpen: boolean,
+  railWidth: number,
+  isTouch: boolean
+): FloorColumnPlacement {
+  if (!isTouch) return { side: 'left', size: 'sm' };
+  const rightPx = floorColumnRightPx(viewportWidth, viewportHeight, railOpen, railWidth);
+  return { side: 'right', rightPx, size: 'xs' };
+}
