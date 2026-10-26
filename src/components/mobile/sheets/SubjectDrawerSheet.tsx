@@ -6,6 +6,7 @@ import { TeacherList } from './TeacherList';
 import { SubjectDrawerTabs } from './SubjectDrawerTabs';
 import { stepTab, SUBJECT_TAB_ORDER } from './subjectTabStep';
 import { SubjectDrawerScroller } from './SubjectDrawerScroller';
+import { SubjectFilesRefreshButton } from './SubjectFilesRefreshButton';
 import { DrawerTabBody } from '../../SubjectFileDrawer/DrawerTabBody';
 import { groupAndSortFiles } from '../../SubjectFileDrawer/utils/groupFiles';
 import type { DrawerTab } from '../../SubjectFileDrawer/types';
@@ -158,6 +159,9 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
               isName={courseName || courseCode}
               titleHref={resolvedCourseId ? syllabusUrl(resolvedCourseId, language) : undefined}
               onBack={onClose}
+              action={
+                activeTab === 'files' && <SubjectFilesRefreshButton courseCode={courseCode} />
+              }
             />
             {/* Below the header, not inside it: the header is `touch-none` so the
                 sheet can be dragged by it, and this is a list of things to tap. */}

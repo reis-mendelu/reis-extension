@@ -21,7 +21,13 @@ import { describe, expect, it } from 'vitest';
  * A subject's Files tab pulls too (SubjectDrawerScroller). Its desktop twin is
  * FilesFreshness, the refresh circle in the drawer header, and both call the
  * same `refreshFilesForSubject` — so what a refresh keeps and adds is one rule
- * (`mergeFolderListing`) on both products, and only the trigger differs.
+ * (`mergeFolderListing`) on both products, and only the trigger differs. On a
+ * Mac the Files tab gets the same visible circle as the calendar, beside the
+ * rename pencil (SubjectFilesRefreshButton), so the phone tree's Mac half has
+ * a control everywhere it has a pull.
+ *
+ * The pull hint (a list nudging itself down once) plays only with a touch
+ * pointer: on a Mac it would teach the one gesture that machine cannot make.
  *
  * Both halves are pinned. The phone files below own the gesture; the desktop
  * surfaces must not reach for them (a "just reuse the indicator" would ship a
@@ -43,6 +49,9 @@ const PHONE_FILES = [
   'components/mobile/screens/exams/ExamsPullArea.tsx',
   'components/mobile/sheets/SubjectDrawerScroller.tsx',
   'components/mobile/sheets/SubjectDrawerSheet.tsx',
+  'components/mobile/sheets/SubjectFilesRefreshButton.tsx',
+  'components/mobile/sheets/SubjectSheetHeader.tsx',
+  'components/mobile/sheets/useSubjectFilesRefresh.ts',
 ];
 
 function filesUnder(dir: string): string[] {
@@ -76,6 +85,20 @@ describe('pull-to-refresh placement', () => {
     );
     expect(read('components/mobile/sheets/SubjectDrawerScroller.tsx')).toContain(
       'PullRefreshIndicator'
+    );
+  });
+
+  it('every pull has a visible control where nothing can pull — the Mac', () => {
+    expect(read('components/mobile/screens/CalendarScreen.tsx')).toContain('<RefreshButton');
+    expect(read('components/mobile/screens/ExamsScreen.tsx')).toContain('<RefreshButton');
+    expect(read('components/mobile/sheets/SubjectDrawerSheet.tsx')).toContain(
+      '<SubjectFilesRefreshButton'
+    );
+  });
+
+  it('the pull hint is a touch lesson only', () => {
+    expect(read('components/mobile/primitives/PullRefreshIndicator.tsx')).toMatch(
+      /isTouch && hint && seen === false/
     );
   });
 

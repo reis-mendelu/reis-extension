@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { Pencil } from 'lucide-react';
 import { SheetHeader } from '../primitives/SheetHeader';
@@ -13,6 +13,8 @@ export interface SubjectSheetHeaderProps {
   isName: string;
   titleHref?: string;
   onBack: () => void;
+  /** A control beside the pencil: the Files tab's refresh (RefreshButton). */
+  action?: ReactNode;
 }
 
 /**
@@ -33,6 +35,7 @@ export function SubjectSheetHeader({
   isName,
   titleHref,
   onBack,
+  action,
 }: SubjectSheetHeaderProps) {
   const { t } = useTranslation();
   const nickname = useAppStore((s) => s.courseNicknames[courseCode]);
@@ -125,14 +128,19 @@ export function SubjectSheetHeader({
       titleSlot={editor || undefined}
       trailing={
         draft === null && (
-          <button
-            type="button"
-            onClick={startEditing}
-            aria-label={t('mobile.subjectName.rename')}
-            className="btn btn-circle btn-ghost -mr-2 -mt-1.5 min-h-11 min-w-11 flex-shrink-0 text-base-content/70"
-          >
-            <Pencil className="h-[18px] w-[18px]" />
-          </button>
+          // The refresh is `sr-only` on a touch screen (absolute, no flex
+          // slot), so there the pencil sits exactly where it always did.
+          <div className="-mr-2 -mt-1.5 flex flex-shrink-0 items-center gap-1">
+            {action}
+            <button
+              type="button"
+              onClick={startEditing}
+              aria-label={t('mobile.subjectName.rename')}
+              className="btn btn-circle btn-ghost min-h-11 min-w-11 flex-shrink-0 text-base-content/70"
+            >
+              <Pencil className="h-[18px] w-[18px]" />
+            </button>
+          </div>
         )
       }
     />
