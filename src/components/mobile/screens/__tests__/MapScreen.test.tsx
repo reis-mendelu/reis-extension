@@ -17,14 +17,6 @@ vi.mock('../../../CampusMap/EventLayer', () => ({
   EventLayer: () => <div data-testid="mock-event-layer" />,
 }));
 
-// MapEventsSection (Akce tab body) pulls in useEventsFacultySettings, which
-// does async IndexedDB + chrome.storage work via useEffect — mocked the same
-// way MapSidePanel.test.tsx mocks it, so these tab-switch tests stay
-// synchronous.
-vi.mock('../../../../hooks/useEventsFacultySettings', () => ({
-  useEventsFacultySettings: () => ({ subscribedFaculties: ['mendelu'], isLoading: false }),
-}));
-
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MapScreen } from '../MapScreen';
 import { useAppStore } from '../../../../store/useAppStore';

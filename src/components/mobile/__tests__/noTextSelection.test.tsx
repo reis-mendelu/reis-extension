@@ -3,9 +3,6 @@ import { render, screen } from '@testing-library/react';
 
 vi.mock('../../CampusMap/MapCanvas', () => ({ MapCanvas: () => <div /> }));
 vi.mock('../../CampusMap/EventLayer', () => ({ EventLayer: () => <div /> }));
-vi.mock('../../../hooks/useEventsFacultySettings', () => ({
-  useEventsFacultySettings: () => ({ subscribedFaculties: ['mendelu'], isLoading: false }),
-}));
 
 import { MobileApp } from '../MobileApp';
 import { SearchSheet } from '../sheets/SearchSheet';

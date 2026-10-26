@@ -300,10 +300,25 @@ describe('SubjectDrawerSheet — previewing a file before downloading it', () =>
     expect(await screen.findByTestId('mobile-pdf-preview')).toBeInTheDocument();
   });
 
+  // The overlay is absolute inset-0 inside the panel, so it fills the panel's
+  // padding box: the panel's safe-area padding does not reach it, and it has to
+  // carry both insets itself or the reader's bottom sits under the nav bar.
+  it('keeps the previewed PDF clear of the system bars', async () => {
+    renderSheet();
+    fireEvent.click(screen.getByText('Prednaska01.pdf'));
+    await screen.findByTestId('mobile-pdf-preview');
+    const overlay = screen.getByTestId('mobile-pdf-preview-overlay');
+    expect(overlay.className).toContain('pt-[var(--safe-top');
+    expect(overlay.className).toContain('pb-[var(--safe-bottom');
+  });
+
   it('still downloads a file it cannot preview', () => {
     renderSheet();
     fireEvent.click(screen.getByText('Data.xlsx'));
-    expect(fileActions.openFile).toHaveBeenCalledWith(expect.stringContaining('f=2'));
+    expect(fileActions.openFile).toHaveBeenCalledWith(
+      expect.stringContaining('f=2'),
+      expect.objectContaining({ name: 'Data.xlsx' })
+    );
     expect(fileActions.openPdfInline).not.toHaveBeenCalled();
   });
 
@@ -315,7 +330,10 @@ describe('SubjectDrawerSheet — previewing a file before downloading it', () =>
     // index — Data.xlsx sorts first.
     const pdfRow = screen.getByText('Prednaska01.pdf').closest('.space-y-1') as HTMLElement;
     fireEvent.click(within(pdfRow).getByTitle('Stáhnout'));
-    expect(fileActions.downloadSingle).toHaveBeenCalledWith(expect.stringContaining('f=1'));
+    expect(fileActions.downloadSingle).toHaveBeenCalledWith(
+      expect.stringContaining('f=1'),
+      expect.objectContaining({ name: 'Prednaska01.pdf' })
+    );
     expect(fileActions.openPdfInline).not.toHaveBeenCalled();
   });
 
@@ -324,7 +342,9 @@ describe('SubjectDrawerSheet — previewing a file before downloading it', () =>
     renderSheet();
     fireEvent.click(screen.getByText('Prednaska01.pdf'));
     await waitFor(() =>
-      expect(fileActions.openFile).toHaveBeenCalledWith(expect.stringContaining('f=1'))
+      expect(fileActions.openFile).toHaveBeenCalledWith(expect.stringContaining('f=1'), {
+        name: 'Prednaska01.pdf',
+      })
     );
   });
 });

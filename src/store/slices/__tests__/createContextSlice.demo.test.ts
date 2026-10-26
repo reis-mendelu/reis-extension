@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useAppStore } from '../../useAppStore';
 
 const getUserParams = vi.hoisted(() => vi.fn());
-vi.mock('../../../utils/userParams', () => ({ getUserParams }));
+vi.mock('../../../utils/userParams', () => ({ getUserParams, isIdentityConfirmed: () => true }));
 
 describe('createContextSlice in demo mode', () => {
   beforeEach(() => {

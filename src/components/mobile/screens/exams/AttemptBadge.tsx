@@ -1,7 +1,5 @@
 import { useTranslation } from '../../../../hooks/useTranslation';
-import type { ExamTerm } from '../../../../types/exams';
-
-type Attempt = NonNullable<ExamTerm['attemptTypes']>[number];
+import type { AttemptType as Attempt } from '../../../../utils/exams/attemptTypesIn';
 
 // Literal class names so Tailwind ships them. Coloured by how late the attempt
 // is: the regular term green, the first retake amber, the last ones red — the
@@ -21,16 +19,23 @@ const LOOK: Record<Attempt, string> = {
  * the seat count its room on a phone. The glyph is the glance; the full name is
  * the element's accessible label and tooltip, so a screen reader and a
  * long-press still say "1. opravný".
+ *
+ * `decorative` is for `AttemptBadgeLegend`, which prints the name beside the
+ * badge: there the label would make a screen reader say it twice.
  */
-export function AttemptBadge({ type }: { type: Attempt }) {
+export function AttemptBadge({
+  type,
+  decorative = false,
+}: {
+  type: Attempt;
+  decorative?: boolean;
+}) {
   const { t } = useTranslation();
   const name = t(`successRate.${type}`);
   const glyph = type === 'regular' ? t('mobile.exams.attemptRegularShort') : type.slice(-1);
   return (
     <span
-      role="img"
-      aria-label={name}
-      title={name}
+      {...(decorative ? { 'aria-hidden': true } : { role: 'img', 'aria-label': name, title: name })}
       className={`inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold leading-none ${LOOK[type]}`}
     >
       {glyph}

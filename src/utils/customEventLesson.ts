@@ -7,8 +7,8 @@ import type { BlockLesson, CalendarCustomEvent } from '../types/calendarTypes';
  * Extracted from `useCalendarData`, where it was inlined. It was inlined there
  * for as long as the desktop grid was the only view that merged custom events —
  * and that is exactly why the phone never showed them: `CalendarScreen` builds
- * its day from `schedule.data` alone, so a block written by `rsvpBlockSync` (or
- * typed in by the student) was persisted, reconciled, and invisible.
+ * its day from `schedule.data` alone, so a block the student typed in was
+ * persisted and invisible.
  *
  * Both trees import this directly. A second copy of a twenty-field mapping is
  * how the two calendars start disagreeing about what a custom event is.

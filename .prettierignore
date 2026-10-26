@@ -19,6 +19,9 @@ src/data/map/campusPaths.json
 # parser change — so they stay byte-for-byte as scraped. Reformatting them
 # would validate future parser work against markup IS never sends.
 src/api/__tests__/fixtures/**/*.html
+# Same, for the impersonation fixtures — IS's HTML and its timetable JSON, trimmed
+# and scrubbed but otherwise as IS emitted them.
+src/api/impersonation/__tests__/fixtures/**
 # The IS Mendelu HTML parsers. CLAUDE.md's Parser Rules freeze them: they are
 # extremely brittle, column-index constants are load-bearing, and a change is
 # only justified by a real captured IS sample. Even behaviour-preserving

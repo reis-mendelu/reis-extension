@@ -81,6 +81,18 @@ describe('findForbiddenWebBuildVars', () => {
     ).toEqual([]);
   });
 
+  // The 3D map's on-switch (src/data/map/buildingModels.ts), read by any build
+  // that sets it. A flag, not a credential.
+  it('allows the 3D map flag', () => {
+    expect(
+      findForbiddenWebBuildVars({
+        VITE_DEV_SOCIETY: 'reis',
+        VITE_PREVIEW_BUILD: 'true',
+        VITE_MAP3D: '1',
+      })
+    ).toEqual([]);
+  });
+
   it("allows Vercel's platform-injected VITE_VERCEL_* metadata", () => {
     expect(
       findForbiddenWebBuildVars({

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MenuCard } from '../MenuCard';
 import { useAppStore } from '../../../../../store/useAppStore';
+import { useIskamStore } from '../../../../../mobile/iskam/iskamStore';
 import type { OutletMenu } from '../../../../../types/menuTypes';
 
 const MENU: OutletMenu[] = [
@@ -40,6 +41,16 @@ describe('MenuCard', () => {
     render(<MenuCard dayIso={DAY} />);
     fireEvent.click(screen.getByTestId('menu-card'));
     expect(useAppStore.getState().mobileSheets).toEqual([{ kind: 'menu', dayIso: DAY }]);
+  });
+
+  // From the tap, not an effect in the sheet: the ISIC row's silent check starts
+  // with the sheet (CLAUDE.md: no useEffect data fetching).
+  it('starts the ISIC balance check when tapped', () => {
+    const check = vi.fn(async () => {});
+    useIskamStore.setState({ check });
+    render(<MenuCard dayIso={DAY} />);
+    fireEvent.click(screen.getByTestId('menu-card'));
+    expect(check).toHaveBeenCalledTimes(1);
   });
 
   // The SKM page carries about two weeks. Beyond that there is nothing to say,

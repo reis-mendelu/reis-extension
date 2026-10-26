@@ -113,6 +113,20 @@ export interface RemotePlace {
 //
 // The curation line is "somewhere you would send a friend to sit", which is
 // what `why` has to earn — not a description of the plants.
+/**
+ * A society's logo on the student map between two dates (`map_pins`): its name,
+ * a short description and a link. On the map only — never in Novinky or Akce.
+ */
+export interface SocietyPin {
+  id: string;
+  societyId: string;
+  title: string;
+  description: string | null;
+  url: string | null;
+  /** [lng, lat] */
+  coord: [number, number];
+}
+
 export interface GardenPlace {
   /** Stable slug, and the stem of the bundled thumb: `public/garden/<id>.webp`. */
   id: string;
@@ -237,9 +251,14 @@ export interface RoomIndexEntry {
 export type MapSelection =
   | { kind: 'room'; room: RoomProperties }
   | { kind: 'roomRef'; entry: RoomIndexEntry } // from search/deep-link before geometry loads
-  | { kind: 'poi'; poi: PoiProperties; coord: [number, number] }
+  // `forRoom`: the timetable room this place was shown FOR — a room with no
+  // floor plan, so the map shows its building ("T18" → pin T). See focusRoomPlace.
+  | { kind: 'poi'; poi: PoiProperties; coord: [number, number]; forRoom?: string }
   | { kind: 'landmark'; landmark: Landmark } // search result only; resolves to a poi selection on focus
+  // search result only: a room with no floor plan (D05), focused through
+  // focusRoomByCode so the card names the room over its building
+  | { kind: 'placedRoom'; label: string; display: string }
   | { kind: 'gardenPlace'; place: GardenPlace } // one of the botanical garden's places
-  // a society event pin. `reveal: 'map'` — focused from the calendar, which asked
-  // WHERE: the phone sheet stays at peek so the pin is not under the card.
-  | { kind: 'event'; event: import('./events').MapEvent; reveal?: 'map' };
+  | { kind: 'societyPin'; pin: SocietyPin } // a society's logo on the map for a while
+  // a society event pin
+  | { kind: 'event'; event: import('./events').MapEvent };

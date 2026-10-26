@@ -1,7 +1,7 @@
 import { ArrowLeft, LogOut } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { societyById } from '../../data/societies';
+import { useSociety } from '../../hooks/useSociety';
 import { logError } from '../../utils/reportError';
 import { SocietyChip } from './SocietyChip';
 import { SocietyPicker } from './SocietyPicker';
@@ -15,7 +15,7 @@ export function AdminConsoleHeader({ compact = false }: { compact?: boolean }) {
   const close = useAppStore((s) => s.closeSocietyAdmin);
   const logout = useAppStore((s) => s.adminLogout);
   const { t } = useTranslation();
-  const society = activeId ? societyById(activeId) : null;
+  const society = useSociety(activeId);
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b border-base-300 bg-base-100 px-3">

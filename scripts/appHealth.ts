@@ -37,12 +37,13 @@ const FORBIDDEN_URL_PATTERNS: { pattern: RegExp; why: string }[] = [
  * was inverted. Anything not listed here is treated as a write.
  *
  * The reason this cannot simply key off the HTTP method: PostgREST sends EVERY
- * `supabase.rpc()` as a POST, read-only ones included, so `get_event_rsvps` is
+ * `supabase.rpc()` as a POST, read-only ones included, so `usage_stats` is
  * a POST that is perfectly fine.
  */
 const READ_ONLY_SUPABASE_RPCS = [
-  'get_event_rsvps',
   'usage_stats' /* read-only aggregate, no writes */,
+  'usage_retention' /* read-only aggregate, no writes */,
+  'usage_programmes' /* read-only aggregate, no writes */,
 ];
 
 const READ_ONLY_METHODS = ['GET', 'HEAD', 'OPTIONS'];

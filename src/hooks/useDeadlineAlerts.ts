@@ -1,15 +1,21 @@
 import { useCallback, useMemo } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { parseDate } from '../utils/date';
+import { courseDisplayName } from '../utils/courseDisplayName';
+import { boxCourseCode, boxState } from '../utils/submissionBoxes';
+import { newPointsAlerts } from '../utils/zaznamnik/newPointsAlerts';
 
 export interface DeadlineAlert {
   id: string;
-  type: 'exam-reg-opens' | 'exam-reg' | 'assignment' | 'cvicny-test';
+  type: 'exam-reg-opens' | 'exam-reg' | 'assignment' | 'cvicny-test' | 'zaznamnik-points';
   title: string;
   body: string;
   deadline?: Date;
   hoursUntil?: number;
   link?: string;
+  /** Set on a row that opens a subject in reIS rather than a page in IS. */
+  courseCode?: string;
+  courseId?: string;
 }
 
 function parseCzDateTime(s: string): Date | null {
@@ -28,10 +34,13 @@ export function useDeadlineAlerts() {
   const exams = useAppStore((s) => s.exams.data);
   const odevzdavarny = useAppStore((s) => s.odevzdavarny);
   const cvicneTests = useAppStore((s) => s.cvicneTests);
+  const subjects = useAppStore((s) => s.subjects?.data);
+  const nicknames = useAppStore((s) => s.courseNicknames);
   const language = useAppStore((s) => s.language);
   const seenIds = useAppStore((s) => s.notifications.seenDeadlineAlertIds);
   const markDeadlineAlertsSeen = useAppStore((s) => s.markDeadlineAlertsSeen);
   const pulseNow = useAppStore((s) => s.now);
+  const newPoints = useAppStore((s) => s.zaznamnikNewPoints);
 
   const markAllSeen = useCallback(
     (ids: string[]) => {
@@ -46,7 +55,11 @@ export function useDeadlineAlerts() {
     const result: DeadlineAlert[] = [];
 
     for (const subject of exams) {
-      const subjectName = (isEn ? subject.nameEn : subject.nameCs) ?? subject.name;
+      const subjectName = courseDisplayName(
+        nicknames,
+        subject.code,
+        (isEn ? subject.nameEn : subject.nameCs) ?? subject.name
+      );
 
       for (const section of subject.sections) {
         const sectionName = (isEn ? section.nameEn : section.nameCs) ?? section.name;
@@ -96,12 +109,19 @@ export function useDeadlineAlerts() {
     }
 
     for (const a of odevzdavarny) {
-      if (a.fileCount > 0 || !a.deadline) continue;
+      // The list also holds boxes IS will not take files for ("Kam nemohu").
+      // Files alone do not silence it: until the student confirms in IS, the
+      // box is not handed in (see boxState).
+      if (boxState(a) === 'confirmed' || !a.deadline || a.isOpen === false) continue;
       const deadline = parseCzDateTime(a.deadline);
       if (!deadline) continue;
       const h = (deadline.getTime() - now) / H;
       if (h > 0 && h <= 48) {
-        const courseName = isEn ? a.courseNameEn : a.courseNameCs;
+        const courseName = courseDisplayName(
+          nicknames,
+          boxCourseCode(a, subjects) ?? undefined,
+          isEn ? a.courseNameEn : a.courseNameCs
+        );
         result.push({
           id: `odev-${a.odevzdavarnaId || a.name}`,
           type: 'assignment',
@@ -122,8 +142,9 @@ export function useDeadlineAlerts() {
     }
 
     result.sort((a, b) => (a.hoursUntil ?? Infinity) - (b.hoursUntil ?? Infinity));
-    return result;
-  }, [exams, odevzdavarny, cvicneTests, language, pulseNow]);
+    // Points first: they already happened, the deadlines are still ahead.
+    return [...newPointsAlerts(newPoints, subjects, nicknames, isEn), ...result];
+  }, [exams, odevzdavarny, cvicneTests, language, pulseNow, subjects, nicknames, newPoints]);
 
   const unseenCount = useMemo(
     () => alerts.filter((a) => !seenIds.has(a.id)).length,

@@ -1,4 +1,4 @@
-import { isHorizontal } from '../screens/calendar/weekSwipe';
+import { isHorizontal } from './swipeSteps';
 import { DRAG_SLOP_PX } from './sheetDrag';
 
 /**

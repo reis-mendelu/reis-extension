@@ -5,8 +5,10 @@ import { AdminConsoleHeader } from './AdminConsoleHeader';
 import { AdminEventList } from './AdminEventList';
 import { SuggestionsInbox } from './SuggestionsInbox';
 import { SocietyAccountsPanel } from './SocietyAccountsPanel';
+import { SocietiesPanel } from './SocietiesPanel';
 import { ChangeMyPasswordForm } from './ChangeMyPasswordForm';
 import { AdminConsoleMap } from './AdminConsoleMap';
+import { AdminQuestionsPanel } from './AdminQuestionsPanel';
 import { AdminStatsPanel } from './AdminStatsPanel';
 
 /**
@@ -31,7 +33,7 @@ import { AdminStatsPanel } from './AdminStatsPanel';
  * `placingEvent` forces the map and hides the toggle: that flow has its own
  * instruction banner and Cancel, so a second way out would just be ambiguous.
  */
-type Tab = 'list' | 'map' | 'suggestions' | 'accounts' | 'stats';
+type Tab = 'list' | 'map' | 'suggestions' | 'accounts' | 'stats' | 'questions';
 
 export function MobileAdminConsole() {
   const placing = useAppStore((s) => s.placingEvent);
@@ -41,6 +43,7 @@ export function MobileAdminConsole() {
   const isReisAdmin = useAppStore((s) => s.adminRole === 'reis_admin');
   const unread = useAppStore((s) => s.suggestionsUnread);
   const loadAdminStats = useAppStore((s) => s.loadAdminStats);
+  const loadAdminQuestions = useAppStore((s) => s.loadAdminQuestions);
   const [tab, setTab] = useState<Tab>('list');
   const draftFocus = useAppStore((s) => s.draftFocusRequest);
   // "Ukázat na mapě" has to bring the map forward as well as move the camera —
@@ -58,6 +61,7 @@ export function MobileAdminConsole() {
   const showMap = placing || tab === 'map';
   const showSuggestions = !placing && isReisAdmin && tab === 'suggestions';
   const showStats = !placing && isReisAdmin && tab === 'stats';
+  const showQuestions = !placing && isReisAdmin && tab === 'questions';
   // Every account gets the accounts tab — a society needs it to change its own
   // password; only a reIS admin additionally sees the reset panel inside it.
   const showAccounts = !placing && tab === 'accounts';
@@ -70,6 +74,7 @@ export function MobileAdminConsole() {
       className={`tab flex-1 px-1 ${tab === key ? 'tab-active font-semibold' : 'text-base-content'}`}
       onClick={() => {
         if (key === 'stats') void loadAdminStats();
+        if (key === 'questions') void loadAdminQuestions();
         setTab(key);
       }}
     >
@@ -93,6 +98,7 @@ export function MobileAdminConsole() {
           {tabBtn('map', t('admin.mapTab') as string)}
           {isReisAdmin && tabBtn('suggestions', t('admin.suggestionsTab') as string, unread)}
           {isReisAdmin && tabBtn('stats', t('admin.statsTab') as string)}
+          {isReisAdmin && tabBtn('questions', t('admin.questions.tab') as string)}
           {tabBtn('accounts', t('admin.accountsTab') as string)}
         </div>
       )}
@@ -102,7 +108,7 @@ export function MobileAdminConsole() {
             for base-100 and measures 1.005:1 (invisible) on base-200. */}
         <div
           className={
-            showMap || showSuggestions || showAccounts || showStats
+            showMap || showSuggestions || showAccounts || showStats || showQuestions
               ? 'hidden'
               : 'h-full bg-base-100'
           }
@@ -112,6 +118,7 @@ export function MobileAdminConsole() {
         {showAccounts && (
           <div className="h-full overflow-y-auto bg-base-100 p-3">
             <div className="flex flex-col gap-6">
+              {isReisAdmin && <SocietiesPanel />}
               {isReisAdmin && <SocietyAccountsPanel />}
               <ChangeMyPasswordForm />
             </div>
@@ -125,6 +132,11 @@ export function MobileAdminConsole() {
         {showStats && (
           <div className="h-full overflow-y-auto bg-base-100">
             <AdminStatsPanel />
+          </div>
+        )}
+        {showQuestions && (
+          <div className="h-full overflow-y-auto bg-base-100 p-3">
+            <AdminQuestionsPanel />
           </div>
         )}
         {showMap && (

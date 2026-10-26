@@ -2,6 +2,8 @@ import { useCallback, useRef, type ReactNode } from 'react';
 import { useAppStore } from '../../../store/useAppStore';
 import { AlwaysScrollable } from '../primitives/AlwaysScrollable';
 import { PullRefreshIndicator } from '../primitives/PullRefreshIndicator';
+import { useSwipeSteps } from '../primitives/useSwipeSteps';
+import { swipeStartIsOffLimits } from '../primitives/swipeStartGuard';
 
 /**
  * The subject sheet's tab body scroller, pullable on the Files tab: pull it
@@ -26,15 +28,31 @@ import { PullRefreshIndicator } from '../primitives/PullRefreshIndicator';
  * to hand it, so a pull there would spin for files the student is not looking
  * at. The empty and skeleton states are held pullable too (AlwaysScrollable):
  * "no files yet" is exactly when a student pulls to check.
+ *
+ * It also SWIPES, a tab at a time (`onSwipeStep`). The tab bar is at the top of
+ * a full-height sheet, the furthest point from a thumb; the body is where the
+ * thumb already is. Built exactly like the calendar's DayBody, which is the
+ * same problem solved and verified on device: one element is both the pull
+ * scroller and the swipe surface, `touch-pan-y` keeps the vertical pan native
+ * and stops the WebView cancelling a sideways swipe partway, and the hook's
+ * axis arbitration means a vertical drag is never claimed at all.
+ *
+ * A swipe may not START on a screen edge (the system back gesture), on a
+ * horizontal scroller that overflows (the grading table, the semester chips)
+ * or in a text field — see `swipeStartIsOffLimits`. Phone and iPad only:
+ * src/test/guards/subjectTabSwipeIsPhoneOnly.test.ts.
  */
 export function SubjectDrawerScroller({
   courseCode,
   pullable,
   top,
+  onSwipeStep,
   children,
 }: {
   courseCode: string;
   pullable: boolean;
+  /** A sideways swipe across the body: -1 for the previous tab, +1 the next. */
+  onSwipeStep: (steps: -1 | 1) => void;
   /** Everything above the list; part of where a pull may start. */
   top: ReactNode;
   children: ReactNode;
@@ -51,6 +69,36 @@ export function SubjectDrawerScroller({
     const state = useAppStore.getState();
     if (!state.filesLoading[courseCode]) void state.refreshFilesForSubject(courseCode);
   }, [courseCode]);
+
+  /**
+   * Written to the node, never through state, and damped to a third — both for
+   * the reasons DayBody gives: a render per pointermove leaves the transition
+   * easing the offset the finger sets, and the next tab is not laid out beside
+   * this one, so following 1:1 would promise a carousel that is not there.
+   */
+  const setOffset = (px: number | null) => {
+    const body = scrollerRef.current;
+    if (!body) return;
+    if (px === null) {
+      body.style.removeProperty('transition');
+      body.style.removeProperty('transform');
+      return;
+    }
+    body.style.transition = 'none';
+    body.style.transform = `translateX(${px / 3}px)`;
+  };
+  const { handlers } = useSwipeSteps({
+    elementRef: scrollerRef,
+    onMove: setOffset,
+    onEnd: (steps) => {
+      setOffset(null);
+      if (steps !== 0) onSwipeStep(steps);
+    },
+    onCancel: () => setOffset(null),
+    ignoreStart: (e) =>
+      swipeStartIsOffLimits(e.target as Element, scrollerRef.current, e.clientX, window.innerWidth),
+  });
+
   return (
     <div ref={surfaceRef} className="flex min-h-0 flex-1 flex-col">
       {top}
@@ -66,7 +114,17 @@ export function SubjectDrawerScroller({
         <div
           ref={scrollerRef}
           data-testid="subject-drawer-scroller"
-          className="relative flex-1 overflow-y-auto"
+          {...handlers}
+          // `[&_.overflow-y-auto]:touch-pan-y` reaches INTO the tab bodies.
+          // Every tab but Soubory scrolls in its own `overflow-y-auto` box, and
+          // a touch resolves touch-action only up to the nearest scroll
+          // container — so this element's pan-y never reached a finger on
+          // Spolužáci or Úspěšnost, and Chrome cancelled 6 of 120 driven swipes
+          // there mid-gesture (0 of 120 with this). Set from here, not in the
+          // tab components, because those are shared with the extension. A
+          // horizontal scroller inside a tab is its own nearest container, so
+          // the grading table still pans sideways.
+          className="relative flex-1 touch-pan-y overflow-y-auto transition-transform duration-200 ease-out [&_.overflow-y-auto]:touch-pan-y"
         >
           {pullable ? <AlwaysScrollable>{children}</AlwaysScrollable> : children}
         </div>

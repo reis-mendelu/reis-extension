@@ -136,7 +136,7 @@ describe('CalendarScreen landing day', () => {
 
   it('opens on the first teaching day when term has not started', () => {
     render(<CalendarScreen />);
-    expect(screen.getByText('Pondělí 21. září')).toBeInTheDocument();
+    expect(screen.getByText('Po 21. září')).toBeInTheDocument();
   });
 
   it('shows the lesson that day rather than an empty screen', () => {
@@ -149,8 +149,8 @@ describe('CalendarScreen landing day', () => {
     // fireEvent, not userEvent: userEvent's own timers deadlock against the
     // fake clock this suite needs to pin a date before term.
     render(<CalendarScreen />);
-    fireEvent.click(screen.getByRole('button', { name: 'Dnes' }));
-    expect(screen.getByText('Středa 16. září')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Zpět na dnešek/ }));
+    expect(screen.getByText('St 16. září')).toBeInTheDocument();
     expect(screen.getByTestId('calendar-outside-teaching')).toBeInTheDocument();
   });
 
@@ -160,7 +160,7 @@ describe('CalendarScreen landing day', () => {
     // teaching day.
     vi.setSystemTime(new Date('2026-09-22T10:00:00'));
     render(<CalendarScreen />);
-    expect(screen.getByText('Úterý 22. září')).toBeInTheDocument();
+    expect(screen.getByText('Út 22. září')).toBeInTheDocument();
   });
 
   it('stays on today on the first teaching day itself', () => {
@@ -168,8 +168,8 @@ describe('CalendarScreen landing day', () => {
     // moves — and `isOutsideTeaching` is already false, which is what decides.
     vi.setSystemTime(new Date('2026-09-21T08:00:00'));
     render(<CalendarScreen />);
-    expect(screen.getByText('Pondělí 21. září')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Dnes' })).not.toBeInTheDocument();
+    expect(screen.getByText('Po 21. září')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Zpět na dnešek/ })).not.toBeInTheDocument();
   });
 
   it('stays on today mid-week once term is running, with the ordinary empty state', () => {
@@ -178,29 +178,29 @@ describe('CalendarScreen landing day', () => {
     // before term, and it must not be dragged back to Monday's class.
     vi.setSystemTime(new Date('2026-09-23T10:00:00'));
     render(<CalendarScreen />);
-    expect(screen.getByText('Středa 23. září')).toBeInTheDocument();
+    expect(screen.getByText('St 23. září')).toBeInTheDocument();
     expect(screen.queryByTestId('calendar-outside-teaching')).not.toBeInTheDocument();
     expect(screen.getByText('Nic nemáš, pohodička')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Dnes' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Zpět na dnešek/ })).not.toBeInTheDocument();
   });
 
   it('stays on today after term, when the first lesson is in the past', () => {
     vi.setSystemTime(new Date('2026-12-16T10:00:00'));
     render(<CalendarScreen />);
-    expect(screen.getByText('Středa 16. prosince')).toBeInTheDocument();
+    expect(screen.getByText('St 16. prosince')).toBeInTheDocument();
   });
 
   it('stays on today while the teaching-week table has not arrived', () => {
     // A late fetch must not silently move the student to another week.
     useAppStore.setState({ teachingWeekData: null } as never);
     render(<CalendarScreen />);
-    expect(screen.getByText('Středa 16. září')).toBeInTheDocument();
+    expect(screen.getByText('St 16. září')).toBeInTheDocument();
   });
 
   it('stays on today with no schedule to name a first day', () => {
     useAppStore.setState({ schedule: { data: [], status: 'success' } } as never);
     render(<CalendarScreen />);
-    expect(screen.getByText('Středa 16. září')).toBeInTheDocument();
+    expect(screen.getByText('St 16. září')).toBeInTheDocument();
   });
 
   it('skips a hidden first lesson and lands on the first day the student can see', () => {
@@ -219,7 +219,7 @@ describe('CalendarScreen landing day', () => {
       },
     } as never);
     render(<CalendarScreen />);
-    expect(screen.getByText('Středa 23. září')).toBeInTheDocument();
+    expect(screen.getByText('St 23. září')).toBeInTheDocument();
     expect(screen.getByText('Statistika')).toBeInTheDocument();
   });
 
@@ -230,6 +230,6 @@ describe('CalendarScreen landing day', () => {
       hiddenItems: { events: [], courses: [{ courseCode: 'EBC-MAN', type: 'all' }] },
     } as never);
     render(<CalendarScreen />);
-    expect(screen.getByText('Středa 16. září')).toBeInTheDocument();
+    expect(screen.getByText('St 16. září')).toBeInTheDocument();
   });
 });

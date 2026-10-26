@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "../node_modules/.tmp/tsconfig.mcp.tsbuildinfo",
+    "baseUrl": "..",
+    "types": ["vite/client", "chrome", "node"]
+  },
+  "include": ["."]
+}

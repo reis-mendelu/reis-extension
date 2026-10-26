@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Clock, MapPin } from 'lucide-react';
 import type { CalendarCustomEvent } from '../types/calendarTypes';
 import { useTranslation } from '../hooks/useTranslation';
+import { popoverPosition, formatDateLabel } from '../utils/calendarPopover';
 
 interface CustomEventModalProps {
   mode: 'create' | 'edit';
@@ -13,19 +14,6 @@ interface CustomEventModalProps {
   onSave: (data: Omit<CalendarCustomEvent, 'id'>) => void;
   onDelete?: () => void;
   onClose: () => void;
-}
-
-function formatDateLabel(yyyymmdd: string, language: string): string {
-  if (!yyyymmdd || yyyymmdd.length !== 8) return '';
-  const y = parseInt(yyyymmdd.slice(0, 4));
-  const m = parseInt(yyyymmdd.slice(4, 6)) - 1;
-  const d = parseInt(yyyymmdd.slice(6, 8));
-  const locale = language === 'en' ? 'en-GB' : 'cs-CZ';
-  return new Date(y, m, d).toLocaleDateString(locale, {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'long',
-  });
 }
 
 const POPOVER_W = 300;
@@ -51,17 +39,7 @@ export function CustomEventModal({
   const date = event?.date ?? initialDate ?? '';
   const titleRef = useRef<HTMLInputElement>(null);
 
-  const pos = (() => {
-    if (!anchor) return null;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    let x = anchor.x + 14;
-    let y = anchor.y - 24;
-    if (x + POPOVER_W > vw - 8) x = anchor.x - POPOVER_W - 14;
-    if (y + POPOVER_H > vh - 8) y = vh - POPOVER_H - 8;
-    if (y < 8) y = 8;
-    return { left: Math.max(8, x), top: y };
-  })();
+  const pos = anchor ? popoverPosition(anchor, POPOVER_W, POPOVER_H) : null;
 
   useEffect(() => {
     titleRef.current?.focus();

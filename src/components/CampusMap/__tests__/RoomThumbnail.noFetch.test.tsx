@@ -40,7 +40,7 @@ describe('RoomThumbnail', () => {
   });
 
   it('fetches nothing for a room the map cannot find either', () => {
-    render(<RoomThumbnail roomName="X02" />);
+    render(<RoomThumbnail roomName="ZFAC1 (Led)" />);
     expect(loadMapBuilding).not.toHaveBeenCalled();
     expect(screen.getByText('—')).toBeInTheDocument();
   });

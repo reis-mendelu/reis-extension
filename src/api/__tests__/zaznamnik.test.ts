@@ -10,6 +10,7 @@ const PH_WITH_DATA = fixture('ph-with-data.html');
 const PH_SLUCKA = fixture('ph-slucka-column.html');
 const PH_EMPTY = fixture('ph-empty.html');
 const PH_PRIOR = fixture('ph-prior-semester.html');
+const PH_UICT_ALL_EMPTY = fixture('ph-uict-all-arches-empty.html');
 
 const VT_WITH_TESTS = fixture('vt-with-tests.html');
 const VT_NO_TESTS = fixture('vt-no-tests.html');
@@ -58,6 +59,18 @@ describe('parsePhPage', () => {
       expect(arch.columns).toEqual([]);
       expect(arch.values).toEqual([]);
     }
+  });
+
+  // Úvod do ICT grades through eTests; its two arches stay "nemáte dosud" all
+  // semester. The parse is right — this pins it, so the tab's empty state is
+  // the thing to fix, never this parser.
+  it('keeps the arch names of a real page whose every arch is still empty', () => {
+    const result = parsePhPage(PH_UICT_ALL_EMPTY);
+    expect(result.sections.map((s) => s.label)).toEqual(['Archy ze cvičení - všichni studenti']);
+    expect(result.sections[0]?.arches).toEqual([
+      { name: 'Zápočet', empty: true, columns: [], values: [] },
+      { name: 'Duplicitní studia', empty: true, columns: [], values: [] },
+    ]);
   });
 
   it('parses prior-semester PH pages without throwing', () => {

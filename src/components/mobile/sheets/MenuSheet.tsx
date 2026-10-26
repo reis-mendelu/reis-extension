@@ -1,11 +1,14 @@
-import { useState } from 'react';
-import { UtensilsCrossed, Soup, Utensils } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { UtensilsCrossed } from 'lucide-react';
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { menuForDay } from '../../../utils/menuForDay';
 import { formatHeaderDate } from '../../../utils/mobile/formatHeaderDate';
+import { MenuOutletPanel } from './MenuOutletPanel';
+import { IskamBalanceRow } from './IskamBalanceRow';
+import { useIskamStore } from '../../../mobile/iskam/iskamStore';
 
 export interface MenuSheetProps {
   dayIso: string;
@@ -28,14 +31,21 @@ export function MenuSheet({ dayIso, onClose }: MenuSheetProps) {
   const { t, language } = useTranslation();
   const menu = useAppStore((s) => s.menu);
   const outlets = menuForDay(menu, new Date(`${dayIso}T00:00:00`));
-  const [active, setActive] = useState(0);
+  // The canteen by NAME, not position, so a language switch that re-fetches the
+  // menu cannot leave the pick pointing at a different canteen.
+  const [outletName, setOutletName] = useState<string | null>(null);
 
   // The sheet outlives the data it was opened on: a language switch clears
   // `menu` and re-fetches (store/useAppStore.ts), which can empty the day while
   // the sheet is still open.
-  const safe = Math.min(active, Math.max(outlets.length - 1, 0));
+  const picked = outlets.findIndex((o) => o.outlet === outletName);
+  const safe = picked >= 0 ? picked : 0;
   const current = outlets[safe];
-
+  // The balance is never kept past the sheet: leaving drops it, so the next
+  // open shows "checking", not a number from minutes ago. On unmount, not in
+  // onClose: Android back and a tab switch remove the sheet without calling it.
+  // A cleanup, not a fetch — the check itself starts from MenuCard's tap.
+  useEffect(() => () => useIskamStore.getState().reset(), []);
   return (
     <Sheet size="content" onClose={onClose}>
       <SheetHeader
@@ -46,54 +56,26 @@ export function MenuSheet({ dayIso, onClose }: MenuSheetProps) {
         )}
         onClose={onClose}
       />
+      <IskamBalanceRow />
       {!current ? (
         <div className="flex flex-col items-center gap-2 px-4 pb-8 pt-2 text-center text-base-content/60">
           <UtensilsCrossed size={32} className="opacity-40" />
           <p>{t('menu.unavailable')}</p>
         </div>
       ) : (
-        <div className="flex flex-col px-4 pb-6">
-          {/* One outlet is not a choice, so it gets no tab strip — the header
-              already says which day, and the row below says which dishes. */}
-          {outlets.length > 1 && (
-            <div role="tablist" className="mb-3 flex gap-2">
-              {outlets.map((o, i) => (
-                <button
-                  key={o.outlet}
-                  role="tab"
-                  aria-selected={i === safe}
-                  onClick={() => setActive(i)}
-                  className={`min-h-9 flex-1 rounded-xl border px-3 text-sm font-bold ${
-                    i === safe
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-base-300 text-base-content/60'
-                  }`}
-                >
-                  {o.outlet}
-                </button>
-              ))}
-            </div>
-          )}
-          <div className="flex flex-col gap-2">
-            {current.mainDishes.map((dish, i) => (
-              <div
-                key={`${dish}-${i}`}
-                className="flex items-start gap-2.5 rounded-2xl border border-base-300 bg-base-100 px-3.5 py-2.5"
-              >
-                <Utensils size={16} className="mt-0.5 flex-shrink-0 text-base-content/40" />
-                <span className="text-md text-base-content">{dish}</span>
-              </div>
-            ))}
-            {/* Soup last. It is still served and a few people want it, but at
-                MENDELU it is not what anyone opens this list for, and leading
-                with it pushed the mains below the fold at 320px. */}
-            {current.soup && (
-              <div className="flex items-start gap-2.5 rounded-2xl border border-base-300 bg-base-100 px-3.5 py-2.5">
-                <Soup size={16} className="mt-0.5 flex-shrink-0 text-primary" />
-                <span className="text-md text-base-content">{current.soup}</span>
-              </div>
-            )}
-          </div>
+        // Every canteen's list, stacked in one grid cell — see MenuOutletPanel:
+        // the cell keeps the height of the longest one, so switching canteen
+        // does not move the sheet's top edge.
+        <div className="grid px-4 pb-6">
+          {outlets.map((o, index) => (
+            <MenuOutletPanel
+              key={o.outlet}
+              outlets={outlets}
+              index={index}
+              shown={index === safe}
+              onPick={(i) => setOutletName(outlets[i]!.outlet)}
+            />
+          ))}
         </div>
       )}
     </Sheet>

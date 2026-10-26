@@ -3,7 +3,7 @@
  *
  * Inline rather than an <img>, for the same reason `ReisLogo` is: the letters
  * take `currentColor`, so the mark reads in both themes off one asset. The
- * shipped `/spolky/ey.svg` cannot be used here — it carries a white ground
+ * society logo (`scripts/society-logos/ey.svg`, served from Supabase Storage) cannot be used here — it carries a white ground
  * added so it matches the round society avatars, and a white plate behind a
  * logo is exactly the container that turns a credit into an advert.
  *

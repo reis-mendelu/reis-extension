@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Users } from 'lucide-react';
+import { AlertTriangle, Users } from 'lucide-react';
 import type { ExamSection, ExamTerm } from '../../../../types/exams';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
@@ -42,10 +42,11 @@ function deadline(raw: string): string {
  *
  * The length is on the detail page only. The sync attaches it to every term
  * (`examDurations`); a term it has not reached yet is fetched when opened —
- * the same request that reads the teacher's Poznámka.
+ * the same request that reads the teacher's Poznámka, shown under the facts.
  *
- * No "Místo konání" row and no map button: the room is already on the term's
- * own line, and the map is the map tab's job.
+ * The room lives here, not on the term's line: date, time, room, seats,
+ * attempt badges and the chip were too much for one phone row. No map button —
+ * the map is the map tab's job.
  */
 export function TermDetails({ term, section, isRegHere, now }: TermDetailsProps) {
   const { t, language } = useTranslation();
@@ -54,12 +55,13 @@ export function TermDetails({ term, section, isRegHere, now }: TermDetailsProps)
   const fetched = useAppStore((s) => s.examTermDurations[term.id]);
 
   const form = (language === 'en' ? term.sectionFormEn : term.sectionFormCs) || term.sectionForm;
+  const room = (language === 'en' ? term.roomEn : term.roomCs) || term.room;
   const synced =
     term.durationMinutes ?? (isRegHere ? section.registeredTerm?.durationMinutes : undefined);
-  // The detail page is read for the length alone here — the phone shows no
-  // Poznámka — so a length the sync already has is not asked for again. A
-  // null one is: IS had none then, and a teacher can have filled it in since.
-  const { isLoading } = useExamNote(typeof synced === 'number' ? undefined : term.id);
+  // Always read: the page carries the teacher's Poznámka as well as the
+  // length, and the slice caches it for 6 h. The "…" only waits on a length
+  // the sync has not attached.
+  const { note, isLoading } = useExamNote(term.id);
   const minutes = synced ?? fetched;
   // One line, the one the student can act on — see utils/mobile/examDeadline.
   const deadlineRow = termDeadline(term, section, isRegHere, now);
@@ -68,8 +70,9 @@ export function TermDetails({ term, section, isRegHere, now }: TermDetailsProps)
   return (
     <div data-testid="term-details" className="flex flex-col gap-2 border-t border-base-300 pt-2">
       <dl className="flex flex-col gap-1">
+        {room && <Fact label={t('mobile.exams.detailRoom')}>{room}</Fact>}
         {form && <Fact label={t('mobile.exams.detailForm')}>{form}</Fact>}
-        {(minutes != null || isLoading) && (
+        {(minutes != null || (isLoading && synced == null)) && (
           <Fact label={t('mobile.exams.detailDuration')}>
             {minutes != null ? t('mobile.exams.durationMin', { count: minutes }) : '…'}
           </Fact>
@@ -78,6 +81,26 @@ export function TermDetails({ term, section, isRegHere, now }: TermDetailsProps)
           <Fact label={t(`mobile.exams.${deadlineRow.kind}`)}>{deadline(deadlineRow.value)}</Fact>
         )}
       </dl>
+      {note && (
+        // The desktop's TermNoteBlock, at the phone's type size. IS writes
+        // rules with pass/fail consequences in red; the warning tone keeps that.
+        // Headed like the facts above, so it reads as the teacher's note.
+        <div className="flex flex-col gap-1">
+          <span className="text-2sm text-base-content/60">{t('mobile.exams.detailNote')}</span>
+          <div
+            data-testid="term-note"
+            className="flex items-start gap-1.5 rounded-lg bg-base-200/60 px-2.5 py-2 text-2sm leading-relaxed"
+          >
+            <AlertTriangle
+              size={14}
+              className={`mt-0.5 shrink-0 ${note.isEmphasized ? 'text-[var(--tone-warning)]' : 'text-base-content/60'}`}
+            />
+            <div className="min-w-0 whitespace-pre-wrap break-words text-base-content/80">
+              {note.text}
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col gap-2">
         {whoUrl && (
           <a

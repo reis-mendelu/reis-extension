@@ -103,6 +103,17 @@ describe('registered exams', () => {
     expect(screen.getAllByText('Matematika')).toHaveLength(1);
   });
 
+  // A swipe lands on a whole tile, never half of one. happy-dom has no layout,
+  // so the snap is pinned by its classes; the peek is measured in the browser.
+  it('snap a swipe to whole tiles', () => {
+    render(<ExamsScreen />);
+    const strip = screen.getByTestId('registered-strip');
+    expect(strip.className).toMatch(/\bsnap-x\b/);
+    for (const tile of within(strip).getAllByRole('button')) {
+      expect(tile.className).toMatch(/\bsnap-start\b/);
+    }
+  });
+
   // "Aby se přihlášené zkoušky neukazovaly defaultně" — only the tiles, until
   // one is tapped.
   it('show no detail card until a tile is tapped', () => {

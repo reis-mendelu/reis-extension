@@ -27,6 +27,20 @@ function group(events: MapEvent[]): VenueGroup {
 }
 
 describe('EventPin', () => {
+  it("draws the event's own emoji over its category's", () => {
+    const { container } = render(
+      <EventPin
+        group={group([{ ...ev('Bruslení', 'sports'), emoji: '26f8' }])}
+        x={100}
+        y={100}
+        selected={false}
+        locale="en-US"
+        onSelect={() => {}}
+      />
+    );
+    expect(container.querySelector('img')?.getAttribute('src')).toBe('/emoji/26f8.svg');
+  });
+
   it('renders the category emoji image as the pin face', () => {
     const { container } = render(
       <EventPin
@@ -69,42 +83,5 @@ describe('EventPin', () => {
     // No always-on "2" badge — the extra event is summarised as "+1" in the bubble.
     expect(screen.queryByText('2')).toBeNull();
     expect(screen.getByText(/\+1/)).toBeTruthy();
-  });
-
-  it('renders a faded style when scheduled', () => {
-    const group = {
-      key: 'k',
-      coord: [16.6, 49.2] as [number, number],
-      events: [
-        {
-          id: 'x',
-          title: 'Future',
-          url: '',
-          date: '2026-12-01',
-          endDate: null,
-          time: null,
-          location: null,
-          imageUrl: null,
-          organizerKey: 'pef' as const,
-          societyId: 'supef',
-          coord: [16.6, 49.2] as [number, number],
-          roomCode: null,
-          venueKind: 'offcampus' as const,
-          category: 'party' as const,
-        },
-      ],
-    };
-    const { container } = render(
-      <EventPin
-        group={group}
-        x={0}
-        y={0}
-        selected={false}
-        scheduled
-        locale="en-US"
-        onSelect={() => {}}
-      />
-    );
-    expect(container.querySelector('[data-scheduled="true"]')).toBeTruthy();
   });
 });

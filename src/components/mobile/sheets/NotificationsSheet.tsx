@@ -7,6 +7,8 @@ import { useDeadlineAlerts } from '../../../hooks/useDeadlineAlerts';
 import { useOpenNotification } from '../../../hooks/useOpenNotification';
 import { NotificationItem } from '../../Notifications/NotificationItem';
 import { DeadlineAlertItem } from '../../Notifications/DeadlineAlertItem';
+import { QuestionList } from '../../Questions/QuestionList';
+import { useQuestions } from '../../../hooks/useQuestions';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
 
@@ -37,10 +39,15 @@ function SectionLabel({ children }: { children: ReactNode }) {
 
 export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
   const { t } = useTranslation();
-  const { notifications, loading, markVisible, settingsLoading, readIds } = useNotificationFeed();
+  const { notifications, loading, markVisible, readIds } = useNotificationFeed();
   const { alerts, markAllSeen } = useDeadlineAlerts();
-  const hasContent = notifications.length > 0 || alerts.length > 0;
+  const questions = useQuestions();
+  const hasContent = notifications.length > 0 || alerts.length > 0 || questions.visible.length > 0;
   const setMobileTab = useAppStore((s) => s.setMobileTab);
+  const pushSheet = useAppStore((s) => s.pushSheet);
+  // New points already happened; the deadlines are still ahead. Two sections.
+  const points = alerts.filter((a) => a.type === 'zaznamnik-points');
+  const deadlines = alerts.filter((a) => a.type !== 'zaznamnik-points');
   const markNotificationsRead = useAppStore((s) => s.markNotificationsRead);
 
   /**
@@ -51,18 +58,14 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
    * belongs to the DESKTOP dropdown. The phone's bell calls `pushSheet`, so the
    * student read every notification here and the dot stayed lit forever.
    *
-   * Gated on `settingsLoading`, not just on mount: `notifications` is the feed
-   * filtered by the spolky subscriptions, which are read out of IndexedDB, so
-   * on a cold open the list is still empty for a tick or two. Marking then
-   * marks nothing and the badge survives — the very bug, reintroduced through a
-   * race. Following the list instead of the mount also covers the 5-minute
-   * refetch landing while the sheet is still up.
+   * Following the list, not the mount: on a cold open the feed can still be
+   * empty for a tick, and marking then would mark nothing and leave the badge.
+   * It also covers the 5-minute refetch landing while the sheet is still up.
    */
   useEffect(() => {
-    if (settingsLoading) return;
     const unread = notifications.filter((n) => !readIds.has(n.id)).map((n) => n.id);
     if (unread.length) void markNotificationsRead(unread);
-  }, [notifications, readIds, settingsLoading, markNotificationsRead]);
+  }, [notifications, readIds, markNotificationsRead]);
 
   /**
    * The other half of the same badge. The bell counts unseen deadline alerts
@@ -89,11 +92,39 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
     <Sheet size="full" onClose={onClose}>
       <SheetHeader title={t('notifications.title')} onClose={onClose} />
       <div className="flex-1 overflow-y-auto px-4 pb-6 pt-1">
-        {alerts.length > 0 && (
+        {/* The console's questions first, so they are on screen without
+            scrolling however long the feed. */}
+        <div className="pb-1 pt-1 empty:hidden">
+          <QuestionList />
+        </div>
+        {points.length > 0 && (
+          <>
+            <SectionLabel>{t('course.tabs.zaznamnik')}</SectionLabel>
+            <div className="flex flex-col gap-2">
+              {points.map((alert) => (
+                <DeadlineAlertItem
+                  key={alert.id}
+                  alert={alert}
+                  onOpenSubject={(a) =>
+                    a.courseCode &&
+                    pushSheet({
+                      kind: 'subjectDrawer',
+                      courseCode: a.courseCode,
+                      courseName: a.title,
+                      courseId: a.courseId,
+                      initialTab: 'zaznamnik',
+                    })
+                  }
+                />
+              ))}
+            </div>
+          </>
+        )}
+        {deadlines.length > 0 && (
           <>
             <SectionLabel>{t('notifications.sectionDeadlines')}</SectionLabel>
             <div className="flex flex-col gap-2">
-              {alerts.map((alert) => (
+              {deadlines.map((alert) => (
                 <DeadlineAlertItem key={alert.id} alert={alert} />
               ))}
             </div>

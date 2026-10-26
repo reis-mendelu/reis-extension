@@ -107,3 +107,41 @@ describe('fetchBuildingRooms drops the out-of-building M halls', () => {
     expect(names(await fetchBuildingRooms(582134))).toEqual(['X']);
   });
 });
+
+// Building X draws X01–X03 and the MENDELU Shop as rows of partitions; the
+// merge has to reach a cached copy too, for the same 30-day reason as above.
+const withPartitions = (): RoomsCollection => {
+  const base = fc(465899);
+  const piece = (id: number, name: string) => ({
+    ...base.features[0]!,
+    properties: { ...base.features[0]!.properties, id, name },
+  });
+  return {
+    type: 'FeatureCollection',
+    features: [piece(476013, 'BA25N1001A'), piece(476014, 'BA25N1001B')],
+  };
+};
+const nicknames = (c: RoomsCollection | null) => c!.features.map((f) => f.properties.nickname);
+
+describe('fetchBuildingRooms merges the building X partitions', () => {
+  it('merges a fresh CDN response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => withPartitions() })
+    );
+    expect(nicknames(await fetchBuildingRooms(465899))).toEqual(['X01']);
+  });
+
+  it('merges a fresh cache hit', async () => {
+    await IndexedDBService.set('map_rooms', '465899', withPartitions());
+    await IndexedDBService.set('meta', STORAGE_KEYS.MAP_ROOMS_LAST_SYNC, { '465899': Date.now() });
+    vi.stubGlobal('fetch', vi.fn());
+    expect(nicknames(await fetchBuildingRooms(465899))).toEqual(['X01']);
+  });
+
+  it('merges the stale-cache fallback', async () => {
+    await IndexedDBService.set('map_rooms', '465899', withPartitions());
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+    expect(nicknames(await fetchBuildingRooms(465899))).toEqual(['X01']);
+  });
+});

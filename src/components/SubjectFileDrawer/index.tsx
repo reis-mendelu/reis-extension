@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef, Suspense, lazy } from 'react';
 import { useFileActions } from '../../hooks/ui/useFileActions';
+import { usePdfReadingPosition } from '../../hooks/ui/usePdfReadingPosition';
 import { logError } from '../../utils/reportError';
 import { DrawerHeader } from './DrawerHeader';
 import { IndexedDBService } from '../../services/storage/IndexedDBService';
@@ -14,6 +15,8 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '../ui/resi
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { DocumentNoteEditor } from './DocumentNoteEditor';
 import { groupAndSortFiles } from './utils/groupFiles';
+import type { PdfRowMeta } from './types';
+import { useOdevzdavarny } from '../../hooks/data/useOdevzdavarny';
 
 const PdfViewer = lazy(() => import('./PdfViewer').then((m) => ({ default: m.PdfViewer })));
 
@@ -42,6 +45,7 @@ export function SubjectFileDrawer({
   const [activeNoteFile, setActiveNoteFile] = useState<{ link: string; name: string } | null>(null);
   const [lastVisitedAt, setLastVisitedAt] = useState<number | null | undefined>(undefined);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
+  const { loadPosition, viewerPosition } = usePdfReadingPosition(lesson?.courseCode);
   const { t } = useTranslation();
   const classmatesCount = useAppStore((s) =>
     lesson?.courseCode ? s.classmates[lesson.courseCode]?.length : undefined
@@ -50,6 +54,8 @@ export function SubjectFileDrawer({
     lesson?.courseCode ? s.zaznamnik?.[lesson.courseCode] : undefined
   );
   const isPhone = useAppStore((s) => s.isTouch && s.isNarrow);
+  const { assignments: boxes } = useOdevzdavarny(state.subjectInfo?.subjectId);
+  const boxCount = boxes.length;
 
   const hasFiles = !!state.files?.length;
 
@@ -70,9 +76,11 @@ export function SubjectFileDrawer({
     return {
       files: state.files?.reduce((acc, f) => acc + f.files.length, 0) || 0,
       classmates: classmatesCount || 0,
-      zaznamnik: zaznamnikData !== undefined ? phCount + vtCount : undefined,
+      // Records plus submission boxes — both live on this tab (see ZaznamnikTab).
+      zaznamnik:
+        zaznamnikData !== undefined || boxCount > 0 ? phCount + vtCount + boxCount : undefined,
     };
-  }, [state.files, classmatesCount, zaznamnikData, phSections, vtTests]);
+  }, [state.files, classmatesCount, zaznamnikData, phSections, vtTests, boxCount]);
 
   const flushDocumentNotes = useAppStore((s) => s.flushDocumentNotes);
 
@@ -171,10 +179,10 @@ export function SubjectFileDrawer({
   }, [activePdfUrl]);
 
   const handleViewPdf = useCallback(
-    async (link: string) => {
+    async (link: string, meta?: PdfRowMeta) => {
       if (isPdfLoading) return;
       setIsPdfLoading(true);
-      const blobUrl = await openPdfInline(link);
+      const [blobUrl] = await Promise.all([openPdfInline(link), loadPosition(link)]);
       if (blobUrl) {
         setActivePdfUrl(blobUrl);
         const attachment = state.files?.flatMap((f) => f.files).find((sub) => sub.link === link);
@@ -183,11 +191,11 @@ export function SubjectFileDrawer({
           : { link, name: 'PDF Document' };
         setActivePdfFile(activeFile);
       } else {
-        openFile(link);
+        openFile(link, meta && { name: meta.name });
       }
       setIsPdfLoading(false);
     },
-    [openPdfInline, openFile, isPdfLoading, state.files]
+    [openPdfInline, openFile, isPdfLoading, state.files, loadPosition]
   );
 
   const handleClosePdf = useCallback(() => {
@@ -314,6 +322,7 @@ export function SubjectFileDrawer({
           onClose={handleClosePdf}
           onToggleNotes={handleToggleNotes}
           hasNotesOpen={hasNote}
+          {...viewerPosition}
         />
       </Suspense>
     </ErrorBoundary>

@@ -1,9 +1,10 @@
 import { Messages } from '../types/messages';
-import type { SyncedData } from '../types/messages';
+import type { RealDataSnapshot } from '../types/messages';
 import { isInIframe } from '../api/proxyClient';
 import { IndexedDBService } from '../services/storage';
 import type { StoreName } from '../types/storage';
 import { isHarnessEnabled } from '../utils/harnessEnabled';
+import { useAppStore } from '../store/useAppStore';
 
 // Non-dotfile so WXT packs it into the dev build; the extension page fetches it
 // from its own origin (chrome-extension://<id>/dev-real-data.json). Gitignored.
@@ -67,8 +68,25 @@ export async function loadRealDataSnapshot(url: string = SNAPSHOT_URL): Promise<
   try {
     const res = await fetch(url);
     if (!res.ok) return false;
-    const snapshot = (await res.json()) as SyncedData;
-    window.postMessage(Messages.syncUpdate({ ...snapshot, isSyncing: false }), '*');
+    const { examNotes, ...snapshot } = (await res.json()) as RealDataSnapshot;
+    // `loaded`: the snapshot is a complete answer, so a domain it omits is
+    // "none", not "never answered" — the screens' failed state keys on that.
+    window.postMessage(
+      Messages.syncUpdate({ ...snapshot, isSyncing: false, loaded: ['schedule', 'exams'] }),
+      '*'
+    );
+    // Stamped as just fetched, so opening a term does not ask IS — which the
+    // dev webapp has no session for — and overwrite them with an error.
+    if (examNotes) {
+      const now = Date.now();
+      useAppStore.setState((s) => ({
+        examNotes: { ...s.examNotes, ...examNotes },
+        lastExamNotesFetchedAt: {
+          ...s.lastExamNotesFetchedAt,
+          ...Object.fromEntries(Object.keys(examNotes).map((id) => [id, now])),
+        },
+      }));
+    }
     return true;
   } catch {
     return false;

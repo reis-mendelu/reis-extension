@@ -3,6 +3,10 @@ import {
   railPaddingPx,
   railOffsetPx,
   clampRailWidth,
+  floorColumnRightPx,
+  FLOOR_COLUMN_RIGHT_PX,
+  FLOOR_BESIDE_RAIL_MIN_HEIGHT,
+  RAIL_INSET_PX,
   RAIL_PX,
   RAIL_MIN_PX,
   RAIL_MAX_PX,
@@ -110,5 +114,45 @@ describe('clampRailWidth', () => {
   it('survives a hostile viewport and a NaN', () => {
     expect(clampRailWidth(2000, 320)).toBe(RAIL_MIN_PX);
     expect(clampRailWidth(Number.NaN, 1194)).toBe(RAIL_PX);
+  });
+});
+
+describe('floorColumnRightPx', () => {
+  // The rail stops at 55vh and the floor column stands 190px off the bottom,
+  // so on any iPad in landscape (1194x834, 1024x768) the two share a band of
+  // screen: Q's floors 5 to 2 sat under the rail and could not be tapped.
+  it('moves the column to the left of an open rail on a tablet', () => {
+    expect(floorColumnRightPx(1194, 834, true, RAIL_PX)).toBe(RAIL_PX + RAIL_INSET_PX + 12);
+    expect(floorColumnRightPx(1024, 768, true, RAIL_PX)).toBe(RAIL_PX + RAIL_INSET_PX + 12);
+    expect(floorColumnRightPx(834, 1112, true, RAIL_PX)).toBe(RAIL_PX + RAIL_INSET_PX + 12);
+  });
+
+  // The student can drag the rail wider; a column placed for 340 would be
+  // under a 500px rail.
+  it('follows the live rail width', () => {
+    expect(floorColumnRightPx(1194, 834, true, 500)).toBe(500 + RAIL_INSET_PX + 12);
+  });
+
+  it('stays at the edge when the rail is closed', () => {
+    expect(floorColumnRightPx(1194, 834, false, RAIL_PX)).toBe(FLOOR_COLUMN_RIGHT_PX);
+  });
+
+  // Below md there is no rail at all — the phone shows a sheet.
+  it('stays at the edge on a phone in portrait', () => {
+    expect(floorColumnRightPx(390, 844, true, RAIL_PX)).toBe(FLOOR_COLUMN_RIGHT_PX);
+    expect(floorColumnRightPx(RAIL_MIN_WIDTH - 1, 1112, true, RAIL_PX)).toBe(FLOOR_COLUMN_RIGHT_PX);
+  });
+
+  // A phone turned sideways is wide enough for the rail but under 450px tall.
+  // Its layout is deliberately left as it was.
+  it('stays at the edge on a phone in landscape', () => {
+    expect(floorColumnRightPx(844, 390, true, RAIL_PX)).toBe(FLOOR_COLUMN_RIGHT_PX);
+    expect(floorColumnRightPx(956, 440, true, RAIL_PX)).toBe(FLOOR_COLUMN_RIGHT_PX);
+    expect(floorColumnRightPx(1194, FLOOR_BESIDE_RAIL_MIN_HEIGHT - 1, true, RAIL_PX)).toBe(
+      FLOOR_COLUMN_RIGHT_PX
+    );
+    expect(floorColumnRightPx(1194, FLOOR_BESIDE_RAIL_MIN_HEIGHT, true, RAIL_PX)).toBe(
+      RAIL_PX + RAIL_INSET_PX + 12
+    );
   });
 });

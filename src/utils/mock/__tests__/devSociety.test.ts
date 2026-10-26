@@ -31,6 +31,11 @@ describe('devSocietyStore (offline dev society CRUD)', () => {
     });
   });
 
+  it('keeps the chosen emoji, as the real table does', () => {
+    devSocietyStore.create(input({ emoji: '26f8' }), 'reis', 'x');
+    expect(devSocietyStore.list('reis').at(-1)?.emoji).toBe('26f8');
+  });
+
   it('list only returns rows for the given association', () => {
     devSocietyStore.create(input(), 'reis', 'x');
     devSocietyStore.create(input({ title: 'Other' }), 'esn', 'y');

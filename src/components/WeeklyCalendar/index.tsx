@@ -75,7 +75,8 @@ export function WeeklyCalendar({
       const event = useAppStore
         .getState()
         .customEvents.find((ce: CalendarCustomEvent) => ce.id === lesson.customEventId);
-      if (event) setEditingCustomEvent({ event, anchor });
+      if (!event) return;
+      setEditingCustomEvent({ event, anchor });
       return;
     }
     setSelected(lesson);

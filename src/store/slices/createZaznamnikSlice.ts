@@ -2,13 +2,34 @@ import type { AppSlice, ZaznamnikSlice } from '../types';
 import type { SubjectZaznamnik } from '../../types/zaznamnik';
 import { IndexedDBService } from '../../services/storage';
 import { logError } from '../../utils/reportError';
+import {
+  clearNewPoints,
+  NEW_POINTS_META_KEY,
+  type NewPointsBySubject,
+} from '../../services/sync/zaznamnikNewPoints';
 
 const isEmpty = (z: SubjectZaznamnik | null | undefined): boolean =>
   !z || (z.ph.sections.length === 0 && z.vt.tests.length === 0);
 
-export const createZaznamnikSlice: AppSlice<ZaznamnikSlice> = (set) => ({
+export const createZaznamnikSlice: AppSlice<ZaznamnikSlice> = (set, get) => ({
   zaznamnik: {},
   zaznamnikHydrated: false,
+  zaznamnikLoading: {},
+  zaznamnikNewPoints: {},
+  setZaznamnikNewPoints: (unseen) => set({ zaznamnikNewPoints: unseen }),
+  markZaznamnikSeen: async (courseCode) => {
+    if (!get().zaznamnikNewPoints[courseCode]) return;
+    set((s) => {
+      const { [courseCode]: _seen, ...rest } = s.zaznamnikNewPoints;
+      return { zaznamnikNewPoints: rest };
+    });
+    try {
+      // Through the sync layer, the one writer to what is stored.
+      await clearNewPoints(courseCode);
+    } catch (err) {
+      logError('ZaznamnikSlice.markZaznamnikSeen', err);
+    }
+  },
   setZaznamnikBatch: (data) => {
     set((state) => {
       const next = { ...state.zaznamnik };
@@ -25,10 +46,35 @@ export const createZaznamnikSlice: AppSlice<ZaznamnikSlice> = (set) => ({
       const entries = await IndexedDBService.getAllWithKeys('zaznamnik');
       const map: Record<string, SubjectZaznamnik | null> = {};
       for (const { key, value } of entries) map[key] = value;
-      set({ zaznamnik: map, zaznamnikHydrated: true });
+      const unseen = (await IndexedDBService.get('meta', NEW_POINTS_META_KEY)) as
+        NewPointsBySubject | undefined;
+      set({ zaznamnik: map, zaznamnikHydrated: true, zaznamnikNewPoints: unseen ?? {} });
     } catch (err) {
       logError('ZaznamnikSlice.fetchZaznamnik', err);
       set({ zaznamnikHydrated: true });
+    }
+  },
+  // The drawer's retry for one subject. The sync is otherwise the only fetch,
+  // so a failed subject stayed failed until the next full run (Návrhy #26).
+  // Inert while impersonating, like the files slice: it would hit IS for
+  // another programme's subject ids.
+  refetchZaznamnik: async (courseCode) => {
+    const { impersonation, studiumId, obdobiId, subjects, zaznamnikLoading } = get();
+    const subjectId = subjects?.data?.[courseCode]?.subjectId;
+    if (impersonation || !studiumId || !obdobiId || !subjectId) return;
+    // One retry at a time: a second would race the first to the store.
+    if (zaznamnikLoading[courseCode]) return;
+    set((s) => ({ zaznamnikLoading: { ...s.zaznamnikLoading, [courseCode]: true } }));
+    try {
+      // Lazy: keeps the IS parsers out of the store's static graph. The sync
+      // layer persists; the slice only puts the answer on screen.
+      const { refetchSubjectZaznamnik } = await import('../../services/sync/syncZaznamnik');
+      const fresh = await refetchSubjectZaznamnik(studiumId, obdobiId, courseCode, subjectId);
+      get().setZaznamnikBatch({ [courseCode]: fresh });
+    } catch (err) {
+      logError('ZaznamnikSlice.refetchZaznamnik', err);
+    } finally {
+      set((s) => ({ zaznamnikLoading: { ...s.zaznamnikLoading, [courseCode]: false } }));
     }
   },
 });

@@ -1,5 +1,14 @@
 import { logError } from '../utils/reportError';
-import { enforceCap, forget, recordOpen, resolve, store, type PdfCacheFs } from './pdfCache';
+import {
+  enforceCap,
+  forget,
+  pdfPath,
+  recordOpen,
+  recordPositions,
+  resolve,
+  store,
+  type PdfCacheFs,
+} from './pdfCache';
 import {
   buildFileEntries,
   serveFile,
@@ -43,7 +52,30 @@ export interface PdfInkStrings {
   /** The floating button that brings the toolbar back. */
   exitFocus: string;
   cancel: string;
-  /** The tool that blocks out an answer so it can be recalled before looking. */
+  /** The `+` bar menu: a blank page, a picture, or moving the pictures. */
+  add: string;
+  /** Menu entries that put a picture on the page, from Photos or the camera. */
+  photoLibrary: string;
+  takePhoto: string;
+  /** Menu entry that puts a picture from Files (Downloads, iCloud Drive) on the page. */
+  chooseFile: string;
+  /** The selected picture's … menu: its one entry moves the picture under / over the ink. */
+  underInk: string;
+  overInk: string;
+  /** Accessibility label of that … button. */
+  more: string;
+  /** Menu entry that enters arranging, where pictures move instead of ink. */
+  movePictures: string;
+  /** The button over a selected picture. */
+  deletePicture: string;
+  /** Ends arranging and gives the pens back. */
+  done: string;
+  /** The tape: the palette tool that puts blocks over answers to hide them. */
+  cover: string;
+  /** The menu entry a finger held on a strip offers. */
+  deleteTape: string;
+  /** Shown when the tape is picked in a file with none yet: what it is for. */
+  tapeHint: string;
 }
 
 export interface PdfInkPlugin {
@@ -51,8 +83,9 @@ export interface PdfInkPlugin {
   isAvailable(): Promise<{ available: boolean }>;
   /**
    * Presents the subject space (file sidebar + reader) on `currentLink`; resolves
-   * when the student closes it with every link that was displayed. Rejects with
-   * `code: 'unreadable'` if PDFKit cannot open the initial file.
+   * when the student closes it with every link that was displayed and the page
+   * (0-based) each was left on. Rejects with `code: 'unreadable'` if PDFKit
+   * cannot open the initial file.
    */
   open(o: {
     courseTitle: string;
@@ -61,13 +94,22 @@ export interface PdfInkPlugin {
     strings: PdfInkStrings;
     /** The app's accent for the reader's chrome; see pdfInkTint.ts. */
     tint: PdfInkTintHexes;
-  }): Promise<{ shown: string[] }>;
+  }): Promise<{ shown: string[]; positions?: Record<string, number> }>;
   /** Answer to a `needsFile` event. */
   deliverFile(o: { link: string; pdfPath: string }): Promise<void>;
   fileUnavailable(o: { link: string }): Promise<void>;
   addListener(
     event: 'needsFile',
     listener: (e: { link: string }) => void | Promise<void>
+  ): Promise<{ remove(): Promise<void> }>;
+  /**
+   * The same link → page map `open` resolves with, sent while the reader is
+   * still up (when the app resigns active): iOS may kill the app in the
+   * background, and then `open` never resolves.
+   */
+  addListener(
+    event: 'positions',
+    listener: (e: { positions: Record<string, number> }) => void | Promise<void>
   ): Promise<{ remove(): Promise<void> }>;
 }
 
@@ -122,15 +164,17 @@ export async function openPdfWithInk(
   const state = await resolve(deps.fs, key, input.date);
 
   let blob: Blob | null = null;
+  // Stale-if-error: IS is unreachable (or serves a page), but the student has a
+  // copy. An index entry whose PDF is gone is no copy at all.
+  const staleCopy = state === 'stale' && (await deps.fs.exists(pdfPath(key)));
   if (state !== 'fresh') {
     try {
       blob = await input.fetchPdf(input.fileLink);
     } catch (error) {
-      if (state === 'absent') return { kind: 'failed', error };
-      // Stale-if-error: IS is unreachable, but the student has a copy.
+      if (!staleCopy) return { kind: 'failed', error };
       logError('PdfInk.staleIfError', error);
     }
-    if (!blob && state === 'absent') return { kind: 'notPdf' };
+    if (!blob && !staleCopy) return { kind: 'notPdf' };
   }
 
   // From here on every failure is the caller's `failed`: the hook must be
@@ -142,7 +186,7 @@ export async function openPdfWithInk(
     courseCode: input.courseCode,
     now: deps.now,
   };
-  let subscription: { remove(): Promise<void> } | null = null;
+  const subscriptions: { remove(): Promise<void> }[] = [];
   try {
     if (blob) {
       await store(
@@ -160,11 +204,30 @@ export async function openPdfWithInk(
     }
     const current = { link: input.fileLink, name: input.name, date: input.date };
     const entries = await buildFileEntries(fileDeps, current, input.files);
+    // buildFileEntries gives a path only to copies fresh for their date, and the
+    // plugin rejects a current file without one (`badArguments`), so the stale
+    // copy has to be handed over here or the student is told it cannot open.
+    const currentEntry = entries.find((e) => e.link === input.fileLink);
+    if (!blob && staleCopy && currentEntry) currentEntry.pdfPath = await deps.fs.uri(pdfPath(key));
     const byLink = new Map(entries.map((e) => [e.link, e]));
+    // Only links this subject listed: a key is derived from the link, so an
+    // unknown one would land on an index entry nobody can reach.
+    const savePositions = async (positions: Record<string, number> | undefined) => {
+      const byKey: Record<string, number> = {};
+      for (const [link, page] of Object.entries(positions ?? {})) {
+        if (byLink.has(link)) byKey[await keyFor(link)] = page;
+      }
+      await recordPositions(deps.fs, byKey);
+    };
 
     // The sidebar asks for files it does not have; each answer goes through the
     // same fetch → cache path the tapped file took.
-    subscription = await deps.plugin.addListener('needsFile', async ({ link }) => {
+    subscriptions.push(
+      await deps.plugin.addListener('positions', ({ positions }) =>
+        savePositions(positions).catch((e: unknown) => logError('PdfInk.positions', e))
+      )
+    );
+    const needsFile = await deps.plugin.addListener('needsFile', async ({ link }) => {
       const file = byLink.get(link);
       const served = file
         ? await serveFile(fileDeps, file, input.fetchPdf)
@@ -175,8 +238,9 @@ export async function openPdfWithInk(
         await deps.plugin.fileUnavailable({ link });
       }
     });
+    subscriptions.push(needsFile);
 
-    const { shown } = await deps.plugin.open({
+    const { shown, positions } = await deps.plugin.open({
       courseTitle: input.courseTitle,
       currentLink: input.fileLink,
       files: entries,
@@ -187,6 +251,7 @@ export async function openPdfWithInk(
     for (const link of shown) {
       await recordOpen(deps.fs, await keyFor(link), now, { courseCode: input.courseCode, link });
     }
+    await savePositions(positions);
     // The sweep may not take an annotated file with it: see enforceCap.
     await enforceCap(deps.fs, undefined, deps.hasInk);
     return { kind: 'shown', hasInk: false };
@@ -201,6 +266,8 @@ export async function openPdfWithInk(
     return fallback ? { kind: 'unreadable', blob: fallback } : { kind: 'failed', error };
   } finally {
     // Cleanup must never replace the result: a failed removal is logged, not thrown.
-    await subscription?.remove().catch((e: unknown) => logError('PdfInk.removeListener', e));
+    for (const subscription of subscriptions) {
+      await subscription.remove().catch((e: unknown) => logError('PdfInk.removeListener', e));
+    }
   }
 }

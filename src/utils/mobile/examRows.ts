@@ -5,6 +5,7 @@ import type { ExamSubject, ExamSection, ExamTerm } from '../../types/exams';
 type RegisteredTerm = NonNullable<ExamSection['registeredTerm']>;
 import { parseCzechDateTime } from './examTimeline';
 import { isGroupSignupSection } from '../exams/isGroupSignup';
+import { courseDisplayName, type CourseNicknames } from '../courseDisplayName';
 
 export interface RegisteredExam {
   subject: ExamSubject;
@@ -87,4 +88,18 @@ export function freeSeats(term: ExamTerm): { free: number; total: number } | nul
   const cap = term.capacity;
   if (!cap || typeof cap.total !== 'number') return null;
   return { free: Math.max(0, cap.total - (cap.occupied ?? 0)), total: cap.total };
+}
+
+/**
+ * The same rows titled with the student's nicknames. Applied after the
+ * builders rather than inside them, so the rows they produce keep IS's name.
+ */
+export function withNicknames<T extends { subject: ExamSubject; subjectName: string }>(
+  rows: T[],
+  nicknames: CourseNicknames
+): T[] {
+  return rows.map((r) => ({
+    ...r,
+    subjectName: courseDisplayName(nicknames, r.subject.code, r.subjectName),
+  }));
 }

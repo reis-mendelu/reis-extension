@@ -39,8 +39,8 @@ export interface GraphHost {
  * `(?!type\s)` excludes `import type` / `export type`, which TypeScript erases
  * at compile time: they ship no code and cannot run a module-scope side effect,
  * so counting them as edges fails the content-script guard on a module that is
- * provably harmless. `src/services/eventReminders/sync.ts` is the live example —
- * it takes a `PermissionState` type from `@capacitor/core` and is right to.
+ * provably harmless — e.g. a `PermissionState` type taken from
+ * `@capacitor/core` by shared code.
  *
  * A per-specifier `import { type A, b }` is deliberately still an edge: `b` is a
  * value, so the module is emitted and its side effects run.

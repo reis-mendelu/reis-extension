@@ -7,6 +7,7 @@ import { failRateTone } from '../../../SubjectsPanel/failRateTone';
 import { orderHardestFirst } from '../../../SubjectsPanel/orderHardestFirst';
 import { FailRateLegend } from '../../../SubjectsPanel/FailRateLegend';
 import { useAppStore } from '../../../../store/useAppStore';
+import { useCourseName } from '../../../../hooks/ui/useCourseName';
 import { pluralSuffix } from '../../../../utils/plural';
 import type { SubjectStatus } from '../../../../types/studyPlan';
 import type { EnrolledSubject } from '../../../../utils/mobile/enrolledSubjects';
@@ -96,6 +97,7 @@ function SemesterRow({
   onOpenSubject: (subject: SubjectStatus) => void;
 }) {
   const { t, language } = useTranslation();
+  const name = useCourseName(subject.code, subject.name);
   // Per-subject credits are small numbers, where Czech needs all three forms
   // ("1 kredit" / "2 kredity" / "5 kreditů"). The shared `subjects.credits`
   // is the invariant genitive, correct only for the 5+ totals desktop shows.
@@ -126,9 +128,7 @@ function SemesterRow({
           mid-word ("Databázové systémy a návrh d…"), losing the half that
           distinguishes one subject from another. */}
       <span className="flex min-w-0 flex-1 flex-row items-start justify-between gap-2.5">
-        <span className="min-w-0 break-words text-md font-medium text-base-content">
-          {subject.name}
-        </span>
+        <span className="min-w-0 break-words text-md font-medium text-base-content">{name}</span>
         <FailRate subject={subject} />
       </span>
       <GradeChip subject={subject} />

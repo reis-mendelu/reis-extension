@@ -30,6 +30,25 @@ const pdf = (name: string) =>
     base64: 'JVBERi0xLjQ=', // %PDF-1.4
   });
 
+// Captured from IS on 2026-10-03 for "Přednáška 4 -- Elementární algoritmy".
+const pptx = (contentDisposition: string | null) =>
+  JSON.stringify({
+    contentType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    contentDisposition,
+    base64: 'UEsDBA==', // PK\x03\x04 — a zip container, as every .pptx is
+  });
+
+/** The `download` names of the anchors clicked, in order. */
+function spyOnSaves(): string[] {
+  const saved: string[] = [];
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+    this: HTMLAnchorElement
+  ) {
+    saved.push(this.download);
+  });
+  return saved;
+}
+
 const page = JSON.stringify({
   contentType: 'text/html; charset=utf-8',
   contentDisposition: null,
@@ -38,6 +57,7 @@ const page = JSON.stringify({
 
 describe('useFileActions inside the extension iframe', () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllMocks();
     fetchViaProxy.mockReset();
     globalThis.fetch = vi.fn(() => Promise.reject(new Error('direct fetch from the iframe')));
@@ -77,6 +97,55 @@ describe('useFileActions inside the extension iframe', () => {
       await done;
     });
     expect(result.current.activeDownloads[link]).toBeUndefined();
+  });
+
+  // Sprint 13: a .pptx row clicked anywhere but its download icon showed no
+  // progress at all — only downloadSingle fed the row. The row is one control,
+  // so a click on its body has to look like the download it starts.
+  it("openFile shows the proxy's byte ticks on the row too", async () => {
+    let resolve!: (v: string) => void;
+    fetchViaProxy.mockImplementation(
+      (_u: string, _o: unknown, onTick: (t: { loaded: number; total: number | null }) => void) => {
+        onTick({ loaded: 40, total: 100 });
+        return new Promise<string>((r) => (resolve = r));
+      }
+    );
+    spyOnSaves();
+    const { result } = renderHook(() => useFileActions());
+    const link = 'https://is.mendelu.cz/a';
+
+    let done!: Promise<void>;
+    act(() => {
+      done = result.current.openFile(link, { name: 'algo05', type: 'pptx' });
+    });
+    await vi.waitFor(() =>
+      expect(result.current.activeDownloads[link]).toEqual({ loaded: 40, total: 100 })
+    );
+    await act(async () => {
+      resolve(pptx('attachment; filename="algo05.pptx"'));
+      await done;
+    });
+    expect(result.current.activeDownloads[link]).toBeUndefined();
+  });
+
+  it('openFile ignores a second click while the row is still downloading', async () => {
+    let resolve!: (v: string) => void;
+    fetchViaProxy.mockImplementation(() => new Promise<string>((r) => (resolve = r)));
+    const saved = spyOnSaves();
+    const { result } = renderHook(() => useFileActions());
+    const link = 'https://is.mendelu.cz/a';
+
+    let first!: Promise<void>;
+    act(() => {
+      first = result.current.openFile(link);
+    });
+    await act(() => result.current.openFile(link));
+    await act(async () => {
+      resolve(pptx('attachment; filename="algo05.pptx"'));
+      await first;
+    });
+    expect(fetchViaProxy).toHaveBeenCalledTimes(1);
+    expect(saved).toEqual(['algo05.pptx']);
   });
 
   // Across postMessage a rejection is only a string, so the 5xx retry reads
@@ -132,5 +201,62 @@ describe('useFileActions inside the extension iframe', () => {
       result.current.downloadZip(['https://is.mendelu.cz/a', 'https://is.mendelu.cz/b'], 'x.zip')
     );
     expect(zipFile.mock.calls.map((c) => c[0])).toEqual(['b.pdf']);
+  });
+  // The reported bug: a .pptx row opened as window.open(blob:…), which the
+  // browser cannot render, so it saved the file under the blob URL's GUID.
+  it('openFile saves a file the browser cannot show under the name IS gave it', async () => {
+    fetchViaProxy.mockResolvedValue(pptx('attachment; filename="algo05.pptx"'));
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    const saved = spyOnSaves();
+    const { result } = renderHook(() => useFileActions());
+    await act(() => result.current.openFile('https://is.mendelu.cz/a'));
+    expect(saved).toEqual(['algo05.pptx']);
+    expect(open).not.toHaveBeenCalled();
+  });
+
+  it("openFile falls back to the row's title, never the slozka.pl URL", async () => {
+    fetchViaProxy.mockResolvedValue(pptx(null));
+    vi.spyOn(window, 'open').mockReturnValue(null);
+    const saved = spyOnSaves();
+    const { result } = renderHook(() => useFileActions());
+    await act(() =>
+      result.current.openFile('https://is.mendelu.cz/auth/dok_server/slozka.pl?download=1', {
+        name: 'Přednáška 4 -- Cykly',
+        type: 'pptx',
+      })
+    );
+    expect(saved).toEqual(['Přednáška 4 -- Cykly.pptx']);
+  });
+
+  it('openFile still opens a PDF in a tab', async () => {
+    fetchViaProxy.mockResolvedValue(pdf('a.pdf'));
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    const saved = spyOnSaves();
+    const { result } = renderHook(() => useFileActions());
+    await act(() => result.current.openFile('https://is.mendelu.cz/a'));
+    expect(open).toHaveBeenCalledWith('blob:x', '_blank', 'noopener,noreferrer');
+    expect(saved).toEqual([]);
+  });
+
+  it("downloadSingle names a headerless file after the row, not the URL's tail", async () => {
+    fetchViaProxy.mockResolvedValue(pptx(null));
+    const saved = spyOnSaves();
+    const { result } = renderHook(() => useFileActions());
+    await act(() =>
+      result.current.downloadSingle('https://is.mendelu.cz/auth/dok_server/slozka.pl?download=1', {
+        name: 'Přednáška 4 -- Cykly',
+      })
+    );
+    expect(saved).toEqual(['Přednáška 4 -- Cykly.pptx']);
+  });
+
+  it('downloadSingle decodes a filename* name', async () => {
+    fetchViaProxy.mockResolvedValue(
+      pptx("attachment; filename*=UTF-8''P%C5%99edn%C3%A1%C5%A1ka%204.pptx")
+    );
+    const saved = spyOnSaves();
+    const { result } = renderHook(() => useFileActions());
+    await act(() => result.current.downloadSingle('https://is.mendelu.cz/a'));
+    expect(saved).toEqual(['Přednáška 4.pptx']);
   });
 });

@@ -111,6 +111,16 @@ async function seedStudentData(owner: typeof PETR) {
       studyInfo: `PEF, ${owner.studium}`,
     },
   ]);
+  // The whole-subject list (Celý předmět): everyone taking MT, the owner included.
+  await IndexedDBService.set('classmates', 'subject:MT', [
+    {
+      personId: Number(owner.studentId),
+      photoUrl: `/img.pl?id=${owner.studentId}`,
+      name: owner.fullName,
+      studyInfo: `PEF, ${owner.studium}`,
+    },
+  ]);
+  await IndexedDBService.set('meta', 'classmates_subject_fetched:MT', 1);
 }
 
 /**

@@ -3,39 +3,9 @@ import type { BlockLesson } from '../../../../types/calendarTypes';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useAppStore } from '../../../../store/useAppStore';
 import { localizedCourseName } from '../../../../utils/localizedLesson';
+import { lessonDisplayName } from '../../../../utils/courseDisplayName';
 import { lessonPlace } from '../../../../utils/lessonPlace';
-
-/**
- * Colour tokens match `CalendarEventCard`'s desktop scheme exactly (same
- * `exam-*`/`lecture-*`/`seminar-*` design tokens) — these card backgrounds are
- * fixed light tints that do NOT follow the active theme, so the foreground
- * uses the fixed `content-primary`/`content-secondary` tokens too, not
- * theme-reactive `base-content`.
- */
-function eventStyles(lesson: BlockLesson) {
-  if (lesson.isExam) {
-    return {
-      bg: 'bg-exam-bg/85',
-      border: 'border-exam-border/30',
-      rail: 'border-l-exam-border',
-      text: 'text-exam-text',
-    };
-  }
-  if (lesson.isSeminar === 'true') {
-    return {
-      bg: 'bg-seminar-bg/85',
-      border: 'border-seminar-border/30',
-      rail: 'border-l-seminar-border',
-      text: 'text-seminar-text',
-    };
-  }
-  return {
-    bg: 'bg-lecture-bg/85',
-    border: 'border-lecture-border/30',
-    rail: 'border-l-lecture-border',
-    text: 'text-lecture-text',
-  };
-}
+import { eventStyles } from './eventStyles';
 
 export interface AgendaEventProps {
   lesson: BlockLesson;
@@ -63,15 +33,13 @@ export interface AgendaEventProps {
  */
 export function AgendaEvent({ lesson, onOpenSubject, onShowOnMap }: AgendaEventProps) {
   const { t, language } = useTranslation();
-  const courseName = localizedCourseName(lesson, language);
-  const mapEvents = useAppStore((s) => s.mapEvents);
-  // A room the index knows, or the society event an answered block stands for.
-  const place = lessonPlace(lesson, language, mapEvents, t('map.venueOnMap'));
+  const nicknames = useAppStore((s) => s.courseNicknames);
+  const courseName = lessonDisplayName(nicknames, lesson, localizedCourseName(lesson, language));
+  const place = lessonPlace(lesson, language);
   // Surname only ("Melicharová"), not the full titled name — that is what
   // lets room, time and teacher share one line at 390px without clipping.
   // Every teacher's full name is in the subject drawer's header.
-  // An answered society event has no teacher; who runs it goes there instead.
-  const teacher = lesson.teachers[0]?.shortName || lesson.teachers[0]?.fullName || place.host;
+  const teacher = lesson.teachers[0]?.shortName || lesson.teachers[0]?.fullName;
   const styles = eventStyles(lesson);
 
   return (

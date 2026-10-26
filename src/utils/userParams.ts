@@ -3,6 +3,10 @@ import { STORAGE_KEYS } from '../services/storage/keys';
 import { fetchUserBaseIds, fetchUserStudyDetails, fetchUserNetId } from './userParams/fetchers';
 import { logError } from './reportError';
 import { announceIdentityChange } from './userParams/identityEvents';
+import { chooseStudy, needsStudyResolution } from './userParams/chooseStudy';
+import { getPreferredStudium } from './userParams/studyPreference';
+import { clearStudyData } from './userParams/clearStudyData';
+import type { StudyOption } from './userParams/studyOptions';
 
 export interface UserParams {
   studium: string;
@@ -20,6 +24,8 @@ export interface UserParams {
   studyYear?: number;
   periodLabel?: string;
   isErasmus: boolean;
+  /** IS's study switcher, kept only for a student with more than one study. */
+  studies?: StudyOption[];
 }
 
 // In-memory cache — avoids redundant IDB reads across 20+ call sites per session.
@@ -153,6 +159,11 @@ export async function getUserParams(): Promise<UserParams | null> {
       // local-only notes with it.
       switched = !!stored?.studentId && !!base.studentId && stored.studentId !== base.studentId;
 
+      // Which study the app runs on — a question only for a student IS offers
+      // more than one (see `chooseStudy`). Everyone else asks IS nothing more.
+      const studies = base.studies ?? [];
+      const preferred = studies.length > 1 ? await getPreferredStudium(base.studentId) : null;
+
       if (switched) {
         // Nothing may serve the previous student's record from here on, even
         // while the wipe below is still running.
@@ -162,25 +173,42 @@ export async function getUserParams(): Promise<UserParams | null> {
         // boot would have nothing to check against.
         await IndexedDBService.clearAll();
         wiped = true;
-      } else if (complete(stored)) {
+      } else if (complete(stored) && !needsStudyResolution(stored!, studies, preferred)) {
         // Same student. Serve the record as it stands rather than rebuilding
         // it — the rebuild below is two more IS pages, on every boot.
         _cached = stored as UserParams;
         return _cached;
       }
 
-      const study = await fetchUserStudyDetails(),
+      // `null`: IS could not be read well enough to move the student to
+      // another study, and a complete record is better kept than rebuilt.
+      const choice =
+        (await chooseStudy({ ...base, studies }, switched ? undefined : stored, preferred)) ??
+        (complete(stored) ? null : { base, studies: undefined });
+      if (!choice) return serveStored(stored);
+      const { studyStatus: _status, studies: _offered, ...chosen } = choice.base;
+      const multi = studies.length > 1 || (stored?.studies?.length ?? 0) > 1;
+
+      const study = await fetchUserStudyDetails(multi ? chosen.studium : undefined),
         net = await fetchUserNetId();
       const params: UserParams = {
-        ...base,
+        ...chosen,
         ...study,
         ...net,
         email: net.username ? `${net.username}@mendelu.cz` : '',
-        isErasmus: base.isErasmus,
+        isErasmus: chosen.isErasmus,
+        ...(choice.studies && choice.studies.length > 1 ? { studies: choice.studies } : {}),
       };
+      // Same student, another study: only that study's cache goes — notes,
+      // settings and the society login stay. Cleared before the new record is
+      // written, so a failed clear leaves the old record and no restart loop.
+      const studyChanged =
+        !switched && multi && !!stored?.studium && stored.studium !== params.studium;
+      if (studyChanged) await clearStudyData();
       await IndexedDBService.set('meta', STORAGE_KEYS.USER_PARAMS, params);
       _cached = params;
       if (switched) announceIdentityChange(params, { wiped: true });
+      else if (studyChanged) announceIdentityChange(params, { wiped: true, studyOnly: true });
       return params;
     } catch (e) {
       logError('getUserParams', e);

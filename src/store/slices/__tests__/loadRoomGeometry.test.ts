@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('../../../api/campusMap', () => ({ fetchBuildingRooms: vi.fn() }));
+// Q (building 0) has a 3D model, and loading its floor plan also asks for it.
+vi.mock('../../../api/buildingModels', () => ({
+  fetchBuildingModel: vi.fn().mockResolvedValue(null),
+}));
 
 import { fetchBuildingRooms } from '../../../api/campusMap';
 import { useAppStore } from '../../useAppStore';
@@ -31,7 +35,7 @@ describe('loadRoomGeometry', () => {
   });
 
   it('does nothing for a room the dataset does not carry', async () => {
-    await useAppStore.getState().loadRoomGeometry('X02');
+    await useAppStore.getState().loadRoomGeometry('ZFAC1');
     expect(fetchBuildingRooms).not.toHaveBeenCalled();
   });
 

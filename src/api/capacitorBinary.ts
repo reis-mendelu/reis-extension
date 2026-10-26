@@ -1,5 +1,6 @@
 import { assertIsOrigin, buildCookieDelivery } from './capacitorTransport';
 import { notifySessionExpired } from '../services/sessionExpiry';
+import { downloadName, rowTypeExtension, type FileRowHint } from '../utils/contentDisposition';
 
 export interface BinaryDeps {
   platform: 'ios' | 'android' | 'web';
@@ -26,15 +27,27 @@ export function base64ToBlob(base64: string, type: string): Blob {
   return new Blob([bytes], { type });
 }
 
+const GENERIC_MIMES = new Set(['', 'application/octet-stream', 'binary/octet-stream']);
+
+/** A Content-Type that says only "bytes" — no more a type than a missing one. */
+function isGenericMime(contentType: string): boolean {
+  return GENERIC_MIMES.has(contentType.split(';')[0]?.trim().toLowerCase() ?? '');
+}
+
 /**
  * IS serves documents from query-string URLs (`slozka.pl?download=354316`), so
  * the URL has no usable basename — the Content-Disposition filename is the only
- * real source, and a generic fallback beats naming a file "slozka.pl".
+ * real source. Without it the drawer row's title (`row`) beats a generic
+ * `dokument`. With no content type, the row's type gives the extension, and
+ * with neither the fallback stays the `.pdf` it has always been. A generic
+ * octet-stream names no type, so it counts as no content type.
  */
-export function filenameFromResponse(headers: Record<string, string>): string {
-  const cd = headers['Content-Disposition'] ?? headers['content-disposition'] ?? '';
-  const match = cd.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
-  return match?.[1]?.trim() || 'dokument.pdf';
+export function filenameFromResponse(headers: Record<string, string>, row?: FileRowHint): string {
+  const cd = headers['Content-Disposition'] ?? headers['content-disposition'] ?? null;
+  const sent = headers['Content-Type'] ?? headers['content-type'] ?? '';
+  const contentType =
+    (isGenericMime(sent) ? null : sent) || (rowTypeExtension(row?.type) ? null : 'application/pdf');
+  return downloadName({ contentDisposition: cd, contentType }, row);
 }
 
 /** Mints the tagged auth error and reports it — see the twin in
@@ -61,7 +74,9 @@ export type IsResourceResult =
 export async function fetchIsBinary(
   url: string,
   token: string,
-  deps: BinaryDeps
+  deps: BinaryDeps,
+  /** The drawer row the file came from: its title names a file IS left unnamed. */
+  row?: FileRowHint
 ): Promise<IsResourceResult> {
   // File links are parsed out of IS HTML, so this is the call that most needs
   // the guard: an IS page can link to any host, and the session must not follow.
@@ -111,7 +126,7 @@ export async function fetchIsBinary(
   }
 
   const blob = base64ToBlob(body, contentType || 'application/octet-stream');
-  return { kind: 'binary', blob, filename: filenameFromResponse(headers) };
+  return { kind: 'binary', blob, filename: filenameFromResponse(headers, row) };
 }
 
 /** The body arrives base64-encoded, so decode before looking for the marker. */

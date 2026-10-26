@@ -1,8 +1,10 @@
+import { RoomDirections } from './RoomDirections';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { landmarkGroupLabels, roomLabel } from './mapHelpers';
+import { landmarkGroupLabels, placeTitle, roomLabel } from './mapHelpers';
 import { EventDetailCard } from './EventDetailCard';
 import { GardenPlaceCard } from './GardenPlaceCard';
+import { SocietyPinCard } from './SocietyPinCard';
 import landmarksJson from '../../data/map/landmarks.json';
 import type { Landmark } from '../../types/campusMap';
 
@@ -30,12 +32,17 @@ export function DetailPanel() {
 
   if (sel.kind === 'gardenPlace') return <GardenPlaceCard place={sel.place} />;
 
+  if (sel.kind === 'societyPin') return <SocietyPinCard pin={sel.pin} />;
+
   if (sel.kind === 'poi') {
     const p = sel.poi;
     const alsoHere = COLOCATED.get(p.id) ?? [];
     return (
       <div className="p-4 bg-base-100 border border-base-300 rounded-lg space-y-1">
-        <h3 className="font-bold text-base-content">{p.name}</h3>
+        {/* Shown for a timetable room with no floor plan: the room heads the
+            card and the building it is in sits under it (focusRoomPlace). */}
+        <h3 className="font-bold text-base-content">{sel.forRoom ?? p.name}</h3>
+        {sel.forRoom && <p className="text-sm text-base-content/70">{placeTitle(p.name, t)}</p>}
         <p className="text-sm text-base-content/60">{p.type}</p>
         {alsoHere.length > 0 && (
           <p className="text-sm text-base-content/70">
@@ -79,6 +86,9 @@ export function DetailPanel() {
       )}
       {r?.hasWhiteboard && <span className="badge badge-sm badge-info">{t('map.whiteboard')}</span>}
       {r?.passportNumber && <p className="text-xs text-base-content/50 pt-1">{r.passportNumber}</p>}
+      <div className="empty:hidden border-t border-base-content/10 mt-2 pt-3">
+        <RoomDirections />
+      </div>
     </div>
   );
 }

@@ -115,3 +115,81 @@ describe('createNotificationSlice: the cache must not outrank the network', () =
     expect(state.notifications.readIds.has('old')).toBe(true);
   });
 });
+
+/**
+ * A cache written by a build before the audience rule (5.3.0 and older) holds
+ * the unfiltered feed with no `subscribersOnly` on its rows, which would read as
+ * public: ESN's Erasmus-only events in every Czech student's Novinky on the
+ * first (or an offline) launch after the update. Such rows are dropped on load;
+ * reIS's own rows carry no audience and stay.
+ */
+describe('createNotificationSlice: a pre-audience cache', () => {
+  it('drops society rows that predate the audience field', async () => {
+    let state: NotificationSlice;
+    const set = vi.fn((updater: unknown) => {
+      const patch = typeof updater === 'function' ? updater(state) : updater;
+      state = { ...state, ...patch };
+    }) as Mock & Parameters<typeof createNotificationSlice>[0];
+    const get = vi.fn(() => state) as unknown as Parameters<typeof createNotificationSlice>[1];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    state = createNotificationSlice(set, get, {} as any);
+    const cache = [
+      { id: 'legacy', associationId: 'esn', title: 'Boat Party' },
+      { id: 'current', associationId: 'esn', title: 'Pub Quiz', subscribersOnly: true },
+      { id: 'deadline', associationId: 'academic_deadline', title: 'Zápočet' },
+      { id: 'reis-event', associationId: 'reis', title: 'reIS meetup' },
+    ];
+    vi.mocked(IndexedDBService.get).mockImplementation(async (_store, key) =>
+      key === 'notifications_cache' ? cache : []
+    );
+    await state.loadNotificationState();
+    expect(state.notifications.data.map((n) => n.id)).toEqual([
+      'current',
+      'deadline',
+      'reis-event',
+    ]);
+  });
+});
+
+/**
+ * The phone sheet marks the feed as soon as it fills, which a fast fetch can do
+ * before loadNotificationState restores the saved read set. Writing only the
+ * in-memory set then erased the history.
+ */
+describe('createNotificationSlice: marking read before the saved set is back', () => {
+  it('keeps the saved read history', async () => {
+    let state: NotificationSlice;
+    const set = vi.fn((updater: unknown) => {
+      const patch = typeof updater === 'function' ? updater(state) : updater;
+      state = { ...state, ...patch };
+    }) as Mock & Parameters<typeof createNotificationSlice>[0];
+    const get = vi.fn(() => state) as unknown as Parameters<typeof createNotificationSlice>[1];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    state = createNotificationSlice(set, get, {} as any);
+    vi.mocked(IndexedDBService.get).mockImplementation(async (_store, key) =>
+      key === 'read_notifications' ? ['older'] : undefined
+    );
+    await state.markNotificationsRead(['new']);
+    expect(vi.mocked(IndexedDBService.set)).toHaveBeenLastCalledWith(
+      'meta',
+      'read_notifications',
+      expect.arrayContaining(['older', 'new'])
+    );
+  });
+});
+
+describe('createNotificationSlice: marking read when the disk read fails', () => {
+  it('still marks in memory instead of leaving the badge stuck', async () => {
+    let state: NotificationSlice;
+    const set = vi.fn((updater: unknown) => {
+      const patch = typeof updater === 'function' ? updater(state) : updater;
+      state = { ...state, ...patch };
+    }) as Mock & Parameters<typeof createNotificationSlice>[0];
+    const get = vi.fn(() => state) as unknown as Parameters<typeof createNotificationSlice>[1];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    state = createNotificationSlice(set, get, {} as any);
+    vi.mocked(IndexedDBService.get).mockRejectedValueOnce(new Error('idb'));
+    await expect(state.markNotificationsRead(['n1'])).resolves.toBeUndefined();
+    expect(state.notifications.readIds.has('n1')).toBe(true);
+  });
+});

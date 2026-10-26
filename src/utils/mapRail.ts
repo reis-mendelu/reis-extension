@@ -113,3 +113,39 @@ export function railPaddingPx(
   if (containerWidth < RAIL_MIN_WIDTH) return 0;
   return Math.round(Math.min(railWidth + RAIL_INSET_PX, containerWidth * RAIL_MAX_SHARE));
 }
+
+/** The floor column's own inset from the right edge, its `right-3`. */
+export const FLOOR_COLUMN_RIGHT_PX = 12;
+
+/**
+ * Shorter than this and the screen is a phone on its side, not a tablet. The
+ * tallest phone in landscape is ~440px; the shortest iPad, a mini in
+ * landscape, is 744.
+ */
+export const FLOOR_BESIDE_RAIL_MIN_HEIGHT = 600;
+
+/**
+ * Where the floor column stands from the right edge.
+ *
+ * Both float at the right: the rail from the top, capped at 55vh, and the
+ * column 190px off the bottom. On an iPad in landscape (1194x834, 1024x768)
+ * the two share a band of screen, and building Q's floors 5 to 2 sat under
+ * the rail where no tap could reach them. So while the rail is open the column
+ * moves to the rail's left edge, with the same 12px gap it keeps from the
+ * screen edge — horizontally, because the column's height depends on how many
+ * floors a building has and a rail capped to clear Q's would be a sliver.
+ *
+ * Phones keep the edge: in portrait there is no rail, and a phone turned
+ * sideways was deliberately left as it was.
+ */
+export function floorColumnRightPx(
+  viewportWidth: number,
+  viewportHeight: number,
+  railOpen: boolean,
+  railWidth: number
+): number {
+  if (!railOpen) return FLOOR_COLUMN_RIGHT_PX;
+  if (viewportWidth < RAIL_MIN_WIDTH) return FLOOR_COLUMN_RIGHT_PX;
+  if (viewportHeight < FLOOR_BESIDE_RAIL_MIN_HEIGHT) return FLOOR_COLUMN_RIGHT_PX;
+  return railWidth + RAIL_INSET_PX + FLOOR_COLUMN_RIGHT_PX;
+}

@@ -10,21 +10,15 @@ export const createI18nSlice: AppSlice<I18nSlice> = (set) => ({
   language: DEFAULT_LANGUAGE,
   isLanguageLoading: true,
   loadLanguage: async () => {
+    let language: Language = DEFAULT_LANGUAGE;
     try {
       const storedLang = (await IndexedDBService.get('meta', STORAGE_KEY)) as Language | undefined;
-
-      if (storedLang === 'cz' || storedLang === 'en') {
-        setCurrentLanguage(storedLang);
-        set({ language: storedLang, isLanguageLoading: false });
-        return;
-      }
-
-      setCurrentLanguage(DEFAULT_LANGUAGE);
-      set({ language: DEFAULT_LANGUAGE, isLanguageLoading: false });
+      if (storedLang === 'cz' || storedLang === 'en') language = storedLang;
     } catch {
-      setCurrentLanguage(DEFAULT_LANGUAGE);
-      set({ language: DEFAULT_LANGUAGE, isLanguageLoading: false });
+      // Unreadable storage falls back to the default.
     }
+    setCurrentLanguage(language);
+    set({ language, isLanguageLoading: false });
   },
   setLanguage: async (newLang: Language) => {
     try {

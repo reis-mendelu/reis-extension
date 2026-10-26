@@ -2,6 +2,7 @@ import { defineConfig } from 'wxt';
 import path from 'path';
 import tailwindcss from '@tailwindcss/vite';
 import { SNAPSHOT_FILENAMES } from './scripts/stripDevRealData.mjs';
+import { pdfjsLegacyAliases } from './scripts/pdfjsLegacyAlias';
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
@@ -38,17 +39,25 @@ export default defineConfig({
     'build:manifestGenerated'(wxt, manifest) {
       if (wxt.config.manifestVersion === 3) return;
       delete manifest.declarative_net_request;
-      const dropped = ['declarativeNetRequestWithHostAccess', 'https://tile.openstreetmap.org/*'];
+      const osmTiles = 'https://tile.openstreetmap.org/*';
+      const dropped = ['declarativeNetRequestWithHostAccess', osmTiles];
       // MV2 has no declarativeNetRequest at all, so the permission would be an
-      // unknown string in front of an AMO reviewer and the host permission
-      // would buy nothing (tiles are plain <img> loads). WXT folds
-      // host_permissions into permissions for MV2, so filter both.
+      // unknown string in front of an AMO reviewer. WXT folds host_permissions
+      // into permissions for MV2, so filter both.
       if (manifest.permissions)
         manifest.permissions = manifest.permissions.filter((p: string) => !dropped.includes(p));
       if (manifest.host_permissions)
         manifest.host_permissions = manifest.host_permissions.filter(
           (p: string) => !dropped.includes(p)
         );
+      // Firefox's half of the tile identity instead: a blocking webRequest
+      // listener in the background page (src/utils/osmTileIdentity.ts). Neither
+      // webRequest permission carries an install warning. The tile host does,
+      // so it is OPTIONAL: required, it would hold every Firefox install's
+      // update behind a permission prompt. The student grants it with one
+      // click on the map's banner (src/utils/osmTileAccess.ts).
+      manifest.permissions = [...(manifest.permissions ?? []), 'webRequest', 'webRequestBlocking'];
+      manifest.optional_permissions = [...(manifest.optional_permissions ?? []), osmTiles];
     },
   },
   webExt: {
@@ -56,7 +65,7 @@ export default defineConfig({
   },
   manifest: {
     name: 'reIS',
-    version: '5.2.5',
+    version: '5.5.0',
     description: 'Modernizovaný reIS rozšířený pro IS Mendelu',
     icons: {
       16: 'reIS_logo_16.png',
@@ -120,9 +129,25 @@ export default defineConfig({
       gecko: {
         id: 'reis-extension@mendelu.cz',
         strict_min_version: '140.0',
+        // Firefox 140+ turns this into consent, enforced at runtime by
+        // src/utils/firefoxDataConsent.ts. Nothing is REQUIRED to use reIS.
+        // Optional, and only ever sent once granted:
+        //  - technicalAndInteraction: the daily install count, feature
+        //    counters, the society post and map-event view/click counters,
+        //    NPS rating, and a report's error log. Firefox shows it as a
+        //    toggle at install and in about:addons.
+        //  - personalCommunications: the text of a report (Nahlásit chybu).
+        //  - personallyIdentifyingInfo: the optional contact email on it.
+        //  - websiteContent: a screenshot attached to it.
+        // The last three are asked for when the student presses Odeslat.
         data_collection_permissions: {
           required: ['none'],
-          optional: [],
+          optional: [
+            'technicalAndInteraction',
+            'personalCommunications',
+            'personallyIdentifyingInfo',
+            'websiteContent',
+          ],
         },
       },
       gecko_android: {
@@ -150,9 +175,7 @@ export default defineConfig({
   vite: () => ({
     plugins: [tailwindcss()],
     resolve: {
-      alias: {
-        '@': path.resolve(__dirname, './src'),
-      },
+      alias: [{ find: '@', replacement: path.resolve(__dirname, './src') }, ...pdfjsLegacyAliases],
     },
   }),
 });

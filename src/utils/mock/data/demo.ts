@@ -50,6 +50,8 @@ export const demoContext = {
   facultyId: '900',
   fullName: 'Jana Ukázková',
   userFaculty: 'PEF',
+  // Explicit, so the real student's programme never survives into the demo.
+  userProgramme: null,
   userSemester: demoPeriodLabel(now),
 } as const;
 

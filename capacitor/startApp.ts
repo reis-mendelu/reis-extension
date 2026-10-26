@@ -9,11 +9,16 @@ import { App as CapApp } from '@capacitor/app';
 import { resolveNativeEduroamSupport } from '@/mobile/eduroamNative';
 import { installMobileActionHandler } from '@/mobile/actionHandler';
 import { installExternalLinkHandler } from '@/mobile/openExternal';
+import { installCalendarResumeReset } from '@/mobile/calendarResume';
 import { promptSessionRecovery } from '@/mobile/sessionRecovery';
 import { setSessionExpiredHandler } from '@/services/sessionExpiry';
 import { setDemoErrorHandler } from '@/utils/reportError';
 import { handleDemoError } from '@/mobile/demoToast';
 import { useAppStore } from '@/store/useAppStore';
+import { trackDailyUsage } from '@/api/feedback';
+import { installExamReminders } from '@/mobile/examReminders';
+import { installNotificationTaps } from '@/mobile/notificationTaps';
+import { installZaznamnikNotifications } from '@/mobile/zaznamnikNotifications';
 
 /**
  * Whether `entrypoints/main/main` has been evaluated.
@@ -88,9 +93,26 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   appMounted = true;
   await SplashScreen.hide();
 
+  // Before the demo return: the reviewer's calendar goes back to today on a
+  // reopen too. Nothing above sets the calendar's day, so nothing races it.
+  installCalendarResumeReset();
+
   // Demo data is seeded, static and complete. Syncing would only produce
   // failed IS requests, and fetchWithAuth throws DemoModeError anyway.
   if (demo) return;
+
+  // "Za chvíli se otvírá zkouška" (spec 2026-10-20). After the demo return:
+  // the demo's exams are seeded, and a reviewer's phone must not be reminded of
+  // them. Reschedules on every exam sync from here on.
+  // One tap listener for every reIS notification, before the features that
+  // post them: a cold-start tap reaches only the first listener registered.
+  installNotificationTaps();
+  installExamReminders();
+
+  // "Nové body" from the záznamník as a system notification. After the demo
+  // return (the demo never syncs, so it has nothing new) and before the sync
+  // starts, so its first batch already has somewhere to go.
+  installZaznamnikNotifications();
 
   // In the extension the CONTENT SCRIPT drives this and posts results into the
   // iframe. Capacitor has neither, so the app drives its own sync; sendToIframe
@@ -99,6 +121,7 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // startSyncService fires an immediate boot sync and then sets the
   // SYNC_INTERVAL timer — no separate first call needed.
   const { requestSync, startSyncService } = await import('@/injector/syncGate');
+  const { MIN_SYNC_GAP } = await import('@/injector/config');
   startSyncService();
 
   // IS's session is a sliding inactivity window, so a returning student is
@@ -110,5 +133,21 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // absence still syncs.
   void CapApp.addListener('resume', () => {
     void requestSync('resume');
+    // Fetch-once-at-startup is stale forever in a long-lived Capacitor process:
+    // a society's new, moved or cancelled event would never reach it. Gap-limited
+    // like the IS sync, so tabbing away and back does not refetch every time.
+    // The societies catalog rides on this too — reloadMapEvents loads it beside
+    // the events — so it gets the same gap and no request of its own.
+    void useAppStore.getState().refreshMapEventsIfStale(MIN_SYNC_GAP);
+    // The jídelníček has the same fetch-once problem, worse: a boot fetch that
+    // failed (the app started while the phone dozed) was never retried, so the
+    // chef hat and the menu card stayed gone for the session.
+    void useAppStore.getState().refreshMenuIfStale(MIN_SYNC_GAP);
+    // A second chance for `loadContext()` if it lost the boot race against
+    // `getUserParams()` — the event audience reads the faculty it sets.
+    if (!useAppStore.getState().contextResolved) void useAppStore.getState().loadContext();
+    // Returning to the app is a day of use: this process can outlive many
+    // days, and only boots used to be counted. Writes at most once a day.
+    void trackDailyUsage();
   });
 }

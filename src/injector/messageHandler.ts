@@ -10,8 +10,10 @@ import { scrapedNavMenu } from './sniper';
 import { downloadDocumentInPage } from './documentDownloader';
 import { isIsMendeluUrl } from './isMendeluUrl';
 import { signOutFromHostPage } from './hostSignOut';
+import { switchStudyOnHost } from './switchStudyOnHost';
 import { readBytesBody } from './readBytesBody';
 import { fetchFileForIframe } from './fetchFileForIframe';
+import { getDiagnostics } from '../utils/diagnostics/diagnosticLog';
 
 let topUpPopupRef: Window | null = null;
 
@@ -178,6 +180,11 @@ async function handleAction(id: string, action: string, payload: unknown) {
         await refreshSchedule();
         result = { success: true };
         break;
+      case 'get_diagnostics':
+        // The report form asks for this context's recent errors, already
+        // cleaned at record time. Sent on only if the student opts in.
+        result = { entries: getDiagnostics() };
+        break;
       case 'download_document':
         // First-party fetch on is.mendelu.cz so the SameSite cookie rides
         // along. Redirect to login only on a genuine session-expiry
@@ -225,6 +232,12 @@ async function handleAction(id: string, action: string, payload: unknown) {
         result = { success: true };
         break;
       }
+      case 'switch_study':
+        // The student picked their other study in the iframe. See switchStudyOnHost.
+        if (!p.studium) throw new Error('switch_study: missing studium');
+        await switchStudyOnHost(p.studium);
+        result = { success: true };
+        break;
       case 'logout': {
         // Host-page half of the sign-out — the logout form AND the host-origin
         // database, which no other context can reach. See hostSignOut.ts.

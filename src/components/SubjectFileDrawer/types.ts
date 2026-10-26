@@ -8,6 +8,7 @@ import type { BlockLesson } from '../../types/calendarTypes';
 import type { ParsedFile, CourseMetadata, SubjectInfo } from '../../types/documents';
 import type { SelectedSubject } from '../../types/app';
 import type { DownloadTick } from '../../hooks/ui/readBlobWithProgress';
+import type { FileRowHint } from '../../utils/contentDisposition';
 
 export type DrawerTab = 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik';
 
@@ -45,9 +46,9 @@ export interface FileListProps {
   fileRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
   ignoreClickRef: React.MutableRefObject<boolean>;
   onToggleSelect: (id: string, e: React.SyntheticEvent) => void;
-  onOpenFile: (link: string) => void;
+  onOpenFile: (link: string, row?: FileRowHint) => void;
   onViewPdf?: (link: string, meta: PdfRowMeta) => void;
-  onDownloadSingle?: (link: string) => void;
+  onDownloadSingle?: (link: string, row?: FileRowHint) => void;
   /** The file whose bytes are being fetched right now, so its row can say so. */
   openingLink?: string | null;
   /** In-flight row downloads keyed by link. A map, not one link: the desktop

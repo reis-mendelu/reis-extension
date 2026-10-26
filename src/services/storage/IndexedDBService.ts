@@ -17,6 +17,7 @@ import type { ErasmusCountryData } from '../../types/erasmus';
 import type { HiddenItems, CalendarCustomEvent } from '../../types/calendarTypes';
 import type { SubjectZaznamnik } from '../../types/zaznamnik';
 import { StoreSchemas, type StoreName } from '../../types/storage';
+import { putAcross } from './putAcross';
 
 interface ReisDB extends DBSchema {
   files: {
@@ -103,6 +104,10 @@ interface ReisDB extends DBSchema {
     key: string; // String(buildingId), e.g. "0" for Q
     value: import('../../types/campusMap').RoomsCollection;
   };
+  map_models: {
+    key: string; // String(buildingId) — the 3D building card's glb + metadata
+    value: import('../../types/buildingModel').BuildingModel;
+  };
 }
 
 // Mock/demo mode (VITE_USE_MOCK_DATA=true) uses a SEPARATE database so its
@@ -120,7 +125,7 @@ interface ReisDB extends DBSchema {
 // `npm run scrape:real` failed on every machine and the real-data snapshot
 // could never be built. Same guard as `errorReporter/reporter.ts:19`.
 const DB_NAME = import.meta.env?.VITE_USE_MOCK_DATA === 'true' ? 'reis_db_mock' : 'reis_db';
-const DB_VERSION = 22;
+const DB_VERSION = 23;
 
 /**
  * The `meta` key holding the random per-install id.
@@ -171,6 +176,7 @@ class IndexedDBServiceImpl {
             'custom_events',
             'zaznamnik',
             'map_rooms',
+            'map_models',
           ];
 
           requiredStores.forEach((store) => {
@@ -289,6 +295,24 @@ class IndexedDBServiceImpl {
       }
       await tx.done;
     });
+  }
+
+  /**
+   * Puts into several stores in ONE readwrite transaction: all of it lands or
+   * none of it does. For writes that only make sense together, like a fresh
+   * záznamník and the "Nové body" entry derived from comparing it.
+   */
+  async setAcross(
+    writes: Array<
+      { [K in StoreName]: { store: K; key: string; value: ReisDB[K]['value'] } }[StoreName]
+    >
+  ): Promise<void> {
+    const validated = writes
+      .map((w) => ({ ...w, value: this.validate(w.store, w.value) }))
+      .filter((w) => w.value !== undefined);
+    if (validated.length === 0) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await this.run((db) => putAcross(db as any, validated));
   }
 
   async delete<K extends keyof ReisDB>(storeName: K, key: string): Promise<void> {

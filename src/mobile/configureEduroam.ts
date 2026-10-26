@@ -41,7 +41,15 @@ export type EduroamConfigOutcome =
    * Android has no equivalent. Its ADD_WIFI_RESULT_ALREADY_EXISTS means a saved
    * network configuration exists, which is a real credential.
    */
-  | 'stale-association';
+  | 'stale-association'
+  /**
+   * iOS only. IS holds a newer certificate than the one the installed
+   * configuration uses, and the device is on eduroam, so `apply` answered
+   * `alreadyAssociated` and replaced nothing. The old configuration keeps
+   * working until its certificate expires; the student must forget the
+   * network before the renewed one can be installed.
+   */
+  | 'renewal-blocked';
 
 /**
  * Did setup actually install the network?
@@ -52,8 +60,8 @@ export type EduroamConfigOutcome =
  * separately, which is two places too many for one question and how a new
  * success once reached a `done` status that no banner recognised.
  *
- * `stale-association` is deliberately NOT here (#261): iOS installs nothing on
- * that path.
+ * `stale-association` and `renewal-blocked` are deliberately NOT here (#261):
+ * iOS installs nothing on either path.
  */
 export function isEduroamConfigured(outcome: EduroamConfigOutcome | null): boolean {
   return outcome === 'saved' || outcome === 'already-configured';
@@ -118,6 +126,7 @@ const OUTCOMES: readonly string[] = [
   'failed',
   'cancelled',
   'stale-association',
+  'renewal-blocked',
 ];
 
 /**

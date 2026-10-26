@@ -5,6 +5,7 @@ import { RegisteredTermDetails } from './RegisteredTermDetails';
 import { ExamClassmatesStrip } from './ExamClassmatesStrip';
 import { TermNoteBlock } from './TermNoteBlock';
 import { TermsSummary } from './TermsSummary';
+import { AttemptPillLegend } from './AttemptPillLegend';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { alternativeTerms, getSectionState } from './utils';
@@ -198,6 +199,7 @@ export function ExamSectionCard({
                   isProcessing={isProcessing}
                 />
               ))}
+              <AttemptPillLegend terms={alternatives} />
             </div>
           </div>
         </div>

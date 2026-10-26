@@ -4,7 +4,7 @@ import { useTheme } from '../../../../hooks/useTheme';
 import { useTranslation } from '../../../../hooks/useTranslation';
 
 /**
- * Dark mode and language — the two rows under VZHLED.
+ * Dark mode and language, in the Nastavení sheet under the calendar view.
  *
  * The language row is a `join` of `btn-xs` buttons, "label left, options
  * right" — the pattern to copy for the next settings control, rather than a

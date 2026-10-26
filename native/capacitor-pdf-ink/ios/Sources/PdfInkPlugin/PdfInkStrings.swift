@@ -24,6 +24,22 @@ struct PdfInkStrings {
     let focus: String
     let exitFocus: String
     let cancel: String
+    let add: String
+    let photoLibrary: String
+    let takePhoto: String
+    let chooseFile: String
+    let underInk: String
+    let overInk: String
+    let more: String
+    let movePictures: String
+    let deletePicture: String
+    let done: String
+    /// The tape: the palette tool that makes covers (`CoverTool`).
+    let cover: String
+    /// The menu entry a finger held on a strip offers.
+    let deleteTape: String
+    /// What the tape is for, shown when it is picked in a file with none yet.
+    let tapeHint: String
 
     init(_ object: JSObject?) {
         saveFailedTitle = object?["saveFailedTitle"] as? String ?? "Your ink couldn't be saved"
@@ -45,5 +61,21 @@ struct PdfInkStrings {
         focus = object?["focus"] as? String ?? "Hide the toolbar"
         exitFocus = object?["exitFocus"] as? String ?? "Show the toolbar"
         cancel = object?["cancel"] as? String ?? "Cancel"
+        add = object?["add"] as? String ?? "Add"
+        photoLibrary = object?["photoLibrary"] as? String ?? "Choose photo"
+        takePhoto = object?["takePhoto"] as? String ?? "Take photo"
+        chooseFile = object?["chooseFile"] as? String ?? "Choose file"
+        underInk = object?["underInk"] as? String ?? "Under the notes"
+        overInk = object?["overInk"] as? String ?? "Over the notes"
+        more = object?["more"] as? String ?? "More"
+        movePictures = object?["movePictures"] as? String ?? "Edit pictures"
+        deletePicture = object?["deletePicture"] as? String ?? "Delete picture"
+        done = object?["done"] as? String ?? "Done"
+        cover = object?["cover"] as? String ?? "Tape"
+        deleteTape = object?["deleteTape"] as? String ?? "Delete tape"
+        tapeHint =
+            object?["tapeHint"] as? String
+            ?? "Tape over an answer and try to recall it. Tap the tape to peek; hold it to delete or move it."
     }
+
 }

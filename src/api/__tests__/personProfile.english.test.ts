@@ -52,7 +52,7 @@ describe('parsePersonProfile on the English page', () => {
   });
 
   describe('student', () => {
-    const profile = parsePersonProfile(STUDENT_PROFILE_HTML_EN, 120349)!;
+    const profile = parsePersonProfile(STUDENT_PROFILE_HTML_EN, 900349)!;
 
     it('parses the programme', () => {
       expect(profile).not.toBeNull();

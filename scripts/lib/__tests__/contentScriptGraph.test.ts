@@ -64,4 +64,14 @@ describe('content script import graph', () => {
         `importing it from a module the content script can reach.`
     ).toBeNull();
   });
+
+  // logError feeds the diagnostic log, and logError is reachable from nearly
+  // every module the content script loads. Whatever diagnosticLog imports, the
+  // content script imports — so it imports nothing.
+  it('keeps the diagnostic log free of imports', () => {
+    const file = join(SRC, 'utils/diagnostics/diagnosticLog.ts');
+    const rel = graph.files.map((f) => f.replace(`${ROOT}/`, ''));
+    expect(rel).toContain('src/utils/diagnostics/diagnosticLog.ts');
+    expect(readFileSync(file, 'utf8')).not.toMatch(/^\s*import\s/m);
+  });
 });

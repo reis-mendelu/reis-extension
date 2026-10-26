@@ -34,6 +34,15 @@ describe('lookupRoomEntry', () => {
     expect(lookupRoomEntry('C02', INDEX)?.code).toBe('BA03N2051');
   });
 
+  // AF and ZF teach 77 lessons a semester in X01–X03. The floor plan draws each
+  // as a row of partitions, merged back into one room by mergedRooms.ts.
+  it('resolves the X-building classrooms IS prints as X01–X03', () => {
+    expect(lookupRoomEntry('X01', INDEX)?.code).toBe('BA25N1001');
+    expect(lookupRoomEntry('X02', INDEX)?.code).toBe('BA25N1002A');
+    expect(lookupRoomEntry('X03', INDEX)?.code).toBe('BA25N1003A');
+    expect(lookupRoomEntry('X01 (Černá Pole)', INDEX)?.code).toBe('BA25N1001');
+  });
+
   it('resolves the raw estate code', () => {
     expect(lookupRoomEntry('BA39N2056', INDEX)?.name).toBe('Q2.56');
   });
@@ -85,8 +94,8 @@ describe('lookupRoomEntry', () => {
   // string can break either tie. Guessing puts a student on the wrong floor
   // while looking certain, so the honest answer is no answer — and now that the
   // UI withholds its controls for an unresolved room, that degrades cleanly.
-  it.each(['E17', 'B52'])('refuses to guess for %s', (nick) => {
-    expect(lookupRoomEntry(nick, INDEX)).toBeNull();
+  it('refuses to guess for B52', () => {
+    expect(lookupRoomEntry('B52', INDEX)).toBeNull();
   });
 
   // ...but a handle repeated within ONE place is not ambiguous in any way a
@@ -101,10 +110,9 @@ describe('lookupRoomEntry', () => {
   );
 
   it('returns null for a room the dataset does not contain', () => {
-    // Real strings off a Zahradnická fakulta timetable. Building X's index
-    // entries are all raw BA25* codes — no X02/X03 exists under any handle.
-    expect(lookupRoomEntry('X02', INDEX)).toBeNull();
-    expect(lookupRoomEntry('X03', INDEX)).toBeNull();
+    // A real string off a Zahradnická fakulta timetable: the Lednice campus has
+    // no floor plan in the map source, and never will.
+    expect(lookupRoomEntry('ZFAC1 (Led)', INDEX)).toBeNull();
     expect(lookupRoomEntry('', INDEX)).toBeNull();
   });
 
@@ -132,6 +140,9 @@ describe('lookupRoomEntry', () => {
     'zahraniční oddělení',
   ];
 
+  // Map nicknames IS's catalogue deliberately outranks — pinned above.
+  const IS_OUTRANKED = ['a411', 'a412'];
+
   // Stronger than "every handle resolves to something": every handle must
   // resolve back to ITS OWN entry. The weaker form passes trivially for every
   // collision above, which is exactly the failure that hurts — a button that
@@ -141,7 +152,8 @@ describe('lookupRoomEntry', () => {
     for (const e of INDEX) {
       for (const handle of [e.code, e.name, e.nickname]) {
         if (!handle || !handle.trim()) continue;
-        if (DATASET_AMBIGUOUS.includes(normalizeRoomKey(handle))) continue;
+        const key = normalizeRoomKey(handle);
+        if (DATASET_AMBIGUOUS.includes(key) || IS_OUTRANKED.includes(key)) continue;
         if (lookupRoomEntry(handle, INDEX) !== e) strays.push(handle);
       }
     }

@@ -2,7 +2,7 @@
  * useFileActions - Hook for file operations (open, download, download ZIP).
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { normalizeFileUrl } from '../../utils/fileUrl';
 import { createLogger } from '../../utils/logger';
 import { isNativeHost } from '../../mobile/openIsFile';
@@ -14,6 +14,10 @@ import { assertNotDemo } from './assertNotDemo';
 import { downloadZipFiles } from './downloadZipFiles';
 import type { DownloadTick } from './readBlobWithProgress';
 import { fetchIsFile } from './fetchIsFile';
+import { opensInTab, saveIsFile } from './saveBlob';
+import { useRowDownloads } from './useRowDownloads';
+import { noPdf, pdfOrNull } from './pdfOrNull';
+import type { FileRowHint } from '../../utils/contentDisposition';
 
 const log = createLogger('useFileActions');
 
@@ -29,44 +33,54 @@ interface UseFileActionsResult {
   downloadProgress: DownloadProgress | null;
   /** In-flight single downloads, keyed by the row's link. */
   activeDownloads: Record<string, DownloadTick>;
-  openFile: (link: string) => Promise<void>;
+  /** `row` names the file when IS sends no Content-Disposition. */
+  openFile: (link: string, row?: FileRowHint) => Promise<void>;
   /** The bytes of an IS PDF, or null when IS served a viewer page instead. */
   fetchPdfBlob: (link: string) => Promise<Blob | null>;
   openPdfInline: (link: string) => Promise<string | null>;
-  downloadSingle: (link: string) => Promise<void>;
+  downloadSingle: (link: string, row?: FileRowHint) => Promise<void>;
   downloadZip: (fileLinks: string[], zipFileName: string) => Promise<void>;
 }
 
 export function useFileActions(): UseFileActionsResult {
   const [isZipping, setIsZipping] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
-  const [activeDownloads, setActiveDownloads] = useState<Record<string, DownloadTick>>({});
-  // A ref, not `activeDownloads`: a second click landing before React commits
-  // the first `setActiveDownloads` would read an empty map and fire a duplicate
-  // request. Same reasoning as useDocumentDownload's `inFlight`.
-  const inFlight = useRef<Set<string>>(new Set());
+  const { activeDownloads, claimRow, tickRow, clearRowProgress, releaseRow } = useRowDownloads();
   const { t } = useTranslation();
 
   const openFile = useCallback(
-    async (link: string) => {
+    async (link: string, row?: FileRowHint) => {
+      // A row click downloads too, so it gets the row's indicator and lock just
+      // as the download icon does — a .pptx row clicked on its body used to
+      // fetch with nothing on screen saying so.
+      if (!claimRow(link)) return;
       const fullUrl = normalizeFileUrl(link);
 
-      // Capacitor: IS denies CORS to every origin, so the browser fetch below
-      // always fails here — and its window.open fallback hands the URL to the
-      // SYSTEM BROWSER, which has no IS session. Fetch natively instead.
-      if (isNativeHost()) {
-        await openNativeFile(fullUrl, 'useFileActions.openFile', t);
-        return;
-      }
-
       try {
+        // Capacitor: IS denies CORS to every origin, so the browser fetch below
+        // always fails here — and its window.open fallback hands the URL to the
+        // SYSTEM BROWSER, which has no IS session. Fetch natively instead.
+        if (isNativeHost()) {
+          await openNativeFile(
+            fullUrl,
+            'useFileActions.openFile',
+            t,
+            () => clearRowProgress(link),
+            row
+          );
+          return;
+        }
+
         assertNotDemo();
-        const { blob } = await fetchIsFile(fullUrl);
-        const blobUrl = URL.createObjectURL(blob);
-
+        const file = await fetchIsFile(fullUrl, tickRow(link));
+        // A tab only for what a tab can show: a .pptx opened this way was saved
+        // by the browser under the blob URL's GUID instead of its name.
+        if (!opensInTab(file.blob)) {
+          saveIsFile(file, row);
+          return;
+        }
+        const blobUrl = URL.createObjectURL(file.blob);
         window.open(blobUrl, '_blank', 'noopener,noreferrer');
-
-        // Clean up after 5 minutes
         setTimeout(() => URL.revokeObjectURL(blobUrl), 5 * 60 * 1000);
       } catch (e) {
         // A demo block must not fall through to the direct link: window.open
@@ -81,20 +95,12 @@ export function useFileActions(): UseFileActionsResult {
         // a top-level tab is first-party, so it carries the session.
         log.error('Failed to fetch file as blob, falling back to direct link', e);
         window.open(fullUrl, '_blank', 'noopener,noreferrer');
+      } finally {
+        releaseRow(link);
       }
     },
-    [t]
+    [t, claimRow, tickRow, clearRowProgress, releaseRow]
   );
-
-  /**
-   * IS serves viewer pages, and Office files, under anchors that look the same
-   * as a document download — and reports no usable type for many of them. The
-   * bytes are the only reliable answer, so a copy that is not a PDF is null and
-   * the caller downloads it instead. It also keeps non-PDF bytes out of the iPad
-   * reader's cache, which stores what it is given under a `.pdf` name.
-   */
-  const looksLikePdf = async (blob: Blob): Promise<boolean> =>
-    (await blob.slice(0, 1024).text()).includes('%PDF-');
 
   const fetchPdfBlob = useCallback(async (link: string): Promise<Blob | null> => {
     const fullUrl = normalizeFileUrl(link);
@@ -112,14 +118,20 @@ export function useFileActions(): UseFileActionsResult {
         // A viewer page is not a PDF — null lets the caller fall back to its
         // normal "can't preview" path. Neither are the Office files IS serves
         // through the same anchors, hence the byte check.
-        if (result.kind !== 'binary') return null;
-        return (await looksLikePdf(result.blob)) ? result.blob : null;
+        if (result.kind !== 'binary') return noPdf(`IS served a ${result.kind}, not a file`);
+        // Awaited inside the try: a failed byte read must land in the catch.
+        return await pdfOrNull(result.blob);
       }
       assertNotDemo();
       const { blob } = await fetchIsFile(fullUrl);
-      return (await looksLikePdf(blob)) ? blob : null;
+      return await pdfOrNull(blob);
     } catch (e) {
-      log.error('Failed to fetch PDF inline', e);
+      // Demo mode is not a failure: the download it falls back to says so.
+      if (e instanceof DemoModeError) {
+        log.error('Failed to fetch PDF inline', e);
+        return null;
+      }
+      logError('useFileActions.fetchPdfBlob', e);
       return null;
     }
   }, []);
@@ -135,25 +147,6 @@ export function useFileActions(): UseFileActionsResult {
     [fetchPdfBlob]
   );
 
-  /** Ends the row's INDICATOR only. The lock is `releaseRow`'s. */
-  const clearRowProgress = useCallback((link: string) => {
-    setActiveDownloads((d) => {
-      if (!(link in d)) return d;
-      const next = { ...d };
-      delete next[link];
-      return next;
-    });
-  }, []);
-
-  /** Ends the indicator AND releases the lock — only once delivery has settled. */
-  const releaseRow = useCallback(
-    (link: string) => {
-      inFlight.current.delete(link);
-      clearRowProgress(link);
-    },
-    [clearRowProgress]
-  );
-
   /**
    * The row's own download. Every exit clears the row: a spinner that never
    * stops is worse than the missing spinner this replaced.
@@ -162,44 +155,34 @@ export function useFileActions(): UseFileActionsResult {
    * output — the row is what the student is looking at, and the two differ.
    */
   const downloadSingle = useCallback(
-    async (link: string) => {
-      if (inFlight.current.has(link)) return;
-      inFlight.current.add(link);
-      setActiveDownloads((d) => ({ ...d, [link]: { loaded: 0, total: null } }));
-
+    async (link: string, row?: FileRowHint) => {
+      if (!claimRow(link)) return;
       const fullUrl = normalizeFileUrl(link);
       try {
         // See openFile: the browser fetch and its window.open fallback are both
-        // dead ends on Capacitor. `onFetched` ends the row's busy state as soon
-        // as the bytes are in hand, because what follows is DELIVERY, not
-        // download: on iOS that is the share sheet, which only settles once the
-        // student picks a folder — the file is already saved by then, and a row
-        // spinning through their own dialog says the app is still working when
-        // it is waiting for them.
+        // dead ends on Capacitor. `onHandoff` ends the row's busy state as the
+        // share sheet opens (iOS) or the save finishes (Android) — NOT when the
+        // bytes land: the base64 round trip and the write after that are the
+        // slow part on a phone, and a row that went idle there while the lock
+        // below still refused taps looked like a dead button. Nor on this
+        // promise: on iOS it settles only once the student picks a folder, and a
+        // row spinning through their own dialog says the app is still working.
         //
-        // The indicator only. The lock is held until `finally`: on Android the
-        // base64 conversion and `Downloads.save` are still running here, and
-        // releasing it early let a second tap start a duplicate download.
+        // The indicator only. The lock is held until `finally`, so a tap under
+        // a dismissing share sheet cannot start a duplicate download.
         if (isNativeHost()) {
-          await openNativeFile(fullUrl, 'useFileActions.downloadSingle', t, () =>
-            clearRowProgress(link)
+          await openNativeFile(
+            fullUrl,
+            'useFileActions.downloadSingle',
+            t,
+            () => clearRowProgress(link),
+            row
           );
           return;
         }
         assertNotDemo();
-        const { blob, contentDisposition } = await fetchIsFile(fullUrl, (tick) =>
-          setActiveDownloads((d) => (link in d ? { ...d, [link]: tick } : d))
-        );
-        const match = contentDisposition?.match(/filename="?([^"]+)"?/);
-        const filename = match?.[1] || link.split('/').pop() || 'download';
-        const blobUrl = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        const file = await fetchIsFile(fullUrl, tickRow(link));
+        saveIsFile(file, row);
       } catch (e) {
         // See openFile: the direct-link fallback would bypass the demo guard.
         if (e instanceof DemoModeError) {
@@ -212,7 +195,7 @@ export function useFileActions(): UseFileActionsResult {
         releaseRow(link);
       }
     },
-    [t, clearRowProgress, releaseRow]
+    [t, claimRow, tickRow, clearRowProgress, releaseRow]
   );
 
   const downloadZip = useCallback(async (fileLinks: string[], zipFileName: string) => {

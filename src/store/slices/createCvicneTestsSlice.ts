@@ -2,6 +2,7 @@ import type { CvicneTestsSlice, AppSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
 import { getUserParams } from '../../utils/userParams';
 import { logError } from '../../utils/reportError';
+import { odevzdavarnyListUrl } from '../../api/odevzdavarny';
 
 export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set, get) => ({
   cvicneTests: [],
@@ -47,8 +48,14 @@ export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set, get) => 
 
       if (studium && obdobi) {
         const data = await IndexedDBService.get('odevzdavarny', `${studium}_${obdobi}`);
+        // 5.3.0 cached `uploadUrl: ''` for a row with no upload link, and an
+        // empty href opens the app's own page. The fetcher now falls back to
+        // the period's list; rows read back from that cache get the same.
+        const boxes = (data || []).map((a) =>
+          a.uploadUrl ? a : { ...a, uploadUrl: odevzdavarnyListUrl(studium, a.obdobi ?? obdobi) }
+        );
         set({
-          odevzdavarny: data || [],
+          odevzdavarny: boxes,
           odevzdavarnyStatus: 'success',
         });
       } else {

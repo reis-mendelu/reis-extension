@@ -18,8 +18,10 @@ function centroid(ring: number[][]): number[] {
 }
 
 describe('bundled map data', () => {
-  it('has 7 academic buildings each with a defaultFloorId', () => {
-    expect(buildings.buildings).toHaveLength(7);
+  // Seven from the MENDELU survey plus budova Z (FRRMS), curated in reis-data
+  // (source/curated/Z) because the survey never covered it.
+  it('has 8 academic buildings (7 surveyed + curated Z) each with a defaultFloorId', () => {
+    expect(buildings.buildings).toHaveLength(8);
     for (const b of buildings.buildings) expect(b.defaultFloorId).not.toBeNull();
   });
 
@@ -85,15 +87,20 @@ describe('bundled map data', () => {
     expect(buildings.buildings.some((b) => b.id === 0 && b.name === 'Q')).toBe(true);
   });
 
-  it('remote places: 5 sites with unique ids, closed footprints in South Moravia, and a url', () => {
+  // Nine since 2026-09-25 (the Útěchov wood-science centre); eight since
+  // 2026-09-24, when Karlov, SLŠ Hranice and VOŠ Boskovice joined as the
+  // IS "areály" with classrooms that had no pin. Karlov (Jeseníky, Silesia) and
+  // Hranice (Olomouc region) are why the box below is Moravia-Silesia, not
+  // South Moravia, and Karlov has no website of its own.
+  it('remote places: 9 sites with unique ids, closed footprints in Moravia-Silesia, url https or none', () => {
     const places = (remotePlaces as { places: RemotePlace[] }).places;
-    expect(places).toHaveLength(5);
-    expect(new Set(places.map((p) => p.id)).size).toBe(5);
+    expect(places).toHaveLength(9);
+    expect(new Set(places.map((p) => p.id)).size).toBe(9);
     for (const p of places) {
       expect(p.id).toBeLessThan(0); // synthetic, never collides with real ids
       expect(p.name.length).toBeGreaterThan(0);
       expect(p.shortName.length).toBeGreaterThan(0);
-      expect(p.url).toMatch(/^https:\/\//);
+      if (p.url !== null) expect(p.url).toMatch(/^https:\/\//);
       // Optional grounds boundary (arboretum garden) is a closed ring.
       if (p.area) {
         const a = p.area.coordinates[0]!; // safe: GeoJSON Polygon always has >=1 ring
@@ -120,11 +127,11 @@ describe('bundled map data', () => {
           n++;
         }
       }
-      // Overall footprint centre lands in South Moravia (lon ~16, lat ~48–50).
+      // Overall footprint centre lands in Moravia-Silesia (lon 16–18, lat 48–50.3).
       expect(sx / n).toBeGreaterThanOrEqual(16);
-      expect(sx / n).toBeLessThanOrEqual(17);
+      expect(sx / n).toBeLessThanOrEqual(18);
       expect(sy / n).toBeGreaterThanOrEqual(48);
-      expect(sy / n).toBeLessThanOrEqual(50);
+      expect(sy / n).toBeLessThanOrEqual(50.3);
       // Optional inner-map detail (arboretum): footpaths are polylines, POIs are
       // named points in the same region.
       if (p.paths) for (const path of p.paths) expect(path.length).toBeGreaterThanOrEqual(2);
@@ -150,7 +157,8 @@ describe('room index: the two building-M ghosts stay out', () => {
   });
 
   it('keeps the real N1074/N1075 halls in A and B', () => {
-    const kept = rows.filter((e) => e.code.endsWith('N1074') || e.code.endsWith('N1075'));
+    // A and B only: budova Z has its own N1075 (the 1.NP atrium), unrelated to M's ghosts.
+    const kept = rows.filter((e) => /^BA\d\dN107[45]$/.test(e.code));
     expect(kept.map((e) => e.code).sort()).toEqual([
       'BA01N1074',
       'BA01N1075',

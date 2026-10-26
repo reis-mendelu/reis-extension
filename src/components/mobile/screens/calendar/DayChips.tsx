@@ -1,9 +1,10 @@
 import { useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from '../../../../hooks/useTranslation';
-import { getCzechHoliday } from '../../../../utils/holidays';
-import { toIso, toCompact, shiftIso, weekDays } from '../../../../utils/mobile/weekDays';
-import { useSwipeSteps } from './useSwipeSteps';
+import { useAppStore } from '../../../../store/useAppStore';
+import { toIso, toCompact, stepWeek, weekDays } from '../../../../utils/mobile/weekDays';
+import { useSwipeSteps } from '../../primitives/useSwipeSteps';
+import { DayChip } from './DayChip';
 
 export interface DayChipsProps {
   selectedIso: string;
@@ -14,7 +15,8 @@ export interface DayChipsProps {
 
 /**
  * Five weekday chips (Mon–Fri) plus the arrows that move a week at a time —
- * the phone's whole day/week switcher.
+ * the phone's whole day/week switcher. (There is no week GRID on the phone any
+ * more — see phoneHasNoWeekView.test — so the strip is the only week there is.)
  *
  * The week is derived from the SELECTED day, not from a stored anchor — see
  * `utils/mobile/weekDays`, which now owns that arithmetic because the screen
@@ -38,7 +40,10 @@ export interface DayChipsProps {
 export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) {
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
-  const days = weekDays(selectedIso, lessonDates);
+  // The store's clock: the pulse moves it, so the mark crosses midnight in an
+  // app left open.
+  const todayIso = toIso(useAppStore((s) => s.now));
+  const days = weekDays(selectedIso, lessonDates, todayIso);
 
   const elementRef = useRef<HTMLDivElement>(null);
   /**
@@ -73,7 +78,7 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
     onMove: setOffset,
     onEnd: (steps) => {
       setOffset(null);
-      if (steps !== 0) onSelect(shiftIso(selectedIso, steps * 7));
+      if (steps !== 0) onSelect(stepWeek(selectedIso, steps, lessonDates, todayIso));
     },
     onCancel: () => setOffset(null),
   });
@@ -87,7 +92,7 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
     <div className="flex flex-shrink-0 items-center gap-1 px-2 pb-2.5 pt-4">
       <button
         type="button"
-        onClick={() => onSelect(shiftIso(selectedIso, -7))}
+        onClick={() => onSelect(stepWeek(selectedIso, -1, lessonDates, todayIso))}
         aria-label={t('mobile.calendar.prevWeek')}
         className={arrowClass}
       >
@@ -112,75 +117,29 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
       >
         {days.map((date) => {
           const iso = toIso(date);
-          const isSelected = iso === selectedIso;
-          const weekday = new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(date);
-          const label = weekday.charAt(0).toUpperCase() + weekday.slice(1);
-          // Marked in the row, not only once the day is opened: a student
-          // scanning the week should see the day off without tapping into it.
-          const holiday = getCzechHoliday(date, language === 'en' ? 'en' : 'cz');
           // Whether the day holds anything, said in the row instead of only in
           // the agenda: "people click on days, just to find out they might be
-          // empty". `lessonDates` was already here for the weekend branch — it
-          // just was not shown.
-          //
-          // A DOT on the days that have something, rather than dimming the ones
-          // that do not. Dimming was the first attempt and it failed the
-          // contrast gate: `text-base-content/40` measures 2.51:1 in the light
-          // theme, under the 4.5 floor, so the empty days became the hardest
-          // labels on the screen to read. Every label stays at /70, which
-          // passes, and presence is carried by the mark instead.
-          const hasLessons = lessonDates.has(toCompact(iso));
+          // empty". A DOT on the days that have something, rather than dimming
+          // the ones that do not: `text-base-content/40` measured 2.51:1 in
+          // the light theme, so the empty days became the hardest labels on
+          // the screen to read.
           return (
-            <button
+            <DayChip
               key={iso}
-              type="button"
-              title={holiday ?? undefined}
+              date={date}
+              locale={locale}
+              language={language === 'en' ? 'en' : 'cz'}
+              isSelected={iso === selectedIso}
+              isToday={iso === todayIso}
+              hasLessons={lessonDates.has(toCompact(iso))}
               onClick={() => onSelect(iso)}
-              // Tonal, not a solid primary fill. `--color-primary` is a lime
-              // #79be15 and `--color-primary-content` is white, which is
-              // 2.29:1 — below AA, measured. The same tint BottomNav marks its
-              // active tab with reads at full strength and is what the app's
-              // soft-fill convention asks for anyway. Nothing rendered this
-              // before: no chip could be selected while the row was anchored to
-              // the semester start, so the failing state was never on screen.
-              className={`flex-1 whitespace-nowrap rounded-full py-2 text-center text-sm transition-colors max-[359px]:text-[11px] ${
-                isSelected
-                  ? 'bg-primary/15 font-semibold text-[var(--tone-primary)]'
-                  : 'font-medium text-base-content/70'
-              }`}
-            >
-              {label} {date.getDate()}
-              {/* One dot, three states: a holiday is red, a day with something
-                  on it is primary, and an empty day carries nothing — absence
-                  is the clearest way to say "nothing here", and it is the only
-                  one that costs no contrast.
-                  A holiday wins over lessons in the rare case of both: the
-                  closure is the more surprising fact, and the banner above the
-                  agenda still names it either way. */}
-              {holiday ? (
-                <span
-                  data-testid="day-chip-holiday"
-                  className="mx-auto mt-0.5 block h-1 w-1 rounded-full bg-error"
-                />
-              ) : hasLessons ? (
-                <span
-                  data-testid="day-chip-lessons"
-                  className={`mx-auto mt-0.5 block h-1 w-1 rounded-full ${
-                    isSelected ? 'bg-primary' : 'bg-base-content/40'
-                  }`}
-                />
-              ) : (
-                // Keeps every chip the same height, so the row does not jitter
-                // as the week changes.
-                <span className="mx-auto mt-0.5 block h-1 w-1" />
-              )}
-            </button>
+            />
           );
         })}
       </div>
       <button
         type="button"
-        onClick={() => onSelect(shiftIso(selectedIso, 7))}
+        onClick={() => onSelect(stepWeek(selectedIso, 1, lessonDates, todayIso))}
         aria-label={t('mobile.calendar.nextWeek')}
         className={arrowClass}
       >

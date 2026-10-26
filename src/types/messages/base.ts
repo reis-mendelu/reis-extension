@@ -10,8 +10,10 @@ export type ActionType =
   | 'trigger_sync'
   | 'refresh_exams'
   | 'refresh_schedule'
+  | 'get_diagnostics'
   | 'open_url'
-  | 'logout';
+  | 'logout'
+  | 'switch_study';
 
 /**
  * A Phase 2 domain whose fetch can finish with a legitimately empty answer.
@@ -41,12 +43,13 @@ export interface SyncedData {
   odevzdavarny?: unknown;
   classmates?: Record<string, unknown>;
   attendance?: Record<string, unknown>;
-  pastAttendance?: Record<string, unknown>;
   zaznamnik?: Record<string, SubjectZaznamnik | null>;
   studyPlan?: DualLanguageStudyPlan;
   studyStats?: StudyStats;
   studyComparison?: StudyComparison;
   notes?: Record<string, Record<string, { note: string; fileName: string }>>;
+  /** The study the per-study data in this update belongs to (see chooseStudy). */
+  studium?: string;
   isSyncing?: boolean;
   lastSync: number;
   error?: string;

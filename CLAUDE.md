@@ -5,11 +5,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 reIS (REIS.mendelu) simplifies the MENDELU university Information System (IS
-Mendelu) for students. It ships as **three products from one codebase**: a
+Mendelu) for students. It ships as **three UI products from one codebase**: a
 Chrome/Firefox/Edge **browser extension** (WXT, injects an iframe containing the
 React app into IS Mendelu pages), an **iOS app** and an **Android app** (both
-Capacitor, same React app). All processing is client-side — no student data is
-intercepted or stored externally.
+Capacitor, same React app). A fourth, headless one, **reIS for Claude** (`mcp/`),
+is described below. All processing is client-side: academic records stay on
+the device and are never intercepted, sent to or stored by reIS anywhere else;
+the only things derived from the student that reach Supabase are the faculty
+and base programme labels on the daily count (see "What reIS still sends").
+The one recipient beyond IS is Claude
+(Anthropic) in reIS for Claude: the IS data a student asks about goes into
+their own Claude chat, by their choice; it never passes through reIS.
 
 Read the next section before editing any UI. Three products do **not** mean
 three UI trees, and the difference is where features get forgotten.
@@ -75,6 +81,33 @@ capability" is a valid answer that ends the turn.
    crash in PR #266 happened. `src/api/` and `src/utils/parsers/` are shared, so
    a "scraper" edit hits BOTH products.
 
+### A fourth product, headless: reIS for Claude (`mcp/`)
+
+A Claude Desktop extension (`.mcpb`) that signs in to IS as the student on
+their laptop and exposes ten read-only tools over the same `src/api` fetchers.
+It has no UI tree, so the parity rule does not apply to it. It is also the only
+reIS code that handles a password: it comes from the keychain and is sent only
+to the IS login endpoint, at sign-in and at each automatic re-login. Its standing promises are pinned in
+`src/test/guards/mcpStaysReadOnly.test.ts`.
+
+A `src/api` change reaches it too. `npx vitest run mcp/` covers the tool
+shaping; `npm run mcp:smoke` only proves the server starts and lists its tools.
+To exercise a changed fetcher against real IS, name its tool:
+`npm run mcp:smoke -- --live mendelu_grades` (it always adds `mendelu_exams`).
+
+Build with `npm run mcp:pack`. Its release tags are `mcp-v*`, never `v*`.
+
+**Plain `node` is not where it runs.** Claude Desktop starts it inside its own
+"MCP Node Host" (`nodeHost.js` in Claude.app) in an Electron utility process,
+where `process.type` is `'utility'` and Node-sniffing libraries take their
+browser path. To debug it there, not by reading logs:
+`node scripts/mcp-smoke.mjs --desktop-host [--live tool…]` runs the built
+server through that real host code (macOS, Claude installed). When an installed
+extension dies, its own log shows only a closed transport; the cause is in
+`~/Library/Logs/Claude/main.log` as `[UtilityProcess stderr] [nodeHost] …`.
+Never launch `Claude.app/Contents/MacOS/Claude` to run a script: it starts a
+second Desktop instance on the same profile.
+
 ## Multi-Repo Organization
 
 Four repos sit side by side, next to the **main checkout**: **reis-extension** (this repo), **reis-scraper**, **reis-data**, **reis-page**. The admin console is not a sibling repo; it lives here, in `src/components/AdminConsole/`. `../` in this file and in `/repos` means relative to the main checkout. From a worktree, `../` is inside `.claude/worktrees/`, so resolve a sibling as `"$(git rev-parse --path-format=absolute --git-common-dir)/../../reis-scraper"`.
@@ -88,11 +121,13 @@ When a task involves IS Mendelu data, a new scraper, or the CDN data shape: read
 ## Local dev, release, and commands
 
 - Local dev against real IS data (`npm run dev:web` at `localhost:3000`) → the `dev-real-data` skill.
-- Releasing (version bump → `test` → `main` → a `vX.Y.Z` tag) → `/release`. The
-  tag drives **iOS only**. The extension is published **separately and by hand**:
-  `gh workflow run publish.yml --ref vX.Y.Z -f tag=vX.Y.Z`, to Chrome and Firefox
-  (Edge is not a target — Edge users install from the CWS). The `push: tags`
-  trigger was removed on purpose: a store submission cannot be recalled.
+- Releasing (version bump + `release-notes/X.Y.Z.cs.txt` → `test` → `main`) →
+  `/release`. Merging the release PR pushes `vX.Y.Z` and, **in the same run**,
+  takes it to all three stores: the App Store (upload and submit for review),
+  Google Play production, and Chrome + Firefox (Edge is not a
+  target). One summary table says what reached each. It has to be one run: a tag
+  pushed with `GITHUB_TOKEN` starts no other workflow. Secrets, the dry run and
+  what it does not do: `docs/release-pipeline.md`.
 - Everything else is in `package.json` scripts.
 - Verifying a UI change (screenshots at 320/390/430 + overflow, collision and contrast assertions) → the `verify-ui` skill. Never judge a UI change from a screenshot alone.
 
@@ -153,6 +188,8 @@ secrets wrapper, so run the npm script directly.
 
 Testing the admin console against real Supabase needs exactly two keys in
 `.env`: `REIS_ADMIN_EMAIL` and `REIS_ADMIN_PASSWORD` (`dev/adminSessionPlugin.ts`).
+Despite its name, `REIS_ADMIN_EMAIL` holds the console **login** (`reis`), not an
+email; the harness maps it to the auth address the way the console does.
 The Supabase URL and publishable key are **not** env vars — they are hardcoded in
 `src/services/supabase/config.ts`. Signing in as one society instead reads
 `REIS_SOCIETY_<ID>_EMAIL` / `_PASSWORD`, uppercased. Missing credentials leave the
@@ -168,6 +205,13 @@ Plain `npm run dev:web` is unaffected: it keeps `VITE_DEV_SOCIETY=reis`, which
 fakes a session **and routes every write to an in-memory store** — publishes
 there never reach Supabase, so never cite them as evidence a write works.
 `dev:web:admin` clears that flag.
+
+### Database migrations
+
+A release applies `supabase/migrations/` to prod itself, before the stores, so
+nobody applies one by hand. A migration is a new file on top, **additive only**
+(old builds run against the new schema for weeks), with no `begin;`/`commit;`.
+Details: `docs/database-migrations.md`.
 
 ## Branches and releasing
 
@@ -188,7 +232,9 @@ there never reach Supabase, so never cite them as evidence a write works.
   and `format:check` are **repo-wide**, not changed-files, and `nuia:gate` is a
   ratchet — a new `noUncheckedIndexedAccess` error fails even if the count drops.
 - `main` accepts only the `test` → `main` release PR. Merging it pushes the
-  `vX.Y.Z` tag and stops — **no workflow submits to any store**. Use `/release`.
+  `vX.Y.Z` tag, **applies pending migrations to prod** and **submits to all three stores** (`ship.yml`). A submission
+  cannot be recalled, so the release PR (diff, notes, CI, privacy block) is the
+  last gate. Use `/release`.
 - **Do not merge into `test` while a release PR is open.**
 - **Testing against your own data is local.** `npm run preview:real` scrapes
   your IS data, strips other students' identities, builds the production bundle
@@ -254,17 +300,31 @@ app** (chrome-extension:// origin, no auth cookies). Data always flows content s
 
 If you add a second host, `src/injector/CLAUDE.md` has the checklist and the isolation rules it has to satisfy — a separate store, a `<HOST>_*` message family, and its origin added to `utils/trustedOrigin.ts`.
 
+## Privacy disclosures
+
+`privacy/disclosures.ts` is the one source of what reIS sends and how every store
+declares it (Apple label, Play Data safety, Chrome Web Store, Firefox manifest,
+iOS/Android permissions, the policy table). `scripts/lib/__tests__/privacyDisclosures.test.ts`
+fails any PR where the code disagrees with it; the release PR's privacy block is
+generated from its diff and gates the merge. **Change a data flow → change that
+file in the same PR** (the `disclosure-drift` Stop hook asks if you forget), then
+`npm run privacy:generate` for the policy table. At release, Claude runs
+`npm run privacy:publish` and does the store forms itself — see `/release`.
+
 ## Error Reporting & Privacy
 
-**reIS transmits nothing about a failure.** No error type, message, stack, file
-path or session id leaves a device, on any platform. There is no error-reporting
-service, no opt-out toggle (nothing to opt out of), and no Supabase table or RPC
-behind it — `error_reports`, `error_groups`, `report_error` and
-`report_error_v2` were all dropped in `supabase/migrations/20260904120000_drop_error_telemetry.sql`.
+**reIS transmits nothing about a failure on its own.** No error type, message,
+stack, file path or session id leaves a device unless the student attaches it to
+a report (item 6 below). There is no error-reporting service, no background
+collection, and no Supabase table or RPC behind one — `error_reports`, `error_groups`, `report_error` and
+`report_error_v2` were all dropped in `supabase/migrations_archive/20260904120000_drop_error_telemetry.sql`.
 
 `logError(context, err, extra?)` (`src/utils/reportError.ts`) is the single
 funnel for non-fatal errors. It writes a local `console.error` with the stack and
-any `extra`. Context naming: `Slice.method`, `Api.fetchX`, `Sync.stepY`,
+any `extra`, and keeps a cleaned copy (context, status, first line of the
+message — never the stack or `extra`) in the in-memory ring buffer
+`src/utils/diagnostics/diagnosticLog.ts`. That file **imports nothing**: it is in
+the content script's graph (`contentScriptGraph.test.ts` enforces it). Context naming: `Slice.method`, `Api.fetchX`, `Sync.stepY`,
 `Parser.parseX`, `useHookName.action`.
 
 **Do not reintroduce transmission.** `src/test/guards/noStudentDataLeaves.test.ts`
@@ -284,16 +344,34 @@ the start of a semester.
 Only these, all disclosed in `docs/privacy-policy-app.md`:
 
 1. **Daily install count** — a random per-install UUID (`services/identity/installId.ts`),
-   never anything derived from the student. Deliberately counts installs, not people.
+   plus faculty, base programme code, platform and app version as labels; nothing else derived
+   from the student. Deliberately counts installs, not people. The UUID is stable, so daily rows link
+   across days, and the same UUID is on the survey and the feature counters (4), so those rows
+   join per install to faculty, platform, programme and app version. The policy says so; none of it carries
+   a name, student number or IS account.
 2. **Feedback the student typed** — via the `submit_suggestion` RPC (`src/api/suggestions.ts`),
    with screen name, app version, browser and viewport.
-3. **Society event view/click counters** — a post row id and nothing else.
-4. **Three feature counters** (`src/api/featureUsage.ts`, September 2026) — the same random
-   install UUID plus one label from a database-enforced whitelist: `map_dwell_3s`,
-   `eduroam_wifi_configured`, `eduroam_profile_delivered`. Counts installs, not people.
+3. **Society event view/click counters** — a post row id and nothing else. Views are
+   counted once per device (`viewedIds`); clicks too, since PR #566: the device remembers
+   in IndexedDB which ids it already counted (`services/spolky/countedOpens.ts`) and
+   nothing about that is sent.
+4. **Feature counters** (`src/api/featureUsage.ts`) — the same random install UUID plus
+   one label from `FEATURE_SIGNALS`, a database-enforced whitelist pinned by
+   `featureSignalWhitelist.test.ts`. Counts installs, not people.
 5. **Map views per event** (same file) — a society event's row id and *no* identifier at all,
    rolled up per event per day in `event_map_views`, kept clear of the Novinky `view_count`.
+   Also once per device per event ever (same `countedOpens.ts`), so it reads as devices, not taps.
    The server stamps the date; the request carries only the event id.
+
+6. **Report attachments** (`submit_suggestion_v3`; v2 for older builds, September 2026) — only what the student
+   adds to a report: a screenshot they pick (re-encoded to JPEG on device, no EXIF/GPS) and,
+   only if they choose it, the cleaned diagnostic log (collected at Send, not listed in the
+   form — the cleaning is what makes it safe to send unread). On a Chyba the choice is two
+   Send buttons, "Odeslat s technickými údaji" first; on a Nápad or Jiné an unticked box.
+   Never preselect it: a pre-ticked box is not consent (CJEU Planet49), and the policy's
+   legal basis for attachments is consent. No install id. Kept 2 years (the daily pg_cron prune; the `done` trigger and the 90-day limit were removed in October 2026, and GDPR's storage limitation is why there is still an end); deleted sooner on request. Every report also carries the platform and OS version it was sent from (no device model).
+   The guard allows diagnostics to reach Supabase through `src/api/suggestions.ts` only, and
+   no Supabase caller may import `utils/diagnostics/`.
 
 4 and 5 are deliberately **unjoinable**: nothing records which event a given install looked
 at, because that pairing would be a behavioural profile. Keep it that way.

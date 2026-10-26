@@ -9,6 +9,9 @@ vi.mock('@/injector/syncGate', () => ({
 }));
 vi.mock('@capacitor/splash-screen', () => ({ SplashScreen: { hide: vi.fn() } }));
 vi.mock('@capacitor/app', () => ({ App: { addListener: vi.fn(), exitApp: vi.fn() } }));
+vi.mock('@capacitor/local-notifications', () => ({
+  LocalNotifications: { addListener: vi.fn() },
+}));
 
 describe('startApp', () => {
   it('does not start the sync service in demo mode', async () => {

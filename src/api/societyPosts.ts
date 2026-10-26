@@ -1,13 +1,16 @@
 import { adminAuthClient } from '@/services/admin/authClient';
 import { logError } from '@/utils/reportError';
 import { DEV_SOCIETY, devSocietyStore } from '@/utils/mock/devSociety';
+import type { PostKind } from '@/types/events';
 
-export type VenueKind = 'campus' | 'online' | 'offcampus';
+export type VenueKind = 'campus' | 'online' | 'offcampus' | 'tba';
 
 export interface PostInput {
   title: string;
   body: string;
   category: string; // EventCategory value
+  /** Twemoji code from src/data/eventEmoji; category is its fallback. */
+  emoji?: string | null;
   date: string; // YYYY-MM-DD
   endDate?: string | null;
   time?: string | null;
@@ -22,6 +25,8 @@ export interface PostInput {
    *  everyone — so an event published without thinking about it reaches the
    *  whole map, exactly as every event did before the column existed. */
   subscribersOnly?: boolean;
+  /** 'notice' = Novinky only, never on the map. Defaults to 'event'. */
+  kind?: PostKind;
 }
 
 export interface SpolkyEventRow {
@@ -30,6 +35,7 @@ export interface SpolkyEventRow {
   title: string;
   body: string | null;
   category: string;
+  emoji?: string | null;
   date: string;
   end_date: string | null;
   time: string | null;
@@ -42,6 +48,12 @@ export interface SpolkyEventRow {
   created_by: string | null;
   visible_from: string | null;
   subscribers_only: boolean;
+  /** Absent until the 20261017120000 migration is applied. */
+  kind?: PostKind;
+  /** Novinky rows that scrolled into view, once per device (markNotificationViewed). */
+  view_count?: number;
+  /** Taps on the Novinky row, every tap (useOpenNotification). */
+  click_count?: number;
 }
 
 // Pure camelCase → snake_case mapping, unit-testable without the network.
@@ -52,6 +64,7 @@ export function toRow(input: PostInput, associationId: string, createdBy: string
     title: input.title,
     body: input.body,
     category: input.category,
+    emoji: input.emoji ?? null,
     date: input.date,
     end_date: input.endDate ?? null,
     time: input.time ?? null,
@@ -63,6 +76,10 @@ export function toRow(input: PostInput, associationId: string, createdBy: string
     url: input.url ?? null,
     visible_from: input.visibleFrom ?? null,
     subscribers_only: input.subscribersOnly ?? false,
+    // Only a notice names its kind; an event is the column's default. So an
+    // event still publishes against a database without the column (the
+    // 20261017120000 migration), and only a notice needs it applied first.
+    ...(input.kind === 'notice' ? { kind: 'notice' as const } : {}),
   };
 }
 
@@ -86,7 +103,11 @@ export async function createPost(
 
 export async function updatePost(
   id: string,
-  patch: Partial<Omit<ReturnType<typeof toRow>, 'association_id' | 'created_by'>>
+  // `kind` widened: an edit can turn a notice back into an event, which a new
+  // row never needs to say.
+  patch: Partial<Omit<ReturnType<typeof toRow>, 'association_id' | 'created_by' | 'kind'>> & {
+    kind?: PostKind;
+  }
 ): Promise<{ error?: string }> {
   if (DEV_SOCIETY) return devSocietyStore.update(id, patch as Partial<SpolkyEventRow>);
   const { error } = await adminAuthClient.from('spolky_events').update(patch).eq('id', id);
@@ -107,7 +128,9 @@ export async function deletePost(id: string): Promise<{ error?: string }> {
   return {};
 }
 
-export async function listMyPosts(associationId: string): Promise<SpolkyEventRow[]> {
+/** The society's own events, or null when the read failed — not [], which
+ *  would read as "this society has no events" and wipe the list on a blip. */
+export async function listMyPosts(associationId: string): Promise<SpolkyEventRow[] | null> {
   if (DEV_SOCIETY) return devSocietyStore.list(associationId);
   const { data, error } = await adminAuthClient
     .from('spolky_events')
@@ -116,7 +139,7 @@ export async function listMyPosts(associationId: string): Promise<SpolkyEventRow
     .order('date', { ascending: true });
   if (error) {
     logError('Admin.listMyPosts', error);
-    return [];
+    return null;
   }
   return (data ?? []) as SpolkyEventRow[];
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { makeLesson } from '../../../test/fixtures/lesson';
-import { roomCodeFor, routeSuggestionFor, subjectSheetFor } from '../lessonActions';
+import { routeSuggestionFor, subjectSheetFor } from '../lessonActions';
 
 describe('lessonActions', () => {
   it('builds the subject drawer sheet from the lesson itself — no lookup, no day matching', () => {
@@ -10,12 +10,6 @@ describe('lessonActions', () => {
       courseCode: 'EBC-AP',
       courseName: 'Architektura počítačů',
     });
-  });
-
-  it('strips the trailing "(Campus)" from the room the way openRoute always has', () => {
-    expect(roomCodeFor(makeLesson({ room: 'Q01 (Brno)' }))).toBe('Q01');
-    expect(roomCodeFor(makeLesson({ room: 'Q01' }))).toBe('Q01');
-    expect(roomCodeFor(makeLesson({ room: '  Q01  ' }))).toBe('Q01');
   });
 
   describe('routeSuggestionFor', () => {
@@ -30,7 +24,14 @@ describe('lessonActions', () => {
     });
 
     it('is null for a room the map cannot place, so no button is offered', () => {
-      expect(routeSuggestionFor(makeLesson({ room: 'Z14' }), 'cz')).toBeNull();
+      expect(routeSuggestionFor(makeLesson({ room: 'ZFAC1 (Led)' }), 'cz')).toBeNull();
+    });
+
+    // Z14 is on the map (budova Z has a floor plan) but the router has no nodes
+    // there in v1, so offering "Doveď mě do Z14" would promise a walk that
+    // cannot be drawn.
+    it('is null for a room in a building the router cannot reach (budova Z)', () => {
+      expect(routeSuggestionFor(makeLesson({ room: 'Z14 (ČP II.)' }), 'cz')).toBeNull();
     });
 
     it('takes the room name from the language the student is reading', () => {

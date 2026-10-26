@@ -128,6 +128,7 @@ debug-*.html
 audit-report.json
 .agent/
 supabase/.temp/
+supabase/.branches/
 
 # Vercel project link for the eduroam receiver page
 receiver/.vercel
@@ -179,3 +180,6 @@ dist-web/
 native/*/Package.resolved
 native/*/.build/
 native/*/.swiftpm/
+
+# reIS for Claude bundle + .mcpb (npm run mcp:pack)
+dist-mcp/

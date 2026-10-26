@@ -1,3 +1,5 @@
+import type { StudyOption } from '../utils/userParams/studyOptions';
+import type { SimilarSuggestion } from '../types/schemas/similarSubjects.schema';
 import type { StateCreator } from 'zustand';
 import type { BlockLesson, HiddenItems, CalendarCustomEvent } from '../types/calendarTypes';
 import type { ExamSubject } from '../types/exams';
@@ -21,6 +23,7 @@ import type { OutletMenu } from '../types/menuTypes';
 import type { PageCategory } from '../data/pages/types';
 import type { SpolekNotification } from '../services/spolky/types';
 import type { SubjectZaznamnik } from '../types/zaznamnik';
+import type { NewPoint } from '../utils/zaznamnik/newPoints';
 import type {
   RoomsCollection,
   MapSelection,
@@ -84,8 +87,17 @@ export interface ExamSlice {
 export interface ZaznamnikSlice {
   zaznamnik: Record<string, SubjectZaznamnik | null>;
   zaznamnikHydrated: boolean;
+  /** A drawer retry is in flight for this subject. */
+  zaznamnikLoading: Record<string, boolean>;
   setZaznamnikBatch: (data: Record<string, SubjectZaznamnik | null>) => void;
   fetchZaznamnik: () => Promise<void>;
+  /** Refetch one subject on demand — the failed state's retry. */
+  refetchZaznamnik: (courseCode: string) => Promise<void>;
+  /** Points the teacher added since the last sync, per subject, until its záznamník is opened. */
+  zaznamnikNewPoints: Record<string, NewPoint[]>;
+  setZaznamnikNewPoints: (unseen: Record<string, NewPoint[]>) => void;
+  /** The student opened this subject's záznamník: its highlight goes. */
+  markZaznamnikSeen: (courseCode: string) => Promise<void>;
 }
 
 export interface SyllabusSlice {
@@ -99,6 +111,9 @@ export interface SyllabusSlice {
 export interface FilesSlice {
   files: Record<string, ParsedFile[]>;
   filesLoading: Record<string, boolean>;
+  /** The last fetch for this subject failed. Distinct from `files[code]` being
+   *  `[]`, which is an answer: the folder is empty. */
+  filesError: Record<string, boolean>;
   lastFilesFetchedAt: Record<string, number>;
   fetchFiles: (courseCode: string) => Promise<void>;
   fetchFilesPriority: (courseCode: string) => Promise<void>;
@@ -141,10 +156,8 @@ export interface SubjectsSlice {
   courseNicknames: Record<string, string>;
   courseDeadlines: Record<string, CourseDeadline[]>;
   attendance: Record<string, SubjectAttendance[]>;
-  pastAttendance: Record<string, SubjectAttendance[]>;
   fetchSubjects: () => Promise<void>;
   setAttendance: (data: Record<string, SubjectAttendance[]>) => void;
-  setPastAttendance: (data: Record<string, SubjectAttendance[]>) => void;
   setCourseNickname: (courseCode: string, nickname: string | null) => void;
   setCourseDeadlines: (courseCode: string, deadlines: CourseDeadline[] | null) => void;
 }
@@ -169,7 +182,7 @@ export interface SyncSlice {
    */
   syncLoaded: Partial<Record<SyncDomain, boolean>>;
   markSyncLoaded: (domains: SyncDomain[]) => void;
-  fetchSyncStatus: () => Promise<void>;
+  seedLastSync: (lastSync: number) => void;
   setSyncStatus: (status: Partial<SyncStatus>) => void;
 }
 
@@ -195,6 +208,13 @@ export interface SuccessRateSlice {
   fetchSuccessRateBatch: (courseCodes: string[]) => Promise<void>;
 }
 
+export interface SimilarSubjectsSlice {
+  /** Old subjects offered to preview for a course code with no stats of its
+   * own. Absent = not asked yet; [] = nothing to suggest. */
+  similarSubjects: Record<string, SimilarSuggestion[]>;
+  fetchSimilarSubjects: (courseCode: string) => Promise<void>;
+}
+
 export interface EduroamSlice {
   isEduroamOpen: boolean;
   /** Device the drawer opens on, skipping its picker. Null = let them pick. */
@@ -207,14 +227,6 @@ export interface EduroamSlice {
 export interface DocumentsSlice {
   isDocumentsOpen: boolean;
   setIsDocumentsOpen: (open: boolean) => void;
-}
-
-export interface FeedbackSlice {
-  feedbackEligible: boolean;
-  feedbackDismissed: boolean;
-  loadFeedbackState: () => Promise<void>;
-  submitNps: (rating: number, reason?: string) => Promise<void>;
-  dismissFeedback: () => Promise<void>;
 }
 
 export interface StudyPlanSlice {
@@ -333,7 +345,11 @@ export interface MenuSlice {
   menuError: boolean;
   /** The language `menu` (or the request in flight) was fetched for. */
   menuLanguage: Language | null;
+  /** When `menu` last arrived (ms epoch); null before the first success. */
+  menuFetchedAt: number | null;
   fetchMenu: () => Promise<void>;
+  /** Capacitor resume: retry a failed or missing menu, refresh one older than `minGapMs`. */
+  refreshMenuIfStale: (minGapMs: number) => Promise<void>;
 }
 
 export interface HiddenItemsSlice {
@@ -365,10 +381,20 @@ export interface ContextSlice {
   obdobiId: string | null;
   facultyId: string | null;
   userFaculty: string | null;
+  /** Base study-programme code from IS ('B-OI'): partner targeting on the device. */
+  userProgramme: string | null;
   userSemester: string | null;
   isErasmus: boolean;
   fullName: string | null;
   userEmail: string | null;
+  /** IS has named the faculty this session; until then loadContext is worth re-asking. */
+  contextResolved: boolean;
+  /** IS's study switcher, for a student with more than one study; else empty. */
+  studies: StudyOption[];
+  /** A switch to another study is under way, or the last one failed. */
+  studySwitch: 'idle' | 'switching' | 'failed';
+  /** Run the app on the student's other study. Restarts the app on success. */
+  switchStudy: (studium: string) => Promise<void>;
   loadContext: () => Promise<void>;
 }
 
@@ -450,7 +476,14 @@ export type MobileSheet =
   // `dayIso` disambiguates the occurrence: the store holds the whole semester
   // and IS reuses a lesson id across the weeks it repeats, so the id alone does
   // not identify which one was tapped.
-  | { kind: 'subjectDrawer'; courseCode: string; courseName?: string; courseId?: string }
+  | {
+      kind: 'subjectDrawer';
+      courseCode: string;
+      courseName?: string;
+      courseId?: string;
+      /** Tab to open on — the odevzdávárny card opens a box's subject on Záznamník. */
+      initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik';
+    }
   | { kind: 'studyPlan' }
   | { kind: 'person'; personId: string; personName?: string }
   // Pushed ON TOP of a person sheet, so back closes the photo and leaves the
@@ -459,6 +492,10 @@ export type MobileSheet =
   | { kind: 'personPhoto'; personId: string; name: string }
   | { kind: 'eduroam' }
   | { kind: 'docs' }
+  // Calendar view, language, dark mode — behind one Profile row (spec 2026-10-09).
+  | { kind: 'settings' }
+  // reIS admins only: "view as a student" of another programme.
+  | { kind: 'impersonation' }
   | { kind: 'menu'; dayIso: string }
   | {
       kind: 'venue';
@@ -484,6 +521,9 @@ export type MobileSheet =
 
 export interface MobileUiSlice {
   mobileTab: MobileTab;
+  /** The last tab that was not Profil. A report is written from Profil (the one
+   *  general entry point on the phone), so this is where the student was. */
+  lastNonProfileTab: MobileTab;
   mobileSelectedDayIso: string | null;
   mobileSheets: MobileSheet[];
   mapSheetState: MapSheetState;
@@ -518,7 +558,6 @@ export interface MobileUiSlice {
   pullHintSeen: boolean | null;
   hydratePullHint: (o: { demo: boolean }) => Promise<void>;
   markPullHintSeen: () => void;
-
   setMobileTab: (tab: MobileTab) => void;
   setMobileSelectedDay: (iso: string | null) => void;
   pushSheet: (sheet: MobileSheet) => void;
@@ -562,9 +601,31 @@ export interface MapSlice {
   loadMapBuilding: (id: number) => Promise<void>;
   /** Geometry for whatever room a room STRING names — resolves, then loads. */
   loadRoomGeometry: (roomName: string) => Promise<void>;
+  /**
+   * 3D models for the building card, by building id. `'failed'` is remembered for
+   * the session so a building whose model cannot be had shows its flat plan
+   * without re-asking the CDN on every hover.
+   */
+  buildingModels: Record<number, import('../types/buildingModel').BuildingModel | 'failed'>;
+  /** Load a building's 3D model if it has one. `loadMapBuilding` calls it. */
+  loadBuildingModel: (id: number) => Promise<void>;
+  /**
+   * SPIKE (#462): the map tilted into 3D around a building. `view` is the flat
+   * map's view at the handover, which the tilted scene starts from.
+   */
+  mapTilt: {
+    phase: 'flat' | '3d' | 'leaving';
+    view: import('../components/Building3D/tilt/tiltCamera').MapView | null;
+  };
+  setMapTilt: (next: MapSlice['mapTilt']) => void;
   // --- Society events on the map ---
   mapEvents: MapEvent[];
   mapEventsLoaded: boolean;
+  /** Set on every successful (re)fetch; null until the first one lands. Drives `refreshMapEventsIfStale`. */
+  mapEventsFetchedAt: number | null;
+  /** Whether MapEventsSection's "Later" bucket (day 14+) is expanded. Collapsed by default. */
+  mapLaterExpanded: boolean;
+  toggleMapLater: () => void;
   /** Create a real reservation for a room + 1-hour slot; on success, force-refetch availability so the panel reflects it. Always an explicit, confirmed user action. */
   /** Which tab the top-right panel shows. */
   mapPanelTab: 'places' | 'events';
@@ -575,8 +636,10 @@ export interface MapSlice {
   loadMapEvents: () => Promise<void>;
   /** Refetch the public feed unconditionally (bypasses the load-once guard). Call after a society create/update/delete so the public map/"Akce" tab reflects the change without a full reload. */
   reloadMapEvents: () => Promise<void>;
-  /** Select an event for the detail panel. Pass `{ fly: true }` (list click) to also fly the camera to its coordinate; a pin click omits it and the camera stays put. `reveal: 'map'` (the calendar) is carried on the selection and keeps the phone sheet at peek, so the pin shows instead of the card. */
-  focusEventById: (id: string, opts?: { fly?: boolean; reveal?: 'map' }) => void;
+  /** Refetch only if `minGapMs` has passed since the last successful fetch — for a resume hook on a long-lived Capacitor process. A stale-but-recent fetch is a no-op. */
+  refreshMapEventsIfStale: (minGapMs: number) => Promise<void>;
+  /** Select an event for the detail panel. Pass `{ fly: true }` (list click) to also fly the camera to its coordinate; a pin click omits it and the camera stays put. `keepBuilding` (a pin in an open floor view) selects without leaving the building or floor. */
+  focusEventById: (id: string, opts?: { fly?: boolean; keepBuilding?: boolean }) => void;
   // --- Society authoring ---
   /** The active society's own events (all dates), mapped from societyPosts. Drawn
    *  by the admin console's map; the student map draws `mapEvents` instead. Which
@@ -610,7 +673,11 @@ export interface MapSlice {
   composerOpen: boolean;
   /** Id of the societyMapEvents entry being edited, or null when composing a new event. */
   editEventId: string | null;
+  /** Id of the event a NEW composer was seeded from ("Duplikovat"), or null. */
+  duplicateEventId: string | null;
   openComposer: (editId?: string) => void;
+  /** Open a composer that creates a new event prefilled from `id` (all but the date). */
+  duplicateEvent: (id: string) => void;
   closeComposer: () => void;
 }
 
@@ -632,14 +699,15 @@ export type AppState = ScheduleSlice &
   FilesSlice &
   NotesSlice &
   ClassmatesSlice &
+  import('./slices/createSubjectClassmatesSlice').SubjectClassmatesSlice &
   SubjectsSlice &
   SyncSlice &
   ThemeSlice &
   I18nSlice &
   SuccessRateSlice &
+  SimilarSubjectsSlice &
   EduroamSlice &
   DocumentsSlice &
-  FeedbackSlice &
   StudyPlanSlice &
   CvicneTestsSlice &
   ErasmusSlice &
@@ -651,19 +719,25 @@ export type AppState = ScheduleSlice &
   ContextSlice &
   PulseSlice &
   NotificationSlice &
+  import('./slices/createQuestionsSlice').QuestionsSlice &
+  import('./slices/createSocietyPinsSlice').SocietyPinsSlice &
   BulletinSlice &
   ViewportSlice &
   MobileUiSlice &
   import('./slices/createSearchSlice').SearchSlice &
   import('./slices/createRecentPdfsSlice').RecentPdfsSlice &
+  import('./slices/createPdfPositionsSlice').PdfPositionsSlice &
   import('./slices/createPersonProfileSlice').PersonProfileSlice &
   MapSlice &
-  import('./slices/createRsvpSlice').RsvpSlice &
+  import('./slices/createSocietiesSlice').SocietiesSlice &
   import('./slices/createAdminStatsSlice').AdminStatsSlice &
+  import('./slices/createAdminQuestionsSlice').AdminQuestionsSlice &
   import('./slices/createAdminSlice').AdminSlice &
   import('./slices/createSuggestionsSlice').SuggestionsSlice &
   import('./slices/createRouteSlice').RouteSlice &
+  import('./slices/createOsmTileAccessSlice').OsmTileAccessSlice &
   import('./slices/createReportSlice').ReportSlice &
+  import('./slices/createImpersonationSlice').ImpersonationSlice &
   DemoSlice;
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

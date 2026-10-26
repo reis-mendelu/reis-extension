@@ -1,5 +1,4 @@
-import { EyMark } from '../../../brand/EyMark';
-import { useTranslation } from '../../../../hooks/useTranslation';
+import { PartnersBlock } from '../../../Partners/PartnersBlock';
 
 /**
  * Who reIS works with, at the foot of Profil, in the open.
@@ -36,35 +35,17 @@ import { useTranslation } from '../../../../hooks/useTranslation';
  * down, instead of looking like the week reIS started selling ads.
  */
 export function AboutSection() {
-  const { t } = useTranslation();
-
-  return (
-    <div // Hidden on a short screen, and this is the rule Profil is held to rather
-      // than a nicety: it must not scroll. Measured at 375×667 (iPhone SE, still
-      // shipping) the settings fit EXACTLY — 0px over — and this block is what
-      // pushes them 70px past the fold, or 106px once the map-app row is there.
-      // A colophon is the one thing on this screen that can stand down; the
-      // settings are what the student came for. Everything from 780px up keeps
-      // it, which is every iPhone since the SE and both iPad orientations.
-      className="[@media(max-height:779px)]:hidden flex flex-col items-center gap-1 px-4 pb-1 pt-2 text-center"
-    >
-      <span className="text-xs font-bold uppercase tracking-wider text-base-content/60">
-        {t('about.partnersLabel')}
-      </span>
-      <p className="max-w-[21rem] text-sm leading-snug text-base-content/60 md:max-w-[34rem]">
-        {t('about.partnersBody')}
-      </p>
-      {/* No card, no plate, no link. A container turns a mark into a placement,
-          and a credit that asks for something is an advert. When there are real
-          opportunities they will link to the opportunity, never to a corporate
-          homepage.
-          The mark is set to the cap height of the line beside it rather than
-          shrunk into a footnote — it is a partner's name, and naming someone in
-          type smaller than your own settings labels is its own statement. */}
-      <div className="flex items-center justify-center gap-3">
-        <EyMark className="h-7 text-base-content" />
-        <span className="text-sm text-base-content/60">{t('about.eyBody')}</span>
-      </div>
-    </div>
-  );
+  // Hidden on a short screen, and this is the rule Profil is held to rather
+  // than a nicety: it must not scroll. Measured at 375×667 (iPhone SE, still
+  // shipping) the settings fit EXACTLY — 0px over — and this block is what
+  // pushes them 70px past the fold, or 106px once the map-app row is there.
+  // A colophon is the one thing on this screen that can stand down; the
+  // settings are what the student came for. Everything from 780px up keeps
+  // it, which is every iPhone since the SE and both iPad orientations.
+  //
+  // Which partners, if any, is the student's field (spec 2026-10-09); the
+  // block renders nothing for a field without one. No card, no plate, no link:
+  // a container turns a mark into a placement, and a credit that asks for
+  // something is an advert.
+  return <PartnersBlock className="[@media(max-height:779px)]:hidden px-4 pb-1 pt-2" />;
 }

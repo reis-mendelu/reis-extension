@@ -5,6 +5,7 @@ import type { OpenExam } from '../../../../utils/mobile/examRows';
 import type { ExamSection } from '../../../../types/exams';
 import { ExamRowCard, type ExamAccent } from './ExamRowCard';
 import { TermRow } from './TermRow';
+import { AttemptBadgeLegend } from './AttemptBadgeLegend';
 
 export interface OpenCardProps {
   row: OpenExam;
@@ -63,6 +64,7 @@ export function OpenCard({
           onRegister={onRegister}
         />
       ))}
+      <AttemptBadgeLegend terms={row.section.terms} />
     </ExamRowCard>
   );
 }

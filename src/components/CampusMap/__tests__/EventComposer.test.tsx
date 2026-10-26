@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { EventComposer } from '../EventComposer';
 import type { PostInput } from '../../../api/societyPosts';
@@ -20,8 +20,18 @@ vi.mock('../../../api/societyPosts', () => ({
 }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 import { toast } from 'sonner';
+// The venue box asks Photon about anything two characters or longer; the
+// composer tests never want the network.
+vi.mock('../../../api/placeSearch', () => ({
+  searchPlaces: vi.fn(async () => [
+    { id: 'N42', name: 'Bar, který neexistuje', context: 'Brno', coord: [16.6097, 49.1959] },
+  ]),
+}));
+let phone = false;
+vi.mock('../../../hooks/ui/usePhoneViewport', () => ({ usePhoneViewport: () => phone }));
 
 beforeEach(() => {
+  phone = false;
   createPost.mockClear();
   updatePost.mockClear();
   useAppStore.setState({
@@ -31,6 +41,8 @@ beforeEach(() => {
     adminSession: { user: { email: 'admin@supef.cz' } } as never,
     draftCoord: null,
     editEventId: null,
+    duplicateEventId: null,
+    societyPosts: [],
     composerOpen: true,
     societyMapEvents: [],
     loadSocietyPosts: vi.fn(async () => {}),
@@ -46,7 +58,7 @@ describe('EventComposer publish', () => {
     // translations (not raw keys), so queries below match the rendered Czech text.
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Party' } });
     // choose date through MiniCalendar
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     // A start time is required now, so every publish path sets one.
     fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
@@ -83,13 +95,54 @@ describe('EventComposer publish', () => {
     });
     render(<EventComposer onDone={() => {}} />);
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'ESN párty' } });
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     // A start time is required now, so every publish path sets one.
     fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
     fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
     await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
     expect(createPost.mock.calls[0][1]).toBe('esn');
+  });
+
+  // A partner's audience is set in the console (spec 2026-10-09), so its events
+  // are always restricted: released builds without the partner rule then show
+  // them only to the partner's faculty, never to every student.
+  it('always restricts a partner event and offers no audience checkbox', async () => {
+    useAppStore.setState({
+      adminRole: 'reis_admin',
+      adminAssociationId: 'reis',
+      adminActiveAssociationId: 'ey',
+      adminSession: { user: { email: 'reis.mendelu@gmail.com' } } as never,
+      draftCoord: [16.61, 49.21],
+    });
+    render(<EventComposer onDone={() => {}} />);
+    expect(screen.queryByRole('checkbox', { name: /PEF/ })).toBeNull();
+    expect(screen.getByText(/pro které je partner nastavený/)).toBeTruthy();
+    fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'EY talk' } });
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
+    fireEvent.click(screen.getByRole('button', { name: '15' }));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    expect(createPost.mock.calls[0][0].subscribersOnly).toBe(true);
+  });
+
+  // An author the catalog does not know could be a partner whose events must be
+  // restricted; publishing it as public would reach students outside its audience.
+  it('blocks publishing while the author is missing from the catalog', async () => {
+    useAppStore.setState({
+      adminRole: 'reis_admin',
+      adminAssociationId: 'reis',
+      adminActiveAssociationId: 'ghost',
+      adminSession: { user: { email: 'reis.mendelu@gmail.com' } } as never,
+      draftCoord: [16.61, 49.21],
+    });
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Ghost' } });
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
+    fireEvent.click(screen.getByRole('button', { name: '15' }));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
+    expect(screen.getByRole('button', { name: 'Zveřejnit akci' })).toBeDisabled();
   });
 
   it('keeps publish disabled until every field is filled, then enables it', async () => {
@@ -100,7 +153,7 @@ describe('EventComposer publish', () => {
     // Completing every field enables publish.
     useAppStore.setState({ draftCoord: [16.61, 49.21] });
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Party' } });
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     // A start time is required now, so every publish path sets one.
     fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
@@ -111,7 +164,7 @@ describe('EventComposer publish', () => {
     useAppStore.setState({ draftCoord: [16.61, 49.21] });
     render(<EventComposer onDone={() => {}} />);
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Party' } });
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     // Time: type into the reIS-native combobox — "1930" masks to 19:30.
     fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
@@ -120,21 +173,22 @@ describe('EventComposer publish', () => {
     expect(createPost.mock.calls[0][0].time).toBe('19:30');
   });
 
-  it('publishes with the category chosen in the picker (not hardcoded party)', async () => {
+  it('publishes with the emoji chosen in the picker (not hardcoded party)', async () => {
     useAppStore.setState({ draftCoord: [16.61, 49.21] });
     render(<EventComposer onDone={() => {}} />);
     fireEvent.change(screen.getByPlaceholderText('Název akce'), {
       target: { value: 'Kvíz večer' },
     });
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     // A start time is required now, so every publish path sets one.
     fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
-    // Pick the "Kvíz" (quiz) category instead of leaving the default party.
+    // Open the picker and choose the quiz emoji instead of the default party.
+    fireEvent.click(screen.getByRole('button', { name: /Párty/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Kvíz' }));
     fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
     await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
-    expect(createPost.mock.calls[0][0].category).toBe('quiz');
+    expect(createPost.mock.calls[0][0]).toMatchObject({ emoji: '1f9e0', category: 'quiz' });
   });
 
   it('preserves venue_kind=campus and room_code when editing a campus event', async () => {
@@ -171,6 +225,70 @@ describe('EventComposer publish', () => {
     expect(patch.venue_kind).toBe('campus');
     expect(patch.room_code).toBe('BA39N6006');
     expect(patch.category).toBe('boardgames');
+  });
+
+  // The backfill files the Finland trip under 'trip' while 🇫🇮 alone maps to
+  // 'culture': an edit that leaves the picture alone keeps the event's own.
+  it('keeps a trip filed as a trip when an edit leaves its flag alone', async () => {
+    useAppStore.setState({
+      editEventId: 'c10',
+      societyMapEvents: [
+        {
+          id: 'c10',
+          title: 'Trip to Finland',
+          url: '',
+          date: '2026-07-08',
+          endDate: null,
+          time: null,
+          location: 'Q6.06',
+          imageUrl: null,
+          organizerKey: 'mendelu',
+          societyId: 'esn',
+          coord: [16.614, 49.209],
+          roomCode: 'BA39N6006',
+          venueKind: 'campus',
+          category: 'trip',
+          emoji: '1f1eb-1f1ee',
+        },
+      ],
+    });
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
+    await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
+    expect(updatePost.mock.calls[0][1]).toMatchObject({ emoji: '1f1eb-1f1ee', category: 'trip' });
+  });
+
+  // An emoji a newer build added is unknown here. Saving an unrelated change
+  // must not swap it for this build's fallback, nor re-file the event.
+  it('keeps an emoji this build does not ship when saving an edit', async () => {
+    useAppStore.setState({
+      editEventId: 'c9',
+      societyMapEvents: [
+        {
+          id: 'c9',
+          title: 'Flamingo run',
+          url: '',
+          date: '2026-07-08',
+          endDate: null,
+          time: null,
+          location: 'Q6.06',
+          imageUrl: null,
+          organizerKey: 'pef',
+          societyId: 'supef',
+          coord: [16.614, 49.209],
+          roomCode: 'BA39N6006',
+          venueKind: 'campus',
+          category: 'sports',
+          emoji: '1f9a9',
+        },
+      ],
+    });
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
+    await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
+    expect(updatePost.mock.calls[0][1]).toMatchObject({ emoji: '1f9a9', category: 'sports' });
   });
 
   it('shows the hall name (not the IS code) in the picked-room chip when editing', () => {
@@ -231,23 +349,38 @@ describe('EventComposer — the audience survives an edit', () => {
     category: 'quiz' as const,
     subscribersOnly: true,
   };
+  const box = () => screen.getByRole('checkbox', { name: 'Jen studenti PEF' });
 
   it('sends the audience in the patch when it is widened to everyone', async () => {
     useAppStore.setState({ editEventId: 'a1', societyMapEvents: [restricted] } as never);
     render(<EventComposer onDone={() => {}} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Všichni' }));
+    expect(box()).toBeChecked();
+    fireEvent.click(box());
     fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
     await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
     expect(updatePost.mock.calls[0][1].subscribers_only).toBe(false);
   });
 
-  it('sends the audience in the patch when it is narrowed to followers', async () => {
+  it('offers no audience control for reIS, which is for everyone', () => {
+    useAppStore.setState({ adminActiveAssociationId: 'reis' } as never);
+    render(<EventComposer onDone={() => {}} />);
+    expect(screen.queryByRole('checkbox', { name: /^Jen / })).toBeNull();
+  });
+
+  it('names Erasmus students for ESN', () => {
+    useAppStore.setState({ adminActiveAssociationId: 'esn' } as never);
+    render(<EventComposer onDone={() => {}} />);
+    expect(screen.getByRole('checkbox', { name: 'Jen erasmáci' })).toBeInTheDocument();
+  });
+
+  it('sends the audience in the patch when it is narrowed to the faculty', async () => {
     useAppStore.setState({
       editEventId: 'a1',
       societyMapEvents: [{ ...restricted, subscribersOnly: false }],
     } as never);
     render(<EventComposer onDone={() => {}} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Jen studenti PEF' }));
+    expect(box()).not.toBeChecked();
+    fireEvent.click(box());
     fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
     await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
     expect(updatePost.mock.calls[0][1].subscribers_only).toBe(true);
@@ -267,6 +400,19 @@ describe('EventComposer — the audience survives an edit', () => {
   });
 });
 
+const VENUE = 'Místnost na kampusu nebo místo ve městě…';
+const pickRoom = () => {
+  fireEvent.change(screen.getByPlaceholderText(VENUE), { target: { value: 'Q01' } });
+  const match = screen.getAllByRole('button').find((b) => /^Q01/.test(b.textContent ?? ''));
+  fireEvent.click(match as HTMLElement);
+};
+const fillRequired = () => {
+  fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Akce' } });
+  fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
+  fireEvent.click(screen.getByRole('button', { name: '15' }));
+  fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
+};
+
 /**
  * Sprint 08: "Spolky se nemůžou podívat, kde plánují akci na mapě před
  * publikem." The draft pin was never the problem — EventLayer has always drawn
@@ -276,15 +422,6 @@ describe('EventComposer — the audience survives an edit', () => {
  * off-campus one.
  */
 describe('EventComposer — seeing the planned location before publishing', () => {
-  const pickRoom = () => {
-    fireEvent.click(screen.getByRole('button', { name: /Kampus/ }));
-    fireEvent.change(screen.getByPlaceholderText('Hledat místnost nebo budovu…'), {
-      target: { value: 'Q01' },
-    });
-    const firstMatch = screen.getAllByRole('button').find((b) => /Q01/.test(b.textContent ?? ''));
-    fireEvent.click(firstMatch as HTMLElement);
-  };
-
   it('puts a picked campus room on the map as the draft pin', () => {
     render(<EventComposer onDone={() => {}} />);
     expect(useAppStore.getState().draftCoord).toBeNull();
@@ -297,7 +434,7 @@ describe('EventComposer — seeing the planned location before publishing', () =
     expect(coord?.[1]).toBeGreaterThan(49);
   });
 
-  it('takes the pin off the map when the room is cleared', () => {
+  it('takes the pin off the map when the venue is cleared', () => {
     render(<EventComposer onDone={() => {}} />);
     pickRoom();
     expect(useAppStore.getState().draftCoord).not.toBeNull();
@@ -306,25 +443,32 @@ describe('EventComposer — seeing the planned location before publishing', () =
     expect(useAppStore.getState().draftCoord).toBeNull();
   });
 
-  it('offers a way to look at the pin once a campus room is chosen', () => {
+  // Beside the map (the desktop console) the camera just goes there: a bar in
+  // town is off-screen from the campus view, and a button to fix that is one
+  // more thing to find.
+  it('flies the map to a picked venue on its own beside the map', () => {
     render(<EventComposer onDone={() => {}} />);
-    pickRoom();
     const before = useAppStore.getState().draftFocusRequest;
-
-    fireEvent.click(screen.getByRole('button', { name: 'Ukázat na mapě' }));
+    pickRoom();
     expect(useAppStore.getState().draftFocusRequest).toBe(before + 1);
+    expect(screen.queryByRole('button', { name: 'Ukázat na mapě' })).toBeNull();
   });
 
-  it('offers the same look at an off-campus point', () => {
-    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+  // On a phone the map is behind a tab: flying there unasked would yank the
+  // society out of a half-filled form, so it gets a button instead.
+  it('offers a show-on-map button on a phone instead of switching away', () => {
+    phone = true;
     render(<EventComposer onDone={() => {}} />);
     const before = useAppStore.getState().draftFocusRequest;
+    pickRoom();
+    expect(useAppStore.getState().draftFocusRequest).toBe(before);
 
     fireEvent.click(screen.getByRole('button', { name: 'Ukázat na mapě' }));
     expect(useAppStore.getState().draftFocusRequest).toBe(before + 1);
   });
 
   it('has nothing to show before a venue is chosen', () => {
+    phone = true;
     render(<EventComposer onDone={() => {}} />);
     expect(screen.queryByRole('button', { name: 'Ukázat na mapě' })).not.toBeInTheDocument();
   });
@@ -333,11 +477,7 @@ describe('EventComposer — seeing the planned location before publishing', () =
   // store happens to hold — the draft pin is a view of it, not the source.
   it('publishes the room coordinate for a campus event', async () => {
     render(<EventComposer onDone={() => {}} />);
-    fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Přednáška' } });
-    fireEvent.click(screen.getByText('Vyberte datum'));
-    fireEvent.click(screen.getByRole('button', { name: '15' }));
-    // A start time is required now, so every publish path sets one.
-    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
+    fillRequired();
     pickRoom();
     // Read the mirrored coord before publishing: closing the composer clears it.
     const pinned = useAppStore.getState().draftCoord;
@@ -353,97 +493,324 @@ describe('EventComposer — seeing the planned location before publishing', () =
 });
 
 /**
- * Regression, caught by driving the composer rather than by reading it.
- *
- * Mirroring a campus room into `draftCoord` (so the map can draw its pin) gave
- * `switchVenue` a stale value it never used to have: it clears the draft when
- * you switch TO campus, but not when you switch AWAY from it. So picking room
- * Q01 and then changing your mind to "Ve městě" left the room's coordinate in
- * the store — the composer showed a venue as already chosen instead of the
- * place search, and Publish would have posted an OFF-CAMPUS event sitting on a
- * lecture hall, with no location name.
+ * The venue KIND is no longer a question the society answers. It follows from
+ * what was picked — a room is a campus event, a searched place or a hand-dropped
+ * pin is off campus — so the stale-kind bugs the toggle used to breed (a room's
+ * coordinate surviving a switch to "Ve městě") have nothing left to hold on to.
  */
-describe('EventComposer — changing your mind about the venue kind', () => {
-  const pickRoom = () => {
-    fireEvent.click(screen.getByRole('button', { name: /Kampus/ }));
-    fireEvent.change(screen.getByPlaceholderText('Hledat místnost nebo budovu…'), {
-      target: { value: 'Q01' },
-    });
-    const match = screen.getAllByRole('button').find((b) => /Q01/.test(b.textContent ?? ''));
-    fireEvent.click(match as HTMLElement);
-  };
-
-  it('drops the campus coordinate when switching to an off-campus venue', () => {
+describe('EventComposer — the venue kind follows the pick', () => {
+  it('publishes a place from the search as an off-campus event with its name', async () => {
     render(<EventComposer onDone={() => {}} />);
-    pickRoom();
-    expect(useAppStore.getState().draftCoord).not.toBeNull();
+    fillRequired();
+    fireEvent.change(screen.getByPlaceholderText(VENUE), { target: { value: 'bar' } });
+    fireEvent.click(await screen.findByText('Bar, který neexistuje'));
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
 
-    fireEvent.click(screen.getByRole('button', { name: /Ve městě/ }));
-
-    expect(useAppStore.getState().draftCoord).toBeNull();
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    const input = createPost.mock.calls[0][0];
+    expect(input.venueKind).toBe('offcampus');
+    expect(input.roomCode).toBeNull();
+    expect(input.location).toBe('Bar, který neexistuje');
+    expect(input.coordLng).toBe(16.6097);
   });
 
-  it('offers the place search again rather than a venue already chosen', () => {
+  it('turns a campus event into an off-campus one when a place replaces the room', async () => {
     render(<EventComposer onDone={() => {}} />);
+    fillRequired();
     pickRoom();
-    fireEvent.click(screen.getByRole('button', { name: /Ve městě/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Změnit místo' }));
+    fireEvent.change(screen.getByPlaceholderText(VENUE), { target: { value: 'bar' } });
+    fireEvent.click(await screen.findByText('Bar, který neexistuje'));
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
 
-    expect(screen.getByPlaceholderText('Hledat místo (bar, klub, park…)')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Změnit místo' })).not.toBeInTheDocument();
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    const input = createPost.mock.calls[0][0];
+    expect(input.venueKind).toBe('offcampus');
+    expect(input.roomCode).toBeNull();
   });
 
-  it('drops an off-campus point when switching to campus, as it always did', () => {
+  it('publishes a hand-dropped pin as an off-campus point', async () => {
     useAppStore.setState({ draftCoord: [16.61, 49.21] });
     render(<EventComposer onDone={() => {}} />);
-    fireEvent.click(screen.getByRole('button', { name: /Kampus/ }));
-    expect(useAppStore.getState().draftCoord).toBeNull();
+    fillRequired();
+    expect(screen.getByText('Vybrané místo na mapě')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    expect(createPost.mock.calls[0][0].venueKind).toBe('offcampus');
+    expect(createPost.mock.calls[0][0].location).toBeNull();
   });
 
-  // With no venue of either kind, there is nothing to preview.
-  it('takes the show-on-map button away with the venue', () => {
+  // Kotlářská 51a, pasted from Google Maps: the same venue as a hand-dropped pin.
+  it('publishes pasted coordinates as an off-campus point, and pins them on the map', async () => {
     render(<EventComposer onDone={() => {}} />);
+    fillRequired();
     pickRoom();
-    expect(screen.getByRole('button', { name: 'Ukázat na mapě' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Ve městě/ }));
-    expect(screen.queryByRole('button', { name: 'Ukázat na mapě' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Změnit místo' }));
+    fireEvent.change(screen.getByPlaceholderText(VENUE), {
+      target: { value: '49.2078989, 16.6030499' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Použít tento bod/ }));
+    expect(useAppStore.getState().draftCoord).toEqual([16.6030499, 49.2078989]);
+    expect(screen.getByText('Vybrané místo na mapě')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    const input = createPost.mock.calls[0][0];
+    expect(input.venueKind).toBe('offcampus');
+    expect(input.roomCode).toBeNull();
+    expect(input.location).toBeNull();
+    expect(input.coordLng).toBe(16.6030499);
+    expect(input.coordLat).toBe(49.2078989);
   });
 });
 
 /**
- * Every event gets a start time.
- *
- * Time used to be optional, which left `time: null` rows in spolky_events —
- * and an event with no start has no "two hours before", so it silently got no
- * reminder at all. Rather than inventing a default hour to notify at, the
- * composer now requires the time, which is the only source these rows have
- * (mapEvents reads spolky_events exclusively).
+ * The draft pin is clickable (EventLayer → beginPlacing) so a society can move
+ * a picked venue. That click goes straight to the store, past the composer, so
+ * the picked room or place used to survive the move: the form kept saying "Q01"
+ * and publish saved the OLD room and its coordinate, whatever the new pin said.
  */
-describe('EventComposer — a start time is required', () => {
+describe('EventComposer — moving the draft pin replaces the pick', () => {
+  const movePin = (to: [number, number]) =>
+    act(() => {
+      useAppStore.getState().beginPlacing();
+      useAppStore.getState().placeDraftCoord(to);
+    });
+
+  it('publishes the new point, not the old room, after the pin is moved', async () => {
+    render(<EventComposer onDone={() => {}} />);
+    fillRequired();
+    pickRoom();
+    movePin([16.7, 49.3]);
+    expect(screen.getByText('Vybrané místo na mapě')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    const input = createPost.mock.calls[0][0];
+    expect(input.venueKind).toBe('offcampus');
+    expect(input.roomCode).toBeNull();
+    expect(input.location).toBeNull();
+    expect([input.coordLng, input.coordLat]).toEqual([16.7, 49.3]);
+  });
+
+  it('drops a searched place’s name once its pin is moved', async () => {
+    render(<EventComposer onDone={() => {}} />);
+    fillRequired();
+    fireEvent.change(screen.getByPlaceholderText(VENUE), { target: { value: 'bar' } });
+    fireEvent.click(await screen.findByText('Bar, který neexistuje'));
+    movePin([16.7, 49.3]);
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    const input = createPost.mock.calls[0][0];
+    expect(input.venueKind).toBe('offcampus');
+    expect(input.location).toBeNull();
+    expect([input.coordLng, input.coordLat]).toEqual([16.7, 49.3]);
+  });
+
+  it('keeps the room when placing is started and then cancelled', async () => {
+    render(<EventComposer onDone={() => {}} />);
+    fillRequired();
+    pickRoom();
+    act(() => {
+      useAppStore.getState().beginPlacing();
+      useAppStore.getState().cancelPlacing();
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    expect(createPost.mock.calls[0][0].venueKind).toBe('campus');
+    expect(createPost.mock.calls[0][0].roomCode).toBeTruthy();
+  });
+
+  // openComposer seeds draftCoord from the edited event, so an untouched
+  // campus event must still read as its room, not as a bare point.
+  it('saves an untouched campus event as campus when draftCoord mirrors it', async () => {
+    const coord: [number, number] = [16.614, 49.209];
+    useAppStore.setState({
+      editEventId: 'c1',
+      draftCoord: [...coord],
+      societyMapEvents: [
+        {
+          id: 'c1',
+          title: 'Deskovky',
+          url: '',
+          date: '2026-07-08',
+          endDate: null,
+          time: '19:30',
+          location: null,
+          imageUrl: null,
+          organizerKey: 'pef',
+          societyId: 'supef',
+          coord,
+          roomCode: 'BA39N6006',
+          venueKind: 'campus',
+          category: 'boardgames',
+        },
+      ],
+    });
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
+    await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
+    expect(updatePost.mock.calls[0][1].venue_kind).toBe('campus');
+    expect(updatePost.mock.calls[0][1].room_code).toBe('BA39N6006');
+  });
+});
+
+/**
+ * Every event had only a title — the form saved `body: ''` unconditionally —
+ * so societies packed the details into it: "City Game (bring a pen)", "BYO
+ * Picnic (B - bring, Y - your, O - own)". The description is optional.
+ */
+describe('EventComposer — a description', () => {
+  it('publishes what the society wrote', async () => {
+    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+    render(<EventComposer onDone={() => {}} />);
+    fillRequired();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Popis (nepovinný)' }), {
+      target: { value: '  Vezměte si propisku.  ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    expect(createPost.mock.calls[0][0].body).toBe('Vezměte si propisku.');
+  });
+
+  it('reads the description back when editing and saves a change to it', async () => {
+    useAppStore.setState({
+      editEventId: 'd1',
+      draftCoord: [16.61, 49.21],
+      societyMapEvents: [
+        {
+          id: 'd1',
+          title: 'City Game',
+          description: 'Vezměte si propisku.',
+          url: '',
+          date: '2026-07-08',
+          endDate: null,
+          time: '18:00',
+          location: null,
+          imageUrl: null,
+          organizerKey: 'pef',
+          societyId: 'supef',
+          coord: [16.61, 49.21],
+          roomCode: null,
+          venueKind: 'offcampus',
+          category: 'culture',
+        },
+      ],
+    } as never);
+    render(<EventComposer onDone={() => {}} />);
+    const field = screen.getByRole('textbox', { name: 'Popis (nepovinný)' });
+    expect(field).toHaveValue('Vezměte si propisku.');
+    fireEvent.change(field, { target: { value: 'Sraz u Q.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
+    await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
+    expect(updatePost.mock.calls[0][1].body).toBe('Sraz u Q.');
+  });
+});
+
+describe('EventComposer — the picture a society usually picks', () => {
+  it('starts on the emoji of the society’s latest event', () => {
+    useAppStore.setState({
+      draftCoord: [16.61, 49.21],
+      societyPosts: [
+        { id: 'p1', date: '2026-07-01', category: 'party', emoji: null },
+        { id: 'p2', date: '2026-07-20', category: 'boardgames', emoji: null },
+      ],
+    } as never);
+    render(<EventComposer onDone={() => {}} />);
+    expect(screen.getByRole('button', { name: /Deskovky/ })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    );
+  });
+
+  it('starts on Párty for a society that has never posted', () => {
+    render(<EventComposer onDone={() => {}} />);
+    expect(screen.getByRole('button', { name: /Párty/ })).toBeInTheDocument();
+  });
+});
+
+/**
+ * Deskovky every Thursday: the second one should not be typed from scratch.
+ * A duplicate is a NEW event — it creates, never updates the original — with
+ * everything carried over except the date, which is the one thing that has to
+ * change.
+ */
+describe('EventComposer — duplicating an event', () => {
+  const source = {
+    id: 's1',
+    title: 'Deskovky',
+    description: 'Hry máme, přineste chuť.',
+    url: 'https://example.org/deskovky',
+    date: '2026-07-08',
+    endDate: null,
+    time: '18:00',
+    location: 'Klub Fléda',
+    imageUrl: null,
+    organizerKey: 'pef',
+    societyId: 'supef',
+    coord: [16.6, 49.2] as [number, number],
+    roomCode: null,
+    venueKind: 'offcampus' as const,
+    category: 'boardgames' as const,
+    subscribersOnly: true,
+  };
+
+  it('prefills everything but the date, and publishes a new event', async () => {
+    useAppStore.setState({
+      duplicateEventId: 's1',
+      draftCoord: source.coord,
+      societyMapEvents: [source],
+    } as never);
+    render(<EventComposer onDone={() => {}} />);
+    expect(screen.getByPlaceholderText('Název akce')).toHaveValue('Deskovky');
+    expect(screen.getAllByText('Vyberte datum')[0]).toBeInTheDocument();
+    const publish = screen.getByRole('button', { name: 'Zveřejnit akci' });
+    expect(publish).toBeDisabled();
+
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
+    fireEvent.click(screen.getByRole('button', { name: '15' }));
+    fireEvent.click(publish);
+
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    expect(updatePost).not.toHaveBeenCalled();
+    const input = createPost.mock.calls[0][0];
+    expect(input).toMatchObject({
+      title: 'Deskovky',
+      body: 'Hry máme, přineste chuť.',
+      time: '18:00',
+      category: 'boardgames',
+      venueKind: 'offcampus',
+      location: 'Klub Fléda',
+      url: 'https://example.org/deskovky',
+      subscribersOnly: true,
+    });
+    expect(input.date).not.toBe('2026-07-08');
+  });
+});
+
+/**
+ * A society publishes what it knows. A semester list has a title and a date;
+ * the place and time follow later — venue_kind 'tba', time null — rather than
+ * a start time or a venue being required up front.
+ */
+describe('EventComposer — publishing without a place or time', () => {
   const fillTitleAndDate = () => {
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Kvíz' } });
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
   };
 
-  it('keeps publish disabled until a time is given', () => {
-    useAppStore.setState({ draftCoord: [16.61, 49.21] });
+  it('enables publish with only a title and a date', () => {
     render(<EventComposer onDone={() => {}} />);
-    fillTitleAndDate();
-
-    // Title, date and venue are all present — only the time is missing.
     expect(screen.getByRole('button', { name: 'Zveřejnit akci' })).toBeDisabled();
-  });
-
-  it('enables publish once the time is set', () => {
-    useAppStore.setState({ draftCoord: [16.61, 49.21] });
-    render(<EventComposer onDone={() => {}} />);
     fillTitleAndDate();
-    fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
-
     expect(screen.getByRole('button', { name: 'Zveřejnit akci' })).toBeEnabled();
   });
 
-  it('publishes the time rather than a null', async () => {
+  it('publishes the time rather than a null when one is set', async () => {
     useAppStore.setState({ draftCoord: [16.61, 49.21] });
     render(<EventComposer onDone={() => {}} />);
     fillTitleAndDate();
@@ -453,6 +820,21 @@ describe('EventComposer — a start time is required', () => {
     await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
     expect(createPost.mock.calls[0][0].time).toBe('19:30');
   });
+
+  it('publishes with only a title and a date, as venue_kind tba with no time', async () => {
+    render(<EventComposer onDone={() => {}} />);
+    fillTitleAndDate();
+    fireEvent.click(screen.getByRole('button', { name: 'Zveřejnit akci' }));
+
+    await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
+    const input = createPost.mock.calls[0][0];
+    expect(input.venueKind).toBe('tba');
+    expect(input.time).toBeNull();
+    expect(input.roomCode).toBeNull();
+    expect(input.coordLng).toBeNull();
+    expect(input.coordLat).toBeNull();
+    expect(input.location).toBeNull();
+  });
 });
 
 /**
@@ -460,11 +842,23 @@ describe('EventComposer — a start time is required', () => {
  * EventDetailCard and openExternal — a `javascript:` scheme there would run
  * in the page. Only http(s) links validateExternalUrl accepts get through.
  */
+// Two identical "Vyberte datum" triggers used to be all a screen reader got:
+// each date picker is now named by its own heading.
+describe('EventComposer — the two date pickers', () => {
+  it('names each date trigger by its heading', () => {
+    render(<EventComposer onDone={() => {}} />);
+    expect(screen.getByRole('button', { name: 'Kdy Vyberte datum' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Konec (vícedenní akce) Vyberte datum' })
+    ).toBeInTheDocument();
+  });
+});
+
 describe('EventComposer — url validation', () => {
   const fillRequired = () => {
     useAppStore.setState({ draftCoord: [16.61, 49.21] });
     fireEvent.change(screen.getByPlaceholderText('Název akce'), { target: { value: 'Kvíz' } });
-    fireEvent.click(screen.getByText('Vyberte datum'));
+    fireEvent.click(screen.getAllByText('Vyberte datum')[0]);
     fireEvent.click(screen.getByRole('button', { name: '15' }));
     fireEvent.change(screen.getByRole('combobox', { name: 'Čas' }), { target: { value: '1930' } });
   };
@@ -480,6 +874,16 @@ describe('EventComposer — url validation', () => {
 
     expect(screen.getByRole('button', { name: 'Zveřejnit akci' })).toBeDisabled();
     expect(screen.getByText('Zadej odkaz http:// nebo https://')).toBeInTheDocument();
+  });
+
+  // The error is not only red text: a screen reader hears it on the field.
+  it('ties the url error to its input for assistive technology', () => {
+    render(<EventComposer onDone={() => {}} />);
+    const input = screen.getByPlaceholderText('https://…');
+    expect(input).not.toHaveAttribute('aria-invalid', 'true');
+    fireEvent.change(input, { target: { value: 'javascript:alert(1)' } });
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(input).toHaveAccessibleDescription('Zadej odkaz http:// nebo https://');
   });
 
   it('leaves publish enabled when the url field is left empty', () => {
@@ -514,5 +918,71 @@ describe('EventComposer — url validation', () => {
     // Neither dead DaisyUI 4 class may come back.
     expect(wrapper?.className).not.toMatch(/form-control/);
     expect(wrapper?.querySelector('span')?.className).not.toMatch(/label-text/);
+  });
+});
+
+/**
+ * reIS has no narrower audience, so the composer shows no control for it — and
+ * an edit must not quietly keep a legacy restricted flag it cannot clear.
+ */
+describe('EventComposer — reIS cannot restrict', () => {
+  it('clears a legacy restricted flag on save', async () => {
+    const legacy = {
+      id: 'r1',
+      title: 'reIS meetup',
+      url: '',
+      date: '2026-07-08',
+      endDate: null,
+      time: '19:30',
+      location: null,
+      imageUrl: null,
+      organizerKey: 'mendelu',
+      societyId: 'reis',
+      coord: [16.614, 49.209] as [number, number],
+      roomCode: 'BA39N6006',
+      venueKind: 'campus' as const,
+      category: 'quiz' as const,
+      subscribersOnly: true,
+    };
+    useAppStore.setState({
+      adminActiveAssociationId: 'reis',
+      editEventId: 'r1',
+      societyMapEvents: [legacy],
+    } as never);
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
+    await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
+    expect(updatePost.mock.calls[0][1].subscribers_only).toBe(false);
+  });
+});
+
+describe('EventComposer — a society the catalog does not know', () => {
+  it('keeps a stored restriction rather than clearing it blind', async () => {
+    const row = {
+      id: 'g1',
+      title: 'Ghost event',
+      url: '',
+      date: '2026-07-08',
+      endDate: null,
+      time: '19:30',
+      location: null,
+      imageUrl: null,
+      organizerKey: 'pef',
+      societyId: 'ghost',
+      coord: [16.614, 49.209] as [number, number],
+      roomCode: 'BA39N6006',
+      venueKind: 'campus' as const,
+      category: 'quiz' as const,
+      subscribersOnly: true,
+    };
+    useAppStore.setState({
+      adminActiveAssociationId: 'ghost',
+      editEventId: 'g1',
+      societyMapEvents: [row],
+    } as never);
+    render(<EventComposer onDone={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit změny' }));
+    await waitFor(() => expect(updatePost).toHaveBeenCalledTimes(1));
+    expect(updatePost.mock.calls[0][1].subscribers_only).toBe(true);
   });
 });

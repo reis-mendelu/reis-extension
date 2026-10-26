@@ -36,8 +36,10 @@ const actionType = z.enum([
   'trigger_sync',
   'refresh_exams',
   'refresh_schedule',
+  'get_diagnostics',
   'open_url',
   'logout',
+  'switch_study',
 ]);
 
 // ── Iframe → Content ────────────────────────────────────────────────────────

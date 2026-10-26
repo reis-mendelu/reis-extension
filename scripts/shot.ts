@@ -5,6 +5,8 @@
  *
  *   npm run verify:ui -- exams-rail --view exams
  *   npm run verify:ui -- drawer --view subjects --click "EBC-IV" --theme light
+ *   npm run verify:ui -- q3d --view map --call 'focusRoomByCode:"Q301"' \
+ *     --route "map/3d/Q.glb=../reis-data/map/3d/Q.glb" --wait-for '[data-ready="true"]'
  *
  * Conventions exist so results are comparable between runs and can't go stale:
  *   - widths are always 320 / 390 / 430 unless overridden
@@ -61,6 +63,24 @@ interface Options {
    *  Re-applied after every --click step too, so a click's own async refetch
    *  (e.g. the admin console's housing tab reloading its list) can't clobber it. */
   seedStore?: string;
+  /** `--route "<url substring>=<local file>"`, repeatable: answer matching
+   *  requests from a local file. For assets not published yet — e.g. a reis-data
+   *  model still in review, served before it reaches jsDelivr. */
+  routes: { match: string; file: string }[];
+  /** `--call "<storeAction>"` or `--call '<storeAction>:<JSON arg>'`, repeatable:
+   *  invoke a store action through the dev store handle after the settle, e.g.
+   *  `--call 'focusRoomByCode:"Q301"'`. The same intent a tap would send. */
+  calls: { action: string; arg?: unknown }[];
+  /** Fail unless this selector is on the page before measuring — the presence
+   *  proof a clean run never gives on its own. */
+  waitFor?: string;
+  /** `--hover TEXT`: rest the pointer on the LAST element with this exact text
+   *  after the clicks — for hover cards, which a click never opens. Last, because
+   *  a drawer or overlay mounts after the page it covers, and the same room code
+   *  is usually also on the calendar underneath it. */
+  hover?: string;
+  /** `--no-webgl`: launch without WebGL, to photograph a WebGL surface's fallback. */
+  noWebgl: boolean;
 }
 
 /**
@@ -90,6 +110,8 @@ function parseArgs(argv: string[]): Options {
   const positional: string[] = [];
   const flags = new Map<string, string>();
   const clicks: string[] = [];
+  const routes: Options['routes'] = [];
+  const calls: Options['calls'] = [];
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
     if (a.startsWith('--')) {
@@ -99,6 +121,8 @@ function parseArgs(argv: string[]): Options {
       // --click is the one repeatable flag: a Map would keep only the last one,
       // and reaching a surface can take several steps.
       if (a === '--click') clicks.push(value);
+      else if (a === '--route') routes.push(parseRoute(value));
+      else if (a === '--call') calls.push(parseCall(value));
       else flags.set(a.slice(2), value);
     } else positional.push(a);
   }
@@ -131,7 +155,33 @@ function parseArgs(argv: string[]): Options {
     height: parseHeight(flags.get('height')),
     expectShell: parseExpectShell(flags.get('expect-shell')),
     seedStore: flags.get('seed-store'),
+    routes,
+    calls,
+    waitFor: flags.get('wait-for') || undefined,
+    hover: flags.get('hover') || undefined,
+    noWebgl: flags.has('no-webgl'),
   };
+}
+
+function parseRoute(raw: string): { match: string; file: string } {
+  const at = raw.indexOf('=');
+  const [match, file] = [raw.slice(0, at), raw.slice(at + 1)];
+  if (at <= 0 || !file) {
+    console.error(`--route takes "<url substring>=<local file>", not "${raw}"`);
+    process.exit(2);
+  }
+  return { match, file: resolve(file) };
+}
+
+function parseCall(raw: string): { action: string; arg?: unknown } {
+  const at = raw.indexOf(':');
+  if (at < 0) return { action: raw };
+  try {
+    return { action: raw.slice(0, at), arg: JSON.parse(raw.slice(at + 1)) };
+  } catch (err) {
+    console.error(`--call: the argument after ":" must be JSON (${(err as Error).message})`);
+    process.exit(2);
+  }
 }
 
 /** Write a value into the app's `meta` IndexedDB store, then reload so the app
@@ -442,7 +492,14 @@ async function run(): Promise<number> {
   rmSync(OUT_DIR, { recursive: true, force: true });
   mkdirSync(OUT_DIR, { recursive: true });
 
-  const browser = await chromium.launch();
+  // Software WebGL: headless Chromium has no GPU, and without SwiftShader it
+  // refuses a WebGL context outright — so the 3D building card would always
+  // photograph its flat fallback and never the thing it exists to show.
+  const browser = await chromium.launch({
+    args: opts.noWebgl
+      ? ['--disable-webgl', '--disable-webgl2']
+      : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+  });
   const report: Record<
     string,
     { shot: string; findings: Finding[]; shell: string; height: number }
@@ -463,6 +520,16 @@ async function run(): Promise<number> {
         isMobile: hasTouch,
       });
       const page = await context.newPage();
+      const routeHits = new Map(opts.routes.map((r) => [r.match, 0]));
+      for (const r of opts.routes) {
+        await page.route(
+          (url) => url.href.includes(r.match),
+          (route) => {
+            routeHits.set(r.match, (routeHits.get(r.match) ?? 0) + 1);
+            return route.fulfill({ path: r.file, headers: { 'access-control-allow-origin': '*' } });
+          }
+        );
+      }
       // tsx compiles with esbuild's keepNames, which wraps functions in a
       // `__name(...)` helper. Playwright serialises `probeSource` by source
       // text, so that helper has to exist in the page or the probe dies with
@@ -538,6 +605,20 @@ async function run(): Promise<number> {
         await seedAndHold(page, opts.seedStore, SEED_SETTLE_MS);
       }
 
+      // Calls BEFORE clicks: an intent (focus a room) sets up the screen a click
+      // then acts on (open its 3D view).
+      for (const call of opts.calls) {
+        await page.evaluate(({ action, arg }) => {
+          const store = (
+            window as unknown as { __reisStore?: { getState: () => Record<string, unknown> } }
+          ).__reisStore;
+          const fn = store?.getState()[action];
+          if (typeof fn !== 'function')
+            throw new Error(`--call: the store has no action "${action}"`);
+          return (fn as (a?: unknown) => unknown)(arg);
+        }, call);
+        await page.waitForTimeout(250);
+      }
       for (const click of opts.clicks) {
         await clickByTextOrLabel(page, click, hasTouch);
         // Settle between steps: each click may mount the surface the next one
@@ -548,6 +629,27 @@ async function run(): Promise<number> {
         // which overwrites adminHousing with whatever the harness's own fetch
         // returns) that would otherwise race the seed and win.
         if (opts.seedStore) await seedStoreState(page, opts.seedStore);
+      }
+      if (opts.hover) {
+        await page.getByText(opts.hover, { exact: true }).last().hover();
+        await page.waitForTimeout(900); // hover-intent delay + the card's entrance
+      }
+      if (opts.waitFor) {
+        const found = await page
+          .waitForSelector(opts.waitFor, { timeout: 20_000 })
+          .then(() => true)
+          .catch(() => false);
+        if (!found) {
+          // Leave evidence: what WAS on screen, and what the page complained about.
+          const miss = resolve(OUT_DIR, `${opts.label}-${width}-wait-for-miss.png`);
+          await page.screenshot({ path: miss });
+          for (const e of consoleErrors.slice(-5)) console.log(`  console: ${e.slice(0, 200)}`);
+          for (const [match, hits] of routeHits)
+            console.log(`  route ${match}: ${hits} request(s)`);
+          throw new Error(
+            `--wait-for: "${opts.waitFor}" never appeared at ${width}px (screen: ${miss})`
+          );
+        }
       }
       await page.waitForTimeout(opts.wait);
       if (opts.seedStore) await assertSeedSurvived(page, opts.seedStore, 'measurement');
@@ -577,6 +679,10 @@ async function run(): Promise<number> {
         console.log(`  \x1b[31mconsole:\x1b[0m ${consoleErrors.length} error(s)`);
         for (const e of consoleErrors.slice(0, 3)) console.log(`    ${e.slice(0, 160)}`);
       }
+      for (const [match, hits] of routeHits)
+        console.log(
+          `  route ${match}: ${hits === 0 ? '\x1b[33mnever requested\x1b[0m' : `${hits} request(s)`}`
+        );
       if (findings.length === 0) {
         console.log('  \x1b[32mno layout or contrast findings\x1b[0m');
       }

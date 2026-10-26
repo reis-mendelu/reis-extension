@@ -124,7 +124,7 @@ describe('usePdfPreview', () => {
     openPdfInline.mockResolvedValue(null);
     const { result } = renderHook(() => usePdfPreview());
     await act(async () => void (await result.current.viewPdf('/x.html')));
-    expect(openFile).toHaveBeenCalledWith('/x.html');
+    expect(openFile).toHaveBeenCalledWith('/x.html', undefined);
     expect(result.current.previewUrl).toBeNull();
   });
 
@@ -221,7 +221,7 @@ describe('usePdfPreview', () => {
       openPdfWithInk.mockResolvedValue({ kind: 'notPdf' });
       const { result } = renderHook(() => usePdfPreview('EBC-MT'));
       await act(async () => void (await result.current.viewPdf('/x.html')));
-      expect(openFile).toHaveBeenCalledWith('/x.html');
+      expect(openFile).toHaveBeenCalledWith('/x.html', undefined);
     });
 
     it('tells the student when the reader failed, instead of a tap that did nothing', async () => {

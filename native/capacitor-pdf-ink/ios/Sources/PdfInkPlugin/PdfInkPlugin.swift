@@ -9,7 +9,9 @@ import UIKit
  * JS asks `isAvailable` first and keeps the pdf.js viewer everywhere else.
  *
  * Files the reader does not have are requested with a `needsFile` event; JS
- * answers with `deliverFile` or `fileUnavailable`.
+ * answers with `deliverFile` or `fileUnavailable`. Each file arrives with the
+ * page it was left on, and the pages come back on close and, in a `positions`
+ * event, whenever the app resigns active.
  *
  * Rejection codes the JS side branches on: `unreadable` (PDFKit cannot open the
  * initial file — JS falls back to the web viewer with the same bytes),
@@ -71,7 +73,8 @@ public class PdfInkPlugin: CAPPlugin, CAPBridgedPlugin {
                     name: raw["name"] as? String ?? link,
                     date: raw["date"] as? String ?? "",
                     pdfURL: (raw["pdfPath"] as? String).flatMap(Self.fileURL),
-                    inkURL: inkURL)
+                    inkURL: inkURL,
+                    lastPageIndex: (raw["lastPageIndex"] as? NSNumber)?.intValue)
             }
             guard let current = files.first(where: { $0.link == currentLink }),
                 let pdfURL = current.pdfURL
@@ -93,9 +96,12 @@ public class PdfInkPlugin: CAPPlugin, CAPBridgedPlugin {
             space.onNeedsFile = { [weak self] link in
                 self?.notifyListeners("needsFile", data: ["link": link])
             }
-            space.onClose = { [weak self] shown in
+            space.onPositions = { [weak self] positions in
+                self?.notifyListeners("positions", data: ["positions": positions])
+            }
+            space.onClose = { [weak self] shown, positions in
                 self?.space = nil
-                call.resolve(["shown": shown])
+                call.resolve(["shown": shown, "positions": positions])
             }
             self.space = space
             space.start(with: document)

@@ -8,6 +8,7 @@ import {
   User,
   Map,
   FileText,
+  LayoutGrid,
 } from 'lucide-react';
 import type { MenuItem } from '../menuConfig';
 
@@ -58,4 +59,5 @@ export const mainItems = (
       },
     ],
   },
+  { id: 'oldIs', label: t('sidebar.isPages'), icon: <LayoutGrid className="w-5 h-5" /> },
 ];

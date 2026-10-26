@@ -18,6 +18,7 @@ import { DownloadProgress } from '../ui/DownloadProgress';
 import type { DownloadTick } from '../../hooks/ui/readBlobWithProgress';
 import { isPdfFile } from './utils/isPdfFile';
 import type { PdfRowMeta } from './types';
+import type { FileRowHint } from '../../utils/contentDisposition';
 
 export interface FileRowActionsProps {
   subFile: FileAttachment;
@@ -31,7 +32,7 @@ export interface FileRowActionsProps {
   downloadTick: DownloadTick | null;
   onToggleNote: () => void;
   onViewPdf?: (link: string, meta: PdfRowMeta) => void;
-  onDownloadSingle?: (link: string) => void;
+  onDownloadSingle?: (link: string, row?: FileRowHint) => void;
 }
 
 export function FileRowActions({
@@ -85,13 +86,14 @@ export function FileRowActions({
           // sitting beside it: the row is already several controls wide at
           // 320px, and an extra element would push the type badge off.
           // Disabled while it runs so the affordance stops claiming to start
-          // something the hook would refuse anyway.
-          disabled={isDownloading}
+          // something the hook would refuse anyway — and while the reader is
+          // fetching the same file, which would be a second copy of it.
+          disabled={isDownloading || isOpening}
           aria-busy={isDownloading || undefined}
           data-testid={`file-download-${subFile.link}`}
           onClick={(e) => {
             e.stopPropagation();
-            onDownloadSingle(subFile.link);
+            onDownloadSingle(subFile.link, { name: displayName, type: subFile.type });
           }}
           className="btn btn-ghost btn-xs btn-square text-base-content/40 hover:text-base-content/70"
           title={downloadLabel}
@@ -109,7 +111,7 @@ export function FileRowActions({
           // while the first is in flight, so this is about the affordance,
           // not the fetch: the row is showing a spinner and this button
           // should not still look like it is offering to do something.
-          disabled={isOpening}
+          disabled={isOpening || isDownloading}
           onClick={(e) => {
             e.stopPropagation();
             onViewPdf(subFile.link, { name: displayName, date });

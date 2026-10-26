@@ -1,6 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { buildSuggestionPayload, resolveScreen, submitSuggestion } from '../suggestions';
 import { supabase } from '@/services/spolky/supabaseClient';
+import { IndexedDBService } from '@/services/storage';
+import { useAppStore } from '@/store/useAppStore';
+import { setPlatform, __resetPlatformForTests } from '@/platform';
 
 describe('buildSuggestionPayload', () => {
   it('sends the reIS screen and never the host URL', () => {
@@ -34,6 +37,14 @@ describe('resolveScreen', () => {
 vi.mock('@/services/spolky/supabaseClient', () => ({
   supabase: { rpc: vi.fn() },
 }));
+vi.mock('@/utils/reportEnvironment', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/reportEnvironment')>();
+  return { ...actual, reportEnvironment: vi.fn(actual.reportEnvironment) };
+});
+vi.mock('@capacitor/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@capacitor/core')>()),
+  Capacitor: { getPlatform: () => 'ios' },
+}));
 
 describe('submitSuggestion', () => {
   beforeEach(() => {
@@ -47,14 +58,20 @@ describe('submitSuggestion', () => {
   // is deny-all RLS with no insert grant to anon, so the SECURITY DEFINER RPC is
   // the only path to a row.
   it('writes through the RPC with no client credential', async () => {
-    vi.mocked(supabase.rpc).mockResolvedValue({ data: true, error: null } as never);
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: 'ok', error: null } as never);
 
     const r = await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
 
     expect(r).toEqual({ ok: true });
     const [fn, args] = vi.mocked(supabase.rpc).mock.calls[0]!;
-    expect(fn).toBe('submit_suggestion');
-    expect(args).toMatchObject({ p_type: 'bug', p_title: 'T', p_body: 'B' });
+    expect(fn).toBe('submit_suggestion_v3');
+    expect(args).toMatchObject({
+      p_type: 'bug',
+      p_title: 'T',
+      p_body: 'B',
+      p_diagnostics: null,
+      p_screenshot: null,
+    });
     // Nothing secret-shaped may travel with the payload.
     expect(JSON.stringify(args)).not.toMatch(/secret/i);
   });
@@ -63,8 +80,8 @@ describe('submitSuggestion', () => {
   // the old 400-vs-429 split is not recoverable here. The client enforces the
   // same limits with maxLength, so an invalid payload from the real UI is
   // unreachable; 'rate_limited' is the honest reading and matches the copy.
-  it('maps a false result to rate_limited', async () => {
-    vi.mocked(supabase.rpc).mockResolvedValue({ data: false, error: null } as never);
+  it('maps a rejected result to rate_limited', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: 'rejected', error: null } as never);
     const r = await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
     expect(r).toEqual({ ok: false, error: 'rate_limited' });
   });
@@ -82,5 +99,106 @@ describe('submitSuggestion', () => {
     vi.mocked(supabase.rpc).mockRejectedValue(new Error('down') as never);
     const r = await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
     expect(r).toEqual({ ok: false, error: 'offline' });
+  });
+
+  it('sends the attachments the student chose', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: 'ok', error: null } as never);
+    const diagnostics = { entries: [], env: {}, sync: {} } as never;
+    await submitSuggestion(
+      { type: 'bug', title: 'T', body: 'B' },
+      { diagnostics, screenshotBase64: '/9j/AAAA' }
+    );
+    const [, args] = vi.mocked(supabase.rpc).mock.calls[0]!;
+    expect(args).toMatchObject({ p_diagnostics: diagnostics, p_screenshot: '/9j/AAAA' });
+  });
+
+  it('says so when the server kept the report but not the screenshot', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: 'ok_without_screenshot',
+      error: null,
+    } as never);
+    const r = await submitSuggestion(
+      { type: 'bug', title: 'T', body: 'B' },
+      { screenshotBase64: '/9j/AAAA' }
+    );
+    expect(r).toEqual({ ok: true, screenshotDropped: true });
+  });
+
+  it('does not report a dropped screenshot when none was sent', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: 'ok_without_screenshot',
+      error: null,
+    } as never);
+    const r = await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
+    expect(r).toEqual({ ok: true });
+  });
+});
+
+// Prod, 5.3.0: every phone and iPad report said "map". The screen came from
+// `meta.reis_current_view`, which only the desktop tree's view state writes —
+// and on the phone the one thing that moves it is a map focus, so after a
+// single "show on map" the key said `map` for good. The phone's screen is its
+// tab; the desktop's is still the persisted view.
+describe('the screen a report records', () => {
+  const asPlatform = (kind: 'extension' | 'capacitor') =>
+    setPlatform({ kind } as unknown as Parameters<typeof setPlatform>[0]);
+
+  async function sentScreen(): Promise<unknown> {
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: 'ok', error: null } as never);
+    await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
+    return vi.mocked(supabase.rpc).mock.calls[0]![1]!.p_screen;
+  }
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    __resetPlatformForTests();
+    useAppStore.setState({ isTouch: false, isNarrow: false, devPhoneOverride: null });
+    // What a phone that once showed a lesson on the map has stored.
+    await IndexedDBService.set('meta', 'reis_current_view', 'map');
+  });
+
+  afterEach(() => {
+    __resetPlatformForTests();
+  });
+
+  it('on the phone app, is the tab — not a map focus left in storage', async () => {
+    asPlatform('capacitor');
+    useAppStore.setState({ mobileTab: 'calendar' });
+    expect(await sentScreen()).toBe('calendar');
+  });
+
+  // Profil is the only general entry point on the phone, so a report written
+  // there says nothing about where the student was. The tab they came from does.
+  it('on the phone app, names the tab the student came from when opened from Profil', async () => {
+    asPlatform('capacitor');
+    useAppStore.setState({ mobileTab: 'profile', lastNonProfileTab: 'exams' });
+    expect(await sentScreen()).toBe('exams');
+  });
+
+  it('on the phone app, says profile only when the student never left it', async () => {
+    asPlatform('capacitor');
+    useAppStore.setState({ mobileTab: 'profile', lastNonProfileTab: 'profile' });
+    expect(await sentScreen()).toBe('profile');
+  });
+
+  // ReportMissingLink and the exam-failure toast open the form in place, so
+  // their reports keep naming their own tab.
+  it('on the phone app, a report opened in place keeps its own tab', async () => {
+    asPlatform('capacitor');
+    useAppStore.setState({ mobileTab: 'subjects', lastNonProfileTab: 'exams' });
+    expect(await sentScreen()).toBe('subjects');
+  });
+
+  it('follows the phone tree in a browser too (touch + narrow)', async () => {
+    asPlatform('extension');
+    useAppStore.setState({ isTouch: true, isNarrow: true, mobileTab: 'exams' });
+    expect(await sentScreen()).toBe('exams');
+  });
+
+  it('on the desktop tree, is still the persisted view, whatever the phone tab says', async () => {
+    asPlatform('extension');
+    await IndexedDBService.set('meta', 'reis_current_view', 'studyPlan');
+    useAppStore.setState({ mobileTab: 'profile' });
+    expect(await sentScreen()).toBe('studyPlan');
   });
 });

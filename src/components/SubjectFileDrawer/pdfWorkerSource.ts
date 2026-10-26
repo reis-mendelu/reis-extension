@@ -6,7 +6,10 @@
 // before pdf.js could start and the inline viewer never opened on the iPad app.
 // `getAssetUrl` is the platform seam built for this — the extension maps it to
 // chrome.runtime.getURL, Capacitor and the dev webapp to a WebView-root path.
-import workerPath from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+//
+// The LEGACY worker, matching the legacy API the app builds alias react-pdf to
+// (scripts/pdfjsLegacyAlias.ts): the default build needs APIs Chromium 143 lacks.
+import workerPath from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import { getPlatform } from '../../platform';
 
 export interface PdfWorkerDeps {

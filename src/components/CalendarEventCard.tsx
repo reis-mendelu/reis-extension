@@ -14,7 +14,6 @@ import { useAppStore } from '../store/useAppStore';
 import { useTimeline } from '../hooks/useTimeline';
 import { renderedBlockMinutes, MIN_VISUAL_BLOCK_MINUTES } from './WeeklyCalendar/utils';
 import { CalendarEventCardHideMenu } from './CalendarEventCardHideMenu';
-import { useTranslation } from '../hooks/useTranslation';
 import { lessonPlace } from '../utils/lessonPlace';
 
 interface CalendarEventCardProps {
@@ -73,10 +72,7 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
     : nickname
       ? baseName
       : fullName;
-  const { t } = useTranslation();
-  const mapEvents = useAppStore((state) => state.mapEvents);
-  // The room, or where an answered society event is — which may be only a pin.
-  const room = lessonPlace(lesson, language ?? 'cz', mapEvents, t('map.venueOnMap')).label;
+  const room = lessonPlace(lesson, language ?? 'cz').label;
 
   // Determine event type and colors using workspace tokens
   const getEventStyles = () => {

@@ -111,6 +111,30 @@ describe('PersonSheet', () => {
     });
   });
 
+  it("shows the avatar beside the name, the way the extension's hover card does", () => {
+    // On its own line under the role it read as a stray icon: for staff there
+    // is nothing beside it, so it floated between the header and the card.
+    usePersonPhoto.mockReturnValue(PHOTO);
+    render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
+    const avatar = screen.getByLabelText('Zvětšit fotku');
+    const name = screen.getByRole('link', { name: 'Jan Novák' });
+    expect(avatar.closest('.flex.items-start')).toBe(name.closest('.flex.items-start'));
+  });
+
+  it('sets the initials and the Teams label in the primary tone, which reads in light', () => {
+    // verify:ui flagged both in the light theme: bare `text-primary` is 2.29:1
+    // on base-200 and about 2:1 on its own /15 tint. The tone token is the same
+    // green darkened for light, and left as is in dark.
+    render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
+    const bare = /(^|\s)text-primary(\s|$)/;
+    const initials = screen.getByText('JN');
+    const teams = screen.getByText('Napsat na Teams').closest('button')!;
+    for (const el of [initials, teams]) {
+      expect(el.className).toContain('text-[var(--tone-primary)]');
+      expect(el.className).not.toMatch(bare);
+    }
+  });
+
   it('does not offer to maximise initials when there is no photo', () => {
     usePersonPhoto.mockReturnValue(null);
     render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
@@ -153,6 +177,49 @@ describe('PersonSheet', () => {
 
     expect(setMobileTab).toHaveBeenCalledWith('map');
     expect(focusRoomByCode).toHaveBeenCalledWith('BA39N1009');
+  });
+
+  it("makes the name a link to the person's own IS page, as the subject sheet does", () => {
+    // The title, not a row of its own — the same pattern as the subject sheet
+    // (#478). A plain target="_blank" anchor: on Capacitor the capture listener
+    // in mobile/openExternal turns it into the in-app WebView that carries the
+    // IS session, so the page opens signed in rather than on IS's login form.
+    render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
+    const link = screen.getByRole('link', { name: 'Jan Novák' });
+    expect(link).toHaveAttribute('href', 'https://is.mendelu.cz/auth/lide/clovek.pl?id=42;lang=cz');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(screen.queryByText('Otevřít v IS')).not.toBeInTheDocument();
+  });
+
+  it('opens the IS page in English when the app is in English', () => {
+    // The cached profile has to be in English too: a `cz` entry is stale for
+    // an `en` app, so the hook refetches and the sheet shows no name meanwhile.
+    useAppStore.setState({
+      language: 'en',
+      personProfiles: {
+        42: {
+          data: { personId: 42, name: 'Jan Novák', universityEmail: 'novak@mendelu.cz' },
+          fetchedAt: Date.now(),
+          lang: 'en',
+        },
+      },
+      fetchPersonProfileById: vi.fn(),
+    } as never);
+    render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
+    expect(screen.getByRole('link', { name: 'Jan Novák' })).toHaveAttribute(
+      'href',
+      'https://is.mendelu.cz/auth/lide/clovek.pl?id=42;lang=en'
+    );
+  });
+
+  it('does not link the loading title — there is no one to open yet', () => {
+    useAppStore.setState({
+      personProfiles: {},
+      personProfilesLoading: { 42: true },
+      fetchPersonProfileById: vi.fn(),
+    } as never);
+    render(<PersonSheet sheet={{ kind: 'person', personId: '42' }} onClose={vi.fn()} />);
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 
   it('does not show the room row when no room can be resolved', () => {

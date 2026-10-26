@@ -1,8 +1,13 @@
 import type { AppSlice } from '../types';
 import { fetchUsageStats, type UsageStats } from '../../api/usageStats';
 import { fetchFeatureStats, type FeatureStats } from '../../api/featureStats';
+import { fetchUsageRetention, type UsageRetention } from '../../api/usageRetention';
+import { fetchUsageProgrammes } from '../../api/usageProgrammes';
+import type { UsageGroup } from '../../api/usageStats';
 
 const WINDOW_DAYS = 30;
+/** Programmes over a week: the weekly figure partner pitches quote. */
+const PROGRAMME_WINDOW_DAYS = 7;
 
 export interface AdminStatsSlice {
   adminStats: UsageStats | null;
@@ -26,6 +31,10 @@ export interface AdminStatsSlice {
    * the two come from different RPCs.
    */
   adminFeatureStats: FeatureStats | null;
+  /** How many regulars went quiet — its own RPC, like the feature stats above. */
+  adminRetention: UsageRetention | null;
+  /** Devices per faculty + programme over 7 days — its own RPC, like retention. */
+  adminProgrammes: UsageGroup[] | null;
   loadAdminStats: () => Promise<void>;
   selectAdminStatsDay: (day: string | null) => Promise<void>;
 }
@@ -65,14 +74,30 @@ async function loadFeatures(set: Set): Promise<void> {
   if (stats) set({ adminFeatureStats: stats });
 }
 
+/** Same contract as `loadFeatures`: independent, and a failure keeps what is shown. */
+async function loadRetention(set: Set): Promise<void> {
+  const retention = await fetchUsageRetention();
+  if (retention) set({ adminRetention: retention });
+}
+
+/** Same contract as `loadRetention`: independent, and a failure keeps what is shown. */
+async function loadProgrammes(set: Set): Promise<void> {
+  const groups = await fetchUsageProgrammes(PROGRAMME_WINDOW_DAYS);
+  if (groups) set({ adminProgrammes: groups });
+}
+
 export const createAdminStatsSlice: AppSlice<AdminStatsSlice> = (set, get) => ({
   adminStats: null,
   adminStatsLoading: false,
   adminStatsDay: null,
   adminStatsRequestId: 0,
   adminFeatureStats: null,
+  adminRetention: null,
+  adminProgrammes: null,
   loadAdminStats: () => {
     void loadFeatures(set);
+    void loadRetention(set);
+    void loadProgrammes(set);
     return load(set, get, get().adminStatsDay);
   },
   selectAdminStatsDay: (day) => load(set, get, day),

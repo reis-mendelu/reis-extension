@@ -3,8 +3,9 @@ import { useState, useEffect, useRef } from 'react';
 import { getSmartWeekRange } from '../utils/calendar';
 import { IndexedDBService } from '../services/storage';
 import { syncService, syncGradeHistory } from '../services/sync';
+import { persistZaznamnikBatch } from '../services/sync/zaznamnikNewPoints';
+import { notifyNewPoints } from '../services/newPointsNotifier';
 
-import { useSpolkySettings } from './useSpolkySettings';
 import { useAppStore, initializeStore } from '../store/useAppStore';
 import { signalReady, requestData, isInIframe } from '../api/proxyClient';
 import { loadRealDataSnapshot } from '../services/loadRealDataSnapshot';
@@ -30,6 +31,8 @@ import { isHarnessEnabled } from '../utils/harnessEnabled';
 import type { SyncDomain } from '../types/messages/base';
 
 interface SyncedData {
+  /** The study the per-study data belongs to; see the guard in the listener. */
+  studium?: string;
   schedule?: BlockLesson[];
   exams?: ExamSubject[];
   subjects?: SubjectsData;
@@ -41,14 +44,15 @@ interface SyncedData {
   classmates?: Record<string, ClassmatesData>;
   zaznamnik?: Record<string, SubjectZaznamnik | null>;
   attendance?: Record<string, SubjectAttendance[]>;
-  pastAttendance?: Record<string, SubjectAttendance[]>;
   studyPlan?: DualLanguageStudyPlan;
   studyStats?: unknown;
   studyComparison?: unknown;
   cvicneTests?: any[];
   odevzdavarny?: any[];
-  lastSync?: string;
+  lastSync?: number;
   isSyncing?: boolean;
+  /** Set only when a run threw; `String(e)`, so never sent anywhere. */
+  error?: string;
   /** Domains whose fetch finished in this run — empty answers included. */
   loaded?: SyncDomain[];
 }
@@ -60,7 +64,6 @@ export function useAppLogic() {
   const [weekNavCount, setWeekNavCount] = useState(0);
   const openSettingsRef = useRef<(() => void) | null>(null);
   const searchPrefillRef = useRef<((query: string) => void) | null>(null);
-  useSpolkySettings();
 
   // Deep-link bridge: switch to the map view when something requests a room
   // focus (e.g. "Show on map" buttons). Subscribe imperatively so the view
@@ -79,14 +82,12 @@ export function useAppLogic() {
       })
       .catch(() => {});
 
-    // Hydrate past attendance from iframe-side IDB cache
-    IndexedDBService.get('meta', 'past_attendance_merged')
-      .then((data) => {
-        if (data && typeof data === 'object' && !Array.isArray(data)) {
-          useAppStore.getState().setPastAttendance(data as Record<string, SubjectAttendance[]>);
-        }
+    // The previous run's stamp, until this session's first run ends.
+    IndexedDBService.get('meta', 'last_sync')
+      .then((v) => {
+        if (typeof v === 'number') useAppStore.getState().seedLastSync(v);
       })
-      .catch((e) => logError('useAppLogic.hydratePastAttendance', e));
+      .catch((e) => logError('useAppLogic.seedLastSync', e));
 
     let unsub: (() => void) | undefined;
     initializeStore().then((unsubscribe) => {
@@ -171,6 +172,15 @@ export function useAppLogic() {
             : null;
       if (!r) return;
 
+      // Crawled for a study this context is not on — a switch half done (see
+      // services/identity/switchStudy). Stored, it would land under this
+      // study's keys: the other study's tests and boxes as this one's.
+      if (r.studium) {
+        const own = (await IndexedDBService.get('meta', 'reis_user_params')) as
+          { studium?: string } | undefined;
+        if (own?.studium && own.studium !== r.studium) return;
+      }
+
       // Instantly update store for reactivity, then persist to IDB in background
       // Before the data branches: a domain can finish with nothing to send
       // (no exams this month), and the screen still has to stop waiting.
@@ -208,7 +218,9 @@ export function useAppLogic() {
             useAppStore.getState().setCvicneTests(r.cvicneTests);
           }
         }
-        if (r.odevzdavarny?.length) {
+        // Array.isArray, not .length: [] is a real answer ("no boxes") — see
+        // useAppLogic.emptyOdevzdavarny.test.ts. A missing key changes nothing.
+        if (Array.isArray(r.odevzdavarny)) {
           const userParams = await IndexedDBService.get('meta', 'reis_user_params');
           if (userParams?.studium && userParams?.obdobi) {
             await IndexedDBService.set(
@@ -242,11 +254,6 @@ export function useAppLogic() {
 
         if (r.attendance) {
           useAppStore.getState().setAttendance(r.attendance);
-        }
-
-        if (r.pastAttendance) {
-          useAppStore.getState().setPastAttendance(r.pastAttendance);
-          await IndexedDBService.set('meta', 'past_attendance_merged', r.pastAttendance);
         }
 
         if (r.files) {
@@ -311,12 +318,11 @@ export function useAppLogic() {
 
         if (r.zaznamnik) {
           useAppStore.getState().setZaznamnikBatch(r.zaznamnik);
-          const persistEntries = Object.entries(r.zaznamnik).filter(
-            ([, v]) => v && (v.ph.sections.length > 0 || v.vt.tests.length > 0)
-          );
-          if (persistEntries.length > 0) {
-            await IndexedDBService.setMany('zaznamnik', persistEntries);
-          }
+          // Compared with the stored copy before replacing it: what the teacher
+          // added since is highlighted, and on the phone also notified.
+          const { found, unseen } = await persistZaznamnikBatch(r.zaznamnik);
+          useAppStore.getState().setZaznamnikNewPoints(unseen);
+          notifyNewPoints(found);
         }
 
         if (r.lastSync) await IndexedDBService.set('meta', 'last_sync', r.lastSync);
@@ -325,7 +331,18 @@ export function useAppLogic() {
       }
 
       if (typeof r.isSyncing === 'boolean') {
-        useAppStore.getState().setSyncStatus({ isSyncing: r.isSyncing });
+        // Only keys the message carries, so an absent one never clears the
+        // store's. `lastSync` only from the message that ENDS a run: the sync
+        // stamps it before Phase 3, and taking it from an early push made the
+        // open drawer (useFiles) refetch a folder the sync was still crawling.
+        useAppStore.getState().setSyncStatus({
+          isSyncing: r.isSyncing,
+          ...(typeof r.error === 'string' ? { error: r.error } : {}),
+          // `> 0`: the injector's cachedData starts at 0, its "no stamp yet".
+          ...(!r.isSyncing && typeof r.lastSync === 'number' && r.lastSync > 0
+            ? { lastSync: r.lastSync }
+            : {}),
+        });
         if (!r.isSyncing) {
           useAppStore.getState().fetchAllFiles();
           useAppStore.getState().fetchAllClassmates();

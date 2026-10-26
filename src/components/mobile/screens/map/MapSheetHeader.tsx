@@ -19,18 +19,21 @@ import { useTranslation } from '../../../../hooks/useTranslation';
  */
 export function MapSheetHeader({
   showingCard,
+  heading,
   onCollapse,
   onBack,
 }: {
   /** A tapped pin's card is showing, so the row is Back rather than a heading. */
   showingCard: boolean;
+  /** Replaces the panel's own title — a selected room's name and floor, over its directions. */
+  heading?: string | null;
   onCollapse: () => void;
   onBack: () => void;
 }) {
   const { t } = useTranslation();
   const title = (
     <span className="font-display text-lg font-bold tracking-tight text-base-content">
-      {t('mobile.map.tabEvents')}
+      {heading ?? t('mobile.map.tabEvents')}
     </span>
   );
 

@@ -56,24 +56,48 @@ const SUPABASE_CALLERS = new Set([
   // the submit-suggestion edge function. Only the transport changed (fetch ->
   // supabase.rpc), which is why the guard newly matches it; the privacy posture
   // is unchanged.
+  //
+  // Since September 2026 (submit_suggestion_v2) a report may also carry what
+  // the STUDENT chose to attach: a screenshot they picked, re-encoded on the
+  // device (no EXIF/GPS), and — only if they choose it (the unticked box on a
+  // Nápad/Jiné, the "with technical details" button on a Chyba) — the cleaned
+  // diagnostic log, collected at Send. The log is not listed in the
+  // form, so the record-time cleaning in utils/diagnostics/diagnosticLog is the
+  // whole of what keeps it safe; do not loosen it on the grounds of consent.
+  // The file receives both as arguments; it does not gather them, and no
+  // Supabase caller may import the diagnostic log (see the test below).
+  // Disclosed in PRIVACY.md section 4 and docs/privacy-policy-app.md BEFORE
+  // this note was written. No install id is sent with a report.
   'src/api/suggestions.ts',
-  // Random install id only. Reads take no identity argument at all.
-  'src/api/eventRsvp.ts',
   // Random install id only, since the privacy refactor. Since September 2026
   // the daily-usage event also carries two GROUP labels (faculty, platform) —
   // counts over thousands of installs, not per-student data. Disclosed in
-  // PRIVACY.md ("Daily Usage & NPS Feedback") and docs/privacy-policy-app.md.
+  // PRIVACY.md ("Daily Usage") and docs/privacy-policy-app.md. The NPS rating
+  // that also lived here was retired in October 2026 for the questions below.
   'src/api/feedback.ts',
+  // Novinky questions (October 2026), disclosed in PRIVACY.md section 2 and
+  // docs/privacy-policy-app.md BEFORE this entry was added. A public read of
+  // the live questions, and `count_question`, which sends a question id and a
+  // key ('seen' or the button tapped) and NO identifier: not the install id,
+  // not a faculty. Questions are written ad hoc and can be about anything;
+  // on one id the answers would add up to an opinion history per install, so
+  // the dedupe lives on the device (countedOpens) and nothing joins them.
+  'src/api/questions.ts',
   // Society post view/click counters; sends a post row id and nothing else.
   'src/services/spolky/spolkyService.ts',
   // Reads the public society events feed. No student data in either direction.
   'src/api/mapEvents.ts',
+  // The societies catalog (September 2026): an anonymous select of public
+  // branding (name, colour, faculty, logo path). No identity, no student data,
+  // nothing written. Logos then load as plain <img> GETs from the same project.
+  'src/api/societies.ts',
   // Two feature counters, added September 2026, both disclosed in PRIVACY.md
   // section 2 and docs/privacy-policy-app.md BEFORE this entry was added.
   //
   // `track_feature_usage` sends the random per-install UUID and one label from
-  // a three-value whitelist enforced in the database ('map_dwell_3s',
-  // 'eduroam_wifi_configured', 'eduroam_profile_delivered'). Same identifier
+  // a whitelist enforced in the database ('map_dwell_3s',
+  // 'eduroam_wifi_configured', 'eduroam_profile_delivered';
+  // featureSignalWhitelist.test.ts pins the list). Same identifier
   // and same posture as `feedback.ts`: it counts INSTALLS, not people.
   //
   // `increment_event_map_view` sends a society event's row id and NO
@@ -134,7 +158,8 @@ const files = walk(SRC).map((f) => ({ path: relative(ROOT, f), text: readFileSyn
  * Microsoft, Komoot and a personal HuggingFace Space while
  * PRIVACY.md claimed it spoke "exclusively" to IS Mendelu, WebISKAM and
  * Supabase. Adding a destination now means adding it here AND to PRIVACY.md.
- * WebISKAM left the list when the integration was removed.
+ * WebISKAM left the list when the integration was removed (#247) and came
+ * back, phone-only and narrow, for the ISIC balance and top-up (2026-10-13).
  */
 const ALLOWED_HOSTS = [
   // --- reIS's own / the university's ---
@@ -151,6 +176,9 @@ const ALLOWED_HOSTS = [
   'hei.api.uni-foundation.eu', // public Erasmus university directory (read-only)
 
   // --- fetched from, carrying student data. Each must stay disclosed. ---
+  'webiskam.mendelu.cz', // phone/iPad only: the ISIC Hlavní konto balance and the GoPay
+  // top-up start, signed in as the student via alibaba.mendelu.cz (also mendelu.cz).
+  // Already covered by the mendelu.cz suffix; listed so the disclosure is explicit.
 
   // --- deep links the STUDENT opens; no background request is made ---
   'google.com', // maps links, Play Store, Chrome Web Store, a society's Apps Script
@@ -158,11 +186,24 @@ const ALLOWED_HOSTS = [
   'outlook.office.com',
   'www.geteduroam.app',
   'supef.cz',
+  'instagram.com', // a society's profile, the "details" link on an event with none
+  'creativecommons.org', // the Twemoji licence, linked from the map's credit line
+  'gate.gopay.com', // the GoPay payment page for an ISIC top-up, opened in the system browser view
 
   // --- not destinations ---
   'localhost.that.never.exists', // CORS sentinel in capacitorTransport
   'is.mendelu.cz.evil.com', // negative example in the URL validator
   'is.mendelu.cz.evil.example', // ditto, in trustedOrigin
+];
+
+/**
+ * URLs that are text, not requests, exempted one file and one exact URL at a
+ * time so the host itself stays undeclared everywhere else.
+ */
+const NOT_REQUESTED: Array<{ file: string; url: string }> = [
+  // The contact URL INSIDE the OSM tile User-Agent. OSM's tile policy asks
+  // apps to name themselves that way; nothing ever fetches it.
+  { file: 'src/utils/osmTileIdentity.ts', url: 'https://github.com/reis-mendelu/reis-extension' },
 ];
 
 describe('no student data leaves the device', () => {
@@ -171,6 +212,8 @@ describe('no student data leaves the device', () => {
     for (const f of files) {
       for (const m of f.text.matchAll(/https:\/\/([a-z0-9.-]+\.[a-z]{2,})/gi)) {
         const host = m[1]!.toLowerCase();
+        if (NOT_REQUESTED.some((n) => n.file === f.path && f.text.startsWith(n.url, m.index)))
+          continue;
         if (ALLOWED_HOSTS.some((a) => host === a || host.endsWith('.' + a))) continue;
         offences.push(`${f.path}  ${host}`);
       }
@@ -293,6 +336,79 @@ describe('no student data leaves the device', () => {
         `this test:\n` +
         offenders.join('\n')
     ).toEqual([]);
+  });
+
+  // The one sanctioned exception to "nothing about a failure leaves": the
+  // student attaches it to a report themselves. These two tests keep it the
+  // ONLY path. Diagnostics may reach Supabase through submit_suggestion_v3 (v2 for older builds) and
+  // nowhere else, and no file that talks to Supabase may read the log itself —
+  // so it can only ever arrive as what the report form was handed.
+  it('sends diagnostics only through the report form, as the student chose', () => {
+    const offenders: string[] = [];
+    for (const f of files) {
+      if (f.path === 'src/api/suggestions.ts') continue;
+      if (/submit_suggestion_v[23]|p_diagnostics|p_screenshot/.test(f.text)) {
+        offenders.push(`${f.path} → names the attachment RPC`);
+      }
+    }
+    for (const f of files) {
+      if (!SUPABASE_CALLERS.has(f.path)) continue;
+      if (/from\s+['"][^'"]*utils\/diagnostics\//.test(f.text)) {
+        offenders.push(`${f.path} → imports the diagnostic log`);
+      }
+    }
+    expect(
+      offenders,
+      `Diagnostics are leaving by a path the student did not choose. The only ` +
+        `sanctioned route is FeedbackModal → submitSuggestion(draft, attachments) ` +
+        `→ submit_suggestion_v3, and only after the student ticks the box:\n` +
+        offenders.join('\n')
+    ).toEqual([]);
+  });
+
+  // Firefox 140+ enforces the manifest's data_collection_permissions as consent.
+  // Mozilla's add-on policy defines user interaction data as "how the user
+  // interacts with Firefox and the installed add-ons, metrics for product
+  // improvement" — with no carve-out for data that carries no identifier. So
+  // the daily count, feature counters and NPS are "technicalAndInteraction"
+  // data, and so are the identifier-free post view/click and map-event view
+  // counters: a post id is not a person, but the count is still a metric.
+  //
+  // The only way out is Mozilla's implicit consent, for a send that is "a
+  // direct, immediate consequence of a single, deliberate user command". No
+  // counter qualifies: the student opened a post or a card, which works
+  // without the counter. "It has no identifier"
+  // is therefore not a reason to drop a gate here.
+  // https://extensionworkshop.com/documentation/publish/add-on-policies/
+  it('senders of interaction data honour Firefox consent', () => {
+    // Every Supabase RPC in these files is an interaction-data send, so each
+    // needs its own gate: a new counter added without one fails here. Comments
+    // are stripped first so a mention of either string cannot pad the count.
+    const gated = [
+      'src/api/feedback.ts', // trackDailyUsage and the NPS answer
+      'src/api/featureUsage.ts', // trackFeatureSignal and trackMapEventView
+      'src/services/spolky/spolkyService.ts', // post views and clicks
+    ];
+    for (const path of gated) {
+      const code = readFileSync(join(ROOT, path), 'utf-8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/(^|\s)\/\/.*$/gm, '$1');
+      const sends = code.match(/\.rpc\(/g)?.length ?? 0;
+      const checks = code.match(/hasDataConsent\('technicalAndInteraction'\)/g)?.length ?? 0;
+      expect(sends, `${path} no longer sends anything — drop it from this list`).toBeGreaterThan(0);
+      expect(checks, `${path} must check hasDataConsent before each of its ${sends} sends`).toBe(
+        sends
+      );
+    }
+    const manifest = readFileSync(join(ROOT, 'wxt.config.ts'), 'utf-8');
+    expect(manifest).toMatch(/optional:\s*\[[^\]]*'technicalAndInteraction'/);
+  });
+
+  it('never keeps a stack or logError extras in the diagnostic log', () => {
+    const src = readFileSync(join(SRC, 'utils/diagnostics/diagnosticLog.ts'), 'utf-8');
+    const entry = src.slice(src.indexOf('export interface DiagnosticEntry'));
+    const body = entry.slice(0, entry.indexOf('}'));
+    expect(body).not.toMatch(/\bstack\b|\bextra\b/);
   });
 
   /**

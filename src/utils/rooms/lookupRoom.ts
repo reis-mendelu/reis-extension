@@ -1,4 +1,6 @@
 import type { RoomIndexEntry } from '../../types/campusMap';
+import { MAP_CAMPUS, codeForLabel } from '../../data/map/isRoomLabels';
+import { bracketCampus, offMapCampus } from './roomCampus';
 
 /**
  * One room string off IS → the index entry the map can actually show.
@@ -134,15 +136,44 @@ const FIELDS: ((e: RoomIndexEntry) => string | null | undefined)[] = [
   (e) => e.nickname,
 ];
 
+/**
+ * IS's own answer: timetable label → passport code, from IS's room catalogue
+ * (see `data/map/isRoomLabels.ts`). Consulted before anything the map says,
+ * because the room string being resolved IS an IS label. It settles ties the
+ * map cannot (E17), agrees with every `PREFERRED_ROOM` entry, and outranks two
+ * map nicknames that sit a floor below IS's rooms (A411, A412).
+ */
+
 /** The first entry any of `raw`'s candidate strings names, or null. */
 export function lookupRoomEntry(
   raw: string | null | undefined,
   index: RoomIndexEntry[]
 ): RoomIndexEntry | null {
-  if (!raw) return null;
+  // A campus the map has no rooms on ("ZFAC1 (Led)"): no map room at all.
+  if (!raw || offMapCampus(raw)) return null;
+  // Any other campus but Černá Pole ("Aula (ČP II.)"): its map rooms are exactly
+  // the ones IS labels there — budova Z's — never a Černá Pole name or nickname,
+  // which is how FRRMS's Aula stays out of building A.
+  const printed = bracketCampus(raw);
+  const campus = printed ?? MAP_CAMPUS;
+  if (campus !== MAP_CAMPUS) {
+    for (const candidate of candidates(raw)) {
+      const code = codeForLabel(candidate, campus);
+      const hit = code ? index.find((e) => e.code === code) : undefined;
+      if (hit) return hit;
+    }
+    return null;
+  }
   for (const candidate of candidates(raw)) {
     const needle = normalizeRoomKey(candidate);
     if (!needle) continue;
+    // Only when the index at hand has that room — a stub index falls through.
+    // A printed "(ČP)" is taken at its word; only a bare label may fall back.
+    const isCode = codeForLabel(candidate, printed ?? undefined);
+    if (isCode) {
+      const hit = index.find((e) => e.code === isCode);
+      if (hit) return hit;
+    }
     const preferred = PREFERRED_ROOM[needle];
     if (preferred) {
       const pick = index.find((e) => e.code === preferred);

@@ -14,6 +14,7 @@ import { AverageAccordion } from './subjects/AverageAccordion';
 import { NavRow } from '../primitives/NavRow';
 import { AlwaysScrollable } from '../primitives/AlwaysScrollable';
 import { ReportMissingLink } from '../../Feedback/ReportMissingLink';
+import { SubmissionBoxesSummary } from '../../SubmissionBoxes/SubmissionBoxesSummary';
 
 function SubjectsSkeleton() {
   const { t } = useTranslation();
@@ -44,7 +45,7 @@ function EmptyState() {
 }
 
 export function SubjectsScreen() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const plan = useStudyPlan();
   const studyStats = useAppStore((s) => s.studyStats);
   const studyComparison = useAppStore((s) => s.studyComparison);
@@ -134,11 +135,7 @@ export function SubjectsScreen() {
       {/* Always draggable, even when it fits — see AlwaysScrollable. */}
       <div data-testid="subjects-scroll" className="flex-1 overflow-y-auto">
         <AlwaysScrollable className="gap-2.5 px-4 pb-[calc(6rem_+_var(--safe-bottom,0px))] pt-3.5">
-          <CreditRing
-            earned={plan.creditsAcquired}
-            total={plan.creditsRequired}
-            lastTwoPeriods={studyStats?.creditsLastTwoPeriods ?? null}
-          />
+          <CreditRing earned={plan.creditsAcquired} total={plan.creditsRequired} />
           {enrolled.length > 0 ? (
             <SemesterCard enrolled={enrolled} semester={semester} onOpenSubject={openSubject} />
           ) : (
@@ -152,6 +149,19 @@ export function SubjectsScreen() {
               {t('mobile.subjects.noneEnrolled')}
             </div>
           )}
+          {/* Under the semester it belongs to; renders nothing with no box open. */}
+          <SubmissionBoxesSummary
+            className="flex-shrink-0"
+            onOpen={(courseCode, box) =>
+              pushSheet({
+                kind: 'subjectDrawer',
+                courseCode,
+                courseName: language === 'en' ? box.courseNameEn : box.courseNameCs,
+                courseId: box.courseId,
+                initialTab: 'zaznamnik',
+              })
+            }
+          />
           <AverageAccordion studyStats={studyStats} comparison={studyComparison} />
           {/* Under the average, and only where the plan is real: in the skeleton
             and error shells above there is nothing to open. */}

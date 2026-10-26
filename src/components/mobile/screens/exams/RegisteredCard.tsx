@@ -1,38 +1,15 @@
 import { useState } from 'react';
-import { Users } from 'lucide-react';
 import { useTranslation } from '../../../../hooks/useTranslation';
-import { useExamClassmates } from '../../../../hooks/data/useExamClassmates';
-import { pluralSuffix } from '../../../../utils/plural';
 import { formatWhenRow } from '../../../../utils/mobile/examWhen';
 import type { RegisteredExam } from '../../../../utils/mobile/examRows';
 import type { ExamSection, ExamTerm } from '../../../../types/exams';
 import { ExamRowCard } from './ExamRowCard';
 import { TermRow } from './TermRow';
+import { AttemptBadgeLegend } from './AttemptBadgeLegend';
 import { TermDetails } from './TermDetails';
 import { MoreChip } from './MoreChip';
 import { parseRegistrationStart } from '../../../../utils/termUtils';
 import { alternativeTerms } from '../../../ExamPanel/utils';
-
-/** The classmate line inside an expanded registered card. Its own component so
- *  `useExamClassmates` only fetches for the card actually open. */
-function ClassmateLine({ term }: { term: ExamTerm }) {
-  const { t, language } = useTranslation();
-  const { classmates } = useExamClassmates(term.id);
-  // Nothing where there is nobody to name — never "Zatím nikdo ze spolužáků".
-  // An empty list means "nobody we could name" at least as often as it means
-  // nobody is going: the classmate list is a separate IS page, and it is the
-  // student's own year, not the term's roll. The term's own details carry IS's
-  // "Kdo jde se mnou na termín" link, and two of them in one card is one too many.
-  if (!classmates || classmates.length === 0) return null;
-  return (
-    <span className="flex items-center gap-1.5 text-sm text-base-content/70">
-      <Users size={14} className="flex-shrink-0" />
-      {t(`mobile.exams.mates${pluralSuffix(language, classmates.length)}`, {
-        count: classmates.length,
-      })}
-    </span>
-  );
-}
 
 export interface RegisteredCardProps {
   row: RegisteredExam;
@@ -82,11 +59,11 @@ export function RegisteredCard({
       title={row.subjectName}
       subtitle={row.sectionName}
       primaryMeta={formatWhenRow(row.date, row.term.time, locale)}
-      secondaryMeta={row.term.room ?? ''}
+      // No room here: it is under Více, as on every term row.
+      secondaryMeta=""
       expanded={expanded}
       onToggle={onToggle}
     >
-      <ClassmateLine term={mine} />
       {/* Behind the same chip the term rows use: the form, the length and the
           deregistration deadline are what a student opens when they want them,
           not three lines every card carries whether or not they asked. */}
@@ -95,11 +72,28 @@ export function RegisteredCard({
         aria-expanded={showDetails}
         aria-label={t('mobile.exams.myTermDetailsAria')}
         onClick={() => setShowDetails((v) => !v)}
-        className="flex w-fit items-center"
+        className="flex w-full items-center"
       >
-        <MoreChip open={showDetails} />
+        <MoreChip open={showDetails} wide />
       </button>
       {showDetails && <TermDetails term={mine} section={row.section} isRegHere now={now} />}
+      {/* The other terms open nothing: their form and length are the ones the
+          "Více" above already shows. */}
+      {others.map((term) => (
+        <TermRow
+          key={term.id}
+          term={term}
+          section={row.section}
+          showDetails={false}
+          now={now}
+          isProcessing={isProcessing}
+          onRegister={onRegister}
+        />
+      ))}
+      {/* Over `others` only: the registered term above wears no badge. */}
+      <AttemptBadgeLegend terms={others} />
+      {/* Last, after the other terms: right under the "Více" chip a thumb
+          reaching for the details could land on the way out instead. */}
       {/* IS closes deregistration at `deregistrationDeadline`. The button was
           offered whatever the date, so past the deadline a tap could only
           fail; the desktop panel has always said so instead. */}
@@ -121,16 +115,6 @@ export function RegisteredCard({
           )}
         </button>
       )}
-      {others.map((term) => (
-        <TermRow
-          key={term.id}
-          term={term}
-          section={row.section}
-          now={now}
-          isProcessing={isProcessing}
-          onRegister={onRegister}
-        />
-      ))}
     </ExamRowCard>
   );
 }

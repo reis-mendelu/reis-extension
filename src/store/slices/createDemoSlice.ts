@@ -18,7 +18,7 @@ import { demoContext } from '../../utils/mock/data/demo';
  * CDN, identical for every student, so wiping it only forces a needless
  * refetch with no privacy benefit.
  *
- * `erasmus` and `map_rooms` are also CDN reference data, not personal, and
+ * `erasmus`, `map_rooms` and `map_models` are also CDN reference data, not personal, and
  * were never in the demo's write set to begin with.
  *
  * `hidden_items`, `custom_events`, `document_notes`, `note_images`, and
@@ -47,7 +47,7 @@ const IS_DERIVED_STORES = [
  * clearing the store to tidy up the demo would reset a student's privacy
  * choice. Delete by key or not at all.
  */
-const IS_DERIVED_META_KEYS = ['study_stats', 'study_comparison'] as const;
+const IS_DERIVED_META_KEYS = ['study_stats', 'study_comparison', 'impersonation'] as const;
 
 async function wipeSeeded(): Promise<void> {
   for (const store of IS_DERIVED_STORES) {
@@ -109,6 +109,7 @@ export const createDemoSlice: AppSlice<DemoSlice> = (set) => ({
       facultyId: null,
       fullName: null,
       userFaculty: null,
+      userProgramme: null,
       userSemester: null,
     });
   },

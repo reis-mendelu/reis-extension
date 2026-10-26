@@ -27,9 +27,24 @@ describe('roomFocusView', () => {
 
   it('pads the building so it does not touch the viewport edge', () => {
     // A building bleeding off the edge reads as "cut off" rather than "all of it".
-    const [x, y] = roomFocusView(room, building)!.padding;
-    expect(x).toBeGreaterThan(0);
-    expect(y).toBeGreaterThan(0);
+    const view = roomFocusView(room, building)!;
+    for (const v of [...view.paddingTopLeft, ...view.paddingBottomRight])
+      expect(v).toBeGreaterThan(0);
+  });
+
+  // The tablet's Akce rail overlays the right of the canvas. Budova Z is a long
+  // crescent: framed without the rail, its north-east end — Z11, the busiest
+  // room in the building — sat under the panel with only a sliver showing.
+  it('keeps the framed building clear of the rail on the right', () => {
+    const plain = roomFocusView(room, building)!;
+    const railed = roomFocusView(room, building, 350)!;
+    expect(railed.paddingBottomRight[0]).toBe(plain.paddingBottomRight[0] + 350);
+    expect(railed.paddingTopLeft).toEqual(plain.paddingTopLeft);
+    expect(railed.paddingBottomRight[1]).toBe(plain.paddingBottomRight[1]);
+  });
+
+  it('keeps the fallback room clear of the rail too', () => {
+    expect(roomFocusView(room, null, 350)!.paddingBottomRight[0]).toBe(120 + 350);
   });
 
   it('falls back to the room when its building has no footprint', () => {

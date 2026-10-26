@@ -155,9 +155,10 @@ describe('TermRow — details', () => {
     expect(screen.getByText('45 min')).toBeInTheDocument();
   });
 
-  // The detail page is fetched for the length alone — the phone shows no
-  // Poznámka — so a length the sync already has makes the request pointless.
-  it('do not fetch the detail page when the sync already attached the length', () => {
+  // Sprint 13: the phone read the detail page for the length alone and dropped
+  // the teacher's Poznámka the desktop shows. Opening a term now always asks
+  // for its page (cached 6 h by the slice), because the note is on it.
+  it('fetch the detail page for the note even when the sync attached the length', () => {
     const fetchExamNotePriority = vi.fn();
     useAppStore.setState({ fetchExamNotePriority } as never);
     render(
@@ -170,7 +171,36 @@ describe('TermRow — details', () => {
       />
     );
     openDetails();
-    expect(fetchExamNotePriority).not.toHaveBeenCalled();
+    expect(fetchExamNotePriority).toHaveBeenCalledWith(term.id);
+  });
+
+  it("show the teacher's Poznámka under the term", () => {
+    useAppStore.setState({
+      examNotes: { [term.id]: { text: 'S sebou kalkulačku.', isEmphasized: false } },
+    } as never);
+    renderRow(openSection);
+    openDetails();
+    const note = within(screen.getByTestId('term-details')).getByTestId('term-note');
+    expect(note).toHaveTextContent('S sebou kalkulačku.');
+    expect(note.querySelector('svg')).not.toHaveClass('text-[var(--tone-warning)]');
+  });
+
+  // IS writes rules with pass/fail consequences in red; the phone keeps that.
+  it('mark a note IS wrote in red as a warning', () => {
+    useAppStore.setState({
+      examNotes: { [term.id]: { text: 'Bez AI, jinak F.', isEmphasized: true } },
+    } as never);
+    renderRow(openSection);
+    openDetails();
+    const note = screen.getByTestId('term-note');
+    expect(note.querySelector('svg')).toHaveClass('text-[var(--tone-warning)]');
+  });
+
+  it('show no note block when the term has no note', () => {
+    useAppStore.setState({ examNotes: { [term.id]: null } } as never);
+    renderRow(openSection);
+    openDetails();
+    expect(screen.queryByTestId('term-note')).not.toBeInTheDocument();
   });
 
   // null is "IS had none at the last sync"; a teacher can have filled it in
@@ -191,11 +221,32 @@ describe('TermRow — details', () => {
     expect(fetchExamNotePriority).toHaveBeenCalledWith(term.id);
   });
 
-  // The room is already on the term's own line.
-  it('do not repeat the room as a "Místo konání" row', () => {
+  // The room moved here from the term's line: date, time, room, seats, badges
+  // and the chip were one line too many on a phone.
+  it('show the room as a "Místnost" row, and leave it off the term line', () => {
     renderRow(openSection);
+    expect(screen.queryByText(/Q01/)).not.toBeInTheDocument();
     openDetails();
-    expect(screen.queryByText('Místo konání')).not.toBeInTheDocument();
+    const details = within(screen.getByTestId('term-details'));
+    expect(details.getByText('Místnost')).toBeInTheDocument();
+    expect(details.getByText('Q01')).toBeInTheDocument();
+  });
+
+  it('show the English room name in English', () => {
+    useAppStore.setState({ language: 'en' } as never);
+    render(
+      <TermRow
+        term={{ ...term, roomCs: 'Studovna PEF', roomEn: 'PEF study room' }}
+        section={openSection}
+        now={NOW}
+        isProcessing={false}
+        onRegister={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole('button', { expanded: false }));
+    const details = within(screen.getByTestId('term-details'));
+    expect(details.getByText('Room')).toBeInTheDocument();
+    expect(details.getByText('PEF study room')).toBeInTheDocument();
   });
 
   it('show the length read on demand for a term the sync did not enrich', () => {

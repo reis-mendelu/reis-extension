@@ -1,5 +1,4 @@
 import type { SyncSlice, AppSlice } from '../types';
-import { syncService } from '../../services/sync';
 
 export const createSyncSlice: AppSlice<SyncSlice> = (set) => {
   setTimeout(() => {
@@ -23,17 +22,16 @@ export const createSyncSlice: AppSlice<SyncSlice> = (set) => {
       set((state) => ({
         syncLoaded: { ...state.syncLoaded, ...Object.fromEntries(domains.map((d) => [d, true])) },
       })),
-    fetchSyncStatus: async () => {
-      const currentStatus = await syncService.getStatus();
-      set((state) => ({
-        syncStatus: {
-          ...currentStatus,
-          handshakeDone: false,
-          handshakeTimedOut: state.syncStatus.handshakeTimedOut,
-        },
-        isSyncing: currentStatus.isSyncing,
-      }));
-    },
+    // Boot only: the previous session's stamp, so diagnostics and the drawers
+    // have a value before the first run ends. Writes nothing once a sync has
+    // delivered one — the IndexedDB read races the first REIS_SYNC_UPDATE —
+    // and touches nothing else: the handshake and isSyncing belong to the sync.
+    seedLastSync: (lastSync) =>
+      set((state) =>
+        state.syncStatus.lastSync === null
+          ? { syncStatus: { ...state.syncStatus, lastSync } }
+          : state
+      ),
     setSyncStatus: (status) =>
       set((state) => ({
         syncStatus: {

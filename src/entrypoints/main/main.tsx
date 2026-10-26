@@ -13,6 +13,10 @@ import '@/utils/devFeatures'; // Register window.toggleDevFeatures
 import App from '@/App.tsx';
 import { AppShell } from '@/components/AppShell';
 import { installExternalLinkHandler } from '@/mobile/openExternal';
+import { installConsoleCapture } from '@/utils/diagnostics/consoleCapture';
+import { initDataConsent } from '@/utils/firefoxDataConsent';
+import { watchOsmTileAccess } from '@/utils/osmTileAccess';
+import { useAppStore } from '@/store/useAppStore';
 
 // At module load, before the first render, because a `target="_blank"` anchor
 // does NOTHING on its own inside the Capacitor WebView: there is no tab to open
@@ -25,6 +29,20 @@ import { installExternalLinkHandler } from '@/mobile/openExternal';
 // Not in an effect: MobileBulletinOverlay portals to document.body, outside the
 // React tree, and its links are among the first things a student can tap.
 installExternalLinkHandler();
+
+// Keeps recent console warnings and errors in memory for the report form, which
+// sends them only if the student chooses to attach them. This entry
+// runs on every host (extension iframe, Capacitor, dev webapp).
+installConsoleCapture();
+
+// Firefox's data-consent API has to be known before the first click: the report
+// form asks for consent inside the click, where an extra await would cost
+// Firefox's user-action status. Resolves to "no such API" everywhere else.
+void initDataConsent();
+
+// Whether OSM tile requests can carry reIS's name (osmTileAccess.ts). Watched
+// for the life of the page, so a grant made in about:addons lands too.
+watchOsmTileAccess((access) => useAppStore.getState().setOsmTileAccess(access));
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

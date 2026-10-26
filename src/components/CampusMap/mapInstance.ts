@@ -16,6 +16,14 @@ export function getMapInstance(): L.Map | null {
   return instance;
 }
 
+/** Re-requests every basemap tile, e.g. once OSM tile requests can be identified. */
+export function redrawBasemap(): void {
+  instance?.eachLayer((l) => {
+    // Duck-typed so this module keeps importing leaflet's types only.
+    if ('getTileUrl' in l) (l as L.TileLayer).redraw();
+  });
+}
+
 export function subscribeMapInstance(cb: (m: L.Map | null) => void): () => void {
   listeners.add(cb);
   cb(instance);

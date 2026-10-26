@@ -10,6 +10,7 @@ import { useExamActions } from '../../ExamPanel/useExamActions';
 import {
   buildRegisteredExams,
   buildOpenExams,
+  withNicknames,
   type RegisteredExam,
   type OpenExam,
 } from '../../../utils/mobile/examRows';
@@ -79,11 +80,19 @@ export function ExamsScreen() {
   // been sat, until it is graded — see `dropFinished` for why it is hidden
   // rather than grouped, and why "finished" means the day is over. Filtered
   // here, once, so the strip, the groups and the count all agree.
+  const nicknames = useAppStore((s) => s.courseNicknames);
   const registered = useMemo(
-    () => dropFinished(buildRegisteredExams(exams, language), (r) => r.date, now),
-    [exams, language, now]
+    () =>
+      withNicknames(
+        dropFinished(buildRegisteredExams(exams, language), (r) => r.date, now),
+        nicknames
+      ),
+    [exams, language, now, nicknames]
   );
-  const open = useMemo(() => buildOpenExams(exams, language), [exams, language]);
+  const open = useMemo(
+    () => withNicknames(buildOpenExams(exams, language), nicknames),
+    [exams, language, nicknames]
+  );
   // "Otevřené termíny 2" has to mean two things that can be booked. A section
   // whose registration opens in December is not one of them — see
   // utils/mobile/examOpening.
@@ -104,6 +113,13 @@ export function ExamsScreen() {
   // used to be prefixed to is real information, so that survives on its own —
   // and where there is none, the row goes away and gives the title its width
   // back, which matters at 320px.
+  // A subject can be present and still yield no row: a "Zápis na cvičení"
+  // section is stripped but its subject kept, and a registered exam whose day
+  // is over is hidden. Keyed on `exams.length` alone, that rendered the header
+  // over a blank body (Návrhy #33) — so the empty state follows what renders.
+  const nothingToShow =
+    registered.length + notYetOpen.length + bookable.length + blocked.length === 0;
+
   const eyebrow = userSemester || undefined;
   const toggle = (id: string) => setExpandedId((cur) => (cur === id ? null : id));
 
@@ -200,7 +216,7 @@ export function ExamsScreen() {
 
   return shell(
     <>
-      {exams.length === 0 ? (
+      {nothingToShow ? (
         <ExamsPullArea
           surfaceRef={screenRef}
           className="items-center justify-center gap-3 px-6 text-center"

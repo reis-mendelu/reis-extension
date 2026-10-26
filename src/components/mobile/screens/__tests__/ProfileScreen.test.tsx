@@ -84,10 +84,10 @@ describe('the profile tab', () => {
     expect(useAppStore.getState().mobileTab).toBe('profile');
   });
 
-  it('renders as a screen, with the settings that were in the sheet', () => {
+  it('renders as a screen, with a way into Nastavení', () => {
     render(<ProfileScreen />);
     expect(screen.getByTestId('profile-screen')).toBeInTheDocument();
-    expect(screen.getByText('Tmavý režim')).toBeInTheDocument();
+    expect(screen.getByText('Nastavení')).toBeInTheDocument();
     expect(screen.getByText('Eduroam')).toBeInTheDocument();
     expect(screen.getByText('Dokumenty')).toBeInTheDocument();
     expect(screen.getByText('Odhlásit se')).toBeInTheDocument();

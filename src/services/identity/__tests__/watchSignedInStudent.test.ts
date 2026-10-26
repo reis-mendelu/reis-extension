@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-let announce: ((p: unknown, change: { wiped: boolean }) => void) | null = null;
+let announce: ((p: unknown, change: { wiped: boolean; studyOnly?: boolean }) => void) | null = null;
 const getUserParams = vi.fn(async () => null);
 const clearUserParamsCache = vi.fn();
 let confirmed = true;
@@ -111,6 +111,17 @@ describe('watchSignedInStudent', () => {
     announce?.(null, { wiped: true });
     await vi.waitFor(() => expect(restart).toHaveBeenCalledTimes(1));
     expect(order).toEqual(['clearAdmin', 'restart']);
+  });
+
+  // A student moving to their other study is still the same person: the
+  // society console they are signed in to stays theirs.
+  it('restarts but keeps the society login when only the study changed', async () => {
+    const clearAdmin = vi.fn(async () => {});
+    const restart = vi.fn();
+    watchSignedInStudent(restart, { clearAdmin });
+    announce?.(null, { wiped: true, studyOnly: true });
+    await vi.waitFor(() => expect(restart).toHaveBeenCalledTimes(1));
+    expect(clearAdmin).not.toHaveBeenCalled();
   });
 
   /**

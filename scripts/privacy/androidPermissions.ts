@@ -1,0 +1,109 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+
+// The Android permissions reIS actually ships — what the manifest merger puts in
+// the release APK, not just what android/app/src/main/AndroidManifest.xml lists.
+// Every Capacitor plugin brings its own manifest, and the merger unions them into
+// the app's: @capacitor/local-notifications alone adds RECEIVE_BOOT_COMPLETED,
+// WAKE_LOCK and SCHEDULE_EXACT_ALARM, none of which appear in the app manifest.
+//
+// Computed from source rather than read from the merged build output because no
+// CI job builds Android and a worktree's android/app/build/ is whatever it was
+// the last time someone built there. The plugin manifests are in node_modules,
+// which CI installs from the lockfile, so this is the same answer everywhere.
+//
+// Known gap: Maven AARs (androidx.*) merge manifests too and are not read here.
+// Today they add only androidx.core's `${applicationId}.DYNAMIC_RECEIVER_NOT_
+// EXPORTED_PERMISSION`, the app's own signature permission, which asks the user
+// for nothing. A new AAR dependency is the case to re-check by hand, with
+// `apkanalyzer manifest permissions` on the release APK.
+
+const USES = /<uses-permission(?:-sdk-23)?\b[^>]*>/g;
+// XML allows either quote style; the backreference makes the closing one match.
+const NAME = /\bandroid:name\s*=\s*(["'])(.+?)\1/;
+const REMOVE = /\btools:node\s*=\s*(["'])remove\1/;
+const PREFIX = 'android.permission.';
+
+interface Declared {
+  add: string[];
+  remove: string[];
+}
+
+/** [start, end) of every `<!-- … -->`; an unterminated one runs to the end. */
+function commentRanges(xml: string): [number, number][] {
+  const out: [number, number][] = [];
+  for (let at = xml.indexOf('<!--'); at !== -1;) {
+    const close = xml.indexOf('-->', at + 4);
+    const end = close === -1 ? xml.length : close + 3;
+    out.push([at, end]);
+    at = xml.indexOf('<!--', end);
+  }
+  return out;
+}
+
+function usesPermissions(xml: string): Declared {
+  const out: Declared = { add: [], remove: [] };
+  const comments = commentRanges(xml);
+  for (const { 0: el, index } of xml.matchAll(USES)) {
+    // Skipped by position rather than stripped from the string, so a comment
+    // can never recombine into markup around it.
+    if (comments.some(([s, e]) => index >= s && index < e)) continue;
+    const name = NAME.exec(el)?.[2];
+    // An element this parser cannot read must fail the check, not vanish from it.
+    if (!name) throw new Error(`privacy:check: cannot read the permission name in ${el}`);
+    // `${applicationId}.…` is the app's own permission, not one it asks for. Any
+    // other placeholder resolves at merge time to a name this cannot know.
+    if (name.startsWith('${applicationId}.')) continue;
+    if (name.includes('${')) throw new Error(`privacy:check: unresolved placeholder in ${el}`);
+    const short = name.startsWith(PREFIX) ? name.slice(PREFIX.length) : name;
+    (REMOVE.test(el) ? out.remove : out.add).push(short);
+  }
+  return out;
+}
+
+/**
+ * The app manifest's uses-permission, plus every library manifest's, minus the
+ * ones the app strips with `tools:node="remove"` — the merger's rule for the
+ * element. `android:permission` on a component (androidx.profileinstaller's
+ * receiver carries `…DUMP`) guards who may call it and is not requested.
+ */
+export function shippedAndroidPermissions(appManifest: string, libManifests: string[]): string[] {
+  const app = usesPermissions(appManifest);
+  // Only the app's removes count: a library's tools:node="remove" applies inside
+  // its own merge, so it cannot strip what the app or a sibling library adds.
+  // Ignoring those errs toward over-reporting, the safe side for this check.
+  const removed = new Set(app.remove);
+  const all = new Set([...app.add, ...libManifests.flatMap((m) => usesPermissions(m).add)]);
+  return [...all].filter((p) => !removed.has(p)).sort();
+}
+
+/** Project dirs in android/capacitor.settings.gradle, relative to android/. */
+export function capacitorPluginDirs(settingsGradle: string): string[] {
+  return [...settingsGradle.matchAll(/projectDir\s*=\s*new File\('([^']+)'\)/g)].map(
+    (m) => m[1] ?? ''
+  );
+}
+
+/** The shipped permissions of the checkout at `root`. The only part that reads the disk. */
+export function readShippedAndroidPermissions(root: string): string[] {
+  const android = join(root, 'android');
+  const libs = capacitorPluginDirs(
+    readFileSync(join(android, 'capacitor.settings.gradle'), 'utf-8')
+  )
+    // resolve, not join: `cap sync` can write absolute projectDirs (see
+    // scripts/android-release.mjs), and join would glue them onto android/.
+    .map((dir) => resolve(android, dir, 'src/main/AndroidManifest.xml'))
+    .map((path) => {
+      // A missing plugin manifest means node_modules is missing, not that the
+      // plugin asks for nothing — never let that read as a clean result.
+      if (!existsSync(path)) throw new Error(`privacy:check: ${path} not found. Run npm ci.`);
+      return readFileSync(path, 'utf-8');
+    });
+  // Generated by `cap sync` and untracked; empty unless a Cordova plugin is added.
+  const cordova = join(android, 'capacitor-cordova-android-plugins/src/main/AndroidManifest.xml');
+  if (existsSync(cordova)) libs.push(readFileSync(cordova, 'utf-8'));
+  return shippedAndroidPermissions(
+    readFileSync(join(android, 'app/src/main/AndroidManifest.xml'), 'utf-8'),
+    libs
+  );
+}

@@ -83,8 +83,8 @@ export function ExamRowCard({
           <span className="truncate text-2sm text-base-content/60">{subtitle}</span>
         </span>
         <span className="flex flex-shrink-0 flex-col items-end gap-0.5">
-          {/* Rendered only when there is something to say: an empty span still
-              takes a line box, which pushed the remaining line off centre. */}
+          {/* Each rendered only when there is something to say: an empty span
+              still takes a line box, which pushed the remaining line off centre. */}
           {primaryMeta && (
             <span
               className={`whitespace-nowrap text-2sm font-bold ${
@@ -94,7 +94,9 @@ export function ExamRowCard({
               {primaryMeta}
             </span>
           )}
-          <span className="whitespace-nowrap text-2sm text-base-content/60">{secondaryMeta}</span>
+          {secondaryMeta && (
+            <span className="whitespace-nowrap text-2sm text-base-content/60">{secondaryMeta}</span>
+          )}
         </span>
         {expanded ? (
           <ChevronUp size={16} className="flex-shrink-0 text-base-content/40" />

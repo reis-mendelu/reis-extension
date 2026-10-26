@@ -64,6 +64,8 @@ export default defineConfig({
       // handle it publishes is what every automated UI check reads through, so
       // the contract that it publishes the REAL store needs a test.
       'dev/**/*.{test,spec}.{js,ts,jsx,tsx}',
+      // mcp/ is the Claude Desktop extension host (reIS for Claude).
+      'mcp/**/*.{test,spec}.ts',
     ],
     coverage: {
       provider: 'v8' as const,

@@ -35,8 +35,12 @@ function baseHookState(): HookState {
     selectTarget: vi.fn(),
     password: null,
     error: null,
+    networkFailure: null,
     outcome: null,
+    expiredAt: null,
+    expiresSoonAt: null,
     run: vi.fn(),
+    renew: vi.fn(),
     reset: vi.fn(),
     openProfilesSettings: vi.fn(),
   };
@@ -222,6 +226,36 @@ describe('EduroamSheet', () => {
     expect(screen.getByText(/už na tomto zařízení nastavený je/)).toBeInTheDocument();
   });
 
+  // The shipped build swapped keychain items under a live configuration, so a
+  // device can hold an eduroam setup whose references are dead. Nothing on iOS
+  // can tell that apart from a healthy one, so the line must not vouch for it.
+  it('gives iOS students the recovery step alongside already-configured', () => {
+    onPhone({ status: 'done', outcome: 'already-configured' }, 'ios');
+
+    render(<EduroamSheet onClose={vi.fn()} />);
+
+    expect(screen.getByText(/Kdyby eduroam vypadával/)).toBeInTheDocument();
+  });
+
+  it('keeps that hint off Android, where ALREADY_EXISTS is a real credential', () => {
+    onPhone({ status: 'done', outcome: 'already-configured' }, 'android');
+
+    render(<EduroamSheet onClose={vi.fn()} />);
+
+    expect(screen.queryByText(/Kdyby eduroam vypadával/)).not.toBeInTheDocument();
+  });
+
+  it('says the renewed certificate was not installed, as a warning', () => {
+    onPhone({ status: 'error', outcome: 'renewal-blocked' }, 'ios');
+
+    render(<EduroamSheet onClose={vi.fn()} />);
+
+    const line = screen.getByText(/nový certifikát/i);
+    expect(line).toHaveTextContent(/Zapomeň síť/);
+    expect(line.closest('.alert')).toHaveClass('alert-warning');
+    expect(screen.queryByText(/nastavený je/)).not.toBeInTheDocument();
+  });
+
   it('does not scold a student who dismissed the system dialog', () => {
     onPhone({ status: 'idle', outcome: 'cancelled' });
 
@@ -291,6 +325,39 @@ describe('EduroamSheet', () => {
     expect(screen.queryByAltText('eduroam QR')).not.toBeInTheDocument();
   });
 
+  // IS keeps offering an expired certificate and never replaces it; the
+  // sheet must say so and offer the student's own "generate" tap.
+  it('offers a new certificate once the current one has expired', () => {
+    const renew = vi.fn();
+    onPhone({ status: 'expired', expiredAt: new Date('2025-01-01T12:00:00Z'), renew }, 'ios');
+
+    render(<EduroamSheet onClose={vi.fn()} />);
+
+    expect(screen.getByText(/vypršel 01\.01\.2025/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Vygenerovat nový certifikát/ }));
+    expect(renew).toHaveBeenCalledWith('ios');
+  });
+
+  it('offers an early renewal after setup when the certificate expires soon', () => {
+    const renew = vi.fn();
+    onPhone(
+      {
+        status: 'done',
+        outcome: 'saved',
+        expiresSoonAt: new Date('2026-10-20T05:43:49Z'),
+        renew,
+      },
+      'ios'
+    );
+
+    render(<EduroamSheet onClose={vi.fn()} />);
+
+    expect(screen.getByText(/eduroam je uložený/)).toBeInTheDocument();
+    expect(screen.getByText(/vyprší 20\.10\.2026/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Vygenerovat nový certifikát/ }));
+    expect(renew).toHaveBeenCalledWith('ios');
+  });
+
   it('closes via the header close button', () => {
     mockedIsMobile.mockReturnValue(false);
     mockedIsMac.mockReturnValue(false);
@@ -302,5 +369,32 @@ describe('EduroamSheet', () => {
     fireEvent.click(screen.getByLabelText('Zavřít'));
 
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  describe('without a network', () => {
+    it('says the student is offline instead of the raw OS error', () => {
+      onPhone(
+        {
+          status: 'error',
+          error: 'The Internet connection appears to be offline.',
+          networkFailure: 'offline',
+        },
+        'ios'
+      );
+
+      render(<EduroamSheet onClose={vi.fn()} />);
+
+      expect(screen.getByText(/Jsi offline/)).toHaveTextContent(/mobilní data/);
+      expect(screen.queryByText(/appears to be offline/)).not.toBeInTheDocument();
+    });
+
+    it('hedges when IS never answered', () => {
+      onPhone({ status: 'error', error: 'timed out', networkFailure: 'unreachable' }, 'android');
+
+      render(<EduroamSheet onClose={vi.fn()} />);
+
+      expect(screen.getByText(/Nepodařilo se spojit s IS/)).toBeInTheDocument();
+      expect(screen.queryByText(/timed out/)).not.toBeInTheDocument();
+    });
   });
 });

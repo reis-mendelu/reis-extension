@@ -2,6 +2,8 @@ import { Bell, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { NotificationItem } from './NotificationItem';
 import { DeadlineAlertItem } from './DeadlineAlertItem';
+import { QuestionList } from '../Questions/QuestionList';
+import { useQuestions } from '../../hooks/useQuestions';
 import { useOpenNotification } from '../../hooks/useOpenNotification';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { SpolekNotification } from '../../services/spolky';
@@ -17,6 +19,8 @@ interface NotificationDropdownProps {
   onShowMap: () => void;
   dropdownRef: React.RefObject<HTMLDivElement | null>;
   deadlineAlerts: DeadlineAlert[];
+  /** Opens a subject's drawer on Záznamník: the "Nové body" row. */
+  onOpenSubject?: (alert: DeadlineAlert) => void;
 }
 
 export function NotificationDropdown({
@@ -27,10 +31,13 @@ export function NotificationDropdown({
   onShowMap,
   dropdownRef,
   deadlineAlerts,
+  onOpenSubject,
 }: NotificationDropdownProps) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
-  const hasContent = notifications.length > 0 || deadlineAlerts.length > 0;
+  const questions = useQuestions();
+  const hasContent =
+    notifications.length > 0 || deadlineAlerts.length > 0 || questions.visible.length > 0;
   // The phone's Novinky sheet runs this same hook. A row without a link used to
   // be a disabled button here while the phone opened it on the map.
   const { opensSomewhere, openNotification } = useOpenNotification({
@@ -43,10 +50,23 @@ export function NotificationDropdown({
   // divider between two bordered cards draws a third line between them.
   const notificationList = (
     <div className="flex flex-col gap-2 p-3">
+      {/* First: the dropdown is 320px tall, and only the top fits unscrolled.
+          The phone's Novinky sheet mounts it too (questionsOnBothTrees.test.ts). */}
+      <QuestionList />
       {deadlineAlerts.length > 0 && (
         <div className="flex flex-col gap-2">
           {deadlineAlerts.map((alert) => (
-            <DeadlineAlertItem key={alert.id} alert={alert} />
+            <DeadlineAlertItem
+              key={alert.id}
+              alert={alert}
+              onOpenSubject={
+                onOpenSubject &&
+                ((a) => {
+                  onClose();
+                  onOpenSubject(a);
+                })
+              }
+            />
           ))}
         </div>
       )}

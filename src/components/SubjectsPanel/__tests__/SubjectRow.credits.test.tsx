@@ -34,9 +34,8 @@ const subject: SubjectStatus = {
  * ever showed on a desktop-width screen.
  */
 describe('SubjectRow — credits', () => {
-  // Two copies since the phone moved them under the name: the one without a
-  // bare `hidden` class is what a phone renders. `\bhidden\b` would also match
-  // `md:hidden`, so compare class tokens instead.
+  // One copy, under the name at every width. Compare class tokens: `\bhidden\b`
+  // would also match `md:hidden`.
   const isPhoneVisible = (el: HTMLElement) => !el.className.split(/\s+/).includes('hidden');
   const creditCell = () => {
     const cell = screen.getAllByText('6 kr.').find(isPhoneVisible);

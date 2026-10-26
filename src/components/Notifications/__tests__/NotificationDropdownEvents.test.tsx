@@ -100,10 +100,25 @@ describe('NotificationDropdown event notifications', () => {
     expect(loadMapEvents).toHaveBeenCalled();
   });
 
-  it('still prefers the link where the author set one', () => {
+  // The card wins even when the author set a link: the card carries the RSVP
+  // and the venue, and the link is its button. Jumping straight to the link
+  // cost every linked event its RSVPs.
+  it('opens the card even where the author set a link', async () => {
     const { onShowMap } = renderDropdown({ ...notification, link: 'https://example.com/game' });
     fireEvent.click(screen.getByText('City Game'));
-    expect(openExternal).toHaveBeenCalledWith('https://example.com/game');
+    await waitFor(() => expect(onShowMap).toHaveBeenCalled());
+    expect(openExternal).not.toHaveBeenCalled();
+    expect(useAppStore.getState().mapSelection).toMatchObject({
+      kind: 'event',
+      event: { id: 'n1' },
+    });
+  });
+
+  it('falls back to the link when the row is no event on the map', async () => {
+    useAppStore.setState({ mapEvents: [], mapEventsLoaded: true } as never);
+    const { onShowMap } = renderDropdown({ ...notification, link: 'https://example.com/game' });
+    fireEvent.click(screen.getByText('City Game'));
+    await waitFor(() => expect(openExternal).toHaveBeenCalledWith('https://example.com/game'));
     expect(onShowMap).not.toHaveBeenCalled();
   });
 

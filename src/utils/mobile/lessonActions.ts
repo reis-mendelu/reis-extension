@@ -1,3 +1,4 @@
+import { hasWalksTo } from '../routing/routableStart';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { MobileSheet } from '../../store/types';
 import { lessonTarget, type RouteTarget } from '../routing/nextLessonTarget';
@@ -12,11 +13,6 @@ export function subjectSheetFor(
   lesson: BlockLesson
 ): Extract<MobileSheet, { kind: 'subjectDrawer' }> {
   return { kind: 'subjectDrawer', courseCode: lesson.courseCode, courseName: lesson.courseName };
-}
-
-/** The room as the map knows it: IS appends " (Campus)" that `focusRoomByCode` does not want. */
-export function roomCodeFor(lesson: BlockLesson): string {
-  return lesson.room.replace(/\s*\([^)]*\)\s*$/, '').trim();
 }
 
 /**
@@ -34,9 +30,10 @@ export function roomCodeFor(lesson: BlockLesson): string {
  */
 export function routeSuggestionFor(lesson: BlockLesson, language: string): RouteTarget | null {
   const target = lessonTarget(lesson);
-  if (!target) return null;
-  // The printed room minus the campus in brackets — the same trim `roomCodeFor`
-  // does, applied to the localized string rather than the raw one.
+  // On the map is not the same as reachable: budova Z has no walks in v1.
+  if (!target || !hasWalksTo(target.buildingName)) return null;
+  // The printed room minus the campus in brackets, applied to the localized
+  // string rather than the raw one.
   const printed = localizedRoom(lesson, language)
     .replace(/\s*\([^)]*\)\s*$/, '')
     .trim();

@@ -21,6 +21,14 @@ describe('resolveRoomCode', () => {
     expect(resolveRoomCode(['BA01N2056'])).toEqual({ code: 'BA01N2056', label: 'A221' });
   });
 
+  it('labels a room with the name IS prints for it', () => {
+    expect(resolveRoomCode(['B05 – Strojový sál'])).toEqual({
+      code: 'BA04N1065',
+      label: 'B05 – Strojový sál',
+    });
+    expect(resolveRoomCode(['B06'])).toEqual({ code: 'BA04N1029', label: 'B06' });
+  });
+
   it('strips the campus a timetable prints after the room', () => {
     expect(resolveRoomCode(['Q2.56 (Poříčí)'])?.code).toBe('BA39N2056');
   });

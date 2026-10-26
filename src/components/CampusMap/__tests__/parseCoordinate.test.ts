@@ -1,0 +1,149 @@
+import { describe, it, expect } from 'vitest';
+import { parseCoordinate } from '../parseCoordinate';
+
+// Kotlářská 51a, Brno — the venue from the task list that started this.
+const LAT = 49.2078989;
+const LNG = 16.6030499;
+
+describe('parseCoordinate', () => {
+  it('reads "lat, lng" as Google Maps copies it, and returns [lng, lat]', () => {
+    expect(parseCoordinate('49.2078989, 16.6030499')).toEqual({ coord: [LNG, LAT] });
+  });
+
+  it('reads it without the space, with a space only, and with a semicolon', () => {
+    expect(parseCoordinate('49.2078989,16.6030499')?.coord).toEqual([LNG, LAT]);
+    expect(parseCoordinate('49.2078989 16.6030499')?.coord).toEqual([LNG, LAT]);
+    expect(parseCoordinate(' 49.2078989; 16.6030499 ')?.coord).toEqual([LNG, LAT]);
+  });
+
+  it('reads Czech decimal commas when the pair is split by a semicolon or a space', () => {
+    expect(parseCoordinate('49,2078989; 16,6030499')?.coord).toEqual([LNG, LAT]);
+    expect(parseCoordinate('49,2078989 16,6030499')?.coord).toEqual([LNG, LAT]);
+  });
+
+  it('reads N/E suffixes and degrees-minutes-seconds', () => {
+    expect(parseCoordinate('49.2078989N, 16.6030499E')?.coord).toEqual([LNG, LAT]);
+    const dms = parseCoordinate(`49°12'28.4"N 16°36'11.0"E`)!.coord;
+    expect(dms[1]).toBeCloseTo(49.20789, 4);
+    expect(dms[0]).toBeCloseTo(16.60306, 4);
+  });
+
+  it('rejects minutes or seconds of 60 or more instead of rolling them into another point', () => {
+    expect(parseCoordinate(`49°60'28.4"N 16°36'11.0"E`)).toBeNull();
+    expect(parseCoordinate(`49°12'60.0"N 16°36'11.0"E`)).toBeNull();
+  });
+
+  // A link and a DMS string name their axes, so a real point abroad whose
+  // numbers happen to read as Brno the other way round must stay where it is.
+  it('never swaps a link or DMS, whose axis order is explicit', () => {
+    expect(parseCoordinate('https://www.google.com/maps/@16.0,49.0,15z')?.coord).toEqual([49, 16]);
+    expect(parseCoordinate(`16°36'11.0"N 49°12'28.4"E`)!.coord[1]).toBeCloseTo(16.60306, 4);
+  });
+
+  // A hemisphere letter names its axis just as a link or DMS does: S and W are
+  // negative, N/S is latitude and E/W longitude wherever it stands, and the
+  // Czechia swap never runs. Before, the letters were matched and ignored.
+  it('applies S and W as negative', () => {
+    expect(parseCoordinate('33.9S, 18.4E')?.coord).toEqual([18.4, -33.9]);
+    expect(parseCoordinate('49.2N 16.6W')?.coord).toEqual([-16.6, 49.2]);
+    expect(parseCoordinate('33,9S; 18,4E')?.coord).toEqual([18.4, -33.9]);
+  });
+
+  it('never swaps a suffixed pair, and takes the axes from its letters', () => {
+    expect(parseCoordinate('16.6N, 49.2E')?.coord).toEqual([49.2, 16.6]);
+    expect(parseCoordinate('16.6E 49.2N')?.coord).toEqual([16.6, 49.2]);
+    expect(parseCoordinate('49.2N 16.6')?.coord).toEqual([16.6, 49.2]);
+    expect(parseCoordinate('16.6 49.2N')?.coord).toEqual([16.6, 49.2]);
+  });
+
+  it('rejects letters that name the same axis twice, or a sign that fights its letter', () => {
+    expect(parseCoordinate('49.2N 16.6N')).toBeNull();
+    expect(parseCoordinate('16.6E 49.2W')).toBeNull();
+    expect(parseCoordinate('-33.9S, 18.4E')).toBeNull();
+    expect(parseCoordinate('-49.2N, 16.6E')).toBeNull();
+    // num('-0.0') is -0, which `< 0` misses: the sign has to be read from the text.
+    expect(parseCoordinate('-0.0N, 16.6E')).toBeNull();
+    expect(parseCoordinate('49.2N, -0.0E')).toBeNull();
+  });
+
+  it('puts a pair typed lng-first back in order when only that order lands in Czechia', () => {
+    expect(parseCoordinate('16.6030499, 49.2078989')?.coord).toEqual([LNG, LAT]);
+  });
+
+  it('takes the pin from a Google Maps place link, with the place name', () => {
+    const url =
+      'https://www.google.com/maps/place/Padagali/@49.2079,16.6005,17z/data=!3m1!4b1!4m6!3m5!1s0x0:0x0!8m2!3d49.2078989!4d16.6030499!16s';
+    // !3d!4d is the place itself; @ is only where the viewport was centred.
+    expect(parseCoordinate(url)).toEqual({ coord: [LNG, LAT], name: 'Padagali' });
+  });
+
+  it('decodes a place name that Google writes with + and percent-escapes', () => {
+    const url =
+      'https://www.google.com/maps/place/Kotl%C3%A1%C5%99sk%C3%A1+51a,+602+00+Brno/@49.2078989,16.6030499,17z/data=!3m1!4b1!4m6!3m5!1s0x0:0x0!8m2!3d49.2078989!4d16.6030499!16s';
+    expect(parseCoordinate(url)).toEqual({
+      coord: [LNG, LAT],
+      name: 'Kotlářská 51a, 602 00 Brno',
+    });
+  });
+
+  // What Google puts in the address bar for a pin dropped where nothing is
+  // named: the "place" is the point itself, which is no name to publish.
+  it('gives a dropped-pin link no name, since its place segment is only the coordinate', () => {
+    const url =
+      "https://www.google.com/maps/place/49%C2%B012'28.4%22N+16%C2%B036'11.0%22E/@49.2078989,16.6030499,17z/data=!3m1!4b1!4m4!3m3!8m2!3d49.2078989!4d16.6030499";
+    expect(parseCoordinate(url)).toEqual({ coord: [LNG, LAT] });
+  });
+
+  // A place link carries the place's own pin in !3d!4d. Without it, the @ pair
+  // is only where the viewport was centred, which follows every pan: falling
+  // back to it published the event wherever the organiser had scrolled.
+  it('reads no point from a place link without its pin, rather than the viewport centre', () => {
+    expect(
+      parseCoordinate('https://www.google.com/maps/place/Padagali/@49.25,16.65,15z')
+    ).toBeNull();
+  });
+
+  it('falls back to the @ centre, and reads ?q= and ?ll= links', () => {
+    expect(
+      parseCoordinate('https://www.google.com/maps/@49.2078989,16.6030499,15z')?.coord
+    ).toEqual([LNG, LAT]);
+    expect(parseCoordinate('https://maps.google.com/?q=49.2078989,16.6030499')?.coord).toEqual([
+      LNG,
+      LAT,
+    ]);
+    expect(
+      parseCoordinate('https://maps.apple.com/?ll=49.2078989,16.6030499&q=Padagali')?.coord
+    ).toEqual([LNG, LAT]);
+  });
+
+  it('reads a Mapy.cz link, whose x is longitude and y latitude', () => {
+    expect(
+      parseCoordinate('https://mapy.cz/zakladni?x=16.6030499&y=49.2078989&z=17')?.coord
+    ).toEqual([LNG, LAT]);
+  });
+
+  it('leaves venue names, addresses and room codes to the search', () => {
+    expect(parseCoordinate('Kotlářská 51a, 602 00 Brno-střed')).toBeNull();
+    expect(parseCoordinate('Q01')).toBeNull();
+    expect(parseCoordinate('Lužánky')).toBeNull();
+    expect(parseCoordinate('602 00')).toBeNull();
+    expect(parseCoordinate('2024, 2025')).toBeNull();
+  });
+
+  it('rejects numbers that are not a place on Earth', () => {
+    expect(parseCoordinate('149.2, 16.6')).toBeNull();
+    expect(parseCoordinate('49.2, 216.6')).toBeNull();
+  });
+
+  // Only the viewport centre is untrustworthy on a place link; an explicit
+  // coordinate parameter names the point itself.
+  it('reads an explicit ?q= point on a place link that has no pin', () => {
+    expect(
+      parseCoordinate('https://www.google.com/maps/place/Kav%C3%A1rna/@49.1,16.5,17z?q=49.21,16.61')
+    ).toMatchObject({ coord: [16.61, 49.21] });
+  });
+
+  it('cannot read a short link, which hides the place behind a redirect', () => {
+    expect(parseCoordinate('https://maps.app.goo.gl/AbCdEf123')).toBeNull();
+  });
+});

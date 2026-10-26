@@ -29,10 +29,11 @@ const noop = () => {};
 /**
  * #401 put the credits back on the phone, at the end of the row. At 320px that
  * cost every name 33px and clipped seven more of them — "Management",
- * "Počítačové sítě" — so on a phone they go on a second line under the name,
- * and keep their own column from `md` up. jsdom does not evaluate `md:`, so
- * this pins the classes rather than the pixels: exactly one copy may render
- * below `md`, and it is the one under the name.
+ * "Počítačové sítě" — so they went on a second line under the name, with
+ * their own column from `md` up. That column put them after the fail-rate chip
+ * while the hardest-subjects card above put them before it, so the line under
+ * the name is now the only place, at every width. jsdom does not evaluate
+ * `md:`, so this pins the classes: one copy, never hidden, under the name.
  */
 describe('SubjectRow credits placement', () => {
   beforeEach(() => {
@@ -43,17 +44,23 @@ describe('SubjectRow credits placement', () => {
     } as never);
   });
 
-  it.each([false, true])('puts the phone copy under the name (compact=%s)', (compact) => {
-    render(
-      <SubjectRow subject={subject} compact={compact} onOpenSubject={noop} onSearchSubject={noop} />
-    );
-    const phoneCopies = screen
-      .getAllByText('6 kr.')
-      .filter((el) => !el.className.split(/\s+/).includes('hidden'));
-    expect(phoneCopies).toHaveLength(1);
-    expect(phoneCopies[0]?.className).toContain('md:hidden');
-    expect(phoneCopies[0]?.previousElementSibling?.textContent).toBe('Angličtina 1');
-  });
+  it.each([false, true])(
+    'puts the credits under the name at every width (compact=%s)',
+    (compact) => {
+      render(
+        <SubjectRow
+          subject={subject}
+          compact={compact}
+          onOpenSubject={noop}
+          onSearchSubject={noop}
+        />
+      );
+      const copies = screen.getAllByText('6 kr.');
+      expect(copies).toHaveLength(1);
+      expect(copies[0]?.className).not.toMatch(/(^|\s)(\w+:)?hidden(\s|$)/);
+      expect(copies[0]?.previousElementSibling?.textContent).toBe('Angličtina 1');
+    }
+  );
 
   it('abbreviates the unit in the student’s language', () => {
     useAppStore.setState({ language: 'en' } as never);

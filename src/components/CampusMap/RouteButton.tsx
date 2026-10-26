@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { nextLessonTarget } from '../../utils/routing/nextLessonTarget';
 import { devForcedNow } from '../../utils/routing/devPosition';
+import { hasWalksTo } from '../../utils/routing/routableStart';
 
 /**
  * "Kam jdeš?" — route to the lesson the student pointed at, else the next one
@@ -11,8 +12,8 @@ import { devForcedNow } from '../../utils/routing/devPosition';
  * The timetable comes FIRST. That is the whole feature: reIS knows the student
  * has a lesson in Q31 at 13:00, so tapping this should walk them there rather
  * than asking them which letter of the alphabet they want. The picker is the
- * fallback for when there is no lesson left today — which is also every FRRMS
- * lesson, since budova Z has no floor plan and its rooms do not resolve.
+ * fallback for when there is no lesson left today — and for a lesson in budova
+ * Z, which has a floor plan but no walks in v1 (`hasWalksTo`).
  *
  * Lives in the sheet's peek row and the rail, not floating over the map, and
  * the reason is contrast. As an overlay it was `btn btn-primary btn-sm`: a 32px
@@ -44,7 +45,10 @@ export function RouteButton() {
       setOpen(false);
       return;
     }
-    const target = suggestion ?? nextLessonTarget(lessons, devForcedNow() ?? new Date());
+    // The next lesson only when the router reaches its building — budova Z has
+    // a floor plan but no walks in v1, and there the picker is the answer.
+    const next = nextLessonTarget(lessons, devForcedNow() ?? new Date());
+    const target = suggestion ?? (next && hasWalksTo(next.buildingName) ? next : null);
     if (target) {
       void routeTo(target.buildingName);
       return;

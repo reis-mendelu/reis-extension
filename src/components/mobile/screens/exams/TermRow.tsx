@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Bell, BellRing } from 'lucide-react';
+import { Bell, BellRing, Clock } from 'lucide-react';
 import type { ExamSection, ExamTerm } from '../../../../types/exams';
 import { useWatchdog } from '../../../../hooks/data/useWatchdog';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { freeSeats } from '../../../../utils/mobile/examRows';
 import { parseCzechDateTime } from '../../../../utils/mobile/examTimeline';
 import { formatDayMonth, trimHour } from '../../../../utils/mobile/examWhen';
+import { termDeadline } from '../../../../utils/mobile/examDeadline';
+import { formatOpensAtBare } from '../../../../utils/mobile/examOpening';
+import { parseRegistrationStart } from '../../../../utils/termUtils';
 import { reportToastOptions } from '../../../Feedback/reportPrefill';
 import { AttemptBadge } from './AttemptBadge';
 import { MoreChip } from './MoreChip';
 import { TermDetails } from './TermDetails';
 import { TermRowStatus } from './TermRowStatus';
+import { SummaryShell } from './SummaryShell';
 
 export interface TermRowProps {
   term: ExamTerm;
@@ -21,6 +25,8 @@ export interface TermRowProps {
   now: Date;
   isProcessing: boolean;
   onRegister: (section: ExamSection, termId: string) => void;
+  /** False under a registered card, whose own "Více" already holds the details. */
+  showDetails?: boolean;
 }
 
 /**
@@ -33,7 +39,14 @@ export interface TermRowProps {
  * term IS has not opened yet fills it with the moment it will, rather than
  * leaving the blank that used to read as "nothing here".
  */
-export function TermRow({ term, section, now, isProcessing, onRegister }: TermRowProps) {
+export function TermRow({
+  term,
+  section,
+  now,
+  isProcessing,
+  onRegister,
+  showDetails = true,
+}: TermRowProps) {
   const { t, language } = useTranslation();
   const { armed, firing, feedback, errorMessage, toggle } = useWatchdog(term);
   // Tapping the term's text opens its own details — see TermDetails.
@@ -57,9 +70,9 @@ export function TermRow({ term, section, now, isProcessing, onRegister }: TermRo
   }, [feedback]);
 
   const isRegHere = section.registeredTerm?.id === term.id;
-  const room = language === 'en' && term.roomEn ? term.roomEn : term.roomCs || term.room;
 
-  // "po 3. 8. · 14:00 · Q08", with the seats left beneath. Falls back to the
+  // "po 3. 8. · 14:00", with the seats left beneath; the room is under Více
+  // (TermDetails). Falls back to the
   // raw IS strings when the date does not parse, so a placeholder value
   // never blanks out the row.
   const parsed = parseCzechDateTime(term.date, term.time);
@@ -73,10 +86,19 @@ export function TermRow({ term, section, now, isProcessing, onRegister }: TermRo
   // subject's own screen.
   const seats = freeSeats(term);
   const subline = seats ? t('mobile.exams.freeOf', { free: seats.free, total: seats.total }) : '';
+  // Under a registered card the row opens nothing, so the one detail it still
+  // needs is on the row: until when the student can move onto this term.
+  const bookBy = showDetails ? null : termDeadline(term, section, isRegHere, now);
+  const parsedBookBy =
+    bookBy?.kind === 'registerUntil' ? parseRegistrationStart(bookBy.value) : null;
+  // An unreadable IS date parses to an Invalid Date, not null: show IS's own text.
+  const bookByAt = parsedBookBy && !Number.isNaN(parsedBookBy.getTime()) ? parsedBookBy : null;
 
   // Which attempts this term counts as. IS can list more than one, and
   // sometimes none.
   const attempts = term.attemptTypes ?? [];
+  // The button's aria-label hides the badges' own names; say them in it.
+  const attemptNames = attempts.map((a) => t(`successRate.${a}`)).join(', ');
 
   return (
     <div
@@ -85,16 +107,13 @@ export function TermRow({ term, section, now, isProcessing, onRegister }: TermRo
       }`}
     >
       <div className="flex items-center gap-2.5">
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-label={`${t('mobile.exams.termDetailsAria')}: ${when}`}
-          onClick={() => setOpen((v) => !v)}
-          className="flex min-w-0 flex-1 flex-col gap-0.5 text-left"
+        <SummaryShell
+          expandable={showDetails}
+          open={open}
+          label={`${t('mobile.exams.termDetailsAria')}: ${when}${attemptNames ? ` · ${attemptNames}` : ''}`}
+          onToggle={() => setOpen((v) => !v)}
         >
-          <span className="truncate text-md font-semibold text-base-content">
-            {[when, room].filter(Boolean).join(' · ')}
-          </span>
+          <span className="truncate text-md font-semibold text-base-content">{when}</span>
           <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-2sm">
             {/* Wraps rather than squeezes: a term counting as all three attempts
                 needs three badges, which at 320px run into the Přihlásit button.
@@ -122,9 +141,20 @@ export function TermRow({ term, section, now, isProcessing, onRegister }: TermRo
                 ))}
               </span>
             )}
-            <MoreChip open={open} />
+            {showDetails && <MoreChip open={open} />}
           </span>
-        </button>
+          {bookBy?.kind === 'registerUntil' && (
+            // A clock and a brighter date set it apart from the seats line
+            // without a colour of its own: something to keep an eye on, not an alarm.
+            <span className="inline-flex items-center gap-1 text-2sm text-base-content/55">
+              <Clock size={11} aria-hidden="true" className="flex-shrink-0" />
+              {t('mobile.exams.registerUntil')}{' '}
+              <span className="font-medium tabular-nums text-base-content/85">
+                {bookByAt ? formatOpensAtBare(bookByAt) : bookBy.value}
+              </span>
+            </span>
+          )}
+        </SummaryShell>
 
         <TermRowStatus
           term={term}
@@ -152,7 +182,9 @@ export function TermRow({ term, section, now, isProcessing, onRegister }: TermRo
           </button>
         )}
       </div>
-      {open && <TermDetails term={term} section={section} isRegHere={isRegHere} now={now} />}
+      {showDetails && open && (
+        <TermDetails term={term} section={section} isRegHere={isRegHere} now={now} />
+      )}
     </div>
   );
 }

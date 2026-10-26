@@ -1,0 +1,132 @@
+import type { AppSlice } from '../types';
+import type { Society } from '../../types/events';
+import { fetchSocieties } from '../../api/societies';
+import { BUNDLED_SOCIETIES } from '../../data/societies';
+import { toSocietyRecord } from '../../utils/societies/resolveSociety';
+import { IndexedDBService } from '../../services/storage';
+import { logError } from '../../utils/reportError';
+import type { SocietyInput } from '../../api/societiesAdmin';
+import {
+  saveSociety,
+  setSocietyActive,
+  type PartnerMarks,
+  type SaveSocietyError,
+} from './societies/saveSociety';
+
+export const SOCIETIES_CACHE_KEY = 'societies_catalog';
+
+export interface SocietiesSlice {
+  /** Every society, hidden ones included. Never empty: starts as the bundled seed. */
+  societies: Record<string, Society>;
+  societiesCacheRead: boolean;
+  /** Cache (once), then network. Called with every events load and on native resume. */
+  loadSocieties: () => Promise<void>;
+  /** After an admin save: show it now, without waiting for the next fetch. */
+  putSociety: (society: Society) => Promise<void>;
+  /** Admin console, reis_admin only (RLS enforces it). `logo` is the picked file. */
+  saveSociety: (
+    input: SocietyInput,
+    logo: Blob | null,
+    isNew: boolean,
+    marks?: PartnerMarks
+  ) => Promise<{ error?: SaveSocietyError }>;
+  /** Hide or show; hidden societies still resolve for their old events. */
+  setSocietyActive: (id: string, active: boolean) => Promise<boolean>;
+}
+
+function isSociety(value: unknown): value is Society {
+  const s = value as Society;
+  return (
+    typeof s === 'object' &&
+    s !== null &&
+    typeof s.id === 'string' &&
+    typeof s.name === 'string' &&
+    typeof s.shortName === 'string' &&
+    typeof s.color === 'string' &&
+    typeof s.glyph === 'string' &&
+    typeof s.facultyKey === 'string' &&
+    typeof s.autoFollowFaculty === 'boolean' &&
+    typeof s.sortOrder === 'number' &&
+    typeof s.isActive === 'boolean'
+  );
+}
+
+export const createSocietiesSlice: AppSlice<SocietiesSlice> = (set, get) => {
+  // The load in flight, shared: boot, a resume refresh and a publish's reload
+  // can overlap, and each would otherwise send its own catalog request.
+  let pending: Promise<void> | null = null;
+  // Bumped by every save. A load that started before one holds a catalog
+  // snapshot older than the save: it must not write over it, and a reload
+  // asked for after the save must not join it.
+  let generation = 0;
+  let pendingGeneration = -1;
+
+  const load = async (started: number) => {
+    if (!get().societiesCacheRead) {
+      try {
+        const cached: unknown = await IndexedDBService.get('meta', SOCIETIES_CACHE_KEY);
+        if (
+          started === generation &&
+          Array.isArray(cached) &&
+          cached.length > 0 &&
+          cached.every(isSociety)
+        ) {
+          set({ societies: toSocietyRecord(cached) });
+        }
+      } catch (err) {
+        logError('SocietiesSlice.readCache', err);
+      }
+      set({ societiesCacheRead: true });
+    }
+
+    const fresh = await fetchSocieties();
+    // null is a failed fetch; [] is a table this client cannot read (RLS,
+    // an outage). Neither may wipe a catalog every screen depends on.
+    if (!fresh || fresh.length === 0) return;
+    if (started !== generation) return;
+    set({ societies: toSocietyRecord(fresh) });
+    try {
+      await IndexedDBService.set('meta', SOCIETIES_CACHE_KEY, fresh);
+    } catch (err) {
+      logError('SocietiesSlice.writeCache', err);
+    }
+  };
+
+  return {
+    societies: BUNDLED_SOCIETIES,
+    societiesCacheRead: false,
+
+    loadSocieties: () => {
+      if (pending && pendingGeneration === generation) return pending;
+      pendingGeneration = generation;
+      const run: Promise<void> = load(generation).finally(() => {
+        if (pending === run) pending = null;
+      });
+      pending = run;
+      return run;
+    },
+
+    putSociety: async (society) => {
+      generation += 1;
+      const societies = { ...get().societies, [society.id]: society };
+      set({ societies });
+      try {
+        await IndexedDBService.set('meta', SOCIETIES_CACHE_KEY, Object.values(societies));
+      } catch (err) {
+        logError('SocietiesSlice.writeCache', err);
+      }
+    },
+
+    saveSociety: (input, logo, isNew, marks) =>
+      saveSociety(
+        { societies: () => get().societies, put: get().putSociety },
+        input,
+        logo,
+        isNew,
+        marks
+      ),
+
+    setSocietyActive: (id, active) =>
+      setSocietyActive({ societies: () => get().societies, put: get().putSociety }, id, active),
+  };
+};

@@ -5,6 +5,20 @@ vi.mock('../storage', () => ({
   IndexedDBService: { clear: vi.fn(async () => {}) },
 }));
 vi.mock('../../api/proxyClient', () => ({ isInIframe: () => false }));
+// A stand-in store: the real one boots the Supabase auth client, which needs an
+// installed platform and rejected unhandled after the tests (CI, PR #579).
+vi.mock('../../store/useAppStore', () => {
+  let state: Record<string, unknown> = { examNotes: {}, lastExamNotesFetchedAt: {} };
+  return {
+    useAppStore: {
+      getState: () => state,
+      setState: (u: unknown) => {
+        const patch = typeof u === 'function' ? (u as (s: typeof state) => object)(state) : u;
+        state = { ...state, ...(patch as object) };
+      },
+    },
+  };
+});
 
 describe('loadRealDataSnapshot', () => {
   beforeEach(() => vi.restoreAllMocks());
@@ -28,6 +42,26 @@ describe('loadRealDataSnapshot', () => {
       type: 'REIS_SYNC_UPDATE',
       data: { schedule: [{ id: 'l1' }], isSyncing: false },
     });
+    spy.mockRestore();
+  });
+
+  // The snapshot IS the answer for every domain it covers — a scrape with no
+  // exam terms drops `exams` because there are none. Without `loaded` the
+  // screens read "never answered" and showed the failed state in the dev
+  // webapp: the phone Exams screen always did, the desktop panel since #26.
+  it('marks schedule and exams as answered', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ lastSync: 1 }), { status: 200 }))
+    );
+    const posts: { data: { loaded?: string[] } }[] = [];
+    const spy = vi.spyOn(window, 'postMessage').mockImplementation(((m: never) => {
+      posts.push(m);
+    }) as typeof window.postMessage);
+
+    await loadRealDataSnapshot();
+
+    expect(posts[0]!.data.loaded).toEqual(['schedule', 'exams']);
     spy.mockRestore();
   });
 

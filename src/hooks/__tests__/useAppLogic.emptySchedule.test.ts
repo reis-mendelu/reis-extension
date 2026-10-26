@@ -16,7 +16,6 @@ import { renderHook, cleanup } from '@testing-library/react';
 
 const store = {
   loadGradeHistory: vi.fn(),
-  setPastAttendance: vi.fn(),
   setNavPages: vi.fn(),
   markSyncLoaded: vi.fn(),
   setSchedule: vi.fn(),
@@ -47,7 +46,6 @@ vi.mock('../../services/sync', () => ({
   syncService: { triggerRefresh: vi.fn() },
   syncGradeHistory: vi.fn(async () => undefined),
 }));
-vi.mock('../useSpolkySettings', () => ({ useSpolkySettings: vi.fn() }));
 vi.mock('../../services/loadRealDataSnapshot', () => ({
   loadRealDataSnapshot: vi.fn(async () => false),
 }));

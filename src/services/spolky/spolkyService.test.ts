@@ -1,6 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { trackNotificationsViewed, trackNotificationClick } from './spolkyService';
+import {
+  trackNotificationsViewed,
+  trackNotificationClick,
+  dropBeyondNovinkyWindow,
+} from './spolkyService';
 import { supabase } from './supabaseClient';
+import { __resetCountedOpensForTests, __forgetCountedOpensMemoryForTests } from './countedOpens';
+
+const { hasDataConsent } = vi.hoisted(() => ({
+  hasDataConsent: vi.fn<(...args: unknown[]) => Promise<boolean>>(async () => true),
+}));
+
+// Firefox's data-consent toggle. Granted unless a test says otherwise, which is
+// also what every non-Firefox browser and the apps answer.
+vi.mock('../../utils/firefoxDataConsent', () => ({
+  hasDataConsent: (...a: unknown[]) => hasDataConsent(...a),
+}));
 
 // Mock the supabase client
 vi.mock('./supabaseClient', () => ({
@@ -10,8 +25,33 @@ vi.mock('./supabaseClient', () => ({
 }));
 
 describe('spolkyService', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    hasDataConsent.mockResolvedValue(true);
+    await __resetCountedOpensForTests();
+  });
+
+  // A post id is not an identifier, but a view or click count is interaction
+  // data in Mozilla's terms, and opening a post works without it.
+  describe('on Firefox with the technical-data toggle off', () => {
+    beforeEach(() => hasDataConsent.mockResolvedValue(false));
+
+    it('sends no view counter', async () => {
+      await trackNotificationsViewed(['id1', 'id2']);
+      expect(hasDataConsent).toHaveBeenCalledWith('technicalAndInteraction');
+      expect(supabase.rpc).not.toHaveBeenCalled();
+    });
+
+    it('sends no click counter', async () => {
+      await trackNotificationClick('id1');
+      expect(hasDataConsent).toHaveBeenCalledWith('technicalAndInteraction');
+      expect(supabase.rpc).not.toHaveBeenCalled();
+    });
+
+    it('asks once for a batch of views, not once per post', async () => {
+      await trackNotificationsViewed(['id1', 'id2', 'id3']);
+      expect(hasDataConsent).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('trackNotificationsViewed', () => {
@@ -51,6 +91,48 @@ describe('spolkyService', () => {
       expect(supabase.rpc).toHaveBeenCalledWith('increment_post_click', { row_id: 'id1' });
     });
 
+    // "Clicked" means this device opened the post, not that it was tapped.
+    it('counts a device once per post: the second tap calls nothing', async () => {
+      await trackNotificationClick('id1');
+      await trackNotificationClick('id1');
+
+      expect(supabase.rpc).toHaveBeenCalledTimes(1);
+    });
+
+    it('still counts a different post', async () => {
+      await trackNotificationClick('id1');
+      await trackNotificationClick('id2');
+
+      expect(supabase.rpc).toHaveBeenCalledTimes(2);
+    });
+
+    it('remembers across a restart', async () => {
+      await trackNotificationClick('id1');
+      __forgetCountedOpensMemoryForTests();
+      await trackNotificationClick('id1');
+
+      expect(supabase.rpc).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not use up the count while consent is off', async () => {
+      hasDataConsent.mockResolvedValue(false);
+      await trackNotificationClick('id1');
+      expect(supabase.rpc).not.toHaveBeenCalled();
+
+      hasDataConsent.mockResolvedValue(true);
+      await trackNotificationClick('id1');
+      expect(supabase.rpc).toHaveBeenCalledTimes(1);
+    });
+
+    it('gives the count back when the write fails, so the next tap retries', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase.rpc as any).mockResolvedValueOnce({ data: null, error: { message: 'down' } });
+      await trackNotificationClick('id1');
+      await trackNotificationClick('id1');
+
+      expect(supabase.rpc).toHaveBeenCalledTimes(2);
+    });
+
     it('should not call RPC if notificationId is empty', async () => {
       await trackNotificationClick('');
       expect(supabase.rpc).not.toHaveBeenCalled();
@@ -66,5 +148,29 @@ describe('spolkyService', () => {
       expect(consoleSpy).toHaveBeenCalled();
       consoleSpy.mockRestore();
     });
+  });
+});
+
+describe('dropBeyondNovinkyWindow', () => {
+  const n = (startsAt?: string) => ({
+    id: startsAt ?? 'x',
+    title: '',
+    body: '',
+    createdAt: '',
+    expiresAt: '',
+    priority: 'normal' as const,
+    startsAt,
+  });
+
+  it('keeps today through today+6, drops today+7 and later', () => {
+    const out = dropBeyondNovinkyWindow(
+      [n('2026-10-08'), n('2026-10-14'), n('2026-10-15')],
+      '2026-10-08'
+    );
+    expect(out.map((x) => x.startsAt)).toEqual(['2026-10-08', '2026-10-14']);
+  });
+
+  it('keeps undated rows (academic)', () => {
+    expect(dropBeyondNovinkyWindow([n(undefined)], '2026-10-08')).toHaveLength(1);
   });
 });
