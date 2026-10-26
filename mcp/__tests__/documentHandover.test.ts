@@ -50,6 +50,7 @@ describe('toolResult with a handed-over file', () => {
     expect(r.content).toHaveLength(2);
     expect(r.content[0]).toMatchObject({ type: 'text' });
     expect(r.content[0]!.text).toContain('L7.pdf');
+    expect(r.content[0]!.text).toContain('Read the saved copy');
     expect(r.content[1]).toEqual({
       type: 'resource',
       resource: {

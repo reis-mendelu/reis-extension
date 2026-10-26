@@ -47,7 +47,10 @@ function handoverResult({ handover: h }: FileHandover) {
   const mb = (h.bytes / 1024 / 1024).toFixed(1);
   return {
     content: [
-      { type: 'text' as const, text: `IS file ${h.filename} (${h.mimeType}, ${mb} MB), attached.` },
+      {
+        type: 'text' as const,
+        text: `IS file ${h.filename} (${h.mimeType}, ${mb} MB), attached. Read the saved copy to see its content.`,
+      },
       {
         type: 'resource' as const,
         resource: {

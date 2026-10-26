@@ -29,7 +29,11 @@ function submissionOf(box: Odevzdavarna) {
   }
 }
 
-export type ToolCtx = { fetch: typeof fetch };
+export type ToolCtx = {
+  fetch: typeof fetch;
+  /** Set while the server cannot reach IS at all (no login): every tool answers this. */
+  unavailable?: string;
+};
 export type ToolDef = {
   name: string;
   title: string;
