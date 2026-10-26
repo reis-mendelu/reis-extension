@@ -112,4 +112,18 @@ describe('useWheelScrollsX', () => {
     expect(scrollBy).toHaveBeenNthCalledWith(1, { left: 40 });
     expect(scrollBy).toHaveBeenCalledTimes(2);
   });
+
+  // Some mice report lines (Firefox) or pages, not pixels: 3 lines is a notch,
+  // and taken as 3px it barely moved the strip while the page stood still.
+  it('in pixel mode, converts line and page wheel units to pixels', () => {
+    render(<Strip mode="pixel" />);
+    const el = screen.getByTestId('strip');
+    const scrollBy = shape(el, 100);
+    const lines = new WheelEvent('wheel', { deltaY: 3, deltaMode: 1, cancelable: true });
+    el.dispatchEvent(lines);
+    expect(scrollBy).toHaveBeenLastCalledWith({ left: 48 });
+    const page = new WheelEvent('wheel', { deltaY: 1, deltaMode: 2, cancelable: true });
+    el.dispatchEvent(page);
+    expect(scrollBy).toHaveBeenLastCalledWith({ left: 300 });
+  });
 });

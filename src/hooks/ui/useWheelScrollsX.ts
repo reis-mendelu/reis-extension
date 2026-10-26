@@ -3,6 +3,14 @@ import { useEffect, type RefObject } from 'react';
 /** How long one notch owns a snapping strip: a wheel burst or a flick is one step. */
 const STEP_LOCK_MS = 350;
 
+/** Pixels per wheel unit: some mice report lines (a line taken as 16px) or pages. */
+const unitPx = (e: WheelEvent, el: HTMLElement) =>
+  e.deltaMode === WheelEvent.DOM_DELTA_LINE
+    ? 16
+    : e.deltaMode === WheelEvent.DOM_DELTA_PAGE
+      ? el.clientWidth
+      : 1;
+
 /**
  * A vertical mouse wheel scrolls a sideways strip.
  *
@@ -38,7 +46,7 @@ export function useWheelScrollsX(
       const forward = e.deltaY > 0;
       if ((forward && el.scrollLeft >= max - 1) || (!forward && el.scrollLeft <= 0)) return;
       e.preventDefault();
-      if (mode === 'pixel') return el.scrollBy({ left: e.deltaY });
+      if (mode === 'pixel') return el.scrollBy({ left: e.deltaY * unitPx(e, el) });
       const now = Date.now();
       if (now < lockedUntil) return;
       lockedUntil = now + STEP_LOCK_MS;
