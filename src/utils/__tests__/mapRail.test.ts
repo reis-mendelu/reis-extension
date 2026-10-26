@@ -4,6 +4,7 @@ import {
   railOffsetPx,
   clampRailWidth,
   floorColumnRightPx,
+  floorColumnPlacement,
   FLOOR_COLUMN_RIGHT_PX,
   FLOOR_BESIDE_RAIL_MIN_HEIGHT,
   RAIL_INSET_PX,
@@ -154,5 +155,49 @@ describe('floorColumnRightPx', () => {
     expect(floorColumnRightPx(1194, FLOOR_BESIDE_RAIL_MIN_HEIGHT, true, RAIL_PX)).toBe(
       RAIL_PX + RAIL_INSET_PX + 12
     );
+  });
+});
+
+describe('floorColumnPlacement', () => {
+  // The iPad app on a Mac runs the phone tree with a mouse, in a window of
+  // 1782x919 or so. The rail rule above put the column 368px off the right
+  // edge there: in the middle of the map, beside whatever building was open.
+  // Under the search bar on the left is where the extension's map already
+  // keeps it, and nothing else on this screen lives there.
+  it('stands top-left under the search, at a mouse size, without a touch screen', () => {
+    const windows: [number, number][] = [
+      [1782, 919],
+      [1280, 800],
+      [700, 700],
+    ];
+    for (const [w, h] of windows) {
+      expect(floorColumnPlacement(w, h, true, RAIL_PX, false)).toEqual({
+        side: 'left',
+        size: 'sm',
+      });
+      expect(floorColumnPlacement(w, h, false, RAIL_PX, false)).toEqual({
+        side: 'left',
+        size: 'sm',
+      });
+    }
+  });
+
+  it('leaves every touch screen exactly where floorColumnRightPx puts it', () => {
+    const screens: [number, number, boolean][] = [
+      [390, 844, true],
+      [320, 568, true],
+      [810, 1080, true],
+      [1080, 810, true],
+      [1194, 834, true],
+      [1194, 834, false],
+      [1366, 1024, true],
+    ];
+    for (const [w, h, open] of screens) {
+      expect(floorColumnPlacement(w, h, open, RAIL_PX, true)).toEqual({
+        side: 'right',
+        rightPx: floorColumnRightPx(w, h, open, RAIL_PX),
+        size: 'xs',
+      });
+    }
   });
 });

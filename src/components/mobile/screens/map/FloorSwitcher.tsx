@@ -1,7 +1,7 @@
 import { useAppStore } from '../../../../store/useAppStore';
 import { FloorStack } from '../../../CampusMap/FloorStack';
 import { useViewportSize } from '../../../../hooks/ui/useViewportSize';
-import { floorColumnRightPx } from '../../../../utils/mapRail';
+import { floorColumnPlacement } from '../../../../utils/mapRail';
 
 /**
  * The floor list, shown only while drilled into a building — the same
@@ -18,23 +18,36 @@ import { floorColumnRightPx } from '../../../../utils/mapRail';
  * anything meant to float above the map here has to clear the same bar.
  *
  * On a tablet it stands beside the open rail, not under it — see
- * `floorColumnRightPx`.
+ * `floorColumnRightPx`. On a Mac (no touch screen) it stands top-left under
+ * the search bar, level with the rail's top — see `floorColumnPlacement`. It
+ * comes before the search in the DOM, so the search results open over it.
  */
 export function FloorSwitcher() {
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const railOpen = useAppStore((s) => s.mapRailOpen);
   const railWidth = useAppStore((s) => s.mapRailWidth);
+  const isTouch = useAppStore((s) => s.isTouch);
   const viewport = useViewportSize();
   if (activeBuildingId === null) return null;
 
-  const right = floorColumnRightPx(viewport.width, viewport.height, railOpen, railWidth);
+  const place = floorColumnPlacement(viewport.width, viewport.height, railOpen, railWidth, isTouch);
+  if (place.side === 'left') {
+    return (
+      <div
+        data-testid="floor-switcher"
+        className="absolute left-4 top-[calc(5rem_+_var(--safe-top,0px))] z-[1000]"
+      >
+        <FloorStack size={place.size} />
+      </div>
+    );
+  }
   return (
     <div
       data-testid="floor-switcher"
-      style={{ right }}
+      style={{ right: place.rightPx }}
       className="absolute bottom-[calc(190px_+_var(--safe-bottom,0px))] z-[1000]"
     >
-      <FloorStack />
+      <FloorStack size={place.size} />
     </div>
   );
 }
