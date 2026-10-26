@@ -16,6 +16,7 @@ const EXPECTED = [
   '.claude-plugin/icon.png',
   '.claude-plugin/plugin.json',
   'LICENSE',
+  'PRIVACY.md',
   'README.md',
   'server/index.mjs',
   'skills/reading-is-files/SKILL.md',

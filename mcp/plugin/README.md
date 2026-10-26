@@ -28,7 +28,7 @@ Install the plugin, then enter your IS Mendelu username and password when Claude
 - Your password is kept in Claude Code's secure storage and is sent only to `is.mendelu.cz` to sign in.
 - It writes nothing to your disk. Claude Code saves a file you ask Claude to read.
 
-Whatever Claude reads goes to Claude like anything else you share in a chat.
+Whatever Claude reads goes to Claude like anything else you share in a chat. The full privacy policy is in [PRIVACY.md](PRIVACY.md).
 
 ## Limits
 
