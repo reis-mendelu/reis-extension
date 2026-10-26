@@ -363,7 +363,8 @@
       "openFailed": "Soubor se nepodařilo otevřít.",
       "downloading": "Stahuji…",
       "opening": "Otevírám…",
-      "savedToDownloads": "Uloženo do Stažených souborů"
+      "savedToDownloads": "Uloženo do Stažených souborů",
+      "saved": "Soubor uložen"
     },
     "documentNote": {
       "add": "Přidat poznámku...",
@@ -710,8 +711,8 @@
       }
     },
     "macApp": {
-      "button": "Uložit eduroam profil",
-      "installStep": "Ulož soubor a pak ho otevři — macOS profil nainstaluje v Nastavení systému. Při instalaci zadej heslo z prvního kroku."
+      "button": "Přidat eduroam profil",
+      "installStep": "macOS otevře Nastavení systému › Obecné › Správa zařízení. Dvakrát klikni na stažený profil eduroam, zvol Instalovat a zadej heslo z prvního kroku."
     },
     "network": {
       "offline": "Jsi offline. K nastavení eduroamu stačí jakýkoli internet — klidně mobilní data, Wi‑Fi není potřeba.",

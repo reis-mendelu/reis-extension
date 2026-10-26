@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import { deliverEduroamProfile, type ProfileDelivery } from '../eduroamProfile';
+import {
+  deliverEduroamProfile,
+  PROFILES_DOWNLOADED_URL,
+  type ProfileDelivery,
+} from '../eduroamProfile';
+import { ShareCanceledError } from '../../errors/shareCanceled';
 
 function deps(over: Partial<ProfileDelivery> = {}): ProfileDelivery {
   return {
@@ -8,6 +13,9 @@ function deps(over: Partial<ProfileDelivery> = {}): ProfileDelivery {
     nativeSave: vi.fn(async () => 'file:///c/Documents/eduroam-reis.mobileconfig'),
     assertExists: vi.fn(async () => true),
     share: vi.fn(async () => {}),
+    isMac: vi.fn(async () => false),
+    openOnMac: vi.fn(async () => true),
+    saveWithPanel: vi.fn(async () => {}),
     ...over,
   };
 }
@@ -86,5 +94,69 @@ describe('deliverEduroamProfile', () => {
   it('treats a dismissed share sheet as done, not as a failure', async () => {
     const d = deps({ share: vi.fn(async () => Promise.reject(new Error('canceled'))) });
     await expect(deliverEduroamProfile(blob(), 'x.mobileconfig', d)).resolves.toBeUndefined();
+  });
+
+  describe('on a Mac', () => {
+    const mac = (over: Partial<ProfileDelivery> = {}) =>
+      deps({ isMac: vi.fn(async () => true), ...over });
+
+    /**
+     * Measured on the Mac app (macOS 26, 2026-10-26): `UIApplication.open` on
+     * the written .mobileconfig hands it to ProfileHelper, and mdmclient files
+     * it as "Profile Downloaded" under System Settings › General › Device
+     * Management. Then the settings link opens that pane, so the student lands
+     * on the Install button with no file to find and no share sheet.
+     */
+    it('hands the profile to macOS and opens Device Management, with no share sheet', async () => {
+      const d = mac();
+      await deliverEduroamProfile(blob(), 'eduroam-reis.mobileconfig', d);
+      expect(d.openOnMac).toHaveBeenNthCalledWith(
+        1,
+        'file:///c/Documents/eduroam-reis.mobileconfig'
+      );
+      expect(d.openOnMac).toHaveBeenNthCalledWith(2, PROFILES_DOWNLOADED_URL);
+      expect(d.share).not.toHaveBeenCalled();
+      expect(d.saveWithPanel).not.toHaveBeenCalled();
+    });
+
+    it('falls back to the Save panel when macOS will not open the profile', async () => {
+      const d = mac({ openOnMac: vi.fn(async () => false) });
+      await deliverEduroamProfile(blob(), 'eduroam-reis.mobileconfig', d);
+      expect(d.saveWithPanel).toHaveBeenCalledWith('file:///c/Documents/eduroam-reis.mobileconfig');
+      expect(d.openOnMac).toHaveBeenCalledTimes(1);
+      expect(d.share).not.toHaveBeenCalled();
+    });
+
+    /** Only a profile is something macOS installs; any other file is saved. */
+    it('saves a non-profile file with the Save panel', async () => {
+      const d = mac();
+      await deliverEduroamProfile(blob(), 'eduroam-reis.eap-config', d);
+      expect(d.saveWithPanel).toHaveBeenCalled();
+      expect(d.openOnMac).not.toHaveBeenCalled();
+    });
+
+    /**
+     * Unlike a dismissed iPhone share sheet, a cancelled Save panel leaves the
+     * profile only in the app's container, which no student can reach. Nothing
+     * was delivered, so the flow must not report it as done.
+     */
+    it('rejects with ShareCanceledError when the Save panel is cancelled', async () => {
+      const d = mac({
+        openOnMac: vi.fn(async () => false),
+        saveWithPanel: vi.fn(async () => {
+          throw new ShareCanceledError();
+        }),
+      });
+      await expect(
+        deliverEduroamProfile(blob(), 'eduroam-reis.mobileconfig', d)
+      ).rejects.toBeInstanceOf(ShareCanceledError);
+    });
+
+    it('keeps the share sheet on an iPhone or iPad', async () => {
+      const d = deps({ isMac: vi.fn(async () => false) });
+      await deliverEduroamProfile(blob(), 'eduroam-reis.mobileconfig', d);
+      expect(d.share).toHaveBeenCalled();
+      expect(d.openOnMac).not.toHaveBeenCalled();
+    });
   });
 });

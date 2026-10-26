@@ -54,6 +54,22 @@ afterEach(() => {
 });
 
 describe('useEduroamSetup', () => {
+  /**
+   * A Mac whose system would not open the profile falls back to the Save panel.
+   * Closing that panel delivered nothing, but nothing broke either: back to the
+   * button, with no error banner and no "done".
+   */
+  it('returns to idle, not error, when a Mac Save panel is cancelled', async () => {
+    const { ShareCanceledError } = await import('../../../errors/shareCanceled');
+    vi.mocked(deliverEduroamProfile).mockRejectedValueOnce(new ShareCanceledError());
+    const { result } = renderHook(() => useEduroamSetup());
+    await act(async () => {
+      await result.current.run('mac');
+    });
+    expect(result.current.status).toBe('idle');
+    expect(result.current.error).toBeNull();
+  });
+
   it('reset() clears generated state (status, password) after a successful run', async () => {
     const { result } = renderHook(() => useEduroamSetup());
 

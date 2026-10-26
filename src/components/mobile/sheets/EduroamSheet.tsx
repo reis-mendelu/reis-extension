@@ -58,9 +58,9 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
   /**
    * reIS on a Mac: inside the app, but with no OS that will take the
    * configuration (see resolveNativeEduroamSupport). The student gets the same
-   * profile a desktop browser would download, except it arrives through the
-   * share sheet — so the flow gains a step the browser never needed, saying
-   * what to do with the file once it is saved.
+   * profile a desktop browser would download, handed straight to macOS, which
+   * opens Device Management on it (see deliverEduroamProfile) — so the flow
+   * gains a step the browser never needed, saying how to install it there.
    */
   const macInApp = !native && target === 'mac' && getPlatform().kind === 'capacitor';
 

@@ -15,6 +15,7 @@ import {
   type NetworkFailure,
 } from '../../services/eduroam/networkFailure';
 import { logError } from '../../utils/reportError';
+import { isShareCancellation } from '../../errors/shareCanceled';
 import { trackFeatureSignal } from '../../api/featureUsage';
 import { useAutoSelectOnce, useRunGeneration } from './eduroamSetupLifecycle';
 
@@ -125,6 +126,8 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
         setStatus('done');
       } catch (e) {
         if (stale()) logError('useEduroamSetup.run', e);
+        // A Mac's Save panel closed unsaved: nothing delivered, nothing broken.
+        else if (isShareCancellation(e)) setStatus('idle');
         else fail('useEduroamSetup.run', e);
       }
     },
