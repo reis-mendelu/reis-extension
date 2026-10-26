@@ -8,7 +8,7 @@ description: Reads a lecture or subject file from IS Mendelu that mendelu_read_f
 - **DOCX, PPTX, XLSX, ODT**: these are zip archives of XML. List the archive, then print the parts that hold the text and read the text between the tags:
   - DOCX: `word/document.xml`
   - PPTX: `ppt/slides/slide1.xml`, `slide2.xml`, … in number order
-  - XLSX: `xl/sharedStrings.xml` for the text, `xl/worksheets/sheet1.xml` for the layout
+  - XLSX: find the sheet you need by name in `xl/workbook.xml`, then its file through `xl/_rels/workbook.xml.rels` (`xl/worksheets/sheetN.xml`; the number need not match the order). In each cell (`<c>`), `t="s"` means the value is an index into the `<si>` list of `xl/sharedStrings.xml`, counted from 0; `t="inlineStr"` carries the text in the cell itself; anything else is the value as written. Never report a bare string index as the cell's text.
   - ODT: `content.xml`
 - On macOS and Linux use `unzip -l <file>` and `unzip -p <file> <part>`. On Windows use PowerShell: `Add-Type -AssemblyName System.IO.Compression.FileSystem`, then `[IO.Compression.ZipFile]::OpenRead('<file>')` and read the entry you need.
 

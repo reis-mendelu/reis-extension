@@ -27,12 +27,17 @@ export type FileHandover = {
   handover: { filename: string; mimeType: string; base64: string; bytes: number };
 };
 
+/** Types a server sends for "some file": a DOCX is a zip, so IS may label it as one. */
+const GENERIC_TYPES =
+  /^(application\/(octet-stream|zip|x-zip(-compressed)?|download|force-download|x-download)|binary\/octet-stream)$/;
+
 export async function documentResult(bytes: Uint8Array, meta: DocumentMeta): Promise<FileHandover> {
-  const generic = !meta.mediaType || meta.mediaType === 'application/octet-stream';
+  const generic = !meta.mediaType || GENERIC_TYPES.test(meta.mediaType);
+  const mimeType = generic ? (MIME_BY_EXT[meta.ext] ?? meta.mediaType) : meta.mediaType;
   return {
     handover: {
       filename: meta.filename ?? `file${meta.ext}`,
-      mimeType: (generic ? MIME_BY_EXT[meta.ext] : meta.mediaType) ?? 'application/octet-stream',
+      mimeType: mimeType || 'application/octet-stream',
       base64: Buffer.from(bytes).toString('base64'),
       bytes: bytes.byteLength,
     },

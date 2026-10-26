@@ -2,7 +2,7 @@
   "name": "reis",
   "displayName": "reIS",
   "version": "0.0.0",
-  "description": "Your IS Mendelu timetable, exams, grades, deadlines and subject files in Claude Code. Read-only; runs on your computer and talks only to is.mendelu.cz.",
+  "description": "Your IS Mendelu timetable, exams, grades, deadlines and subject files in Claude Code. Read-only; runs on your computer and talks only to is.mendelu.cz, plus cdn.jsdelivr.net for public pass-rate statistics.",
   "author": { "name": "reIS", "url": "https://github.com/reis-mendelu/reis-extension" },
   "homepage": "https://github.com/reis-mendelu/reis-extension/tree/main/mcp",
   "repository": "https://github.com/reis-mendelu/reis-extension",

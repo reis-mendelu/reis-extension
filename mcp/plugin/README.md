@@ -4,7 +4,7 @@ Your IS Mendelu data in Claude Code: timetable, exams, subjects, study plan, syl
 
 ## Install
 
-Install the plugin, then enter your IS Mendelu username and password when Claude Code asks. Ask things like "what's due this week?" or "explain lecture 7 of Počítačové sítě".
+The plugin's server runs on [Node.js](https://nodejs.org) 20 or later, which Claude Code itself does not install: check that `node --version` works in a terminal. Install the plugin, then enter your IS Mendelu username and password when Claude Code asks. Ask things like "what's due this week?" or "explain lecture 7 of Počítačové sítě".
 
 ## What Claude can read
 
@@ -16,7 +16,7 @@ Install the plugin, then enter your IS Mendelu username and password when Claude
 | `mendelu_study_plan` | Your study plan and credits |
 | `mendelu_syllabus` | One subject's syllabus and requirements |
 | `mendelu_subject_files` | Files in a subject's IS document folder |
-| `mendelu_read_file` | One of those files, handed to Claude to read (PDF, DOCX, PPTX, XLSX, ODT, plain text), up to 30 MB |
+| `mendelu_read_file` | One of those files, handed to Claude to read (PDF, DOCX, PPTX, XLSX, ODT, plain text), up to 10 MB |
 | `mendelu_success_rates` | Historical pass rates of subjects (public reIS statistics) |
 | `mendelu_grades` | Your grades and credits so far |
 | `mendelu_assignments` | Your submission boxes and their deadlines |

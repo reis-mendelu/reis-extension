@@ -32,6 +32,27 @@ describe('documentHandover (plugin build)', () => {
     );
   });
 
+  it.each([
+    'application/zip',
+    'application/x-zip-compressed',
+    'binary/octet-stream',
+    'application/download',
+  ])('names the type from the extension when IS sends the generic %s', async (mediaType) => {
+    const r = await documentResult(PDF, { filename: 'L7.pptx', mediaType, ext: '.pptx' });
+    expect(r.handover.mimeType).toBe(
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    );
+  });
+
+  it('keeps a specific type IS sends', async () => {
+    const r = await documentResult(PDF, {
+      filename: 'L7.pdf',
+      mediaType: 'application/pdf',
+      ext: '.docx',
+    });
+    expect(r.handover.mimeType).toBe('application/pdf');
+  });
+
   it('says in the tool description that it returns the file, not its text', () => {
     expect(DOCUMENT_DESCRIPTION).toMatch(/returns the file itself/i);
     expect(DOCUMENT_DESCRIPTION).not.toMatch(/returns its text/i);
