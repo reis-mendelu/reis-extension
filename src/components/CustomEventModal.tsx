@@ -45,9 +45,17 @@ export function CustomEventModal({
   useEffect(() => {
     titleRef.current?.focus();
   }, []);
-  // Escape closes the editor, and only it: an Escape layer over the drawer or
-  // panel it opened from.
-  useEscapeLayer(true, onClose);
+  // Escape closes the editor, and only it (an Escape layer over the drawer or
+  // panel it opened from) — but never with something typed in it, which a
+  // close would throw away. The key is kept either way.
+  const typed =
+    title !== (event?.title ?? '') ||
+    room !== (event?.room ?? '') ||
+    startTime !== (event?.startTime ?? initialStart ?? '') ||
+    endTime !== (event?.endTime ?? initialEnd ?? '');
+  useEscapeLayer(true, () => {
+    if (!typed) onClose();
+  });
 
   const handleSave = () => {
     if (!title.trim() || !date || !startTime || !endTime) return;

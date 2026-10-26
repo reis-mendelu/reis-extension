@@ -9,14 +9,17 @@ import { EdgeScrollButtons } from './EdgeScrollButtons';
  */
 export function HorizontalScroller({
   className,
+  outerClassName = '',
   children,
 }: {
   className: string;
+  /** For the outermost box: margins a parent's flex layout acts on. */
+  outerClassName?: string;
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   return (
-    <div className="relative">
+    <div className={`relative ${outerClassName}`}>
       <div ref={ref} className={className}>
         {children}
       </div>

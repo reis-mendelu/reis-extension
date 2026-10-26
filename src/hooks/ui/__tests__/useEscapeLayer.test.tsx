@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { StrictMode } from 'react';
 import { render, fireEvent, act } from '@testing-library/react';
 import { useEscapeLayer, hasOpenEscapeLayer } from '../useEscapeLayer';
 
@@ -132,6 +133,61 @@ describe('useEscapeLayer', () => {
     const { rerender } = render(<Layer open onClose={() => {}} />);
     expect(hasOpenEscapeLayer()).toBe(true);
     rerender(<Layer open={false} onClose={() => {}} />);
+    expect(hasOpenEscapeLayer()).toBe(false);
+  });
+
+  // StrictMode mounts, unmounts and re-mounts every effect in development, and
+  // runs each useState initializer twice. Neither may leave a stale layer on
+  // the stack or put the outer layer on top.
+  it('under StrictMode, nested layers still close inner first, one per press', () => {
+    const outer = vi.fn();
+    const inner = vi.fn();
+    function Outer({ showInner }: { showInner: boolean }) {
+      useEscapeLayer(true, outer);
+      return showInner ? <Layer open onClose={inner} /> : null;
+    }
+    const { rerender } = render(
+      <StrictMode>
+        <Outer showInner />
+      </StrictMode>
+    );
+    escape();
+    expect(inner).toHaveBeenCalledTimes(1);
+    expect(outer).not.toHaveBeenCalled();
+    rerender(
+      <StrictMode>
+        <Outer showInner={false} />
+      </StrictMode>
+    );
+    escape();
+    expect(outer).toHaveBeenCalledTimes(1);
+    expect(inner).toHaveBeenCalledTimes(1);
+  });
+
+  // A layer that unmounts and mounts again while open (a keyed remount, a
+  // route change) is a new layer, and the newest one: it is the one on top.
+  it('a layer re-mounted while open comes back on top, and leaves nothing behind', async () => {
+    const under = vi.fn();
+    const first = vi.fn();
+    const second = vi.fn();
+    const { rerender, unmount } = render(
+      <>
+        <Layer open onClose={under} />
+        <Layer key="a" open onClose={first} />
+      </>
+    );
+    await act(async () => {});
+    rerender(
+      <>
+        <Layer open onClose={under} />
+        <Layer key="b" open onClose={second} />
+      </>
+    );
+    escape();
+    expect(second).toHaveBeenCalledTimes(1);
+    expect(first).not.toHaveBeenCalled();
+    expect(under).not.toHaveBeenCalled();
+    unmount();
     expect(hasOpenEscapeLayer()).toBe(false);
   });
 });

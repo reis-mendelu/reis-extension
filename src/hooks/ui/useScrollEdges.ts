@@ -19,12 +19,21 @@ export function useScrollEdges(ref: RefObject<HTMLElement | null>, active: boole
     };
     measure();
     el.addEventListener('scroll', measure, { passive: true });
-    // The box resizing (a window resize) and its content changing (tiles
-    // arriving with a sync) both move the edges.
+    // The box resizing (a window resize), its content resizing (a font
+    // loading, a tile growing) and its content changing (tiles arriving with
+    // a sync, text resolving in place) all move the edges.
     const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null;
-    ro?.observe(el);
-    const mo = new MutationObserver(measure);
-    mo.observe(el, { childList: true, subtree: true });
+    const observeBoxes = () => {
+      ro?.disconnect();
+      ro?.observe(el);
+      for (const child of el.children) ro?.observe(child);
+    };
+    observeBoxes();
+    const mo = new MutationObserver(() => {
+      observeBoxes();
+      measure();
+    });
+    mo.observe(el, { childList: true, subtree: true, characterData: true });
     return () => {
       el.removeEventListener('scroll', measure);
       ro?.disconnect();

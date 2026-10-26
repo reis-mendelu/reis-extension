@@ -45,12 +45,14 @@ export function RegisteredStrip({
       {/* Edge to edge, so the next tile peeking in at the right says "swipe".
           A fixed 178px tile made exactly two fit at 390px, with nothing
           peeking — so 42vw at most, which leaves a peek at every phone width.
-          Snapped, so a swipe moves one whole exam. */}
-      <div className="relative">
+          Snapped, so a swipe moves one whole exam. The bleed is on the
+          wrapper, not the strip, so the edge buttons sit at the strip's real
+          edges rather than over its tiles. */}
+      <div className="relative -mx-4">
         <div
           ref={stripRef}
           data-testid="registered-strip"
-          className="-mx-4 flex snap-x snap-mandatory scroll-px-4 items-stretch gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex snap-x snap-mandatory scroll-px-4 items-stretch gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {rows.map((row) => {
             const today = sameDay(row.date, now);

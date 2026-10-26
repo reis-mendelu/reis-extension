@@ -62,6 +62,8 @@ export function AdaptiveDrawer({
           // the drawer underneath closed instead. With a layer open, the key is
           // handed to that layer and the drawer stays.
           onEscapeKeyDown={(e) => {
+            // A held key's auto-repeat closes nothing: one press, one thing.
+            if (e.repeat) return e.preventDefault();
             if (!hasOpenEscapeLayer()) return;
             e.preventDefault();
             closeTopEscapeLayer();

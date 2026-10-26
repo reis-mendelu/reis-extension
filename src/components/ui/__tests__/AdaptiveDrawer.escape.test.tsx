@@ -134,4 +134,17 @@ describe('Escape on the side drawer', () => {
     escape();
     expect(drawer).toHaveBeenCalledTimes(1);
   });
+
+  // A held key auto-repeats; one press closes one thing, here as everywhere.
+  it('on a phone, a held Escape does not close the vaul drawer after the form above it', () => {
+    useAppStore.setState({ isTouch: true, isNarrow: true } as never);
+    const drawer = vi.fn();
+    render(
+      <AdaptiveDrawer open onClose={drawer}>
+        <p>subject</p>
+      </AdaptiveDrawer>
+    );
+    fireEvent.keyDown(document, { key: 'Escape', repeat: true });
+    expect(drawer).not.toHaveBeenCalled();
+  });
 });

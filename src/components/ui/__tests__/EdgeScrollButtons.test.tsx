@@ -89,4 +89,55 @@ describe('EdgeScrollButtons', () => {
       expect(e.defaultPrevented).toBe(false);
     }
   });
+
+  // Tiles arrive with a sync after the strip has mounted; its own size never
+  // changes, so only watching the content catches the new overflow.
+  it('shows the forward button when content arrives after mount', async () => {
+    render(<Strip />);
+    const el = screen.getByTestId('strip');
+    shape(el, { content: 300 });
+    expect(forward()).toBeNull();
+    Object.defineProperty(el, 'scrollWidth', { configurable: true, value: 900 });
+    await act(async () => {
+      // Text edited in place (a name resolving): a characterData change only.
+      (el.firstElementChild!.firstChild as Text).data = 'many more tiles';
+    });
+    expect(forward()).not.toBeNull();
+  });
+
+  it('re-measures when the strip or its content resizes', () => {
+    const callbacks: (() => void)[] = [];
+    const observed: Element[] = [];
+    const RO = vi.fn(function (this: unknown, cb: () => void) {
+      callbacks.push(cb);
+      return { observe: (t: Element) => observed.push(t), disconnect: vi.fn(), unobserve: vi.fn() };
+    });
+    vi.stubGlobal('ResizeObserver', RO);
+    render(<Strip />);
+    const el = screen.getByTestId('strip');
+    shape(el, { content: 300 });
+    expect(observed).toContain(el);
+    expect(observed).toContain(el.firstElementChild);
+    Object.defineProperty(el, 'scrollWidth', { configurable: true, value: 900 });
+    act(() => callbacks.forEach((cb) => cb()));
+    expect(forward()).not.toBeNull();
+    vi.unstubAllGlobals();
+  });
+
+  it('lets go of the strip on unmount', () => {
+    const disconnect = vi.fn();
+    vi.stubGlobal(
+      'ResizeObserver',
+      vi.fn(function () {
+        return { observe: vi.fn(), disconnect, unobserve: vi.fn() };
+      })
+    );
+    const { unmount } = render(<Strip />);
+    const el = screen.getByTestId('strip');
+    const remove = vi.spyOn(el, 'removeEventListener');
+    unmount();
+    expect(disconnect).toHaveBeenCalled();
+    expect(remove).toHaveBeenCalledWith('scroll', expect.any(Function));
+    vi.unstubAllGlobals();
+  });
 });

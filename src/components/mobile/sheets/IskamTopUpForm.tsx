@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useIskamStore } from '../../../mobile/iskam/iskamStore';
 import { validateAmount, type PayMethod } from '../../../mobile/iskam/topUp';
+import { keepDraftOnEscape } from '../../../hooks/ui/keepDraftOnEscape';
 
 /**
  * One amount, two ways to pay. Google Pay only on Android: WebISKAM offers no
@@ -36,6 +37,7 @@ export function IskamTopUpForm() {
           aria-invalid={invalid}
           aria-describedby={invalid ? 'iskam-amount-error' : undefined}
           onChange={(e) => setText(e.target.value)}
+          onKeyDown={keepDraftOnEscape(text)}
         />
       </label>
       {invalid && (

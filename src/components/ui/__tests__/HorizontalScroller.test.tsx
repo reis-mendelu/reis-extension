@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { GradingTable } from '../../SubjectFileDrawer/Syllabus/GradingTable';
 import { PhArchView } from '../../SubjectFileDrawer/Zaznamnik/PhArchView';
+import { SemesterSelector } from '../../SuccessRate/SemesterSelector';
 import { useAppStore } from '../../../store/useAppStore';
 import type { PhSection } from '../../../types/zaznamnik';
 
@@ -58,6 +59,25 @@ describe('sideways tables and a mouse', () => {
       },
     ] as unknown as PhSection[];
     const { container } = render(<PhArchView sections={sections} />);
+    const scrollBy = overflow(container);
+    fireEvent.click(screen.getByRole('button', { name: 'Posunout dál' }));
+    expect(scrollBy).toHaveBeenCalledTimes(1);
+  });
+
+  // Below `sm` the semester chips are a sideways row too (a long history, a
+  // narrow Mac window). Its top margin stays on the outermost box, which the
+  // panel's flex column pushes to the bottom on desktop.
+  it('SemesterSelector: a forward button while the chips overflow', () => {
+    const stats = [2021, 2022, 2023, 2024, 2025].map((year) => ({
+      year,
+      semesterName: 'ZS',
+      totalPass: 10,
+      totalFail: 5,
+    }));
+    const { container } = render(
+      <SemesterSelector stats={stats as never} activeIndex={0} onSelect={() => {}} />
+    );
+    expect((container.firstElementChild as HTMLElement).className).toContain('sm:mt-auto');
     const scrollBy = overflow(container);
     fireEvent.click(screen.getByRole('button', { name: 'Posunout dál' }));
     expect(scrollBy).toHaveBeenCalledTimes(1);
