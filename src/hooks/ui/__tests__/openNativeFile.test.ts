@@ -56,6 +56,27 @@ describe('openNativeFile success feedback', () => {
     expect(toast.success).not.toHaveBeenCalled();
   });
 
+  /**
+   * A Mac's Save panel closes with no sign the file arrived, unlike the share
+   * sheet. The toast is the confirmation there, as it is on Android.
+   */
+  it('confirms a Save-panel delivery on a Mac with a toast', async () => {
+    vi.mocked(openIsFileNatively).mockResolvedValue({ usedFallback: false, delivered: 'saved' });
+
+    await openNativeFile('slozka.pl?download=1', 'Test.open', t);
+
+    expect(toast.success).toHaveBeenCalledWith('course.file.saved');
+  });
+
+  it('stays silent when the Mac Save panel is cancelled', async () => {
+    vi.mocked(openIsFileNatively).mockRejectedValue(new ShareCanceledError());
+
+    await openNativeFile('slozka.pl?download=1', 'Test.open', t);
+
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
   it('still reports a failure and never claims success', async () => {
     vi.mocked(openIsFileNatively).mockRejectedValue(new Error('IS did not return a file'));
 

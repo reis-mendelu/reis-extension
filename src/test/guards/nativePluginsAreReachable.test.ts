@@ -54,6 +54,10 @@ const IOS_ONLY: Record<string, string> = {
   // native/capacitor-pdf-ink: PDFKit + PencilKit reader. Android keeps the
   // pdf.js viewer; there is no PencilKit to reuse there.
   PdfInk: 'iPad-only PencilKit reader — Android keeps the pdf.js viewer',
+  // native/capacitor-mac-save: the macOS Save panel for the iOS app on a Mac.
+  // Android already saves into Downloads (DownloadsPlugin.java), and JS asks
+  // only when `Capacitor.getPlatform() === 'ios'` (src/mobile/macSave.ts).
+  MacSave: 'Mac-only Save panel — Android saves into Downloads already',
 };
 
 function walk(dir: string, out: string[] = []): string[] {

@@ -39,12 +39,14 @@ export async function openNativeFile(
     // was never asked, which was the case) got NO signal at all while the file
     // saved perfectly. Confirmation must not ride on a droppable permission.
     // iOS is deliberately silent: its share sheet is already the confirmation.
+    // A Mac's Save panel just closes, so it is told, like Android.
     if (delivered === 'downloads') toast.success(t('course.file.savedToDownloads'));
+    if (delivered === 'saved') toast.success(t('course.file.saved'));
   } catch (e) {
-    // The student closed the iOS share sheet. The file is already in Documents
-    // and declining a destination is not a failure — this toast is what
-    // suggestion #32 (iPad, 16 Oct) reported as "the file couldn't be opened".
-    // Same call as useDocumentDownload's.
+    // The student closed the iOS share sheet, or a Mac's Save panel. Declining
+    // a destination is not a failure — this toast is what suggestion #32
+    // (iPad, 16 Oct) reported as "the file couldn't be opened". Same call as
+    // useDocumentDownload's.
     if (isShareCancellation(e)) return;
     logError(context, e);
     // A lapsed session returns silently here on purpose: `fetchIsBinary`

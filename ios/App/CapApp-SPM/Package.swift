@@ -22,6 +22,7 @@ let package = Package(
         .package(name: "CapacitorSplashScreen", path: "../../../node_modules/@capacitor/splash-screen"),
         .package(name: "CapgoCapacitorInappbrowser", path: "../../../node_modules/@capgo/capacitor-inappbrowser"),
         .package(name: "ReisCapacitorEduroam", path: "../../../native/capacitor-eduroam"),
+        .package(name: "ReisCapacitorMacSave", path: "../../../native/capacitor-mac-save"),
         .package(name: "ReisCapacitorPdfInk", path: "../../../native/capacitor-pdf-ink"),
         .package(name: "ReisCapacitorSecureStore", path: "../../../native/capacitor-secure-store")
     ],
@@ -41,6 +42,7 @@ let package = Package(
                 .product(name: "CapacitorSplashScreen", package: "CapacitorSplashScreen"),
                 .product(name: "CapgoCapacitorInappbrowser", package: "CapgoCapacitorInappbrowser"),
                 .product(name: "ReisCapacitorEduroam", package: "ReisCapacitorEduroam"),
+                .product(name: "ReisCapacitorMacSave", package: "ReisCapacitorMacSave"),
                 .product(name: "ReisCapacitorPdfInk", package: "ReisCapacitorPdfInk"),
                 .product(name: "ReisCapacitorSecureStore", package: "ReisCapacitorSecureStore")
             ]
