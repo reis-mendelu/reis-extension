@@ -1,6 +1,9 @@
 # reIS for Claude in Claude's directory: plan
 
-Status 2026-10-26: plugin build done on `claude/reis-for-claude-plugin` (`npm run mcp:plugin`). Not yet published or submitted.
+Status 2026-10-26: built (`npm run mcp:plugin`), published to the public repo
+`reis-mendelu/reis-for-claude` and submitted to Claude's directory from `main @ f774c18`,
+listed on Claude Code only. Waiting on Anthropic's review. Updates to that repo are by hand
+until a release step pushes them.
 
 ## Goal
 
