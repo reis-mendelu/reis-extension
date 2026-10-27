@@ -1,0 +1,40 @@
+{
+  "name": "reis",
+  "displayName": "reIS",
+  "version": "0.0.0",
+  "description": "Your IS Mendelu timetable, exams, grades, deadlines and subject files in Claude Code. Read-only; runs on your computer and talks only to is.mendelu.cz, plus cdn.jsdelivr.net for public pass-rate statistics.",
+  "author": {
+    "name": "reIS",
+    "url": "https://github.com/reis-mendelu/reis-extension"
+  },
+  "homepage": "https://github.com/reis-mendelu/reis-for-claude",
+  "documentationUrl": "https://github.com/reis-mendelu/reis-for-claude#readme",
+  "privacyPolicyUrl": "https://github.com/reis-mendelu/reis-for-claude/blob/main/PRIVACY.md",
+  "supportUrl": "https://github.com/reis-mendelu/reis-for-claude/issues",
+  "repository": "https://github.com/reis-mendelu/reis-extension",
+  "license": "Apache-2.0",
+  "keywords": ["mendelu", "university", "student", "timetable", "exams"],
+  "userConfig": {
+    "username": {
+      "type": "string",
+      "title": "IS Mendelu username",
+      "description": "Your IS login, e.g. xnovak."
+    },
+    "password": {
+      "type": "string",
+      "title": "IS Mendelu password",
+      "description": "Kept in your system's secure storage. Sent only to is.mendelu.cz.",
+      "sensitive": true
+    }
+  },
+  "mcpServers": {
+    "is": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/server/index.mjs"],
+      "env": {
+        "MENDELU_USER": "${user_config.username}",
+        "MENDELU_PASS": "${user_config.password}"
+      }
+    }
+  }
+}

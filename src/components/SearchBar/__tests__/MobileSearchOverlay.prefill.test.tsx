@@ -25,6 +25,7 @@ vi.mock('../useSearch', () => ({
 }));
 
 import { MobileSearchOverlay } from '../MobileSearchOverlay';
+import { useEscapeLayer } from '../../../hooks/ui/useEscapeLayer';
 
 function input() {
   return screen.getByPlaceholderText(/search\.placeholder/) as HTMLInputElement;
@@ -51,5 +52,24 @@ describe('MobileSearchOverlay query prefill', () => {
     render(<MobileSearchOverlay isOpen={true} onClose={() => {}} prefillQuery="" />);
     fireEvent.change(input(), { target: { value: 'Fyzika' } });
     expect(input().value).toBe('Fyzika');
+  });
+
+  // An Escape layer: the overlay closes, and a drawer under it stays open.
+  it('closes on Escape without closing the layer under it', () => {
+    const under = vi.fn();
+    const onClose = vi.fn();
+    function Under() {
+      useEscapeLayer(true, under);
+      return null;
+    }
+    render(
+      <>
+        <Under />
+        <MobileSearchOverlay isOpen onClose={onClose} prefillQuery="" />
+      </>
+    );
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(under).not.toHaveBeenCalled();
   });
 });

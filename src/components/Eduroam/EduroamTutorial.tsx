@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Loader2, QrCode, Download, ExternalLink, Check, AlertTriangle } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useEscapeLayer } from '../../hooks/ui/useEscapeLayer';
 import { PasswordChip } from './PasswordChip';
 import { StepHeading } from './StepHeading';
 import { EDUROAM_MANUAL, manualKey, type EduroamAction, type DesktopEduroamTarget } from './manual';
@@ -87,6 +88,8 @@ export function EduroamTutorial({
   const { t } = useTranslation();
   const manual = EDUROAM_MANUAL[target];
   const [zoom, setZoom] = useState<string | null>(null);
+  // The lightbox is over the drawer: Escape closes the picture first.
+  useEscapeLayer(zoom !== null, () => setZoom(null));
 
   return (
     <div className="mt-6">

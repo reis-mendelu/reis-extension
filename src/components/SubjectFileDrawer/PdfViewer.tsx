@@ -5,7 +5,7 @@ import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { resolvePdfWorkerSource } from './pdfWorkerSource';
 import { computeRenderWindow } from './pdfWindow';
 import { clampScale } from './pinchZoom';
-import { usePinchZoom } from './usePinchZoom';
+import { useReaderInput } from './useReaderInput';
 import { usePdfPagePosition } from './usePdfPagePosition';
 import { logError } from '../../utils/reportError';
 
@@ -62,7 +62,7 @@ export function PdfViewer({
   // for mixed-geometry PDFs (e.g. a portrait cover before landscape slides).
   const [baseHeight, setBaseHeight] = useState(0);
   const [pageHeights, setPageHeights] = useState<Map<number, number>>(new Map());
-  usePinchZoom(containerRef, contentRef, scale, setScale);
+  useReaderInput(containerRef, contentRef, scale, setScale, onClose);
   const { trackRow } = usePdfPagePosition({
     containerRef,
     numPages,

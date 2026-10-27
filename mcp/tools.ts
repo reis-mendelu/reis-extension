@@ -10,6 +10,8 @@ import { fetchGradeHistory } from '../src/api/gradeHistory';
 import { fetchOdevzdavarny, type Odevzdavarna } from '../src/api/odevzdavarny';
 import { boxState } from '../src/utils/submissionBoxes';
 import { listFolderFiles, readDokServerFile } from './files';
+// Aliased to ./documentHandover in the plugin build, like the import in files.ts.
+import { DOCUMENT_DESCRIPTION } from './documentText';
 import { scheduleRows, defaultRange, compactStudyPlan } from './shape';
 
 const UNCONFIRMED_NOTE =
@@ -27,7 +29,11 @@ function submissionOf(box: Odevzdavarna) {
   }
 }
 
-export type ToolCtx = { fetch: typeof fetch };
+export type ToolCtx = {
+  fetch: typeof fetch;
+  /** Set while the server cannot reach IS at all (no login): every tool answers this. */
+  unavailable?: string;
+};
 export type ToolDef = {
   name: string;
   title: string;
@@ -159,8 +165,7 @@ export const TOOLS: ToolDef[] = [
   {
     name: 'mendelu_read_file',
     title: 'Read a subject file',
-    description:
-      'Downloads one file from the IS document server and returns its text (PDF, DOCX, PPTX, XLSX, ODT, plain text). Only accepts a downloadUrl from mendelu_subject_files. Read-only.',
+    description: DOCUMENT_DESCRIPTION,
     input: { url: z.string().url().describe('A downloadUrl from mendelu_subject_files.') },
     run: (a, ctx) => readDokServerFile(String(a.url), ctx.fetch),
   },

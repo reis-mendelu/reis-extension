@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { ArrowLeft, ExternalLink, Pin } from 'lucide-react';
 import { createPortal } from 'react-dom';
+import { useEscapeLayer } from '../../hooks/ui/useEscapeLayer';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { BulletinPost } from '../../types/bulletin';
 import { BulletinList } from './BulletinList';
@@ -24,21 +25,18 @@ export function MobileBulletinOverlay({
 }: MobileBulletinOverlayProps) {
   const { t } = useTranslation();
 
-  // Mirror the desktop dropdown's Escape-to-close + lock the page underneath so
+  // Escape closes it, as the desktop dropdown's does, and only it: it is an
+  // Escape layer over whatever it opened from. And lock the page underneath so
   // background scrolling and rubber-banding don't bleed through the overlay.
+  useEscapeLayer(isOpen, onClose);
   useEffect(() => {
     if (!isOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
-      document.removeEventListener('keydown', onKey);
       document.body.style.overflow = previousOverflow;
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

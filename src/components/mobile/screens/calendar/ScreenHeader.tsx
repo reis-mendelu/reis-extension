@@ -15,6 +15,12 @@ export interface ScreenHeaderProps {
    */
   below?: ReactNode;
   /**
+   * One more circle at the START of the actions row: the screen's refresh.
+   * Only drawn where there is no pull to make it (RefreshButton) — a Mac — and
+   * otherwise `sr-only`, which is absolute and takes no flex slot.
+   */
+  action?: ReactNode;
+  /**
    * Makes the title itself a control, with a return glyph beside it — the
    * calendar's way back to today. A glyph, not a pill: the header is full at a
    * date and three actions, and "Dnes" beside the date never fit at 375.
@@ -34,7 +40,7 @@ const TITLE_CLASS =
  * three destinations were reachable from one of five tabs; making the actions
  * part of the header means a screen cannot render one without them.
  */
-export function ScreenHeader({ eyebrow, title, below, titleAction }: ScreenHeaderProps) {
+export function ScreenHeader({ eyebrow, title, below, action, titleAction }: ScreenHeaderProps) {
   return (
     // The top padding carries --safe-top because this is the topmost element on
     // every mobile screen and targetSdk 36 forces edge-to-edge: without it the
@@ -75,7 +81,10 @@ export function ScreenHeader({ eyebrow, title, below, titleAction }: ScreenHeade
             <span className={TITLE_CLASS}>{title}</span>
           )}
         </div>
-        <HeaderActions />
+        <div className="flex flex-shrink-0 items-center gap-2 max-[359px]:gap-1">
+          {action}
+          <HeaderActions />
+        </div>
       </div>
       {below}
     </div>

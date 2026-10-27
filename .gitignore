@@ -181,5 +181,6 @@ native/*/Package.resolved
 native/*/.build/
 native/*/.swiftpm/
 
-# reIS for Claude bundle + .mcpb (npm run mcp:pack)
+# reIS for Claude bundle + .mcpb (npm run mcp:pack) and plugin folder (npm run mcp:plugin)
 dist-mcp/
+dist-plugin/

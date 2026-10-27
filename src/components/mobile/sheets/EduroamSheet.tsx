@@ -47,8 +47,18 @@ function NumberBadge({ n }: { n: number }) {
 export function EduroamSheet({ onClose }: EduroamSheetProps) {
   const { t } = useTranslation();
   const target = detectTarget();
-  const { status, password, error, networkFailure, outcome, expiredAt, expiresSoonAt, run, renew } =
-    useEduroamSetup(target);
+  const {
+    status,
+    password,
+    error,
+    networkFailure,
+    outcome,
+    expiredAt,
+    expiresSoonAt,
+    run,
+    renew,
+    profileRoute,
+  } = useEduroamSetup(target);
   const working = status === 'working';
 
   // On the phone itself Android saves the network directly, so there is no
@@ -58,9 +68,9 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
   /**
    * reIS on a Mac: inside the app, but with no OS that will take the
    * configuration (see resolveNativeEduroamSupport). The student gets the same
-   * profile a desktop browser would download, except it arrives through the
-   * share sheet — so the flow gains a step the browser never needed, saying
-   * what to do with the file once it is saved.
+   * profile a desktop browser would download, handed straight to macOS, which
+   * opens Device Management on it (see deliverEduroamProfile) — so the flow
+   * gains a step the browser never needed, saying how to install it there.
    */
   const macInApp = !native && target === 'mac' && getPlatform().kind === 'capacitor';
 
@@ -135,7 +145,13 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
           <div className="flex items-center gap-3">
             <NumberBadge n={3} />
             <span className="flex-1 text-sm text-base-content/70">
-              {t('eduroam.macApp.installStep')}
+              {/* `saved`: macOS would not open the profile, so the student saved
+                  it with the Save panel and nothing has opened System Settings. */}
+              {t(
+                status === 'done' && profileRoute === 'saved'
+                  ? 'eduroam.macApp.savedStep'
+                  : 'eduroam.macApp.installStep'
+              )}
             </span>
           </div>
         )}

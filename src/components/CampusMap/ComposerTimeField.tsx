@@ -113,21 +113,19 @@ export function ComposerTimeField({
       ?.scrollIntoView({ block: 'nearest' });
   }, [open, active, options]);
 
+  // Every key handled here is kept. Escape only while the list is open: it
+  // closes the list, and with none open it is left to the panel.
   const onKeyDown = (e: React.KeyboardEvent) => {
+    const kept = ['ArrowDown', 'ArrowUp', 'Enter'].includes(e.key) || (e.key === 'Escape' && open);
+    if (!kept) return;
+    e.preventDefault();
     if (e.key === 'ArrowDown') {
-      e.preventDefault();
       if (!open) return openList();
       setActive((a) => Math.min(options.length - 1, a + 1));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setActive((a) => Math.max(0, a - 1));
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (open && active >= 0 && options[active]) commit(options[active]);
-      else if (isCompleteTime(text)) commit(text);
-    } else if (e.key === 'Escape') {
-      close();
-    }
+    } else if (e.key === 'ArrowUp') setActive((a) => Math.max(0, a - 1));
+    else if (e.key === 'Escape') close();
+    else if (open && active >= 0 && options[active]) commit(options[active]);
+    else if (isCompleteTime(text)) commit(text);
   };
 
   return (

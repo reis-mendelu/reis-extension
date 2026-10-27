@@ -143,3 +143,12 @@ describe('createIsSession', () => {
     expect(login).toHaveBeenCalledTimes(3);
   });
 });
+
+describe('noLoginFetch', () => {
+  it('answers every request with how to set the login, in both hosts, and never fetches', async () => {
+    const { noLoginFetch, NO_LOGIN_MESSAGE } = await import('../session');
+    await expect(noLoginFetch(IS_URL)).rejects.toThrow(NO_LOGIN_MESSAGE);
+    expect(NO_LOGIN_MESSAGE).toMatch(/\/plugin configure reis/);
+    expect(NO_LOGIN_MESSAGE).toMatch(/Claude Desktop/);
+  });
+});

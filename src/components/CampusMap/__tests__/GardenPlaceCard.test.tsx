@@ -63,7 +63,7 @@ describe('GardenPlaceCard', () => {
     render(<GardenPlaceCard place={{ ...PLACE, photo: 'rokle-full.jpg' }} />);
     fireEvent.click(screen.getByRole('button', { name: 'Rokle' }));
     expect(screen.getAllByAltText('Rokle')).toHaveLength(2);
-    fireEvent.keyDown(window, { key: 'Escape' });
+    fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.getAllByAltText('Rokle')).toHaveLength(1);
   });
 

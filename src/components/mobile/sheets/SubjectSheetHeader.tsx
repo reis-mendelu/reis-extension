@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { Pencil } from 'lucide-react';
 import { SheetHeader } from '../primitives/SheetHeader';
@@ -13,6 +13,8 @@ export interface SubjectSheetHeaderProps {
   isName: string;
   titleHref?: string;
   onBack: () => void;
+  /** A control beside the pencil: the Files tab's refresh (RefreshButton). */
+  action?: ReactNode;
 }
 
 /**
@@ -22,7 +24,10 @@ export interface SubjectSheetHeaderProps {
  *
  * Not that component reused: its pencil appears on hover and is ~27px, and it
  * leans on Escape to cancel. Here the pencil is always shown and 44px, and
- * Uložit / Zrušit are buttons, because a phone keyboard has neither key.
+ * Uložit / Zrušit are buttons, because an on-screen keyboard has no Escape.
+ * A hardware one (a Mac, an iPad with a keyboard) cancels with Escape as well,
+ * and keeps the key, so the sheet stack does not pop the subject with the
+ * draft in it.
  *
  * With a nickname set, IS's own name stays visible under it, so a renamed
  * subject can still be matched to what the teacher, the timetable and IS call
@@ -33,6 +38,7 @@ export function SubjectSheetHeader({
   isName,
   titleHref,
   onBack,
+  action,
 }: SubjectSheetHeaderProps) {
   const { t } = useTranslation();
   const nickname = useAppStore((s) => s.courseNicknames[courseCode]);
@@ -81,6 +87,11 @@ export function SubjectSheetHeader({
         aria-describedby={hintId}
         placeholder={isName}
         enterKeyHint="done"
+        onKeyDown={(e) => {
+          if (e.key !== 'Escape') return;
+          e.preventDefault();
+          cancel();
+        }}
         autoComplete="off"
         // text-base is 16px — below that iOS zooms the page in on focus.
         className="input input-bordered h-11 w-full text-base font-semibold"
@@ -125,14 +136,19 @@ export function SubjectSheetHeader({
       titleSlot={editor || undefined}
       trailing={
         draft === null && (
-          <button
-            type="button"
-            onClick={startEditing}
-            aria-label={t('mobile.subjectName.rename')}
-            className="btn btn-circle btn-ghost -mr-2 -mt-1.5 min-h-11 min-w-11 flex-shrink-0 text-base-content/70"
-          >
-            <Pencil className="h-[18px] w-[18px]" />
-          </button>
+          // The refresh is `sr-only` on a touch screen (absolute, no flex
+          // slot), so there the pencil sits exactly where it always did.
+          <div className="-mr-2 -mt-1.5 flex flex-shrink-0 items-center gap-1">
+            {action}
+            <button
+              type="button"
+              onClick={startEditing}
+              aria-label={t('mobile.subjectName.rename')}
+              className="btn btn-circle btn-ghost min-h-11 min-w-11 flex-shrink-0 text-base-content/70"
+            >
+              <Pencil className="h-[18px] w-[18px]" />
+            </button>
+          </div>
         )
       }
     />

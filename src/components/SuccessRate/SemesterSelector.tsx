@@ -1,5 +1,6 @@
 import type { SemesterStats } from '../../types/documents';
 import { useTranslation } from '../../hooks/useTranslation';
+import { HorizontalScroller } from '../ui/HorizontalScroller';
 
 interface SemesterSelectorProps {
   stats: SemesterStats[];
@@ -24,7 +25,11 @@ export function SemesterSelector({ stats, activeIndex, onSelect }: SemesterSelec
   // `ring-inset` because that scrolling row also clips vertically and has no
   // vertical padding, so an outer ring lost its top and bottom edges.
   return (
-    <div className="flex flex-nowrap sm:flex-wrap justify-center-safe sm:justify-center gap-1 sm:gap-2 mt-4 sm:mt-auto overflow-x-auto sm:overflow-visible snap-x scrollbar-thin -mx-1 px-1">
+    // A sideways row below `sm`: a mouse gets edge buttons (HorizontalScroller).
+    <HorizontalScroller
+      outerClassName="mt-4 sm:mt-auto"
+      className="flex flex-nowrap sm:flex-wrap justify-center-safe sm:justify-center gap-1 sm:gap-2 overflow-x-auto sm:overflow-visible snap-x scrollbar-thin -mx-1 px-1"
+    >
       {stats.map((s, i) => {
         const total = s.totalPass + s.totalFail,
           rate = Math.round((s.totalPass / total) * 100) || 0,
@@ -65,6 +70,6 @@ export function SemesterSelector({ stats, activeIndex, onSelect }: SemesterSelec
           </button>
         );
       })}
-    </div>
+    </HorizontalScroller>
   );
 }
