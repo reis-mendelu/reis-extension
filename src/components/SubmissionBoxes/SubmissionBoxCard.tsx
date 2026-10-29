@@ -20,6 +20,8 @@ interface SubmissionBoxCardProps {
   box: Odevzdavarna;
   now: number;
   testId: string;
+  /** New since an earlier sync: reached from a "Nová odevzdávárna" row. */
+  isNew?: boolean;
 }
 
 /**
@@ -27,7 +29,7 @@ interface SubmissionBoxCardProps {
  * card-sized target is what a thumb on the phone actually hits. The teacher's
  * Pokyny fold out below it, outside the link, so opening them stays in reIS.
  */
-export function SubmissionBoxCard({ box, now, testId }: SubmissionBoxCardProps) {
+export function SubmissionBoxCard({ box, now, testId, isNew }: SubmissionBoxCardProps) {
   const L = useBoxLabels();
   const deadline = boxDeadline(box);
   const state = boxState(box);
@@ -49,7 +51,14 @@ export function SubmissionBoxCard({ box, now, testId }: SubmissionBoxCardProps) 
         }`}
       >
         <div className="flex items-start justify-between gap-2">
-          <span className="min-w-0 break-words text-sm font-semibold">{box.name}</span>
+          <span className="min-w-0 break-words text-sm font-semibold">
+            {isNew && (
+              <span className="mr-1.5 inline-block rounded-md bg-info/15 px-1.5 py-0.5 align-[1px] text-[11px] font-bold text-[var(--tone-info)]">
+                {L.t('newBox.badge')}
+              </span>
+            )}
+            {box.name}
+          </span>
           {deadline && (
             <span
               className={`shrink-0 whitespace-nowrap rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${

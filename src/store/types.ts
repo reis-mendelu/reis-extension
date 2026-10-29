@@ -329,6 +329,11 @@ export interface CvicneTestsSlice {
   odevzdavarnyStatus: Status;
   fetchOdevzdavarny: () => Promise<void>;
   setOdevzdavarny: (assignments: Odevzdavarna[]) => void;
+  /** Keys (boxKey) of boxes new since an earlier sync whose subject is not opened yet. */
+  odevzdavarnyNew: string[];
+  setOdevzdavarnyNew: (keys: string[]) => void;
+  /** The subject's Záznamník is on screen: its new boxes are seen. */
+  markBoxesSeen: (courseCode: string) => Promise<void>;
 }
 
 export interface UseThemeResult {

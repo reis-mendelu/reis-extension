@@ -5,6 +5,8 @@ const { store } = vi.hoisted(() => ({
   store: {
     zaznamnikNewPoints: {} as Record<string, unknown[]>,
     markZaznamnikSeen: vi.fn(async () => undefined),
+    odevzdavarnyNew: [] as string[],
+    markBoxesSeen: vi.fn(async () => undefined),
   },
 }));
 vi.mock('../../../store/useAppStore', () => ({
@@ -17,6 +19,7 @@ describe('useMarkZaznamnikSeen', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     store.zaznamnikNewPoints = { 'EBC-PS': [{ label: 'a', value: '1' }] };
+    store.odevzdavarnyNew = [];
   });
 
   it('clears a subject once its záznamník is on screen', () => {
@@ -33,5 +36,18 @@ describe('useMarkZaznamnikSeen', () => {
   it('does nothing for a subject with nothing new', () => {
     renderHook(() => useMarkZaznamnikSeen('EBC-VWA', 'zaznamnik', true));
     expect(store.markZaznamnikSeen).not.toHaveBeenCalled();
+  });
+
+  // New submission boxes live on the same tab, so they clear the same way.
+  it('clears new submission boxes once the záznamník is on screen', () => {
+    store.odevzdavarnyNew = ['9001'];
+    renderHook(() => useMarkZaznamnikSeen('EBC-VWA', 'zaznamnik', true));
+    expect(store.markBoxesSeen).toHaveBeenCalledWith('EBC-VWA');
+  });
+
+  it('leaves new boxes while another tab is showing', () => {
+    store.odevzdavarnyNew = ['9001'];
+    renderHook(() => useMarkZaznamnikSeen('EBC-VWA', 'files', true));
+    expect(store.markBoxesSeen).not.toHaveBeenCalled();
   });
 });

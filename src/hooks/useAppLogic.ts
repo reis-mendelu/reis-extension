@@ -4,6 +4,7 @@ import { getSmartWeekRange } from '../utils/calendar';
 import { IndexedDBService } from '../services/storage';
 import { syncService, syncGradeHistory } from '../services/sync';
 import { persistZaznamnikBatch } from '../services/sync/zaznamnikNewPoints';
+import { persistNewBoxes } from '../services/sync/newSubmissionBoxes';
 import { notifyNewPoints } from '../services/newPointsNotifier';
 
 import { useAppStore, initializeStore } from '../store/useAppStore';
@@ -229,6 +230,13 @@ export function useAppLogic() {
               r.odevzdavarny
             );
             useAppStore.getState().setOdevzdavarny(r.odevzdavarny);
+            // Its own catch: a failed check must not cost the rest of the push.
+            try {
+              const { unseen } = await persistNewBoxes(r.odevzdavarny);
+              useAppStore.getState().setOdevzdavarnyNew(unseen);
+            } catch (err) {
+              logError('useAppLogic.persistNewBoxes', err);
+            }
           }
         }
         if (r.exams) useAppStore.getState().setExams(r.exams);

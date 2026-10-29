@@ -4,10 +4,18 @@ import { parseDate } from '../utils/date';
 import { courseDisplayName } from '../utils/courseDisplayName';
 import { boxCourseCode, boxState } from '../utils/submissionBoxes';
 import { newPointsAlerts } from '../utils/zaznamnik/newPointsAlerts';
+import { boxKey } from '../utils/newSubmissionBoxes';
+import { newBoxAlerts } from '../utils/newSubmissionBoxAlerts';
 
 export interface DeadlineAlert {
   id: string;
-  type: 'exam-reg-opens' | 'exam-reg' | 'assignment' | 'cvicny-test' | 'zaznamnik-points';
+  type:
+    | 'exam-reg-opens'
+    | 'exam-reg'
+    | 'assignment'
+    | 'assignment-new'
+    | 'cvicny-test'
+    | 'zaznamnik-points';
   title: string;
   body: string;
   deadline?: Date;
@@ -41,6 +49,7 @@ export function useDeadlineAlerts() {
   const markDeadlineAlertsSeen = useAppStore((s) => s.markDeadlineAlertsSeen);
   const pulseNow = useAppStore((s) => s.now);
   const newPoints = useAppStore((s) => s.zaznamnikNewPoints);
+  const newBoxes = useAppStore((s) => s.odevzdavarnyNew);
 
   const markAllSeen = useCallback(
     (ids: string[]) => {
@@ -108,7 +117,12 @@ export function useDeadlineAlerts() {
       }
     }
 
+    const freshBoxes = newBoxAlerts(newBoxes, odevzdavarny, subjects, nicknames, language, now);
+    const announced = new Set(freshBoxes.map((a) => a.id.slice('odev-new-'.length)));
+
     for (const a of odevzdavarny) {
+      // Its "Nová odevzdávárna" row already says when it is due.
+      if (announced.has(boxKey(a))) continue;
       // The list also holds boxes IS will not take files for ("Kam nemohu").
       // Files alone do not silence it: until the student confirms in IS, the
       // box is not handed in (see boxState).
@@ -142,9 +156,19 @@ export function useDeadlineAlerts() {
     }
 
     result.sort((a, b) => (a.hoursUntil ?? Infinity) - (b.hoursUntil ?? Infinity));
-    // Points first: they already happened, the deadlines are still ahead.
-    return [...newPointsAlerts(newPoints, subjects, nicknames, isEn), ...result];
-  }, [exams, odevzdavarny, cvicneTests, language, pulseNow, subjects, nicknames, newPoints]);
+    // Points and new boxes first: they already happened, the deadlines are still ahead.
+    return [...newPointsAlerts(newPoints, subjects, nicknames, isEn), ...freshBoxes, ...result];
+  }, [
+    exams,
+    odevzdavarny,
+    cvicneTests,
+    language,
+    pulseNow,
+    subjects,
+    nicknames,
+    newPoints,
+    newBoxes,
+  ]);
 
   const unseenCount = useMemo(
     () => alerts.filter((a) => !seenIds.has(a.id)).length,

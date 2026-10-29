@@ -1,4 +1,4 @@
-import { BookOpen, ClipboardList, Clock, ExternalLink } from 'lucide-react';
+import { BookOpen, ClipboardList, Clock, ExternalLink, FilePlus } from 'lucide-react';
 import type { DeadlineAlert } from '../../hooks/useDeadlineAlerts';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -6,6 +6,7 @@ const TYPE_KEY: Record<DeadlineAlert['type'], string> = {
   'exam-reg-opens': 'deadlines.examRegOpens',
   'exam-reg': 'deadlines.examReg',
   assignment: 'deadlines.assignment',
+  'assignment-new': 'newBox.kind',
   'cvicny-test': 'deadlines.cvicnyTest',
   'zaznamnik-points': 'zaznamnik.newPoints',
 };
@@ -16,6 +17,7 @@ const TINT: Record<DeadlineAlert['type'], string> = {
   'exam-reg-opens': 'bg-warning/10 text-warning',
   'exam-reg': 'bg-warning/10 text-warning',
   assignment: 'bg-warning/10 text-warning',
+  'assignment-new': 'bg-info/10 text-info',
   'cvicny-test': 'bg-success/10 text-success',
   'zaznamnik-points': 'bg-success/10 text-success',
 };
@@ -46,7 +48,7 @@ export function DeadlineAlertItem({
   onOpenSubject,
 }: {
   alert: DeadlineAlert;
-  /** A row about a subject (new záznamník points) opens it in reIS. */
+  /** A row about a subject (new záznamník points, a new box) opens it in reIS. */
   onOpenSubject?: (alert: DeadlineAlert) => void;
 }) {
   const { t } = useTranslation();
@@ -68,6 +70,8 @@ export function DeadlineAlertItem({
       >
         {alert.type === 'zaznamnik-points' ? (
           <ClipboardList size={16} />
+        ) : alert.type === 'assignment-new' ? (
+          <FilePlus size={16} />
         ) : isCvicny ? (
           <BookOpen size={16} />
         ) : (
