@@ -14,16 +14,19 @@ import { describe, expect, it } from 'vitest';
  * that placement means rewriting this guard on purpose.
  *
  * The data keeps syncing: the placement that replaces it will read the same slice.
- * If the choice is "nowhere", drop the sync and the last test with it.
+ * It is parsed out of the subjects page sync already fetches, so it costs no extra
+ * request to IS. If the choice is "nowhere", the parsing and the last test can go.
  */
 const SRC = resolve(process.cwd(), 'src');
 const read = (p: string) => readFileSync(join(SRC, p), 'utf8');
+// Any spelling a reader could use: the slice, a useAttendance hook, a Czech label.
+const MENTIONS_ATTENDANCE = /attendance|docházk|dochazk/i;
 
 function componentFiles(dir: string): string[] {
   return readdirSync(join(SRC, dir), { withFileTypes: true }).flatMap((e) => {
     const path = join(dir, e.name);
     if (e.isDirectory()) return e.name === '__tests__' ? [] : componentFiles(path);
-    return e.name.endsWith('.tsx') ? [path] : [];
+    return /\.tsx?$/.test(e.name) ? [path] : [];
   });
 }
 
@@ -36,12 +39,12 @@ describe('attendance has no screen yet', () => {
     'components/mobile/sheets/SubjectSheetHeader.tsx',
     'components/mobile/sheets/SubjectDrawerSheet.tsx',
   ])('%s does not read attendance', (file) => {
-    expect(read(file)).not.toMatch(/attendance/i);
+    expect(read(file)).not.toMatch(MENTIONS_ATTENDANCE);
   });
 
   it('no component on either tree reads it', () => {
     const readers = [...componentFiles('components'), ...componentFiles('mobile')]
-      .filter((f) => /\battendance\b/i.test(read(f)))
+      .filter((f) => MENTIONS_ATTENDANCE.test(read(f)))
       .map((f) => relative(SRC, join(SRC, f)));
     expect(readers).toEqual([]);
   });
