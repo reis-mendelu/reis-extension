@@ -18,12 +18,18 @@ const READERS: Record<string, string> = {
   'src/hooks/useVisibleMapEvents.ts': 'the map seam: filters through visibleToStudent',
   'src/hooks/useNotificationFeed.ts': 'the Novinky seam: filters through canSee',
   'src/hooks/useOpenNotification.ts': 'looks up the event of a row the feed already filtered',
+  'src/store/slices/createMapSlice.ts': 'owns mapEvents: loads and focuses, shows nothing',
+  'src/store/slices/createNotificationSlice.ts':
+    'owns the feed: loads and marks read, shows nothing',
+  'src/store/types.ts': 'declares the two fields',
 };
 const NOT_EVENTS = [
   'src/hooks/useMatchingPartners.ts',
   'src/components/CampusMap/SocietyPinLayer.tsx',
 ];
-const RAW_EVENTS = /(\.|\{\s*)mapEvents\b|\bmapEvents\s*:|notifications\.data\b/;
+// Also the whole slice (`s.notifications)`), which reaches `.data` by an alias.
+const RAW_EVENTS =
+  /(\.|\{\s*)mapEvents\b|\bmapEvents\s*:|notifications\.data\b|\bs\.notifications\)/;
 
 function sources(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
@@ -35,9 +41,8 @@ function sources(dir: string): string[] {
 
 describe('the exchange-student filter covers events only', () => {
   it('only the listed hooks read raw society events', () => {
-    const readers = ['src/components', 'src/hooks']
-      .flatMap(sources)
-      .filter((path) => RAW_EVENTS.test(readFileSync(path, 'utf8')));
+    // All of src: the phone tree also lives in src/mobile.
+    const readers = sources('src').filter((path) => RAW_EVENTS.test(readFileSync(path, 'utf8')));
     expect(readers.sort()).toEqual(Object.keys(READERS).sort());
   });
 

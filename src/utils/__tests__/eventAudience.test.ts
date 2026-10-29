@@ -15,10 +15,10 @@ import {
  * tests are about what a student is shown.
  */
 const cat = BUNDLED_SOCIETIES;
-const pef: Viewer = { facultyKey: 'pef', erasmus: false };
-const frrms: Viewer = { facultyKey: 'frrms', erasmus: false };
-const erasmusPef: Viewer = { facultyKey: 'pef', erasmus: true };
-const unknown: Viewer = { facultyKey: null, erasmus: false };
+const pef: Viewer = { facultyKey: 'pef', erasmus: false, exchange: false };
+const frrms: Viewer = { facultyKey: 'frrms', erasmus: false, exchange: false };
+const erasmusPef: Viewer = { facultyKey: 'pef', erasmus: true, exchange: false };
+const unknown: Viewer = { facultyKey: null, erasmus: false, exchange: false };
 const ev = (societyId: string, subscribersOnly?: boolean) => ({ societyId, subscribersOnly });
 
 describe('audienceOf', () => {
@@ -82,8 +82,18 @@ describe('canSee: partners obey their audience, whatever subscribersOnly says', 
     audience: ['pef:B-OI', 'pef:B-AII'],
   };
   const withSap = { ...cat, sap };
-  const pefOi: Viewer = { facultyKey: 'pef', erasmus: false, programme: 'B-OI' };
-  const pefEm: Viewer = { facultyKey: 'pef', erasmus: false, programme: 'B-EM' };
+  const pefOi: Viewer = {
+    facultyKey: 'pef',
+    erasmus: false,
+    exchange: false,
+    programme: 'B-OI',
+  };
+  const pefEm: Viewer = {
+    facultyKey: 'pef',
+    erasmus: false,
+    exchange: false,
+    programme: 'B-EM',
+  };
 
   it('shows a public partner event only to matching students', () => {
     expect(canSee(ev('sap', false), withSap, pefOi)).toBe(true);
@@ -122,8 +132,10 @@ describe('canSee: an exchange student sees ESN only (decision 2026-10-29)', () =
     }
   });
 
-  it("keeps reIS's own events: reIS is the app, not a society", () => {
-    expect(canSee(ev('reis', false), cat, exchange)).toBe(true);
+  it("keeps reIS's own events and rows: reIS is the app, not a society", () => {
+    for (const id of ['reis', 'admin', 'academic_deadline', '']) {
+      expect(canSee(ev(id, false), cat, exchange)).toBe(true);
+    }
   });
 
   it('hides a partner whose audience the student is in (EY targets PEF)', () => {

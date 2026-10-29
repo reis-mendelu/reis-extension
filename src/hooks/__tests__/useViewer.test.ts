@@ -71,8 +71,10 @@ describe('useViewer', () => {
     expect(result.current).toMatchObject({ erasmus: true, exchange: true });
   });
 
-  it('is the impersonated student while impersonating, never Erasmus', () => {
+  it('is the impersonated student while impersonating, never Erasmus or exchange', () => {
     useAppStore.setState({
+      // The admin's own programme must not leak into the impersonated viewer.
+      userProgramme: 'Z-EXC',
       impersonation: { selection: { faculty: 'FRRMS' }, result: {} } as never,
     });
     const { result } = renderHook(() => useViewer());

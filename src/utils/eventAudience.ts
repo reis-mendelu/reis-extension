@@ -23,9 +23,9 @@ export interface Viewer {
    * On IS's exchange programme (Z-EXC): sees ESN's events and nobody else's
    * (decision 2026-10-29). Narrow on purpose, because this one HIDES: the
    * Erasmus text test can match a Czech student's own trip abroad, and that
-   * student would lose their faculty's events. Absent = not exchange.
+   * student would lose their faculty's events.
    */
-  exchange?: boolean;
+  exchange: boolean;
   /** Base study-programme code ('B-OI'), null when IS did not say. Partners only. */
   programme?: string | null;
 }
@@ -42,8 +42,16 @@ export const EXCHANGE_PROGRAMME = 'Z-EXC';
 
 /** ESN MENDELU, by id: an edited label must not change who exchange students see. */
 const ESN = 'esn';
-/** reIS itself, university-wide whatever the row says (as in spolkyService). */
-const REIS = 'reis';
+/**
+ * reIS's own rows: no society, the console's `admin`, academic deadlines, and
+ * `reis`, which is university-wide whatever the row says (as in spolkyService).
+ * reIS is the app, not a society, so even an exchange student sees these.
+ */
+export function isReisOwn(societyId: string | null | undefined): boolean {
+  return (
+    !societyId || societyId === 'admin' || societyId === 'reis' || societyId.startsWith('academic_')
+  );
+}
 
 export type Audience = 'everyone' | 'erasmus' | Exclude<FacultyKey, 'mendelu'>;
 
@@ -64,7 +72,7 @@ export function canSee(
   // student even its events "for everyone" are noise. reIS is the app, not a
   // society. Checked before partners: a partner's faculty-wide audience would
   // otherwise match them too.
-  if (viewer.exchange) return event.societyId === ESN || event.societyId === REIS;
+  if (viewer.exchange) return event.societyId === ESN || isReisOwn(event.societyId);
   // Partners reach their audience and nobody else, whatever the event's own
   // flag (spec 2026-10-09). Noise control, like the rest of this file.
   if (society && isPartner(society)) return matchesAudience(society.audience, viewer);

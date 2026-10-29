@@ -138,4 +138,24 @@ describe('loadContext viewer cache', () => {
     await useAppStore.getState().loadContext();
     expect(useAppStore.getState().userProgramme).toBe('Z-EXC');
   });
+
+  // Dual study: the programme is the selected study's, so switching between an
+  // exchange study and a degree study moves the student in and out of it.
+  it('follows the selected study in and out of the exchange programme', async () => {
+    getUserParams.mockResolvedValue({
+      facultyLabel: 'PEF',
+      studyProgram: 'Z-EXC',
+      isErasmus: false,
+    });
+    await useAppStore.getState().loadContext();
+    expect(useAppStore.getState().userProgramme).toBe('Z-EXC');
+
+    getUserParams.mockResolvedValue({
+      facultyLabel: 'PEF',
+      studyProgram: 'B-OI-ZBOI',
+      isErasmus: false,
+    });
+    await useAppStore.getState().loadContext();
+    expect(useAppStore.getState().userProgramme).toBe('B-OI');
+  });
 });
