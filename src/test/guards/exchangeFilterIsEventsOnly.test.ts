@@ -27,9 +27,19 @@ const NOT_EVENTS = [
   'src/hooks/useMatchingPartners.ts',
   'src/components/CampusMap/SocietyPinLayer.tsx',
 ];
-// Also the whole slice (`s.notifications)`), which reaches `.data` by an alias.
+// Any `mapEvents` in code (a destructure too, not an import path), the feed's
+// `.data`, and the whole slice by selector or destructure, which reach `.data`
+// by an alias.
 const RAW_EVENTS =
-  /(\.|\{\s*)mapEvents\b|\bmapEvents\s*:|notifications\.data\b|\bs\.notifications\)/;
+  /(?<![/\w])mapEvents\b|\bnotifications\.data\b|\bs\.notifications\)|\{[^}]*\bnotifications\b[^}]*\}\s*=\s*(useAppStore|get)\b/;
+// A property read or a destructure, not the word in prose.
+const USES_EXCHANGE = /\.exchange\b|\{[^}]*\bexchange\b[^}]*\}/;
+
+/** Source without comments, so prose never counts as a read. */
+const code = (path: string) =>
+  readFileSync(path, 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
 
 function sources(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
@@ -42,20 +52,20 @@ function sources(dir: string): string[] {
 describe('the exchange-student filter covers events only', () => {
   it('only the listed hooks read raw society events', () => {
     // All of src: the phone tree also lives in src/mobile.
-    const readers = sources('src').filter((path) => RAW_EVENTS.test(readFileSync(path, 'utf8')));
+    const readers = sources('src').filter((path) => RAW_EVENTS.test(code(path)));
     expect(readers.sort()).toEqual(Object.keys(READERS).sort());
   });
 
   it.each(['src/hooks/useVisibleMapEvents.ts', 'src/hooks/useNotificationFeed.ts'])(
     '%s filters through the audience rule',
     (path) => {
-      expect(readFileSync(path, 'utf8')).toMatch(/\b(canSee|visibleToStudent)\(/);
+      expect(code(path)).toMatch(/\b(canSee|visibleToStudent)\(/);
     }
   );
 
   it.each(NOT_EVENTS)('%s does not apply the exchange filter', (path) => {
-    const src = readFileSync(path, 'utf8');
-    expect(src).not.toMatch(/\.exchange\b/);
+    const src = code(path);
+    expect(src).not.toMatch(USES_EXCHANGE);
     expect(src).not.toMatch(/\b(canSee|visibleToStudent)\(/);
   });
 });
