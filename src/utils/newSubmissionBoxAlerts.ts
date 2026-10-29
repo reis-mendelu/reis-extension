@@ -2,28 +2,16 @@ import type { Odevzdavarna } from '../api/odevzdavarny';
 import type { DeadlineAlert } from '../hooks/useDeadlineAlerts';
 import type { SubjectInfo } from '../types/documents';
 import type { Language } from '../store/types';
-import { translate } from '../i18n/translate';
 import { courseDisplayName, type CourseNicknames } from './courseDisplayName';
 import { boxCourseCode, boxDeadline } from './submissionBoxes';
 import { actionable, boxKey } from './newSubmissionBoxes';
 
-/** "do ne 20. 12. 23:59", the same words the box's own card uses. */
-export function boxUntil(deadline: Date, language: Language): string {
-  const locale = language === 'cz' ? 'cs' : 'en';
-  const day = deadline.toLocaleDateString(locale, {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'numeric',
-  });
-  const time = deadline.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-  return translate(language, 'odevzdavarny.until', { date: `${day} ${time}` });
-}
-
 /**
  * "Nová odevzdávárna" as Novinky rows, one per box, on both trees. A row opens
  * its subject's Záznamník, where the boxes are, and stays until that tab is
- * on screen (markBoxesSeen). No clock: the deadline is in the text, so the row
- * sits with "Nové body" instead of sorting among the deadlines.
+ * on screen (markBoxesSeen). A deadline but no `hoursUntil`: a clock would
+ * print hundreds of hours and sort the row among the deadlines, when it is news
+ * like "Nové body". The row shows the date instead.
  */
 export function newBoxAlerts(
   unseen: string[],
@@ -42,7 +30,6 @@ export function newBoxAlerts(
     // A row that cannot open its subject would be a dead end.
     if (!code) return [];
     const s = subjects?.[code];
-    const deadline = boxDeadline(box);
     return [
       {
         id: `odev-new-${boxKey(box)}`,
@@ -54,7 +41,8 @@ export function newBoxAlerts(
             s?.displayName ||
             (isEn ? box.courseNameEn || box.courseNameCs : box.courseNameCs)
         ),
-        body: deadline ? `${box.name} · ${boxUntil(deadline, language)}` : box.name,
+        body: box.name,
+        deadline: boxDeadline(box) ?? undefined,
         courseCode: code,
         courseId: s?.subjectId ?? box.courseId,
       },

@@ -48,10 +48,8 @@ describe('NotificationsSheet: new odevzdávárna', () => {
     render(<NotificationsSheet onClose={vi.fn()} />);
     expect(screen.getByText('Záznamník')).toBeInTheDocument();
     expect(screen.getByText('Matematika')).toBeInTheDocument();
-    expect(
-      screen.getByText(/Build MATLAB Proficiency · do .*20\. ?12\. 23:59/)
-    ).toBeInTheDocument();
-    expect(screen.getByText('Nová odevzdávárna')).toBeInTheDocument();
+    expect(screen.getByText('Nová · Build MATLAB Proficiency')).toBeInTheDocument();
+    expect(screen.getByText(/^do 20\. ?12\.$/)).toBeInTheDocument();
   });
 
   it('a tap opens the subject on Záznamník', () => {

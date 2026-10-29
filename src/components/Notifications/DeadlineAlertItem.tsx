@@ -1,6 +1,7 @@
 import { BookOpen, ClipboardList, Clock, ExternalLink, FilePlus } from 'lucide-react';
 import type { DeadlineAlert } from '../../hooks/useDeadlineAlerts';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useBoxLabels } from '../SubmissionBoxes/useBoxLabels';
 
 const TYPE_KEY: Record<DeadlineAlert['type'], string> = {
   'exam-reg-opens': 'deadlines.examRegOpens',
@@ -52,12 +53,24 @@ export function DeadlineAlertItem({
   onOpenSubject?: (alert: DeadlineAlert) => void;
 }) {
   const { t } = useTranslation();
+  const { shortDate } = useBoxLabels();
 
   const h = alert.hoursUntil !== undefined ? Math.floor(alert.hoursUntil) : null;
+  // A new box is weeks away as often as not: its date, not a count of hours.
   const timeLabel =
-    h !== null ? (h < 1 ? t('deadlines.lessThanHour') : t('deadlines.hoursLeft', { h })) : null;
+    h !== null
+      ? h < 1
+        ? t('deadlines.lessThanHour')
+        : t('deadlines.hoursLeft', { h })
+      : alert.type === 'assignment-new' && alert.deadline
+        ? t('odevzdavarny.until', { date: shortDate(alert.deadline) })
+        : null;
   const kind = t(TYPE_KEY[alert.type]);
   const isCvicny = alert.type === 'cvicny-test';
+  const isNewBox = alert.type === 'assignment-new';
+  // "Nová odevzdávárna · " left a 320px phone no room for the box's own name,
+  // the one thing the row is about. The icon and the section say the rest.
+  const lead = isNewBox ? t('newBox.badge') : kind;
 
   const body = (
     <>
@@ -70,7 +83,7 @@ export function DeadlineAlertItem({
       >
         {alert.type === 'zaznamnik-points' ? (
           <ClipboardList size={16} />
-        ) : alert.type === 'assignment-new' ? (
+        ) : isNewBox ? (
           <FilePlus size={16} />
         ) : isCvicny ? (
           <BookOpen size={16} />
@@ -85,7 +98,8 @@ export function DeadlineAlertItem({
               test has no clock, so its kind IS its meta, and prefixing the
               subtitle with it too printed "Cvičný test" three times in one
               row — the label, the subtitle and the test's own name. */}
-          {timeLabel ? `${kind} · ${alert.body}` : alert.body}
+          {isNewBox && <span className="sr-only">{kind}: </span>}
+          {timeLabel ? `${lead} · ${alert.body}` : alert.body}
         </span>
       </span>
       {/* Bold base-content, not `text-warning`. Amber on the light theme's

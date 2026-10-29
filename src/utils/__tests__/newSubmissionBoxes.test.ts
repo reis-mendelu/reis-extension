@@ -76,7 +76,8 @@ describe('newBoxAlerts', () => {
       courseCode: 'EBC-MAT',
       courseId: '164074',
     });
-    expect(row?.body).toMatch(/^Build MATLAB Proficiency \(bonus body\) · do .*20\. ?12\. 23:59$/);
+    expect(row?.body).toBe('Build MATLAB Proficiency (bonus body)');
+    expect(row?.deadline).toEqual(new Date(2026, 11, 20, 23, 59));
     // No clock: it would print hundreds of hours and sort among the deadlines.
     expect(row?.hoursUntil).toBeUndefined();
   });

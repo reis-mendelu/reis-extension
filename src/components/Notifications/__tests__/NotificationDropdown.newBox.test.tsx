@@ -9,7 +9,8 @@ const NEW_BOX: DeadlineAlert = {
   id: 'odev-new-9001',
   type: 'assignment-new',
   title: 'Matematika',
-  body: 'Build MATLAB Proficiency · do ne 20. 12. 23:59',
+  body: 'Build MATLAB Proficiency',
+  deadline: new Date(2026, 11, 20, 23, 59),
   courseCode: 'EBC-MAT',
   courseId: '164074',
 };
@@ -32,8 +33,11 @@ describe('extension bell: new odevzdávárna', () => {
         onOpenSubject={onOpenSubject}
       />
     );
-    expect(screen.getByText('Nová odevzdávárna')).toBeInTheDocument();
-    expect(screen.getByText(NEW_BOX.body)).toBeInTheDocument();
+    // "Nová" leads the box's name; the date takes the meta column; the full
+    // kind is there for a screen reader.
+    expect(screen.getByText('Nová · Build MATLAB Proficiency')).toBeInTheDocument();
+    expect(screen.getByText('Nová odevzdávárna:')).toBeInTheDocument();
+    expect(screen.getByText(/^do 20\. ?12\.$/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Matematika/ }));
     expect(onClose).toHaveBeenCalled();
     expect(onOpenSubject).toHaveBeenCalledWith(NEW_BOX);
