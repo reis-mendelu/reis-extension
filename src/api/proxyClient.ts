@@ -12,6 +12,7 @@ import type { DownloadTick } from '../hooks/ui/readBlobWithProgress';
 import { initProxyListener } from './proxy/messageListener';
 import { IndexedDBService } from '../services/storage/IndexedDBService';
 import { clearUserParamsCache } from '../utils/userParams';
+import { resetNewBoxes } from '../services/sync/newSubmissionBoxes';
 import { logError } from '../utils/reportError';
 import { getPlatform } from '../platform';
 
@@ -109,6 +110,14 @@ export async function logout(): Promise<void> {
     await IndexedDBService.clearAll();
   } catch (e) {
     logError('ProxyClient.logout:clearAll', e);
+  }
+  // Apart from the wipe, so a failed one still drops this student's boxes. It
+  // waits its turn behind a sync being stored as this ran, which would
+  // otherwise write them back for the next student to be compared with.
+  try {
+    await resetNewBoxes();
+  } catch (e) {
+    logError('ProxyClient.logout:resetNewBoxes', e);
   }
 
   // The society/admin login is a SECOND credential, kept by supabase-js in

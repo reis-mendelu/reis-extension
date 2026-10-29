@@ -1559,5 +1559,9 @@
     "whySend": "Send",
     "whySent": "Thanks, we'll read it.",
     "whyFailed": "Could not send. Please try again."
+  },
+  "newBox": {
+    "kind": "New submission box",
+    "badge": "New"
   }
 }

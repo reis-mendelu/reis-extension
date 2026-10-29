@@ -206,7 +206,14 @@ export async function syncAllData() {
       studium && userParams?.obdobi
         ? syncOdevzdavarny(studium, userParams.obdobi).then((result) => {
             if (result) {
-              if (live()) cachedData = { ...cachedData, odevzdavarny: result.assignments };
+              // The period travels with the list it was read for, never with
+              // a cached one: a failed read must not say the period was read.
+              if (live())
+                cachedData = {
+                  ...cachedData,
+                  odevzdavarny: result.assignments,
+                  odevzdavarnyObdobi: userParams.obdobi,
+                };
             }
             return result;
           })
@@ -396,6 +403,7 @@ export async function syncAllData() {
           cvicneTests: cachedData.cvicneTests,
           odevzdavarny: cachedData.odevzdavarny,
           studium: cachedData.studium,
+          odevzdavarnyObdobi: cachedData.odevzdavarnyObdobi,
           isSyncing: true,
           lastSync: cachedData.lastSync,
         })

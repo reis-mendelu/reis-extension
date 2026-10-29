@@ -4,6 +4,7 @@ import { getSmartWeekRange } from '../utils/calendar';
 import { IndexedDBService } from '../services/storage';
 import { syncService, syncGradeHistory } from '../services/sync';
 import { persistZaznamnikBatch } from '../services/sync/zaznamnikNewPoints';
+import { persistNewBoxes } from '../services/sync/newSubmissionBoxes';
 import { notifyNewPoints } from '../services/newPointsNotifier';
 
 import { useAppStore, initializeStore } from '../store/useAppStore';
@@ -33,6 +34,8 @@ import type { SyncDomain } from '../types/messages/base';
 interface SyncedData {
   /** The study the per-study data belongs to; see the guard in the listener. */
   studium?: string;
+  /** The IS period `odevzdavarny` was read for (see types/messages/base.ts). */
+  odevzdavarnyObdobi?: string;
   schedule?: BlockLesson[];
   exams?: ExamSubject[];
   subjects?: SubjectsData;
@@ -229,6 +232,16 @@ export function useAppLogic() {
               r.odevzdavarny
             );
             useAppStore.getState().setOdevzdavarny(r.odevzdavarny);
+            // Its own catch: a failed check must not cost the rest of the push.
+            try {
+              // The period the sync read the list for, not this context's: in
+              // the extension the two can differ as the semester turns, and a
+              // cached list (a failed read) says it read no period at all.
+              const { unseen } = await persistNewBoxes(r.odevzdavarny, r.odevzdavarnyObdobi);
+              useAppStore.getState().setOdevzdavarnyNew(unseen);
+            } catch (err) {
+              logError('useAppLogic.persistNewBoxes', err);
+            }
           }
         }
         if (r.exams) useAppStore.getState().setExams(r.exams);

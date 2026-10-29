@@ -1559,5 +1559,9 @@
     "whySend": "Odeslat",
     "whySent": "Díky, přečteme si to.",
     "whyFailed": "Nepodařilo se odeslat. Zkus to prosím znovu."
+  },
+  "newBox": {
+    "kind": "Nová odevzdávárna",
+    "badge": "Nová"
   }
 }

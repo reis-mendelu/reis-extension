@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { clear, del, getAllWithKeys } = vi.hoisted(() => ({
   clear: vi.fn(async () => {}),
@@ -15,6 +15,9 @@ vi.mock('../../../services/storage/IndexedDBService', () => ({
 import { clearStudyData } from '../clearStudyData';
 
 describe('clearStudyData', () => {
+  // Each test asserts on its own call only.
+  beforeEach(() => vi.clearAllMocks());
+
   // Review #591: the left study's unread "Nové body" came back after a restart,
   // because fetchZaznamnik restores them from this key.
   it("drops the left study's unread Nové body with its other meta", async () => {
@@ -25,5 +28,12 @@ describe('clearStudyData', () => {
     );
     expect(deleted).not.toContain('reis_theme');
     expect(clear).toHaveBeenCalledWith('zaznamnik');
+  });
+
+  // The next study's first sync has to be a baseline, not a list of "new" boxes.
+  it("forgets the left study's submission boxes, seen and new", async () => {
+    await clearStudyData();
+    const deleted = del.mock.calls.map((c) => (c as unknown[])[1]);
+    expect(deleted).toEqual(expect.arrayContaining(['odevzdavarny_known', 'odevzdavarny_new']));
   });
 });
