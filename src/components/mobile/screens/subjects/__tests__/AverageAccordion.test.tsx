@@ -21,10 +21,10 @@ const comparison: StudyComparison = {
 // Classes that set a size above the card's own title (`text-md`, 15px). On a
 // phone `text-base` is 17px (index.css), so a row set in it outgrew the title
 // above it and every neighbouring card ("phone: way too big").
-const OVERSIZED = /(^|\s)(text-(base|lg|xl|[2-9]xl)|font-display)(\s|$)/;
+const OVERSIZED = /(^|\s)text-(base|lg|xl|[2-9]xl|\[[^\]]+\])(\s|$)/;
 
-function openCard() {
-  const { container } = render(<AverageAccordion studyStats={stats} comparison={comparison} />);
+function openCard(cmp: StudyComparison = comparison) {
+  const { container } = render(<AverageAccordion studyStats={stats} comparison={cmp} />);
   fireEvent.click(screen.getByRole('button', { name: 'Studijní průměr' }));
   return container;
 }
@@ -45,8 +45,9 @@ describe('AverageAccordion type scale', () => {
     );
   });
 
-  it('sets labels and the standing sentence at body size, values one step up', () => {
+  it('sets labels and the standing sentence at body size, values at most one step up', () => {
     openCard();
+    expect(screen.getByText('Studijní průměr')).toHaveClass('text-md');
     for (const label of ['Tento semestr', 'Za celé studium', 'Vážený průměr']) {
       expect(screen.getByText(label)).toHaveClass('text-sm');
     }
@@ -56,11 +57,18 @@ describe('AverageAccordion type scale', () => {
     expect(screen.getByText('Překonáváš 48 % studentů ve svém ročníku.')).toHaveClass('text-sm');
   });
 
+  it('sets the top-tier sentence at body size too', () => {
+    openCard({ ...comparison, rank: 70, percentile: 10 });
+    expect(screen.getByText('Jsi v top 10 % ročníku.')).toHaveClass('text-sm');
+  });
+
   it('has no text larger than its own title', () => {
     const container = openCard();
-    const oversized = [...container.querySelectorAll('[class]')]
+    const els = [...container.querySelectorAll<HTMLElement>('*')];
+    const oversized = els
       .map((el) => el.getAttribute('class') ?? '')
       .filter((cls) => OVERSIZED.test(cls));
     expect(oversized).toEqual([]);
+    expect(els.filter((el) => el.style.fontSize)).toEqual([]);
   });
 });
