@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { organizeLessons, getEventStyle, renderedBlockMinutes } from '../utils';
+import {
+  organizeLessons,
+  getEventStyle,
+  renderedBlockMinutes,
+  timeToPercent,
+  MIN_BLOCK_MINUTES,
+} from '../utils';
 import type { BlockLesson } from '../../../types/calendarTypes';
 
 describe('organizeLessons', () => {
@@ -121,124 +127,92 @@ describe('organizeLessons', () => {
     expect(organized.find((l) => l.id === '5')?.maxColumns).toBe(2);
   });
 });
+/**
+ * The reported bug: "Hodinové přednášky jsou zobrazované jako že mají hodinu
+ * a půl".
+ *
+ * A 90-minute legibility floor, added for 10-minute oral exams, applied to
+ * every block: a 14:00-14:50 lesson was drawn down to 15:30, and with a 15:00
+ * lesson after it, down to 15:00. A lesson's block now ends on its end time.
+ */
+describe('a block is as tall as the lesson is long', () => {
+  const end = ({ top, height }: { top: string; height: string }) =>
+    parseFloat(top) + parseFloat(height);
 
-describe('getEventStyle minimum visual height', () => {
-  const pct = (s: string) => parseFloat(s);
-
-  it('draws a 10-minute exam at the same size as a 90-minute one', () => {
-    // 10 min of a 14h day is ~1.19% — an unlabelled sliver. The floor gives it
-    // the full 1.5h box so the card renders exactly as it always has.
-    expect(getEventStyle('09:45', '09:55').height).toBe(getEventStyle('09:45', '11:15').height);
+  it('ends a 50-minute lesson on its end time', () => {
+    expect(renderedBlockMinutes('14:00', '14:50')).toBe(50);
+    expect(end(getEventStyle('14:00', '14:50'))).toBeCloseTo(timeToPercent('14:50'), 5);
   });
 
-  it('gives a clamped short exam enough room to satisfy the card layout gate', () => {
-    // CalendarEventCard hides subject + room below 60 rendered minutes; a real
-    // 10-minute oral exam must still clear it or it renders as a blank sliver.
-    expect(renderedBlockMinutes('09:45', '09:55')).toBeGreaterThanOrEqual(60);
+  it('ends a 110-minute lesson on its end time', () => {
+    expect(renderedBlockMinutes('11:00', '12:50')).toBe(110);
+    expect(end(getEventStyle('11:00', '12:50'))).toBeCloseTo(timeToPercent('12:50'), 5);
   });
 
-  it('reports true length for blocks already above the floor', () => {
-    expect(renderedBlockMinutes('09:45', '11:15')).toBe(90);
-    expect(renderedBlockMinutes('09:00', '12:00')).toBe(180);
-  });
-
-  it('does not move the block start when clamping', () => {
-    expect(getEventStyle('09:45', '09:55').top).toBe(getEventStyle('09:45', '11:15').top);
-  });
-
-  it('leaves a normal 90-minute block untouched', () => {
-    expect(pct(getEventStyle('09:45', '11:15').height)).toBeCloseTo((90 / (14 * 60)) * 100, 5);
+  it('starts the block on its start time', () => {
+    expect(getEventStyle('14:00', '14:50').top).toBe(`${timeToPercent('14:00')}%`);
   });
 
   it('leaves a long block untouched', () => {
-    expect(pct(getEventStyle('09:00', '12:00').height)).toBeCloseTo((180 / (14 * 60)) * 100, 5);
+    expect(renderedBlockMinutes('09:00', '12:00')).toBe(180);
   });
 });
 
-describe('organizeLessons and the visual block floor', () => {
-  // The floor enlarges a short block for legibility, but lane assignment used
-  // the true end time — so a 10-minute exam at 12:00 (drawn down to 13:30) and
-  // a lesson at 12:30 landed in the SAME lane and the exam covered it. Layout
-  // has to reason about the space a block actually occupies.
+/**
+ * The floor that is left is for blocks no lesson is ever that short:
+ * IS teaches in 50-minute hours, so a block under MIN_BLOCK_MINUTES is an oral
+ * exam slot, and drawn at its real length it is a few pixels with no label.
+ */
+describe('the floor under the shortest lesson', () => {
   const block = (id: string, startTime: string, endTime: string): BlockLesson =>
     ({ id, date: '20260601', startTime, endTime }) as BlockLesson;
 
-  it('gives a short exam and the lesson under its floored height separate lanes', () => {
-    const { lessons, totalRows } = organizeLessons([
-      block('exam', '12:00', '12:10'),
-      block('lesson', '12:30', '14:00'),
-    ]);
-    expect(totalRows).toBe(2);
-    expect(lessons[0]!.row).not.toBe(lessons[1]!.row);
-    // Capping at 12:30 would draw it for 30 minutes, under the 60 the card
-    // needs to show a subject and a room at all — so it keeps the floor and
-    // takes a lane instead of becoming an unlabelled sliver.
-    expect(lessons[0]!.renderedMinutes).toBe(90);
+  it('sits below a 50-minute lesson, so it never touches one', () => {
+    expect(MIN_BLOCK_MINUTES).toBeLessThan(50);
   });
 
-  it('still shares a lane once the later block clears the floored height', () => {
-    const { lessons, totalRows } = organizeLessons([
-      block('exam', '12:00', '12:10'),
-      block('lesson', '13:30', '15:00'),
-    ]);
-    expect(totalRows).toBe(1);
-    expect(lessons[0]!.row).toBe(lessons[1]!.row);
-  });
-
-  it('leaves normal-length lessons laid out exactly as before', () => {
-    const { lessons, totalRows } = organizeLessons([
-      block('a', '08:00', '09:50'),
-      block('b', '10:00', '11:50'),
-    ]);
-    expect(totalRows).toBe(1);
-    expect(lessons[0]!.row).toBe(lessons[1]!.row);
+  it('gives a 10-minute exam room for one line', () => {
+    expect(renderedBlockMinutes('10:00', '10:10')).toBe(MIN_BLOCK_MINUTES);
   });
 
   it('keeps endTime truthful — the floor is layout only', () => {
     const { lessons } = organizeLessons([block('exam', '12:00', '12:10')]);
     expect(lessons[0]!.endTime).toBe('12:10');
   });
-});
 
-describe('the floor near the end of the grid', () => {
-  // The grid stops at 21:00. Floors are for legibility, so one must never push
-  // a block past the bottom edge — the calendar is overflow-hidden and would
-  // clip the card it was trying to make readable.
-  it('shortens the floor rather than overflowing 21:00', () => {
-    expect(renderedBlockMinutes('20:30', '20:40')).toBe(30);
-    expect(renderedBlockMinutes('20:00', '20:50')).toBe(60);
+  it('gives a short exam and a lesson under its floored height separate lanes', () => {
+    const { totalRows } = organizeLessons([
+      block('exam', '12:00', '12:10'),
+      block('lesson', '12:20', '14:00'),
+    ]);
+    expect(totalRows).toBe(2);
   });
 
-  it('keeps the full floor when there is room for it', () => {
-    expect(renderedBlockMinutes('12:00', '12:10')).toBe(90);
-    expect(renderedBlockMinutes('19:30', '19:40')).toBe(90);
+  it('shares a lane once the next block clears the floor', () => {
+    const { totalRows } = organizeLessons([
+      block('exam', '12:00', '12:10'),
+      block('lesson', '13:00', '14:50'),
+    ]);
+    expect(totalRows).toBe(1);
+  });
+
+  it('shortens the floor rather than overflowing 21:00', () => {
+    expect(renderedBlockMinutes('20:40', '20:50')).toBe(20);
+    const { top, height } = getEventStyle('20:40', '20:50');
+    expect(parseFloat(top) + parseFloat(height)).toBeCloseTo(100, 5);
   });
 
   it('never shortens a block below its real length', () => {
-    // A genuinely long late event still runs off the grid, exactly as it did
-    // before any floor existed. The cap bounds the floor, not the truth.
     expect(renderedBlockMinutes('20:00', '22:00')).toBe(120);
-  });
-
-  it('leaves top + height inside the grid for a late short block', () => {
-    const { top, height } = getEventStyle('20:30', '20:40');
-    expect(parseFloat(top) + parseFloat(height)).toBeCloseTo(100, 5);
   });
 });
 
 /**
- * The reported bug: "fix překryv hodin když začíná 14:00-14:50 a 15:00-18:50,
- * ale nechápu, proč to tam je".
- *
- * Nothing overlaps in real time — 14:50 is before 15:00. The 90-minute
- * legibility floor was what overlapped them: it drew the 50-minute lesson down
- * to 15:30, lane assignment read that as a clash, and the two lessons were
- * squeezed into half-width columns side by side. Hence "I don't understand why
- * it's there" — it was not in the data.
- *
- * The floor now stops at whatever comes next, so it can never invent a clash.
+ * "fix překryv hodin když začíná 14:00-14:50 a 15:00-18:50" — the earlier
+ * report about the same floor. Nothing overlaps in real time, so the two stay
+ * in one full-width lane, one above the other.
  */
-describe('the visual floor never reaches into the next block', () => {
+describe('back-to-back lessons', () => {
   const block = (id: string, startTime: string, endTime: string): BlockLesson =>
     ({ id, date: '20260601', startTime, endTime }) as BlockLesson;
 
@@ -248,65 +222,21 @@ describe('the visual floor never reaches into the next block', () => {
       block('b', '15:00', '18:50'),
     ]);
     expect(totalRows).toBe(1);
-    expect(lessons[0]!.row).toBe(lessons[1]!.row);
-    // What the student actually saw: the day column divides by maxColumns, so
-    // 2 was the half-width pair. 1 is the full-width card, one above the other.
     expect(lessons.map((l) => l.maxColumns)).toEqual([1, 1]);
   });
 
-  it('caps the floored height at the next block’s start', () => {
-    expect(renderedBlockMinutes('14:00', '14:50', '15:00')).toBe(60);
-  });
-
-  it('still floors a short block when nothing follows it', () => {
-    expect(renderedBlockMinutes('14:00', '14:50')).toBe(90);
-  });
-
-  it('never shrinks a block below its real length, so a true clash still shows', () => {
-    expect(renderedBlockMinutes('14:00', '16:00', '14:30')).toBe(120);
-    const { totalRows } = organizeLessons([
-      block('a', '14:00', '16:00'),
-      block('b', '14:30', '15:30'),
-    ]);
-    expect(totalRows).toBe(2);
-  });
-
-  it('publishes the space each block occupies, so lanes and heights cannot drift', () => {
+  it('publishes each block’s real length, so lanes and heights cannot drift', () => {
     const { lessons } = organizeLessons([
       block('a', '14:00', '14:50'),
       block('b', '15:00', '18:50'),
     ]);
-    expect(lessons[0]!.renderedMinutes).toBe(60);
-    expect(lessons[1]!.renderedMinutes).toBe(230);
-  });
-});
-
-/**
- * The cap has a floor of its own.
- *
- * Raised in review: capping at the next block can take a short block under the
- * 60 minutes `CalendarEventCard` needs before it will draw a subject and a
- * room, which is exactly the unlabelled sliver the visual floor was added to
- * prevent. So the cap applies only while the result is still legible; below
- * that the block keeps its full floor and lane assignment separates the two,
- * which is what happened before the cap existed.
- */
-describe('the cap never makes a block unreadable', () => {
-  const block = (id: string, startTime: string, endTime: string): BlockLesson =>
-    ({ id, date: '20260601', startTime, endTime }) as BlockLesson;
-
-  it('takes the cap while it stays at or above the legibility line', () => {
-    expect(renderedBlockMinutes('14:00', '14:50', '15:00')).toBe(60);
+    expect(lessons.map((l) => l.renderedMinutes)).toEqual([50, 230]);
   });
 
-  it('keeps the full floor when the cap would go under it', () => {
-    expect(renderedBlockMinutes('14:00', '14:10', '14:20')).toBe(90);
-  });
-
-  it('so the tight pair take separate lanes rather than one illegible row', () => {
+  it('still splits a real clash into two lanes', () => {
     const { totalRows } = organizeLessons([
-      block('exam', '14:00', '14:10'),
-      block('lesson', '14:20', '15:50'),
+      block('a', '14:00', '16:00'),
+      block('b', '14:30', '15:30'),
     ]);
     expect(totalRows).toBe(2);
   });
