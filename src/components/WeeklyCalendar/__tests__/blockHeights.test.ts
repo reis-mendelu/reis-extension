@@ -68,9 +68,11 @@ describe('the floors', () => {
   });
 
   it('give a 10-minute exam slot its full two-line block', () => {
-    expect(renderedBlockMinutes('10:00', '10:10', true)).toBe(EXAM_BLOCK_MINUTES);
-    // The card's two-line layout starts at the same number, by construction.
-    expect(EXAM_BLOCK_MINUTES).toBe(TWO_LINE_BLOCK_MINUTES);
+    expect(renderedBlockMinutes('10:00', '10:10', true)).toBe(90);
+    // The card's two-line layout starts at the same number, by construction —
+    // pinned to 90 on both, so moving the pair together still fails here.
+    expect(EXAM_BLOCK_MINUTES).toBe(90);
+    expect(TWO_LINE_BLOCK_MINUTES).toBe(90);
   });
 
   it('leave an exam longer than the floor at its real length', () => {

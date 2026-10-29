@@ -31,7 +31,8 @@ export const MIN_BLOCK_MINUTES = 45;
  * The shortest block that holds the card's two lines — the title, then the
  * room and the time: about 56px, which 90 minutes is from a 700px-tall window
  * up. CalendarEventCard switches layouts on it, and an exam slot is drawn at
- * least this tall, so the two must stay one number.
+ * least this tall (unless it starts after 19:30, where the grid ends first —
+ * see renderedBlockMinutes), so the two must stay one number.
  */
 export const TWO_LINE_BLOCK_MINUTES = 90;
 
