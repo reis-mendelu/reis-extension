@@ -401,7 +401,6 @@
     "attendanceSummaryFew": "Na {n} {z} {total} cvičení",
     "attendanceSummaryOther": "Na {n} {z} {total} cvičení",
     "attendanceAbsences": "{n}× chyběl/a",
-    "attendanceNote": "Počítají se jen cvičení, kde vyučující docházku zapsal.",
     "attendanceStatus": {
       "present": "Přítomen/a",
       "elsewhere": "Přítomen/a jinde",

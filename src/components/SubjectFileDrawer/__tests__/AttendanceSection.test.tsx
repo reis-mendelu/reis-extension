@@ -42,7 +42,8 @@ describe('AttendanceSection', () => {
     expect(screen.getByText('Na 1 ze 2 cvičení')).toBeInTheDocument();
     // The rows name the room, so the group detail drops it.
     expect(screen.getByText('· 1× chyběl/a · Cv St 17.00–18.50')).toBeInTheDocument();
-    expect(screen.getByText(cs.zaznamnik.attendanceNote)).toBeInTheDocument();
+    // No footnote: nobody read it (Dominik, 2026-10-29).
+    expect(screen.queryByText(/Počítají se jen/)).toBeNull();
   });
 
   it('lists every recorded session with date, time, room and a status word', () => {

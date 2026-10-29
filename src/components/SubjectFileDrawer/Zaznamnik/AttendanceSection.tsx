@@ -99,7 +99,6 @@ export function AttendanceSection({ courseCode }: { courseCode: string }) {
           </div>
         );
       })}
-      <p className="text-[11px] text-base-content/70">{t('zaznamnik.attendanceNote')}</p>
     </div>
   );
 }

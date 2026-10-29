@@ -401,7 +401,6 @@
     "attendanceSummaryFew": "At {n} of {total} sessions",
     "attendanceSummaryOther": "At {n} of {total} sessions",
     "attendanceAbsences": "{n}× absent",
-    "attendanceNote": "Only sessions where the teacher recorded attendance count.",
     "attendanceStatus": {
       "present": "Present",
       "elsewhere": "Present elsewhere",
