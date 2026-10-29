@@ -46,8 +46,8 @@ describe('attendance has no screen yet', () => {
     expect(read(file)).not.toMatch(MENTIONS_ATTENDANCE);
   });
 
-  it('no component on either tree reads it', () => {
-    const readers = [...componentFiles('components'), ...componentFiles('mobile')]
+  it('no component on either tree reads it, the root App included', () => {
+    const readers = ['App.tsx', ...componentFiles('components'), ...componentFiles('mobile')]
       .filter((f) => MENTIONS_ATTENDANCE.test(read(f)))
       .map((f) => relative(SRC, join(SRC, f)));
     expect(readers).toEqual([]);
