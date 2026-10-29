@@ -22,6 +22,7 @@ const events = [
   at('supef', false, 'supef-public'),
   at('au_frrms', false, 'frrms-public'),
   at('ey', false, 'ey'),
+  at('reis', false, 'reis'),
 ];
 const ids = () => renderHook(() => useVisibleMapEvents()).result.current.map((e) => e.id);
 
@@ -38,16 +39,23 @@ describe('useVisibleMapEvents', () => {
   });
 
   it('a regular student sees what they always did', () => {
-    expect(ids()).toEqual(['esn-public', 'supef-public', 'frrms-public', 'ey']);
+    expect(ids()).toEqual(['esn-public', 'supef-public', 'frrms-public', 'ey', 'reis']);
   });
 
-  it('an exchange student (Z-EXC) sees ESN only', () => {
+  it("an exchange student (Z-EXC) sees ESN only, and reIS's own", () => {
     useAppStore.setState({ userProgramme: 'Z-EXC' });
-    expect(ids()).toEqual(['esn-public', 'esn-erasmus']);
+    expect(ids()).toEqual(['esn-public', 'esn-erasmus', 'reis']);
   });
 
   it('the Erasmus text flag alone adds ESN events and hides nothing', () => {
     useAppStore.setState({ isErasmus: true });
-    expect(ids()).toEqual(['esn-public', 'esn-erasmus', 'supef-public', 'frrms-public', 'ey']);
+    expect(ids()).toEqual([
+      'esn-public',
+      'esn-erasmus',
+      'supef-public',
+      'frrms-public',
+      'ey',
+      'reis',
+    ]);
   });
 });

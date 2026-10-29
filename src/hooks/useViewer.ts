@@ -1,17 +1,7 @@
 import { useMemo } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { FACULTY_LABEL_TO_KEY } from '../types/events';
-import type { Viewer } from '../utils/eventAudience';
-
-/**
- * IS's exchange programme. The `isErasmus` text test reads studium.pl in the
- * session's language, and the Czech name of this programme ("Zahraniční
- * studenti - krátkodobé studijní pobyty") matches none of its words, so a
- * student with IS in Czech was never shown ESN's Erasmus-only events. The code
- * is the same in both languages. It is also the one signal trusted to HIDE
- * events (`exchange`), which the text test is not.
- */
-const EXCHANGE_PROGRAMME = 'Z-EXC';
+import { EXCHANGE_PROGRAMME, type Viewer } from '../utils/eventAudience';
 
 export function viewerFrom(
   facultyLabel: string | null,

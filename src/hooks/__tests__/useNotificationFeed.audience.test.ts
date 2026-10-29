@@ -38,6 +38,7 @@ describe('Novinky audience', () => {
           row('esn', 'esn', true),
           row('esnPub', 'esn', false),
           row('frrms', 'au_frrms', true),
+          row('reisNotice', 'reis', false),
           row('deadline', 'academic_deadline', false),
         ],
       },
@@ -50,6 +51,7 @@ describe('Novinky audience', () => {
       'pub',
       'mine',
       'esnPub',
+      'reisNotice',
       'deadline',
     ]);
   });
@@ -63,15 +65,21 @@ describe('Novinky audience', () => {
       'pub',
       'esnPub',
       'frrms',
+      'reisNotice',
       'deadline',
     ]);
   });
 
   // Decision 2026-10-29: an exchange student (IS programme Z-EXC) sees ESN's
-  // events and reIS's own rows, nothing from another society.
+  // events and reIS's own rows (`reis` included), nothing from another society.
   it('an exchange student sees ESN only, plus reIS rows', () => {
     useAppStore.setState({ userProgramme: 'Z-EXC' });
     const { result } = renderHook(() => useNotificationFeed());
-    expect(result.current.notifications.map((n) => n.id)).toEqual(['esn', 'esnPub', 'deadline']);
+    expect(result.current.notifications.map((n) => n.id)).toEqual([
+      'esn',
+      'esnPub',
+      'reisNotice',
+      'deadline',
+    ]);
   });
 });
