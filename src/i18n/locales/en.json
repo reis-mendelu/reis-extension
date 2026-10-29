@@ -392,6 +392,12 @@
     "noAssessment": "This course has no continuous assessment or tests.",
     "nothingYet": "Nothing recorded yet.",
     "notLoaded": "reIS doesn't load assessment for this course.",
+    "emptyShort": {
+      "noData": "Nothing yet",
+      "noAssessment": "No assessment",
+      "notLoaded": "Not loaded",
+      "nothingYet": "Nothing yet"
+    },
     "phSection": "Continuous assessment",
     "vtSection": "Tests",
     "isContinuous": "IS (continuous assessment)",

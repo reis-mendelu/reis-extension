@@ -1,4 +1,4 @@
-import { ClipboardList, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { useZaznamnik } from '../../hooks/data/useZaznamnik';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -6,6 +6,7 @@ import type { VtTestAttempt } from '../../types/zaznamnik';
 import { VtTestGroup } from './Zaznamnik/VtTestGroup';
 import { PhArchView } from './Zaznamnik/PhArchView';
 import { AttendanceSection } from './Zaznamnik/AttendanceSection';
+import { ZaznamnikEmpty } from './Zaznamnik/ZaznamnikEmpty';
 import { recordedGroups } from '../../utils/attendanceSummary';
 import { ReportMissingLink } from '../Feedback/ReportMissingLink';
 import { SubmissionBoxList } from '../SubmissionBoxes/SubmissionBoxList';
@@ -125,31 +126,16 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
     // known only from the document server has none and is never fetched, so
     // reIS cannot say it has no assessment — only that it does not load it.
     const checked = subjectInfo?.hasPrubezne === false && subjectInfo?.hasTest === false;
-    const emptyMessage = hasFlags
-      ? t('zaznamnik.noData')
-      : checked
-        ? t('zaznamnik.noAssessment')
-        : t('zaznamnik.notLoaded');
-    // With Docházka or boxes to show, the empty-records note shrinks to a line under them
-    // instead of filling the tab as if there were nothing here at all.
-    if (hasTop) {
-      return (
-        <div className="h-full overflow-y-auto p-4 space-y-5 text-[13px]">
-          {topSection}
-          <p className="text-xs text-base-content/70">{emptyMessage}</p>
-          {backlinks}
-        </div>
-      );
-    }
+    // One placeholder where the marks would be, alone or under Docházka and boxes.
     return (
-      <div className="flex flex-col h-full">
-        <div className="flex flex-col items-center justify-center flex-1 p-6 text-center">
-          <div className="flex flex-col items-center opacity-40">
-            <ClipboardList className="w-12 h-12 mb-3" />
-            <p className="text-sm">{emptyMessage}</p>
+      <div className="h-full overflow-y-auto p-4 space-y-5 text-[13px]">
+        {topSection}
+        <ZaznamnikEmpty reason={hasFlags ? 'noData' : checked ? 'noAssessment' : 'notLoaded'} />
+        {hasFlags && !hasTop && (
+          <div className="flex justify-center">
+            <ReportMissingLink prefill="zaznamnikEmpty" />
           </div>
-          {hasFlags && <ReportMissingLink prefill="zaznamnikEmpty" className="mt-2" />}
-        </div>
+        )}
         {backlinks}
       </div>
     );
@@ -182,12 +168,11 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
       )}
 
       {nonEmptyArches.length === 0 && vtGroups.length === 0 && (
-        <div className="flex flex-col items-center justify-center p-6 text-center">
-          <div className="flex flex-col items-center opacity-40">
-            <ClipboardList className="w-12 h-12 mb-3" />
-            <p className="text-sm">{t('zaznamnik.nothingYet')}</p>
+        <div className="space-y-2">
+          <ZaznamnikEmpty reason="nothingYet" />
+          <div className="flex justify-center">
+            <ReportMissingLink prefill="zaznamnikEmpty" />
           </div>
-          <ReportMissingLink prefill="zaznamnikEmpty" className="mt-2" />
         </div>
       )}
 

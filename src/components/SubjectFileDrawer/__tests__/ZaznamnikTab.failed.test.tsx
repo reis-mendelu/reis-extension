@@ -36,7 +36,7 @@ describe('ZaznamnikTab when the fetch failed', () => {
   it('says it could not load instead of "no assessment data"', () => {
     render(<ZaznamnikTab courseCode="EBC" />);
     expect(screen.getByText(cs.mobile.loadFailed.title)).toBeInTheDocument();
-    expect(screen.queryByText(cs.zaznamnik.noData)).toBeNull();
+    expect(screen.queryByRole('img', { name: cs.zaznamnik.noData })).toBeNull();
   });
 
   it('retries this subject', () => {
@@ -62,7 +62,7 @@ describe('ZaznamnikTab when the fetch failed', () => {
   it('keeps "no assessment data" for a subject never fetched (undefined)', () => {
     useAppStore.setState({ zaznamnik: {} } as never);
     render(<ZaznamnikTab courseCode="EBC" />);
-    expect(screen.getByText(cs.zaznamnik.noData)).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: cs.zaznamnik.noData })).toBeInTheDocument();
     expect(screen.queryByText(cs.mobile.loadFailed.title)).toBeNull();
   });
 });

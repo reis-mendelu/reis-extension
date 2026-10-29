@@ -392,6 +392,12 @@
     "noAssessment": "Tento předmět nemá průběžné hodnocení ani testy.",
     "nothingYet": "Zatím nic zapsáno.",
     "notLoaded": "Hodnocení k tomuto předmětu reIS nenačítá.",
+    "emptyShort": {
+      "noData": "Zatím nic",
+      "noAssessment": "Bez hodnocení",
+      "notLoaded": "Nenačítá se",
+      "nothingYet": "Zatím nic"
+    },
     "phSection": "Průběžné hodnocení",
     "vtSection": "Testy",
     "isContinuous": "IS (průběžné hodnocení)",

@@ -111,8 +111,9 @@ describe('ZaznamnikTab with arches that are all still empty', () => {
 
   it('says nothing is recorded yet, not that data is missing', () => {
     render(<ZaznamnikTab courseCode="EBC" />);
-    expect(screen.getByText('Zatím nic zapsáno.')).toBeTruthy();
-    expect(screen.queryByText('Žádná data hodnocení.')).toBeNull();
+    // The empty state is a glyph; its sentence is the accessible name.
+    expect(screen.getByRole('img', { name: 'Zatím nic zapsáno.' })).toBeTruthy();
+    expect(screen.queryByRole('img', { name: 'Žádná data hodnocení.' })).toBeNull();
   });
 });
 
@@ -134,8 +135,12 @@ describe('ZaznamnikTab for a subject reIS never checked', () => {
 
   it('does not claim the subject has no assessment', () => {
     render(<ZaznamnikTab courseCode="EBC" />);
-    expect(screen.queryByText('Tento předmět nemá průběžné hodnocení ani testy.')).toBeNull();
-    expect(screen.getByText('Hodnocení k tomuto předmětu reIS nenačítá.')).toBeTruthy();
+    expect(
+      screen.queryByRole('img', { name: 'Tento předmět nemá průběžné hodnocení ani testy.' })
+    ).toBeNull();
+    expect(
+      screen.getByRole('img', { name: 'Hodnocení k tomuto předmětu reIS nenačítá.' })
+    ).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Chybí tu něco? Nahlásit' })).toBeNull();
   });
 });

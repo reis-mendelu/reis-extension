@@ -151,7 +151,7 @@ describe.each([
     renderTab('EXC-KPSIT', showIsBacklink);
     const heading = screen.getByText(cs.zaznamnik.attendanceSection);
     expect(before(heading, screen.getByText('Protokol'))).toBe(true);
-    expect(before(heading, screen.getByText(cs.zaznamnik.noData))).toBe(true);
+    expect(before(heading, screen.getByRole('img', { name: cs.zaznamnik.noData }))).toBe(true);
   });
 
   it('shows no Docházka for a subject without records', () => {
