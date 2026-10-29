@@ -4,6 +4,7 @@ import {
   shortDate,
   dashRange,
   groupDetail,
+  recordedGroups,
   summarizeAttendance,
 } from '../attendanceSummary';
 import type { AttendanceRecord, AttendanceStatus } from '../../types/documents';
@@ -78,6 +79,20 @@ describe('formatting', () => {
 
   it('writes a time range with an en dash', () => {
     expect(dashRange('13.00-14.50')).toBe('13.00–14.50');
+  });
+
+  it('drops the room too when the rows already name it', () => {
+    expect(groupDetail('EBC-M Cv Út 13.00-14.50 Q05', 'EBC-M', 'Q05')).toBe('Cv Út 13.00–14.50');
+    expect(groupDetail('EBC-M Cv Út 13.00-14.50 Q05', 'EBC-M', 'Q01')).toBe(
+      'Cv Út 13.00–14.50 Q05'
+    );
+  });
+
+  it('keeps only groups with records', () => {
+    const empty = { label: 'a', records: [] };
+    const full = { label: 'b', records: [rec('present')] };
+    expect(recordedGroups([empty, full])).toEqual([full]);
+    expect(recordedGroups(undefined)).toEqual([]);
   });
 
   it('drops the course code from a group label', () => {

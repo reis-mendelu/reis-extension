@@ -6,6 +6,7 @@ import type { VtTestAttempt } from '../../types/zaznamnik';
 import { VtTestGroup } from './Zaznamnik/VtTestGroup';
 import { PhArchView } from './Zaznamnik/PhArchView';
 import { AttendanceSection } from './Zaznamnik/AttendanceSection';
+import { recordedGroups } from '../../utils/attendanceSummary';
 import { ReportMissingLink } from '../Feedback/ReportMissingLink';
 import { SubmissionBoxList } from '../SubmissionBoxes/SubmissionBoxList';
 import { useOdevzdavarny } from '../../hooks/data/useOdevzdavarny';
@@ -33,15 +34,11 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
   const { t, language } = useTranslation();
   const lang = language === 'cz' ? 'cz' : 'en';
   const subjectId = subjectInfo?.subjectId;
-  // Submission boxes sit on top of every state below: they come from their own
-  // sync, so a subject can have boxes before (or without) any recorded marks.
+  // Docházka, then submission boxes, sit on top of every state below: both come
+  // from their own sync, so a subject can have them before (or without) marks.
   const { assignments: boxes } = useOdevzdavarny(subjectId);
-  // Docházka opens the tab; like the boxes it has its own sync, so it shows in
-  // every state below, loading and failed included.
-  const hasAttendance = useAppStore(
-    (s) => !!s.attendance[courseCode]?.some((g) => g.records.length > 0)
-  );
-  const boxSection = (
+  const hasAttendance = useAppStore((s) => recordedGroups(s.attendance[courseCode]).length > 0);
+  const topSection = (
     <>
       <AttendanceSection courseCode={courseCode} />
       <SubmissionBoxList boxes={boxes} />
@@ -87,7 +84,7 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
   if (isLoading) {
     return (
       <div className="h-full overflow-y-auto p-4 space-y-5 text-[13px]">
-        {boxSection}
+        {topSection}
         <div className="space-y-3 animate-pulse">
           <div className="h-4 bg-base-300 rounded w-1/3" />
           <div className="h-10 bg-base-300 rounded" />
@@ -99,12 +96,12 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
     );
   }
 
-  // "Could not load" is not "no marks" (Návrhy #26). Boxes come from their
-  // own sync, so they still show above it.
+  // "Could not load" is not "no marks" (Návrhy #26). Docházka and boxes come
+  // from their own sync, so they still show above it.
   if (isFailed) {
     return (
       <div className="flex flex-col h-full overflow-y-auto">
-        {hasTop && <div className="p-4 pb-0 space-y-5 text-[13px]">{boxSection}</div>}
+        {hasTop && <div className="p-4 pb-0 space-y-5 text-[13px]">{topSection}</div>}
         <LoadFailed
           testId="zaznamnik-error"
           // The same preconditions refetchZaznamnik checks, so the button is
@@ -131,12 +128,12 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
       : checked
         ? t('zaznamnik.noAssessment')
         : t('zaznamnik.notLoaded');
-    // With boxes to show, the empty-records note shrinks to a line under them
+    // With Docházka or boxes to show, the empty-records note shrinks to a line under them
     // instead of filling the tab as if there were nothing here at all.
     if (hasTop) {
       return (
         <div className="h-full overflow-y-auto p-4 space-y-5 text-[13px]">
-          {boxSection}
+          {topSection}
           <p className="text-xs text-base-content/70">{emptyMessage}</p>
           {backlinks}
         </div>
@@ -168,7 +165,7 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
 
   return (
     <div className="h-full overflow-y-auto p-4 space-y-5 text-[13px]">
-      {boxSection}
+      {topSection}
       <PhArchView sections={data.ph.sections} />
 
       {vtGroups.length > 0 && (

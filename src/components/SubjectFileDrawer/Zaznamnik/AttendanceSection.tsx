@@ -5,6 +5,7 @@ import {
   czFromPreposition,
   dashRange,
   groupDetail,
+  recordedGroups,
   shortDate,
   summarizeAttendance,
 } from '../../../utils/attendanceSummary';
@@ -18,7 +19,7 @@ const PILL: Record<AttendanceStatus, string> = {
   excluded: 'bg-error/12 text-[var(--tone-error)]',
   late: 'bg-warning/15 text-[var(--tone-warning)]',
   'early-leave': 'bg-warning/15 text-[var(--tone-warning)]',
-  excused: 'bg-base-content/8 text-base-content/70',
+  excused: 'bg-base-content/8 text-base-content/75',
 };
 
 /**
@@ -32,7 +33,7 @@ const PILL: Record<AttendanceStatus, string> = {
 export function AttendanceSection({ courseCode }: { courseCode: string }) {
   const groups = useAppStore((s) => s.attendance[courseCode]);
   const { t, language } = useTranslation();
-  const recorded = groups?.filter((g) => g.records.length > 0) ?? [];
+  const recorded = recordedGroups(groups);
   if (recorded.length === 0) return null;
 
   return (
@@ -42,33 +43,46 @@ export function AttendanceSection({ courseCode }: { courseCode: string }) {
       </p>
       {recorded.map((group, gi) => {
         const { attended, counted, absent } = summarizeAttendance(group.records);
-        const summary = t(`zaznamnik.attendanceSummary${pluralSuffix(language, counted)}`)
-          .replace('{n}', String(attended))
-          .replace('{z}', czFromPreposition(counted))
-          .replace('{total}', String(counted));
+        // Every session excused or excluded: "Na 0 z 0" would say nothing, the rows say it all.
+        const summary =
+          counted > 0
+            ? t(`zaznamnik.attendanceSummary${pluralSuffix(language, counted)}`, {
+                n: attended,
+                z: czFromPreposition(counted),
+                total: counted,
+              })
+            : null;
         const detail = [
-          absent > 0 ? t('zaznamnik.attendanceAbsences').replace('{n}', String(absent)) : null,
-          groupDetail(group.label, courseCode),
+          absent > 0 ? t('zaznamnik.attendanceAbsences', { n: absent }) : null,
+          groupDetail(group.label, courseCode, group.records[0]?.room),
         ]
           .filter(Boolean)
           .join(' · ');
         return (
           <div key={gi} className="@container border border-base-content/15 rounded-lg px-3 py-2">
-            <p className="flex flex-wrap items-baseline gap-x-2 mb-1">
-              <span className="text-[13px] font-semibold text-base-content">{summary}</span>
-              {detail && (
-                <span className="hidden @md:inline text-[11px] text-base-content/60">{detail}</span>
-              )}
-            </p>
-            <ul>
+            {summary && (
+              <p className="flex flex-wrap items-baseline gap-x-1.5 mb-1">
+                <span className="text-[13px] font-semibold text-base-content">{summary}</span>
+                {detail && (
+                  <span className="hidden @md:inline text-[11px] text-base-content/70">
+                    · {detail}
+                  </span>
+                )}
+              </p>
+            )}
+            <ul
+              className={`divide-y divide-base-content/10 ${summary ? 'border-t border-base-content/10' : ''}`}
+            >
               {group.records.map((r, ri) => (
                 <li
                   key={ri}
-                  className="grid grid-cols-[3.25rem_minmax(0,1fr)_auto] items-center gap-2 py-1.5 border-t border-base-content/10 text-[12px] tabular-nums"
+                  className="grid grid-cols-[3.25rem_minmax(0,1fr)_auto] items-center gap-2 py-1.5 text-[12px] tabular-nums"
                 >
                   <span className="text-base-content">{shortDate(r.date)}</span>
-                  <span className="flex gap-2 min-w-0 text-base-content/60">
-                    <span className="hidden @xs:inline whitespace-nowrap">{dashRange(r.time)}</span>
+                  <span className="flex gap-2 min-w-0 text-base-content/70">
+                    <span className="hidden @2xs:inline whitespace-nowrap">
+                      {dashRange(r.time)}
+                    </span>
                     <span className="truncate">{r.room}</span>
                   </span>
                   <span
@@ -82,7 +96,7 @@ export function AttendanceSection({ courseCode }: { courseCode: string }) {
           </div>
         );
       })}
-      <p className="text-[11px] text-base-content/60">{t('zaznamnik.attendanceNote')}</p>
+      <p className="text-[11px] text-base-content/70">{t('zaznamnik.attendanceNote')}</p>
     </div>
   );
 }

@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { render, screen, cleanup, within } from '@testing-library/react';
 import { AttendanceSection } from '../Zaznamnik/AttendanceSection';
-import { ZaznamnikTab } from '../ZaznamnikTab';
+import { DrawerTabBody } from '../DrawerTabBody';
+import { NOW, box } from '../../SubmissionBoxes/__tests__/boxFixtures';
 import { useAppStore } from '../../../store/useAppStore';
 import { parseAttendance } from '../../../api/attendance';
 import cs from '../../../i18n/locales/cs.json';
@@ -39,7 +40,8 @@ describe('AttendanceSection', () => {
     render(<AttendanceSection courseCode="EXC-KPSIT" />);
     expect(screen.getByText(cs.zaznamnik.attendanceSection)).toBeInTheDocument();
     expect(screen.getByText('Na 1 ze 2 cvičení')).toBeInTheDocument();
-    expect(screen.getByText(/1× chyběl\/a · Cv St 17\.00–18\.50 Q01\.48/)).toBeInTheDocument();
+    // The rows name the room, so the group detail drops it.
+    expect(screen.getByText('· 1× chyběl/a · Cv St 17.00–18.50')).toBeInTheDocument();
     expect(screen.getByText(cs.zaznamnik.attendanceNote)).toBeInTheDocument();
   });
 
@@ -70,6 +72,23 @@ describe('AttendanceSection', () => {
     expect(screen.getByText(en.zaznamnik.attendanceStatus.absent)).toBeInTheDocument();
   });
 
+  it('skips the summary when every session was excused, and still lists them', () => {
+    useAppStore.setState({
+      language: 'cz',
+      attendance: {
+        X: [
+          {
+            label: 'X Cv Po 9.00-10.50 Q01',
+            records: [{ date: '5. 10. 2026', time: '9.00-10.50', room: 'Q01', status: 'excused' }],
+          },
+        ],
+      },
+    } as never);
+    render(<AttendanceSection courseCode="X" />);
+    expect(screen.queryByText(/^Na \d/)).toBeNull();
+    expect(screen.getByText(cs.zaznamnik.attendanceStatus.excused)).toBeInTheDocument();
+  });
+
   it('renders nothing for a subject with no attendance records', () => {
     seed('cz');
     const { container } = render(<AttendanceSection courseCode="EBC-MT" />);
@@ -77,33 +96,66 @@ describe('AttendanceSection', () => {
   });
 });
 
-// The same tab renders in the desktop drawer and in the phone/iPad sheet
-// (DrawerTabBody); the phone passes showIsBacklink={false}.
+// DrawerTabBody is the one body both trees render: the desktop drawer
+// (SubjectFileDrawerContent) and the phone/iPad sheet (SubjectDrawerSheet),
+// which passes showIsBacklink={false}. Rendering it, not ZaznamnikTab, means a
+// tree-specific branch that drops the tab fails here.
+function renderTab(code: string, showIsBacklink: boolean) {
+  return render(
+    <DrawerTabBody
+      tab="zaznamnik"
+      lesson={{ courseCode: code, courseName: 'Předmět', courseId: '', id: 'sel-1' }}
+      files={[]}
+      isFilesLoading={false}
+      isSyncing={false}
+      isDragging={false}
+      selectionBoxStyle={null}
+      showDragHint={false}
+      groupedFiles={[]}
+      selectedIds={[]}
+      fileRefs={{ current: new Map() }}
+      ignoreClickRef={{ current: false }}
+      toggleSelect={vi.fn()}
+      openFile={vi.fn()}
+      resolvedCourseId=""
+      syllabusResult={{ syllabus: null, isLoading: false }}
+      showIsBacklink={showIsBacklink}
+    />
+  );
+}
+
+const before = (a: Node, b: Node) =>
+  !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
 describe.each([
   ['desktop drawer', true],
-  ['phone sheet', false],
-])('ZaznamnikTab attendance in the %s', (_, showIsBacklink) => {
+  ['phone and iPad sheet', false],
+])('Záznamník tab in the %s', (_, showIsBacklink) => {
   beforeEach(() => seed('cz'));
   afterEach(cleanup);
 
-  it('opens the tab with Docházka, above everything else', () => {
-    render(<ZaznamnikTab courseCode="EXC-KPSIT" showIsBacklink={showIsBacklink} />);
+  it('opens with Docházka, above the submission boxes and the marks', () => {
+    useAppStore.setState({
+      now: NOW,
+      odevzdavarny: [box({ courseId: '1', courseCode: 'EXC-KPSIT', name: 'Protokol' })],
+    } as never);
+    renderTab('EXC-KPSIT', showIsBacklink);
     const heading = screen.getByText(cs.zaznamnik.attendanceSection);
-    const note = screen.getByText(cs.zaznamnik.noData);
-    expect(heading.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(before(heading, screen.getByText('Protokol'))).toBe(true);
+    expect(before(heading, screen.getByText(cs.zaznamnik.noData))).toBe(true);
   });
 
   it('shows no Docházka for a subject without records', () => {
     useAppStore.setState({
       subjects: { data: { 'EBC-MT': { hasPrubezne: true, hasTest: false, subjectId: '2' } } },
     } as never);
-    render(<ZaznamnikTab courseCode="EBC-MT" showIsBacklink={showIsBacklink} />);
+    renderTab('EBC-MT', showIsBacklink);
     expect(screen.queryByText(cs.zaznamnik.attendanceSection)).toBeNull();
   });
 
   it('keeps Docházka when the marks failed to load', () => {
     useAppStore.setState({ zaznamnik: { 'EXC-KPSIT': null } } as never);
-    render(<ZaznamnikTab courseCode="EXC-KPSIT" showIsBacklink={showIsBacklink} />);
+    renderTab('EXC-KPSIT', showIsBacklink);
     expect(screen.getByText(cs.zaznamnik.attendanceSection)).toBeInTheDocument();
     expect(screen.getByText(cs.mobile.loadFailed.title)).toBeInTheDocument();
   });

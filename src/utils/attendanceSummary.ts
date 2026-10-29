@@ -1,4 +1,9 @@
-import type { AttendanceRecord } from '../types/documents';
+import type { AttendanceRecord, SubjectAttendance } from '../types/documents';
+
+/** The groups that have anything recorded; IS lists empty ones too. */
+export function recordedGroups(groups: SubjectAttendance[] | undefined): SubjectAttendance[] {
+  return groups?.filter((g) => g.records.length > 0) ?? [];
+}
 
 export interface AttendanceSummary {
   /** Sessions the student was at: present, elsewhere, late or left early. */
@@ -51,8 +56,13 @@ export function dashRange(text: string): string {
   return text.replace(/(\d)-(\d)/g, '$1–$2');
 }
 
-/** IS labels a group "EBC-M Cv Út 13.00-14.50 Q05"; the subject is already on screen. */
-export function groupDetail(label: string, courseCode: string): string {
-  const rest = label.startsWith(courseCode) ? label.slice(courseCode.length) : label;
-  return dashRange(rest.trim());
+/**
+ * IS labels a group "EBC-M Cv Út 13.00-14.50 Q05". The subject is already on
+ * screen and every row names the room, so both come off: "Cv Út 13.00–14.50".
+ */
+export function groupDetail(label: string, courseCode: string, room?: string): string {
+  let rest = label.startsWith(courseCode) ? label.slice(courseCode.length) : label;
+  rest = rest.trim();
+  if (room && rest.endsWith(` ${room}`)) rest = rest.slice(0, -room.length).trim();
+  return dashRange(rest);
 }
