@@ -102,5 +102,7 @@ describe('CalendarEventCard in a short block', () => {
     );
 
     expect(screen.getByText('Matematika - Ústní zkouška')).toBeInTheDocument();
+    // The line truncates in a narrow column; the tooltip carries it whole.
+    expect(screen.getByTitle(/^Matematika - Ústní zkouška\s/)).toBeInTheDocument();
   });
 });

@@ -122,7 +122,7 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
       className={`h-full mx-1 rounded cursor-pointer group
                         ${styles.bg} border ${styles.outerBorder} border-l-4 ${styles.border} relative`}
       onClick={onClick}
-      title={`${courseTitle}\n${lesson.startTime} - ${lesson.endTime}\n${room}\n${lesson.teachers[0]?.shortName || ''}`}
+      title={`${lesson.isExam ? courseName : courseTitle}\n${lesson.startTime} - ${lesson.endTime}\n${room}\n${lesson.teachers[0]?.shortName || ''}`}
     >
       {/* Deadline countdown badge */}
       {timeline && timeline.weeksLeft <= 4 && !lesson.isExam && (
