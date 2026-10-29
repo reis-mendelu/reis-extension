@@ -21,7 +21,7 @@ const comparison: StudyComparison = {
 // Classes that set a size above the card's own title (`text-md`, 15px). On a
 // phone `text-base` is 17px (index.css), so a row set in it outgrew the title
 // above it and every neighbouring card ("phone: way too big").
-const OVERSIZED = /(^|\s)text-(base|lg|xl|[2-9]xl|\[[^\]]+\])(\s|$)/;
+const OVERSIZED = /(^|\s)text-(base|lg|xl|[2-9]xl|\[[\d.]+(px|rem|em)\])(\s|$)/;
 
 function openCard(cmp: StudyComparison = comparison) {
   const { container } = render(<AverageAccordion studyStats={stats} comparison={cmp} />);
@@ -62,6 +62,8 @@ describe('AverageAccordion type scale', () => {
     expect(screen.getByText('Jsi v top 10 % ročníku.')).toHaveClass('text-sm');
   });
 
+  // The catch-all for elements added later, which the explicit checks above
+  // would not know to look at.
   it('has no text larger than its own title', () => {
     const container = openCard();
     const els = [...container.querySelectorAll<HTMLElement>('*')];
