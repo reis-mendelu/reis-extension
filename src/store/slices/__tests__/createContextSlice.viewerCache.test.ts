@@ -125,9 +125,9 @@ describe('loadContext viewer cache', () => {
     expect(useAppStore.getState().isErasmus).toBe(false);
   });
 
-  // Exchange is a semester too, and Z-EXC hides every other society's events
-  // (decision 2026-10-29): a stale one must not outlive the Erasmus flag.
-  it('restores a recent exchange programme on a cold start', async () => {
+  // Z-EXC hides every other society's events (decision 2026-10-29), so an
+  // exchange student must not see them flash in on a cold start either.
+  it('restores a cached exchange programme on a cold start', async () => {
     idb.set('viewer_audience', {
       faculty: 'LDF',
       erasmus: true,
@@ -137,18 +137,5 @@ describe('loadContext viewer cache', () => {
     getUserParams.mockResolvedValue(null);
     await useAppStore.getState().loadContext();
     expect(useAppStore.getState().userProgramme).toBe('Z-EXC');
-  });
-
-  it('drops a stale exchange programme, but keeps a stale degree programme', async () => {
-    const old = Date.now() - 200 * 24 * 60 * 60 * 1000;
-    idb.set('viewer_audience', { faculty: 'LDF', erasmus: true, programme: 'Z-EXC', savedAt: old });
-    getUserParams.mockResolvedValue(null);
-    await useAppStore.getState().loadContext();
-    expect(useAppStore.getState().userProgramme).toBeNull();
-
-    useAppStore.setState({ userFaculty: null, userProgramme: null });
-    idb.set('viewer_audience', { faculty: 'PEF', erasmus: false, programme: 'B-OI', savedAt: old });
-    await useAppStore.getState().loadContext();
-    expect(useAppStore.getState().userProgramme).toBe('B-OI');
   });
 });

@@ -15,8 +15,18 @@ describe('viewerFrom', () => {
   });
 
   it('unknown or missing label is null', () => {
-    expect(viewerFrom(null, true)).toMatchObject({ facultyKey: null, erasmus: true });
-    expect(viewerFrom('XYZ', false)).toMatchObject({ facultyKey: null, erasmus: false });
+    expect(viewerFrom(null, true)).toEqual({
+      facultyKey: null,
+      erasmus: true,
+      exchange: false,
+      programme: null,
+    });
+    expect(viewerFrom('XYZ', false)).toEqual({
+      facultyKey: null,
+      erasmus: false,
+      exchange: false,
+      programme: null,
+    });
   });
 
   // The text test on studium.pl misses Z-EXC when IS is in Czech: the

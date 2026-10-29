@@ -3,7 +3,6 @@ import { getUserParams, isIdentityConfirmed } from '../../utils/userParams';
 import { IndexedDBService } from '../../services/storage';
 import { logError } from '../../utils/reportError';
 import { baseProgramme } from '../../utils/partnerAudience';
-import { EXCHANGE_PROGRAMME } from '../../utils/eventAudience';
 import { switchStudy } from '../../services/identity/switchStudy';
 
 /** Who the student was last time IS said so — the event audience's fallback. */
@@ -65,11 +64,9 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
           // Erasmus is a semester, a faculty is a degree: an old Erasmus flag
           // would show ESN-only events to a student who is no longer one.
           const fresh = Date.now() - (cached.savedAt ?? 0) < ERASMUS_CACHE_MS;
-          // So is an exchange, and Z-EXC hides every other society's events.
-          const programme = cached.programme ?? null;
           set({
             userFaculty: cached.faculty,
-            userProgramme: programme === EXCHANGE_PROGRAMME && !fresh ? null : programme,
+            userProgramme: cached.programme ?? null,
             isErasmus: fresh && cached.erasmus,
           });
         }
