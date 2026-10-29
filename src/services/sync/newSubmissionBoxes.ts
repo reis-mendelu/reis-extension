@@ -1,5 +1,5 @@
 import type { Odevzdavarna } from '../../api/odevzdavarny';
-import { boxKey, findNewBoxes, type KnownBoxes } from '../../utils/newSubmissionBoxes';
+import { boxKey, findNewBoxes, waitingToOpen, type KnownBoxes } from '../../utils/newBoxDetection';
 import { IndexedDBService } from '../storage/IndexedDBService';
 
 /**
@@ -26,20 +26,26 @@ async function persist(fresh: Odevzdavarna[], obdobi: string) {
     ids: new Set(stored.ids),
     periods: new Set(stored.periods),
   };
-  const found = findNewBoxes(known, fresh, obdobi, Date.now());
-  const freshKeys = fresh.map(boxKey);
+  const now = Date.now();
+  const found = findNewBoxes(known, fresh, obdobi, now);
   // Only ever added to: a partial or stale list can miss a box for one push,
   // and a box that comes back is not new again. The push's own period counts
   // even with no boxes in it, so the first box of an empty semester is news.
   const next: StoredKnown = {
-    ids: [...new Set([...(stored?.ids ?? []), ...freshKeys])],
+    ids: [
+      ...new Set([
+        ...(stored?.ids ?? []),
+        ...fresh.filter((b) => !waitingToOpen(b, now)).map(boxKey),
+      ]),
+    ],
     periods: [
       ...new Set([...(stored?.periods ?? []), obdobi, ...fresh.flatMap((b) => b.obdobi ?? [])]),
     ],
   };
-  // A box that left IS takes its row with it.
-  const present = new Set(freshKeys);
-  const unseen = [...new Set([...(unseenBefore ?? []), ...found])].filter((k) => present.has(k));
+  // Not pruned to this list: a push can lack a period's rows (a failed read
+  // right after the semester turned), and the box would never come back as
+  // new. A box that really left IS has no row anyway (newBoxAlerts).
+  const unseen = [...new Set([...(unseenBefore ?? []), ...found])];
   // One transaction: the ids marked known and the ones still to announce land together.
   await IndexedDBService.setAcross([
     { store: 'meta', key: KNOWN_BOXES_META_KEY, value: next },

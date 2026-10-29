@@ -1,5 +1,5 @@
 import type { Odevzdavarna } from '../api/odevzdavarny';
-import { boxState, isBoxOpen } from './submissionBoxes';
+import { boxDeadline, boxState, isBoxOpen } from './submissionBoxes';
 
 /**
  * A box's identity across syncs: IS's own id, or the subject and the name for
@@ -11,6 +11,17 @@ export const boxKey = (box: Odevzdavarna): string =>
 /** A box the student can still do something about: open, and not handed in. */
 export const actionable = (box: Odevzdavarna, now: number) =>
   isBoxOpen(box, now) && boxState(box) !== 'confirmed';
+
+/**
+ * A box IS lists but will not take files for yet, with its deadline still
+ * ahead: it may open later. Such a box is not recorded as known, so the day it
+ * opens it is news. (Whether IS lists a box before it opens is not confirmed
+ * from a real page; if it never does, this costs nothing.)
+ */
+export const waitingToOpen = (box: Odevzdavarna, now: number) =>
+  box.isOpen === false &&
+  boxState(box) !== 'confirmed' &&
+  (boxDeadline(box)?.getTime() ?? Infinity) > now;
 
 /** Every box id and IS period this device has already seen. */
 export interface KnownBoxes {

@@ -12,6 +12,7 @@ import type { DownloadTick } from '../hooks/ui/readBlobWithProgress';
 import { initProxyListener } from './proxy/messageListener';
 import { IndexedDBService } from '../services/storage/IndexedDBService';
 import { clearUserParamsCache } from '../utils/userParams';
+import { resetNewBoxes } from '../services/sync/newSubmissionBoxes';
 import { logError } from '../utils/reportError';
 import { getPlatform } from '../platform';
 
@@ -107,6 +108,10 @@ export async function logout(): Promise<void> {
   clearUserParamsCache();
   try {
     await IndexedDBService.clearAll();
+    // A sync being stored as this ran would write its boxes back after the
+    // wipe, and the next student would be compared with them. The reset
+    // waits its turn behind it.
+    await resetNewBoxes();
   } catch (e) {
     logError('ProxyClient.logout:clearAll', e);
   }

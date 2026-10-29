@@ -121,7 +121,7 @@ export async function syncAllData() {
     generation = studyGeneration;
     // Every update this run sends names its study, so a context still on the
     // other one after a half-done switch can refuse it (useAppLogic).
-    if (studium) cachedData = { ...cachedData, studium };
+    if (studium) cachedData = { ...cachedData, studium, obdobi: userParams?.obdobi };
 
     // Which core fetches actually ran, as opposed to being TTL-skipped — both
     // come back null, and only a fetch that ran can say IS was unreachable.
@@ -396,6 +396,7 @@ export async function syncAllData() {
           cvicneTests: cachedData.cvicneTests,
           odevzdavarny: cachedData.odevzdavarny,
           studium: cachedData.studium,
+          obdobi: cachedData.obdobi,
           isSyncing: true,
           lastSync: cachedData.lastSync,
         })

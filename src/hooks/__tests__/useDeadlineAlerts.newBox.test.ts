@@ -45,4 +45,19 @@ describe('useDeadlineAlerts — new odevzdávárna', () => {
     useAppStore.setState({ odevzdavarnyNew: [] } as never);
     expect(alerts().map((a) => a.type)).toEqual(['assignment']);
   });
+
+  // Tapping the new-box row clears it, and the box's own deadline row comes
+  // back: the bell must not count that box a second time.
+  it('the deadline row that comes back is already seen with its new-box row', () => {
+    useAppStore.setState({
+      odevzdavarnyNew: [],
+      notifications: {
+        ...useAppStore.getState().notifications,
+        seenDeadlineAlertIds: new Set(['odev-new-7']),
+      },
+    } as never);
+    const { alerts, unseenCount } = renderHook(() => useDeadlineAlerts()).result.current;
+    expect(alerts.map((a) => a.id)).toEqual(['odev-7']);
+    expect(unseenCount).toBe(0);
+  });
 });

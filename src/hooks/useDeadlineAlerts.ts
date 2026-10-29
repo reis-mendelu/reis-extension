@@ -4,7 +4,7 @@ import { parseDate } from '../utils/date';
 import { courseDisplayName } from '../utils/courseDisplayName';
 import { boxCourseCode, boxState } from '../utils/submissionBoxes';
 import { newPointsAlerts } from '../utils/zaznamnik/newPointsAlerts';
-import { boxKey } from '../utils/newSubmissionBoxes';
+import { boxKey } from '../utils/newBoxDetection';
 import { newBoxAlerts, NEW_BOX_ID_PREFIX } from '../utils/newSubmissionBoxAlerts';
 
 export interface DeadlineAlert {
@@ -24,6 +24,10 @@ export interface DeadlineAlert {
   /** Set on a row that opens a subject in reIS rather than a page in IS. */
   courseCode?: string;
   courseId?: string;
+  /** On a "Nová odevzdávárna" row: the box it is about (boxKey). */
+  boxKey?: string;
+  /** Counted as seen when this id is: a deadline row whose box's new-box row was seen. */
+  seenWith?: string;
 }
 
 function parseCzDateTime(s: string): Date | null {
@@ -118,7 +122,7 @@ export function useDeadlineAlerts() {
     }
 
     const freshBoxes = newBoxAlerts(newBoxes, odevzdavarny, subjects, nicknames, language, now);
-    const announced = new Set(freshBoxes.map((a) => a.id.slice(NEW_BOX_ID_PREFIX.length)));
+    const announced = new Set(freshBoxes.map((a) => a.boxKey));
 
     for (const a of odevzdavarny) {
       // Its "Nová odevzdávárna" row already says when it is due.
@@ -144,6 +148,9 @@ export function useDeadlineAlerts() {
           deadline,
           hoursUntil: h,
           link: a.uploadUrl,
+          // The student tapped this box's "Nová odevzdávárna" row a moment ago;
+          // the bell must not light up again for the same box.
+          seenWith: `${NEW_BOX_ID_PREFIX}${boxKey(a)}`,
         });
       }
     }
@@ -171,7 +178,8 @@ export function useDeadlineAlerts() {
   ]);
 
   const unseenCount = useMemo(
-    () => alerts.filter((a) => !seenIds.has(a.id)).length,
+    () =>
+      alerts.filter((a) => !seenIds.has(a.id) && !(a.seenWith && seenIds.has(a.seenWith))).length,
     [alerts, seenIds]
   );
 

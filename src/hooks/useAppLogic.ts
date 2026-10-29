@@ -34,6 +34,8 @@ import type { SyncDomain } from '../types/messages/base';
 interface SyncedData {
   /** The study the per-study data belongs to; see the guard in the listener. */
   studium?: string;
+  /** The IS period the run read (see types/messages/base.ts). */
+  obdobi?: string;
   schedule?: BlockLesson[];
   exams?: ExamSubject[];
   subjects?: SubjectsData;
@@ -232,7 +234,12 @@ export function useAppLogic() {
             useAppStore.getState().setOdevzdavarny(r.odevzdavarny);
             // Its own catch: a failed check must not cost the rest of the push.
             try {
-              const { unseen } = await persistNewBoxes(r.odevzdavarny, userParams.obdobi);
+              // The period the sync read, not this context's: in the extension
+              // the two can differ for a moment as the semester turns.
+              const { unseen } = await persistNewBoxes(
+                r.odevzdavarny,
+                r.obdobi ?? userParams.obdobi
+              );
               useAppStore.getState().setOdevzdavarnyNew(unseen);
             } catch (err) {
               logError('useAppLogic.persistNewBoxes', err);

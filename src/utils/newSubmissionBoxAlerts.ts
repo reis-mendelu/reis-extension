@@ -4,7 +4,7 @@ import type { SubjectInfo } from '../types/documents';
 import type { Language } from '../store/types';
 import { courseDisplayName, type CourseNicknames } from './courseDisplayName';
 import { boxCourseCode, boxDeadline } from './submissionBoxes';
-import { actionable, boxKey } from './newSubmissionBoxes';
+import { actionable, boxKey } from './newBoxDetection';
 
 /** A new box's row id is this plus its boxKey. */
 export const NEW_BOX_ID_PREFIX = 'odev-new-';
@@ -41,6 +41,7 @@ export function newBoxAlerts(
       {
         id: `${NEW_BOX_ID_PREFIX}${boxKey(box)}`,
         type: 'assignment-new' as const,
+        boxKey: boxKey(box),
         title: courseDisplayName(
           nicknames,
           code,

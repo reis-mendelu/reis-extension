@@ -1,7 +1,7 @@
 import type { Odevzdavarna } from '../../api/odevzdavarny';
 import { useAppStore } from '../../store/useAppStore';
 import { splitBoxes } from '../../utils/submissionBoxes';
-import { boxKey } from '../../utils/newSubmissionBoxes';
+import { boxKey } from '../../utils/newBoxDetection';
 import { SubmissionBoxCard } from './SubmissionBoxCard';
 import { ClosedBoxes } from './ClosedBoxes';
 import { useBoxLabels } from './useBoxLabels';

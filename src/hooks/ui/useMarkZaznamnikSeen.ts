@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { boxCourseCode } from '../../utils/submissionBoxes';
-import { boxKey } from '../../utils/newSubmissionBoxes';
+import { boxKey } from '../../utils/newBoxDetection';
 
 /**
  * Clears a subject's "Nové body" and new submission boxes once its Záznamník tab is actually on screen,

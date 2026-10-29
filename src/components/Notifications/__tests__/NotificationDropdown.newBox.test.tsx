@@ -43,4 +43,24 @@ describe('extension bell: new odevzdávárna', () => {
     expect(onClose).toHaveBeenCalled();
     expect(onOpenSubject).toHaveBeenCalledWith(NEW_BOX);
   });
+
+  it('a box with no date leaves the meta column empty, not "Nová" twice', () => {
+    render(
+      <NotificationDropdown
+        dropdownRef={createRef()}
+        notifications={[]}
+        loading={false}
+        onClose={vi.fn()}
+        onVisible={vi.fn()}
+        onShowMap={vi.fn()}
+        deadlineAlerts={[{ ...NEW_BOX, deadline: undefined }]}
+        onOpenSubject={vi.fn()}
+      />
+    );
+    const row = screen.getByRole('button', { name: /Matematika/ });
+    expect(row.textContent?.match(/Nová/g)).toHaveLength(2); // sr-only kind + the lead
+    expect(row).not.toHaveTextContent(
+      /odevzdávárnaNová odevzdávárna|Proficiency.*Nová odevzdávárna/
+    );
+  });
 });

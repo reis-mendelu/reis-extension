@@ -107,11 +107,35 @@ describe('persistNewBoxes', () => {
     expect(out.found).toEqual(['2']);
   });
 
-  it('an unseen box that left IS is forgotten', async () => {
+  // A push can lack a period's rows (a failed read right after the semester
+  // turned): the box stays unseen, and simply has no row while it is absent.
+  it('an unseen box missing from one push stays unseen', async () => {
     await persist([box('1')]);
     await persist([box('1'), box('2')]);
     const out = await persist([box('1')]);
-    expect(out.unseen).toEqual([]);
+    expect(out.unseen).toEqual(['2']);
+  });
+
+  // If IS lists a box before it takes files, its opening is the news.
+  it('a box seen while it will not take files yet is announced when it opens', async () => {
+    const waiting = { ...box('2'), section: 'closed' as const, isOpen: false };
+    await persist([box('1'), waiting]);
+    expect(db.get(`meta/${KNOWN_BOXES_META_KEY}`)).toEqual({ ids: ['1'], periods: ['P1'] });
+    const out = await persist([box('1'), box('2')]);
+    expect(out.found).toEqual(['2']);
+  });
+
+  it('a closed box whose deadline passed is known, and never announced', async () => {
+    const past = {
+      ...box('2'),
+      section: 'closed' as const,
+      isOpen: false,
+      deadline: '01.10.2026 10:00',
+    };
+    await persist([box('1')]);
+    const out = await persist([box('1'), past]);
+    expect(out.found).toEqual([]);
+    expect((db.get(`meta/${KNOWN_BOXES_META_KEY}`) as { ids: string[] }).ids).toContain('2');
   });
 });
 

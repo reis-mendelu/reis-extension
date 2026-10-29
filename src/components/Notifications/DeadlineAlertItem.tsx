@@ -118,7 +118,8 @@ export function DeadlineAlertItem({
           is a solid block rather than a sentence, so the row keeps its urgency
           signal and the words stay readable. */}
       <span className="flex-shrink-0 whitespace-nowrap text-2sm font-bold text-base-content">
-        {timeLabel ?? kind}
+        {/* A new box with no date says nothing here: "Nová" already leads it. */}
+        {timeLabel ?? (isNewBox ? null : kind)}
       </span>
       {alert.link && (
         <ExternalLink size={14} className="flex-shrink-0 text-base-content/40" aria-hidden />

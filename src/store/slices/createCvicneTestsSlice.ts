@@ -4,7 +4,7 @@ import { getUserParams } from '../../utils/userParams';
 import { logError } from '../../utils/reportError';
 import { odevzdavarnyListUrl } from '../../api/odevzdavarny';
 import { boxCourseCode } from '../../utils/submissionBoxes';
-import { boxKey } from '../../utils/newSubmissionBoxes';
+import { boxKey } from '../../utils/newBoxDetection';
 import { clearNewBoxes, readNewBoxes } from '../../services/sync/newSubmissionBoxes';
 
 export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set, get) => ({
@@ -53,8 +53,11 @@ export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set, get) => 
         const [data, unseen] = await Promise.all([
           IndexedDBService.get('odevzdavarny', `${studium}_${obdobi}`),
           // Through the queue: a read beside a persist could bring back a box
-          // the student has just seen.
-          readNewBoxes(),
+          // the student has just seen. Its failure must not cost the boxes.
+          readNewBoxes().catch((err) => {
+            logError('CvicneTestsSlice.readNewBoxes', err);
+            return [];
+          }),
         ]);
         // 5.3.0 cached `uploadUrl: ''` for a row with no upload link, and an
         // empty href opens the app's own page. The fetcher now falls back to

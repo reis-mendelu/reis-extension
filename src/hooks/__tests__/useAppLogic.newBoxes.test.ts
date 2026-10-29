@@ -84,6 +84,14 @@ describe('a sync push carrying the submission boxes', () => {
     expect(store.setOdevzdavarnyNew).toHaveBeenCalledWith(['9001']);
   });
 
+  // In the extension the content script's period can be ahead of this
+  // context's for a moment; the list belongs to the period the sync read.
+  it('compares against the period the push says it read', async () => {
+    persistNewBoxes.mockResolvedValue({ found: [], unseen: [] });
+    await push({ odevzdavarny: [BOX], obdobi: 'next' });
+    expect(persistNewBoxes).toHaveBeenCalledWith([BOX], 'next');
+  });
+
   // The check is extra: if it fails, the rest of the push is still stored.
   it('a failed check does not stop the rest of the push', async () => {
     persistNewBoxes.mockRejectedValue(new Error('aborted'));

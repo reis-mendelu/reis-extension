@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Odevzdavarna } from '../../api/odevzdavarny';
-import { boxKey, findNewBoxes } from '../newSubmissionBoxes';
+import { boxKey, findNewBoxes } from '../newBoxDetection';
 import { newBoxAlerts } from '../newSubmissionBoxAlerts';
 
 const NOW = new Date(2026, 9, 29, 12, 0).getTime();
