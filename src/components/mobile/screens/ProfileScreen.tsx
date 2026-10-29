@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { Wifi, FileText, MessageSquarePlus, LogOut, UserCog, Settings } from 'lucide-react';
+import {
+  Wifi,
+  FileText,
+  MessageSquarePlus,
+  LogOut,
+  UserCog,
+  ShieldCheck,
+  Settings,
+} from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { SignOutConfirm } from '../sheets/SignOutConfirm';
@@ -14,8 +22,7 @@ import { AlwaysScrollable } from '../primitives/AlwaysScrollable';
  * The profile TAB: a way into Nastavení, eduroam setup, documents, feedback and
  * logout. Reuses the shared report form (mounted by `MobileApp`) rather than
  * rebuilding it. No societies section: there is nothing to choose (spec
- * 2026-10-08). The admin console has no door here or anywhere else in a
- * build (adminConsoleIsDormant.test.ts).
+ * 2026-10-08); the console is reached by holding the name.
  *
  * No hidden-items list: hiding exists only on desktop calendar cards and
  * storage is per device, so on a phone it was always empty (spec 2026-10-09).
@@ -27,6 +34,9 @@ export function ProfileScreen() {
   const [signOutOpen, setSignOutOpen] = useState(false);
 
   const isReisAdmin = useAppStore((s) => s.adminRole === 'reis_admin');
+  // Signed in to the console on this device (held the name once): keep a way back.
+  const hasAdminSession = useAppStore((s) => s.adminSession !== null);
+  const openSocietyAdmin = useAppStore((s) => s.openSocietyAdmin);
   const loadImpersonationOptions = useAppStore((s) => s.loadImpersonationOptions);
 
   return (
@@ -84,6 +94,10 @@ export function ProfileScreen() {
             sublabel={t('mobile.student.documentsSub')}
             onClick={() => pushSheet({ kind: 'docs' })}
           />
+
+          {hasAdminSession && (
+            <NavRow icon={ShieldCheck} label={t('admin.entry')} onClick={openSocietyAdmin} />
+          )}
 
           {/* reIS admins only. Options load from the tap, never from an effect. */}
           {isReisAdmin && (
