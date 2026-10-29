@@ -12,8 +12,9 @@ import type { CardLesson } from '../types/calendarTypes';
 import { useCourseName } from '../hooks/ui/useCourseName';
 import { useAppStore } from '../store/useAppStore';
 import { useTimeline } from '../hooks/useTimeline';
-import { renderedBlockMinutes, MIN_VISUAL_BLOCK_MINUTES } from './WeeklyCalendar/utils';
 import { CalendarEventCardHideMenu } from './CalendarEventCardHideMenu';
+import { CalendarEventCardOneLine } from './CalendarEventCardOneLine';
+import { TWO_LINE_BLOCK_MINUTES } from './WeeklyCalendar/utils';
 import { lessonPlace } from '../utils/lessonPlace';
 
 interface CalendarEventCardProps {
@@ -44,23 +45,17 @@ function getExamSectionName(courseName: string): string {
 export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCardProps) {
   const timeline = useTimeline(lesson.courseCode || '');
 
-  // How much room the grid actually gave this block. `renderedMinutes` is the
-  // number it laid the block out with — legibility floor and next-block cap
-  // included — so recomputing it here without the cap would promise the card
-  // space the column has not given it.
-  const occupies = lesson.renderedMinutes ?? renderedBlockMinutes(lesson.startTime, lesson.endTime);
-
   // Two stacked lines need about 56px: 20 for the title, 20 for the room-and-time
-  // row, 16 of padding. The grid is fourteen hours tall, so on a normal desktop
-  // window 60 minutes is about 41px — and the old gate at `>= 60` drew the second
-  // line anyway and let `overflow-hidden` cut it in half. That was visible on any
-  // 60-to-89-minute lesson before this, and became the common case once short
-  // blocks started being capped at the next one.
+  // row, 16 of padding. The grid is fourteen hours tall, so on a 700px-tall
+  // window an hour is about 41px (50px at 844) and 90 minutes the first length
+  // that holds both. Below it the card is one line, which a 50-minute lesson
+  // (~34px at 700) still fits with the tighter padding that layout takes.
   //
-  // MIN_VISUAL_BLOCK_MINUTES is the right line because it IS the floor: anything
-  // the grid floored is at least this tall, and anything shorter got there by
-  // being capped, which means something starts right underneath it.
-  const fitsTwoLines = occupies >= MIN_VISUAL_BLOCK_MINUTES;
+  // `renderedMinutes` is what the week grid laid the block out with. The day
+  // list gives every card the same 80px and passes none, so there the height
+  // says nothing about the lesson and the card always has room for both lines.
+  const fitsTwoLines =
+    lesson.renderedMinutes === undefined || lesson.renderedMinutes >= TWO_LINE_BLOCK_MINUTES;
 
   // Get localized names and apply nickname
   const fullName = getLocalizedCourseName(lesson, language);
@@ -120,16 +115,18 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
       : lesson.isExam
         ? getExamSectionName(courseName)
         : courseName;
+  const hasDeadlineBadge = !!timeline && timeline.weeksLeft <= 4 && !lesson.isExam;
+  const hasHideMenu = !lesson.isCustom && !lesson.isExam && !isCompact;
 
   return (
     <div
       className={`h-full mx-1 rounded cursor-pointer group
                         ${styles.bg} border ${styles.outerBorder} border-l-4 ${styles.border} relative`}
       onClick={onClick}
-      title={`${courseTitle}\n${lesson.startTime} - ${lesson.endTime}\n${room}\n${lesson.teachers[0]?.shortName || ''}`}
+      title={`${lesson.isExam ? courseName : courseTitle}\n${lesson.startTime} - ${lesson.endTime}\n${room}\n${lesson.teachers[0]?.shortName || ''}`}
     >
       {/* Deadline countdown badge */}
-      {timeline && timeline.weeksLeft <= 4 && !lesson.isExam && (
+      {hasDeadlineBadge && timeline && (
         <div
           className={`absolute top-1.5 right-1.5 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold z-10 group-hover:opacity-0 transition-opacity ${
             timeline.weeksLeft === 0
@@ -145,30 +142,18 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
       )}
       {/* The only route to hideEvent/hideCourse, so it renders however little
           room the block has — see CalendarEventCardHideMenu. */}
-      {!lesson.isCustom && !lesson.isExam && !isCompact && (
+      {hasHideMenu && (
         <CalendarEventCardHideMenu lesson={lesson} fullName={fullName} baseName={baseName} />
       )}
-      <div className="p-2 h-full flex flex-col text-sm overflow-hidden font-inter">
-        {/* One line, for a block with room for one. The time joins the title
-            rather than being dropped: "Cvičení" alone on a row between two other
-            blocks says less than the thing it is sitting next to. The room goes,
-            because something has to, and it is the part the tooltip and the
-            subject drawer both still carry. */}
+      <div
+        className={`px-2 ${fitsTwoLines ? 'py-2' : 'py-1'} h-full flex flex-col text-sm overflow-hidden font-inter`}
+      >
         {!fitsTwoLines ? (
-          <div
-            className={`flex min-w-0 items-baseline justify-between gap-2 ${
-              // Same inset the two-line title takes, and for the same reason:
-              // the quick-hide button sits at top-right and would otherwise
-              // land on the time. It appears on hover, so without this the
-              // time would vanish under a thumb at the moment it is read.
-              !lesson.isCustom && !lesson.isExam && !isCompact ? 'pr-8' : ''
-            }`}
-          >
-            <span className="truncate font-semibold text-content-primary">{courseTitle}</span>
-            <span className="flex-shrink-0 whitespace-nowrap text-xs text-content-secondary">
-              {isCompact ? lesson.startTime : `${lesson.startTime} - ${lesson.endTime}`}
-            </span>
-          </div>
+          <CalendarEventCardOneLine
+            title={courseTitle}
+            time={isCompact ? lesson.startTime : `${lesson.startTime} - ${lesson.endTime}`}
+            overlay={hasDeadlineBadge ? 'deadlineBadge' : hasHideMenu ? 'hideMenu' : 'none'}
+          />
         ) : (
           /* Course title - always visible. Fixed near-black (content-primary)
                     rather than the colored type token, so the title reads black on the
