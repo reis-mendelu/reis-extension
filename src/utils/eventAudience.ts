@@ -44,7 +44,8 @@ export const EXCHANGE_PROGRAMME = 'Z-EXC';
 const ESN = 'esn';
 /**
  * reIS's own rows: no society, the console's `admin`, academic deadlines, and
- * `reis`, which is university-wide whatever the row says (as in spolkyService).
+ * `reis`, which is university-wide whatever the row says. spolkyService's
+ * `dropPreAudienceRows` keeps the same rows, so it calls this too.
  * reIS is the app, not a society, so even an exchange student sees these.
  */
 export function isReisOwn(societyId: string | null | undefined): boolean {

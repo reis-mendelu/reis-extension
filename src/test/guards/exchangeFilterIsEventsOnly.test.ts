@@ -35,11 +35,14 @@ const RAW_EVENTS =
 // A property read or a destructure, not the word in prose.
 const USES_EXCHANGE = /\.exchange\b|\{[^}]*\bexchange\b[^}]*\}/;
 
-/** Source without comments, so prose never counts as a read. */
-const code = (path: string) =>
-  readFileSync(path, 'utf8')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+// Strings and comments in one pass, so a `/*` or `//` inside a string is
+// never read as a comment that hides the code after it.
+const STRING_OR_COMMENT =
+  /'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"|`(?:\\.|[^`\\])*`|\/\*[\s\S]*?\*\/|\/\/[^\n]*/g;
+/** Source without comments, so prose never counts as a read. Strings stay. */
+const stripComments = (src: string) =>
+  src.replace(STRING_OR_COMMENT, (m) => (m.startsWith('/') ? '' : m));
+const code = (path: string) => stripComments(readFileSync(path, 'utf8'));
 
 function sources(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
@@ -50,6 +53,13 @@ function sources(dir: string): string[] {
 }
 
 describe('the exchange-student filter covers events only', () => {
+  it('a comment marker inside a string hides no code', () => {
+    const src = "const a = '/*'; const e = s.mapEvents; // */\nconst u = 'http://x'; e.exchange;";
+    expect(stripComments(src)).toMatch(RAW_EVENTS);
+    expect(stripComments(src)).toMatch(USES_EXCHANGE);
+    expect(stripComments('/* mapEvents */ // .exchange')).not.toMatch(/mapEvents|exchange/);
+  });
+
   it('only the listed hooks read raw society events', () => {
     // All of src: the phone tree also lives in src/mobile.
     const readers = sources('src').filter((path) => RAW_EVENTS.test(code(path)));
