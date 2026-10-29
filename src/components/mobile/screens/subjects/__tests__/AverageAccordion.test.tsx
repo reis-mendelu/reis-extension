@@ -18,10 +18,9 @@ const comparison: StudyComparison = {
   nextBetterGpa: 2.21,
 };
 
-// Classes that set a size above the card's own title (`text-md`, 15px). On a
-// phone `text-base` is 17px (index.css), so a row set in it outgrew the title
-// above it and every neighbouring card ("phone: way too big").
-const OVERSIZED = /(^|\s)text-(base|lg|xl|[2-9]xl|\[[\d.]+(px|rem|em)\])(\s|$)/;
+// Classes that set a size above the card's own title (`text-md`, 15px),
+// including behind a variant (`md:`, `touch:`) — the iPad runs this tree too.
+const OVERSIZED = /(^|[\s:])text-(base|lg|xl|[2-9]xl|\[[\d.]+(px|rem|em)\])(\s|$)/;
 
 function openCard(cmp: StudyComparison = comparison) {
   const { container } = render(<AverageAccordion studyStats={stats} comparison={cmp} />);
