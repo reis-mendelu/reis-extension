@@ -8,7 +8,8 @@ import type { Viewer } from '../utils/eventAudience';
  * session's language, and the Czech name of this programme ("Zahraniční
  * studenti - krátkodobé studijní pobyty") matches none of its words, so a
  * student with IS in Czech was never shown ESN's Erasmus-only events. The code
- * is the same in both languages.
+ * is the same in both languages. It is also the one signal trusted to HIDE
+ * events (`exchange`), which the text test is not.
  */
 const EXCHANGE_PROGRAMME = 'Z-EXC';
 
@@ -20,6 +21,7 @@ export function viewerFrom(
   return {
     facultyKey: (facultyLabel && FACULTY_LABEL_TO_KEY[facultyLabel]) || null,
     erasmus: erasmus || programme === EXCHANGE_PROGRAMME,
+    exchange: programme === EXCHANGE_PROGRAMME,
     programme,
   };
 }

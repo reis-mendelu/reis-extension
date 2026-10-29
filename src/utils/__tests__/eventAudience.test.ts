@@ -105,6 +105,39 @@ describe('canSee: partners obey their audience, whatever subscribersOnly says', 
   });
 });
 
+describe('canSee: an exchange student sees ESN only (decision 2026-10-29)', () => {
+  // Exchange = IS's exchange programme Z-EXC. Every other society writes in
+  // Czech for Czech students, so even its events "for everyone" are noise here.
+  const exchange: Viewer = { facultyKey: 'pef', erasmus: true, exchange: true, programme: 'Z-EXC' };
+
+  it("shows ESN's events, public and restricted", () => {
+    expect(canSee(ev('esn', false), cat, exchange)).toBe(true);
+    expect(canSee(ev('esn', true), cat, exchange)).toBe(true);
+  });
+
+  it("hides every other society's events, even the ones for everyone", () => {
+    for (const id of ['supef', 'au_frrms', 'usaf', 'ldf', 'zf', 'reis']) {
+      expect(canSee(ev(id, false), cat, exchange)).toBe(false);
+      expect(canSee(ev(id, true), cat, exchange)).toBe(false);
+    }
+  });
+
+  it('hides a partner whose audience the student is in (EY targets PEF)', () => {
+    expect(canSee(ev('ey', false), cat, exchange)).toBe(false);
+  });
+
+  it('hides events of a society missing from the catalog', () => {
+    expect(canSee(ev('ghost', false), cat, exchange)).toBe(false);
+  });
+
+  // `erasmus` also comes from a text test on studium.pl, which can see a
+  // Czech student's own trips abroad. It may add ESN's events, never hide others.
+  it('the Erasmus flag alone hides nothing', () => {
+    expect(canSee(ev('supef', false), cat, erasmusPef)).toBe(true);
+    expect(canSee(ev('ey', false), cat, erasmusPef)).toBe(true);
+  });
+});
+
 describe('visibleToStudent', () => {
   it('keeps order and drops what the viewer may not see', () => {
     const list = [ev('supef', true), ev('esn', true), ev('reis')];

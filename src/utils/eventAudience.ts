@@ -17,7 +17,15 @@ import { isPartner, matchesAudience } from './partnerAudience';
 export interface Viewer {
   /** null when not known yet (first launch before IS data) — sees public only. */
   facultyKey: FacultyKey | null;
+  /** May see ESN's Erasmus-only events. Broad: also set by a text test on IS. */
   erasmus: boolean;
+  /**
+   * On IS's exchange programme (Z-EXC): sees ESN's events and nobody else's
+   * (decision 2026-10-29). Narrow on purpose, because this one HIDES: the
+   * Erasmus text test can match a Czech student's own trip abroad, and that
+   * student would lose their faculty's events. Absent = not exchange.
+   */
+  exchange?: boolean;
   /** Base study-programme code ('B-OI'), null when IS did not say. Partners only. */
   programme?: string | null;
 }
@@ -37,6 +45,10 @@ export function canSee(
   viewer: Viewer
 ): boolean {
   const society = societies[event.societyId];
+  // Every other society writes in Czech for Czech students, so for an exchange
+  // student even its events "for everyone" are noise. Checked before partners:
+  // a partner's faculty-wide audience would otherwise match them too.
+  if (viewer.exchange) return audienceOf(society) === 'erasmus';
   // Partners reach their audience and nobody else, whatever the event's own
   // flag (spec 2026-10-09). Noise control, like the rest of this file.
   if (society && isPartner(society)) return matchesAudience(society.audience, viewer);
