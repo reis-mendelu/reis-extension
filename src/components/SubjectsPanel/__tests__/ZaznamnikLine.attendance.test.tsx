@@ -22,6 +22,10 @@ describe('ZaznamnikLine leaves attendance out', () => {
       odevzdavarny: [],
       subjects: null,
     } as never);
+    // Both subjects really carry attendance, so an empty render means "left out", not "no data".
+    const { attendance } = useAppStore.getState();
+    expect(attendance['EXC-KPSIT']?.[0]?.records.length).toBeGreaterThan(0);
+    expect(attendance['EBC-PS']?.[0]?.records.length).toBeGreaterThan(0);
   });
 
   it('draws nothing for a subject whose only content is attendance', () => {
