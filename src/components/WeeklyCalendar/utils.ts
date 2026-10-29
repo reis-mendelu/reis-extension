@@ -20,9 +20,10 @@ export function timeToPercent(time: string): number {
  * taught is ever raised, and a lesson's block ends exactly on its end time.
  * The floor was 90 for everything until "Hodinové přednášky jsou zobrazované
  * jako že mají hodinu a půl" — a 14:00-14:50 lesson drawn down to 15:30. What
- * this still raises is a custom event, which can be 15 minutes. 45 is one line
- * of the card's text, about 30px with its padding and border, down to a
- * 600px-tall window, where an hour is about 34px (41px at 700, 50px at 844).
+ * this still raises is a custom event, which can be 15 minutes. One line of the
+ * card's text needs about 30px with its padding and border; 45 minutes is 38px
+ * on an 844px-tall window, 30px at 700 and 25px at 600, where the text still
+ * shows whole (measured; 30 minutes was 20px at 700 and cut the line).
  */
 export const MIN_BLOCK_MINUTES = 45;
 

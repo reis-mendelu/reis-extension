@@ -14,9 +14,9 @@ import { describe, expect, it } from 'vitest';
  * The phone and iPad have nothing to fix: their day is a list
  * (`DayAgenda` → `AgendaEvent`), every card is as tall as its text, and the
  * time is written on the card. There is no hour grid for a height to disagree
- * with (`phoneHasNoWeekView.test.ts` is why). If the phone ever draws lessons on
- * a time grid again, it must take its heights from `renderedBlockMinutes`, not a
- * copy of it — this test is what fails first.
+ * with (`phoneHasNoWeekView.test.ts` pins that the grid is gone). This test
+ * fails if a phone file imports the desktop grid or its card; a phone grid
+ * should take its heights from `renderedBlockMinutes`, not a copy of it.
  */
 const SRC = resolve(process.cwd(), 'src');
 const read = (p: string) => readFileSync(join(SRC, p), 'utf8');

@@ -66,9 +66,8 @@ describe('CalendarEventCard in a short block', () => {
 
   /**
    * Raised in review: the first version of this gated the quick-hide menu on
-   * the same flag, so a 60-to-89-minute lesson — exactly the common case, since
-   * a block is only that short when something follows it — lost the only UI
-   * that calls `hideEvent` or `hideCourse`. Shortening a card must not take a
+   * the same flag, so a one-line lesson — every 50-minute one — lost the only
+   * UI that calls `hideEvent` or `hideCourse`. Shortening a card must not take a
    * feature away from it.
    */
   it('keeps the quick-hide menu, which is the only way to hide a lesson', () => {
