@@ -70,7 +70,7 @@ export function DeadlineAlertItem({
   const isNewBox = alert.type === 'assignment-new';
   // "Nová odevzdávárna · " left a 320px phone no room for the box's own name,
   // the one thing the row is about. The icon and the section say the rest.
-  const lead = isNewBox ? t('newBox.badge') : kind;
+  const lead = t('newBox.badge');
 
   const body = (
     <>
@@ -98,8 +98,18 @@ export function DeadlineAlertItem({
               test has no clock, so its kind IS its meta, and prefixing the
               subtitle with it too printed "Cvičný test" three times in one
               row — the label, the subtitle and the test's own name. */}
-          {isNewBox && <span className="sr-only">{kind}: </span>}
-          {timeLabel ? `${lead} · ${alert.body}` : alert.body}
+          {isNewBox ? (
+            // Read as "Nová odevzdávárna: <box>", not "Nová" twice.
+            <>
+              <span className="sr-only">{kind}: </span>
+              <span aria-hidden>{lead} · </span>
+              {alert.body}
+            </>
+          ) : timeLabel ? (
+            `${kind} · ${alert.body}`
+          ) : (
+            alert.body
+          )}
         </span>
       </span>
       {/* Bold base-content, not `text-warning`. Amber on the light theme's

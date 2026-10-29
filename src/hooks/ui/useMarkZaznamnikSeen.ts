@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import { boxCourseCode } from '../../utils/submissionBoxes';
+import { boxKey } from '../../utils/newSubmissionBoxes';
 
 /**
  * Clears a subject's "Nové body" and new submission boxes once its Záznamník tab is actually on screen,
@@ -14,8 +16,17 @@ export function useMarkZaznamnikSeen(
 ): void {
   const isNew = useAppStore((s) => !!courseCode && !!s.zaznamnikNewPoints[courseCode]?.length);
   const markSeen = useAppStore((s) => s.markZaznamnikSeen);
-  // New submission boxes sit on the same tab; the slice clears only this subject's.
-  const hasNewBoxes = useAppStore((s) => s.odevzdavarnyNew.length > 0);
+  // New submission boxes sit on the same tab. This subject's only: a box for
+  // another one must not hide one arriving here while the student looks.
+  const hasNewBoxes = useAppStore(
+    (s) =>
+      !!courseCode &&
+      s.odevzdavarnyNew.length > 0 &&
+      s.odevzdavarny.some(
+        (b) =>
+          s.odevzdavarnyNew.includes(boxKey(b)) && boxCourseCode(b, s.subjects?.data) === courseCode
+      )
+  );
   const markBoxesSeen = useAppStore((s) => s.markBoxesSeen);
   useEffect(() => {
     if (isOpen && isNew && courseCode && activeTab === 'zaznamnik') void markSeen(courseCode);

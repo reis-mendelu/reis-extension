@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { Odevzdavarna } from '../../api/odevzdavarny';
 import { useAppStore } from '../../store/useAppStore';
 import { splitBoxes } from '../../utils/submissionBoxes';
@@ -15,10 +14,12 @@ import { useBoxLabels } from './useBoxLabels';
 export function SubmissionBoxList({ boxes }: { boxes: Odevzdavarna[] }) {
   const L = useBoxLabels();
   const now = useAppStore((s) => s.now).getTime();
-  // Read once: opening this tab marks the boxes seen straight away, and the
-  // mark has to stay for the visit the "Nová odevzdávárna" row led to.
-  const [fresh] = useState(() => new Set(useAppStore.getState().odevzdavarnyNew));
+  // Opening this tab marks the boxes seen straight away; the ones seen this
+  // run keep the mark, so the visit the "Nová odevzdávárna" row led to has it.
+  const unseen = useAppStore((s) => s.odevzdavarnyNew);
+  const seen = useAppStore((s) => s.odevzdavarnySeenNew);
   if (boxes.length === 0) return null;
+  const fresh = new Set([...unseen, ...seen]);
   const split = splitBoxes(boxes, now);
   const isNew = (b: Odevzdavarna) => fresh.has(boxKey(b));
   // New first, so the subject opens on the box its row was about.

@@ -232,7 +232,7 @@ export function useAppLogic() {
             useAppStore.getState().setOdevzdavarny(r.odevzdavarny);
             // Its own catch: a failed check must not cost the rest of the push.
             try {
-              const { unseen } = await persistNewBoxes(r.odevzdavarny);
+              const { unseen } = await persistNewBoxes(r.odevzdavarny, userParams.obdobi);
               useAppStore.getState().setOdevzdavarnyNew(unseen);
             } catch (err) {
               logError('useAppLogic.persistNewBoxes', err);

@@ -16,7 +16,12 @@ describe('SubmissionBoxList — a new box', () => {
   ];
 
   beforeEach(() => {
-    useAppStore.setState({ now: NOW, language: 'cz', odevzdavarnyNew: ['2'] } as never);
+    useAppStore.setState({
+      now: NOW,
+      language: 'cz',
+      odevzdavarnyNew: ['2'],
+      odevzdavarnySeenNew: [],
+    } as never);
   });
   afterEach(cleanup);
 
@@ -28,11 +33,17 @@ describe('SubmissionBoxList — a new box', () => {
     expect(within(cards[1]!).queryByText('Nová')).toBeNull();
   });
 
-  // Opening the tab marks it seen at once; the mark must outlive that.
-  it('stays marked for this visit after the box is marked seen', () => {
-    render(<SubmissionBoxList boxes={boxes} />);
-    useAppStore.setState({ odevzdavarnyNew: [] } as never);
+  // Opening the tab marks it seen at once (markBoxesSeen moves it across);
+  // the mark must outlive that, and a remount of the tab too.
+  it('stays marked once seen, even when the tab remounts', () => {
+    const { unmount } = render(<SubmissionBoxList boxes={boxes} />);
+    useAppStore.setState({ odevzdavarnyNew: [], odevzdavarnySeenNew: ['2'] } as never);
     expect(within(screen.getByTestId('submission-box-2')).getByText('Nová')).toBeInTheDocument();
+    unmount();
+    render(<SubmissionBoxList boxes={boxes} />);
+    const cards = screen.getAllByTestId(/^submission-box-/);
+    expect(cards.map((c) => c.dataset.testid)).toEqual(['submission-box-2', 'submission-box-1']);
+    expect(within(cards[0]!).getByText('Nová')).toBeInTheDocument();
   });
 
   it('without anything new, soonest first as always', () => {

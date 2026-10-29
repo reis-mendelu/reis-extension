@@ -26,4 +26,11 @@ describe('clearStudyData', () => {
     expect(deleted).not.toContain('reis_theme');
     expect(clear).toHaveBeenCalledWith('zaznamnik');
   });
+
+  // The next study's first sync has to be a baseline, not a list of "new" boxes.
+  it("forgets the left study's submission boxes, seen and new", async () => {
+    await clearStudyData();
+    const deleted = del.mock.calls.map((c) => (c as unknown[])[1]);
+    expect(deleted).toEqual(expect.arrayContaining(['odevzdavarny_known', 'odevzdavarny_new']));
+  });
 });

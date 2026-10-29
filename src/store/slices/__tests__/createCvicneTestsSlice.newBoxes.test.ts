@@ -46,6 +46,7 @@ describe('new submission boxes in the store', () => {
       odevzdavarny: [],
       odevzdavarnyStatus: 'idle',
       odevzdavarnyNew: [],
+      odevzdavarnySeenNew: [],
       studiumId: 'st',
       obdobiId: 'ob',
       subjects: {
@@ -70,6 +71,20 @@ describe('new submission boxes in the store', () => {
 
     expect(useAppStore.getState().odevzdavarnyNew).toEqual(['2']);
     expect(db.get(`meta/${NEW_BOXES_META_KEY}`)).toEqual(['2']);
+    // Seen, but still marked "Nová" for the rest of this run.
+    expect(useAppStore.getState().odevzdavarnySeenNew).toEqual(['1']);
+  });
+
+  // A sync answered while the clear waited its turn put the box back on
+  // screen; what is stored after the clear wins.
+  it('a box a racing sync put back on screen is dropped once the clear lands', async () => {
+    useAppStore.setState({ odevzdavarny: [box('1', 'M')] } as never);
+    db.set(`meta/${NEW_BOXES_META_KEY}`, ['1']);
+    useAppStore.getState().setOdevzdavarnyNew(['1']);
+    const marking = useAppStore.getState().markBoxesSeen('EBC-MAT');
+    useAppStore.getState().setOdevzdavarnyNew(['1']);
+    await marking;
+    expect(useAppStore.getState().odevzdavarnyNew).toEqual([]);
   });
 
   it('opening a subject with no new box writes nothing', async () => {

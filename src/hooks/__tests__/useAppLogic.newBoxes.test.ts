@@ -80,7 +80,7 @@ describe('a sync push carrying the submission boxes', () => {
     persistNewBoxes.mockResolvedValue({ found: ['9001'], unseen: ['9001'] });
     await push({ odevzdavarny: [BOX] });
 
-    expect(persistNewBoxes).toHaveBeenCalledWith([BOX]);
+    expect(persistNewBoxes).toHaveBeenCalledWith([BOX], 'ob');
     expect(store.setOdevzdavarnyNew).toHaveBeenCalledWith(['9001']);
   });
 

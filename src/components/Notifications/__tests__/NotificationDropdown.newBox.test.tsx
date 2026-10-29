@@ -33,10 +33,11 @@ describe('extension bell: new odevzdávárna', () => {
         onOpenSubject={onOpenSubject}
       />
     );
-    // "Nová" leads the box's name; the date takes the meta column; the full
-    // kind is there for a screen reader.
-    expect(screen.getByText('Nová · Build MATLAB Proficiency')).toBeInTheDocument();
-    expect(screen.getByText('Nová odevzdávárna:')).toBeInTheDocument();
+    // "Nová" leads the box's name and the date takes the meta column; a
+    // screen reader hears the full kind once, not "Nová" twice.
+    const row = screen.getByRole('button', { name: /Matematika/ });
+    expect(row).toHaveTextContent('Nová · Build MATLAB Proficiency');
+    expect(row).toHaveAccessibleName(/Nová odevzdávárna: Build MATLAB Proficiency/);
     expect(screen.getByText(/^do 20\. ?12\.$/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Matematika/ }));
     expect(onClose).toHaveBeenCalled();

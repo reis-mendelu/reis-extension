@@ -5,7 +5,7 @@ import { courseDisplayName } from '../utils/courseDisplayName';
 import { boxCourseCode, boxState } from '../utils/submissionBoxes';
 import { newPointsAlerts } from '../utils/zaznamnik/newPointsAlerts';
 import { boxKey } from '../utils/newSubmissionBoxes';
-import { newBoxAlerts } from '../utils/newSubmissionBoxAlerts';
+import { newBoxAlerts, NEW_BOX_ID_PREFIX } from '../utils/newSubmissionBoxAlerts';
 
 export interface DeadlineAlert {
   id: string;
@@ -118,7 +118,7 @@ export function useDeadlineAlerts() {
     }
 
     const freshBoxes = newBoxAlerts(newBoxes, odevzdavarny, subjects, nicknames, language, now);
-    const announced = new Set(freshBoxes.map((a) => a.id.slice('odev-new-'.length)));
+    const announced = new Set(freshBoxes.map((a) => a.id.slice(NEW_BOX_ID_PREFIX.length)));
 
     for (const a of odevzdavarny) {
       // Its "Nová odevzdávárna" row already says when it is due.

@@ -33,13 +33,18 @@ describe('boxKey', () => {
   });
 });
 
+const known = (ids: string[], periods = ['P1']) => ({
+  ids: new Set(ids),
+  periods: new Set(periods),
+});
+
 describe('findNewBoxes', () => {
   it('announces nothing on first sight: what is there is the baseline', () => {
-    expect(findNewBoxes(undefined, [box({})], NOW)).toEqual([]);
+    expect(findNewBoxes(undefined, [box({})], 'P1', NOW)).toEqual([]);
   });
 
   it('a box missing from the known ids is new', () => {
-    expect(findNewBoxes(new Set(['1']), [box({ odevzdavarnaId: '1' }), box({})], NOW)).toEqual([
+    expect(findNewBoxes(known(['1']), [box({ odevzdavarnaId: '1' }), box({})], 'P1', NOW)).toEqual([
       '9001',
     ]);
   });
@@ -47,19 +52,36 @@ describe('findNewBoxes', () => {
   // An empty baseline is still a baseline: the first boxes of a semester that
   // started with none are exactly the news.
   it('an empty known list still makes the next box new', () => {
-    expect(findNewBoxes(new Set(), [box({})], NOW)).toEqual(['9001']);
+    expect(findNewBoxes(known([]), [box({})], 'P1', NOW)).toEqual(['9001']);
+  });
+
+  // The semester turned: teachers made the new period's boxes weeks ago, and
+  // this device has simply never read that period before.
+  it('a period never read before is a baseline of its own', () => {
+    expect(findNewBoxes(known(['1']), [box({ obdobi: 'P2' })], 'P2', NOW)).toEqual([]);
+    expect(findNewBoxes(known(['1']), [box({})], 'P2', NOW)).toEqual([]);
+  });
+
+  it('a box of a period already read is new, whichever period the push is for', () => {
+    expect(findNewBoxes(known([], ['P1', 'P2']), [box({ obdobi: 'P1' })], 'P2', NOW)).toEqual([
+      '9001',
+    ]);
   });
 
   it('a box the student cannot upload to is not news', () => {
-    expect(findNewBoxes(new Set(), [box({ section: 'closed', isOpen: false })], NOW)).toEqual([]);
+    expect(findNewBoxes(known([]), [box({ section: 'closed', isOpen: false })], 'P1', NOW)).toEqual(
+      []
+    );
   });
 
   it('a box whose deadline already passed is not news', () => {
-    expect(findNewBoxes(new Set(), [box({ deadline: '01.10.2026 10:00' })], NOW)).toEqual([]);
+    expect(findNewBoxes(known([]), [box({ deadline: '01.10.2026 10:00' })], 'P1', NOW)).toEqual([]);
   });
 
   it('a box already handed in is not news', () => {
-    expect(findNewBoxes(new Set(), [box({ section: 'submitted', fileCount: 1 })], NOW)).toEqual([]);
+    expect(
+      findNewBoxes(known([]), [box({ section: 'submitted', fileCount: 1 })], 'P1', NOW)
+    ).toEqual([]);
   });
 });
 
@@ -78,8 +100,21 @@ describe('newBoxAlerts', () => {
     });
     expect(row?.body).toBe('Build MATLAB Proficiency (bonus body)');
     expect(row?.deadline).toEqual(new Date(2026, 11, 20, 23, 59));
-    // No clock: it would print hundreds of hours and sort among the deadlines.
+    // No clock this far out: it would read "za 1234 h".
     expect(row?.hoursUntil).toBeUndefined();
+  });
+
+  // It stands in for the box's 48-hour deadline row, so it keeps that clock.
+  it('a box due within 48 hours keeps the clock', () => {
+    const [row] = newBoxAlerts(
+      ['9001'],
+      [box({ deadline: '30.10.2026 10:00' })],
+      subjects,
+      {},
+      'cz',
+      NOW
+    );
+    expect(row?.hoursUntil).toBe(22);
   });
 
   it('uses the nickname the student gave the subject', () => {

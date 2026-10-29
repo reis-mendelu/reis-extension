@@ -1,6 +1,6 @@
 import { IndexedDBService } from '../../services/storage/IndexedDBService';
 import { NEW_POINTS_META_KEY } from '../../services/sync/zaznamnikNewPoints';
-import { KNOWN_BOXES_META_KEY, NEW_BOXES_META_KEY } from '../../services/sync/newSubmissionBoxes';
+import { resetNewBoxes } from '../../services/sync/newSubmissionBoxes';
 
 /**
  * Stores whose contents belong to ONE study. Everything else stays: the
@@ -22,16 +22,13 @@ const STUDY_STORES = [
 /**
  * `meta` is deleted by key, never cleared (see `IndexedDBService.clearAll`).
  * The unread Nové body go too: `fetchZaznamnik` restores them on the next
- * start, and they are the left study's subjects (review #591). So do the
- * submission boxes seen and still new: the next study starts a fresh baseline.
+ * start, and they are the left study's subjects (review #591).
  */
 const STUDY_META_KEYS = [
   'study_stats',
   'study_comparison',
   'current_attendance',
   NEW_POINTS_META_KEY,
-  KNOWN_BOXES_META_KEY,
-  NEW_BOXES_META_KEY,
 ];
 
 /**
@@ -54,4 +51,8 @@ export async function clearStudyData(): Promise<void> {
     ...meta.map((m) => m.key).filter((k) => k.startsWith(STUDY_META_PREFIX)),
   ];
   await Promise.all(keys.map((k) => IndexedDBService.delete('meta', k)));
+  // The submission boxes seen and still new go too, so the next study starts a
+  // fresh baseline. On their own queue: a sync of the left study still being
+  // stored would otherwise write its boxes back as this study's known ones.
+  await resetNewBoxes();
 }

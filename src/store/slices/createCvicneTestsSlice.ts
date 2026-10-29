@@ -5,7 +5,7 @@ import { logError } from '../../utils/reportError';
 import { odevzdavarnyListUrl } from '../../api/odevzdavarny';
 import { boxCourseCode } from '../../utils/submissionBoxes';
 import { boxKey } from '../../utils/newSubmissionBoxes';
-import { clearNewBoxes, NEW_BOXES_META_KEY } from '../../services/sync/newSubmissionBoxes';
+import { clearNewBoxes, readNewBoxes } from '../../services/sync/newSubmissionBoxes';
 
 export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set, get) => ({
   cvicneTests: [],
@@ -52,7 +52,9 @@ export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set, get) => 
       if (studium && obdobi) {
         const [data, unseen] = await Promise.all([
           IndexedDBService.get('odevzdavarny', `${studium}_${obdobi}`),
-          IndexedDBService.get('meta', NEW_BOXES_META_KEY) as Promise<string[] | undefined>,
+          // Through the queue: a read beside a persist could bring back a box
+          // the student has just seen.
+          readNewBoxes(),
         ]);
         // 5.3.0 cached `uploadUrl: ''` for a row with no upload link, and an
         // empty href opens the app's own page. The fetcher now falls back to
@@ -63,7 +65,7 @@ export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set, get) => 
         set({
           odevzdavarny: boxes,
           odevzdavarnyStatus: 'success',
-          odevzdavarnyNew: unseen ?? [],
+          odevzdavarnyNew: unseen,
         });
       } else {
         set({ odevzdavarnyStatus: 'success', odevzdavarny: [] });
@@ -78,6 +80,7 @@ export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set, get) => 
   },
   odevzdavarnyNew: [],
   setOdevzdavarnyNew: (keys) => set({ odevzdavarnyNew: keys }),
+  odevzdavarnySeenNew: [],
   markBoxesSeen: async (courseCode) => {
     const { odevzdavarny, odevzdavarnyNew, subjects } = get();
     const seen = new Set(
@@ -87,9 +90,15 @@ export const createCvicneTestsSlice: AppSlice<CvicneTestsSlice> = (set, get) => 
         .filter((k) => odevzdavarnyNew.includes(k))
     );
     if (seen.size === 0) return;
-    set((s) => ({ odevzdavarnyNew: s.odevzdavarnyNew.filter((k) => !seen.has(k)) }));
+    set((s) => ({
+      odevzdavarnyNew: s.odevzdavarnyNew.filter((k) => !seen.has(k)),
+      odevzdavarnySeenNew: [...new Set([...s.odevzdavarnySeenNew, ...seen])],
+    }));
     try {
-      await clearNewBoxes([...seen]);
+      // What is stored once the clear has its turn: a sync answered in the
+      // meantime may have put this subject's box back on screen.
+      const rest = await clearNewBoxes([...seen]);
+      set((s) => ({ odevzdavarnyNew: s.odevzdavarnyNew.filter((k) => rest.includes(k)) }));
     } catch (err) {
       logError('CvicneTestsSlice.markBoxesSeen', err);
     }

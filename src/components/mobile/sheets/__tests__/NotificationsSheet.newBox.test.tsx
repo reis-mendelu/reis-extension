@@ -48,7 +48,9 @@ describe('NotificationsSheet: new odevzdávárna', () => {
     render(<NotificationsSheet onClose={vi.fn()} />);
     expect(screen.getByText('Záznamník')).toBeInTheDocument();
     expect(screen.getByText('Matematika')).toBeInTheDocument();
-    expect(screen.getByText('Nová · Build MATLAB Proficiency')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Matematika/ })).toHaveTextContent(
+      'Nová · Build MATLAB Proficiency'
+    );
     expect(screen.getByText(/^do 20\. ?12\.$/)).toBeInTheDocument();
   });
 
