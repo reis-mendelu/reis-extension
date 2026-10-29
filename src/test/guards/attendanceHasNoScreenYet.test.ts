@@ -13,9 +13,13 @@ import { describe, expect, it } from 'vitest';
  * arrive on both trees at once, labelled, not as this component reused. Building
  * that placement means rewriting this guard on purpose.
  *
+ * Any mention counts, comments included: until a placement exists, no screen file
+ * on either tree should be about attendance at all.
+ *
  * The data keeps syncing: the placement that replaces it will read the same slice.
  * It is parsed out of the subjects page sync already fetches, so it costs no extra
- * request to IS. If the choice is "nowhere", the parsing and the last test can go.
+ * request to IS. If the choice is "nowhere", the parser, the attendance slice and
+ * its sync plumbing go, and the last test with them.
  */
 const SRC = resolve(process.cwd(), 'src');
 const read = (p: string) => readFileSync(join(SRC, p), 'utf8');
@@ -26,7 +30,7 @@ function componentFiles(dir: string): string[] {
   return readdirSync(join(SRC, dir), { withFileTypes: true }).flatMap((e) => {
     const path = join(dir, e.name);
     if (e.isDirectory()) return e.name === '__tests__' ? [] : componentFiles(path);
-    return /\.tsx?$/.test(e.name) ? [path] : [];
+    return /\.tsx?$/.test(e.name) && !e.name.includes('.test.') ? [path] : [];
   });
 }
 
@@ -50,6 +54,7 @@ describe('attendance has no screen yet', () => {
   });
 
   it('sync still writes it, for the placement that replaces it', () => {
-    expect(read('services/sync/syncSubjects.ts')).toContain('setAttendance(');
+    // The live write: the injector's sync result lands in the store here.
+    expect(read('hooks/useAppLogic.ts')).toContain('setAttendance(r.attendance)');
   });
 });
