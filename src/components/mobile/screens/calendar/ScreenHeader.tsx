@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { RotateCcw } from 'lucide-react';
+import { Calendar1 } from 'lucide-react';
 import { HeaderActions } from '../HeaderActions';
 
 export interface ScreenHeaderProps {
@@ -21,9 +21,12 @@ export interface ScreenHeaderProps {
    */
   action?: ReactNode;
   /**
-   * Makes the title itself a control, with a return glyph beside it — the
+   * Makes the title itself a control, with a today glyph beside it — the
    * calendar's way back to today. A glyph, not a pill: the header is full at a
    * date and three actions, and "Dnes" beside the date never fit at 375.
+   * Calendar1, a page with a "1" on it: ↺ (RotateCcw) read as "refresh the
+   * data", and the plain calendar and CalendarCheck are already the
+   * Calendar and Exams tabs below.
    */
   titleAction?: { label: string; onClick: () => void };
 }
@@ -71,7 +74,7 @@ export function ScreenHeader({ eyebrow, title, below, action, titleAction }: Scr
               className="-my-1.5 flex min-w-0 items-center gap-1 py-1.5 text-left"
             >
               <span className={TITLE_CLASS}>{title}</span>
-              <RotateCcw
+              <Calendar1
                 size={16}
                 strokeWidth={2.5}
                 className="flex-shrink-0 text-[var(--tone-primary)]"
