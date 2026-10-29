@@ -5,6 +5,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import type { VtTestAttempt } from '../../types/zaznamnik';
 import { VtTestGroup } from './Zaznamnik/VtTestGroup';
 import { PhArchView } from './Zaznamnik/PhArchView';
+import { AttendanceSection } from './Zaznamnik/AttendanceSection';
 import { ReportMissingLink } from '../Feedback/ReportMissingLink';
 import { SubmissionBoxList } from '../SubmissionBoxes/SubmissionBoxList';
 import { useOdevzdavarny } from '../../hooks/data/useOdevzdavarny';
@@ -35,7 +36,18 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
   // Submission boxes sit on top of every state below: they come from their own
   // sync, so a subject can have boxes before (or without) any recorded marks.
   const { assignments: boxes } = useOdevzdavarny(subjectId);
-  const boxSection = <SubmissionBoxList boxes={boxes} />;
+  // Docházka opens the tab; like the boxes it has its own sync, so it shows in
+  // every state below, loading and failed included.
+  const hasAttendance = useAppStore(
+    (s) => !!s.attendance[courseCode]?.some((g) => g.records.length > 0)
+  );
+  const boxSection = (
+    <>
+      <AttendanceSection courseCode={courseCode} />
+      <SubmissionBoxList boxes={boxes} />
+    </>
+  );
+  const hasTop = hasAttendance || boxes.length > 0;
 
   const buildUrl = (extra: string) =>
     `${IS_BASE}/auth/student/list.pl?studium=${studium};obdobi=${obdobi};predmet=${subjectId};${extra};lang=${lang}`;
@@ -92,7 +104,7 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
   if (isFailed) {
     return (
       <div className="flex flex-col h-full overflow-y-auto">
-        {boxes.length > 0 && <div className="p-4 pb-0 text-[13px]">{boxSection}</div>}
+        {hasTop && <div className="p-4 pb-0 space-y-5 text-[13px]">{boxSection}</div>}
         <LoadFailed
           testId="zaznamnik-error"
           // The same preconditions refetchZaznamnik checks, so the button is
@@ -121,7 +133,7 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
         : t('zaznamnik.notLoaded');
     // With boxes to show, the empty-records note shrinks to a line under them
     // instead of filling the tab as if there were nothing here at all.
-    if (boxes.length > 0) {
+    if (hasTop) {
       return (
         <div className="h-full overflow-y-auto p-4 space-y-5 text-[13px]">
           {boxSection}

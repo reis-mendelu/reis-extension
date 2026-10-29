@@ -395,7 +395,22 @@
     "phSection": "Continuous assessment",
     "vtSection": "Tests",
     "isContinuous": "IS (continuous assessment)",
-    "isTestResults": "IS (test results)"
+    "isTestResults": "IS (test results)",
+    "attendanceSection": "Attendance",
+    "attendanceSummaryOne": "At {n} of {total} session",
+    "attendanceSummaryFew": "At {n} of {total} sessions",
+    "attendanceSummaryOther": "At {n} of {total} sessions",
+    "attendanceAbsences": "{n}× absent",
+    "attendanceNote": "Only sessions where the teacher recorded attendance count.",
+    "attendanceStatus": {
+      "present": "Present",
+      "elsewhere": "Present elsewhere",
+      "absent": "Absent",
+      "excused": "Excused",
+      "late": "Late",
+      "early-leave": "Left early",
+      "excluded": "Excluded"
+    }
   },
   "syllabus": {
     "conditions": "Completion requirements",

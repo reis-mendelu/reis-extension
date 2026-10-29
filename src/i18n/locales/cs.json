@@ -395,7 +395,22 @@
     "phSection": "Průběžné hodnocení",
     "vtSection": "Testy",
     "isContinuous": "IS (průběžné hodnocení)",
-    "isTestResults": "IS (výsledky testů)"
+    "isTestResults": "IS (výsledky testů)",
+    "attendanceSection": "Docházka",
+    "attendanceSummaryOne": "Na {n} {z} {total} cvičení",
+    "attendanceSummaryFew": "Na {n} {z} {total} cvičení",
+    "attendanceSummaryOther": "Na {n} {z} {total} cvičení",
+    "attendanceAbsences": "{n}× chyběl/a",
+    "attendanceNote": "Počítají se jen cvičení, kde vyučující docházku zapsal.",
+    "attendanceStatus": {
+      "present": "Přítomen/a",
+      "elsewhere": "Přítomen/a jinde",
+      "absent": "Chyběl/a",
+      "excused": "Omluven/a",
+      "late": "Pozdní příchod",
+      "early-leave": "Dřívější odchod",
+      "excluded": "Vyloučen/a"
+    }
   },
   "syllabus": {
     "conditions": "Podmínky ukončení",
