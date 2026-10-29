@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { clear, del, getAllWithKeys } = vi.hoisted(() => ({
   clear: vi.fn(async () => {}),
@@ -15,6 +15,9 @@ vi.mock('../../../services/storage/IndexedDBService', () => ({
 import { clearStudyData } from '../clearStudyData';
 
 describe('clearStudyData', () => {
+  // Each test asserts on its own call only.
+  beforeEach(() => vi.clearAllMocks());
+
   // Review #591: the left study's unread "Nové body" came back after a restart,
   // because fetchZaznamnik restores them from this key.
   it("drops the left study's unread Nové body with its other meta", async () => {

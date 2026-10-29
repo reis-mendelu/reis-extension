@@ -47,10 +47,21 @@ const box = (id: string, obdobi = 'P1'): Odevzdavarna => ({
 // The sync reads the current period; boxes carry their own.
 const persist = (boxes: Odevzdavarna[], obdobi = 'P1') => persistNewBoxes(boxes, obdobi);
 
+const signIn = () => db.set('meta/reis_user_params', { studium: 'st', obdobi: 'P1' });
+
 describe('persistNewBoxes', () => {
   beforeEach(() => {
     db.clear();
+    signIn();
     vi.spyOn(Date, 'now').mockReturnValue(NOW);
+  });
+
+  // Signed out between the push and its turn on the queue: nothing is written
+  // for the next student to be compared with.
+  it('writes nothing once the student has signed out', async () => {
+    db.delete('meta/reis_user_params');
+    expect(await persist([box('1')])).toEqual({ found: [], unseen: [] });
+    expect(db.has(`meta/${KNOWN_BOXES_META_KEY}`)).toBe(false);
   });
 
   it('first sight after install: remembers every box, announces none', async () => {
@@ -168,7 +179,10 @@ describe('clearNewBoxes', () => {
 });
 
 describe('reading and resetting', () => {
-  beforeEach(() => db.clear());
+  beforeEach(() => {
+    db.clear();
+    signIn();
+  });
 
   it('reads what is still unseen', async () => {
     db.set(`meta/${NEW_BOXES_META_KEY}`, ['2']);

@@ -108,12 +108,16 @@ export async function logout(): Promise<void> {
   clearUserParamsCache();
   try {
     await IndexedDBService.clearAll();
-    // A sync being stored as this ran would write its boxes back after the
-    // wipe, and the next student would be compared with them. The reset
-    // waits its turn behind it.
-    await resetNewBoxes();
   } catch (e) {
     logError('ProxyClient.logout:clearAll', e);
+  }
+  // Apart from the wipe, so a failed one still drops this student's boxes. It
+  // waits its turn behind a sync being stored as this ran, which would
+  // otherwise write them back for the next student to be compared with.
+  try {
+    await resetNewBoxes();
+  } catch (e) {
+    logError('ProxyClient.logout:resetNewBoxes', e);
   }
 
   // The society/admin login is a SECOND credential, kept by supabase-js in

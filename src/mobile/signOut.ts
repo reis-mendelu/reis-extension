@@ -139,9 +139,13 @@ export function buildSignOutDeps(): SignOutDeps {
       await clearAdminSession();
     },
     clearLocalData: async () => {
-      await IndexedDBService.clearAll();
-      // Behind a sync still being stored, which would write its boxes back.
-      await resetNewBoxes();
+      try {
+        await IndexedDBService.clearAll();
+      } finally {
+        // Even when the wipe failed; behind a sync still being stored, which
+        // would write its boxes back.
+        await resetNewBoxes();
+      }
     },
     // A reload rather than a hand-rolled teardown: boot() already owns the
     // "no token → present login" path, and re-running it is what guarantees

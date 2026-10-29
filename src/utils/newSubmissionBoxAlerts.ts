@@ -39,9 +39,11 @@ export function newBoxAlerts(
   return boxes.flatMap((box) => {
     if (!wanted.has(boxKey(box)) || !actionable(box, now)) return [];
     const code = boxCourseCode(box, subjects);
-    // A row that cannot open its subject would be a dead end.
-    if (!code) return [];
-    const s = subjects?.[code];
+    const s = code ? subjects?.[code] : undefined;
+    // A row that cannot open its subject's Záznamník would be a dead end: the
+    // drawer opens a subject without its IS id on another tab. It shows once
+    // the subjects have loaded.
+    if (!code || !s?.subjectId) return [];
     const deadline = boxDeadline(box) ?? undefined;
     const hours = deadline && (deadline.getTime() - now) / 3_600_000;
     const urgent = hours !== undefined && hours <= URGENT_HOURS;
@@ -53,15 +55,15 @@ export function newBoxAlerts(
         title: courseDisplayName(
           nicknames,
           code,
-          (isEn ? s?.nameEn : s?.nameCs) ||
-            s?.displayName ||
+          (isEn ? s.nameEn : s.nameCs) ||
+            s.displayName ||
             (isEn ? box.courseNameEn || box.courseNameCs : box.courseNameCs)
         ),
         body: box.name,
         deadline,
         hoursUntil: urgent ? hours : undefined,
         courseCode: code,
-        courseId: s?.subjectId ?? box.courseId,
+        courseId: s.subjectId,
       },
     ];
   });

@@ -7,6 +7,7 @@ import {
   type KnownBoxes,
 } from '../../utils/newBoxDetection';
 import { IndexedDBService } from '../storage/IndexedDBService';
+import { STORAGE_KEYS } from '../storage/keys';
 
 /**
  * The 'meta' key holding every box id and IS period this device has seen. Its
@@ -24,6 +25,12 @@ interface StoredKnown {
 }
 
 async function persist(fresh: Odevzdavarna[], obdobi: string | undefined) {
+  // Signed out since the push arrived: writing now would hand this student's
+  // boxes to the next one as "already seen". The wipe took the params, and
+  // the next sign-in, finding none, has no reason to wipe again.
+  if (!(await IndexedDBService.get('meta', STORAGE_KEYS.USER_PARAMS))) {
+    return { found: [], unseen: [] };
+  }
   const [stored, unseenBefore] = (await Promise.all([
     IndexedDBService.get('meta', KNOWN_BOXES_META_KEY),
     IndexedDBService.get('meta', NEW_BOXES_META_KEY),

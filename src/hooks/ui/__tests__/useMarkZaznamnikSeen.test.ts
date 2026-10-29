@@ -54,10 +54,11 @@ describe('useMarkZaznamnikSeen', () => {
   // while the student is looking.
   it("clears only when the new box is this subject's", () => {
     store.odevzdavarnyNew = ['9002'];
-    renderHook(() => useMarkZaznamnikSeen('EBC-VWA', 'zaznamnik', true));
+    const { rerender } = renderHook(() => useMarkZaznamnikSeen('EBC-VWA', 'zaznamnik', true));
     expect(store.markBoxesSeen).not.toHaveBeenCalled();
+    // The same open tab, when a sync brings this subject a box.
     store.odevzdavarnyNew = ['9002', '9001'];
-    renderHook(() => useMarkZaznamnikSeen('EBC-VWA', 'zaznamnik', true));
+    rerender();
     expect(store.markBoxesSeen).toHaveBeenCalledWith('EBC-VWA');
   });
 

@@ -93,4 +93,27 @@ describe('new submission boxes in the store', () => {
     await useAppStore.getState().markBoxesSeen('EBC-MAT');
     expect(idb.set).not.toHaveBeenCalledWith('meta', NEW_BOXES_META_KEY, expect.anything());
   });
+
+  it('a failed read keeps the new boxes already on screen', async () => {
+    db.set('odevzdavarny/st_ob', [box('1', 'M')]);
+    useAppStore.getState().setOdevzdavarnyNew(['1']);
+    idb.get.mockImplementation(async (store: string, key: string) => {
+      if (store === 'meta' && key === NEW_BOXES_META_KEY) throw new Error('closing');
+      return db.get(`${store}/${key}`);
+    });
+    await useAppStore.getState().fetchOdevzdavarny();
+    expect(useAppStore.getState().odevzdavarnyNew).toEqual(['1']);
+    expect(useAppStore.getState().odevzdavarny).toHaveLength(1);
+    idb.get.mockImplementation(async (store: string, key: string) => db.get(`${store}/${key}`));
+  });
+
+  // A sync answered while the hydration was reading: its newer list stays.
+  it('a hydration does not put an older read back over a newer list', async () => {
+    db.set('odevzdavarny/st_ob', [box('1', 'M'), box('2', 'M')]);
+    db.set(`meta/${NEW_BOXES_META_KEY}`, ['1']);
+    const hydrating = useAppStore.getState().fetchOdevzdavarny();
+    useAppStore.getState().setOdevzdavarnyNew(['1', '2']);
+    await hydrating;
+    expect(useAppStore.getState().odevzdavarnyNew).toEqual(['1', '2']);
+  });
 });

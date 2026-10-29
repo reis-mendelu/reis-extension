@@ -130,6 +130,14 @@ describe('newBoxAlerts', () => {
     ).toEqual([]);
   });
 
+  // The phone drawer opens a subject without its IS id on another tab.
+  it('a box whose subject has no IS id yet has no row until it does', () => {
+    const bare = { 'EBC-MAT': { nameCs: 'Matematika' } };
+    expect(newBoxAlerts(['9001'], [box({ courseCode: 'EBC-MAT' })], bare, {}, 'cz', NOW)).toEqual(
+      []
+    );
+  });
+
   it('a box whose subject reIS cannot place has no row to open', () => {
     expect(newBoxAlerts(['9001'], [box({ courseId: '999' })], subjects, {}, 'cz', NOW)).toEqual([]);
   });
