@@ -1,0 +1,22 @@
+{
+  "societies": {
+    "esnmendelubrno": "esn",
+    "supefmendelu": "supef",
+    "au_frrms": "au_frrms",
+    "uniestudentuaf": "usaf",
+    "spldf_mendelu": "ldf",
+    "led_zf": "zf",
+    "studentimendelu": null,
+    "icv_klub": null
+  },
+  "official": [
+    "mendelu.cz",
+    "pefmendelu",
+    "af.mendelu",
+    "ldf_mendelu",
+    "zf_mendelu",
+    "frrms_mendelu",
+    "icv_mendelu",
+    "mendelu_international"
+  ]
+}
