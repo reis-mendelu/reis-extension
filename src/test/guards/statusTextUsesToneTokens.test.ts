@@ -21,6 +21,8 @@ import { describe, expect, it } from 'vitest';
  */
 const SWEPT = [
   'src/components/mobile/screens/exams',
+  // both trees: the Docházka pills in the shared Záznamník tab
+  'src/components/SubjectFileDrawer/Zaznamnik/AttendanceSection.tsx',
   'src/components/mobile/screens/ExamsScreen.tsx',
   'src/components/mobile/screens/calendar/DayChips.tsx',
   'src/components/mobile/screens/ProfileScreen.tsx',

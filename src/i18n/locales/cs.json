@@ -392,10 +392,30 @@
     "noAssessment": "Tento předmět nemá průběžné hodnocení ani testy.",
     "nothingYet": "Zatím nic zapsáno.",
     "notLoaded": "Hodnocení k tomuto předmětu reIS nenačítá.",
+    "emptyShort": {
+      "noData": "Zatím nic",
+      "noAssessment": "Bez hodnocení",
+      "notLoaded": "Nenačítá se",
+      "nothingYet": "Zatím nic"
+    },
     "phSection": "Průběžné hodnocení",
     "vtSection": "Testy",
     "isContinuous": "IS (průběžné hodnocení)",
-    "isTestResults": "IS (výsledky testů)"
+    "isTestResults": "IS (výsledky testů)",
+    "attendanceSection": "Docházka",
+    "attendanceSummaryOne": "Na {n} {z} {total} cvičení",
+    "attendanceSummaryFew": "Na {n} {z} {total} cvičení",
+    "attendanceSummaryOther": "Na {n} {z} {total} cvičení",
+    "attendanceAbsences": "{n}× chyběl/a",
+    "attendanceStatus": {
+      "present": "Přítomen/a",
+      "elsewhere": "Přítomen/a jinde",
+      "absent": "Chyběl/a",
+      "excused": "Omluven/a",
+      "late": "Pozdní příchod",
+      "early-leave": "Dřívější odchod",
+      "excluded": "Vyloučen/a"
+    }
   },
   "syllabus": {
     "conditions": "Podmínky ukončení",

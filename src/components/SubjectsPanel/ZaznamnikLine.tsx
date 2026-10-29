@@ -10,16 +10,6 @@ interface ZaznamnikLineProps {
   className?: string;
 }
 
-const STATUS_DOT: Record<string, string> = {
-  present: 'bg-success',
-  elsewhere: 'bg-success',
-  absent: 'bg-error',
-  excused: 'bg-base-content/30',
-  late: 'bg-warning',
-  'early-leave': 'bg-warning',
-  excluded: 'bg-error',
-};
-
 const IS_BASE = 'https://is.mendelu.cz';
 const DAY_MS = 1000 * 60 * 60 * 24;
 
@@ -36,26 +26,9 @@ export function ZaznamnikLine({ courseCode, subjectId, className }: ZaznamnikLin
   const lang = language === 'cz' ? 'cz' : 'en';
 
   const studium = useAppStore((s) => s.studiumId);
-  const attendanceGroups = useAppStore((s) => s.attendance[courseCode]);
   const subjectInfo = useAppStore((s) => s.subjects?.data[courseCode]);
   const allTests = useAppStore((s) => s.cvicneTests);
   const allAssignments = useAppStore((s) => s.odevzdavarny);
-
-  const dots = useMemo(() => {
-    if (!attendanceGroups) return [];
-    return attendanceGroups.flatMap((g) => g.records);
-  }, [attendanceGroups]);
-
-  const { visibleDots, presentCount, totalCount } = useMemo(() => {
-    const visible = dots.slice(-10);
-    let present = 0,
-      total = 0;
-    for (const d of dots) {
-      if (d.status === 'present' || d.status === 'elsewhere') present++;
-      if (d.status !== 'excused' && d.status !== 'excluded') total++;
-    }
-    return { visibleDots: visible, presentCount: present, totalCount: total };
-  }, [dots]);
 
   const accessibleTests = useMemo(() => {
     if (!subjectId || !allTests) return [];
@@ -77,8 +50,7 @@ export function ZaznamnikLine({ courseCode, subjectId, className }: ZaznamnikLin
 
   const autoHref = subjectInfo?.autoHref;
 
-  const hasAnything =
-    visibleDots.length > 0 || autoHref || accessibleCount > 0 || upcomingDeadlines.length > 0;
+  const hasAnything = autoHref || accessibleCount > 0 || upcomingDeadlines.length > 0;
   if (!hasAnything) return null;
 
   const deadlineLabel = (ts: number) => {
@@ -100,19 +72,6 @@ export function ZaznamnikLine({ courseCode, subjectId, className }: ZaznamnikLin
 
   return (
     <div className={className ?? 'flex items-center flex-wrap gap-x-3 gap-y-1 px-3 pb-2 -mt-1'}>
-      {visibleDots.length > 0 && (
-        <span className="flex items-center gap-1 shrink-0">
-          {visibleDots.map((d, i) => (
-            <span
-              key={i}
-              className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[d.status] ?? 'bg-base-content/20'}`}
-            />
-          ))}
-          <span className="text-[10px] text-base-content/70 ml-0.5 font-mono">
-            {presentCount}/{totalCount}
-          </span>
-        </span>
-      )}
       {autoHref && (
         <a
           href={autoHref}
