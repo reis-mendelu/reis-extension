@@ -127,11 +127,12 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
     // reIS cannot say it has no assessment — only that it does not load it.
     const checked = subjectInfo?.hasPrubezne === false && subjectInfo?.hasTest === false;
     // One placeholder where the marks would be, alone or under Docházka and boxes.
+    // Neither says whether marks are missing, so the report link stays with it.
     return (
       <div className="h-full overflow-y-auto p-4 space-y-5 text-[13px]">
         {topSection}
         <ZaznamnikEmpty reason={hasFlags ? 'noData' : checked ? 'noAssessment' : 'notLoaded'} />
-        {hasFlags && !hasTop && (
+        {hasFlags && (
           <div className="flex justify-center">
             <ReportMissingLink prefill="zaznamnikEmpty" />
           </div>

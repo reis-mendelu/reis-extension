@@ -37,7 +37,7 @@ describe('ZaznamnikEmpty', () => {
 describe('ZaznamnikTab empty state', () => {
   afterEach(cleanup);
 
-  const seed = (attendance: Record<string, unknown>) =>
+  const seed = (attendance: Record<string, unknown>, flags = false) =>
     useAppStore.setState({
       language: 'cz',
       studiumId: '123',
@@ -48,8 +48,17 @@ describe('ZaznamnikTab empty state', () => {
       odevzdavarny: [],
       impersonation: null,
       attendance,
-      subjects: { data: { EBC: { hasPrubezne: false, hasTest: false, subjectId: '789' } } },
+      subjects: { data: { EBC: { hasPrubezne: flags, hasTest: flags, subjectId: '789' } } },
     } as never);
+
+  const absentOnce = {
+    EBC: [
+      {
+        label: 'EBC Cv Út 13.00-14.50 Q05',
+        records: [{ date: '20. 10. 2026', time: '13.00-14.50', room: 'Q05', status: 'absent' }],
+      },
+    ],
+  };
 
   it('is the same block when it is the only thing in the tab', () => {
     seed({});
@@ -59,17 +68,20 @@ describe('ZaznamnikTab empty state', () => {
   });
 
   it('sits under Docházka when attendance is shown', () => {
-    seed({
-      EBC: [
-        {
-          label: 'EBC Cv Út 13.00-14.50 Q05',
-          records: [{ date: '20. 10. 2026', time: '13.00-14.50', room: 'Q05', status: 'absent' }],
-        },
-      ],
-    });
+    seed(absentOnce);
     render(<ZaznamnikTab courseCode="EBC" />);
     const heading = screen.getByText(cs.zaznamnik.attendanceSection);
     const block = screen.getByRole('img', { name: cs.zaznamnik.noAssessment });
     expect(heading.compareDocumentPosition(block) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  // Attendance says nothing about whether marks are missing, so a subject with
+  // assessment and no records still offers the report under Docházka.
+  it('still offers to report missing marks under Docházka', () => {
+    seed(absentOnce, true);
+    render(<ZaznamnikTab courseCode="EBC" />);
+    const block = screen.getByRole('img', { name: cs.zaznamnik.noData });
+    const report = screen.getByRole('button', { name: cs.feedback.reportLink });
+    expect(block.compareDocumentPosition(report) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
