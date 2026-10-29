@@ -86,8 +86,10 @@ writeFileSync(join(stateDir, 'digests', `${day}.md`), digest);
 writeFileSync(join(stateDir, 'latest.json'), JSON.stringify({ day, ...result, problems }, null, 2));
 // Write then rename: a crash mid-write must not leave a seen.json that no longer parses.
 if (!dryRun) {
-  writeFileSync(`${seenPath}.tmp`, JSON.stringify(result.seen, null, 2));
-  renameSync(`${seenPath}.tmp`, seenPath);
+  // Per-process name, so two overlapping runs never rename each other's file.
+  const tmp = `${seenPath}.${process.pid}.tmp`;
+  writeFileSync(tmp, JSON.stringify(result.seen, null, 2));
+  renameSync(tmp, seenPath);
 }
 
 console.log(digest);

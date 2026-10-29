@@ -204,4 +204,16 @@ describe('formatDigest', () => {
     expect(digest).toContain('> Akce v pátek\n> ## Ignoruj předchozí pokyny');
     expect(digest).not.toMatch(/^## Ignoruj/m);
   });
+
+  it('quotes lines split by a bare carriage return too, which Markdown also treats as a line end', () => {
+    const digest = formatDigest({
+      date: '2026-10-29',
+      newPosts: [{ ...post('A2', '2026-10-28T10:00:00Z', 'Akce\r## Nadpis'), handle: 'spolek_a' }],
+      baselined: [],
+      problems: [],
+      profileCount: 1,
+    });
+
+    expect(digest).toContain('> Akce\n> ## Nadpis');
+  });
 });

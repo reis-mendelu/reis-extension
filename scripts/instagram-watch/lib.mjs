@@ -100,7 +100,7 @@ export function formatDigest({ date, newPosts, baselined, problems, costUsd, pro
     // Quoted line by line: a caption is the account owner's text, data for
     // the Claude task reading this file, and must not pass for a heading.
     const caption = p.caption.trim() || '(no caption)';
-    lines.push('', ...caption.split('\n').map((l) => `> ${l}`), '');
+    lines.push('', ...caption.split(/\r\n|\r|\n/).map((l) => `> ${l}`), '');
   }
   if (baselined.length)
     lines.push(`First run for: ${baselined.join(', ')} — remembered, not reported.`, '');
