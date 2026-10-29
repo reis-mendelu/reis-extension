@@ -8,14 +8,25 @@ describe('viewerFrom', () => {
     expect(viewerFrom('PEF', false)).toEqual({
       facultyKey: 'pef',
       erasmus: false,
+      exchange: false,
       programme: null,
     });
     expect(viewerFrom('PEF', false, 'B-OI')).toMatchObject({ programme: 'B-OI' });
   });
 
   it('unknown or missing label is null', () => {
-    expect(viewerFrom(null, true)).toEqual({ facultyKey: null, erasmus: true, programme: null });
-    expect(viewerFrom('XYZ', false)).toEqual({ facultyKey: null, erasmus: false, programme: null });
+    expect(viewerFrom(null, true)).toEqual({
+      facultyKey: null,
+      erasmus: true,
+      exchange: false,
+      programme: null,
+    });
+    expect(viewerFrom('XYZ', false)).toEqual({
+      facultyKey: null,
+      erasmus: false,
+      exchange: false,
+      programme: null,
+    });
   });
 
   // The text test on studium.pl misses Z-EXC when IS is in Czech: the
@@ -23,6 +34,14 @@ describe('viewerFrom', () => {
   it('the exchange programme Z-EXC is Erasmus even when the text test said no', () => {
     expect(viewerFrom('LDF', false, 'Z-EXC')).toMatchObject({ erasmus: true });
     expect(viewerFrom('PEF', false, 'B-EM')).toMatchObject({ erasmus: false });
+  });
+
+  // Only the programme code makes an exchange student: the text test can match
+  // a Czech student's own Erasmus trip, and `exchange` hides other events.
+  it('is an exchange student on Z-EXC only, never on the text test', () => {
+    expect(viewerFrom('LDF', false, 'Z-EXC')).toMatchObject({ exchange: true });
+    expect(viewerFrom('PEF', true, 'B-OI')).toMatchObject({ exchange: false });
+    expect(viewerFrom('PEF', true)).toMatchObject({ exchange: false });
   });
 });
 
@@ -38,15 +57,33 @@ describe('useViewer', () => {
 
   it('is the signed-in student by default', () => {
     const { result } = renderHook(() => useViewer());
-    expect(result.current).toEqual({ facultyKey: 'pef', erasmus: true, programme: 'B-OI' });
+    expect(result.current).toEqual({
+      facultyKey: 'pef',
+      erasmus: true,
+      exchange: false,
+      programme: 'B-OI',
+    });
   });
 
-  it('is the impersonated student while impersonating, never Erasmus', () => {
+  it('is an exchange student when IS says Z-EXC', () => {
+    useAppStore.setState({ userProgramme: 'Z-EXC', isErasmus: false });
+    const { result } = renderHook(() => useViewer());
+    expect(result.current).toMatchObject({ erasmus: true, exchange: true });
+  });
+
+  it('is the impersonated student while impersonating, never Erasmus or exchange', () => {
     useAppStore.setState({
+      // The admin's own programme must not leak into the impersonated viewer.
+      userProgramme: 'Z-EXC',
       impersonation: { selection: { faculty: 'FRRMS' }, result: {} } as never,
     });
     const { result } = renderHook(() => useViewer());
     // The picker selects a faculty only, so no programme-level partners then.
-    expect(result.current).toEqual({ facultyKey: 'frrms', erasmus: false, programme: null });
+    expect(result.current).toEqual({
+      facultyKey: 'frrms',
+      erasmus: false,
+      exchange: false,
+      programme: null,
+    });
   });
 });

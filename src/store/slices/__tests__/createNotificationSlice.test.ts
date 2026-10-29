@@ -138,6 +138,8 @@ describe('createNotificationSlice: a pre-audience cache', () => {
       { id: 'current', associationId: 'esn', title: 'Pub Quiz', subscribersOnly: true },
       { id: 'deadline', associationId: 'academic_deadline', title: 'Zápočet' },
       { id: 'reis-event', associationId: 'reis', title: 'reIS meetup' },
+      { id: 'console', associationId: 'admin', title: 'Údržba IS' },
+      { id: 'no-society', title: 'Vítej v reIS' },
     ];
     vi.mocked(IndexedDBService.get).mockImplementation(async (_store, key) =>
       key === 'notifications_cache' ? cache : []
@@ -147,6 +149,8 @@ describe('createNotificationSlice: a pre-audience cache', () => {
       'current',
       'deadline',
       'reis-event',
+      'console',
+      'no-society',
     ]);
   });
 });

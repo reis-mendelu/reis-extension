@@ -4,6 +4,7 @@ import { supabase } from './supabaseClient';
 import { logError } from '../../utils/reportError';
 import { hasDataConsent } from '../../utils/firefoxDataConsent';
 import { claimFirstOpen, confirmOpen, releaseOpen } from './countedOpens';
+import { isReisOwn } from '../../utils/eventAudience';
 import { localTodayIso, NOVINKY_WINDOW_DAYS } from '../../components/CampusMap/eventWindow';
 
 // Runtime shape of a `spolky_events` row used by the notification feed. Supabase
@@ -170,15 +171,7 @@ export function dropPastEvents(
  * society row without the key; reIS's own rows (no society, or `reis`) stay.
  */
 export function dropPreAudienceRows(notifications: SpolekNotification[]): SpolekNotification[] {
-  return notifications.filter(
-    (n) =>
-      !n.associationId ||
-      n.associationId === 'admin' ||
-      // reIS's own events are university-wide whatever the row says.
-      n.associationId === 'reis' ||
-      n.associationId.startsWith('academic_') ||
-      'subscribersOnly' in n
-  );
+  return notifications.filter((n) => isReisOwn(n.associationId) || 'subscribersOnly' in n);
 }
 
 /**

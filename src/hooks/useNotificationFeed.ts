@@ -5,13 +5,12 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { dropPastEvents, dropBeyondNovinkyWindow } from '../services/spolky/spolkyService';
 import type { SpolekNotification } from '../services/spolky/types';
 import { localTodayIso } from '../components/CampusMap/eventWindow';
-import { canSee } from '../utils/eventAudience';
+import { canSee, isReisOwn } from '../utils/eventAudience';
 import { useViewer } from './useViewer';
 import { useAppStore } from '../store/useAppStore';
 
-/** reIS's own rows (admin, academic deadlines) are for everyone, as before. */
-const isReisRow = (n: SpolekNotification) =>
-  !n.associationId || n.associationId === 'admin' || n.associationId.startsWith('academic_');
+/** reIS's own rows are for everyone, exchange students included. */
+const isReisRow = (n: SpolekNotification) => isReisOwn(n.associationId);
 
 export function useNotificationFeed() {
   const [isOpen, setIsOpen] = useState(false);
