@@ -79,7 +79,7 @@ export function CalendarScreen() {
           they did not already know, and a week label was tried there and
           rejected the same way — the strip and the title already say which
           week and which day this is. Away from today the date itself is the
-          way back (a return glyph beside it, no extra row): the header is
+          way back (a today glyph beside it, no extra row): the header is
           full at a date and three actions, and a floating "Dnes" pill read as
           one more control at the bottom of the screen. */}
       {/* Refreshing is a pull on the day (DayBody). The visible circle that
