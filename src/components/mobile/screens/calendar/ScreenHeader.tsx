@@ -25,8 +25,8 @@ export interface ScreenHeaderProps {
    * calendar's way back to today. A glyph, not a pill: the header is full at a
    * date and three actions, and "Dnes" beside the date never fit at 375.
    * Calendar1, a page with a "1" on it: ↺ (RotateCcw) read as "refresh the
-   * data", and the plain calendar and CalendarCheck are already the
-   * Calendar and Exams tabs below.
+   * data", CalendarCheck is the Exams tab, and the plain calendar is both the
+   * Calendar tab and the empty day's art on this same screen.
    */
   titleAction?: { label: string; onClick: () => void };
 }
@@ -74,9 +74,11 @@ export function ScreenHeader({ eyebrow, title, below, action, titleAction }: Scr
               className="-my-1.5 flex min-w-0 items-center gap-1 py-1.5 text-left"
             >
               <span className={TITLE_CLASS}>{title}</span>
+              {/* 18px at stroke 2: at 16px and 2.5 the "1" closed up and the
+                  glyph read as a bare calendar page, which is not "today". */}
               <Calendar1
-                size={16}
-                strokeWidth={2.5}
+                size={18}
+                strokeWidth={2}
                 className="flex-shrink-0 text-[var(--tone-primary)]"
               />
             </button>
