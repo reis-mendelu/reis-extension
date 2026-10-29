@@ -21,12 +21,13 @@ dependencies.
 
 ## What it writes
 
-Everything goes to `~/.reis/instagram-watch/` (or `$REIS_IG_STATE`), outside the repo, so
-it survives a worktree being removed and nothing scraped is ever committed:
+Everything goes to `~/.reis/instagram-watch/` by default, outside the repo, so it survives a
+worktree being removed and nothing scraped is committed. `$REIS_IG_STATE` moves it; never
+point that inside the repo:
 
 | Path | What |
 | --- | --- |
-| `seen.json` | shortCodes already reported, per handle |
+| `seen.json` | shortCodes remembered per handle: reported, or baselined on a first run |
 | `digests/YYYY-MM-DD.md` | new posts with caption, link and local image paths, plus problems |
 | `latest.json` | the same as data |
 | `posters/` | cover + up to 4 carousel slides per new post; Instagram's CDN links expire |

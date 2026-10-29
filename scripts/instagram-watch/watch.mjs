@@ -4,7 +4,7 @@
 // the posts it has not seen before. No Instagram account is involved, ever.
 // See README.md beside this file.
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,11 +25,14 @@ const option = (name) => {
 
 const stateDir = process.env.REIS_IG_STATE ?? join(homedir(), '.reis', 'instagram-watch');
 const staleDays = Number(option('--stale-days') ?? 60);
+if (!Number.isFinite(staleDays) || staleDays <= 0) fail('--stale-days takes a positive number.');
 const dryRun = flag('--dry-run');
 
 const accounts = JSON.parse(readFileSync(join(HERE, 'accounts.json'), 'utf8'));
 const allHandles = [...Object.keys(accounts.societies), ...accounts.official];
-const handles = option('--only')?.split(',') ?? allHandles;
+const only = option('--only');
+if (flag('--only') && !only?.trim()) fail('--only takes a comma-separated list of handles.');
+const handles = only ? only.split(',').map((h) => h.trim().toLowerCase()) : allHandles;
 
 const token = process.env.APIFY_TOKEN ?? tokenFromMainCheckoutEnv();
 if (!token) {
@@ -56,6 +59,10 @@ result.newPosts.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 for (const post of result.newPosts) {
   post.localImages = await savePosters(post);
   post.society = accounts.societies[post.handle] ?? null;
+  // Nothing saved: forget the post so the next run retries it with fresh CDN links.
+  if (post.images.length && !post.localImages.length) {
+    result.seen[post.handle] = (result.seen[post.handle] ?? []).filter((c) => c !== post.shortCode);
+  }
 }
 
 // usageTotalUsd lags the charge by minutes; the charged-event count does not.
@@ -77,7 +84,11 @@ const digest = formatDigest({
 mkdirSync(join(stateDir, 'digests'), { recursive: true });
 writeFileSync(join(stateDir, 'digests', `${day}.md`), digest);
 writeFileSync(join(stateDir, 'latest.json'), JSON.stringify({ day, ...result, problems }, null, 2));
-if (!dryRun) writeFileSync(seenPath, JSON.stringify(result.seen, null, 2));
+// Write then rename: a crash mid-write must not leave a seen.json that no longer parses.
+if (!dryRun) {
+  writeFileSync(`${seenPath}.tmp`, JSON.stringify(result.seen, null, 2));
+  renameSync(`${seenPath}.tmp`, seenPath);
+}
 
 console.log(digest);
 console.log(`State: ${stateDir}${dryRun ? ' (dry run: seen.json not updated)' : ''}`);
@@ -112,7 +123,7 @@ async function savePosters(post) {
   const saved = [];
   for (const [i, url] of post.images.entries()) {
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
       if (!res.ok) continue;
       const file = join(stateDir, 'posters', `${post.shortCode}${i ? `-${i}` : ''}.jpg`);
       writeFileSync(file, Buffer.from(await res.arrayBuffer()));
@@ -122,6 +133,11 @@ async function savePosters(post) {
     }
   }
   return saved;
+}
+
+function fail(message) {
+  console.error(message);
+  process.exit(1);
 }
 
 function readJson(path, fallback) {
