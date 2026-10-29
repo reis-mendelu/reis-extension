@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   organizeLessons,
-  getEventStyle,
+  styleFromMinutes,
   renderedBlockMinutes,
   timeToPercent,
   MIN_BLOCK_MINUTES,
+  EXAM_BLOCK_MINUTES,
 } from '../utils';
 import type { BlockLesson } from '../../../types/calendarTypes';
 
@@ -127,6 +128,17 @@ describe('organizeLessons', () => {
     expect(organized.find((l) => l.id === '5')?.maxColumns).toBe(2);
   });
 });
+
+const block = (id: string, startTime: string, endTime: string, isExam = false): BlockLesson =>
+  ({ id, date: '20260601', startTime, endTime, isExam }) as BlockLesson;
+
+/** Where the week grid draws a lone block: the same path WeeklyCalendarDay takes. */
+const drawn = (startTime: string, endTime: string, isExam = false) => {
+  const lesson = organizeLessons([block('x', startTime, endTime, isExam)]).lessons[0]!;
+  const { top, height } = styleFromMinutes(lesson.startTime, lesson.renderedMinutes);
+  return { top: parseFloat(top), bottom: parseFloat(top) + parseFloat(height) };
+};
+
 /**
  * The reported bug: "Hodinové přednášky jsou zobrazované jako že mají hodinu
  * a půl".
@@ -135,22 +147,17 @@ describe('organizeLessons', () => {
  * every block: a 14:00-14:50 lesson was drawn down to 15:30, and with a 15:00
  * lesson after it, down to 15:00. A lesson's block now ends on its end time.
  */
-describe('a block is as tall as the lesson is long', () => {
-  const end = ({ top, height }: { top: string; height: string }) =>
-    parseFloat(top) + parseFloat(height);
-
+describe('a lesson is as tall as it is long', () => {
   it('ends a 50-minute lesson on its end time', () => {
-    expect(renderedBlockMinutes('14:00', '14:50')).toBe(50);
-    expect(end(getEventStyle('14:00', '14:50'))).toBeCloseTo(timeToPercent('14:50'), 5);
+    expect(drawn('14:00', '14:50').bottom).toBeCloseTo(timeToPercent('14:50'), 5);
   });
 
   it('ends a 110-minute lesson on its end time', () => {
-    expect(renderedBlockMinutes('11:00', '12:50')).toBe(110);
-    expect(end(getEventStyle('11:00', '12:50'))).toBeCloseTo(timeToPercent('12:50'), 5);
+    expect(drawn('11:00', '12:50').bottom).toBeCloseTo(timeToPercent('12:50'), 5);
   });
 
   it('starts the block on its start time', () => {
-    expect(getEventStyle('14:00', '14:50').top).toBe(`${timeToPercent('14:00')}%`);
+    expect(drawn('14:00', '14:50').top).toBeCloseTo(timeToPercent('14:00'), 5);
   });
 
   it('leaves a long block untouched', () => {
@@ -159,50 +166,60 @@ describe('a block is as tall as the lesson is long', () => {
 });
 
 /**
- * The floor that is left is for blocks no lesson is ever that short:
- * IS teaches in 50-minute hours, so a block under MIN_BLOCK_MINUTES is an oral
- * exam slot, and drawn at its real length it is a few pixels with no label.
+ * What is still floored, and why it never reaches a lesson.
+ *
+ * MIN_BLOCK_MINUTES sits under the shortest IS lesson (one 50-minute hour), so
+ * it only ever raises something shorter — a custom event, which can be 15.
+ * An exam is a slot, not a lesson: its block keeps the 90 it always had, the
+ * room the card needs for the section, the subject and the room.
  */
-describe('the floor under the shortest lesson', () => {
-  const block = (id: string, startTime: string, endTime: string): BlockLesson =>
-    ({ id, date: '20260601', startTime, endTime }) as BlockLesson;
-
-  it('sits below a 50-minute lesson, so it never touches one', () => {
+describe('the floors', () => {
+  it('never touch a 50-minute lesson', () => {
     expect(MIN_BLOCK_MINUTES).toBeLessThan(50);
+    expect(renderedBlockMinutes('14:00', '14:50')).toBe(50);
   });
 
-  it('gives a 10-minute exam room for one line', () => {
-    expect(renderedBlockMinutes('10:00', '10:10')).toBe(MIN_BLOCK_MINUTES);
+  it('raise a 15-minute custom event to one line', () => {
+    expect(renderedBlockMinutes('10:00', '10:15')).toBe(MIN_BLOCK_MINUTES);
+    expect(MIN_BLOCK_MINUTES).toBe(30);
   });
 
-  it('keeps endTime truthful — the floor is layout only', () => {
-    const { lessons } = organizeLessons([block('exam', '12:00', '12:10')]);
+  it('give a 10-minute exam slot its full two-line block', () => {
+    expect(renderedBlockMinutes('10:00', '10:10', true)).toBe(EXAM_BLOCK_MINUTES);
+    expect(EXAM_BLOCK_MINUTES).toBe(90);
+  });
+
+  it('leave an exam longer than the floor at its real length', () => {
+    expect(renderedBlockMinutes('08:00', '11:00', true)).toBe(180);
+  });
+
+  it('keep endTime truthful — the floor is layout only', () => {
+    const { lessons } = organizeLessons([block('exam', '12:00', '12:10', true)]);
     expect(lessons[0]!.endTime).toBe('12:10');
   });
 
-  it('gives a short exam and a lesson under its floored height separate lanes', () => {
+  it('give a short exam and a lesson under its floored block separate lanes', () => {
     const { totalRows } = organizeLessons([
-      block('exam', '12:00', '12:10'),
-      block('lesson', '12:20', '14:00'),
+      block('exam', '12:00', '12:10', true),
+      block('lesson', '12:30', '14:00'),
     ]);
     expect(totalRows).toBe(2);
   });
 
-  it('shares a lane once the next block clears the floor', () => {
+  it('share a lane once the next block clears the floor', () => {
     const { totalRows } = organizeLessons([
-      block('exam', '12:00', '12:10'),
-      block('lesson', '13:00', '14:50'),
+      block('exam', '12:00', '12:10', true),
+      block('lesson', '13:30', '14:50'),
     ]);
     expect(totalRows).toBe(1);
   });
 
-  it('shortens the floor rather than overflowing 21:00', () => {
-    expect(renderedBlockMinutes('20:40', '20:50')).toBe(20);
-    const { top, height } = getEventStyle('20:40', '20:50');
-    expect(parseFloat(top) + parseFloat(height)).toBeCloseTo(100, 5);
+  it('shorten rather than overflow 21:00', () => {
+    expect(renderedBlockMinutes('20:40', '20:50', true)).toBe(20);
+    expect(drawn('20:40', '20:50', true).bottom).toBeCloseTo(100, 5);
   });
 
-  it('never shortens a block below its real length', () => {
+  it('never shorten a block below its real length', () => {
     expect(renderedBlockMinutes('20:00', '22:00')).toBe(120);
   });
 });
@@ -213,9 +230,6 @@ describe('the floor under the shortest lesson', () => {
  * in one full-width lane, one above the other.
  */
 describe('back-to-back lessons', () => {
-  const block = (id: string, startTime: string, endTime: string): BlockLesson =>
-    ({ id, date: '20260601', startTime, endTime }) as BlockLesson;
-
   it('leaves 14:00-14:50 and 15:00-18:50 in a single full-width lane', () => {
     const { lessons, totalRows } = organizeLessons([
       block('a', '14:00', '14:50'),

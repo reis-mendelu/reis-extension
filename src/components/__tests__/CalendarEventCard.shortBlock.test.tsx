@@ -1,8 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { LessonWithRow } from '../../types/calendarTypes';
 
-vi.mock('../../hooks/useTimeline', () => ({ useTimeline: () => null }));
+const timeline = vi.hoisted(() => ({ value: null as null | { weeksLeft: number; short: string } }));
+vi.mock('../../hooks/useTimeline', () => ({ useTimeline: () => timeline.value }));
 vi.mock('../../hooks/ui/useHintStatus', () => ({ useHintStatus: () => ({ seen: true }) }));
 vi.mock('../../hooks/ui/useCourseName', () => ({ useCourseName: (_c?: string, n?: string) => n }));
 
@@ -37,6 +38,10 @@ const lesson = (renderedMinutes: number, extra: Partial<LessonWithRow> = {}): Le
  * now that blocks are drawn for their real length.
  */
 describe('CalendarEventCard in a short block', () => {
+  afterEach(() => {
+    timeline.value = null;
+  });
+
   it('drops to one line with the time, and no room', () => {
     // A 50-minute lesson is now drawn for its 50 minutes, about 34px.
     render(<CalendarEventCard lesson={lesson(50)} />);
@@ -85,14 +90,26 @@ describe('CalendarEventCard in a short block', () => {
   });
 
   /**
-   * A short exam slot is one line too. The two-line card puts the subject on
-   * its own row; on one line it would be "Ústní zkouška" with no word of which
-   * subject, so the line carries both.
+   * The deadline badge sits at the top-right and is always showing, so a
+   * one-line block — every 50-minute lesson — would have it over the time.
    */
-  it('names the subject on a one-line exam', () => {
+  it('keeps the time clear of the deadline badge', () => {
+    timeline.value = { weeksLeft: 2, short: '2t' };
+    render(<CalendarEventCard lesson={lesson(50)} />);
+
+    expect(screen.getByText('2t')).toBeInTheDocument();
+    expect(screen.getByText('14:00 - 14:50').parentElement?.className).toContain('pr-12');
+  });
+
+  /**
+   * An exam slot keeps the two-line block (the grid draws it for 90 minutes,
+   * however short): section, subject and room, which is what a student looks
+   * for on the day. The tooltip names the subject too.
+   */
+  it('shows an exam slot with its section, subject and room', () => {
     render(
       <CalendarEventCard
-        lesson={lesson(45, {
+        lesson={lesson(90, {
           isExam: true,
           courseName: 'Matematika - Ústní zkouška',
           startTime: '10:00',
@@ -101,8 +118,9 @@ describe('CalendarEventCard in a short block', () => {
       />
     );
 
-    expect(screen.getByText('Matematika - Ústní zkouška')).toBeInTheDocument();
-    // The line truncates in a narrow column; the tooltip carries it whole.
+    expect(screen.getByText('Ústní zkouška')).toBeInTheDocument();
+    expect(screen.getByText('Matematika')).toBeInTheDocument();
+    expect(screen.getByText('Q01')).toBeInTheDocument();
     expect(screen.getByTitle(/^Matematika - Ústní zkouška\s/)).toBeInTheDocument();
   });
 });

@@ -8,8 +8,8 @@ import { describe, expect, it } from 'vitest';
  * "Hodinové přednášky jsou zobrazované jako že mají hodinu a půl": the week
  * grid drew a 14:00-14:50 lesson down to 15:30, because a 90-minute floor sized
  * every block. The fix lives in `WeeklyCalendar/utils.ts` (the grid maths) and
- * `CalendarEventCard.tsx` (what a block that size can show), and both are
- * extension-only.
+ * `CalendarEventCard.tsx` with `CalendarEventCardOneLine.tsx` (what a block
+ * that size can show), and all three are extension-only.
  *
  * The phone and iPad have nothing to fix: their day is a list
  * (`DayAgenda` → `AgendaEvent`), every card is as tall as its text, and the
@@ -32,11 +32,19 @@ function filesUnder(dir: string): string[] {
 const PHONE_FILES = [...filesUnder('components/mobile'), ...filesUnder('mobile')];
 
 describe('lesson heights are a desktop concern', () => {
-  it('the desktop grid sizes blocks from renderedBlockMinutes', () => {
-    expect(read('components/WeeklyCalendar/utils.ts')).toContain(
-      'export function renderedBlockMinutes'
-    );
-    expect(read('components/CalendarEventCard.tsx')).toContain('renderedMinutes');
+  it('the desktop day column sizes each block from the space organizeLessons gave it', () => {
+    // One number for the lanes and the heights: a second copy of the rule is
+    // how a block's height and its lane came to disagree before.
+    const column = read('components/WeeklyCalendar/WeeklyCalendarDay.tsx');
+    expect(column).toContain('organizeLessons(lessons)');
+    expect(column).toContain('styleFromMinutes(lesson.startTime, lesson.renderedMinutes)');
+  });
+
+  it('the desktop card decides one line or two from that same number', () => {
+    const card = read('components/CalendarEventCard.tsx');
+    expect(card).toContain('lesson.renderedMinutes >= TWO_LINE_BLOCK_MINUTES');
+    expect(card).toContain('<CalendarEventCardOneLine');
+    expect(read('components/CalendarEventCardOneLine.tsx')).toContain('pr-12');
   });
 
   it('the phone day is a list of cards with the time written on them', () => {
