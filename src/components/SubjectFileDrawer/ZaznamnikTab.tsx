@@ -37,7 +37,9 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
   // Docházka, then submission boxes, sit on top of every state below: both come
   // from their own sync, so a subject can have them before (or without) marks.
   const { assignments: boxes } = useOdevzdavarny(subjectId);
-  const hasAttendance = useAppStore((s) => recordedGroups(s.attendance[courseCode]).length > 0);
+  const hasAttendance = useAppStore(
+    (s) => !s.impersonation && recordedGroups(s.attendance[courseCode]).length > 0
+  );
   const topSection = (
     <>
       <AttendanceSection courseCode={courseCode} />

@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { join, relative, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -42,7 +42,8 @@ describe('attendance lives in Záznamník', () => {
   it('only the Záznamník tab and its Docházka section read it, the root App included', () => {
     const readers = ['App.tsx', ...componentFiles('components'), ...componentFiles('mobile')]
       .filter((f) => MENTIONS_ATTENDANCE.test(read(f)))
-      .map((f) => relative(SRC, join(SRC, f)))
+      // Forward slashes on every OS: the list below is written that way.
+      .map((f) => relative(SRC, join(SRC, f)).split(sep).join('/'))
       .sort();
     expect(readers).toEqual([
       'components/SubjectFileDrawer/Zaznamnik/AttendanceSection.tsx',

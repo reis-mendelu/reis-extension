@@ -89,6 +89,14 @@ describe('AttendanceSection', () => {
     expect(screen.getByText(cs.zaznamnik.attendanceStatus.excused)).toBeInTheDocument();
   });
 
+  it('shows nothing while an admin views as a student: the slice holds the admin’s own', () => {
+    seed('cz');
+    useAppStore.setState({ impersonation: { selection: {}, result: {} } } as never);
+    const { container } = render(<AttendanceSection courseCode="EXC-KPSIT" />);
+    expect(container.innerHTML).toBe('');
+    useAppStore.setState({ impersonation: null } as never);
+  });
+
   it('renders nothing for a subject with no attendance records', () => {
     seed('cz');
     const { container } = render(<AttendanceSection courseCode="EBC-MT" />);

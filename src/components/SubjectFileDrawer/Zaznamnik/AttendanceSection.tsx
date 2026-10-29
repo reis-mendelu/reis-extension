@@ -31,7 +31,10 @@ const PILL: Record<AttendanceStatus, string> = {
  * after the summary and for the time column, so they drop out by width.
  */
 export function AttendanceSection({ courseCode }: { courseCode: string }) {
-  const groups = useAppStore((s) => s.attendance[courseCode]);
+  // While an admin views as a student, the slice still holds the admin's own
+  // attendance (the overlay leaves code-keyed stores alone), and a shared course
+  // code would show it under the student. Nothing is loaded for the student.
+  const groups = useAppStore((s) => (s.impersonation ? undefined : s.attendance[courseCode]));
   const { t, language } = useTranslation();
   const recorded = recordedGroups(groups);
   if (recorded.length === 0) return null;
