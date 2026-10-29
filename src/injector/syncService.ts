@@ -121,7 +121,7 @@ export async function syncAllData() {
     generation = studyGeneration;
     // Every update this run sends names its study, so a context still on the
     // other one after a half-done switch can refuse it (useAppLogic).
-    if (studium) cachedData = { ...cachedData, studium, obdobi: userParams?.obdobi };
+    if (studium) cachedData = { ...cachedData, studium };
 
     // Which core fetches actually ran, as opposed to being TTL-skipped — both
     // come back null, and only a fetch that ran can say IS was unreachable.
@@ -206,7 +206,14 @@ export async function syncAllData() {
       studium && userParams?.obdobi
         ? syncOdevzdavarny(studium, userParams.obdobi).then((result) => {
             if (result) {
-              if (live()) cachedData = { ...cachedData, odevzdavarny: result.assignments };
+              // The period travels with the list it was read for, never with
+              // a cached one: a failed read must not say the period was read.
+              if (live())
+                cachedData = {
+                  ...cachedData,
+                  odevzdavarny: result.assignments,
+                  odevzdavarnyObdobi: userParams.obdobi,
+                };
             }
             return result;
           })
@@ -396,7 +403,7 @@ export async function syncAllData() {
           cvicneTests: cachedData.cvicneTests,
           odevzdavarny: cachedData.odevzdavarny,
           studium: cachedData.studium,
-          obdobi: cachedData.obdobi,
+          odevzdavarnyObdobi: cachedData.odevzdavarnyObdobi,
           isSyncing: true,
           lastSync: cachedData.lastSync,
         })

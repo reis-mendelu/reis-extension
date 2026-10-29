@@ -50,8 +50,11 @@ export interface SyncedData {
   notes?: Record<string, Record<string, { note: string; fileName: string }>>;
   /** The study the per-study data in this update belongs to (see chooseStudy). */
   studium?: string;
-  /** The IS period the run read, so the app can tell a new semester's boxes from news. */
-  obdobi?: string;
+  /**
+   * The IS period `odevzdavarny` was read for; absent when the list is a cached
+   * one. Lets the app tell a new semester's boxes from news.
+   */
+  odevzdavarnyObdobi?: string;
   isSyncing?: boolean;
   lastSync: number;
   error?: string;

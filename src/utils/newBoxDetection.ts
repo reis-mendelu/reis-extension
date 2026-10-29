@@ -43,14 +43,16 @@ export interface KnownBoxes {
 export function findNewBoxes(
   known: KnownBoxes | undefined,
   fresh: Odevzdavarna[],
-  obdobi: string,
+  obdobi: string | undefined,
   now: number
 ): string[] {
   if (!known) return [];
   return fresh
     .filter(
       (b) =>
-        !known.ids.has(boxKey(b)) && known.periods.has(b.obdobi ?? obdobi) && actionable(b, now)
+        !known.ids.has(boxKey(b)) &&
+        known.periods.has(b.obdobi ?? obdobi ?? '') &&
+        actionable(b, now)
     )
     .map(boxKey);
 }

@@ -80,7 +80,8 @@ describe('a sync push carrying the submission boxes', () => {
     persistNewBoxes.mockResolvedValue({ found: ['9001'], unseen: ['9001'] });
     await push({ odevzdavarny: [BOX] });
 
-    expect(persistNewBoxes).toHaveBeenCalledWith([BOX], 'ob');
+    // A list without its period is a cached one: it says no period was read.
+    expect(persistNewBoxes).toHaveBeenCalledWith([BOX], undefined);
     expect(store.setOdevzdavarnyNew).toHaveBeenCalledWith(['9001']);
   });
 
@@ -88,7 +89,7 @@ describe('a sync push carrying the submission boxes', () => {
   // context's for a moment; the list belongs to the period the sync read.
   it('compares against the period the push says it read', async () => {
     persistNewBoxes.mockResolvedValue({ found: [], unseen: [] });
-    await push({ odevzdavarny: [BOX], obdobi: 'next' });
+    await push({ odevzdavarny: [BOX], odevzdavarnyObdobi: 'next' });
     expect(persistNewBoxes).toHaveBeenCalledWith([BOX], 'next');
   });
 

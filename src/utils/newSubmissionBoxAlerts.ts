@@ -9,6 +9,13 @@ import { actionable, boxKey } from './newBoxDetection';
 /** A new box's row id is this plus its boxKey. */
 export const NEW_BOX_ID_PREFIX = 'odev-new-';
 
+/**
+ * The id of a new box's row once it is due within 48 hours. Its own id: the
+ * bell counts the row again when it turns urgent, and only having seen THIS
+ * row stands in for the box's deadline row (useDeadlineAlerts).
+ */
+export const urgentNewBoxId = (key: string) => `${NEW_BOX_ID_PREFIX}${key}@48h`;
+
 const URGENT_HOURS = 48;
 
 /**
@@ -37,9 +44,10 @@ export function newBoxAlerts(
     const s = subjects?.[code];
     const deadline = boxDeadline(box) ?? undefined;
     const hours = deadline && (deadline.getTime() - now) / 3_600_000;
+    const urgent = hours !== undefined && hours <= URGENT_HOURS;
     return [
       {
-        id: `${NEW_BOX_ID_PREFIX}${boxKey(box)}`,
+        id: urgent ? urgentNewBoxId(boxKey(box)) : `${NEW_BOX_ID_PREFIX}${boxKey(box)}`,
         type: 'assignment-new' as const,
         boxKey: boxKey(box),
         title: courseDisplayName(
@@ -51,7 +59,7 @@ export function newBoxAlerts(
         ),
         body: box.name,
         deadline,
-        hoursUntil: hours !== undefined && hours <= URGENT_HOURS ? hours : undefined,
+        hoursUntil: urgent ? hours : undefined,
         courseCode: code,
         courseId: s?.subjectId ?? box.courseId,
       },

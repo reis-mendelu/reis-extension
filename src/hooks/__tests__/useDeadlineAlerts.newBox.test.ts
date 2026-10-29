@@ -46,9 +46,24 @@ describe('useDeadlineAlerts — new odevzdávárna', () => {
     expect(alerts().map((a) => a.type)).toEqual(['assignment']);
   });
 
-  // Tapping the new-box row clears it, and the box's own deadline row comes
-  // back: the bell must not count that box a second time.
-  it('the deadline row that comes back is already seen with its new-box row', () => {
+  // The urgent new-box row stood in for the deadline row; once it is seen and
+  // the box opened, the deadline row that comes back is not counted again.
+  it('the deadline row that comes back is already seen with its urgent new-box row', () => {
+    useAppStore.setState({
+      odevzdavarnyNew: [],
+      notifications: {
+        ...useAppStore.getState().notifications,
+        seenDeadlineAlertIds: new Set(['odev-new-7@48h']),
+      },
+    } as never);
+    const { alerts, unseenCount } = renderHook(() => useDeadlineAlerts()).result.current;
+    expect(alerts.map((a) => a.id)).toEqual(['odev-7']);
+    expect(unseenCount).toBe(0);
+  });
+
+  // Seen weeks before the deadline, the new-box row says nothing about the
+  // 48-hour warning that comes later: that one is news of its own.
+  it('a new-box row seen while it was far off does not silence the 48-hour warning', () => {
     useAppStore.setState({
       odevzdavarnyNew: [],
       notifications: {
@@ -56,8 +71,19 @@ describe('useDeadlineAlerts — new odevzdávárna', () => {
         seenDeadlineAlertIds: new Set(['odev-new-7']),
       },
     } as never);
+    expect(renderHook(() => useDeadlineAlerts()).result.current.unseenCount).toBe(1);
+  });
+
+  it('a new box turning urgent while unseen lights the bell again', () => {
+    useAppStore.setState({
+      odevzdavarnyNew: ['7'],
+      notifications: {
+        ...useAppStore.getState().notifications,
+        seenDeadlineAlertIds: new Set(['odev-new-7']),
+      },
+    } as never);
     const { alerts, unseenCount } = renderHook(() => useDeadlineAlerts()).result.current;
-    expect(alerts.map((a) => a.id)).toEqual(['odev-7']);
-    expect(unseenCount).toBe(0);
+    expect(alerts.map((a) => a.id)).toEqual(['odev-new-7@48h']);
+    expect(unseenCount).toBe(1);
   });
 });

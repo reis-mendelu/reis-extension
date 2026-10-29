@@ -4,8 +4,8 @@ import { boxCourseCode } from '../../utils/submissionBoxes';
 import { boxKey } from '../../utils/newBoxDetection';
 
 /**
- * Clears a subject's "Nové body" and new submission boxes once its Záznamník tab is actually on screen,
- * however it got there: a tab tap, a row that opened straight on it, or a tapped
+ * Clears a subject's "Nové body" and new submission boxes once its Záznamník
+ * tab is actually on screen, however it got there: a tab tap, a row that opened straight on it, or a tapped
  * notification. Points arriving while the student is looking clear at once.
  * Both drawers call it: desktop's state hook and the phone's sheet.
  */

@@ -5,7 +5,7 @@ import { courseDisplayName } from '../utils/courseDisplayName';
 import { boxCourseCode, boxState } from '../utils/submissionBoxes';
 import { newPointsAlerts } from '../utils/zaznamnik/newPointsAlerts';
 import { boxKey } from '../utils/newBoxDetection';
-import { newBoxAlerts, NEW_BOX_ID_PREFIX } from '../utils/newSubmissionBoxAlerts';
+import { newBoxAlerts, urgentNewBoxId } from '../utils/newSubmissionBoxAlerts';
 
 export interface DeadlineAlert {
   id: string;
@@ -148,9 +148,10 @@ export function useDeadlineAlerts() {
           deadline,
           hoursUntil: h,
           link: a.uploadUrl,
-          // The student tapped this box's "Nová odevzdávárna" row a moment ago;
-          // the bell must not light up again for the same box.
-          seenWith: `${NEW_BOX_ID_PREFIX}${boxKey(a)}`,
+          // Its urgent "Nová odevzdávárna" row stood in for it, and was seen:
+          // the bell must not count the same box twice. A new-box row seen
+          // weeks earlier does not count: this warning is news of its own.
+          seenWith: urgentNewBoxId(boxKey(a)),
         });
       }
     }

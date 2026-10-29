@@ -125,6 +125,24 @@ describe('persistNewBoxes', () => {
     expect(out.found).toEqual(['2']);
   });
 
+  // A failed read sends the cached list with no period: it must not count as
+  // having read the new semester, or the first real read would flood.
+  it('a cached list does not mark its push period as read', async () => {
+    await persistNewBoxes([box('1')], 'P1');
+    await persistNewBoxes([box('1')], undefined);
+    const out = await persistNewBoxes([box('2', 'P2'), box('1')], 'P2');
+    expect(out.found).toEqual([]);
+  });
+
+  // Closed or handed in before the student looked: done with. If the teacher
+  // reopens it weeks later, it is not "new".
+  it('an unseen box that closes or is handed in stops being new', async () => {
+    await persist([box('1')]);
+    await persist([box('1'), box('2')]);
+    const out = await persist([box('1'), { ...box('2'), section: 'submitted' as const }]);
+    expect(out.unseen).toEqual([]);
+  });
+
   it('a closed box whose deadline passed is known, and never announced', async () => {
     const past = {
       ...box('2'),

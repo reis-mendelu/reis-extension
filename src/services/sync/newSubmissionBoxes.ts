@@ -1,5 +1,11 @@
 import type { Odevzdavarna } from '../../api/odevzdavarny';
-import { boxKey, findNewBoxes, waitingToOpen, type KnownBoxes } from '../../utils/newBoxDetection';
+import {
+  actionable,
+  boxKey,
+  findNewBoxes,
+  waitingToOpen,
+  type KnownBoxes,
+} from '../../utils/newBoxDetection';
 import { IndexedDBService } from '../storage/IndexedDBService';
 
 /**
@@ -17,7 +23,7 @@ interface StoredKnown {
   periods: string[];
 }
 
-async function persist(fresh: Odevzdavarna[], obdobi: string) {
+async function persist(fresh: Odevzdavarna[], obdobi: string | undefined) {
   const [stored, unseenBefore] = (await Promise.all([
     IndexedDBService.get('meta', KNOWN_BOXES_META_KEY),
     IndexedDBService.get('meta', NEW_BOXES_META_KEY),
@@ -29,8 +35,9 @@ async function persist(fresh: Odevzdavarna[], obdobi: string) {
   const now = Date.now();
   const found = findNewBoxes(known, fresh, obdobi, now);
   // Only ever added to: a partial or stale list can miss a box for one push,
-  // and a box that comes back is not new again. The push's own period counts
-  // even with no boxes in it, so the first box of an empty semester is news.
+  // and a box that comes back is not new again. The period the list was read
+  // for counts even with no boxes in it, so the first box of an empty semester
+  // is news.
   const next: StoredKnown = {
     ids: [
       ...new Set([
@@ -39,13 +46,19 @@ async function persist(fresh: Odevzdavarna[], obdobi: string) {
       ]),
     ],
     periods: [
-      ...new Set([...(stored?.periods ?? []), obdobi, ...fresh.flatMap((b) => b.obdobi ?? [])]),
+      ...new Set([
+        ...(stored?.periods ?? []),
+        ...(obdobi ? [obdobi] : []),
+        ...fresh.flatMap((b) => b.obdobi ?? []),
+      ]),
     ],
   };
   // Not pruned to this list: a push can lack a period's rows (a failed read
   // right after the semester turned), and the box would never come back as
-  // new. A box that really left IS has no row anyway (newBoxAlerts).
-  const unseen = [...new Set([...(unseenBefore ?? []), ...found])];
+  // new. A box that really left IS has no row anyway (newBoxAlerts). One that
+  // closed or was handed in is done with, so a reopening is not "new" again.
+  const done = new Set(fresh.filter((b) => !actionable(b, now)).map(boxKey));
+  const unseen = [...new Set([...(unseenBefore ?? []), ...found])].filter((k) => !done.has(k));
   // One transaction: the ids marked known and the ones still to announce land together.
   await IndexedDBService.setAcross([
     { store: 'meta', key: KNOWN_BOXES_META_KEY, value: next },
@@ -66,13 +79,14 @@ function enqueue<T>(job: () => Promise<T>): Promise<T> {
 }
 
 /**
- * Remembers a sync's box list for period `obdobi`, and says what is new since
+ * Remembers a sync's box list, read for period `obdobi` (undefined for a
+ * cached list), and says what is new since
  * this device last saw one: `found` for this push, `unseen` for every new box
  * whose subject has not been opened since. Nothing here leaves the device.
  */
 export function persistNewBoxes(
   fresh: Odevzdavarna[],
-  obdobi: string
+  obdobi: string | undefined
 ): Promise<{ found: string[]; unseen: string[] }> {
   return enqueue(() => persist(fresh, obdobi));
 }
