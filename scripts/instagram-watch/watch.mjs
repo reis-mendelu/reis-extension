@@ -4,11 +4,11 @@
 // the posts it has not seen before. No Instagram account is involved, ever.
 // See README.md beside this file.
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { checkHealth, findNewPosts, formatDigest, normalizeProfiles } from './lib.mjs';
+import { SAFE_NAME, checkHealth, findNewPosts, formatDigest, normalizeProfiles } from './lib.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const API = 'https://api.apify.com/v2';
@@ -38,6 +38,7 @@ if (!token) {
 }
 
 const run = await runActor(handles);
+if (!SAFE_NAME.test(run.id)) throw new Error('Apify returned an unexpected run id.');
 const items = await apify(`/datasets/${run.defaultDatasetId}/items?clean=true`);
 mkdirSync(join(stateDir, 'runs'), { recursive: true });
 const day = new Date().toISOString().slice(0, 10);
@@ -45,7 +46,7 @@ writeFileSync(join(stateDir, 'runs', `${day}-${run.id}.json`), JSON.stringify(it
 
 const profiles = normalizeProfiles(items);
 const seenPath = join(stateDir, 'seen.json');
-const seen = existsSync(seenPath) ? JSON.parse(readFileSync(seenPath, 'utf8')) : {};
+const seen = readJson(seenPath, {});
 const result = findNewPosts(profiles, seen, { baseline: !flag('--no-baseline') });
 const problems = checkHealth(profiles, handles, new Date(), staleDays);
 
@@ -57,14 +58,20 @@ for (const post of result.newPosts) {
   post.society = accounts.societies[post.handle] ?? null;
 }
 
-// The run object returned at SUCCEEDED can predate the final charge; read it again.
+// usageTotalUsd lags the charge by minutes; the charged-event count does not.
 const settled = await apify(`/actor-runs/${run.id}`);
+const profilePrice =
+  settled.pricingInfo?.pricingPerEvent?.actorChargeEvents?.profile?.eventPriceUsd ?? 0;
+const costUsd = Math.max(
+  settled.usageTotalUsd ?? 0,
+  (settled.chargedEventCounts?.profile ?? 0) * profilePrice
+);
 const digest = formatDigest({
   date: day,
   newPosts: result.newPosts,
   baselined: result.baselined,
   problems,
-  costUsd: settled.usageTotalUsd,
+  costUsd,
   profileCount: profiles.length,
 });
 mkdirSync(join(stateDir, 'digests'), { recursive: true });
@@ -115,6 +122,15 @@ async function savePosters(post) {
     }
   }
   return saved;
+}
+
+function readJson(path, fallback) {
+  try {
+    return JSON.parse(readFileSync(path, 'utf8'));
+  } catch (err) {
+    if (err.code === 'ENOENT') return fallback;
+    throw err;
+  }
 }
 
 // The token lives in the main checkout's .env, which a worktree does not have.

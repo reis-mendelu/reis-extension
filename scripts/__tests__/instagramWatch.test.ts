@@ -138,6 +138,15 @@ describe('normalizeProfiles', () => {
     });
   });
 
+  it('drops a post whose shortCode could escape the posters folder, since it names the saved file', () => {
+    const hostile = {
+      username: 'spolek_a',
+      latestPosts: [{ shortCode: '../../x', timestamp: '2026-10-08T10:00:00.000Z' }],
+    };
+
+    expect(normalizeProfiles([hostile])[0]?.posts).toEqual([]);
+  });
+
   it('drops an error row with no username, so checkHealth reports that handle missing', () => {
     expect(normalizeProfiles([{ error: 'not_found', input: 'x' }])).toEqual([]);
   });

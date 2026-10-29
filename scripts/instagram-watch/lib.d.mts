@@ -43,3 +43,4 @@ export declare function formatDigest(run: {
   costUsd?: number;
   profileCount: number;
 }): string;
+export declare const SAFE_NAME: RegExp;

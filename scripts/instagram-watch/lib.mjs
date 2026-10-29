@@ -6,6 +6,8 @@
 const SEEN_CAP = 200;
 /** Carousel slides kept per post: enough for a schedule, not a whole photo recap. */
 const MAX_SLIDES = 5;
+/** Instagram shortCodes and Apify ids are [A-Za-z0-9_-]; anything else is refused. */
+export const SAFE_NAME = /^[A-Za-z0-9_-]+$/;
 
 /**
  * Splits a run's posts into new ones and remembered ones.
@@ -56,7 +58,8 @@ export function normalizeProfiles(items) {
     .map((item) => ({
       handle: item.username.toLowerCase(),
       posts: (item.latestPosts ?? [])
-        .filter((p) => p?.shortCode && p?.timestamp)
+        // shortCode names the saved poster file, so it must not be able to leave posters/.
+        .filter((p) => SAFE_NAME.test(p?.shortCode ?? '') && p?.timestamp)
         .map((p) => ({
           shortCode: p.shortCode,
           url: p.url ?? `https://www.instagram.com/p/${p.shortCode}/`,
