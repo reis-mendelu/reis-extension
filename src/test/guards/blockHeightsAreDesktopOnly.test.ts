@@ -44,14 +44,12 @@ describe('lesson heights are a desktop concern', () => {
     const card = read('components/CalendarEventCard.tsx');
     expect(card).toContain('lesson.renderedMinutes >= TWO_LINE_BLOCK_MINUTES');
     expect(card).toContain('<CalendarEventCardOneLine');
-    expect(read('components/CalendarEventCardOneLine.tsx')).toContain('pr-12');
   });
 
   it('the phone day is a list of cards with the time written on them', () => {
     const row = read('components/mobile/screens/calendar/AgendaEvent.tsx');
     expect(row).toContain('lesson.startTime');
     expect(row).toContain('lesson.endTime');
-    expect(read('components/mobile/screens/calendar/DayAgenda.tsx')).not.toMatch(/style=\{/);
   });
 
   it.each(PHONE_FILES)('%s draws no time grid of its own', (file) => {

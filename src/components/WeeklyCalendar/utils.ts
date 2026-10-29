@@ -20,21 +20,30 @@ export function timeToPercent(time: string): number {
  * taught is ever raised, and a lesson's block ends exactly on its end time.
  * The floor was 90 for everything until "Hodinové přednášky jsou zobrazované
  * jako že mají hodinu a půl" — a 14:00-14:50 lesson drawn down to 15:30. What
- * this still raises is a custom event, which can be 15 minutes: 30 is one line
- * of the card's text on a 700px-tall window, where an hour is about 41px.
+ * this still raises is a custom event, which can be 15 minutes. 45 is one line
+ * of the card's text, about 30px with its padding and border, down to a
+ * 600px-tall window, where an hour is about 34px (41px at 700, 50px at 844).
  */
-export const MIN_BLOCK_MINUTES = 30;
+export const MIN_BLOCK_MINUTES = 45;
+
+/**
+ * The shortest block that holds the card's two lines — the title, then the
+ * room and the time: about 56px, which 90 minutes is from a 700px-tall window
+ * up. CalendarEventCard switches layouts on it, and an exam slot is drawn at
+ * least this tall, so the two must stay one number.
+ */
+export const TWO_LINE_BLOCK_MINUTES = 90;
 
 /**
  * An exam's block, however short the slot. An exam is a slot in a term, not a
  * lesson: a 10-minute oral exam drawn at 10 minutes is ~7px with no label, and
  * the student needs the section, the subject and the room on it, which is the
- * card's two-line layout (CalendarEventCard's TWO_LINE_BLOCK_MINUTES).
+ * card's two-line layout.
  *
  * Layout only: startTime and endTime stay truthful, so a 12:00 oral exam still
  * reads "12:00 - 12:10" on the card and in its tooltip.
  */
-export const EXAM_BLOCK_MINUTES = 90;
+export const EXAM_BLOCK_MINUTES = TWO_LINE_BLOCK_MINUTES;
 
 /**
  * Grid space a block occupies: its real length, raised to its floor.
@@ -47,7 +56,9 @@ export function renderedBlockMinutes(startTime: string, endTime: string, isExam 
   // The grid stops at 21:00 and the calendar is overflow-hidden, so a floor
   // applied blindly to a 20:40 block would push the card off the bottom and
   // clip it. Shorten the floor to what is left of the grid — but never below
-  // the real length, so a genuinely long late event still runs over.
+  // the real length, so a genuinely long late event still runs over. A slot
+  // after 19:30 therefore gets less than its floor (a 20:40 exam is one clipped
+  // line); that is accepted, since moving its top would put it at the wrong time.
   const toGridEnd = TOTAL_HOURS * 60 - (timeToMinutes(startTime) - GRID_START_HOUR * 60);
   const floor = isExam ? EXAM_BLOCK_MINUTES : MIN_BLOCK_MINUTES;
   return Math.max(real, Math.min(floor, toGridEnd));

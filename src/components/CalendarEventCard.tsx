@@ -14,6 +14,7 @@ import { useAppStore } from '../store/useAppStore';
 import { useTimeline } from '../hooks/useTimeline';
 import { CalendarEventCardHideMenu } from './CalendarEventCardHideMenu';
 import { CalendarEventCardOneLine } from './CalendarEventCardOneLine';
+import { TWO_LINE_BLOCK_MINUTES } from './WeeklyCalendar/utils';
 import { lessonPlace } from '../utils/lessonPlace';
 
 interface CalendarEventCardProps {
@@ -40,9 +41,6 @@ function getExamSectionName(courseName: string): string {
   // Normalize "prubezny" to "průběžný"
   return sectionName.replace(/prubezny/gi, 'průběžný');
 }
-
-/** The shortest block, in grid minutes, that holds the title and the room-and-time row. */
-const TWO_LINE_BLOCK_MINUTES = 90;
 
 export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCardProps) {
   const timeline = useTimeline(lesson.courseCode || '');

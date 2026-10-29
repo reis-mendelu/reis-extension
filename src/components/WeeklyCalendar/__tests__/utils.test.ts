@@ -6,6 +6,7 @@ import {
   timeToPercent,
   MIN_BLOCK_MINUTES,
   EXAM_BLOCK_MINUTES,
+  TWO_LINE_BLOCK_MINUTES,
 } from '../utils';
 import type { BlockLesson } from '../../../types/calendarTypes';
 
@@ -181,12 +182,15 @@ describe('the floors', () => {
 
   it('raise a 15-minute custom event to one line', () => {
     expect(renderedBlockMinutes('10:00', '10:15')).toBe(MIN_BLOCK_MINUTES);
-    expect(MIN_BLOCK_MINUTES).toBe(30);
+    // 45 is one line of the card's text (~30px with its padding and border)
+    // down to a 600px-tall window, where an hour is ~34px. 30 was not.
+    expect(MIN_BLOCK_MINUTES).toBe(45);
   });
 
   it('give a 10-minute exam slot its full two-line block', () => {
     expect(renderedBlockMinutes('10:00', '10:10', true)).toBe(EXAM_BLOCK_MINUTES);
-    expect(EXAM_BLOCK_MINUTES).toBe(90);
+    // The card's two-line layout starts at the same number, by construction.
+    expect(EXAM_BLOCK_MINUTES).toBe(TWO_LINE_BLOCK_MINUTES);
   });
 
   it('leave an exam longer than the floor at its real length', () => {
@@ -214,6 +218,9 @@ describe('the floors', () => {
     expect(totalRows).toBe(1);
   });
 
+  // Accepted: a slot starting after 19:30 gets less than its floor, and an exam
+  // at 20:40 drops to one clipped line. Running off the grid would hide it
+  // entirely, and moving its top would put it at the wrong time.
   it('shorten rather than overflow 21:00', () => {
     expect(renderedBlockMinutes('20:40', '20:50', true)).toBe(20);
     expect(drawn('20:40', '20:50', true).bottom).toBeCloseTo(100, 5);
