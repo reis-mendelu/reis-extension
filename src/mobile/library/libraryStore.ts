@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { fetchRoomBlocks, type Block } from './availability';
+import { fetchAllBlocks, type Block } from './availability';
 import { nativeBookingsHttp } from './transport';
 import type { BookingsHttp } from './bookingsBase';
 import { LIBRARY_ROOMS } from '../../data/map/libraryRooms';
@@ -47,14 +47,14 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     set({ status: 'loading' });
     const to = new Date(now);
     to.setDate(to.getDate() + DAYS_AHEAD);
-    const results = await Promise.all(
-      LIBRARY_ROOMS.map(
-        async (r) =>
-          [
-            r.featureId,
-            await fetchRoomBlocks(http, r.staffMemberId, dayOf(now), dayOf(to)),
-          ] as const
-      )
+    const all = await fetchAllBlocks(
+      http,
+      LIBRARY_ROOMS.map((r) => r.staffMemberId),
+      dayOf(now),
+      dayOf(to)
+    );
+    const results = LIBRARY_ROOMS.map(
+      (r) => [r.featureId, all?.[r.staffMemberId] ?? null] as const
     );
     if (mine !== seq) return;
     const blocks = Object.fromEntries(results);

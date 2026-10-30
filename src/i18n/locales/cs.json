@@ -1554,6 +1554,7 @@
       "cancelUnknown": "Knihovna neodpověděla. Zkontroluj e-mail, jestli rezervace zmizela.",
       "cancelFailed": "Rezervaci se nepodařilo zrušit.",
       "seatsOne": "1 místo",
+      "loading": "Načítám volné hodiny…",
       "pickRoom": "Klepni na studovnu a vyber hodinu k rezervaci.",
       "partMain": "Knihovna A",
       "partIc": "Knihovna IC"

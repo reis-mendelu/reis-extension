@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { fetchRoomBlocks } from '../availability';
+import { fetchRoomBlocks, fetchAllBlocks } from '../availability';
 import { createBooking, buildEnvelope } from '../createBooking';
 import { cancelBooking } from '../cancelBooking';
 import { QUESTION_FACULTY, QUESTION_STUDENT_ID, BOOKINGS_BASE } from '../bookingsBase';
@@ -162,5 +162,34 @@ describe('fetchRoomBlocks', () => {
     expect(
       await fetchRoomBlocks(reply(500, {}), room.staffMemberId, '2026-11-10', '2026-11-11')
     ).toBeNull();
+  });
+});
+
+describe('fetchAllBlocks', () => {
+  const free = (day: string) => ({
+    status: 'BOOKINGSAVAILABILITYSTATUS_AVAILABLE',
+    startDateTime: { dateTime: `${day}T07:00:00`, timeZone: 'x' },
+    endDateTime: { dateTime: `${day}T19:00:00`, timeZone: 'x' },
+  });
+
+  it('asks once for every room and files each answer under its staff id', async () => {
+    const http = reply(200, {
+      staffAvailabilityResponse: [
+        { staffId: 'a', availabilityItems: [free('2026-11-10')] },
+        { staffId: 'b', availabilityItems: [] },
+      ],
+    });
+    const all = await fetchAllBlocks(http, ['a', 'b', 'c'], '2026-11-10', '2026-11-17');
+    expect(http).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(http).mock.calls[0]![0].data).toMatchObject({ staffIds: ['a', 'b', 'c'] });
+    expect(all?.a?.[0]).toMatchObject({ status: 'free', start: '2026-11-10T07:00' });
+    expect(all?.b).toEqual([]);
+    // Not in the answer is "could not ask", not "nothing free".
+    expect(all?.c).toBeNull();
+  });
+
+  it('returns null when the one request fails', async () => {
+    expect(await fetchAllBlocks(boom, ['a'], '2026-11-10', '2026-11-11')).toBeNull();
+    expect(await fetchAllBlocks(reply(500, {}), ['a'], '2026-11-10', '2026-11-11')).toBeNull();
   });
 });

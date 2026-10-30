@@ -51,6 +51,11 @@ function RoomList({ group }: { group: LibraryPart }) {
     <div className="space-y-2">
       <PartChips group={group} />
       <p className="text-xs text-base-content/70">{t('mobile.library.pickRoom')}</p>
+      {status === 'loading' && (
+        <p role="status" className="text-sm text-base-content/70">
+          {t('mobile.library.loading')}
+        </p>
+      )}
       {status === 'offline' && (
         <p role="status" className="text-sm text-base-content/70">
           {t('mobile.library.offline')}
@@ -194,7 +199,11 @@ function RoomHours({ room }: { room: LibraryRoom }) {
           </button>
         ))}
       </div>
-      {blocks === undefined || status === 'loading' ? null : blocks === null ? (
+      {blocks === undefined || status === 'loading' ? (
+        <p role="status" className="text-sm text-base-content/70">
+          {t('mobile.library.loading')}
+        </p>
+      ) : blocks === null ? (
         <p role="status" className="text-sm text-base-content/70">
           {t('mobile.library.offline')}
         </p>

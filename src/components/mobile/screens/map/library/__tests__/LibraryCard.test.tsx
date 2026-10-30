@@ -70,6 +70,14 @@ describe('LibraryCard list', () => {
     expect(screen.getByText('Klepni na studovnu a vyber hodinu k rezervaci.')).toBeTruthy();
     expect(screen.getAllByText(/^dnes (volné od|plno)/).length).toBe(4);
   });
+  it('says it is loading while the library answers, in the list and in a room', () => {
+    useLibraryStore.setState({ blocks: {}, status: 'loading', fetchedAt: null });
+    const { unmount } = render(<LibraryCard view={{ featureId: null, group: 'main' }} />);
+    expect(screen.getByText('Načítám volné hodiny…')).toBeTruthy();
+    unmount();
+    render(<LibraryCard view={{ featureId: ind1.featureId, group: 'main' }} />);
+    expect(screen.getByText('Načítám volné hodiny…')).toBeTruthy();
+  });
   it('opens a room on tap', () => {
     render(<LibraryCard view={{ featureId: null, group: 'main' }} />);
     fireEvent.click(screen.getByRole('button', { name: 'Týmová studovna 1' }));
