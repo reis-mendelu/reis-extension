@@ -368,10 +368,21 @@ describe('CalendarScreen — week view', () => {
 
   // CodeRabbit, second round: the same lesson on two days must not announce
   // the same — the block's name carries its day.
-  it("a block's accessible name says which day it is", () => {
-    useAppStore.setState({ mobileCalendarView: 'week' } as never);
+  it('the same lesson on two days announces two different days', () => {
+    useAppStore.setState({
+      mobileCalendarView: 'week',
+      schedule: {
+        data: [java, { ...java, id: 'pj-mon', date: '20261005' }],
+        status: 'success',
+      },
+    } as never);
     render(<CalendarScreen />);
-    const block = screen.getByRole('button', { name: /Programovací jazyk Java/ });
-    expect(block.getAttribute('aria-label')).toMatch(/St 7\. 10\./);
+    const labels = screen
+      .getAllByRole('button', { name: /Programovací jazyk Java/ })
+      .map((b) => b.getAttribute('aria-label'));
+    expect(labels).toHaveLength(2);
+    expect(labels.some((l) => /Po 5\. 10\./.test(l ?? ''))).toBe(true);
+    expect(labels.some((l) => /St 7\. 10\./.test(l ?? ''))).toBe(true);
+    expect(new Set(labels).size).toBe(2);
   });
 });
