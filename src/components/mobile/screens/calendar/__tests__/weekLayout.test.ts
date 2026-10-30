@@ -149,6 +149,14 @@ describe('weekLayout — review findings', () => {
 
   it('a phone cascade never indents a block out of its column (CodeRabbit)', () => {
     const deep = blockBox(5, 6, true);
-    expect(deep.left).toBe('24px');
+    expect(deep.left).toBe('50.0%');
+    expect(deep.width).toBe('calc(100% - 50.0%)');
+  });
+
+  // CodeRabbit, second round: a flat two-step cap gave lanes 2 and 3 the same
+  // box, so four lessons starting together hid one completely.
+  it('every lane of a deep clash gets its own indent', () => {
+    const lefts = [0, 1, 2, 3].map((lane) => blockBox(lane, 4, true).left);
+    expect(new Set(lefts).size).toBe(4);
   });
 });

@@ -80,4 +80,15 @@ describe('weekHalloweenSpots', () => {
     );
     expect(days).toEqual([{ iso: '2026-11-02', lessons: [{ start: h(15), end: h(16, 30) }] }]);
   });
+
+  // CodeRabbit, second round: minutes are not pixels. On a short grid the
+  // free minutes can be too few pixels for the drawing, so it is left out.
+  it('skips a mark that would not fit in pixels', () => {
+    const days = [day('mo', [h(10), h(12)]), day('tu', [h(7), h(9)])];
+    const roomy = weekHalloweenSpots(days, RANGE, 'mo', 1);
+    expect(roomy.spiderDay).toBe('mo');
+    const cramped = weekHalloweenSpots(days, RANGE, 'mo', 0.05);
+    expect(cramped.spiderDay).toBeNull();
+    expect(cramped.pumpkinDays).toEqual([]);
+  });
 });

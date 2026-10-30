@@ -41,6 +41,9 @@ const SPIDER_FREE_MIN = 120;
 /** A pumpkin needs this much free column above the bottom line to sit in. */
 const PUMPKIN_FREE_MIN = 90;
 const MAX_PUMPKINS = 2;
+/** Pixels the spider (thread + body) and a pumpkin need to fit their gap. */
+const SPIDER_MIN_PX = 70;
+const PUMPKIN_MIN_PX = 36;
 
 /**
  * Where Týden's Halloween decorations go (spec 2026-10-30). Only space no
@@ -55,7 +58,9 @@ const MAX_PUMPKINS = 2;
 export function weekHalloweenSpots(
   days: WeekHalloweenDay[],
   range: HourRange,
-  todayIso: string
+  todayIso: string,
+  /** The grid's pixels per minute; a gap must fit the drawing in pixels too. */
+  pxPerMin = Infinity
 ): WeekHalloweenSpots {
   const top = range.start * 60;
   const bottom = range.end * 60;
@@ -64,15 +69,17 @@ export function weekHalloweenSpots(
   const freeEnd = (d: WeekHalloweenDay) =>
     d.lessons.length ? bottom - Math.max(...d.lessons.map((l) => l.end)) : bottom - top;
 
+  const fitsSpider = (d: WeekHalloweenDay) =>
+    freeTop(d) >= SPIDER_FREE_MIN && freeTop(d) * pxPerMin >= SPIDER_MIN_PX;
+  const fitsPumpkin = (d: WeekHalloweenDay) =>
+    freeEnd(d) >= PUMPKIN_FREE_MIN && freeEnd(d) * pxPerMin >= PUMPKIN_MIN_PX;
+
   const rightToLeft = [...days].reverse();
   const today = days.find((d) => d.iso === todayIso);
-  const spider =
-    today && freeTop(today) >= SPIDER_FREE_MIN
-      ? today
-      : rightToLeft.find((d) => freeTop(d) >= SPIDER_FREE_MIN);
+  const spider = today && fitsSpider(today) ? today : rightToLeft.find(fitsSpider);
 
   const pumpkinDays = rightToLeft
-    .filter((d) => d.iso !== spider?.iso && freeEnd(d) >= PUMPKIN_FREE_MIN)
+    .filter((d) => d.iso !== spider?.iso && fitsPumpkin(d))
     .slice(0, MAX_PUMPKINS)
     .map((d) => d.iso);
 

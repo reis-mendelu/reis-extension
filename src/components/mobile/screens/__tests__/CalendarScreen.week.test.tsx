@@ -365,4 +365,13 @@ describe('CalendarScreen — week view', () => {
     const chip = within(screen.getByTestId('day-strip')).getByRole('button', { name: /Út 6/ });
     expect(chip.closest('[data-day-iso]')?.getAttribute('data-day-iso')).toBe('2026-10-06');
   });
+
+  // CodeRabbit, second round: the same lesson on two days must not announce
+  // the same — the block's name carries its day.
+  it("a block's accessible name says which day it is", () => {
+    useAppStore.setState({ mobileCalendarView: 'week' } as never);
+    render(<CalendarScreen />);
+    const block = screen.getByRole('button', { name: /Programovací jazyk Java/ });
+    expect(block.getAttribute('aria-label')).toMatch(/St 7\. 10\./);
+  });
 });

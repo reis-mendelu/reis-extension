@@ -50,11 +50,22 @@ export function WeekBlock({ block, cascade, gridPx, onOpen }: WeekBlockProps) {
     ? nameLines((block.visible / 100) * gridPx, NAME_LINE_PX, covered ? 4 : RESERVED_PX)
     : 2;
   const time = `${lesson.startTime} – ${lesson.endTime}`;
+  // The day, so the same lesson on two days does not announce the same: the
+  // column it sits in has no name of its own (PR #618 review). "St 7. 10."
+  const date = new Date(
+    Number(lesson.date.slice(0, 4)),
+    Number(lesson.date.slice(4, 6)) - 1,
+    Number(lesson.date.slice(6, 8))
+  );
+  const weekday = new Intl.DateTimeFormat(language === 'en' ? 'en-GB' : 'cs-CZ', {
+    weekday: 'short',
+  }).format(date);
+  const day = `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)} ${date.getDate()}. ${date.getMonth() + 1}.`;
 
   return (
     <button
       type="button"
-      aria-label={[name, room, time].filter(Boolean).join(', ')}
+      aria-label={[name, day, time, room].filter(Boolean).join(', ')}
       onClick={() => onOpen(lesson)}
       style={{
         top: `${block.top}%`,

@@ -60,7 +60,14 @@ export function WeekGrid({ lessons, selectedIso, lessonDates, onSelectDay }: Wee
   const hours = Array.from({ length: span + 1 }, (_, i) => range.start + i);
   // Halloween week: decorations only in space no lesson uses (weekHalloween).
   const halloween = useIsHalloween();
-  const spots = weekHalloweenSpots(halloweenDays(days, weekLessons), range, todayIso);
+  // Pixels as well as minutes: a short grid can leave a gap too small for the
+  // drawing. Until the grid is measured (0px) only the minutes decide.
+  const spots = weekHalloweenSpots(
+    halloweenDays(days, weekLessons),
+    range,
+    todayIso,
+    gridPx > 0 ? gridPx / (span * 60) : Infinity
+  );
   // The thread ends ~40px above the first lesson, whatever the screen height.
   const spiderThread = Math.max(
     20,

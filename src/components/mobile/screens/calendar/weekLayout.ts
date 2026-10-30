@@ -134,10 +134,14 @@ export function blockBox(
   cascade: boolean
 ): { left: string; width: string } {
   if (cascade) {
-    // Capped at two steps: a fifth lane at 12px each left a ~45px column no
-    // block at all (PR #618 review). Deeper clashes overlap at the cap.
-    const indent = Math.min(lane, 2) * CASCADE_INDENT_PX;
-    return { left: `${indent}px`, width: indent ? `calc(100% - ${indent}px)` : '100%' };
+    if (lane === 0) return { left: '0px', width: '100%' };
+    // Up to three lanes: 12px steps, readable and familiar. Deeper clashes
+    // share 60% of the column between their lanes, so every lane keeps its
+    // own edge — a flat cap once put lanes 2 and 3 in the same box and hid
+    // one of four simultaneous lessons (PR #618 review).
+    const indent =
+      lanes <= 3 ? `${lane * CASCADE_INDENT_PX}px` : `${((lane * 60) / lanes).toFixed(1)}%`;
+    return { left: indent, width: `calc(100% - ${indent})` };
   }
   return { left: `${(lane / lanes) * 100}%`, width: `${100 / lanes}%` };
 }
