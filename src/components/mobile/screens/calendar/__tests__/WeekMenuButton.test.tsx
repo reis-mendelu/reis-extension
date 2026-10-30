@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { WeekMenuButton } from '../WeekMenuButton';
 import { useAppStore } from '../../../../../store/useAppStore';
+import { useIskamStore } from '../../../../../mobile/iskam/iskamStore';
 import type { OutletMenu } from '../../../../../types/menuTypes';
 
 // Mon 12 – Fri 16 October 2026. Monday and Wednesday serve; Tuesday does not.
@@ -28,6 +29,17 @@ describe('WeekMenuButton', () => {
       mobileCalendarView: 'week',
       mobileSheets: [],
     } as never);
+  });
+
+  // The ISIC balance sits at the top of the same sheet. Den's MenuCard starts
+  // its check on the tap; the hat must too, or Týden's sheet has no ISIC row —
+  // Dominik on the Pixel, 2026-10-30.
+  it('starts the ISIC balance check when tapped, as the menu card does', () => {
+    const check = vi.fn(async () => {});
+    useIskamStore.setState({ check });
+    render(<WeekMenuButton days={WEEK} todayIso="2026-10-07" />);
+    fireEvent.click(hat()!);
+    expect(check).toHaveBeenCalledTimes(1);
   });
 
   // The hat opens the menu of the week on screen — no day has to be picked

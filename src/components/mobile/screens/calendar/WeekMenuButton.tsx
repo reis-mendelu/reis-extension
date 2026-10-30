@@ -2,6 +2,7 @@ import { ChefHat } from 'lucide-react';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { menuForDay } from '../../../../utils/menuForDay';
+import { useIskamStore } from '../../../../mobile/iskam/iskamStore';
 
 /**
  * The jídelníček's way in from the week view: a chef hat in the header that
@@ -37,7 +38,12 @@ export function WeekMenuButton({ days, todayIso }: { days: string[]; todayIso: s
   return (
     <button
       type="button"
-      onClick={() => pushSheet({ kind: 'menu', dayIso, week: days })}
+      onClick={() => {
+        pushSheet({ kind: 'menu', dayIso, week: days });
+        // The ISIC balance at the top of the sheet is checked from the tap, as
+        // MenuCard does in Den — without it Týden's sheet had no ISIC row.
+        void useIskamStore.getState().check();
+      }}
       aria-label={t('menu.title')}
       className="flex h-10 w-10 items-center justify-center rounded-full border border-base-300 bg-base-100 max-[359px]:h-9 max-[359px]:w-9"
     >
