@@ -80,21 +80,42 @@ export function useSwipeSteps({
     owned.current = null;
   };
 
+  // Calls off the swipe in flight: a second finger made it a pinch.
+  const cancelForSecondFinger = () => {
+    const first = start.current?.id;
+    reset();
+    if (first !== undefined && elementRef.current?.hasPointerCapture?.(first))
+      elementRef.current?.releasePointerCapture?.(first);
+    onCancel();
+  };
+
+  // Every finger on the PAGE, not just on this surface: the pinch covers the
+  // whole calendar, so one finger here and one on the day strip or the Teď
+  // card is a pinch too (PR #618 review). A touch that is not the primary
+  // pointer means another finger is already down — the browser's own count,
+  // so nothing here can go stale. Capture phase: before any surface's handler.
+  useEffect(() => {
+    const down = (e: PointerEvent) => {
+      if (e.pointerType === 'touch' && !e.isPrimary && start.current) cancelForSecondFinger();
+    };
+    window.addEventListener('pointerdown', down, true);
+    return () => window.removeEventListener('pointerdown', down, true);
+  });
+
   const onPointerDown = (e: ReactPointerEvent<HTMLElement>) => {
     // A second finger is not a new gesture, and it is not a swipe either: it
     // makes this a pinch, which zooms the calendar between Den and Týden (spec
     // 2026-10-30) — the first finger drifting sideways must not step a day
-    // too. So the swipe in flight is called off. The click-suppression flag is
-    // left as it is: a drag before the second finger still swallows its click.
+    // too. The page-wide listener below has already called the swipe off; a
+    // finger landing while another is down starts nothing either. The
+    // click-suppression flag is left as it is: a drag before the second
+    // finger still swallows its click.
     if (start.current) {
-      if (start.current.id === e.pointerId) return;
-      const first = start.current.id;
-      reset();
-      if (elementRef.current?.hasPointerCapture?.(first))
-        elementRef.current?.releasePointerCapture?.(first);
-      onCancel();
+      if (start.current.id !== e.pointerId) cancelForSecondFinger();
       return;
     }
+    // A second finger starts nothing: it is one half of a pinch.
+    if (e.pointerType === 'touch' && !e.isPrimary) return;
     // Disarmed BEFORE the start is judged, so a press the hook declines cannot
     // inherit a swallow armed by the previous swipe and eat its own tap.
     dragged.current = false;

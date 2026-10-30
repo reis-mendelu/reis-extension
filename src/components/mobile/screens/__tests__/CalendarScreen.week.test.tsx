@@ -189,7 +189,9 @@ describe('CalendarScreen — week view', () => {
   });
 
   it('has no Teď strip when nothing is running', () => {
+    useAppStore.setState({ mobileCalendarView: 'week' } as never);
     render(<CalendarScreen />);
+    expect(screen.getByTestId('week-grid')).toBeTruthy();
     expect(screen.queryByTestId('week-now-strip')).toBeNull();
   });
 

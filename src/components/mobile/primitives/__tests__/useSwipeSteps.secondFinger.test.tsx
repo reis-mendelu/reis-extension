@@ -36,4 +36,40 @@ describe('useSwipeSteps — a second finger', () => {
     expect(onEnd).not.toHaveBeenCalledWith(1);
     expect(onEnd).not.toHaveBeenCalledWith(-1);
   });
+
+  // PR #618 review: the pinch covers the whole calendar, so a second finger
+  // landing on ANOTHER surface (the day strip, the Teď card) must call the
+  // swipe off too, not only one on this surface.
+  it('cancels when the second finger lands anywhere else on the page', () => {
+    onEnd.mockClear();
+    onCancel.mockClear();
+    onMove.mockClear();
+    render(
+      <>
+        <Host />
+        <div data-testid="elsewhere" />
+      </>
+    );
+    const el = screen.getByTestId('surface');
+    fireEvent.pointerDown(el, {
+      clientX: 300,
+      clientY: 100,
+      pointerId: 1,
+      pointerType: 'touch',
+      isPrimary: true,
+    });
+    fireEvent.pointerMove(el, { clientX: 260, clientY: 100, pointerId: 1 });
+    fireEvent.pointerDown(screen.getByTestId('elsewhere'), {
+      clientX: 50,
+      pointerId: 2,
+      pointerType: 'touch',
+      isPrimary: false,
+    });
+    const movesBefore = onMove.mock.calls.length;
+    fireEvent.pointerMove(el, { clientX: 140, clientY: 100, pointerId: 1 });
+    fireEvent.pointerUp(el, { clientX: 140, clientY: 100, pointerId: 1 });
+    expect(onCancel).toHaveBeenCalled();
+    expect(onMove.mock.calls.length).toBe(movesBefore);
+    expect(onEnd).not.toHaveBeenCalledWith(1);
+  });
 });

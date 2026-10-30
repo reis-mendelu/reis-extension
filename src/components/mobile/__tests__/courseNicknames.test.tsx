@@ -42,6 +42,14 @@ describe('calendar', () => {
     expect(screen.queryByText('Management')).toBeNull();
   });
 
+  // Den's row and Týden's block each keep an exam's section (PR #618 review:
+  // the revert of #540 had swapped the agenda case for the block one).
+  it('exam row keeps its section after the nickname', () => {
+    const lesson = makeLesson({ courseName: 'Management - Zkouška', isExam: true });
+    render(<AgendaEvent lesson={lesson} onOpenSubject={vi.fn()} onShowOnMap={vi.fn()} />);
+    expect(screen.getByText('Mňam - Zkouška')).toBeInTheDocument();
+  });
+
   it('week grid block', () => {
     const block = {
       lesson: makeLesson(),
