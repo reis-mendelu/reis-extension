@@ -142,3 +142,19 @@ export function stepWeek(
   const shown = weekDays(target, lessonDates, todayIso).map(toIso);
   return shown.includes(target) ? target : (shown[shown.length - 1] ?? target);
 }
+
+/**
+ * Where Den opens when the student switches to it from Týden with the icon
+ * pill (spec 2026-10-30, decision 12): today if the shown week holds it — in
+ * this week "Den" means today — else the shown week's first day with lessons,
+ * else its first shown day. Never a day outside the week on screen.
+ */
+export function denLandingDay(
+  selectedIso: string,
+  lessonDates: ReadonlySet<string>,
+  todayIso: string
+): string {
+  const days = weekDays(selectedIso, lessonDates, todayIso).map(toIso);
+  if (days.includes(todayIso)) return todayIso;
+  return days.find((iso) => lessonDates.has(toCompact(iso))) ?? days[0] ?? selectedIso;
+}

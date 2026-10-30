@@ -1334,7 +1334,9 @@
       "backToToday": "Zpět na dnešek",
       "viewLabel": "Zobrazení kalendáře",
       "dayView": "Den",
-      "weekView": "Týden"
+      "weekView": "Týden",
+      "nowLabel": "Teď",
+      "thisLesson": "Tato hodina"
     },
     "exams": {
       "title": "Zkoušky",

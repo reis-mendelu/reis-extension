@@ -1,3 +1,4 @@
+import { MapPin } from 'lucide-react';
 import type { BlockLesson } from '../../../../types/calendarTypes';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useAppStore } from '../../../../store/useAppStore';
@@ -23,7 +24,9 @@ const RESERVED_PX = 16;
 
 /**
  * One lesson in the week grid: the subject's NAME and its room, and on an iPad
- * the time too. Never the course code — the mockups showed it and Dominik's
+ * the time too. The room is the CODE with a pin ("Q07", not "Q07 (Brno)"):
+ * it is how a student in Týden sees where a lesson is without opening it, and
+ * a ~45px block has no width for the campus (spec 2026-10-30, decision 5). Never the course code — the mockups showed it and Dominik's
  * answer was "nobody cares about the code of the subjects".
  *
  * Same colours as the agenda row (`eventStyles`): fixed light tints in both
@@ -34,7 +37,10 @@ export function WeekBlock({ block, cascade, gridPx, onOpen }: WeekBlockProps) {
   const { lesson } = block;
   const nicknames = useAppStore((s) => s.courseNicknames);
   const name = lessonDisplayName(nicknames, lesson, localizedCourseName(lesson, language));
-  const room = lessonPlace(lesson, language).label;
+  // The campus in brackets dropped, the trim routeSuggestionFor makes too.
+  const room = lessonPlace(lesson, language)
+    .label.replace(/\s*\([^)]*\)\s*$/, '')
+    .trim();
   const styles = eventStyles(lesson);
   const box = blockBox(block.lane, block.lanes, cascade);
   // Clamped to the part a later clash leaves uncovered — there the room line is
@@ -67,8 +73,13 @@ export function WeekBlock({ block, cascade, gridPx, onOpen }: WeekBlockProps) {
       {/* Under a cascaded clash the room line would show only as one letter in
           the uncovered strip; the room is in the block on top's tap-through. */}
       {room && !(cascade && covered) && (
-        <span className="mt-auto truncate text-[10px] leading-3 text-content-secondary md:mt-0 md:text-[11px] md:leading-[14px]">
-          {room}
+        <span className="mt-auto flex min-w-0 items-center gap-0.5 text-[11px] font-extrabold leading-3 text-content-primary/80 md:mt-0 md:text-[12px] md:leading-[15px]">
+          <MapPin
+            aria-hidden
+            className="h-2.5 w-2.5 flex-shrink-0 md:h-3 md:w-3"
+            strokeWidth={2.5}
+          />
+          <span className="truncate">{room}</span>
         </span>
       )}
       {!cascade && (

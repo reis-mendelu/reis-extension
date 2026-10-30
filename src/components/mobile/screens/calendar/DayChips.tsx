@@ -19,6 +19,11 @@ export interface DayChipsProps {
    * below already shows each day's lessons.
    */
   view?: 'day' | 'week';
+  /**
+   * Týden only: a tapped day opens in Den, and Den is remembered — tapping the
+   * day is the choice to look at it (spec 2026-10-30, decision 4).
+   */
+  onOpenDay?: (iso: string) => void;
 }
 
 /**
@@ -44,7 +49,13 @@ export interface DayChipsProps {
  * is the arrow you reach for, and a pill breaks that mapping for the sake of a
  * tidier row. 44px tall now, the touch minimum the old 36px missed.
  */
-export function DayChips({ selectedIso, onSelect, lessonDates, view = 'day' }: DayChipsProps) {
+export function DayChips({
+  selectedIso,
+  onSelect,
+  lessonDates,
+  view = 'day',
+  onOpenDay,
+}: DayChipsProps) {
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
   // The store's clock, as the week grid's now-line reads it: the pulse moves it,
@@ -140,7 +151,7 @@ export function DayChips({ selectedIso, onSelect, lessonDates, view = 'day' }: D
               isToday={iso === todayIso}
               hasLessons={lessonDates.has(toCompact(iso))}
               showDot={view === 'day'}
-              onClick={view === 'day' ? () => onSelect(iso) : undefined}
+              onClick={view === 'day' ? () => onSelect(iso) : onOpenDay && (() => onOpenDay(iso))}
             />
           );
         })}

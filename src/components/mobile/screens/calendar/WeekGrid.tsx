@@ -6,7 +6,7 @@ import { useWideViewport } from '../../../../hooks/ui/useWideViewport';
 import { getCzechHoliday } from '../../../../utils/holidays';
 import { toIso, toCompact, stepWeek, weekDays } from '../../../../utils/mobile/weekDays';
 import { useSwipeSteps } from '../../primitives/useSwipeSteps';
-import { useOpenLesson } from './useOpenLesson';
+import { useOpenWeekLesson } from './useOpenWeekLesson';
 import { useElementHeight } from './useElementHeight';
 import { WeekBlock } from './WeekBlock';
 import { weekHourRange, placeDay, nowOffset } from './weekLayout';
@@ -43,7 +43,7 @@ export function WeekGrid({ lessons, selectedIso, lessonDates, onSelectDay }: Wee
   const now = useAppStore((s) => s.now);
   const cascade = !useWideViewport();
   const bottomPad = CALENDAR_BOTTOM_PAD;
-  const openLesson = useOpenLesson();
+  const openLesson = useOpenWeekLesson();
   const swipeRef = useRef<HTMLDivElement>(null);
   const columnsRef = useRef<HTMLDivElement>(null);
   const gridPx = useElementHeight(columnsRef);

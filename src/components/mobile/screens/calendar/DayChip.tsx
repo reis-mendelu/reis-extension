@@ -13,7 +13,7 @@ export interface DayChipProps {
   hasLessons: boolean;
   /** The lesson/holiday dot. Off in the week view, where the grid says it. */
   showDot: boolean;
-  /** Absent in the week view, where a chip is a label, not a control. */
+  /** Selects the day in Den; in Týden it opens the day in Den. Absent = a label. */
   onClick?: () => void;
 }
 

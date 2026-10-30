@@ -14,10 +14,13 @@ import type { MobileCalendarView } from '../../../../store/types';
  *
  * Placed and dressed like the bar under it, 8px above it, the spot the Dnes
  * pill held: `bottom-[84px]` clears BottomNav (18px inset + its ~54px height +
- * a gap). The week grid reserves this band so the switch never covers a lesson;
- * the agenda already pads `pb-36` for it.
+ * a gap). The agenda and the week grid both clear it (CALENDAR_BOTTOM_PAD), so
+ * it never covers a lesson.
+ *
+ * #528 took it off the screen for a choose-once panel and a Nastavení row;
+ * spec 2026-10-30 brought it back as it was, and every switch is remembered.
  */
-export function CalendarViewSwitch() {
+export function CalendarViewSwitch({ onDay }: { onDay?: () => void }) {
   const { t } = useTranslation();
   const view = useAppStore((s) => s.mobileCalendarView);
   const setView = useAppStore((s) => s.setMobileCalendarView);
@@ -27,7 +30,11 @@ export function CalendarViewSwitch() {
       type="button"
       aria-label={label}
       aria-pressed={view === value}
-      onClick={() => setView(value)}
+      onClick={() => {
+        // Leaving Týden picks Den's day first, so Den opens on it (decision 12).
+        if (value === 'day' && view === 'week') onDay?.();
+        setView(value);
+      }}
       // Tonal, like BottomNav's active tab: --tone-primary on the /15 tint, not
       // raw primary, which measured 2.03:1 in the light theme.
       className={`flex min-h-9 min-w-11 items-center justify-center rounded-full transition-colors ${

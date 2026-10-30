@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import type { SyntheticEvent } from 'react';
 import { Sheet } from '../primitives/Sheet';
 import { SubjectSheetHeader } from './SubjectSheetHeader';
+import { WeekLessonPlace } from './WeekLessonPlace';
 import { TeacherList } from './TeacherList';
 import { SubjectDrawerTabs } from './SubjectDrawerTabs';
 import { stepTab, SUBJECT_TAB_ORDER } from './subjectTabStep';
@@ -158,6 +159,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
                 activeTab === 'files' && <SubjectFilesRefreshButton courseCode={courseCode} />
               }
             />
+            {sheet.weekLesson && <WeekLessonPlace lesson={sheet.weekLesson} />}
             {/* Below the header, not inside it: the header is `touch-none` so the
                 sheet can be dragged by it, and this is a list of things to tap. */}
             <TeacherList teachers={syllabusResult.syllabus?.courseInfo?.teachers} />

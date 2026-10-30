@@ -1334,7 +1334,9 @@
       "backToToday": "Back to today",
       "viewLabel": "Calendar view",
       "dayView": "Day",
-      "weekView": "Week"
+      "weekView": "Week",
+      "nowLabel": "Now",
+      "thisLesson": "This lesson"
     },
     "exams": {
       "title": "Exams",

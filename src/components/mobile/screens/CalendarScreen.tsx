@@ -14,8 +14,9 @@ import { useShowLessonOnMap } from './calendar/useShowLessonOnMap';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { NowNextCard } from './calendar/NowNextCard';
 import { DayChips } from './calendar/DayChips';
+import { denLandingDay, toIso } from '../../../utils/mobile/weekDays';
 import { DayBody } from './calendar/DayBody';
-import { WeekGrid } from './calendar/WeekGrid';
+import { WeekBody } from './calendar/WeekBody';
 import { CalendarViewSwitch } from './calendar/CalendarViewSwitch';
 import { useCalendarToday } from './calendar/useCalendarToday';
 import { RecentFilesStrip } from './calendar/RecentFilesStrip';
@@ -27,6 +28,7 @@ export function CalendarScreen() {
   const { t, language } = useTranslation();
   const { schedule } = useSchedule();
   const setMobileSelectedDay = useAppStore((s) => s.setMobileSelectedDay);
+  const setMobileCalendarView = useAppStore((s) => s.setMobileCalendarView);
   const showOnMap = useShowLessonOnMap();
   const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
@@ -191,28 +193,28 @@ export function CalendarScreen() {
     if (nowNext) showOnMap(nowNext.current);
   };
 
-  // The week grid replaces everything day-shaped under the strip: the Now/Next
-  // card and the holiday banner are about ONE day, and the grid answers both
-  // in its own terms (a now-line, a red-washed column). It also has no pull to
-  // refresh — that lives on the agenda's scroller, one tap away.
+  // Leaving Týden for Den: by tapping a day, that day; by the switch, today in
+  // this week or the shown week's first lesson day (spec 2026-10-30).
+  const openDay = (iso: string) => {
+    setMobileSelectedDay(iso);
+    setMobileCalendarView('day');
+  };
+  const switchToDen = () =>
+    setMobileSelectedDay(denLandingDay(selectedIso, lessonDates, toIso(now)));
+
   if (view === 'week') {
     return shell(
       <>
-        <DayChips
-          selectedIso={selectedIso}
-          onSelect={setMobileSelectedDay}
-          lessonDates={lessonDates}
-          // No selection, no dots, and the chips are labels — see DayChips'
-          // `view`. The arrows and the swipe move the week.
-          view="week"
-        />
-        <WeekGrid
+        <WeekBody
           lessons={dayLessons}
           selectedIso={selectedIso}
           lessonDates={lessonDates}
+          nowNext={nowNext}
+          onRoute={openRoute}
           onSelectDay={setMobileSelectedDay}
+          onOpenDay={openDay}
         />
-        <CalendarViewSwitch />
+        <CalendarViewSwitch onDay={switchToDen} />
       </>
     );
   }

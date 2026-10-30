@@ -146,26 +146,17 @@ describe('CalendarScreen — week view', () => {
   });
 
   /**
-   * Týden is about the week, not a day in it — 10 October 2026. A chip tap
-   * used to peek into Den, then briefly selected a day; swiping to another week
-   * selected one nobody chose, and the chef hat silently depended on it. Now
-   * nothing in Týden is selected, a chip is not a control, and the title names
-   * the week the strip shows.
+   * Spec 2026-10-30, decision 4: tapping a day in Týden IS the choice to look
+   * at that day — Den opens on it and Den is remembered. (Until then a chip
+   * was a label here, and before that a peek that left Týden saved.)
    */
-  it('a day in the strip is not a control in the week view', () => {
-    useAppStore.setState({ mobileCalendarView: 'week', savedCalendarView: 'week' } as never);
+  it('tapping a day opens it in Den and remembers Den', () => {
+    useAppStore.setState({ mobileCalendarView: 'week' } as never);
     render(<CalendarScreen />);
     const chip = within(screen.getByTestId('day-strip')).getByRole('button', { name: /Út 6/ });
-    // aria-disabled rather than `disabled`, so a swipe starting on it still
-    // reaches the strip on older WebKit.
-    expect(chip).toHaveAttribute('aria-disabled', 'true');
-    expect(chip).not.toBeDisabled();
-    // And out of the tab order: a keyboard stop that does nothing is a trap.
-    expect(chip).toHaveAttribute('tabindex', '-1');
-    expect(chip).not.toHaveAttribute('aria-pressed');
     fireEvent.click(chip);
-    expect(useAppStore.getState().mobileCalendarView).toBe('week');
-    expect(useAppStore.getState().mobileSelectedDayIso).toBe('2026-10-07');
+    expect(useAppStore.getState().mobileCalendarView).toBe('day');
+    expect(useAppStore.getState().mobileSelectedDayIso).toBe('2026-10-06');
   });
 
   it('the week view is titled with the week the strip shows', () => {
@@ -186,10 +177,76 @@ describe('CalendarScreen — week view', () => {
     expect(screen.getByLabelText(/Zpět na dnešek/)).toBeInTheDocument();
   });
 
-  it('the Now/Next card belongs to the day view', () => {
+  // Decision 8: the running lesson, its room and Trasa sit above the grid, and
+  // only while a lesson is running — Den's card rule.
+  it('shows the Teď strip above the grid while a lesson runs', () => {
     vi.setSystemTime(new Date('2026-10-07T15:30:00'));
     useAppStore.setState({ mobileCalendarView: 'week', now: new Date() } as never);
     render(<CalendarScreen />);
-    expect(screen.queryByTestId('now-next-card')).toBeNull();
+    const strip = screen.getByTestId('week-now-strip');
+    expect(within(strip).getByText(/Programovací jazyk Java/)).toBeTruthy();
+    expect(within(strip).getByText(/Q07/)).toBeTruthy();
+  });
+
+  it('has no Teď strip when nothing is running', () => {
+    render(<CalendarScreen />);
+    expect(screen.queryByTestId('week-now-strip')).toBeNull();
+  });
+
+  // Decision 5: the room is on the block — the code, not the campus in brackets.
+  it('a block shows the room without its campus', () => {
+    useAppStore.setState({
+      mobileCalendarView: 'week',
+      schedule: { data: [{ ...java, room: 'Q07 (Brno)' }], status: 'success' },
+    } as never);
+    render(<CalendarScreen />);
+    const block = screen.getByRole('button', { name: /Programovací jazyk Java/ });
+    expect(within(block).getByText('Q07')).toBeTruthy();
+  });
+
+  // Decision 6: the sheet learns which lesson it came from, only from Týden.
+  it('a block opens the subject carrying its lesson', () => {
+    useAppStore.setState({ mobileCalendarView: 'week' } as never);
+    render(<CalendarScreen />);
+    fireEvent.click(screen.getByRole('button', { name: /Programovací jazyk Java/ }));
+    expect(useAppStore.getState().mobileSheets.at(-1)).toMatchObject({
+      kind: 'subjectDrawer',
+      courseCode: 'EBC-PJ',
+      weekLesson: { id: 'pj' },
+    });
+  });
+
+  // Decision 12: the switch back to Den lands on today in this week…
+  it('switching to Den in this week lands on today', () => {
+    useAppStore.setState({
+      mobileCalendarView: 'week',
+      mobileSelectedDayIso: '2026-10-06',
+    } as never);
+    render(<CalendarScreen />);
+    fireEvent.click(screen.getByRole('button', { name: 'Den' }));
+    expect(useAppStore.getState().mobileCalendarView).toBe('day');
+    expect(useAppStore.getState().mobileSelectedDayIso).toBe('2026-10-07');
+  });
+
+  // …and in another week on its first day with lessons (here none: Monday).
+  it('switching to Den in another week lands on that week', () => {
+    useAppStore.setState({
+      mobileCalendarView: 'week',
+      mobileSelectedDayIso: '2026-10-14',
+    } as never);
+    render(<CalendarScreen />);
+    fireEvent.click(screen.getByRole('button', { name: 'Den' }));
+    expect(useAppStore.getState().mobileSelectedDayIso).toBe('2026-10-12');
+  });
+
+  it('in a week with lessons, the first lesson day', () => {
+    useAppStore.setState({
+      mobileCalendarView: 'week',
+      mobileSelectedDayIso: '2026-10-14',
+      schedule: { data: [{ ...java, id: 'pj2', date: '20261015' }], status: 'success' },
+    } as never);
+    render(<CalendarScreen />);
+    fireEvent.click(screen.getByRole('button', { name: 'Den' }));
+    expect(useAppStore.getState().mobileSelectedDayIso).toBe('2026-10-15');
   });
 });

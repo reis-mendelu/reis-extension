@@ -86,9 +86,10 @@ the grid never scrolls and fits the week's hours.
   on the calendar (`gesturestart` preventDefault) even though the viewport
   already says `user-scalable=no`.
 - **The Instagram week recipe stays retired.**
-- **Extension: no change.** Its week blocks already show the room, and the room
-  name opens the map (`desktopHasNoShowOnMap.test.ts`); it has no subject-sheet
-  equivalent of the "this lesson" row because it does not need one.
+- **Extension: no change.** Its week blocks already show the room with a pin,
+  and its subject drawer, opened from a block, already names that lesson's room
+  as a map button (`CourseMeta`). The phone's "this lesson" row brings the
+  phone level with it; `weekViewHasBothTrees.test.ts` pins both halves.
 
 ## Out of scope
 

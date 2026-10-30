@@ -16,11 +16,23 @@ import { describe, expect, it } from 'vitest';
  * Same for the way back to today: the phone made the header date the control
  * (and tapping the Kalendář tab again), because its header is full; the
  * extension keeps its "Dnes" button in AppHeader. Each tree has one.
+ *
+ * And the room (spec 2026-10-30). The phone removed Týden once (#540) because
+ * its blocks gave no way to the room. Both trees now answer it the same way:
+ * the block shows the room, a tap opens the subject, and the subject opened
+ * from a block names that lesson's room with a way to the map — the
+ * extension's drawer through `CourseMeta`'s room button, the phone's sheet
+ * through `WeekLessonPlace` (only from Týden: Den's row already has a pin).
  */
 const read = (p: string) => readFileSync(resolve(process.cwd(), 'src', p), 'utf8');
 
 const PHONE_FILES = [
+  'components/mobile/screens/calendar/WeekBody.tsx',
   'components/mobile/screens/calendar/WeekGrid.tsx',
+  'components/mobile/screens/calendar/WeekNowStrip.tsx',
+  'components/mobile/screens/calendar/CalendarViewSwitch.tsx',
+  'components/mobile/screens/calendar/useOpenWeekLesson.ts',
+  'components/mobile/sheets/WeekLessonPlace.tsx',
   'components/mobile/screens/calendar/WeekBlock.tsx',
   'components/mobile/screens/calendar/weekLayout.ts',
   'components/mobile/screens/calendar/useCalendarToday.ts',
@@ -41,7 +53,32 @@ describe('week view on both trees', () => {
   });
 
   it('the phone renders the week grid', () => {
-    expect(read('components/mobile/screens/CalendarScreen.tsx')).toContain('<WeekGrid');
+    expect(read('components/mobile/screens/CalendarScreen.tsx')).toContain('<WeekBody');
+    expect(read('components/mobile/screens/calendar/WeekBody.tsx')).toContain('<WeekGrid');
+  });
+
+  it('the phone switches on the calendar itself, not in Nastavení', () => {
+    expect(read('components/mobile/screens/CalendarScreen.tsx')).toContain('<CalendarViewSwitch');
+    expect(read('components/mobile/sheets/SettingsSheet.tsx')).not.toContain('CalendarView');
+  });
+
+  it('a block shows its room on both trees', () => {
+    expect(read('components/mobile/screens/calendar/WeekBlock.tsx')).toContain('<MapPin');
+    expect(read('components/CalendarEventCard.tsx')).toContain('<MapPin');
+  });
+
+  it("the subject opened from a block names that lesson's room on both trees", () => {
+    expect(read('components/SubjectFileDrawer/Header/CourseMeta.tsx')).toContain(
+      'focusRoomByCode(lesson.room)'
+    );
+    expect(read('components/mobile/screens/calendar/useOpenWeekLesson.ts')).toContain(
+      'weekLesson: lesson'
+    );
+    expect(read('components/mobile/sheets/SubjectDrawerSheet.tsx')).toContain('<WeekLessonPlace');
+  });
+
+  it("Den's tap carries no lesson: its row already has the pin", () => {
+    expect(read('components/mobile/screens/calendar/useOpenLesson.ts')).not.toContain('weekLesson');
   });
 
   it('the phone shares the desktop lane maths', () => {

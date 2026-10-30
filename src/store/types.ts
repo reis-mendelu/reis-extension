@@ -494,6 +494,12 @@ export type MobileSheet =
       courseId?: string;
       /** Tab to open on — the odevzdávárny card opens a box's subject on Záznamník. */
       initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik';
+      /**
+       * The lesson a Týden block was, set ONLY by the week grid: the sheet then
+       * says where and when that lesson is, with Trasa. From Den the row just
+       * tapped already said it, and from Předměty there is no lesson.
+       */
+      weekLesson?: BlockLesson;
     }
   | { kind: 'studyPlan' }
   | { kind: 'person'; personId: string; personName?: string }
