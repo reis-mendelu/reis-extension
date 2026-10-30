@@ -154,10 +154,14 @@ describe('SubjectDrawerSheet — renaming the subject', () => {
 
   // Release review (cubic): an Escape that ends an IME composition belongs to
   // the input method, not to the rename.
-  it('an Escape that ends an IME composition keeps the rename open', () => {
-    renderSheet();
-    fireEvent.click(screen.getByRole('button', { name: 'Přejmenovat předmět' }));
+  it('an Escape that ends an IME composition keeps the rename and the sheet', () => {
+    const sheet = { kind: 'subjectDrawer', courseCode: 'ALG', courseName: 'Algoritmizace' };
+    useAppStore.setState({ mobileSheets: [sheet] } as never);
+    render(<SheetHost />);
+    fireEvent.click(pencil());
+    fireEvent.change(field(), { target: { value: 'Algo' } });
     fireEvent.keyDown(field(), { key: 'Escape', isComposing: true });
-    expect(field()).toBeTruthy();
+    expect(useAppStore.getState().mobileSheets).toEqual([sheet]);
+    expect(field()).toBeInTheDocument();
   });
 });

@@ -34,22 +34,18 @@ const Schema = z.object({
   ),
 });
 
+/** One breakdown row of the school card; `devices` follows the card's floor (below). */
+export interface SchoolGroup {
+  key: string;
+  devices: number;
+}
+
 /**
  * What reIS can show MENDELU, all from data it already collects. Counts of
  * INSTALLS, never people; -1 means "under 10", this card's floor (stricter than
  * the console's 5, because the card is meant to leave reIS), and -2 in a
  * breakdown means hidden only to protect a smaller group.
  */
-/**
- * One breakdown row of the school card. Not the console's `UsageGroup`: its
- * floor is 10, not 5 — -1 means "under 10" — and -2 means hidden only to
- * protect a smaller group (complementary suppression).
- */
-export interface SchoolGroup {
-  key: string;
-  devices: number;
-}
-
 export interface SchoolStats {
   /** The last complete Monday–Sunday week the regulars describe. */
   weekFrom: string;

@@ -42,23 +42,32 @@ export function usePinchView({ surfaceRef, onPinchIn, onSpread }: PinchViewConfi
     let from: number | null = null;
     let fired = false;
 
-    // Only fingers ON the calendar count: one resting on the tab bar plus one
-    // dragged on the calendar is not a pinch (release review).
+    // Only fingers that STARTED on the calendar count — one resting on the tab
+    // bar plus one dragged on the calendar is not a pinch (release review). The
+    // pair is then followed by identifier, not by where it is now: a finger
+    // whose element is removed mid-gesture keeps its old, detached target
+    // (#622 review).
+    let pair: [number, number] | null = null;
     const onSurface = (e: TouchEvent) =>
       Array.from(e.touches).filter((t) => t.target instanceof Node && surface.contains(t.target));
+    const byId = (e: TouchEvent, id: number) =>
+      Array.from(e.touches).find((t) => t.identifier === id);
 
-    // Exactly two fingers set the baseline; any other count drops it, so a
-    // third finger and its lift never leave an old pair's distance behind.
+    // Exactly two fingers on the calendar set the baseline; any other count
+    // drops it, so a third finger and its lift never leave an old pair behind.
     const baseline = (e: TouchEvent) => {
       const [a, b, extra] = onSurface(e);
-      from = a && b && !extra && e.touches.length === 2 ? distance(a, b) : null;
+      const ok = a && b && !extra && e.touches.length === 2;
+      pair = ok ? [a.identifier, b.identifier] : null;
+      from = ok ? distance(a, b) : null;
       fired = false;
     };
     const onStart = baseline;
     const onMove = (e: TouchEvent) => {
-      const [a, b, extra] = onSurface(e);
-      if (from === null || fired || extra || e.touches.length !== 2 || !a || !b || from === 0)
-        return;
+      if (from === null || pair === null || fired || e.touches.length !== 2 || from === 0) return;
+      const a = byId(e, pair[0]);
+      const b = byId(e, pair[1]);
+      if (!a || !b) return;
       const scale = distance(a, b) / from;
       const { onPinchIn: pinchIn, onSpread: spread } = handlers.current;
       if (scale <= PINCH_IN_SCALE && pinchIn) {

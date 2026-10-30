@@ -52,7 +52,9 @@ export function WeekBlock({ block, cascade, gridPx, onOpen }: WeekBlockProps) {
   // Clamped to the part a later clash leaves uncovered — there the room line is
   // under the block on top, so only the padding is reserved.
   const covered = block.visible < block.height;
-  const blockPx = (block.visible / 100) * gridPx;
+  // On an iPad clashes sit side by side, so nothing covers a block: its full
+  // height decides whether the time row fits (#622 review).
+  const blockPx = ((cascade ? block.visible : block.height) / 100) * gridPx;
   const lines = cascade
     ? nameLines((block.visible / 100) * gridPx, NAME_LINE_PX, covered ? 4 : RESERVED_PX)
     : 2;

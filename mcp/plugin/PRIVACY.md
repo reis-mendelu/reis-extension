@@ -21,9 +21,9 @@ public pass-rate statistics that reIS publishes.
 - **Your IS data** goes from `is.mendelu.cz` to your computer, and from there into your
   Claude conversation, because you asked Claude about it. Anthropic's own terms and
   privacy policy cover what happens to a conversation.
-- **Public pass-rate statistics** come from `cdn.jsdelivr.net`. No identifier is sent, but
-  each request names the subject it looks up, so the set of subjects requested reveals to
-  the CDN which courses you are enrolled in.
+- **Public pass-rate statistics** come from `cdn.jsdelivr.net`. Each request names the
+  subject code Claude looks up and, like any web request, comes from your IP address; no
+  other data about you is sent.
 
 Nothing goes to reIS. reIS runs no server for this plugin, receives nothing from it,
 counts nothing and stores nothing.

@@ -47,7 +47,7 @@ function onMac(over: Partial<HookState>) {
   render(<EduroamSheet onClose={vi.fn()} />);
 }
 
-const { installStep, savedStep } = cs.eduroam.macApp;
+const { installStep, savedStep, handedStep } = cs.eduroam.macApp;
 
 afterEach(() => {
   cleanup();
@@ -68,6 +68,13 @@ describe('EduroamSheet on a Mac', () => {
   it('after a Save-panel fallback, says to open the saved file — not that Settings opened', () => {
     onMac({ status: 'done', profileRoute: 'saved' });
     expect(screen.getByText(savedStep)).toBeInTheDocument();
+    expect(screen.queryByText(installStep)).toBeNull();
+  });
+
+  // #622 review: macOS took the profile, but the pane did not open.
+  it('when the pane did not open, says to open it — not that it opened', () => {
+    onMac({ status: 'done', profileRoute: 'handed' });
+    expect(screen.getByText(handedStep)).toBeInTheDocument();
     expect(screen.queryByText(installStep)).toBeNull();
   });
 });

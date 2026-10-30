@@ -409,4 +409,21 @@ describe('CalendarScreen — week view', () => {
     expect(useAppStore.getState().mobileCalendarView).toBe('day');
     expect(container).toBeTruthy();
   });
+
+  // #622 review: a finger that started on the calendar stays in the pinch even
+  // if the element under it is removed mid-gesture (its target is detached).
+  it('a pinch keeps its fingers when the element under one is removed', () => {
+    render(<CalendarScreen />);
+    const el = screen.getByTestId('calendar-screen');
+    const gone = document.createElement('div');
+    const t = (id: number, x: number, target: Element) => ({
+      identifier: id,
+      clientX: x,
+      clientY: 300,
+      target,
+    });
+    fireEvent.touchStart(el, { touches: [t(1, 80, el), t(2, 320, el)] });
+    fireEvent.touchMove(el, { touches: [t(1, 160, gone), t(2, 240, el)] });
+    expect(useAppStore.getState().mobileCalendarView).toBe('week');
+  });
 });

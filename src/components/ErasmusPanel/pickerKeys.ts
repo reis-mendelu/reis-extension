@@ -19,7 +19,8 @@ export function pickerKeyDown<T>(
   }
   // Only from the list on screen: after Escape it still holds the old results,
   // and Enter picked one nobody could see (release review).
-  if (e.key === 'Enter' && isOpen && first !== undefined) {
+  // Not the Enter that commits an IME composition: that is the input method's.
+  if (e.key === 'Enter' && isOpen && !e.nativeEvent.isComposing && first !== undefined) {
     pick(first);
     setOpen(false);
   }

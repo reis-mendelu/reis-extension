@@ -41,8 +41,17 @@ export function EdgeScrollButtons({ scrollerRef }: { scrollerRef: RefObject<HTML
   const forwardRef = useRef<HTMLButtonElement>(null);
   const focused = useRef<'back' | 'forward' | null>(null);
   useLayoutEffect(() => {
-    if (focused.current === 'forward' && !forward) backRef.current?.focus();
-    if (focused.current === 'back' && !back) forwardRef.current?.focus();
+    // WebKit and Firefox fire no blur when a focused node is removed, so the
+    // mark is cleared here whenever its button is gone, handed over or not —
+    // a stale mark would later pull focus from wherever the student is.
+    if (focused.current === 'forward' && !forward) {
+      focused.current = null;
+      backRef.current?.focus();
+    }
+    if (focused.current === 'back' && !back) {
+      focused.current = null;
+      forwardRef.current?.focus();
+    }
   }, [back, forward]);
   if (isTouch) return null;
   const step = (dir: 1 | -1) => {

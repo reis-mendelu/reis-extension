@@ -43,4 +43,12 @@ describe('WeekBlock on an iPad', () => {
     render(<WeekBlock block={block(20)} cascade={false} gridPx={600} onOpen={vi.fn()} />);
     expect(screen.getByText('14:00 – 14:50')).toBeTruthy();
   });
+
+  // #622 review: on an iPad a clash sits side by side, so a block "covered" on
+  // paper (visible < height) is not; its full height decides.
+  it('keeps the time row on a side-by-side block covered only on paper', () => {
+    const b = { ...block(20), visible: 5 };
+    render(<WeekBlock block={b} cascade={false} gridPx={600} onOpen={vi.fn()} />);
+    expect(screen.getByText('14:00 – 14:50')).toBeTruthy();
+  });
 });

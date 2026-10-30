@@ -41,8 +41,8 @@ export const READABLE_PLAN_PX = 250;
  * its own fit zoom (it is narrower than twice READABLE_PLAN_PX):
  *
  * - the building is drawn at least READABLE_PLAN_PX across, or
- * - the camera is at PLAN_FOCUS_MAX_ZOOM, the closest a plan is ever opened
- *   at. A small building (E, 204px there) otherwise never qualified on a
+ * - the camera is at PLAN_FOCUS_MAX_ZOOM, the ceiling of a building fit
+ *   (roomFocusView). A small building (E, 204px there) otherwise never qualified on a
  *   window big enough to fit it closer.
  *
  * A zoomed-out route fit still draws the plan far below both, so it still

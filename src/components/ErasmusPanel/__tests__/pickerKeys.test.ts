@@ -2,8 +2,12 @@ import { describe, it, expect, vi } from 'vitest';
 import type { KeyboardEvent } from 'react';
 import { pickerKeyDown } from '../pickerKeys';
 
-const key = (k: string) =>
-  ({ key: k, preventDefault: vi.fn() }) as unknown as KeyboardEvent & {
+const key = (k: string, isComposing = false) =>
+  ({
+    key: k,
+    preventDefault: vi.fn(),
+    nativeEvent: { isComposing },
+  }) as unknown as KeyboardEvent & {
     preventDefault: () => void;
   };
 
@@ -19,6 +23,13 @@ describe('pickerKeyDown', () => {
   it('Enter picks nothing while the list is closed', () => {
     const pick = vi.fn();
     pickerKeyDown(key('Enter'), false, vi.fn(), 'Wien', pick);
+    expect(pick).not.toHaveBeenCalled();
+  });
+
+  // #622 review: Enter that commits an IME composition is the input method's.
+  it('Enter that commits an IME composition picks nothing', () => {
+    const pick = vi.fn();
+    pickerKeyDown(key('Enter', true), true, vi.fn(), 'Wien', pick);
     expect(pick).not.toHaveBeenCalled();
   });
 });

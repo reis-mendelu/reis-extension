@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Toaster } from '../ui/sonner';
+import { toastOffset } from '../mobile/toastOffset';
 import { SuggestionsToast } from './SuggestionsToast';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -56,7 +57,12 @@ export function AdminConsole() {
   if (isPhone) {
     return (
       <>
-        <Toaster position="top-center" />
+        {/* The phone's offset, so a toast clears the status bar (#622 review). */}
+        <Toaster
+          position="top-center"
+          offset={toastOffset(false)}
+          mobileOffset={toastOffset(false)}
+        />
         <SuggestionsToast />
         <MobileAdminConsole />
       </>

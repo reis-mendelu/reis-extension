@@ -252,13 +252,21 @@ describe('no student data leaves the device', () => {
   });
 
   it('only reviewed files talk to Supabase', () => {
-    // Both clients: the student app's `supabase` and the admin console's
-    // `adminAuthClient` — the second slipped past this check entirely until the
-    // 5.6.0 release review.
-    const callers = files
-      .filter((f) => /\b(supabase|adminAuthClient)\s*\.\s*(rpc|from)\s*\(/.test(f.text))
-      .map((f) => f.path)
-      .filter((p) => !SUPABASE_CALLERS.has(p) && !ADMIN_CALLERS.has(p));
+    // Both clients, each against its own list: the student app's `supabase`
+    // against SUPABASE_CALLERS, the admin console's `adminAuthClient` against
+    // ADMIN_CALLERS. The second slipped past this check entirely until the
+    // 5.6.0 release review, and an admin file must not gain a student-client
+    // call by being on the admin list (#622 review).
+    const callers = [
+      ...files
+        .filter((f) => /\bsupabase\s*\.\s*(rpc|from)\s*\(/.test(f.text))
+        .map((f) => f.path)
+        .filter((p) => !SUPABASE_CALLERS.has(p)),
+      ...files
+        .filter((f) => /\badminAuthClient\s*\.\s*(rpc|from)\s*\(/.test(f.text))
+        .map((f) => f.path)
+        .filter((p) => !ADMIN_CALLERS.has(p)),
+    ];
 
     expect(
       callers,
@@ -271,13 +279,14 @@ describe('no student data leaves the device', () => {
   it('sends no student-identifying field to Supabase', () => {
     const offences: string[] = [];
     for (const f of files) {
-      if (!/\bsupabase\s*\.\s*(rpc|from)\s*\(/.test(f.text)) continue;
+      // Both clients: an admin-console call carries no student identifier either.
+      if (!/\b(supabase|adminAuthClient)\s*\.\s*(rpc|from)\s*\(/.test(f.text)) continue;
       const lines = f.text.split('\n');
       lines.forEach((line, i) => {
         // Look inside the payload region of a Supabase call: the call line and
         // the object literal that follows it.
         const near = lines.slice(Math.max(0, i - 2), i + 14).join('\n');
-        if (!/\bsupabase\s*\.\s*(rpc|from)\s*\(/.test(near)) return;
+        if (!/\b(supabase|adminAuthClient)\s*\.\s*(rpc|from)\s*\(/.test(near)) return;
         for (const name of IDENTIFYING) {
           if (IDENTIFYING_EXCEPTIONS[f.path]?.includes(name)) continue;
           // `p_student_id:` is the column name on legacy tables; flag only when

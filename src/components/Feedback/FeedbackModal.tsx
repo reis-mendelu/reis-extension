@@ -104,6 +104,8 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
   const hasDraft =
     !isSuccess &&
     (attachments.screenshot !== null ||
+      // A screenshot still being encoded is already chosen (#622 review).
+      attachments.encoding ||
       [message, contact, title === (initialTitle ?? '') ? '' : title].some((v) => v.trim()));
   const handleClose = useCloseReport(isOpen, onClose, hasDraft);
 
