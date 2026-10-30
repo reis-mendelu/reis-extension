@@ -159,4 +159,17 @@ describe('weekLayout — review findings', () => {
     const lefts = [0, 1, 2, 3].map((lane) => blockBox(lane, 4, true).left);
     expect(new Set(lefts).size).toBe(4);
   });
+
+  // Release review (cubic): percentages are floats, so a lesson ending exactly
+  // where the next one starts read as an overlap and lost its room line.
+  it('back-to-back lessons do not cover each other', () => {
+    // 06:10–07:50 then 07:50–09:30 in a 6–14 grid: the float sum of the
+    // first block's top and height lands a hair past the second's top.
+    const range = { start: 6, end: 14 };
+    const placed = placeDay([lesson('a', '06:10', '07:50'), lesson('b', '07:50', '09:30')], range);
+    for (const p of placed) {
+      expect(p.visible).toBeCloseTo(p.height, 9);
+      expect(p.onTop).toBe(false);
+    }
+  });
 });

@@ -44,7 +44,8 @@ describe('Halloween decorations', () => {
 
   // The date title turns into "back to today" once you leave today, so a
   // pumpkin beside it read as one more thing to tap (Dominik, 2026-10-30).
-  // The pumpkins moved into the day's end and the week grid.
+  // The pumpkins moved into the day's end and the week grid; an empty day's
+  // icon is a pumpkin too (CalendarEmptyDay), which Dominik saw and kept.
   it('puts no pumpkin on any title', () => {
     useAppStore.setState({ now: IN_WEEK });
     const pumpkins = (c: HTMLElement) => c.querySelectorAll('ellipse[fill="#f97316"]').length;

@@ -65,6 +65,8 @@ describe('SubjectDrawerSheet — the lesson a Týden block was', () => {
   it('says where and when the lesson is, and routes to it', () => {
     renderSheet(lesson('Q01'));
     const row = screen.getByTestId('week-lesson-place');
+    // A named group, so assistive tech announces "Tato hodina" (release review).
+    expect(screen.getByRole('group', { name: 'Tato hodina' })).toBe(row);
     expect(within(row).getByText(/Q01/)).toBeTruthy();
     expect(within(row).getByText(/10:00–11:50/)).toBeTruthy();
     expect(within(row).getByText(/30\. října/)).toBeTruthy();

@@ -12,11 +12,10 @@ export interface DayChipsProps {
   /** Compact IS dates (YYYYMMDD) that have at least one lesson. */
   lessonDates: ReadonlySet<string>;
   /**
-   * The week view marks no selection and no dots, and its chips are not
-   * controls: Týden is about the week, so the selected day is only the week's
-   * anchor, moved by the arrows and the swipe. A chip tap used to open Den,
-   * then to select a day the chef hat depended on — "unintuitive". The grid
-   * below already shows each day's lessons.
+   * The week view marks no selection and no dots: Týden is about the week, so
+   * the selected day is only the week's anchor, moved by the arrows and the
+   * swipe, and the grid below already shows each day's lessons. Its chips are
+   * still controls — a tapped day opens in Den (`onOpenDay`).
    */
   view?: 'day' | 'week';
   /**

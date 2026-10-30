@@ -103,12 +103,17 @@ export function placeDay(lessons: BlockLesson[], range: HourRange): PlacedBlock[
     })
     .sort((a, b) => a.top - b.top || a.lane - b.lane);
   placed.forEach((block, i) => (block.order = i));
+  // Overlap is decided in whole minutes, never in percentages: the float sum
+  // of a block's top and height can land a hair past the next block's top, and
+  // back-to-back lessons then read as a clash (release review: 731 such pairs).
+  const startOf = (b: PlacedBlock) => minutesOf(b.lesson.startTime);
+  const endOf = (b: PlacedBlock) => startOf(b) + b.lesson.renderedMinutes;
   for (const block of placed) {
     for (const over of placed) {
       // Drawn later and starting inside this block's span: it covers this
       // block from its own top down.
       const covers =
-        over.order > block.order && over.top >= block.top && over.top < block.top + block.height;
+        over.order > block.order && startOf(over) >= startOf(block) && startOf(over) < endOf(block);
       if (!covers) continue;
       block.visible = Math.min(block.visible, over.top - block.top);
       over.onTop = true;

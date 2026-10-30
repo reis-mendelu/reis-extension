@@ -29,6 +29,7 @@ export function WeekLessonPlace({ lesson }: { lesson: BlockLesson }) {
   return (
     <div
       data-testid="week-lesson-place"
+      role="group"
       aria-label={t('mobile.calendar.thisLesson')}
       className="mx-4 mb-2 mt-1 flex items-center gap-3 rounded-2xl border border-primary/25 bg-base-100 py-2 pl-3 pr-2"
     >

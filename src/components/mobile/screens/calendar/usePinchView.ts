@@ -42,17 +42,23 @@ export function usePinchView({ surfaceRef, onPinchIn, onSpread }: PinchViewConfi
     let from: number | null = null;
     let fired = false;
 
+    // Only fingers ON the calendar count: one resting on the tab bar plus one
+    // dragged on the calendar is not a pinch (release review).
+    const onSurface = (e: TouchEvent) =>
+      Array.from(e.touches).filter((t) => t.target instanceof Node && surface.contains(t.target));
+
     // Exactly two fingers set the baseline; any other count drops it, so a
     // third finger and its lift never leave an old pair's distance behind.
     const baseline = (e: TouchEvent) => {
-      const [a, b] = [e.touches[0], e.touches[1]];
-      from = e.touches.length === 2 && a && b ? distance(a, b) : null;
+      const [a, b, extra] = onSurface(e);
+      from = a && b && !extra && e.touches.length === 2 ? distance(a, b) : null;
       fired = false;
     };
     const onStart = baseline;
     const onMove = (e: TouchEvent) => {
-      const [a, b] = [e.touches[0], e.touches[1]];
-      if (from === null || fired || e.touches.length !== 2 || !a || !b || from === 0) return;
+      const [a, b, extra] = onSurface(e);
+      if (from === null || fired || extra || e.touches.length !== 2 || !a || !b || from === 0)
+        return;
       const scale = distance(a, b) / from;
       const { onPinchIn: pinchIn, onSpread: spread } = handlers.current;
       if (scale <= PINCH_IN_SCALE && pinchIn) {
