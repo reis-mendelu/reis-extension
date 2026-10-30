@@ -3,6 +3,7 @@ import { GardenPlaceCard } from '../../../CampusMap/GardenPlaceCard';
 import { SocietyPinCard } from '../../../CampusMap/SocietyPinCard';
 import { MapEventsSection } from '../../../CampusMap/MapEventsSection';
 import { RoomDirections } from '../../../CampusMap/RoomDirections';
+import { LibraryCard } from './library/LibraryCard';
 import type { MapEvent } from '../../../../types/events';
 import type { GardenPlace, SocietyPin } from '../../../../types/campusMap';
 
@@ -13,6 +14,8 @@ export interface MapPanelBodyProps {
   selectedGardenPlace?: GardenPlace | null;
   /** A society pin (`map_pins`), tapped on the map. Optional, as above. */
   selectedSocietyPin?: SocietyPin | null;
+  /** The library's rooms, or one of them (`featureId`), on phone and iPad. */
+  selectedLibrary?: { featureId: number | null } | null;
   /** The rail frames its own content, so the card inside it renders flush. */
   flush?: boolean;
 }
@@ -37,6 +40,7 @@ export function MapPanelBody({
   selectedEvent,
   selectedGardenPlace = null,
   selectedSocietyPin = null,
+  selectedLibrary = null,
   flush = false,
 }: MapPanelBodyProps) {
   if (selectedEvent) {
@@ -45,6 +49,9 @@ export function MapPanelBody({
         <EventDetailCard event={selectedEvent} flush={flush} />
       </div>
     );
+  }
+  if (selectedLibrary) {
+    return <LibraryCard featureId={selectedLibrary.featureId} flush={flush} />;
   }
   if (selectedGardenPlace) {
     return (

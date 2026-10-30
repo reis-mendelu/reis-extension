@@ -23,6 +23,7 @@ import { initLeafletMap, flyAndReveal, drawLandmarks } from './mapLayers';
 import { drawRemotePlaces, REMOTE, REMOTE_IDS } from './remoteLayers';
 import { drawCampusPaths } from './pathLayers';
 import { roomLabelsHidden } from './roomLabels';
+import { applyRoomTints, type RoomPoly } from './roomTints';
 import { drawRoomRouteChip, chipShown, clampRoomChip } from './roomRouteChip';
 import { translate } from '../../i18n/translate';
 import { CAMPUS_NAVIGATION_ENABLED } from '../../utils/routing/navigationEnabled';
@@ -86,7 +87,7 @@ export function MapCanvas() {
   const keepViewRef = useRef(false);
   // Live room polygons keyed by placeId, with their unselected base style — lets
   // a plain map click re-highlight in place without a full redraw or camera move.
-  const roomPolysRef = useRef<Map<number, { poly: L.Polygon; base: L.PathOptions }>>(new Map());
+  const roomPolysRef = useRef<Map<number, RoomPoly>>(new Map());
   /** The "Najdi cestu" pill pinned to the selected room. Its own group, so a
    *  selection change never redraws the plan — a redraw moves the camera. */
   const roomChipRef = useRef<L.LayerGroup>(L.layerGroup());
@@ -419,7 +420,7 @@ export function MapCanvas() {
       );
       if (!struct) {
         poly.on('click', () => select.selectMapRoom(p));
-        roomPolysRef.current.set(p.id, { poly, base: effectiveBase });
+        roomPolysRef.current.set(p.id, { poly, base: effectiveBase, plain: effectiveBase });
         if (p.name) {
           // Label sizable rooms permanently (MyMENDELU-style); tiny rooms only on
           // hover, to avoid a wall of overlapping numbers.
@@ -450,6 +451,7 @@ export function MapCanvas() {
         targetBounds = poly.getBounds();
       }
     }
+    applyRoomTints(roomPolysRef.current, select.mapRoomTints, selectedId, SELECTED_STYLE);
     // Which box to frame is a decision, so it lives in a tested pure module:
     // a selected room frames its BUILDING, not its own few metres of floor.
     // See focusBounds.roomFocusView.
@@ -473,6 +475,16 @@ export function MapCanvas() {
     // `railRef` at the moment of focus. As dependencies they made a resize drag
     // re-run this whole effect sixty times a second, and it resets the camera.
   }, [activeBuildingId, activeFloorId, roomsByBuilding, focusReq, focusTarget, isPhone]);
+
+  // A screen's room tints (the library's bookable rooms) arrive after the floor
+  // is drawn as often as before it, so they are applied in place here too.
+  const roomTints = useAppStore((s) => s.mapRoomTints);
+  useEffect(() => {
+    const sel = useAppStore.getState().mapSelection;
+    const selId =
+      sel?.kind === 'room' ? sel.room.id : sel?.kind === 'roomRef' ? sel.entry.placeId : null;
+    applyRoomTints(roomPolysRef.current, roomTints, selId, SELECTED_STYLE);
+  }, [roomTints]);
 
   // A building with no outline of its own (D05 → building D) still has to
   // show which one it is; the camera move alone left the map looking unchanged.

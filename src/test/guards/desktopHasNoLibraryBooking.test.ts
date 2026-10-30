@@ -27,10 +27,30 @@ const MOBILE_ONLY = [
   'src/mobile/library/createBooking.ts',
   'src/mobile/library/cancelBooking.ts',
   'src/mobile/library/transport.ts',
+  'src/mobile/library/slots.ts',
+  'src/mobile/library/bookingService.ts',
+  'src/mobile/library/bookingActions.ts',
+  'src/mobile/library/libraryStore.ts',
+  'src/mobile/library/libraryModel.ts',
+  'src/mobile/library/libraryBlock.ts',
+  'src/components/mobile/screens/map/library/LibraryPinLayer.tsx',
+  'src/components/mobile/screens/map/library/LibraryTints.tsx',
+  'src/components/mobile/screens/map/library/LibraryCard.tsx',
+  'src/components/mobile/sheets/LibraryBookSheet.tsx',
+  'src/components/mobile/sheets/LibraryCancelSheet.tsx',
 ];
 
 /** Files outside src/mobile/library that may reach it, each on the phone tree. */
-const ALLOWED_IMPORTERS = new Set<string>([]);
+const ALLOWED_IMPORTERS = new Set<string>([
+  'src/components/mobile/screens/map/library/LibraryPinLayer.tsx',
+  'src/components/mobile/screens/map/library/LibraryTints.tsx',
+  'src/components/mobile/screens/map/library/LibraryCard.tsx',
+  'src/components/mobile/sheets/LibraryBookSheet.tsx',
+  'src/components/mobile/sheets/LibraryCancelSheet.tsx',
+  // Tapping a booking's calendar block opens the cancel sheet (Den and Týden).
+  'src/components/mobile/screens/calendar/useOpenLesson.ts',
+  'src/components/mobile/screens/calendar/useOpenWeekLesson.ts',
+]);
 
 const root = process.cwd();
 function walk(dir: string, out: string[] = []): string[] {
@@ -81,7 +101,7 @@ describe('library booking stays on the phone tree', () => {
 
   it('nothing else imports the booking code or names its host', () => {
     const REACHES =
-      /(from\s+|import\s*\(\s*|import\s+)['"][^'"]*\/api\/library\/[^'"]*['"]|bookings\.cloud\.microsoft/i;
+      /(from\s+|import\s*\(\s*|import\s+)['"][^'"]*\/mobile\/library\/[^'"]*['"]|bookings\.cloud\.microsoft/i;
     expect(REACHES.test("import { x } from '../mobile/library/createBooking';")).toBe(true);
     const offenders = walk(join(root, 'src'))
       .filter((f) => !f.startsWith('src/mobile/library/') && !ALLOWED_IMPORTERS.has(f))

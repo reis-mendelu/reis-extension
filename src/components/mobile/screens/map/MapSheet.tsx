@@ -13,6 +13,7 @@ import { useTranslation } from '../../../../hooks/useTranslation';
 import { MapPanelBody } from './MapPanelBody';
 import { MapSheetPeek } from './MapSheetPeek';
 import { MapSheetHeader } from './MapSheetHeader';
+import { libraryOf } from './library/libraryOf';
 import { useRoomDirections } from '../../../CampusMap/useRoomDirections';
 import { floorText } from '../../../CampusMap/floorText';
 import { useSafeBottom } from '../../../../hooks/ui/useSafeBottom';
@@ -58,7 +59,10 @@ export function MapSheet() {
   const selectedGardenPlace = selection?.kind === 'gardenPlace' ? selection.place : null;
   // A society pin likewise.
   const selectedSocietyPin = selection?.kind === 'societyPin' ? selection.pin : null;
-  const selectedCard = selectedEvent || selectedGardenPlace || selectedSocietyPin;
+  // The library's room list, or one of its rooms (also when tapped on the plan).
+  const selectedLibrary = libraryOf(selection);
+  const selectedCard =
+    selectedEvent || selectedGardenPlace || selectedSocietyPin || selectedLibrary;
 
   // `peek` is the only stop that hides the LIST. It is no longer blank — it
   // shows the next event (`MapSheetPeek`) — but one row is not the week, which
@@ -133,7 +137,8 @@ export function MapSheet() {
       !selection ||
       (selection.kind !== 'event' &&
         selection.kind !== 'gardenPlace' &&
-        selection.kind !== 'societyPin')
+        selection.kind !== 'societyPin' &&
+        !libraryOf(selection))
     )
       return;
     // 'half', not 'expanded' — and the height below hugs the card anyway. Any
@@ -291,9 +296,20 @@ export function MapSheet() {
         <>
           <MapSheetHeader
             showingCard={!!selectedCard}
-            heading={directions ? `${directions.label} · ${floorText(directions.level, t)}` : null}
+            heading={
+              selectedLibrary
+                ? t('mobile.library.title')
+                : directions
+                  ? `${directions.label} · ${floorText(directions.level, t)}`
+                  : null
+            }
             onCollapse={toggle}
-            onBack={clearMapSelection}
+            // From one room Back returns to the list of rooms, not to nothing.
+            onBack={
+              selectedLibrary?.featureId != null
+                ? () => useAppStore.setState({ mapSelection: { kind: 'library' } })
+                : clearMapSelection
+            }
           />
           {/* pb-24 clears the floating BottomNav, which is positioned against
               the SCREEN and draws over the sheet. */}
@@ -302,6 +318,7 @@ export function MapSheet() {
               selectedEvent={selectedEvent}
               selectedGardenPlace={selectedGardenPlace}
               selectedSocietyPin={selectedSocietyPin}
+              selectedLibrary={selectedLibrary}
             />
           </div>
         </>

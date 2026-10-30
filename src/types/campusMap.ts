@@ -247,6 +247,12 @@ export interface RoomIndexEntry {
   placeId: number;
 }
 
+/** A colour and a permanent label a screen puts on one room of the open floor. */
+export interface RoomTint {
+  fill: string;
+  label: string;
+}
+
 // Unified selection for the detail panel and search results.
 export type MapSelection =
   | { kind: 'room'; room: RoomProperties }
@@ -260,5 +266,7 @@ export type MapSelection =
   | { kind: 'placedRoom'; label: string; display: string }
   | { kind: 'gardenPlace'; place: GardenPlace } // one of the botanical garden's places
   | { kind: 'societyPin'; pin: SocietyPin } // a society's logo on the map for a while
+  // the library's bookable study rooms (phone and iPad): the list, or one room (`featureId`)
+  | { kind: 'library'; featureId?: number }
   // a society event pin
   | { kind: 'event'; event: import('./events').MapEvent };

@@ -69,6 +69,8 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   activeBuildingId: null,
   activeFloorId: null,
   mapSelection: null,
+  mapRoomTints: {},
+  setMapRoomTints: (mapRoomTints) => set({ mapRoomTints }),
   roomsByBuilding: {},
   buildingModels: {},
   mapTilt: { phase: 'flat', view: null },

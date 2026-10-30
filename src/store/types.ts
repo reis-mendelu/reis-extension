@@ -534,7 +534,11 @@ export type MobileSheet =
   // inside CalendarScreen while its button shipped on every screen's header —
   // so it opened from one tab out of five.
   | { kind: 'bulletin' }
-  | { kind: 'confirm'; confirmId: string };
+  | { kind: 'confirm'; confirmId: string }
+  // Library study rooms (phone and iPad): confirm one hour, or cancel a booking
+  // from its calendar block.
+  | { kind: 'libraryBook'; featureId: number; day: string; hour: number }
+  | { kind: 'libraryCancel'; eventId: string };
 
 export type MobileCalendarView = 'day' | 'week';
 
@@ -602,6 +606,9 @@ export interface MapSlice {
   activeBuildingId: number | null;
   activeFloorId: number | null;
   mapSelection: MapSelection | null;
+  /** Rooms of the open floor drawn in a colour and named, by room id. Empty unless a screen sets it. */
+  mapRoomTints: Record<number, import('../types/campusMap').RoomTint>;
+  setMapRoomTints: (tints: Record<number, import('../types/campusMap').RoomTint>) => void;
   roomsByBuilding: Record<number, RoomsCollection>;
   mapLoadingBuilding: number | null;
   mapSearchQuery: string;

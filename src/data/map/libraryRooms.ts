@@ -36,6 +36,9 @@ export interface LibraryRoom {
   kind: LibraryRoomKind;
   nameCs: string;
   nameEn: string;
+  /** The short name drawn on the room itself. */
+  labelCs: string;
+  labelEn: string;
   seats: number;
   serviceId: string;
   staffMemberId: string;
@@ -47,6 +50,8 @@ export const LIBRARY_ROOMS: readonly LibraryRoom[] = [
     kind: 'individual',
     nameCs: 'Individuální studovna 1',
     nameEn: 'Individual Study Room 1',
+    labelCs: 'Ind. 1',
+    labelEn: 'Ind. 1',
     seats: 1,
     serviceId: '05921bc4-327d-4cc2-b499-3b3ee4603e32',
     staffMemberId: '38efbb39-7a31-4526-bb7e-c34504f1a539',
@@ -56,6 +61,8 @@ export const LIBRARY_ROOMS: readonly LibraryRoom[] = [
     kind: 'individual',
     nameCs: 'Individuální studovna 2',
     nameEn: 'Individual Study Room 2',
+    labelCs: 'Ind. 2',
+    labelEn: 'Ind. 2',
     seats: 1,
     serviceId: 'e2b362f0-0294-45ff-97e0-1e80ef1e9f51',
     staffMemberId: 'cb31b250-257c-45f5-a79e-957300aea3a6',
@@ -65,6 +72,8 @@ export const LIBRARY_ROOMS: readonly LibraryRoom[] = [
     kind: 'team',
     nameCs: 'Týmová studovna 1',
     nameEn: 'Team Study Room 1',
+    labelCs: 'Tým 1',
+    labelEn: 'Team 1',
     seats: 10,
     serviceId: '5c7477a7-4afd-4c5b-bc9f-c157c14b2972',
     staffMemberId: 'e9c87efa-0ea7-4d3e-9f9a-9e51c5775474',
@@ -74,6 +83,8 @@ export const LIBRARY_ROOMS: readonly LibraryRoom[] = [
     kind: 'team',
     nameCs: 'Týmová studovna 2',
     nameEn: 'Team Study Room 2',
+    labelCs: 'Tým 2',
+    labelEn: 'Team 2',
     seats: 6,
     serviceId: 'ff081e72-01eb-4778-a6dc-d5139596cb93',
     staffMemberId: 'ee81403d-0312-49e8-a9cd-bca3be101c32',
@@ -83,6 +94,8 @@ export const LIBRARY_ROOMS: readonly LibraryRoom[] = [
     kind: 'team',
     nameCs: 'Studovna IC levá',
     nameEn: 'Study Room IC left',
+    labelCs: 'IC levá',
+    labelEn: 'IC left',
     seats: 6,
     serviceId: '7d0f31df-8b21-42d0-994c-f42d1de78093',
     staffMemberId: '2e10ced2-1057-46c5-a2df-ef90fc1ecdcc',
@@ -92,6 +105,8 @@ export const LIBRARY_ROOMS: readonly LibraryRoom[] = [
     kind: 'team',
     nameCs: 'Studovna IC pravá',
     nameEn: 'Study Room IC right',
+    labelCs: 'IC pravá',
+    labelEn: 'IC right',
     seats: 6,
     serviceId: 'c83c7c2c-c1e5-404c-8927-7254015b6930',
     staffMemberId: '548315e4-e230-44ab-b23b-19a643c2d03c',
