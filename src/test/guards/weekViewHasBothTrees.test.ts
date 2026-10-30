@@ -47,7 +47,42 @@ const PHONE_FILES = [
   'components/mobile/nav/BottomNav.tsx',
 ];
 
+/**
+ * Decided phone-only parts of Týden's return (spec 2026-10-30), named so the
+ * tree-parity hook does not ask about them again:
+ *
+ * - the PINCH between Den and Týden (`usePinchView.ts`, and `useSwipeSteps.ts`
+ *   standing down on a second finger). The extension is used with a mouse and
+ *   has no two-finger gesture to map it to; its week is always on screen.
+ * - the floating Den/Týden switch and the band that clears it
+ *   (`CalendarViewSwitch.tsx`, `calendarBottomPad.ts`): the extension has one
+ *   view, the week, and nothing to switch.
+ * - the phone's own week layout and chrome, which the extension draws its own
+ *   way (`WeeklyCalendar/`): `WeekBody.tsx`, `WeekGrid.tsx`, `WeekBlock.tsx`,
+ *   `weekLayout.ts`, `WeekNowStrip.tsx`, `useOpenWeekLesson.ts`,
+ *   `useCalendarTitle.ts`, `useElementHeight.ts`, `DayChip.tsx`,
+ *   `DayChips.tsx`, `DayBody.tsx`, `ScreenHeader.tsx`, `HeaderActions.tsx`,
+ *   `WeekMenuButton.tsx`, `MenuSheet.tsx`, `MenuDayTabs.tsx`, `SheetHost.tsx`,
+ *   `SubjectDrawerSheet.tsx`, `WeekLessonPlace.tsx`, `CalendarScreen.tsx`,
+ *   `calendarResume.ts`, `formatWeekRange.ts`, `weekDays.ts`. The capability
+ *   each serves is on both trees; the tests below pin that.
+ */
+const PHONE_ONLY_BY_DESIGN = [
+  'components/mobile/screens/calendar/usePinchView.ts',
+  'components/mobile/primitives/useSwipeSteps.ts',
+  'components/mobile/screens/calendar/CalendarViewSwitch.tsx',
+  'components/mobile/screens/calendar/calendarBottomPad.ts',
+];
+
 describe('week view on both trees', () => {
+  it.each(PHONE_ONLY_BY_DESIGN)('%s exists (phone-only by design)', (file) => {
+    expect(() => read(file)).not.toThrow();
+  });
+
+  it('the extension has no pinch: it is used with a mouse', () => {
+    expect(read('components/WeeklyCalendar/WeeklyCalendarGrid.tsx')).not.toMatch(/touches|pinch/i);
+  });
+
   it.each(PHONE_FILES)('%s exists', (file) => {
     expect(() => read(file)).not.toThrow();
   });
