@@ -1330,6 +1330,7 @@
       "nextWeek": "Next week",
       "loading": "Loading your timetable…",
       "holiday": "Public holiday",
+      "holidayShort": "holiday",
       "teachingStarts": "Teaching starts {date}",
       "recentFiles": "Recently opened",
       "backToToday": "Back to today",

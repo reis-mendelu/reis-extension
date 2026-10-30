@@ -15,6 +15,12 @@ export interface DayChipProps {
   showDot: boolean;
   /** Selects the day in Den; in Týden it opens the day in Den. Absent = a label. */
   onClick?: () => void;
+  /**
+   * Týden only: the word under a holiday ("svátek"). Its column in the grid is
+   * washed red and empty, and that alone did not say why — Dominik on the
+   * Pixel, 28 Oct 2026. Set on every Týden chip, so every slot is one height.
+   */
+  holidayWord?: string;
 }
 
 /** One day of the strip — see DayChips for the row around it. */
@@ -27,6 +33,7 @@ export function DayChip({
   hasLessons,
   showDot,
   onClick,
+  holidayWord,
 }: DayChipProps) {
   const weekday = new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(date);
   const label = weekday.charAt(0).toUpperCase() + weekday.slice(1);
@@ -107,7 +114,14 @@ export function DayChip({
           lessons and washes a holiday's column red, so the dots there said
           nothing — "the bullets below the days are useless in the weekly
           view" — and the slot keeps the strip one height in both views. */}
-      {showDot && holiday ? (
+      {holidayWord !== undefined ? (
+        // Týden: the slot is a line of text tall on every chip, so a week
+        // with a holiday is not a different height from one without.
+        // --tone-error, not error: raw red on the light page is under AA.
+        <span className="mx-auto block h-3 text-[10px] font-medium leading-3 text-[var(--tone-error)]">
+          {holiday ? holidayWord : null}
+        </span>
+      ) : showDot && holiday ? (
         <span
           data-testid="day-chip-holiday"
           className="mx-auto mt-0.5 block h-1 w-1 rounded-full bg-error"

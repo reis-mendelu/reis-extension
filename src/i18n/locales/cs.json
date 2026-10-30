@@ -1330,6 +1330,7 @@
       "nextWeek": "Další týden",
       "loading": "Načítám rozvrh…",
       "holiday": "Státní svátek",
+      "holidayShort": "svátek",
       "teachingStarts": "Výuka začíná {date}",
       "recentFiles": "Naposledy otevřené",
       "backToToday": "Zpět na dnešek",

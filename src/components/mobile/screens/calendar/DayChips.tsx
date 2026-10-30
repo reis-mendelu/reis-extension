@@ -151,6 +151,7 @@ export function DayChips({
               isToday={iso === todayIso}
               hasLessons={lessonDates.has(toCompact(iso))}
               showDot={view === 'day'}
+              holidayWord={view === 'week' ? t('mobile.calendar.holidayShort') : undefined}
               onClick={view === 'day' ? () => onSelect(iso) : onOpenDay && (() => onOpenDay(iso))}
             />
           );

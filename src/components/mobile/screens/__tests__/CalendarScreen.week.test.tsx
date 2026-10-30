@@ -296,29 +296,18 @@ describe('CalendarScreen — week view', () => {
     expect(useAppStore.getState().mobileCalendarView).toBe('day');
   });
 
-  // "It just shows a red column" — Dominik, 2026-10-30, on 28 October. A
-  // holiday with nothing on it says why, quietly, in its own column.
-  it('a free holiday says it is a holiday', () => {
+  // "It just shows a red column" — Dominik, 2026-10-30, on 28 October. The
+  // day row says why, under the day's name; the column stays empty.
+  it('a holiday says so under its day, not in the grid', () => {
     useAppStore.setState({
       mobileCalendarView: 'week',
       mobileSelectedDayIso: '2026-10-28',
     } as never);
     render(<CalendarScreen />);
-    const column = screen
-      .getByTestId('week-grid')
-      .querySelector('[data-day-iso="2026-10-28"]') as HTMLElement;
-    expect(within(column).getByText('Státní svátek')).toBeTruthy();
-  });
-
-  it('an ordinary free day says nothing', () => {
-    useAppStore.setState({
-      mobileCalendarView: 'week',
-      mobileSelectedDayIso: '2026-10-28',
-    } as never);
-    render(<CalendarScreen />);
-    const column = screen
-      .getByTestId('week-grid')
-      .querySelector('[data-day-iso="2026-10-27"]') as HTMLElement;
-    expect(within(column).queryByText('Státní svátek')).toBeNull();
+    const strip = screen.getByTestId('day-strip');
+    const chip = within(strip).getByRole('button', { name: /St 28/ });
+    expect(within(chip).getByText('svátek')).toBeTruthy();
+    expect(within(strip).getAllByText('svátek')).toHaveLength(1);
+    expect(within(screen.getByTestId('week-grid')).queryByText(/svátek/i)).toBeNull();
   });
 });
