@@ -107,7 +107,8 @@ export function placeDay(lessons: BlockLesson[], range: HourRange): PlacedBlock[
   // of a block's top and height can land a hair past the next block's top, and
   // back-to-back lessons then read as a clash (release review: 731 such pairs).
   const startOf = (b: PlacedBlock) => minutesOf(b.lesson.startTime);
-  const endOf = (b: PlacedBlock) => startOf(b) + b.lesson.renderedMinutes;
+  const endOf = (b: PlacedBlock) =>
+    startOf(b) + renderedBlockMinutes(b.lesson.startTime, b.lesson.endTime, b.lesson.isExam);
   for (const block of placed) {
     for (const over of placed) {
       // Drawn later and starting inside this block's span: it covers this
