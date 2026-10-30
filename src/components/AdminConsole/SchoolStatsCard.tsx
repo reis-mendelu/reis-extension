@@ -1,24 +1,28 @@
-import { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { StatsBars } from './StatsBars';
-import { schoolStatsText, dayMonth, fullDate } from './schoolStatsText';
 
 /**
  * "Pro školu": the numbers reIS can show MENDELU, from data it already has —
  * regulars by faculty, eduroam set up through reIS, event reach and how many
- * devices saw each Novinky notice. Its own RPC with a floor of 10, so it can
- * leave reIS: "Kopírovat jako text" gives the Czech one-pager text.
+ * devices saw each Novinky notice. Its own RPC with a floor of 10, so a
+ * screenshot of it can leave reIS.
  *
  * Deliberately absent: subject or teacher ratings, usage joined to study
  * results, and counts of IS logins through reIS — see the mendelu-leadership
  * review behind supabase/migrations/20261030120000_school_stats.sql.
  */
+/** '2026-10-19' → '19. 10.' — split by hand so no time zone can move the day. */
+const dayMonth = (iso: string) => {
+  const [, m, d] = iso.split('-').map(Number);
+  return `${d}. ${m}.`;
+};
+const fullDate = (iso: string) => `${dayMonth(iso)} ${iso.slice(0, 4)}`;
+
 export function SchoolStatsCard() {
   const { t } = useTranslation();
   const s = useAppStore((st) => st.adminSchoolStats);
   const language = useAppStore((st) => st.language);
-  const [copied, setCopied] = useState(false);
   if (!s) return null;
 
   const under10 = t('admin.school.under10') as string;
@@ -27,9 +31,6 @@ export function SchoolStatsCard() {
   const num = (n: number) =>
     n < 0 ? under10 : n.toLocaleString(language === 'cz' ? 'cs-CZ' : 'en-GB');
   const label = (k: string) => (k === 'unknown' ? (t('admin.stats.unknown') as string) : k);
-  const copy = () => {
-    void navigator.clipboard?.writeText(schoolStatsText(s)).then(() => setCopied(true));
-  };
 
   const tiles = [
     {
@@ -65,18 +66,13 @@ export function SchoolStatsCard() {
   return (
     <section aria-labelledby="school-stats-title" className="card bg-base-200 shadow-sm">
       <div className="card-body gap-3 p-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <div>
-            <h4 id="school-stats-title" className="text-sm font-semibold">
-              {t('admin.school.title')}
-            </h4>
-            <span className="text-xs opacity-70">
-              {t('admin.school.week', { from: dayMonth(s.weekFrom), to: fullDate(s.weekTo) })}
-            </span>
-          </div>
-          <button type="button" className="btn btn-sm btn-outline" onClick={copy}>
-            {copied ? t('admin.school.copied') : t('admin.school.copy')}
-          </button>
+        <div>
+          <h4 id="school-stats-title" className="text-sm font-semibold">
+            {t('admin.school.title')}
+          </h4>
+          <span className="text-xs opacity-70">
+            {t('admin.school.week', { from: dayMonth(s.weekFrom), to: fullDate(s.weekTo) })}
+          </span>
         </div>
 
         <div className="stats stats-vertical sm:stats-horizontal border border-base-content/10 bg-base-100 shadow-sm">

@@ -1154,8 +1154,6 @@
       "notices": "Novinky notices (devices that saw each)",
       "under10": "under 10",
       "under10Short": "< 10",
-      "copy": "Copy as text",
-      "copied": "Copied",
       "note": "Data reIS already has. Counts of devices, not people. Groups under 10 are hidden so this can be shown outside reIS."
     },
     "stats": {

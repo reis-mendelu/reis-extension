@@ -1,8 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { SchoolStatsCard } from '../SchoolStatsCard';
-import { schoolStatsText } from '../schoolStatsText';
 import type { SchoolStats } from '../../../api/schoolStats';
 
 const STATS: SchoolStats = {
@@ -43,16 +42,5 @@ describe('SchoolStatsCard', () => {
     expect(plain(card.textContent)).toContain('455');
     expect(plain(card.textContent)).toContain('11 216');
     expect(screen.getAllByText('< 10').length).toBeGreaterThan(0);
-  });
-
-  it('copies the plain-text summary for an email or a one-pager', () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
-    useAppStore.setState({ adminSchoolStats: STATS } as never);
-    render(<SchoolStatsCard />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Kopírovat jako text' }));
-
-    expect(writeText).toHaveBeenCalledWith(schoolStatsText(STATS));
   });
 });
