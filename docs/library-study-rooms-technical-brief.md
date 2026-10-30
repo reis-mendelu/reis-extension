@@ -1,5 +1,17 @@
 # Library study rooms, native booking: technical brief
 
+> **Built (2026-10-30), on branch `claude/study-rooms-rias-integration-698ae3`, not merged.**
+> Code: `src/mobile/library/` (Bookings client, slots, store, `bookAndRecord`, `cancelAndRemove`),
+> `src/components/mobile/screens/map/library/` (pin, tints, room list and hours),
+> `src/components/mobile/sheets/Library{Book,Cancel}Sheet.tsx`, the IC split in
+> `src/data/map/libraryRooms.ts`. Guard: `desktopHasNoLibraryBooking.test.ts`. The shared map
+> only learned two generic things: `mapRoomTints` (colour and name a room) and the `library`
+> selection kind. Live read of all six rooms' availability verified against the real service;
+> create and cancel were verified by hand on 2026-10-30. **Owed:** a device run on a release
+> build (the Bookings call only works through native HTTP, never in the dev webapp), then the
+> store forms at release (Apple label, Play Data safety, policy gist).
+
+
 Researched 2026-10-30. Not built. Decisions with Dominik are marked **decided**.
 
 ## Decided
