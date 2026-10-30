@@ -4,6 +4,7 @@ import { StatsBars } from './StatsBars';
 import { DailyActivityChart } from './DailyActivityChart';
 import { DayDetail } from './DayDetail';
 import { FeatureSignals } from './FeatureSignals';
+import { SchoolStatsCard } from './SchoolStatsCard';
 
 /**
  * Counts of DEVICES, never people — the note under the tiles says so, and the
@@ -140,6 +141,8 @@ export function AdminStatsPanel() {
   return (
     <div className="flex flex-col gap-4 p-3">
       {usage}
+      {/* Its own RPC too: renders nothing until `school_stats` answers. */}
+      <SchoolStatsCard />
       {/* Its own RPC like the feature signals below, so outside the usage
           branch: it survives a failed usage read. */}
       {programmes && programmes.length > 0 && (

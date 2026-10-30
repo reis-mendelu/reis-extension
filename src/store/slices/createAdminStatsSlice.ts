@@ -3,6 +3,7 @@ import { fetchUsageStats, type UsageStats } from '../../api/usageStats';
 import { fetchFeatureStats, type FeatureStats } from '../../api/featureStats';
 import { fetchUsageRetention, type UsageRetention } from '../../api/usageRetention';
 import { fetchUsageProgrammes } from '../../api/usageProgrammes';
+import { fetchSchoolStats, type SchoolStats } from '../../api/schoolStats';
 import type { UsageGroup } from '../../api/usageStats';
 
 const WINDOW_DAYS = 30;
@@ -35,6 +36,8 @@ export interface AdminStatsSlice {
   adminRetention: UsageRetention | null;
   /** Devices per faculty + programme over 7 days — its own RPC, like retention. */
   adminProgrammes: UsageGroup[] | null;
+  /** The "Pro školu" card — its own RPC, like retention. */
+  adminSchoolStats: SchoolStats | null;
   loadAdminStats: () => Promise<void>;
   selectAdminStatsDay: (day: string | null) => Promise<void>;
 }
@@ -86,6 +89,12 @@ async function loadProgrammes(set: Set): Promise<void> {
   if (groups) set({ adminProgrammes: groups });
 }
 
+/** Same contract as `loadRetention`: independent, and a failure keeps what is shown. */
+async function loadSchool(set: Set): Promise<void> {
+  const school = await fetchSchoolStats();
+  if (school) set({ adminSchoolStats: school });
+}
+
 export const createAdminStatsSlice: AppSlice<AdminStatsSlice> = (set, get) => ({
   adminStats: null,
   adminStatsLoading: false,
@@ -94,10 +103,12 @@ export const createAdminStatsSlice: AppSlice<AdminStatsSlice> = (set, get) => ({
   adminFeatureStats: null,
   adminRetention: null,
   adminProgrammes: null,
+  adminSchoolStats: null,
   loadAdminStats: () => {
     void loadFeatures(set);
     void loadRetention(set);
     void loadProgrammes(set);
+    void loadSchool(set);
     return load(set, get, get().adminStatsDay);
   },
   selectAdminStatsDay: (day) => load(set, get, day),
