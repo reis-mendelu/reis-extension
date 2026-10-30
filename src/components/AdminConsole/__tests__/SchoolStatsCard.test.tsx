@@ -14,6 +14,7 @@ const STATS: SchoolStats = {
     { key: 'ZF', devices: -1 },
   ],
   eduroamSince: '2026-09-23',
+  eduroamTotal: 540,
   eduroamWifi: 455,
   eduroamProfile: 93,
   eduroamByFaculty: [{ key: 'PEF', devices: 236 }],
@@ -39,6 +40,7 @@ describe('SchoolStatsCard', () => {
 
     const card = screen.getByRole('region', { name: 'Pro školu' });
     expect(plain(card.textContent)).toContain('1 990');
+    expect(plain(card.textContent)).toContain('540');
     expect(plain(card.textContent)).toContain('455');
     expect(plain(card.textContent)).toContain('11 216');
     expect(screen.getAllByText('< 10').length).toBeGreaterThan(0);

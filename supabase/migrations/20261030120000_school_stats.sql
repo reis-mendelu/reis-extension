@@ -1,11 +1,11 @@
 -- school_stats: the numbers reIS can put in front of MENDELU (the "Pro školu"
 -- card in the admin console), all from data reIS already collects.
 --
---   regulars  installs active on 2+ days of the last complete Mon–Sun week,
---             by the faculty IS last named on the install, and how many are phones
+--   regulars  installs IS has named a student on, active on 2+ days of the last
+--             complete Mon–Sun week, by faculty, and how many are phones
 --   eduroam   installs on which reIS configured eduroam Wi-Fi (phones) or handed
 --             over a profile (laptops), since the counter began, by faculty and week
---   events    posts with any reach: Novinky views and clicks, map opens
+--   events    posts with any reach since publication: Novinky views and clicks, map opens
 --   notices   Novinky questions and how many devices saw each one
 --
 -- Additive and safe for every released build: three new functions, nothing else
@@ -87,12 +87,14 @@ as $$
      where faculty is not null
      order by student_id, usage_date desc
   ),
-  -- 'web' is the dev server and the preview, never a student.
+  -- 'web' is the dev server and the preview, never a student. A device counts
+  -- only once IS has named a student on it, as in usage_retention.
   regulars as (
     select u.student_id, bool_or(u.platform in ('ios', 'android')) as phone
       from public.daily_active_usage u, wk
      where u.usage_date between wk.from_date and wk.to_date
        and u.platform is distinct from 'web'
+       and u.student_id in (select student_id from install_faculty)
      group by u.student_id
     having count(distinct u.usage_date) >= 2
   ),
@@ -117,13 +119,17 @@ as $$
                                    else count(*) filter (where phone) end from regulars),
     'regulars_by_faculty', public.school_suppress_groups(coalesce((
         select jsonb_agg(jsonb_build_object('key', faculty, 'n', n)) from (
-          select coalesce(f.faculty, 'unknown') as faculty, count(*) as n
-            from regulars r left join install_faculty f using (student_id)
+          select f.faculty, count(*) as n
+            from regulars r join install_faculty f using (student_id)
            group by 1) g), '[]'::jsonb)),
     'eduroam_since', (select min(usage_date) from edu),
     'eduroam_wifi', (select case when n < 10 then -1 else n end from (
         select count(distinct install_id) as n from edu
          where feature = 'eduroam_wifi_configured') x),
+    -- One setup per install, whichever kind: the headline, suppressed on its own
+    -- rather than summed from two independently hidden counts.
+    'eduroam_total', (select case when n < 10 then -1 else n end from (
+        select count(distinct install_id) as n from edu) x),
     'eduroam_profile', (select case when n < 10 then -1 else n end from (
         select count(distinct install_id) as n from edu
          where feature = 'eduroam_profile_delivered') x),
@@ -142,7 +148,9 @@ as $$
         'views', coalesce(sum(view_count), 0),
         'clicks', coalesce(sum(click_count), 0),
         'map_views', (select coalesce(sum(views), 0) from public.event_map_views)
-      ) from public.spolky_events where view_count > 0 or click_count > 0),
+      ) from public.spolky_events
+       where view_count > 0 or click_count > 0
+          or id in (select event_id from public.event_map_views)),
     'notices', coalesce((select json_agg(json_build_object(
         'id', id,
         'prompt', prompt_cz,

@@ -80,6 +80,12 @@ begin
     insert into public.daily_active_usage (student_id, usage_date, faculty, platform)
     values ('af-once-' || i, wk_from + 1, 'AF', 'extension');
   end loop;
+  -- 11 phones on two days that IS never named a student on: not counted
+  for i in 1..11 loop
+    id := 'unlabelled-' || i;
+    insert into public.daily_active_usage (student_id, usage_date, faculty, platform)
+    values (id, wk_from, null, 'android'), (id, wk_from + 2, null, 'android');
+  end loop;
   -- 20 'web' rows on two days: the dev server, never counted
   for i in 1..20 loop
     id := 'web-' || i;
@@ -102,6 +108,9 @@ begin
   select (e->>'n')::int into edu from json_array_elements(v->'eduroam_by_faculty') e where e->>'key' = 'PEF';
   if edu is distinct from 12 or (v->>'eduroam_wifi')::int is distinct from 12 then
     raise exception 'expected 12 PEF eduroam setups: %', v;
+  end if;
+  if (v->>'eduroam_total')::int is distinct from 12 then
+    raise exception 'expected an eduroam total of 12: %', v->>'eduroam_total';
   end if;
   if (v->>'eduroam_profile')::int is distinct from -1 then
     raise exception 'zero laptop profiles must read as hidden (-1): %', v->>'eduroam_profile';

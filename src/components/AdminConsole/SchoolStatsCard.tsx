@@ -40,12 +40,7 @@ export function SchoolStatsCard() {
     },
     s.eduroamSince && {
       key: 'eduroam',
-      // Both hidden is "under 10", not a made-up 0.
-      value: num(
-        s.eduroamWifi < 0 && s.eduroamProfile < 0
-          ? -1
-          : Math.max(s.eduroamWifi, 0) + Math.max(s.eduroamProfile, 0)
-      ),
+      value: num(s.eduroamTotal),
       desc: t('admin.school.eduroamDesc', {
         wifi: num(s.eduroamWifi),
         profile: num(s.eduroamProfile),

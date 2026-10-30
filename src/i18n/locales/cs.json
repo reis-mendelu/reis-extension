@@ -1144,17 +1144,17 @@
       "title": "Pro školu",
       "week": "Týden {from} – {to}",
       "regulars": "Pravidelní uživatelé",
-      "regularsDesc": "2+ dny v týdnu · na telefonu {phone}",
+      "regularsDesc": "2+ dny v týdnu · na telefonu: {phone}",
       "eduroam": "eduroam přes reIS",
-      "eduroamDesc": "{wifi} telefonů · {profile} notebooků · od {since}",
-      "events": "Akce",
-      "eventsDesc": "{views} zobrazení · {clicks} prokliků · {map} na mapě",
+      "eduroamDesc": "telefony: {wifi} · notebooky: {profile} · od {since}",
+      "events": "Akce celkem",
+      "eventsDesc": "zobrazení: {views} · prokliky: {clicks} · na mapě: {map}",
       "regularsByFaculty": "Pravidelní uživatelé podle fakulty",
       "eduroamByFaculty": "eduroam podle fakulty",
       "notices": "Oznámení v Novinkách (kolik zařízení ho vidělo)",
       "under10": "méně než 10",
       "under10Short": "< 10",
-      "note": "Data, která reIS už má. Počty zařízení, ne lidí. Skupiny pod 10 jsou skryté, aby se daly ukázat mimo reIS."
+      "note": "Data, která reIS už má. Uživatelé a eduroam jsou počty zařízení, ne lidí; akce se sčítají od zveřejnění. Skupiny pod 10 jsou skryté, aby se daly ukázat mimo reIS."
     },
     "stats": {
       "today": "Dnes",

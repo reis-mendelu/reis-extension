@@ -13,6 +13,7 @@ const Schema = z.object({
   regulars_phone: z.number(),
   regulars_by_faculty: z.array(Group),
   eduroam_since: z.string().nullable(),
+  eduroam_total: z.number(),
   eduroam_wifi: z.number(),
   eduroam_profile: z.number(),
   eduroam_by_faculty: z.array(Group),
@@ -43,12 +44,14 @@ export interface SchoolStats {
   /** The last complete Monday–Sunday week the regulars describe. */
   weekFrom: string;
   weekTo: string;
-  /** Installs active on 2+ days of that week. */
+  /** Installs IS has named a student on, active on 2+ days of that week. */
   regulars: number;
   regularsPhone: number;
   regularsByFaculty: UsageGroup[];
   /** The first day the eduroam counter recorded anything; null before then. */
   eduroamSince: string | null;
+  /** Installs with any eduroam setup, suppressed on its own (not a sum of two hidden counts). */
+  eduroamTotal: number;
   eduroamWifi: number;
   eduroamProfile: number;
   eduroamByFaculty: UsageGroup[];
@@ -82,6 +85,7 @@ export async function fetchSchoolStats(): Promise<SchoolStats | null> {
     regularsPhone: d.regulars_phone,
     regularsByFaculty: groups(d.regulars_by_faculty),
     eduroamSince: d.eduroam_since,
+    eduroamTotal: d.eduroam_total,
     eduroamWifi: d.eduroam_wifi,
     eduroamProfile: d.eduroam_profile,
     eduroamByFaculty: groups(d.eduroam_by_faculty),

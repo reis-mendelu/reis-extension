@@ -1144,17 +1144,17 @@
       "title": "For the school",
       "week": "Week {from} – {to}",
       "regulars": "Regular users",
-      "regularsDesc": "2+ days a week · on phones {phone}",
+      "regularsDesc": "2+ days a week · on phones: {phone}",
       "eduroam": "eduroam via reIS",
-      "eduroamDesc": "{wifi} phones · {profile} laptops · since {since}",
-      "events": "Events",
-      "eventsDesc": "{views} views · {clicks} clicks · {map} on the map",
+      "eduroamDesc": "phones: {wifi} · laptops: {profile} · since {since}",
+      "events": "Events, all time",
+      "eventsDesc": "views: {views} · clicks: {clicks} · map opens: {map}",
       "regularsByFaculty": "Regular users by faculty",
       "eduroamByFaculty": "eduroam by faculty",
       "notices": "Novinky notices (devices that saw each)",
       "under10": "under 10",
       "under10Short": "< 10",
-      "note": "Data reIS already has. Counts of devices, not people. Groups under 10 are hidden so this can be shown outside reIS."
+      "note": "Data reIS already has. Users and eduroam are counts of devices, not people; events add up since publication. Groups under 10 are hidden so this can be shown outside reIS."
     },
     "stats": {
       "today": "Today",
