@@ -22,6 +22,7 @@ describe('CalendarScreen — back to today', () => {
       language: 'cz',
       mobileSelectedDayIso: null,
       mobileSheets: [],
+      mobileCalendarView: 'day',
       schedule: { data: [], status: 'loading' } as never,
       firstSyncSettled: false,
       syncLoaded: {},

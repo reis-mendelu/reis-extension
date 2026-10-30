@@ -36,6 +36,8 @@ export interface ScreenHeaderProps {
    * The other tabs' titles are words, and a pumpkin would only squeeze them.
    */
   seasonal?: boolean;
+  /** A round action of this screen's own, first in the action cluster. */
+  leadingAction?: ReactNode;
 }
 
 const TITLE_CLASS =
@@ -57,6 +59,7 @@ export function ScreenHeader({
   action,
   titleAction,
   seasonal = false,
+  leadingAction,
 }: ScreenHeaderProps) {
   const pumpkin = useIsHalloween() && seasonal && <Pumpkin className="h-6 w-6 flex-shrink-0" />;
   return (
@@ -107,7 +110,7 @@ export function ScreenHeader({
         </div>
         <div className="flex flex-shrink-0 items-center gap-2 max-[359px]:gap-1">
           {action}
-          <HeaderActions />
+          <HeaderActions leading={leadingAction} />
         </div>
       </div>
       {below}

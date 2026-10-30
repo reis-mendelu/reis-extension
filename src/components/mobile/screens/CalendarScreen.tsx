@@ -15,10 +15,13 @@ import { ScreenHeader } from './calendar/ScreenHeader';
 import { NowNextCard } from './calendar/NowNextCard';
 import { DayChips } from './calendar/DayChips';
 import { DayBody } from './calendar/DayBody';
+import { WeekGrid } from './calendar/WeekGrid';
+import { CalendarViewChooser } from './calendar/CalendarViewChooser';
 import { useCalendarToday } from './calendar/useCalendarToday';
 import { RecentFilesStrip } from './calendar/RecentFilesStrip';
+import { WeekMenuButton } from './calendar/WeekMenuButton';
 import { CalendarSkeleton } from './calendar/CalendarSkeleton';
-import { formatHeaderDate } from '../../../utils/mobile/formatHeaderDate';
+import { useCalendarTitle } from './calendar/useCalendarTitle';
 
 export function CalendarScreen() {
   const { t, language } = useTranslation();
@@ -30,6 +33,8 @@ export function CalendarScreen() {
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
   const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
   const syncLoaded = useAppStore((s) => s.syncLoaded);
+  const view = useAppStore((s) => s.mobileCalendarView);
+  const choosing = useAppStore((s) => s.calendarViewChosen === false);
   // The store's clock, not `new Date()`: the pulse advances it, so the running
   // lesson's card and its countdown move with it instead of being stamped once
   // per render and then only when something else happened to re-render.
@@ -72,6 +77,7 @@ export function CalendarScreen() {
   const customLessons = customEvents.map(customEventToLesson);
   const dayLessons = [...visibleSchedule, ...customLessons];
   const lessonDates = new Set(dayLessons.map((l) => l.date));
+  const header = useCalendarTitle({ selectedIso, lessonDates, isAway });
   const chrome = (
     <>
       {/* The date IS the title, and the eyebrow stays empty. It was the
@@ -87,15 +93,12 @@ export function CalendarScreen() {
           other tab's; now it is a header action: sr-only on touch, a circle
           on a Mac, where nothing can pull (RefreshButton). */}
       <ScreenHeader
-        title={formatHeaderDate(
-          new Date(`${selectedIso}T00:00:00`),
-          language === 'en' ? 'en-US' : 'cs-CZ',
-          'short'
-        )}
+        title={header.title}
         titleAction={
-          isAway ? { label: t('mobile.calendar.backToToday'), onClick: goToday } : undefined
+          header.away ? { label: t('mobile.calendar.backToToday'), onClick: goToday } : undefined
         }
         seasonal
+        leadingAction={<WeekMenuButton days={header.weekIsos} todayIso={header.todayIso} />}
         action={
           <RefreshButton
             label={t('mobile.header.refresh')}
@@ -107,11 +110,12 @@ export function CalendarScreen() {
     </>
   );
   const shell = (body: ReactNode) => (
-    // The ref is where a pull to refresh may start (DayBody).
+    // `relative` anchors the first-open view chooser (day and week only). The
+    // ref is where a pull to refresh may start (DayBody).
     <div
       ref={screenRef}
       data-testid="calendar-screen"
-      className="flex flex-1 flex-col overflow-hidden"
+      className="relative flex flex-1 flex-col overflow-hidden"
     >
       {chrome}
       {body}
@@ -188,6 +192,32 @@ export function CalendarScreen() {
     if (nowNext) showOnMap(nowNext.current);
   };
 
+  // The week grid replaces everything day-shaped under the strip: the Now/Next
+  // card and the holiday banner are about ONE day, and the grid answers both
+  // in its own terms (a now-line, a red-washed column). It also has no pull to
+  // refresh — that lives on the agenda's scroller, one tap away.
+  if (view === 'week') {
+    return shell(
+      <>
+        <DayChips
+          selectedIso={selectedIso}
+          onSelect={setMobileSelectedDay}
+          lessonDates={lessonDates}
+          // No selection, no dots, and the chips are labels — see DayChips'
+          // `view`. The arrows and the swipe move the week.
+          view="week"
+        />
+        <WeekGrid
+          lessons={dayLessons}
+          selectedIso={selectedIso}
+          lessonDates={lessonDates}
+          onSelectDay={setMobileSelectedDay}
+        />
+        {choosing && <CalendarViewChooser />}
+      </>
+    );
+  }
+
   return shell(
     <>
       {nowNext && <NowNextCard data={nowNext} onRoute={openRoute} />}
@@ -221,6 +251,7 @@ export function CalendarScreen() {
         onSelectDay={setMobileSelectedDay}
         pullSurfaceRef={screenRef}
       />
+      {choosing && <CalendarViewChooser />}
     </>
   );
 }

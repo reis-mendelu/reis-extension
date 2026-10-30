@@ -1331,7 +1331,14 @@
       "holiday": "Státní svátek",
       "teachingStarts": "Výuka začíná {date}",
       "recentFiles": "Naposledy otevřené",
-      "backToToday": "Zpět na dnešek"
+      "backToToday": "Zpět na dnešek",
+      "viewLabel": "Zobrazení kalendáře",
+      "dayView": "Den",
+      "weekView": "Týden",
+      "chooserTitle": "Jak chceš vidět rozvrh?",
+      "chooserLine": "Zkus obojí na svém rozvrhu.",
+      "chooserSave": "Uložit: {view}",
+      "chooserSaved": "Uloženo. Změníš to v Profilu → Nastavení."
     },
     "exams": {
       "title": "Zkoušky",
@@ -1476,7 +1483,8 @@
     "profile": {
       "settings": "Nastavení",
       "atSchool": "Ve škole",
-      "settingsSub": "Jazyk, vzhled"
+      "calendar": "Kalendář",
+      "settingsSub": "Kalendář, jazyk, vzhled"
     },
     "loadFailed": {
       "title": "Data se nepodařilo načíst",

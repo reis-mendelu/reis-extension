@@ -1,6 +1,7 @@
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { CalendarViewRow } from '../screens/profile/CalendarViewRow';
 import { AppearanceRows } from '../screens/profile/AppearanceRows';
 
 export interface SettingsSheetProps {
@@ -18,6 +19,7 @@ export function SettingsSheet({ onClose }: SettingsSheetProps) {
     <Sheet size="content" onClose={onClose}>
       <SheetHeader title={t('mobile.profile.settings')} onClose={onClose} />
       <div className="pb-6">
+        <CalendarViewRow />
         <AppearanceRows />
       </div>
     </Sheet>

@@ -4,11 +4,17 @@ export interface DayChipProps {
   date: Date;
   locale: string;
   language: 'cz' | 'en';
-  /** The agenda's day, in full ink and `aria-pressed`. */
-  isSelected: boolean;
+  /**
+   * The agenda's day, in full ink and `aria-pressed`. Undefined in the week
+   * view, which has no selection to draw or announce.
+   */
+  isSelected: boolean | undefined;
   isToday: boolean;
   hasLessons: boolean;
-  onClick: () => void;
+  /** The lesson/holiday dot. Off in the week view, where the grid says it. */
+  showDot: boolean;
+  /** Absent in the week view, where a chip is a label, not a control. */
+  onClick?: () => void;
 }
 
 /** One day of the strip — see DayChips for the row around it. */
@@ -19,6 +25,7 @@ export function DayChip({
   isSelected,
   isToday,
   hasLessons,
+  showDot,
   onClick,
 }: DayChipProps) {
   const weekday = new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(date);
@@ -26,7 +33,7 @@ export function DayChip({
   // Marked in the row, not only once the day is opened: a student
   // scanning the week should see the day off without tapping into it.
   const holiday = getCzechHoliday(date, language);
-  const todayFilled = isToday && isSelected;
+  const todayFilled = isToday && isSelected !== false;
   return (
     <button
       type="button"
@@ -34,6 +41,12 @@ export function DayChip({
       aria-pressed={isSelected}
       title={holiday ?? undefined}
       onClick={onClick}
+      // aria-disabled, not `disabled`: a swipe that starts on a chip must still
+      // reach the strip's pointer handlers, and older WebKit (pre-Safari 17
+      // WKWebView, bug 219188) drops pointer events on disabled controls —
+      // which would kill the week swipe in Týden, where every chip is inert.
+      aria-disabled={onClick ? undefined : true}
+      tabIndex={onClick ? undefined : -1}
       // The selection is ink, not colour. It was a lime tonal pill, and on
       // Saturday 3 October the arrow left one on Friday 9 with today in
       // another week: "the 9th of October gets highlighted as the current
@@ -57,7 +70,8 @@ export function DayChip({
           whatever was selected, today looked the same before and after a tap
           on it — "when I go back to Friday, it doesn't change. How do I know
           if I'm on Friday?" With another day picked it is a ring in the same
-          ink: still today, plainly not where you are. A ring is a
+          ink: still today, plainly not where you are. The week view selects
+          nothing (`isSelected` undefined) and keeps the fill. A ring is a
           box-shadow, so the circle keeps its size and the row its height;
           `--tone-primary`, not `primary`, because lime on the light theme is
           under 3:1 for a mark. */}
@@ -88,13 +102,17 @@ export function DayChip({
           one that costs no contrast.
           A holiday wins over lessons in the rare case of both: the
           closure is the more surprising fact, and the banner above the
-          agenda still names it either way. */}
-      {holiday ? (
+          agenda still names it either way.
+          The week view keeps only the empty slot: the grid below shows the
+          lessons and washes a holiday's column red, so the dots there said
+          nothing — "the bullets below the days are useless in the weekly
+          view" — and the slot keeps the strip one height in both views. */}
+      {showDot && holiday ? (
         <span
           data-testid="day-chip-holiday"
           className="mx-auto mt-0.5 block h-1 w-1 rounded-full bg-error"
         />
-      ) : hasLessons ? (
+      ) : showDot && hasLessons ? (
         <span
           data-testid="day-chip-lessons"
           className="mx-auto mt-0.5 block h-1 w-1 rounded-full bg-base-content/40"

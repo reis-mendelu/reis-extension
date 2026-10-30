@@ -1331,7 +1331,14 @@
       "holiday": "Public holiday",
       "teachingStarts": "Teaching starts {date}",
       "recentFiles": "Recently opened",
-      "backToToday": "Back to today"
+      "backToToday": "Back to today",
+      "viewLabel": "Calendar view",
+      "dayView": "Day",
+      "weekView": "Week",
+      "chooserTitle": "How do you want to see your timetable?",
+      "chooserLine": "Try both on your own timetable.",
+      "chooserSave": "Save: {view}",
+      "chooserSaved": "Saved. Change it in Profile → Settings."
     },
     "exams": {
       "title": "Exams",
@@ -1476,7 +1483,8 @@
     "profile": {
       "settings": "Settings",
       "atSchool": "At school",
-      "settingsSub": "Language, appearance"
+      "calendar": "Calendar",
+      "settingsSub": "Calendar, language, appearance"
     },
     "loadFailed": {
       "title": "Couldn't load your data",

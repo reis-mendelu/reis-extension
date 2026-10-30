@@ -11,12 +11,19 @@ export interface DayChipsProps {
   onSelect: (iso: string) => void;
   /** Compact IS dates (YYYYMMDD) that have at least one lesson. */
   lessonDates: ReadonlySet<string>;
+  /**
+   * The week view marks no selection and no dots, and its chips are not
+   * controls: Týden is about the week, so the selected day is only the week's
+   * anchor, moved by the arrows and the swipe. A chip tap used to open Den,
+   * then to select a day the chef hat depended on — "unintuitive". The grid
+   * below already shows each day's lessons.
+   */
+  view?: 'day' | 'week';
 }
 
 /**
  * Five weekday chips (Mon–Fri) plus the arrows that move a week at a time —
- * the phone's whole day/week switcher. (There is no week GRID on the phone any
- * more — see phoneHasNoWeekView.test — so the strip is the only week there is.)
+ * the phone's whole day/week switcher.
  *
  * The week is derived from the SELECTED day, not from a stored anchor — see
  * `utils/mobile/weekDays`, which now owns that arithmetic because the screen
@@ -37,11 +44,11 @@ export interface DayChipsProps {
  * is the arrow you reach for, and a pill breaks that mapping for the sake of a
  * tidier row. 44px tall now, the touch minimum the old 36px missed.
  */
-export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) {
+export function DayChips({ selectedIso, onSelect, lessonDates, view = 'day' }: DayChipsProps) {
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
-  // The store's clock: the pulse moves it, so the mark crosses midnight in an
-  // app left open.
+  // The store's clock, as the week grid's now-line reads it: the pulse moves it,
+  // so the mark crosses midnight in an app left open.
   const todayIso = toIso(useAppStore((s) => s.now));
   const days = weekDays(selectedIso, lessonDates, todayIso);
 
@@ -129,10 +136,11 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
               date={date}
               locale={locale}
               language={language === 'en' ? 'en' : 'cz'}
-              isSelected={iso === selectedIso}
+              isSelected={view === 'day' ? iso === selectedIso : undefined}
               isToday={iso === todayIso}
               hasLessons={lessonDates.has(toCompact(iso))}
-              onClick={() => onSelect(iso)}
+              showDot={view === 'day'}
+              onClick={view === 'day' ? () => onSelect(iso) : undefined}
             />
           );
         })}
