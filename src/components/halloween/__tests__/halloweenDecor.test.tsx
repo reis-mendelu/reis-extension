@@ -7,7 +7,7 @@ import { ReisLogo } from '../../ReisLogo';
 import { ScreenHeader } from '../../mobile/screens/calendar/ScreenHeader';
 
 const IN_WEEK = new Date(2026, 10, 2, 10, 0);
-const BEFORE = new Date(2026, 9, 30, 10, 0);
+const BEFORE = new Date(2026, 9, 29, 10, 0); // the Thursday before it starts
 const AFTER = new Date(2026, 10, 7, 0, 0); // the first moment the week is over
 const realNow = useAppStore.getState().now;
 
