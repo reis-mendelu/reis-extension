@@ -51,6 +51,7 @@ function baseState(overrides: Record<string, unknown> = {}) {
     language: 'cz',
     isTouch: true, // a phone; the Mac case is in guards/macRefreshIsVisible
     mobileSelectedDayIso: '2026-04-20',
+    mobileCalendarView: 'day',
     mobileSheets: [],
     firstSyncSettled: true,
     syncLoaded: { schedule: true, exams: true },
@@ -117,6 +118,29 @@ describe('the calendar refresh', () => {
   it('a sideways swipe on the week strip changes the week and does not refresh', () => {
     render(<CalendarScreen />);
     drag(screen.getByTestId('day-strip'), -FAR * 2, 10);
+    expect(trigger).not.toHaveBeenCalled();
+  });
+
+  // Spec 2026-10-30, decision 9: a pull works in Týden as in Den, from
+  // anywhere on the screen. The 5.4.0 week grid had none.
+  it('pulling down on the week grid refreshes', () => {
+    useAppStore.setState({ mobileCalendarView: 'week' } as never);
+    render(<CalendarScreen />);
+    drag(screen.getByTestId('week-grid'), 0, FAR);
+    expect(trigger).toHaveBeenCalledTimes(1);
+  });
+
+  it('pulling down on the header in Týden refreshes', () => {
+    useAppStore.setState({ mobileCalendarView: 'week' } as never);
+    render(<CalendarScreen />);
+    drag(screen.getByTestId('calendar-screen').firstElementChild as HTMLElement, 0, FAR);
+    expect(trigger).toHaveBeenCalledTimes(1);
+  });
+
+  it('a sideways swipe on the week grid does not refresh', () => {
+    useAppStore.setState({ mobileCalendarView: 'week' } as never);
+    render(<CalendarScreen />);
+    drag(screen.getByTestId('week-grid'), -FAR * 2, 10);
     expect(trigger).not.toHaveBeenCalled();
   });
 

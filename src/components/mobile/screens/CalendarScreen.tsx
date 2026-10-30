@@ -213,6 +213,7 @@ export function CalendarScreen() {
           onRoute={openRoute}
           onSelectDay={setMobileSelectedDay}
           onOpenDay={openDay}
+          pullSurfaceRef={screenRef}
         />
         <CalendarViewSwitch onDay={switchToDen} />
       </>

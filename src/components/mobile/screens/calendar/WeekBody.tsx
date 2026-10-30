@@ -1,6 +1,9 @@
+import { useRef, type RefObject } from 'react';
 import type { BlockLesson } from '../../../../types/calendarTypes';
 import type { NowNext } from '../../../../utils/mobile/nowNext';
 import { useWideViewport } from '../../../../hooks/ui/useWideViewport';
+import { useAppStore } from '../../../../store/useAppStore';
+import { PullRefreshIndicator } from '../../primitives/PullRefreshIndicator';
 import { NowNextCard } from './NowNextCard';
 import { WeekNowStrip } from './WeekNowStrip';
 import { DayChips } from './DayChips';
@@ -14,6 +17,8 @@ export interface WeekBodyProps {
   onRoute: () => void;
   onSelectDay: (iso: string) => void;
   onOpenDay: (iso: string) => void;
+  /** The whole calendar screen: a pull may start anywhere on it, as in Den. */
+  pullSurfaceRef: RefObject<HTMLElement | null>;
 }
 
 /**
@@ -23,6 +28,11 @@ export interface WeekBodyProps {
  * running lesson does not: "where do I go right now" is the one moment the
  * route is urgent, so it sits above the grid while a lesson runs — a compact
  * strip on a phone, the full card on an iPad (spec 2026-10-30, decision 8).
+ *
+ * A pull refreshes here too (decision 9) — the 5.4.0 grid had none, so the
+ * same gesture did something in Den and nothing in Týden. The grid never
+ * scrolls, so it is always "at its top"; a second finger or a sideways swipe
+ * is not a pull (usePullToRefresh). The pull HINT stays Den's lesson.
  */
 export function WeekBody({
   lessons,
@@ -32,8 +42,12 @@ export function WeekBody({
   onRoute,
   onSelectDay,
   onOpenDay,
+  pullSurfaceRef,
 }: WeekBodyProps) {
   const wide = useWideViewport();
+  const gridRef = useRef<HTMLDivElement>(null);
+  const scheduleRefreshing = useAppStore((s) => s.scheduleRefreshing);
+  const triggerScheduleRefresh = useAppStore((s) => s.triggerScheduleRefresh);
   return (
     <>
       {nowNext &&
@@ -51,12 +65,20 @@ export function WeekBody({
         view="week"
         onOpenDay={onOpenDay}
       />
-      <WeekGrid
-        lessons={lessons}
-        selectedIso={selectedIso}
-        lessonDates={lessonDates}
-        onSelectDay={onSelectDay}
-      />
+      <div ref={gridRef} className="relative flex min-h-0 flex-1 flex-col">
+        <PullRefreshIndicator
+          scrollerRef={gridRef}
+          surfaceRef={pullSurfaceRef}
+          refreshing={scheduleRefreshing}
+          onRefresh={triggerScheduleRefresh}
+        />
+        <WeekGrid
+          lessons={lessons}
+          selectedIso={selectedIso}
+          lessonDates={lessonDates}
+          onSelectDay={onSelectDay}
+        />
+      </div>
     </>
   );
 }
