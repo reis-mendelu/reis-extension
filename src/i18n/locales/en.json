@@ -1181,6 +1181,7 @@
       "signalMapDwell": "Map for 3+ seconds",
       "signalEduroamConfigured": "eduroam configured by the app",
       "signalEduroamDelivered": "eduroam profile handed over",
+      "signalCalendarWeekView": "Calendar in week view",
       "signalInstalls": "installs",
       "reachTitle": "Events: News and map side by side",
       "reachNotice": "notice",

@@ -165,7 +165,7 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'feature_counters',
-    what: 'Three feature counters on the random install id, one whitelisted label each.',
+    what: 'Four feature counters on the random install id, one whitelisted label each.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/featureUsage.ts'],
@@ -185,6 +185,11 @@ export const FLOWS: Flow[] = [
         'eduroam profile handed over',
         'a profile is prepared for you to install (Mac, Windows)',
         'the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it',
+      ],
+      [
+        'Week view used',
+        'at most once a day, when the calendar shows the week (phone, iPad)',
+        'the random install identifier and the fixed `calendar_week_view` label',
       ],
     ],
     stores: {

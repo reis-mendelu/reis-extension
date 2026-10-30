@@ -40,6 +40,7 @@ yourself — see *Report attachments* below.
 | Map used for 3 seconds | at most once a day, after three seconds on the map | the random install identifier and the fixed `map_dwell_3s` label |
 | eduroam network configured | the app itself saves the eduroam network (phone) | the random install identifier and the fixed `eduroam_wifi_configured` label |
 | eduroam profile handed over | a profile is prepared for you to install (Mac, Windows) | the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it |
+| Week view used | at most once a day, when the calendar shows the week (phone, iPad) | the random install identifier and the fixed `calendar_week_view` label |
 <!-- END generated:flows -->
 
 Which partner company you are shown, if any, is decided on your device from your

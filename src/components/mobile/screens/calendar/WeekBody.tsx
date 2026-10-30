@@ -1,8 +1,9 @@
-import { useRef, type RefObject } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 import type { BlockLesson } from '../../../../types/calendarTypes';
 import type { NowNext } from '../../../../utils/mobile/nowNext';
 import { useWideViewport } from '../../../../hooks/ui/useWideViewport';
 import { useAppStore } from '../../../../store/useAppStore';
+import { trackFeatureSignal } from '../../../../api/featureUsage';
 import { PullRefreshIndicator } from '../../primitives/PullRefreshIndicator';
 import { NowNextCard } from './NowNextCard';
 import { WeekNowStrip } from './WeekNowStrip';
@@ -48,6 +49,12 @@ export function WeekBody({
   const gridRef = useRef<HTMLDivElement>(null);
   const scheduleRefreshing = useAppStore((s) => s.scheduleRefreshing);
   const triggerScheduleRefresh = useAppStore((s) => s.triggerScheduleRefresh);
+  // How many installs use Týden at all — Tonda's "people pick a view once and
+  // never switch", answered with a number (decision 15). A write, not a
+  // fetch: the counter latches once per session, the database once a day.
+  useEffect(() => {
+    void trackFeatureSignal('calendar_week_view');
+  }, []);
   return (
     <>
       {nowNext &&
