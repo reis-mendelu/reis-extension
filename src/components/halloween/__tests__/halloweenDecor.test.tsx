@@ -8,14 +8,18 @@ import { ScreenHeader } from '../../mobile/screens/calendar/ScreenHeader';
 
 const IN_WEEK = new Date(2026, 10, 2, 10, 0);
 const BEFORE = new Date(2026, 9, 30, 10, 0);
+const AFTER = new Date(2026, 10, 7, 0, 0); // the first moment the week is over
 const realNow = useAppStore.getState().now;
 
 afterEach(() => useAppStore.setState({ now: realNow }));
 
 // Both trees get the week: the desktop's top bar and the phone's day view.
 describe('Halloween decorations', () => {
-  it('draws nothing outside the week, on either tree', () => {
-    useAppStore.setState({ now: BEFORE });
+  it.each([
+    ['before', BEFORE],
+    ['after', AFTER],
+  ])('draws nothing %s the week, on either tree', (_, now) => {
+    useAppStore.setState({ now });
     render(
       <>
         <HalloweenHeaderBats />

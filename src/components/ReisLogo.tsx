@@ -29,8 +29,10 @@ export function ReisLogo({ className = 'w-8 h-8' }: ReisLogoProps) {
         fillRule="evenodd"
       />
       {halloween ? (
-        // The dot becomes a pumpkin for the Halloween week, at the same spot.
-        <g transform="translate(2 60)">
+        // The dot becomes a pumpkin for the Halloween week, at the same spot and
+        // the dot's size: the pumpkin's body (32,38 on its 64 grid) lands on the
+        // dot's centre, 32,96, and spans about the dot's 32 units.
+        <g transform="translate(8 67.5) scale(.75)">
           <PumpkinShapes />
         </g>
       ) : (
