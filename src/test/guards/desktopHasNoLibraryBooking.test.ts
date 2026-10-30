@@ -22,14 +22,14 @@ import { describe, expect, it } from 'vitest';
  * came back narrow: no reIS server, no stored hash, no Supabase table.
  */
 const MOBILE_ONLY = [
-  'src/api/library/bookingsBase.ts',
-  'src/api/library/availability.ts',
-  'src/api/library/createBooking.ts',
-  'src/api/library/cancelBooking.ts',
-  'src/api/library/transport.ts',
+  'src/mobile/library/bookingsBase.ts',
+  'src/mobile/library/availability.ts',
+  'src/mobile/library/createBooking.ts',
+  'src/mobile/library/cancelBooking.ts',
+  'src/mobile/library/transport.ts',
 ];
 
-/** Files outside src/api/library that may reach it, each on the phone tree. */
+/** Files outside src/mobile/library that may reach it, each on the phone tree. */
 const ALLOWED_IMPORTERS = new Set<string>([]);
 
 const root = process.cwd();
@@ -82,16 +82,16 @@ describe('library booking stays on the phone tree', () => {
   it('nothing else imports the booking code or names its host', () => {
     const REACHES =
       /(from\s+|import\s*\(\s*|import\s+)['"][^'"]*\/api\/library\/[^'"]*['"]|bookings\.cloud\.microsoft/i;
-    expect(REACHES.test("import { x } from '../api/library/createBooking';")).toBe(true);
+    expect(REACHES.test("import { x } from '../mobile/library/createBooking';")).toBe(true);
     const offenders = walk(join(root, 'src'))
-      .filter((f) => !f.startsWith('src/api/library/') && !ALLOWED_IMPORTERS.has(f))
+      .filter((f) => !f.startsWith('src/mobile/library/') && !ALLOWED_IMPORTERS.has(f))
       .filter((f) => REACHES.test(readFileSync(join(root, f), 'utf8')));
     expect(offenders).toEqual([]);
   });
 
   it('reIS for Claude cannot reach the booking code, through any import chain', () => {
     const reached = [...importClosure(join(root, 'mcp/server.ts'))].filter((f) =>
-      f.startsWith('src/api/library/')
+      f.startsWith('src/mobile/library/')
     );
     expect(reached).toEqual([]);
   });

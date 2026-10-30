@@ -206,7 +206,7 @@ const ALLOWED_HOSTS = [
   'bookings.cloud.microsoft', // phone/iPad only: the library's study-room booking sends the
   // student's name, MENDELU e-mail, student number and faculty code to the library's own
   // Microsoft Bookings (MENDELU's tenant), straight from the device, only when they book.
-  // Removed with the first booking feature (#275), back with this one. src/api/library/ only.
+  // Removed with the first booking feature (#275), back with this one. src/mobile/library/ only.
 
   // --- deep links the STUDENT opens; no background request is made ---
   'google.com', // maps links, Play Store, Chrome Web Store, a society's Apps Script
