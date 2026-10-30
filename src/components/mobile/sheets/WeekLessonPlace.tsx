@@ -30,7 +30,7 @@ export function WeekLessonPlace({ lesson }: { lesson: BlockLesson }) {
     <div
       data-testid="week-lesson-place"
       aria-label={t('mobile.calendar.thisLesson')}
-      className="mx-4 mt-1 flex items-center gap-3 rounded-2xl border border-primary/25 bg-base-100 py-2 pl-3 pr-2"
+      className="mx-4 mb-2 mt-1 flex items-center gap-3 rounded-2xl border border-primary/25 bg-base-100 py-2 pl-3 pr-2"
     >
       <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/15 text-[var(--tone-primary)]">
         <MapPin size={20} aria-hidden />

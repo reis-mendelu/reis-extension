@@ -73,13 +73,17 @@ export function WeekBlock({ block, cascade, gridPx, onOpen }: WeekBlockProps) {
       {/* Under a cascaded clash the room line would show only as one letter in
           the uncovered strip; the room is in the block on top's tap-through. */}
       {room && !(cascade && covered) && (
-        <span className="mt-auto flex min-w-0 items-center gap-0.5 text-[11px] font-extrabold leading-3 text-content-primary/80 md:mt-0 md:text-[12px] md:leading-[15px]">
+        // The code wins the width. In a ~45px phone column "Q01.48" did not fit
+        // beside the pin and read "Q01…", so a phone drops the pin for a code
+        // longer than four characters, and below 360px the code is a point
+        // smaller. Measured at 320/390/430 with verify:ui.
+        <span className="mt-auto flex min-w-0 items-center gap-0.5 text-[11px] font-extrabold leading-3 text-content-primary/80 max-[359px]:text-[10px] md:mt-0 md:text-[12px] md:leading-[15px]">
           <MapPin
             aria-hidden
-            className="h-2.5 w-2.5 flex-shrink-0 md:h-3 md:w-3"
+            className={`h-2.5 w-2.5 flex-shrink-0 md:h-3 md:w-3 ${room.length > 4 ? 'max-md:hidden' : ''}`}
             strokeWidth={2.5}
           />
-          <span className="truncate">{room}</span>
+          <span className="whitespace-nowrap">{room}</span>
         </span>
       )}
       {!cascade && (

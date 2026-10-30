@@ -35,8 +35,11 @@ export function WeekNowStrip({ data, onRoute }: { data: NowNext; onRoute: () => 
         <span className="flex-shrink-0 text-xs font-extrabold uppercase tracking-wide text-[var(--tone-primary)]">
           {t('mobile.calendar.nowLabel')}
         </span>
-        <span className="min-w-0 flex-1 truncate text-md font-bold">
-          {[name, place.label].filter(Boolean).join(' · ')}
+        {/* The name gives way, never the room: "Vývoj webových aplikací ·
+            Q…" at 390px hid the one thing this strip is for. */}
+        <span className="flex min-w-0 flex-1 items-baseline gap-1 text-md font-bold">
+          <span className="truncate">{name}</span>
+          {place.label && <span className="flex-shrink-0 whitespace-nowrap">· {place.label}</span>}
         </span>
         {place.routable && (
           <button
