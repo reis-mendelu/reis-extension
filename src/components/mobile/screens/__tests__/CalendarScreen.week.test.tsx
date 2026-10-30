@@ -426,4 +426,30 @@ describe('CalendarScreen — week view', () => {
     fireEvent.touchMove(el, { touches: [t(1, 160, gone), t(2, 240, el)] });
     expect(useAppStore.getState().mobileCalendarView).toBe('week');
   });
+
+  // #622 review: which fingers began on the calendar is remembered by
+  // identifier, across a lift — a finger whose element was removed can still
+  // pair with a new calendar finger.
+  it('a finger whose element was removed can pair with a new calendar finger', () => {
+    render(<CalendarScreen />);
+    const el = screen.getByTestId('calendar-screen');
+    const gone = document.createElement('div');
+    const t = (id: number, x: number, target: Element) => ({
+      identifier: id,
+      clientX: x,
+      clientY: 300,
+      target,
+    });
+    fireEvent.touchStart(el, {
+      touches: [t(1, 80, el), t(2, 320, el)],
+      changedTouches: [t(1, 80, el), t(2, 320, el)],
+    });
+    fireEvent.touchEnd(el, { touches: [t(1, 80, gone)], changedTouches: [t(2, 320, el)] });
+    fireEvent.touchStart(el, {
+      touches: [t(1, 80, gone), t(3, 320, el)],
+      changedTouches: [t(3, 320, el)],
+    });
+    fireEvent.touchMove(el, { touches: [t(1, 160, gone), t(3, 240, el)] });
+    expect(useAppStore.getState().mobileCalendarView).toBe('week');
+  });
 });
