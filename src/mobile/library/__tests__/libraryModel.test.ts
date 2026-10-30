@@ -12,8 +12,8 @@ describe('libraryTints', () => {
   it('colours individual rooms blue and team rooms green, with short names', () => {
     const blocks = Object.fromEntries(LIBRARY_ROOMS.map((r) => [r.featureId, open]));
     const t = libraryTints(blocks, DAY, now, 'cz');
-    expect(t[ind1!.featureId]).toEqual({ fill: TINT_BLUE, label: 'Ind. 1' });
-    expect(t[team1!.featureId]).toEqual({ fill: TINT_GREEN, label: 'Tým 1' });
+    expect(t[ind1!.featureId]).toEqual({ fill: TINT_BLUE, label: 'Ind. 1', group: 'main' });
+    expect(t[team1!.featureId]).toEqual({ fill: TINT_GREEN, label: 'Tým 1', group: 'main' });
   });
   it('greys a room with no free hour left, and names it in English', () => {
     const blocks = { [ind1!.featureId]: [] as Block[], [ind2!.featureId]: open };

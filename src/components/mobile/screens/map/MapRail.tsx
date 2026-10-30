@@ -154,7 +154,10 @@ export function MapRail() {
             type="button"
             onClick={
               selectedLibrary?.featureId != null
-                ? () => useAppStore.setState({ mapSelection: { kind: 'library' } })
+                ? () =>
+                    useAppStore.setState({
+                      mapSelection: { kind: 'library', group: selectedLibrary.group },
+                    })
                 : clearMapSelection
             }
             className="-ml-1.5 flex min-w-0 flex-1 items-center gap-1 rounded-lg px-1.5 py-1 text-left hover:bg-base-200"

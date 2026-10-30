@@ -29,11 +29,14 @@ export const IC_LEFT_ID = 57640;
 export const IC_RIGHT_ID = 576401;
 
 export type LibraryRoomKind = 'individual' | 'team';
+/** The library proper (four rooms) and the IC rooms across the hall: two places to walk to. */
+export type LibraryPart = 'main' | 'ic';
 
 export interface LibraryRoom {
   /** The map polygon (`RoomProperties.id`). */
   featureId: number;
   kind: LibraryRoomKind;
+  part: LibraryPart;
   nameCs: string;
   nameEn: string;
   /** The short name drawn on the room itself. */
@@ -48,6 +51,7 @@ export const LIBRARY_ROOMS: readonly LibraryRoom[] = [
   {
     featureId: 57621,
     kind: 'individual',
+    part: 'main',
     nameCs: 'Individuální studovna 1',
     nameEn: 'Individual Study Room 1',
     labelCs: 'Ind. 1',
@@ -59,6 +63,7 @@ export const LIBRARY_ROOMS: readonly LibraryRoom[] = [
   {
     featureId: 57625,
     kind: 'individual',
+    part: 'main',
     nameCs: 'Individuální studovna 2',
     nameEn: 'Individual Study Room 2',
     labelCs: 'Ind. 2',
@@ -70,6 +75,7 @@ export const LIBRARY_ROOMS: readonly LibraryRoom[] = [
   {
     featureId: 57632,
     kind: 'team',
+    part: 'main',
     nameCs: 'Týmová studovna 1',
     nameEn: 'Team Study Room 1',
     labelCs: 'Tým 1',
@@ -81,6 +87,7 @@ export const LIBRARY_ROOMS: readonly LibraryRoom[] = [
   {
     featureId: 57627,
     kind: 'team',
+    part: 'main',
     nameCs: 'Týmová studovna 2',
     nameEn: 'Team Study Room 2',
     labelCs: 'Tým 2',
@@ -92,6 +99,7 @@ export const LIBRARY_ROOMS: readonly LibraryRoom[] = [
   {
     featureId: IC_LEFT_ID,
     kind: 'team',
+    part: 'ic',
     nameCs: 'Studovna IC levá',
     nameEn: 'Study Room IC left',
     labelCs: 'IC levá',
@@ -103,6 +111,7 @@ export const LIBRARY_ROOMS: readonly LibraryRoom[] = [
   {
     featureId: IC_RIGHT_ID,
     kind: 'team',
+    part: 'ic',
     nameCs: 'Studovna IC pravá',
     nameEn: 'Study Room IC right',
     labelCs: 'IC pravá',

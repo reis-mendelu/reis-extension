@@ -56,7 +56,7 @@ export function roomFocusView<B>(
  * their own box, tight enough that each room's name has room to be read, which
  * the whole building's frame does not give six small rooms.
  */
-export const GROUP_FOCUS_MAX_ZOOM = 20;
+export const GROUP_FOCUS_MAX_ZOOM = 21;
 
 export function groupFocusView<B>(groupBounds: B, railPx = 0): FocusView<B> {
   return {

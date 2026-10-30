@@ -251,6 +251,8 @@ export interface RoomIndexEntry {
 export interface RoomTint {
   fill: string;
   label: string;
+  /** Tinted rooms that belong together (the library's two parts), framed one at a time. */
+  group: string;
 }
 
 // Unified selection for the detail panel and search results.
@@ -266,7 +268,7 @@ export type MapSelection =
   | { kind: 'placedRoom'; label: string; display: string }
   | { kind: 'gardenPlace'; place: GardenPlace } // one of the botanical garden's places
   | { kind: 'societyPin'; pin: SocietyPin } // a society's logo on the map for a while
-  // the library's bookable study rooms (phone and iPad): the list, or one room (`featureId`)
-  | { kind: 'library'; featureId?: number }
+  // the library's bookable study rooms (phone and iPad): the list of one part (`group`), or one room (`featureId`)
+  | { kind: 'library'; featureId?: number; group?: string }
   // a society event pin
   | { kind: 'event'; event: import('./events').MapEvent };

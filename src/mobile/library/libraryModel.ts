@@ -29,7 +29,7 @@ export function libraryTints(
       : r.kind === 'individual'
         ? TINT_BLUE
         : TINT_GREEN;
-    out[r.featureId] = { fill, label: lang === 'cz' ? r.labelCs : r.labelEn };
+    out[r.featureId] = { fill, label: lang === 'cz' ? r.labelCs : r.labelEn, group: r.part };
   }
   return out;
 }

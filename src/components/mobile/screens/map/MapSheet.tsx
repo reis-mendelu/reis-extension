@@ -307,7 +307,10 @@ export function MapSheet() {
             // From one room Back returns to the list of rooms, not to nothing.
             onBack={
               selectedLibrary?.featureId != null
-                ? () => useAppStore.setState({ mapSelection: { kind: 'library' } })
+                ? () =>
+                    useAppStore.setState({
+                      mapSelection: { kind: 'library', group: selectedLibrary.group },
+                    })
                 : clearMapSelection
             }
           />

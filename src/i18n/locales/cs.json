@@ -1553,7 +1553,9 @@
       "cancelled": "Rezervace zrušena.",
       "cancelUnknown": "Knihovna neodpověděla. Zkontroluj e-mail, jestli rezervace zmizela.",
       "cancelFailed": "Rezervaci se nepodařilo zrušit.",
-      "seatsOne": "1 místo"
+      "seatsOne": "1 místo",
+      "partMain": "Knihovna",
+      "partIc": "Studovny IC"
     }
   },
   "session": {

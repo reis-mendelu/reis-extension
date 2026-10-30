@@ -23,7 +23,8 @@ import { initLeafletMap, flyAndReveal, drawLandmarks } from './mapLayers';
 import { drawRemotePlaces, REMOTE, REMOTE_IDS } from './remoteLayers';
 import { drawCampusPaths } from './pathLayers';
 import { roomLabelsHidden } from './roomLabels';
-import { applyRoomTints, type RoomPoly } from './roomTints';
+import { applyRoomTints, tintedBoundsOf, type RoomPoly } from './roomTints';
+import { dimsOtherRooms } from './dimsOtherRooms';
 import { drawRoomRouteChip, chipShown, clampRoomChip } from './roomRouteChip';
 import { translate } from '../../i18n/translate';
 import { CAMPUS_NAVIGATION_ENABLED } from '../../utils/routing/navigationEnabled';
@@ -404,8 +405,6 @@ export function MapCanvas() {
       .sort((a) => (a.properties.category === 'structure' ? -1 : 1));
     roomPolysRef.current.clear();
     let targetBounds: L.LatLngBounds | null = null;
-    // The tinted rooms' own box: what a screen that tints a group (the library) frames.
-    let tintedBounds: L.LatLngBounds | null = null;
     for (const f of feats as RoomFeature[]) {
       const p = f.properties,
         struct = p.category === 'structure';
@@ -454,18 +453,22 @@ export function MapCanvas() {
         }
       }
       poly.addTo(layer);
-      if (select.mapRoomTints[p.id]) {
-        const pb = poly.getBounds();
-        tintedBounds = tintedBounds
-          ? tintedBounds.extend(pb)
-          : L.latLngBounds(pb.getSouthWest(), pb.getNorthEast());
-      }
       if (isSel) {
         poly.bringToFront();
         targetBounds = poly.getBounds();
       }
     }
-    applyRoomTints(roomPolysRef.current, select.mapRoomTints, selectedId, SELECTED_STYLE);
+    applyRoomTints(
+      roomPolysRef.current,
+      select.mapRoomTints,
+      selectedId,
+      SELECTED_STYLE,
+      dimsOtherRooms(sel, select.mapRoomTints)
+    );
+    const tintedBounds =
+      sel?.kind === 'library'
+        ? tintedBoundsOf(roomPolysRef.current, select.mapRoomTints, sel.group)
+        : null;
     // Which box to frame is a decision, so it lives in a tested pure module:
     // a selected room frames its BUILDING, not its own few metres of floor.
     // See focusBounds.roomFocusView.
@@ -492,7 +495,7 @@ export function MapCanvas() {
     // The library's room list hugs the lower part of a phone's screen: the plan
     // has to end up above it, as a pin does (see sheetClearance.ts).
     if (isPhone && select.mapSelection?.kind === 'library' && tintedBounds) {
-      panPinClearOfSheet(map, (tintedBounds as L.LatLngBounds).getCenter());
+      panPinClearOfSheet(map, tintedBounds.getCenter());
     }
     // isPhone joins the deps because the rail offset reads it. It is stable
     // for the life of a device, but it flips on a browser resize, and this
@@ -510,9 +513,21 @@ export function MapCanvas() {
   useEffect(() => {
     const sel = useAppStore.getState().mapSelection;
     const selId =
-      sel?.kind === 'room' ? sel.room.id : sel?.kind === 'roomRef' ? sel.entry.placeId : null;
-    applyRoomTints(roomPolysRef.current, roomTints, selId, SELECTED_STYLE);
-  }, [roomTints]);
+      sel?.kind === 'room'
+        ? sel.room.id
+        : sel?.kind === 'roomRef'
+          ? sel.entry.placeId
+          : sel?.kind === 'library'
+            ? (sel.featureId ?? null)
+            : null;
+    applyRoomTints(
+      roomPolysRef.current,
+      roomTints,
+      selId,
+      SELECTED_STYLE,
+      dimsOtherRooms(sel, roomTints)
+    );
+  }, [roomTints, mapSelection]);
 
   // A building with no outline of its own (D05 → building D) still has to
   // show which one it is; the camera move alone left the map looking unchanged.
@@ -540,17 +555,34 @@ export function MapCanvas() {
         selected = poly;
       } else poly.setStyle(base);
     }
-    // One library room picked from its list: close in on it, above the sheet.
+    // The library: one room picked from its list closes in on that room, a part
+    // (or Back from a room) on that part's rooms, each above the sheet or left of
+    // the rail.
     const lens = mapRef.current;
-    if (mapSelection?.kind === 'library' && selected && isPhone && lens) {
-      const room = (selected as L.Polygon).getBounds();
-      lens.fitBounds(room, {
-        maxZoom: 21,
-        paddingTopLeft: [32, 72],
-        paddingBottomRight: [32, 32],
-        animate: false,
-      });
-      panPinClearOfSheet(lens, room.getCenter());
+    if (mapSelection?.kind === 'library' && isPhone && lens) {
+      const railPx = railPaddingPx(
+        lens.getSize().x,
+        isPhone,
+        railRef.current.width,
+        railRef.current.open
+      );
+      const box = selected
+        ? (selected as L.Polygon).getBounds()
+        : tintedBoundsOf(
+            roomPolysRef.current,
+            useAppStore.getState().mapRoomTints,
+            mapSelection.group
+          );
+      if (box) {
+        const view = groupFocusView<L.LatLngBoundsExpression>(box, railPx);
+        lens.fitBounds(view.bounds, {
+          maxZoom: selected ? 21 : view.maxZoom,
+          paddingTopLeft: view.paddingTopLeft,
+          paddingBottomRight: view.paddingBottomRight,
+          animate: false,
+        });
+        panPinClearOfSheet(lens, box.getCenter());
+      }
     }
     // The offer belongs where the question was asked, and ONLY when the
     // question came from the timetable. `routeSuggestion` is set by the pin

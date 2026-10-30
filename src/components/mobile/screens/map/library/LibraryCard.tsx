@@ -2,11 +2,16 @@ import { useState } from 'react';
 import { useAppStore } from '../../../../../store/useAppStore';
 import { useTranslation } from '../../../../../hooks/useTranslation';
 import { RoomDirections } from '../../../../CampusMap/RoomDirections';
-import { LIBRARY_ROOMS, type LibraryRoom } from '../../../../../data/map/libraryRooms';
+import {
+  LIBRARY_ROOMS,
+  type LibraryPart,
+  type LibraryRoom,
+} from '../../../../../data/map/libraryRooms';
 import { useLibraryStore } from '../../../../../mobile/library/libraryStore';
 import { TINT_BLUE, TINT_GREEN, TINT_GREY } from '../../../../../mobile/library/libraryModel';
 import { DAILY_CAP, freeHours, hourSummary } from '../../../../../mobile/library/slots';
 import { HourGrid } from './HourGrid';
+import type { LibraryView } from './libraryOf';
 
 const HOURS = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
 const iso = (d: Date) =>
@@ -27,16 +32,16 @@ function weekdays(from: Date): Date[] {
  * today, or one room with its hours. The same slot as the event and society
  * cards, so it inherits the sheet and the rail (and the iPad) from them.
  */
-export function LibraryCard({ featureId, flush }: { featureId: number | null; flush?: boolean }) {
-  const room = LIBRARY_ROOMS.find((r) => r.featureId === featureId) ?? null;
+export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolean }) {
+  const room = LIBRARY_ROOMS.find((r) => r.featureId === view.featureId) ?? null;
   return (
     <div data-testid="library-card" className={flush ? 'px-5' : 'px-4'}>
-      {room ? <RoomHours room={room} /> : <RoomList />}
+      {room ? <RoomHours room={room} /> : <RoomList group={view.group} />}
     </div>
   );
 }
 
-function RoomList() {
+function RoomList({ group }: { group: LibraryPart }) {
   const { t, language } = useTranslation();
   const blocks = useLibraryStore((s) => s.blocks);
   const status = useLibraryStore((s) => s.status);
@@ -44,13 +49,14 @@ function RoomList() {
   const day = iso(now);
   return (
     <div className="space-y-2">
+      <PartChips group={group} />
       {status === 'offline' && (
         <p role="status" className="text-sm text-base-content/70">
           {t('mobile.library.offline')}
         </p>
       )}
       <ul className="grid grid-cols-2 gap-2">
-        {LIBRARY_ROOMS.map((r) => (
+        {LIBRARY_ROOMS.filter((r) => r.part === group).map((r) => (
           <RoomRow
             key={r.featureId}
             room={r}
@@ -59,6 +65,29 @@ function RoomList() {
           />
         ))}
       </ul>
+    </div>
+  );
+}
+
+/** The two places the rooms are: the camera goes to the one picked. */
+function PartChips({ group }: { group: LibraryPart }) {
+  const { t } = useTranslation();
+  const parts: LibraryPart[] = ['main', 'ic'];
+  return (
+    <div role="group" className="flex gap-2">
+      {parts.map((p) => (
+        <button
+          key={p}
+          type="button"
+          aria-pressed={p === group}
+          onClick={() => useAppStore.setState({ mapSelection: { kind: 'library', group: p } })}
+          className={`min-h-9 rounded-full px-3 text-sm font-semibold ${
+            p === group ? 'bg-primary text-primary-content' : 'bg-base-100 ring-1 ring-base-300'
+          }`}
+        >
+          {t(p === 'main' ? 'mobile.library.partMain' : 'mobile.library.partIc')}
+        </button>
+      ))}
     </div>
   );
 }
@@ -76,8 +105,14 @@ function RoomRow({
   const full = sum !== null && sum.count === 0;
   const dot = full ? TINT_GREY : room.kind === 'individual' ? TINT_BLUE : TINT_GREEN;
   const select = () =>
-    useAppStore.setState({ mapSelection: { kind: 'library', featureId: room.featureId } });
-  // The label is the one drawn on the room itself, so a row and its polygon match.
+    useAppStore.setState({
+      mapSelection: { kind: 'library', featureId: room.featureId, group: room.part },
+    });
+  // The row spells the room out (the map's "Ind. 1" is only a polygon label) and
+  // says how many people it holds: Tým 1 is for 10, Tým 2 for 6.
+  const name = (lang === 'cz' ? room.nameCs : room.nameEn)
+    .replace(/\s*(studovna|study room)\s*/i, ' ')
+    .trim();
   return (
     <li>
       <button
@@ -92,8 +127,11 @@ function RoomRow({
           style={{ background: dot }}
         />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold text-base-content">
-            {lang === 'cz' ? room.labelCs : room.labelEn}
+          <span className="block truncate text-sm font-semibold text-base-content">{name}</span>
+          <span className="block truncate text-xs text-base-content/70">
+            {t(room.seats === 1 ? 'mobile.library.seatsOne' : 'mobile.library.seats', {
+              n: room.seats,
+            })}
           </span>
           <span className="block truncate text-xs text-base-content/70">
             {sum === null

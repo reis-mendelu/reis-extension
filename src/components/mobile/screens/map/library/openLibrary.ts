@@ -23,5 +23,5 @@ export function openLibrary(): void {
   );
   app.setMapBuilding(LIBRARY_BUILDING_ID);
   app.setMapFloor(LIBRARY_FLOOR_ID);
-  useAppStore.setState({ mapSelection: { kind: 'library' } });
+  useAppStore.setState({ mapSelection: { kind: 'library', group: 'main' } });
 }

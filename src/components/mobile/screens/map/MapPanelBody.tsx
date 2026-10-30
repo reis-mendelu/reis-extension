@@ -4,6 +4,7 @@ import { SocietyPinCard } from '../../../CampusMap/SocietyPinCard';
 import { MapEventsSection } from '../../../CampusMap/MapEventsSection';
 import { RoomDirections } from '../../../CampusMap/RoomDirections';
 import { LibraryCard } from './library/LibraryCard';
+import type { LibraryView } from './library/libraryOf';
 import type { MapEvent } from '../../../../types/events';
 import type { GardenPlace, SocietyPin } from '../../../../types/campusMap';
 
@@ -15,7 +16,7 @@ export interface MapPanelBodyProps {
   /** A society pin (`map_pins`), tapped on the map. Optional, as above. */
   selectedSocietyPin?: SocietyPin | null;
   /** The library's rooms, or one of them (`featureId`), on phone and iPad. */
-  selectedLibrary?: { featureId: number | null } | null;
+  selectedLibrary?: LibraryView | null;
   /** The rail frames its own content, so the card inside it renders flush. */
   flush?: boolean;
 }
@@ -51,7 +52,7 @@ export function MapPanelBody({
     );
   }
   if (selectedLibrary) {
-    return <LibraryCard featureId={selectedLibrary.featureId} flush={flush} />;
+    return <LibraryCard view={selectedLibrary} flush={flush} />;
   }
   if (selectedGardenPlace) {
     return (

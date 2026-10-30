@@ -1553,7 +1553,9 @@
       "cancelled": "Booking cancelled.",
       "cancelUnknown": "The library didn't answer. Check your e-mail to see whether the booking is gone.",
       "cancelFailed": "Couldn't cancel the booking.",
-      "seatsOne": "1 seat"
+      "seatsOne": "1 seat",
+      "partMain": "Library",
+      "partIc": "IC rooms"
     }
   },
   "session": {
