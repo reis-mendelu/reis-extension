@@ -66,6 +66,10 @@ const PHONE_FILES = [
  *   `SubjectDrawerSheet.tsx`, `WeekLessonPlace.tsx`, `CalendarScreen.tsx`,
  *   `calendarResume.ts`, `formatWeekRange.ts`, `weekDays.ts`. The capability
  *   each serves is on both trees; the tests below pin that.
+ * - Týden's Halloween week marks (`weekHalloween.ts`, `WeekHalloweenMarks.tsx`,
+ *   and Den's `HalloweenDayEnd.tsx`): the extension decorates its own week
+ *   grid its own way — bats in the top bar, a cobweb in the hours' corner
+ *   (`HalloweenHeaderBats`, `WeeklyCalendarHeader`), from the same art.
  */
 const PHONE_ONLY_BY_DESIGN = [
   'components/mobile/screens/calendar/usePinchView.ts',

@@ -24,7 +24,7 @@ const EMPTY_RANGE: HourRange = { start: 8, end: 16 };
  */
 const MIN_HOURS = 8;
 
-function minutesOf(hhmm: string): number {
+export function minutesOf(hhmm: string): number {
   const [h = NaN, m = NaN] = hhmm.split(':').map(Number);
   return h * 60 + m;
 }

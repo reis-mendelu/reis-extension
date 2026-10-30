@@ -1,8 +1,6 @@
 import type { ReactNode } from 'react';
 import { Calendar1 } from 'lucide-react';
 import { HeaderActions } from '../HeaderActions';
-import { useIsHalloween } from '../../../../hooks/ui/useHalloween';
-import { Pumpkin } from '../../../halloween/HalloweenArt';
 
 export interface ScreenHeaderProps {
   /** Optional: omit where the title already says it. Student's "IS MENDELU
@@ -31,11 +29,6 @@ export interface ScreenHeaderProps {
    * Calendar tab and the empty day's art on this same screen.
    */
   titleAction?: { label: string; onClick: () => void };
-  /**
-   * The calendar's date: the one title that gets the Halloween week's pumpkin.
-   * The other tabs' titles are words, and a pumpkin would only squeeze them.
-   */
-  seasonal?: boolean;
   /** A round action of this screen's own, first in the action cluster. */
   leadingAction?: ReactNode;
 }
@@ -58,10 +51,8 @@ export function ScreenHeader({
   below,
   action,
   titleAction,
-  seasonal = false,
   leadingAction,
 }: ScreenHeaderProps) {
-  const pumpkin = useIsHalloween() && seasonal && <Pumpkin className="h-6 w-6 flex-shrink-0" />;
   return (
     // The top padding carries --safe-top because this is the topmost element on
     // every mobile screen and targetSdk 36 forces edge-to-edge: without it the
@@ -92,7 +83,6 @@ export function ScreenHeader({
               className="-my-1.5 flex min-w-0 items-center gap-1 py-1.5 text-left"
             >
               <span className={TITLE_CLASS}>{title}</span>
-              {pumpkin}
               {/* 18px at stroke 2: at 16px and 2.5 the "1" closed up and the
                   glyph read as a bare calendar page, which is not "today". */}
               <Calendar1
@@ -104,7 +94,6 @@ export function ScreenHeader({
           ) : (
             <div className="flex min-w-0 items-center gap-1">
               <span className={TITLE_CLASS}>{title}</span>
-              {pumpkin}
             </div>
           )}
         </div>

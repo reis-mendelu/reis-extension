@@ -310,4 +310,28 @@ describe('CalendarScreen — week view', () => {
     expect(within(strip).getAllByText('svátek')).toHaveLength(1);
     expect(within(screen.getByTestId('week-grid')).queryByText(/svátek/i)).toBeNull();
   });
+
+  // Halloween week: decorations only in free space, never on a block.
+  it('decorates the week during Halloween, in free space only', () => {
+    vi.setSystemTime(new Date('2026-11-04T10:00:00'));
+    useAppStore.setState({
+      mobileCalendarView: 'week',
+      now: new Date(),
+      mobileSelectedDayIso: '2026-11-04',
+      schedule: { data: [{ ...java, date: '20261103' }], status: 'success' },
+    } as never);
+    render(<CalendarScreen />);
+    const grid = screen.getByTestId('week-grid');
+    expect(within(grid).getByTestId('week-halloween-web')).toBeTruthy();
+    expect(within(grid).getByTestId('week-halloween-spider')).toBeTruthy();
+    expect(within(grid).getAllByTestId('week-halloween-pumpkin').length).toBeGreaterThan(0);
+    const block = screen.getByRole('button', { name: /Programovací jazyk Java/ });
+    expect(block.querySelector('[data-testid^="week-halloween"]')).toBeNull();
+  });
+
+  it('draws no Halloween outside the week', () => {
+    useAppStore.setState({ mobileCalendarView: 'week' } as never);
+    render(<CalendarScreen />);
+    expect(screen.queryByTestId('week-halloween-web')).toBeNull();
+  });
 });

@@ -9,7 +9,11 @@ import { useSwipeSteps } from '../../primitives/useSwipeSteps';
 import { useOpenWeekLesson } from './useOpenWeekLesson';
 import { useElementHeight } from './useElementHeight';
 import { WeekBlock } from './WeekBlock';
-import { weekHourRange, placeDay, nowOffset } from './weekLayout';
+import { weekHalloweenSpots } from './weekHalloween';
+import { useIsHalloween } from '../../../../hooks/ui/useHalloween';
+import { SprawlingWeb } from '../../../halloween/HalloweenArt';
+import { WeekHalloweenMarks } from './WeekHalloweenMarks';
+import { weekHourRange, placeDay, nowOffset, minutesOf } from './weekLayout';
 import { CALENDAR_BOTTOM_PAD } from './calendarBottomPad';
 
 export interface WeekGridProps {
@@ -54,6 +58,23 @@ export function WeekGrid({ lessons, selectedIso, lessonDates, onSelectDay }: Wee
   const range = weekHourRange(weekLessons);
   const span = range.end - range.start;
   const hours = Array.from({ length: span + 1 }, (_, i) => range.start + i);
+  // Halloween week: decorations only in space no lesson uses (weekHalloween).
+  const halloween = useIsHalloween();
+  const spots = weekHalloweenSpots(
+    days.map((iso) => ({
+      iso,
+      lessons: weekLessons
+        .filter((l) => l.date === toCompact(iso))
+        .map((l) => ({ start: minutesOf(l.startTime), end: minutesOf(l.endTime) })),
+    })),
+    range,
+    todayIso
+  );
+  // The thread ends ~40px above the first lesson, whatever the screen height.
+  const spiderThread = Math.max(
+    20,
+    Math.min(110, (spots.spiderFreeMin / (span * 60)) * gridPx - 40)
+  );
 
   // Written straight to the node, never through state — DayChips documents why.
   const setOffset = (px: number | null) => {
@@ -82,8 +103,19 @@ export function WeekGrid({ lessons, selectedIso, lessonDates, onSelectDay }: Wee
       ref={swipeRef}
       data-testid="week-grid"
       {...handlers}
-      className={`flex min-h-0 flex-1 touch-none gap-1 px-2 ${bottomPad} pt-2 transition-transform duration-200 ease-out`}
+      className={`relative flex min-h-0 flex-1 touch-none gap-1 px-2 ${bottomPad} pt-2 transition-transform duration-200 ease-out`}
     >
+      {/* First in the DOM, so the hours, the lines and every block paint over
+          it: it spreads behind the grid, never on a lesson. */}
+      {halloween && (
+        <span
+          data-testid="week-halloween-web"
+          aria-hidden="true"
+          className="pointer-events-none absolute left-0 top-0 text-base-content/15"
+        >
+          <SprawlingWeb className="h-48 w-56" />
+        </span>
+      )}
       <div className="relative w-8 flex-shrink-0">
         {hours.slice(0, -1).map((h, i) => (
           <span
@@ -132,6 +164,9 @@ export function WeekGrid({ lessons, selectedIso, lessonDates, onSelectDay }: Wee
                   onOpen={openLesson}
                 />
               ))}
+              {halloween && (
+                <WeekHalloweenMarks iso={iso} spots={spots} spiderThread={spiderThread} />
+              )}
               {nowAt !== null && (
                 <div
                   data-testid="week-now-line"

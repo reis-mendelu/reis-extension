@@ -124,7 +124,6 @@ export function CalendarScreen() {
         titleAction={
           header.away ? { label: t('mobile.calendar.backToToday'), onClick: goToday } : undefined
         }
-        seasonal
         leadingAction={<WeekMenuButton days={header.weekIsos} todayIso={header.todayIso} />}
         action={
           <RefreshButton
