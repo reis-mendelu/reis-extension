@@ -4,6 +4,7 @@ import { useTranslation } from '../../../../hooks/useTranslation';
 import { subjectSheetFor } from '../../../../utils/mobile/lessonActions';
 import { lessonPlace } from '../../../../utils/lessonPlace';
 import { useShowLessonOnMap } from './useShowLessonOnMap';
+import { libraryBlockId } from '../../../../mobile/library/libraryBlock';
 
 /**
  * What tapping a Týden block does (spec 2026-10-30). A lesson opens its
@@ -21,6 +22,11 @@ export function useOpenWeekLesson(): (lesson: BlockLesson) => void {
   const showOnMap = useShowLessonOnMap();
   const { language } = useTranslation();
   return (lesson) => {
+    const booking = libraryBlockId(lesson);
+    if (booking) {
+      pushSheet({ kind: 'libraryCancel', eventId: booking });
+      return;
+    }
     if (lesson.isCustom) {
       if (lessonPlace(lesson, language).onMap) showOnMap(lesson);
       return;
