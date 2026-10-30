@@ -56,11 +56,18 @@ export function WeekBlock({ block, cascade, gridPx, onOpen }: WeekBlockProps) {
       type="button"
       aria-label={[name, room, time].filter(Boolean).join(', ')}
       onClick={() => onOpen(lesson)}
-      style={{ top: `${block.top}%`, height: `${block.height}%`, left: box.left, width: box.width }}
+      style={{
+        top: `${block.top}%`,
+        height: `${block.height}%`,
+        left: box.left,
+        width: box.width,
+        // Paint order by start (placeDay), not lane: a later block is on top.
+        zIndex: block.order + 1,
+      }}
       // A cascaded block is drawn over the one it clashes with; the ring in the
       // screen's colour is what keeps the two edges apart.
       className={`absolute flex flex-col overflow-hidden rounded-md border border-l-[3px] py-0.5 pl-[3px] pr-0.5 text-left ${styles.solid} ${styles.border} ${styles.rail} ${
-        block.lane > 0 && cascade ? 'z-10 ring-2 ring-base-200' : ''
+        block.onTop && cascade ? 'ring-2 ring-base-200' : ''
       }`}
     >
       <span

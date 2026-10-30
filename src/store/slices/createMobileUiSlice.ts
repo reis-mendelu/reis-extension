@@ -85,7 +85,8 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
       set({ mobileCalendarView: fallback });
       return;
     }
-    const stored = await IndexedDBService.get('meta', 'calendar_view_v2');
+    // A failed read is a missing key: an iPad still gets its Týden default.
+    const stored = await IndexedDBService.get('meta', 'calendar_view_v2').catch(() => undefined);
     set({ mobileCalendarView: stored === 'day' || stored === 'week' ? stored : fallback });
   },
   // Every switch is the choice: the icon pill, a pinch, a day tapped in Týden.

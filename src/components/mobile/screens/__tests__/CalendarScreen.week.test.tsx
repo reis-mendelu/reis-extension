@@ -325,13 +325,42 @@ describe('CalendarScreen — week view', () => {
     expect(within(grid).getByTestId('week-halloween-web')).toBeTruthy();
     expect(within(grid).getByTestId('week-halloween-spider')).toBeTruthy();
     expect(within(grid).getAllByTestId('week-halloween-pumpkin').length).toBeGreaterThan(0);
-    const block = screen.getByRole('button', { name: /Programovací jazyk Java/ });
-    expect(block.querySelector('[data-testid^="week-halloween"]')).toBeNull();
+    // Java is Tuesday 15:00–16:50, so Tuesday has no free end: no pumpkin
+    // may sit in its column. Where the spider and pumpkins go is pinned in
+    // weekHalloween.test.ts; this checks the grid draws them in those columns.
+    const columnOf = (el: Element) => el.closest('[data-day-iso]')?.getAttribute('data-day-iso');
+    const pumpkinDays = within(grid).getAllByTestId('week-halloween-pumpkin').map(columnOf);
+    expect(pumpkinDays).not.toContain('2026-11-03');
+    expect(columnOf(within(grid).getByTestId('week-halloween-spider'))).toBe('2026-11-04');
   });
 
   it('draws no Halloween outside the week', () => {
     useAppStore.setState({ mobileCalendarView: 'week' } as never);
     render(<CalendarScreen />);
     expect(screen.queryByTestId('week-halloween-web')).toBeNull();
+    expect(screen.queryByTestId('week-halloween-spider')).toBeNull();
+    expect(screen.queryByTestId('week-halloween-pumpkin')).toBeNull();
+  });
+
+  // PR #618 review: a third finger must not leave a stale baseline behind.
+  it('a third finger resets the pinch; the remaining pair starts fresh', () => {
+    render(<CalendarScreen />);
+    const el = screen.getByTestId('calendar-screen');
+    const t = (id: number, x: number) => ({ identifier: id, clientX: x, clientY: 300 });
+    fireEvent.touchStart(el, { touches: [t(1, 100), t(2, 300)] });
+    fireEvent.touchStart(el, { touches: [t(1, 100), t(2, 300), t(3, 380)] });
+    fireEvent.touchEnd(el, { touches: [t(2, 300), t(3, 380)] });
+    // The remaining pair is 80px apart; against the old 200px baseline that
+    // would read as a pinch in. It must not switch.
+    fireEvent.touchMove(el, { touches: [t(2, 300), t(3, 380)] });
+    expect(useAppStore.getState().mobileCalendarView).toBe('day');
+  });
+
+  // PR #618 review: spreading over a day's NAME opens that day too.
+  it('a day chip in Týden names its day for a spread', () => {
+    useAppStore.setState({ mobileCalendarView: 'week' } as never);
+    render(<CalendarScreen />);
+    const chip = within(screen.getByTestId('day-strip')).getByRole('button', { name: /Út 6/ });
+    expect(chip.closest('[data-day-iso]')?.getAttribute('data-day-iso')).toBe('2026-10-06');
   });
 });

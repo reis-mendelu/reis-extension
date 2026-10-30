@@ -9,11 +9,11 @@ import { useSwipeSteps } from '../../primitives/useSwipeSteps';
 import { useOpenWeekLesson } from './useOpenWeekLesson';
 import { useElementHeight } from './useElementHeight';
 import { WeekBlock } from './WeekBlock';
-import { weekHalloweenSpots } from './weekHalloween';
+import { weekHalloweenSpots, halloweenDays } from './weekHalloween';
 import { useIsHalloween } from '../../../../hooks/ui/useHalloween';
 import { SprawlingWeb } from '../../../halloween/HalloweenArt';
 import { WeekHalloweenMarks } from './WeekHalloweenMarks';
-import { weekHourRange, placeDay, nowOffset, minutesOf } from './weekLayout';
+import { weekHourRange, placeDay, nowOffset } from './weekLayout';
 import { CALENDAR_BOTTOM_PAD } from './calendarBottomPad';
 
 export interface WeekGridProps {
@@ -60,16 +60,7 @@ export function WeekGrid({ lessons, selectedIso, lessonDates, onSelectDay }: Wee
   const hours = Array.from({ length: span + 1 }, (_, i) => range.start + i);
   // Halloween week: decorations only in space no lesson uses (weekHalloween).
   const halloween = useIsHalloween();
-  const spots = weekHalloweenSpots(
-    days.map((iso) => ({
-      iso,
-      lessons: weekLessons
-        .filter((l) => l.date === toCompact(iso))
-        .map((l) => ({ start: minutesOf(l.startTime), end: minutesOf(l.endTime) })),
-    })),
-    range,
-    todayIso
-  );
+  const spots = weekHalloweenSpots(halloweenDays(days, weekLessons), range, todayIso);
   // The thread ends ~40px above the first lesson, whatever the screen height.
   const spiderThread = Math.max(
     20,

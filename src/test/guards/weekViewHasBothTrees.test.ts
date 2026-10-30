@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -76,6 +76,9 @@ const PHONE_ONLY_BY_DESIGN = [
   'components/mobile/primitives/useSwipeSteps.ts',
   'components/mobile/screens/calendar/CalendarViewSwitch.tsx',
   'components/mobile/screens/calendar/calendarBottomPad.ts',
+  'components/mobile/screens/calendar/weekHalloween.ts',
+  'components/mobile/screens/calendar/WeekHalloweenMarks.tsx',
+  'components/mobile/screens/calendar/HalloweenDayEnd.tsx',
 ];
 
 describe('week view on both trees', () => {
@@ -83,8 +86,13 @@ describe('week view on both trees', () => {
     expect(() => read(file)).not.toThrow();
   });
 
-  it('the extension has no pinch: it is used with a mouse', () => {
-    expect(read('components/WeeklyCalendar/WeeklyCalendarGrid.tsx')).not.toMatch(/touches|pinch/i);
+  // Every file of the desktop calendar, not one (PR #618 review).
+  it.each(
+    readdirSync(resolve(process.cwd(), 'src/components/WeeklyCalendar')).filter((f) =>
+      /\.tsx?$/.test(f)
+    )
+  )('the extension calendar has no pinch: WeeklyCalendar/%s', (file) => {
+    expect(read(`components/WeeklyCalendar/${file}`)).not.toMatch(/touches|pinch|gesturestart/i);
   });
 
   it.each(PHONE_FILES)('%s exists', (file) => {

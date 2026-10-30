@@ -45,7 +45,7 @@ export function MenuDayTabs({
             onClick={() => onPick(iso)}
             className={`min-h-11 flex-1 rounded-xl border px-1 text-sm ${
               iso === day
-                ? 'border-primary bg-primary/10 font-bold text-primary'
+                ? 'border-primary bg-primary/10 font-bold text-[var(--tone-primary)]'
                 : serves
                   ? 'border-transparent font-medium text-base-content/70'
                   : 'border-transparent font-medium text-base-content/30'

@@ -1,4 +1,7 @@
-import type { HourRange } from './weekLayout';
+import type { BlockLesson } from '../../../../types/calendarTypes';
+import { renderedBlockMinutes } from '../../../WeeklyCalendar/utils';
+import { minutesOf, type HourRange } from './weekLayout';
+import { toCompact } from '../../../../utils/mobile/weekDays';
 
 /** One shown day: its iso date and its lessons in minutes from midnight. */
 export interface WeekHalloweenDay {
@@ -13,6 +16,24 @@ export interface WeekHalloweenSpots {
   spiderFreeMin: number;
   /** Columns a pumpkin sits at the bottom of, at most two. */
   pumpkinDays: string[];
+}
+
+/**
+ * The shown days with each lesson as the grid DRAWS it: from its start to its
+ * rendered end (an exam's 90-minute floor), skipping a lesson without usable
+ * times, which `weekHourRange` and `placeDay` skip too.
+ */
+export function halloweenDays(days: string[], lessons: BlockLesson[]): WeekHalloweenDay[] {
+  return days.map((iso) => ({
+    iso,
+    lessons: lessons
+      .filter((l) => l.date === toCompact(iso))
+      .flatMap((l) => {
+        const start = minutesOf(l.startTime);
+        if (!Number.isFinite(start) || !Number.isFinite(minutesOf(l.endTime))) return [];
+        return [{ start, end: start + renderedBlockMinutes(l.startTime, l.endTime, l.isExam) }];
+      }),
+  }));
 }
 
 /** A spider needs this much free column under the top to hang in. */

@@ -72,19 +72,24 @@ export function WeekBody({
         view="week"
         onOpenDay={onOpenDay}
       />
-      <div ref={gridRef} className="relative flex min-h-0 flex-1 flex-col">
+      {/* The indicator is the grid's SIBLING, as in DayBody: the refresh
+          holds the referenced element down while it runs, and that must be
+          the grid, not the spinner (PR #618 review). */}
+      <div className="relative flex min-h-0 flex-1 flex-col">
         <PullRefreshIndicator
           scrollerRef={gridRef}
           surfaceRef={pullSurfaceRef}
           refreshing={scheduleRefreshing}
           onRefresh={triggerScheduleRefresh}
         />
-        <WeekGrid
-          lessons={lessons}
-          selectedIso={selectedIso}
-          lessonDates={lessonDates}
-          onSelectDay={onSelectDay}
-        />
+        <div ref={gridRef} className="relative flex min-h-0 flex-1 flex-col">
+          <WeekGrid
+            lessons={lessons}
+            selectedIso={selectedIso}
+            lessonDates={lessonDates}
+            onSelectDay={onSelectDay}
+          />
+        </div>
       </div>
     </>
   );

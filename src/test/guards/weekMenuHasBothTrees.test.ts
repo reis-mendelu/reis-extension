@@ -48,6 +48,11 @@ describe('the week view reaches the menu on both trees', () => {
     expect(read('components/mobile/screens/calendar/WeekMenuButton.tsx')).toContain('<ChefHat');
   });
 
+  // PR #618 review: the hat is Týden's way in; Den's card must stay.
+  it('Den still carries the menu card under the day', () => {
+    expect(read('components/mobile/screens/calendar/DayBody.tsx')).toContain('<MenuCard');
+  });
+
   it('the extension week keeps a chef hat per day', () => {
     expect(read('components/WeeklyCalendar/WeeklyCalendarHeader.tsx')).toContain('<ChefHat');
   });

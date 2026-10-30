@@ -48,6 +48,8 @@ describe('Halloween decorations', () => {
   it('puts no pumpkin on any title', () => {
     useAppStore.setState({ now: IN_WEEK });
     const pumpkins = (c: HTMLElement) => c.querySelectorAll('ellipse[fill="#f97316"]').length;
+    const today = render(<ScreenHeader title="Po 2. listopadu" />);
+    expect(pumpkins(today.container)).toBe(0);
     const away = render(
       <ScreenHeader title="Út 3. listopadu" titleAction={{ label: 'Dnes', onClick: () => {} }} />
     );

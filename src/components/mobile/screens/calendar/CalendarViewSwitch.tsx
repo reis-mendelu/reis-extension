@@ -15,7 +15,7 @@ import type { MobileCalendarView } from '../../../../store/types';
  * Placed and dressed like the bar under it, 8px above it, the spot the Dnes
  * pill held: `bottom-[84px]` clears BottomNav (18px inset + its ~54px height +
  * a gap). The agenda and the week grid both clear it (CALENDAR_BOTTOM_PAD), so
- * it never covers a lesson.
+ * it never covers a lesson. 44px buttons, the app's touch floor (#493 had 36).
  *
  * #528 took it off the screen for a choose-once panel and a Nastavení row;
  * spec 2026-10-30 brought it back as it was, and every switch is remembered.
@@ -37,7 +37,7 @@ export function CalendarViewSwitch({ onDay }: { onDay?: () => void }) {
       }}
       // Tonal, like BottomNav's active tab: --tone-primary on the /15 tint, not
       // raw primary, which measured 2.03:1 in the light theme.
-      className={`flex min-h-9 min-w-11 items-center justify-center rounded-full transition-colors ${
+      className={`flex min-h-11 min-w-11 items-center justify-center rounded-full transition-colors ${
         view === value ? 'bg-primary/15 text-[var(--tone-primary)]' : 'text-base-content/70'
       }`}
     >

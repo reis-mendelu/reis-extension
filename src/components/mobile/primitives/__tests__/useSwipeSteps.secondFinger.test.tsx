@@ -11,21 +11,26 @@ import { useSwipeSteps } from '../useSwipeSteps';
 describe('useSwipeSteps — a second finger', () => {
   const onEnd = vi.fn();
   const onCancel = vi.fn();
+  const onMove = vi.fn();
   function Host() {
     const elementRef = useRef<HTMLDivElement>(null);
-    const { handlers } = useSwipeSteps({ elementRef, onMove: () => {}, onEnd, onCancel });
+    const { handlers } = useSwipeSteps({ elementRef, onMove, onEnd, onCancel });
     return <div ref={elementRef} data-testid="surface" {...handlers} />;
   }
 
   it('cancels the swipe the first finger started', () => {
     onEnd.mockClear();
     onCancel.mockClear();
+    onMove.mockClear();
     render(<Host />);
     const el = screen.getByTestId('surface');
     fireEvent.pointerDown(el, { clientX: 300, clientY: 100, pointerId: 1 });
     fireEvent.pointerMove(el, { clientX: 260, clientY: 100, pointerId: 1 });
     fireEvent.pointerDown(el, { clientX: 100, clientY: 300, pointerId: 2 });
+    const movesBefore = onMove.mock.calls.length;
     fireEvent.pointerMove(el, { clientX: 140, clientY: 100, pointerId: 1 });
+    // No live movement once the second finger is down (PR #618 review).
+    expect(onMove.mock.calls.length).toBe(movesBefore);
     fireEvent.pointerUp(el, { clientX: 140, clientY: 100, pointerId: 1 });
     expect(onCancel).toHaveBeenCalled();
     expect(onEnd).not.toHaveBeenCalledWith(1);

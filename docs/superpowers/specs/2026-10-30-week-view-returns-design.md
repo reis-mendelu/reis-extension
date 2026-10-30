@@ -31,6 +31,9 @@ the view is remembered, and a counter measures how many use Týden.
    remembers Den** (not a peek: tapping the day is the choice). Spreading on a
    day does the same.
 5. **Room code on every block**: the room with a pin glyph, on its own line.
+   On a phone the pin is dropped for a code longer than four characters
+   ("Q01.48"): the code is what the student needs, and both did not fit a
+   ~45px column (measured with verify:ui).
 6. **The subject sheet shows "this lesson" — room, day, time, Trasa → — only
    when it was opened from a Týden block.** From Den it would repeat the row
    the student just tapped; from Předměty there is no lesson.
@@ -45,12 +48,16 @@ the view is remembered, and a counter measures how many use Týden.
 9. **Pull to refresh works in Týden**, started anywhere on the screen, as in
    Den.
 10. **New phone install: Den. New iPad install: Týden.**
-11. **After the update everyone opens on Den**: the 5.4.0 choice still stored in
-    `meta.calendar_view` is ignored.
+11. **After the update the 5.4.0 choice in `meta.calendar_view` is ignored**:
+    existing phones open on Den, and iPads follow decision 10 and open on
+    Týden (confirmed by Dominik, 2026-10-30).
 12. **The pill from Týden to Den** lands on today when the shown week is this
     week, else on the first day of the shown week that has lessons. **Den to
     Týden** shows the week of the day Den was on.
-13. Society and own events behave in Týden as in Den.
+13. Society and own events behave in Týden as in Den: their text opens no
+    subject. Den's row has a separate map pin; a Týden block has no room for
+    one, so tapping the block itself does what Den's pin does (the map, when
+    it knows the place).
 14. The chef hat (#530) stays: in Týden the header's chef hat opens the menu
     with a tab per day.
 15. **A counter**, `calendar_week_view`, through the existing feature counters

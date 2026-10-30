@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { weekHalloweenSpots } from '../weekHalloween';
+import { weekHalloweenSpots, halloweenDays } from '../weekHalloween';
+import type { BlockLesson } from '../../../../../types/calendarTypes';
 
 const h = (hh: number, mm = 0) => hh * 60 + mm;
 const RANGE = { start: 7, end: 17 };
@@ -59,7 +60,24 @@ describe('weekHalloweenSpots', () => {
   });
 
   it('sits none where every column runs to the end', () => {
-    const spots = weekHalloweenSpots([day('mo', [h(15), h(17)])], RANGE, 'mo');
+    const spots = weekHalloweenSpots(
+      [day('mo', [h(7), h(17)]), day('tu', [h(7), h(17)])],
+      RANGE,
+      'mo'
+    );
+    expect(spots.spiderDay).toBeNull();
     expect(spots.pumpkinDays).toEqual([]);
+  });
+
+  // PR #618 review: the marks read what is DRAWN — an exam's 90-minute floor —
+  // and skip a lesson with no usable time instead of passing NaN on.
+  it('reads drawn exam ends and skips unusable times', () => {
+    const l = (date: string, startTime: string, endTime: string, isExam = false) =>
+      ({ date, startTime, endTime, isExam }) as BlockLesson;
+    const days = halloweenDays(
+      ['2026-11-02'],
+      [l('20261102', '15:00', '15:10', true), l('20261102', '', '')]
+    );
+    expect(days).toEqual([{ iso: '2026-11-02', lessons: [{ start: h(15), end: h(16, 30) }] }]);
   });
 });

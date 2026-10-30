@@ -188,7 +188,7 @@ export const FLOWS: Flow[] = [
       ],
       [
         'Week view used',
-        'at most once a day, when the calendar shows the week (phone, iPad)',
+        'when the calendar shows the week (phone, iPad), once per app session; stored as one row per install per day',
         'the random install identifier and the fixed `calendar_week_view` label',
       ],
     ],

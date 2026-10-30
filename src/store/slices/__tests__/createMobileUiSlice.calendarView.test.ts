@@ -81,4 +81,11 @@ describe('createMobileUiSlice — calendar view', () => {
     expect(state.mobileCalendarView).toBe('week');
     expect(IndexedDBService.set).toHaveBeenCalledWith('meta', 'calendar_view_v2', 'week');
   });
+
+  // PR #618 review: a failed read must still give an iPad its Týden default.
+  it('a failed read falls back to the default, not to Den', async () => {
+    vi.mocked(IndexedDBService.get).mockRejectedValue(new Error('idb closed'));
+    await state.hydrateCalendarView({ demo: false, wide: true });
+    expect(state.mobileCalendarView).toBe('week');
+  });
 });

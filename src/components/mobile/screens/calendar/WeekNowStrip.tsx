@@ -39,7 +39,11 @@ export function WeekNowStrip({ data, onRoute }: { data: NowNext; onRoute: () => 
             Q…" at 390px hid the one thing this strip is for. */}
         <span className="flex min-w-0 flex-1 items-baseline gap-1 text-md font-bold">
           <span className="truncate">{name}</span>
-          {place.label && <span className="flex-shrink-0 whitespace-nowrap">· {place.label}</span>}
+          {place.label && (
+            // The room yields only after the name has: shrink-[0.2] against the
+            // name's default 1, so a long off-campus label truncates last.
+            <span className="min-w-0 shrink-[0.2] truncate whitespace-nowrap">· {place.label}</span>
+          )}
         </span>
         {place.routable && (
           <button

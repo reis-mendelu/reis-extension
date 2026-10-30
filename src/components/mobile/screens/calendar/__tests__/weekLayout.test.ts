@@ -113,3 +113,42 @@ describe('nameLines', () => {
     expect(nameLines(20, 13, 16)).toBe(1);
   });
 });
+
+// PR #618 review findings, 2026-10-30.
+describe('weekLayout — review findings', () => {
+  const exam = (id: string, startTime: string, endTime: string): BlockLesson =>
+    ({ ...lesson(id, startTime, endTime), isExam: true }) as BlockLesson;
+
+  it('a record with only a start does not stretch the range (CodeRabbit)', () => {
+    expect(weekHourRange([lesson('a', '10:00', '11:00'), lesson('b', '00:00', '')])).toEqual({
+      start: 10,
+      end: 18,
+    });
+  });
+
+  it('the range covers an exam drawn for its 90-minute floor (CodeRabbit)', () => {
+    // 10-minute oral exam at 17:30: drawn to 19:00, so the range must reach 19.
+    const range = weekHourRange([lesson('a', '09:00', '10:00'), exam('x', '17:30', '17:40')]);
+    expect(range.end).toBe(19);
+  });
+
+  it('a block is covered by a later one that started before it ended, whatever lane (cubic)', () => {
+    // A 8–10 (lane 0), B 9–11 (lane 1), C 10–12 reuses lane 0 and is drawn
+    // after B, so B's lower half is under C, and C is on top.
+    const range = { start: 8, end: 16 };
+    const placed = placeDay(
+      [lesson('a', '08:00', '10:00'), lesson('b', '09:00', '11:00'), lesson('c', '10:00', '12:00')],
+      range
+    );
+    const b = placed.find((p) => p.lesson.id === 'b')!;
+    const c = placed.find((p) => p.lesson.id === 'c')!;
+    expect(b.visible).toBeCloseTo(c.top - b.top, 5);
+    expect(c.visible).toBeCloseTo(c.height, 5);
+    expect(c.order).toBeGreaterThan(b.order);
+  });
+
+  it('a phone cascade never indents a block out of its column (CodeRabbit)', () => {
+    const deep = blockBox(5, 6, true);
+    expect(deep.left).toBe('24px');
+  });
+});

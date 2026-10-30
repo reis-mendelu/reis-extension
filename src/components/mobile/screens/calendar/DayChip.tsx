@@ -1,4 +1,5 @@
 import { getCzechHoliday } from '../../../../utils/holidays';
+import { toIso } from '../../../../utils/mobile/weekDays';
 
 export interface DayChipProps {
   date: Date;
@@ -45,6 +46,8 @@ export function DayChip({
     <button
       type="button"
       aria-current={isToday ? 'date' : undefined}
+      // Where a spread on the chip lands in Den (usePinchView's dayIsoAt).
+      data-day-iso={toIso(date)}
       aria-pressed={isSelected}
       title={holiday ?? undefined}
       onClick={onClick}

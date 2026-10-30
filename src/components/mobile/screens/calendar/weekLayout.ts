@@ -1,5 +1,5 @@
 import type { BlockLesson } from '../../../../types/calendarTypes';
-import { organizeLessons } from '../../../WeeklyCalendar/utils';
+import { organizeLessons, renderedBlockMinutes } from '../../../WeeklyCalendar/utils';
 import { toIso } from '../../../../utils/mobile/weekDays';
 
 /**
@@ -29,10 +29,24 @@ export function minutesOf(hhmm: string): number {
   return h * 60 + m;
 }
 
-/** The whole hours around every lesson in the week, at least eight of them. */
+/**
+ * The whole hours around every lesson in the week, at least eight of them.
+ *
+ * A lesson counts only with BOTH times (a start-only record stretched the
+ * range to midnight while never being drawn), and to its DRAWN end: a short
+ * exam is drawn for its 90-minute floor, which was clipped at the range's end.
+ */
 export function weekHourRange(lessons: BlockLesson[]): HourRange {
-  const starts = lessons.map((l) => minutesOf(l.startTime)).filter(Number.isFinite);
-  const ends = lessons.map((l) => minutesOf(l.endTime)).filter(Number.isFinite);
+  const spans = lessons
+    .map((l) => {
+      const start = minutesOf(l.startTime);
+      const end = minutesOf(l.endTime);
+      if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+      return { start, end: start + renderedBlockMinutes(l.startTime, l.endTime, l.isExam) };
+    })
+    .filter((x): x is { start: number; end: number } => x !== null);
+  const starts = spans.map((x) => x.start);
+  const ends = spans.map((x) => x.end);
   if (starts.length === 0 || ends.length === 0) return { ...EMPTY_RANGE };
   let start = Math.max(0, Math.floor(Math.min(...starts) / 60));
   let end = Math.min(24, Math.ceil(Math.max(...ends) / 60));
@@ -57,23 +71,47 @@ export interface PlacedBlock {
    * this, so the lines do not run on underneath the block on top.
    */
   visible: number;
+  /**
+   * Paint order: by start, then lane. A later block is drawn over an earlier
+   * one it overlaps whatever their lanes — lane 0 is reused once it frees, so
+   * the lane said nothing about which block is on top (PR #618 review).
+   */
+  order: number;
+  /** Whether this block is drawn over an earlier one, so needs the ring. */
+  onTop: boolean;
 }
 
 /** One day's blocks, positioned in the fitted range. */
 export function placeDay(lessons: BlockLesson[], range: HourRange): PlacedBlock[] {
   const span = (range.end - range.start) * 60;
-  const placed = organizeLessons(lessons).lessons.map((l) => {
-    const fromTop = minutesOf(l.startTime) - range.start * 60;
-    const minutes = Math.min(l.renderedMinutes, span - fromTop);
-    const top = (Math.max(0, fromTop) / span) * 100;
-    const height = (minutes / span) * 100;
-    return { lesson: l, top, height, lane: l.row, lanes: l.maxColumns || 1, visible: height };
-  });
+  const placed = organizeLessons(lessons)
+    .lessons.map((l) => {
+      const fromTop = minutesOf(l.startTime) - range.start * 60;
+      const minutes = Math.min(l.renderedMinutes, span - fromTop);
+      const top = (Math.max(0, fromTop) / span) * 100;
+      const height = (minutes / span) * 100;
+      return {
+        lesson: l,
+        top,
+        height,
+        lane: l.row,
+        lanes: l.maxColumns || 1,
+        visible: height,
+        order: 0,
+        onTop: false,
+      };
+    })
+    .sort((a, b) => a.top - b.top || a.lane - b.lane);
+  placed.forEach((block, i) => (block.order = i));
   for (const block of placed) {
     for (const over of placed) {
+      // Drawn later and starting inside this block's span: it covers this
+      // block from its own top down.
       const covers =
-        over.lane > block.lane && over.top >= block.top && over.top < block.top + block.height;
-      if (covers) block.visible = Math.min(block.visible, over.top - block.top);
+        over.order > block.order && over.top >= block.top && over.top < block.top + block.height;
+      if (!covers) continue;
+      block.visible = Math.min(block.visible, over.top - block.top);
+      over.onTop = true;
     }
   }
   return placed;
@@ -96,7 +134,9 @@ export function blockBox(
   cascade: boolean
 ): { left: string; width: string } {
   if (cascade) {
-    const indent = lane * CASCADE_INDENT_PX;
+    // Capped at two steps: a fifth lane at 12px each left a ~45px column no
+    // block at all (PR #618 review). Deeper clashes overlap at the cap.
+    const indent = Math.min(lane, 2) * CASCADE_INDENT_PX;
     return { left: `${indent}px`, width: indent ? `calc(100% - ${indent}px)` : '100%' };
   }
   return { left: `${(lane / lanes) * 100}%`, width: `${100 / lanes}%` };

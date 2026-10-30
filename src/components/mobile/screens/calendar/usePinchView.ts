@@ -42,12 +42,14 @@ export function usePinchView({ surfaceRef, onPinchIn, onSpread }: PinchViewConfi
     let from: number | null = null;
     let fired = false;
 
-    const onStart = (e: TouchEvent) => {
+    // Exactly two fingers set the baseline; any other count drops it, so a
+    // third finger and its lift never leave an old pair's distance behind.
+    const baseline = (e: TouchEvent) => {
       const [a, b] = [e.touches[0], e.touches[1]];
-      if (e.touches.length !== 2 || !a || !b) return;
-      from = distance(a, b);
+      from = e.touches.length === 2 && a && b ? distance(a, b) : null;
       fired = false;
     };
+    const onStart = baseline;
     const onMove = (e: TouchEvent) => {
       const [a, b] = [e.touches[0], e.touches[1]];
       if (from === null || fired || e.touches.length !== 2 || !a || !b || from === 0) return;
@@ -61,9 +63,8 @@ export function usePinchView({ surfaceRef, onPinchIn, onSpread }: PinchViewConfi
         spread({ x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 });
       }
     };
-    const onEnd = (e: TouchEvent) => {
-      if (e.touches.length < 2) from = null;
-    };
+    // A lift that leaves two fingers starts a fresh pinch from them.
+    const onEnd = baseline;
     const blockPageZoom = (e: Event) => e.preventDefault();
 
     surface.addEventListener('touchstart', onStart, { passive: true });

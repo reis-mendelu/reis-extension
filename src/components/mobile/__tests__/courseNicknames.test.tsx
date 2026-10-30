@@ -43,7 +43,16 @@ describe('calendar', () => {
   });
 
   it('week grid block', () => {
-    const block = { lesson: makeLesson(), top: 0, height: 20, lane: 0, lanes: 1, visible: 20 };
+    const block = {
+      lesson: makeLesson(),
+      top: 0,
+      height: 20,
+      lane: 0,
+      lanes: 1,
+      visible: 20,
+      order: 0,
+      onTop: false,
+    };
     render(<WeekBlock block={block} cascade={false} gridPx={600} onOpen={vi.fn()} />);
     expect(screen.getByText('Mňam')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Mňam,/ })).toBeInTheDocument();
@@ -51,7 +60,16 @@ describe('calendar', () => {
 
   it('exam block keeps its section after the nickname', () => {
     const lesson = makeLesson({ courseName: 'Management - Zkouška', isExam: true });
-    const block = { lesson, top: 0, height: 20, lane: 0, lanes: 1, visible: 20 };
+    const block = {
+      lesson,
+      top: 0,
+      height: 20,
+      lane: 0,
+      lanes: 1,
+      visible: 20,
+      order: 0,
+      onTop: false,
+    };
     render(<WeekBlock block={block} cascade={false} gridPx={600} onOpen={vi.fn()} />);
     expect(screen.getByText('Mňam - Zkouška')).toBeInTheDocument();
   });
