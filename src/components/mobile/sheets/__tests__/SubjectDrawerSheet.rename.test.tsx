@@ -151,4 +151,13 @@ describe('SubjectDrawerSheet — renaming the subject', () => {
     renderSheet();
     expect(vi.mocked(useSyllabus)).toHaveBeenCalledWith('ALG', '', 'Algoritmizace');
   });
+
+  // Release review (cubic): an Escape that ends an IME composition belongs to
+  // the input method, not to the rename.
+  it('an Escape that ends an IME composition keeps the rename open', () => {
+    renderSheet();
+    fireEvent.click(screen.getByRole('button', { name: 'Přejmenovat předmět' }));
+    fireEvent.keyDown(field(), { key: 'Escape', isComposing: true });
+    expect(field()).toBeTruthy();
+  });
 });

@@ -150,7 +150,9 @@ export function EduroamSheet({ onClose }: EduroamSheetProps) {
               {t(
                 status === 'done' && profileRoute === 'saved'
                   ? 'eduroam.macApp.savedStep'
-                  : 'eduroam.macApp.installStep'
+                  : status === 'done' && profileRoute === 'handed'
+                    ? 'eduroam.macApp.handedStep'
+                    : 'eduroam.macApp.installStep'
               )}
             </span>
           </div>

@@ -72,9 +72,16 @@ describe('czFromPreposition', () => {
 });
 
 describe('formatting', () => {
-  it('drops the year from an IS date', () => {
-    expect(shortDate('20. 10. 2026')).toBe('20. 10.');
-    expect(shortDate('6. 10.')).toBe('6. 10.');
+  it("drops this year's year from an IS date", () => {
+    const now = new Date(2026, 9, 30);
+    expect(shortDate('20. 10. 2026', now)).toBe('20. 10.');
+    expect(shortDate('6. 10.', now)).toBe('6. 10.');
+  });
+
+  // Release review (cubic): a winter semester crosses New Year, so in January
+  // an October date without its year reads as the coming October.
+  it("keeps another year's year", () => {
+    expect(shortDate('20. 10. 2026', new Date(2027, 0, 12))).toBe('20. 10. 2026');
   });
 
   it('writes a time range with an en dash', () => {

@@ -733,7 +733,8 @@
     "macApp": {
       "button": "Add eduroam profile",
       "installStep": "macOS opens System Settings › General › Device Management. Double-click the downloaded eduroam profile, choose Install and enter the password from step one.",
-      "savedStep": "Double-click the file you saved. macOS then lists it in System Settings › General › Device Management: double-click it there, choose Install and enter the password from step one."
+      "savedStep": "Double-click the file you saved. macOS then lists it in System Settings › General › Device Management: double-click it there, choose Install and enter the password from step one.",
+      "handedStep": "Open System Settings › General › Device Management. Double-click the downloaded eduroam profile, choose Install and enter the password from step one."
     },
     "network": {
       "offline": "You're offline. Any internet connection will do for setting up eduroam — mobile data is fine, no Wi‑Fi needed.",

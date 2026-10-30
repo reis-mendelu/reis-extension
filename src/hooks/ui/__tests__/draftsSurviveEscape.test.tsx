@@ -25,8 +25,9 @@ const SHEET = { kind: 'notifications' };
 const sheets = () => useAppStore.getState().mobileSheets;
 
 /**
- * A typed draft is never lost to Escape — the rule the rename field and the
- * report form already keep. On a Mac (and an iPad with a keyboard) Escape is
+ * A typed draft is never lost to Escape — the rule the report form already
+ * keeps. (The subject rename is the one deliberate exception: there Escape
+ * means "cancel this edit", keeps the old name and leaves the sheet open.) On a Mac (and an iPad with a keyboard) Escape is
  * the key that closes a sheet or an editor, and pressed in a field with text
  * in it, it threw that text away: the "why" under a 1–2 star rating in
  * Novinky, the ISKAM top-up amount, a custom event being written. With text

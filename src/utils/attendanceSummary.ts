@@ -26,15 +26,18 @@ export function summarizeAttendance(records: AttendanceRecord[]): AttendanceSumm
   return { attended, counted, absent };
 }
 
-// Whether the Czech word for the leading part starts with s/z/š/ž or a cluster
-// that takes "ze": jednoho, dvou, tří, čtyř, pěti, šesti, sedmi, osmi, devíti.
+// Whether the genitive of the leading part takes "ze" (it starts with s/z/š/ž
+// or a cluster): dvou, tří, čtyř, šesti, sedmi do; jednoho, pěti, osmi, devíti
+// don't. Indexed by the digit.
 const UNITS_ZE = [false, false, true, true, true, false, true, true, false, false];
-// deseti, jedenácti, dvanácti, třinácti, čtrnácti, patnácti, šestnácti, sedmnácti, osmnácti, devatenácti
+// Teens by n − 10: dvanácti, třinácti, čtrnácti, šestnácti, sedmnácti take "ze";
+// deseti, jedenácti, patnácti, osmnácti, devatenácti don't.
 const TEENS_ZE = [false, false, true, true, true, false, true, true, false, false];
-// dvaceti, třiceti, čtyřiceti, padesáti, šedesáti, sedmdesáti, osmdesáti, devadesáti
+// Tens by the tens digit: dvaceti, třiceti, čtyřiceti, šedesáti, sedmdesáti take
+// "ze"; padesáti, osmdesáti, devadesáti don't.
 const TENS_ZE = [false, false, true, true, true, false, true, true, false, false];
 
-/** "z" or "ze" before a written number: "1 z 2", "2 ze 3", "4 z 5". */
+/** "z" or "ze" before a written number: "1 ze 2", "2 ze 3", "4 z 5". */
 export function czFromPreposition(n: number): 'z' | 'ze' {
   if (n >= 100) {
     const h = Math.floor(n / 100) % 10;
@@ -46,9 +49,14 @@ export function czFromPreposition(n: number): 'z' | 'ze' {
   return UNITS_ZE[n] ? 'ze' : 'z';
 }
 
-/** "20. 10. 2026" → "20. 10." — the year is the current one and only costs width. */
-export function shortDate(date: string): string {
-  return date.replace(/\s*\d{4}\s*$/, '');
+/**
+ * "20. 10. 2026" → "20. 10." when 2026 is this year: then the year only costs
+ * width. Another year stays — a winter semester crosses New Year, and in
+ * January "20. 10." would read as the October ahead (release review).
+ */
+export function shortDate(date: string, now: Date = new Date()): string {
+  const year = /\s*(\d{4})\s*$/.exec(date);
+  return year && Number(year[1]) === now.getFullYear() ? date.slice(0, year.index) : date;
 }
 
 /** "13.00-14.50" → "13.00–14.50". */
