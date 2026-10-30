@@ -165,7 +165,7 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'feature_counters',
-    what: 'Three feature counters on the random install id, one whitelisted label each.',
+    what: 'Four feature counters on the random install id, one whitelisted label each.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/featureUsage.ts'],
@@ -185,6 +185,11 @@ export const FLOWS: Flow[] = [
         'eduroam profile handed over',
         'a profile is prepared for you to install (Mac, Windows)',
         'the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it',
+      ],
+      [
+        'Week view used',
+        'when the calendar shows the week (phone, iPad), once per app session; stored as one row per install per day',
+        'the random install identifier and the fixed `calendar_week_view` label',
       ],
     ],
     stores: {
@@ -241,6 +246,11 @@ export const EXEMPT: Exempt[] = [
     call: 'usage_programmes',
     files: ['src/api/usageProgrammes.ts'],
     why: 'Admin console read, signed-in reis_admin.',
+  },
+  {
+    call: 'school_stats',
+    files: ['src/api/schoolStats.ts'],
+    why: 'Admin console read, signed-in reis_admin: aggregates of data already collected, groups under 10 hidden.',
   },
   {
     call: 'feature_stats',

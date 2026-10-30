@@ -45,9 +45,12 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
   const hasContent = notifications.length > 0 || alerts.length > 0 || questions.visible.length > 0;
   const setMobileTab = useAppStore((s) => s.setMobileTab);
   const pushSheet = useAppStore((s) => s.pushSheet);
-  // New points already happened; the deadlines are still ahead. Two sections.
-  const points = alerts.filter((a) => a.type === 'zaznamnik-points');
-  const deadlines = alerts.filter((a) => a.type !== 'zaznamnik-points');
+  // New points and new boxes already happened; the deadlines are still ahead.
+  // Two sections, and both kinds of news open the subject's Záznamník.
+  const isNews = (a: { type: string }) =>
+    a.type === 'zaznamnik-points' || a.type === 'assignment-new';
+  const points = alerts.filter(isNews);
+  const deadlines = alerts.filter((a) => !isNews(a));
   const markNotificationsRead = useAppStore((s) => s.markNotificationsRead);
 
   /**

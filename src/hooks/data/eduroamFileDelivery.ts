@@ -1,7 +1,11 @@
 import type { EduroamCertMaterial } from '../../api/eduroam';
 import { generateEduroamMobileconfig } from '../../services/eduroam/mobileconfig';
 import { generateEapConfig } from '../../services/eduroam/eapConfig';
-import { deliverEduroamProfile, buildProfileDelivery } from '../../mobile/eduroamProfile';
+import {
+  deliverEduroamProfile,
+  buildProfileDelivery,
+  type ProfileRoute,
+} from '../../mobile/eduroamProfile';
 import { trackFeatureSignal } from '../../api/featureUsage';
 
 /**
@@ -12,28 +16,29 @@ import { trackFeatureSignal } from '../../api/featureUsage';
 export async function deliverEduroamFile(
   t: 'mac' | 'windows',
   { rootCaDer, clientP12 }: Pick<EduroamCertMaterial, 'rootCaDer' | 'clientP12'>
-): Promise<void> {
+): Promise<ProfileRoute> {
   const xml = generateEduroamMobileconfig({ rootCaDer, clientP12 });
 
   // Not `saveAs`. In a browser it is the same anchor download it always
   // was, but the Mac target is now also reached from INSIDE the app — reIS
   // on a Mac is the iOS app, where NEHotspotConfiguration is unavailable
   // and a blob download is a silent no-op. deliverEduroamProfile writes the
-  // file natively and hands it to the share sheet there.
+  // file natively and hands it to macOS there (see eduroamProfile.ts).
   const delivery = buildProfileDelivery();
+  let route: ProfileRoute;
   if (t === 'windows') {
     // Windows: same .eap-config as Android, but reIS runs on this PC, so we
     // save it straight to disk. Windows has no association for the
     // extension, so double-clicking does NOT open it — geteduroam loads it
     // from its own ··· menu, which is what the manual's steps walk through.
     const eap = generateEapConfig({ rootCaDer, clientP12 });
-    await deliverEduroamProfile(
+    route = await deliverEduroamProfile(
       new Blob([eap], { type: 'application/eap-config' }),
       'eduroam-reis.eap-config',
       delivery
     );
   } else {
-    await deliverEduroamProfile(
+    route = await deliverEduroamProfile(
       new Blob([xml], { type: 'application/x-apple-aspen-config' }),
       'eduroam-reis.mobileconfig',
       delivery
@@ -45,6 +50,7 @@ export async function deliverEduroamFile(
   // to open it and approve the install (or load it from geteduroam's
   // menu on Windows), and reIS cannot see whether they did.
   void trackFeatureSignal('eduroam_profile_delivered');
+  return route;
 }
 
 // macOS deep link straight to the Profiles / Device Management pane.

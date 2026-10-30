@@ -191,6 +191,7 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
       societyMapEvents: [],
       suggestions: [],
       suggestionsUnread: 0,
+      suggestionsAnnouncedFor: null,
     });
   },
   loadAdminSession: async () => {

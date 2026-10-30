@@ -6,6 +6,17 @@ const LOGIN_FLOOR_MS = 60_000;
 /** Unexplained login failures in a row before giving up until restart. */
 const MAX_UNEXPECTED = 3;
 
+/** What every tool answers while no login is set, so Claude can tell the student. */
+export const NO_LOGIN_MESSAGE =
+  'No IS Mendelu login is set yet. In Claude Code, run /plugin configure reis and enter your IS username and password. In Claude Desktop, open the reIS for Claude extension settings.';
+
+/**
+ * Stands in for the session fetch while no login is set. The server still
+ * starts: exiting left the student a bare "Failed to connect" in /mcp, with
+ * this message only in a log file (seen 2026-10-26).
+ */
+export const noLoginFetch: typeof fetch = () => Promise.reject(new Error(NO_LOGIN_MESSAGE));
+
 export interface IsSession {
   /** Drop-in fetch: cookie to IS only, login on demand, one re-login on expiry. */
   fetch: typeof fetch;

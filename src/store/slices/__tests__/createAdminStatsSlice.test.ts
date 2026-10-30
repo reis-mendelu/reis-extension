@@ -6,6 +6,8 @@ const fetchUsageRetention = vi.hoisted(() => vi.fn());
 vi.mock('../../../api/usageRetention', () => ({ fetchUsageRetention }));
 const fetchUsageProgrammes = vi.hoisted(() => vi.fn());
 vi.mock('../../../api/usageProgrammes', () => ({ fetchUsageProgrammes }));
+const fetchSchoolStats = vi.hoisted(() => vi.fn());
+vi.mock('../../../api/schoolStats', () => ({ fetchSchoolStats }));
 
 import { useAppStore } from '../../useAppStore';
 
@@ -24,13 +26,27 @@ describe('createAdminStatsSlice', () => {
     fetchUsageStats.mockReset().mockResolvedValue(stats);
     fetchUsageRetention.mockReset().mockResolvedValue(null);
     fetchUsageProgrammes.mockReset().mockResolvedValue(null);
+    fetchSchoolStats.mockReset().mockResolvedValue(null);
     useAppStore.setState({
+      adminSchoolStats: null,
       adminRetention: null,
       adminProgrammes: null,
       adminStats: null,
       adminStatsDay: null,
       adminStatsRequestId: 0,
     } as never);
+  });
+
+  it('loads the school card beside the usage numbers, and a failed read keeps what is shown', async () => {
+    const school = { regulars: 1990 };
+    fetchSchoolStats.mockResolvedValueOnce(school);
+    await useAppStore.getState().loadAdminStats();
+    await vi.waitFor(() => expect(useAppStore.getState().adminSchoolStats).toBe(school));
+
+    fetchSchoolStats.mockResolvedValueOnce(null);
+    await useAppStore.getState().loadAdminStats();
+    await vi.waitFor(() => expect(fetchSchoolStats).toHaveBeenCalledTimes(2));
+    expect(useAppStore.getState().adminSchoolStats).toBe(school);
   });
 
   it('asks for today when no day is picked', async () => {

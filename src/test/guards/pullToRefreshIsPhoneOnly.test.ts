@@ -13,10 +13,22 @@ import { describe, expect, it } from 'vitest';
  * `triggerExamsRefresh`. The desktop calendar has no manual refresh at all —
  * that is a known gap, not a choice made here.
  *
+ * The phone tree meets a mouse too: the iPad app on a Mac reports
+ * `pointer: fine` and no pull reaches it, so there `RefreshButton` is a visible
+ * circle among the header actions instead of `sr-only`. That is the same
+ * answer the desktop gives — a control, not a gesture — inside the phone tree.
+ *
  * A subject's Files tab pulls too (SubjectDrawerScroller). Its desktop twin is
  * FilesFreshness, the refresh circle in the drawer header, and both call the
  * same `refreshFilesForSubject` — so what a refresh keeps and adds is one rule
- * (`mergeFolderListing`) on both products, and only the trigger differs.
+ * (`mergeFolderListing`) on both products, and only the trigger differs. On a
+ * Mac the Files tab gets the same visible circle as the calendar, beside the
+ * rename pencil (SubjectFilesRefreshButton), so the phone tree's Mac half has
+ * a control everywhere it has a pull (rendered and asserted visible in
+ * macRefreshIsVisible.test.tsx).
+ *
+ * The pull hint (a list nudging itself down once) plays only with a touch
+ * pointer: on a Mac it would teach the one gesture that machine cannot make.
  *
  * Both halves are pinned. The phone files below own the gesture; the desktop
  * surfaces must not reach for them (a "just reuse the indicator" would ship a
@@ -35,9 +47,13 @@ const PHONE_FILES = [
   'components/mobile/screens/CalendarScreen.tsx',
   'components/mobile/screens/ExamsScreen.tsx',
   'components/mobile/screens/calendar/DayBody.tsx',
+  'components/mobile/screens/calendar/ScreenHeader.tsx',
   'components/mobile/screens/exams/ExamsPullArea.tsx',
   'components/mobile/sheets/SubjectDrawerScroller.tsx',
   'components/mobile/sheets/SubjectDrawerSheet.tsx',
+  'components/mobile/sheets/SubjectFilesRefreshButton.tsx',
+  'components/mobile/sheets/SubjectSheetHeader.tsx',
+  'components/mobile/sheets/useSubjectFilesRefresh.ts',
 ];
 
 function filesUnder(dir: string): string[] {
@@ -71,6 +87,15 @@ describe('pull-to-refresh placement', () => {
     );
     expect(read('components/mobile/sheets/SubjectDrawerScroller.tsx')).toContain(
       'PullRefreshIndicator'
+    );
+  });
+
+  // That every pull has a VISIBLE control on a Mac is pinned by rendering, in
+  // macRefreshIsVisible.test.tsx: a grep for `<RefreshButton` passed with the
+  // sr-only button alone.
+  it('the pull hint is a touch lesson only', () => {
+    expect(read('components/mobile/primitives/PullRefreshIndicator.tsx')).toMatch(
+      /isTouch && hint && seen === false/
     );
   });
 

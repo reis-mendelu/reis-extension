@@ -1,0 +1,16 @@
+{
+  "name": "@reis/capacitor-mac-save",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The macOS Save panel for reIS on a Mac (the iPad app, Designed for iPad). A local Capacitor plugin package, not published.",
+  "license": "Apache-2.0",
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    }
+  },
+  "files": [
+    "ios/Sources",
+    "Package.swift"
+  ]
+}

@@ -37,6 +37,7 @@ const MOBILE_ONLY = [
   'src/components/mobile/sheets/IskamTopUpForm.tsx',
   'src/components/mobile/sheets/MenuSheet.tsx',
   'src/components/mobile/screens/calendar/MenuCard.tsx',
+  'src/components/mobile/screens/calendar/WeekMenuButton.tsx',
 ];
 
 /** Files outside src/mobile/iskam that may reach it, each on the phone tree. */
@@ -45,6 +46,9 @@ const ALLOWED_IMPORTERS = new Set([
   'src/components/mobile/sheets/IskamTopUpForm.tsx',
   'src/components/mobile/sheets/MenuSheet.tsx',
   'src/components/mobile/screens/calendar/MenuCard.tsx',
+  // Týden's chef hat opens the same menza sheet and starts the same balance
+  // check from its tap (spec 2026-10-30).
+  'src/components/mobile/screens/calendar/WeekMenuButton.tsx',
 ]);
 
 const root = process.cwd();

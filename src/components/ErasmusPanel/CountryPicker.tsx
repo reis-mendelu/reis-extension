@@ -4,6 +4,7 @@ import { ERASMUS_COUNTRIES } from '@/constants/erasmusCountries';
 import { useErasmus } from '@/hooks/data/useErasmus';
 import { cn } from '@/components/ui/utils';
 import { useTranslation } from '@/hooks/useTranslation';
+import { pickerKeyDown } from './pickerKeys';
 import { fuzzyMatch, removeDiacritics } from '@/utils/searchUtils';
 
 interface CountryPickerProps {
@@ -105,13 +106,7 @@ export function CountryPicker({
             setSearch(value);
             setIsOpen(true);
           }}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') setIsOpen(false);
-            if (e.key === 'Enter' && results.length > 0) {
-              onChange(results[0].en);
-              setIsOpen(false);
-            }
-          }}
+          onKeyDown={(e) => pickerKeyDown(e, isOpen, setIsOpen, results[0], (c) => onChange(c.en))}
         />
 
         {/* Left Icon: Globe */}

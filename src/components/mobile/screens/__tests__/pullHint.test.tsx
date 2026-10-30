@@ -111,6 +111,19 @@ describe('the pull hint', () => {
     mm.mockRestore();
   });
 
+  // The iPad app on a Mac reports `pointer: fine`, and no mouse or trackpad
+  // makes the touch pull. A list that slides down by itself there teaches a
+  // gesture nobody at that machine can make; the Mac gets a visible refresh
+  // circle in the header instead (RefreshButton).
+  it('does not play without a touch pointer, as on a Mac', () => {
+    baseState({ isTouch: false });
+    render(<CalendarScreen />);
+    act(() => vi.advanceTimersByTime(PULL_HINT_DELAY_MS * 3));
+    expect(animate).not.toHaveBeenCalled();
+    // Not spent either: the same account on an iPad still gets its lesson.
+    expect(useAppStore.getState().pullHintSeen).toBe(false);
+  });
+
   it('an exams pull does not use up the calendar hint', () => {
     // Exams have no hint of their own; pulling there first must not stop the
     // calendar from ever teaching the gesture.

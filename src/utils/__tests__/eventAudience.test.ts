@@ -15,10 +15,10 @@ import {
  * tests are about what a student is shown.
  */
 const cat = BUNDLED_SOCIETIES;
-const pef: Viewer = { facultyKey: 'pef', erasmus: false };
-const frrms: Viewer = { facultyKey: 'frrms', erasmus: false };
-const erasmusPef: Viewer = { facultyKey: 'pef', erasmus: true };
-const unknown: Viewer = { facultyKey: null, erasmus: false };
+const pef: Viewer = { facultyKey: 'pef', erasmus: false, exchange: false };
+const frrms: Viewer = { facultyKey: 'frrms', erasmus: false, exchange: false };
+const erasmusPef: Viewer = { facultyKey: 'pef', erasmus: true, exchange: false };
+const unknown: Viewer = { facultyKey: null, erasmus: false, exchange: false };
 const ev = (societyId: string, subscribersOnly?: boolean) => ({ societyId, subscribersOnly });
 
 describe('audienceOf', () => {
@@ -82,8 +82,18 @@ describe('canSee: partners obey their audience, whatever subscribersOnly says', 
     audience: ['pef:B-OI', 'pef:B-AII'],
   };
   const withSap = { ...cat, sap };
-  const pefOi: Viewer = { facultyKey: 'pef', erasmus: false, programme: 'B-OI' };
-  const pefEm: Viewer = { facultyKey: 'pef', erasmus: false, programme: 'B-EM' };
+  const pefOi: Viewer = {
+    facultyKey: 'pef',
+    erasmus: false,
+    exchange: false,
+    programme: 'B-OI',
+  };
+  const pefEm: Viewer = {
+    facultyKey: 'pef',
+    erasmus: false,
+    exchange: false,
+    programme: 'B-EM',
+  };
 
   it('shows a public partner event only to matching students', () => {
     expect(canSee(ev('sap', false), withSap, pefOi)).toBe(true);
@@ -102,6 +112,58 @@ describe('canSee: partners obey their audience, whatever subscribersOnly says', 
   it('societies keep their faculty rule', () => {
     expect(canSee(ev('supef', false), withSap, frrms)).toBe(true);
     expect(canSee(ev('supef', true), withSap, frrms)).toBe(false);
+  });
+});
+
+describe('canSee: an exchange student sees ESN only (decision 2026-10-29)', () => {
+  // Exchange = IS's exchange programme Z-EXC. Every other society writes in
+  // Czech for Czech students, so even its events "for everyone" are noise here.
+  const exchange: Viewer = { facultyKey: 'pef', erasmus: true, exchange: true, programme: 'Z-EXC' };
+
+  it("shows ESN's events, public and restricted", () => {
+    expect(canSee(ev('esn', false), cat, exchange)).toBe(true);
+    expect(canSee(ev('esn', true), cat, exchange)).toBe(true);
+  });
+
+  it("hides every other society's events, even the ones for everyone", () => {
+    for (const id of ['supef', 'au_frrms', 'usaf', 'ldf', 'zf']) {
+      expect(canSee(ev(id, false), cat, exchange)).toBe(false);
+      expect(canSee(ev(id, true), cat, exchange)).toBe(false);
+    }
+  });
+
+  it("keeps reIS's own events and rows: reIS is the app, not a society", () => {
+    for (const id of ['reis', 'admin', 'academic_deadline', '']) {
+      expect(canSee(ev(id, false), cat, exchange)).toBe(true);
+    }
+  });
+
+  it('hides a partner whose audience the student is in (EY targets PEF)', () => {
+    expect(canSee(ev('ey', false), cat, exchange)).toBe(false);
+  });
+
+  it('hides events of a society missing from the catalog', () => {
+    expect(canSee(ev('ghost', false), cat, exchange)).toBe(false);
+  });
+
+  // ESN by its id, not its label: an edited label must neither empty an
+  // exchange student's feed nor let another society through.
+  it('is ESN by id, whatever the catalog says about labels', () => {
+    const relabelled = { ...cat, esn: { ...cat.esn!, audienceLabel: null } };
+    expect(canSee(ev('esn', false), relabelled, exchange)).toBe(true);
+    expect(canSee(ev('esn', false), {}, exchange)).toBe(true);
+    const impostor = {
+      ...cat,
+      other: { ...cat.supef!, id: 'other', audienceLabel: 'erasmus' as const },
+    };
+    expect(canSee(ev('other', false), impostor, exchange)).toBe(false);
+  });
+
+  // `erasmus` also comes from a text test on studium.pl, which can see a
+  // Czech student's own trips abroad. It may add ESN's events, never hide others.
+  it('the Erasmus flag alone hides nothing', () => {
+    expect(canSee(ev('supef', false), cat, erasmusPef)).toBe(true);
+    expect(canSee(ev('ey', false), cat, erasmusPef)).toBe(true);
   });
 });
 

@@ -1,4 +1,6 @@
 import { useAppStore } from '../store/useAppStore';
+import { useIsHalloween } from '../hooks/ui/useHalloween';
+import { PumpkinShapes } from './halloween/HalloweenArt';
 
 interface ReisLogoProps {
   className?: string;
@@ -12,6 +14,7 @@ interface ReisLogoProps {
 export function ReisLogo({ className = 'w-8 h-8' }: ReisLogoProps) {
   const theme = useAppStore((s) => s.theme);
   const isDark = theme === 'mendelu-dark';
+  const halloween = useIsHalloween();
 
   const bg = isDark ? '#111827' : 'transparent';
   const letter = isDark ? '#ffffff' : '#111827';
@@ -25,7 +28,16 @@ export function ReisLogo({ className = 'w-8 h-8' }: ReisLogoProps) {
         fill={letter}
         fillRule="evenodd"
       />
-      <circle cx="32" cy="96" r="16" fill="#79be15" stroke={dotStroke} strokeWidth="4" />
+      {halloween ? (
+        // The dot becomes a pumpkin for the Halloween week, at the same spot and
+        // the dot's size: the pumpkin's body (32,38 on its 64 grid) lands on the
+        // dot's centre, 32,96, and spans about the dot's 32 units.
+        <g transform="translate(8 67.5) scale(.75)">
+          <PumpkinShapes />
+        </g>
+      ) : (
+        <circle cx="32" cy="96" r="16" fill="#79be15" stroke={dotStroke} strokeWidth="4" />
+      )}
     </svg>
   );
 }

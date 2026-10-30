@@ -7,6 +7,7 @@ import {
   Wifi,
   ChevronRight,
   UserCog,
+  ShieldCheck,
 } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -17,6 +18,7 @@ import { logout } from '../../api/proxyClient';
 import { HiddenItemsSection } from './Profile/HiddenItemsSection';
 import { PartnersBlock } from '../Partners/PartnersBlock';
 import { desktopEduroamTarget } from '../../utils/desktopEduroamTarget';
+import { useLongPress } from '../../hooks/ui/useLongPress';
 import { StudySwitcher } from '../StudySwitcher/StudySwitcher';
 
 export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: () => void }) {
@@ -29,6 +31,14 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
   const openReport = useAppStore((state) => state.openReport);
   const isReisAdmin = useAppStore((state) => state.adminRole === 'reis_admin');
   const openImpersonationPicker = useAppStore((state) => state.openImpersonationPicker);
+  const hasAdminSession = useAppStore((state) => state.adminSession !== null);
+  const openSocietyAdmin = useAppStore((state) => state.openSocietyAdmin);
+  const openAdmin = () => {
+    openSocietyAdmin();
+    onClose?.();
+  };
+  // The hidden door into the admin console: hold your name (spec 2026-10-08).
+  const hold = useLongPress(openAdmin);
   const { params } = useUserParams();
 
   if (!isOpen) return null;
@@ -48,7 +58,8 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
             <div className="flex flex-col gap-2.5 text-xs">
               <div
                 data-testid="profile-popup-name"
-                className="flex items-center gap-3 text-base-content/90"
+                {...hold}
+                className="flex select-none items-center gap-3 text-base-content/90"
               >
                 <User size={16} className="text-base-content/40" />
                 <span className="font-semibold text-sm truncate">{params.fullName}</span>
@@ -131,20 +142,31 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
           </button>
         </div>
 
-        {/* reIS admins only. The admin console has no door in any build
-            (adminConsoleIsDormant.test.ts): its data is reached in Supabase. */}
-        {isReisAdmin && (
+        {/* Admin section: only for a device signed in to the console. Students
+            have nothing here — societies are not chosen (spec 2026-10-08). */}
+        {(hasAdminSession || isReisAdmin) && (
           <div className="py-1 border-b border-base-200">
-            <button
-              onClick={() => {
-                openImpersonationPicker();
-                onClose?.();
-              }}
-              className="w-full flex items-center gap-2 px-1 py-2 hover:bg-base-200 rounded-lg transition-colors"
-            >
-              <UserCog size={16} className="text-base-content/50" />
-              <span className="text-xs opacity-70">{t('impersonation.entry')}</span>
-            </button>
+            {hasAdminSession && (
+              <button
+                onClick={openAdmin}
+                className="w-full flex items-center gap-2 px-1 py-2 hover:bg-base-200 rounded-lg transition-colors"
+              >
+                <ShieldCheck size={16} className="text-base-content/50" />
+                <span className="text-xs opacity-70">{t('admin.entry')}</span>
+              </button>
+            )}
+            {isReisAdmin && (
+              <button
+                onClick={() => {
+                  openImpersonationPicker();
+                  onClose?.();
+                }}
+                className="w-full flex items-center gap-2 px-1 py-2 hover:bg-base-200 rounded-lg transition-colors"
+              >
+                <UserCog size={16} className="text-base-content/50" />
+                <span className="text-xs opacity-70">{t('impersonation.entry')}</span>
+              </button>
+            )}
           </div>
         )}
 

@@ -1,6 +1,7 @@
 import { clearStoredToken } from '../platform/tokenStore';
 import { clearUserParamsCache } from '../utils/userParams';
 import { IndexedDBService } from '../services/storage';
+import { resetNewBoxes } from '../services/sync/newSubmissionBoxes';
 import { logError } from '../utils/reportError';
 import { IS_COOKIE_URL } from './inAppLoginDeps';
 import { runSignOutCleanups, SignOutBlockedError } from './signOutCleanups';
@@ -137,7 +138,15 @@ export function buildSignOutDeps(): SignOutDeps {
       const { clearAdminSession } = await import('../services/admin/clearAdminSession');
       await clearAdminSession();
     },
-    clearLocalData: () => IndexedDBService.clearAll(),
+    clearLocalData: async () => {
+      try {
+        await IndexedDBService.clearAll();
+      } finally {
+        // Even when the wipe failed; behind a sync still being stored, which
+        // would write its boxes back.
+        await resetNewBoxes();
+      }
+    },
     // A reload rather than a hand-rolled teardown: boot() already owns the
     // "no token → present login" path, and re-running it is what guarantees
     // the signed-out app is in exactly the state a fresh install is.

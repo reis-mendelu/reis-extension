@@ -30,6 +30,14 @@ describe('BottomNav — tapping the calendar tab again', () => {
     expect(useAppStore.getState().mobileSelectedDayIso).toBeNull();
   });
 
+  // Home is today in the view the student keeps: Týden stays Týden.
+  it('keeps the remembered view', () => {
+    useAppStore.setState({ mobileCalendarView: 'week' } as never);
+    render(<BottomNav />);
+    fireEvent.click(screen.getByRole('button', { name: 'Kalendář' }));
+    expect(useAppStore.getState().mobileCalendarView).toBe('week');
+  });
+
   it('arriving from another tab keeps the day the student left', () => {
     useAppStore.setState({ mobileTab: 'exams' } as never);
     render(<BottomNav />);

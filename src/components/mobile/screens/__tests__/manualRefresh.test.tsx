@@ -6,6 +6,7 @@ import { useAppStore } from '../../../../store/useAppStore';
 import { syncService } from '../../../../services/sync';
 import { PULL_REFRESH_THRESHOLD_PX } from '../../primitives/pullToRefresh';
 import type { ExamSubject } from '../../../../types/exams';
+import { LOADED } from './pullTestSetup';
 
 /**
  * The calendar's manual refresh: a pull down on the day, and a screen-reader
@@ -25,14 +26,6 @@ import type { ExamSubject } from '../../../../types/exams';
  * mocking the barrel would leave every one of them `undefined`.
  */
 const REFRESH = 'Obnovit';
-
-const LOADED = {
-  isSyncing: false,
-  lastSync: 1,
-  error: null,
-  handshakeDone: true,
-  handshakeTimedOut: false,
-};
 
 function examWithTerm(): ExamSubject {
   return {
@@ -56,7 +49,9 @@ function examWithTerm(): ExamSubject {
 function baseState(overrides: Record<string, unknown> = {}) {
   useAppStore.setState({
     language: 'cz',
+    isTouch: true, // a phone; the Mac case is in guards/macRefreshIsVisible
     mobileSelectedDayIso: '2026-04-20',
+    mobileCalendarView: 'day',
     mobileSheets: [],
     firstSyncSettled: true,
     syncLoaded: { schedule: true, exams: true },
@@ -123,6 +118,29 @@ describe('the calendar refresh', () => {
   it('a sideways swipe on the week strip changes the week and does not refresh', () => {
     render(<CalendarScreen />);
     drag(screen.getByTestId('day-strip'), -FAR * 2, 10);
+    expect(trigger).not.toHaveBeenCalled();
+  });
+
+  // Spec 2026-10-30, decision 9: a pull works in Týden as in Den, from
+  // anywhere on the screen. The 5.4.0 week grid had none.
+  it('pulling down on the week grid refreshes', () => {
+    useAppStore.setState({ mobileCalendarView: 'week' } as never);
+    render(<CalendarScreen />);
+    drag(screen.getByTestId('week-grid'), 0, FAR);
+    expect(trigger).toHaveBeenCalledTimes(1);
+  });
+
+  it('pulling down on the header in Týden refreshes', () => {
+    useAppStore.setState({ mobileCalendarView: 'week' } as never);
+    render(<CalendarScreen />);
+    drag(screen.getByTestId('calendar-screen').firstElementChild as HTMLElement, 0, FAR);
+    expect(trigger).toHaveBeenCalledTimes(1);
+  });
+
+  it('a sideways swipe on the week grid does not refresh', () => {
+    useAppStore.setState({ mobileCalendarView: 'week' } as never);
+    render(<CalendarScreen />);
+    drag(screen.getByTestId('week-grid'), -FAR * 2, 10);
     expect(trigger).not.toHaveBeenCalled();
   });
 

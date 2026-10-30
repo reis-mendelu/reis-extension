@@ -4,10 +4,18 @@ import { parseDate } from '../utils/date';
 import { courseDisplayName } from '../utils/courseDisplayName';
 import { boxCourseCode, boxState } from '../utils/submissionBoxes';
 import { newPointsAlerts } from '../utils/zaznamnik/newPointsAlerts';
+import { boxKey } from '../utils/newBoxDetection';
+import { newBoxAlerts, urgentNewBoxId } from '../utils/newSubmissionBoxAlerts';
 
 export interface DeadlineAlert {
   id: string;
-  type: 'exam-reg-opens' | 'exam-reg' | 'assignment' | 'cvicny-test' | 'zaznamnik-points';
+  type:
+    | 'exam-reg-opens'
+    | 'exam-reg'
+    | 'assignment'
+    | 'assignment-new'
+    | 'cvicny-test'
+    | 'zaznamnik-points';
   title: string;
   body: string;
   deadline?: Date;
@@ -16,6 +24,10 @@ export interface DeadlineAlert {
   /** Set on a row that opens a subject in reIS rather than a page in IS. */
   courseCode?: string;
   courseId?: string;
+  /** On a "Nová odevzdávárna" row: the box it is about (boxKey). */
+  boxKey?: string;
+  /** Counted as seen when this id is: a deadline row whose box's new-box row was seen. */
+  seenWith?: string;
 }
 
 function parseCzDateTime(s: string): Date | null {
@@ -41,6 +53,7 @@ export function useDeadlineAlerts() {
   const markDeadlineAlertsSeen = useAppStore((s) => s.markDeadlineAlertsSeen);
   const pulseNow = useAppStore((s) => s.now);
   const newPoints = useAppStore((s) => s.zaznamnikNewPoints);
+  const newBoxes = useAppStore((s) => s.odevzdavarnyNew);
 
   const markAllSeen = useCallback(
     (ids: string[]) => {
@@ -108,7 +121,12 @@ export function useDeadlineAlerts() {
       }
     }
 
+    const freshBoxes = newBoxAlerts(newBoxes, odevzdavarny, subjects, nicknames, language, now);
+    const announced = new Set(freshBoxes.map((a) => a.boxKey));
+
     for (const a of odevzdavarny) {
+      // Its "Nová odevzdávárna" row already says when it is due.
+      if (announced.has(boxKey(a))) continue;
       // The list also holds boxes IS will not take files for ("Kam nemohu").
       // Files alone do not silence it: until the student confirms in IS, the
       // box is not handed in (see boxState).
@@ -130,6 +148,10 @@ export function useDeadlineAlerts() {
           deadline,
           hoursUntil: h,
           link: a.uploadUrl,
+          // Its urgent "Nová odevzdávárna" row stood in for it, and was seen:
+          // the bell must not count the same box twice. A new-box row seen
+          // weeks earlier does not count: this warning is news of its own.
+          seenWith: urgentNewBoxId(boxKey(a)),
         });
       }
     }
@@ -142,12 +164,23 @@ export function useDeadlineAlerts() {
     }
 
     result.sort((a, b) => (a.hoursUntil ?? Infinity) - (b.hoursUntil ?? Infinity));
-    // Points first: they already happened, the deadlines are still ahead.
-    return [...newPointsAlerts(newPoints, subjects, nicknames, isEn), ...result];
-  }, [exams, odevzdavarny, cvicneTests, language, pulseNow, subjects, nicknames, newPoints]);
+    // Points and new boxes first: they already happened, the deadlines are still ahead.
+    return [...newPointsAlerts(newPoints, subjects, nicknames, isEn), ...freshBoxes, ...result];
+  }, [
+    exams,
+    odevzdavarny,
+    cvicneTests,
+    language,
+    pulseNow,
+    subjects,
+    nicknames,
+    newPoints,
+    newBoxes,
+  ]);
 
   const unseenCount = useMemo(
-    () => alerts.filter((a) => !seenIds.has(a.id)).length,
+    () =>
+      alerts.filter((a) => !seenIds.has(a.id) && !(a.seenWith && seenIds.has(a.seenWith))).length,
     [alerts, seenIds]
   );
 

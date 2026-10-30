@@ -7,6 +7,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { logError } from '../../utils/reportError';
 import { feedbackErrorKey } from './feedbackErrorKey';
 import { useAppStore } from '../../store/useAppStore';
+import { useCloseReport } from './useCloseReport';
 import { desktopDialogMotion, phoneSheetMotion } from './feedbackModalMotion';
 import { useReportAttachments } from './useReportAttachments';
 import { ReportAttachments } from './ReportAttachments';
@@ -99,17 +100,14 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
     if (e.key === 'Enter' && !isBug) void handleSubmit(attachments.includeDiagnostics);
   };
 
-  const handleClose = () => {
-    onClose();
-    // Reset form after delay
-    setTimeout(() => {
-      setIsSuccess(false);
-      setTitle('');
-      setMessage('');
-      setContact('');
-      setType('bug');
-    }, 300);
-  };
+  // Typed text or a screenshot, not yet sent: Escape keeps it (useCloseReport).
+  const hasDraft =
+    !isSuccess &&
+    (attachments.screenshot !== null ||
+      // A screenshot still being encoded is already chosen (#622 review).
+      attachments.encoding ||
+      [message, contact, title === (initialTitle ?? '') ? '' : title].some((v) => v.trim()));
+  const handleClose = useCloseReport(isOpen, onClose, hasDraft);
 
   return (
     <AnimatePresence>
@@ -123,8 +121,13 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            data-testid="feedback-backdrop"
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={handleClose}
+            // A stray click outside keeps a typed report, as Escape does
+            // (useCloseReport); ✕ closes it deliberately (release review).
+            onClick={() => {
+              if (!hasDraft) handleClose();
+            }}
           />
 
           <motion.div

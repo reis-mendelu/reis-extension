@@ -14,85 +14,64 @@ export function timeToPercent(time: string): number {
 }
 
 /**
- * Shortest block the grid can draw, in minutes of grid space.
+ * Shortest block the grid draws, in minutes of grid space.
  *
- * 90 minutes — the length every exam block used to be assumed to have — because
- * that is the smallest box CalendarEventCard can fill without truncating: it
- * needs room for the type, the subject, the room row and the time row, and it
- * gates the subject/room on `>= 60` on top of that. A real 10-minute oral exam
- * is ~1.2% of a 14-hour day, about 7px, and renders as an unlabelled sliver.
- *
- * Clamping is deliberately layout-only. startTime and endTime stay truthful, so
- * a 12:00 oral exam still reads "12:00 - 12:10" on the card and in its tooltip
- * even though it occupies an hour and a half of grid.
+ * Under every lesson: IS teaches in 50-minute hours, so nothing a student is
+ * taught is ever raised, and a lesson's block ends exactly on its end time.
+ * The floor was 90 for everything until "Hodinové přednášky jsou zobrazované
+ * jako že mají hodinu a půl" — a 14:00-14:50 lesson drawn down to 15:30. What
+ * this still raises is a custom event, which can be 15 minutes. One line of the
+ * card's text needs about 30px with its padding and border; 45 minutes is 38px
+ * on an 844px-tall window, 30px at 700 and 25px at 600, where the text still
+ * shows whole (measured; 30 minutes was 20px at 700 and cut the line).
  */
-export const MIN_VISUAL_BLOCK_MINUTES = 90;
+export const MIN_BLOCK_MINUTES = 45;
 
 /**
- * The shortest block that can still carry its own label.
- *
- * `CalendarEventCard` gates the subject and the room on `>= 60`, so a block
- * drawn under this is the unlabelled sliver the floor exists to prevent. It is
- * the floor on the floor: a cap that would go below it is not worth taking.
+ * The shortest block that holds the card's two lines — the title, then the
+ * room and the time: about 56px, which 90 minutes is from a 700px-tall window
+ * up. CalendarEventCard switches layouts on it, and an exam slot is drawn at
+ * least this tall (unless it starts after 19:30, where the grid ends first —
+ * see renderedBlockMinutes), so the two must stay one number.
  */
-export const MIN_LEGIBLE_BLOCK_MINUTES = 60;
+export const TWO_LINE_BLOCK_MINUTES = 90;
 
 /**
- * Grid space a block actually occupies — its real length, floored for
- * legibility, and stopped at whatever comes next.
+ * An exam's block, however short the slot. An exam is a slot in a term, not a
+ * lesson: a 10-minute oral exam drawn at 10 minutes is ~7px with no label, and
+ * the student needs the section, the subject and the room on it, which is the
+ * card's two-line layout.
  *
- * `nextStartTime` is the start of the following block on the same day. Without
- * it the floor invented clashes: a 14:00-14:50 lesson was drawn down to 15:30,
- * so a 15:00 lesson read as overlapping and the two were squeezed into
- * half-width columns — side by side, over a gap of ten minutes, with nothing in
- * the data to justify it. The floor is for legibility; it has no business
- * changing what the day looks like it contains.
- *
- * `Math.max(real, …)` keeps a REAL clash real: a block that genuinely runs past
- * the next one still does, and still gets its own lane.
+ * Layout only: startTime and endTime stay truthful, so a 12:00 oral exam still
+ * reads "12:00 - 12:10" on the card and in its tooltip.
  */
-export function renderedBlockMinutes(
-  startTime: string,
-  endTime: string,
-  nextStartTime?: string
-): number {
+export const EXAM_BLOCK_MINUTES = TWO_LINE_BLOCK_MINUTES;
+
+/**
+ * Grid space a block occupies: its real length, raised to its floor.
+ *
+ * `Math.max` keeps the real length whenever it is longer, so a block that
+ * genuinely runs past the next one still does, and still gets its own lane.
+ */
+export function renderedBlockMinutes(startTime: string, endTime: string, isExam = false): number {
   const real = timeToMinutes(endTime) - timeToMinutes(startTime);
   // The grid stops at 21:00 and the calendar is overflow-hidden, so a floor
-  // applied blindly to a 20:30 block would push the card off the bottom and
-  // clip the very thing it was widening for legibility. Shorten the floor to
-  // what is left of the grid — but never below the real length, so a genuinely
-  // long late event still runs over exactly as it did before any floor existed.
+  // applied blindly to a 20:40 block would push the card off the bottom and
+  // clip it. Shorten the floor to what is left of the grid — but never below
+  // the real length, so a genuinely long late event still runs over. A slot
+  // after 19:30 therefore gets less than its floor (a 20:40 exam is one clipped
+  // line); that is accepted, since moving its top would put it at the wrong time.
   const toGridEnd = TOTAL_HOURS * 60 - (timeToMinutes(startTime) - GRID_START_HOUR * 60);
-  const floor = Math.min(MIN_VISUAL_BLOCK_MINUTES, toGridEnd);
-  const toNext = nextStartTime
-    ? timeToMinutes(nextStartTime) - timeToMinutes(startTime)
-    : Number.POSITIVE_INFINITY;
-  const capped = Math.min(floor, toNext);
-  // Cap, unless capping would leave the block too small to say what it is. A
-  // 10-minute exam followed twenty minutes later cannot both keep the full
-  // width and stay readable, and an unlabelled sliver is the worse of the two —
-  // so it keeps the floor and lane assignment puts it BESIDE its neighbour,
-  // which is what the floor and the lanes were doing together before the cap
-  // existed. Above the legibility line the cap wins, which is the ordinary
-  // case: a 50-minute lesson before a 15:00 one is drawn for its 60 and the two
-  // sit one above the other.
-  return Math.max(real, capped >= MIN_LEGIBLE_BLOCK_MINUTES ? capped : floor);
-}
-
-export function getEventStyle(
-  startTime: string,
-  endTime: string,
-  nextStartTime?: string
-): { top: string; height: string } {
-  return styleFromMinutes(startTime, renderedBlockMinutes(startTime, endTime, nextStartTime));
+  const floor = isExam ? EXAM_BLOCK_MINUTES : MIN_BLOCK_MINUTES;
+  return Math.max(real, Math.min(floor, toGridEnd));
 }
 
 /**
- * The style for a block whose occupied space is already known.
+ * The style for a block, from the space `organizeLessons` gave it.
  *
- * `organizeLessons` works it out to assign lanes; the day column draws from the
- * same number rather than recomputing it. Two copies of this rule are what let
- * the lanes and the heights disagree in the first place.
+ * The lanes and the day column read the same number rather than each working it
+ * out. Two copies of this rule are what let the lanes and the heights disagree
+ * in the first place.
  */
 export function styleFromMinutes(
   startTime: string,
@@ -120,7 +99,8 @@ export function organizeLessons(lessons: BlockLesson[]): OrganizedLessons {
       const startB = timeToMinutes(b.startTime);
       if (startA !== startB) return startA - startB;
       return (
-        renderedBlockMinutes(a.startTime, a.endTime) - renderedBlockMinutes(b.startTime, b.endTime)
+        renderedBlockMinutes(a.startTime, a.endTime, a.isExam) -
+        renderedBlockMinutes(b.startTime, b.endTime, b.isExam)
       );
     });
 
@@ -131,18 +111,13 @@ export function organizeLessons(lessons: BlockLesson[]): OrganizedLessons {
   let maxEndInCluster = 0;
   let rows: number[] = [];
 
-  sortedLessons.forEach((lesson, i) => {
+  sortedLessons.forEach((lesson) => {
     const start = timeToMinutes(lesson.startTime);
-    // The space the block OCCUPIES, not when it ends. getEventStyle floors a
-    // short block's height for legibility, so laying lanes out by the true end
-    // let a 10-minute exam drawn down to 13:30 sit in the same lane as a 12:30
-    // lesson and cover it. `lesson.endTime` is untouched — the card and its
-    // tooltip still read the real time.
-    const renderedMinutes = renderedBlockMinutes(
-      lesson.startTime,
-      lesson.endTime,
-      sortedLessons[i + 1]?.startTime
-    );
+    // The space the block OCCUPIES, not when it ends. A short exam slot is
+    // drawn for EXAM_BLOCK_MINUTES, so laying lanes out by the true end would
+    // let it sit in the same lane as a lesson twenty minutes later and cover it.
+    // `lesson.endTime` is untouched — the card and its tooltip read the real time.
+    const renderedMinutes = renderedBlockMinutes(lesson.startTime, lesson.endTime, lesson.isExam);
     const end = start + renderedMinutes;
 
     // Skip invalid times

@@ -12,6 +12,7 @@ import { BulletinSheet } from './BulletinSheet';
 import { MenuSheet } from './MenuSheet';
 import { VenueSheet } from './VenueSheet';
 import { ImpersonationSheet } from './ImpersonationSheet';
+import { useEscapeClosesSheet } from './useEscapeClosesSheet';
 
 /**
  * Renders the phone UI's sheet stack, in order, each in its own `Sheet`.
@@ -25,6 +26,7 @@ import { ImpersonationSheet } from './ImpersonationSheet';
 export function SheetHost() {
   const sheets = useAppStore((s) => s.mobileSheets);
   const popSheet = useAppStore((s) => s.popSheet);
+  useEscapeClosesSheet();
 
   return (
     <>
@@ -51,7 +53,9 @@ export function SheetHost() {
           case 'venue':
             return <VenueSheet key={index} sheet={sheet} onClose={popSheet} />;
           case 'menu':
-            return <MenuSheet key={index} dayIso={sheet.dayIso} onClose={popSheet} />;
+            return (
+              <MenuSheet key={index} dayIso={sheet.dayIso} week={sheet.week} onClose={popSheet} />
+            );
           case 'search':
             return <SearchSheet key={index} sheet={sheet} onClose={popSheet} />;
           case 'impersonation':

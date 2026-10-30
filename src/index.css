@@ -244,6 +244,23 @@ body,
   --tone-accent: color-mix(in oklab, var(--color-accent) 64%, white);
 }
 
+/* The Halloween week (src/utils/halloween.ts): orange in place of the lime, in
+   both themes. useHalloweenSeason sets the attribute on <html> only inside the
+   window, so outside it this block matches nothing. Only the brand hues move;
+   the ink on them stays #1f2937 (5.4:1 on #f97316), and the tonal tokens above
+   are derived from --color-primary, so they follow on their own. */
+:root[data-season='halloween'] {
+  --color-primary: #f97316;
+  --color-secondary: #fb923c;
+  --color-secondary-content: #1f2937;
+}
+/* One step lighter on dark: #f97316 as the phone tab bar's active label on its
+   own tint measured 4.29:1, where the lime it replaces passed. */
+:root[data-season='halloween'][data-theme='mendelu-dark'] {
+  --color-primary: #fb923c;
+  --color-secondary: #fdba74;
+}
+
 /* Tailwind v4: Custom tokens via @theme */
 @theme {
   /* The computed walking route.

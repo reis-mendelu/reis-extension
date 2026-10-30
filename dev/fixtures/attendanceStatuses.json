@@ -1,0 +1,24 @@
+{
+  "_comment": "Synthetic attendance for EBC-M (a real subject code from the snapshot) with every status IS records (doch-* in src/api/attendance.ts) across two groups, so the Docházka section in Záznamník can be measured with every pill tint. Dates and rooms are invented. Serve with: REIS_FIXTURE=attendanceStatuses npx vite --config vite.web.config.ts",
+  "attendance": {
+    "EBC-M": [
+      {
+        "label": "EBC-M Cv Út 13.00-14.50 Q05",
+        "records": [
+          { "date": "29. 9. 2026", "time": "13.00-14.50", "room": "Q05", "status": "present" },
+          { "date": "6. 10. 2026", "time": "13.00-14.50", "room": "Q05", "status": "elsewhere" },
+          { "date": "13. 10. 2026", "time": "13.00-14.50", "room": "Q05", "status": "late" },
+          { "date": "20. 10. 2026", "time": "13.00-14.50", "room": "Q05", "status": "early-leave" },
+          { "date": "27. 10. 2026", "time": "13.00-14.50", "room": "Q05", "status": "absent" }
+        ]
+      },
+      {
+        "label": "EBC-M Př Po 9.00-10.50 Q01",
+        "records": [
+          { "date": "5. 10. 2026", "time": "9.00-10.50", "room": "Q01", "status": "excused" },
+          { "date": "12. 10. 2026", "time": "9.00-10.50", "room": "Q01", "status": "excluded" }
+        ]
+      }
+    ]
+  }
+}

@@ -30,6 +30,8 @@ export const FEATURE_SIGNALS = [
   'eduroam_wifi_configured',
   /** A profile was handed over, which the student must still install (mac/windows). */
   'eduroam_profile_delivered',
+  /** Týden was on screen on the phone or iPad (spec 2026-10-30). */
+  'calendar_week_view',
 ] as const;
 
 /** Each label must also be in the database whitelist (featureSignalWhitelist.test.ts). */

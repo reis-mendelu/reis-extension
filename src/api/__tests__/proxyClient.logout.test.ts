@@ -19,6 +19,9 @@ vi.mock('../../services/admin/clearAdminSession', () => ({
   clearAdminSession: () => clearAdminSession(),
 }));
 
+const resetNewBoxes = vi.hoisted(() => vi.fn(async () => {}));
+vi.mock('../../services/sync/newSubmissionBoxes', () => ({ resetNewBoxes }));
+
 function stub(kind: ReisPlatform['kind']): ReisPlatform {
   const bag = new Map<string, unknown>();
   return {
@@ -127,5 +130,16 @@ describe('logout on Capacitor', () => {
     const msg = postMessage.mock.calls[0]?.[0] as { type: string; action: string };
     expect(msg.type).toBe('REIS_ACTION');
     expect(msg.action).toBe('logout');
+  });
+
+  // The box record is this student's: a failed wipe must not leave it for the
+  // next one to be compared with.
+  it('resets the submission-box record on the extension even when the wipe fails', async () => {
+    clearAll.mockRejectedValue(new Error('closing'));
+    resetNewBoxes.mockClear();
+    setPlatform(stub('extension'));
+    void logout().catch(() => {});
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalled());
+    expect(resetNewBoxes).toHaveBeenCalledTimes(1);
   });
 });

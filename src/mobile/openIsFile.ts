@@ -6,6 +6,7 @@ import { toDirectDownloadUrl } from '../api/isDocumentUrl';
 import { deliverFile, type DeliveryKind } from './deliverFile';
 import { ShareCanceledError, isShareCancellation } from '../errors/shareCanceled';
 import type { FileRowHint } from '../utils/contentDisposition';
+import { isMacApp, saveWithPanel } from './macSave';
 
 interface DownloadsPlugin {
   save(o: {
@@ -46,10 +47,12 @@ export function isNativeHost(): boolean {
  * 2. **It never calls `window.open`.** Capacitor hands that to the SYSTEM
  *    BROWSER, which has no IS session.
  * 3. **On Android it lands in Downloads with a notification**, like any
- *    browser — not a share sheet. See deliverFile for the iOS asymmetry.
+ *    browser — not a share sheet. See deliverFile for the iOS asymmetry, and
+ *    for the Mac, which runs the iOS build but gets the macOS Save panel.
  *
  * `onHandoff` fires once, when the student has something else to look at: on
- * iOS just before the share sheet opens, on Android once the file is saved. It
+ * iOS just before the share sheet (on a Mac, the Save panel) opens, on Android
+ * once the file is saved. It
  * is NOT when the bytes land. On a phone that is the start of the slow part —
  * the blob goes back to base64 and crosses the bridge again to be written —
  * and a row that went idle there, while its lock still refused every tap, read
@@ -116,7 +119,8 @@ export async function openIsFileNatively(
   const base64 = await blobToBase64(result.blob);
   // The delivery kind is returned rather than discarded: it is what tells the
   // caller whether the student has already SEEN confirmation (iOS share sheet)
-  // or needs to be told (Android, where the file lands silently in Downloads).
+  // or needs to be told (Android, where the file lands silently in Downloads,
+  // and a Mac, whose Save panel just closes).
   const delivered = await deliverFile(
     chooseFilename(filenameOverride, result.filename),
     base64,
@@ -132,19 +136,7 @@ export async function openIsFileNatively(
         return Downloads.save(o);
       },
       shareFile: async (o) => {
-        // iOS has no Downloads folder: write to Documents, then offer the file to
-        // the Files/share sheet, which is that platform's native save flow.
-        const { Filesystem, Directory } = await import('@capacitor/filesystem');
-        await Filesystem.writeFile({
-          path: o.filename,
-          data: o.base64,
-          directory: Directory.Documents,
-          recursive: true,
-        });
-        const { uri } = await Filesystem.getUri({
-          directory: Directory.Documents,
-          path: o.filename,
-        });
+        const uri = await writeToDocuments(o);
         const { Share } = await import('@capacitor/share');
         // The sheet is about to cover the screen; the row has nothing left to say.
         handOff();
@@ -160,10 +152,35 @@ export async function openIsFileNatively(
           throw e;
         }
       },
+      isMac: isMacApp,
+      saveWithPanel: async (o) => {
+        // A Mac: the same write, then the macOS Save panel instead of the share
+        // sheet. The panel copies the file out; a cancel arrives as
+        // ShareCanceledError, so no row draws a warning for it.
+        const uri = await writeToDocuments(o);
+        handOff();
+        await saveWithPanel(uri);
+      },
     }
   );
 
   // Android: the save is done and the toast is next. iOS already handed off.
   handOff();
   return { usedFallback, delivered };
+}
+
+/**
+ * iOS has no Downloads folder: write to the app's Documents, then hand the file
+ * on (share sheet on an iPhone or iPad, Save panel on a Mac).
+ */
+async function writeToDocuments(o: { filename: string; base64: string }): Promise<string> {
+  const { Filesystem, Directory } = await import('@capacitor/filesystem');
+  await Filesystem.writeFile({
+    path: o.filename,
+    data: o.base64,
+    directory: Directory.Documents,
+    recursive: true,
+  });
+  const { uri } = await Filesystem.getUri({ directory: Directory.Documents, path: o.filename });
+  return uri;
 }

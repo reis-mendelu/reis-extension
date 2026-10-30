@@ -1,4 +1,5 @@
 import { useTranslation } from '../../../hooks/useTranslation';
+import { HorizontalScroller } from '../../ui/HorizontalScroller';
 
 export function GradingTable({ table, studyForm }: { table: string[][]; studyForm: string }) {
   const { t } = useTranslation();
@@ -14,7 +15,7 @@ export function GradingTable({ table, studyForm }: { table: string[][]; studyFor
   return (
     <div>
       <h3 className="text-[14px] font-bold mb-1">{t('syllabus.grading')}</h3>
-      <div className="overflow-x-auto border border-base-200 rounded-lg">
+      <HorizontalScroller className="overflow-x-auto border border-base-200 rounded-lg">
         <table className="table table-sm w-full">
           <thead>
             <tr className="bg-base-200 text-base-content">
@@ -46,7 +47,7 @@ export function GradingTable({ table, studyForm }: { table: string[][]; studyFor
               ))}
           </tbody>
         </table>
-      </div>
+      </HorizontalScroller>
     </div>
   );
 }

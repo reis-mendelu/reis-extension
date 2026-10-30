@@ -34,6 +34,7 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
   welcomeSeen: null,
   externalOpening: false,
   pullHintSeen: null,
+  mobileCalendarView: 'day',
 
   // Read once at boot, before the root renders (capacitor/main.capacitor.tsx).
   // Same key as the desktop WelcomeModal: a device that dismissed it there has
@@ -70,6 +71,30 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
     if (get().pullHintSeen === true) return;
     set({ pullHintSeen: true });
     IndexedDBService.set('meta', 'pull_hint_seen', true).catch(() => {});
+  },
+
+  // Read once at boot beside the pull hint, so the calendar's first frame is
+  // the remembered view rather than Den swapping to Týden a tick in. The v2 key
+  // on purpose: the 5.4.0 choice in `calendar_view` predates #540, and after
+  // Týden's return everyone starts from the default (spec 2026-10-30). With
+  // nothing remembered, an iPad opens on Týden — Den leaves its width empty —
+  // and a phone on Den. Demo mode reads nothing and takes the default.
+  hydrateCalendarView: async ({ demo, wide }) => {
+    const fallback = wide ? 'week' : 'day';
+    if (demo) {
+      set({ mobileCalendarView: fallback });
+      return;
+    }
+    // A failed read is a missing key: an iPad still gets its Týden default.
+    const stored = await IndexedDBService.get('meta', 'calendar_view_v2').catch(() => undefined);
+    set({ mobileCalendarView: stored === 'day' || stored === 'week' ? stored : fallback });
+  },
+  // Every switch is the choice: the icon pill, a pinch, a day tapped in Týden.
+  // State first, storage second, like dismissWelcome: the view changes on the
+  // tap, and a failed write only means the choice is not remembered.
+  setMobileCalendarView: (view) => {
+    set({ mobileCalendarView: view });
+    IndexedDBService.set('meta', 'calendar_view_v2', view).catch(() => {});
   },
 
   // Switching tabs closes sheets: a sheet belongs to the screen that opened it.

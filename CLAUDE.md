@@ -96,6 +96,11 @@ To exercise a changed fetcher against real IS, name its tool:
 `npm run mcp:smoke -- --live mendelu_grades` (it always adds `mendelu_exams`).
 
 Build with `npm run mcp:pack`. Its release tags are `mcp-v*`, never `v*`.
+`npm run mcp:plugin` builds the same server as a Claude Code plugin for Claude's
+directory: `mendelu_read_file` hands the file over whole instead of extracting its text
+(`mcp/documentHandover.ts` replaces `documentText.ts`), so officeparser stays out and
+every plugin file stays under the directory's 5 MiB limit. Claude Code drops a server whose
+message passes 16 MiB, hence the 10 MB cap on handed-over files.
 
 **Plain `node` is not where it runs.** Claude Desktop starts it inside its own
 "MCP Node Host" (`nodeHost.js` in Claude.app) in an Electron utility process,

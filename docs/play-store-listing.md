@@ -330,7 +330,7 @@ nikdy nevidí — a všechno podstatné máš hned po ruce.
 
 CO UMÍ
 
-• Rozvrh — den po dni, s detailem každé hodiny včetně místnosti a vyučujícího.
+• Rozvrh — po dnech s místností a vyučujícím u každé hodiny, nebo celý týden najednou.
 • Známky a průběžné hodnocení — bez proklikávání se do hloubky IS.
 • Zkoušky — termíny, přihlášení i odhlášení přímo z telefonu.
 • Předměty a soubory — studijní materiály stáhneš na pár klepnutí.
@@ -359,7 +359,7 @@ away.
 
 WHAT IT DOES
 
-• Timetable — day by day, with full lesson detail including room and teacher.
+• Timetable — day by day with each lesson's room and teacher, or the whole week at once.
 • Grades and continuous assessment, without digging through IS.
 • Exams — dates, sign-up and sign-off straight from your phone.
 • Courses and files — download study materials in a couple of taps.

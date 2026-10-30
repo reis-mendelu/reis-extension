@@ -11,12 +11,23 @@ export interface DayChipsProps {
   onSelect: (iso: string) => void;
   /** Compact IS dates (YYYYMMDD) that have at least one lesson. */
   lessonDates: ReadonlySet<string>;
+  /**
+   * The week view marks no selection and no dots: Týden is about the week, so
+   * the selected day is only the week's anchor, moved by the arrows and the
+   * swipe, and the grid below already shows each day's lessons. Its chips are
+   * still controls — a tapped day opens in Den (`onOpenDay`).
+   */
+  view?: 'day' | 'week';
+  /**
+   * Týden only: a tapped day opens in Den, and Den is remembered — tapping the
+   * day is the choice to look at it (spec 2026-10-30, decision 4).
+   */
+  onOpenDay?: (iso: string) => void;
 }
 
 /**
  * Five weekday chips (Mon–Fri) plus the arrows that move a week at a time —
- * the phone's whole day/week switcher. (There is no week GRID on the phone any
- * more — see phoneHasNoWeekView.test — so the strip is the only week there is.)
+ * the phone's whole day/week switcher.
  *
  * The week is derived from the SELECTED day, not from a stored anchor — see
  * `utils/mobile/weekDays`, which now owns that arithmetic because the screen
@@ -37,11 +48,17 @@ export interface DayChipsProps {
  * is the arrow you reach for, and a pill breaks that mapping for the sake of a
  * tidier row. 44px tall now, the touch minimum the old 36px missed.
  */
-export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) {
+export function DayChips({
+  selectedIso,
+  onSelect,
+  lessonDates,
+  view = 'day',
+  onOpenDay,
+}: DayChipsProps) {
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
-  // The store's clock: the pulse moves it, so the mark crosses midnight in an
-  // app left open.
+  // The store's clock, as the week grid's now-line reads it: the pulse moves it,
+  // so the mark crosses midnight in an app left open.
   const todayIso = toIso(useAppStore((s) => s.now));
   const days = weekDays(selectedIso, lessonDates, todayIso);
 
@@ -129,10 +146,12 @@ export function DayChips({ selectedIso, onSelect, lessonDates }: DayChipsProps) 
               date={date}
               locale={locale}
               language={language === 'en' ? 'en' : 'cz'}
-              isSelected={iso === selectedIso}
+              isSelected={view === 'day' ? iso === selectedIso : undefined}
               isToday={iso === todayIso}
               hasLessons={lessonDates.has(toCompact(iso))}
-              onClick={() => onSelect(iso)}
+              showDot={view === 'day'}
+              holidayWord={view === 'week' ? t('mobile.calendar.holidayShort') : undefined}
+              onClick={view === 'day' ? () => onSelect(iso) : onOpenDay && (() => onOpenDay(iso))}
             />
           );
         })}

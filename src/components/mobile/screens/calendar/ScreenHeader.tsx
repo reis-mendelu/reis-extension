@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { RotateCcw } from 'lucide-react';
+import { Calendar1 } from 'lucide-react';
 import { HeaderActions } from '../HeaderActions';
 
 export interface ScreenHeaderProps {
@@ -15,11 +15,22 @@ export interface ScreenHeaderProps {
    */
   below?: ReactNode;
   /**
-   * Makes the title itself a control, with a return glyph beside it — the
+   * One more circle at the START of the actions row: the screen's refresh.
+   * Only drawn where there is no pull to make it (RefreshButton) — a Mac — and
+   * otherwise `sr-only`, which is absolute and takes no flex slot.
+   */
+  action?: ReactNode;
+  /**
+   * Makes the title itself a control, with a today glyph beside it — the
    * calendar's way back to today. A glyph, not a pill: the header is full at a
    * date and three actions, and "Dnes" beside the date never fit at 375.
+   * Calendar1, a page with a "1" on it: ↺ (RotateCcw) read as "refresh the
+   * data", CalendarCheck is the Exams tab, and the plain calendar is both the
+   * Calendar tab and the empty day's art on this same screen.
    */
   titleAction?: { label: string; onClick: () => void };
+  /** A round action of this screen's own, first in the action cluster. */
+  leadingAction?: ReactNode;
 }
 
 const TITLE_CLASS =
@@ -34,7 +45,14 @@ const TITLE_CLASS =
  * three destinations were reachable from one of five tabs; making the actions
  * part of the header means a screen cannot render one without them.
  */
-export function ScreenHeader({ eyebrow, title, below, titleAction }: ScreenHeaderProps) {
+export function ScreenHeader({
+  eyebrow,
+  title,
+  below,
+  action,
+  titleAction,
+  leadingAction,
+}: ScreenHeaderProps) {
   return (
     // The top padding carries --safe-top because this is the topmost element on
     // every mobile screen and targetSdk 36 forces edge-to-edge: without it the
@@ -65,17 +83,24 @@ export function ScreenHeader({ eyebrow, title, below, titleAction }: ScreenHeade
               className="-my-1.5 flex min-w-0 items-center gap-1 py-1.5 text-left"
             >
               <span className={TITLE_CLASS}>{title}</span>
-              <RotateCcw
-                size={16}
-                strokeWidth={2.5}
+              {/* 18px at stroke 2: at 16px and 2.5 the "1" closed up and the
+                  glyph read as a bare calendar page, which is not "today". */}
+              <Calendar1
+                size={18}
+                strokeWidth={2}
                 className="flex-shrink-0 text-[var(--tone-primary)]"
               />
             </button>
           ) : (
-            <span className={TITLE_CLASS}>{title}</span>
+            <div className="flex min-w-0 items-center gap-1">
+              <span className={TITLE_CLASS}>{title}</span>
+            </div>
           )}
         </div>
-        <HeaderActions />
+        <div className="flex flex-shrink-0 items-center gap-2 max-[359px]:gap-1">
+          {action}
+          <HeaderActions leading={leadingAction} />
+        </div>
       </div>
       {below}
     </div>

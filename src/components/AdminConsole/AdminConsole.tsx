@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Toaster } from '../ui/sonner';
+import { toastOffset } from '../mobile/toastOffset';
+import { SuggestionsToast } from './SuggestionsToast';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { usePhoneViewport } from '../../hooks/ui/usePhoneViewport';
@@ -55,7 +57,13 @@ export function AdminConsole() {
   if (isPhone) {
     return (
       <>
-        <Toaster position="top-center" />
+        {/* The phone's offset, so a toast clears the status bar (#622 review). */}
+        <Toaster
+          position="top-center"
+          offset={toastOffset(false)}
+          mobileOffset={toastOffset(false)}
+        />
+        <SuggestionsToast />
         <MobileAdminConsole />
       </>
     );
@@ -67,6 +75,7 @@ export function AdminConsole() {
       className="flex h-screen w-full flex-col overflow-hidden bg-base-200 font-sans text-base-content"
     >
       <Toaster position="top-center" />
+      <SuggestionsToast />
       <AdminConsoleHeader />
       <div className="flex min-h-0 flex-1">
         {/* Statistiky is a page, not a pane: the charts need the width, and the

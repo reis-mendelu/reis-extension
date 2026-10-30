@@ -13,6 +13,15 @@ import type {
 export interface SuggestionsSlice {
   suggestions: SuggestionRow[];
   suggestionsUnread: number;
+  /**
+   * The admin session (its email) the "new suggestions" toast already spoke
+   * to. In the store, not in the component: the toast is mounted in the admin
+   * console and the desktop app, one at a time, and a remount must not
+   * announce again — while admin logout (adminLogout) clears it, so the same
+   * admin signing in again hears it again.
+   */
+  suggestionsAnnouncedFor: string | null;
+  markSuggestionsAnnounced: (email: string | null) => void;
   /** Ids with a status write in flight. Both row actions are enabled at once,
    *  so without this a fast triaged→done pair can complete out of order and
    *  leave the store disagreeing with the database. */
@@ -31,6 +40,8 @@ const unread = (rows: SuggestionRow[]): number => rows.filter((r) => r.status ==
 export const createSuggestionsSlice: AppSlice<SuggestionsSlice> = (set, get) => ({
   suggestions: [],
   suggestionsUnread: 0,
+  suggestionsAnnouncedFor: null,
+  markSuggestionsAnnounced: (email) => set({ suggestionsAnnouncedFor: email }),
   suggestionsPending: [],
   suggestionAttachments: {},
 

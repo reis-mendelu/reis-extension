@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SubjectDrawerSheet } from '../SubjectDrawerSheet';
+import { SheetHost } from '../SheetHost';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useSyllabus } from '../../../../hooks/data/useSyllabus';
 
@@ -11,7 +12,8 @@ vi.mock('../../../../hooks/data/useSyllabus', () => ({
 
 /**
  * Renaming a subject on the phone: the pencil in the sheet's header, a field,
- * and Uložit / Zrušit as buttons, because a phone keyboard has no Escape. The
+ * and Uložit / Zrušit as buttons, because an on-screen keyboard has no Escape
+ * (a hardware one, on a Mac or an iPad, cancels with it too). The
  * extension has had this since its drawer title became editable; the phone
  * had no way to set a nickname at all.
  */
@@ -97,6 +99,21 @@ describe('SubjectDrawerSheet — renaming the subject', () => {
     expect(screen.getByText('Algoritmizace')).toBeInTheDocument();
   });
 
+  // On a Mac, or an iPad with a keyboard, Escape in the field used to reach
+  // the sheet stack and pop the whole subject, draft and all. It cancels the
+  // edit, the way the extension's title editor does, and the sheet stays.
+  it('Escape cancels the rename and leaves the sheet open', () => {
+    const sheet = { kind: 'subjectDrawer', courseCode: 'ALG', courseName: 'Algoritmizace' };
+    useAppStore.setState({ mobileSheets: [sheet] } as never);
+    render(<SheetHost />);
+    fireEvent.click(pencil());
+    fireEvent.change(field(), { target: { value: 'Algo' } });
+    fireEvent.keyDown(field(), { key: 'Escape' });
+    expect(useAppStore.getState().mobileSheets).toEqual([sheet]);
+    expect(screen.queryByRole('textbox', { name: 'Tvůj název předmětu' })).toBeNull();
+    expect(useAppStore.getState().courseNicknames.ALG).toBeUndefined();
+  });
+
   it('resets to the IS name', () => {
     useAppStore.setState({ courseNicknames: { ALG: 'Algo' } } as never);
     renderSheet();
@@ -133,5 +150,18 @@ describe('SubjectDrawerSheet — renaming the subject', () => {
     useAppStore.setState({ courseNicknames: { ALG: 'Algo' } } as never);
     renderSheet();
     expect(vi.mocked(useSyllabus)).toHaveBeenCalledWith('ALG', '', 'Algoritmizace');
+  });
+
+  // Release review (cubic): an Escape that ends an IME composition belongs to
+  // the input method, not to the rename.
+  it('an Escape that ends an IME composition keeps the rename and the sheet', () => {
+    const sheet = { kind: 'subjectDrawer', courseCode: 'ALG', courseName: 'Algoritmizace' };
+    useAppStore.setState({ mobileSheets: [sheet] } as never);
+    render(<SheetHost />);
+    fireEvent.click(pencil());
+    fireEvent.change(field(), { target: { value: 'Algo' } });
+    fireEvent.keyDown(field(), { key: 'Escape', isComposing: true });
+    expect(useAppStore.getState().mobileSheets).toEqual([sheet]);
+    expect(field()).toBeInTheDocument();
   });
 });

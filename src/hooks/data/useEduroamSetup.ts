@@ -6,7 +6,7 @@ import {
 } from '../../api/eduroam';
 import { configureEduroam, type EduroamConfigOutcome } from '../../mobile/configureEduroam';
 import { canConfigureEduroamNatively, nativeEduroamDeps } from '../../mobile/eduroamNative';
-import { deliverEduroamFile, openProfilesSettings } from './eduroamFileDelivery';
+import { useEduroamProfileDelivery } from './useEduroamProfileDelivery';
 import { statusAfterNativeOutcome } from './eduroamOutcomeStatus';
 import { certExpiry, NO_EXPIRY } from '../../services/eduroam/certValidity';
 import {
@@ -58,6 +58,7 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
 
   // Every run, renew, reset and device pick leaves older requests behind.
   const generation = useRunGeneration();
+  const { deliver: deliverFile, surface: fileSurface } = useEduroamProfileDelivery();
 
   const fail = useCallback((context: string, e: unknown) => {
     logError(context, e);
@@ -119,16 +120,16 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
           throw new Error('eduroam on a phone is set up by the reIS app, not from a browser');
         }
 
-        await deliverEduroamFile(t, material);
+        const next = await deliverFile(t, material);
         if (stale()) return;
         setPassword(extractionPw);
-        setStatus('done');
+        setStatus(next);
       } catch (e) {
         if (stale()) logError('useEduroamSetup.run', e);
         else fail('useEduroamSetup.run', e);
       }
     },
-    [clearResult, fail, generation]
+    [clearResult, deliverFile, fail, generation]
   );
 
   /**
@@ -194,6 +195,6 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
     run,
     renew,
     reset,
-    openProfilesSettings,
+    ...fileSurface,
   };
 }
