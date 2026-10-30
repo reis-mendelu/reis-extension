@@ -17,6 +17,7 @@ import { DayChips } from './calendar/DayChips';
 import { denLandingDay, toIso } from '../../../utils/mobile/weekDays';
 import { DayBody } from './calendar/DayBody';
 import { WeekBody } from './calendar/WeekBody';
+import { usePinchView, dayIsoAt } from './calendar/usePinchView';
 import { CalendarViewSwitch } from './calendar/CalendarViewSwitch';
 import { useCalendarToday } from './calendar/useCalendarToday';
 import { RecentFilesStrip } from './calendar/RecentFilesStrip';
@@ -79,6 +80,31 @@ export function CalendarScreen() {
   const dayLessons = [...visibleSchedule, ...customLessons];
   const lessonDates = new Set(dayLessons.map((l) => l.date));
   const header = useCalendarTitle({ selectedIso, lessonDates, isAway });
+  // Leaving Týden for Den: by tapping or spreading on a day, that day; by the
+  // switch, today in this week or the shown week's first lesson day. Pinching
+  // in on Den is the way the other way. Every one of them is remembered
+  // (spec 2026-10-30). Before the early returns: usePinchView is a hook.
+  const openDay = (iso: string) => {
+    setMobileSelectedDay(iso);
+    setMobileCalendarView('day');
+  };
+  const switchToDen = () =>
+    setMobileSelectedDay(denLandingDay(selectedIso, lessonDates, toIso(now)));
+  usePinchView({
+    surfaceRef: screenRef,
+    onPinchIn: view === 'day' ? () => setMobileCalendarView('week') : undefined,
+    onSpread:
+      view === 'week'
+        ? (point) => {
+            const iso = dayIsoAt(point);
+            if (iso) openDay(iso);
+            else {
+              switchToDen();
+              setMobileCalendarView('day');
+            }
+          }
+        : undefined,
+  });
   const chrome = (
     <>
       {/* The date IS the title, and the eyebrow stays empty. It was the
@@ -192,15 +218,6 @@ export function CalendarScreen() {
   const openRoute = () => {
     if (nowNext) showOnMap(nowNext.current);
   };
-
-  // Leaving Týden for Den: by tapping a day, that day; by the switch, today in
-  // this week or the shown week's first lesson day (spec 2026-10-30).
-  const openDay = (iso: string) => {
-    setMobileSelectedDay(iso);
-    setMobileCalendarView('day');
-  };
-  const switchToDen = () =>
-    setMobileSelectedDay(denLandingDay(selectedIso, lessonDates, toIso(now)));
 
   if (view === 'week') {
     return shell(

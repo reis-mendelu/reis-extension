@@ -81,9 +81,20 @@ export function useSwipeSteps({
   };
 
   const onPointerDown = (e: ReactPointerEvent<HTMLElement>) => {
-    // A swipe already in flight keeps the strip; a second finger is not a new
-    // gesture and must not clear the click-suppression flag either.
-    if (start.current) return;
+    // A second finger is not a new gesture, and it is not a swipe either: it
+    // makes this a pinch, which zooms the calendar between Den and Týden (spec
+    // 2026-10-30) — the first finger drifting sideways must not step a day
+    // too. So the swipe in flight is called off. The click-suppression flag is
+    // left as it is: a drag before the second finger still swallows its click.
+    if (start.current) {
+      if (start.current.id === e.pointerId) return;
+      const first = start.current.id;
+      reset();
+      if (elementRef.current?.hasPointerCapture?.(first))
+        elementRef.current?.releasePointerCapture?.(first);
+      onCancel();
+      return;
+    }
     // Disarmed BEFORE the start is judged, so a press the hook declines cannot
     // inherit a swallow armed by the previous swipe and eat its own tap.
     dragged.current = false;

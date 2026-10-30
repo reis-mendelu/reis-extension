@@ -113,6 +113,8 @@ export function WeekGrid({ lessons, selectedIso, lessonDates, onSelectDay }: Wee
           return (
             <div
               key={iso}
+              // Where a spread lands in Den (usePinchView's dayIsoAt).
+              data-day-iso={iso}
               title={holiday ?? undefined}
               // Today's column is washed so "where is today" is answered at a
               // glance in every week view; a holiday is washed red, as its

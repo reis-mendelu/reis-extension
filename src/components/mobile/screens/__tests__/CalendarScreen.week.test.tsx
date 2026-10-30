@@ -249,4 +249,50 @@ describe('CalendarScreen — week view', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Den' }));
     expect(useAppStore.getState().mobileSelectedDayIso).toBe('2026-10-15');
   });
+
+  /**
+   * Decision 3: a pinch is a shortcut on top of the switch. Pinching in on Den
+   * zooms out to Týden; spreading on a day in Týden opens that day in Den.
+   * Either way the view is remembered, like every other switch.
+   */
+  const fingers = (a: [number, number], b: [number, number]) => [
+    { identifier: 1, clientX: a[0], clientY: a[1] },
+    { identifier: 2, clientX: b[0], clientY: b[1] },
+  ];
+  const twoFingers = (el: HTMLElement, from: number, to: number) => {
+    fireEvent.touchStart(el, { touches: fingers([200 - from, 300], [200 + from, 300]) });
+    for (const f of [0.33, 0.66, 1]) {
+      const half = from + (to - from) * f;
+      fireEvent.touchMove(el, { touches: fingers([200 - half, 300], [200 + half, 300]) });
+    }
+    fireEvent.touchEnd(el, { touches: [] });
+  };
+
+  it('pinching in on Den zooms out to Týden', () => {
+    render(<CalendarScreen />);
+    twoFingers(screen.getByTestId('calendar-screen'), 120, 40);
+    expect(useAppStore.getState().mobileCalendarView).toBe('week');
+  });
+
+  it('spreading on a day in Týden opens that day in Den', () => {
+    useAppStore.setState({ mobileCalendarView: 'week' } as never);
+    render(<CalendarScreen />);
+    const tuesday = screen.getByTestId('week-grid').querySelector('[data-day-iso="2026-10-06"]');
+    expect(tuesday).toBeTruthy();
+    const original = document.elementFromPoint;
+    document.elementFromPoint = () => tuesday;
+    try {
+      twoFingers(screen.getByTestId('calendar-screen'), 40, 120);
+    } finally {
+      document.elementFromPoint = original;
+    }
+    expect(useAppStore.getState().mobileCalendarView).toBe('day');
+    expect(useAppStore.getState().mobileSelectedDayIso).toBe('2026-10-06');
+  });
+
+  it('a small two-finger wobble changes nothing', () => {
+    render(<CalendarScreen />);
+    twoFingers(screen.getByTestId('calendar-screen'), 100, 90);
+    expect(useAppStore.getState().mobileCalendarView).toBe('day');
+  });
 });
