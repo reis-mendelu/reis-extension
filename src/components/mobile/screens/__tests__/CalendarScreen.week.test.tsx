@@ -295,4 +295,30 @@ describe('CalendarScreen — week view', () => {
     twoFingers(screen.getByTestId('calendar-screen'), 100, 90);
     expect(useAppStore.getState().mobileCalendarView).toBe('day');
   });
+
+  // "It just shows a red column" — Dominik, 2026-10-30, on 28 October. A
+  // holiday with nothing on it says why, quietly, in its own column.
+  it('a free holiday says it is a holiday', () => {
+    useAppStore.setState({
+      mobileCalendarView: 'week',
+      mobileSelectedDayIso: '2026-10-28',
+    } as never);
+    render(<CalendarScreen />);
+    const column = screen
+      .getByTestId('week-grid')
+      .querySelector('[data-day-iso="2026-10-28"]') as HTMLElement;
+    expect(within(column).getByText('Státní svátek')).toBeTruthy();
+  });
+
+  it('an ordinary free day says nothing', () => {
+    useAppStore.setState({
+      mobileCalendarView: 'week',
+      mobileSelectedDayIso: '2026-10-28',
+    } as never);
+    render(<CalendarScreen />);
+    const column = screen
+      .getByTestId('week-grid')
+      .querySelector('[data-day-iso="2026-10-27"]') as HTMLElement;
+    expect(within(column).queryByText('Státní svátek')).toBeNull();
+  });
 });

@@ -39,7 +39,7 @@ export interface WeekGridProps {
  * nothing inside scrolls.
  */
 export function WeekGrid({ lessons, selectedIso, lessonDates, onSelectDay }: WeekGridProps) {
-  const { language } = useTranslation();
+  const { t, language } = useTranslation();
   const now = useAppStore((s) => s.now);
   const cascade = !useWideViewport();
   const bottomPad = CALENDAR_BOTTOM_PAD;
@@ -132,6 +132,16 @@ export function WeekGrid({ lessons, selectedIso, lessonDates, onSelectDay }: Wee
                   onOpen={openLesson}
                 />
               ))}
+              {/* A red column alone did not say why it was empty ("it just
+                  shows a red column", 28 Oct 2026). A free holiday says so,
+                  quietly: the phone's ~45px column takes "Státní svátek", an
+                  iPad's has room for the holiday's own name. Not over a
+                  lesson — a holiday that has one is just a day with a lesson. */}
+              {holiday && dayLessons.length === 0 && (
+                <span className="pointer-events-none absolute inset-x-0 top-1/3 px-1 text-center text-[11px] leading-tight text-base-content/70 md:text-xs">
+                  {cascade ? t('mobile.calendar.holiday') : holiday}
+                </span>
+              )}
               {nowAt !== null && (
                 <div
                   data-testid="week-now-line"
