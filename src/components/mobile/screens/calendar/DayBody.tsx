@@ -6,6 +6,7 @@ import { DayAgenda } from './DayAgenda';
 import { CalendarEmptyDay } from './CalendarEmptyDay';
 import { RecentFilesStrip } from './RecentFilesStrip';
 import { MenuCard } from './MenuCard';
+import { HalloweenDayEnd } from './HalloweenDayEnd';
 import { useSwipeSteps } from '../../primitives/useSwipeSteps';
 import { useShowLessonOnMap } from './useShowLessonOnMap';
 import { useOpenLesson } from './useOpenLesson';
@@ -145,6 +146,7 @@ export function DayBody({
           )}
           <RecentFilesStrip />
           <MenuCard dayIso={selectedIso} />
+          <HalloweenDayEnd />
         </AlwaysScrollable>
       </div>
     </div>

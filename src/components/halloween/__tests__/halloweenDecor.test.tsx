@@ -1,0 +1,68 @@
+import { afterEach, describe, expect, it } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { useAppStore } from '../../../store/useAppStore';
+import { HalloweenHeaderBats } from '../HalloweenHeaderBats';
+import { HalloweenDayEnd } from '../../mobile/screens/calendar/HalloweenDayEnd';
+import { ReisLogo } from '../../ReisLogo';
+import { ScreenHeader } from '../../mobile/screens/calendar/ScreenHeader';
+
+const IN_WEEK = new Date(2026, 10, 2, 10, 0);
+const BEFORE = new Date(2026, 9, 30, 10, 0);
+const realNow = useAppStore.getState().now;
+
+afterEach(() => useAppStore.setState({ now: realNow }));
+
+// Both trees get the week: the desktop's top bar and the phone's day view.
+describe('Halloween decorations', () => {
+  it('draws nothing outside the week, on either tree', () => {
+    useAppStore.setState({ now: BEFORE });
+    render(
+      <>
+        <HalloweenHeaderBats />
+        <HalloweenDayEnd />
+      </>
+    );
+    expect(screen.queryByTestId('halloween-header')).toBeNull();
+    expect(screen.queryByTestId('halloween-day-end')).toBeNull();
+  });
+
+  it('draws the bats on the desktop and the day end on the phone during the week', () => {
+    useAppStore.setState({ now: IN_WEEK });
+    render(
+      <>
+        <HalloweenHeaderBats />
+        <HalloweenDayEnd />
+      </>
+    );
+    expect(screen.getByTestId('halloween-header')).toBeTruthy();
+    expect(screen.getByTestId('halloween-day-end')).toBeTruthy();
+  });
+
+  it("puts the pumpkin on the calendar's date, today or not, and on no other title", () => {
+    useAppStore.setState({ now: IN_WEEK });
+    const pumpkins = (c: HTMLElement) => c.querySelectorAll('ellipse[fill="#f97316"]').length;
+    const today = render(<ScreenHeader title="Po 2. listopadu" seasonal />);
+    expect(pumpkins(today.container)).toBe(1);
+    const away = render(
+      <ScreenHeader
+        title="Út 3. listopadu"
+        seasonal
+        titleAction={{ label: 'Dnes', onClick: () => {} }}
+      />
+    );
+    expect(pumpkins(away.container)).toBe(1);
+    const other = render(<ScreenHeader title="Předměty" />);
+    expect(pumpkins(other.container)).toBe(0);
+  });
+
+  it('swaps the logo dot for a pumpkin only during the week', () => {
+    useAppStore.setState({ now: BEFORE });
+    const { container, rerender } = render(<ReisLogo />);
+    expect(container.querySelector('circle[fill="#79be15"]')).not.toBeNull();
+
+    useAppStore.setState({ now: IN_WEEK });
+    rerender(<ReisLogo />);
+    expect(container.querySelector('circle[fill="#79be15"]')).toBeNull();
+    expect(container.querySelector('ellipse[fill="#f97316"]')).not.toBeNull();
+  });
+});

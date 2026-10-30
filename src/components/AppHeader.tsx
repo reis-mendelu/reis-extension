@@ -7,6 +7,7 @@ import { NotificationFeed } from './NotificationFeed';
 import { useAppStore } from '../store/useAppStore';
 import { getWeekForDate } from '../api/teachingWeek';
 import { isTrustedHostOrigin } from '../utils/trustedOrigin';
+import { HalloweenHeaderBats } from './halloween/HalloweenHeaderBats';
 
 interface AppHeaderProps {
   currentView: string;
@@ -128,6 +129,7 @@ export function AppHeader({
           )}
 
           {currentView === 'calendar' ? <BulletinBanner inline /> : <div className="flex-1" />}
+          <HalloweenHeaderBats />
 
           <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 ml-auto z-10">
             {/* Narrow/mobile: search icon button */}
