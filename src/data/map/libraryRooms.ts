@@ -158,7 +158,13 @@ export function splitIcRoom(rooms: RoomsCollection): RoomsCollection {
   if (at === -1 || rooms.features[at]!.properties.nickname === 'Studovna IC levá') return rooms;
   const whole = rooms.features[at]!;
   const left = icHalf(whole, IC_LEFT_ID, IC_ESTATE_NAME, RING_IC_LEFT, 'Studovna IC levá');
-  const right = icHalf(whole, IC_RIGHT_ID, `${IC_ESTATE_NAME}B`, RING_IC_RIGHT, 'Studovna IC pravá');
+  const right = icHalf(
+    whole,
+    IC_RIGHT_ID,
+    `${IC_ESTATE_NAME}B`,
+    RING_IC_RIGHT,
+    'Studovna IC pravá'
+  );
   return {
     ...rooms,
     features: rooms.features.flatMap((f, i) => (i === at ? [left, right] : [f])),

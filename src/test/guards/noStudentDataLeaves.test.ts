@@ -203,6 +203,10 @@ const ALLOWED_HOSTS = [
   'webiskam.mendelu.cz', // phone/iPad only: the ISIC Hlavní konto balance and the GoPay
   // top-up start, signed in as the student via alibaba.mendelu.cz (also mendelu.cz).
   // Already covered by the mendelu.cz suffix; listed so the disclosure is explicit.
+  'bookings.cloud.microsoft', // phone/iPad only: the library's study-room booking sends the
+  // student's name, MENDELU e-mail, student number and faculty code to the library's own
+  // Microsoft Bookings (MENDELU's tenant), straight from the device, only when they book.
+  // Removed with the first booking feature (#275), back with this one. src/api/library/ only.
 
   // --- deep links the STUDENT opens; no background request is made ---
   'google.com', // maps links, Play Store, Chrome Web Store, a society's Apps Script

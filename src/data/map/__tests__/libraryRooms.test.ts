@@ -176,7 +176,10 @@ describe('LIBRARY_ROOMS', () => {
   it('is findable through the room index, so search and deep links reach both IC rooms', () => {
     const INDEX = index as RoomIndexEntry[];
     for (const id of [IC_LEFT_ID, IC_RIGHT_ID]) {
-      expect(INDEX.some((e) => e.placeId === id), String(id)).toBe(true);
+      expect(
+        INDEX.some((e) => e.placeId === id),
+        String(id)
+      ).toBe(true);
     }
   });
 });
