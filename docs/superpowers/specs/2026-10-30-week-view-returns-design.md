@@ -69,7 +69,8 @@ the grid never scrolls and fits the week's hours.
   or deleting the old one. With no new key the default is decision 10 — which
   means an iPad that used 5.4.0 or 5.5.0 opens on **Týden** after the update,
   while a phone opens on Den. Read decision 11 as being about the old choice,
-  not as overriding the iPad default.
+  not as overriding the iPad default. **Confirmed by Dominik on 2026-10-30:
+  existing iPads open on Týden, as built.**
 - **"iPad" = `useWideViewport()`** (the one tablet branch in JS).
 - **The phone strip is a compact component**, not `NowNextCard`: the card is
   ~110px and the grid needs the height. At `md:` and up the full
