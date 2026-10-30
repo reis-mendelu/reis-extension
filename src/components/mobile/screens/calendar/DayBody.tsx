@@ -12,7 +12,7 @@ import { useShowLessonOnMap } from './useShowLessonOnMap';
 import { useOpenLesson } from './useOpenLesson';
 import { AlwaysScrollable } from '../../primitives/AlwaysScrollable';
 import { PullRefreshIndicator } from '../../primitives/PullRefreshIndicator';
-import { useCalendarBottomPad } from './calendarBottomPad';
+import { CALENDAR_BOTTOM_PAD } from './calendarBottomPad';
 
 export interface DayBodyProps {
   agenda: AgendaRow[];
@@ -76,7 +76,7 @@ export function DayBody({
   const showOnMap = useShowLessonOnMap();
   const openLesson = useOpenLesson();
   const bodyRef = useRef<HTMLDivElement>(null);
-  const bottomPad = useCalendarBottomPad();
+  const bottomPad = CALENDAR_BOTTOM_PAD;
 
   /**
    * Written straight to the node, never through state — the same rule DayChips

@@ -572,21 +572,13 @@ export interface MobileUiSlice {
   hydratePullHint: (o: { demo: boolean }) => Promise<void>;
   markPullHintSeen: () => void;
   /**
-   * What the calendar SHOWS: the saved view, or a view being tried in the
-   * chooser. In memory only.
+   * Den or Týden, remembered on the device (`meta.calendar_view_v2`). What is
+   * shown is the choice: there is no separate saved view.
    */
   mobileCalendarView: MobileCalendarView;
-  /** The student's saved choice, `meta.calendar_view`. 'day' until one is saved. */
-  savedCalendarView: MobileCalendarView;
-  /**
-   * Whether a view has been saved. null = not hydrated yet (never show the
-   * chooser); false = never saved (show it); true = saved.
-   */
-  calendarViewChosen: boolean | null;
-  hydrateCalendarView: (o: { demo: boolean }) => Promise<void>;
-  showCalendarView: (view: MobileCalendarView) => void;
-  saveCalendarView: (view: MobileCalendarView) => void;
-  restoreCalendarView: () => void;
+  /** `wide` = an iPad, which opens on Týden when nothing is remembered. */
+  hydrateCalendarView: (o: { demo: boolean; wide: boolean }) => Promise<void>;
+  setMobileCalendarView: (view: MobileCalendarView) => void;
 
   setMobileTab: (tab: MobileTab) => void;
   setMobileSelectedDay: (iso: string | null) => void;

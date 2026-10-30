@@ -16,7 +16,7 @@ import { NowNextCard } from './calendar/NowNextCard';
 import { DayChips } from './calendar/DayChips';
 import { DayBody } from './calendar/DayBody';
 import { WeekGrid } from './calendar/WeekGrid';
-import { CalendarViewChooser } from './calendar/CalendarViewChooser';
+import { CalendarViewSwitch } from './calendar/CalendarViewSwitch';
 import { useCalendarToday } from './calendar/useCalendarToday';
 import { RecentFilesStrip } from './calendar/RecentFilesStrip';
 import { WeekMenuButton } from './calendar/WeekMenuButton';
@@ -34,7 +34,6 @@ export function CalendarScreen() {
   const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
   const syncLoaded = useAppStore((s) => s.syncLoaded);
   const view = useAppStore((s) => s.mobileCalendarView);
-  const choosing = useAppStore((s) => s.calendarViewChosen === false);
   // The store's clock, not `new Date()`: the pulse advances it, so the running
   // lesson's card and its countdown move with it instead of being stamped once
   // per render and then only when something else happened to re-render.
@@ -110,7 +109,7 @@ export function CalendarScreen() {
     </>
   );
   const shell = (body: ReactNode) => (
-    // `relative` anchors the first-open view chooser (day and week only). The
+    // `relative` anchors the Den/Týden switch (day and week only). The
     // ref is where a pull to refresh may start (DayBody).
     <div
       ref={screenRef}
@@ -213,7 +212,7 @@ export function CalendarScreen() {
           lessonDates={lessonDates}
           onSelectDay={setMobileSelectedDay}
         />
-        {choosing && <CalendarViewChooser />}
+        <CalendarViewSwitch />
       </>
     );
   }
@@ -251,7 +250,7 @@ export function CalendarScreen() {
         onSelectDay={setMobileSelectedDay}
         pullSurfaceRef={screenRef}
       />
-      {choosing && <CalendarViewChooser />}
+      <CalendarViewSwitch />
     </>
   );
 }

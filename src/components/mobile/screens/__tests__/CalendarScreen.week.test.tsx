@@ -54,8 +54,6 @@ describe('CalendarScreen — week view', () => {
       mobileSheets: [],
       mobileTab: 'calendar',
       mobileCalendarView: 'day',
-      savedCalendarView: 'day',
-      calendarViewChosen: true,
       schedule: { data: [java, economics], status: 'success' },
       customEvents: [],
       hiddenItems: { courses: [], events: [] },
@@ -104,15 +102,22 @@ describe('CalendarScreen — week view', () => {
     expect(pills()).toHaveLength(0);
   });
 
-  // Spec 2026-10-09: the view is chosen once and changed in Profile →
-  // Nastavení, so the calendar carries no switch in either view.
-  it('has no view switch on the calendar', () => {
+  // Spec 2026-10-30: #493's switch is back on the calendar in both views —
+  // hidden in Nastavení (#528), nobody found Týden.
+  it('carries the Den/Týden switch in both views', () => {
     const { unmount } = render(<CalendarScreen />);
-    expect(screen.queryByRole('group', { name: 'Zobrazení kalendáře' })).toBeNull();
+    expect(screen.getByRole('group', { name: 'Zobrazení kalendáře' })).toBeTruthy();
     unmount();
     useAppStore.setState({ mobileCalendarView: 'week' } as never);
     render(<CalendarScreen />);
-    expect(screen.queryByRole('group', { name: 'Zobrazení kalendáře' })).toBeNull();
+    expect(screen.getByRole('group', { name: 'Zobrazení kalendáře' })).toBeTruthy();
+  });
+
+  it('switching remembers the view', () => {
+    render(<CalendarScreen />);
+    fireEvent.click(screen.getByRole('button', { name: 'Týden' }));
+    expect(useAppStore.getState().mobileCalendarView).toBe('week');
+    expect(screen.getByTestId('week-grid')).toBeTruthy();
   });
 
   it('shows the whole week: a lesson on another day is on screen', () => {

@@ -1334,11 +1334,7 @@
       "backToToday": "Zpět na dnešek",
       "viewLabel": "Zobrazení kalendáře",
       "dayView": "Den",
-      "weekView": "Týden",
-      "chooserTitle": "Jak chceš vidět rozvrh?",
-      "chooserLine": "Zkus obojí na svém rozvrhu.",
-      "chooserSave": "Uložit: {view}",
-      "chooserSaved": "Uloženo. Změníš to v Profilu → Nastavení."
+      "weekView": "Týden"
     },
     "exams": {
       "title": "Zkoušky",
@@ -1483,8 +1479,7 @@
     "profile": {
       "settings": "Nastavení",
       "atSchool": "Ve škole",
-      "calendar": "Kalendář",
-      "settingsSub": "Kalendář, jazyk, vzhled"
+      "settingsSub": "Jazyk, vzhled"
     },
     "loadFailed": {
       "title": "Data se nepodařilo načíst",

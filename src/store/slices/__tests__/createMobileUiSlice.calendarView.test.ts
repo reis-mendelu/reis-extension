@@ -9,10 +9,14 @@ vi.mock('../../../services/storage', () => ({
 }));
 
 /**
- * The calendar's day/week choice is asked once and then saved on the device
- * (spec 2026-10-09). What the calendar SHOWS is separate from what is SAVED:
- * trying a view in the chooser, or peeking at one day from the week, must not
- * overwrite the choice. IndexedDB, never localStorage (Iron Rules).
+ * Den or Týden is remembered on the device: whatever the student last switched
+ * to is where the calendar opens (spec 2026-10-30). There is no chooser and no
+ * separate "saved" view — what is shown IS the choice.
+ *
+ * The key is `calendar_view_v2`, never the 5.4.0 `calendar_view`: everyone
+ * opens on Den after the update, so a choice from before #540 must not be read.
+ * With no key, a phone opens on Den and an iPad on Týden.
+ * IndexedDB, never localStorage (Iron Rules).
  */
 describe('createMobileUiSlice — calendar view', () => {
   let state: MobileUiSlice;
@@ -31,59 +35,50 @@ describe('createMobileUiSlice — calendar view', () => {
     state = createMobileUiSlice(set, get, {} as any);
   });
 
-  it('opens on the day view, not yet hydrated', () => {
+  it('opens on the day view before hydration', () => {
     expect(state.mobileCalendarView).toBe('day');
-    expect(state.savedCalendarView).toBe('day');
-    expect(state.calendarViewChosen).toBeNull();
   });
 
-  it('hydrates a saved week as chosen', async () => {
+  it('hydrates the remembered view from the v2 key', async () => {
     vi.mocked(IndexedDBService.get).mockResolvedValue('week');
-    await state.hydrateCalendarView({ demo: false });
-    expect(IndexedDBService.get).toHaveBeenCalledWith('meta', 'calendar_view');
-    expect(state.calendarViewChosen).toBe(true);
-    expect(state.savedCalendarView).toBe('week');
+    await state.hydrateCalendarView({ demo: false, wide: false });
+    expect(IndexedDBService.get).toHaveBeenCalledWith('meta', 'calendar_view_v2');
     expect(state.mobileCalendarView).toBe('week');
   });
 
-  it('a missing key means the student never chose', async () => {
+  it('never reads the 5.4.0 key', async () => {
     vi.mocked(IndexedDBService.get).mockResolvedValue(undefined);
-    await state.hydrateCalendarView({ demo: false });
-    expect(state.calendarViewChosen).toBe(false);
+    await state.hydrateCalendarView({ demo: false, wide: false });
+    expect(IndexedDBService.get).not.toHaveBeenCalledWith('meta', 'calendar_view');
+  });
+
+  it('with nothing remembered, a phone opens on Den', async () => {
+    vi.mocked(IndexedDBService.get).mockResolvedValue(undefined);
+    await state.hydrateCalendarView({ demo: false, wide: false });
     expect(state.mobileCalendarView).toBe('day');
   });
 
-  it('an unknown stored value is asked again rather than trusted', async () => {
+  it('with nothing remembered, an iPad opens on Týden', async () => {
+    vi.mocked(IndexedDBService.get).mockResolvedValue(undefined);
+    await state.hydrateCalendarView({ demo: false, wide: true });
+    expect(state.mobileCalendarView).toBe('week');
+  });
+
+  it('an unknown stored value falls back to the default', async () => {
     vi.mocked(IndexedDBService.get).mockResolvedValue('month');
-    await state.hydrateCalendarView({ demo: false });
-    expect(state.calendarViewChosen).toBe(false);
+    await state.hydrateCalendarView({ demo: false, wide: false });
+    expect(state.mobileCalendarView).toBe('day');
   });
 
-  it('demo mode counts as chosen and reads nothing', async () => {
-    await state.hydrateCalendarView({ demo: true });
-    expect(state.calendarViewChosen).toBe(true);
+  it('demo mode reads nothing and takes the default', async () => {
+    await state.hydrateCalendarView({ demo: true, wide: true });
     expect(IndexedDBService.get).not.toHaveBeenCalled();
+    expect(state.mobileCalendarView).toBe('week');
   });
 
-  it('showing a view changes the screen and writes nothing', () => {
-    state.showCalendarView('week');
+  it('switching shows the view and remembers it', () => {
+    state.setMobileCalendarView('week');
     expect(state.mobileCalendarView).toBe('week');
-    expect(state.savedCalendarView).toBe('day');
-    expect(IndexedDBService.set).not.toHaveBeenCalled();
-  });
-
-  it('saving writes the choice and marks it chosen', () => {
-    state.saveCalendarView('week');
-    expect(state.savedCalendarView).toBe('week');
-    expect(state.mobileCalendarView).toBe('week');
-    expect(state.calendarViewChosen).toBe(true);
-    expect(IndexedDBService.set).toHaveBeenCalledWith('meta', 'calendar_view', 'week');
-  });
-
-  it('restoring puts the saved view back after a peek', () => {
-    state.saveCalendarView('week');
-    state.showCalendarView('day');
-    state.restoreCalendarView();
-    expect(state.mobileCalendarView).toBe('week');
+    expect(IndexedDBService.set).toHaveBeenCalledWith('meta', 'calendar_view_v2', 'week');
   });
 });

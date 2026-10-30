@@ -93,7 +93,7 @@ describe('ProfileScreen', () => {
 
   it('opens Nastavení in one tap, naming what is inside', () => {
     render(<ProfileScreen />);
-    expect(screen.getByText('Kalendář, jazyk, vzhled')).toBeTruthy();
+    expect(screen.getByText('Jazyk, vzhled')).toBeTruthy();
     fireEvent.click(screen.getByText('Nastavení'));
     expect(useAppStore.getState().mobileSheets).toEqual([{ kind: 'settings' }]);
   });

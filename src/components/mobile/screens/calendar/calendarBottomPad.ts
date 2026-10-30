@@ -1,17 +1,12 @@
-import { useAppStore } from '../../../../store/useAppStore';
-
 /**
- * The bottom padding of the agenda and the week grid. Normally it clears the
- * floating tab bar (76px measured, +20). While the first-open view chooser is
- * up, the chooser itself sits in the layout below them and clears the tab bar
- * with its own margin, so they only need a small gap above it — and the week
- * grid, which never scrolls, shrinks to whatever height the chooser leaves.
- * Full literal class strings, so Tailwind's scanner sees both.
+ * The bottom padding of the agenda and the week grid: it clears the floating
+ * tab bar (18px inset + ~58px) AND the Den/Týden switch floating 8px above it
+ * (`CalendarViewSwitch`, ~46px), so neither ever covers a lesson.
+ *
+ * This band is the switch's cost, ~46px on every calendar state, and it was
+ * the reason #528 took the switch off the screen. Spec 2026-10-30 keeps it on
+ * the screen anyway: hidden in Nastavení, nobody found Týden.
+ *
+ * A full literal class string, so Tailwind's scanner sees it.
  */
-const NAV_PAD = 'pb-[calc(6rem_+_var(--safe-bottom,0px))]';
-const CHOOSER_PAD = 'pb-2';
-
-export function useCalendarBottomPad(): string {
-  const choosing = useAppStore((s) => s.calendarViewChosen === false);
-  return choosing ? CHOOSER_PAD : NAV_PAD;
-}
+export const CALENDAR_BOTTOM_PAD = 'pb-[calc(9rem_+_var(--safe-bottom,0px))]';

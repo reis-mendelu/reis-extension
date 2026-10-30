@@ -3,20 +3,20 @@ import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * A lesson's height follows its length only on the DESKTOP calendar.
+ * A lesson's height follows its length, and there is ONE rule for it.
  *
  * "Hodinové přednášky jsou zobrazované jako že mají hodinu a půl": the week
  * grid drew a 14:00-14:50 lesson down to 15:30, because a 90-minute floor sized
  * every block. The fix lives in `WeeklyCalendar/utils.ts` (the grid maths) and
  * `CalendarEventCard.tsx` with `CalendarEventCardOneLine.tsx` (what a block
- * that size can show), and all three are extension-only.
+ * that size can show).
  *
- * The phone and iPad have nothing to fix: their day is a list
- * (`DayAgenda` → `AgendaEvent`), every card is as tall as its text, and the
- * time is written on the card. There is no hour grid for a height to disagree
- * with (`phoneHasNoWeekView.test.ts` pins that the grid is gone). This test
- * fails if a phone file imports the desktop grid or its card; a phone grid
- * should take its heights from `renderedBlockMinutes`, not a copy of it.
+ * The phone's day is a list (`DayAgenda` → `AgendaEvent`), every card as tall
+ * as its text with the time written on it. The phone's week grid (back since
+ * spec 2026-10-30) takes its lanes AND heights from that same maths —
+ * `weekLayout.placeDay` reads `organizeLessons(...).renderedMinutes` — so a
+ * phone file may import `WeeklyCalendar/utils` and nothing else of the desktop
+ * grid: not its components, not its card, and never a copy of the rule.
  */
 const SRC = resolve(process.cwd(), 'src');
 const read = (p: string) => readFileSync(join(SRC, p), 'utf8');
@@ -52,12 +52,18 @@ describe('lesson heights are a desktop concern', () => {
     expect(row).toContain('lesson.endTime');
   });
 
-  it.each(PHONE_FILES)('%s draws no time grid of its own', (file) => {
+  it.each(PHONE_FILES)('%s borrows no desktop grid component or card', (file) => {
     // Imports only: eventStyles.ts names CalendarEventCard in a comment, for
     // its colours, which is not a grid.
     const imports = read(file)
       .split('\n')
       .filter((line) => /^\s*import\b|\bfrom\s+['"]/.test(line));
-    expect(imports.join('\n')).not.toMatch(/WeeklyCalendar\/|CalendarEventCard/);
+    expect(imports.join('\n')).not.toMatch(/WeeklyCalendar\/(?!utils['"])|CalendarEventCard/);
+  });
+
+  it('the phone week grid sizes blocks from the same renderedMinutes', () => {
+    const layout = read('components/mobile/screens/calendar/weekLayout.ts');
+    expect(layout).toContain("from '../../../WeeklyCalendar/utils'");
+    expect(layout).toContain('l.renderedMinutes');
   });
 });

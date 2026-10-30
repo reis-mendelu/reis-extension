@@ -10,7 +10,7 @@ import { useOpenLesson } from './useOpenLesson';
 import { useElementHeight } from './useElementHeight';
 import { WeekBlock } from './WeekBlock';
 import { weekHourRange, placeDay, nowOffset } from './weekLayout';
-import { useCalendarBottomPad } from './calendarBottomPad';
+import { CALENDAR_BOTTOM_PAD } from './calendarBottomPad';
 
 export interface WeekGridProps {
   /** Visible lessons and the student's own events, the same set the agenda reads. */
@@ -42,7 +42,7 @@ export function WeekGrid({ lessons, selectedIso, lessonDates, onSelectDay }: Wee
   const { language } = useTranslation();
   const now = useAppStore((s) => s.now);
   const cascade = !useWideViewport();
-  const bottomPad = useCalendarBottomPad();
+  const bottomPad = CALENDAR_BOTTOM_PAD;
   const openLesson = useOpenLesson();
   const swipeRef = useRef<HTMLDivElement>(null);
   const columnsRef = useRef<HTMLDivElement>(null);

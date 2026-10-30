@@ -15,6 +15,7 @@ import { setSessionExpiredHandler } from '@/services/sessionExpiry';
 import { setDemoErrorHandler } from '@/utils/reportError';
 import { handleDemoError } from '@/mobile/demoToast';
 import { useAppStore } from '@/store/useAppStore';
+import { RAIL_MIN_WIDTH } from '@/utils/mapRail';
 import { trackDailyUsage } from '@/api/feedback';
 import { installExamReminders } from '@/mobile/examReminders';
 import { installNotificationTaps } from '@/mobile/notificationTaps';
@@ -85,12 +86,16 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
     .getState()
     .hydratePullHint({ demo })
     .catch(() => {});
-  // And the calendar's day/week choice, so its first frame is the saved view
-  // rather than the day view swapping to the week a tick in — or, when nothing
-  // is saved, already knows to offer the chooser.
+  // And Den or Týden, so the calendar's first frame is the remembered view
+  // rather than Den swapping to Týden a tick in. `wide` is the iPad test the
+  // layout itself uses (useWideViewport): with nothing remembered it opens on
+  // Týden.
   await useAppStore
     .getState()
-    .hydrateCalendarView({ demo })
+    .hydrateCalendarView({
+      demo,
+      wide: window.matchMedia(`(min-width: ${RAIL_MIN_WIDTH}px)`).matches,
+    })
     .catch(() => {});
 
   // Dynamic import on purpose: this module renders the React root on

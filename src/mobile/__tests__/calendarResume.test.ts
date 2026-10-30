@@ -17,16 +17,15 @@ describe('installCalendarResumeReset', () => {
     const lastNight = new Date(2026, 9, 1, 23, 0);
     useAppStore.setState({
       mobileSelectedDayIso: '2026-11-12',
-      // A day peeked at from the week, left open overnight.
-      mobileCalendarView: 'day',
-      savedCalendarView: 'week',
+      // Týden is the remembered view; a resume must not touch it.
+      mobileCalendarView: 'week',
       now: lastNight,
     });
     handler();
     expect(useAppStore.getState().now.getTime()).toBeGreaterThan(lastNight.getTime());
     // null is "no choice made": today, or the first teaching day before term.
     expect(useAppStore.getState().mobileSelectedDayIso).toBeNull();
-    // The saved view comes back — a peek at one day was not a choice.
+    // The view stays: what is shown is the student's choice (spec 2026-10-30).
     expect(useAppStore.getState().mobileCalendarView).toBe('week');
   });
 });
