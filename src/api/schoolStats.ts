@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { adminAuthClient } from '@/services/admin/authClient';
 import { logError } from '@/utils/reportError';
 import { DEV_SOCIETY } from '@/utils/mock/devSociety';
-import type { UsageGroup } from './usageStats';
 
 const Group = z.object({ key: z.string(), n: z.number() });
 
@@ -41,6 +40,16 @@ const Schema = z.object({
  * the console's 5, because the card is meant to leave reIS), and -2 in a
  * breakdown means hidden only to protect a smaller group.
  */
+/**
+ * One breakdown row of the school card. Not the console's `UsageGroup`: its
+ * floor is 10, not 5 — -1 means "under 10" — and -2 means hidden only to
+ * protect a smaller group (complementary suppression).
+ */
+export interface SchoolGroup {
+  key: string;
+  devices: number;
+}
+
 export interface SchoolStats {
   /** The last complete Monday–Sunday week the regulars describe. */
   weekFrom: string;
@@ -48,7 +57,7 @@ export interface SchoolStats {
   /** Installs IS has named a student on, active on 2+ days of that week. */
   regulars: number;
   regularsPhone: number;
-  regularsByFaculty: UsageGroup[];
+  regularsByFaculty: SchoolGroup[];
   /** The first day the eduroam counter recorded anything; null before then. */
   eduroamSince: string | null;
   /** Installs with any eduroam setup, suppressed on its own (not a sum of two hidden counts). */
@@ -56,7 +65,7 @@ export interface SchoolStats {
   /** Phones and laptops come as a pair: both -1 when either is under 10. */
   eduroamWifi: number;
   eduroamProfile: number;
-  eduroamByFaculty: UsageGroup[];
+  eduroamByFaculty: SchoolGroup[];
   events: { posts: number; views: number; clicks: number; mapViews: number };
   /** Only notices that have been shown. */
   notices: {
@@ -69,7 +78,7 @@ export interface SchoolStats {
   }[];
 }
 
-const groups = (g: z.infer<typeof Group>[]): UsageGroup[] =>
+const groups = (g: z.infer<typeof Group>[]): SchoolGroup[] =>
   g.map(({ key, n }) => ({ key, devices: n }));
 
 /** Admin-only aggregate read, defined in supabase/migrations/20261030120000_school_stats.sql. */

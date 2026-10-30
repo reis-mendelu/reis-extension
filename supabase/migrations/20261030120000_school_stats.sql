@@ -121,6 +121,9 @@ as $$
       left join public.reis_question_counts c on c.question_id = q.id
      where q.starts_at <= now() and q.ends_at > q.starts_at
      group by q.id
+    -- Seen by at least one device: a started question nobody was shown is not
+    -- a notice the card can report on (release review).
+    having coalesce(sum(c.n) filter (where c.key = 'seen'), 0) > 0
   )
   select json_build_object(
     'week_from', (select from_date from wk),

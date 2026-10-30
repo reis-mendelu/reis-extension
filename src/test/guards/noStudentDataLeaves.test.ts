@@ -112,6 +112,30 @@ const SUPABASE_CALLERS = new Set([
 ]);
 
 /**
+ * The admin console's Supabase callers, through `adminAuthClient`: a session
+ * signed in as reis_admin or one society's account, never a student's device.
+ * They read aggregates the RPCs already suppress (usage, retention,
+ * programmes, feature counts, the school card: groups under 5, or 10 for the
+ * card that leaves reIS, hidden), or write what the admin types (posts,
+ * questions, society accounts, suggestion triage). None of them carries a
+ * student identifier; the RPCs check the role server-side.
+ */
+const ADMIN_CALLERS = new Set([
+  'src/api/adminQuestions.ts',
+  'src/api/featureStats.ts',
+  'src/api/schoolStats.ts',
+  'src/api/societiesAdmin.ts',
+  'src/api/societyAccounts.ts',
+  'src/api/societyPosts.ts',
+  'src/api/suggestionsAdmin.ts',
+  'src/api/usageProgrammes.ts',
+  'src/api/usageRetention.ts',
+  'src/api/usageStats.ts',
+  // The signed-in admin's own role and society, from spolky_accounts.
+  'src/store/slices/createAdminSlice.ts',
+]);
+
+/**
  * Files permitted to call crypto.subtle.digest. None of these hash a student
  * identifier: PKCE verifiers, image fingerprints, and the iPad reader's on-device
  * filename for a subject PDF (`courseCode:fileLink` — a course code and an IS
@@ -228,10 +252,13 @@ describe('no student data leaves the device', () => {
   });
 
   it('only reviewed files talk to Supabase', () => {
+    // Both clients: the student app's `supabase` and the admin console's
+    // `adminAuthClient` — the second slipped past this check entirely until the
+    // 5.6.0 release review.
     const callers = files
-      .filter((f) => /\bsupabase\s*\.\s*(rpc|from)\s*\(/.test(f.text))
+      .filter((f) => /\b(supabase|adminAuthClient)\s*\.\s*(rpc|from)\s*\(/.test(f.text))
       .map((f) => f.path)
-      .filter((p) => !SUPABASE_CALLERS.has(p));
+      .filter((p) => !SUPABASE_CALLERS.has(p) && !ADMIN_CALLERS.has(p));
 
     expect(
       callers,

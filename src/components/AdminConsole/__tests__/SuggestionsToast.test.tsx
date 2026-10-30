@@ -3,6 +3,7 @@ import { render, act } from '@testing-library/react';
 import type { Session } from '@supabase/supabase-js';
 import { useAppStore } from '../../../store/useAppStore';
 import { SuggestionsToast } from '../SuggestionsToast';
+import { __resetSuggestionsToastForTests } from '../suggestionsAnnounced';
 
 const toastInfo = vi.fn();
 vi.mock('sonner', () => ({ toast: { info: (...a: unknown[]) => toastInfo(...a) } }));
@@ -14,6 +15,7 @@ function sessionFor(email: string): Session {
 describe('SuggestionsToast', () => {
   beforeEach(() => {
     toastInfo.mockReset();
+    __resetSuggestionsToastForTests();
     useAppStore.setState({
       language: 'en',
       adminSession: null,
@@ -94,5 +96,20 @@ describe('SuggestionsToast', () => {
   it('renders nothing', () => {
     const { container } = render(<SuggestionsToast />);
     expect(container).toBeEmptyDOMElement();
+  });
+
+  // Release review (cubic): the toast now lives in the admin console AND the
+  // app, and only one is mounted at a time. Moving between them remounts it;
+  // that must not announce the same session twice.
+  it('announces once per session across a remount', () => {
+    useAppStore.setState({
+      adminSession: sessionFor('admin@example.com'),
+      adminRole: 'reis_admin',
+      suggestionsUnread: 4,
+    });
+    const first = render(<SuggestionsToast />);
+    first.unmount();
+    render(<SuggestionsToast />);
+    expect(toastInfo).toHaveBeenCalledTimes(1);
   });
 });
