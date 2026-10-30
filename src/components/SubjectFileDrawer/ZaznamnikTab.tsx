@@ -1,10 +1,13 @@
-import { ClipboardList, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { useZaznamnik } from '../../hooks/data/useZaznamnik';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { VtTestAttempt } from '../../types/zaznamnik';
 import { VtTestGroup } from './Zaznamnik/VtTestGroup';
 import { PhArchView } from './Zaznamnik/PhArchView';
+import { AttendanceSection } from './Zaznamnik/AttendanceSection';
+import { ZaznamnikEmpty } from './Zaznamnik/ZaznamnikEmpty';
+import { recordedGroups } from '../../utils/attendanceSummary';
 import { ReportMissingLink } from '../Feedback/ReportMissingLink';
 import { SubmissionBoxList } from '../SubmissionBoxes/SubmissionBoxList';
 import { useOdevzdavarny } from '../../hooks/data/useOdevzdavarny';
@@ -32,10 +35,19 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
   const { t, language } = useTranslation();
   const lang = language === 'cz' ? 'cz' : 'en';
   const subjectId = subjectInfo?.subjectId;
-  // Submission boxes sit on top of every state below: they come from their own
-  // sync, so a subject can have boxes before (or without) any recorded marks.
+  // Docházka, then submission boxes, sit on top of every state below: both come
+  // from their own sync, so a subject can have them before (or without) marks.
   const { assignments: boxes } = useOdevzdavarny(subjectId);
-  const boxSection = <SubmissionBoxList boxes={boxes} />;
+  const hasAttendance = useAppStore(
+    (s) => !s.impersonation && recordedGroups(s.attendance[courseCode]).length > 0
+  );
+  const topSection = (
+    <>
+      <AttendanceSection courseCode={courseCode} />
+      <SubmissionBoxList boxes={boxes} />
+    </>
+  );
+  const hasTop = hasAttendance || boxes.length > 0;
 
   const buildUrl = (extra: string) =>
     `${IS_BASE}/auth/student/list.pl?studium=${studium};obdobi=${obdobi};predmet=${subjectId};${extra};lang=${lang}`;
@@ -75,7 +87,7 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
   if (isLoading) {
     return (
       <div className="h-full overflow-y-auto p-4 space-y-5 text-[13px]">
-        {boxSection}
+        {topSection}
         <div className="space-y-3 animate-pulse">
           <div className="h-4 bg-base-300 rounded w-1/3" />
           <div className="h-10 bg-base-300 rounded" />
@@ -87,12 +99,12 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
     );
   }
 
-  // "Could not load" is not "no marks" (Návrhy #26). Boxes come from their
-  // own sync, so they still show above it.
+  // "Could not load" is not "no marks" (Návrhy #26). Docházka and boxes come
+  // from their own sync, so they still show above it.
   if (isFailed) {
     return (
       <div className="flex flex-col h-full overflow-y-auto">
-        {boxes.length > 0 && <div className="p-4 pb-0 text-[13px]">{boxSection}</div>}
+        {hasTop && <div className="p-4 pb-0 space-y-5 text-[13px]">{topSection}</div>}
         <LoadFailed
           testId="zaznamnik-error"
           // The same preconditions refetchZaznamnik checks, so the button is
@@ -114,31 +126,17 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
     // known only from the document server has none and is never fetched, so
     // reIS cannot say it has no assessment — only that it does not load it.
     const checked = subjectInfo?.hasPrubezne === false && subjectInfo?.hasTest === false;
-    const emptyMessage = hasFlags
-      ? t('zaznamnik.noData')
-      : checked
-        ? t('zaznamnik.noAssessment')
-        : t('zaznamnik.notLoaded');
-    // With boxes to show, the empty-records note shrinks to a line under them
-    // instead of filling the tab as if there were nothing here at all.
-    if (boxes.length > 0) {
-      return (
-        <div className="h-full overflow-y-auto p-4 space-y-5 text-[13px]">
-          {boxSection}
-          <p className="text-xs text-base-content/70">{emptyMessage}</p>
-          {backlinks}
-        </div>
-      );
-    }
+    // One placeholder where the marks would be, alone or under Docházka and boxes.
+    // Neither says whether marks are missing, so the report link stays with it.
     return (
-      <div className="flex flex-col h-full">
-        <div className="flex flex-col items-center justify-center flex-1 p-6 text-center">
-          <div className="flex flex-col items-center opacity-40">
-            <ClipboardList className="w-12 h-12 mb-3" />
-            <p className="text-sm">{emptyMessage}</p>
+      <div className="h-full overflow-y-auto p-4 space-y-5 text-[13px]">
+        {topSection}
+        <ZaznamnikEmpty reason={hasFlags ? 'noData' : checked ? 'noAssessment' : 'notLoaded'} />
+        {hasFlags && (
+          <div className="flex justify-center">
+            <ReportMissingLink prefill="zaznamnikEmpty" />
           </div>
-          {hasFlags && <ReportMissingLink prefill="zaznamnikEmpty" className="mt-2" />}
-        </div>
+        )}
         {backlinks}
       </div>
     );
@@ -156,7 +154,7 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
 
   return (
     <div className="h-full overflow-y-auto p-4 space-y-5 text-[13px]">
-      {boxSection}
+      {topSection}
       <PhArchView sections={data.ph.sections} />
 
       {vtGroups.length > 0 && (
@@ -171,12 +169,11 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
       )}
 
       {nonEmptyArches.length === 0 && vtGroups.length === 0 && (
-        <div className="flex flex-col items-center justify-center p-6 text-center">
-          <div className="flex flex-col items-center opacity-40">
-            <ClipboardList className="w-12 h-12 mb-3" />
-            <p className="text-sm">{t('zaznamnik.nothingYet')}</p>
+        <div className="space-y-2">
+          <ZaznamnikEmpty reason="nothingYet" />
+          <div className="flex justify-center">
+            <ReportMissingLink prefill="zaznamnikEmpty" />
           </div>
-          <ReportMissingLink prefill="zaznamnikEmpty" className="mt-2" />
         </div>
       )}
 

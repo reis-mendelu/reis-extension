@@ -90,7 +90,9 @@ console.log('mcp:pack: the server stays up in a Claude-Desktop-like utility proc
 // reaches Supabase code the server never calls, and this proves the bundler
 // dropped it.
 const bundle = readFileSync(join('dist-mcp', 'server', 'index.mjs'), 'utf8');
-if (/supabase\.co|supabase-js|GoTrueClient/.test(bundle)) {
+// reIS's own project host and the client library, not the bare word: a public
+// suffix list inside a dependency names supabase.co among thousands of hosts.
+if (/zvbpgkmnrqyprtkyxkwn|supabase-js|GoTrueClient/.test(bundle)) {
   console.error('mcp:pack: the bundle contains Supabase code');
   process.exit(1);
 }

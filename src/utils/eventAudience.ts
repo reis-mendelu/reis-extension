@@ -17,9 +17,41 @@ import { isPartner, matchesAudience } from './partnerAudience';
 export interface Viewer {
   /** null when not known yet (first launch before IS data) — sees public only. */
   facultyKey: FacultyKey | null;
+  /** May see ESN's Erasmus-only events. Broad: also set by a text test on IS. */
   erasmus: boolean;
+  /**
+   * On IS's exchange programme (Z-EXC): sees ESN's events and nobody else's
+   * (decision 2026-10-29). Narrow on purpose, because this one HIDES: the
+   * Erasmus text test can match a Czech student's own trip abroad, and that
+   * student would lose their faculty's events.
+   */
+  exchange: boolean;
   /** Base study-programme code ('B-OI'), null when IS did not say. Partners only. */
   programme?: string | null;
+}
+
+/**
+ * IS's exchange programme. The `isErasmus` text test reads studium.pl in the
+ * session's language, and the Czech name of this programme ("Zahraniční
+ * studenti - krátkodobé studijní pobyty") matches none of its words, so a
+ * student with IS in Czech was never shown ESN's Erasmus-only events. The code
+ * is the same in both languages. It is also the one signal trusted to HIDE
+ * events (`exchange`), which the text test is not.
+ */
+export const EXCHANGE_PROGRAMME = 'Z-EXC';
+
+/** ESN MENDELU, by id: an edited label must not change who exchange students see. */
+const ESN = 'esn';
+/**
+ * reIS's own rows: no society, the console's `admin`, academic deadlines, and
+ * `reis`, which is university-wide whatever the row says. spolkyService's
+ * `dropPreAudienceRows` keeps the same rows, so it calls this too.
+ * reIS is the app, not a society, so even an exchange student sees these.
+ */
+export function isReisOwn(societyId: string | null | undefined): boolean {
+  return (
+    !societyId || societyId === 'admin' || societyId === 'reis' || societyId.startsWith('academic_')
+  );
 }
 
 export type Audience = 'everyone' | 'erasmus' | Exclude<FacultyKey, 'mendelu'>;
@@ -37,6 +69,11 @@ export function canSee(
   viewer: Viewer
 ): boolean {
   const society = societies[event.societyId];
+  // Every other society writes in Czech for Czech students, so for an exchange
+  // student even its events "for everyone" are noise. reIS is the app, not a
+  // society. Checked before partners: a partner's faculty-wide audience would
+  // otherwise match them too.
+  if (viewer.exchange) return event.societyId === ESN || isReisOwn(event.societyId);
   // Partners reach their audience and nobody else, whatever the event's own
   // flag (spec 2026-10-09). Noise control, like the rest of this file.
   if (society && isPartner(society)) return matchesAudience(society.audience, viewer);

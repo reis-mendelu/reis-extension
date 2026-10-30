@@ -17,17 +17,27 @@ const deferred = () => {
 };
 let gates: Record<'base64' | 'write' | 'save', ReturnType<typeof deferred>>;
 let platform: 'ios' | 'android' = 'ios';
+let onMac = false;
 
 vi.mock('@capacitor/core', () => ({
-  registerPlugin: () => ({
-    save: vi.fn(async () => {
-      order.push('save:start');
-      await gates.save.promise;
-      order.push('save:done');
-      return { uri: 'content://x', bytes: 3 };
-    }),
-    requestNotificationPermission: vi.fn(async () => ({ granted: true })),
-  }),
+  registerPlugin: (name: string) =>
+    name === 'MacSave'
+      ? {
+          isMac: vi.fn(async () => ({ mac: onMac })),
+          save: vi.fn(async (o: { url: string }) => {
+            order.push(`panel:${o.url}`);
+            return { url: 'file:///Users/x/Downloads/a.pptx' };
+          }),
+        }
+      : {
+          save: vi.fn(async () => {
+            order.push('save:start');
+            await gates.save.promise;
+            order.push('save:done');
+            return { uri: 'content://x', bytes: 3 };
+          }),
+          requestNotificationPermission: vi.fn(async () => ({ granted: true })),
+        },
   Capacitor: { getPlatform: () => platform },
   CapacitorHttp: { get: vi.fn() },
   CapacitorCookies: { setCookie: vi.fn() },
@@ -69,6 +79,7 @@ vi.mock('@capacitor/share', () => ({
 }));
 
 const { openIsFileNatively } = await import('../openIsFile');
+const { __resetMacSaveForTests } = await import('../macSave');
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
@@ -76,6 +87,8 @@ describe('openIsFileNatively — when the busy row may go idle', () => {
   beforeEach(() => {
     order.length = 0;
     gates = { base64: deferred(), write: deferred(), save: deferred() };
+    onMac = false;
+    __resetMacSaveForTests();
   });
 
   it('iOS: stays busy through the base64 and the write, and hands over as the share sheet opens', async () => {
@@ -109,5 +122,21 @@ describe('openIsFileNatively — when the busy row may go idle', () => {
     gates.save.resolve();
     await done;
     expect(order.indexOf('handoff')).toBeGreaterThan(order.indexOf('save:done'));
+  });
+
+  /**
+   * A Mac runs this same iOS build. The file is written to Documents exactly as
+   * on an iPad, then offered to the macOS Save panel instead of the share sheet;
+   * the row hands over as the panel opens, for the same reason as the sheet.
+   */
+  it('Mac: writes, hands over as the Save panel opens, and never shares', async () => {
+    platform = 'ios';
+    onMac = true;
+    const onHandoff = vi.fn(() => order.push('handoff'));
+    const done = openIsFileNatively('slozka.pl?download=1', undefined, undefined, onHandoff);
+    gates.base64.resolve();
+    gates.write.resolve();
+    await expect(done).resolves.toMatchObject({ delivered: 'saved' });
+    expect(order).toEqual(['fetched', 'base64', 'written', 'handoff', 'panel:file:///a.pptx']);
   });
 });

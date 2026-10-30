@@ -1,0 +1,48 @@
+{
+  "_comment": "Fictional new points on demo subjects for the Novinky 'Nové body' section (#581).",
+  "now": "2026-10-29T10:30:00+01:00",
+  "store": {
+    "mapEvents": [],
+    "mapEventsLoaded": true,
+    "subjects": {
+      "version": 1,
+      "lastUpdated": "2026-10-28T10:00:00+01:00",
+      "data": {
+        "DEM-STA": {
+          "displayName": "Statistika",
+          "fullName": "Statistika",
+          "nameCs": "Statistika",
+          "nameEn": "Statistika",
+          "subjectCode": "DEM-STA",
+          "subjectId": "900101",
+          "folderUrl": "",
+          "fetchedAt": "2026-10-28T10:00:00+01:00"
+        },
+        "DEM-MIK": {
+          "displayName": "Mikroekonomie",
+          "fullName": "Mikroekonomie",
+          "nameCs": "Mikroekonomie",
+          "nameEn": "Mikroekonomie",
+          "subjectCode": "DEM-MIK",
+          "subjectId": "900102",
+          "folderUrl": "",
+          "fetchedAt": "2026-10-28T10:00:00+01:00"
+        }
+      }
+    },
+    "zaznamnikNewPoints": {
+      "DEM-STA": [
+        {
+          "label": "Průběžný test 2",
+          "value": "18/20"
+        }
+      ],
+      "DEM-MIK": [
+        {
+          "label": "Seminární práce",
+          "value": "9"
+        }
+      ]
+    }
+  }
+}

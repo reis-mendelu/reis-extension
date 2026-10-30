@@ -27,6 +27,7 @@ describe('Novinky audience', () => {
     useAppStore.setState({
       societies: BUNDLED_SOCIETIES,
       userFaculty: 'PEF',
+      userProgramme: 'B-OI',
       isErasmus: false,
       impersonation: null,
       notifications: {
@@ -35,7 +36,9 @@ describe('Novinky audience', () => {
           row('pub', 'au_frrms', false),
           row('mine', 'supef', true),
           row('esn', 'esn', true),
+          row('esnPub', 'esn', false),
           row('frrms', 'au_frrms', true),
+          row('reisNotice', 'reis', false),
           row('deadline', 'academic_deadline', false),
         ],
       },
@@ -44,7 +47,13 @@ describe('Novinky audience', () => {
 
   it("shows public events, my faculty's own and reIS rows, without any follow", () => {
     const { result } = renderHook(() => useNotificationFeed());
-    expect(result.current.notifications.map((n) => n.id)).toEqual(['pub', 'mine', 'deadline']);
+    expect(result.current.notifications.map((n) => n.id)).toEqual([
+      'pub',
+      'mine',
+      'esnPub',
+      'reisNotice',
+      'deadline',
+    ]);
   });
 
   it("shows the impersonated student's audience", () => {
@@ -52,6 +61,25 @@ describe('Novinky audience', () => {
       impersonation: { selection: { faculty: 'FRRMS' }, result: {} } as never,
     });
     const { result } = renderHook(() => useNotificationFeed());
-    expect(result.current.notifications.map((n) => n.id)).toEqual(['pub', 'frrms', 'deadline']);
+    expect(result.current.notifications.map((n) => n.id)).toEqual([
+      'pub',
+      'esnPub',
+      'frrms',
+      'reisNotice',
+      'deadline',
+    ]);
+  });
+
+  // Decision 2026-10-29: an exchange student (IS programme Z-EXC) sees ESN's
+  // events and reIS's own rows (`reis` included), nothing from another society.
+  it('an exchange student sees ESN only, plus reIS rows', () => {
+    useAppStore.setState({ userProgramme: 'Z-EXC' });
+    const { result } = renderHook(() => useNotificationFeed());
+    expect(result.current.notifications.map((n) => n.id)).toEqual([
+      'esn',
+      'esnPub',
+      'reisNotice',
+      'deadline',
+    ]);
   });
 });

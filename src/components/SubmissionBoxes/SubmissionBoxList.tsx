@@ -1,6 +1,7 @@
 import type { Odevzdavarna } from '../../api/odevzdavarny';
 import { useAppStore } from '../../store/useAppStore';
 import { splitBoxes } from '../../utils/submissionBoxes';
+import { boxKey } from '../../utils/newBoxDetection';
 import { SubmissionBoxCard } from './SubmissionBoxCard';
 import { ClosedBoxes } from './ClosedBoxes';
 import { useBoxLabels } from './useBoxLabels';
@@ -13,8 +14,17 @@ import { useBoxLabels } from './useBoxLabels';
 export function SubmissionBoxList({ boxes }: { boxes: Odevzdavarna[] }) {
   const L = useBoxLabels();
   const now = useAppStore((s) => s.now).getTime();
+  // Opening this tab marks the boxes seen straight away; the ones seen this
+  // run keep the mark, so the visit the "Nová odevzdávárna" row led to has it.
+  const unseen = useAppStore((s) => s.odevzdavarnyNew);
+  const seen = useAppStore((s) => s.odevzdavarnySeenNew);
   if (boxes.length === 0) return null;
-  const { open, closed } = splitBoxes(boxes, now);
+  const fresh = new Set([...unseen, ...seen]);
+  const split = splitBoxes(boxes, now);
+  const isNew = (b: Odevzdavarna) => fresh.has(boxKey(b));
+  // New first, so the subject opens on the box its row was about.
+  const open = [...split.open.filter(isNew), ...split.open.filter((b) => !isNew(b))];
+  const { closed } = split;
 
   return (
     <section className="space-y-2" data-testid="submission-boxes">
@@ -27,6 +37,7 @@ export function SubmissionBoxList({ boxes }: { boxes: Odevzdavarna[] }) {
           box={box}
           now={now}
           testId={`submission-box-${box.odevzdavarnaId || i}`}
+          isNew={isNew(box)}
         />
       ))}
       <ClosedBoxes boxes={closed} />

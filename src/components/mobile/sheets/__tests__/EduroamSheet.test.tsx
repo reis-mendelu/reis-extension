@@ -43,6 +43,7 @@ function baseHookState(): HookState {
     renew: vi.fn(),
     reset: vi.fn(),
     openProfilesSettings: vi.fn(),
+    profileRoute: null,
   };
 }
 

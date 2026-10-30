@@ -1,9 +1,9 @@
-import { useCallback, useRef, type ReactNode } from 'react';
-import { useAppStore } from '../../../store/useAppStore';
+import { useRef, type ReactNode } from 'react';
 import { AlwaysScrollable } from '../primitives/AlwaysScrollable';
 import { PullRefreshIndicator } from '../primitives/PullRefreshIndicator';
 import { useSwipeSteps } from '../primitives/useSwipeSteps';
 import { swipeStartIsOffLimits } from '../primitives/swipeStartGuard';
+import { useSubjectFilesRefresh } from './useSubjectFilesRefresh';
 
 /**
  * The subject sheet's tab body scroller, pullable on the Files tab: pull it
@@ -59,16 +59,7 @@ export function SubjectDrawerScroller({
 }) {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
-  // Spins only over a list. With none on screen the tab shows its skeleton and
-  // "Načítání souborů…" bar (DrawerTabBody's own isEmpty test), which already
-  // say it; a spinner on top said it twice and held the skeleton down too.
-  const refreshing = useAppStore(
-    (s) => !!s.filesLoading[courseCode] && (s.files[courseCode]?.length ?? 0) > 0
-  );
-  const refresh = useCallback(() => {
-    const state = useAppStore.getState();
-    if (!state.filesLoading[courseCode]) void state.refreshFilesForSubject(courseCode);
-  }, [courseCode]);
+  const { refreshing, refresh } = useSubjectFilesRefresh(courseCode);
 
   /**
    * Written to the node, never through state, and damped to a third — both for

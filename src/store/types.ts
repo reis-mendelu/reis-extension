@@ -329,6 +329,17 @@ export interface CvicneTestsSlice {
   odevzdavarnyStatus: Status;
   fetchOdevzdavarny: () => Promise<void>;
   setOdevzdavarny: (assignments: Odevzdavarna[]) => void;
+  /** Keys (boxKey) of boxes new since an earlier sync whose subject is not opened yet. */
+  odevzdavarnyNew: string[];
+  setOdevzdavarnyNew: (keys: string[]) => void;
+  /**
+   * New boxes seen since the app started. In memory only: they keep their
+   * "Nová" mark and lead the list for the rest of the run, so a tab that
+   * remounts (loading, failed, retried) still opens on the box.
+   */
+  odevzdavarnySeenNew: string[];
+  /** The subject's Záznamník is on screen: its new boxes are seen. */
+  markBoxesSeen: (courseCode: string) => Promise<void>;
 }
 
 export interface UseThemeResult {

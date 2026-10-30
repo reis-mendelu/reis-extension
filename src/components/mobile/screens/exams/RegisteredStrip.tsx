@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import type { RegisteredExam } from '../../../../utils/mobile/examRows';
 import { formatWhenRow } from '../../../../utils/mobile/examWhen';
+import { EdgeScrollButtons } from '../../../ui/EdgeScrollButtons';
 
 export interface RegisteredStripProps {
   rows: RegisteredExam[];
@@ -37,50 +38,58 @@ export function RegisteredStrip({
   renderDetail,
 }: RegisteredStripProps) {
   const selected = rows.find((r) => r.section.id === selectedId);
+  // The scrollbar is hidden: a mouse gets edge buttons (EdgeScrollButtons).
+  const stripRef = useRef<HTMLDivElement>(null);
   return (
     <div className="flex flex-col gap-2.5">
       {/* Edge to edge, so the next tile peeking in at the right says "swipe".
           A fixed 178px tile made exactly two fit at 390px, with nothing
           peeking — so 42vw at most, which leaves a peek at every phone width.
-          Snapped, so a swipe moves one whole exam. */}
-      <div
-        data-testid="registered-strip"
-        className="-mx-4 flex snap-x snap-mandatory scroll-px-4 items-stretch gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        {rows.map((row) => {
-          const today = sameDay(row.date, now);
-          const isSelected = row.section.id === selectedId;
-          const look = isSelected
-            ? 'border-success bg-success/10'
-            : today
-              ? 'border-error/50 bg-error/5'
-              : 'border-base-300 bg-base-100';
-          return (
-            <button
-              key={row.section.id}
-              type="button"
-              aria-pressed={isSelected}
-              onClick={() => onSelect(row)}
-              className={`flex w-[min(178px,42vw)] flex-shrink-0 snap-start flex-col gap-0.5 rounded-2xl border px-3.5 py-2.5 text-left ${look}`}
-            >
-              <span
-                className={`truncate text-xs font-bold ${today ? 'text-[var(--tone-error)]' : 'text-[var(--tone-success)]'}`}
+          Snapped, so a swipe moves one whole exam. The bleed is on the
+          wrapper, not the strip, so the edge buttons sit at the strip's real
+          edges rather than over its tiles. */}
+      <div className="relative -mx-4">
+        <div
+          ref={stripRef}
+          data-testid="registered-strip"
+          className="flex snap-x snap-mandatory scroll-px-4 items-stretch gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {rows.map((row) => {
+            const today = sameDay(row.date, now);
+            const isSelected = row.section.id === selectedId;
+            const look = isSelected
+              ? 'border-success bg-success/10'
+              : today
+                ? 'border-error/50 bg-error/5'
+                : 'border-base-300 bg-base-100';
+            return (
+              <button
+                key={row.section.id}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => onSelect(row)}
+                className={`flex w-[min(178px,42vw)] flex-shrink-0 snap-start flex-col gap-0.5 rounded-2xl border px-3.5 py-2.5 text-left ${look}`}
               >
-                {formatWhenRow(row.date, row.term.time, locale)}
-              </span>
-              {/* Two lines each, not one with an ellipsis: "Průběžný test 1 ·
+                <span
+                  className={`truncate text-xs font-bold ${today ? 'text-[var(--tone-error)]' : 'text-[var(--tone-success)]'}`}
+                >
+                  {formatWhenRow(row.date, row.term.time, locale)}
+                </span>
+                {/* Two lines each, not one with an ellipsis: "Průběžný test 1 ·
                   Studovna PEF (ČP)" needs 203px and the tile gives 148, so the
                   room — the half a student is looking for — was the half that
                   got cut. Measured on the device's own data at 375px. */}
-              <span className="line-clamp-2 break-words text-md font-bold text-base-content">
-                {row.subjectName}
-              </span>
-              <span className="line-clamp-2 break-words text-2sm text-base-content/60">
-                {[row.sectionName, row.term.room].filter(Boolean).join(' · ')}
-              </span>
-            </button>
-          );
-        })}
+                <span className="line-clamp-2 break-words text-md font-bold text-base-content">
+                  {row.subjectName}
+                </span>
+                <span className="line-clamp-2 break-words text-2sm text-base-content/60">
+                  {[row.sectionName, row.term.room].filter(Boolean).join(' · ')}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <EdgeScrollButtons scrollerRef={stripRef} />
       </div>
       {selected && <div data-testid="registered-detail">{renderDetail(selected)}</div>}
     </div>

@@ -124,4 +124,38 @@ describe('loadContext viewer cache', () => {
     expect(useAppStore.getState().userFaculty).toBe('PEF');
     expect(useAppStore.getState().isErasmus).toBe(false);
   });
+
+  // Z-EXC hides every other society's events (decision 2026-10-29), so an
+  // exchange student must not see them flash in on a cold start either.
+  it('restores a cached exchange programme on a cold start', async () => {
+    idb.set('viewer_audience', {
+      faculty: 'LDF',
+      erasmus: true,
+      programme: 'Z-EXC',
+      savedAt: Date.now(),
+    });
+    getUserParams.mockResolvedValue(null);
+    await useAppStore.getState().loadContext();
+    expect(useAppStore.getState().userProgramme).toBe('Z-EXC');
+  });
+
+  // Dual study: the programme is the selected study's, so switching between an
+  // exchange study and a degree study moves the student in and out of it.
+  it('follows the selected study in and out of the exchange programme', async () => {
+    getUserParams.mockResolvedValue({
+      facultyLabel: 'PEF',
+      studyProgram: 'Z-EXC',
+      isErasmus: false,
+    });
+    await useAppStore.getState().loadContext();
+    expect(useAppStore.getState().userProgramme).toBe('Z-EXC');
+
+    getUserParams.mockResolvedValue({
+      facultyLabel: 'PEF',
+      studyProgram: 'B-OI-ZBOI',
+      isErasmus: false,
+    });
+    await useAppStore.getState().loadContext();
+    expect(useAppStore.getState().userProgramme).toBe('B-OI');
+  });
 });

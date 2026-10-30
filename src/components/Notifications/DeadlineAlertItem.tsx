@@ -1,11 +1,13 @@
-import { BookOpen, ClipboardList, Clock, ExternalLink } from 'lucide-react';
+import { BookOpen, ClipboardList, Clock, ExternalLink, FilePlus } from 'lucide-react';
 import type { DeadlineAlert } from '../../hooks/useDeadlineAlerts';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useBoxLabels } from '../SubmissionBoxes/useBoxLabels';
 
 const TYPE_KEY: Record<DeadlineAlert['type'], string> = {
   'exam-reg-opens': 'deadlines.examRegOpens',
   'exam-reg': 'deadlines.examReg',
   assignment: 'deadlines.assignment',
+  'assignment-new': 'newBox.kind',
   'cvicny-test': 'deadlines.cvicnyTest',
   'zaznamnik-points': 'zaznamnik.newPoints',
 };
@@ -16,6 +18,7 @@ const TINT: Record<DeadlineAlert['type'], string> = {
   'exam-reg-opens': 'bg-warning/10 text-warning',
   'exam-reg': 'bg-warning/10 text-warning',
   assignment: 'bg-warning/10 text-warning',
+  'assignment-new': 'bg-info/10 text-info',
   'cvicny-test': 'bg-success/10 text-success',
   'zaznamnik-points': 'bg-success/10 text-success',
 };
@@ -46,16 +49,28 @@ export function DeadlineAlertItem({
   onOpenSubject,
 }: {
   alert: DeadlineAlert;
-  /** A row about a subject (new záznamník points) opens it in reIS. */
+  /** A row about a subject (new záznamník points, a new box) opens it in reIS. */
   onOpenSubject?: (alert: DeadlineAlert) => void;
 }) {
   const { t } = useTranslation();
+  const { shortDate } = useBoxLabels();
 
   const h = alert.hoursUntil !== undefined ? Math.floor(alert.hoursUntil) : null;
+  // A new box is weeks away as often as not: its date, not a count of hours.
   const timeLabel =
-    h !== null ? (h < 1 ? t('deadlines.lessThanHour') : t('deadlines.hoursLeft', { h })) : null;
+    h !== null
+      ? h < 1
+        ? t('deadlines.lessThanHour')
+        : t('deadlines.hoursLeft', { h })
+      : alert.type === 'assignment-new' && alert.deadline
+        ? t('odevzdavarny.until', { date: shortDate(alert.deadline) })
+        : null;
   const kind = t(TYPE_KEY[alert.type]);
   const isCvicny = alert.type === 'cvicny-test';
+  const isNewBox = alert.type === 'assignment-new';
+  // "Nová odevzdávárna · " left a 320px phone no room for the box's own name,
+  // the one thing the row is about. The icon and the section say the rest.
+  const lead = t('newBox.badge');
 
   const body = (
     <>
@@ -68,6 +83,8 @@ export function DeadlineAlertItem({
       >
         {alert.type === 'zaznamnik-points' ? (
           <ClipboardList size={16} />
+        ) : isNewBox ? (
+          <FilePlus size={16} />
         ) : isCvicny ? (
           <BookOpen size={16} />
         ) : (
@@ -81,7 +98,18 @@ export function DeadlineAlertItem({
               test has no clock, so its kind IS its meta, and prefixing the
               subtitle with it too printed "Cvičný test" three times in one
               row — the label, the subtitle and the test's own name. */}
-          {timeLabel ? `${kind} · ${alert.body}` : alert.body}
+          {isNewBox ? (
+            // Read as "Nová odevzdávárna: <box>", not "Nová" twice.
+            <>
+              <span className="sr-only">{kind}: </span>
+              <span aria-hidden>{lead} · </span>
+              {alert.body}
+            </>
+          ) : timeLabel ? (
+            `${kind} · ${alert.body}`
+          ) : (
+            alert.body
+          )}
         </span>
       </span>
       {/* Bold base-content, not `text-warning`. Amber on the light theme's
@@ -90,7 +118,8 @@ export function DeadlineAlertItem({
           is a solid block rather than a sentence, so the row keeps its urgency
           signal and the words stay readable. */}
       <span className="flex-shrink-0 whitespace-nowrap text-2sm font-bold text-base-content">
-        {timeLabel ?? kind}
+        {/* A new box with no date says nothing here: "Nová" already leads it. */}
+        {timeLabel ?? (isNewBox ? null : kind)}
       </span>
       {alert.link && (
         <ExternalLink size={14} className="flex-shrink-0 text-base-content/40" aria-hidden />

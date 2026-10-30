@@ -79,13 +79,13 @@ export function CalendarScreen() {
           they did not already know, and a week label was tried there and
           rejected the same way — the strip and the title already say which
           week and which day this is. Away from today the date itself is the
-          way back (a return glyph beside it, no extra row): the header is
+          way back (a today glyph beside it, no extra row): the header is
           full at a date and three actions, and a floating "Dnes" pill read as
           one more control at the bottom of the screen. */}
       {/* Refreshing is a pull on the day (DayBody). The visible circle that
           sat on its own row here made this header one line taller than every
-          other tab's; what is left is the screen-reader route to the same
-          sync, which takes no layout. */}
+          other tab's; now it is a header action: sr-only on touch, a circle
+          on a Mac, where nothing can pull (RefreshButton). */}
       <ScreenHeader
         title={formatHeaderDate(
           new Date(`${selectedIso}T00:00:00`),
@@ -95,7 +95,7 @@ export function CalendarScreen() {
         titleAction={
           isAway ? { label: t('mobile.calendar.backToToday'), onClick: goToday } : undefined
         }
-        below={
+        action={
           <RefreshButton
             label={t('mobile.header.refresh')}
             refreshing={scheduleRefreshing}

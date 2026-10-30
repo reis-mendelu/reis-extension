@@ -6,6 +6,7 @@ import { useAppStore } from '../../../../store/useAppStore';
 import { syncService } from '../../../../services/sync';
 import { PULL_REFRESH_THRESHOLD_PX } from '../../primitives/pullToRefresh';
 import type { ExamSubject } from '../../../../types/exams';
+import { LOADED } from './pullTestSetup';
 
 /**
  * The calendar's manual refresh: a pull down on the day, and a screen-reader
@@ -25,14 +26,6 @@ import type { ExamSubject } from '../../../../types/exams';
  * mocking the barrel would leave every one of them `undefined`.
  */
 const REFRESH = 'Obnovit';
-
-const LOADED = {
-  isSyncing: false,
-  lastSync: 1,
-  error: null,
-  handshakeDone: true,
-  handshakeTimedOut: false,
-};
 
 function examWithTerm(): ExamSubject {
   return {
@@ -56,6 +49,7 @@ function examWithTerm(): ExamSubject {
 function baseState(overrides: Record<string, unknown> = {}) {
   useAppStore.setState({
     language: 'cz',
+    isTouch: true, // a phone; the Mac case is in guards/macRefreshIsVisible
     mobileSelectedDayIso: '2026-04-20',
     mobileSheets: [],
     firstSyncSettled: true,

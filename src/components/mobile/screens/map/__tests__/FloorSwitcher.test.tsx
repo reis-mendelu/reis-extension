@@ -20,9 +20,17 @@ describe('FloorSwitcher beside the tablet rail', () => {
       activeBuildingId: 0,
       mapRailOpen: true,
       mapRailWidth: 340,
+      // Every case in this block is a touch screen; the Mac is the next block.
+      isTouch: true,
     } as never);
   });
   afterAll(() => setViewport(390, 844));
+
+  it('keeps the small buttons on a touch screen', () => {
+    setViewport(1194, 834);
+    render(<FloorSwitcher />);
+    expect(screen.getByRole('button', { name: '0' })).toHaveClass('btn-xs');
+  });
 
   it('stands left of the open rail on an iPad in landscape', () => {
     setViewport(1194, 834);
@@ -54,5 +62,37 @@ describe('FloorSwitcher beside the tablet rail', () => {
     setViewport(844, 390);
     render(<FloorSwitcher />);
     expect(screen.getByTestId('floor-switcher').style.right).toBe('12px');
+  });
+});
+
+// The iPad app on a Mac: phone tree, mouse, a ~1782x919 window. Beside the
+// rail the column landed in the middle of the map; it goes where the
+// extension's map keeps it instead — under the search, on the left.
+describe('FloorSwitcher on a Mac', () => {
+  beforeEach(() => {
+    useAppStore.setState({
+      activeBuildingId: 0,
+      mapRailOpen: true,
+      mapRailWidth: 340,
+      isTouch: false,
+    } as never);
+  });
+  afterAll(() => setViewport(390, 844));
+
+  it('stands top-left under the search bar, clear of the rail', () => {
+    setViewport(1782, 919);
+    render(<FloorSwitcher />);
+    const column = screen.getByTestId('floor-switcher');
+    expect(column.style.right).toBe('');
+    expect(column).toHaveClass('left-4');
+    expect(column.className).toContain('top-[calc(5rem');
+    expect(column.className).not.toContain('bottom-');
+  });
+
+  it('takes buttons a mouse can hit on a window drawn at 0.825', () => {
+    setViewport(1782, 919);
+    render(<FloorSwitcher />);
+    expect(screen.getByRole('button', { name: '0' })).toHaveClass('btn-sm');
+    expect(screen.getByRole('button', { name: '0' })).not.toHaveClass('btn-xs');
   });
 });

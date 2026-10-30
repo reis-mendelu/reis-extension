@@ -5,7 +5,12 @@ import { TiltButton } from '../Building3D/tilt/TiltButton';
 
 const META = buildingsJson as BuildingsMeta;
 
-export function FloorStack() {
+/**
+ * `size` is `xs` everywhere but the Mac's phone tree (see
+ * `floorColumnPlacement`), where a mouse on a window drawn at 0.825 made the
+ * 24px buttons read as 20pt. The desktop tree passes nothing and is unchanged.
+ */
+export function FloorStack({ size = 'xs' }: { size?: 'xs' | 'sm' }) {
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const activeFloorId = useAppStore((s) => s.activeFloorId);
   const setMapFloor = useAppStore((s) => s.setMapFloor);
@@ -22,7 +27,7 @@ export function FloorStack() {
       {b.floors.map((f) => (
         <button
           key={f.id}
-          className={`btn btn-xs ${activeFloorId === f.id ? 'btn-primary' : 'btn-ghost'}`}
+          className={`btn ${size === 'sm' ? 'btn-sm' : 'btn-xs'} ${activeFloorId === f.id ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => setMapFloor(f.id)}
           disabled={leaving}
         >

@@ -4,6 +4,7 @@ import { useNotificationFeed } from '../hooks/useNotificationFeed';
 import { useDeadlineAlerts, type DeadlineAlert } from '../hooks/useDeadlineAlerts';
 import { NotificationDropdown } from './Notifications/NotificationDropdown';
 import { useQuestions } from '../hooks/useQuestions';
+import { useEscapeLayer } from '../hooks/ui/useEscapeLayer';
 
 export function NotificationFeed({
   className = '',
@@ -23,9 +24,10 @@ export function NotificationFeed({
   }, [isOpen, markAllSeen, deadlineAlerts]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Escape closes the dropdown, and only it (an Escape layer).
+  useEscapeLayer(isOpen, () => setIsOpen(false));
   useEffect(() => {
     if (!isOpen) return;
-    const handleEsc = (e: KeyboardEvent) => e.key === 'Escape' && setIsOpen(false);
     const handleClick = (e: MouseEvent) => {
       if (
         dropdownRef.current &&
@@ -35,12 +37,8 @@ export function NotificationFeed({
         setIsOpen(false);
       }
     };
-    document.addEventListener('keydown', handleEsc);
     document.addEventListener('mousedown', handleClick);
-    return () => {
-      document.removeEventListener('keydown', handleEsc);
-      document.removeEventListener('mousedown', handleClick);
-    };
+    return () => document.removeEventListener('mousedown', handleClick);
   }, [isOpen, setIsOpen]);
 
   // Console questions count until the dropdown is opened with them in, as on

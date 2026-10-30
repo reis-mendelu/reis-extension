@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { submitSuggestion } from '../../api/suggestions';
+import { keepDraftOnEscape } from '../../hooks/ui/keepDraftOnEscape';
 
 /**
  * Under a 1- or 2-star rating: an offer to say why, closed until tapped so
@@ -43,6 +44,8 @@ export function LowRatingFeedback({ title }: { title: string }) {
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
+        // Escape with a "why" typed must not pop Novinky and lose it.
+        onKeyDown={keepDraftOnEscape(text)}
         maxLength={2000}
         rows={3}
         autoFocus
