@@ -47,7 +47,8 @@ export function RegisteredStrip({
           peeking — so 42vw at most, which leaves a peek at every phone width.
           Snapped, so a swipe moves one whole exam. The bleed is on the
           wrapper, not the strip, so the edge buttons sit at the strip's real
-          edges rather than over its tiles. */}
+          edges. Mouse only, they still cover about 36px at each end (32px
+          wide, 4px in), the peeking tile at rest included. */}
       <div className="relative -mx-4">
         <div
           ref={stripRef}

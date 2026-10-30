@@ -26,10 +26,11 @@ export const PROFILE_SETTLE_MS = 1500;
 /**
  * Where the profile went, so the sheet can say what to do next:
  * `opened` — macOS took it and Device Management is open (a Mac);
+ * `handed` — macOS took it, but the Device Management pane did not open;
  * `saved` — the student saved it with the Save panel (a Mac that would not open it);
  * `shared` — the share sheet (iPhone, iPad); `downloaded` — a browser download.
  */
-export type ProfileRoute = 'opened' | 'saved' | 'shared' | 'downloaded';
+export type ProfileRoute = 'opened' | 'handed' | 'saved' | 'shared' | 'downloaded';
 
 /**
  * How the eduroam profile reaches the student, as data so the rules above it
@@ -100,8 +101,8 @@ export async function deliverEduroamProfile(
     if (filename.endsWith('.mobileconfig') && (await deps.openOnMac(uri))) {
       // Only after the open has resolved, then a settle: see PROFILE_SETTLE_MS.
       await deps.wait(PROFILE_SETTLE_MS);
-      await deps.openOnMac(PROFILES_DOWNLOADED_URL);
-      return 'opened';
+      // The pane may refuse to open; then say so rather than that it opened.
+      return (await deps.openOnMac(PROFILES_DOWNLOADED_URL)) ? 'opened' : 'handed';
     }
     await deps.saveWithPanel(uri);
     return 'saved';

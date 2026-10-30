@@ -1,4 +1,4 @@
-import type { RefObject } from 'react';
+import { useLayoutEffect, useRef, type RefObject } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -35,6 +35,24 @@ export function EdgeScrollButtons({ scrollerRef }: { scrollerRef: RefObject<HTML
   const { t } = useTranslation();
   const isTouch = useAppStore((s) => s.isTouch);
   const { back, forward } = useScrollEdges(scrollerRef, !isTouch);
+  // Pressing one way to the end removes the button that has focus, and focus
+  // fell to <body>. It moves to the button that remains (release review).
+  const backRef = useRef<HTMLButtonElement>(null);
+  const forwardRef = useRef<HTMLButtonElement>(null);
+  const focused = useRef<'back' | 'forward' | null>(null);
+  useLayoutEffect(() => {
+    // WebKit and Firefox fire no blur when a focused node is removed, so the
+    // mark is cleared here whenever its button is gone, handed over or not —
+    // a stale mark would later pull focus from wherever the student is.
+    if (focused.current === 'forward' && !forward) {
+      focused.current = null;
+      backRef.current?.focus();
+    }
+    if (focused.current === 'back' && !back) {
+      focused.current = null;
+      forwardRef.current?.focus();
+    }
+  }, [back, forward]);
   if (isTouch) return null;
   const step = (dir: 1 | -1) => {
     const el = scrollerRef.current;
@@ -44,7 +62,10 @@ export function EdgeScrollButtons({ scrollerRef }: { scrollerRef: RefObject<HTML
     <>
       {back && (
         <button
+          ref={backRef}
           type="button"
+          onFocus={() => (focused.current = 'back')}
+          onBlur={() => (focused.current = null)}
           onClick={() => step(-1)}
           aria-label={t('common.scrollBack')}
           className={`${BUTTON} left-1`}
@@ -54,7 +75,10 @@ export function EdgeScrollButtons({ scrollerRef }: { scrollerRef: RefObject<HTML
       )}
       {forward && (
         <button
+          ref={forwardRef}
           type="button"
+          onFocus={() => (focused.current = 'forward')}
+          onBlur={() => (focused.current = null)}
           onClick={() => step(1)}
           aria-label={t('common.scrollForward')}
           className={`${BUTTON} right-1`}

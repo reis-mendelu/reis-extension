@@ -13,8 +13,10 @@ import { useHintStatus } from '../hooks/ui/useHintStatus';
  * past the 200-line convention carrying it. Raised in review.
  *
  * It is the ONLY route to `hideEvent` and `hideCourse`, which is why the card
- * renders it regardless of how little room the block has: every 50-minute
- * lesson is drawn in one line, and it can be hidden like any other.
+ * renders it however little room the block has: a 50-minute lesson is drawn
+ * in one line and can be hidden like any other — unless it overlaps another
+ * lesson (`maxColumns > 1`): the card then has no room for the menu, so that
+ * lesson cannot be hidden until it stops overlapping.
  */
 export function CalendarEventCardHideMenu({
   lesson,

@@ -138,4 +138,20 @@ describe('FeedbackModal', () => {
     await waitFor(() => expect(submitSuggestion).toHaveBeenCalled());
     expect(screen.queryByText('Sent!')).not.toBeInTheDocument();
   });
+
+  // Release review (cubic): Escape already kept a typed report; a click on the
+  // backdrop threw it away. Both keep it now; ✕ closes deliberately.
+  it('a backdrop click keeps a typed report, and closes an empty one', () => {
+    const onClose = vi.fn();
+    const { unmount } = render(<FeedbackModal isOpen onClose={onClose} />);
+    fireEvent.change(screen.getByPlaceholderText(/What happened/i), {
+      target: { value: 'Panel stayed empty' },
+    });
+    fireEvent.click(screen.getByTestId('feedback-backdrop'));
+    expect(onClose).not.toHaveBeenCalled();
+    unmount();
+    render(<FeedbackModal isOpen onClose={onClose} />);
+    fireEvent.click(screen.getByTestId('feedback-backdrop'));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });

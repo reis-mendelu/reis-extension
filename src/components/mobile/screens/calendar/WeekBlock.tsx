@@ -19,6 +19,12 @@ export interface WeekBlockProps {
 
 /** Fixed line height, so the clamp below and the CSS agree at every width. */
 const NAME_LINE_PX = 12;
+/**
+ * The iPad block's three rows — two name lines, the room, the time — plus
+ * padding. Shorter than this (a 50-minute lesson in a long day) and the time
+ * row goes, so overflow never clips the room (release review).
+ */
+const IPAD_TIME_ROW_MIN_PX = 80;
 /** Block padding (4px) plus the room line (12px) under the name. */
 const RESERVED_PX = 16;
 
@@ -46,6 +52,9 @@ export function WeekBlock({ block, cascade, gridPx, onOpen }: WeekBlockProps) {
   // Clamped to the part a later clash leaves uncovered — there the room line is
   // under the block on top, so only the padding is reserved.
   const covered = block.visible < block.height;
+  // On an iPad clashes sit side by side, so nothing covers a block: its full
+  // height decides whether the time row fits (#622 review).
+  const blockPx = ((cascade ? block.visible : block.height) / 100) * gridPx;
   const lines = cascade
     ? nameLines((block.visible / 100) * gridPx, NAME_LINE_PX, covered ? 4 : RESERVED_PX)
     : 2;
@@ -104,7 +113,7 @@ export function WeekBlock({ block, cascade, gridPx, onOpen }: WeekBlockProps) {
           <span className="whitespace-nowrap">{room}</span>
         </span>
       )}
-      {!cascade && (
+      {!cascade && (gridPx === 0 || blockPx >= IPAD_TIME_ROW_MIN_PX) && (
         <span className="truncate text-[11px] leading-[14px] tabular-nums text-content-secondary">
           {time}
         </span>

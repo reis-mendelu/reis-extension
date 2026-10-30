@@ -25,7 +25,9 @@ import { useTranslation } from '../../../hooks/useTranslation';
 /**
  * `leading` is one screen's own round action, placed before the shared three —
  * the calendar's chef hat in the week view. It sits in this cluster rather than
- * beside it so the gap, and its tightening below 360px, stay one rule.
+ * beside it so the gap, and its tightening below 360px, stay one rule. That is
+ * four targets again in Týden; its title is a short week range ("2.–6. 11."),
+ * which fits beside them at 320px (verify:ui, 2026-10-30).
  */
 export function HeaderActions({ leading }: { leading?: ReactNode }) {
   const { t } = useTranslation();

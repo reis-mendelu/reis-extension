@@ -257,15 +257,15 @@ describe('CalendarScreen — week view', () => {
    * zooms out to Týden; spreading on a day in Týden opens that day in Den.
    * Either way the view is remembered, like every other switch.
    */
-  const fingers = (a: [number, number], b: [number, number]) => [
-    { identifier: 1, clientX: a[0], clientY: a[1] },
-    { identifier: 2, clientX: b[0], clientY: b[1] },
+  const fingers = (el: HTMLElement, a: [number, number], b: [number, number]) => [
+    { identifier: 1, clientX: a[0], clientY: a[1], target: el },
+    { identifier: 2, clientX: b[0], clientY: b[1], target: el },
   ];
   const twoFingers = (el: HTMLElement, from: number, to: number) => {
-    fireEvent.touchStart(el, { touches: fingers([200 - from, 300], [200 + from, 300]) });
+    fireEvent.touchStart(el, { touches: fingers(el, [200 - from, 300], [200 + from, 300]) });
     for (const f of [0.33, 0.66, 1]) {
       const half = from + (to - from) * f;
-      fireEvent.touchMove(el, { touches: fingers([200 - half, 300], [200 + half, 300]) });
+      fireEvent.touchMove(el, { touches: fingers(el, [200 - half, 300], [200 + half, 300]) });
     }
     fireEvent.touchEnd(el, { touches: [] });
   };
@@ -348,7 +348,7 @@ describe('CalendarScreen — week view', () => {
   it('a third finger resets the pinch; the remaining pair starts fresh', () => {
     render(<CalendarScreen />);
     const el = screen.getByTestId('calendar-screen');
-    const t = (id: number, x: number) => ({ identifier: id, clientX: x, clientY: 300 });
+    const t = (id: number, x: number) => ({ identifier: id, clientX: x, clientY: 300, target: el });
     fireEvent.touchStart(el, { touches: [t(1, 100), t(2, 300)] });
     fireEvent.touchStart(el, { touches: [t(1, 100), t(2, 300), t(3, 380)] });
     fireEvent.touchEnd(el, { touches: [t(2, 300), t(3, 380)] });
@@ -384,5 +384,72 @@ describe('CalendarScreen — week view', () => {
     expect(labels.some((l) => /Po 5\. 10\./.test(l ?? ''))).toBe(true);
     expect(labels.some((l) => /St 7\. 10\./.test(l ?? ''))).toBe(true);
     expect(new Set(labels).size).toBe(2);
+  });
+
+  // Release review (cubic): a finger resting outside the calendar (the tab
+  // bar) plus one on the calendar is not a pinch.
+  it('a finger outside the calendar does not make a pinch', () => {
+    const { container } = render(
+      <>
+        <CalendarScreen />
+        <div data-testid="outside" />
+      </>
+    );
+    const el = screen.getByTestId('calendar-screen');
+    const outside = screen.getByTestId('outside');
+    const t = (id: number, x: number, target: Element) => ({
+      identifier: id,
+      clientX: x,
+      clientY: 300,
+      target,
+    });
+    fireEvent.touchStart(el, { touches: [t(1, 100, outside), t(2, 300, el)] });
+    fireEvent.touchMove(el, { touches: [t(1, 100, outside), t(2, 150, el)] });
+    fireEvent.touchEnd(el, { touches: [] });
+    expect(useAppStore.getState().mobileCalendarView).toBe('day');
+    expect(container).toBeTruthy();
+  });
+
+  // #622 review: a finger that started on the calendar stays in the pinch even
+  // if the element under it is removed mid-gesture (its target is detached).
+  it('a pinch keeps its fingers when the element under one is removed', () => {
+    render(<CalendarScreen />);
+    const el = screen.getByTestId('calendar-screen');
+    const gone = document.createElement('div');
+    const t = (id: number, x: number, target: Element) => ({
+      identifier: id,
+      clientX: x,
+      clientY: 300,
+      target,
+    });
+    fireEvent.touchStart(el, { touches: [t(1, 80, el), t(2, 320, el)] });
+    fireEvent.touchMove(el, { touches: [t(1, 160, gone), t(2, 240, el)] });
+    expect(useAppStore.getState().mobileCalendarView).toBe('week');
+  });
+
+  // #622 review: which fingers began on the calendar is remembered by
+  // identifier, across a lift — a finger whose element was removed can still
+  // pair with a new calendar finger.
+  it('a finger whose element was removed can pair with a new calendar finger', () => {
+    render(<CalendarScreen />);
+    const el = screen.getByTestId('calendar-screen');
+    const gone = document.createElement('div');
+    const t = (id: number, x: number, target: Element) => ({
+      identifier: id,
+      clientX: x,
+      clientY: 300,
+      target,
+    });
+    fireEvent.touchStart(el, {
+      touches: [t(1, 80, el), t(2, 320, el)],
+      changedTouches: [t(1, 80, el), t(2, 320, el)],
+    });
+    fireEvent.touchEnd(el, { touches: [t(1, 80, gone)], changedTouches: [t(2, 320, el)] });
+    fireEvent.touchStart(el, {
+      touches: [t(1, 80, gone), t(3, 320, el)],
+      changedTouches: [t(3, 320, el)],
+    });
+    fireEvent.touchMove(el, { touches: [t(1, 160, gone), t(3, 240, el)] });
+    expect(useAppStore.getState().mobileCalendarView).toBe('week');
   });
 });

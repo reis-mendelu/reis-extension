@@ -6,9 +6,10 @@ export interface FocusView<B> {
   paddingBottomRight: [number, number];
 }
 
-/** The closest a floor plan is ever opened at: the ceiling `roomFocusView`
- *  gives the building fit. roomLabels reads it too — "is the plan drawn
- *  smaller than the view it opens at" cannot ask for a view closer than this. */
+/** The ceiling `roomFocusView` gives a building fit. (Not the closest a plan is
+ *  ever drawn at: loading a plan and the room-only fallback open at 21.)
+ *  roomLabels reads it too — "is the plan drawn smaller than the view it opens
+ *  at" cannot ask for a building view closer than this. */
 export const PLAN_FOCUS_MAX_ZOOM = 19;
 
 /**

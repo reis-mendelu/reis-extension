@@ -42,17 +42,46 @@ export function usePinchView({ surfaceRef, onPinchIn, onSpread }: PinchViewConfi
     let from: number | null = null;
     let fired = false;
 
-    // Exactly two fingers set the baseline; any other count drops it, so a
-    // third finger and its lift never leave an old pair's distance behind.
+    // Only fingers that STARTED on the calendar count — one resting on the tab
+    // bar plus one dragged on the calendar is not a pinch (release review). The
+    // pair is then followed by identifier, not by where it is now: a finger
+    // whose element is removed mid-gesture keeps its old, detached target
+    // (#622 review).
+    let pair: [number, number] | null = null;
+    // Fingers that began ON the calendar, by identifier, for as long as they
+    // stay down — so one whose element is later removed (its target then
+    // detached) still counts, across a lift of the other (#622 review).
+    const began = new Set<number>();
+    const onSurface = (e: TouchEvent) =>
+      Array.from(e.touches).filter((t) => began.has(t.identifier));
+    const byId = (e: TouchEvent, id: number) =>
+      Array.from(e.touches).find((t) => t.identifier === id);
+
+    // Exactly two calendar fingers set the baseline; any other count drops
+    // it, so a third finger and its lift never leave an old pair behind.
     const baseline = (e: TouchEvent) => {
-      const [a, b] = [e.touches[0], e.touches[1]];
-      from = e.touches.length === 2 && a && b ? distance(a, b) : null;
+      const [a, b, extra] = onSurface(e);
+      const ok = a && b && !extra && e.touches.length === 2;
+      pair = ok ? [a.identifier, b.identifier] : null;
+      from = ok ? distance(a, b) : null;
       fired = false;
     };
-    const onStart = baseline;
+    const onStart = (e: TouchEvent) => {
+      for (const t of Array.from(e.changedTouches ?? [])) {
+        if (t.target instanceof Node && surface.contains(t.target)) began.add(t.identifier);
+      }
+      // A touch the event did not report as changed (a test, an old WebKit)
+      // still counts when it is on the calendar now.
+      for (const t of Array.from(e.touches)) {
+        if (t.target instanceof Node && surface.contains(t.target)) began.add(t.identifier);
+      }
+      baseline(e);
+    };
     const onMove = (e: TouchEvent) => {
-      const [a, b] = [e.touches[0], e.touches[1]];
-      if (from === null || fired || e.touches.length !== 2 || !a || !b || from === 0) return;
+      if (from === null || pair === null || fired || e.touches.length !== 2 || from === 0) return;
+      const a = byId(e, pair[0]);
+      const b = byId(e, pair[1]);
+      if (!a || !b) return;
       const scale = distance(a, b) / from;
       const { onPinchIn: pinchIn, onSpread: spread } = handlers.current;
       if (scale <= PINCH_IN_SCALE && pinchIn) {
@@ -63,8 +92,13 @@ export function usePinchView({ surfaceRef, onPinchIn, onSpread }: PinchViewConfi
         spread({ x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 });
       }
     };
-    // A lift that leaves two fingers starts a fresh pinch from them.
-    const onEnd = baseline;
+    // A lift forgets that finger; one that leaves two starts a fresh pinch.
+    const onEnd = (e: TouchEvent) => {
+      for (const t of Array.from(e.changedTouches ?? [])) began.delete(t.identifier);
+      const down = new Set(Array.from(e.touches).map((t) => t.identifier));
+      for (const id of began) if (!down.has(id)) began.delete(id);
+      baseline(e);
+    };
     const blockPageZoom = (e: Event) => e.preventDefault();
 
     surface.addEventListener('touchstart', onStart, { passive: true });

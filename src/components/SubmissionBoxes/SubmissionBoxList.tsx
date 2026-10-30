@@ -7,8 +7,8 @@ import { ClosedBoxes } from './ClosedBoxes';
 import { useBoxLabels } from './useBoxLabels';
 
 /**
- * A subject's submission boxes — open ones as cards, soonest first, then the
- * closed ones folded away. Read-only: every action is a link into IS.
+ * A subject's submission boxes — open ones as cards, new ones first and the
+ * rest soonest first, then the closed ones folded away. Read-only: every action is a link into IS.
  * Rendered by ZaznamnikTab, so the extension, phone and iPad share it.
  */
 export function SubmissionBoxList({ boxes }: { boxes: Odevzdavarna[] }) {

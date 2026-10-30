@@ -79,9 +79,9 @@ export function AttendanceSection({ courseCode }: { courseCode: string }) {
               {group.records.map((r, ri) => (
                 <li
                   key={ri}
-                  className="grid grid-cols-[3.25rem_minmax(0,1fr)_auto] items-center gap-2 py-1.5 text-[12px] tabular-nums"
+                  className="grid grid-cols-[minmax(3.25rem,auto)_minmax(0,1fr)_auto] items-center gap-2 py-1.5 text-[12px] tabular-nums"
                 >
-                  <span className="text-base-content">{shortDate(r.date)}</span>
+                  <span className="whitespace-nowrap text-base-content">{shortDate(r.date)}</span>
                   <span className="flex gap-2 min-w-0 text-base-content/70">
                     <span className="hidden @2xs:inline whitespace-nowrap">
                       {dashRange(r.time)}

@@ -140,4 +140,36 @@ describe('EdgeScrollButtons', () => {
     expect(remove).toHaveBeenCalledWith('scroll', expect.any(Function));
     vi.unstubAllGlobals();
   });
+
+  // Release review (cubic): pressing forward until the end unmounts the
+  // focused button, and focus fell to <body>. It moves to the other one.
+  it('hands focus to the remaining button when the focused one disappears', () => {
+    render(<Strip />);
+    const el = screen.getByTestId('strip');
+    shape(el, { left: 300 });
+    forward()!.focus();
+    expect(document.activeElement).toBe(forward());
+    shape(el, { left: 600 });
+    expect(forward()).toBeNull();
+    expect(document.activeElement).toBe(back());
+  });
+
+  // #622 review: with no button left to take focus the mark must clear, or a
+  // later overflow pulls focus from wherever the student moved on to.
+  it('does not steal focus later after the strip stopped overflowing', () => {
+    render(
+      <>
+        <Strip />
+        <button type="button">elsewhere</button>
+      </>
+    );
+    const el = screen.getByTestId('strip');
+    shape(el, { left: 300 });
+    forward()!.focus();
+    shape(el, { content: 300 });
+    const elsewhere = screen.getByRole('button', { name: 'elsewhere' });
+    elsewhere.focus();
+    shape(el, { left: 0, content: 900 });
+    expect(document.activeElement).toBe(elsewhere);
+  });
 });

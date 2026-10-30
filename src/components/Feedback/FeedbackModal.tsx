@@ -104,6 +104,8 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
   const hasDraft =
     !isSuccess &&
     (attachments.screenshot !== null ||
+      // A screenshot still being encoded is already chosen (#622 review).
+      attachments.encoding ||
       [message, contact, title === (initialTitle ?? '') ? '' : title].some((v) => v.trim()));
   const handleClose = useCloseReport(isOpen, onClose, hasDraft);
 
@@ -119,8 +121,13 @@ export function FeedbackModal({ isOpen, onClose, initialTitle }: FeedbackModalPr
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            data-testid="feedback-backdrop"
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={handleClose}
+            // A stray click outside keeps a typed report, as Escape does
+            // (useCloseReport); ✕ closes it deliberately (release review).
+            onClick={() => {
+              if (!hasDraft) handleClose();
+            }}
           />
 
           <motion.div

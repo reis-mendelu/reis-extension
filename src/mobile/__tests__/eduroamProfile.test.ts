@@ -123,6 +123,19 @@ describe('deliverEduroamProfile', () => {
       expect(d.saveWithPanel).not.toHaveBeenCalled();
     });
 
+    // Release review (cubic): when the Device Management pane does not open,
+    // the sheet must not say it did — the profile is with macOS, but the
+    // student has to open the pane themselves.
+    it('says "handed" when macOS took the profile but the pane did not open', async () => {
+      const d = mac({
+        openOnMac: vi.fn((url: string) => Promise.resolve(url !== PROFILES_DOWNLOADED_URL)),
+      });
+      await expect(deliverEduroamProfile(blob(), 'eduroam-reis.mobileconfig', d)).resolves.toBe(
+        'handed'
+      );
+      expect(d.saveWithPanel).not.toHaveBeenCalled();
+    });
+
     /**
      * The open resolves when the file is handed over, before macOS has listed
      * it; the pane opened at once could show nothing yet. So: the open first,

@@ -113,10 +113,10 @@ export function DayChip({
           A holiday wins over lessons in the rare case of both: the
           closure is the more surprising fact, and the banner above the
           agenda still names it either way.
-          The week view keeps only the empty slot: the grid below shows the
-          lessons and washes a holiday's column red, so the dots there said
-          nothing — "the bullets below the days are useless in the weekly
-          view" — and the slot keeps the strip one height in both views. */}
+          The week view has no dots: the grid below shows the lessons — "the
+          bullets below the days are useless in the weekly view" — and its
+          slot is a line tall on every chip for the holiday word, so the strip
+          is one height in every week, and a few px taller than in Den. */}
       {holidayWord !== undefined ? (
         // Týden: the slot is a line of text tall on every chip, so a week
         // with a holiday is not a different height from one without.

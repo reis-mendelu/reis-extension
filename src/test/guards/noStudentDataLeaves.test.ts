@@ -112,6 +112,30 @@ const SUPABASE_CALLERS = new Set([
 ]);
 
 /**
+ * The admin console's Supabase callers, through `adminAuthClient`: a session
+ * signed in as reis_admin or one society's account, never a student's device.
+ * They read aggregates the RPCs already suppress (usage, retention,
+ * programmes, feature counts, the school card: groups under 5, or 10 for the
+ * card that leaves reIS, hidden), or write what the admin types (posts,
+ * questions, society accounts, suggestion triage). None of them carries a
+ * student identifier; the RPCs check the role server-side.
+ */
+const ADMIN_CALLERS = new Set([
+  'src/api/adminQuestions.ts',
+  'src/api/featureStats.ts',
+  'src/api/schoolStats.ts',
+  'src/api/societiesAdmin.ts',
+  'src/api/societyAccounts.ts',
+  'src/api/societyPosts.ts',
+  'src/api/suggestionsAdmin.ts',
+  'src/api/usageProgrammes.ts',
+  'src/api/usageRetention.ts',
+  'src/api/usageStats.ts',
+  // The signed-in admin's own role and society, from spolky_accounts.
+  'src/store/slices/createAdminSlice.ts',
+]);
+
+/**
  * Files permitted to call crypto.subtle.digest. None of these hash a student
  * identifier: PKCE verifiers, image fingerprints, and the iPad reader's on-device
  * filename for a subject PDF (`courseCode:fileLink` — a course code and an IS
@@ -228,10 +252,21 @@ describe('no student data leaves the device', () => {
   });
 
   it('only reviewed files talk to Supabase', () => {
-    const callers = files
-      .filter((f) => /\bsupabase\s*\.\s*(rpc|from)\s*\(/.test(f.text))
-      .map((f) => f.path)
-      .filter((p) => !SUPABASE_CALLERS.has(p));
+    // Both clients, each against its own list: the student app's `supabase`
+    // against SUPABASE_CALLERS, the admin console's `adminAuthClient` against
+    // ADMIN_CALLERS. The second slipped past this check entirely until the
+    // 5.6.0 release review, and an admin file must not gain a student-client
+    // call by being on the admin list (#622 review).
+    const callers = [
+      ...files
+        .filter((f) => /\bsupabase\s*\.\s*(rpc|from)\s*\(/.test(f.text))
+        .map((f) => f.path)
+        .filter((p) => !SUPABASE_CALLERS.has(p)),
+      ...files
+        .filter((f) => /\badminAuthClient\s*\.\s*(rpc|from)\s*\(/.test(f.text))
+        .map((f) => f.path)
+        .filter((p) => !ADMIN_CALLERS.has(p)),
+    ];
 
     expect(
       callers,
@@ -244,13 +279,14 @@ describe('no student data leaves the device', () => {
   it('sends no student-identifying field to Supabase', () => {
     const offences: string[] = [];
     for (const f of files) {
-      if (!/\bsupabase\s*\.\s*(rpc|from)\s*\(/.test(f.text)) continue;
+      // Both clients: an admin-console call carries no student identifier either.
+      if (!/\b(supabase|adminAuthClient)\s*\.\s*(rpc|from)\s*\(/.test(f.text)) continue;
       const lines = f.text.split('\n');
       lines.forEach((line, i) => {
         // Look inside the payload region of a Supabase call: the call line and
         // the object literal that follows it.
         const near = lines.slice(Math.max(0, i - 2), i + 14).join('\n');
-        if (!/\bsupabase\s*\.\s*(rpc|from)\s*\(/.test(near)) return;
+        if (!/\b(supabase|adminAuthClient)\s*\.\s*(rpc|from)\s*\(/.test(near)) return;
         for (const name of IDENTIFYING) {
           if (IDENTIFYING_EXCEPTIONS[f.path]?.includes(name)) continue;
           // `p_student_id:` is the column name on legacy tables; flag only when

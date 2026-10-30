@@ -4,7 +4,7 @@ import type { KeyboardEvent } from 'react';
  * The Erasmus pickers' keys. Escape closes an OPEN list and keeps the key, so
  * the drawer around the picker stays (useEscapeLayer yields to
  * `preventDefault`); with the list closed it is left to the drawer. Enter takes
- * the top result, if there is one.
+ * the top result of the open list, if there is one.
  */
 export function pickerKeyDown<T>(
   e: KeyboardEvent,
@@ -17,7 +17,10 @@ export function pickerKeyDown<T>(
     e.preventDefault();
     setOpen(false);
   }
-  if (e.key === 'Enter' && first !== undefined) {
+  // Only from the list on screen: after Escape it still holds the old results,
+  // and Enter picked one nobody could see (release review).
+  // Not the Enter that commits an IME composition: that is the input method's.
+  if (e.key === 'Enter' && isOpen && !e.nativeEvent.isComposing && first !== undefined) {
     pick(first);
     setOpen(false);
   }

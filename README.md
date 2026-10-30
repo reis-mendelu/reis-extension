@@ -18,7 +18,7 @@ npm run test:e2e   # E2E tests (Playwright)
 
 Code is [Apache-2.0](LICENSE). The reIS name and logo are not covered; forks must use their own name and icon.
 
-Map tiles © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL). 3D model of building Q based on © Statutární město Brno, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+Map tiles © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL). 3D model of building Q modified from the 3D building model (LOD2) © Statutární město Brno, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) — storeys sliced, facades and the north front added — with terrain from ČÚZK DMR 5G; built in [reis-data](https://github.com/reis-mendelu/reis-data).
 
 ---
 

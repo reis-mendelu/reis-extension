@@ -19,6 +19,7 @@ describe('SuggestionsToast', () => {
       adminSession: null,
       adminRole: null,
       suggestionsUnread: 0,
+      suggestionsAnnouncedFor: null,
     });
   });
 
@@ -94,5 +95,35 @@ describe('SuggestionsToast', () => {
   it('renders nothing', () => {
     const { container } = render(<SuggestionsToast />);
     expect(container).toBeEmptyDOMElement();
+  });
+
+  // Release review (cubic): the toast now lives in the admin console AND the
+  // app, and only one is mounted at a time. Moving between them remounts it;
+  // that must not announce the same session twice.
+  it('announces once per session across a remount', () => {
+    useAppStore.setState({
+      adminSession: sessionFor('admin@example.com'),
+      adminRole: 'reis_admin',
+      suggestionsUnread: 4,
+    });
+    const first = render(<SuggestionsToast />);
+    first.unmount();
+    render(<SuggestionsToast />);
+    expect(toastInfo).toHaveBeenCalledTimes(1);
+  });
+
+  // #622 review: on a phone the toast is unmounted by logout before it can see
+  // the session go, so the mark lives in the store and logout clears it.
+  it('announces again after logout and a fresh sign-in by the same admin', () => {
+    useAppStore.setState({
+      adminSession: sessionFor('admin@example.com'),
+      adminRole: 'reis_admin',
+      suggestionsUnread: 4,
+    });
+    const first = render(<SuggestionsToast />);
+    first.unmount();
+    useAppStore.setState({ suggestionsAnnouncedFor: null }); // what adminLogout does
+    render(<SuggestionsToast />);
+    expect(toastInfo).toHaveBeenCalledTimes(2);
   });
 });

@@ -88,7 +88,8 @@ export function SubjectSheetHeader({
         placeholder={isName}
         enterKeyHint="done"
         onKeyDown={(e) => {
-          if (e.key !== 'Escape') return;
+          // An Escape that ends an IME composition is the input method's.
+          if (e.key !== 'Escape' || e.nativeEvent.isComposing) return;
           e.preventDefault();
           cancel();
         }}

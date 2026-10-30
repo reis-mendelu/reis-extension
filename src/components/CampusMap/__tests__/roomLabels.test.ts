@@ -61,8 +61,8 @@ describe('roomLabelsHidden', () => {
     });
 
     it('shows a small building at the closest view a plan ever opens at', () => {
-      // E never reaches READABLE_PLAN_PX at that zoom (204px), but a plan is
-      // never opened closer than PLAN_FOCUS_MAX_ZOOM, so "smaller than the
+      // E never reaches READABLE_PLAN_PX at that zoom (204px), but a building
+      // fit never opens closer than PLAN_FOCUS_MAX_ZOOM, so "smaller than the
       // view it opens at" cannot ask for more. None of E's names overlap there.
       expect(roomLabelsHidden(mapAt(PLAN_FOCUS_MAX_ZOOM, 21), E)).toBe(false);
       expect(roomLabelsHidden(mapAt(PLAN_FOCUS_MAX_ZOOM - 1, 21), E)).toBe(true);

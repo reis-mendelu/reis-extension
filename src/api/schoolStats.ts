@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { adminAuthClient } from '@/services/admin/authClient';
 import { logError } from '@/utils/reportError';
 import { DEV_SOCIETY } from '@/utils/mock/devSociety';
-import type { UsageGroup } from './usageStats';
 
 const Group = z.object({ key: z.string(), n: z.number() });
 
@@ -35,6 +34,12 @@ const Schema = z.object({
   ),
 });
 
+/** One breakdown row of the school card; `devices` follows the card's floor (below). */
+export interface SchoolGroup {
+  key: string;
+  devices: number;
+}
+
 /**
  * What reIS can show MENDELU, all from data it already collects. Counts of
  * INSTALLS, never people; -1 means "under 10", this card's floor (stricter than
@@ -48,7 +53,7 @@ export interface SchoolStats {
   /** Installs IS has named a student on, active on 2+ days of that week. */
   regulars: number;
   regularsPhone: number;
-  regularsByFaculty: UsageGroup[];
+  regularsByFaculty: SchoolGroup[];
   /** The first day the eduroam counter recorded anything; null before then. */
   eduroamSince: string | null;
   /** Installs with any eduroam setup, suppressed on its own (not a sum of two hidden counts). */
@@ -56,7 +61,7 @@ export interface SchoolStats {
   /** Phones and laptops come as a pair: both -1 when either is under 10. */
   eduroamWifi: number;
   eduroamProfile: number;
-  eduroamByFaculty: UsageGroup[];
+  eduroamByFaculty: SchoolGroup[];
   events: { posts: number; views: number; clicks: number; mapViews: number };
   /** Only notices that have been shown. */
   notices: {
@@ -69,7 +74,7 @@ export interface SchoolStats {
   }[];
 }
 
-const groups = (g: z.infer<typeof Group>[]): UsageGroup[] =>
+const groups = (g: z.infer<typeof Group>[]): SchoolGroup[] =>
   g.map(({ key, n }) => ({ key, devices: n }));
 
 /** Admin-only aggregate read, defined in supabase/migrations/20261030120000_school_stats.sql. */

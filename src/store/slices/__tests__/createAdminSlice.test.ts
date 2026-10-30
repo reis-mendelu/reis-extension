@@ -253,6 +253,15 @@ describe('createAdminSlice', () => {
     expect(state.adminConsoleOpen).toBe(false);
   });
 
+  // #622 review: the suggestions toast's "already announced" mark goes with the
+  // session, so the same admin signing in again hears it again.
+  it('logout forgets which session the suggestions toast spoke to', async () => {
+    const s = state as typeof state & { suggestionsAnnouncedFor: string | null };
+    s.suggestionsAnnouncedFor = 'admin@esn.cz';
+    await state.adminLogout();
+    expect((state as typeof s).suggestionsAnnouncedFor).toBeNull();
+  });
+
   it('loadAdminSession hydrates from a persisted session without opening the console', async () => {
     getSession.mockResolvedValue({ data: { session: { user: { email: 'admin@esn.cz' } } } });
     maybeSingle.mockResolvedValue({ data: { role: 'association', association_id: 'esn' } });
