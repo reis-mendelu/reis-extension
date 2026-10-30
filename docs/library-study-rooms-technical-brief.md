@@ -10,7 +10,7 @@ Researched 2026-10-30. Not built. Decisions with Dominik are marked **decided**.
 - **The booking lands in the reIS calendar automatically** (artifact comment, 2026-10-30): on success the app writes a `CalendarCustomEvent` (title "Studovna · …", date, start/end, room = building A) through the existing custom-event path (`customEventToLesson`, shown on both trees). Nothing to tap, no calendar permission, nothing leaves the device. No "Přidat do kalendáře" button. Because cancelling happens in the e-mail link, reIS cannot know and the block stays until the student taps "Odebrat"; say so rather than promise sync. Writing to the phone's own calendar app is not part of this. **Deleting the block today works only on the desktop tree** (`CustomEventModal` has Delete, opened from `WeeklyCalendar`). On the phone/iPad tree a custom event is shown but a tap does nothing (`useOpenLesson` returns for `isCustom`; `useOpenWeekLesson` only opens the map). So the phone needs a delete action for these blocks anyway: the "Odebrat" on the booked screen, plus a tap on the block in Den/Týden that offers "Odebrat z kalendáře".
 - **IC divider** (Dominik, 2026-10-30): the mockup's cut, half and half at 90° between the two rooms, is right as drawn. Step 1 can use it.
 - **Soft cap: at most 4 bookings per day per student**, counted on the device (bypassable, no server). Say so in the UI when it is reached.
-- **Mark reIS bookings for the librarians** (Dominik: "sure"). The field is not chosen yet: the `notes` I sent on 2026-10-30 did not show in the admin's details pane. Candidates are a suffix on the customer name or the faculty answer; probe before deciding, and do not put anything in the faculty field that breaks it for the library.
+- **Marker** (Dominik, 2026-10-30, revised): not needed, nice to have. Send `notes: "reIS"` on the customer (it is stored with the booking); the student has no notes field, so it is free. No further probing.
 - **Cancel is done by the app** with `DELETE` on the stored `selfServiceAppointmentId` (see "Direct cancel from reIS"). No e-mail link is needed.
 - Because the extension is left out, pin that decision and its reason in `src/test/guards/` (follow `desktopHasNoShowOnMap.test.ts`) when this is built.
 
@@ -80,18 +80,29 @@ The response carries `appointment.id` (an EWS-style id) **and** `selfServiceAppo
 - Individual rooms carry `seats: 1` on the map, but the July app listed capacity 2. The Bookings services give no capacity. The mockups now show none for individual rooms; confirm with the library.
 - The mockups draw these exact polygons from that file.
 
-## Removing the calendar block (Dominik, 2026-10-30)
-Tap the block in Den or Týden → a sheet with "Odebrat z kalendáře" and the notice "Odebere jen záznam v tvém kalendáři v reIS. Rezervace v knihovně tím nezanikne." plus the e-mail-link cancel as a secondary action. Mockup frame J. Needs a phone-tree handler for `isCustom` blocks (today `useOpenLesson` returns early).
+## The calendar block (Dominik, 2026-10-30)
+Tap the block in Den or Týden → one action, "Zrušit rezervaci v knihovně". It cancels the real reservation (DELETE) and removes the block. There is deliberately no "remove from calendar only", so the calendar and the library cannot disagree. Mockup frame J. Needs a phone-tree handler for `isCustom` blocks (today `useOpenLesson` returns early) and a failed cancel is "unknown", not "cancelled".
+
+## Reuse map: no new screens where reIS already has the mechanism (Dominik, 2026-10-30)
+The mockups are inspiration. Build onto what exists:
+| Mockup | Existing mechanism | What is new |
+|---|---|---|
+| 0 pin on overview | `EventLayer` / `SocietyPinLayer` pin pattern in the `reisEvents` pane; the old `LibraryLayer` (git `03f3e3d13^`) | one pin component and its count |
+| B list, C room card, I IC rooms, G iPad | `mapSelection` + `MapPanelBody` (same slot as `EventDetailCard`, `SocietyPinCard`); phone `MapSheet`, tablet `MapRail`; the room card a tapped room already opens; `FloorStack`/`FloorSwitcher` | a `MapSelection` kind for the room list, a booking section in the room card |
+| D confirm | `Sheet` primitive + `SheetHeader`, as exam `ConfirmSheet` | the booking copy |
+| E booked, F/H errors | sonner toast (`toastOffset`), `logError`, the network-error mapping | none; the full "Rezervováno" screen is NOT built, a toast plus the calendar block says it |
+| J block in calendar | calendar custom events (`customEventToLesson`), `Sheet` | tap handler for `isCustom` on the phone tree |
+Anything in the mockups not in this table needs a reason before it becomes a new component.
 
 ## Direct cancel from reIS: it works (tested 2026-10-30)
 - `DELETE .../bookingBusinessesc2/{business}/appointments/{selfServiceAppointmentId}` with the same two headers (`x-anchormailbox`, `x-req-source`), no body, no auth, returned **200**. Availability for the slot went from busy back to free, and a later `GET` of that id returned 404 "Appointment in the request not found". A test booking (Individual Study Room 1, Tue 10 Nov 2026 15:00) was created and cancelled this way; nothing remains.
 - So **cancel is in the app**, not an e-mail link. `canCustomerManageTheirBooking: false` only turns off the web page's manage link; the endpoint does not check it. The earlier decision "cancel = open the e-mail link" is replaced.
 - The only thing needed is the `selfServiceAppointmentId` from the create response. Keep it on the device with the booking (same place as the calendar block). It is a bearer capability: whoever holds it can cancel that booking, and it is 22 random characters, so it is not guessable. Never log it, never send it anywhere else, never put it in a URL the student shares.
 - `POST .../appointments/{id}/cancel` answered 401: not a route to use.
-- Not verified: whether the student or the library gets a cancellation e-mail, and that the library's admin shows the booking as cancelled rather than gone. The earlier admin-cancel left the slot free the same way.
+- A cancellation e-mail does go out (Dominik, 2026-10-30), so the notice on the cancel button should say the student will get one. Not verified: that the library's admin shows the booking as cancelled rather than gone. The earlier admin-cancel left the slot free the same way.
 - This route is undocumented; Microsoft could close it. Treat a failed cancel as "unknown" like a failed create: say so and point to the library.
 - `sendMeetingInviteToCustomer: true`: the student also gets an Outlook meeting invite. Declining it is not known to cancel the booking.
-- The `notes` field on the customer is stored (`"notes": "reIS"` came back in the response). Whether the librarians' admin view shows it is still unverified.
+- The customer `notes` field is stored (`"notes": "reIS"` came back in the response).
 
 ## Opening hours the app must follow
 `bookingsSchedulingPolicy.bookingServiceWindows` is the source: Monday to Friday 07:00–19:00 (minutes 420–1140), Saturday and Sunday closed, 15-minute slot grid but we book whole hours. One window (2026-09-01 to 2026-09-11) overrides this, so read the windows rather than hardcoding hours or a weekend guard.
