@@ -5,10 +5,16 @@ export function StatsBars({
   groups,
   labelFor,
   under5,
+  hidden = under5,
 }: {
   groups: UsageGroup[];
   labelFor: (key: string) => string;
   under5: string;
+  /**
+   * For -2: a group hidden only so a smaller one cannot be recovered by
+   * subtraction (school_suppress_groups). Its count is not under the floor.
+   */
+  hidden?: string;
 }) {
   const max = Math.max(1, ...groups.map((g) => g.devices));
   return (
@@ -36,7 +42,9 @@ export function StatsBars({
                 className={suppressed ? 'fill-base-content/50' : 'fill-primary'}
               />
             </svg>
-            <span className="text-right tabular-nums">{suppressed ? under5 : g.devices}</span>
+            <span className="text-right tabular-nums">
+              {g.devices === -2 ? hidden : suppressed ? under5 : g.devices}
+            </span>
           </li>
         );
       })}

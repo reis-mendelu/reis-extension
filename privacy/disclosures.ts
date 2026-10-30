@@ -243,6 +243,11 @@ export const EXEMPT: Exempt[] = [
     why: 'Admin console read, signed-in reis_admin.',
   },
   {
+    call: 'school_stats',
+    files: ['src/api/schoolStats.ts'],
+    why: 'Admin console read, signed-in reis_admin: aggregates of data already collected, groups under 10 hidden.',
+  },
+  {
     call: 'feature_stats',
     files: ['src/api/featureStats.ts'],
     why: 'Admin console read, signed-in reis_admin.',
