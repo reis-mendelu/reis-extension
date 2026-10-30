@@ -12,13 +12,13 @@ const STATS: SchoolStats = {
   regularsByFaculty: [
     { key: 'PEF', devices: 1325 },
     { key: 'ZF', devices: -1 },
+    { key: 'AF', devices: -2 },
   ],
   eduroamSince: '2026-09-23',
   eduroamTotal: 540,
   eduroamWifi: 455,
   eduroamProfile: 93,
   eduroamByFaculty: [{ key: 'PEF', devices: 236 }],
-  eduroamByWeek: [],
   events: { posts: 63, views: 11216, clicks: 850, mapViews: 609 },
   notices: [],
 };
@@ -44,5 +44,34 @@ describe('SchoolStatsCard', () => {
     expect(plain(card.textContent)).toContain('455');
     expect(plain(card.textContent)).toContain('11 216');
     expect(screen.getAllByText('< 10').length).toBeGreaterThan(0);
+    // A neighbour hidden to protect a smaller group is not "under 10".
+    expect(screen.getByText('skryto')).toBeTruthy();
+  });
+
+  it('drops the phone/laptop split when the pair is hidden, and shows notices in the admin language', () => {
+    useAppStore.setState({
+      language: 'en',
+      adminSchoolStats: {
+        ...STATS,
+        eduroamWifi: -1,
+        eduroamProfile: -1,
+        notices: [
+          {
+            id: 'q1',
+            promptCz: 'Česky',
+            promptEn: 'In English',
+            startsAt: '2026-10-24T00:00:00+00:00',
+            endsAt: '2026-11-07T00:00:00+00:00',
+            seen: 711,
+          },
+        ],
+      },
+    } as never);
+    render(<SchoolStatsCard />);
+
+    const card = screen.getByRole('region', { name: 'For the school' });
+    expect(card.textContent).not.toContain('laptops:');
+    expect(card.textContent).toContain('since 23. 9. 2026');
+    expect(screen.getByText('In English')).toBeTruthy();
   });
 });

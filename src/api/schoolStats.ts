@@ -17,7 +17,6 @@ const Schema = z.object({
   eduroam_wifi: z.number(),
   eduroam_profile: z.number(),
   eduroam_by_faculty: z.array(Group),
-  eduroam_by_week: z.array(Group),
   events: z.object({
     posts: z.number(),
     views: z.number(),
@@ -27,7 +26,8 @@ const Schema = z.object({
   notices: z.array(
     z.object({
       id: z.string(),
-      prompt: z.string(),
+      prompt_cz: z.string(),
+      prompt_en: z.string(),
       starts_at: z.string(),
       ends_at: z.string(),
       seen: z.number(),
@@ -38,7 +38,8 @@ const Schema = z.object({
 /**
  * What reIS can show MENDELU, all from data it already collects. Counts of
  * INSTALLS, never people; -1 means "under 10", this card's floor (stricter than
- * the console's 5, because the card is meant to leave reIS).
+ * the console's 5, because the card is meant to leave reIS), and -2 in a
+ * breakdown means hidden only to protect a smaller group.
  */
 export interface SchoolStats {
   /** The last complete Monday–Sunday week the regulars describe. */
@@ -52,13 +53,20 @@ export interface SchoolStats {
   eduroamSince: string | null;
   /** Installs with any eduroam setup, suppressed on its own (not a sum of two hidden counts). */
   eduroamTotal: number;
+  /** Phones and laptops come as a pair: both -1 when either is under 10. */
   eduroamWifi: number;
   eduroamProfile: number;
   eduroamByFaculty: UsageGroup[];
-  /** Keyed by the Monday of each week. */
-  eduroamByWeek: UsageGroup[];
   events: { posts: number; views: number; clicks: number; mapViews: number };
-  notices: { id: string; prompt: string; startsAt: string; endsAt: string; seen: number }[];
+  /** Only notices that have been shown. */
+  notices: {
+    id: string;
+    promptCz: string;
+    promptEn: string;
+    startsAt: string;
+    endsAt: string;
+    seen: number;
+  }[];
 }
 
 const groups = (g: z.infer<typeof Group>[]): UsageGroup[] =>
@@ -89,7 +97,6 @@ export async function fetchSchoolStats(): Promise<SchoolStats | null> {
     eduroamWifi: d.eduroam_wifi,
     eduroamProfile: d.eduroam_profile,
     eduroamByFaculty: groups(d.eduroam_by_faculty),
-    eduroamByWeek: groups(d.eduroam_by_week),
     events: {
       posts: d.events.posts,
       views: d.events.views,
@@ -98,7 +105,8 @@ export async function fetchSchoolStats(): Promise<SchoolStats | null> {
     },
     notices: d.notices.map((q) => ({
       id: q.id,
-      prompt: q.prompt,
+      promptCz: q.prompt_cz,
+      promptEn: q.prompt_en,
       startsAt: q.starts_at,
       endsAt: q.ends_at,
       seen: q.seen,

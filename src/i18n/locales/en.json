@@ -1147,6 +1147,7 @@
       "regularsDesc": "2+ days a week · on phones: {phone}",
       "eduroam": "eduroam via reIS",
       "eduroamDesc": "phones: {wifi} · laptops: {profile} · since {since}",
+      "eduroamSince": "since {since}",
       "events": "Events, all time",
       "eventsDesc": "views: {views} · clicks: {clicks} · map opens: {map}",
       "regularsByFaculty": "Regular users by faculty",
@@ -1154,6 +1155,7 @@
       "notices": "Novinky notices (devices that saw each)",
       "under10": "under 10",
       "under10Short": "< 10",
+      "hidden": "hidden",
       "note": "Data reIS already has. Users and eduroam are counts of devices, not people; events add up since publication. Groups under 10 are hidden so this can be shown outside reIS."
     },
     "stats": {

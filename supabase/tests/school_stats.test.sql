@@ -49,8 +49,8 @@ begin
   select (e->>'n')::int into a from json_array_elements(got) e where e->>'key' = 'A';
   select (e->>'n')::int into b from json_array_elements(got) e where e->>'key' = 'B';
   select (e->>'n')::int into c from json_array_elements(got) e where e->>'key' = 'C';
-  if a is distinct from -1 or b is distinct from -1 or c is distinct from 40 then
-    raise exception 'expected A and B hidden, C published (a=%, b=%, c=%): %', a, b, c, got;
+  if a is distinct from -1 or b is distinct from -2 or c is distinct from 40 then
+    raise exception 'expected A under 10 (-1), B hidden as a neighbour (-2), C published (a=%, b=%, c=%): %', a, b, c, got;
   end if;
 
   got := public.school_suppress_groups('[{"key":"A","n":4},{"key":"B","n":5}]'::jsonb);
@@ -106,14 +106,31 @@ begin
   end if;
 
   select (e->>'n')::int into edu from json_array_elements(v->'eduroam_by_faculty') e where e->>'key' = 'PEF';
-  if edu is distinct from 12 or (v->>'eduroam_wifi')::int is distinct from 12 then
+  if edu is distinct from 12 then
     raise exception 'expected 12 PEF eduroam setups: %', v;
+  end if;
+  -- 12 phones and 0 laptops: published beside the total of 12, either one gives
+  -- the other away, so both are hidden.
+  if (v->>'eduroam_wifi')::int is distinct from -1 then
+    raise exception 'phones must hide when laptops are under 10: %', v->>'eduroam_wifi';
   end if;
   if (v->>'eduroam_total')::int is distinct from 12 then
     raise exception 'expected an eduroam total of 12: %', v->>'eduroam_total';
   end if;
   if (v->>'eduroam_profile')::int is distinct from -1 then
     raise exception 'zero laptop profiles must read as hidden (-1): %', v->>'eduroam_profile';
+  end if;
+end $$;
+
+-- a notice that has not started yet is not listed as shown
+do $$
+declare v json;
+begin
+  insert into public.reis_questions (prompt_cz, prompt_en, buttons, starts_at, ends_at)
+  values ('Budoucí', 'Future', '[{"key":"ano","cz":"Ano","en":"Yes"}]'::jsonb, now() + interval '1 day', now() + interval '2 days');
+  v := public.school_stats_unchecked();
+  if exists (select 1 from json_array_elements(v->'notices') e where e->>'prompt_cz' = 'Budoucí') then
+    raise exception 'an unstarted notice was listed: %', v->'notices';
   end if;
 end $$;
 

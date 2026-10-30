@@ -28,6 +28,7 @@ export function SchoolStatsCard() {
   const under10 = t('admin.school.under10') as string;
   // The bars' number column is 4rem: "méně než 10" wraps there, "< 10" does not.
   const under10Short = t('admin.school.under10Short') as string;
+  const hidden = t('admin.school.hidden') as string;
   const num = (n: number) =>
     n < 0 ? under10 : n.toLocaleString(language === 'cz' ? 'cs-CZ' : 'en-GB');
   const label = (k: string) => (k === 'unknown' ? (t('admin.stats.unknown') as string) : k);
@@ -41,11 +42,16 @@ export function SchoolStatsCard() {
     s.eduroamSince && {
       key: 'eduroam',
       value: num(s.eduroamTotal),
-      desc: t('admin.school.eduroamDesc', {
-        wifi: num(s.eduroamWifi),
-        profile: num(s.eduroamProfile),
-        since: fullDate(s.eduroamSince),
-      }),
+      // Phones and laptops come only as a pair (school_stats hides both when
+      // either is under 10); without them, just the date.
+      desc:
+        s.eduroamWifi >= 0 && s.eduroamProfile >= 0
+          ? t('admin.school.eduroamDesc', {
+              wifi: num(s.eduroamWifi),
+              profile: num(s.eduroamProfile),
+              since: fullDate(s.eduroamSince),
+            })
+          : t('admin.school.eduroamSince', { since: fullDate(s.eduroamSince) }),
     },
     {
       key: 'events',
@@ -84,13 +90,23 @@ export function SchoolStatsCard() {
           {s.regularsByFaculty.length > 0 && (
             <div>
               <h5 className="mb-1 text-xs font-semibold">{t('admin.school.regularsByFaculty')}</h5>
-              <StatsBars groups={s.regularsByFaculty} labelFor={label} under5={under10Short} />
+              <StatsBars
+                groups={s.regularsByFaculty}
+                labelFor={label}
+                under5={under10Short}
+                hidden={hidden}
+              />
             </div>
           )}
           {s.eduroamByFaculty.length > 0 && (
             <div>
               <h5 className="mb-1 text-xs font-semibold">{t('admin.school.eduroamByFaculty')}</h5>
-              <StatsBars groups={s.eduroamByFaculty} labelFor={label} under5={under10Short} />
+              <StatsBars
+                groups={s.eduroamByFaculty}
+                labelFor={label}
+                under5={under10Short}
+                hidden={hidden}
+              />
             </div>
           )}
         </div>
@@ -101,7 +117,7 @@ export function SchoolStatsCard() {
             <ul className="flex flex-col gap-1 text-sm">
               {s.notices.map((q) => (
                 <li key={q.id} className="flex justify-between gap-2">
-                  <span className="truncate">{q.prompt}</span>
+                  <span className="truncate">{language === 'cz' ? q.promptCz : q.promptEn}</span>
                   <span className="shrink-0 tabular-nums">{num(q.seen)}</span>
                 </li>
               ))}

@@ -4,9 +4,9 @@
 --   regulars  installs IS has named a student on, active on 2+ days of the last
 --             complete Mon–Sun week, by faculty, and how many are phones
 --   eduroam   installs on which reIS configured eduroam Wi-Fi (phones) or handed
---             over a profile (laptops), since the counter began, by faculty and week
+--             over a profile (laptops), since the counter began, by faculty
 --   events    posts with any reach since publication: Novinky views and clicks, map opens
---   notices   Novinky questions and how many devices saw each one
+--   notices   Novinky questions that have been shown, and how many devices saw each
 --
 -- Additive and safe for every released build: three new functions, nothing else
 -- changes. Nothing new is collected and no identifier leaves the database —
@@ -56,7 +56,10 @@ begin
 
   return coalesce((
     select json_agg(json_build_object(
-             'key', key, 'n', case when rn <= cutoff then -1 else cnt end
+             -- -1: under 10. -2: hidden only so the smaller one cannot be
+             -- recovered by subtraction — its count is not under 10, so the
+             -- card must not say it is.
+             'key', key, 'n', case when rn > cutoff then cnt when cnt < 10 then -1 else -2 end
            ) order by cnt desc, key)
       from (
         select e->>'key' as key,
@@ -98,17 +101,25 @@ as $$
      group by u.student_id
     having count(distinct u.usage_date) >= 2
   ),
+  edu_counts as (
+    select count(distinct install_id) filter (where feature = 'eduroam_wifi_configured') as wifi,
+           count(distinct install_id) filter (where feature = 'eduroam_profile_delivered') as profile
+      from public.feature_usage
+     where feature in ('eduroam_wifi_configured', 'eduroam_profile_delivered')
+  ),
   edu as (
     select f.install_id, f.feature, f.usage_date,
            f.usage_date - (extract(isodow from f.usage_date)::int - 1) as week
       from public.feature_usage f
      where f.feature in ('eduroam_wifi_configured', 'eduroam_profile_delivered')
   ),
+  -- Only notices that have actually been shown: started, with a real window.
   notices as (
-    select q.id, q.prompt_cz, q.starts_at, q.ends_at,
+    select q.id, q.prompt_cz, q.prompt_en, q.starts_at, q.ends_at,
            coalesce(sum(c.n) filter (where c.key = 'seen'), 0) as seen
       from public.reis_questions q
       left join public.reis_question_counts c on c.question_id = q.id
+     where q.starts_at <= now() and q.ends_at > q.starts_at
      group by q.id
   )
   select json_build_object(
@@ -123,25 +134,20 @@ as $$
             from regulars r join install_faculty f using (student_id)
            group by 1) g), '[]'::jsonb)),
     'eduroam_since', (select min(usage_date) from edu),
-    'eduroam_wifi', (select case when n < 10 then -1 else n end from (
-        select count(distinct install_id) as n from edu
-         where feature = 'eduroam_wifi_configured') x),
     -- One setup per install, whichever kind: the headline, suppressed on its own
     -- rather than summed from two independently hidden counts.
     'eduroam_total', (select case when n < 10 then -1 else n end from (
         select count(distinct install_id) as n from edu) x),
-    'eduroam_profile', (select case when n < 10 then -1 else n end from (
-        select count(distinct install_id) as n from edu
-         where feature = 'eduroam_profile_delivered') x),
+    -- Phones and laptops only as a pair, both at 10 or more: published beside
+    -- the total, either one would give away the other by subtraction.
+    'eduroam_wifi', (select case when least(wifi, profile) < 10 then -1 else wifi end from edu_counts),
+    'eduroam_profile', (select case when least(wifi, profile) < 10 then -1 else profile end from edu_counts),
     -- Phones and laptops together per faculty: one setup each, whichever device.
     'eduroam_by_faculty', public.school_suppress_groups(coalesce((
         select jsonb_agg(jsonb_build_object('key', faculty, 'n', n)) from (
           select coalesce(i.faculty, 'unknown') as faculty, count(distinct e.install_id) as n
             from edu e left join install_faculty i on i.student_id = e.install_id
            group by 1) g), '[]'::jsonb)),
-    'eduroam_by_week', public.school_suppress_groups(coalesce((
-        select jsonb_agg(jsonb_build_object('key', week::text, 'n', n)) from (
-          select week, count(distinct install_id) as n from edu group by 1) g), '[]'::jsonb)),
     -- Society- and partner-published posts: public content, not student data.
     'events', (select json_build_object(
         'posts', count(*),
@@ -153,7 +159,8 @@ as $$
           or id in (select event_id from public.event_map_views)),
     'notices', coalesce((select json_agg(json_build_object(
         'id', id,
-        'prompt', prompt_cz,
+        'prompt_cz', prompt_cz,
+        'prompt_en', prompt_en,
         'starts_at', starts_at,
         'ends_at', ends_at,
         'seen', case when seen < 10 then -1 else seen end

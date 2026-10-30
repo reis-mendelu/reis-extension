@@ -15,18 +15,19 @@ const RAW = {
   regulars_by_faculty: [
     { key: 'PEF', n: 1325 },
     { key: 'ZF', n: -1 },
+    { key: 'AF', n: -2 },
   ],
   eduroam_since: '2026-09-23',
   eduroam_total: 540,
   eduroam_wifi: 455,
   eduroam_profile: 93,
   eduroam_by_faculty: [{ key: 'PEF', n: 236 }],
-  eduroam_by_week: [{ key: '2026-09-28', n: 210 }],
   events: { posts: 63, views: 11216, clicks: 850, map_views: 609 },
   notices: [
     {
       id: 'q1',
-      prompt: 'reIS je teď na Google Play',
+      prompt_cz: 'reIS je teď na Google Play',
+      prompt_en: 'reIS is now on Google Play',
       starts_at: '2026-10-24T21:43:08+00:00',
       ends_at: '2026-11-07T21:43:08+00:00',
       seen: 711,
@@ -51,18 +52,19 @@ describe('fetchSchoolStats', () => {
       regularsByFaculty: [
         { key: 'PEF', devices: 1325 },
         { key: 'ZF', devices: -1 },
+        { key: 'AF', devices: -2 },
       ],
       eduroamSince: '2026-09-23',
       eduroamTotal: 540,
       eduroamWifi: 455,
       eduroamProfile: 93,
       eduroamByFaculty: [{ key: 'PEF', devices: 236 }],
-      eduroamByWeek: [{ key: '2026-09-28', devices: 210 }],
       events: { posts: 63, views: 11216, clicks: 850, mapViews: 609 },
       notices: [
         {
           id: 'q1',
-          prompt: 'reIS je teď na Google Play',
+          promptCz: 'reIS je teď na Google Play',
+          promptEn: 'reIS is now on Google Play',
           startsAt: '2026-10-24T21:43:08+00:00',
           endsAt: '2026-11-07T21:43:08+00:00',
           seen: 711,
