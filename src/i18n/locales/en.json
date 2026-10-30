@@ -1528,8 +1528,8 @@
       "today": "Today",
       "tomorrow": "Tomorrow",
       "seats": "{n} seats",
-      "free": "{count} hours free · next {time}",
-      "full": "Full today",
+      "free": "free from {time}",
+      "full": "full",
       "fullDay": "Full this day",
       "offline": "Couldn't load bookings right now. Check your connection.",
       "pickHour": "Pick an hour",
@@ -1552,7 +1552,8 @@
       "keep": "Keep it",
       "cancelled": "Booking cancelled.",
       "cancelUnknown": "The library didn't answer. Check your e-mail to see whether the booking is gone.",
-      "cancelFailed": "Couldn't cancel the booking."
+      "cancelFailed": "Couldn't cancel the booking.",
+      "seatsOne": "1 seat"
     }
   },
   "session": {

@@ -1528,8 +1528,8 @@
       "today": "Dnes",
       "tomorrow": "Zítra",
       "seats": "{n} míst",
-      "free": "{count} volných hodin · nejbližší {time}",
-      "full": "Dnes plno",
+      "free": "volné od {time}",
+      "full": "plno",
       "fullDay": "Tento den plno",
       "offline": "Rezervace se teď nepodařilo načíst. Zkontroluj připojení.",
       "pickHour": "Vyber hodinu",
@@ -1552,7 +1552,8 @@
       "keep": "Ponechat",
       "cancelled": "Rezervace zrušena.",
       "cancelUnknown": "Knihovna neodpověděla. Zkontroluj e-mail, jestli rezervace zmizela.",
-      "cancelFailed": "Rezervaci se nepodařilo zrušit."
+      "cancelFailed": "Rezervaci se nepodařilo zrušit.",
+      "seatsOne": "1 místo"
     }
   },
   "session": {

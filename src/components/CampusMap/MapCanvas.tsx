@@ -29,7 +29,7 @@ import { translate } from '../../i18n/translate';
 import { CAMPUS_NAVIGATION_ENABLED } from '../../utils/routing/navigationEnabled';
 import { setMapInstance } from './mapInstance';
 import { LABELS_PANE } from './mapPanes';
-import { roomFocusView } from './focusBounds';
+import { roomFocusView, groupFocusView } from './focusBounds';
 import { panPinClearOfSheet } from './sheetClearance';
 import { TiltToggle } from '../Building3D/tilt/TiltToggle';
 import { drawPoiHighlight, outlineForSelection } from './poiOutline';
@@ -392,12 +392,20 @@ export function MapCanvas() {
     // highlight and the camera flies straight to it — that's the "focus".
     const sel = select.mapSelection;
     const selectedId =
-      sel?.kind === 'roomRef' ? sel.entry.placeId : sel?.kind === 'room' ? sel.room.id : null;
+      sel?.kind === 'roomRef'
+        ? sel.entry.placeId
+        : sel?.kind === 'room'
+          ? sel.room.id
+          : sel?.kind === 'library'
+            ? (sel.featureId ?? null)
+            : null;
     const feats = fc.features
       .filter((f) => f.properties.floorId === activeFloorId)
       .sort((a) => (a.properties.category === 'structure' ? -1 : 1));
     roomPolysRef.current.clear();
     let targetBounds: L.LatLngBounds | null = null;
+    // The tinted rooms' own box: what a screen that tints a group (the library) frames.
+    let tintedBounds: L.LatLngBounds | null = null;
     for (const f of feats as RoomFeature[]) {
       const p = f.properties,
         struct = p.category === 'structure';
@@ -446,6 +454,12 @@ export function MapCanvas() {
         }
       }
       poly.addTo(layer);
+      if (select.mapRoomTints[p.id]) {
+        const pb = poly.getBounds();
+        tintedBounds = tintedBounds
+          ? tintedBounds.extend(pb)
+          : L.latLngBounds(pb.getSouthWest(), pb.getNorthEast());
+      }
       if (isSel) {
         poly.bringToFront();
         targetBounds = poly.getBounds();
@@ -455,16 +469,30 @@ export function MapCanvas() {
     // Which box to frame is a decision, so it lives in a tested pure module:
     // a selected room frames its BUILDING, not its own few metres of floor.
     // See focusBounds.roomFocusView.
-    const view = roomFocusView<L.LatLngBoundsExpression>(
-      targetBounds ?? null,
-      (b?.bounds as L.LatLngBoundsExpression | undefined) ?? null,
-      railPaddingPx(map.getSize().x, isPhone, railRef.current.width, railRef.current.open)
+    const rail = railPaddingPx(
+      map.getSize().x,
+      isPhone,
+      railRef.current.width,
+      railRef.current.open
     );
+    const view =
+      sel?.kind === 'library' && tintedBounds
+        ? groupFocusView<L.LatLngBoundsExpression>(tintedBounds, rail)
+        : roomFocusView<L.LatLngBoundsExpression>(
+            targetBounds ?? null,
+            (b?.bounds as L.LatLngBoundsExpression | undefined) ?? null,
+            rail
+          );
     if (view) {
       const { bounds, maxZoom, paddingTopLeft, paddingBottomRight } = view;
       flyAndReveal(map, () =>
         map.fitBounds(bounds, { maxZoom, paddingTopLeft, paddingBottomRight, animate: false })
       );
+    }
+    // The library's room list hugs the lower part of a phone's screen: the plan
+    // has to end up above it, as a pin does (see sheetClearance.ts).
+    if (isPhone && select.mapSelection?.kind === 'library' && tintedBounds) {
+      panPinClearOfSheet(map, (tintedBounds as L.LatLngBounds).getCenter());
     }
     // isPhone joins the deps because the rail offset reads it. It is stable
     // for the life of a device, but it flips on a browser resize, and this
@@ -501,7 +529,9 @@ export function MapCanvas() {
         ? mapSelection.room.id
         : mapSelection?.kind === 'roomRef'
           ? mapSelection.entry.placeId
-          : null;
+          : mapSelection?.kind === 'library'
+            ? (mapSelection.featureId ?? null)
+            : null;
     let selected: L.Polygon | null = null;
     for (const [id, { poly, base }] of roomPolysRef.current) {
       if (id === selId) {
@@ -509,6 +539,18 @@ export function MapCanvas() {
         poly.bringToFront();
         selected = poly;
       } else poly.setStyle(base);
+    }
+    // One library room picked from its list: close in on it, above the sheet.
+    const lens = mapRef.current;
+    if (mapSelection?.kind === 'library' && selected && isPhone && lens) {
+      const room = (selected as L.Polygon).getBounds();
+      lens.fitBounds(room, {
+        maxZoom: 21,
+        paddingTopLeft: [32, 72],
+        paddingBottomRight: [32, 32],
+        animate: false,
+      });
+      panPinClearOfSheet(lens, room.getCenter());
     }
     // The offer belongs where the question was asked, and ONLY when the
     // question came from the timetable. `routeSuggestion` is set by the pin

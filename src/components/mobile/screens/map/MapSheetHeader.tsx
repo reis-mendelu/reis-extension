@@ -11,8 +11,8 @@ import { useTranslation } from '../../../../hooks/useTranslation';
  * row is the nearest grab surface to the content the student is reading, which
  * is why `touch-none` is on it too and not only on the pill.
  *
- * It replaced a segmented control. Library study-room reservation is hidden on
- * mobile, so unless a building is selected there is exactly one tab, and a
+ * It replaced a segmented control. There is exactly one thing in this panel at
+ * a time (the events, or a card from a pin, the library's rooms included), and a
  * track with a selected pill framing the only thing you could pick is all
  * chrome. The row still had to exist for the grab, so it became a heading whose
  * tap collapses.

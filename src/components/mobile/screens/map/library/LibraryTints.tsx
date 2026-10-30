@@ -3,10 +3,8 @@ import { useAppStore } from '../../../../../store/useAppStore';
 import { useLibraryStore } from '../../../../../mobile/library/libraryStore';
 import { libraryTints } from '../../../../../mobile/library/libraryModel';
 import { canBookLibrary } from '../../../../../mobile/library/transport';
+import { todayIso } from './openLibrary';
 import { LIBRARY_BUILDING_ID, LIBRARY_FLOOR_ID } from '../../../../../data/map/libraryRooms';
-
-const todayIso = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 /**
  * Colours and names the six bookable rooms while building A's floor -1 is open:

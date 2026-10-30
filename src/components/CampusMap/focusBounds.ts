@@ -50,3 +50,19 @@ export function roomFocusView<B>(
   if (roomBounds) return view(roomBounds, 21, 120);
   return null;
 }
+
+/**
+ * How close to sit when a screen asks for a GROUP of rooms (the library's six):
+ * their own box, tight enough that each room's name has room to be read, which
+ * the whole building's frame does not give six small rooms.
+ */
+export const GROUP_FOCUS_MAX_ZOOM = 20;
+
+export function groupFocusView<B>(groupBounds: B, railPx = 0): FocusView<B> {
+  return {
+    bounds: groupBounds,
+    maxZoom: GROUP_FOCUS_MAX_ZOOM,
+    paddingTopLeft: [32, 72],
+    paddingBottomRight: [32 + railPx, 32],
+  };
+}

@@ -40,8 +40,25 @@ const MOBILE_ONLY = [
   'src/components/mobile/sheets/LibraryCancelSheet.tsx',
 ];
 
+/**
+ * Phone-tree files that wire the booking in without importing its code: the map's
+ * panel, the pin's mount, the sheet host, and the shared hooks a screen reads. Each
+ * is reached by the phone tree only, which is what clears them with the tree-parity
+ * hook: the extension has no such capability, by this decision.
+ */
+const PHONE_TREE_WIRING = [
+  'src/components/mobile/screens/MapScreen.tsx',
+  'src/components/mobile/screens/map/MapSheet.tsx',
+  'src/components/mobile/screens/map/MapRail.tsx',
+  'src/components/mobile/screens/map/MapPanelBody.tsx',
+  'src/components/mobile/screens/map/library/libraryOf.ts',
+  'src/components/mobile/screens/map/library/HourGrid.tsx',
+  'src/components/mobile/sheets/SheetHost.tsx',
+];
+
 /** Files outside src/mobile/library that may reach it, each on the phone tree. */
 const ALLOWED_IMPORTERS = new Set<string>([
+  'src/components/mobile/screens/map/library/openLibrary.ts',
   'src/components/mobile/screens/map/library/LibraryPinLayer.tsx',
   'src/components/mobile/screens/map/library/LibraryTints.tsx',
   'src/components/mobile/screens/map/library/LibraryCard.tsx',
@@ -96,6 +113,10 @@ function importClosure(entry: string): Set<string> {
 
 describe('library booking stays on the phone tree', () => {
   it.each(MOBILE_ONLY)('%s exists (a rename must update this guard)', (f) => {
+    expect(existsSync(join(root, f))).toBe(true);
+  });
+
+  it.each(PHONE_TREE_WIRING)('%s exists (a rename must update this guard)', (f) => {
     expect(existsSync(join(root, f))).toBe(true);
   });
 

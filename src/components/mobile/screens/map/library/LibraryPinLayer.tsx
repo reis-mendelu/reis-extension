@@ -8,13 +8,10 @@ import { useLibraryStore } from '../../../../../mobile/library/libraryStore';
 import { roomsOpenCount } from '../../../../../mobile/library/libraryModel';
 import { canBookLibrary } from '../../../../../mobile/library/transport';
 import { isDemoMode } from '../../../../../errors/demoMode';
-import { openLibrary } from './openLibrary';
+import { openLibrary, todayIso } from './openLibrary';
 
 /** The library, where building A stands on the campus overview. */
 const LIBRARY_COORD: [number, number] = [16.6152, 49.20996];
-
-const todayIso = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 /**
  * The library's one pin on the campus overview: a small white disc like an

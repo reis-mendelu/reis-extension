@@ -49,7 +49,7 @@ function RoomList() {
           {t('mobile.library.offline')}
         </p>
       )}
-      <ul className="space-y-1.5">
+      <ul className="grid grid-cols-2 gap-2">
         {LIBRARY_ROOMS.map((r) => (
           <RoomRow
             key={r.featureId}
@@ -77,12 +77,14 @@ function RoomRow({
   const dot = full ? TINT_GREY : room.kind === 'individual' ? TINT_BLUE : TINT_GREEN;
   const select = () =>
     useAppStore.setState({ mapSelection: { kind: 'library', featureId: room.featureId } });
+  // The label is the one drawn on the room itself, so a row and its polygon match.
   return (
     <li>
       <button
         type="button"
         onClick={select}
-        className="flex min-h-11 w-full items-center gap-3 rounded-xl bg-base-100 px-3 py-2 text-left ring-1 ring-base-300"
+        aria-label={lang === 'cz' ? room.nameCs : room.nameEn}
+        className="flex min-h-14 w-full items-center gap-2.5 rounded-xl bg-base-100 px-3 py-2 text-left ring-1 ring-base-300"
       >
         <span
           aria-hidden="true"
@@ -91,19 +93,14 @@ function RoomRow({
         />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold text-base-content">
-            {lang === 'cz' ? room.nameCs : room.nameEn}
+            {lang === 'cz' ? room.labelCs : room.labelEn}
           </span>
           <span className="block truncate text-xs text-base-content/70">
-            {t('mobile.library.seats', { n: room.seats })}
-            {sum &&
-              ` · ${
-                full
-                  ? t('mobile.library.full')
-                  : t('mobile.library.free', {
-                      count: sum.count,
-                      time: `${String(sum.next).padStart(2, '0')}:00`,
-                    })
-              }`}
+            {sum === null
+              ? '\u00a0'
+              : full
+                ? t('mobile.library.full')
+                : t('mobile.library.free', { time: `${String(sum.next).padStart(2, '0')}:00` })}
           </span>
         </span>
       </button>
@@ -118,7 +115,12 @@ function RoomHours({ room }: { room: LibraryRoom }) {
   const status = useLibraryStore((s) => s.status);
   const now = new Date();
   const days = weekdays(now);
-  const [day, setDay] = useState(() => iso(days[0] ?? now));
+  const [picked, setDay] = useState<string | null>(null);
+  // Opens on the first day with an hour to book, not on a today that is over.
+  const firstFree = blocks
+    ? days.find((d) => freeHours(blocks, iso(d), now).length > 0)
+    : undefined;
+  const day = picked ?? iso(firstFree ?? days[0] ?? now);
   const locale = language === 'cz' ? 'cs' : 'en';
   const free = blocks ? freeHours(blocks, day, now) : [];
   const chip = (d: Date) =>
@@ -127,7 +129,16 @@ function RoomHours({ room }: { room: LibraryRoom }) {
       : d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'numeric' });
   return (
     <div className="space-y-3" data-testid={`library-room-${room.featureId}`}>
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <p className="text-sm font-semibold text-base-content">
+        {language === 'cz' ? room.nameCs : room.nameEn}
+        <span className="font-normal text-base-content/70">
+          {' · '}
+          {room.seats === 1
+            ? t('mobile.library.seatsOne')
+            : t('mobile.library.seats', { n: room.seats })}
+        </span>
+      </p>
+      <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {days.map((d) => (
           <button
             key={iso(d)}
