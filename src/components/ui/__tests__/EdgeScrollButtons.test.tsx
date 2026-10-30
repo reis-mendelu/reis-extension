@@ -140,4 +140,17 @@ describe('EdgeScrollButtons', () => {
     expect(remove).toHaveBeenCalledWith('scroll', expect.any(Function));
     vi.unstubAllGlobals();
   });
+
+  // Release review (cubic): pressing forward until the end unmounts the
+  // focused button, and focus fell to <body>. It moves to the other one.
+  it('hands focus to the remaining button when the focused one disappears', () => {
+    render(<Strip />);
+    const el = screen.getByTestId('strip');
+    shape(el, { left: 300 });
+    forward()!.focus();
+    expect(document.activeElement).toBe(forward());
+    shape(el, { left: 600 });
+    expect(forward()).toBeNull();
+    expect(document.activeElement).toBe(back());
+  });
 });

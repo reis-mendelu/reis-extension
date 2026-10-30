@@ -90,7 +90,9 @@ export interface LessonWithRow extends BlockLesson {
   maxColumns: number;
   /**
    * Grid minutes the block occupies — its real length, raised to
-   * EXAM_BLOCK_MINUTES for an exam slot and MIN_BLOCK_MINUTES otherwise.
+   * EXAM_BLOCK_MINUTES for an exam slot and MIN_BLOCK_MINUTES otherwise, but
+   * the floor is capped at what is left of the grid (21:00): a slot after 19:30
+   * gets less than its floor (renderedBlockMinutes).
    */
   renderedMinutes: number;
 }

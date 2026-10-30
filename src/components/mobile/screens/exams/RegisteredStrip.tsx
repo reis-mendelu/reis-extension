@@ -47,7 +47,8 @@ export function RegisteredStrip({
           peeking — so 42vw at most, which leaves a peek at every phone width.
           Snapped, so a swipe moves one whole exam. The bleed is on the
           wrapper, not the strip, so the edge buttons sit at the strip's real
-          edges rather than over its tiles. */}
+          edges. They still cover the first few px of a tile scrolled under
+          them — mouse only, and only while the strip is scrolled. */}
       <div className="relative -mx-4">
         <div
           ref={stripRef}

@@ -5,6 +5,12 @@ const capClear = vi.fn();
 vi.mock('@capgo/capacitor-inappbrowser', () => ({
   InAppBrowser: { clearCookies: inAppClear },
 }));
+const { clearAll, resetNewBoxes } = vi.hoisted(() => ({
+  clearAll: vi.fn(),
+  resetNewBoxes: vi.fn(),
+}));
+vi.mock('../../services/storage', () => ({ IndexedDBService: { clearAll } }));
+vi.mock('../../services/sync/newSubmissionBoxes', () => ({ resetNewBoxes }));
 vi.mock('@capacitor/core', async (orig) => ({
   ...(await orig<typeof import('@capacitor/core')>()),
   CapacitorCookies: { clearCookies: capClear },
@@ -46,5 +52,30 @@ describe('buildSignOutDeps().clearOtherLogins', () => {
     await buildSignOutDeps().clearOtherLogins();
     expect(clearIskam).toHaveBeenCalledTimes(1);
     __resetSignOutCleanupsForTests();
+  });
+});
+
+// Release review (cubic): the wipe-then-reset order had no test. The reset
+// runs even when the IndexedDB wipe fails, or a sync still being stored
+// writes its boxes back.
+describe('buildSignOutDeps().clearLocalData', () => {
+  beforeEach(() => {
+    clearAll.mockReset();
+    resetNewBoxes.mockReset();
+  });
+
+  it('resets the new boxes even when the wipe rejects', async () => {
+    clearAll.mockRejectedValue(new Error('idb blocked'));
+    resetNewBoxes.mockResolvedValue(undefined);
+    await expect(buildSignOutDeps().clearLocalData()).rejects.toThrow('idb blocked');
+    expect(resetNewBoxes).toHaveBeenCalledTimes(1);
+  });
+
+  it('wipes first, then resets', async () => {
+    const order: string[] = [];
+    clearAll.mockImplementation(async () => void order.push('wipe'));
+    resetNewBoxes.mockImplementation(async () => void order.push('reset'));
+    await buildSignOutDeps().clearLocalData();
+    expect(order).toEqual(['wipe', 'reset']);
   });
 });
