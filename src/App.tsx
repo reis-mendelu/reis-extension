@@ -7,12 +7,15 @@ import { AppOverlays } from './components/AppOverlays';
 import { MobileApp } from './components/mobile/MobileApp';
 import { AdminConsole } from './components/AdminConsole/AdminConsole';
 import { usePhoneViewport } from './hooks/ui/usePhoneViewport';
+import { useHalloweenSeason } from './hooks/ui/useHalloween';
 import { useAppStore } from './store/useAppStore';
 
 function App() {
   const s = useAppLogic();
   const isPhone = usePhoneViewport();
   const adminConsoleOpen = useAppStore((state) => state.adminConsoleOpen);
+  // Above the fork, so the phone and the desktop tree both turn orange.
+  useHalloweenSeason();
 
   const handlePrevWeek = () => {
     s.setCurrentDate((prev) => {

@@ -3,6 +3,8 @@ import { ChefHat, Soup, Utensils, UtensilsCrossed } from 'lucide-react';
 import type { DateInfo } from '../../types/calendarTypes';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
+import { useIsHalloween } from '../../hooks/ui/useHalloween';
+import { Cobweb } from '../halloween/HalloweenArt';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -127,6 +129,7 @@ export function WeeklyCalendarHeader({
   const { t } = useTranslation();
   const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
   const menu = useAppStore((s) => s.menu);
+  const halloween = useIsHalloween();
 
   // Which calendar day-column index (0-4) has menu data?
   // Build a set of "day.month" date keys that have menu data, e.g. "19.3"
@@ -159,7 +162,11 @@ export function WeeklyCalendarHeader({
 
   return (
     <div className="relative z-20 flex border-b border-base-300 bg-base-100 flex-shrink-0 h-[48px]">
-      <div className="w-12 border-r border-base-300 bg-base-200" />
+      {/* The corner above the hours never holds a day or a lesson, which is
+          why the Halloween week's cobweb lives here. */}
+      <div className="w-12 border-r border-base-300 bg-base-200">
+        {halloween && <Cobweb className="h-full w-full text-base-content/25" />}
+      </div>
       {Array.from({ length: dayCount }, (_, i) => i).map((index) => {
         const dateInfo = weekDates[index];
         const isToday = index === todayIndex;

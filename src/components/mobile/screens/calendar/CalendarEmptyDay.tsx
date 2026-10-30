@@ -1,5 +1,7 @@
 import { Calendar, CalendarOff } from 'lucide-react';
 import { useTranslation } from '../../../../hooks/useTranslation';
+import { useIsHalloween } from '../../../../hooks/ui/useHalloween';
+import { Pumpkin } from '../../../halloween/HalloweenArt';
 
 export interface CalendarEmptyDayProps {
   /** The holiday's name when the selected day is one, otherwise null. */
@@ -31,6 +33,7 @@ export function CalendarEmptyDay({
   teachingStartsOn = null,
 }: CalendarEmptyDayProps) {
   const { t, language } = useTranslation();
+  const halloween = useIsHalloween();
   const teachingStarts = teachingStartsOn
     ? t('mobile.calendar.teachingStarts', {
         date: teachingStartsOn.toLocaleDateString(language === 'en' ? 'en-US' : 'cs-CZ', {
@@ -71,7 +74,14 @@ export function CalendarEmptyDay({
       >
         {/* A crossed-out calendar for "there is no schedule here", the plain one
             for a day that simply has nothing on it. */}
-        {muted && !holiday ? <CalendarOff size={28} /> : <Calendar size={28} />}
+        {muted && !holiday ? (
+          <CalendarOff size={28} />
+        ) : halloween && !holiday ? (
+          // An ordinary free day in the Halloween week; a holiday keeps its own.
+          <Pumpkin className="h-10 w-10" />
+        ) : (
+          <Calendar size={28} />
+        )}
       </div>
       <div className="font-display text-lg font-bold">{title}</div>
       <div className="max-w-56 text-xs text-base-content/60">{body}</div>

@@ -95,6 +95,7 @@ export function CalendarScreen() {
         titleAction={
           isAway ? { label: t('mobile.calendar.backToToday'), onClick: goToday } : undefined
         }
+        seasonal
         action={
           <RefreshButton
             label={t('mobile.header.refresh')}
