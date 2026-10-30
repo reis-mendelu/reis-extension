@@ -95,16 +95,18 @@ export function Cobweb({ className = 'h-12 w-12' }: ArtProps) {
   );
 }
 
-// A web that spreads from its top-left anchor: rays fanning to the far edges
-// and sagging spiral threads between neighbouring rays. Computed once.
+// A web that spreads from its top-left anchor: rays fanning out and sagging
+// spiral threads between neighbouring rays. Every thread ends inside the
+// viewBox and the box is never cropped (`meet`), so the web thins out on its
+// own instead of stopping at a straight cut. Computed once.
 const WEB_W = 200;
 const WEB_H = 150;
 const WEB_RAYS = [2, 14, 27, 40, 53, 66, 78, 88].map((deg) => (deg * Math.PI) / 180);
-const WEB_RINGS = [16, 32, 50, 70, 92, 116, 142];
+const WEB_RINGS = [14, 28, 44, 62, 82, 104, 128];
 const at = (r: number, a: number) =>
   `${(r * Math.cos(a)).toFixed(1)} ${(r * Math.sin(a)).toFixed(1)}`;
 const WEB_PATH = [
-  ...WEB_RAYS.map((a) => `M0 0L${at(260, a)}`),
+  ...WEB_RAYS.map((a) => `M0 0L${at(144, a)}`),
   ...WEB_RINGS.flatMap((r, i) =>
     WEB_RAYS.slice(1).map((a, j) => {
       const prev = WEB_RAYS[j]!;
@@ -125,7 +127,7 @@ export function SprawlingWeb({ className = 'h-36 w-48' }: ArtProps) {
     <svg
       {...HIDDEN}
       viewBox={`0 0 ${WEB_W} ${WEB_H}`}
-      preserveAspectRatio="xMinYMin slice"
+      preserveAspectRatio="xMinYMin meet"
       className={className}
     >
       <path
