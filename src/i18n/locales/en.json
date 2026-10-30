@@ -1181,6 +1181,7 @@
       "signalMapDwell": "Map for 3+ seconds",
       "signalEduroamConfigured": "eduroam configured by the app",
       "signalEduroamDelivered": "eduroam profile handed over",
+      "signalCalendarWeekView": "Calendar in week view",
       "signalInstalls": "installs",
       "reachTitle": "Events: News and map side by side",
       "reachNotice": "notice",
@@ -1329,9 +1330,15 @@
       "nextWeek": "Next week",
       "loading": "Loading your timetable…",
       "holiday": "Public holiday",
+      "holidayShort": "holiday",
       "teachingStarts": "Teaching starts {date}",
       "recentFiles": "Recently opened",
-      "backToToday": "Back to today"
+      "backToToday": "Back to today",
+      "viewLabel": "Calendar view",
+      "dayView": "Day",
+      "weekView": "Week",
+      "nowLabel": "Now",
+      "thisLesson": "This lesson"
     },
     "exams": {
       "title": "Exams",

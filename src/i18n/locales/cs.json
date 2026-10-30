@@ -1181,6 +1181,7 @@
       "signalMapDwell": "Mapa aspoň 3 sekundy",
       "signalEduroamConfigured": "eduroam nastaven aplikací",
       "signalEduroamDelivered": "eduroam profil předán",
+      "signalCalendarWeekView": "Kalendář v zobrazení Týden",
       "signalInstalls": "instalací",
       "reachTitle": "Akce: Novinky a mapa vedle sebe",
       "reachNotice": "oznámení",
@@ -1329,9 +1330,15 @@
       "nextWeek": "Další týden",
       "loading": "Načítám rozvrh…",
       "holiday": "Státní svátek",
+      "holidayShort": "svátek",
       "teachingStarts": "Výuka začíná {date}",
       "recentFiles": "Naposledy otevřené",
-      "backToToday": "Zpět na dnešek"
+      "backToToday": "Zpět na dnešek",
+      "viewLabel": "Zobrazení kalendáře",
+      "dayView": "Den",
+      "weekView": "Týden",
+      "nowLabel": "Teď",
+      "thisLesson": "Tato hodina"
     },
     "exams": {
       "title": "Zkoušky",

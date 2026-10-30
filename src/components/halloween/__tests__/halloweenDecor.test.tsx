@@ -7,7 +7,7 @@ import { ReisLogo } from '../../ReisLogo';
 import { ScreenHeader } from '../../mobile/screens/calendar/ScreenHeader';
 
 const IN_WEEK = new Date(2026, 10, 2, 10, 0);
-const BEFORE = new Date(2026, 9, 30, 10, 0);
+const BEFORE = new Date(2026, 9, 29, 10, 0); // the Thursday before it starts
 const AFTER = new Date(2026, 10, 7, 0, 0); // the first moment the week is over
 const realNow = useAppStore.getState().now;
 
@@ -42,21 +42,25 @@ describe('Halloween decorations', () => {
     expect(screen.getByTestId('halloween-day-end')).toBeTruthy();
   });
 
-  it("puts the pumpkin on the calendar's date, today or not, and on no other title", () => {
+  // The date title turns into "back to today" once you leave today, so a
+  // pumpkin beside it read as one more thing to tap (Dominik, 2026-10-30).
+  // The pumpkins moved into the day's end and the week grid.
+  it('puts no pumpkin on any title', () => {
     useAppStore.setState({ now: IN_WEEK });
     const pumpkins = (c: HTMLElement) => c.querySelectorAll('ellipse[fill="#f97316"]').length;
-    const today = render(<ScreenHeader title="Po 2. listopadu" seasonal />);
-    expect(pumpkins(today.container)).toBe(1);
+    const today = render(<ScreenHeader title="Po 2. listopadu" />);
+    expect(pumpkins(today.container)).toBe(0);
     const away = render(
-      <ScreenHeader
-        title="Út 3. listopadu"
-        seasonal
-        titleAction={{ label: 'Dnes', onClick: () => {} }}
-      />
+      <ScreenHeader title="Út 3. listopadu" titleAction={{ label: 'Dnes', onClick: () => {} }} />
     );
-    expect(pumpkins(away.container)).toBe(1);
-    const other = render(<ScreenHeader title="Předměty" />);
-    expect(pumpkins(other.container)).toBe(0);
+    expect(pumpkins(away.container)).toBe(0);
+  });
+
+  it("puts a pumpkin at the day's end in Den", () => {
+    useAppStore.setState({ now: IN_WEEK });
+    render(<HalloweenDayEnd />);
+    const end = screen.getByTestId('halloween-day-end');
+    expect(end.querySelectorAll('ellipse[fill="#f97316"]').length).toBeGreaterThan(0);
   });
 
   it('swaps the logo dot for a pumpkin only during the week', () => {

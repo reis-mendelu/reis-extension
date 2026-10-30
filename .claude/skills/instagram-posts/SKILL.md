@@ -108,7 +108,7 @@ Write a spec and render it:
 
 ```json
 { "kicker": "Novinka", "headline": "Celý *týden* na jeden pohled.",
-  "sub": "Rozvrh po dnech, nebo po týdnech. Vybereš jednou v Nastavení.",
+  "sub": "Rozvrh po dnech, nebo celý týden. Přepneš jedním klepnutím.",
   "screenshot": "<path to png, relative to the spec>", "shotOffset": 0 }
 ```
 

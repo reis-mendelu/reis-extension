@@ -1,14 +1,27 @@
 import { getCzechHoliday } from '../../../../utils/holidays';
+import { toIso } from '../../../../utils/mobile/weekDays';
 
 export interface DayChipProps {
   date: Date;
   locale: string;
   language: 'cz' | 'en';
-  /** The agenda's day, in full ink and `aria-pressed`. */
-  isSelected: boolean;
+  /**
+   * The agenda's day, in full ink and `aria-pressed`. Undefined in the week
+   * view, which has no selection to draw or announce.
+   */
+  isSelected: boolean | undefined;
   isToday: boolean;
   hasLessons: boolean;
-  onClick: () => void;
+  /** The lesson/holiday dot. Off in the week view, where the grid says it. */
+  showDot: boolean;
+  /** Selects the day in Den; in Týden it opens the day in Den. Absent = a label. */
+  onClick?: () => void;
+  /**
+   * Týden only: the word under a holiday ("svátek"). Its column in the grid is
+   * washed red and empty, and that alone did not say why — Dominik on the
+   * Pixel, 28 Oct 2026. Set on every Týden chip, so every slot is one height.
+   */
+  holidayWord?: string;
 }
 
 /** One day of the strip — see DayChips for the row around it. */
@@ -19,21 +32,31 @@ export function DayChip({
   isSelected,
   isToday,
   hasLessons,
+  showDot,
   onClick,
+  holidayWord,
 }: DayChipProps) {
   const weekday = new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(date);
   const label = weekday.charAt(0).toUpperCase() + weekday.slice(1);
   // Marked in the row, not only once the day is opened: a student
   // scanning the week should see the day off without tapping into it.
   const holiday = getCzechHoliday(date, language);
-  const todayFilled = isToday && isSelected;
+  const todayFilled = isToday && isSelected !== false;
   return (
     <button
       type="button"
       aria-current={isToday ? 'date' : undefined}
+      // Where a spread on the chip lands in Den (usePinchView's dayIsoAt).
+      data-day-iso={toIso(date)}
       aria-pressed={isSelected}
       title={holiday ?? undefined}
       onClick={onClick}
+      // aria-disabled, not `disabled`: a swipe that starts on a chip must still
+      // reach the strip's pointer handlers, and older WebKit (pre-Safari 17
+      // WKWebView, bug 219188) drops pointer events on disabled controls —
+      // which would kill the week swipe in Týden, where every chip is inert.
+      aria-disabled={onClick ? undefined : true}
+      tabIndex={onClick ? undefined : -1}
       // The selection is ink, not colour. It was a lime tonal pill, and on
       // Saturday 3 October the arrow left one on Friday 9 with today in
       // another week: "the 9th of October gets highlighted as the current
@@ -57,7 +80,8 @@ export function DayChip({
           whatever was selected, today looked the same before and after a tap
           on it — "when I go back to Friday, it doesn't change. How do I know
           if I'm on Friday?" With another day picked it is a ring in the same
-          ink: still today, plainly not where you are. A ring is a
+          ink: still today, plainly not where you are. The week view selects
+          nothing (`isSelected` undefined) and keeps the fill. A ring is a
           box-shadow, so the circle keeps its size and the row its height;
           `--tone-primary`, not `primary`, because lime on the light theme is
           under 3:1 for a mark. */}
@@ -88,13 +112,24 @@ export function DayChip({
           one that costs no contrast.
           A holiday wins over lessons in the rare case of both: the
           closure is the more surprising fact, and the banner above the
-          agenda still names it either way. */}
-      {holiday ? (
+          agenda still names it either way.
+          The week view keeps only the empty slot: the grid below shows the
+          lessons and washes a holiday's column red, so the dots there said
+          nothing — "the bullets below the days are useless in the weekly
+          view" — and the slot keeps the strip one height in both views. */}
+      {holidayWord !== undefined ? (
+        // Týden: the slot is a line of text tall on every chip, so a week
+        // with a holiday is not a different height from one without.
+        // --tone-error, not error: raw red on the light page is under AA.
+        <span className="mx-auto block h-3 text-[10px] font-medium leading-3 text-[var(--tone-error)]">
+          {holiday ? holidayWord : null}
+        </span>
+      ) : showDot && holiday ? (
         <span
           data-testid="day-chip-holiday"
           className="mx-auto mt-0.5 block h-1 w-1 rounded-full bg-error"
         />
-      ) : hasLessons ? (
+      ) : showDot && hasLessons ? (
         <span
           data-testid="day-chip-lessons"
           className="mx-auto mt-0.5 block h-1 w-1 rounded-full bg-base-content/40"

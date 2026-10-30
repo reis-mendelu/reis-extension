@@ -14,22 +14,29 @@ import { useShowLessonOnMap } from './calendar/useShowLessonOnMap';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { NowNextCard } from './calendar/NowNextCard';
 import { DayChips } from './calendar/DayChips';
+import { denLandingDay, toIso } from '../../../utils/mobile/weekDays';
 import { DayBody } from './calendar/DayBody';
+import { WeekBody } from './calendar/WeekBody';
+import { usePinchView, dayIsoAt } from './calendar/usePinchView';
+import { CalendarViewSwitch } from './calendar/CalendarViewSwitch';
 import { useCalendarToday } from './calendar/useCalendarToday';
 import { RecentFilesStrip } from './calendar/RecentFilesStrip';
+import { WeekMenuButton } from './calendar/WeekMenuButton';
 import { CalendarSkeleton } from './calendar/CalendarSkeleton';
-import { formatHeaderDate } from '../../../utils/mobile/formatHeaderDate';
+import { useCalendarTitle } from './calendar/useCalendarTitle';
 
 export function CalendarScreen() {
   const { t, language } = useTranslation();
   const { schedule } = useSchedule();
   const setMobileSelectedDay = useAppStore((s) => s.setMobileSelectedDay);
+  const setMobileCalendarView = useAppStore((s) => s.setMobileCalendarView);
   const showOnMap = useShowLessonOnMap();
   const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
   const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
   const syncLoaded = useAppStore((s) => s.syncLoaded);
+  const view = useAppStore((s) => s.mobileCalendarView);
   // The store's clock, not `new Date()`: the pulse advances it, so the running
   // lesson's card and its countdown move with it instead of being stamped once
   // per render and then only when something else happened to re-render.
@@ -72,6 +79,32 @@ export function CalendarScreen() {
   const customLessons = customEvents.map(customEventToLesson);
   const dayLessons = [...visibleSchedule, ...customLessons];
   const lessonDates = new Set(dayLessons.map((l) => l.date));
+  const header = useCalendarTitle({ selectedIso, lessonDates, isAway });
+  // Leaving Týden for Den: by tapping or spreading on a day, that day; by the
+  // switch, today in this week or the shown week's first lesson day. Pinching
+  // in on Den is the way the other way. Every one of them is remembered
+  // (spec 2026-10-30). Before the early returns: usePinchView is a hook.
+  const openDay = (iso: string) => {
+    setMobileSelectedDay(iso);
+    setMobileCalendarView('day');
+  };
+  const switchToDen = () =>
+    setMobileSelectedDay(denLandingDay(selectedIso, lessonDates, toIso(now)));
+  usePinchView({
+    surfaceRef: screenRef,
+    onPinchIn: view === 'day' ? () => setMobileCalendarView('week') : undefined,
+    onSpread:
+      view === 'week'
+        ? (point) => {
+            const iso = dayIsoAt(point);
+            if (iso) openDay(iso);
+            else {
+              switchToDen();
+              setMobileCalendarView('day');
+            }
+          }
+        : undefined,
+  });
   const chrome = (
     <>
       {/* The date IS the title, and the eyebrow stays empty. It was the
@@ -87,15 +120,11 @@ export function CalendarScreen() {
           other tab's; now it is a header action: sr-only on touch, a circle
           on a Mac, where nothing can pull (RefreshButton). */}
       <ScreenHeader
-        title={formatHeaderDate(
-          new Date(`${selectedIso}T00:00:00`),
-          language === 'en' ? 'en-US' : 'cs-CZ',
-          'short'
-        )}
+        title={header.title}
         titleAction={
-          isAway ? { label: t('mobile.calendar.backToToday'), onClick: goToday } : undefined
+          header.away ? { label: t('mobile.calendar.backToToday'), onClick: goToday } : undefined
         }
-        seasonal
+        leadingAction={<WeekMenuButton days={header.weekIsos} todayIso={header.todayIso} />}
         action={
           <RefreshButton
             label={t('mobile.header.refresh')}
@@ -107,11 +136,12 @@ export function CalendarScreen() {
     </>
   );
   const shell = (body: ReactNode) => (
-    // The ref is where a pull to refresh may start (DayBody).
+    // `relative` anchors the Den/Týden switch (day and week only). The
+    // ref is where a pull to refresh may start (DayBody).
     <div
       ref={screenRef}
       data-testid="calendar-screen"
-      className="flex flex-1 flex-col overflow-hidden"
+      className="relative flex flex-1 flex-col overflow-hidden"
     >
       {chrome}
       {body}
@@ -188,6 +218,24 @@ export function CalendarScreen() {
     if (nowNext) showOnMap(nowNext.current);
   };
 
+  if (view === 'week') {
+    return shell(
+      <>
+        <WeekBody
+          lessons={dayLessons}
+          selectedIso={selectedIso}
+          lessonDates={lessonDates}
+          nowNext={nowNext}
+          onRoute={openRoute}
+          onSelectDay={setMobileSelectedDay}
+          onOpenDay={openDay}
+          pullSurfaceRef={screenRef}
+        />
+        <CalendarViewSwitch onDay={switchToDen} />
+      </>
+    );
+  }
+
   return shell(
     <>
       {nowNext && <NowNextCard data={nowNext} onRoute={openRoute} />}
@@ -221,6 +269,7 @@ export function CalendarScreen() {
         onSelectDay={setMobileSelectedDay}
         pullSurfaceRef={screenRef}
       />
+      <CalendarViewSwitch />
     </>
   );
 }

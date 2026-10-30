@@ -94,3 +94,49 @@ export function Cobweb({ className = 'h-12 w-12' }: ArtProps) {
     </svg>
   );
 }
+
+// A web that spreads from its top-left anchor: rays fanning out and sagging
+// spiral threads between neighbouring rays. Every thread ends inside the
+// viewBox and the box is never cropped (`meet`), so the web thins out on its
+// own instead of stopping at a straight cut. Computed once.
+const WEB_W = 200;
+const WEB_H = 150;
+const WEB_RAYS = [2, 14, 27, 40, 53, 66, 78, 88].map((deg) => (deg * Math.PI) / 180);
+const WEB_RINGS = [14, 28, 44, 62, 82, 104, 128];
+const at = (r: number, a: number) =>
+  `${(r * Math.cos(a)).toFixed(1)} ${(r * Math.sin(a)).toFixed(1)}`;
+const WEB_PATH = [
+  ...WEB_RAYS.map((a) => `M0 0L${at(144, a)}`),
+  ...WEB_RINGS.flatMap((r, i) =>
+    WEB_RAYS.slice(1).map((a, j) => {
+      const prev = WEB_RAYS[j]!;
+      // Each thread sags toward the anchor, more on the outer rings.
+      const sag = r * (0.88 - i * 0.012);
+      return `M${at(r, prev)}Q${at(sag, (prev + a) / 2)} ${at(r, a)}`;
+    })
+  ),
+].join('');
+
+/**
+ * A cobweb that SPREADS from a corner, not a corner badge: the first one read
+ * as "just a block" floating under the day (Dominik, 2026-10-30). Anchor it in
+ * a real corner — the screen's edge, the grid's top-left — and let it run.
+ */
+export function SprawlingWeb({ className = 'h-36 w-48' }: ArtProps) {
+  return (
+    <svg
+      {...HIDDEN}
+      viewBox={`0 0 ${WEB_W} ${WEB_H}`}
+      preserveAspectRatio="xMinYMin meet"
+      className={className}
+    >
+      <path
+        d={WEB_PATH}
+        stroke="currentColor"
+        strokeWidth="1"
+        fill="none"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}

@@ -9,7 +9,8 @@ import { useAppStore } from '../store/useAppStore';
  * Google Calendar does exactly this, and it is why a student there never needs
  * a "today" button after reopening — "when I close the app, it also returns to
  * the right day". reIS kept the old selection for as long as the OS kept the
- * process, which on an iPad is days.
+ * process, which on an iPad is days. Den or Týden stays as it was: the shown
+ * view IS the remembered one, as Google reopens in the view the student keeps.
  *
  * Capacitor only: the extension's iframe is rebuilt on every IS page load, so
  * it already opens fresh.

@@ -1,6 +1,6 @@
 # Calendar: choose Den or Týden once, change it in Nastavení
 
-> **Superseded 2026-10-11.** The phone and iPad calendar is Den only; the week grid, this chooser and the Nastavení calendar row were removed (see `src/test/guards/phoneHasNoWeekView.test.ts`). Kept as a record of what was tried.
+> **Superseded 2026-10-11.** The phone and iPad calendar is Den only; the week grid, this chooser and the Nastavení calendar row were removed (see `src/test/guards/phoneHasNoWeekView.test.ts`). Kept as a record of what was tried. **Týden came back on 2026-10-30** with a different switch: see `2026-10-30-week-view-returns-design.md`.
 
 Phone/iPad tree only. Agreed with Dominik on 2026-10-09, after Tonda's
 observation that students pick a calendar view once and never touch the switch

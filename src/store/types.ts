@@ -494,6 +494,12 @@ export type MobileSheet =
       courseId?: string;
       /** Tab to open on — the odevzdávárny card opens a box's subject on Záznamník. */
       initialTab?: 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik';
+      /**
+       * The lesson a Týden block was, set ONLY by the week grid: the sheet then
+       * says where and when that lesson is, with Trasa. From Den the row just
+       * tapped already said it, and from Předměty there is no lesson.
+       */
+      weekLesson?: BlockLesson;
     }
   | { kind: 'studyPlan' }
   | { kind: 'person'; personId: string; personName?: string }
@@ -507,7 +513,7 @@ export type MobileSheet =
   | { kind: 'settings' }
   // reIS admins only: "view as a student" of another programme.
   | { kind: 'impersonation' }
-  | { kind: 'menu'; dayIso: string }
+  | { kind: 'menu'; dayIso: string; week?: string[] }
   | {
       kind: 'venue';
       coord: [number, number];
@@ -529,6 +535,8 @@ export type MobileSheet =
   // so it opened from one tab out of five.
   | { kind: 'bulletin' }
   | { kind: 'confirm'; confirmId: string };
+
+export type MobileCalendarView = 'day' | 'week';
 
 export interface MobileUiSlice {
   mobileTab: MobileTab;
@@ -569,6 +577,15 @@ export interface MobileUiSlice {
   pullHintSeen: boolean | null;
   hydratePullHint: (o: { demo: boolean }) => Promise<void>;
   markPullHintSeen: () => void;
+  /**
+   * Den or Týden, remembered on the device (`meta.calendar_view_v2`). What is
+   * shown is the choice: there is no separate saved view.
+   */
+  mobileCalendarView: MobileCalendarView;
+  /** `wide` = an iPad, which opens on Týden when nothing is remembered. */
+  hydrateCalendarView: (o: { demo: boolean; wide: boolean }) => Promise<void>;
+  setMobileCalendarView: (view: MobileCalendarView) => void;
+
   setMobileTab: (tab: MobileTab) => void;
   setMobileSelectedDay: (iso: string | null) => void;
   pushSheet: (sheet: MobileSheet) => void;

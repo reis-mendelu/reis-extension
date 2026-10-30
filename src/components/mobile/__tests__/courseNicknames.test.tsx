@@ -6,6 +6,7 @@ vi.mock('../../../hooks/ui/useRecentPdfOpen', () => ({
 }));
 
 import { AgendaEvent } from '../screens/calendar/AgendaEvent';
+import { WeekBlock } from '../screens/calendar/WeekBlock';
 import { NowNextCard } from '../screens/calendar/NowNextCard';
 import { RecentFilesStrip } from '../screens/calendar/RecentFilesStrip';
 import { SemesterCard } from '../screens/subjects/SemesterCard';
@@ -41,9 +42,43 @@ describe('calendar', () => {
     expect(screen.queryByText('Management')).toBeNull();
   });
 
+  // Den's row and Týden's block each keep an exam's section (PR #618 review:
+  // the revert of #540 had swapped the agenda case for the block one).
   it('exam row keeps its section after the nickname', () => {
     const lesson = makeLesson({ courseName: 'Management - Zkouška', isExam: true });
     render(<AgendaEvent lesson={lesson} onOpenSubject={vi.fn()} onShowOnMap={vi.fn()} />);
+    expect(screen.getByText('Mňam - Zkouška')).toBeInTheDocument();
+  });
+
+  it('week grid block', () => {
+    const block = {
+      lesson: makeLesson(),
+      top: 0,
+      height: 20,
+      lane: 0,
+      lanes: 1,
+      visible: 20,
+      order: 0,
+      onTop: false,
+    };
+    render(<WeekBlock block={block} cascade={false} gridPx={600} onOpen={vi.fn()} />);
+    expect(screen.getByText('Mňam')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Mňam,/ })).toBeInTheDocument();
+  });
+
+  it('exam block keeps its section after the nickname', () => {
+    const lesson = makeLesson({ courseName: 'Management - Zkouška', isExam: true });
+    const block = {
+      lesson,
+      top: 0,
+      height: 20,
+      lane: 0,
+      lanes: 1,
+      visible: 20,
+      order: 0,
+      onTop: false,
+    };
+    render(<WeekBlock block={block} cascade={false} gridPx={600} onOpen={vi.fn()} />);
     expect(screen.getByText('Mňam - Zkouška')).toBeInTheDocument();
   });
 

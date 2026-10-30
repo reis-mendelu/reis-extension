@@ -7,11 +7,18 @@ const at = (y: number, m: number, d: number, h = 12, min = 0) => new Date(y, m -
 
 describe('isHalloween', () => {
   it('is off the evening before', () => {
-    expect(isHalloween(at(2026, 10, 30, 23, 59))).toBe(false);
+    expect(isHalloween(at(2026, 10, 29, 23, 59))).toBe(false);
   });
 
-  it('starts at midnight on 31 October', () => {
-    expect(isHalloween(at(2026, 10, 31, 0, 0))).toBe(true);
+  // A day early, so the Friday before Halloween already has it (Dominik,
+  // 2026-10-30): the last teaching day before the weekend is when students
+  // are in the app.
+  it('starts at midnight on 30 October', () => {
+    expect(isHalloween(at(2026, 10, 30, 0, 0))).toBe(true);
+  });
+
+  it('is on on Halloween itself', () => {
+    expect(isHalloween(at(2026, 10, 31))).toBe(true);
   });
 
   it('is on through the week after', () => {
