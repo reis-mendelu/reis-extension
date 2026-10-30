@@ -1528,8 +1528,8 @@
       "today": "Today",
       "tomorrow": "Tomorrow",
       "seats": "{n} seats",
-      "free": "free from {time}",
-      "full": "full",
+      "free": "free today from {time}",
+      "full": "full today",
       "fullDay": "Full this day",
       "offline": "Couldn't load bookings right now. Check your connection.",
       "pickHour": "Pick an hour",
@@ -1554,8 +1554,9 @@
       "cancelUnknown": "The library didn't answer. Check your e-mail to see whether the booking is gone.",
       "cancelFailed": "Couldn't cancel the booking.",
       "seatsOne": "1 seat",
-      "partMain": "Library",
-      "partIc": "IC rooms"
+      "pickRoom": "Tap a room to pick an hour and book it.",
+      "partMain": "Library A",
+      "partIc": "Library IC"
     }
   },
   "session": {

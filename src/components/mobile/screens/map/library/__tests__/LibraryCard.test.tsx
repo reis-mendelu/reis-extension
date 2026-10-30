@@ -51,10 +51,10 @@ describe('libraryOf', () => {
 });
 
 describe('LibraryCard list', () => {
-  it('lists the four library rooms under the Knihovna chip, the IC rooms under the other', () => {
+  it('lists the four library rooms under the Knihovna A chip, the IC rooms under the other', () => {
     render(<LibraryCard view={{ featureId: null, group: 'main' }} />);
     expect(screen.getAllByRole('button')).toHaveLength(2 + 4);
-    fireEvent.click(screen.getByRole('button', { name: 'Studovny IC' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Knihovna IC' }));
     expect(useAppStore.getState().mapSelection).toEqual({ kind: 'library', group: 'ic' });
   });
   it('spells each room out and says how many people it holds', () => {
@@ -64,6 +64,11 @@ describe('LibraryCard list', () => {
     expect(screen.getByText('10 míst')).toBeTruthy();
     expect(screen.getByText('6 míst')).toBeTruthy();
     expect(screen.getAllByText('1 místo')).toHaveLength(2);
+  });
+  it('says that tapping a room books it, and that the hours are for today', () => {
+    render(<LibraryCard view={{ featureId: null, group: 'main' }} />);
+    expect(screen.getByText('Klepni na studovnu a vyber hodinu k rezervaci.')).toBeTruthy();
+    expect(screen.getAllByText(/^dnes (volné od|plno)/).length).toBe(4);
   });
   it('opens a room on tap', () => {
     render(<LibraryCard view={{ featureId: null, group: 'main' }} />);

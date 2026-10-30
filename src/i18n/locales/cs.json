@@ -1528,8 +1528,8 @@
       "today": "Dnes",
       "tomorrow": "Zítra",
       "seats": "{n} míst",
-      "free": "volné od {time}",
-      "full": "plno",
+      "free": "dnes volné od {time}",
+      "full": "dnes plno",
       "fullDay": "Tento den plno",
       "offline": "Rezervace se teď nepodařilo načíst. Zkontroluj připojení.",
       "pickHour": "Vyber hodinu",
@@ -1554,8 +1554,9 @@
       "cancelUnknown": "Knihovna neodpověděla. Zkontroluj e-mail, jestli rezervace zmizela.",
       "cancelFailed": "Rezervaci se nepodařilo zrušit.",
       "seatsOne": "1 místo",
-      "partMain": "Knihovna",
-      "partIc": "Studovny IC"
+      "pickRoom": "Klepni na studovnu a vyber hodinu k rezervaci.",
+      "partMain": "Knihovna A",
+      "partIc": "Knihovna IC"
     }
   },
   "session": {

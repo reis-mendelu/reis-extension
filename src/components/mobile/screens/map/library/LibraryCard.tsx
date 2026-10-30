@@ -50,6 +50,7 @@ function RoomList({ group }: { group: LibraryPart }) {
   return (
     <div className="space-y-2">
       <PartChips group={group} />
+      <p className="text-xs text-base-content/70">{t('mobile.library.pickRoom')}</p>
       {status === 'offline' && (
         <p role="status" className="text-sm text-base-content/70">
           {t('mobile.library.offline')}
