@@ -1,0 +1,89 @@
+# Library study rooms, native booking: technical brief
+
+Researched 2026-10-30. Not built. Decisions with Dominik are marked **decided**.
+
+## Decided
+- **Phone and iPad only** (Capacitor). No extension, no dev-webapp live booking.
+- **No reIS server in the path.** The device calls Microsoft Bookings directly. No Supabase proxy, no rate-limit table, no stored hash.
+- **The Seminar Room is not offered** (Dominik, 2026-10-30). That makes six bookable rooms: four in the library and the two IC rooms. The service stays in Bookings; the app just does not list it, so the 2-day lead-time rule below never applies in the UI. On the map it is an ordinary, untinted room.
+- **Entry point = a small pin on the campus overview, nothing else** (Dominik, 2026-10-30). The overview is already crowded with event pins, so no label, bar or card goes over it. Reuse the pre-#275 `LibraryLayer.tsx` (git: `03f3e3d13^`): a 30 px white disc in the `reisEvents` pane, library glyph, green count badge of rooms free today, anchored at `[16.6152, 49.20996]`, shown only while no building is open, same look as `EventPin`. Tap flies to building A, floor −1, and opens the room list at about 40% of the screen. The old pin also had a hover bubble; on a phone there is no hover, so the badge carries the count. The count needs one availability call per room when the map opens, never at app start.
+- **The booking lands in the reIS calendar automatically** (artifact comment, 2026-10-30): on success the app writes a `CalendarCustomEvent` (title "Studovna · …", date, start/end, room = building A) through the existing custom-event path (`customEventToLesson`, shown on both trees). Nothing to tap, no calendar permission, nothing leaves the device. No "Přidat do kalendáře" button. Because cancelling happens in the e-mail link, reIS cannot know and the block stays until the student taps "Odebrat"; say so rather than promise sync. Writing to the phone's own calendar app is not part of this. **Deleting the block today works only on the desktop tree** (`CustomEventModal` has Delete, opened from `WeeklyCalendar`). On the phone/iPad tree a custom event is shown but a tap does nothing (`useOpenLesson` returns for `isCustom`; `useOpenWeekLesson` only opens the map). So the phone needs a delete action for these blocks anyway: the "Odebrat" on the booked screen, plus a tap on the block in Den/Týden that offers "Odebrat z kalendáře".
+- Cancel = open the manage link Bookings emails to the student. No cancel API.
+- Because the extension is left out, pin that decision and its reason in `src/test/guards/` (follow `desktopHasNoShowOnMap.test.ts`) when this is built.
+
+## What was verified live on 2026-10-30
+All with plain `curl` (no Origin, no cookies), which is close to what CapacitorHttp sends.
+
+| Call | Result |
+|---|---|
+| `POST .../bookingBusinessesc2/RezervacestudovenMENDELU@mendelu.onmicrosoft.com/services` body `{}` | 200, 7 services |
+| `POST .../GetStaffAvailability` for one room's staff GUID | 200, one block per status per day |
+| `POST .../appointments` (envelope from the pre-#275 `bookings-create`) | 200, appointment created, visible in the admin calendar |
+| Cancel in the Bookings admin | slot freed; availability back to one block |
+
+A foreign web origin (example.com) cannot call it: `Failed to fetch`. So the dev webapp can't exercise the live call, and Capacitor is the only place it can run.
+
+The services and availability endpoints need no auth. `customQuestions`, `bookingBusiness` and similar return 401.
+
+## The ids are per room, not one shared mailbox
+Each service has its own `staffMemberIds[0]`. The July allowlist in `libraryRooms.ts` (git: `03f3e3d13^`) still matches the live data for all 7 rooms. Do not assume one shared staff GUID (#150 said so; today it is per room).
+
+## The booking form changed: two required free-text questions
+Match by GUID, never by position. The order differs per service.
+
+| Question GUID | Label |
+|---|---|
+| `51ae56d9-10e3-4388-8acc-590f9f2bc258` | fakulta / faculty |
+| `c7fe8a04-e915-4a06-a045-36b68532ed90` | student / employee ID |
+
+Confirmed on two rooms with opposite orders (Individual Study Room 1: faculty first; Team Study Room 1: ID first). The old code answered every question with the student ID, which would now put the ID in the faculty field. The question text is not in the `services` response, so the two GUIDs are hardcoded constants.
+
+## Create request
+Same envelope as the old edge function (`POST .../appointments`, headers `x-anchormailbox`, `x-req-source: BookingsC2`):
+- `serviceId`, `staffMemberIds: [staffGuid]`, `startTime`/`endTime` as `{dateTime, timeZone: "Central Europe Standard Time"}`
+- one `customers[]` entry: `name`, `emailAddress`, `answeredCustomQuestions` (id, answer, `ANSWER_INPUT_TYPE_TEXT`)
+- identity comes from `getUserParams()`: `fullName`, `<username>@mendelu.cz`, `studentId`, faculty label. All local.
+
+The response carries `appointment.id` (an EWS-style id) **and** `selfServiceAppointmentId` (the short id the booking site uses). The old code kept only the first. A future cancel via API would use the short id, but the decision is to open the email link instead.
+
+## Rules the UI must respect
+- 1-hour slots. Lead time: 1 hour (`bookingsSchedulingPolicy.minimumLeadTime`; the Seminar Room's 2 days is moot, it is not offered).
+- Availability is gaps and blocks, not "free now". Say "next free hour", never "free now".
+- Microsoft throttles to 4 concurrent requests per mailbox. Call availability once per room on open, not per hour tapped.
+- One-time pledge ("I'll show up") the first time only.
+
+## Privacy work that comes with it
+- `bookings.cloud.microsoft` goes back into `src/test/guards/noStudentDataLeaves.test.ts` under "fetched from, carrying student data".
+- `privacy/disclosures.ts` changes in the same PR (name, email, student ID, faculty go to the library's Bookings in MENDELU's own Microsoft tenant), then `npm run privacy:generate`.
+- Apple privacy label, Play Data safety, the policy gist and the release PR's privacy block all change. Claude does these at release (see `/release`).
+- Check whether the Firefox consent categories matter once the extension is out (they shouldn't: the extension no longer sends it).
+
+## From the persona review (2026-10-30)
+- Re-read availability when the sheet opens and again just before the create call. A librarian-blocked room must not show as free.
+- A create that hangs is "unknown", not "failed": the old code noted a 2xx can arrive late. After 10 s show "Nevíme, jestli rezervace prošla"; never auto-retry; lock the button while sending so a double tap can't double-book.
+- Bookings has no per-student cap that reIS knows of. A soft cap kept on the device (for example 2 active bookings, stored locally) is bypassable but needs no server. Unresolved.
+- Librarians cannot tell a reIS booking from a web-form one. The `notes` field I sent in the test did not appear in the admin's details pane, so a marker is unverified. Needs a second probe or a question to the library.
+- Two consecutive hours: v1 offers "Rezervovat další hodinu" after booking (a separate booking). A range picker would need two creates and partial-failure handling.
+
+## The rooms on the map (checked against `reis-data` `map/rooms-54678.geojson`)
+- The five library rooms are real polygons on building A, floor −1 (`floorId` 57574): Individuální 1 = 57621, Individuální 2 = 57625, Týmová 2 = 57627, Týmová 1 = 57632, Seminární místnost = 57631 (nickname `AS01`, 22 seats on the map).
+- Both IC rooms ("Studovna IC levá" and "pravá") are **one** polygon, 57640, typed `office` with nickname `A011`, and it sits about 65 m from the other rooms. Its `type`/label in the data is wrong for tinting and needs a fix before it shows as a study room.
+- **Decided (Dominik, 2026-10-30): show them as two rooms.** Physically it is one space; the librarians put a divider in it. The upper part is **Studovna IC levá**, the lower part **Studovna IC pravá**, each its own room card with its own booking.
+  - The mockups cut polygon 57640 in half at 90° to its long side (ids `576401` levá, `576402` pravá). The outline is a 6.6 × 4.2 m rectangle (minimum bounding box, long side at 120° on the map), so each half is about 3.3 × 4.2 m. The cut passes through the midpoint of the long side. **That is still not a measured divider position**; check it against the library's floor plan or a photo before building.
+  - Code adaptation, when built: the map data needs two polygons instead of one. Either replace feature 57640 with two features in `reis-data` `map/rooms-54678.geojson` (new ids, `type` that reads as a library room, nicknames "IC levá"/"IC pravá"), or add an app-side override next to `mergedRooms.ts` that splits it (that file already does the opposite, merging rings, so the pattern exists). The `reis-data` route keeps one source of truth and reaches the extension map too, but touches another repo and its release; the override is local to this PR.
+  - Each IC room gets its own `placeId` in the room → Bookings staff mapping (the July `libraryRooms.ts` pointed both at 57640), so a tap on either polygon opens that room's card, not a chooser.
+  - Anything that finds a room by id (search, "show on map", route-to-room) must still resolve 57640 if it was used before, or the id must be retired everywhere. Grep for 57640 and `A011` before changing it.
+  - The extension map shows the same polygons, so it will show two IC rooms with no booking on them. Pin that in the guard together with the extension exclusion.
+- Individual rooms carry `seats: 1` on the map, but the July app listed capacity 2. The Bookings services give no capacity. The mockups now show none for individual rooms; confirm with the library.
+- The mockups draw these exact polygons from that file.
+
+## Removing the calendar block (Dominik, 2026-10-30)
+Tap the block in Den or Týden → a sheet with "Odebrat z kalendáře" and the notice "Odebere jen záznam v tvém kalendáři v reIS. Rezervace v knihovně tím nezanikne." plus the e-mail-link cancel as a secondary action. Mockup frame J. Needs a phone-tree handler for `isCustom` blocks (today `useOpenLesson` returns early).
+
+## Still open
+- Faculty answer: short code ("PEF") or long name. The field is free text.
+- Does the confirmation email to the student contain a manage/cancel link? A test booking was made to xholek1@mendelu.cz on 2026-10-30 (cancelled), so that email exists in his inbox.
+- Add `bookings.cloud.microsoft` to the iOS ATS and Android network config only if needed (HTTPS, so probably not).
+
+## Test booking left behind
+One appointment, Individual Study Room 1, Fri 6 Nov 2026 15:00, "reIS TEST - Dominik Holek": created and cancelled the same session. Nothing remains in the calendar.
