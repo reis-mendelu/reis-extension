@@ -70,9 +70,9 @@ No `AppDelegate` URL handling was needed: the sign-in returned through the SDK's
 
 - OAuth clients already in `reis-479320` (created 8 Oct): `reIS iOS` (bundle `cz.reis.app`), `reIS Android (Play App Signing)`,
   `reIS Android (upload key / sideload)`. Spike added `SPIKE Android debug (gspike)`: iOS client (bundle `cz.reis.app`); one Android client per package + SHA-1 (debug, upload key,
-  Play App Signing key). No Web client is needed in this design. **PENDING:** confirm on device.
+  Play App Signing key). No Web client / server client ID is needed: Android connected with only the package + SHA-1 client, and iOS with only the iOS client (verified on both devices). Each build flavour needs its own Android client (debug, upload key, Play App Signing key); the project already has the last two.
 - iOS: `CFBundleURLTypes` entry with the reversed client ID in `Info.plist`; one SPM dependency
-  (GoogleSignIn-iOS >=9). No `AppDelegate` change was needed to compile; **PENDING:** whether the callback needs one.
+  (GoogleSignIn-iOS >=9). No `AppDelegate`/`SceneDelegate` change was needed: sign-in completed on the iPad without one.
 - Android: `play-services-auth:21.4.0` in `app/build.gradle`; one `registerPlugin` line in `MainActivity`. No
   `onActivityResult` override (the plugin registers its own `StartIntentSenderForResult` launcher in `load()`).
 - **Size, measured** (debug builds, unminified, so an upper bound; same web bundle in both):
