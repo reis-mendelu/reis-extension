@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { GoogleCalendarAuth } from './googleCalendarAuth';
 
 /**
@@ -17,9 +18,13 @@ const SCOPES = {
 let current = SCOPES.readonly;
 let token: string | null = null;
 
+// Also appended to Documents/spike-log.txt so a cabled device's log can be pulled with
+// `devicectl device copy from --domain-type appDataContainer` without tapping or screenshots.
 const log = (m: unknown) => {
+  const line = `${new Date().toISOString()}  ${typeof m === 'string' ? m : JSON.stringify(m)}`;
   const el = document.getElementById('log');
-  if (el) el.textContent = `${new Date().toISOString()}  ${typeof m === 'string' ? m : JSON.stringify(m, null, 1)}\n\n${el.textContent}`;
+  if (el) el.textContent = `${line}\n\n${el.textContent}`;
+  void Filesystem.appendFile({ path: 'spike-log.txt', data: `${line}\n`, directory: Directory.Documents, encoding: Encoding.UTF8 }).catch(() => undefined);
 };
 
 async function run(label: string, fn: () => Promise<unknown>) {
@@ -47,6 +52,7 @@ const actions: [string, () => Promise<unknown>][] = [
   ['1 Connect (account picker + consent)', async () => {
     const r = await GoogleCalendarAuth.connect({ clientId: CLIENT_ID, scopes: current });
     token = r.accessToken;
+    setTimeout(() => void autoRun(), 500);
     return { scopes: current, ...redact(r) };
   }],
   ['2 Silent token (no UI)', async () => {
@@ -73,5 +79,15 @@ export function mountSpike() {
     b.onclick = () => void run(label, fn);
     box.appendChild(b);
   }
-  log(`ready · clientId ${CLIENT_ID ? 'set' : 'MISSING (needed on iOS)'}`);
+  log(`ready · ${Capacitor.getPlatform()} · clientId ${CLIENT_ID ? 'set' : 'MISSING (needed on iOS)'}`);
+  void autoRun();
+}
+
+/** On every launch: the silent path, then the three Google calls. Needs no taps once connected. */
+async function autoRun() {
+  for (const i of [5, 6, 7, 8]) {
+    const entry = actions[i];
+    if (!entry) continue;
+    await run(`AUTO ${entry[0]}`, entry[1]);
+  }
 }
