@@ -23,6 +23,7 @@ let token: string | null = null;
 // `devicectl device copy from --domain-type appDataContainer` without tapping or screenshots.
 const log = (m: unknown) => {
   const line = `${new Date().toISOString()}  ${typeof m === 'string' ? m : JSON.stringify(m)}`;
+  console.log(`SPIKE ${line}`);
   const el = document.getElementById('log');
   if (el) el.textContent = `${line}\n\n${el.textContent}`;
   void Filesystem.appendFile({ path: 'spike-log.txt', data: `${line}\n`, directory: Directory.Documents, encoding: Encoding.UTF8 }).catch(() => undefined);
