@@ -46,13 +46,15 @@ on `authorize()` returning a token without a resolution once consent exists, and
 
 ## 4. Cost per platform
 
-- OAuth clients: iOS client (bundle `cz.reis.app`); one Android client per package + SHA-1 (debug, upload key,
+- OAuth clients already in `reis-479320` (created 8 Oct): `reIS iOS` (bundle `cz.reis.app`), `reIS Android (Play App Signing)`,
+  `reIS Android (upload key / sideload)`. Spike added `SPIKE Android debug (gspike)`: iOS client (bundle `cz.reis.app`); one Android client per package + SHA-1 (debug, upload key,
   Play App Signing key). No Web client is needed in this design. **PENDING:** confirm on device.
 - iOS: `CFBundleURLTypes` entry with the reversed client ID in `Info.plist`; one SPM dependency
   (GoogleSignIn-iOS >=9). No `AppDelegate` change was needed to compile; **PENDING:** whether the callback needs one.
 - Android: `play-services-auth:21.4.0` in `app/build.gradle`; one `registerPlugin` line in `MainActivity`. No
   `onActivityResult` override (the plugin registers its own `StartIntentSenderForResult` launcher in `load()`).
-- Debug APK with the dependency: 12.5 MB (baseline delta **PENDING**). IPA delta **PENDING**.
+- Debug APK with the dependency: 12.5 MB (baseline delta **PENDING**). iOS: the built `App.app` has only `Capacitor` and `Cordova` frameworks (GoogleSignIn is
+  statically linked, no Facebook SDK); 17 MB debug, delta **PENDING**.
 
 ## 5. Privacy fallout
 
@@ -66,8 +68,11 @@ iOS, which a privacy-first app should not ship. GoogleSignIn-iOS ships its own p
 - Google's sensitive-scope verification page says review "can take up to 10 days". It requires brand verification,
   a verified authorized domain, a public home page, a privacy policy on the same domain, a justification per
   scope with why a narrower scope will not do, and an unlisted YouTube demo video showing the consent flow.
-- Sensitive/restricted tier of each Calendar scope: **PENDING**. Neither Google docs page fetched states it;
-  read it from the console's Data access picker.
+- Sensitivity tier, read from the Cloud console's Data access page (project `reis-479320`, 2026-10-31):
+  **sensitive:** `calendar.readonly`, `calendar.events.readonly`, `calendar.events.owned.readonly`.
+  **non-sensitive:** `calendar.calendarlist.readonly`, `calendar.app.created`. **None is restricted.**
+  So reading events needs a sensitive scope whichever one is picked, and verification cannot be avoided. The
+  narrowest event read, `events.owned.readonly`, would miss subscribed calendars (e.g. a school timetable).
 - Account limit worth knowing: 100 refresh tokens per Google Account per client ID.
 
 ## 7. Fallback: the OS calendar
