@@ -25,6 +25,13 @@ public class BackgroundCheckPlugin extends Plugin {
         call.resolve(out);
     }
 
+    /** A language switch: renames the channels, leaves the job alone. */
+    @PluginMethod
+    public void setChannelNames(PluginCall call) {
+        BackgroundNotifier.ensureChannels(getContext(), call.getObject("channelNames"));
+        call.resolve();
+    }
+
     @PluginMethod
     public void setEnabled(PluginCall call) {
         Boolean enabled = call.getBoolean("enabled");
@@ -69,6 +76,13 @@ public class BackgroundCheckPlugin extends Plugin {
     @PluginMethod
     public void clearNotifications(PluginCall call) {
         BackgroundNotifier.clearAll(getContext());
+        // A tap that launched the app is this student's too: the next person to
+        // sign in must not be taken to their subject.
+        Intent launch = getActivity() != null ? getActivity().getIntent() : null;
+        if (launch != null) {
+            launch.removeExtra(BackgroundNotifier.EXTRA_KIND);
+            launch.removeExtra(BackgroundNotifier.EXTRA_COURSE);
+        }
         call.resolve();
     }
 }

@@ -58,6 +58,19 @@ describe('composeBackgroundNotifications', () => {
     expect(out.find((n) => n.kind === 'points')?.courseCode).toBe('EBC-A');
   });
 
+  it('a box whose subject is not known opens Novinky, not a subject that cannot be found', () => {
+    const [n] = composeBackgroundNotifications(
+      {
+        terms: [],
+        boxes: [{ courseCode: '12345', name: 'Projekt', resolved: false }],
+        points: {},
+      },
+      'cz',
+      nameOf
+    );
+    expect(n?.courseCode).toBeNull();
+  });
+
   it('a single term names its date and time, in the student language', () => {
     const [n] = composeBackgroundNotifications(
       {

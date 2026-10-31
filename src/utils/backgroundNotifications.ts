@@ -15,7 +15,8 @@ export interface BackgroundNotification {
 
 export interface BackgroundFindings {
   terms: Pick<NewExamTerm, 'courseCode' | 'subjectCs' | 'subjectEn' | 'date' | 'time'>[];
-  boxes: { courseCode: string; name: string }[];
+  /** `resolved`: the code is a real course code, so a tap can open its drawer. */
+  boxes: { courseCode: string; name: string; resolved?: boolean }[];
   points: Record<string, NewPoint[]>;
 }
 
@@ -68,7 +69,7 @@ export function composeBackgroundNotifications(
             kind: 'boxes',
             title: translate(language, 'backgroundCheck.boxTitleOne', { subject: nameOf(code) }),
             body: found.boxes.map((b) => b.name).join(', '),
-            courseCode: code,
+            courseCode: found.boxes.every((b) => b.resolved !== false) ? code : null,
           }
         : {
             kind: 'boxes',

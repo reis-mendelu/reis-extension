@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
@@ -14,16 +15,22 @@ export function BackgroundCheckRow() {
   const { t } = useTranslation();
   const state = useAppStore((s) => s.backgroundCheck);
   const set = useAppStore((s) => s.setBackgroundCheck);
+  // One request at a time: a second tap before the first settles would flip the
+  // same captured state and could leave the phone opposite to the last tap.
+  const [busy, setBusy] = useState(false);
   if (state === 'unknown') return null;
   const on = state === 'on';
   const label = t('backgroundCheck.label');
 
   const toggle = async () => {
+    setBusy(true);
     try {
       await setBackgroundCheckEnabled(!on);
       set(on ? 'off' : 'on');
     } catch (err) {
       logError('BackgroundCheckRow.toggle', err);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -40,6 +47,7 @@ export function BackgroundCheckRow() {
         aria-label={label}
         className="toggle toggle-primary toggle-sm mt-0.5"
         checked={on}
+        disabled={busy}
         onChange={() => void toggle()}
       />
     </div>

@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: October 22, 2026**
+**Last Updated: October 31, 2026**
 
 ## Introduction
 reIS ("we", "our", or "us") is a Chrome extension designed to modernize and enhance the user experience of the Mendel University Information System (IS Mendelu). We are committed to protecting your privacy and ensuring the security of your data.
@@ -60,7 +60,7 @@ Firefox asks you directly about everything above. Nothing is **required** to use
 reIS contacts the following services. **IS Mendelu is the only one that receives your academic data**, and only because it is the university's own system; WebISKAM, below, is the university's too, and receives only the sign-in that lets the app read your ISIC balance, plus, for a top-up, the amount and the payment method you chose. No other service on this list receives it, under any feature. The two that once did — Anthropic, for the Erasmus syllabus comparison, and Microsoft Bookings, for library study-room booking — were removed in September 2026 along with both features. jsDelivr receives no identifier, but the set of subjects requested does reveal which courses you are enrolled in.
 
 **Always:**
-1. **IS Mendelu** (`is.mendelu.cz`) — fetches your academic data, authenticated by you. In the Android app this also happens in the background while reIS is closed (at most every 15 minutes, less often when the phone saves battery), so the app can notify you of new exam terms, submission boxes and points; nothing it reads goes anywhere else, and you can switch it off in Settings.
+1. **IS Mendelu** (`is.mendelu.cz`) — fetches your academic data, authenticated by you. In the Android app this also happens in the background while reIS is closed (at most every 15 minutes, less often when the phone saves battery, and only while the phone is online), so the app can notify you of new exam terms, submission boxes and points; nothing it reads goes anywhere else, and you can switch it off in Settings.
 2. **Supabase** (`*.supabase.co`) — reIS's own backend: public notifications, society events, anonymous usage events, and feedback you submit, with any attachment you added to it. Different records carry different keys. The daily usage count uses the random installation identifier described above (as does the satisfaction rating in extension versions up to 5.4.1); Novinky question counters carry only a question id and a button; society view/click counters carry only a post row id. Versions up to 5.3.0 (September 2026) also send event RSVPs, with the same random installation identifier, until they are updated; current versions send none. A submitted suggestion carries no identifier we generate — but if you fill in the optional contact field, it carries whatever you typed there, because asking us to reply is what that field is for.
 3. **jsDelivr** (`cdn.jsdelivr.net`) — static subject-difficulty data. No identifier is sent, but the set of subjects requested does reveal to the CDN which courses you are enrolled in.
 4. **OpenStreetMap** — campus map tiles. The request identifies reIS by name, which their tile usage policy requires; it carries nothing about you.

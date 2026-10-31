@@ -8,6 +8,7 @@ const plugin = vi.hoisted(() => ({
   clearNotifications: vi.fn(),
   getLaunchTap: vi.fn(),
   addListener: vi.fn(),
+  setChannelNames: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock('@capacitor/core', async (orig) => ({
   ...(await orig<typeof import('@capacitor/core')>()),
@@ -71,9 +72,46 @@ describe('startBackgroundCheck taps', () => {
     expect(plugin.addListener).toHaveBeenCalledWith('notificationTap', expect.any(Function));
   });
 
+  it('a later tap, while the app is open, navigates too', async () => {
+    plugin.getLaunchTap.mockResolvedValue({});
+    await startBackgroundCheck();
+    const onTap = plugin.addListener.mock.calls[0]?.[1] as (tap: unknown) => void;
+    onTap({ kind: 'exams', courseCode: null });
+    expect(useAppStore.getState().mobileTab).toBe('exams');
+  });
+
+  it('a cold-start subject tap waits until the subjects have loaded', async () => {
+    plugin.getLaunchTap.mockResolvedValue({ kind: 'boxes', courseCode: 'EBC-AP' });
+    useAppStore.setState({ subjects: undefined } as never);
+    await startBackgroundCheck();
+    expect(useAppStore.getState().mobileSheets).toEqual([]);
+    useAppStore.setState({
+      subjects: { data: { 'EBC-AP': { subjectId: '123', nameCs: 'AP' } } },
+    } as never);
+    await vi.waitFor(() =>
+      expect(useAppStore.getState().mobileSheets.at(-1)).toMatchObject({
+        kind: 'subjectDrawer',
+        courseId: '123',
+        initialTab: 'zaznamnik',
+      })
+    );
+  });
+
   it('no launch tap, no navigation', async () => {
     plugin.getLaunchTap.mockResolvedValue({});
     await startBackgroundCheck();
     expect(useAppStore.getState().mobileTab).toBe('calendar');
+  });
+
+  it('renames the channels when the language is switched', async () => {
+    plugin.getLaunchTap.mockResolvedValue({});
+    await startBackgroundCheck();
+    expect(plugin.start).toHaveBeenCalledWith({
+      channelNames: expect.objectContaining({ boxes: 'Nové odevzdávárny' }),
+    });
+    useAppStore.setState({ language: 'en' } as never);
+    expect(plugin.setChannelNames).toHaveBeenCalledWith({
+      channelNames: expect.objectContaining({ boxes: 'New submission boxes' }),
+    });
   });
 });

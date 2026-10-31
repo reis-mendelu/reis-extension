@@ -97,7 +97,9 @@ export async function runBackgroundCheck(d: BackgroundDeps): Promise<BackgroundS
   });
   if (!ran) return 'busy';
 
-  const language = await d.language();
+  // After the persists have consumed the new items: a failed read of the
+  // language must cost only the wording, never the notification.
+  const language = await d.language().catch(() => 'cz');
   const boxCourseNames = new Map(newBoxes.map((b) => [b.courseId, b.courseNameCs]));
   const nameOf = (code: string) => {
     const s = subjects[code];
@@ -111,10 +113,10 @@ export async function runBackgroundCheck(d: BackgroundDeps): Promise<BackgroundS
   const list = composeBackgroundNotifications(
     {
       terms,
-      boxes: newBoxes.map((b) => ({
-        courseCode: boxCourseCode(b, subjects) ?? b.courseId,
-        name: b.name,
-      })),
+      boxes: newBoxes.map((b) => {
+        const code = boxCourseCode(b, subjects);
+        return { courseCode: code ?? b.courseId, name: b.name, resolved: !!code };
+      }),
       points,
     },
     language,

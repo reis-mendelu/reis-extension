@@ -51,10 +51,12 @@ function deps(over: Partial<BackgroundDeps> = {}): BackgroundDeps {
 
 describe('runBackgroundCheck', () => {
   it('does nothing without a session or without the student params', async () => {
-    const d = deps({ hasSession: async () => false });
-    expect(await runBackgroundCheck(d)).toBe('signed-out');
-    expect(await runBackgroundCheck(deps({ params: async () => null }))).toBe('no-params');
-    expect(d.notify).not.toHaveBeenCalled();
+    const signedOut = deps({ hasSession: async () => false });
+    expect(await runBackgroundCheck(signedOut)).toBe('signed-out');
+    expect(signedOut.notify).not.toHaveBeenCalled();
+    const noParams = deps({ params: async () => null });
+    expect(await runBackgroundCheck(noParams)).toBe('no-params');
+    expect(noParams.notify).not.toHaveBeenCalled();
   });
 
   it('skips the whole run while a sync holds the lock', async () => {
@@ -85,11 +87,25 @@ describe('runBackgroundCheck', () => {
       persistZaznamnik: async () => ({ found: { 'EBC-A': [{ label: 'Test', value: '9' }] } }),
     });
     await runBackgroundCheck(d);
+    expect(d.notify).toHaveBeenCalledTimes(1);
     const [list] = (d.notify as ReturnType<typeof vi.fn>).mock.calls[0] as [
       { kind: string; title: string }[],
     ];
     expect(list.map((n) => n.kind)).toEqual(['exams', 'boxes', 'points']);
     expect(list[1]?.title).toBe('Nová odevzdávárna: Algoritmy');
+  });
+
+  it('a failing language read still announces what was found, in Czech', async () => {
+    const d = deps({
+      language: async () => {
+        throw new Error('idb gone');
+      },
+      persistBoxes: async () => ({ found: ['b1'], unseen: ['b1'] }),
+    });
+    await runBackgroundCheck(d);
+    expect(d.notify).toHaveBeenCalledTimes(1);
+    const [list] = (d.notify as ReturnType<typeof vi.fn>).mock.calls[0] as [{ title: string }[]];
+    expect(list[0]?.title).toMatch(/^Nová odevzdávárna/);
   });
 
   it('one failing step does not cost the others', async () => {

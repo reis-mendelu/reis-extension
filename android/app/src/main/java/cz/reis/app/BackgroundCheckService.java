@@ -52,14 +52,13 @@ public class BackgroundCheckService extends JobService {
             if (!isEnabled(c)) return;
             JobScheduler js = c.getSystemService(JobScheduler.class);
             if (js.getPendingJob(JOB_ID) != null) return;
-            int r = js.schedule(
-                new JobInfo.Builder(JOB_ID, new ComponentName(c, BackgroundCheckService.class))
-                    .setPeriodic(PERIOD_MS)
-                    .setPersisted(true)
-                    .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                    .setRequiresBatteryNotLow(true)
-                    .build()
-            );
+            JobInfo.Builder job = new JobInfo.Builder(JOB_ID, new ComponentName(c, BackgroundCheckService.class))
+                .setPeriodic(PERIOD_MS)
+                .setPersisted(true)
+                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
+            // API 26+; on Android 7 the job runs on a low battery too, rather than never.
+            if (Build.VERSION.SDK_INT >= 26) job.setRequiresBatteryNotLow(true);
+            int r = js.schedule(job.build());
             BgLog.line(c, "scheduled result=" + r);
         } catch (Throwable t) {
             // A scheduling fault must never cost the student the app itself.
@@ -74,7 +73,8 @@ public class BackgroundCheckService extends JobService {
         }
     }
 
-    private static boolean signedIn(Context c) {
+    /** Whether a student is signed in: the token the app keeps in its secure store. */
+    static boolean signedIn(Context c) {
         return c.getSharedPreferences("reis_secure_store", Context.MODE_PRIVATE).contains(TOKEN_KEY);
     }
 
@@ -97,7 +97,8 @@ public class BackgroundCheckService extends JobService {
     @Override
     public boolean onStopJob(JobParameters params) {
         BgLog.line(this, "job STOPPED by system after " + (SystemClock.elapsedRealtime() - startedAt) + "ms");
-        if (run != null) run.destroy();
+        // Invalidated first, so a run the system stopped can never finish a later one.
+        if (run != null) run.cancel();
         return false;
     }
 }

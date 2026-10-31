@@ -43,4 +43,19 @@ describe('background check row', () => {
     await waitFor(() => expect(native.setBackgroundCheckEnabled).toHaveBeenCalledWith(true));
     expect(useAppStore.getState().backgroundCheck).toBe('off');
   });
+
+  it('ignores a second tap until the phone has answered the first', async () => {
+    let release: () => void = () => {};
+    native.setBackgroundCheckEnabled.mockReturnValueOnce(new Promise<void>((r) => (release = r)));
+    useAppStore.setState({ backgroundCheck: 'on' } as never);
+    render(<BackgroundCheckRow />);
+    const toggle = screen.getByRole('switch', { name: 'Oznámení' });
+    fireEvent.click(toggle);
+    await waitFor(() => expect(toggle).toBeDisabled());
+    fireEvent.click(toggle);
+    expect(native.setBackgroundCheckEnabled).toHaveBeenCalledTimes(1);
+    release();
+    await waitFor(() => expect(useAppStore.getState().backgroundCheck).toBe('off'));
+    expect(toggle).not.toBeDisabled();
+  });
 });

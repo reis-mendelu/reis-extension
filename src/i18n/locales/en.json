@@ -1620,7 +1620,7 @@
     "hint": "New points, submission boxes and exam dates, even when the app is closed.",
     "channelExams": "New exam dates",
     "channelBoxes": "New submission boxes",
-    "channelPoints": "New points in the record",
+    "channelPoints": "New points in Záznamník",
     "examTitleOne": "New exam date: {subject}",
     "examBodyOne": "{date} at {time}",
     "examTitleMany": "New exam dates",

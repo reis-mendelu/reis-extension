@@ -164,4 +164,18 @@ describe('diffZaznamnik', () => {
     );
     expect(diffZaznamnik(prev, fresh)).toEqual([{ label: 'Test', value: '10/10' }]);
   });
+
+  it('ignores attempts that share a name and a time when IS lists them in another order', () => {
+    const at = '8. 10. 2026 10:00';
+    const prev = z([], [attempt('Test', 4, at), attempt('Test', 9, at), attempt('Test', 6, at)]);
+    const fresh = z([], [attempt('Test', 6, at), attempt('Test', 4, at), attempt('Test', 9, at)]);
+    expect(diffZaznamnik(prev, fresh)).toEqual([]);
+  });
+
+  it('reports only the new one when an attempt is added among tied attempts', () => {
+    const at = '8. 10. 2026 10:00';
+    const prev = z([], [attempt('Test', 4, at), attempt('Test', 9, at)]);
+    const fresh = z([], [attempt('Test', 9, at), attempt('Test', 7, at), attempt('Test', 4, at)]);
+    expect(diffZaznamnik(prev, fresh)).toEqual([{ label: 'Test', value: '7/10' }]);
+  });
 });

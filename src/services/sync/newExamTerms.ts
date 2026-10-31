@@ -2,6 +2,7 @@ import type { ExamSubject } from '../../types/exams';
 import { allTermKeys, findNewTerms, type NewExamTerm } from '../../utils/newExamTerms';
 import { IndexedDBService } from '../storage/IndexedDBService';
 import { STORAGE_KEYS } from '../storage/keys';
+import { withKnownStateLock } from './knownStateLock';
 
 /** The 'meta' key holding every exam term id this device has seen. */
 export const KNOWN_TERMS_META_KEY = 'exam_terms_known';
@@ -31,14 +32,16 @@ let queue: Promise<unknown> = Promise.resolve();
  * this device last saw a list. Nothing here leaves the device.
  */
 export function persistExamTerms(fresh: readonly ExamSubject[]): Promise<NewExamTerm[]> {
-  const run = queue.then(() => persist(fresh));
+  const run = queue.then(() => withKnownStateLock(() => persist(fresh)));
   queue = run.catch(() => undefined);
   return run;
 }
 
 /** Another study: forget every term, so its first sync is a fresh baseline. */
 export function resetExamTerms(): Promise<void> {
-  const run = queue.then(() => IndexedDBService.delete('meta', KNOWN_TERMS_META_KEY));
+  const run = queue.then(() =>
+    withKnownStateLock(() => IndexedDBService.delete('meta', KNOWN_TERMS_META_KEY))
+  );
   queue = run.catch(() => undefined);
   return run;
 }

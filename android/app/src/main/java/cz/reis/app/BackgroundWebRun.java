@@ -33,7 +33,8 @@ class BackgroundWebRun {
     private final Done done;
     private final Handler main = new Handler(Looper.getMainLooper());
     private WebView web;
-    private boolean finished;
+    private volatile boolean finished;
+    private BackgroundNativeBridge bridge;
 
     BackgroundWebRun(Context ctx, Done done) {
         this.ctx = ctx.getApplicationContext();
@@ -46,7 +47,8 @@ class BackgroundWebRun {
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setUserAgentString(s.getUserAgentString() + " reIS/5 (+https://github.com/reis-mendelu/reis-extension)");
-        web.addJavascriptInterface(new BackgroundNativeBridge(ctx, web), "androidBridge");
+        bridge = new BackgroundNativeBridge(ctx, web);
+        web.addJavascriptInterface(bridge, "androidBridge");
         web.addJavascriptInterface(new Host(), "ReisBg");
         web.setWebChromeClient(new WebChromeClient() {
             @Override
@@ -78,7 +80,16 @@ class BackgroundWebRun {
         done.finished(status);
     }
 
+    /** The system stopped the job: nothing this run says from now on counts. */
+    void cancel() {
+        finished = true;
+        main.removeCallbacksAndMessages(null);
+        destroy();
+    }
+
     void destroy() {
+        // The bridge's worker threads go with the page, whichever way the run ends.
+        if (bridge != null) bridge.close();
         main.post(() -> {
             if (web == null) return;
             web.stopLoading();
@@ -143,7 +154,12 @@ class BackgroundWebRun {
     private class Host {
         /** [{kind, title, body}] from backgroundCheck.ts. */
         @JavascriptInterface
-        public void notify(String json) { BackgroundNotifier.post(ctx, json); }
+        public void notify(String json) {
+            // A run that was stopped, or whose student has signed out since it
+            // began, must not post: the tray is already cleared for the next one.
+            if (finished || !BackgroundCheckService.signedIn(ctx)) return;
+            BackgroundNotifier.post(ctx, json);
+        }
 
         @JavascriptInterface
         public void done(String status) { main.post(() -> finish(status)); }

@@ -37,12 +37,19 @@ async function main(): Promise<string> {
       (await IndexedDBService.get('meta', 'reis_language')) === 'en' ? 'en' : 'cz',
     // The lock the foreground sync takes, shared with this WebView: while the
     // app is crawling this run leaves, and while this run crawls the app's tick does.
-    withSyncLock: async (job) =>
-      navigator.locks.request(SYNC_LOCK_NAME, { ifAvailable: true }, async (lock) => {
+    withSyncLock: async (job) => {
+      // An old WebView has no Web Locks, and nothing to take turns with either:
+      // the foreground sync has the same fallback.
+      if (!navigator.locks) {
+        await job();
+        return true;
+      }
+      return navigator.locks.request(SYNC_LOCK_NAME, { ifAvailable: true }, async (lock) => {
         if (!lock) return false;
         await job();
         return true;
-      }),
+      });
+    },
     fetchSubjects: async (studium, obdobi) =>
       (await fetchDualLanguageSubjects(studium, obdobi))?.subjects ?? null,
     fetchExams: fetchDualLanguageExams,

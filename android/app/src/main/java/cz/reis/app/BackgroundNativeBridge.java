@@ -41,6 +41,11 @@ class BackgroundNativeBridge {
     private final android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
     private final ExecutorService pool = Executors.newFixedThreadPool(6);
 
+    /** Ends the worker threads; the run that owns this bridge is over. */
+    void close() {
+        pool.shutdownNow();
+    }
+
     BackgroundNativeBridge(Context ctx, WebView web) {
         this.ctx = ctx;
         this.web = web;
@@ -63,24 +68,31 @@ class BackgroundNativeBridge {
 
     @JavascriptInterface
     public void postMessage(String msg) {
-        pool.execute(() -> {
-            String callbackId = "-1", plugin = "", method = "";
-            try {
-                JSONObject m = new JSONObject(msg);
-                callbackId = m.optString("callbackId", "-1");
-                plugin = m.optString("pluginId");
-                method = m.optString("methodName");
-                JSONObject o = m.optJSONObject("options");
-                if (o == null) o = new JSONObject();
-                Object data = dispatch(plugin, method, o);
-                reply(callbackId, plugin, method, true, data);
-            } catch (Throwable t) {
-                BgLog.line(ctx, "bridge error " + plugin + "." + method + ": " + t.getClass().getSimpleName());
-                JSONObject err = new JSONObject();
-                try { err.put("message", String.valueOf(t.getMessage())); } catch (Exception ignored) {}
-                reply(callbackId, plugin, method, false, err);
-            }
-        });
+        // A page still talking after its run ended has nobody to answer.
+        if (pool.isShutdown()) return;
+        try {
+            pool.execute(() -> run(msg));
+        } catch (java.util.concurrent.RejectedExecutionException ignored) {
+        }
+    }
+
+    private void run(String msg) {
+        String callbackId = "-1", plugin = "", method = "";
+        try {
+            JSONObject m = new JSONObject(msg);
+            callbackId = m.optString("callbackId", "-1");
+            plugin = m.optString("pluginId");
+            method = m.optString("methodName");
+            JSONObject o = m.optJSONObject("options");
+            if (o == null) o = new JSONObject();
+            Object data = dispatch(plugin, method, o);
+            reply(callbackId, plugin, method, true, data);
+        } catch (Throwable t) {
+            BgLog.line(ctx, "bridge error " + plugin + "." + method + ": " + t.getClass().getSimpleName());
+            JSONObject err = new JSONObject();
+            try { err.put("message", String.valueOf(t.getMessage())); } catch (Exception ignored) {}
+            reply(callbackId, plugin, method, false, err);
+        }
     }
 
     private Object dispatch(String plugin, String method, JSONObject o) throws Exception {

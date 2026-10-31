@@ -60,6 +60,13 @@ describe('the background check stays on Android', () => {
     );
   });
 
+  it('no extension entrypoint imports the background entry', () => {
+    // The WXT entrypoints are the extension's whole import graph's roots.
+    expect(
+      importers('capacitor/background').filter((f) => f.startsWith('src/entrypoints'))
+    ).toEqual([]);
+  });
+
   it('the extension build never bundles the background entry', () => {
     expect(read('wxt.config.ts')).not.toMatch(/background\.html|capacitor\/background/);
   });
