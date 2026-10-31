@@ -102,6 +102,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // SPIKE: -PspikeAppIdSuffix=.gspike installs beside a normal build instead of over it.
+            // Debug only, so a release upload can never pick up a different package id.
+            applicationIdSuffix project.findProperty("spikeAppIdSuffix") ?: ""
+        }
         release {
             // minify stays OFF. Capacitor loads the PACKAGED plugins by class name
             // out of the generated capacitor.plugins.json — strings, no Java caller
@@ -134,6 +139,8 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
+    // SPIKE: Authorization API for the read-only Calendar token.
+    implementation 'com.google.android.gms:play-services-auth:21.4.0'
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
