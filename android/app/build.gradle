@@ -78,8 +78,7 @@ android {
     namespace = "cz.reis.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        // SPIKE: -PspikeAppIdSuffix=.gspike installs beside a normal build instead of over it.
-        applicationId "cz.reis.app" + (project.findProperty("spikeAppIdSuffix") ?: "")
+        applicationId "cz.reis.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode reisVersionCode
@@ -103,6 +102,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // SPIKE: -PspikeAppIdSuffix=.gspike installs beside a normal build instead of over it.
+            // Debug only, so a release upload can never pick up a different package id.
+            applicationIdSuffix project.findProperty("spikeAppIdSuffix") ?: ""
+        }
         release {
             // minify stays OFF. Capacitor loads the PACKAGED plugins by class name
             // out of the generated capacitor.plugins.json — strings, no Java caller

@@ -87,6 +87,10 @@ public class GoogleCalendarAuthPlugin extends Plugin {
                     call.reject("no pending intent");
                     return;
                 }
+                if (pendingConsent != null) {
+                    call.reject("consent already in progress");
+                    return;
+                }
                 pendingConsent = call;
                 getBridge().saveCall(call);
                 consentLauncher.launch(new IntentSenderRequest.Builder(pending.getIntentSender()).build());

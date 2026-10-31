@@ -87,18 +87,19 @@ void CapApp.addListener('backButton', () => {
 });
 
 async function boot(): Promise<void> {
-  // SPIKE (not for merging): the Google Calendar feasibility harness replaces the app.
-  if (import.meta.env.VITE_GOOGLE_SPIKE === '1') {
-    await SplashScreen.hide();
-    (await import('@/spike/googleCalendarSpike')).mountSpike();
-    return;
-  }
   // BEFORE ensureSession, which is what reads the token and decides whether to
   // present login. Installs from before #172 hold a live UISAuth in plain
   // Preferences; it is deleted rather than migrated, so the student signs in
   // once and the plaintext copy is gone by deletion rather than by trusting a
   // copy step.
   await purgePlaintextToken();
+
+  // SPIKE (not for merging): the Google Calendar feasibility harness replaces the app.
+  if (import.meta.env.VITE_GOOGLE_SPIKE === '1') {
+    await SplashScreen.hide();
+    (await import('@/spike/googleCalendarSpike')).mountSpike();
+    return;
+  }
 
   // BEFORE ensureSession too, and for a related reason: ensureSession accepts
   // the stored token on SHAPE alone, and on iOS that token outlives the app —

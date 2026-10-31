@@ -140,10 +140,13 @@ export function mountSpike() {
 }
 
 /** On every launch: the silent path, then the three Google calls. Needs no taps once connected. */
-async function autoRun() {
-  for (const i of [5, 6, 7, 8]) {
-    const entry = actions[i];
-    if (!entry) continue;
-    await run(`AUTO ${entry[0]}`, entry[1]);
-  }
+let autoQueue: Promise<void> = Promise.resolve();
+function autoRun() {
+  // Chained, so a launch run and a post-Connect run never interleave their log lines.
+  autoQueue = autoQueue.then(async () => {
+    for (const [label, fn] of actions) {
+      if (/^[2-5] /.test(label)) await run(`AUTO ${label}`, fn);
+    }
+  });
+  return autoQueue;
 }

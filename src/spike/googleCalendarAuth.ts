@@ -8,6 +8,7 @@ export interface GoogleTokenResult {
   email?: string;
 }
 
+/** `clientId` is the iOS OAuth client (required there, ignored on Android). */
 interface GoogleCalendarAuthNative {
   connect(o: { clientId?: string; scopes: string[] }): Promise<GoogleTokenResult>;
   getAccessToken(o: { clientId?: string; scopes: string[] }): Promise<GoogleTokenResult>;

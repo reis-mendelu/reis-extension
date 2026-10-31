@@ -92,7 +92,7 @@ No `AppDelegate` URL handling was needed: the sign-in returned through the SDK's
 - **Android:** the Authorization API is part of Play Services; no manifest of its own. The plugin requests no ID token and
   no email, only the Calendar scope, and calendar data goes Google -> device, never to a reIS server, so a new Data safety
   entry is not expected. This is a reading of Play's definition of "collected", not confirmed with a Play review.
-- Capgo would add the Facebook SDK on iOS (its `Package.swift` depends on it unconditionally), which a privacy-first app
+- Capgo would pull the Facebook SDK into the iOS build (its `Package.swift` depends on it unconditionally; whether the linker drops it from an archive was not verified), which a privacy-first app
   should not ship. That is one more reason the custom package is the better fit.
 - reIS's rule holds with this design: no reIS backend, tokens stay in Google's SDK storage (iOS Keychain), calendar data
   goes only to and from Google. `noStudentDataLeaves` must be re-run after the plugin lands.
@@ -139,3 +139,14 @@ About **7 to 10 working days** for one developer, plus Google's verification wai
 | Verification (parallel) | Brand verification, a verified domain with the privacy policy on it (today the policy is a gist, which does not qualify), a demo video, a per-scope justification. Until verified: 100 users in total, and refresh tokens last 7 days in Testing. |
 
 Biggest risks: verification of a sensitive scope (no restricted scope is needed), and the policy needing a verified domain.
+
+## Spike plugin: known gaps to close in the real build
+
+Review of PR #627 found these in the throwaway plugin and harness. None blocks the findings; each is a to-do for the real feature.
+
+- **iOS `getAccessToken` ignores `scopes`.** Compare the requested scopes with `grantedScopes` and reject with `NEEDS_CONSENT`, as Android does.
+- **iOS `disconnect` on a failed revoke** (offline) should still sign out locally before rejecting.
+- **Android `disconnect` is a no-op.** The Authorization API has no sign-out; revoking needs a token revocation call, and the harness keeps a cached token until relaunch.
+- **Harness log** is written to `Documents/spike-log.txt` (backed up, never truncated) and holds event titles. Acceptable for a throwaway build; the real feature logs nothing of the sort.
+- **Google hosts** (`www.googleapis.com`, `oauth2.googleapis.com`) are exempted for the one harness file in `noStudentDataLeaves.test.ts` only. The real feature declares them in `ALLOWED_HOSTS`, `PRIVACY.md` and `privacy/disclosures.ts`.
+- **Android permissions:** `@capacitor/calendar` adds `READ_CALENDAR` and `WRITE_CALENDAR`; this branch strips both from the release manifest, so the Android OS-calendar path works only in a build that removes the two `tools:node="remove"` lines.
