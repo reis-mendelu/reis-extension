@@ -7,6 +7,7 @@ import {
   type KnownBoxes,
 } from '../../utils/newBoxDetection';
 import { IndexedDBService } from '../storage/IndexedDBService';
+import { withKnownStateLock } from './knownStateLock';
 import { STORAGE_KEYS } from '../storage/keys';
 
 /**
@@ -80,7 +81,7 @@ async function persist(fresh: Odevzdavarna[], obdobi: string | undefined) {
 let queue: Promise<unknown> = Promise.resolve();
 
 function enqueue<T>(job: () => Promise<T>): Promise<T> {
-  const run = queue.then(job);
+  const run = queue.then(() => withKnownStateLock(job));
   queue = run.catch(() => undefined);
   return run;
 }

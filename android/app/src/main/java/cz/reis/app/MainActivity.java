@@ -8,8 +8,22 @@ import androidx.activity.EdgeToEdge;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
+    // The background check leaves the run to the app while it is on screen.
+    @Override
+    public void onStart() {
+        super.onStart();
+        BackgroundCheckService.appInForeground = true;
+    }
+
+    @Override
+    public void onStop() {
+        BackgroundCheckService.appInForeground = false;
+        super.onStop();
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(BackgroundCheckPlugin.class);
         registerPlugin(DownloadsPlugin.class);
         registerPlugin(EduroamPlugin.class);
         registerPlugin(SecureStorePlugin.class);

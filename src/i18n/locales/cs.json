@@ -507,7 +507,7 @@
     "systemOn": "Zapnutá",
     "systemOff": "Vypnutá",
     "systemEnable": "Zapnout",
-    "systemBanner": "Oznámení jsou vypnutá, takže ti nepřijdou nové body ani připomínky zkoušek."
+    "systemBanner": "Oznámení jsou vypnutá, takže ti nepřijdou nové body, odevzdávárny, termíny ani připomínky zkoušek."
   },
   "examReminders": {
     "title": "Za chvíli se otvírá zkouška",
@@ -1614,5 +1614,17 @@
   "newBox": {
     "kind": "Nová odevzdávárna",
     "badge": "Nová"
+  },
+  "backgroundCheck": {
+    "label": "Oznámení",
+    "hint": "Nové body, odevzdávárny a termíny zkoušek, i když je aplikace zavřená.",
+    "channelExams": "Nové termíny zkoušek",
+    "channelBoxes": "Nové odevzdávárny",
+    "channelPoints": "Nové body v záznamníku",
+    "examTitleOne": "Nový termín zkoušky: {subject}",
+    "examBodyOne": "{date} v {time}",
+    "examTitleMany": "Nové termíny zkoušek",
+    "boxTitleOne": "Nová odevzdávárna: {subject}",
+    "boxTitleMany": "Nové odevzdávárny"
   }
 }

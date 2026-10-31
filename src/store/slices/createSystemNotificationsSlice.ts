@@ -15,9 +15,18 @@ export type SystemNotificationStatus = 'unknown' | 'granted' | 'denied' | 'promp
 export interface SystemNotificationsSlice {
   systemNotifications: SystemNotificationStatus;
   setSystemNotifications: (next: SystemNotificationStatus) => void;
+  /**
+   * The Android background check (see desktopHasNoBackgroundCheck.test.ts): `unknown`
+   * until the native side has answered, and for ever on iOS and in the
+   * extension, which have none.
+   */
+  backgroundCheck: 'unknown' | 'on' | 'off';
+  setBackgroundCheck: (next: 'on' | 'off') => void;
 }
 
 export const createSystemNotificationsSlice: AppSlice<SystemNotificationsSlice> = (set) => ({
   systemNotifications: 'unknown',
   setSystemNotifications: (next) => set({ systemNotifications: next }),
+  backgroundCheck: 'unknown',
+  setBackgroundCheck: (next) => set({ backgroundCheck: next }),
 });

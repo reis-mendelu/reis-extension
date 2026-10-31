@@ -507,7 +507,7 @@
     "systemOn": "On",
     "systemOff": "Off",
     "systemEnable": "Turn on",
-    "systemBanner": "Notifications are off, so you won't get new points or exam reminders."
+    "systemBanner": "Notifications are off, so you won't get new points, submission boxes, exam dates or exam reminders."
   },
   "examReminders": {
     "title": "An exam opens soon",
@@ -1614,5 +1614,17 @@
   "newBox": {
     "kind": "New submission box",
     "badge": "New"
+  },
+  "backgroundCheck": {
+    "label": "Notifications",
+    "hint": "New points, submission boxes and exam dates, even when the app is closed.",
+    "channelExams": "New exam dates",
+    "channelBoxes": "New submission boxes",
+    "channelPoints": "New points in Záznamník",
+    "examTitleOne": "New exam date: {subject}",
+    "examBodyOne": "{date} at {time}",
+    "examTitleMany": "New exam dates",
+    "boxTitleOne": "New submission box: {subject}",
+    "boxTitleMany": "New submission boxes"
   }
 }
