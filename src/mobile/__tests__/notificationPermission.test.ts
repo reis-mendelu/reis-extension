@@ -73,10 +73,16 @@ describe('notification permission', () => {
   );
 
   it('enable asks the system while it still will', async () => {
-    ln.checkPermissions.mockResolvedValue({ display: 'prompt-with-rationale' });
+    // Asked while still askable, then read again after the dialog.
+    ln.checkPermissions
+      .mockResolvedValueOnce({ display: 'prompt-with-rationale' })
+      .mockResolvedValueOnce({ display: 'granted' });
     ln.requestPermissions.mockResolvedValue({ display: 'granted' });
     await enableNotifications();
     expect(ln.requestPermissions).toHaveBeenCalled();
+    // The row and the banner follow the store: without the refresh they would
+    // keep offering Zapnout after the student said yes.
+    expect(useAppStore.getState().systemNotifications).toBe('granted');
     expect(downloads.openNotificationSettings).not.toHaveBeenCalled();
   });
 
