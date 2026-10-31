@@ -34,15 +34,30 @@ Candidates checked by reading source (*read*, not run on a device):
 
 ## 2. iOS scope consent
 
-**PENDING.** Evidence line will be the harness `tokeninfo` output (`scope`, `expires_in`) after `connect`, with
-a calendarList and an events call returning 200. The proof's `connect` never uses the restore path.
+**Verified on a physical iPad 8 (iPadOS 26), 2026-10-31.** `connect` with `calendar.readonly` showed Google's account
+picker and consent screen. Log lines are in the app's `Documents/spike-log.txt`, pulled with `devicectl`:
+
+- `grantedScopes`: `calendar.readonly`, `userinfo.email`, `userinfo.profile`, `openid`.
+- `GET oauth2.googleapis.com/tokeninfo`: 200, `scope` = `email profile .../auth/calendar.readonly ... openid`,
+  `expires_in` 3599, `azp` = the iOS client `576873601004-j691...`.
+- `GET calendar/v3/users/me/calendarList`: 200, 5+ calendars returned (owner role).
+- `GET calendar/v3/calendars/primary/events?singleEvents=true&timeMin..&timeMax..`: 200, returned the account's
+  "reIS - release test" event on 6 Nov.
+- Before connecting, the same three calls returned 400/401 and the silent path said `not connected`, so the
+  plugin and registration work and the 200s are not a cache.
+
+The iOS trap (extra scope silently skipped) did not occur because `connect` never uses `restorePreviousSignIn`.
+No `AppDelegate` URL handling was needed: the sign-in returned through the SDK's own web authentication session.
 
 ## 3. Refresh without UI or backend
 
-**PENDING.** Harness button "2 Silent token" is called (a) after the 1 h expiry, (b) after killing and
-relaunching the app. iOS relies on the SDK's Keychain-held refresh token (`refreshTokensIfNeeded`). Android relies
-on `authorize()` returning a token without a resolution once consent exists, and the proof rejects with
-`NEEDS_CONSENT` rather than showing UI. No `serverAuthCode` is requested on either platform.
+- **iOS, cold relaunch: verified.** Kill + relaunch restored the session in 25 ms (first launch after connect) and 72 ms
+  (after a full reinstall of the app), no UI, same account, token reused while still valid. The session lives in the
+  iOS Keychain, held by GoogleSignIn-iOS. No `serverAuthCode`, no reIS server.
+- **iOS, after expiry:** **PENDING** (token issued 13:59:41 UTC expires 14:59:40 UTC; a scripted relaunch runs after that).
+- **Android:** **PENDING.** Plugin built and compiles; device run is waiting for the Pixel to be free.
+- By reading the code: Android re-authorize with consent already granted is documented to return a token with no
+  resolution; the proof rejects with `NEEDS_CONSENT` instead of showing UI.
 
 ## 4. Cost per platform
 
@@ -93,8 +108,11 @@ on `authorize()` returning a token without a resolution once consent exists, and
 
 - `@capacitor/calendar` 1.0.1 (official, Capacitor >=8) reads EventKit on iOS and CalendarContract on Android;
   `@ebarooni/capacitor-calendar` 8.10.0 is the community alternative.
-- Expected asymmetry, **PENDING device check**: Android sees Google Calendar through the device account; iOS sees
-  nothing unless the Google account was added in iOS Settings.
+- **iOS, verified on the iPad 8:** after granting calendar access (iOS 17+ asks for *full* calendar access, a heavy
+  prompt), EventKit listed only `Home`, `Work`, `Österreichische Feiertage` and `Birthdays`. The Google event
+  "reIS - release test" (6 Nov, returned by the Calendar API a minute earlier for the same person) was **not** visible,
+  because that Google account is not added in iOS Settings. A student who only uses the Google Calendar app sees nothing.
+- **Android: PENDING device check** (expected: Google Calendar is visible through the device account via CalendarContract).
 
 ## Estimate for the real feature
 
