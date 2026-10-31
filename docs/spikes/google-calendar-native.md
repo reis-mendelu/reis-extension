@@ -53,13 +53,27 @@ on `authorize()` returning a token without a resolution once consent exists, and
   (GoogleSignIn-iOS >=9). No `AppDelegate` change was needed to compile; **PENDING:** whether the callback needs one.
 - Android: `play-services-auth:21.4.0` in `app/build.gradle`; one `registerPlugin` line in `MainActivity`. No
   `onActivityResult` override (the plugin registers its own `StartIntentSenderForResult` launcher in `load()`).
-- Debug APK with the dependency: 12.5 MB (baseline delta **PENDING**). iOS: the built `App.app` has only `Capacitor` and `Cordova` frameworks (GoogleSignIn is
-  statically linked, no Facebook SDK); 17 MB debug, delta **PENDING**.
+- **Size, measured** (debug builds, unminified, so an upper bound; same web bundle in both):
+  Android APK 11,913,963 B without the plugin, 12,539,128 B with it, **+625 KB (+5.2%)**.
+  iOS `App.app` 15,176 KB without, 17,632 KB with, **+2.4 MB**, of which `App.debug.dylib` is +1.96 MB. The built `.app`
+  has only `Capacitor` and `Cordova` frameworks (GoogleSignIn, AppAuth, GTMAppAuth, GTMSessionFetcher and Promises are
+  statically linked), and no Facebook SDK. Release/archive sizes were not measured.
 
 ## 5. Privacy fallout
 
-**PENDING** (Xcode privacy report on an archive; Play Data safety). Known: Capgo would add the Facebook SDK on
-iOS, which a privacy-first app should not ship. GoogleSignIn-iOS ships its own privacy manifest.
+- **iOS manifest, read from the resolved packages:** GoogleSignIn-iOS ships a `PrivacyInfo.xcprivacy` that declares eight
+  collected data types, all *linked to the user*, purpose App Functionality, tracking false: Name, EmailAddress,
+  PhoneNumber, OtherDataTypes, CoarseLocation, UserID, DeviceID, OtherUsageData; plus UserDefaults API access (reason
+  CA92.1). AppAuth's manifest is empty. So adopting the SDK will probably put those types on the reIS App Store label,
+  where today the label lists only the three flows in `privacy/disclosures.ts`. Not yet confirmed with Xcode's Generate
+  Privacy Report on an archive.
+- **Android:** the Authorization API is part of Play Services; no manifest of its own. The plugin requests no ID token and
+  no email, only the Calendar scope, and calendar data goes Google -> device, never to a reIS server, so a new Data safety
+  entry is not expected. This is a reading of Play's definition of "collected", not confirmed with a Play review.
+- Capgo would add the Facebook SDK on iOS (its `Package.swift` depends on it unconditionally), which a privacy-first app
+  should not ship. That is one more reason the custom package is the better fit.
+- reIS's rule holds with this design: no reIS backend, tokens stay in Google's SDK storage (iOS Keychain), calendar data
+  goes only to and from Google. `noStudentDataLeaves` must be re-run after the plugin lands.
 
 ## 6. Verification status
 
