@@ -20,6 +20,7 @@ import { trackDailyUsage } from '@/api/feedback';
 import { installExamReminders } from '@/mobile/examReminders';
 import { installNotificationTaps } from '@/mobile/notificationTaps';
 import { installZaznamnikNotifications } from '@/mobile/zaznamnikNotifications';
+import { startBackgroundCheck } from '@/mobile/backgroundCheckNative';
 import {
   askNotificationsIfNeverAsked,
   refreshNotificationStatus,
@@ -135,6 +136,10 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // plain first request; after a refusal the banner takes over rather than a
   // second dialog. A student once ran for weeks with it off and no sign of it.
   void askNotificationsIfNeverAsked();
+
+  // Android only: arms the background check that notifies while the app is
+  // closed, and names its channels. After the demo return, like the rest.
+  void startBackgroundCheck();
 
   // In the extension the CONTENT SCRIPT drives this and posts results into the
   // iframe. Capacitor has neither, so the app drives its own sync; sendToIframe

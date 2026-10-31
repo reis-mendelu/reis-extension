@@ -55,6 +55,12 @@ registerSignOutCleanup(async () => {
   await clearZaznamnikNotifications();
 });
 
+// The background check's notifications name this student's subjects and points.
+registerSignOutCleanup(async () => {
+  const { clearBackgroundNotifications } = await import('@/mobile/backgroundCheckNative');
+  await clearBackgroundNotifications();
+});
+
 // Android only: the status bar sits transparent over the app there (see
 // MainActivity), so its icons must follow the reIS theme, not the system one.
 // iOS is left on its current behaviour.

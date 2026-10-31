@@ -42,6 +42,12 @@ const ANDROID_ONLY: Record<string, string> = {
   // share sheet covers this, so no Swift half is planned; if one is written it
   // must be packaged, per the README's own warning about this exact plugin.
   Downloads: 'no iOS half — the share sheet covers it there',
+  // android/app/src/main/java/cz/reis/app/BackgroundCheckPlugin.java: a
+  // JobScheduler job that runs the sync while the app is closed. iOS has no
+  // equivalent without a server push (BGAppRefresh is too rare to promise
+  // anything), and JS asks only when `Capacitor.getPlatform() === 'android'`
+  // (src/mobile/backgroundCheckNative.ts).
+  BackgroundCheck: 'Android-only JobScheduler job — iOS has no background check',
 };
 
 /**

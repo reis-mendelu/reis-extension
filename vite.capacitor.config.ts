@@ -41,6 +41,12 @@ export default defineConfig({
   build: {
     outDir: resolve(__dirname, 'dist-capacitor'),
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        index: resolve(__dirname, 'capacitor/index.html'),
+        background: resolve(__dirname, 'capacitor/background.html'),
+      },
+    },
   },
   server: {
     fs: {
