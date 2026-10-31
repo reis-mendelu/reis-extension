@@ -28,6 +28,7 @@ import { createContextSlice } from './slices/createContextSlice';
 import { createPulseSlice } from './slices/createPulseSlice';
 import { createCustomEventsSlice } from './slices/createCustomEventsSlice';
 import { createNotificationSlice } from './slices/createNotificationSlice';
+import { createSystemNotificationsSlice } from './slices/createSystemNotificationsSlice';
 import { createQuestionsSlice } from './slices/createQuestionsSlice';
 import { createSocietyPinsSlice } from './slices/createSocietyPinsSlice';
 import { createSearchSlice } from './slices/createSearchSlice';
@@ -88,6 +89,7 @@ export const useAppStore = create<AppState>()(
     ...createPulseSlice(...a),
     ...createCustomEventsSlice(...a),
     ...createNotificationSlice(...a),
+    ...createSystemNotificationsSlice(...a),
     ...createQuestionsSlice(...a),
     ...createSocietyPinsSlice(...a),
     ...createSearchSlice(...a),
