@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { Calendar as OsCalendar } from '@capacitor/calendar';
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { GoogleCalendarAuth } from './googleCalendarAuth';
 
@@ -65,6 +66,16 @@ const actions: [string, () => Promise<unknown>][] = [
   ['4 calendarList', async () => get('https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=5&fields=items(id,summary,accessRole)')],
   ['5 primary events (next 7 days)', async () =>
     get(`https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=true&orderBy=startTime&maxResults=10&timeMin=${encodeURIComponent(iso(0))}&timeMax=${encodeURIComponent(iso(7))}&fields=items(summary,start,end)`)],
+  ['7 OS calendar: permission + calendars + next 7 days', async () => {
+    const perm = await OsCalendar.requestPermissions({ permissions: ['readCalendar'] });
+    const cals = await OsCalendar.listCalendars();
+    const ev = await OsCalendar.findEvents({ startDate: Date.now(), endDate: Date.now() + 7 * 864e5 });
+    return {
+      perm,
+      calendars: cals.calendars.map((c) => ({ name: c.name, displayName: c.displayName })),
+      events: ev.events.map((e) => ({ title: e.title, start: e.startDate, calendar: e.calendarName })),
+    };
+  }],
   ['Disconnect', () => GoogleCalendarAuth.disconnect()],
 ];
 
