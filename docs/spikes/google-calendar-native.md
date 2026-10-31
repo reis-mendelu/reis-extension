@@ -8,9 +8,10 @@ page of buttons (`src/spike/`), nothing else in the app changes.
 
 ## Recommendation
 
-**PENDING device evidence.** Leading hypothesis: native Google sign-in through a thin `native/` plugin, because
-the two off-the-shelf options have specific problems (Q1). It becomes a "no" if either platform cannot refresh
-silently (Q3).
+**PENDING the two after-expiry checks.** Leading call: **go with native Google sign-in** through the thin plugin.
+Reasons: it works on both platforms with no reIS backend; iOS shows nothing through EventKit for a student who only uses
+the Google Calendar app (so the OS route cannot be the main path); Capgo has the iOS scope and Facebook SDK problems.
+It becomes a "no" only if a token cannot be refreshed silently after expiry on one platform.
 
 ## 1. Plugin choice
 
@@ -55,9 +56,15 @@ No `AppDelegate` URL handling was needed: the sign-in returned through the SDK's
   (after a full reinstall of the app), no UI, same account, token reused while still valid. The session lives in the
   iOS Keychain, held by GoogleSignIn-iOS. No `serverAuthCode`, no reIS server.
 - **iOS, after expiry:** **PENDING** (token issued 13:59:41 UTC expires 14:59:40 UTC; a scripted relaunch runs after that).
-- **Android:** **PENDING.** Plugin built and compiles; device run is waiting for the Pixel to be free.
-- By reading the code: Android re-authorize with consent already granted is documented to return a token with no
-  resolution; the proof rejects with `NEEDS_CONSENT` instead of showing UI.
+- **Android, connect + relaunch: verified on a Pixel 9a (package `cz.reis.app.gspike`, debug build).** Before connecting,
+  `getAccessToken` rejected with `NEEDS_CONSENT` (the no-UI guarantee: it never shows a sheet by itself). After `connect`
+  and choosing a test-user account: `tokeninfo` 200 with `calendar.readonly` granted, `expires_in` 3598, `azp` = the
+  Android client `576873601004-b5u6j3g...`, calendarList 200, events 200. `force-stop` + relaunch: the silent call
+  returned in 165 ms with no UI, same token still valid. `tokeninfo` says `access_type: online`: the app holds no refresh
+  token, Google Play services holds the consent.
+- **Caveat on consent:** no separate consent screen was seen on Android. The same Google account had consented to this
+  project's iOS client minutes earlier, which probably let Google skip it. A first-ever Android consent was not observed.
+- **After expiry:** iOS and Android results below (**PENDING** until the scripted relaunches finish).
 
 ## 4. Cost per platform
 
@@ -112,8 +119,23 @@ No `AppDelegate` URL handling was needed: the sign-in returned through the SDK's
   prompt), EventKit listed only `Home`, `Work`, `Österreichische Feiertage` and `Birthdays`. The Google event
   "reIS - release test" (6 Nov, returned by the Calendar API a minute earlier for the same person) was **not** visible,
   because that Google account is not added in iOS Settings. A student who only uses the Google Calendar app sees nothing.
-- **Android: PENDING device check** (expected: Google Calendar is visible through the device account via CalendarContract).
+- **Android, verified on the Pixel 9a:** after the plain "Allow reIS to access your calendar?" read prompt,
+  CalendarContract listed ~25 calendars, including every Google calendar of the accounts added in Android Settings
+  (`Ideal Week`, `Exercise`, `Personal`, `Work`, ...) next to holiday calendars. So the OS route works on Android and not on iOS.
 
 ## Estimate for the real feature
 
-**PENDING** until Q2 and Q3 have evidence.
+About **7 to 10 working days** for one developer, plus Google's verification wait (up to 10 days per Google, run in parallel).
+
+| Piece | Work |
+|---|---|
+| Plugin hardening | Real error codes, `disconnect` (iOS `GIDSignIn.disconnect`; Android revoke via the Authorization API), pin the account on Android, tests for the JS wrapper. 1 to 1.5 d |
+| Slice + storage | `createGoogleCalendarSlice`, an IndexedDB store for events, chosen calendar ids. 1 d |
+| Sync service | `events.list` per chosen calendar with `singleEvents=true`, a window of about -1 / +3 months, paging, cancelled events, timezone handling, 401 means reconnect. 2 d |
+| Rendering | Map to the lesson shape like `customEventToLesson`, read-only and visually distinct, merged into `CalendarScreen` (phone) and `useCalendarData` (tablet/desktop width) after the hidden-items filter. **All-day events** need a banner row (the lesson shape has start and end times only). 2 d |
+| Settings UI | Connect, calendar picker from `calendarList`, disconnect, CZ and EN strings. 1 d |
+| Disclosures + guards | `privacy/disclosures.ts`, `PRIVACY.md`, the policy docs, the App Store label (the SDK's eight types), Play Data safety, and `www.googleapis.com` in `noStudentDataLeaves` (the guard fails on it today). 1 d |
+| Parity guard | A test in `src/test/guards/` that the extension bundle contains no Google Calendar code. 0.5 d |
+| Verification (parallel) | Brand verification, a verified domain with the privacy policy on it (today the policy is a gist, which does not qualify), a demo video, a per-scope justification. Until verified: 100 users in total, and refresh tokens last 7 days in Testing. |
+
+Biggest risks: verification of a sensitive scope (no restricted scope is needed), and the policy needing a verified domain.
