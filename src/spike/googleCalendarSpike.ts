@@ -52,7 +52,10 @@ const redact = (r: { accessToken: string | null }) => ({
 });
 
 async function get(url: string) {
-  const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const r = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(20_000),
+  });
   return { status: r.status, body: await r.json().catch(() => null) };
 }
 
