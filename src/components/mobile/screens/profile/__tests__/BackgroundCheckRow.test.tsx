@@ -19,18 +19,18 @@ describe('background check row', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('says what it does, including that it uses the IS sign-in', () => {
+  it('says in plain words what it notifies about', () => {
     useAppStore.setState({ backgroundCheck: 'on' } as never);
     render(<BackgroundCheckRow />);
-    expect(screen.getByText('Kontrola na pozadí')).toBeInTheDocument();
-    expect(screen.getByText(/Používá k tomu tvé přihlášení do ISu/)).toBeInTheDocument();
-    expect(screen.getByRole('switch', { name: 'Kontrola na pozadí' })).toBeChecked();
+    expect(screen.getByText('Oznámení')).toBeInTheDocument();
+    expect(screen.getByText(/Nové body, odevzdávárny a termíny zkoušek/)).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: 'Oznámení' })).toBeChecked();
   });
 
   it('turning it off tells the phone and follows', async () => {
     useAppStore.setState({ backgroundCheck: 'on' } as never);
     render(<BackgroundCheckRow />);
-    fireEvent.click(screen.getByRole('switch', { name: 'Kontrola na pozadí' }));
+    fireEvent.click(screen.getByRole('switch', { name: 'Oznámení' }));
     await waitFor(() => expect(useAppStore.getState().backgroundCheck).toBe('off'));
     expect(native.setBackgroundCheckEnabled).toHaveBeenCalledWith(false);
   });
@@ -39,7 +39,7 @@ describe('background check row', () => {
     native.setBackgroundCheckEnabled.mockRejectedValueOnce(new Error('nope'));
     useAppStore.setState({ backgroundCheck: 'off' } as never);
     render(<BackgroundCheckRow />);
-    fireEvent.click(screen.getByRole('switch', { name: 'Kontrola na pozadí' }));
+    fireEvent.click(screen.getByRole('switch', { name: 'Oznámení' }));
     await waitFor(() => expect(native.setBackgroundCheckEnabled).toHaveBeenCalledWith(true));
     expect(useAppStore.getState().backgroundCheck).toBe('off');
   });

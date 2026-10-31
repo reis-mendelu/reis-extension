@@ -1616,8 +1616,8 @@
     "badge": "Nová"
   },
   "backgroundCheck": {
-    "label": "Kontrola na pozadí",
-    "hint": "I se zavřenou aplikací se reIS občas podívá do ISu a oznámí nové body, odevzdávárny a termíny zkoušek. Používá k tomu tvé přihlášení do ISu.",
+    "label": "Oznámení",
+    "hint": "Nové body, odevzdávárny a termíny zkoušek, i když je aplikace zavřená.",
     "channelExams": "Nové termíny zkoušek",
     "channelBoxes": "Nové odevzdávárny",
     "channelPoints": "Nové body v záznamníku",

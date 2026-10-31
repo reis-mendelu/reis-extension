@@ -1616,8 +1616,8 @@
     "badge": "New"
   },
   "backgroundCheck": {
-    "label": "Background check",
-    "hint": "Even with the app closed, reIS now and then looks into IS and notifies you of new points, submission boxes and exam dates. It uses your IS sign-in to do so.",
+    "label": "Notifications",
+    "hint": "New points, submission boxes and exam dates, even when the app is closed.",
     "channelExams": "New exam dates",
     "channelBoxes": "New submission boxes",
     "channelPoints": "New points in the record",
