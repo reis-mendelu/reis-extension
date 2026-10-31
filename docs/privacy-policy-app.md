@@ -101,8 +101,8 @@ same notifications library — reIS no longer schedules event reminders, and the
 two leave with the library in a later release; Wi-Fi state, only for optional
 one-tap eduroam, where Android's own dialog saves the network.
 
-**Android background check:** about every 15 minutes, while reIS is closed and
-the phone is online, the app asks IS Mendelu — with the sign-in you already gave
+**Android background check:** at most every 15 minutes (less often when the
+phone saves battery), while reIS is closed and the phone is online, the app asks IS Mendelu — with the sign-in you already gave
 it, exactly as when you open it — for new exam terms, submission boxes and
 points, and shows what is new as a notification. Nothing it reads is sent
 anywhere else. You can switch it off in Settings, and signing out stops it.
