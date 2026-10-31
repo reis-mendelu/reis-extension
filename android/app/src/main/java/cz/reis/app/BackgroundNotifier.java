@@ -24,6 +24,9 @@ import org.json.JSONObject;
  */
 final class BackgroundNotifier {
     static final String TAG = "reis-bg";
+    /** Intent extras of a tap: what BackgroundCheckPlugin hands the page. */
+    static final String EXTRA_KIND = "reis_bg_kind";
+    static final String EXTRA_COURSE = "reis_bg_course";
     static final String[] KINDS = {"exams", "boxes", "points"};
 
     private static String channelId(String kind) {
@@ -57,11 +60,17 @@ final class BackgroundNotifier {
             }
             ensureChannels(c, null);
             JSONArray list = new JSONArray(json);
-            Intent open = c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
-            if (open != null) open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
             for (int i = 0; i < list.length(); i++) {
                 JSONObject n = list.getJSONObject(i);
                 String kind = n.getString("kind");
+                // One intent per notification: the tap says which one it was, and
+                // the page opens that subject rather than only the app.
+                Intent open = c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
+                if (open != null) {
+                    open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    open.putExtra(EXTRA_KIND, kind);
+                    if (!n.isNull("courseCode")) open.putExtra(EXTRA_COURSE, n.optString("courseCode"));
+                }
                 // Seconds since the epoch, as the other notifications do: two runs
                 // each finding something must be two notifications, not one replaced.
                 int id = (int) (System.currentTimeMillis() / 1000) + i;

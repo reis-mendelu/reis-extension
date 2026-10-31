@@ -41,6 +41,23 @@ describe('composeBackgroundNotifications', () => {
     expect(out[2]?.title).toBe('Nové body: Předmět EBC-A');
   });
 
+  it('carries the subject a tap should open: one subject, or none for a summary', () => {
+    const out = composeBackgroundNotifications(
+      {
+        terms: [],
+        boxes: [
+          { courseCode: 'EBC-A', name: 'Projekt' },
+          { courseCode: 'EBC-B', name: 'Esej' },
+        ],
+        points: { 'EBC-A': [{ label: 'Test', value: '9' }] },
+      },
+      'cz',
+      nameOf
+    );
+    expect(out.find((n) => n.kind === 'boxes')?.courseCode).toBeNull();
+    expect(out.find((n) => n.kind === 'points')?.courseCode).toBe('EBC-A');
+  });
+
   it('a single term names its date and time, in the student language', () => {
     const [n] = composeBackgroundNotifications(
       {

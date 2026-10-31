@@ -9,6 +9,8 @@ export interface BackgroundNotification {
   kind: BackgroundKind;
   title: string;
   body: string;
+  /** The subject a tap opens; null for a summary (it opens Novinky instead). */
+  courseCode: string | null;
 }
 
 export interface BackgroundFindings {
@@ -46,11 +48,13 @@ export function composeBackgroundNotifications(
               date: firstTerm.date,
               time: firstTerm.time,
             }),
+            courseCode: null,
           }
         : {
             kind: 'exams',
             title: translate(language, 'backgroundCheck.examTitleMany'),
             body: unique(found.terms.map(subject)).join(', '),
+            courseCode: null,
           }
     );
   }
@@ -64,17 +68,24 @@ export function composeBackgroundNotifications(
             kind: 'boxes',
             title: translate(language, 'backgroundCheck.boxTitleOne', { subject: nameOf(code) }),
             body: found.boxes.map((b) => b.name).join(', '),
+            courseCode: code,
           }
         : {
             kind: 'boxes',
             title: translate(language, 'backgroundCheck.boxTitleMany'),
             body: codes.map(nameOf).join(', '),
+            courseCode: null,
           }
     );
   }
 
   if (Object.keys(found.points).length > 0) {
-    out.push({ kind: 'points', ...newPointsNotification(found.points, nameOf, language) });
+    const codes = Object.keys(found.points);
+    out.push({
+      kind: 'points',
+      ...newPointsNotification(found.points, nameOf, language),
+      courseCode: codes.length === 1 ? (codes[0] ?? null) : null,
+    });
   }
   return out;
 }

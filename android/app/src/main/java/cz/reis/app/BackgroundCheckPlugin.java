@@ -1,5 +1,6 @@
 package cz.reis.app;
 
+import android.content.Intent;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -33,6 +34,36 @@ public class BackgroundCheckPlugin extends Plugin {
         }
         BackgroundCheckService.setEnabled(getContext(), enabled);
         call.resolve();
+    }
+
+    /** The tap that launched the app, once: the intent outlives the page, so it is consumed here. */
+    @PluginMethod
+    public void getLaunchTap(PluginCall call) {
+        Intent launch = getActivity() != null ? getActivity().getIntent() : null;
+        JSObject tap = tapOf(launch);
+        if (launch != null) {
+            launch.removeExtra(BackgroundNotifier.EXTRA_KIND);
+            launch.removeExtra(BackgroundNotifier.EXTRA_COURSE);
+        }
+        call.resolve(tap != null ? tap : new JSObject());
+    }
+
+    /** A tap while the app is already running arrives as a new intent (the activity is singleTask). */
+    @Override
+    protected void handleOnNewIntent(Intent intent) {
+        super.handleOnNewIntent(intent);
+        JSObject tap = tapOf(intent);
+        if (tap != null) notifyListeners("notificationTap", tap, true);
+    }
+
+    private static JSObject tapOf(Intent intent) {
+        if (intent == null) return null;
+        String kind = intent.getStringExtra(BackgroundNotifier.EXTRA_KIND);
+        if (kind == null) return null;
+        JSObject tap = new JSObject();
+        tap.put("kind", kind);
+        tap.put("courseCode", intent.getStringExtra(BackgroundNotifier.EXTRA_COURSE));
+        return tap;
     }
 
     @PluginMethod
