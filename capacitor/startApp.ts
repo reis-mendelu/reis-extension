@@ -20,6 +20,10 @@ import { trackDailyUsage } from '@/api/feedback';
 import { installExamReminders } from '@/mobile/examReminders';
 import { installNotificationTaps } from '@/mobile/notificationTaps';
 import { installZaznamnikNotifications } from '@/mobile/zaznamnikNotifications';
+import {
+  askNotificationsIfNeverAsked,
+  refreshNotificationStatus,
+} from '@/mobile/notificationPermission';
 
 /**
  * Whether `entrypoints/main/main` has been evaluated.
@@ -126,6 +130,12 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // starts, so its first batch already has somewhere to go.
   installZaznamnikNotifications();
 
+  // Whether the phone lets reIS notify at all, in the store for Nastavení and
+  // the bell's banner. Asked here, once, while the system still treats it as a
+  // plain first request; after a refusal the banner takes over rather than a
+  // second dialog. A student once ran for weeks with it off and no sign of it.
+  void askNotificationsIfNeverAsked();
+
   // In the extension the CONTENT SCRIPT drives this and posts results into the
   // iframe. Capacitor has neither, so the app drives its own sync; sendToIframe
   // loops the results back to this same window, where useAppLogic's existing
@@ -144,6 +154,8 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // for ten seconds. MIN_SYNC_GAP collapses those; a resume after a real
   // absence still syncs.
   void CapApp.addListener('resume', () => {
+    // Back from system Settings, perhaps with the switch flipped.
+    void refreshNotificationStatus();
     void requestSync('resume');
     // Fetch-once-at-startup is stale forever in a long-lived Capacitor process:
     // a society's new, moved or cancelled event would never reach it. Gap-limited

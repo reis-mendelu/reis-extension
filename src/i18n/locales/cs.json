@@ -502,7 +502,12 @@
     "tomorrow": "Zítra",
     "fromReis": "reIS",
     "sectionDeadlines": "Blížící se termíny",
-    "sectionSocieties": "Od spolků"
+    "sectionSocieties": "Od spolků",
+    "systemLabel": "Oznámení v telefonu",
+    "systemOn": "Zapnutá",
+    "systemOff": "Vypnutá",
+    "systemEnable": "Zapnout",
+    "systemBanner": "Oznámení jsou vypnutá, takže ti nepřijdou nové body ani připomínky zkoušek."
   },
   "examReminders": {
     "title": "Za chvíli se otvírá zkouška",
@@ -1484,7 +1489,7 @@
     "profile": {
       "settings": "Nastavení",
       "atSchool": "Ve škole",
-      "settingsSub": "Jazyk, vzhled"
+      "settingsSub": "Oznámení, jazyk, vzhled"
     },
     "loadFailed": {
       "title": "Data se nepodařilo načíst",

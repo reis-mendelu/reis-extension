@@ -747,6 +747,7 @@ export type AppState = ScheduleSlice &
   ContextSlice &
   PulseSlice &
   NotificationSlice &
+  import('./slices/createSystemNotificationsSlice').SystemNotificationsSlice &
   import('./slices/createQuestionsSlice').QuestionsSlice &
   import('./slices/createSocietyPinsSlice').SocietyPinsSlice &
   BulletinSlice &
