@@ -1,0 +1,82 @@
+# Spike: Google Calendar inside the reIS phone app
+
+Status: **in progress.** Source-reading and desk research are done (marked *read*). Device evidence is
+marked **PENDING** and is filled in as it is measured. Nothing here is for merging.
+
+Branch `spike/google-calendar-native` (from `origin/test`). Harness: `VITE_GOOGLE_SPIKE=1` mounts a bare
+page of buttons (`src/spike/`), nothing else in the app changes.
+
+## Recommendation
+
+**PENDING device evidence.** Leading hypothesis: native Google sign-in through a thin `native/` plugin, because
+the two off-the-shelf options have specific problems (Q1). It becomes a "no" if either platform cannot refresh
+silently (Q3).
+
+## 1. Plugin choice
+
+Candidates checked by reading source (*read*, not run on a device):
+
+- `@capgo/capacitor-social-login` 8.7.5, Capacitor >=8, maintained (modified 2026-10-21).
+  - **iOS:** uses GoogleSignIn-iOS. `login()` takes `restorePreviousSignIn` whenever a previous sign-in exists
+    and `forcePrompt` is unset, and that path never requests `additionalScopes`. A returning user can get a
+    token without Calendar. This matches the reported iOS scope bug.
+  - **iOS:** `Package.swift` always depends on `facebook-ios-sdk`. Its `facebook: false` stub is documented for
+    Android only. Whether it is dropped on iOS is unverified.
+  - **Android:** `refresh()` goes through Credential Manager (`GetGoogleIdOption`, autoSelect), which may show
+    UI, and then the Authorization API. Scopes require changing `MainActivity`. Access token and scopes are
+    persisted in plain SharedPreferences.
+- `@belongnet/capacitor-google-auth`: not on npm (404). `@codetrix-studio/capacitor-google-auth`: Capacitor 6 only.
+- **Chosen for the proof:** `native/capacitor-google-calendar` (iOS: GoogleSignIn-iOS only) plus
+  `GoogleCalendarAuthPlugin.java` (Android: `AuthorizationClient.authorize()` only, no Credential Manager, no
+  server client ID, no `serverAuthCode`). About 120 lines of Swift and 110 of Java.
+- iOS must be a `native/` package (see `native/capacitor-secure-store/README.md`). `nativePluginsAreReachable`
+  passes with it.
+
+## 2. iOS scope consent
+
+**PENDING.** Evidence line will be the harness `tokeninfo` output (`scope`, `expires_in`) after `connect`, with
+a calendarList and an events call returning 200. The proof's `connect` never uses the restore path.
+
+## 3. Refresh without UI or backend
+
+**PENDING.** Harness button "2 Silent token" is called (a) after the 1 h expiry, (b) after killing and
+relaunching the app. iOS relies on the SDK's Keychain-held refresh token (`refreshTokensIfNeeded`). Android relies
+on `authorize()` returning a token without a resolution once consent exists, and the proof rejects with
+`NEEDS_CONSENT` rather than showing UI. No `serverAuthCode` is requested on either platform.
+
+## 4. Cost per platform
+
+- OAuth clients: iOS client (bundle `cz.reis.app`); one Android client per package + SHA-1 (debug, upload key,
+  Play App Signing key). No Web client is needed in this design. **PENDING:** confirm on device.
+- iOS: `CFBundleURLTypes` entry with the reversed client ID in `Info.plist`; one SPM dependency
+  (GoogleSignIn-iOS >=9). No `AppDelegate` change was needed to compile; **PENDING:** whether the callback needs one.
+- Android: `play-services-auth:21.4.0` in `app/build.gradle`; one `registerPlugin` line in `MainActivity`. No
+  `onActivityResult` override (the plugin registers its own `StartIntentSenderForResult` launcher in `load()`).
+- Debug APK with the dependency: 12.5 MB (baseline delta **PENDING**). IPA delta **PENDING**.
+
+## 5. Privacy fallout
+
+**PENDING** (Xcode privacy report on an archive; Play Data safety). Known: Capgo would add the Facebook SDK on
+iOS, which a privacy-first app should not ship. GoogleSignIn-iOS ships its own privacy manifest.
+
+## 6. Verification status
+
+- Consent screen can stay External/Testing with a test user for the spike. Refresh tokens issued in Testing
+  expire after **7 days** (Google OAuth docs, "Refresh token expiration").
+- Google's sensitive-scope verification page says review "can take up to 10 days". It requires brand verification,
+  a verified authorized domain, a public home page, a privacy policy on the same domain, a justification per
+  scope with why a narrower scope will not do, and an unlisted YouTube demo video showing the consent flow.
+- Sensitive/restricted tier of each Calendar scope: **PENDING**. Neither Google docs page fetched states it;
+  read it from the console's Data access picker.
+- Account limit worth knowing: 100 refresh tokens per Google Account per client ID.
+
+## 7. Fallback: the OS calendar
+
+- `@capacitor/calendar` 1.0.1 (official, Capacitor >=8) reads EventKit on iOS and CalendarContract on Android;
+  `@ebarooni/capacitor-calendar` 8.10.0 is the community alternative.
+- Expected asymmetry, **PENDING device check**: Android sees Google Calendar through the device account; iOS sees
+  nothing unless the Google account was added in iOS Settings.
+
+## Estimate for the real feature
+
+**PENDING** until Q2 and Q3 have evidence.
