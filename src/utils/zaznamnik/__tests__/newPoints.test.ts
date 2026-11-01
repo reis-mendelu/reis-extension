@@ -138,4 +138,44 @@ describe('diffZaznamnik', () => {
     const regraded = z([], [attempt('Test 1', 8, '1. 10. 2026 10:00')]);
     expect(diffZaznamnik(prev, regraded)).toEqual([{ label: 'Test 1', value: '8/10' }]);
   });
+
+  it('reports nothing for unchanged attempts that share a name and a time', () => {
+    // A real subject lists 25 attempts under 12 distinct name+time pairs.
+    const same = () =>
+      z(
+        [],
+        [
+          attempt('Průběžný test', 4, '8. 10. 2026 10:00'),
+          attempt('Průběžný test', 9, '8. 10. 2026 10:00'),
+          attempt('Průběžný test', 6, '8. 10. 2026 10:00'),
+        ]
+      );
+    expect(diffZaznamnik(same(), same())).toEqual([]);
+  });
+
+  it('still reports a changed score among attempts that share a name and a time', () => {
+    const prev = z(
+      [],
+      [attempt('Test', 4, '8. 10. 2026 10:00'), attempt('Test', 9, '8. 10. 2026 10:00')]
+    );
+    const fresh = z(
+      [],
+      [attempt('Test', 4, '8. 10. 2026 10:00'), attempt('Test', 10, '8. 10. 2026 10:00')]
+    );
+    expect(diffZaznamnik(prev, fresh)).toEqual([{ label: 'Test', value: '10/10' }]);
+  });
+
+  it('ignores attempts that share a name and a time when IS lists them in another order', () => {
+    const at = '8. 10. 2026 10:00';
+    const prev = z([], [attempt('Test', 4, at), attempt('Test', 9, at), attempt('Test', 6, at)]);
+    const fresh = z([], [attempt('Test', 6, at), attempt('Test', 4, at), attempt('Test', 9, at)]);
+    expect(diffZaznamnik(prev, fresh)).toEqual([]);
+  });
+
+  it('reports only the new one when an attempt is added among tied attempts', () => {
+    const at = '8. 10. 2026 10:00';
+    const prev = z([], [attempt('Test', 4, at), attempt('Test', 9, at)]);
+    const fresh = z([], [attempt('Test', 9, at), attempt('Test', 7, at), attempt('Test', 4, at)]);
+    expect(diffZaznamnik(prev, fresh)).toEqual([{ label: 'Test', value: '7/10' }]);
+  });
 });

@@ -1,6 +1,7 @@
 import type { SubjectZaznamnik } from '../../types/zaznamnik';
 import { diffZaznamnik, type NewPoint } from '../../utils/zaznamnik/newPoints';
 import { IndexedDBService } from '../storage/IndexedDBService';
+import { withKnownStateLock } from './knownStateLock';
 
 /** Subject code → the entries the student has not opened yet. */
 export type NewPointsBySubject = Record<string, NewPoint[]>;
@@ -61,7 +62,7 @@ let queue: Promise<unknown> = Promise.resolve();
 export function persistZaznamnikBatch(
   batch: Record<string, SubjectZaznamnik | null>
 ): Promise<{ found: NewPointsBySubject; unseen: NewPointsBySubject }> {
-  const run = queue.then(() => persist(batch));
+  const run = queue.then(() => withKnownStateLock(() => persist(batch)));
   queue = run.catch(() => undefined);
   return run;
 }
@@ -71,14 +72,16 @@ export function persistZaznamnikBatch(
  * persist, so a sync landing at that moment cannot write the entry back.
  */
 export function clearNewPoints(courseCode: string): Promise<NewPointsBySubject> {
-  const run = queue.then(async () => {
-    const stored = ((await IndexedDBService.get('meta', NEW_POINTS_META_KEY)) ??
-      {}) as NewPointsBySubject;
-    if (!(courseCode in stored)) return stored;
-    const { [courseCode]: _seen, ...rest } = stored;
-    await IndexedDBService.set('meta', NEW_POINTS_META_KEY, rest);
-    return rest;
-  });
+  const run = queue.then(() =>
+    withKnownStateLock(async () => {
+      const stored = ((await IndexedDBService.get('meta', NEW_POINTS_META_KEY)) ??
+        {}) as NewPointsBySubject;
+      if (!(courseCode in stored)) return stored;
+      const { [courseCode]: _seen, ...rest } = stored;
+      await IndexedDBService.set('meta', NEW_POINTS_META_KEY, rest);
+      return rest;
+    })
+  );
   queue = run.catch(() => undefined);
   return run;
 }

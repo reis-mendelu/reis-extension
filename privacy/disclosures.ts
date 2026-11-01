@@ -283,9 +283,15 @@ export const PLATFORM_PERMISSIONS = {
    * RECEIVE_BOOT_COMPLETED and WAKE_LOCK come from @capacitor/local-notifications,
    * which stays for the exam-opening reminders (spec 2026-10-20): scheduled on
    * the phone from its own exam list, nothing sent anywhere.
+   * ACCESS_NETWORK_STATE is the Android background check's (BackgroundCheckService):
+   * JobScheduler needs it to run the job only when the phone is online. That
+   * job asks IS Mendelu, with the sign-in the student already gave the app, for
+   * new exam terms, odevzdávárny and záznamník points while reIS is closed, and
+   * shows them as notifications; nothing it reads goes anywhere else.
    */
   android: [
     'INTERNET',
+    'ACCESS_NETWORK_STATE',
     'POST_NOTIFICATIONS',
     'ACCESS_WIFI_STATE',
     'CHANGE_WIFI_STATE',

@@ -5,6 +5,7 @@ import { IndexedDBService } from '../services/storage';
 import { syncService, syncGradeHistory } from '../services/sync';
 import { persistZaznamnikBatch } from '../services/sync/zaznamnikNewPoints';
 import { persistNewBoxes } from '../services/sync/newSubmissionBoxes';
+import { persistExamTerms } from '../services/sync/newExamTerms';
 import { notifyNewPoints } from '../services/newPointsNotifier';
 
 import { useAppStore, initializeStore } from '../store/useAppStore';
@@ -244,7 +245,16 @@ export function useAppLogic() {
             }
           }
         }
-        if (r.exams) useAppStore.getState().setExams(r.exams);
+        if (r.exams) {
+          useAppStore.getState().setExams(r.exams);
+          // Marks these terms seen, so the phone's background check does not
+          // announce what the student has already had on screen.
+          try {
+            await persistExamTerms(r.exams);
+          } catch (err) {
+            logError('useAppLogic.persistExamTerms', err);
+          }
+        }
 
         if (r.subjects?.data) {
           const existing = (await IndexedDBService.get('subjects', 'current')) as {

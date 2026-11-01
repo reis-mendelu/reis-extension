@@ -30,4 +30,18 @@ describe('SettingsSheet', () => {
     fireEvent.click(screen.getByText('English'));
     await waitFor(() => expect(useAppStore.getState().language).toBe('en'));
   });
+
+  it('says the phone has reIS notifications off, and offers the fix', () => {
+    useAppStore.setState({ systemNotifications: 'denied' } as never);
+    render(<SettingsSheet onClose={vi.fn()} />);
+    expect(screen.getByText('Vypnutá')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Zapnout' })).toBeInTheDocument();
+  });
+
+  it('shows no notification row before the phone has answered', () => {
+    useAppStore.setState({ systemNotifications: 'unknown' } as never);
+    render(<SettingsSheet onClose={vi.fn()} />);
+    expect(screen.queryByText('Vypnutá')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Zapnout' })).not.toBeInTheDocument();
+  });
 });

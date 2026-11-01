@@ -3,6 +3,7 @@ import { SheetHeader } from '../primitives/SheetHeader';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { AppearanceRows } from '../screens/profile/AppearanceRows';
 import { SystemNotificationsRow } from '../screens/profile/SystemNotificationsRow';
+import { BackgroundCheckRow } from '../screens/profile/BackgroundCheckRow';
 
 export interface SettingsSheetProps {
   onClose: () => void;
@@ -20,6 +21,7 @@ export function SettingsSheet({ onClose }: SettingsSheetProps) {
       <SheetHeader title={t('mobile.profile.settings')} onClose={onClose} />
       <div className="pb-6">
         <SystemNotificationsRow />
+        <BackgroundCheckRow />
         <AppearanceRows />
       </div>
     </Sheet>

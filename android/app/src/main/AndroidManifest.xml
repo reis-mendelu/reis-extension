@@ -45,6 +45,15 @@
 
         </activity>
 
+        <!-- The background check (BackgroundCheckService): Android starts it about
+             every 15 minutes, it looks into IS headless and notifies of what is new.
+             Needs ACCESS_NETWORK_STATE below for its network constraint, and
+             RECEIVE_BOOT_COMPLETED (from local-notifications) to persist across a reboot. -->
+        <service
+            android:name=".BackgroundCheckService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -59,6 +68,7 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Runtime-requested on Android 13+; without it the download notification
          is silently dropped (the file still saves). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />

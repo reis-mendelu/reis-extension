@@ -32,6 +32,18 @@ describe('NotificationsSheet', () => {
     } as never);
   });
 
+  it('tells the student the phone has reIS notifications off', () => {
+    useAppStore.setState({ systemNotifications: 'denied' } as never);
+    render(<NotificationsSheet onClose={vi.fn()} />);
+    expect(screen.getByRole('status')).toHaveTextContent(/Oznámení jsou vypnutá/);
+  });
+
+  it('shows no banner while the phone lets reIS notify', () => {
+    useAppStore.setState({ systemNotifications: 'granted' } as never);
+    render(<NotificationsSheet onClose={vi.fn()} />);
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
   it('shows the title and a notification from the feed', () => {
     render(<NotificationsSheet onClose={vi.fn()} />);
     expect(screen.getByText('Novinky')).toBeInTheDocument();
