@@ -150,3 +150,7 @@ Review of PR #627 found these in the throwaway plugin and harness. None blocks t
 - **Harness log** is written to `Documents/spike-log.txt` (backed up, never truncated) and holds event titles. Acceptable for a throwaway build; the real feature logs nothing of the sort.
 - **Google hosts** (`www.googleapis.com`, `oauth2.googleapis.com`) are exempted for the one harness file in `noStudentDataLeaves.test.ts` only. The real feature declares them in `ALLOWED_HOSTS`, `PRIVACY.md` and `privacy/disclosures.ts`.
 - **Android permissions:** `@capacitor/calendar` adds `READ_CALENDAR` and `WRITE_CALENDAR`; this branch strips both from the release manifest, so the Android OS-calendar path works only in a build that removes the two `tools:node="remove"` lines.
+
+## Running the harness
+
+Build with `VITE_GOOGLE_SPIKE=1`. On Android also pass `-PspikeAppIdSuffix=.gspike` to Gradle: the Android OAuth client is registered for the debug package `cz.reis.app.gspike`, so a build without the suffix cannot connect. The iOS client ID goes in `Info.plist` locally and is never committed.
