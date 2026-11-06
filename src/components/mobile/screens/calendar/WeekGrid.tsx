@@ -12,7 +12,7 @@ import { WeekDayColumn } from './WeekDayColumn';
 import { weekHalloweenSpots, halloweenDays } from './weekHalloween';
 import { useIsHalloween } from '../../../../hooks/ui/useHalloween';
 import { SprawlingWeb } from '../../../halloween/HalloweenArt';
-import { weekHourRange, nowOffset } from './weekLayout';
+import { weekHourRange, nowOffset, WEEK_ROW_VARS } from './weekLayout';
 import { CALENDAR_BOTTOM_PAD } from './calendarBottomPad';
 
 export interface WeekGridProps {
@@ -22,7 +22,7 @@ export interface WeekGridProps {
   lessonDates: ReadonlySet<string>;
   onSelectDay: (iso: string) => void;
   /**
-   * Each day's `min-width` (dayMinWidth): a day with a clash widens so its
+   * Each day's `min-width` (weekColumnMinWidths): a day with a clash widens so its
    * lessons stay readable side by side. The day chips above get the same.
    */
   columnMinWidths: Record<string, string>;
@@ -135,7 +135,7 @@ export function WeekGrid({
           </span>
         ))}
       </div>
-      <div ref={columnsRef} className="relative flex flex-1 gap-1.5 max-[359px]:gap-0.5">
+      <div ref={columnsRef} className={`relative flex flex-1 gap-[var(--wk-gap)] ${WEEK_ROW_VARS}`}>
         {hours.map((h, i) => (
           <div
             key={h}

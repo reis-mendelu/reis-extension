@@ -11,7 +11,10 @@ const SLOP = 10;
  *
  * Two rules a hold on a TAPPABLE target needs:
  * - The click that ends a hold is swallowed, or lifting the finger would also
- *   do the tap (open the subject over the hide menu). Only that one click.
+ *   do the tap. Swallowed on the WINDOW, not the target: what the hold opened
+ *   is under the finger by then, and a touch's click goes to whatever is there
+ *   at the lift — a sheet's backdrop, which closed the sheet the hold had just
+ *   opened (CDP touch, 2026-11-06). Only that one click, and only briefly.
  * - A second finger anywhere cancels it: two fingers resting before a spread
  *   are a pinch (usePinchView), not a hold. The second finger usually lands on
  *   another element, so it is heard on the window, not on the target.
@@ -20,8 +23,8 @@ export function useLongPress(onLongPress: () => void, ms = 700) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const origin = useRef<{ x: number; y: number } | null>(null);
   const touch = useRef(false);
-  const held = useRef(false);
   const unlisten = useRef<(() => void) | null>(null);
+  const unswallow = useRef<(() => void) | null>(null);
   const cancel = () => {
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
@@ -29,7 +32,33 @@ export function useLongPress(onLongPress: () => void, ms = 700) {
     unlisten.current?.();
     unlisten.current = null;
   };
-  useEffect(() => cancel, []);
+  useEffect(
+    () => () => {
+      cancel();
+      unswallow.current?.();
+    },
+    []
+  );
+
+  const swallowNextClick = () => {
+    const swallow = (e: globalThis.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      stop();
+    };
+    const stop = () => {
+      window.removeEventListener('click', swallow, true);
+      window.removeEventListener('pointerdown', stop, true);
+      clearTimeout(timeout);
+      unswallow.current = null;
+    };
+    // A click that has not come by then is not this gesture's.
+    const timeout = setTimeout(stop, 1000);
+    window.addEventListener('click', swallow, true);
+    // The next press starts a new gesture: its click is a real tap.
+    window.addEventListener('pointerdown', stop, true);
+    unswallow.current = stop;
+  };
 
   const listenForSecondFinger = (pointerId: number) => {
     const onPointer = (e: globalThis.PointerEvent) => {
@@ -49,14 +78,14 @@ export function useLongPress(onLongPress: () => void, ms = 700) {
   return {
     onPointerDown: (e: PointerEvent) => {
       cancel();
-      held.current = false;
+      unswallow.current?.();
       touch.current = e.pointerType === 'touch';
       origin.current = { x: e.clientX, y: e.clientY };
       listenForSecondFinger(e.pointerId);
       timer.current = setTimeout(() => {
         timer.current = null;
         cancel();
-        held.current = true;
+        swallowNextClick();
         onLongPress();
       }, ms);
     },
@@ -67,12 +96,6 @@ export function useLongPress(onLongPress: () => void, ms = 700) {
     onPointerUp: cancel,
     onPointerLeave: cancel,
     onPointerCancel: cancel,
-    onClickCapture: (e: MouseEvent) => {
-      if (!held.current) return;
-      held.current = false;
-      e.preventDefault();
-      e.stopPropagation();
-    },
     // iOS/Android open a text-selection callout on a held name; the hold is
     // ours. Touch only: a desktop right-click keeps its menu.
     onContextMenu: (e: MouseEvent) => {

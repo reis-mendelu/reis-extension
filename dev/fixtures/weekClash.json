@@ -1,5 +1,5 @@
 {
-  "_comment": "Synthetic Týden fixture with clashing lessons. NO real student data — fictional teachers, made-up rooms. Day offsets 0–4 are Monday–Friday when served with a Monday clock, e.g. ?now=2026-11-02T07:30 (dayOffset is from 'now', see scripts/lib/fixtureRebase.ts). Wednesday holds three parallel seminar options of one subject (suggestion #43's case and the deepest clash), Thursday the two-lesson clash from Dominik's 2026-11-06 screenshot. Serve with: npm run dev:web:clash",
+  "_comment": "Synthetic Týden fixture with clashing lessons. NO real student data — fictional teachers, made-up rooms. Day offsets 0–4 are Monday–Friday when served with a Monday clock, e.g. ?now=2026-11-02T07:30 (dayOffset is from 'now', see scripts/lib/fixtureRebase.ts). Wednesday holds three parallel seminar options of one subject (suggestion #43's case and the deepest clash), Thursday the two-lesson clash from Dominik's 2026-11-06 screenshot. Serve with: npm run dev:web:clash The NEXT week (offsets 7–11) is the realistic case: one two-lesson clash on Thursday and nothing else, the shape of the screenshot.",
   "schedule": [
     {
       "id": "fx-d0-eko",
@@ -301,6 +301,237 @@
     {
       "id": "fx-d4-fa",
       "dayOffset": 4,
+      "startTime": "13:00",
+      "endTime": "14:50",
+      "courseCode": "EBC-FAP",
+      "courseName": "Finanční analýza podniku",
+      "courseNameCs": "Finanční analýza podniku",
+      "courseNameEn": "Finanční analýza podniku",
+      "room": "Q21",
+      "roomCs": "Q21",
+      "roomEn": "Q21",
+      "roomStructured": {
+        "name": "Q21",
+        "id": "q21"
+      },
+      "teachers": [
+        {
+          "fullName": "Ing. Petr Svoboda, Ph.D.",
+          "shortName": "Svoboda",
+          "id": "11"
+        }
+      ],
+      "isExam": false,
+      "isConsultation": "false",
+      "isSeminar": "false",
+      "studyId": "",
+      "facultyCode": "PEF",
+      "isDefaultCampus": "true",
+      "courseId": "ebc-fap",
+      "campus": "Brno",
+      "periodId": ""
+    },
+    {
+      "id": "fx-d7-eko",
+      "dayOffset": 7,
+      "startTime": "11:00",
+      "endTime": "12:50",
+      "courseCode": "EBC-EKO",
+      "courseName": "Ekonometrie 1",
+      "courseNameCs": "Ekonometrie 1",
+      "courseNameEn": "Ekonometrie 1",
+      "room": "Q01",
+      "roomCs": "Q01",
+      "roomEn": "Q01",
+      "roomStructured": {
+        "name": "Q01",
+        "id": "q01"
+      },
+      "teachers": [
+        {
+          "fullName": "Ing. Petr Svoboda, Ph.D.",
+          "shortName": "Svoboda",
+          "id": "11"
+        }
+      ],
+      "isExam": false,
+      "isConsultation": "false",
+      "isSeminar": "false",
+      "studyId": "",
+      "facultyCode": "PEF",
+      "isDefaultCampus": "true",
+      "courseId": "ebc-eko",
+      "campus": "Brno",
+      "periodId": ""
+    },
+    {
+      "id": "fx-d8-vf",
+      "dayOffset": 8,
+      "startTime": "13:00",
+      "endTime": "14:50",
+      "courseCode": "EBC-VF1",
+      "courseName": "Veřejné finance 1",
+      "courseNameCs": "Veřejné finance 1",
+      "courseNameEn": "Veřejné finance 1",
+      "room": "Q02",
+      "roomCs": "Q02",
+      "roomEn": "Q02",
+      "roomStructured": {
+        "name": "Q02",
+        "id": "q02"
+      },
+      "teachers": [
+        {
+          "fullName": "Ing. Petr Svoboda, Ph.D.",
+          "shortName": "Svoboda",
+          "id": "11"
+        }
+      ],
+      "isExam": false,
+      "isConsultation": "false",
+      "isSeminar": "false",
+      "studyId": "",
+      "facultyCode": "PEF",
+      "isDefaultCampus": "true",
+      "courseId": "ebc-vf1",
+      "campus": "Brno",
+      "periodId": ""
+    },
+    {
+      "id": "fx-d8-op",
+      "dayOffset": 8,
+      "startTime": "15:00",
+      "endTime": "17:50",
+      "courseCode": "EBC-OP",
+      "courseName": "Oceňování podniku",
+      "courseNameCs": "Oceňování podniku",
+      "courseNameEn": "Oceňování podniku",
+      "room": "Q42",
+      "roomCs": "Q42",
+      "roomEn": "Q42",
+      "roomStructured": {
+        "name": "Q42",
+        "id": "q42"
+      },
+      "teachers": [
+        {
+          "fullName": "Ing. Petr Svoboda, Ph.D.",
+          "shortName": "Svoboda",
+          "id": "11"
+        }
+      ],
+      "isExam": false,
+      "isConsultation": "false",
+      "isSeminar": "true",
+      "studyId": "",
+      "facultyCode": "PEF",
+      "isDefaultCampus": "true",
+      "courseId": "ebc-op",
+      "campus": "Brno",
+      "periodId": ""
+    },
+    {
+      "id": "fx-d10-vf",
+      "dayOffset": 10,
+      "startTime": "09:00",
+      "endTime": "10:50",
+      "courseCode": "EBC-VF1",
+      "courseName": "Veřejné finance 1",
+      "courseNameCs": "Veřejné finance 1",
+      "courseNameEn": "Veřejné finance 1",
+      "room": "Q30",
+      "roomCs": "Q30",
+      "roomEn": "Q30",
+      "roomStructured": {
+        "name": "Q30",
+        "id": "q30"
+      },
+      "teachers": [
+        {
+          "fullName": "Ing. Petr Svoboda, Ph.D.",
+          "shortName": "Svoboda",
+          "id": "11"
+        }
+      ],
+      "isExam": false,
+      "isConsultation": "false",
+      "isSeminar": "true",
+      "studyId": "",
+      "facultyCode": "PEF",
+      "isDefaultCampus": "true",
+      "courseId": "ebc-vf1",
+      "campus": "Brno",
+      "periodId": ""
+    },
+    {
+      "id": "fx-d10-fa",
+      "dayOffset": 10,
+      "startTime": "10:00",
+      "endTime": "11:50",
+      "courseCode": "EBC-FAP",
+      "courseName": "Finanční analýza podniku",
+      "courseNameCs": "Finanční analýza podniku",
+      "courseNameEn": "Finanční analýza podniku",
+      "room": "Q21",
+      "roomCs": "Q21",
+      "roomEn": "Q21",
+      "roomStructured": {
+        "name": "Q21",
+        "id": "q21"
+      },
+      "teachers": [
+        {
+          "fullName": "Ing. Petr Svoboda, Ph.D.",
+          "shortName": "Svoboda",
+          "id": "11"
+        }
+      ],
+      "isExam": false,
+      "isConsultation": "false",
+      "isSeminar": "true",
+      "studyId": "",
+      "facultyCode": "PEF",
+      "isDefaultCampus": "true",
+      "courseId": "ebc-fap",
+      "campus": "Brno",
+      "periodId": ""
+    },
+    {
+      "id": "fx-d10-eko",
+      "dayOffset": 10,
+      "startTime": "12:00",
+      "endTime": "13:50",
+      "courseCode": "EBC-EKO",
+      "courseName": "Ekonometrie 1",
+      "courseNameCs": "Ekonometrie 1",
+      "courseNameEn": "Ekonometrie 1",
+      "room": "Q24",
+      "roomCs": "Q24",
+      "roomEn": "Q24",
+      "roomStructured": {
+        "name": "Q24",
+        "id": "q24"
+      },
+      "teachers": [
+        {
+          "fullName": "Ing. Petr Svoboda, Ph.D.",
+          "shortName": "Svoboda",
+          "id": "11"
+        }
+      ],
+      "isExam": false,
+      "isConsultation": "false",
+      "isSeminar": "true",
+      "studyId": "",
+      "facultyCode": "PEF",
+      "isDefaultCampus": "true",
+      "courseId": "ebc-eko",
+      "campus": "Brno",
+      "periodId": ""
+    },
+    {
+      "id": "fx-d11-fa",
+      "dayOffset": 11,
       "startTime": "13:00",
       "endTime": "14:50",
       "courseCode": "EBC-FAP",

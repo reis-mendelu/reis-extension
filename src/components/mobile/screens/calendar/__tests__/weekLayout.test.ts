@@ -7,7 +7,7 @@ import {
   nowOffset,
   nameLines,
   dayLanes,
-  dayMinWidth,
+  weekColumnMinWidths,
   MIN_LANE_PX,
 } from '../weekLayout';
 
@@ -104,19 +104,98 @@ describe('dayLanes', () => {
   });
 });
 
-describe('dayMinWidth', () => {
-  it('a day without a clash has no floor, so its text never pushes it wider', () => {
-    // An explicit 0, not auto: a chip's label would otherwise set its own
-    // minimum and drift out of line with the column under it.
-    expect(dayMinWidth(1, [1, 1, 1, 1, 1])).toBe('0px');
+/**
+ * The min-width strings are CSS, so the test evaluates them the way a browser
+ * would at one width — the variables WEEK_ROW_VARS sets, `100%` the row — and
+ * then lays the row out as `flex: 1 1 0` does: every day at least its floor,
+ * the rest shared equally.
+ */
+const VARS = {
+  wide: { gap: 6, day: 42, today: 48 },
+  narrow: { gap: 2, day: 32, today: 40 },
+};
+function layRow(mins: string[], rowPx: number, screen: number): number[] {
+  const v = screen >= 360 ? VARS.wide : VARS.narrow;
+  const px = mins.map((m) =>
+    Function(
+      `return ${m
+        .replace(/var\(--wk-gap\)/g, String(v.gap))
+        .replace(/var\(--wk-day\)/g, String(v.day))
+        .replace(/var\(--wk-today\)/g, String(v.today))
+        .replace(/100%/g, String(rowPx))
+        .replace(/calc/g, '')
+        .replace(/min\(/g, 'Math.min(')
+        .replace(/px/g, '')}`
+    )()
+  ) as number[];
+  const free = rowPx - (mins.length - 1) * v.gap;
+  // Flexbox: freeze any day whose equal share is under its floor, repeat.
+  const frozen = new Map<number, number>();
+  for (;;) {
+    const open = px.map((_, i) => i).filter((i) => !frozen.has(i));
+    const share = (free - [...frozen.values()].reduce((a, b) => a + b, 0)) / open.length;
+    const under = open.filter((i) => px[i]! > share);
+    if (under.length === 0) return px.map((_, i) => frozen.get(i) ?? share);
+    for (const i of under) frozen.set(i, px[i]!);
+  }
+}
+
+describe('weekColumnMinWidths', () => {
+  const week = ['2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30'];
+  // The row the columns get: screen − px-2 − two w-8 slots − two gap-1.
+  const rowAt = (screen: number) => screen - 16 - 64 - 8;
+  const thursdayClash = [
+    lesson('a', '09:00', '10:50', '20261029'),
+    lesson('b', '10:00', '11:50', '20261029'),
+    lesson('c', '09:00', '10:50', '20261027'),
+  ];
+  const widths = (lessons: BlockLesson[], screen: number, today = '2026-10-26') => {
+    const mins = weekColumnMinWidths(lessons, week, today);
+    return layRow(
+      week.map((d) => mins[d]!),
+      rowAt(screen),
+      screen
+    );
+  };
+  const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
+
+  it('a week without a clash stays five equal columns', () => {
+    const w = widths([lesson('c', '09:00', '10:50', '20261027')], 390);
+    expect(new Set(w.map((x) => x.toFixed(1))).size).toBe(1);
   });
 
-  it('a clashing day asks for a readable width per lane, capped at its share of the row', () => {
-    // Two lanes of six in the week: never more than 2/6 of the row minus the
-    // gaps between five days, so a 320px phone never overflows.
-    expect(dayMinWidth(2, [1, 1, 1, 2, 1])).toBe(
-      `min(${2 * MIN_LANE_PX}px, calc((100% - 24px) * 0.3333))`
-    );
+  it('390px: a two-lane Thursday gets a readable lane, the other days keep their chips', () => {
+    const w = widths(thursdayClash, 390);
+    expect(w[3]! / 2).toBeGreaterThanOrEqual(MIN_LANE_PX);
+    expect(Math.min(...w)).toBeGreaterThanOrEqual(42);
+  });
+
+  it('320px: lanes and plain days end up about equally wide, nothing overflows', () => {
+    const w = widths(thursdayClash, 320);
+    expect(sum(w) + 4 * 2).toBeLessThanOrEqual(rowAt(320) + 0.01);
+    expect(w[3]! / 2).toBeGreaterThan(34);
+    expect(Math.min(...w)).toBeGreaterThanOrEqual(32);
+  });
+
+  it('two clashing days and a three-lane one still fit, with every chip whole', () => {
+    const deep = [
+      ...thursdayClash,
+      lesson('x', '09:00', '10:50', '20261028'),
+      lesson('y', '09:00', '10:50', '20261028'),
+      lesson('z', '09:00', '10:50', '20261028'),
+    ];
+    for (const screen of [320, 390, 430]) {
+      const w = widths(deep, screen);
+      const gap = screen >= 360 ? 6 : 2;
+      expect(sum(w) + 4 * gap).toBeLessThanOrEqual(rowAt(screen) + 0.01);
+      // Monday is today: its chip's filled date needs its own floor.
+      expect(w[0]).toBeGreaterThanOrEqual(screen >= 360 ? 48 : 40);
+    }
+  });
+
+  it('an iPad changes nothing for a two-lane clash: the column already has room', () => {
+    const w = widths(thursdayClash, 810);
+    expect(new Set(w.map((x) => x.toFixed(1))).size).toBe(1);
   });
 });
 

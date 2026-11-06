@@ -92,7 +92,7 @@ export function placeDay(lessons: BlockLesson[], range: HourRange): PlacedBlock[
  * 5.6.0 cascaded a clash on a phone instead (the later lesson indented 12px
  * and drawn over the earlier one), which left the earlier lesson a 12px sliver
  * with one letter of its name (Dominik, 2026-11-06). Width for the lanes now
- * comes from the day column itself — see `dayMinWidth`.
+ * comes from the day column itself — see `weekColumnMinWidths`.
  */
 export function blockBox(lane: number, lanes: number): { left: string; width: string } {
   return { left: `${(lane / lanes) * 100}%`, width: `${100 / lanes}%` };
@@ -105,8 +105,14 @@ export function blockBox(lane: number, lanes: number): { left: string; width: st
  */
 export const MIN_LANE_PX = 44;
 
-/** The widest gap between two day columns (`gap-1.5`; 2px below 360px). */
-const DAY_GAP_PX = 6;
+/**
+ * The CSS variables both Týden rows define (the chips and the columns): the
+ * gap between days, and the floor of a day without a clash — its chip's label,
+ * measured at 390 and 320 ("Po 16" 41px / 31px; today's filled date 47px /
+ * 40px). Both rows set the same values, so one formula lands on one width.
+ */
+export const WEEK_ROW_VARS =
+  '[--wk-gap:6px] [--wk-day:42px] [--wk-today:48px] max-[359px]:[--wk-gap:2px] max-[359px]:[--wk-day:32px] max-[359px]:[--wk-today:40px]';
 
 /** How many lanes each day's widest clash needs; 1 for a day without one. */
 export function dayLanes(lessons: BlockLesson[], days: string[]): Record<string, number> {
@@ -120,34 +126,49 @@ export function dayLanes(lessons: BlockLesson[], days: string[]): Record<string,
 }
 
 /**
- * The CSS `min-width` of a day column — and of its chip above, so the two stay
- * in line. Every column is `flex: 1 1 0`, so flexbox holds a clashing day at
- * this floor and shares what is left equally among the rest. No measuring.
+ * Every day's CSS `min-width`, for the Týden columns and their chips alike, so
+ * the two stay in line. Every column and chip is `flex: 1 1 0`, so flexbox
+ * holds each day at its floor and shares what is left equally. No measuring.
  *
- * A day without a clash gets an explicit 0: left at `auto`, a chip's label
- * would set its own minimum and drift out of line with the column.
- *
- * A clashing day wants `MIN_LANE_PX` per lane, but never more than its share
- * of the row by lanes (two lanes in a week of six lanes: 2/6), so on a 320px
- * phone, or with two clashing days, every lesson ends up equally wide and the
- * row never overflows. The gaps are taken at their widest for the same reason.
+ * - A day without a clash keeps its chip's width (`--wk-day`, `--wk-today`),
+ *   or its equal share where seven days leave less.
+ * - A clashing day wants `MIN_LANE_PX` per lane, but no more than its lanes'
+ *   fair share of the row (two lanes of six: 2/6), nor more than the other
+ *   days' floors leave. So on a 320px phone every lesson ends up about equally
+ *   wide, and the row never overflows.
  */
-export function dayMinWidth(lanes: number, weekLanes: number[]): string {
-  if (lanes <= 1) return '0px';
-  const total = weekLanes.reduce((sum, n) => sum + n, 0);
-  const gaps = Math.max(0, weekLanes.length - 1) * DAY_GAP_PX;
-  const share = (lanes / total).toFixed(4);
-  return `min(${lanes * MIN_LANE_PX}px, calc((100% - ${gaps}px) * ${share}))`;
-}
-
-/** Every day's `min-width`, for the Týden columns and their chips alike. */
 export function weekColumnMinWidths(
   lessons: BlockLesson[],
-  days: string[]
+  days: string[],
+  todayIso: string
 ): Record<string, string> {
   const lanes = dayLanes(lessons, days);
-  const all = days.map((iso) => lanes[iso] ?? 1);
-  return Object.fromEntries(days.map((iso) => [iso, dayMinWidth(lanes[iso] ?? 1, all)]));
+  const lanesOf = (iso: string) => lanes[iso] ?? 1;
+  const n = days.length;
+  const total = days.reduce((sum, iso) => sum + lanesOf(iso), 0);
+  const clashLanes = days.reduce((sum, iso) => sum + (lanesOf(iso) > 1 ? lanesOf(iso) : 0), 0);
+  const singles = days.filter((iso) => lanesOf(iso) === 1);
+  const plain = singles.filter((iso) => iso !== todayIso).length;
+  const floors = [
+    plain > 0 ? `${plain} * var(--wk-day)` : '',
+    singles.includes(todayIso) ? 'var(--wk-today)' : '',
+  ].filter(Boolean);
+  const row = `(100% - ${n - 1} * var(--wk-gap))`;
+  const rest = floors.length ? `(${row} - ${floors.join(' - ')})` : row;
+  const ratio = (a: number, b: number) => (a / b).toFixed(4);
+
+  return Object.fromEntries(
+    days.map((iso) => {
+      const l = lanesOf(iso);
+      if (l === 1) {
+        const floor = iso === todayIso ? 'var(--wk-today)' : 'var(--wk-day)';
+        return [iso, `min(${floor}, calc(${row} / ${n}))`];
+      }
+      const fair = `calc(${row} * ${ratio(l, total)})`;
+      const left = `calc(${rest} * ${ratio(l, clashLanes)})`;
+      return [iso, `min(${l * MIN_LANE_PX}px, ${fair}, ${left})`];
+    })
+  );
 }
 
 /** Percent from the top for the now-line, or null when it is not on this day. */

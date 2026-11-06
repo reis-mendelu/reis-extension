@@ -68,16 +68,15 @@ describe('CalendarScreen — Týden columns', () => {
   it('widens a day with a clash, column and chip alike, and only that day', () => {
     render(<CalendarScreen />);
     const column = (iso: string) =>
-      screen
-        .getAllByTestId('week-day-column')
-        .find((c) => c.getAttribute('data-day-iso') === iso)!;
+      screen.getAllByTestId('week-day-column').find((c) => c.getAttribute('data-day-iso') === iso)!;
     const chip = (iso: string) =>
       screen.getByTestId('day-strip').querySelector<HTMLElement>(`[data-day-iso="${iso}"]`)!;
 
     expect(column('2026-10-29').style.minWidth).toMatch(/^min\(88px/);
     expect(chip('2026-10-29').style.minWidth).toBe(column('2026-10-29').style.minWidth);
-    expect(column('2026-10-27').style.minWidth).toBe('0px');
-    expect(chip('2026-10-27').style.minWidth).toBe('0px');
+    // A plain day keeps its chip's width, and its chip says the same.
+    expect(column('2026-10-27').style.minWidth).toMatch(/^min\(var\(--wk-day\)/);
+    expect(chip('2026-10-27').style.minWidth).toBe(column('2026-10-27').style.minWidth);
   });
 
   it('lays the clash side by side, half the column each', () => {

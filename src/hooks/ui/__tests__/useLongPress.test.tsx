@@ -109,3 +109,26 @@ describe('useLongPress', () => {
     expect(onLong).not.toHaveBeenCalled();
   });
 });
+
+// CDP touch, 2026-11-06: the hold opened a sheet under the finger, the lift's
+// click landed on the sheet's backdrop and closed it again.
+describe('useLongPress — the click after a hold lands elsewhere', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('swallows it wherever it lands', () => {
+    vi.useFakeTimers();
+    const onElsewhere = vi.fn();
+    const { getByTestId } = render(
+      <>
+        <Probe onLong={vi.fn()} />
+        <button data-testid="backdrop" onClick={onElsewhere} />
+      </>
+    );
+    fireEvent.pointerDown(getByTestId('t'), { clientX: 0, clientY: 0 });
+    act(() => void vi.advanceTimersByTime(700));
+    fireEvent.click(getByTestId('backdrop'));
+    expect(onElsewhere).not.toHaveBeenCalled();
+    fireEvent.click(getByTestId('backdrop'));
+    expect(onElsewhere).toHaveBeenCalledOnce();
+  });
+});

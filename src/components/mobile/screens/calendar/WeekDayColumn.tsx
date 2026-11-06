@@ -10,7 +10,7 @@ export interface WeekDayColumnProps {
   index: number;
   lessons: BlockLesson[];
   range: HourRange;
-  /** The column's `min-width` (dayMinWidth), the same as its chip's above. */
+  /** The column's `min-width` (weekColumnMinWidths), the same as its chip's above. */
   minWidth: string;
   holiday: string | null;
   isToday: boolean;

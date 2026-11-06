@@ -161,7 +161,8 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
                     rather than the colored type token, so the title reads black on the
                     light green/blue/red card tints regardless of theme. */
           <div
-            className={`font-semibold text-content-primary flex-shrink-0 truncate ${hasHideMenu ? 'pr-8' : ''}`}
+            // In a clash the code is the card ("MA"): no pr-8, which cut it to "M…".
+            className={`font-semibold text-content-primary flex-shrink-0 truncate ${hasHideMenu && !isCompact ? 'pr-8' : ''}`}
           >
             {courseTitle}
           </div>
