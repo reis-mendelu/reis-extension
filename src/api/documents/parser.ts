@@ -9,6 +9,8 @@ import { folderPageLinks } from './folderPagination';
 export function parseServerFiles(html: string): {
   files: ParsedFile[];
   paginationLinks: string[];
+  /** The folder has more pages than folderPagination.ts requests. */
+  paginationTruncated?: boolean;
   totalRecords?: number;
 } {
   const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -160,8 +162,8 @@ export function parseServerFiles(html: string): {
   // IS's page bar, read by `on=` (see folderPagination.ts). The label match
   // below is the fallback for a page without one; it misses a one-document
   // last page ("11") and every page past a windowed bar's "…".
-  const pageLinks = folderPageLinks(doc);
-  if (pageLinks) paginationLinks.push(...pageLinks);
+  const pageBar = folderPageLinks(doc);
+  if (pageBar) paginationLinks.push(...pageBar.links);
   else
     doc.querySelectorAll('a').forEach((a) => {
       const href = a.getAttribute('href');
@@ -181,5 +183,10 @@ export function parseServerFiles(html: string): {
     totalRecords = parseInt(totalMatch[3], 10);
   }
 
-  return { files, paginationLinks, totalRecords };
+  return {
+    files,
+    paginationLinks,
+    paginationTruncated: pageBar?.truncated ?? false,
+    totalRecords,
+  };
 }

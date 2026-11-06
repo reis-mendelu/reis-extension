@@ -64,4 +64,19 @@ describe('folder pagination', () => {
     // Page 1 is the folder URL itself; only page 2 is fetched in addition.
     expect(fetchWithAuth).toHaveBeenCalledTimes(2);
   });
+
+  it('reports a folder past the page cap as incomplete, not as everything', async () => {
+    // The 96-document bar with its →| arrow moved to on=150: 1,510 documents.
+    const huge = fixture('slozka-96.on0').replace(/on=9;/g, 'on=150;');
+    expect(parseServerFiles(huge).paginationTruncated).toBe(true);
+    expect(parseServerFiles(fixture('slozka-96.on0')).paginationTruncated).toBe(false);
+
+    vi.mocked(fetchWithAuth).mockImplementation(async (url) =>
+      String(url).includes('on=') ? new Response('<html></html>') : new Response(huge)
+    );
+    const listing = await fetchFolderListing(
+      'https://is.mendelu.cz/auth/dok_server/slozka.pl?ds=1;id=900002'
+    );
+    expect(listing.complete).toBe(false);
+  });
 });

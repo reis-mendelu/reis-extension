@@ -16,9 +16,10 @@ const MAX_PAGE_INDEX = 99;
  *  - disabled arrows still carry an `on=` (`data-active="false"`): on page 1
  *    "previous" is `on=-1`, and on the last page "next" points one past it.
  * So: the highest `on=` among live links is the last page, and every page up
- * to it is requested.
+ * to it is requested. Past the cap, `truncated` says so: a caller that treats
+ * the listing as the whole folder would otherwise read the rest as deleted.
  */
-export function folderPageLinks(doc: Document): string[] | null {
+export function folderPageLinks(doc: Document): { links: string[]; truncated: boolean } | null {
   const bar = doc.querySelector('ul.paginator');
   if (!bar) return null;
 
@@ -37,11 +38,11 @@ export function folderPageLinks(doc: Document): string[] | null {
       template = href;
     }
   }
-  if (!template) return [];
+  if (!template) return { links: [], truncated: false };
 
   const links: string[] = [];
   for (let n = 0; n <= Math.min(last, MAX_PAGE_INDEX); n++) {
     if (n !== current) links.push(template.replace(ON, `$1on=${n}`));
   }
-  return links;
+  return { links, truncated: last > MAX_PAGE_INDEX };
 }
