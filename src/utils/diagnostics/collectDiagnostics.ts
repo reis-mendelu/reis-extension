@@ -41,6 +41,22 @@ export interface DiagnosticsPayload {
      *  so it reads false while a retry is in flight. A flag only: the message
      *  is String(e), uncleaned. */
     syncFailed?: boolean;
+    // Optional: builds up to 5.6.0 send none of these. Each one is a count of
+    // what a "report missing" link covers (reportPrefill.ts), so a report of
+    // an empty list can be read against what the app actually held.
+    /** 'none' (never loaded), 'loading' or 'success'. A store read, like the
+     *  others: `syncLoaded` holds whether a sync answered for subjects. */
+    subjects?: string;
+    subjectsCount?: number;
+    /** Syllabuses held, and of those how many have neither text nor table —
+     *  what the syllabus tab shows as "no data". */
+    syllabusCount?: number;
+    syllabusEmpty?: number;
+    /** Zápisník records held; `null` ones are failed fetches, empty ones have
+     *  no section and no test. */
+    zaznamnikCount?: number;
+    zaznamnikFailed?: number;
+    zaznamnikEmpty?: number;
   };
 }
 
@@ -101,6 +117,27 @@ export async function collectDiagnostics(
         .filter(([, v]) => v)
         .map(([k]) => k),
       syncFailed: !!s.syncStatus?.error,
+      ...heldCounts(s),
     },
+  };
+}
+
+type Store = ReturnType<typeof useAppStore.getState>;
+
+/** Counts only. Never which subject: no key of these maps leaves here. */
+function heldCounts(s: Store) {
+  const syllabuses = Object.values(s.syllabuses?.cache ?? {});
+  const zaznamnik = Object.values(s.zaznamnik ?? {});
+  return {
+    subjects: s.subjectsLoading ? 'loading' : s.subjects ? 'success' : 'none',
+    subjectsCount: Object.keys(s.subjects?.data ?? {}).length,
+    syllabusCount: syllabuses.length,
+    syllabusEmpty: syllabuses.filter((y) => !y?.requirementsText && !y?.requirementsTable?.length)
+      .length,
+    zaznamnikCount: zaznamnik.length,
+    zaznamnikFailed: zaznamnik.filter((z) => z === null).length,
+    zaznamnikEmpty: zaznamnik.filter(
+      (z) => z !== null && !z.ph.sections.length && !z.vt.tests.length
+    ).length,
   };
 }

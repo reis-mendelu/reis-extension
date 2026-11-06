@@ -105,6 +105,17 @@ function DiagnosticsTable({ d }: { d: NonNullable<SuggestionAttachment['diagnost
           {d.sync.syncFailed ? ' · last run failed' : ''}
         </p>
       )}
+      {/* Absent up to 5.6.0. What the app held for each "report missing"
+          link: a store read, like the cache line — `answered` above says
+          whether a sync got subjects from IS this session. */}
+      {d.sync.subjects !== undefined && (
+        <p className="break-words">
+          subjects {d.sync.subjects} · {d.sync.subjectsCount ?? 0} subjects ·{' '}
+          {d.sync.syllabusCount ?? 0} syllabus ({d.sync.syllabusEmpty ?? 0} empty) ·{' '}
+          {d.sync.zaznamnikCount ?? 0} zaznamnik ({d.sync.zaznamnikFailed ?? 0} failed,{' '}
+          {d.sync.zaznamnikEmpty ?? 0} empty)
+        </p>
+      )}
       <ul className="mt-1 max-h-56 overflow-y-auto space-y-1">
         {d.entries.map((e, i) => (
           <li key={`${e.t}-${i}`} className="break-words">
