@@ -11,6 +11,7 @@ import { QuestionList } from '../../Questions/QuestionList';
 import { useQuestions } from '../../../hooks/useQuestions';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
+import { NotificationsOffBanner } from './NotificationsOffBanner';
 
 export interface NotificationsSheetProps {
   onClose: () => void;
@@ -95,6 +96,7 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
     <Sheet size="full" onClose={onClose}>
       <SheetHeader title={t('notifications.title')} onClose={onClose} />
       <div className="flex-1 overflow-y-auto px-4 pb-6 pt-1">
+        <NotificationsOffBanner />
         {/* The console's questions first, so they are on screen without
             scrolling however long the feed. */}
         <div className="pb-1 pt-1 empty:hidden">
