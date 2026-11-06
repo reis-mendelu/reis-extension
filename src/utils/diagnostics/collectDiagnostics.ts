@@ -124,20 +124,30 @@ export async function collectDiagnostics(
 
 type Store = ReturnType<typeof useAppStore.getState>;
 
-/** Counts only. Never which subject: no key of these maps leaves here. */
+/**
+ * Counts only. Never which subject: no key of these maps leaves here. Runs
+ * inside Send, so it must not throw: a record of an unexpected shape (one
+ * hydrated from an older build) drops these fields, never the report.
+ */
 function heldCounts(s: Store) {
-  const syllabuses = Object.values(s.syllabuses?.cache ?? {});
-  const zaznamnik = Object.values(s.zaznamnik ?? {});
-  return {
-    subjects: s.subjectsLoading ? 'loading' : s.subjects ? 'success' : 'none',
-    subjectsCount: Object.keys(s.subjects?.data ?? {}).length,
-    syllabusCount: syllabuses.length,
-    syllabusEmpty: syllabuses.filter((y) => !y?.requirementsText && !y?.requirementsTable?.length)
-      .length,
-    zaznamnikCount: zaznamnik.length,
-    zaznamnikFailed: zaznamnik.filter((z) => z === null).length,
-    zaznamnikEmpty: zaznamnik.filter(
-      (z) => z !== null && !z.ph.sections.length && !z.vt.tests.length
-    ).length,
-  };
+  try {
+    // The store holds one language per subject: createSyllabusSlice unwraps
+    // IndexedDB's { cz, en } before caching.
+    const syllabuses = Object.values(s.syllabuses?.cache ?? {});
+    const zaznamnik = Object.values(s.zaznamnik ?? {});
+    return {
+      subjects: s.subjectsLoading ? 'loading' : s.subjects ? 'success' : 'none',
+      subjectsCount: Object.keys(s.subjects?.data ?? {}).length,
+      syllabusCount: syllabuses.length,
+      syllabusEmpty: syllabuses.filter((y) => !y?.requirementsText && !y?.requirementsTable?.length)
+        .length,
+      zaznamnikCount: zaznamnik.length,
+      zaznamnikFailed: zaznamnik.filter((z) => z === null).length,
+      zaznamnikEmpty: zaznamnik.filter(
+        (z) => z !== null && !z?.ph?.sections?.length && !z?.vt?.tests?.length
+      ).length,
+    };
+  } catch {
+    return {};
+  }
 }

@@ -170,7 +170,7 @@ describe('an empty answer leaves a trace in the diagnostic log', () => {
       subjects: { version: 1, lastUpdated: 'now', data: { XX1: { subjectCode: 'XX1' } } },
       attendance: {},
       availablePeriods: [],
-      shape: { ...SHAPE_EMPTY, rows: 2, folderLinks: 1 },
+      shape: { ...SHAPE_EMPTY, rows: 2, syllabusLinks: 2, folderLinks: 1 },
     });
     const { syncAllData, log } = await loadSync();
     await syncAllData();
@@ -247,7 +247,9 @@ describe('an empty answer leaves a trace in the diagnostic log', () => {
       subjects: { version: 1, lastUpdated: 'now', data: { XX1: { subjectId: '1' } } },
       attendance: {},
       availablePeriods: [],
-      shape: { ...SHAPE_EMPTY, rows: 1, folderLinks: 1 },
+      // A real healthy list.pl: more rows than subjects (group rows), and
+      // every row with a syllabus link also has a folder link.
+      shape: { ...SHAPE_EMPTY, rows: 3, syllabusLinks: 1, folderLinks: 1 },
     });
     api.exams.mockResolvedValue([{ code: 'XX1', sections: [] }]);
     const { syncAllData, log } = await loadSync();

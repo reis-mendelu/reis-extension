@@ -9,6 +9,7 @@ const syncState = {
   error: null as string | null,
   subjects: { data: {} } as { data: Record<string, unknown> } | null,
   subjectsLoading: false,
+  extraZaznamnik: {} as Record<string, unknown>,
 };
 vi.mock('@/platform', () => ({ getPlatform: () => platform }));
 vi.mock('@/api/proxyClient', () => ({ executeAction: vi.fn() }));
@@ -35,6 +36,7 @@ vi.mock('@/store/useAppStore', () => ({
         XX1: { ph: { sections: [1] }, vt: { tests: [] } },
         XX2: { ph: { sections: [] }, vt: { tests: [] } },
         XX3: null,
+        ...syncState.extraZaznamnik,
       },
     }),
   },
@@ -57,6 +59,7 @@ describe('collectDiagnostics', () => {
     syncState.error = null;
     syncState.subjects = { data: {} };
     syncState.subjectsLoading = false;
+    syncState.extraZaznamnik = {};
   });
 
   it('merges app and content-script entries in time order', async () => {
@@ -117,6 +120,13 @@ describe('collectDiagnostics', () => {
     expect(JSON.stringify(out)).not.toMatch(/installId|https?:/);
     // Counts only: never which subject.
     expect(JSON.stringify(out)).not.toMatch(/XX\d/);
+  });
+
+  it('survives a zápisník record of an older shape', async () => {
+    syncState.extraZaznamnik = { XX4: {} };
+    const out = await collectDiagnostics({ fetchContent: async () => [] });
+    expect(out.sync.zaznamnikCount).toBe(4);
+    expect(out.sync.zaznamnikEmpty).toBe(2);
   });
 
   it('tells "no subjects yet" from "loading" from "answered, none"', async () => {
