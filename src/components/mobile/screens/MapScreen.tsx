@@ -5,6 +5,8 @@ import { MapCanvas } from '../../CampusMap/MapCanvas';
 import { OsmTileAccessBanner } from '../../CampusMap/OsmTileAccessBanner';
 import { EventLayer } from '../../CampusMap/EventLayer';
 import { SocietyPinLayer } from '../../CampusMap/SocietyPinLayer';
+import { LibraryPinLayer } from './map/library/LibraryPinLayer';
+import { LibraryTints } from './map/library/LibraryTints';
 import { roomLabel } from '../../CampusMap/mapHelpers';
 import type { MapSelection } from '../../../types/campusMap';
 import { FloorSwitcher } from './map/FloorSwitcher';
@@ -81,6 +83,8 @@ export function MapScreen() {
           here and does not affect this element's layout. */}
       <EventLayer />
       <SocietyPinLayer />
+      <LibraryPinLayer />
+      <LibraryTints />
       <FloorSwitcher />
       {/* marginTop carries --safe-top because this floating bar is the topmost
           element on the map screen and targetSdk 36 forces edge-to-edge: without

@@ -15,6 +15,7 @@ import { MapPanelBody } from './MapPanelBody';
 import { MapRailOpenButton } from './MapRailOpenButton';
 import { RoomPlaceNote } from './RoomPlaceNote';
 import { useForRoomSelection } from './useForRoomSelection';
+import { libraryOf } from './library/libraryOf';
 
 /**
  * The map panel on a tablet: a sidebar, not a sheet.
@@ -59,7 +60,10 @@ export function MapRail() {
   const selectedGardenPlace = selection?.kind === 'gardenPlace' ? selection.place : null;
   // A society pin likewise.
   const selectedSocietyPin = selection?.kind === 'societyPin' ? selection.pin : null;
-  const selectedCard = selectedEvent || selectedGardenPlace || selectedSocietyPin;
+  // The library's room list, or one of its rooms (also when tapped on the plan).
+  const selectedLibrary = libraryOf(selection);
+  const selectedCard =
+    selectedEvent || selectedGardenPlace || selectedSocietyPin || selectedLibrary;
   const forRoom = useForRoomSelection();
 
   // Picking a pin while the rail is closed has to bring it back — otherwise the
@@ -148,12 +152,19 @@ export function MapRail() {
         {selectedCard ? (
           <button
             type="button"
-            onClick={clearMapSelection}
+            onClick={
+              selectedLibrary?.featureId != null
+                ? () =>
+                    useAppStore.setState({
+                      mapSelection: { kind: 'library', group: selectedLibrary.group },
+                    })
+                : clearMapSelection
+            }
             className="-ml-1.5 flex min-w-0 flex-1 items-center gap-1 rounded-lg px-1.5 py-1 text-left hover:bg-base-200"
           >
             <ChevronLeft size={18} className="flex-shrink-0 text-base-content/40" />
             <span className="truncate font-display text-lg font-bold tracking-tight">
-              {t('mobile.map.tabEvents')}
+              {selectedLibrary ? t('mobile.library.title') : t('mobile.map.tabEvents')}
             </span>
           </button>
         ) : (
@@ -192,6 +203,7 @@ export function MapRail() {
           selectedEvent={selectedEvent}
           selectedGardenPlace={selectedGardenPlace}
           selectedSocietyPin={selectedSocietyPin}
+          selectedLibrary={selectedLibrary}
           flush
         />
       </div>

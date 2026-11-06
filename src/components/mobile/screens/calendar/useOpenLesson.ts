@@ -1,6 +1,7 @@
 import type { BlockLesson } from '../../../../types/calendarTypes';
 import { useAppStore } from '../../../../store/useAppStore';
 import { subjectSheetFor } from '../../../../utils/mobile/lessonActions';
+import { libraryBlockId } from '../../../../mobile/library/libraryBlock';
 
 /**
  * What tapping a lesson does — one answer for the day agenda's row and the
@@ -13,6 +14,12 @@ import { subjectSheetFor } from '../../../../utils/mobile/lessonActions';
 export function useOpenLesson(): (lesson: BlockLesson) => void {
   const pushSheet = useAppStore((s) => s.pushSheet);
   return (lesson) => {
+    // A library booking's block offers cancelling the booking, and only that.
+    const booking = libraryBlockId(lesson);
+    if (booking) {
+      pushSheet({ kind: 'libraryCancel', eventId: booking });
+      return;
+    }
     if (lesson.isCustom) return;
     pushSheet(subjectSheetFor(lesson));
   };

@@ -12,6 +12,8 @@ import { BulletinSheet } from './BulletinSheet';
 import { MenuSheet } from './MenuSheet';
 import { VenueSheet } from './VenueSheet';
 import { ImpersonationSheet } from './ImpersonationSheet';
+import { LibraryBookSheet } from './LibraryBookSheet';
+import { LibraryCancelSheet } from './LibraryCancelSheet';
 import { useEscapeClosesSheet } from './useEscapeClosesSheet';
 
 /**
@@ -60,6 +62,10 @@ export function SheetHost() {
             return <SearchSheet key={index} sheet={sheet} onClose={popSheet} />;
           case 'impersonation':
             return <ImpersonationSheet key={index} onClose={popSheet} />;
+          case 'libraryBook':
+            return <LibraryBookSheet key={index} sheet={sheet} onClose={popSheet} />;
+          case 'libraryCancel':
+            return <LibraryCancelSheet key={index} eventId={sheet.eventId} onClose={popSheet} />;
           default:
             return null;
         }

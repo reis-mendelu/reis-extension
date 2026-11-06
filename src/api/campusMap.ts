@@ -4,6 +4,7 @@ import { loggers } from '../utils/logger';
 import { logError } from '../utils/reportError';
 import { dropSuppressedRooms } from '../data/map/suppressedRooms';
 import { mergeRoomGroups } from '../data/map/mergedRooms';
+import { splitIcRoom } from '../data/map/libraryRooms';
 import type { RoomsCollection } from '../types/campusMap';
 
 const CDN_BASE_URL = 'https://cdn.jsdelivr.net/gh/reis-mendelu/reis-data@main';
@@ -27,7 +28,7 @@ async function markSynced(buildingId: number): Promise<void> {
 // What every return path hands out: cached, fresh and stale copies alike, since a
 // device can hold a 30-day-old floor plan that predates either fix.
 const cleaned = (rooms: RoomsCollection): RoomsCollection =>
-  mergeRoomGroups(dropSuppressedRooms(rooms));
+  splitIcRoom(mergeRoomGroups(dropSuppressedRooms(rooms)));
 
 export async function fetchBuildingRooms(buildingId: number): Promise<RoomsCollection | null> {
   const key = String(buildingId);
