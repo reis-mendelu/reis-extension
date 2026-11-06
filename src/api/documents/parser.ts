@@ -4,6 +4,7 @@ import { logError } from '../../utils/reportError';
 import type { ParsedFile, FileAttachment } from '../../types/documents';
 import { getColumnIndices } from './columnIndices';
 import { iconSysid } from './iconSysid';
+import { folderPageLinks } from './folderPagination';
 
 export function parseServerFiles(html: string): {
   files: ParsedFile[];
@@ -156,16 +157,22 @@ export function parseServerFiles(html: string): {
     });
   });
 
-  doc.querySelectorAll('a').forEach((a) => {
-    const href = a.getAttribute('href');
-    if (
-      href?.includes('slozka.pl') &&
-      !href.includes('download') &&
-      a.textContent?.trim().match(/^\d+[-–]\d+$/)
-    ) {
-      if (!paginationLinks.includes(href)) paginationLinks.push(href);
-    }
-  });
+  // IS's page bar, read by `on=` (see folderPagination.ts). The label match
+  // below is the fallback for a page without one; it misses a one-document
+  // last page ("11") and every page past a windowed bar's "…".
+  const pageLinks = folderPageLinks(doc);
+  if (pageLinks) paginationLinks.push(...pageLinks);
+  else
+    doc.querySelectorAll('a').forEach((a) => {
+      const href = a.getAttribute('href');
+      if (
+        href?.includes('slozka.pl') &&
+        !href.includes('download') &&
+        a.textContent?.trim().match(/^\d+[-–]\d+$/)
+      ) {
+        if (!paginationLinks.includes(href)) paginationLinks.push(href);
+      }
+    });
 
   // Try to find total records count (e.g. "1-10 z 24")
   const bodyText = doc.body.textContent || '';
