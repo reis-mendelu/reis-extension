@@ -1,0 +1,4 @@
+{
+  "_comment": "No submission box at all, so the Subjects panel can be measured without the Odevzdávárny card while the real snapshot has open boxes. Serve with: REIS_FIXTURE=noSubmissionBoxes npm run dev:web",
+  "odevzdavarny": []
+}

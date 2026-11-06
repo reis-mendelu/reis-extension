@@ -11,6 +11,7 @@ import { useSubjectsData } from './useSubjectsData';
 import { buildFallbackPlan } from './buildFallbackPlan';
 import { ReportMissingLink } from '../Feedback/ReportMissingLink';
 import { SubmissionBoxesSummary } from '../SubmissionBoxes/SubmissionBoxesSummary';
+import { splitBoxes } from '../../utils/submissionBoxes';
 
 interface SubjectsPanelProps {
   onOpenSubject: (
@@ -37,6 +38,11 @@ export function SubjectsPanel({
   const studyComparison = useAppStore((s) => s.studyComparison);
   const subjects = useAppStore((s) => s.subjects);
   const language = useAppStore((s) => s.language);
+  const boxes = useAppStore((s) => s.odevzdavarny);
+  const now = useAppStore((s) => s.now);
+  // The summary renders nothing without an open box; the layout below has to
+  // know that too, so it asks the same question the summary does.
+  const hasOpenBox = useMemo(() => splitBoxes(boxes, now.getTime()).open.length > 0, [boxes, now]);
   // Opens a box's subject on Záznamník, where the box is listed.
   const boxesSummary = (className: string) => (
     <SubmissionBoxesSummary
@@ -51,6 +57,16 @@ export function SubjectsPanel({
         )
       }
     />
+  );
+  // py-1.5 beside the average: its collapsed header is 34px, and so is this.
+  const studyPlanButton = (className: string) => (
+    <button
+      onClick={onOpenStudyPlan}
+      className={`${className} flex items-center justify-between gap-2 px-4 rounded-xl border border-base-300 bg-base-200 hover:bg-base-300 transition-colors text-sm text-base-content/70 font-medium`}
+    >
+      <span>{t('subjects.studyPlan')}</span>
+      <ChevronRight className="w-4 h-4 text-base-content/70" />
+    </button>
   );
   const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
@@ -120,9 +136,9 @@ export function SubjectsPanel({
         enrolledCredits={enrolledCredits}
       />
 
-      {/* Not shrink-0: below lg the card stacks under the average, and in a
-          short window this block is taller than the room left. It gives way
-          and scrolls rather than pushing Studijní plán off the bottom. */}
+      {/* Not shrink-0: in a short window this block is taller than the room
+          left. It gives way and scrolls rather than pushing Studijní plán off
+          the bottom. */}
       <div className="px-4 pt-3 pb-0 min-h-0 overflow-y-auto">
         <EnrolledNowSection
           plan={effectivePlan}
@@ -132,25 +148,39 @@ export function SubjectsPanel({
           onOpenSubject={onOpenSubject}
           onSearchSubject={onSearchSubject}
         />
-        {/* Beside the average from lg up, not under it: at 1280×800 a stacked
-            card pushed Studijní plán off the bottom. */}
-        <div className="mt-3 flex flex-col items-center gap-3 lg:flex-row lg:items-start lg:justify-center">
-          <div className="w-full max-w-xl lg:flex-1">
+        {/* An open box spans the width, like Aktuálně zapsáno above it; the
+            average and the plan split the row under it into equal halves.
+            Beside the average, the box left three cards of three heights and
+            widths. The row scrolls with the box: pinned below, the expanded
+            average cut the box down to its title at 1280×800. The plan sits at
+            the top of its half, so it stays in view while the average runs on. */}
+        {hasOpenBox ? (
+          <>
+            {boxesSummary('mt-3 w-full')}
+            <div
+              data-testid="subjects-bottom-row"
+              className="mt-3 pb-4 grid gap-3 md:grid-cols-2 md:items-start"
+            >
+              <StudyAveragesSection
+                studyStats={studyStats}
+                comparison={studyComparison}
+                className="w-full"
+              />
+              {studyPlanButton('w-full py-1.5 shadow-sm')}
+            </div>
+          </>
+        ) : (
+          <div className="mt-3">
             <StudyAveragesSection studyStats={studyStats} comparison={studyComparison} />
           </div>
-          {boxesSummary('w-full max-w-xl lg:flex-1')}
-        </div>
+        )}
       </div>
 
-      <div className="px-4 pt-3 pb-4 shrink-0">
-        <button
-          onClick={onOpenStudyPlan}
-          className="max-w-xl mx-auto w-full flex items-center justify-between gap-2 px-4 py-2 rounded-xl border border-base-300 bg-base-200 hover:bg-base-300 transition-colors text-sm text-base-content/70 font-medium"
-        >
-          <span>{t('subjects.studyPlan')}</span>
-          <ChevronRight className="w-4 h-4 text-base-content/70" />
-        </button>
-      </div>
+      {!hasOpenBox && (
+        <div className="px-4 pt-3 pb-4 shrink-0">
+          {studyPlanButton('max-w-xl mx-auto w-full py-2')}
+        </div>
+      )}
     </div>
   );
 }
