@@ -38,6 +38,14 @@ export const DiagnosticsPayloadSchema = z.object({
     firstSyncSettled: z.boolean().optional(),
     syncLoaded: z.array(z.string()).max(10).optional(),
     syncFailed: z.boolean().optional(),
+    // Added after 5.6.0, optional for the same reason.
+    subjects: z.string().optional(),
+    subjectsCount: z.number().optional(),
+    syllabusCount: z.number().optional(),
+    syllabusEmpty: z.number().optional(),
+    zaznamnikCount: z.number().optional(),
+    zaznamnikFailed: z.number().optional(),
+    zaznamnikEmpty: z.number().optional(),
   }),
 }) satisfies z.ZodType<DiagnosticsPayload>;
 
