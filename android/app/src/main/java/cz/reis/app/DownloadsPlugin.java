@@ -76,6 +76,34 @@ public class DownloadsPlugin extends Plugin {
         requestPermissionForAlias(NOTIFICATIONS, call, "notificationPermissionResult");
     }
 
+    /**
+     * The app's own page in system Settings → Notifications. Once Android 13+
+     * has refused to show its dialog (twice denied) or the student turned the
+     * switch off on any version, this page is the only place to turn them on
+     * again, and the app has no other way to send them there.
+     */
+    @PluginMethod
+    public void openNotificationSettings(PluginCall call) {
+        Intent intent;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            intent = new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, getContext().getPackageName())
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        } else {
+            // minSdk is 24 and the action above is API 26: Android 7 and 7.1 get
+            // the app's details page, which has the notifications switch.
+            intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    .setData(Uri.parse("package:" + getContext().getPackageName()))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        }
+        try {
+            getContext().startActivity(intent);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject(e.getClass().getSimpleName() + ": " + e.getMessage(), e);
+        }
+    }
+
     @PermissionCallback
     private void notificationPermissionResult(PluginCall call) {
         call.resolve(new JSObject().put("granted", hasNotificationPermission()));
