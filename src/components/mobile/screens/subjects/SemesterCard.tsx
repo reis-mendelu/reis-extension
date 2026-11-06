@@ -17,7 +17,8 @@ interface SemesterCardProps {
   /**
    * The exchange-student fallback, built from the subjects store rather than a
    * study plan (see useEffectiveStudyPlan). It knows names and codes only, so
-   * the card claims nothing else: no credits on the rows and no "done" count.
+   * the card claims nothing else: no "done" count (its rows carry the 999
+   * credits-unknown sentinel, which they already hide).
    */
   exchange?: boolean;
 }
@@ -107,12 +108,7 @@ export function SemesterCard({
       )}
       <div className="flex flex-col px-2 pb-2 pt-1">
         {subjects.map((s) => (
-          <SemesterRow
-            key={s.code}
-            subject={s}
-            onOpenSubject={onOpenSubject}
-            showCredits={!exchange}
-          />
+          <SemesterRow key={s.code} subject={s} onOpenSubject={onOpenSubject} />
         ))}
       </div>
     </div>

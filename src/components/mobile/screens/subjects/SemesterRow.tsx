@@ -81,12 +81,9 @@ function FailRate({ subject }: { subject: SubjectStatus }) {
 export function SemesterRow({
   subject,
   onOpenSubject,
-  showCredits = true,
 }: {
   subject: SubjectStatus;
   onOpenSubject: (subject: SubjectStatus) => void;
-  /** False for the exchange-student fallback, whose credits are unknown (0). */
-  showCredits?: boolean;
 }) {
   const { t, language } = useTranslation();
   const name = useCourseName(subject.code, subject.name);
@@ -124,7 +121,7 @@ export function SemesterRow({
         <FailRate subject={subject} />
       </span>
       <GradeChip subject={subject} />
-      {showCredits && isRealCredits(subject.credits) && (
+      {isRealCredits(subject.credits) && (
         <span className="flex-shrink-0 text-sm font-semibold text-base-content/80">
           {subject.credits} {creditWord}
         </span>

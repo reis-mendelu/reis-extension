@@ -11,7 +11,10 @@ export function buildFallbackPlan(subjects: SubjectsData, language: 'cs' | 'en')
     id: info.subjectId ?? '',
     code: info.subjectCode,
     name: (language === 'en' ? info.nameEn : info.nameCs) ?? info.displayName,
-    credits: 0,
+    // Unknown, not zero: student/list.pl has no credits. 999 is IS's own
+    // "credits unknown" sentinel (isRealCredits), so no row on either tree
+    // shows an invented "0 kr." and no total sums it.
+    credits: 999,
     type: '',
     isEnrolled: true,
     isFulfilled: false,
