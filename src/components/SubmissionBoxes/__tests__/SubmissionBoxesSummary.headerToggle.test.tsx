@@ -73,3 +73,36 @@ describe('SubmissionBoxesSummary header toggle', () => {
     }
   });
 });
+
+describe('SubmissionBoxesSummary header structure', () => {
+  beforeEach(() => {
+    useAppStore.setState({ now: NOW, language: 'cz' } as never);
+  });
+  afterEach(cleanup);
+
+  it('due rows stay outside the toggle, collapsed and expanded', () => {
+    useAppStore.setState({
+      odevzdavarny: [
+        box({ name: 'Rozpracovaný projekt', deadline: '08.10.2026 23:59', odevzdavarnaId: '1' }),
+        box({ name: 'Projects', deadline: '31.01.2027 04:27', odevzdavarnaId: '2' }),
+      ],
+    });
+    render(<SubmissionBoxesSummary onOpen={vi.fn()} />);
+    const toggle = screen.getByTestId('submission-boxes-toggle');
+    expect(toggle.contains(screen.getByTestId('submission-due-row'))).toBe(false);
+    expect(toggle.textContent).not.toContain('Nic k odevzdání');
+    fireEvent.click(toggle);
+    for (const row of screen.getAllByTestId('submission-open-row')) {
+      expect(toggle.contains(row)).toBe(false);
+    }
+  });
+
+  it('with nothing more to show, the header is no button at all', () => {
+    useAppStore.setState({
+      odevzdavarny: [box({ name: 'Rozpracovaný projekt', deadline: '08.10.2026 23:59' })],
+    });
+    render(<SubmissionBoxesSummary onOpen={vi.fn()} />);
+    expect(screen.queryByRole('button', { expanded: false })).toBeNull();
+    expect(screen.getByText('Odevzdávárny').closest('button')).toBeNull();
+  });
+});

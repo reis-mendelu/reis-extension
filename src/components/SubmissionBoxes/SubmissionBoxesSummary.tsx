@@ -69,16 +69,19 @@ export function SubmissionBoxesSummary({ onOpen, className = '' }: SubmissionBox
     >
       {canExpand ? (
         // The whole header is the disclosure, not only the count: a tap on the
-        // title or on "nothing due" did nothing. -mx/-my with matching padding
-        // reach the card's edges and keep a 44px target without making the
-        // card taller.
+        // title or on "nothing due" did nothing. Negative margins with matching
+        // padding reach the card's edges and keep a 44px target. Above rows it
+        // stops where the list starts (-mb-1.5 = the list's mt-1.5): reaching
+        // further would slide under the first row, which paints on top.
         <button
           type="button"
           data-testid="submission-boxes-toggle"
           aria-expanded={showAll}
           aria-controls={listId}
           onClick={() => setExpanded((v) => !v)}
-          className="group -mx-4 -my-3 block min-h-11 cursor-pointer w-[calc(100%+2rem)] rounded-2xl px-4 py-3 text-left"
+          className={`group -mx-4 -mt-3 block min-h-11 w-[calc(100%+2rem)] cursor-pointer rounded-2xl px-4 py-3 text-left ${
+            rows.length > 0 ? '-mb-1.5' : '-mb-3'
+          }`}
         >
           <span className="flex items-center justify-between gap-2">
             {title}
