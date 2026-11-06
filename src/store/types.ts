@@ -373,7 +373,7 @@ export interface HiddenItemsSlice {
   ) => Promise<void>;
   unhideCourse: (courseCode: string, type?: 'lecture' | 'seminar' | 'all') => Promise<void>;
   hideEvent: (id: string, courseCode: string, courseName: string, date: string) => Promise<void>;
-  unhideEvent: (id: string) => Promise<void>;
+  unhideEvent: (id: string, date?: string) => Promise<void>;
 }
 
 export interface TeachingWeekSlice {
@@ -534,6 +534,8 @@ export type MobileSheet =
   // inside CalendarScreen while its button shipped on every screen's header —
   // so it opened from one tab out of five.
   | { kind: 'bulletin' }
+  // A held lesson in Týden or Den: hide it, or all of its kind (#43).
+  | { kind: 'hideLesson'; lesson: BlockLesson }
   | { kind: 'confirm'; confirmId: string };
 
 export type MobileCalendarView = 'day' | 'week';
