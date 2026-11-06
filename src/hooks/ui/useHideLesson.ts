@@ -1,7 +1,9 @@
 import { toast } from 'sonner';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../useTranslation';
-import { useHintStatus } from './useHintStatus';
+import { HintService } from '../../services/hints/HintService';
+
+const HINT_ID = 'calendar_hide_first_time';
 
 /** What a hide needs of a lesson — a `CardLesson` and a `BlockLesson` both fit. */
 export interface HideableLesson {
@@ -27,18 +29,24 @@ export function canHideLesson(lesson: HideableLesson): boolean {
  * and the student has no way to know where from, but a toast on every hide
  * would be noise by the third one.
  *
+ * The hint's status is read when the hide HAPPENS, not when the menu mounts:
+ * a per-component `useHintStatus` starts as "seen" until IndexedDB answers, so
+ * a quick first hide skipped the hint, and every mounted card held its own
+ * copy of the answer (PR #638 review).
+ *
  * `name` is what the hide is RECORDED against, so the restore list reads right.
  */
 export function useHideLesson() {
   const { t } = useTranslation();
-  const { isSeen, markSeen } = useHintStatus('calendar_hide_first_time');
   const hideEvent = useAppStore((s) => s.hideEvent);
   const hideCourse = useAppStore((s) => s.hideCourse);
 
   const showHint = () => {
-    if (isSeen) return;
-    toast.info(t('calendar.hide.hint'), { duration: 5000 });
-    void markSeen();
+    void HintService.isSeen(HINT_ID).then((seen) => {
+      if (seen) return;
+      toast.info(t('calendar.hide.hint'), { duration: 5000 });
+      void HintService.markSeen(HINT_ID);
+    });
   };
 
   return {

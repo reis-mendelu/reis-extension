@@ -3,7 +3,9 @@ import type { BlockLesson, HiddenItems } from '../types/calendarTypes';
 /**
  * True when a lesson should be hidden from the calendar, per the user's
  * `hiddenItems` preferences. A lesson is hidden if:
- * - its `id` is in `hiddenItems.events`, or
+ * - its `id` AND `date` are in `hiddenItems.events` — IS reuses a lesson's id
+ *   across every week it repeats, so the id alone hid the whole series behind
+ *   "Skrýt tuto hodinu" (PR #638 review), or
  * - its course (`courseCode`) matches a `hiddenItems.courses` entry whose
  *   `type` is either `'all'`/unset, or matches the lesson's own type
  *   (derived from `isSeminar`: `'seminar'` when `'true'`, else `'lecture'`).
@@ -12,7 +14,7 @@ import type { BlockLesson, HiddenItems } from '../types/calendarTypes';
  * and mobile (`CalendarScreen`) so the predicate can't drift between them.
  */
 export function isLessonHidden(lesson: BlockLesson, hiddenItems: HiddenItems): boolean {
-  if (hiddenItems.events.some((e) => e.id === lesson.id)) return true;
+  if (hiddenItems.events.some((e) => e.id === lesson.id && e.date === lesson.date)) return true;
 
   return hiddenItems.courses.some(
     (c) =>

@@ -19,7 +19,9 @@ export function SettingsSheet({ onClose }: SettingsSheetProps) {
   return (
     <Sheet size="content" onClose={onClose}>
       <SheetHeader title={t('mobile.profile.settings')} onClose={onClose} />
-      <div className="pb-6">
+      {/* Scrolls: the hidden-lessons list has no length limit, and the sheet
+          caps its height (PR #638 review). */}
+      <div className="min-h-0 flex-1 overflow-y-auto pb-6">
         <SystemNotificationsRow />
         <AppearanceRows />
         {/* Where the first-hide hint sends a student (HideLessonSheet). */}

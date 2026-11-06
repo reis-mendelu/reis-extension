@@ -32,13 +32,11 @@ export function useLongPress(onLongPress: () => void, ms = 700) {
     unlisten.current?.();
     unlisten.current = null;
   };
-  useEffect(
-    () => () => {
-      cancel();
-      unswallow.current?.();
-    },
-    []
-  );
+  // Unmounting cancels a pending hold but NOT an armed swallow: the hold's own
+  // action may unmount this (holding the name swaps App for AdminConsole), and
+  // the lift's click would then land on whatever replaced it. The swallow ends
+  // itself on that click, the next press, or after a second (PR #638 review).
+  useEffect(() => cancel, []);
 
   const swallowNextClick = () => {
     const swallow = (e: globalThis.MouseEvent) => {
@@ -77,6 +75,10 @@ export function useLongPress(onLongPress: () => void, ms = 700) {
 
   return {
     onPointerDown: (e: PointerEvent) => {
+      // A second finger is a pinch, never a hold of its own — on this target
+      // or another one (PR #638 review). Its arrival cancels the first, via
+      // the window listener below.
+      if (e.pointerType === 'touch' && !e.isPrimary) return;
       cancel();
       unswallow.current?.();
       touch.current = e.pointerType === 'touch';

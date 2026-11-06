@@ -373,7 +373,7 @@ export interface HiddenItemsSlice {
   ) => Promise<void>;
   unhideCourse: (courseCode: string, type?: 'lecture' | 'seminar' | 'all') => Promise<void>;
   hideEvent: (id: string, courseCode: string, courseName: string, date: string) => Promise<void>;
-  unhideEvent: (id: string) => Promise<void>;
+  unhideEvent: (id: string, date?: string) => Promise<void>;
 }
 
 export interface TeachingWeekSlice {

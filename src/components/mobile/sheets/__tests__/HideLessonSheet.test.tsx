@@ -66,26 +66,33 @@ describe('HideLessonSheet', () => {
     );
   });
 
-  it('offers lectures for a lecture, and never the whole subject', () => {
+  it('hides every lecture for a lecture, and never offers the whole subject', async () => {
     render(<HideLessonSheet lesson={{ ...seminar, isSeminar: 'false' }} onClose={vi.fn()} />);
-    expect(screen.getByText('Skrýt všechny přednášky')).toBeTruthy();
     expect(screen.queryByText('Skrýt celý předmět')).toBeNull();
+    fireEvent.click(screen.getByText('Skrýt všechny přednášky'));
+    await waitFor(() =>
+      expect(useAppStore.getState().hiddenItems.courses).toEqual([
+        { courseCode: 'EBC-VF1', courseName: 'Veřejné finance 1', type: 'lecture' },
+      ])
+    );
   });
 
+  // The status is read at the moment of the hide, so a hide right after the
+  // sheet opens still gets the hint (PR #638 review).
   it('says once, the first time, where hidden lessons come back from', async () => {
     const { unmount } = render(<HideLessonSheet lesson={seminar} onClose={vi.fn()} />);
-    // The hint status loads from IndexedDB; wait until it has said "not seen".
-    await waitFor(() => expect(screen.getByText('Skrýt tuto hodinu')).toBeTruthy());
-    await new Promise((r) => setTimeout(r, 0));
     fireEvent.click(screen.getByText('Skrýt tuto hodinu'));
-    expect(toastInfo).toHaveBeenCalledWith(
-      'Uloženo! Skryté položky lze obnovit v Profil → Nastavení.',
-      expect.anything()
+    await waitFor(() =>
+      expect(toastInfo).toHaveBeenCalledWith(
+        'Uloženo! Skryté položky lze obnovit v Profil → Nastavení.',
+        expect.anything()
+      )
     );
+    await waitFor(() => expect(seen.value).toBe(true));
     unmount();
     render(<HideLessonSheet lesson={seminar} onClose={vi.fn()} />);
-    await new Promise((r) => setTimeout(r, 0));
     fireEvent.click(screen.getByText('Skrýt všechna cvičení'));
+    await new Promise((r) => setTimeout(r, 0));
     expect(toastInfo).toHaveBeenCalledTimes(1);
   });
 });

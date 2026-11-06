@@ -21,7 +21,13 @@ const seminar = {
 const block = (lesson: BlockLesson) => ({ lesson, top: 0, height: 20, lane: 0, lanes: 1 });
 
 const hold = (el: HTMLElement) => {
-  fireEvent.pointerDown(el, { pointerId: 1, pointerType: 'touch', clientX: 5, clientY: 5 });
+  fireEvent.pointerDown(el, {
+    pointerId: 1,
+    pointerType: 'touch',
+    isPrimary: true,
+    clientX: 5,
+    clientY: 5,
+  });
   act(() => void vi.advanceTimersByTime(700));
   fireEvent.pointerUp(el, { pointerId: 1, pointerType: 'touch' });
   fireEvent.click(el);

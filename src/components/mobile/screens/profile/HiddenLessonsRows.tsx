@@ -45,11 +45,11 @@ export function HiddenLessonsRows() {
       ))}
       {events.map((event) => (
         <Row
-          key={event.id}
+          key={`${event.id}-${event.date}`}
           name={event.courseName}
           detail={`${t('calendar.hide.single')} · ${Number(event.date.slice(6, 8))}. ${Number(event.date.slice(4, 6))}.`}
           restoreLabel={t('calendar.hide.restore')}
-          onRestore={() => void unhideEvent(event.id)}
+          onRestore={() => void unhideEvent(event.id, event.date)}
         />
       ))}
     </section>

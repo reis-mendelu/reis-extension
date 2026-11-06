@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { useState } from 'react';
 import { render, fireEvent, act } from '@testing-library/react';
 import { useLongPress } from '../useLongPress';
 
@@ -51,7 +52,12 @@ describe('useLongPress', () => {
     const { getByTestId } = render(<Probe onLong={vi.fn()} />);
     fireEvent.pointerDown(getByTestId('t'), { pointerType: 'mouse', clientX: 0, clientY: 0 });
     expect(fireEvent.contextMenu(getByTestId('t'))).toBe(true);
-    fireEvent.pointerDown(getByTestId('t'), { pointerType: 'touch', clientX: 0, clientY: 0 });
+    fireEvent.pointerDown(getByTestId('t'), {
+      pointerType: 'touch',
+      isPrimary: true,
+      clientX: 0,
+      clientY: 0,
+    });
     expect(fireEvent.contextMenu(getByTestId('t'))).toBe(false);
   });
 
@@ -130,5 +136,43 @@ describe('useLongPress — the click after a hold lands elsewhere', () => {
     expect(onElsewhere).not.toHaveBeenCalled();
     fireEvent.click(getByTestId('backdrop'));
     expect(onElsewhere).toHaveBeenCalledOnce();
+  });
+});
+
+// PR #638 review (cubic).
+describe('useLongPress — review findings', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('a second finger never starts a hold of its own', () => {
+    vi.useFakeTimers();
+    const onLong = vi.fn();
+    const { getByTestId } = render(<Probe onLong={onLong} />);
+    fireEvent.pointerDown(getByTestId('t'), {
+      pointerId: 2,
+      pointerType: 'touch',
+      isPrimary: false,
+      clientX: 0,
+      clientY: 0,
+    });
+    act(() => void vi.advanceTimersByTime(1000));
+    expect(onLong).not.toHaveBeenCalled();
+  });
+
+  it('keeps swallowing the lift when the hold unmounted its own target', () => {
+    vi.useFakeTimers();
+    const onElsewhere = vi.fn();
+    function Swap() {
+      const [held, setHeld] = useState(false);
+      return held ? (
+        <button data-testid="replacement" onClick={onElsewhere} />
+      ) : (
+        <Probe onLong={() => setHeld(true)} />
+      );
+    }
+    const { getByTestId } = render(<Swap />);
+    fireEvent.pointerDown(getByTestId('t'), { clientX: 0, clientY: 0 });
+    act(() => void vi.advanceTimersByTime(700));
+    fireEvent.click(getByTestId('replacement'));
+    expect(onElsewhere).not.toHaveBeenCalled();
   });
 });
