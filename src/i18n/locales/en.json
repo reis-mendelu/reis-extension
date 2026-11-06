@@ -502,7 +502,12 @@
     "tomorrow": "Tomorrow",
     "fromReis": "reIS",
     "sectionDeadlines": "Upcoming deadlines",
-    "sectionSocieties": "From societies"
+    "sectionSocieties": "From societies",
+    "systemLabel": "Phone notifications",
+    "systemOn": "On",
+    "systemOff": "Off",
+    "systemEnable": "Turn on",
+    "systemBanner": "Notifications are off, so you won't get new points or exam reminders."
   },
   "examReminders": {
     "title": "An exam opens soon",
@@ -1484,7 +1489,7 @@
     "profile": {
       "settings": "Settings",
       "atSchool": "At school",
-      "settingsSub": "Language, appearance"
+      "settingsSub": "Notifications, language, appearance"
     },
     "loadFailed": {
       "title": "Couldn't load your data",
