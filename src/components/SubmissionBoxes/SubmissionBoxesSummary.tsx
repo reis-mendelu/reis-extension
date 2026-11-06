@@ -53,39 +53,57 @@ export function SubmissionBoxesSummary({ onOpen, className = '' }: SubmissionBox
   const canExpand = open.length > due.length;
   const showAll = canExpand && expanded;
   const rows = showAll ? open : due;
+  const title = <span className="text-sm font-semibold">{L.t('odevzdavarny.title')}</span>;
+  // Part of the header, so a tap on it toggles too. Only ever collapsed:
+  // expanded lists every open box, and there is at least one.
+  const nothingDue = rows.length === 0 && (
+    <span className="mt-1 block text-xs text-base-content/70">
+      {L.t('odevzdavarny.nothingDueSoon')}
+    </span>
+  );
 
   return (
     <div
       data-testid="submission-boxes-summary"
       className={`rounded-2xl border border-base-300 bg-base-100 px-4 py-3 ${className}`}
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-semibold">{L.t('odevzdavarny.title')}</span>
-        {canExpand ? (
-          // -my/-mr keep a 44px target without making the header taller.
-          <button
-            type="button"
-            data-testid="submission-boxes-toggle"
-            aria-expanded={showAll}
-            aria-controls={listId}
-            onClick={() => setExpanded((v) => !v)}
-            className="-my-3 -mr-2 inline-flex min-h-11 items-center gap-0.5 rounded-lg px-2 text-xs font-semibold text-[var(--tone-primary)] hover:bg-base-200"
-          >
-            {L.openCount(open.length)}
-            <ChevronDown
-              size={14}
-              aria-hidden
-              className={`transition-transform ${showAll ? 'rotate-180' : ''}`}
-            />
-          </button>
-        ) : (
-          <span className="text-xs text-base-content/70">{L.openCount(open.length)}</span>
-        )}
-      </div>
+      {canExpand ? (
+        // The whole header is the disclosure, not only the count: a tap on the
+        // title or on "nothing due" did nothing. -mx/-my with matching padding
+        // reach the card's edges and keep a 44px target without making the
+        // card taller.
+        <button
+          type="button"
+          data-testid="submission-boxes-toggle"
+          aria-expanded={showAll}
+          aria-controls={listId}
+          onClick={() => setExpanded((v) => !v)}
+          className="group -mx-4 -my-3 block min-h-11 cursor-pointer w-[calc(100%+2rem)] rounded-2xl px-4 py-3 text-left"
+        >
+          <span className="flex items-center justify-between gap-2">
+            {title}
+            <span className="-my-1 -mr-2 inline-flex items-center gap-0.5 rounded-lg px-2 py-1 text-xs font-semibold text-[var(--tone-primary)] group-hover:bg-base-200">
+              {L.openCount(open.length)}
+              <ChevronDown
+                size={14}
+                aria-hidden
+                className={`transition-transform ${showAll ? 'rotate-180' : ''}`}
+              />
+            </span>
+          </span>
+          {nothingDue}
+        </button>
+      ) : (
+        <>
+          <div className="flex items-center justify-between gap-2">
+            {title}
+            <span className="text-xs text-base-content/70">{L.openCount(open.length)}</span>
+          </div>
+          {nothingDue}
+        </>
+      )}
       <div id={listId}>
-        {rows.length === 0 ? (
-          <p className="mt-1 text-xs text-base-content/70">{L.t('odevzdavarny.nothingDueSoon')}</p>
-        ) : (
+        {rows.length > 0 && (
           <ul className="mt-1.5">
             {rows.map((box, i) => {
               const code = boxCourseCode(box, subjects);
