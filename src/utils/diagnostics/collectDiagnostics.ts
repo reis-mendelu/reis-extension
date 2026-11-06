@@ -48,8 +48,10 @@ export interface DiagnosticsPayload {
      *  others: `syncLoaded` holds whether a sync answered for subjects. */
     subjects?: string;
     subjectsCount?: number;
-    /** Syllabuses held, and of those how many have neither text nor table —
-     *  what the syllabus tab shows as "no data". */
+    /** Syllabuses held in the store, and of those how many have neither text
+     *  nor table. Counts CACHED entries only: a subject whose syllabus never
+     *  arrived (a failed fetch) also shows "no data" and is not counted here —
+     *  `Sync.syllabus` in the entries counts those failures. */
     syllabusCount?: number;
     syllabusEmpty?: number;
     /** Zápisník records held; `null` ones are failed fetches, empty ones have

@@ -83,6 +83,8 @@ function Screenshot({ src }: { src: string }) {
 
 function DiagnosticsTable({ d }: { d: NonNullable<SuggestionAttachment['diagnostics']> }) {
   const time = (ms: number) => new Date(ms).toLocaleTimeString();
+  // Not reported is not zero: a missing count must not read as an empty list.
+  const count = (n: number | undefined) => n ?? '—';
   return (
     <div className="rounded-lg bg-base-200 p-2 text-[11px] leading-snug text-base-content/80 font-mono">
       <p className="break-words">
@@ -110,10 +112,10 @@ function DiagnosticsTable({ d }: { d: NonNullable<SuggestionAttachment['diagnost
           whether a sync got subjects from IS this session. */}
       {d.sync.subjects !== undefined && (
         <p className="break-words">
-          subjects {d.sync.subjects} · {d.sync.subjectsCount ?? 0} subjects ·{' '}
-          {d.sync.syllabusCount ?? 0} syllabus ({d.sync.syllabusEmpty ?? 0} empty) ·{' '}
-          {d.sync.zaznamnikCount ?? 0} zaznamnik ({d.sync.zaznamnikFailed ?? 0} failed,{' '}
-          {d.sync.zaznamnikEmpty ?? 0} empty)
+          subjects {d.sync.subjects} · {count(d.sync.subjectsCount)} subjects ·{' '}
+          {count(d.sync.syllabusCount)} syllabus ({count(d.sync.syllabusEmpty)} empty) ·{' '}
+          {count(d.sync.zaznamnikCount)} zaznamnik ({count(d.sync.zaznamnikFailed)} failed,{' '}
+          {count(d.sync.zaznamnikEmpty)} empty)
         </p>
       )}
       <ul className="mt-1 max-h-56 overflow-y-auto space-y-1">

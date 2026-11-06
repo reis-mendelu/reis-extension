@@ -179,6 +179,19 @@ describe('an empty answer leaves a trace in the diagnostic log', () => {
     expect(line?.msg).not.toContain('XX1');
   });
 
+  it('traces a row with a folder link but no syllabus link too', async () => {
+    api.subjects.mockResolvedValue({
+      subjects: { version: 1, lastUpdated: 'now', data: { XX1: { subjectCode: 'XX1' } } },
+      attendance: {},
+      availablePeriods: [],
+      shape: { ...SHAPE_EMPTY, rows: 3, syllabusLinks: 1, folderLinks: 2 },
+    });
+    const { syncAllData, log } = await loadSync();
+    await syncAllData();
+    const line = log.getDiagnostics().find((e) => e.ctx === 'Sync.subjects');
+    expect(line?.msg).toContain('folder links 2');
+  });
+
   it('records an empty exam list once per session, not on every run', async () => {
     const { syncAllData, log } = await loadSync();
     const { resetSyncTtl } = await import('../syncTtl');

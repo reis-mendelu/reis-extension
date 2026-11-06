@@ -227,6 +227,13 @@ describe('SuggestionsInbox', () => {
     expect(screen.queryByText(/syllabus/)).toBeNull();
   });
 
+  it('shows a count the build did not send as — rather than 0', () => {
+    openWithSync({ subjects: 'none' });
+    expect(
+      screen.getByText(/subjects none · — subjects · — syllabus \(— empty\)/)
+    ).toBeInTheDocument();
+  });
+
   /** Suggestions 41/42 had a subjects report with no subjects line at all. */
   it('shows what the app held for subjects, syllabus and zápisník', () => {
     openWithSync({

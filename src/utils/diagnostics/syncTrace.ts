@@ -49,10 +49,10 @@ export interface SubjectsPageShapeLike {
 }
 
 /**
- * Subjects: traced when the list is empty, or when more rows carried a
- * syllabus link than the list kept — the parser takes a row only when it has
- * BOTH a syllabus and a folder link, so that gap is where subjects silently go
- * missing. Not `rows`: a healthy list.pl has more `uis-hl-table` rows than
+ * Subjects: traced when the list is empty, or when more rows carried EITHER
+ * link than the list kept — the parser takes a row only when it has BOTH a
+ * syllabus and a folder link, so a row missing one of them is where subjects
+ * silently go missing. Not `rows`: a healthy list.pl has more `uis-hl-table` rows than
  * subjects (13 rows, 8 subjects, 8 of each link on a real account, November
  * 2026), so a row count alone would put this line in every report.
  */
@@ -62,7 +62,7 @@ export function traceSubjectsAnswer(
   periods: number,
   params: { studium?: string; obdobi?: string } | null | undefined
 ): void {
-  if (parsed > 0 && !(shape && shape.syllabusLinks > parsed)) return;
+  if (parsed > 0 && !(shape && Math.max(shape.syllabusLinks, shape.folderLinks) > parsed)) return;
   const page = shape
     ? ` from ${shape.rows} rows · tables ${shape.tables} · tmtab_1 ${yn(shape.table)}` +
       ` · syllabus links ${shape.syllabusLinks} · folder links ${shape.folderLinks}` +
