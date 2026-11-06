@@ -68,7 +68,7 @@
   "src/components/SubjectsPanel/SemesterSection.tsx",
   "src/components/SubjectsPanel/SubjectRow.tsx",
   "src/components/SubjectsPanel/ZaznamnikLine.tsx",
-  "src/components/SubjectsPanel/__tests__/buildFallbackPlan.test.ts",
+  "src/utils/studyPlan/__tests__/buildFallbackPlan.test.ts",
   "src/components/SubjectsPanel/utils.ts",
   "src/components/SuccessRate/TermBreakdown.tsx",
   "src/components/WeeklyCalendar/WeeklyCalendarDay.tsx",

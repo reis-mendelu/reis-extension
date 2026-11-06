@@ -183,7 +183,7 @@ export function SubjectsScreen() {
           {/* Under the average, and only where the plan is real: in the skeleton
             and error shells above there is nothing to open, and an exchange
             student's plan page would be empty. Průměr above renders only with
-            grades to average. */}
+            something to show: averages or a year-group standing. */}
           {!isFallback && (
             <div className="flex-shrink-0 overflow-hidden rounded-2xl border border-base-300 bg-base-100">
               {/* No icon and no sublabel: this row is the twin of the "Studijní

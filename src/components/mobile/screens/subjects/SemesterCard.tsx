@@ -87,9 +87,7 @@ export function SemesterCard({
       <div className="flex items-center gap-2.5 px-3.5 pb-0.5 pt-3">
         <span className="h-8 w-1 flex-shrink-0 rounded-full bg-primary" />
         <div className="flex flex-1 flex-col">
-          <span className="font-display text-base font-semibold text-base-content">
-            {title}
-          </span>
+          <span className="font-display text-base font-semibold text-base-content">{title}</span>
           <span className="text-xs text-base-content/60">{subtitle}</span>
         </div>
         {!exchange && (

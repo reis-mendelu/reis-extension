@@ -213,7 +213,7 @@ describe('SubjectsScreen — regular students never see the exchange caption', (
     expect(screen.getByText('Marketing')).toBeInTheDocument();
   });
 
-  it('shows no caption when the plan is cached but the subjects load first after the handshake', () => {
+  it("shows no caption after the handshake while the plan's IndexedDB read is still pending", () => {
     settled({ studyPlanLoaded: false });
     render(<SubjectsScreen />);
     expect(screen.queryByText(CAPTION)).not.toBeInTheDocument();
