@@ -13,6 +13,7 @@ import { useCourseName } from '../hooks/ui/useCourseName';
 import { useAppStore } from '../store/useAppStore';
 import { useTimeline } from '../hooks/useTimeline';
 import { CalendarEventCardHideMenu } from './CalendarEventCardHideMenu';
+import { canHideLesson } from '../hooks/ui/useHideLesson';
 import { CalendarEventCardOneLine } from './CalendarEventCardOneLine';
 import { TWO_LINE_BLOCK_MINUTES } from './WeeklyCalendar/utils';
 import { lessonPlace } from '../utils/lessonPlace';
@@ -116,7 +117,8 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
         ? getExamSectionName(courseName)
         : courseName;
   const hasDeadlineBadge = !!timeline && timeline.weeksLeft <= 4 && !lesson.isExam;
-  const hasHideMenu = !lesson.isCustom && !lesson.isExam && !isCompact;
+  // In a clash too (#43): parallel seminar options are what a student wants gone.
+  const hasHideMenu = canHideLesson(lesson);
 
   return (
     <div
@@ -159,7 +161,7 @@ export function CalendarEventCard({ lesson, onClick, language }: CalendarEventCa
                     rather than the colored type token, so the title reads black on the
                     light green/blue/red card tints regardless of theme. */
           <div
-            className={`font-semibold text-content-primary flex-shrink-0 truncate ${!lesson.isExam && !isCompact ? 'pr-8' : ''}`}
+            className={`font-semibold text-content-primary flex-shrink-0 truncate ${hasHideMenu ? 'pr-8' : ''}`}
           >
             {courseTitle}
           </div>

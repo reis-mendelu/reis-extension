@@ -1,12 +1,12 @@
 import type { BlockLesson } from '../../../../types/calendarTypes';
 import { organizeLessons, renderedBlockMinutes } from '../../../WeeklyCalendar/utils';
-import { toIso } from '../../../../utils/mobile/weekDays';
+import { toIso, toCompact } from '../../../../utils/mobile/weekDays';
 
 /**
  * Layout maths for the phone's week grid, kept pure so it can be tested
  * without a browser. Lane assignment is the desktop grid's own
- * `organizeLessons` — the same overlap rules on both trees — but the vertical
- * scale is not: the desktop draws a fixed 7–21 and scrolls, and a phone screen
+ * `organizeLessons` — the same overlap rules on both trees, side by side on
+ * both — but the vertical scale is not: the desktop draws a fixed 7–21 and scrolls, and a phone screen
  * must fit without scrolling, so the range here is fitted to the week.
  */
 
@@ -65,91 +65,89 @@ export interface PlacedBlock {
   /** Which lane of its clash, and how many lanes the clash has. */
   lane: number;
   lanes: number;
-  /**
-   * Percent of the block left uncovered on a phone, where a later clash is
-   * drawn over it (`blockBox`) from its own top down. Its name is clamped to
-   * this, so the lines do not run on underneath the block on top.
-   */
-  visible: number;
-  /**
-   * Paint order: by start, then lane. A later block is drawn over an earlier
-   * one it overlaps whatever their lanes — lane 0 is reused once it frees, so
-   * the lane said nothing about which block is on top (PR #618 review).
-   */
-  order: number;
-  /** Whether this block is drawn over an earlier one, so needs the ring. */
-  onTop: boolean;
 }
 
 /** One day's blocks, positioned in the fitted range. */
 export function placeDay(lessons: BlockLesson[], range: HourRange): PlacedBlock[] {
   const span = (range.end - range.start) * 60;
-  const placed = organizeLessons(lessons)
+  return organizeLessons(lessons)
     .lessons.map((l) => {
       const fromTop = minutesOf(l.startTime) - range.start * 60;
       const minutes = Math.min(l.renderedMinutes, span - fromTop);
-      const top = (Math.max(0, fromTop) / span) * 100;
-      const height = (minutes / span) * 100;
       return {
         lesson: l,
-        top,
-        height,
+        top: (Math.max(0, fromTop) / span) * 100,
+        height: (minutes / span) * 100,
         lane: l.row,
         lanes: l.maxColumns || 1,
-        visible: height,
-        order: 0,
-        onTop: false,
       };
     })
     .sort((a, b) => a.top - b.top || a.lane - b.lane);
-  placed.forEach((block, i) => (block.order = i));
-  // Overlap is decided in whole minutes, never in percentages: the float sum
-  // of a block's top and height can land a hair past the next block's top, and
-  // back-to-back lessons then read as a clash (release review: 731 such pairs).
-  const startOf = (b: PlacedBlock) => minutesOf(b.lesson.startTime);
-  const endOf = (b: PlacedBlock) =>
-    startOf(b) + renderedBlockMinutes(b.lesson.startTime, b.lesson.endTime, b.lesson.isExam);
-  for (const block of placed) {
-    for (const over of placed) {
-      // Drawn later and starting inside this block's span: it covers this
-      // block from its own top down.
-      const covers =
-        over.order > block.order && startOf(over) >= startOf(block) && startOf(over) < endOf(block);
-      if (!covers) continue;
-      block.visible = Math.min(block.visible, over.top - block.top);
-      over.onTop = true;
-    }
-  }
-  return placed;
 }
 
-/** How far each later lane of a clash is indented on a phone. */
-export const CASCADE_INDENT_PX = 12;
+/**
+ * Where a block sits across its column: a clash is split side by side, an
+ * equal share per lane, on every width — the desktop grid's rule.
+ *
+ * 5.6.0 cascaded a clash on a phone instead (the later lesson indented 12px
+ * and drawn over the earlier one), which left the earlier lesson a 12px sliver
+ * with one letter of its name (Dominik, 2026-11-06). Width for the lanes now
+ * comes from the day column itself — see `dayMinWidth`.
+ */
+export function blockBox(lane: number, lanes: number): { left: string; width: string } {
+  return { left: `${(lane / lanes) * 100}%`, width: `${100 / lanes}%` };
+}
 
 /**
- * Where a block sits across its column.
- *
- * A phone column is ~45–56px wide, and halving it for a clash left two ~20px
- * slivers that could show no text at all. So on a phone the later block is
- * indented and drawn on top — both keep a readable width — while the iPad,
- * with ~150px columns, splits them side by side as the desktop grid does.
+ * The narrowest a lane of a clash should be, in CSS px: a day column on a
+ * 320px phone is ~45px and still reads a syllable or two a line
+ * ("Eko-nome-trie"), so a lane gets about that rather than half of it.
  */
-export function blockBox(
-  lane: number,
-  lanes: number,
-  cascade: boolean
-): { left: string; width: string } {
-  if (cascade) {
-    if (lane === 0) return { left: '0px', width: '100%' };
-    // Up to three lanes: 12px steps, readable and familiar. Deeper clashes
-    // share 60% of the column between their lanes, so every lane keeps its
-    // own edge — a flat cap once put lanes 2 and 3 in the same box and hid
-    // one of four simultaneous lessons (PR #618 review).
-    const indent =
-      lanes <= 3 ? `${lane * CASCADE_INDENT_PX}px` : `${((lane * 60) / lanes).toFixed(1)}%`;
-    return { left: indent, width: `calc(100% - ${indent})` };
+export const MIN_LANE_PX = 44;
+
+/** The widest gap between two day columns (`gap-1.5`; 2px below 360px). */
+const DAY_GAP_PX = 6;
+
+/** How many lanes each day's widest clash needs; 1 for a day without one. */
+export function dayLanes(lessons: BlockLesson[], days: string[]): Record<string, number> {
+  const lanes: Record<string, number> = {};
+  for (const iso of days) {
+    const compact = toCompact(iso);
+    const placed = organizeLessons(lessons.filter((l) => l.date === compact)).lessons;
+    lanes[iso] = Math.max(1, ...placed.map((l) => l.maxColumns || 1));
   }
-  return { left: `${(lane / lanes) * 100}%`, width: `${100 / lanes}%` };
+  return lanes;
+}
+
+/**
+ * The CSS `min-width` of a day column — and of its chip above, so the two stay
+ * in line. Every column is `flex: 1 1 0`, so flexbox holds a clashing day at
+ * this floor and shares what is left equally among the rest. No measuring.
+ *
+ * A day without a clash gets an explicit 0: left at `auto`, a chip's label
+ * would set its own minimum and drift out of line with the column.
+ *
+ * A clashing day wants `MIN_LANE_PX` per lane, but never more than its share
+ * of the row by lanes (two lanes in a week of six lanes: 2/6), so on a 320px
+ * phone, or with two clashing days, every lesson ends up equally wide and the
+ * row never overflows. The gaps are taken at their widest for the same reason.
+ */
+export function dayMinWidth(lanes: number, weekLanes: number[]): string {
+  if (lanes <= 1) return '0px';
+  const total = weekLanes.reduce((sum, n) => sum + n, 0);
+  const gaps = Math.max(0, weekLanes.length - 1) * DAY_GAP_PX;
+  const share = (lanes / total).toFixed(4);
+  return `min(${lanes * MIN_LANE_PX}px, calc((100% - ${gaps}px) * ${share}))`;
+}
+
+/** Every day's `min-width`, for the Týden columns and their chips alike. */
+export function weekColumnMinWidths(
+  lessons: BlockLesson[],
+  days: string[]
+): Record<string, string> {
+  const lanes = dayLanes(lessons, days);
+  const all = days.map((iso) => lanes[iso] ?? 1);
+  return Object.fromEntries(days.map((iso) => [iso, dayMinWidth(lanes[iso] ?? 1, all)]));
 }
 
 /** Percent from the top for the now-line, or null when it is not on this day. */

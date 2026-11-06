@@ -8,12 +8,11 @@ import { toIso, toCompact, stepWeek, weekDays } from '../../../../utils/mobile/w
 import { useSwipeSteps } from '../../primitives/useSwipeSteps';
 import { useOpenWeekLesson } from './useOpenWeekLesson';
 import { useElementHeight } from './useElementHeight';
-import { WeekBlock } from './WeekBlock';
+import { WeekDayColumn } from './WeekDayColumn';
 import { weekHalloweenSpots, halloweenDays } from './weekHalloween';
 import { useIsHalloween } from '../../../../hooks/ui/useHalloween';
 import { SprawlingWeb } from '../../../halloween/HalloweenArt';
-import { WeekHalloweenMarks } from './WeekHalloweenMarks';
-import { weekHourRange, placeDay, nowOffset } from './weekLayout';
+import { weekHourRange, nowOffset } from './weekLayout';
 import { CALENDAR_BOTTOM_PAD } from './calendarBottomPad';
 
 export interface WeekGridProps {
@@ -22,6 +21,11 @@ export interface WeekGridProps {
   selectedIso: string;
   lessonDates: ReadonlySet<string>;
   onSelectDay: (iso: string) => void;
+  /**
+   * Each day's `min-width` (dayMinWidth): a day with a clash widens so its
+   * lessons stay readable side by side. The day chips above get the same.
+   */
+  columnMinWidths: Record<string, string>;
 }
 
 /**
@@ -42,10 +46,16 @@ export interface WeekGridProps {
  * damped offset. `touch-none` is safe here for the reason it is on the strip:
  * nothing inside scrolls.
  */
-export function WeekGrid({ lessons, selectedIso, lessonDates, onSelectDay }: WeekGridProps) {
+export function WeekGrid({
+  lessons,
+  selectedIso,
+  lessonDates,
+  onSelectDay,
+  columnMinWidths,
+}: WeekGridProps) {
   const { language } = useTranslation();
   const now = useAppStore((s) => s.now);
-  const cascade = !useWideViewport();
+  const wide = useWideViewport();
   const bottomPad = CALENDAR_BOTTOM_PAD;
   const openLesson = useOpenWeekLesson();
   const swipeRef = useRef<HTMLDivElement>(null);
@@ -133,51 +143,23 @@ export function WeekGrid({ lessons, selectedIso, lessonDates, onSelectDay }: Wee
             className="absolute inset-x-0 border-t border-base-content/10"
           />
         ))}
-        {days.map((iso) => {
-          const holiday = getCzechHoliday(
-            new Date(`${iso}T00:00:00`),
-            language === 'en' ? 'en' : 'cz'
-          );
-          const dayLessons = weekLessons.filter((l) => l.date === toCompact(iso));
-          const nowAt = nowOffset(now, iso, range);
-          return (
-            <div
-              key={iso}
-              // Where a spread lands in Den (usePinchView's dayIsoAt).
-              data-day-iso={iso}
-              title={holiday ?? undefined}
-              // Today's column is washed so "where is today" is answered at a
-              // glance in every week view; a holiday is washed red, as its
-              // chip's dot is.
-              className={`relative flex-1 rounded-lg ${
-                holiday ? 'bg-error/10' : iso === todayIso ? 'bg-primary/10' : ''
-              }`}
-            >
-              {placeDay(dayLessons, range).map((block) => (
-                <WeekBlock
-                  key={block.lesson.id}
-                  block={block}
-                  cascade={cascade}
-                  gridPx={gridPx}
-                  onOpen={openLesson}
-                />
-              ))}
-              {halloween && (
-                <WeekHalloweenMarks iso={iso} spots={spots} spiderThread={spiderThread} />
-              )}
-              {nowAt !== null && (
-                <div
-                  data-testid="week-now-line"
-                  style={{ top: `${nowAt}%` }}
-                  className="pointer-events-none absolute -left-1 right-0 z-20 flex -translate-y-1/2 items-center"
-                >
-                  <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-error" />
-                  <span className="h-0.5 flex-1 bg-error" />
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {days.map((iso, index) => (
+          <WeekDayColumn
+            key={iso}
+            iso={iso}
+            index={index}
+            lessons={weekLessons.filter((l) => l.date === toCompact(iso))}
+            range={range}
+            minWidth={columnMinWidths[iso] ?? '0px'}
+            holiday={getCzechHoliday(new Date(`${iso}T00:00:00`), language === 'en' ? 'en' : 'cz')}
+            isToday={iso === todayIso}
+            nowAt={nowOffset(now, iso, range)}
+            wide={wide}
+            gridPx={gridPx}
+            onOpen={openLesson}
+            halloween={halloween ? { spots, spiderThread } : null}
+          />
+        ))}
       </div>
       <div className="w-8 flex-shrink-0" />
     </div>

@@ -23,6 +23,11 @@ export interface DayChipsProps {
    * day is the choice to look at it (spec 2026-10-30, decision 4).
    */
   onOpenDay?: (iso: string) => void;
+  /**
+   * Týden only: each chip's `min-width`, the same as its column's below, so a
+   * day widened for a clash keeps its chip over it (weekLayout's dayMinWidth).
+   */
+  columnMinWidths?: Record<string, string>;
 }
 
 /**
@@ -54,6 +59,7 @@ export function DayChips({
   lessonDates,
   view = 'day',
   onOpenDay,
+  columnMinWidths,
 }: DayChipsProps) {
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
@@ -152,6 +158,7 @@ export function DayChips({
               showDot={view === 'day'}
               holidayWord={view === 'week' ? t('mobile.calendar.holidayShort') : undefined}
               onClick={view === 'day' ? () => onSelect(iso) : onOpenDay && (() => onOpenDay(iso))}
+              minWidth={columnMinWidths?.[iso]}
             />
           );
         })}

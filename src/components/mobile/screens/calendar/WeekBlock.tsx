@@ -7,11 +7,12 @@ import { lessonDisplayName } from '../../../../utils/courseDisplayName';
 import { lessonPlace } from '../../../../utils/lessonPlace';
 import { eventStyles } from './eventStyles';
 import { blockBox, nameLines, type PlacedBlock } from './weekLayout';
+import { useHoldToHide } from './useHoldToHide';
 
 export interface WeekBlockProps {
   block: PlacedBlock;
-  /** Phone columns cascade a clash; iPad columns split it (see `blockBox`). */
-  cascade: boolean;
+  /** An iPad: its ~150px columns have room for the time row too. */
+  wide: boolean;
   /** The grid's height in px, for how many name lines fit. 0 before layout. */
   gridPx: number;
   onOpen: (lesson: BlockLesson) => void;
@@ -38,7 +39,7 @@ const RESERVED_PX = 16;
  * Same colours as the agenda row (`eventStyles`): fixed light tints in both
  * themes, so the ink is the fixed content-* tokens, not base-content.
  */
-export function WeekBlock({ block, cascade, gridPx, onOpen }: WeekBlockProps) {
+export function WeekBlock({ block, wide, gridPx, onOpen }: WeekBlockProps) {
   const { language } = useTranslation();
   const { lesson } = block;
   const nicknames = useAppStore((s) => s.courseNicknames);
@@ -48,16 +49,12 @@ export function WeekBlock({ block, cascade, gridPx, onOpen }: WeekBlockProps) {
     .label.replace(/\s*\([^)]*\)\s*$/, '')
     .trim();
   const styles = eventStyles(lesson);
-  const box = blockBox(block.lane, block.lanes, cascade);
-  // Clamped to the part a later clash leaves uncovered — there the room line is
-  // under the block on top, so only the padding is reserved.
-  const covered = block.visible < block.height;
-  // On an iPad clashes sit side by side, so nothing covers a block: its full
-  // height decides whether the time row fits (#622 review).
-  const blockPx = ((cascade ? block.visible : block.height) / 100) * gridPx;
-  const lines = cascade
-    ? nameLines((block.visible / 100) * gridPx, NAME_LINE_PX, covered ? 4 : RESERVED_PX)
-    : 2;
+  const box = blockBox(block.lane, block.lanes);
+  const hold = useHoldToHide(lesson);
+  const blockPx = (block.height / 100) * gridPx;
+  // A phone block shows as many whole lines of the name as fit above the room;
+  // the iPad's wider block wraps less and keeps two.
+  const lines = wide ? 2 : nameLines(blockPx, NAME_LINE_PX, RESERVED_PX);
   const time = `${lesson.startTime} – ${lesson.endTime}`;
   // The day, so the same lesson on two days does not announce the same: the
   // column it sits in has no name of its own (PR #618 review). "St 7. 10."
@@ -76,19 +73,15 @@ export function WeekBlock({ block, cascade, gridPx, onOpen }: WeekBlockProps) {
       type="button"
       aria-label={[name, day, time, room].filter(Boolean).join(', ')}
       onClick={() => onOpen(lesson)}
+      // A hold opens the hide menu (#43); see useHoldToHide.
+      {...hold}
       style={{
         top: `${block.top}%`,
         height: `${block.height}%`,
         left: box.left,
         width: box.width,
-        // Paint order by start (placeDay), not lane: a later block is on top.
-        zIndex: block.order + 1,
       }}
-      // A cascaded block is drawn over the one it clashes with; the ring in the
-      // screen's colour is what keeps the two edges apart.
-      className={`absolute flex flex-col overflow-hidden rounded-md border border-l-[3px] py-0.5 pl-[3px] pr-0.5 text-left ${styles.solid} ${styles.border} ${styles.rail} ${
-        block.onTop && cascade ? 'ring-2 ring-base-200' : ''
-      }`}
+      className={`absolute z-[1] flex flex-col overflow-hidden rounded-md border border-l-[3px] py-0.5 pl-[3px] pr-0.5 text-left ${styles.solid} ${styles.border} ${styles.rail}`}
     >
       <span
         lang={language === 'en' ? 'en' : 'cs'}
@@ -97,9 +90,7 @@ export function WeekBlock({ block, cascade, gridPx, onOpen }: WeekBlockProps) {
       >
         {name}
       </span>
-      {/* Under a cascaded clash the room line would show only as one letter in
-          the uncovered strip; the room is in the block on top's tap-through. */}
-      {room && !(cascade && covered) && (
+      {room && (
         // The code wins the width. In a ~45px phone column "Q01.48" did not fit
         // beside the pin and read "Q01…", so a phone drops the pin for a code
         // longer than four characters, and below 360px the code is a point
@@ -113,7 +104,7 @@ export function WeekBlock({ block, cascade, gridPx, onOpen }: WeekBlockProps) {
           <span className="whitespace-nowrap">{room}</span>
         </span>
       )}
-      {!cascade && (gridPx === 0 || blockPx >= IPAD_TIME_ROW_MIN_PX) && (
+      {wide && (gridPx === 0 || blockPx >= IPAD_TIME_ROW_MIN_PX) && (
         <span className="truncate text-[11px] leading-[14px] tabular-nums text-content-secondary">
           {time}
         </span>
