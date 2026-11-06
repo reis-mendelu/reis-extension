@@ -117,37 +117,61 @@ export function railPaddingPx(
 /** The floor column's own inset from the right edge, its `right-3`. */
 export const FLOOR_COLUMN_RIGHT_PX = 12;
 
+/** How far the floor column stands off the bottom on a touch screen, clear of
+ *  the sheet's peek and the floating BottomNav. FloorSwitcher's `bottom-[…]`. */
+export const FLOOR_COLUMN_BOTTOM_PX = 190;
+
+/** The gap the open rail keeps above the floor column — the column's own 12px
+ *  from the edge, turned on its side. */
+const RAIL_FLOOR_GAP_PX = 12;
+
 /**
  * Shorter than this and the screen is a phone on its side, not a tablet. The
  * tallest phone in landscape is ~440px; the shortest iPad, a mini in
  * landscape, is 744.
  */
-export const FLOOR_BESIDE_RAIL_MIN_HEIGHT = 600;
+export const RAIL_YIELDS_MIN_HEIGHT = 600;
 
 /**
- * Where the floor column stands from the right edge.
- *
- * Both float at the right: the rail from the top, capped at 55vh, and the
- * column 190px off the bottom. On an iPad in landscape (1194x834, 1024x768)
- * the two share a band of screen, and building Q's floors 5 to 2 sat under
- * the rail where no tap could reach them. So while the rail is open the column
- * moves to the rail's left edge, with the same 12px gap it keeps from the
- * screen edge — horizontally, because the column's height depends on how many
- * floors a building has and a rail capped to clear Q's would be a sliver.
- *
- * Phones keep the edge: in portrait there is no rail, and a phone turned
- * sideways was deliberately left as it was.
+ * The floor column's height: FloorStack's `p-1` (4px top and bottom), one
+ * `btn-xs` (24px) per row, `gap-1` (4px) between rows. A row is a floor, plus
+ * the 3D/2D switch when the building has a model. Building Q's eight floors
+ * are 228px, which is what the browser measures at 1080x810.
  */
-export function floorColumnRightPx(
-  viewportWidth: number,
-  viewportHeight: number,
-  railOpen: boolean,
-  railWidth: number
-): number {
-  if (!railOpen) return FLOOR_COLUMN_RIGHT_PX;
-  if (viewportWidth < RAIL_MIN_WIDTH) return FLOOR_COLUMN_RIGHT_PX;
-  if (viewportHeight < FLOOR_BESIDE_RAIL_MIN_HEIGHT) return FLOOR_COLUMN_RIGHT_PX;
-  return railWidth + RAIL_INSET_PX + FLOOR_COLUMN_RIGHT_PX;
+export function floorColumnHeightPx(rows: number): number {
+  if (rows <= 0) return 0;
+  return 8 + rows * 24 + (rows - 1) * 4;
+}
+
+/**
+ * The open rail's max-height.
+ *
+ * The rail floats from the top, capped at 55vh; the floor column stands at the
+ * right edge 190px off the bottom, where the phone keeps it. On an iPad in
+ * landscape (1080x810, 1194x834, 1024x768) the two share a band of that edge,
+ * and building Q's floors 5 to 2 sat under the rail where no tap could reach
+ * them.
+ *
+ * #473 answered that by moving the COLUMN to the rail's left edge whenever the
+ * rail was open, overlapping or not. That stood it in the middle of the map —
+ * on an iPad 8 in portrait 368px off the edge with 270px of empty screen
+ * between it and the rail. So the RAIL yields instead: while a building is
+ * open it stops 12px above the column and scrolls inside itself, which it
+ * already does past 55vh.
+ *
+ * `100%` is the map screen, the containing block of both. The rail's top is
+ * its `top-[calc(5rem_+_var(--safe-top))]`, the column's bottom its
+ * `bottom-[calc(190px_+_var(--safe-bottom))]`.
+ *
+ * `floorRows` is null when no column stands at the right edge: no building is
+ * open, or there is no touch screen (the Mac puts the column top-left). A
+ * phone on its side is too short for both and is left as it was.
+ */
+export function railMaxHeight(viewportHeight: number, floorRows: number | null): string {
+  if (floorRows === null || floorRows <= 0) return '55vh';
+  if (viewportHeight < RAIL_YIELDS_MIN_HEIGHT) return '55vh';
+  const below = FLOOR_COLUMN_BOTTOM_PX + floorColumnHeightPx(floorRows) + RAIL_FLOOR_GAP_PX;
+  return `min(55vh, calc(100% - 5rem - var(--safe-top, 0px) - var(--safe-bottom, 0px) - ${below}px))`;
 }
 
 export type FloorColumnPlacement =
@@ -156,24 +180,19 @@ export type FloorColumnPlacement =
 /**
  * Where the floor column stands, and how big its buttons are.
  *
+ * Every touch screen, phone or iPad, rail open or not: the right edge, where
+ * the phone has always kept it. The open rail makes room (`railMaxHeight`).
+ *
  * Without a touch screen it is the iPad app on a Mac: the phone tree, a mouse,
- * and a window around 1782x919 that the system draws at 0.825. The rail rule
- * above then put the column 368px off the right edge — in the middle of the
- * map, beside the building it belongs to — with 24px buttons that show as 20pt.
- * So there it goes under the search bar on the left, where the extension's map
- * already keeps it and nothing else on this screen lives, and takes btn-sm.
+ * and a window around 1782x919 that the system draws at 0.825. There it goes
+ * under the search bar on the left, where the extension's map already keeps
+ * it and nothing else on this screen lives, and takes btn-sm — 24px buttons
+ * show as 20pt there.
  *
  * `isTouch` is the store's `pointer: coarse`, the same test the Mac's visible
- * refresh button uses. Every touch screen keeps `floorColumnRightPx` as it was.
+ * refresh button uses.
  */
-export function floorColumnPlacement(
-  viewportWidth: number,
-  viewportHeight: number,
-  railOpen: boolean,
-  railWidth: number,
-  isTouch: boolean
-): FloorColumnPlacement {
+export function floorColumnPlacement(isTouch: boolean): FloorColumnPlacement {
   if (!isTouch) return { side: 'left', size: 'sm' };
-  const rightPx = floorColumnRightPx(viewportWidth, viewportHeight, railOpen, railWidth);
-  return { side: 'right', rightPx, size: 'xs' };
+  return { side: 'right', rightPx: FLOOR_COLUMN_RIGHT_PX, size: 'xs' };
 }
