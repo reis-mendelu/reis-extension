@@ -44,7 +44,8 @@ function finish(code, message) {
 }
 child.on('exit', (code) => finish(1, `server exited with ${code}`));
 toServer.on('error', (e) => finish(1, `server stdin: ${e.message}`));
-const timer = setTimeout(() => finish(1, 'timed out'), 90000);
+// Live runs download real files (mendelu_read_file), which takes longer.
+const timer = setTimeout(() => finish(1, 'timed out'), live ? 300000 : 90000);
 
 let buf = '';
 const waiters = new Map();
@@ -77,7 +78,52 @@ const tools = (await call('tools/list', {})).result.tools.map((t) => t.name).sor
 console.log('tools:', tools.length, tools.join(', '));
 let failed = tools.length !== 10;
 
+const json = async (name, args) => {
+  const r = await call('tools/call', { name, arguments: { ...args, response_format: 'json' } });
+  const text = r.result.content[0].text;
+  if (r.result.isError) throw new Error(text);
+  // A long document passes the character limit and the cut JSON no longer
+  // parses, but its kind comes before the text.
+  if (!text.includes('\n\n[truncated at ')) return JSON.parse(text);
+  return { kind: /"kind": "([^"]+)"/.exec(text)?.[1], truncated: text.length };
+};
+
+/**
+ * mendelu_read_file takes a downloadUrl, so `{}` proves nothing. IS file names
+ * carry no extension, so read the student's own subject files in turn until
+ * one PDF and one DOCX have come back. Prints only the kind and the length of
+ * the text, never the text or a file name.
+ */
+async function readRealFiles() {
+  const MAX_READS = 25;
+  const read = new Map();
+  const errors = [];
+  let reads = 0;
+  outer: for (const s of await json('mendelu_subjects', {})) {
+    for (const f of await json('mendelu_subject_files', { code: s.subjectCode })) {
+      if ((read.has('pdf') && read.has('docx')) || reads >= MAX_READS) break outer;
+      reads++;
+      try {
+        const doc = await json('mendelu_read_file', { url: f.downloadUrl });
+        const chars = doc.truncated ?? (typeof doc.text === 'string' ? doc.text.length : 0);
+        if (doc.kind && !read.has(doc.kind)) read.set(doc.kind, chars);
+      } catch (e) {
+        errors.push(e.message.split('\n')[0]);
+      }
+    }
+  }
+  console.log(`mendelu_read_file: ${reads} files read, ${errors.length} refused`);
+  for (const [kind, chars] of read) console.log(`  ${kind}: ${chars} chars of text`);
+  if (errors.length) console.log(`  first refusal: ${errors[0]}`);
+  // A PDF is the case that matters; a DOCX only if the student has one.
+  return (read.get('pdf') ?? 0) > 0 && (!read.has('docx') || read.get('docx') > 0);
+}
+
 for (const name of live ? [...extraTools, 'mendelu_exams'] : []) {
+  if (name === 'mendelu_read_file') {
+    if (!(await readRealFiles())) failed = true;
+    continue;
+  }
   const r = await call('tools/call', { name, arguments: {} });
   const text = r.result.content[0].text;
   const summary = r.result.isError
