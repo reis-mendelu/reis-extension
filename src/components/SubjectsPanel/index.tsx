@@ -1,6 +1,5 @@
-import { useMemo, useState } from 'react';
 import { ChevronRight, Info } from 'lucide-react';
-import { useStudyPlan } from '@/hooks/useStudyPlan';
+import { useEffectiveStudyPlan } from '@/hooks/useEffectiveStudyPlan';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { SubjectsPanelHeader } from './SubjectsPanelHeader';
@@ -8,7 +7,6 @@ import { SubjectsPanelSkeleton } from './SubjectsPanelSkeleton';
 import { EnrolledNowSection } from './EnrolledNowSection';
 import { StudyAveragesSection } from './StudyAveragesSection';
 import { useSubjectsData } from './useSubjectsData';
-import { buildFallbackPlan } from './buildFallbackPlan';
 import { ReportMissingLink } from '../Feedback/ReportMissingLink';
 import { SubmissionBoxesSummary } from '../SubmissionBoxes/SubmissionBoxesSummary';
 import { splitBoxes } from '../../utils/submissionBoxes';
@@ -32,11 +30,9 @@ export function SubjectsPanel({
   onOpenStudyPlan,
 }: SubjectsPanelProps) {
   const { t } = useTranslation();
-  const plan = useStudyPlan();
   const studyPlanLoaded = useAppStore((s) => s.studyPlanLoaded);
   const studyStats = useAppStore((s) => s.studyStats);
   const studyComparison = useAppStore((s) => s.studyComparison);
-  const subjects = useAppStore((s) => s.subjects);
   const language = useAppStore((s) => s.language);
   const boxes = useAppStore((s) => s.odevzdavarny);
   const now = useAppStore((s) => s.now);
@@ -73,25 +69,10 @@ export function SubjectsPanel({
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
 
   // Erasmus/exchange students have no KontrolaPlanu, so the plan never
-  // materializes — fall back to the subjects store (student/list.pl).
-  const planUsable = !!plan && plan.blocks.some((b) => b.groups.some((g) => g.subjects.length > 0));
-  // The fallback must wait until the plan has actually settled (loaded, handshake
-  // resolved, not mid-sync) — otherwise regular students see the exchange caption
-  // flash during cold load, since the subjects store (Tier 1) populates before the
-  // study plan (Tier 2 microtask). Latch: background resyncs flip isSyncing every
-  // few minutes; once settled once, later isSyncing:true phases must not collapse
-  // the fallback back to a skeleton mid-session for Erasmus students.
-  const planSettled = studyPlanLoaded && (handshakeDone || handshakeTimedOut) && !isSyncing;
-  const [settledOnce, setSettledOnce] = useState(false);
-  if (planSettled && !settledOnce) setSettledOnce(true);
-  const gateOpen = planSettled || settledOnce;
-  const fallbackPlan = useMemo(() => {
-    if (!gateOpen || planUsable || !subjects || Object.keys(subjects.data).length === 0)
-      return null;
-    return buildFallbackPlan(subjects, language === 'en' ? 'en' : 'cs');
-  }, [gateOpen, planUsable, subjects, language]);
-
-  const effectivePlan = planUsable ? plan : fallbackPlan;
+  // materializes — fall back to the subjects store (student/list.pl). The
+  // fallback and the wait for the plan to settle are shared with the phone's
+  // SubjectsScreen; see useEffectiveStudyPlan.
+  const { plan: effectivePlan, planUsable } = useEffectiveStudyPlan();
   const { subjectSemesters, subjectToZameranis, zameraniProgress, failRates, enrolledCredits } =
     useSubjectsData(effectivePlan);
 
