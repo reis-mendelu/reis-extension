@@ -109,6 +109,9 @@ yourself and state the assumption in the PR, where Dominik can correct it.
   for IS Mendelu credentials: they stay on Dominik's laptop (CLAUDE.md). When a
   task needs real IS data (a parser change, a bug only real data shows), ask
   in a note for an HTML sample or for Dominik to check it locally.
+- Supabase is production: **read only**. Query it to understand data; any
+  schema or data change goes in as a migration in the PR
+  (`supabase/migrations/`, applied by the release), never written directly.
 
 ## Finishing: show it, then ask to merge
 
