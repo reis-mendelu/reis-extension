@@ -196,7 +196,8 @@ describe('SubjectsScreen — regular students never see the fallback list', () =
 
     act(() => useAppStore.setState({ studyPlanLoaded: true }));
     rerender(<SubjectsScreen />);
-    expect(screen.queryByRole('button', { name: /study plan/i })).not.toBeInTheDocument();
+    expect(screen.getByTestId('subjects-skeleton')).toBeInTheDocument();
+    expect(screen.queryByText('Marketing')).not.toBeInTheDocument();
 
     act(() =>
       useAppStore.setState({
