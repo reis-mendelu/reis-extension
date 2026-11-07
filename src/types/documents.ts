@@ -40,14 +40,21 @@ export interface FileAttachment {
   name: string;
   type: string;
   link: string;
+  /** The file's own name and extension, from its icon in IS's Přílohy cell. Absent in older caches. */
+  filename?: string;
 }
 
 export interface ParsedFile {
   subfolder: string;
+  /** Path-safe (validateFileName): + / : – ( ) stripped. Keys and saved files use it. */
   file_name: string;
+  /** The title as IS prints it, for display. Absent in older caches: fall back to file_name. */
+  title?: string;
   file_comment: string;
   author: string;
   date: string;
+  /** IS's Modifikace date: moves when the teacher replaces files, unlike `date`. */
+  modified?: string;
   files: FileAttachment[];
   language?: string; // Language of the fetch request
 }

@@ -16,14 +16,20 @@ import type { DownloadTick } from '../../hooks/ui/readBlobWithProgress';
 import { opensInReader } from './utils/isPdfFile';
 import type { PdfRowMeta } from './types';
 import type { FileRowHint } from '../../utils/contentDisposition';
+import { FileRowMeta, RowProgressBar } from './fileRowBits';
 
 export interface FileListItemProps {
   subFile: FileAttachment;
   /** Already carries the "(n)" suffix when a row holds several attachments. */
   displayName: string;
   date: string;
+  /** What the iPad reader caches by (changedOn); the row still shows `date`. */
+  readerDate?: string;
+  author?: string;
   comment?: string;
   isNew: boolean;
+  /** One of a document's several files: its name only; DocumentFiles shows the rest. */
+  compact?: boolean;
   isSelected: boolean;
   selectable: boolean;
   hasNote: boolean;
@@ -47,8 +53,11 @@ export function FileListItem({
   subFile,
   displayName,
   date,
+  readerDate = date,
+  author,
   comment,
   isNew,
+  compact = false,
   isSelected,
   selectable,
   hasNote,
@@ -78,7 +87,7 @@ export function FileListItem({
     if (e.ctrlKey || e.metaKey) {
       onToggleSelect(subFile.link, e);
     } else if (onViewPdf && opensInReader(subFile)) {
-      onViewPdf(subFile.link, { name: displayName, date });
+      onViewPdf(subFile.link, { name: displayName, date: readerDate });
     } else {
       onOpenFile(subFile.link, { name: displayName, type: subFile.type });
     }
@@ -135,24 +144,29 @@ export function FileListItem({
               </span>
             )}
           </div>
-          <div className="text-xs text-base-content/50 truncate flex items-center gap-2">
-            {isBusy ? (
-              // The tonal token, not raw `text-primary`: that measured 2.29:1
-              // on the light theme's white row (see DownloadProgress).
-              <span className="shrink-0 font-medium text-[var(--btn-tonal-primary)]">
-                {t(isDownloading ? 'course.file.downloading' : 'course.file.opening')}
-              </span>
-            ) : (
-              date && <span className="shrink-0">{date}</span>
-            )}
-            {comment && <span className="truncate">{comment}</span>}
-          </div>
+          {(!compact || isBusy) && (
+            <div className="text-xs text-base-content/70 truncate flex items-center gap-2">
+              {isBusy ? (
+                // The tonal token, not raw `text-primary`: that measured 2.29:1
+                // on the light theme's white row (see DownloadProgress).
+                <span className="shrink-0 font-medium text-[var(--btn-tonal-primary)]">
+                  {t(isDownloading ? 'course.file.downloading' : 'course.file.opening')}
+                </span>
+              ) : (
+                <FileRowMeta date={date} author={author} />
+              )}
+            </div>
+          )}
+          {/* Its own line: beside a date and an author on a phone it had no room. */}
+          {!compact && comment && (
+            <div className="line-clamp-2 text-xs text-base-content/70">{comment}</div>
+          )}
         </div>
 
         <FileRowActions
           subFile={subFile}
           displayName={displayName}
-          date={date}
+          date={readerDate}
           hasNote={hasNote}
           isExpanded={isExpanded}
           isOpening={isOpening}
@@ -161,22 +175,7 @@ export function FileListItem({
           onViewPdf={onViewPdf}
           onDownloadSingle={onDownloadSingle}
         />
-        {/* Along the row's bottom edge, not only in the 24px button: a spinner
-            that small was "not visible enough" (#372). Determinate when the
-            transport can count bytes against a Content-Length; indeterminate
-            when it cannot — Capacitor hands the whole file over at once, and IS
-            sends no length for the PDFs it generates. Hidden from assistive
-            tech: the ring in the button is the announced progressbar, and a
-            second one would read the same download out twice. */}
-        {isBusy && (
-          <progress
-            aria-hidden="true"
-            {...(downloadTick?.total
-              ? { value: downloadTick.loaded, max: downloadTick.total }
-              : {})}
-            className="progress progress-primary absolute inset-x-0 bottom-0 h-1 rounded-none"
-          />
-        )}
+        {isBusy && <RowProgressBar tick={downloadTick} />}
       </div>
 
       {NOTES_ENABLED && isExpanded && (

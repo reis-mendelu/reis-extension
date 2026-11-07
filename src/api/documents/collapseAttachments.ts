@@ -48,9 +48,11 @@ export function collapseAttachments(files: FileAttachment[]): FileAttachment[] {
 
     const preferred = isDirectDownload(file.link) ? file : kept;
     const other = preferred === file ? kept : file;
+    const filename = preferred.filename ?? other.filename;
     out[existing] = {
       ...preferred,
       type: preferred.type !== 'unknown' ? preferred.type : other.type,
+      ...(filename ? { filename } : {}),
     };
   }
 
