@@ -10,6 +10,7 @@ import { useExamActions } from '../../ExamPanel/useExamActions';
 import {
   buildRegisteredExams,
   buildOpenExams,
+  buildSignupExams,
   withNicknames,
   type RegisteredExam,
   type OpenExam,
@@ -24,6 +25,7 @@ import { NotYetOpenCard } from './exams/NotYetOpenCard';
 import { RegisteredCard } from './exams/RegisteredCard';
 import { OpenCard } from './exams/OpenCard';
 import { ExamsPullArea } from './exams/ExamsPullArea';
+import { SignupGroup } from './exams/SignupGroup';
 import { RefreshButton } from '../primitives/RefreshButton';
 import { ConfirmSheet } from '../sheets/ConfirmSheet';
 import { ReportMissingLink } from '../../Feedback/ReportMissingLink';
@@ -93,6 +95,10 @@ export function ExamsScreen() {
     () => withNicknames(buildOpenExams(exams, language), nicknames),
     [exams, language, nicknames]
   );
+  const signups = useMemo(
+    () => withNicknames(buildSignupExams(exams, language), nicknames),
+    [exams, language, nicknames]
+  );
   // "Otevřené termíny 2" has to mean two things that can be booked. A section
   // whose registration opens in December is not one of them — see
   // utils/mobile/examOpening.
@@ -113,12 +119,12 @@ export function ExamsScreen() {
   // used to be prefixed to is real information, so that survives on its own —
   // and where there is none, the row goes away and gives the title its width
   // back, which matters at 320px.
-  // A subject can be present and still yield no row: a "Zápis na cvičení"
-  // section is stripped but its subject kept, and a registered exam whose day
-  // is over is hidden. Keyed on `exams.length` alone, that rendered the header
-  // over a blank body (Návrhy #33) — so the empty state follows what renders.
+  // A subject can be present and still yield no row: a registered exam whose
+  // day is over is hidden. Keyed on `exams.length` alone, that rendered the
+  // header over a blank body (Návrhy #33) — so the empty state follows what
+  // renders.
   const nothingToShow =
-    registered.length + notYetOpen.length + bookable.length + blocked.length === 0;
+    registered.length + notYetOpen.length + bookable.length + blocked.length + signups.length === 0;
 
   const eyebrow = userSemester || undefined;
   const toggle = (id: string) => setExpandedId((cur) => (cur === id ? null : id));
@@ -295,6 +301,15 @@ export function ExamsScreen() {
                 ))}
               </ExamGroup>
             )}
+            {/* Last and folded: seminar-group signup is not an exam (report #37). */}
+            <SignupGroup
+              rows={signups}
+              now={now}
+              expandedId={expandedId}
+              onToggle={toggle}
+              processingSectionId={processingSectionId}
+              onRegister={handleRegisterRequest}
+            />
           </ExamsPullArea>
         </>
       )}

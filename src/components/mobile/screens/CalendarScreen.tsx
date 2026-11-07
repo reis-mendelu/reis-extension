@@ -24,8 +24,10 @@ import { RecentFilesStrip } from './calendar/RecentFilesStrip';
 import { WeekMenuButton } from './calendar/WeekMenuButton';
 import { CalendarSkeleton } from './calendar/CalendarSkeleton';
 import { useCalendarTitle } from './calendar/useCalendarTitle';
+import { useScreenSignal } from '../../../hooks/useScreenSignal';
 
 export function CalendarScreen() {
+  useScreenSignal('screen_calendar');
   const { t, language } = useTranslation();
   const { schedule } = useSchedule();
   const setMobileSelectedDay = useAppStore((s) => s.setMobileSelectedDay);
