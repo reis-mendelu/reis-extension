@@ -42,7 +42,7 @@ const DIGIT = /\p{N}/u;
 export function prettifyFileName(name: string): string {
   const stem = name.replace(EXTENSION, '');
   if (!stem.trim()) return name;
-  return spaceSeparators(stem, /([\p{L}\p{N}])([-.]+)(?=[\p{L}\p{N}])/gu, /^[-.\s]+/) || name;
+  return spaceSeparators(stem, /([\p{L}\p{N}])([-.]+)(?=[\p{L}\p{N}])/gu, true) || name;
 }
 
 /**
@@ -53,27 +53,26 @@ export function prettifyFileName(name: string): string {
  * between digits, a spaced dash and a plus stay. Display only.
  */
 export function prettifyTitle(title: string): string {
-  // A leading dot stays: ".NET" is a word in a title.
-  return spaceSeparators(title, /([\p{L}\p{N}])(-+)(?=[\p{L}\p{N}])/gu, /^[-\s]+/) || title;
+  // Its ends stay as typed: ".NET", "-1 as an eigenvalue".
+  return spaceSeparators(title, /([\p{L}\p{N}])(-+)(?=[\p{L}\p{N}])/gu, false) || title;
 }
 
-/** `_` as spaces, `between` matches as spaces unless they join two digits, ends trimmed. */
-function spaceSeparators(text: string, between: RegExp, leading: RegExp): string {
-  return (
-    text
-      .replace(/_+/g, ' ')
-      .replace(between, (match, before: string, seps: string, at: number, all: string) => {
-        const after = all.charAt(at + match.length);
-        const numeric = seps.length === 1 && DIGIT.test(before) && DIGIT.test(after);
-        return numeric ? match : `${before} `;
-      })
-      // Leftover separators at the very ends ("__P3__final--"); an abbreviation's
-      // dot ("č. 4") is inside the text and stays.
-      .replace(leading, '')
-      .replace(/[-\s]+$/, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-  );
+/**
+ * `_` as spaces, `between` matches as spaces unless they join two digits, and
+ * for a file name (`trimEnds`) leftover separators at its very ends
+ * ("__P3__final--"); an abbreviation's dot ("č. 4") is inside and stays.
+ */
+function spaceSeparators(text: string, between: RegExp, trimEnds: boolean): string {
+  const spaced = text
+    .replace(/_+/g, ' ')
+    .replace(between, (match, before: string, seps: string, at: number, all: string) => {
+      // A whole code point: a digit outside the BMP ("𝟚") is two UTF-16 units.
+      const after = String.fromCodePoint(all.codePointAt(at + match.length) ?? 0);
+      const numeric = seps.length === 1 && DIGIT.test(before) && DIGIT.test(after);
+      return numeric ? match : `${before} `;
+    });
+  const trimmed = trimEnds ? spaced.replace(/^[-.\s]+/, '').replace(/[-\s]+$/, '') : spaced;
+  return trimmed.replace(/\s+/g, ' ').trim();
 }
 
 /** A file name's extension in lower case, without its dot: "instrukce.MD" → "md". */

@@ -67,6 +67,11 @@ describe('prettifyFileName', () => {
     );
   });
 
+  it('reads a digit outside the BMP as one character', () => {
+    expect(prettifyFileName('𝟙-𝟚.pdf')).toBe('𝟙-𝟚');
+    expect(prettifyFileName('𝟙.𝟚.pdf')).toBe('𝟙.𝟚');
+  });
+
   it('collapses repeated separators and trims', () => {
     expect(prettifyFileName('__P3__final--.zip')).toBe('P3 final');
   });
@@ -113,6 +118,7 @@ describe('prettifyTitle', () => {
     expect(prettifyTitle('Cvičení 2.1a')).toBe('Cvičení 2.1a');
     expect(prettifyTitle('Prednaska01.pdf')).toBe('Prednaska01.pdf');
     expect(prettifyTitle('.NET_zaklady')).toBe('.NET zaklady');
+    expect(prettifyTitle('-1 as an eigenvalue')).toBe('-1 as an eigenvalue');
   });
 });
 

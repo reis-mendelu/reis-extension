@@ -26,9 +26,16 @@ export function FileName({ name, shown }: { name: string; shown?: string }) {
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const fit = () => setVisible(fitTwoLines(el, pretty));
+    let alive = true;
+    const fit = () => alive && setVisible(fitTwoLines(el, pretty));
     fit();
-    if (typeof ResizeObserver === 'undefined') return;
+    // Inter can land after the first fit, with wider glyphs at the same width.
+    void document.fonts?.ready.then(fit);
+    if (typeof ResizeObserver === 'undefined') {
+      return () => {
+        alive = false;
+      };
+    }
     let width = el.clientWidth;
     const observer = new ResizeObserver(() => {
       if (el.clientWidth === width) return;
@@ -36,7 +43,10 @@ export function FileName({ name, shown }: { name: string; shown?: string }) {
       fit();
     });
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      alive = false;
+      observer.disconnect();
+    };
   }, [pretty]);
 
   return (

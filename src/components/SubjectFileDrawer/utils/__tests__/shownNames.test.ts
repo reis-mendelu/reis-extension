@@ -38,6 +38,16 @@ describe('shownNames', () => {
     ).toEqual(['instrukce_v1.md', 'instrukce-v1.md', 'instrukce v1 (docx)']);
   });
 
+  it('checks the final labels again: an added extension can meet a real name', () => {
+    const shown = shownNames([
+      { name: 'report.pdf', kind: 'file', ext: 'pdf' },
+      { name: 'report.docx', kind: 'file', ext: 'docx' },
+      { name: 'report (pdf).txt', kind: 'file', ext: 'txt' },
+    ]);
+    expect(new Set(shown).size).toBe(3);
+    expect(shown[1]).toBe('report (docx)');
+  });
+
   it('leaves a duplicate without an extension as it is', () => {
     expect(
       shownNames([
