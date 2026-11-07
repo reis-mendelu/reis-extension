@@ -64,9 +64,18 @@ export function prettifyFileName(name: string): string {
  * "ig organizac…novani". The row picks `keep` by measuring (FileName.tsx).
  */
 export function middleCut(text: string, keep: number): string {
-  if (text.length <= keep) return text;
+  // By code point, so an emoji is never split into two broken halves.
+  const chars = Array.from(text);
+  if (chars.length <= keep) return text;
   if (keep < 2) return '…';
   const head = Math.ceil((keep - 1) * 0.6);
   const tail = keep - 1 - head;
-  return `${text.slice(0, head).trimEnd()}…${tail > 0 ? text.slice(text.length - tail).trimStart() : ''}`;
+  const end =
+    tail > 0
+      ? chars
+          .slice(chars.length - tail)
+          .join('')
+          .trimStart()
+      : '';
+  return `${chars.slice(0, head).join('').trimEnd()}…${end}`;
 }

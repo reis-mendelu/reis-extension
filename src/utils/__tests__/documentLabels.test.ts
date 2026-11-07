@@ -83,6 +83,12 @@ describe('middleCut', () => {
     expect(middleCut('ig harm kombinovani', 30)).toBe('ig harm kombinovani');
   });
 
+  it('never splits an emoji, at any length', () => {
+    const text = '📘 skripta 📗 cvičení 📕 zkouška 📙';
+    const lone = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:^|[^\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+    for (let keep = 2; keep <= 30; keep++) expect(middleCut(text, keep)).not.toMatch(lone);
+  });
+
   it('cuts the middle to the length asked, keeping both ends', () => {
     const cut = middleCut('ig organizacni informace kombinovani', 20);
     expect(cut.length).toBeLessThanOrEqual(20);
