@@ -106,6 +106,13 @@ describe('prettifyTitle', () => {
     expect(prettifyTitle('Prezentace – přednáška č. 4')).toBe('Prezentace – přednáška č. 4');
     expect(prettifyTitle('Odkaz na Seznam.cz')).toBe('Odkaz na Seznam.cz');
   });
+
+  it('never strips an extension-like ending from a title', () => {
+    // A lone file's row shows its document's title, which a teacher may type
+    // like a file name; prettifyFileName once cut these on that row.
+    expect(prettifyTitle('Cvičení 2.1a')).toBe('Cvičení 2.1a');
+    expect(prettifyTitle('Prednaska01.pdf')).toBe('Prednaska01.pdf');
+  });
 });
 
 describe('fileExtension', () => {
