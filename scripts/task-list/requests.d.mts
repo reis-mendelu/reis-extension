@@ -8,3 +8,4 @@ export function noteRequests(
   date: string,
   link?: string
 ): UpdatePayload;
+export function pragueDate(now?: Date): string;

@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { findTasks } from '../task-list/lib.mjs';
-import { doneRequests, noteRequests } from '../task-list/requests.mjs';
+import { doneRequests, noteRequests, pragueDate } from '../task-list/requests.mjs';
 
 // A made-up doc in the shape `read_doc` (Google Docs connector) returns.
 // Checklist state is NOT in this JSON — the Docs API omits it — so `done`
@@ -272,5 +276,76 @@ describe('write requests', () => {
       textStyle: { link: { url } },
       fields: 'link',
     });
+  });
+});
+
+// Findings from cubic's review of #650.
+describe('edge cases', () => {
+  const docOf = (...content: object[]) => ({
+    content: { revisionId: 'r', tabs: [{ documentTab: { body: { content } } }] },
+  });
+
+  it('counts a task done only when its title is struck, not a word inside it', () => {
+    const d = docOf(
+      para('Bucket list', { heading: 'HEADING_2' }),
+      para('rename old tab', { bullet: true })
+    );
+    expect(findTasks(d, '## Bucket list\n  - rename ~~old~~ tab')[0]!.done).toBe(false);
+    expect(findTasks(d, '## Bucket list\n  - ~~rename old tab~~')[0]!.done).toBe(true);
+  });
+
+  it('gives tasks whose titles share a prefix each their own done-state', () => {
+    const d = docOf(
+      para('Bucket list', { heading: 'HEADING_2' }),
+      para('fix map pins', { bullet: true }),
+      para('fix map', { bullet: true })
+    );
+    const md = '## Bucket list\n  - ~~fix map pins~~\n  - fix map';
+    expect(findTasks(d, md).map((t) => t.done)).toEqual([true, false]);
+  });
+
+  it('does not read a subheading inside the section as a reply', () => {
+    const d = docOf(
+      para('Bucket list', { heading: 'HEADING_2' }),
+      para('a task', { bullet: true }),
+      para('Later', { heading: 'HEADING_3' })
+    );
+    const [task] = findTasks(d, '## Bucket list\n  - a task\n### Later');
+    expect(task!.thread).toEqual([]);
+    expect(task!.status).toBe('new');
+  });
+
+  it('matches a struck task whose URL the export turned into a markdown link', () => {
+    const d = docOf(
+      para('Bucket list', { heading: 'HEADING_2' }),
+      para('✅ put https://x.example/ in the app (PR #1, merged)', { bullet: true })
+    );
+    const md =
+      '## Bucket list\n  - ~~✅ put~~ [~~https://x.example/~~](https://x.example/) ~~in the app~~ (PR \\#1, merged)';
+    expect(findTasks(d, md)[0]!.done).toBe(true);
+  });
+
+  it('dates notes in Prague, where a UTC date would still say yesterday', () => {
+    expect(pragueDate(new Date('2026-11-07T23:30:00Z'))).toBe('2026-11-08');
+    expect(pragueDate(new Date('2026-07-01T21:59:00Z'))).toBe('2026-07-01');
+  });
+
+  it('fails loudly when list --task names a task that does not exist', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'task-list-'));
+    const doc = join(dir, 'doc.json');
+    const md = join(dir, 'md.txt');
+    writeFileSync(
+      doc,
+      JSON.stringify(
+        docOf(para('Bucket list', { heading: 'HEADING_2' }), para('only one', { bullet: true }))
+      )
+    );
+    writeFileSync(md, '## Bucket list\n  - only one');
+    const cli = join(process.cwd(), 'scripts/task-list/cli.mjs');
+    expect(() =>
+      execFileSync('node', [cli, 'list', '--doc', doc, '--md', md, '--task', '9'], {
+        stdio: 'pipe',
+      })
+    ).toThrow(/No task #9/);
   });
 });

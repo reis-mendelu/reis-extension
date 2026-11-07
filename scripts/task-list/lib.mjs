@@ -32,12 +32,16 @@ export function unwrapMarkdown(json) {
 }
 
 function normalize(s) {
-  return s
-    .replace(/\\(.)/g, '$1')
-    .replace(/~~|\*\*|__|[<>]/g, '')
-    .replace(/[\s\u000b ]+/g, ' ')
-    .trim()
-    .toLowerCase();
+  return (
+    s
+      .replace(/\\(.)/g, '$1')
+      // A styled URL comes back as [text](url): keep the text, as the doc shows it.
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/~~|\*\*|__|[<>]/g, '')
+      .replace(/[\s\u000b ]+/g, ' ')
+      .trim()
+      .toLowerCase()
+  );
 }
 
 function headingLevel(paragraph) {
@@ -86,9 +90,13 @@ function markdownDoneMap(markdown, section) {
   const lines = markdown.split('\n');
   const levelOf = (l) => /^(#+)\s/.exec(l)?.[1].length ?? null;
   const textOf = (l) => l.replace(/^#+\s*/, '');
-  return sectionSlice(lines, section, levelOf, textOf)
-    .filter((l) => /^\s*-\s/.test(l))
-    .map((l) => ({ text: normalize(l.replace(/^\s*-\s/, '')), done: l.includes('~~') }));
+  return (
+    sectionSlice(lines, section, levelOf, textOf)
+      .filter((l) => /^\s*-\s/.test(l))
+      // Done = the item itself is struck (a ticked checklist box, or ✅ + strike),
+      // not a struck word somewhere inside it.
+      .map((l) => ({ text: normalize(l.replace(/^\s*-\s/, '')), done: /^\s*-\s+~~/.test(l) }))
+  );
 }
 
 function linesOf(text) {
@@ -126,12 +134,15 @@ export function findTasks(docJson, markdownJson, { section = 'Bucket list' } = {
   const uriOf = (id) =>
     inlineObjects[id]?.inlineObjectProperties?.embeddedObject?.imageProperties?.contentUri ?? null;
   const tasks = [];
+  const used = new Set();
   for (const p of sectionSlice(
     paragraphs(body),
     section,
     (p) => p.level,
     (p) => p.text
   )) {
+    // A subheading inside the section is structure, never a task or a reply.
+    if (p.level !== null) continue;
     const visible = p.text.replace(/\n$/, '');
     const words = visible.replaceAll(OBJECT, '').trim();
     if (!words) {
@@ -150,7 +161,11 @@ export function findTasks(docJson, markdownJson, { section = 'Bucket list' } = {
     }
     const titleLen = visible.split(SOFT_BREAK)[0].replace(/[\s\uFFFC]+$/, '').length;
     const key = normalize(title);
-    const match = md.find((m) => m.text.startsWith(key));
+    // One markdown line per task, in order: two titles sharing a prefix must
+    // not both take the first line's state.
+    const at = md.findIndex((m, i) => !used.has(i) && m.text.startsWith(key));
+    if (at !== -1) used.add(at);
+    const match = md[at];
     tasks.push({
       n: tasks.length + 1,
       title,

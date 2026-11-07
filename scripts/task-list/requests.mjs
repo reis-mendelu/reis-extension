@@ -48,3 +48,13 @@ export function noteRequests(task, revisionId, message, date, link) {
   }
   return { requests, writeControl: { requiredRevisionId: revisionId } };
 }
+
+/** Today's date in Prague, where Dominik reads the notes (YYYY-MM-DD). */
+export function pragueDate(now = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Prague',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now);
+}

@@ -13,7 +13,7 @@ import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { findTasks, unwrapDoc } from './lib.mjs';
-import { doneRequests, noteRequests } from './requests.mjs';
+import { doneRequests, noteRequests, pragueDate } from './requests.mjs';
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
@@ -105,7 +105,7 @@ async function downloadImages(selected, dir) {
 
 if (command === 'list') {
   let selected = values.all ? tasks : tasks.filter((t) => t.done !== true);
-  if (values.task) selected = selected.filter((t) => t.n === Number(values.task));
+  if (values.task) selected = [pick()].filter((t) => selected.includes(t));
   if (values.images)
     await downloadImages(
       selected.filter((t) => t.images.length),
@@ -133,7 +133,7 @@ if (command === 'list') {
     console.error('note needs --text');
     process.exit(2);
   }
-  const date = new Date().toISOString().slice(0, 10);
+  const date = pragueDate();
   console.log(
     JSON.stringify(
       noteRequests(pick(), unwrapDoc(docJson).revisionId, values.text, date, values.link),
