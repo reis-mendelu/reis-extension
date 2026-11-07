@@ -126,3 +126,26 @@ A later session finds it `answered` and reads the reply after the `∎`:
 
 A "y" in the doc is the go-ahead because only Dominik edits the doc; the
 Docs API cannot say who typed it. Never merge on anything less explicit.
+
+## One run (what the routine does)
+
+`routine-prompt.md` next to this file is the prompt the scheduled routine
+fires with: every 2 hours, 8–22h Prague, a fresh session in the
+`reis-extension` environment with the Google Drive connector. Each run, in
+this order, then stop:
+
+1. **Read** the doc (section 1) and `list` the Bucket list.
+2. **Merges first.** Every `answered` task whose last Claude note asked
+   "Mergnout?": `y` → merge and mark done; `n` → that task is this run's build.
+3. **Questions on everything new.** Triage every `new` task in one pass:
+   skip non-code silently, note the unclear ones. Re-read before each write.
+4. **Build at most one task**, in this priority: a rework after `n`, then an
+   `answered` question, then a stale `claimed` task (note over a day old, no PR
+   moving), then the oldest clear `new` task. Claim → build → PR → green →
+   review page → "Mergnout?" note.
+5. **PRs still on CI.** A PR this routine opened that is not green yet stays
+   claimed; the next run picks it up from step 4 (stale claim) once its CI is
+   done, or fixes it if red.
+
+One build per run keeps a run inside the usage budget. If a run dies mid-build,
+the claim note and the pushed branch are how the next run resumes.
