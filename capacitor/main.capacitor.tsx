@@ -94,6 +94,13 @@ async function boot(): Promise<void> {
   // copy step.
   await purgePlaintextToken();
 
+  // SPIKE (not for merging): the Google Calendar feasibility harness replaces the app.
+  if (import.meta.env.VITE_GOOGLE_SPIKE === '1') {
+    await SplashScreen.hide();
+    (await import('@/spike/googleCalendarSpike')).mountSpike();
+    return;
+  }
+
   // BEFORE ensureSession too, and for a related reason: ensureSession accepts
   // the stored token on SHAPE alone, and on iOS that token outlives the app —
   // the shared keychain group hands a reinstall the credential the previous

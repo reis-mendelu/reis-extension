@@ -230,6 +230,18 @@ const NOT_REQUESTED: Array<{ file: string; url: string }> = [
   { file: 'src/utils/osmTileIdentity.ts', url: 'https://github.com/reis-mendelu/reis-extension' },
 ];
 
+/**
+ * SPIKE ONLY (PR #627, never merged): the Google Calendar feasibility harness
+ * calls Google's REST API from a file gated behind VITE_GOOGLE_SPIKE. These two
+ * hosts stay undeclared everywhere else and are NOT disclosed in PRIVACY.md,
+ * because nothing on this branch ships. A real feature must declare them in
+ * ALLOWED_HOSTS, PRIVACY.md and privacy/disclosures.ts, and delete this entry.
+ */
+const SPIKE_ONLY: Array<{ file: string; host: string }> = [
+  { file: 'src/spike/googleCalendarSpike.ts', host: 'www.googleapis.com' },
+  { file: 'src/spike/googleCalendarSpike.ts', host: 'oauth2.googleapis.com' },
+];
+
 describe('no student data leaves the device', () => {
   it('contacts no undeclared third-party host', () => {
     const offences: string[] = [];
@@ -239,6 +251,7 @@ describe('no student data leaves the device', () => {
         if (NOT_REQUESTED.some((n) => n.file === f.path && f.text.startsWith(n.url, m.index)))
           continue;
         if (ALLOWED_HOSTS.some((a) => host === a || host.endsWith('.' + a))) continue;
+        if (SPIKE_ONLY.some((n) => n.file === f.path && n.host === host)) continue;
         offences.push(`${f.path}  ${host}`);
       }
     }
