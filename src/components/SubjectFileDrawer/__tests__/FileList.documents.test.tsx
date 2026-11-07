@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FileList } from '../FileList';
+import { FileNameText } from '../FileName';
 import type { FileGroup } from '../types';
 import type { ParsedFile } from '../../../types/documents';
 
@@ -61,12 +62,12 @@ function renderList(files: ParsedFile[], over: Record<string, unknown> = {}) {
 describe('FileList: a document with several files', () => {
   it('names each file by its own name, and the document once above them', () => {
     renderList([LECTURES]);
-    // By title: a file name is split by <wbr> and its glued extension.
+    // Shown readable (no extension, separators as spaces); the real name on hover.
     expect(screen.getByTitle('ig-03-fyzicka_vrstva.pdf')).toHaveTextContent(
-      'ig-03-fyzicka_vrstva.pdf'
+      /^ig 03 fyzicka vrstva$/
     );
-    expect(screen.getByTitle('eth_frame.pdf')).toHaveTextContent('eth_frame.pdf');
-    expect(screen.getByTitle('ig-04-Ethernet.pdf')).toHaveTextContent('ig-04-Ethernet.pdf');
+    expect(screen.getByTitle('eth_frame.pdf')).toHaveTextContent(/^eth frame$/);
+    expect(screen.getByTitle('ig-04-Ethernet.pdf')).toHaveTextContent(/^ig 04 Ethernet$/);
     expect(screen.getAllByText('ig-03 + ig-04 + ig-05')).toHaveLength(1);
     expect(screen.queryByText(/\(\d\)$/)).toBeNull();
   });
@@ -85,40 +86,31 @@ describe('FileList: a document with several files', () => {
 
 describe('FileList: long names', () => {
   /**
-   * A one-line truncate cut the extension first ("ig-c04-fyzicka_vrstva.p…").
-   * Names wrap to two lines now. The middle cut that keeps the extension needs
-   * layout, so it is measured in the browser (verify-ui), not here; the cut
-   * itself is unit-tested in documentLabels.test.ts.
+   * A one-line truncate cut "ig-c04-fyzicka_vrstva.pdf" mid-name. Names now
+   * read as text ("ig c04 fyzicka vrstva") and wrap to two lines; past two the
+   * middle is cut, which needs layout and is measured in the browser
+   * (verify-ui), while the cut itself is unit-tested in documentLabels.test.ts.
    */
-
-  it('wraps a name to two lines instead of cutting it on one', () => {
+  it('wraps a name to two lines between words instead of cutting it on one', () => {
     renderList([LECTURES]);
     const name = screen.getByTitle('ig-03-fyzicka_vrstva.pdf');
     expect(name.className).toContain('line-clamp-2');
+    expect(name.className).toContain('break-words');
     expect(name.className).not.toContain('truncate');
   });
 
-  it('breaks after separators, and never inside the extension', () => {
-    // break-all split "ig-PPS-org-inf-ZS2026.pdf" into "…ZS2026.p" / "df".
-    renderList([LECTURES]);
-    const name = screen.getByTitle('ig-03-fyzicka_vrstva.pdf');
-    expect(name.className).not.toContain('break-all');
-    // After "ig-", "03-" and "fyzicka_", the last one before the glued "vrstva.pdf".
-    expect(name.querySelectorAll('wbr')).toHaveLength(3);
-    const tail = name.querySelector('.whitespace-nowrap');
-    expect(tail?.textContent).toBe('vrstva.pdf');
-  });
-
-  it('breaks a title between words, not inside them', () => {
-    renderList([LONE]);
-    expect(screen.getByText('Harmonogram+organizacni informace').className).toContain(
-      'break-words'
+  it('gives screen readers the whole name when the visible one is cut', () => {
+    render(
+      <FileNameText shown="ig organizac…novani" full="ig organizacni informace kombinovani" />
     );
+    expect(screen.getByText('ig organizac…novani')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByText('ig organizacni informace kombinovani')).toHaveClass('sr-only');
   });
 
-  it('keeps the whole name on hover', () => {
-    renderList([LECTURES]);
-    expect(screen.getByTitle('eth_frame.pdf')).toHaveTextContent('eth_frame.pdf');
+  it('adds nothing for screen readers when the name is whole', () => {
+    const { container } = render(<FileNameText shown="eth frame" full="eth frame" />);
+    expect(container.textContent).toBe('eth frame');
+    expect(container.querySelector('.sr-only')).toBeNull();
   });
 });
 

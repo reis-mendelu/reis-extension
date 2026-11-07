@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { documentTitle, attachmentLabel, middleTruncate, nameBreaks } from '../documentLabels';
+import { documentTitle, attachmentLabel, prettifyFileName, middleCut } from '../documentLabels';
 
 const doc = { file_name: 'Harmonograminfo', title: 'Harmonogram+info' };
 
@@ -35,56 +35,59 @@ describe('attachmentLabel', () => {
   });
 });
 
-describe('middleTruncate', () => {
-  const LONG = 'Cviceni_5_Uzivatele_a_bezpecnost_postupne_s_ukazkami.ipynb';
-
-  it('leaves a name that fits alone', () => {
-    expect(middleTruncate('ig-c04-fyzicka_vrstva.pdf', 40)).toBe('ig-c04-fyzicka_vrstva.pdf');
+describe('prettifyFileName', () => {
+  /**
+   * Dominik, 2026-11-07: an extension at the end of every row and "_ | . | -"
+   * between words read oddly, and the badge on the right already says PDF. The
+   * shown name drops the extension and turns separators into spaces; the real
+   * name stays on hover, in the reader, in saved files and in reIS for Claude.
+   */
+  it('turns _ - and inner . into spaces and drops the extension', () => {
+    expect(prettifyFileName('ig-harm_kombinovani_PPS-ZS2026.pdf')).toBe(
+      'ig harm kombinovani PPS ZS2026'
+    );
+    expect(prettifyFileName('Tyden5_Uzivatele_a_bezpecnost.pptx')).toBe(
+      'Tyden5 Uzivatele a bezpecnost'
+    );
+    expect(prettifyFileName('instrukce.v2.final.docx')).toBe('instrukce v2 final');
   });
 
-  it('cuts the middle of the stem to the length asked, never the extension', () => {
-    for (const keep of [12, 20, 30, 44]) {
-      const cut = middleTruncate(LONG, keep);
-      expect(cut).toHaveLength(keep);
-      expect(cut.endsWith('.ipynb')).toBe(true);
-      expect(cut).toContain('…');
-    }
-    expect(middleTruncate(LONG, 30).startsWith('Cviceni_5_')).toBe(true);
+  it('keeps dots and hyphens between digits: numbers, versions, dates, ranges', () => {
+    expect(prettifyFileName('verze_2.1.pdf')).toBe('verze 2.1');
+    expect(prettifyFileName('zadani_04.10.2026.pdf')).toBe('zadani 04.10.2026');
+    expect(prettifyFileName('ig-c03-Cviceni_v_laboratori_Q1-48.pdf')).toBe(
+      'ig c03 Cviceni v laboratori Q1-48'
+    );
   });
 
-  it('cuts a name with no extension at its end', () => {
-    expect(middleTruncate('a'.repeat(60), 44)).toBe(`${'a'.repeat(43)}…`);
+  it('collapses repeated separators and trims', () => {
+    expect(prettifyFileName('__P3__final--.zip')).toBe('P3 final');
+  });
+
+  it('leaves a title alone: no extension, a spaced dash, a number with a dot', () => {
+    expect(prettifyFileName('Reading week - Pisařovic - Flexbox')).toBe(
+      'Reading week - Pisařovic - Flexbox'
+    );
+    expect(prettifyFileName('Prezentace – přednáška č. 4')).toBe('Prezentace – přednáška č. 4');
+    expect(prettifyFileName('Studijní opora 2.0')).toBe('Studijní opora 2.0');
+  });
+
+  it('keeps a name that is only an extension', () => {
+    expect(prettifyFileName('.pdf')).toBe('.pdf');
+    expect(prettifyFileName('.gitignore')).toBe('.gitignore');
   });
 });
 
-describe('nameBreaks', () => {
-  /**
-   * break-all split "ig-PPS-org-inf-ZS2026.pdf" into "…ZS2026.p" / "df". The
-   * stem may break after a separator; the extension never breaks, glued to the
-   * stem's last segment ("ZS2026.pdf", not "ZS202" / "6.pdf") when that is
-   * short, else to its last character, so it never stands alone on a line.
-   */
-  it('breaks the stem after _ - . and …, and keeps the last segment with the extension', () => {
-    expect(nameBreaks('ig-PPS-org-inf-ZS2026.pdf')).toEqual({
-      pieces: ['ig-', 'PPS-', 'org-', 'inf-'],
-      tail: 'ZS2026.pdf',
-    });
-    expect(nameBreaks('ig-harm_komb…S-ZS2026.pdf').pieces).toEqual(['ig-', 'harm_', 'komb…', 'S-']);
+describe('middleCut', () => {
+  it('leaves text that fits alone', () => {
+    expect(middleCut('ig harm kombinovani', 30)).toBe('ig harm kombinovani');
   });
 
-  it('glues a short name with no separator whole', () => {
-    expect(nameBreaks('P3.zip')).toEqual({ pieces: [], tail: 'P3.zip' });
-  });
-
-  it('glues only the last character when the last segment is long', () => {
-    expect(nameBreaks('uloha_postupnereseni.ipynb')).toEqual({
-      pieces: ['uloha_', 'postupneresen'],
-      tail: 'i.ipynb',
-    });
-    expect(nameBreaks('dz_18Rozvaha.pdf').tail).toBe('18Rozvaha.pdf');
-  });
-
-  it('keeps a whole name with no extension as one piece', () => {
-    expect(nameBreaks('Přednáška 05')).toEqual({ pieces: ['Přednáška 05'], tail: '' });
+  it('cuts the middle to the length asked, keeping both ends', () => {
+    const cut = middleCut('ig organizacni informace kombinovani', 20);
+    expect(cut.length).toBeLessThanOrEqual(20);
+    expect(cut.startsWith('ig organiz')).toBe(true);
+    expect(cut.endsWith('novani')).toBe(true);
+    expect(cut).toContain('…');
   });
 });

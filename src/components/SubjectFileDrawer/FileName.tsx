@@ -1,36 +1,32 @@
-import { Fragment, useLayoutEffect, useRef, useState } from 'react';
-import { middleTruncate, nameBreaks } from '../../utils/documentLabels';
+import { useLayoutEffect, useRef, useState } from 'react';
+import { middleCut, prettifyFileName } from '../../utils/documentLabels';
 
-const HAS_EXTENSION = /\.[a-z0-9]{1,8}$/i;
 // flex-1: the width is the room the row gives, not the text's, so cutting the
 // text cannot shrink the box and trigger another fit.
-const CLASSES = 'min-w-0 flex-1 line-clamp-2';
+const CLASSES = 'min-w-0 flex-1 line-clamp-2 break-words';
 
 /**
- * A file row's name on up to two lines, its extension never cut.
+ * A file row's name as a student reads it, on up to two lines.
  *
- * A one-line truncate cut "ig-c04-fyzicka_vrstva.pdf" to "ig-c04-fyzicka_vrstva.p…",
- * and a two-line clamp alone does the same once a name is longer: the clamp
- * cuts the end, where the extension is. On a 320 px phone the name column is
- * about 106 px, eleven characters a line, so most file names need more than
- * two lines.
+ * Shown without its extension and with `_ - .` between words as spaces
+ * (prettifyFileName): the badge beside it already says PDF, and
+ * "ig-harm_kombinovani_PPS-ZS2026.pdf" wrapped badly and read worse. The real
+ * name stays in `title`, and the reader, saved files and reIS for Claude get it
+ * from the row, not from here.
  *
- * So the name is measured: it stays whole when it fits two lines, otherwise a
- * hidden copy with the same width and classes finds by binary search how much
- * of the stem's middle to drop. It refits when the row's width changes.
- * Without layout (jsdom, the first paint) it is simply the whole name.
+ * Past two lines the middle is cut ("ig organizac…novani"), measured on a
+ * hidden copy with the same width and classes, refitting when the width
+ * changes. Without layout (jsdom, the first paint) it is the whole name.
  */
 export function FileName({ name }: { name: string }) {
+  const pretty = prettifyFileName(name);
   const ref = useRef<HTMLSpanElement>(null);
-  const [shown, setShown] = useState(name);
+  const [shown, setShown] = useState(pretty);
 
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el || !HAS_EXTENSION.test(name)) {
-      setShown(name);
-      return;
-    }
-    const fit = () => setShown(fitTwoLines(el, name));
+    if (!el) return;
+    const fit = () => setShown(fitTwoLines(el, pretty));
     fit();
     if (typeof ResizeObserver === 'undefined') return;
     let width = el.clientWidth;
@@ -41,73 +37,53 @@ export function FileName({ name }: { name: string }) {
     });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [name]);
+  }, [pretty]);
 
-  if (!HAS_EXTENSION.test(name)) {
-    // A title breaks between words.
-    return (
-      <span ref={ref} className={`${CLASSES} break-words`} title={name}>
-        {shown}
-      </span>
-    );
-  }
-  // A file name breaks after its separators (<wbr>), anywhere only as a last
-  // resort, and never inside the extension: break-all split
-  // "ig-PPS-org-inf-ZS2026.pdf" into "…ZS2026.p" / "df".
-  const { pieces, tail } = nameBreaks(shown);
   return (
-    <span ref={ref} className={`${CLASSES} ${FILE_NAME_WRAP}`} title={name}>
-      {pieces.map((piece, i) => (
-        <Fragment key={i}>
-          {piece}
-          <wbr />
-        </Fragment>
-      ))}
-      <span className="whitespace-nowrap">{tail}</span>
+    <span ref={ref} className={CLASSES} title={name}>
+      <FileNameText shown={shown} full={pretty} />
     </span>
   );
 }
 
-const FILE_NAME_WRAP = '[overflow-wrap:anywhere]';
-
-/** The same markup FileName renders, built on the hidden probe. */
-function fillProbe(probe: HTMLElement, text: string) {
-  probe.replaceChildren();
-  const { pieces, tail } = nameBreaks(text);
-  for (const piece of pieces) {
-    probe.append(piece, document.createElement('wbr'));
-  }
-  const glued = document.createElement('span');
-  glued.className = 'whitespace-nowrap';
-  glued.textContent = tail;
-  probe.append(glued);
+/**
+ * The visible name, and the whole one for screen readers when the visible one
+ * is cut: a reader would otherwise announce "ig organizac … novani".
+ */
+export function FileNameText({ shown, full }: { shown: string; full: string }) {
+  if (shown === full) return <>{full}</>;
+  return (
+    <>
+      <span aria-hidden="true">{shown}</span>
+      <span className="sr-only">{full}</span>
+    </>
+  );
 }
 
-/** The longest middle-cut of `name` that fits `el`'s two lines, measured on a hidden copy. */
-function fitTwoLines(el: HTMLElement, name: string): string {
+/** The longest middle cut of `text` that fits `el`'s two lines, measured on a hidden copy. */
+function fitTwoLines(el: HTMLElement, text: string): string {
   const width = el.clientWidth;
-  if (!width || !el.parentElement) return name;
+  if (!width || !el.parentElement) return text;
   const probe = el.cloneNode(false) as HTMLElement;
   probe.removeAttribute('title');
   probe.style.cssText = `position:absolute;visibility:hidden;pointer-events:none;width:${width}px;`;
   el.parentElement.appendChild(probe);
-  const fits = (text: string) => {
-    fillProbe(probe, text);
-    // Wider counts too: the glued tail cannot wrap, so it can only overflow.
+  const fits = (candidate: string) => {
+    probe.textContent = candidate;
     return (
       probe.scrollHeight <= probe.clientHeight + 1 && probe.scrollWidth <= probe.clientWidth + 1
     );
   };
   try {
-    if (fits(name)) return name;
+    if (fits(text)) return text;
     let lo = 1;
-    let hi = name.length - 1;
+    let hi = text.length - 1;
     while (lo < hi) {
       const mid = Math.ceil((lo + hi) / 2);
-      if (fits(middleTruncate(name, mid))) lo = mid;
+      if (fits(middleCut(text, mid))) lo = mid;
       else hi = mid - 1;
     }
-    return middleTruncate(name, lo);
+    return middleCut(text, lo);
   } finally {
     probe.remove();
   }
