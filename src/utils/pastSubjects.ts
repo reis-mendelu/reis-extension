@@ -6,17 +6,23 @@ import { isThisSemester } from '../components/SubjectsPanel/utils';
  * rule every notification kind follows: reIS never notifies about a subject
  * the student is not taking this semester (decided 2026-11-07).
  *
- * Negative evidence on purpose, not "is it enrolled now". The plan is cached
- * in IndexedDB for a semester, so in September or February the one in hand
- * can be last semester's — and it lists the new semester's subjects as never
- * enrolled. An allow-list would silence exactly those until it refreshed, and
- * a student with no usable plan (exchange students, a failed fetch) would get
- * nothing at all. So only a row that says "taken before, not now" counts:
+ * Negative evidence on purpose, not "is it enrolled now". The store's plan
+ * comes from IndexedDB, so until a launch's first sync refreshes it the one in
+ * hand can be last semester's — and that lists the new semester's subjects as
+ * never enrolled. An allow-list would silence all of those, and a student with
+ * no usable plan (exchange students, a failed fetch) would get nothing at all.
+ * So only a row that says "taken before, not now" counts:
  *
  *  - passed, but not this semester (`isThisSemester` — a winter subject passed
- *    in January is this semester's until February starts the summer one), or
+ *    in January is this semester's until February starts the summer one),
+ *    recognised subjects (no attempt) included, or
  *  - enrolled at some point (`enrollmentCount > 0`) and neither enrolled now
  *    nor passed: a failed attempt not taken again.
+ *
+ * The one case a stale plan gets wrong is that second one being retaken: it
+ * reads as past until the plan refreshes. Nothing is lost for it: the new
+ * points notification reads this run's plan (useAppLogic), exam reminders
+ * reconcile when the plan changes, and Novinky recomputes.
  *
  * Anything enrolled now stays — a winter subject still unpassed in its
  * January–February exam period included. So does a code the plan does not
@@ -32,7 +38,7 @@ export function pastSubjectCodes(plan: StudyPlan | null | undefined): Set<string
         if (!s.code) continue;
         if (s.isEnrolled || (s.isFulfilled && isThisSemester(s.fulfillmentDate))) {
           current.add(s.code);
-        } else if (s.enrollmentCount > 0) {
+        } else if (s.isFulfilled || s.enrollmentCount > 0) {
           past.add(s.code);
         }
       }

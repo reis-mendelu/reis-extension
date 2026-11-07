@@ -73,6 +73,12 @@ describe('pastSubjectCodes', () => {
     expect(isPastSubject(past, undefined)).toBe(false);
   });
 
+  // Uznaný předmět: passed with no attempt here, still an earlier semester's.
+  it('a subject recognised in an earlier semester is past too', () => {
+    const recognised = row('XX-UZN', { isFulfilled: true, fulfillmentDate: '20.09.2025' });
+    expect(isPastSubject(pastSubjectCodes(plan(recognised)), 'XX-UZN')).toBe(true);
+  });
+
   it('a subject passed this semester is still this semester', () => {
     const passedNow = row('XX-DONE', {
       isFulfilled: true,

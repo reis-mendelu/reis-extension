@@ -339,7 +339,13 @@ export function useAppLogic() {
           // Never a system notification about an earlier semester's subject:
           // the fallback crawl (subjectScope) can reach those. `unseen` stays
           // whole — Novinky filters on read, with the plan current by then.
-          const past = pastSubjectCodesOf(useAppStore.getState().studyPlanDual);
+          // This run's plan, not the store's: the store reloads it from
+          // IndexedDB only once the sync ends, and the push that carried it
+          // (this one, or an earlier one of the run) has already written it.
+          const plan = r.studyPlan ?? (await IndexedDBService.get('study_plan', 'current'));
+          const past = pastSubjectCodesOf(
+            isDualLanguageStudyPlan(plan) ? plan : useAppStore.getState().studyPlanDual
+          );
           notifyNewPoints(withoutPastSubjects(found, past));
         }
 
