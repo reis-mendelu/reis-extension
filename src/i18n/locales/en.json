@@ -1362,6 +1362,7 @@
       "termDetailsAria": "Term details",
       "sectionDetailsAria": "Exam details",
       "noDetails": "IS gives no further details.",
+      "detailsFailed": "Some details could not be loaded.",
       "detailForm": "Form",
       "detailDuration": "Length",
       "detailRoom": "Room",

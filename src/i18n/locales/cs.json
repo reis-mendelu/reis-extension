@@ -1362,6 +1362,7 @@
       "termDetailsAria": "Podrobnosti termínu",
       "sectionDetailsAria": "Podrobnosti zkoušky",
       "noDetails": "IS k tomu nic dalšího neuvádí.",
+      "detailsFailed": "Některé podrobnosti se nepodařilo načíst.",
       "detailForm": "Forma termínu",
       "detailDuration": "Délka trvání",
       "detailRoom": "Místnost",

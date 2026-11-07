@@ -162,6 +162,20 @@ describe.each(['OpenCard', 'NotYetOpenCard'] as const)('%s — one Více per car
     expect(details.getByText('Q01')).toBeInTheDocument();
   });
 
+  // Review (cubic): a page that failed to load is not IS saying "nothing".
+  it('says a read failed rather than that IS gives nothing', () => {
+    const bare = { sectionFormCs: undefined, durationMinutes: null };
+    useAppStore.setState({
+      examNotes: { t1: null },
+      examNotesError: { t2: 'HTTP 500' },
+    } as never);
+    render(cards[name](makeRow([term(1, bare), term(2, { ...bare, room: 'Q02' })])));
+    openDetails();
+    const details = screen.getByTestId('term-details');
+    expect(details).toHaveTextContent('Některé podrobnosti se nepodařilo načíst.');
+    expect(details).not.toHaveTextContent('nic dalšího neuvádí');
+  });
+
   it('says IS gives nothing more instead of opening an empty strip', () => {
     useAppStore.setState({ examNotes: { t1: null, t2: null } } as never);
     const bare = { sectionFormCs: undefined, durationMinutes: null };

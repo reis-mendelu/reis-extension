@@ -18,21 +18,29 @@ export function SectionDetails({ section }: { section: ExamSection }) {
   const durations = useAppStore((s) => s.examTermDurations);
   const notes = useAppStore((s) => s.examNotes);
   const loading = useAppStore((s) => s.examNotesLoading);
+  const errors = useAppStore((s) => s.examNotesError);
   useExamNotes(section.terms.map((term) => term.id));
 
-  const { room, form, minutes, note, waiting } = sectionFacts({
+  const { room, form, minutes, note, waiting, allRead, failed } = sectionFacts({
     terms: section.terms,
     language,
     durations,
     notes,
     loading,
+    errors,
   });
-  // Say so rather than open a bare strip: with nothing shared it holds nothing.
-  const empty = !room && !form && minutes == null && !note && !waiting;
+  // "IS gives nothing more" only once every term's page has actually been
+  // read: a failed read is ours, and says so instead (the slice retries after
+  // its 5-minute error backoff, on the next open).
+  const empty = !room && !form && minutes == null && !note && !waiting && allRead;
+  const unreadable = failed && !note;
 
   return (
     <div data-testid="term-details" className="flex flex-col gap-2 border-t border-base-300 pt-2">
       {empty && <p className="text-2sm text-base-content/60">{t('mobile.exams.noDetails')}</p>}
+      {unreadable && (
+        <p className="text-2sm text-base-content/60">{t('mobile.exams.detailsFailed')}</p>
+      )}
       <dl className="flex flex-col gap-1">
         {room && <Fact label={t('mobile.exams.detailRoom')}>{room}</Fact>}
         {form && <Fact label={t('mobile.exams.detailForm')}>{form}</Fact>}

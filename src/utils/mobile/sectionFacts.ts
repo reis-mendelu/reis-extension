@@ -10,6 +10,8 @@ export interface SectionFactsInput {
   notes: Record<string, TermNote | null | undefined>;
   /** Store's `examNotesLoading`. */
   loading: Record<string, boolean | undefined>;
+  /** Store's `examNotesError`. */
+  errors: Record<string, string | undefined>;
 }
 
 export interface SectionFacts {
@@ -19,6 +21,10 @@ export interface SectionFacts {
   note?: TermNote;
   /** A term's page is still being read: its length or note may yet arrive. */
   waiting: boolean;
+  /** Every term's page has been read, so a missing fact is IS's answer. */
+  allRead: boolean;
+  /** A term's page could not be read: a missing note may be ours, not IS's. */
+  failed: boolean;
 }
 
 /** The one value every item has, or undefined when any is missing or differs. */
@@ -46,6 +52,7 @@ export function sectionFacts({
   durations,
   notes,
   loading,
+  errors,
 }: SectionFactsInput): SectionFacts {
   const en = language === 'en';
   return {
@@ -57,5 +64,7 @@ export function sectionFacts({
       (n) => `${n.isEmphasized}|${n.text.trim()}`
     ),
     waiting: terms.some((t) => loading[t.id]),
+    allRead: terms.every((t) => notes[t.id] !== undefined),
+    failed: terms.some((t) => errors[t.id]),
   };
 }

@@ -22,6 +22,7 @@ function input(terms: ExamTerm[], over: Partial<SectionFactsInput> = {}): Sectio
     durations: {},
     notes: Object.fromEntries(terms.map((t) => [t.id, note])),
     loading: {},
+    errors: {},
     ...over,
   };
 }
@@ -39,6 +40,8 @@ describe('sectionFacts', () => {
       minutes: 90,
       note,
       waiting: false,
+      allRead: true,
+      failed: false,
     });
   });
 
@@ -73,6 +76,18 @@ describe('sectionFacts', () => {
     );
     expect(facts.waiting).toBe(true);
     expect(facts.note).toBeUndefined();
+  });
+
+  // Review (cubic): a page that failed to load is not IS saying "nothing".
+  it('tells a failed read apart from one that found nothing', () => {
+    const terms = [term('a'), term('b')];
+    expect(sectionFacts(input(terms, { notes: { a: null, b: null } }))).toMatchObject({
+      allRead: true,
+      failed: false,
+    });
+    expect(
+      sectionFacts(input(terms, { notes: { a: null }, errors: { b: 'HTTP 500' } }))
+    ).toMatchObject({ allRead: false, failed: true });
   });
 
   it('uses the English room and form in English', () => {
