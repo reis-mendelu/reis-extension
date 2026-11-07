@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { Odevzdavarna } from '../../api/odevzdavarny';
 import { boxDeadline, boxState } from '../../utils/submissionBoxes';
 import { daysUntil, useBoxLabels } from './useBoxLabels';
@@ -23,6 +24,8 @@ interface SummaryBoxRowProps {
    */
   showUpload: boolean;
   testId: string;
+  /** Replaces the deadline chip on the right (the Odevzdáno list's points). */
+  aside?: ReactNode;
 }
 
 /** One box on the Subjects-screen card: the box, its subject, its deadline. */
@@ -34,6 +37,7 @@ export function SummaryBoxRow({
   onOpen,
   showUpload,
   testId,
+  aside,
 }: SummaryBoxRowProps) {
   const L = useBoxLabels();
   const subjectName = useCourseName(courseCode ?? undefined, L.courseName(box));
@@ -64,19 +68,20 @@ export function SummaryBoxRow({
           )}
         </span>
       </span>
-      {deadline && days !== null && (
-        <span
-          className={`shrink-0 whitespace-nowrap rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${
-            urgent
-              ? 'bg-warning/20 text-[var(--tone-warning)]'
-              : 'bg-base-content/8 text-base-content/70'
-          }`}
-        >
-          {days <= RELATIVE_DAYS
-            ? L.relative(deadline, now)
-            : L.t('odevzdavarny.until', { date: L.shortDate(deadline) })}
-        </span>
-      )}
+      {aside ??
+        (deadline && days !== null && (
+          <span
+            className={`shrink-0 whitespace-nowrap rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${
+              urgent
+                ? 'bg-warning/20 text-[var(--tone-warning)]'
+                : 'bg-base-content/8 text-base-content/70'
+            }`}
+          >
+            {days <= RELATIVE_DAYS
+              ? L.relative(deadline, now)
+              : L.t('odevzdavarny.until', { date: L.shortDate(deadline) })}
+          </span>
+        ))}
     </>
   );
 

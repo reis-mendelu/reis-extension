@@ -1599,6 +1599,8 @@
     "openFew": "{n} otevřené",
     "openOther": "{n} otevřených",
     "nothingDueSoon": "Nic k odevzdání do 14 dní",
+    "submittedCount": "Odevzdáno ({n})",
+    "awaitingGrading": "čeká na hodnocení",
     "instructions": "Pokyny"
   },
   "questions": {
