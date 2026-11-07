@@ -6,6 +6,7 @@ import { syncService, syncGradeHistory } from '../services/sync';
 import { persistZaznamnikBatch } from '../services/sync/zaznamnikNewPoints';
 import { persistNewBoxes } from '../services/sync/newSubmissionBoxes';
 import { notifyNewPoints } from '../services/newPointsNotifier';
+import { pastSubjectCodesOf, withoutPastSubjects } from '../utils/pastSubjects';
 
 import { useAppStore, initializeStore } from '../store/useAppStore';
 import { signalReady, requestData, isInIframe } from '../api/proxyClient';
@@ -335,7 +336,17 @@ export function useAppLogic() {
           // added since is highlighted, and on the phone also notified.
           const { found, unseen } = await persistZaznamnikBatch(r.zaznamnik);
           useAppStore.getState().setZaznamnikNewPoints(unseen);
-          notifyNewPoints(found);
+          // Never a system notification about an earlier semester's subject:
+          // the fallback crawl (subjectScope) can reach those. `unseen` stays
+          // whole — Novinky filters on read, with the plan current by then.
+          // This run's plan, not the store's: the store reloads it from
+          // IndexedDB only once the sync ends, and the push that carried it
+          // (this one, or an earlier one of the run) has already written it.
+          const plan = r.studyPlan ?? (await IndexedDBService.get('study_plan', 'current'));
+          const past = pastSubjectCodesOf(
+            isDualLanguageStudyPlan(plan) ? plan : useAppStore.getState().studyPlanDual
+          );
+          notifyNewPoints(withoutPastSubjects(found, past));
         }
 
         if (r.lastSync) await IndexedDBService.set('meta', 'last_sync', r.lastSync);
