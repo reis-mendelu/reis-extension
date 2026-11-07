@@ -53,7 +53,10 @@ describe('FileName after the web font loads', () => {
     let fontsLoaded!: () => void;
     const ready = new Promise<void>((resolve) => (fontsLoaded = resolve));
     const fonts = Object.getOwnPropertyDescriptor(document, 'fonts');
-    Object.defineProperty(document, 'fonts', { configurable: true, value: { ready } });
+    Object.defineProperty(document, 'fonts', {
+      configurable: true,
+      value: { ready, status: 'loading' },
+    });
     let wide = false; // the fallback font fits; Inter's wider glyphs do not
     const proto = HTMLElement.prototype;
     const spies = [
@@ -72,6 +75,24 @@ describe('FileName after the web font loads', () => {
       expect(await screen.findByText(/…/)).toBeInTheDocument();
     } finally {
       spies.forEach((s) => s.mockRestore());
+      if (fonts) Object.defineProperty(document, 'fonts', fonts);
+      else Reflect.deleteProperty(document, 'fonts');
+    }
+  });
+});
+
+describe('FileName when the fonts are already loaded', () => {
+  it('does not wait on document.fonts to fit a second time', () => {
+    const then = vi.fn();
+    const fonts = Object.getOwnPropertyDescriptor(document, 'fonts');
+    Object.defineProperty(document, 'fonts', {
+      configurable: true,
+      value: { ready: { then }, status: 'loaded' },
+    });
+    try {
+      render(<FileName name="eth_frame.pdf" shown="eth frame" />);
+      expect(then).not.toHaveBeenCalled();
+    } finally {
       if (fonts) Object.defineProperty(document, 'fonts', fonts);
       else Reflect.deleteProperty(document, 'fonts');
     }

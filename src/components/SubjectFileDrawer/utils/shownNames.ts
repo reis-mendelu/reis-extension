@@ -29,12 +29,15 @@ export function shownNames(rows: (ShownRow | null)[]): (string | undefined)[] {
     const ext = rows[i]?.ext;
     return p !== undefined && ext && (clashes.get(p) ?? 0) > 1 ? `${p} (${ext})` : p;
   });
-  // Same cleaned name and same extension ("instrukce_v1.md", "instrukce-v1.md"):
-  // only the real names differ, so those rows show them.
+  // Still alike: same cleaned name and same extension ("instrukce_v1.md",
+  // "instrukce-v1.md"), or a label that meets another row's real name. Those
+  // rows show their real names, which differ within one folder.
   const still = countOf(withExt);
-  return withExt.map((w, i) =>
+  const fallback = withExt.map((w, i) =>
     w !== undefined && w !== pretty[i] && (still.get(w) ?? 0) > 1 ? rows[i]?.name : w
   );
+  const last = countOf(fallback);
+  return fallback.map((f, i) => (f !== undefined && (last.get(f) ?? 0) > 1 ? rows[i]?.name : f));
 }
 
 function countOf(values: (string | undefined)[]): Map<string, number> {

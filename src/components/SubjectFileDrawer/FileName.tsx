@@ -29,8 +29,9 @@ export function FileName({ name, shown }: { name: string; shown?: string }) {
     let alive = true;
     const fit = () => alive && setVisible(fitTwoLines(el, pretty));
     fit();
-    // Inter can land after the first fit, with wider glyphs at the same width.
-    void document.fonts?.ready.then(fit);
+    // Inter can land after the first fit, with wider glyphs at the same width;
+    // once it has, there is nothing to wait for and no second fit to pay for.
+    if (document.fonts?.status === 'loading') void document.fonts.ready.then(fit);
     if (typeof ResizeObserver === 'undefined') {
       return () => {
         alive = false;

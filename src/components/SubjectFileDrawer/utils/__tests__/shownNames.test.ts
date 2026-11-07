@@ -48,6 +48,15 @@ describe('shownNames', () => {
     expect(shown[1]).toBe('report (docx)');
   });
 
+  it('never leaves two rows alike when a real name meets a cleaned one', () => {
+    const shown = shownNames([
+      { name: 'report_ (pdf).txt', kind: 'file', ext: 'txt' },
+      { name: 'report (pdf).txt', kind: 'file', ext: 'txt' },
+      { name: 'report (pdf).txt.pdf', kind: 'file', ext: 'pdf' },
+    ]);
+    expect(new Set(shown).size).toBe(3);
+  });
+
   it('leaves a duplicate without an extension as it is', () => {
     expect(
       shownNames([
