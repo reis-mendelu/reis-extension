@@ -18,8 +18,17 @@ import { trackFeatureSignal, type FeatureSignal } from '../api/featureUsage';
  * A write over what is already on screen, not a data fetch, so the no-
  * `useEffect`-for-fetching rule does not apply (same as `useMapDwell`).
  */
-export function useScreenSignal(signal: FeatureSignal, active = true): void {
+export function useScreenSignal(signal: FeatureSignal, active = true, delayMs = 0): void {
   useEffect(() => {
-    if (active) void trackFeatureSignal(signal);
-  }, [signal, active]);
+    if (!active) return;
+    if (delayMs <= 0) {
+      void trackFeatureSignal(signal);
+      return;
+    }
+    // `delayMs` is for a screen that can be on screen for a moment without
+    // being chosen: the extension boots on the calendar, then restores the
+    // saved view from IndexedDB. Unmounting before the delay cancels the count.
+    const timer = setTimeout(() => void trackFeatureSignal(signal), delayMs);
+    return () => clearTimeout(timer);
+  }, [signal, active, delayMs]);
 }

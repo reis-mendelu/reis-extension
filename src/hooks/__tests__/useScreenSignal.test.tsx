@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useScreenSignal } from '../useScreenSignal';
 import { trackFeatureSignal } from '../../api/featureUsage';
@@ -28,6 +28,30 @@ describe('useScreenSignal', () => {
 
     rerender({ open: true });
     expect(trackFeatureSignal).toHaveBeenCalledWith('screen_search');
+  });
+
+  // The extension boots on the calendar and then restores the saved view from
+  // IndexedDB; a calendar that is replaced within moments was never looked at.
+  describe('with a delay', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('counts only once the screen has stayed up for the delay', () => {
+      vi.useFakeTimers();
+      renderHook(() => useScreenSignal('screen_calendar', true, 1000));
+      vi.advanceTimersByTime(999);
+      expect(trackFeatureSignal).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
+      expect(trackFeatureSignal).toHaveBeenCalledWith('screen_calendar');
+    });
+
+    it('does not count a screen replaced before the delay', () => {
+      vi.useFakeTimers();
+      const { unmount } = renderHook(() => useScreenSignal('screen_calendar', true, 1000));
+      vi.advanceTimersByTime(300);
+      unmount();
+      vi.advanceTimersByTime(5000);
+      expect(trackFeatureSignal).not.toHaveBeenCalled();
+    });
   });
 
   it('does not count again on a re-render while open', () => {

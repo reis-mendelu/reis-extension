@@ -18,6 +18,8 @@ import { useTranslation } from '../../hooks/useTranslation';
 import type { BlockLesson, CalendarCustomEvent } from '../../types/calendarTypes';
 import { useScreenSignal } from '../../hooks/useScreenSignal';
 
+/** Longer than the IndexedDB read that restores the saved view. */
+const CALENDAR_SIGNAL_DELAY_MS = 1000;
 const TOTAL_HOURS = 14;
 
 export function WeeklyCalendar({
@@ -29,7 +31,10 @@ export function WeeklyCalendar({
   onPrevWeek?: () => void;
   onNextWeek?: () => void;
 }) {
-  useScreenSignal('screen_calendar');
+  // After a second, not on mount: useAppLogic boots on 'calendar' and then
+  // restores the saved view, so a student who left reIS on Předměty would
+  // otherwise count as having opened the calendar.
+  useScreenSignal('screen_calendar', true, CALENDAR_SIGNAL_DELAY_MS);
   const language = useAppStore((state) => state.language);
   const isLanguageLoading = useAppStore((state) => state.isLanguageLoading);
   const isMobile = useIsMobile();
