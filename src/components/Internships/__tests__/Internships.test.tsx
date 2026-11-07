@@ -69,6 +69,22 @@ describe('Stáže', () => {
       expect(screen.queryByText(/se kterými spolupracujeme/)).toBeNull();
     });
 
+    it('hands keyboard focus back to the pill when the dropdown closes', () => {
+      render(<InternshipsMenu />);
+      const pill = screen.getByRole('button', { name: 'Stáže' });
+      fireEvent.click(pill);
+      const close = screen.getByRole('button', { name: 'Zavřít stáže' });
+      close.focus();
+      fireEvent.click(close);
+      expect(document.activeElement).toBe(pill);
+
+      fireEvent.click(pill);
+      screen.getByRole('link', { name: /Cesta s EY/ }).focus();
+      fireEvent.keyDown(document, { key: 'Escape' });
+      expect(screen.queryByRole('link', { name: /Cesta s EY/ })).toBeNull();
+      expect(document.activeElement).toBe(pill);
+    });
+
     it('renders nothing when no partner matches the field', () => {
       useAppStore.setState({ userFaculty: 'ZF', userProgramme: null } as never);
       const { container } = render(<InternshipsMenu />);

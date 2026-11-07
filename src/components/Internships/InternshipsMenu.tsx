@@ -15,6 +15,14 @@ export function InternshipsMenu() {
   const items = usePartnerInternships();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const pillRef = useRef<HTMLButtonElement>(null);
+  // Escape and the X close from inside the dropdown, whose elements then
+  // unmount: put keyboard focus back on the pill instead of the page body.
+  // A click outside is not one of them; it already put focus where it went.
+  const closeToPill = () => {
+    setOpen(false);
+    pillRef.current?.focus();
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -24,13 +32,14 @@ export function InternshipsMenu() {
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
   }, [open]);
-  useEscapeLayer(open, () => setOpen(false));
+  useEscapeLayer(open, closeToPill);
 
   if (items.length === 0) return null;
 
   return (
     <div className="relative flex items-center" ref={ref}>
       <button
+        ref={pillRef}
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
@@ -50,7 +59,7 @@ export function InternshipsMenu() {
             <span className="text-xs font-bold text-base-content">{t('internships.title')}</span>
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={closeToPill}
               aria-label={t('internships.close')}
               className="rounded-lg p-1 text-base-content/40 transition-colors hover:bg-base-300 hover:text-base-content/85"
             >
