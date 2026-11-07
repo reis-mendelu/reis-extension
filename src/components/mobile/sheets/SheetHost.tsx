@@ -10,6 +10,7 @@ import { SettingsSheet } from './SettingsSheet';
 import { SearchSheet } from './SearchSheet';
 import { BulletinSheet } from './BulletinSheet';
 import { MenuSheet } from './MenuSheet';
+import { IskamSheet } from './IskamSheet';
 import { VenueSheet } from './VenueSheet';
 import { ImpersonationSheet } from './ImpersonationSheet';
 import { HideLessonSheet } from './HideLessonSheet';
@@ -57,6 +58,8 @@ export function SheetHost() {
             return (
               <MenuSheet key={index} dayIso={sheet.dayIso} week={sheet.week} onClose={popSheet} />
             );
+          case 'isic':
+            return <IskamSheet key={index} onClose={popSheet} />;
           case 'search':
             return <SearchSheet key={index} sheet={sheet} onClose={popSheet} />;
           case 'impersonation':

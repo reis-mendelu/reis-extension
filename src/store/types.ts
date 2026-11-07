@@ -514,6 +514,9 @@ export type MobileSheet =
   // reIS admins only: "view as a student" of another programme.
   | { kind: 'impersonation' }
   | { kind: 'menu'; dayIso: string; week?: string[] }
+  // The ISIC balance and Dobít, from the profile (phone only — the same row
+  // the menu sheet shows; src/test/guards/desktopHasNoIskam.test.ts).
+  | { kind: 'isic' }
   | {
       kind: 'venue';
       coord: [number, number];

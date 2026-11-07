@@ -1502,7 +1502,9 @@
     "profile": {
       "settings": "Nastavení",
       "atSchool": "Ve škole",
-      "settingsSub": "Oznámení, jazyk, vzhled"
+      "settingsSub": "Oznámení, jazyk, vzhled",
+      "isic": "ISIC",
+      "isicSub": "zůstatek a dobití"
     },
     "loadFailed": {
       "title": "Data se nepodařilo načíst",
