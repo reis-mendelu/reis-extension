@@ -82,41 +82,59 @@ const json = async (name, args) => {
   const r = await call('tools/call', { name, arguments: { ...args, response_format: 'json' } });
   const text = r.result.content[0].text;
   if (r.result.isError) throw new Error(text);
-  // A long document passes the character limit and the cut JSON no longer
-  // parses, but its kind comes before the text.
   if (!text.includes('\n\n[truncated at ')) return JSON.parse(text);
+  // Only a document's text may run past the character limit. The cut JSON no
+  // longer parses, but its kind comes before the text.
+  if (name !== 'mendelu_read_file') throw new Error(`${name}: output cut at the limit`);
   return { kind: /"kind": "([^"]+)"/.exec(text)?.[1], truncated: text.length };
 };
 
+/** The one refusal a healthy server gives on purpose (files.ts readCapped). */
+const TOO_BIG = 'too big to read here';
+
 /**
  * mendelu_read_file takes a downloadUrl, so `{}` proves nothing. IS file names
- * carry no extension, so read the student's own subject files in turn until
- * one PDF and one DOCX have come back. Prints only the kind and the length of
- * the text, never the text or a file name.
+ * carry no extension, so read the student's own subject files in turn until a
+ * PDF and a DOCX have given text. Prints only the kind and the length of the
+ * text, never the text or a file name.
  */
 async function readRealFiles() {
   const MAX_READS = 25;
-  const read = new Map();
-  const errors = [];
+  const longest = new Map(); // kind -> longest text read of that kind
+  const refusals = [];
   let reads = 0;
+  const done = () => longest.get('pdf') > 0 && longest.get('docx') > 0;
   outer: for (const s of await json('mendelu_subjects', {})) {
-    for (const f of await json('mendelu_subject_files', { code: s.subjectCode })) {
-      if ((read.has('pdf') && read.has('docx')) || reads >= MAX_READS) break outer;
+    let files;
+    try {
+      files = await json('mendelu_subject_files', { code: s.subjectCode });
+    } catch (e) {
+      console.log(`  a subject's file list was skipped: ${e.message.split('\n')[0]}`);
+      continue;
+    }
+    for (const f of files) {
+      if (done() || reads >= MAX_READS) break outer;
       reads++;
       try {
         const doc = await json('mendelu_read_file', { url: f.downloadUrl });
         const chars = doc.truncated ?? (typeof doc.text === 'string' ? doc.text.length : 0);
-        if (doc.kind && !read.has(doc.kind)) read.set(doc.kind, chars);
+        // A scanned file reads as 0 chars; a later file of its kind may still have text.
+        if (doc.kind) longest.set(doc.kind, Math.max(longest.get(doc.kind) ?? 0, chars));
       } catch (e) {
-        errors.push(e.message.split('\n')[0]);
+        refusals.push(e.message.split('\n')[0]);
       }
     }
   }
-  console.log(`mendelu_read_file: ${reads} files read, ${errors.length} refused`);
-  for (const [kind, chars] of read) console.log(`  ${kind}: ${chars} chars of text`);
-  if (errors.length) console.log(`  first refusal: ${errors[0]}`);
+  // Unsupported types come back as a note, not an error, so any refusal but
+  // the size cap is a broken read (of a file whose kind we never learn).
+  const broken = refusals.filter((m) => !m.includes(TOO_BIG));
+  console.log(`mendelu_read_file: ${reads} files read, ${refusals.length} refused`);
+  for (const [kind, chars] of longest) console.log(`  ${kind}: ${chars} chars of text`);
+  for (const m of broken) console.log(`  broken read: ${m}`);
   // A PDF is the case that matters; a DOCX only if the student has one.
-  return (read.get('pdf') ?? 0) > 0 && (!read.has('docx') || read.get('docx') > 0);
+  return (
+    longest.get('pdf') > 0 && (!longest.has('docx') || longest.get('docx') > 0) && !broken.length
+  );
 }
 
 for (const name of live ? [...extraTools, 'mendelu_exams'] : []) {
