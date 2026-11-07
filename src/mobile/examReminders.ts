@@ -8,11 +8,16 @@ import {
   examOpeningReminders,
   type ExamOpeningReminder,
 } from '../utils/examOpeningReminders';
+import { isPastSubject, pastSubjectCodesOf } from '../utils/pastSubjects';
 const CHANNEL_ID = 'reis-exam-openings';
 
 function wanted(includeDue = false): ExamOpeningReminder[] {
-  const { exams, language } = useAppStore.getState();
-  return examOpeningReminders(exams.data, new Date(), language, { includeDue });
+  const { exams, language, studyPlanDual } = useAppStore.getState();
+  // None about an earlier semester's subject (utils/pastSubjects). Applied to
+  // the keep-list too, so a reminder already held for one is cancelled.
+  const past = pastSubjectCodesOf(studyPlanDual);
+  const current = exams.data.filter((s) => !isPastSubject(past, s.code));
+  return examOpeningReminders(current, new Date(), language, { includeDue });
 }
 
 // Set at sign-out: nothing more is scheduled for a student who has left.
@@ -121,7 +126,13 @@ export function installExamReminders(): () => void {
   let exams = useAppStore.getState().exams.data;
   let status = useAppStore.getState().exams.status;
   let tab = useAppStore.getState().mobileTab;
+  let plan = useAppStore.getState().studyPlanDual;
   unsubscribe = useAppStore.subscribe((state) => {
+    // The plan decides which subjects are past; it can land after the exams.
+    if (state.studyPlanDual !== plan) {
+      plan = state.studyPlanDual;
+      void reconcileExamReminders();
+    }
     // The boot load can finish with the very list it started with (empty), so
     // the status settling is a change worth reconciling on too.
     const loaded = state.exams.status !== status && state.exams.status === 'success';
