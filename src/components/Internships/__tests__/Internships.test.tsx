@@ -99,7 +99,7 @@ describe('Stáže', () => {
 
     // jsdom has no layout, so this pins the classes; the widths themselves
     // were measured in a browser (600/768/900/1024px, PR #651).
-    it('spans the window below 880px instead of hanging off the pill', () => {
+    it('spans the main column below 880px instead of hanging off the pill', () => {
       render(<InternshipsMenu />);
       fireEvent.click(screen.getByRole('button', { name: 'Stáže' }));
       const panel = screen

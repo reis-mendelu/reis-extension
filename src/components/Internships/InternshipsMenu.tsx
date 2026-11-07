@@ -65,7 +65,10 @@ export function InternshipsMenu() {
         // Anchored under the pill, the 384px panel runs from x≈457 to x≈841, so
         // below an 880px window it would hang off the right side — and the
         // app's own "narrow" switch only flips at 768px, which left 768–860
-        // overflowing (measured). Below 880px it spans the window instead.
+        // overflowing (measured). Below 880px it is `fixed`, but the header's
+        // backdrop-blur makes the header its containing block, so it spans the
+        // main column beside the sidebar (x≈96 to the right edge), not the
+        // whole window — which keeps it clear of the sidebar.
         <div
           data-internships-panel
           className="fixed inset-x-4 top-16 z-50 flex flex-col overflow-hidden rounded-xl border border-base-300 bg-base-100 shadow-xl min-[880px]:absolute min-[880px]:inset-x-auto min-[880px]:left-0 min-[880px]:top-11 min-[880px]:w-96"
