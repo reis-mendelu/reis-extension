@@ -24,8 +24,9 @@ import { AlwaysScrollable } from '../primitives/AlwaysScrollable';
  * rebuilding it. No societies section: there is nothing to choose (spec
  * 2026-10-08); the console is reached by holding the name.
  *
- * No hidden-items list: hiding exists only on desktop calendar cards and
- * storage is per device, so on a phone it was always empty (spec 2026-10-09).
+ * No hidden-items list here: since a held lesson can be hidden on the phone
+ * too (#43, 2026-11-06), the list is in Nastavení (`HiddenLessonsRows`), where
+ * the first-hide hint says it is.
  */
 export function ProfileScreen() {
   const { t } = useTranslation();

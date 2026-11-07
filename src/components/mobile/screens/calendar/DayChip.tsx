@@ -22,6 +22,8 @@ export interface DayChipProps {
    * Pixel, 28 Oct 2026. Set on every Týden chip, so every slot is one height.
    */
   holidayWord?: string;
+  /** Týden only: the CSS min-width of the column under this chip. */
+  minWidth?: string;
 }
 
 /** One day of the strip — see DayChips for the row around it. */
@@ -35,6 +37,7 @@ export function DayChip({
   showDot,
   onClick,
   holidayWord,
+  minWidth,
 }: DayChipProps) {
   const weekday = new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(date);
   const label = weekday.charAt(0).toUpperCase() + weekday.slice(1);
@@ -51,6 +54,8 @@ export function DayChip({
       aria-pressed={isSelected}
       title={holiday ?? undefined}
       onClick={onClick}
+      // Týden: its column's min-width, so the chip stays over its column.
+      style={minWidth ? { minWidth } : undefined}
       // aria-disabled, not `disabled`: a swipe that starts on a chip must still
       // reach the strip's pointer handlers, and older WebKit (pre-Safari 17
       // WKWebView, bug 219188) drops pointer events on disabled controls —

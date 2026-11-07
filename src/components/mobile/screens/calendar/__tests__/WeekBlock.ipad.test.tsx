@@ -22,9 +22,6 @@ const block = (height: number) => ({
   height,
   lane: 0,
   lanes: 1,
-  visible: height,
-  order: 0,
-  onTop: false,
 });
 
 /**
@@ -34,21 +31,22 @@ const block = (height: number) => ({
  */
 describe('WeekBlock on an iPad', () => {
   it('drops the time row when the block is too short for it', () => {
-    render(<WeekBlock block={block(10)} cascade={false} gridPx={600} onOpen={vi.fn()} />);
+    render(<WeekBlock block={block(10)} wide gridPx={600} onOpen={vi.fn()} />);
     expect(screen.getByText('Q15')).toBeTruthy();
     expect(screen.queryByText('14:00 – 14:50')).toBeNull();
   });
 
   it('keeps the time row when there is room', () => {
-    render(<WeekBlock block={block(20)} cascade={false} gridPx={600} onOpen={vi.fn()} />);
+    render(<WeekBlock block={block(20)} wide gridPx={600} onOpen={vi.fn()} />);
     expect(screen.getByText('14:00 – 14:50')).toBeTruthy();
   });
 
-  // #622 review: on an iPad a clash sits side by side, so a block "covered" on
-  // paper (visible < height) is not; its full height decides.
-  it('keeps the time row on a side-by-side block covered only on paper', () => {
-    const b = { ...block(20), visible: 5 };
-    render(<WeekBlock block={b} cascade={false} gridPx={600} onOpen={vi.fn()} />);
-    expect(screen.getByText('14:00 – 14:50')).toBeTruthy();
+  // 2026-11-06: a clash is side by side on a phone too, so nothing covers a
+  // block any more and each lane keeps its room line.
+  it('a phone block in a clash keeps its room and drops only the time', () => {
+    const b = { ...block(20), lane: 1, lanes: 2 };
+    render(<WeekBlock block={b} wide={false} gridPx={600} onOpen={vi.fn()} />);
+    expect(screen.getByText('Q15')).toBeTruthy();
+    expect(screen.queryByText('14:00 – 14:50')).toBeNull();
   });
 });

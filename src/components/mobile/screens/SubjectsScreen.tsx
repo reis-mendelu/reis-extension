@@ -4,13 +4,14 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
 import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
 import { ScreenError } from '../primitives/ScreenError';
-import { useStudyPlan } from '../../../hooks/useStudyPlan';
+import { useEffectiveStudyPlan } from '../../../hooks/useEffectiveStudyPlan';
 import { selectEnrolledNow, enrolledSemester } from '../../../utils/mobile/enrolledSubjects';
 import type { SubjectStatus } from '../../../types/studyPlan';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { CreditRing } from './subjects/CreditRing';
 import { SemesterCard } from './subjects/SemesterCard';
 import { AverageAccordion } from './subjects/AverageAccordion';
+import { ExchangeCaption } from './subjects/ExchangeCaption';
 import { NavRow } from '../primitives/NavRow';
 import { AlwaysScrollable } from '../primitives/AlwaysScrollable';
 import { ReportMissingLink } from '../../Feedback/ReportMissingLink';
@@ -46,7 +47,11 @@ function EmptyState() {
 
 export function SubjectsScreen() {
   const { t, language } = useTranslation();
-  const plan = useStudyPlan();
+  // `plan` is the real study plan, or for an exchange student (no
+  // KontrolaPlanu) the stand-in built from the subjects store — the same
+  // fallback the extension draws. It waits for the plan to settle, so a
+  // regular student never sees it; see useEffectiveStudyPlan.
+  const { plan, planUsable, isFallback } = useEffectiveStudyPlan();
   const studyStats = useAppStore((s) => s.studyStats);
   const studyComparison = useAppStore((s) => s.studyComparison);
   const pushSheet = useAppStore((s) => s.pushSheet);
@@ -69,8 +74,6 @@ export function SubjectsScreen() {
   // broken "0 %" ring. Mirrors desktop's planUsable check (SubjectsPanel/index.tsx).
   // Every subject's pass/fail statistics, not only the ones whose drawer has
   // been opened — that is what left the chip on one row out of eight.
-
-  const planUsable = !!plan && plan.blocks.some((b) => b.groups.some((g) => g.subjects.length > 0));
 
   // No per-domain shortcut here, unlike the calendar and exams screens. The
   // plan's fetch is TTL-gated, so "nothing came back" covers skipped-as-fresh,
@@ -108,11 +111,15 @@ export function SubjectsScreen() {
   // can distinguish. A lone study-plan rejection inside an otherwise healthy
   // run still reads as "no subjects"; narrowing that needs a fetched/skipped
   // distinction inside ttlGated, which is a separate change.
-  if (!planUsable && syncError) {
+  // An exchange student's fallback list wins over the error, as it does in the
+  // extension: what is in hand is a better answer than "it failed".
+  if (!planUsable && !isFallback && syncError) {
     return shell(<ScreenError testId="subjects-error" />);
   }
 
-  if (!planUsable) {
+  // Still reached with an empty subjects store too, so a student with neither
+  // a plan nor a subject folder keeps the empty state and its report link.
+  if (!plan) {
     return shell(<EmptyState />);
   }
 
@@ -135,9 +142,19 @@ export function SubjectsScreen() {
       {/* Always draggable, even when it fits — see AlwaysScrollable. */}
       <div data-testid="subjects-scroll" className="flex-1 overflow-y-auto">
         <AlwaysScrollable className="gap-2.5 px-4 pb-[calc(6rem_+_var(--safe-bottom,0px))] pt-3.5">
-          <CreditRing earned={plan.creditsAcquired} total={plan.creditsRequired} />
+          {/* The fallback has no credits to ring, only the caption saying why. */}
+          {isFallback ? (
+            <ExchangeCaption />
+          ) : (
+            <CreditRing earned={plan.creditsAcquired} total={plan.creditsRequired} />
+          )}
           {enrolled.length > 0 ? (
-            <SemesterCard enrolled={enrolled} semester={semester} onOpenSubject={openSubject} />
+            <SemesterCard
+              enrolled={enrolled}
+              semester={semester}
+              onOpenSubject={openSubject}
+              exchange={isFallback}
+            />
           ) : (
             // Said plainly rather than left blank: a student who has not
             // registered yet used to be shown a semester the heuristics picked,
@@ -164,13 +181,17 @@ export function SubjectsScreen() {
           />
           <AverageAccordion studyStats={studyStats} comparison={studyComparison} />
           {/* Under the average, and only where the plan is real: in the skeleton
-            and error shells above there is nothing to open. */}
-          <div className="flex-shrink-0 overflow-hidden rounded-2xl border border-base-300 bg-base-100">
-            {/* No icon and no sublabel: this row is the twin of the "Studijní
-              průměr" header above it, and the English plan title under a Czech
-              label was the same thing said twice. */}
-            <NavRow label={t('mobile.subjects.studyPlan')} onClick={openPlan} />
-          </div>
+            and error shells above there is nothing to open, and an exchange
+            student's plan page would be empty. Průměr above renders only with
+            something to show: averages or a year-group standing. */}
+          {!isFallback && (
+            <div className="flex-shrink-0 overflow-hidden rounded-2xl border border-base-300 bg-base-100">
+              {/* No icon and no sublabel: this row is the twin of the "Studijní
+                průměr" header above it, and the English plan title under a
+                Czech label was the same thing said twice. */}
+              <NavRow label={t('mobile.subjects.studyPlan')} onClick={openPlan} />
+            </div>
+          )}
         </AlwaysScrollable>
       </div>
     </>,

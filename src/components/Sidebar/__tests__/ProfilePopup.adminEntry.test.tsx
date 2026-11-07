@@ -32,6 +32,9 @@ describe('ProfilePopup — the hidden way into admin', () => {
     act(() => void vi.advanceTimersByTime(700));
     expect(open).toHaveBeenCalledOnce();
     expect(onClose).toHaveBeenCalled();
+    // The hold swallows its lift's click for up to a second (useLongPress);
+    // let that window close so the next test's click is a click.
+    act(() => void vi.advanceTimersByTime(1000));
   });
 
   it('shows Správa only once an admin session exists', () => {
