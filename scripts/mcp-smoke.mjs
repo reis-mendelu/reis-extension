@@ -108,6 +108,8 @@ async function readRealFiles() {
   let reads = 0;
   const done = () => longest.get('pdf') > 0 && longest.get('docx') > 0;
   outer: for (const s of await json('mendelu_subjects', {})) {
+    // Stop before listing another folder once the reads are done.
+    if (done() || reads >= MAX_READS) break;
     let files;
     try {
       files = await json('mendelu_subject_files', { code: s.subjectCode });
