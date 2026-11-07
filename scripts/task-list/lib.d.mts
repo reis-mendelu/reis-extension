@@ -11,9 +11,9 @@ export interface TaskImage {
 export interface Task {
   n: number;
   title: string;
-  details: string[];
-  /** Lines starting "↳ Claude" — notes earlier sessions left. */
-  notes: string[];
+  /** Lines under the title, in order; Claude's start "↳ Claude". */
+  thread: { by: 'claude' | 'human'; text: string }[];
+  status: 'new' | 'asked' | 'answered' | 'claimed' | 'done';
   /** From the markdown export; null when the line could not be matched. */
   done: boolean | null;
   start: number;

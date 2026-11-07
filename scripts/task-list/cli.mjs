@@ -115,10 +115,9 @@ if (command === 'list') {
     );
   } else {
     for (const t of selected) {
-      const mark = t.done === null ? '?' : t.done ? '✓' : '·';
-      console.log(`#${t.n} ${mark} ${t.title}`);
-      for (const d of t.details) console.log(`     ${d}`);
-      for (const n of t.notes) console.log(`     ${n}`);
+      const status = t.done === null ? 'unmatched' : t.status;
+      console.log(`#${t.n} [${status}] ${t.title}`);
+      for (const line of t.thread) console.log(`     ${line.text}`);
       for (const img of t.images)
         console.log(`     image: ${img.file ?? img.error ?? '(not downloaded)'}`);
     }

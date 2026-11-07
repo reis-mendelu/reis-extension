@@ -55,16 +55,46 @@ Every write changes the revision, so **re-read before each further write.**
 
 No Google API can tick a checklist box, so "done" is `✅` + strikethrough. The
 box itself stays for Dominik to tick. Notes go inside the task's own item as an
-italic `↳ Claude YYYY-MM-DD: …` line; the connector cannot start a Doc comment.
+italic `↳ Claude YYYY-MM-DD: … ∎` line; the connector cannot start a Doc comment.
 
-## Taking a task
+## The loop: ask, wait, pick up the answer
 
-- Take tasks that are about this repo's code. Outreach, emails and partner work
-  are Dominik's; leave them alone without a note.
-- If a task is unclear, ask in a note instead of guessing — say what is missing.
+Each task has a `status` (the `[…]` in `list`), worked out from the lines under it:
+
+| Status | Meaning | What a session does |
+| --- | --- | --- |
+| `new` | Claude never wrote on it | triage it (below) |
+| `asked` | Claude's question is the last word | skip — wait for Dominik |
+| `answered` | someone wrote after Claude's last note | re-read the thread; work it if now clear, else ask once more |
+| `claimed` | a note says `in progress — branch …` | resume that branch if the note is over a day old and no PR is moving; otherwise skip |
+| `done` | ticked or struck through | skip |
+
+A reply counts wherever it is typed: after the `∎` on Claude's line, on a new
+line in the same item (Shift+Enter), or as a nested bullet (Enter, Tab).
+
+**Triage every `new` task in one pass**, then work one task per session:
+
+1. Not code for this repo (outreach, emails, partner deals, other repos) →
+   leave it alone, no note.
+2. Clear enough to build → claim it and build it.
+3. Unclear → one note with the questions, then move on.
+
+**Ask only when the answer changes what gets built.** Everything else, decide
+yourself and state the assumption in the PR, where Dominik can correct it.
+
+- Offer options (`(a) … nebo (b) …`), not open questions; answerable in one line.
+- At most three questions per note, in the task's language.
+- One round: after an answer, build. Ask again only if the answer leaves the
+  task impossible, not merely imprecise.
+- Say what you found first (what exists today, what is missing), so the
+  question can be answered without opening the code.
+
+## Working a task
+
 - **Claim before working**: note `in progress — branch <name>` first, so a
   parallel or later session does not start the same task. A session can die
   mid-task (usage limit, machine reclaimed); push the branch early so the work
   survives, and a later session resumes from the claimed branch.
-- Normal repo rules apply: branch → PR into `test`, CI green. Never merge.
+- Normal repo rules apply: branch → PR into `test`, CI green, both UI trees.
+  Never merge.
 - After the PR is green, mark done with `--note "PR #n"`.

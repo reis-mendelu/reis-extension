@@ -8,7 +8,7 @@ import { findTasks, doneRequests, noteRequests } from '../task-list/lib.mjs';
 let at = 1;
 const para = (
   text: string,
-  opts: { heading?: string; bullet?: boolean; images?: string[] } = {}
+  opts: { heading?: string; bullet?: boolean; nesting?: number; images?: string[] } = {}
 ) => {
   const startIndex = at;
   const elements: object[] = [];
@@ -36,7 +36,14 @@ const para = (
     paragraph: {
       elements,
       paragraphStyle: { namedStyleType: opts.heading ?? 'NORMAL_TEXT' },
-      ...(opts.bullet ? { bullet: { listId: 'kix.list' } } : {}),
+      ...(opts.bullet
+        ? {
+            bullet: {
+              listId: 'kix.list',
+              ...(opts.nesting ? { nestingLevel: opts.nesting } : {}),
+            },
+          }
+        : {}),
     },
   };
 };
@@ -107,9 +114,11 @@ describe('findTasks', () => {
     expect(tasks[0].images).toEqual([]);
   });
 
-  it('separates Claude notes from the task text', () => {
-    expect(tasks[1].details).toEqual(['viz foto']);
-    expect(tasks[3].notes).toEqual(['↳ Claude 2026-11-07: needs a design first']);
+  it('keeps the lines under a title as a thread, Claude notes marked as such', () => {
+    expect(tasks[1].thread).toEqual([{ by: 'human', text: 'viz foto' }]);
+    expect(tasks[3].thread).toEqual([
+      { by: 'claude', text: '↳ Claude 2026-11-07: needs a design first' },
+    ]);
   });
 
   it('matches a task containing a bare URL, which the export wraps in <…>', () => {
@@ -132,6 +141,54 @@ describe('findTasks', () => {
     };
     const md = '## Bucket list\n  - put <https://x.example/a> into the app';
     expect(findTasks(d, md)[0].done).toBe(false);
+  });
+
+  it('tells asked, answered, claimed and new apart, so a later run knows what to pick up', () => {
+    const q = '↳ Claude 2026-11-07: (a) or (b)?';
+    const d = {
+      content: {
+        revisionId: 'r',
+        tabs: [
+          {
+            documentTab: {
+              body: {
+                content: [
+                  para('Bucket list', { heading: 'HEADING_2' }),
+                  para('untouched', { bullet: true }),
+                  para(`waiting\u000b${q}`, { bullet: true }),
+                  para(`answered inline\u000b${q}\u000bb, on both trees`, { bullet: true }),
+                  para(`same line\u000b${q} ∎ b, top bar`, { bullet: true }),
+                  para(`answered nested\u000b${q}`, { bullet: true }),
+                  para('a please', { bullet: true, nesting: 1 }),
+                  para('busy\u000b↳ Claude 2026-11-07: in progress — branch claude/x', {
+                    bullet: true,
+                  }),
+                ],
+              },
+            },
+          },
+        ],
+      },
+    };
+    const md =
+      '## Bucket list\n  - untouched\n  - waiting\n  - answered inline\n  - same line\n  - answered nested\n      - a please\n  - busy';
+    const tasks = findTasks(d, md);
+    expect(tasks.map((t) => [t.title, t.status])).toEqual([
+      ['untouched', 'new'],
+      ['waiting', 'asked'],
+      ['answered inline', 'answered'],
+      ['same line', 'answered'],
+      ['answered nested', 'answered'],
+      ['busy', 'claimed'],
+    ]);
+    // Typed straight after Claude's note: the ∎ end mark splits it off.
+    expect(tasks[3].thread).toEqual([
+      { by: 'claude', text: `${q} ∎` },
+      { by: 'human', text: 'b, top bar' },
+    ]);
+    // A nested reply belongs to its task: no extra task, and a new note goes after it.
+    expect(tasks[4].thread.at(-1)).toEqual({ by: 'human', text: 'a please' });
+    expect(tasks[4].textEnd).toBe(d.content.tabs[0].documentTab.body.content[6].endIndex - 1);
   });
 
   it('can read another section by name', () => {
@@ -161,7 +218,7 @@ describe('write requests', () => {
   it('appends a note on a soft line break so the task stays one checklist item', () => {
     const out = noteRequests(task, 'rev-1', 'blocked: needs the IS HTML sample', '2026-11-07');
     const [insert, italic] = out.requests;
-    const text = '\u000b↳ Claude 2026-11-07: blocked: needs the IS HTML sample';
+    const text = '\u000b↳ Claude 2026-11-07: blocked: needs the IS HTML sample ∎';
     expect(insert.insertText).toEqual({ text, location: { index: task.textEnd } });
     expect(italic.updateTextStyle.range).toEqual({
       startIndex: task.textEnd + 1,

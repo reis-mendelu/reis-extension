@@ -4,17 +4,16 @@
 // Two reads, because neither alone is enough:
 // - `read_doc` (Docs API JSON): character indices to write at, and image URIs.
 // - `read_file_content` (markdown export): whether a checklist box is ticked.
-//   The Docs API does not expose checklist state at all — a ticked and an
-//   unticked item are identical in its JSON — while the export renders a ticked
-//   item as ~~struck~~.
-// No Google API can tick the checkbox itself, so "done" is written as a struck
-// title with a ✅ prefix, which reads the same in the doc.
+//   The Docs API omits checklist state; the export renders a ticked item ~~struck~~.
+// No Google API can tick the box itself, so "done" is ✅ + strikethrough.
 
-const OBJECT = '￼';
+const OBJECT = '\uFFFC';
 const SOFT_BREAK = '\u000b';
 // Claude's notes start with this. BMP characters only: the markdown export
 // garbles anything outside it (🤖 comes back as mojibake), ✅ and ↳ survive.
 const NOTE_MARK = '↳ Claude';
+// Ends every note, so a reply typed after it on the same line reads as human.
+const NOTE_END = '∎';
 
 /** Accepts the connector's wrapper ({content: doc}) or the bare document. */
 export function unwrapDoc(json) {
@@ -67,6 +66,7 @@ function paragraphs(body) {
         text,
         images,
         bullet: !!p.bullet,
+        nesting: p.bullet?.nestingLevel ?? 0,
         level: headingLevel(p),
       };
     });
@@ -91,9 +91,34 @@ function markdownDoneMap(markdown, section) {
     .map((l) => ({ text: normalize(l.replace(/^\s*-\s/, '')), done: l.includes('~~') }));
 }
 
+function linesOf(text) {
+  if (!text.startsWith(NOTE_MARK)) return [{ by: 'human', text }];
+  const end = text.indexOf(NOTE_END);
+  if (end === -1) return [{ by: 'claude', text }];
+  const reply = text.slice(end + NOTE_END.length).trim();
+  const note = { by: 'claude', text: text.slice(0, end + NOTE_END.length) };
+  return reply ? [note, { by: 'human', text: reply }] : [note];
+}
+
+/**
+ * Where a task stands in the ask → answer → work loop:
+ * new (Claude never wrote on it), asked (Claude's question is the last word),
+ * answered (someone wrote after Claude), claimed (a session is working on it).
+ */
+function statusOf(task) {
+  if (task.done === true) return 'done';
+  const lastClaude = task.thread.findLastIndex((l) => l.by === 'claude');
+  if (lastClaude === -1) return 'new';
+  if (lastClaude < task.thread.length - 1) return 'answered';
+  const body = task.thread[lastClaude].text.replace(/^↳ Claude [\d-]+:\s*/, '');
+  return /^in progress\b/i.test(body) ? 'claimed' : 'asked';
+}
+
 /**
  * Tasks in one section (default: the Bucket list), numbered from 1 in doc
- * order. `done` is null when the markdown line could not be matched.
+ * order. `done` is null when the markdown line could not be matched. Lines
+ * under a title — soft line breaks in its item, or nested bullets below it —
+ * form the task's `thread`.
  */
 export function findTasks(docJson, markdownJson, { section = 'Bucket list' } = {}) {
   const { body, inlineObjects } = unwrapDoc(docJson);
@@ -115,14 +140,20 @@ export function findTasks(docJson, markdownJson, { section = 'Bucket list' } = {
     }
     if (!p.bullet) continue;
     const [title, ...lines] = visible.split(SOFT_BREAK).map((l) => l.replaceAll(OBJECT, '').trim());
-    const titleLen = visible.split(SOFT_BREAK)[0].replace(/[\s￼]+$/, '').length;
+    const parent = tasks.at(-1);
+    if (p.nesting > 0 && parent) {
+      parent.thread.push(...[title, ...lines].filter(Boolean).flatMap(linesOf));
+      parent.images.push(...p.images.map((id) => ({ id, uri: uriOf(id) })));
+      parent.textEnd = p.end - 1;
+      continue;
+    }
+    const titleLen = visible.split(SOFT_BREAK)[0].replace(/[\s\uFFFC]+$/, '').length;
     const key = normalize(title);
     const match = md.find((m) => m.text.startsWith(key));
     tasks.push({
       n: tasks.length + 1,
       title,
-      details: lines.filter((l) => l && !l.startsWith(NOTE_MARK)),
-      notes: lines.filter((l) => l.startsWith(NOTE_MARK)),
+      thread: lines.filter(Boolean).flatMap(linesOf),
       done: match ? match.done : null,
       start: p.start,
       titleEnd: p.start + titleLen,
@@ -130,7 +161,7 @@ export function findTasks(docJson, markdownJson, { section = 'Bucket list' } = {
       images: p.images.map((id) => ({ id, uri: uriOf(id) })),
     });
   }
-  return tasks;
+  return tasks.map((t) => ({ ...t, status: statusOf(t) }));
 }
 
 /** update_doc payload that marks a task done: ✅ + strikethrough, optional "(note)". */
@@ -152,7 +183,7 @@ export function doneRequests(task, revisionId, note) {
 
 /** update_doc payload that appends an italic "↳ Claude" note inside the task's own item. */
 export function noteRequests(task, revisionId, message, date) {
-  const text = `${SOFT_BREAK}${NOTE_MARK} ${date}: ${message}`;
+  const text = `${SOFT_BREAK}${NOTE_MARK} ${date}: ${message} ${NOTE_END}`;
   return {
     requests: [
       { insertText: { text, location: { index: task.textEnd } } },
