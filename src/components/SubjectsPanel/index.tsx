@@ -11,6 +11,7 @@ import { useSubjectsData } from './useSubjectsData';
 import { ReportMissingLink } from '../Feedback/ReportMissingLink';
 import { SubmissionBoxesSummary } from '../SubmissionBoxes/SubmissionBoxesSummary';
 import { boxesSummaryShows } from '../../utils/submissionBoxes';
+import { useScreenSignal } from '../../hooks/useScreenSignal';
 
 interface SubjectsPanelProps {
   onOpenSubject: (
@@ -30,6 +31,7 @@ export function SubjectsPanel({
   onSearchSubject,
   onOpenStudyPlan,
 }: SubjectsPanelProps) {
+  useScreenSignal('screen_subjects');
   const { t } = useTranslation();
   const studyPlanLoaded = useAppStore((s) => s.studyPlanLoaded);
   const studyStats = useAppStore((s) => s.studyStats);

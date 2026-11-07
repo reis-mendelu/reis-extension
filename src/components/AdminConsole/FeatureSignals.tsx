@@ -6,6 +6,7 @@ import { SignalTrend } from './SignalTrend';
 import { EventReachTable } from './EventReachTable';
 import type { FeatureSignalCount } from '../../api/featureStats';
 import { SIGNAL_LABEL_KEY } from './featureSignalLabels';
+import { signalShare } from '../../utils/signalShare';
 
 /** The label each database key is shown under. An unknown key is not rendered:
  *  a future deployment's signal with no copy for it would read as a bug. */
@@ -38,6 +39,9 @@ const UNSELECTED = 'bg-base-200 border-l-2 border-transparent hover:bg-base-300'
 export function FeatureSignals() {
   const { t } = useTranslation();
   const stats = useAppStore((s) => s.adminFeatureStats);
+  // The usage panel's own daily install count, from a different RPC: when that
+  // read failed there is nothing to divide by, and the rows show counts alone.
+  const usageDaily = useAppStore((s) => s.adminStats?.daily ?? null);
   // Local, like the console's own tab selection (AdminConsole's `pane`): this
   // is which chart you are looking at, not anything the app knows about you.
   const [signal, setSignal] = useState<string | null>(null);
@@ -55,6 +59,20 @@ export function FeatureSignals() {
 
   // Default to the first signal that actually has a shape to draw, so the
   // chart is never empty on arrival and never opens on a withheld series.
+  // "10 % of the day's installs opened Vývěska" (2026-11-07). Pooled over the
+  // window (utils/signalShare). A suppressed signal has no daily rows, so it
+  // gets no share — a 0 % would claim a number the floor withheld.
+  const share = (key: string, row: FeatureSignalCount | undefined): string | null => {
+    if (!usageDaily || suppressed(row)) return null;
+    const ratio = signalShare(
+      stats.daily.filter((d) => d.feature === key),
+      usageDaily
+    );
+    if (ratio === null) return null;
+    const pct = ratio > 0 && ratio < 0.01 ? '< 1' : String(Math.round(ratio * 100));
+    return t('admin.stats.signalShare', { pct });
+  };
+
   const activeSignal = signal ?? ORDER.find((k) => !suppressed(byKey.get(k))) ?? null;
   const now = new Date();
 
@@ -74,6 +92,7 @@ export function FeatureSignals() {
           {ORDER.map((key) => {
             const row = byKey.get(key);
             const isActive = key === activeSignal;
+            const rowShare = share(key, row);
             return (
               <div key={key}>
                 <button
@@ -82,7 +101,19 @@ export function FeatureSignals() {
                   onClick={() => setSignal(key)}
                   className={`${ROW} ${isActive ? SELECTED : UNSELECTED}`}
                 >
-                  <span className="min-w-0 text-sm">{t(`admin.stats.${LABEL_KEY[key]}`)}</span>
+                  <span className="flex min-w-0 flex-col">
+                    <span className="text-sm">{t(`admin.stats.${LABEL_KEY[key]}`)}</span>
+                    {/* Under the label, not beside the count: two numbers side
+                        by side overflow a 320px console. */}
+                    {rowShare && (
+                      <span
+                        className="text-xs tabular-nums opacity-70"
+                        title={t('admin.stats.signalShareHint')}
+                      >
+                        {rowShare}
+                      </span>
+                    )}
+                  </span>
                   <span className="flex-shrink-0 text-sm font-semibold tabular-nums">
                     {value(row)} {t('admin.stats.signalInstalls')}
                   </span>

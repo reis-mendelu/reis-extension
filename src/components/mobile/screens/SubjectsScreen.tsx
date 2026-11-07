@@ -16,6 +16,7 @@ import { NavRow } from '../primitives/NavRow';
 import { AlwaysScrollable } from '../primitives/AlwaysScrollable';
 import { ReportMissingLink } from '../../Feedback/ReportMissingLink';
 import { SubmissionBoxesSummary } from '../../SubmissionBoxes/SubmissionBoxesSummary';
+import { useScreenSignal } from '../../../hooks/useScreenSignal';
 
 function SubjectsSkeleton() {
   const { t } = useTranslation();
@@ -46,6 +47,7 @@ function EmptyState() {
 }
 
 export function SubjectsScreen() {
+  useScreenSignal('screen_subjects');
   const { t, language } = useTranslation();
   // `plan` is the real study plan, or for an exchange student (no
   // KontrolaPlanu) the stand-in built from the subjects store — the same

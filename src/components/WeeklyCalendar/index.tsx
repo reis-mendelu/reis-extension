@@ -16,6 +16,7 @@ import { useHintStatus } from '../../hooks/ui/useHintStatus';
 import { useIsMobile } from '../../hooks/ui/useIsMobile';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { BlockLesson, CalendarCustomEvent } from '../../types/calendarTypes';
+import { useScreenSignal } from '../../hooks/useScreenSignal';
 
 const TOTAL_HOURS = 14;
 
@@ -28,6 +29,7 @@ export function WeeklyCalendar({
   onPrevWeek?: () => void;
   onNextWeek?: () => void;
 }) {
+  useScreenSignal('screen_calendar');
   const language = useAppStore((state) => state.language);
   const isLanguageLoading = useAppStore((state) => state.isLanguageLoading);
   const isMobile = useIsMobile();
