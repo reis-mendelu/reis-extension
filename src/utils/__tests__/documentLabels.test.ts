@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { documentTitle, attachmentLabel, prettifyFileName, middleCut } from '../documentLabels';
+import {
+  documentTitle,
+  attachmentLabel,
+  prettifyFileName,
+  prettifyTitle,
+  fileExtension,
+  middleCut,
+} from '../documentLabels';
 
 const doc = { file_name: 'Harmonograminfo', title: 'Harmonogram+info' };
 
@@ -75,6 +82,37 @@ describe('prettifyFileName', () => {
   it('keeps a name that is only an extension', () => {
     expect(prettifyFileName('.pdf')).toBe('.pdf');
     expect(prettifyFileName('.gitignore')).toBe('.gitignore');
+  });
+});
+
+describe('prettifyTitle', () => {
+  /**
+   * Dominik, 2026-11-07: "we should clean up the document titles". A title gets
+   * the separators of a file name read as spaces, and nothing else: it keeps
+   * its dots and any extension-like ending, a spaced dash and a plus.
+   */
+  it('turns _ and - between words into spaces, keeping " + " and a spaced dash', () => {
+    expect(prettifyTitle('ig-03-fyzicka_vrstva + ig-04-Ethernet + ig-05-sitova_vrstva')).toBe(
+      'ig 03 fyzicka vrstva + ig 04 Ethernet + ig 05 sitova vrstva'
+    );
+    expect(prettifyTitle('Kombinovani - Harmonogram+organizacni informace')).toBe(
+      'Kombinovani - Harmonogram+organizacni informace'
+    );
+    expect(prettifyTitle('Moderni_smery_managementu_1')).toBe('Moderni smery managementu 1');
+  });
+
+  it('keeps dates, versions, codes and dots', () => {
+    expect(prettifyTitle('Zadani 04.10.2026 v2.1 (Q1-48)')).toBe('Zadani 04.10.2026 v2.1 (Q1-48)');
+    expect(prettifyTitle('Prezentace – přednáška č. 4')).toBe('Prezentace – přednáška č. 4');
+    expect(prettifyTitle('Odkaz na Seznam.cz')).toBe('Odkaz na Seznam.cz');
+  });
+});
+
+describe('fileExtension', () => {
+  it('is the extension in lower case, without the dot', () => {
+    expect(fileExtension('instrukce.MD')).toBe('md');
+    expect(fileExtension('Studijní opora 2.0')).toBeUndefined();
+    expect(fileExtension(undefined)).toBeUndefined();
   });
 });
 

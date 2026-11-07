@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { middleCut, prettifyFileName } from '../../utils/documentLabels';
+import { middleCut } from '../../utils/documentLabels';
 
 // flex-1: the width is the room the row gives, not the text's, so cutting the
 // text cannot shrink the box and trigger another fit.
@@ -8,25 +8,24 @@ const CLASSES = 'min-w-0 flex-1 line-clamp-2 break-words';
 /**
  * A file row's name as a student reads it, on up to two lines.
  *
- * Shown without its extension and with `_ - .` between words as spaces
- * (prettifyFileName): the badge beside it already says PDF, and
- * "ig-harm_kombinovani_PPS-ZS2026.pdf" wrapped badly and read worse. The real
- * name stays in `title`, and the reader, saved files and reIS for Claude get it
- * from the row, not from here.
+ * `shown` is the cleaned text FileList computed (shownNames: no extension,
+ * separators as spaces, the extension back only where two rows would read the
+ * same); `name` is the real one and stays in `title`. The reader, saved files
+ * and reIS for Claude get the real name from the row, not from here.
  *
  * Past two lines the middle is cut ("ig organizac…novani"), measured on a
  * hidden copy with the same width and classes, refitting when the width
- * changes. Without layout (jsdom, the first paint) it is the whole name.
+ * changes. Without layout (jsdom, the first paint) it is the whole text.
  */
-export function FileName({ name }: { name: string }) {
-  const pretty = prettifyFileName(name);
+export function FileName({ name, shown }: { name: string; shown?: string }) {
+  const pretty = shown ?? name;
   const ref = useRef<HTMLSpanElement>(null);
-  const [shown, setShown] = useState(pretty);
+  const [visible, setVisible] = useState(pretty);
 
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const fit = () => setShown(fitTwoLines(el, pretty));
+    const fit = () => setVisible(fitTwoLines(el, pretty));
     fit();
     if (typeof ResizeObserver === 'undefined') return;
     let width = el.clientWidth;
@@ -41,7 +40,7 @@ export function FileName({ name }: { name: string }) {
 
   return (
     <span ref={ref} className={CLASSES} title={name}>
-      <FileNameText shown={shown} full={pretty} />
+      <FileNameText shown={visible} full={pretty} />
     </span>
   );
 }

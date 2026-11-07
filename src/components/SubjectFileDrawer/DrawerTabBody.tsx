@@ -1,5 +1,6 @@
 import { FileText, Loader2 } from 'lucide-react';
-import { FileList, FileListSkeleton } from './FileList';
+import { FileList } from './FileList';
+import { FileListSkeleton } from './FileListSkeleton';
 import { SyllabusTab } from './SyllabusTab';
 import { ClassmatesTab } from './ClassmatesTab';
 import { ZaznamnikTab } from './ZaznamnikTab';

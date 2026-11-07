@@ -42,21 +42,42 @@ const DIGIT = /\p{N}/u;
 export function prettifyFileName(name: string): string {
   const stem = name.replace(EXTENSION, '');
   if (!stem.trim()) return name;
-  const spaced = stem
-    .replace(/_+/g, ' ')
-    .replace(
-      /([\p{L}\p{N}])([-.]+)(?=[\p{L}\p{N}])/gu,
-      (match, before: string, seps: string, at: number, all: string) => {
+  return spaceSeparators(stem, /([\p{L}\p{N}])([-.]+)(?=[\p{L}\p{N}])/gu) || name;
+}
+
+/**
+ * A document title as a row or heading shows it: `_` and `-` between words
+ * read as spaces ("ig-03-fyzicka_vrstva + ig-04-Ethernet" → "ig 03 fyzicka
+ * vrstva + ig 04 Ethernet"). Unlike a file name it keeps every dot and any
+ * extension-like ending ("Seznam.cz"): a teacher typed it as text. A hyphen
+ * between digits, a spaced dash and a plus stay. Display only.
+ */
+export function prettifyTitle(title: string): string {
+  return spaceSeparators(title, /([\p{L}\p{N}])(-+)(?=[\p{L}\p{N}])/gu) || title;
+}
+
+/** `_` as spaces, `between` matches as spaces unless they join two digits, ends trimmed. */
+function spaceSeparators(text: string, between: RegExp): string {
+  return (
+    text
+      .replace(/_+/g, ' ')
+      .replace(between, (match, before: string, seps: string, at: number, all: string) => {
         const after = all.charAt(at + match.length);
         const numeric = seps.length === 1 && DIGIT.test(before) && DIGIT.test(after);
         return numeric ? match : `${before} `;
-      }
-    )
-    // Leftover separators at the very ends ("__P3__final--"); an abbreviation's
-    // dot ("č. 4") is inside the text and stays.
-    .replace(/^[-.\s]+/, '')
-    .replace(/[-\s]+$/, '');
-  return spaced.replace(/\s+/g, ' ').trim() || name;
+      })
+      // Leftover separators at the very ends ("__P3__final--"); an abbreviation's
+      // dot ("č. 4") is inside the text and stays.
+      .replace(/^[-.\s]+/, '')
+      .replace(/[-\s]+$/, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+  );
+}
+
+/** A file name's extension in lower case, without its dot: "instrukce.MD" → "md". */
+export function fileExtension(name: string | undefined): string | undefined {
+  return name ? EXTENSION.exec(name)?.[0].slice(1).toLowerCase() : undefined;
 }
 
 /**

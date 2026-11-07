@@ -23,6 +23,7 @@ export interface FileListItemProps {
   subFile: FileAttachment;
   /** Already carries the "(n)" suffix when a row holds several attachments. */
   displayName: string;
+  shownName?: string; // What the row shows (shownNames); displayName drives hover and actions.
   date: string;
   /** What the iPad reader caches by (changedOn); the row still shows `date`. */
   readerDate?: string;
@@ -53,6 +54,7 @@ export interface FileListItemProps {
 export function FileListItem({
   subFile,
   displayName,
+  shownName,
   date,
   readerDate = date,
   author,
@@ -138,7 +140,7 @@ export function FileListItem({
           <div
             className={`font-medium flex items-start gap-2 ${isSelected ? 'text-primary' : 'text-base-content'}`}
           >
-            <FileName name={displayName} />
+            <FileName name={displayName} shown={shownName} />
             {isNew && (
               <span className="badge badge-primary badge-xs mt-1 font-bold shrink-0">
                 {t('course.freshness.newBadge')}

@@ -68,7 +68,7 @@ describe('FileList: a document with several files', () => {
     );
     expect(screen.getByTitle('eth_frame.pdf')).toHaveTextContent(/^eth frame$/);
     expect(screen.getByTitle('ig-04-Ethernet.pdf')).toHaveTextContent(/^ig 04 Ethernet$/);
-    expect(screen.getAllByText('ig-03 + ig-04 + ig-05')).toHaveLength(1);
+    expect(screen.getAllByText('ig 03 + ig 04 + ig 05')).toHaveLength(1);
     expect(screen.queryByText(/\(\d\)$/)).toBeNull();
   });
 
@@ -111,6 +111,48 @@ describe('FileList: long names', () => {
     const { container } = render(<FileNameText shown="eth frame" full="eth frame" />);
     expect(container.textContent).toBe('eth frame');
     expect(container.querySelector('.sr-only')).toBeNull();
+  });
+});
+
+describe('FileList: cleaned titles and same-name files', () => {
+  it('cleans the document heading, the original on hover', () => {
+    renderList([LECTURES]);
+    const heading = screen.getByRole('heading', { name: 'ig 03 + ig 04 + ig 05' });
+    expect(heading).toHaveAttribute('title', 'ig-03 + ig-04 + ig-05');
+  });
+
+  it('cleans a single-file title, keeping a spaced dash and a plus', () => {
+    renderList([doc({ ...LONE, title: 'Moderni_smery - cast+1' })]);
+    expect(screen.getByTitle('Moderni_smery - cast+1')).toHaveTextContent(
+      /^Moderni smery - cast\+1$/
+    );
+  });
+
+  it('shows the extension only for files that would read the same', () => {
+    renderList([
+      doc({
+        title: 'Reading week - Flexbox',
+        files: [
+          { name: 'x', type: 'unknown', link: dl(11), filename: 'instrukce.md' },
+          { name: 'x', type: 'docx', link: dl(12), filename: 'instrukce.docx' },
+          { name: 'x', type: 'html', link: dl(13), filename: 'prednaska-demo.html' },
+        ],
+      }),
+    ]);
+    expect(screen.getByTitle('instrukce.md')).toHaveTextContent(/^instrukce \(md\)$/);
+    expect(screen.getByTitle('instrukce.docx')).toHaveTextContent(/^instrukce \(docx\)$/);
+    expect(screen.getByTitle('prednaska-demo.html')).toHaveTextContent(/^prednaska demo$/);
+  });
+
+  it('does the same for single-file documents in one folder', () => {
+    renderList([
+      doc({ title: 'Prezentace_1', files: [{ name: 'x', type: 'pdf', link: dl(21) }] }),
+      doc({ title: 'Prezentace 1', files: [{ name: 'x', type: 'pptx', link: dl(22) }] }),
+      doc({ title: 'Harmonogram', files: [{ name: 'x', type: 'pdf', link: dl(23) }] }),
+    ]);
+    expect(screen.getByTitle('Prezentace_1')).toHaveTextContent(/^Prezentace 1 \(pdf\)$/);
+    expect(screen.getByTitle('Prezentace 1')).toHaveTextContent(/^Prezentace 1 \(pptx\)$/);
+    expect(screen.getByTitle('Harmonogram')).toHaveTextContent(/^Harmonogram$/);
   });
 });
 
