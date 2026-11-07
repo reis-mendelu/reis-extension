@@ -1502,7 +1502,9 @@
     "profile": {
       "settings": "Settings",
       "atSchool": "At school",
-      "settingsSub": "Notifications, language, appearance"
+      "settingsSub": "Notifications, language, appearance",
+      "isic": "ISIC",
+      "isicSub": "balance and top-up"
     },
     "loadFailed": {
       "title": "Couldn't load your data",

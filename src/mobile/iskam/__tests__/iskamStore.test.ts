@@ -22,7 +22,7 @@ vi.mock('../../../platform', () => ({ getPlatform: () => ({ kind: platformKind }
 vi.mock('../../../errors/demoMode', () => ({ isDemoMode: () => demo }));
 vi.mock('../../../utils/reportError', () => ({ logError: vi.fn() }));
 
-import { useIskamStore } from '../iskamStore';
+import { iskamOffered, useIskamStore } from '../iskamStore';
 import { LoginCancelledError, LoginUnreachableError } from '../../ensureSession';
 
 const KONTA = `<div class="vyskaRiadkuKonto"><div>Hlavní konto</div><div>245,00 Kč</div><a href="/Platby/NabitiKonta/0">Nabít</a></div>`;
@@ -80,6 +80,34 @@ describe('useIskamStore', () => {
     } finally {
       window.history.replaceState(null, '', '/');
     }
+  });
+
+  // StrictMode mounts a sheet twice in dev, and the unmount reset in between
+  // wiped the forced state — so ?iskam= never showed the row in either sheet,
+  // and verify-ui photographed a header with nothing under it.
+  it('keeps a forced ?iskam= state through reset() on the dev webapp', async () => {
+    platformKind = 'web';
+    window.history.replaceState(null, '', '/?iskam=balance');
+    try {
+      await s().check();
+      s().reset();
+      expect(s().status).toBe('balance');
+      expect(runSilentChain).not.toHaveBeenCalled();
+    } finally {
+      window.history.replaceState(null, '', '/');
+    }
+  });
+
+  // The profile's ISIC row is shown by this, before any check has run: an
+  // entry that opened an empty sheet in the demo or the web build would be a
+  // way into nothing.
+  it('is offered on Capacitor only, and never in demo mode', () => {
+    expect(iskamOffered()).toBe(true);
+    demo = true;
+    expect(iskamOffered()).toBe(false);
+    demo = false;
+    platformKind = 'web';
+    expect(iskamOffered()).toBe(false);
   });
 
   it('stays hidden in demo mode and off Capacitor, without touching WebISKAM', async () => {

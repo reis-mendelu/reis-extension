@@ -38,6 +38,8 @@ const MOBILE_ONLY = [
   'src/components/mobile/sheets/MenuSheet.tsx',
   'src/components/mobile/screens/calendar/MenuCard.tsx',
   'src/components/mobile/screens/calendar/WeekMenuButton.tsx',
+  'src/components/mobile/screens/profile/IskamProfileRow.tsx',
+  'src/components/mobile/sheets/IskamSheet.tsx',
 ];
 
 /** Files outside src/mobile/iskam that may reach it, each on the phone tree. */
@@ -49,7 +51,30 @@ const ALLOWED_IMPORTERS = new Set([
   // Týden's chef hat opens the same menza sheet and starts the same balance
   // check from its tap (spec 2026-10-30).
   'src/components/mobile/screens/calendar/WeekMenuButton.tsx',
+  // The profile's way in (Task List, 2026-11-07: few found it in Jídelníček).
+  // The row starts the same check from its tap and opens a sheet holding the
+  // same IskamBalanceRow; nothing about the balance or top-up is duplicated.
+  'src/components/mobile/screens/profile/IskamProfileRow.tsx',
+  'src/components/mobile/sheets/IskamSheet.tsx',
 ]);
+
+/**
+ * Where the profile's ISIC entry is wired in. Named so the tree-parity hook
+ * treats them as the decided divergence they are: the extension has no profile
+ * tab and no ISIC row, by the decision above, so these changes have no desktop
+ * counterpart.
+ */
+const PROFILE_ENTRY_WIRING = [
+  'src/components/mobile/screens/ProfileScreen.tsx',
+  'src/components/mobile/sheets/SheetHost.tsx',
+];
+
+/** The extension's own UI, as .claude/hooks/tree-parity.mjs defines it. */
+const DESKTOP_ENTRY = [
+  'src/components/Sidebar.tsx',
+  'src/components/AppMain.tsx',
+  'src/components/AppOverlays.tsx',
+];
 
 const root = process.cwd();
 function walk(dir: string, out: string[] = []): string[] {
@@ -116,6 +141,13 @@ describe('WebISKAM stays on the phone tree', () => {
       f.startsWith('src/mobile/iskam/')
     );
     expect(reached).toEqual([]);
+  });
+
+  it('the extension UI cannot reach the ISIC row, the profile entry or its sheet', () => {
+    const desktop = new Set(DESKTOP_ENTRY.flatMap((e) => [...importClosure(join(root, e))]));
+    const reached = [...ALLOWED_IMPORTERS, ...PROFILE_ENTRY_WIRING].filter((f) => desktop.has(f));
+    expect(reached).toEqual([]);
+    expect([...desktop].filter((f) => f.startsWith('src/mobile/iskam/'))).toEqual([]);
   });
 
   it('the extension asks for no webiskam host permission', () => {
