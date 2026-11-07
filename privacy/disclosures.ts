@@ -193,7 +193,7 @@ export const FLOWS: Flow[] = [
       ],
       [
         'Screen opened',
-        'when the calendar, Předměty, Jídelníček, search, Vývěska or Novinky is shown, once per app session; stored as one row per install per day',
+        'when the calendar, Předměty, Jídelníček, search, Vývěska or Novinky is shown, once per app session (again only if a send fails); stored as one row per install per day',
         'the random install identifier and one fixed label naming the screen (`screen_calendar`, `screen_subjects`, `screen_menu`, `screen_search`, `screen_bulletin`, `screen_notifications`) — nothing about what was on it, what you searched for or how long you stayed',
       ],
     ],
