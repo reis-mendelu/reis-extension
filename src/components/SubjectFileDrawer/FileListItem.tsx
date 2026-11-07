@@ -142,7 +142,7 @@ export function FileListItem({
             )}
           </div>
           {(!compact || isBusy) && (
-            <div className="text-xs text-base-content/50 truncate flex items-center gap-2">
+            <div className="text-xs text-base-content/70 truncate flex items-center gap-2">
               {isBusy ? (
                 // The tonal token, not raw `text-primary`: that measured 2.29:1
                 // on the light theme's white row (see DownloadProgress).
