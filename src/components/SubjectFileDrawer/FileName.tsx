@@ -8,10 +8,11 @@ const CLASSES = 'min-w-0 flex-1 line-clamp-2 break-words';
 /**
  * A file row's name as a student reads it, on up to two lines.
  *
- * `shown` is the cleaned text FileList computed (shownNames: no extension,
- * separators as spaces, the extension back only where two rows would read the
- * same); `name` is the real one and stays in `title`. The reader, saved files
- * and reIS for Claude get the real name from the row, not from here.
+ * `shown` is the cleaned text FileList computed (shownNames): separators as
+ * spaces; for a file under a document also no extension, which comes back only
+ * where two rows would read the same; a document title keeps its own ending.
+ * `name` is the real one and stays in `title`. The reader, saved files and reIS
+ * for Claude get the real name from the row, not from here.
  *
  * Past two lines the middle is cut ("ig organizac…novani"), measured on a
  * hidden copy with the same width and classes, refitting when the width

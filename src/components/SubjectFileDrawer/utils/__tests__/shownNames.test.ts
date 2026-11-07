@@ -28,6 +28,16 @@ describe('shownNames', () => {
     ).toEqual(['Prezentace 1 (pdf)', undefined, 'Prezentace 1 (pptx)', 'Harmonogram']);
   });
 
+  it('falls back to the real name when the extension does not tell them apart', () => {
+    expect(
+      shownNames([
+        { name: 'instrukce_v1.md', kind: 'file', ext: 'md' },
+        { name: 'instrukce-v1.md', kind: 'file', ext: 'md' },
+        { name: 'instrukce v1.docx', kind: 'file', ext: 'docx' },
+      ])
+    ).toEqual(['instrukce_v1.md', 'instrukce-v1.md', 'instrukce v1 (docx)']);
+  });
+
   it('leaves a duplicate without an extension as it is', () => {
     expect(
       shownNames([

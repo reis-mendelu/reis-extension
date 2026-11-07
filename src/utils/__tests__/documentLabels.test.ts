@@ -112,6 +112,7 @@ describe('prettifyTitle', () => {
     // like a file name; prettifyFileName once cut these on that row.
     expect(prettifyTitle('Cvičení 2.1a')).toBe('Cvičení 2.1a');
     expect(prettifyTitle('Prednaska01.pdf')).toBe('Prednaska01.pdf');
+    expect(prettifyTitle('.NET_zaklady')).toBe('.NET zaklady');
   });
 });
 

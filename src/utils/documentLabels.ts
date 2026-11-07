@@ -42,7 +42,7 @@ const DIGIT = /\p{N}/u;
 export function prettifyFileName(name: string): string {
   const stem = name.replace(EXTENSION, '');
   if (!stem.trim()) return name;
-  return spaceSeparators(stem, /([\p{L}\p{N}])([-.]+)(?=[\p{L}\p{N}])/gu) || name;
+  return spaceSeparators(stem, /([\p{L}\p{N}])([-.]+)(?=[\p{L}\p{N}])/gu, /^[-.\s]+/) || name;
 }
 
 /**
@@ -53,11 +53,12 @@ export function prettifyFileName(name: string): string {
  * between digits, a spaced dash and a plus stay. Display only.
  */
 export function prettifyTitle(title: string): string {
-  return spaceSeparators(title, /([\p{L}\p{N}])(-+)(?=[\p{L}\p{N}])/gu) || title;
+  // A leading dot stays: ".NET" is a word in a title.
+  return spaceSeparators(title, /([\p{L}\p{N}])(-+)(?=[\p{L}\p{N}])/gu, /^[-\s]+/) || title;
 }
 
 /** `_` as spaces, `between` matches as spaces unless they join two digits, ends trimmed. */
-function spaceSeparators(text: string, between: RegExp): string {
+function spaceSeparators(text: string, between: RegExp, leading: RegExp): string {
   return (
     text
       .replace(/_+/g, ' ')
@@ -68,7 +69,7 @@ function spaceSeparators(text: string, between: RegExp): string {
       })
       // Leftover separators at the very ends ("__P3__final--"); an abbreviation's
       // dot ("č. 4") is inside the text and stays.
-      .replace(/^[-.\s]+/, '')
+      .replace(leading, '')
       .replace(/[-\s]+$/, '')
       .replace(/\s+/g, ' ')
       .trim()
