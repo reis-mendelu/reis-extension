@@ -14,6 +14,7 @@ import { useUserParams } from '../../hooks/useUserParams';
 import { useAppStore } from '../../store/useAppStore';
 import { ExamsFreshness } from './ExamsFreshness';
 import { LoadFailed } from '../LoadFailed';
+import { SignupGroup } from './SignupGroup';
 
 interface RegisteredExam extends TimelineExam {
   subject: ExamSubject;
@@ -41,7 +42,7 @@ function PanelTopBar({ href }: { href: string }) {
 export function ExamPanel() {
   const { t, language } = useTranslation();
   const { params } = useUserParams();
-  const { exams, showSkeleton, showFailed, sections } = useExamsData();
+  const { exams, showSkeleton, showFailed, sections, signupSections } = useExamsData();
   const studium = params?.studium || '';
   const obdobi = params?.obdobi || '';
   const href =
@@ -132,6 +133,22 @@ export function ExamPanel() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, []);
 
+  const sectionCard = (subject: ExamSubject, section: ExamSection) => (
+    <ExamSectionCard
+      key={section.id}
+      subject={subject}
+      section={section}
+      isExpanded={expandedId === section.id}
+      isProcessing={processingSectionId === section.id}
+      armedTerms={armedTerms}
+      firingTerms={firingTerms}
+      toggleArm={toggleArm}
+      onToggleExpand={handleToggleExpand}
+      onRegister={handleRegisterRequest}
+      onUnregister={handleUnregisterRequest}
+    />
+  );
+
   const topTimeline =
     realExams.length > 0 ? (
       <div>
@@ -195,27 +212,12 @@ export function ExamPanel() {
               </>
             ) : null;
           })()
-        ) : sections.length > 0 ? (
+        ) : sections.length > 0 || signupSections.length > 0 ? (
           <>
             {topTimeline}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {sections.map(
-                ({ subject, section }: { subject: ExamSubject; section: ExamSection }) => (
-                  <ExamSectionCard
-                    key={section.id}
-                    subject={subject}
-                    section={section}
-                    isExpanded={expandedId === section.id}
-                    isProcessing={processingSectionId === section.id}
-                    armedTerms={armedTerms}
-                    firingTerms={firingTerms}
-                    toggleArm={toggleArm}
-                    onToggleExpand={handleToggleExpand}
-                    onRegister={handleRegisterRequest}
-                    onUnregister={handleUnregisterRequest}
-                  />
-                )
-              )}
+              {sections.map(({ subject, section }) => sectionCard(subject, section))}
+              <SignupGroup rows={signupSections} renderCard={sectionCard} />
             </div>
           </>
         ) : realExams.length > 0 ? (
@@ -228,8 +230,8 @@ export function ExamPanel() {
             </div>
           </>
         ) : (
-          // Subjects, but none with a row: a "Zápis na cvičení" section is
-          // stripped and its subject kept. `null` here was a blank panel (#33).
+          // Subjects, but none with a row (a subject IS lists with no terms).
+          // `null` here was a blank panel (#33).
           <div className="flex-1 flex flex-col items-center justify-center">
             <EmptyExamsState />
           </div>

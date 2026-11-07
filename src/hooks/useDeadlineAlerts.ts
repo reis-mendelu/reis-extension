@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { parseDate } from '../utils/date';
 import { courseDisplayName } from '../utils/courseDisplayName';
+import { isGroupSignupSection } from '../utils/exams/isGroupSignup';
 import { boxCourseCode, boxState } from '../utils/submissionBoxes';
 import { newPointsAlerts } from '../utils/zaznamnik/newPointsAlerts';
 import { boxKey } from '../utils/newBoxDetection';
@@ -86,6 +87,9 @@ export function useDeadlineAlerts() {
       );
 
       for (const section of subject.sections) {
+        // Shown in a collapsed group with no badge (report #37) — an alert
+        // would be the badge by another name.
+        if (isGroupSignupSection(section)) continue;
         const sectionName = (isEn ? section.nameEn : section.nameCs) ?? section.name;
 
         if (section.status === 'available') {
