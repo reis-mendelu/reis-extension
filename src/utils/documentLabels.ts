@@ -26,3 +26,19 @@ export function attachmentLabel(
   if (count <= 1) return title;
   return attachment.filename || `${title} (${index + 1})`;
 }
+
+/**
+ * `name` cut to `keep` characters in the middle of its stem, the extension
+ * whole: "Cviceni_5_Uzivat…_ukazkami.ipynb". The file row picks `keep` by
+ * measuring (FileName.tsx); a clamp alone cuts the end, which is exactly where
+ * ".pdf" sits. A name with no extension is cut at its end.
+ */
+export function middleTruncate(name: string, keep: number): string {
+  if (name.length <= keep) return name;
+  const ext = /\.[a-z0-9]{1,8}$/i.exec(name)?.[0] ?? '';
+  const room = keep - ext.length - 1;
+  if (!ext || room < 2) return `${name.slice(0, Math.max(keep - 1, 0))}…`;
+  const stem = name.slice(0, -ext.length);
+  const head = Math.ceil(room * 0.6);
+  return `${stem.slice(0, head)}…${stem.slice(stem.length - (room - head))}${ext}`;
+}

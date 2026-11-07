@@ -80,6 +80,35 @@ describe('FileList: a document with several files', () => {
   });
 });
 
+describe('FileList: long names', () => {
+  /**
+   * A one-line truncate cut the extension first ("ig-c04-fyzicka_vrstva.p…").
+   * Names wrap to two lines now. The middle cut that keeps the extension needs
+   * layout, so it is measured in the browser (verify-ui), not here; the cut
+   * itself is unit-tested in documentLabels.test.ts.
+   */
+
+  it('wraps a name to two lines instead of cutting it on one', () => {
+    renderList([LECTURES]);
+    const name = screen.getByText('ig-03-fyzicka_vrstva.pdf');
+    expect(name.className).toContain('line-clamp-2');
+    expect(name.className).toContain('break-all');
+    expect(name.className).not.toContain('truncate');
+  });
+
+  it('breaks a title between words, not inside them', () => {
+    renderList([LONE]);
+    expect(screen.getByText('Harmonogram+organizacni informace').className).toContain(
+      'break-words'
+    );
+  });
+
+  it('keeps the whole name on hover', () => {
+    renderList([LECTURES]);
+    expect(screen.getByTitle('eth_frame.pdf')).toHaveTextContent('eth_frame.pdf');
+  });
+});
+
 describe('FileList: a document with one file', () => {
   it('goes by its title as IS prints it, with nothing stripped', () => {
     renderList([LONE]);

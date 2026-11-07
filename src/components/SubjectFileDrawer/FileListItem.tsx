@@ -17,6 +17,7 @@ import { opensInReader } from './utils/isPdfFile';
 import type { PdfRowMeta } from './types';
 import type { FileRowHint } from '../../utils/contentDisposition';
 import { FileRowMeta, RowProgressBar } from './fileRowBits';
+import { FileName } from './FileName';
 
 export interface FileListItemProps {
   subFile: FileAttachment;
@@ -135,11 +136,11 @@ export function FileListItem({
 
         <div className="flex-1 min-w-0">
           <div
-            className={`font-medium truncate flex items-center gap-2 ${isSelected ? 'text-primary' : 'text-base-content'}`}
+            className={`font-medium flex items-start gap-2 ${isSelected ? 'text-primary' : 'text-base-content'}`}
           >
-            <span className="truncate">{displayName}</span>
+            <FileName name={displayName} />
             {isNew && (
-              <span className="badge badge-primary badge-xs font-bold shrink-0">
+              <span className="badge badge-primary badge-xs mt-1 font-bold shrink-0">
                 {t('course.freshness.newBadge')}
               </span>
             )}
