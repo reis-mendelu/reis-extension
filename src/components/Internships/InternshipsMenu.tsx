@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { BriefcaseBusiness, X } from 'lucide-react';
-import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useEscapeLayer } from '../../hooks/ui/useEscapeLayer';
 import { usePartnerInternships } from '../../hooks/usePartnerInternships';
@@ -25,7 +24,6 @@ export function InternshipsMenu() {
     pillRef.current?.focus();
   };
 
-  const isNarrow = useAppStore((s) => s.isNarrow);
   // The field can stop matching while the dropdown is open (an admin switching
   // the impersonated faculty). The component then renders nothing, so the
   // dropdown must also stop being open — or its Escape layer would stay armed,
@@ -64,14 +62,13 @@ export function InternshipsMenu() {
       </button>
 
       {shown && (
-        // Anchored under the pill it starts ~450px from the left edge, so in a
-        // narrow window a 384px panel would hang off the right side. There it
-        // spans the window instead.
+        // Anchored under the pill, the 384px panel runs from x≈457 to x≈841, so
+        // below an 880px window it would hang off the right side — and the
+        // app's own "narrow" switch only flips at 768px, which left 768–860
+        // overflowing (measured). Below 880px it spans the window instead.
         <div
           data-internships-panel
-          className={`z-50 flex flex-col overflow-hidden rounded-xl border border-base-300 bg-base-100 shadow-xl ${
-            isNarrow ? 'fixed inset-x-4 top-16' : 'absolute left-0 top-11 w-96'
-          }`}
+          className="fixed inset-x-4 top-16 z-50 flex flex-col overflow-hidden rounded-xl border border-base-300 bg-base-100 shadow-xl min-[880px]:absolute min-[880px]:inset-x-auto min-[880px]:left-0 min-[880px]:top-11 min-[880px]:w-96"
         >
           <div className="flex items-center justify-between border-b border-base-300/80 bg-base-200/40 px-4 py-2.5">
             <span className="text-xs font-bold text-base-content">{t('internships.title')}</span>

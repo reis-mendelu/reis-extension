@@ -97,16 +97,16 @@ describe('Stáže', () => {
       );
     });
 
-    it('pins the dropdown inside a narrow window instead of hanging off the pill', () => {
-      useAppStore.setState({ isNarrow: true } as never);
+    // jsdom has no layout, so this pins the classes; the widths themselves
+    // were measured in a browser (600/768/900/1024px, PR #651).
+    it('spans the window below 880px instead of hanging off the pill', () => {
       render(<InternshipsMenu />);
       fireEvent.click(screen.getByRole('button', { name: 'Stáže' }));
       const panel = screen
         .getByRole('link', { name: /Cesta s EY/ })
         .closest('[data-internships-panel]');
-      expect(panel?.className).toContain('fixed');
-      expect(panel?.className).toContain('inset-x-4');
-      useAppStore.setState({ isNarrow: false } as never);
+      expect(panel?.className).toContain('fixed inset-x-4');
+      expect(panel?.className).toContain('min-[880px]:absolute');
     });
 
     it('renders nothing when no partner matches the field', () => {
