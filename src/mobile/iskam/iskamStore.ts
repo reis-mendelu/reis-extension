@@ -239,9 +239,6 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
       signingIn: false,
       lastTopUp: null,
       ...(inFlight ? {} : { topUp: 'idle' as const }),
-      // Dev webapp only (null in every shipped build): StrictMode mounts a
-      // sheet twice, and this reset in between would wipe a ?iskam= state.
-      ...devForcedState(),
     });
   },
 

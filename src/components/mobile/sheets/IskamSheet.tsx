@@ -1,8 +1,7 @@
-import { useEffect } from 'react';
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { useIskamStore } from '../../../mobile/iskam/iskamStore';
+import { useIskamResetOnLeave } from './useIskamResetOnLeave';
 import { IskamBalanceRow } from './IskamBalanceRow';
 
 export interface IskamSheetProps {
@@ -18,10 +17,8 @@ export interface IskamSheetProps {
  */
 export function IskamSheet({ onClose }: IskamSheetProps) {
   const { t } = useTranslation();
-  // As in MenuSheet: the balance never outlives the sheet. On unmount, since
-  // Android back and a tab switch remove a sheet without calling onClose. A
-  // cleanup, not a fetch — the check starts from the profile row's tap.
-  useEffect(() => () => useIskamStore.getState().reset(), []);
+  // As in MenuSheet: the balance never outlives the sheet.
+  useIskamResetOnLeave();
   return (
     <Sheet size="content" onClose={onClose}>
       <SheetHeader title={t('mobile.profile.isic')} onClose={onClose} />

@@ -20,13 +20,16 @@ describe('MenuSheet and the ISIC row', () => {
   // PR #548 review: Android back and a tab switch remove the sheet through
   // popSheet / the stack, never through its close button, so the reset that
   // drops the balance has to run on unmount, whatever removed the sheet.
-  it('drops the ISIC state when the sheet goes away by any route', () => {
+  it('drops the ISIC state when the sheet goes away by any route', async () => {
     useAppStore.setState({ language: 'cz', menu: [] } as never);
     const reset = vi.fn();
     useIskamStore.setState({ reset });
     const { unmount } = render(<MenuSheet dayIso="2026-10-13" onClose={() => {}} />);
     expect(reset).not.toHaveBeenCalled();
     unmount();
+    // One microtask late (useIskamResetOnLeave): StrictMode's simulated
+    // unmount must not drop the check the tap just started.
+    await Promise.resolve();
     expect(reset).toHaveBeenCalledTimes(1);
   });
 });

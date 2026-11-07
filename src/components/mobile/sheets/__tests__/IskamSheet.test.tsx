@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
@@ -24,7 +25,6 @@ describe('IskamSheet (the profile way into the ISIC row)', () => {
       status: 'balance',
       balance: { amount: 2825.58 },
       lastTopUp: null,
-      reset: vi.fn(),
     });
   });
 
@@ -42,13 +42,26 @@ describe('IskamSheet (the profile way into the ISIC row)', () => {
 
   // Same rule as MenuSheet (PR #548 review): Android back and a tab switch
   // remove a sheet without its close button, so the balance is dropped on
-  // unmount, whatever removed the sheet.
-  it('drops the ISIC state when the sheet goes away by any route', () => {
-    const reset = vi.fn();
-    useIskamStore.setState({ reset });
+  // unmount, whatever removed the sheet. The real reset, and the store after it.
+  it('drops the balance when the sheet goes away by any route', async () => {
     const { unmount } = render(<IskamSheet onClose={() => {}} />);
-    expect(reset).not.toHaveBeenCalled();
     unmount();
-    expect(reset).toHaveBeenCalledTimes(1);
+    await Promise.resolve();
+    expect(useIskamStore.getState().status).toBe('hidden');
+    expect(useIskamStore.getState().balance).toBeNull();
+  });
+
+  // Review #645: StrictMode runs setup → cleanup → setup on mount in dev, and a
+  // reset in that simulated unmount dropped the check the tap had started,
+  // leaving the sheet empty. Jídelníček's sheet had the same hole.
+  it("keeps the balance through StrictMode's double mount", async () => {
+    render(
+      <StrictMode>
+        <IskamSheet onClose={() => {}} />
+      </StrictMode>
+    );
+    await Promise.resolve();
+    expect(useIskamStore.getState().status).toBe('balance');
+    expect(screen.getByTestId('iskam-amount')).toBeInTheDocument();
   });
 });

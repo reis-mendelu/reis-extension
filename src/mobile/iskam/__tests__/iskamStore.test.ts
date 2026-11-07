@@ -82,22 +82,6 @@ describe('useIskamStore', () => {
     }
   });
 
-  // StrictMode mounts a sheet twice in dev, and the unmount reset in between
-  // wiped the forced state — so ?iskam= never showed the row in either sheet,
-  // and verify-ui photographed a header with nothing under it.
-  it('keeps a forced ?iskam= state through reset() on the dev webapp', async () => {
-    platformKind = 'web';
-    window.history.replaceState(null, '', '/?iskam=balance');
-    try {
-      await s().check();
-      s().reset();
-      expect(s().status).toBe('balance');
-      expect(runSilentChain).not.toHaveBeenCalled();
-    } finally {
-      window.history.replaceState(null, '', '/');
-    }
-  });
-
   // The profile's ISIC row is shown by this, before any check has run: an
   // entry that opened an empty sheet in the demo or the web build would be a
   // way into nothing.
