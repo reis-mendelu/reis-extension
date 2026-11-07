@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ChevronRight, Info } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useEffectiveStudyPlan } from '@/hooks/useEffectiveStudyPlan';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -98,10 +98,6 @@ export function SubjectsPanel({
     return (
       <div className="h-full flex flex-col overflow-hidden">
         <div className="px-4 pt-4 pb-0 shrink-0">
-          <div className="flex items-start gap-2 text-xs text-base-content/70 pb-3">
-            <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-            <span>{t('subjects.noPlanExchange')}</span>
-          </div>
           <EnrolledNowSection
             plan={effectivePlan}
             failRates={failRates}

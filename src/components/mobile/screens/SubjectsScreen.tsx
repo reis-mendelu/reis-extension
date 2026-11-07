@@ -11,7 +11,6 @@ import { ScreenHeader } from './calendar/ScreenHeader';
 import { CreditRing } from './subjects/CreditRing';
 import { SemesterCard } from './subjects/SemesterCard';
 import { AverageAccordion } from './subjects/AverageAccordion';
-import { ExchangeCaption } from './subjects/ExchangeCaption';
 import { NavRow } from '../primitives/NavRow';
 import { AlwaysScrollable } from '../primitives/AlwaysScrollable';
 import { ReportMissingLink } from '../../Feedback/ReportMissingLink';
@@ -144,12 +143,9 @@ export function SubjectsScreen() {
       {/* Always draggable, even when it fits — see AlwaysScrollable. */}
       <div data-testid="subjects-scroll" className="flex-1 overflow-y-auto">
         <AlwaysScrollable className="gap-2.5 px-4 pb-[calc(6rem_+_var(--safe-bottom,0px))] pt-3.5">
-          {/* The fallback has no credits to ring, only the caption saying why. */}
-          {isFallback ? (
-            <ExchangeCaption />
-          ) : (
-            <CreditRing earned={plan.creditsAcquired} total={plan.creditsRequired} />
-          )}
+          {/* The fallback has no credits to ring, and says nothing about the
+              missing study plan: students only care that they see their subjects. */}
+          {!isFallback && <CreditRing earned={plan.creditsAcquired} total={plan.creditsRequired} />}
           {enrolled.length > 0 ? (
             <SemesterCard
               enrolled={enrolled}
