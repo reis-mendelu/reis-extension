@@ -91,6 +91,8 @@ const json = async (name, args) => {
 
 /** The one refusal a healthy server gives on purpose (files.ts readCapped). */
 const TOO_BIG = 'too big to read here';
+/** mendelu_subject_files errors that mean "nothing to list", not a broken server. */
+const SKIPPABLE_LISTING = ['has no file folder', 'output cut at the limit'];
 
 /**
  * mendelu_read_file takes a downloadUrl, so `{}` proves nothing. IS file names
@@ -102,6 +104,7 @@ async function readRealFiles() {
   const MAX_READS = 25;
   const longest = new Map(); // kind -> longest text read of that kind
   const refusals = [];
+  const listingErrors = [];
   let reads = 0;
   const done = () => longest.get('pdf') > 0 && longest.get('docx') > 0;
   outer: for (const s of await json('mendelu_subjects', {})) {
@@ -109,7 +112,12 @@ async function readRealFiles() {
     try {
       files = await json('mendelu_subject_files', { code: s.subjectCode });
     } catch (e) {
-      console.log(`  a subject's file list was skipped: ${e.message.split('\n')[0]}`);
+      const m = e.message.split('\n')[0];
+      // Expected: a subject with no IS folder (tools.ts), or a list too long to
+      // come back whole. Anything else is a broken listing, which could hide
+      // the only DOCX, so it fails the run.
+      if (!SKIPPABLE_LISTING.some((s) => m.includes(s))) listingErrors.push(m);
+      else console.log(`  a subject's file list was skipped: ${m}`);
       continue;
     }
     for (const f of files) {
@@ -127,7 +135,7 @@ async function readRealFiles() {
   }
   // Unsupported types come back as a note, not an error, so any refusal but
   // the size cap is a broken read (of a file whose kind we never learn).
-  const broken = refusals.filter((m) => !m.includes(TOO_BIG));
+  const broken = [...listingErrors, ...refusals.filter((m) => !m.includes(TOO_BIG))];
   console.log(`mendelu_read_file: ${reads} files read, ${refusals.length} refused`);
   for (const [kind, chars] of longest) console.log(`  ${kind}: ${chars} chars of text`);
   for (const m of broken) console.log(`  broken read: ${m}`);
