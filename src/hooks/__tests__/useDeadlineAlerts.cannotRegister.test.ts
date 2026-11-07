@@ -40,4 +40,15 @@ describe('useDeadlineAlerts', () => {
     const { result } = renderHook(() => useDeadlineAlerts());
     expect(result.current.alerts.map((a) => a.type)).toEqual(['exam-reg-opens']);
   });
+
+  // Report #37 put "zápis na …" sections back in the store, shown in a
+  // collapsed group with no badge. An alert would be the badge by another name.
+  it('raises none for a seminar-group signup', () => {
+    const term = { id: 't1', date: '05.10.2026', time: '09:00', ...dates };
+    const subject = subjectWith(term);
+    subject.sections[0]!.name = 'Zápis na cvičení';
+    useAppStore.setState({ exams: { ...useAppStore.getState().exams, data: [subject] } });
+    const { result } = renderHook(() => useDeadlineAlerts());
+    expect(result.current.alerts.filter((a) => a.type.startsWith('exam-'))).toEqual([]);
+  });
 });

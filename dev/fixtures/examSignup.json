@@ -1,0 +1,326 @@
+{
+  "_comment": "Synthetic fixture for report #37: seminar-group signup ('Zápis na cvičení') in its own collapsed group at the bottom of Zkoušky. NO real student data — fictional teachers, invented term ids. Etologie: the reported shape, a full ZOO Vyškov excursion under Kam se přihlásit nemohu. Algoritmizace: #344's shape, bookable slots for a group. Plus three exams from examSeason so the exam groups render above it. Serve with: REIS_FIXTURE=examSignup vite --config vite.web.config.ts",
+  "exams": [
+    {
+      "version": 1,
+      "id": "fx-mt",
+      "code": "EBC-MT",
+      "name": "Matematika",
+      "nameCs": "Matematika",
+      "nameEn": "Mathematics",
+      "sections": [
+        {
+          "id": "fx-mt-zk",
+          "name": "zkouška",
+          "nameCs": "zkouška",
+          "nameEn": "exam",
+          "type": "Zkouška",
+          "status": "registered",
+          "registeredTerm": {
+            "id": "fx-mt-zk-t2",
+            "dayOffset": 2,
+            "time": "09:00",
+            "room": "Q01",
+            "roomCs": "Q01",
+            "roomEn": "Q01",
+            "teacher": "doc. Ing. Jan Novák, Ph.D.",
+            "deregDayOffset": 0,
+            "deregTime": "23:59"
+          },
+          "terms": [
+            {
+              "id": "fx-mt-zk-t1",
+              "dayOffset": 0,
+              "time": "08:00",
+              "room": "Q01",
+              "teacher": "doc. Ing. Jan Novák, Ph.D.",
+              "capacity": {
+                "occupied": 40,
+                "total": 40,
+                "raw": "40/40"
+              },
+              "full": true,
+              "attemptTypes": ["regular"],
+              "sectionForm": "písemná",
+              "sectionFormCs": "písemná",
+              "sectionFormEn": "written",
+              "durationMinutes": 45
+            },
+            {
+              "id": "fx-mt-zk-t2",
+              "dayOffset": 2,
+              "time": "09:00",
+              "room": "Q01",
+              "teacher": "doc. Ing. Jan Novák, Ph.D.",
+              "capacity": {
+                "occupied": 31,
+                "total": 40,
+                "raw": "31/40"
+              },
+              "full": false,
+              "attemptTypes": ["regular"],
+              "canRegisterNow": true,
+              "deregDayOffset": 0,
+              "deregTime": "23:59",
+              "sectionForm": "písemná",
+              "sectionFormEn": "written",
+              "durationMinutes": 45
+            },
+            {
+              "id": "fx-mt-zk-t3",
+              "dayOffset": 16,
+              "time": "10:00",
+              "room": "Q02",
+              "teacher": "Ing. Petra Dvořáková, Ph.D.",
+              "capacity": {
+                "occupied": 4,
+                "total": 35,
+                "raw": "4/35"
+              },
+              "attemptTypes": ["retake1"],
+              "canRegisterNow": true,
+              "sectionForm": "písemná a ústní",
+              "sectionFormEn": "written and oral",
+              "durationMinutes": 45
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": 1,
+      "id": "fx-sta",
+      "code": "EBC-STA",
+      "name": "Statistika",
+      "nameCs": "Statistika",
+      "nameEn": "Statistics",
+      "sections": [
+        {
+          "id": "fx-sta-zk",
+          "name": "zkouška",
+          "nameCs": "zkouška",
+          "nameEn": "exam",
+          "type": "exam",
+          "status": "open",
+          "terms": [
+            {
+              "id": "fx-sta-zk-t1",
+              "dayOffset": 30,
+              "time": "09:00",
+              "room": "Q01",
+              "teacher": "Ing. Petr Dvořák",
+              "capacity": {
+                "occupied": 4,
+                "total": 40,
+                "raw": "4/40"
+              },
+              "full": false,
+              "attemptTypes": ["retake1"],
+              "regStartDayOffset": 10,
+              "regEndDayOffset": 29,
+              "canRegisterNow": false,
+              "cannotRegister": true,
+              "blockReasonUrl": "https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=fx-sta-zk-t1;zobraz_duvod=1;lang=cz",
+              "sectionForm": "písemná",
+              "sectionFormCs": "písemná",
+              "sectionFormEn": "written",
+              "regStartTime": "13:00",
+              "regEndTime": "20:00",
+              "durationMinutes": 90
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": 1,
+      "id": "fx-mng",
+      "code": "EBC-MNG",
+      "name": "Management",
+      "nameCs": "Management",
+      "nameEn": "Management",
+      "sections": [
+        {
+          "id": "fx-mng-zk",
+          "name": "zkouška",
+          "nameCs": "zkouška",
+          "nameEn": "exam",
+          "type": "exam",
+          "status": "open",
+          "terms": [
+            {
+              "id": "fx-mng-zk-t1",
+              "dayOffset": 8,
+              "time": "10:00",
+              "room": "Q02",
+              "roomCs": "Q02",
+              "roomEn": "Q02",
+              "teacher": "doc. Ing. Jana Černá, Ph.D.",
+              "capacity": {
+                "occupied": 25,
+                "total": 45,
+                "raw": "25/45"
+              },
+              "full": false,
+              "sectionForm": "písemná a ústní",
+              "sectionFormCs": "písemná a ústní",
+              "sectionFormEn": "written",
+              "attemptTypes": ["regular"],
+              "canRegisterNow": true,
+              "regStartDayOffset": -3,
+              "regEndDayOffset": 6,
+              "deregDayOffset": 6,
+              "regStartTime": "13:00",
+              "regEndTime": "20:00",
+              "deregTime": "20:00",
+              "durationMinutes": 90
+            },
+            {
+              "id": "fx-mng-zk-t2",
+              "dayOffset": 15,
+              "time": "10:00",
+              "room": "Q02",
+              "roomCs": "Q02",
+              "roomEn": "Q02",
+              "teacher": "doc. Ing. Jana Černá, Ph.D.",
+              "capacity": {
+                "occupied": 45,
+                "total": 45,
+                "raw": "45/45"
+              },
+              "full": true,
+              "sectionForm": "písemná",
+              "sectionFormCs": "písemná",
+              "sectionFormEn": "written",
+              "attemptTypes": ["retake1"],
+              "canRegisterNow": false,
+              "regStartDayOffset": -3,
+              "regEndDayOffset": 13,
+              "deregDayOffset": 13,
+              "regStartTime": "13:00",
+              "regEndTime": "20:00",
+              "deregTime": "20:00",
+              "durationMinutes": 90
+            },
+            {
+              "id": "fx-mng-zk-t3",
+              "dayOffset": 3,
+              "time": "10:00",
+              "room": "Q02",
+              "roomCs": "Q02",
+              "roomEn": "Q02",
+              "teacher": "doc. Ing. Jana Černá, Ph.D.",
+              "capacity": {
+                "occupied": 30,
+                "total": 45,
+                "raw": "30/45"
+              },
+              "full": false,
+              "sectionForm": "písemná",
+              "sectionFormCs": "písemná",
+              "sectionFormEn": "written",
+              "attemptTypes": ["regular"],
+              "canRegisterNow": false,
+              "regStartDayOffset": -20,
+              "regEndDayOffset": -1,
+              "deregDayOffset": -1,
+              "regStartTime": "13:00",
+              "regEndTime": "20:00",
+              "deregTime": "20:00",
+              "durationMinutes": 90
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": 1,
+      "id": "fx-etw",
+      "code": "ETWHZ",
+      "name": "Etologie a welfare hospodářských zvířat",
+      "nameCs": "Etologie a welfare hospodářských zvířat",
+      "nameEn": "Ethology and welfare of farm animals",
+      "sections": [
+        {
+          "id": "fx-etw-zap",
+          "name": "Zápis na cvičení",
+          "nameCs": "Zápis na cvičení",
+          "nameEn": "Practical sign-up",
+          "type": "test",
+          "status": "open",
+          "terms": [
+            {
+              "id": "fx-etw-t1",
+              "dayOffset": 6,
+              "time": "10:00",
+              "room": "ZOO Vyškov",
+              "roomCs": "ZOO Vyškov",
+              "roomEn": "ZOO Vyškov",
+              "teacher": "Ing. Karel Malý",
+              "capacity": {
+                "occupied": 46,
+                "total": 46,
+                "raw": "46/46"
+              },
+              "full": true,
+              "attemptTypes": ["regular", "retake1"],
+              "canRegisterNow": false,
+              "cannotRegister": true,
+              "blockReasonUrl": "https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=fx-etw-t1;zobraz_duvod=1;lang=cz",
+              "sectionForm": "zápis na cvičení",
+              "regStartDayOffset": -8,
+              "regEndDayOffset": 5,
+              "deregDayOffset": 5,
+              "regStartTime": "13:00",
+              "regEndTime": "09:00",
+              "deregTime": "09:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": 1,
+      "id": "fx-alg",
+      "code": "EBC-ALG",
+      "name": "Algoritmizace",
+      "nameCs": "Algoritmizace",
+      "nameEn": "Algorithms",
+      "sections": [
+        {
+          "id": "fx-alg-zap",
+          "name": "Zápis na cvičení",
+          "nameCs": "Zápis na cvičení",
+          "nameEn": "Practical sign-up",
+          "type": "test",
+          "status": "open",
+          "terms": [
+            {
+              "id": "fx-alg-t1",
+              "dayOffset": 3,
+              "time": "11:00",
+              "room": "P1014",
+              "roomCs": "P1014",
+              "roomEn": "P1014",
+              "teacher": "Ing. Eva Horáková",
+              "capacity": {
+                "occupied": 2,
+                "total": 15,
+                "raw": "2/15"
+              },
+              "full": false,
+              "attemptTypes": ["regular"],
+              "canRegisterNow": true,
+              "regStartDayOffset": -3,
+              "regEndDayOffset": 2,
+              "deregDayOffset": 2,
+              "regStartTime": "13:00",
+              "regEndTime": "20:00",
+              "deregTime": "20:00"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

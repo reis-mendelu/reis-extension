@@ -32,13 +32,24 @@ describe('the sections the desktop exam panel lists', () => {
   // Same bug as the phone's "Otevřené termíny": IS serves seminar-group signup
   // through the exam-terms table, and the desktop panel passed it straight
   // through on the identical `status !== 'registered'` test.
-  it('drops seminar-group signup', () => {
+  it('keeps seminar-group signup out of the exam list', () => {
     setExams([
       section({ id: 'a', name: 'Zápis na cvičení' }),
       section({ id: 'b', name: 'Zkouška' }),
     ]);
     const { result } = renderHook(() => useExamsData());
     expect(result.current.sections.map((r) => r.section.name)).toEqual(['Zkouška']);
+  });
+
+  // Report #37: it goes to its own collapsed group instead of disappearing.
+  it('hands unregistered signup sections to the signup group', () => {
+    setExams([
+      section({ id: 'a', name: 'Zápis na cvičení' }),
+      section({ id: 'b', name: 'Zkouška' }),
+      section({ id: 'c', name: 'Zápis na seminář', status: 'registered' }),
+    ]);
+    const { result } = renderHook(() => useExamsData());
+    expect(result.current.signupSections.map((r) => r.section.id)).toEqual(['a']);
   });
 
   it('keeps zápočet', () => {

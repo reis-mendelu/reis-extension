@@ -54,28 +54,44 @@ const reported = [
   },
 ] as unknown as ExamSubject[];
 
+/**
+ * Until report #37 this group was stripped at the store's door (#344). Then a
+ * student lost a ZOO Vyškov excursion she could not see anywhere, so signups
+ * are kept and shown in a collapsed group of their own at the bottom of
+ * Zkoušky. What #344 was really about survives: no badge, and never under
+ * Otevřené termíny.
+ */
 describe('a seminar-group signup arriving from IS', () => {
   beforeEach(() => {
     useAppStore.setState((s) => ({ exams: { ...s.exams, data: [], status: 'success' } }));
   });
 
-  it('never reaches the store', () => {
+  it('reaches the store, so the signup group can show it', () => {
     useAppStore.getState().setExams(reported);
     const [subject] = useAppStore.getState().exams.data;
-    expect(subject?.sections).toEqual([]);
+    expect(subject?.sections.map((s) => s.name)).toEqual(['Zápis na cvičení']);
   });
 
   // The complaint was not really the row — it was being told he had something
   // to do. The menu badge counts every section with a registerable term, so
-  // before this filter he carried a "1" on Zkoušky for a cvičení he was
-  // already enrolled in.
+  // he carried a "1" on Zkoušky for a cvičení he was already enrolled in.
   it('does not put a badge on the Zkoušky menu item', () => {
     useAppStore.getState().setExams(reported);
     const { result } = renderHook(() => useMenuItems());
     expect(result.current.find((i) => i.id === 'exams')?.badge).toBe(0);
   });
 
-  it('still badges a real exam, so the filter has not disabled the feature', () => {
+  it('does not badge a registered signup either', () => {
+    const registered = JSON.parse(JSON.stringify(reported)) as ExamSubject[];
+    const sec = registered[0]!.sections[0]!;
+    sec.status = 'registered';
+    sec.registeredTerm = { id: '901', date: '21.09.2026', time: '11:00' };
+    useAppStore.getState().setExams(registered);
+    const { result } = renderHook(() => useMenuItems());
+    expect(result.current.find((i) => i.id === 'exams')?.badge).toBe(0);
+  });
+
+  it('still badges a real exam, so the badge rule has not disabled the feature', () => {
     const withExam = JSON.parse(JSON.stringify(reported)) as ExamSubject[];
     withExam[0]!.sections.push({
       ...JSON.parse(JSON.stringify(reported[0]!.sections[0])),

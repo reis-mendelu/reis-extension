@@ -13,17 +13,19 @@ export function useExamsData() {
   const examsAnswered = useAppStore((s) => !!s.syncLoaded.exams);
   const refreshing = useAppStore((s) => s.examsRefreshing);
 
-  const sections = useMemo(() => {
-    const res: { subject: ExamSubject; section: ExamSection }[] = [];
+  // Seminar-group signup rides in on the same IS table as exam terms but is
+  // not an exam: it gets a collapsed group of its own (report #37) — see
+  // utils/exams/isGroupSignup.
+  const { sections, signupSections } = useMemo(() => {
+    const exam: { subject: ExamSubject; section: ExamSection }[] = [];
+    const signup: { subject: ExamSubject; section: ExamSection }[] = [];
     exams.forEach((sub: ExamSubject) => {
       sub.sections.forEach((sec: ExamSection) => {
-        // Seminar-group signup rides in on the same IS table as exam
-        // terms but is not an exam — see utils/exams/isGroupSignup.
-        if (isGroupSignupSection(sec)) return;
-        if (sec.status !== 'registered') res.push({ subject: sub, section: sec });
+        if (sec.status === 'registered') return;
+        (isGroupSignupSection(sec) ? signup : exam).push({ subject: sub, section: sec });
       });
     });
-    return res;
+    return { sections: exam, signupSections: signup };
   }, [exams]);
 
   // A sync only means "still loading" while exams have no answer yet — the
@@ -45,5 +47,5 @@ export function useExamsData() {
   const showSkeleton = waiting || (unanswered && refreshing);
   const showFailed = unanswered && !refreshing;
 
-  return { exams, showSkeleton, showFailed, sections };
+  return { exams, showSkeleton, showFailed, sections, signupSections };
 }

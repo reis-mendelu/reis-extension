@@ -18,8 +18,7 @@ beforeEach(() =>
       handshakeDone: true,
       handshakeTimedOut: false,
     },
-    // What `stripGroupSignupSections` leaves when "Zápis na cvičení" was the
-    // subject's only section: the subject, with nothing in it.
+    // A subject IS lists with no sections at all.
     exams: {
       data: [{ version: 1, id: 'tv', name: 'Tělesná výchova', code: 'TV', sections: [] }],
       status: 'success',
