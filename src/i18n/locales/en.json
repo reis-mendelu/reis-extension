@@ -947,6 +947,10 @@
     "loading": "Loading…",
     "error": "Failed to load"
   },
+  "internships": {
+    "title": "Internships",
+    "close": "Close internships"
+  },
   "customEvent": {
     "titlePlaceholder": "Add title",
     "locationPlaceholder": "Room or place",

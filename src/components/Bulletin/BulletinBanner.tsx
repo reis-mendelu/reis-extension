@@ -76,7 +76,7 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
 
   if (isMobile) {
     return (
-      <div className="flex-1 flex items-center min-w-0 px-3">
+      <div className="flex items-center min-w-0 px-3">
         <button
           type="button"
           onClick={() => {
@@ -104,7 +104,7 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
   }
 
   return (
-    <div className="relative flex-1 flex items-center min-w-0 px-3" ref={dropdownRef}>
+    <div className="relative flex items-center min-w-0 px-3" ref={dropdownRef}>
       <button
         type="button"
         onClick={() => {

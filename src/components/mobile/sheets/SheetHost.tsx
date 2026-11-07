@@ -9,6 +9,7 @@ import { DocsSheet } from './DocsSheet';
 import { SettingsSheet } from './SettingsSheet';
 import { SearchSheet } from './SearchSheet';
 import { BulletinSheet } from './BulletinSheet';
+import { InternshipsSheet } from './InternshipsSheet';
 import { MenuSheet } from './MenuSheet';
 import { IskamSheet } from './IskamSheet';
 import { VenueSheet } from './VenueSheet';
@@ -52,6 +53,8 @@ export function SheetHost() {
             return <SettingsSheet key={index} onClose={popSheet} />;
           case 'bulletin':
             return <BulletinSheet key={index} onClose={popSheet} />;
+          case 'internships':
+            return <InternshipsSheet key={index} onClose={popSheet} />;
           case 'venue':
             return <VenueSheet key={index} sheet={sheet} onClose={popSheet} />;
           case 'menu':

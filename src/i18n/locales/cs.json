@@ -947,6 +947,10 @@
     "loading": "Načítání…",
     "error": "Nepodařilo se načíst"
   },
+  "internships": {
+    "title": "Stáže",
+    "close": "Zavřít stáže"
+  },
   "customEvent": {
     "titlePlaceholder": "Přidat název",
     "locationPlaceholder": "Místnost nebo místo",

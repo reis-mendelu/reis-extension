@@ -537,6 +537,9 @@ export type MobileSheet =
   // inside CalendarScreen while its button shipped on every screen's header —
   // so it opened from one tab out of five.
   | { kind: 'bulletin' }
+  // Stáže: the programmes of the student's partners. Its button sits beside the
+  // vývěska's and only exists when there is a programme to show.
+  | { kind: 'internships' }
   // A held lesson in Týden or Den: hide it, or all of its kind (#43).
   | { kind: 'hideLesson'; lesson: BlockLesson }
   | { kind: 'confirm'; confirmId: string };
