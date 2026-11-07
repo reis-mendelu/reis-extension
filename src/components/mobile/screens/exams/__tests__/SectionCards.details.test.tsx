@@ -109,6 +109,18 @@ describe.each(['OpenCard', 'NotYetOpenCard'] as const)('%s — one Více per car
     expect(screen.queryByRole('button', { name: /Podrobnosti termínu/ })).not.toBeInTheDocument();
   });
 
+  // The deadlines left the details because they are per term; each row has to
+  // carry its own instead, or the card would lose them altogether.
+  it('says on every row until when that term takes registrations', () => {
+    render(cards[name](makeRow([1, 2, 3].map((i) => term(i)))));
+    const lines = screen.getAllByText(/^Přihlášení do/);
+    expect(lines.map((l) => l.textContent)).toEqual([
+      'Přihlášení do 10. 12. 20:00',
+      'Přihlášení do 11. 12. 20:00',
+      'Přihlášení do 12. 12. 20:00',
+    ]);
+  });
+
   it('opens the subject-level facts and the note, never one term’s deadline or classmates', () => {
     render(cards[name](makeRow([1, 2, 3].map((i) => term(i)))));
     openDetails();
