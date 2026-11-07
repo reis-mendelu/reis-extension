@@ -44,8 +44,9 @@ export function DocumentFiles({
           )}
         </h4>
         <div className="flex items-center gap-2 truncate text-xs text-base-content/70">
-          <FileRowMeta date={date} author={author} comment={comment} />
+          <FileRowMeta date={date} author={author} />
         </div>
+        {comment && <div className="line-clamp-2 text-xs text-base-content/70">{comment}</div>}
       </div>
       <div className="ml-3 space-y-1 border-l border-base-content/10 pl-1">{children}</div>
     </div>

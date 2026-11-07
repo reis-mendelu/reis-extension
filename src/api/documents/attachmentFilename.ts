@@ -15,7 +15,12 @@ import { sanitizeString } from '../../utils/validation/stringSanitizer';
  */
 export function attachmentFilename(link: Element): string {
   const icon = link.querySelector('[data-sysid^="mime-"]');
-  return sanitizeString(icon?.getAttribute('title') || icon?.getAttribute('aria-label') || '', 200);
+  // Whole, not cut to a display length: the type is read from its extension,
+  // and a cut name can end in a false one. The row truncates it in CSS.
+  return sanitizeString(
+    icon?.getAttribute('title') || icon?.getAttribute('aria-label') || '',
+    1000
+  );
 }
 
 /**

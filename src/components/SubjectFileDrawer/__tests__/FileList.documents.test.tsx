@@ -92,6 +92,13 @@ describe('FileList: a document with one file', () => {
     expect(screen.queryByText('23.10.2026')).toBeNull();
   });
 
+  it("gives IS's comment its own line, so the author cannot crowd it out on a phone", () => {
+    renderList([{ ...LONE, file_comment: 'Cvičení 4 rozvrhovaná na sudý týd...' }]);
+    const comment = screen.getByText('Cvičení 4 rozvrhovaná na sudý týd...');
+    expect(comment.parentElement).not.toBe(screen.getByText('P. Svoboda').parentElement);
+    expect(comment.className).toContain('line-clamp-2');
+  });
+
   it('says who put it there', () => {
     renderList([LONE]);
     expect(screen.getByText('P. Svoboda')).toBeInTheDocument();

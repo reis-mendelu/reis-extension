@@ -155,8 +155,11 @@ export function FileListItem({
               ) : (
                 <FileRowMeta date={date} author={author} />
               )}
-              {!compact && comment && <span className="truncate">{comment}</span>}
             </div>
+          )}
+          {/* Its own line: beside a date and an author on a phone it had no room. */}
+          {!compact && comment && (
+            <div className="line-clamp-2 text-xs text-base-content/70">{comment}</div>
           )}
         </div>
 

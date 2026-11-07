@@ -24,25 +24,16 @@ export function FileTypeBadge({ type }: { type: string }) {
 }
 
 /**
- * The quiet second line of a row or a document heading: date, who put it
- * there, IS's comment. The author tells a student whose seminar a file is for
- * when two teachers share one folder ("cvičení 05 - turcinek" beside
- * "cvičení 05 - Pisařovic").
+ * The quiet second line of a row or a document heading: date and who put it
+ * there; IS's comment gets a line of its own. The author tells a student whose
+ * seminar a file is for when two teachers share one folder ("cvičení 05 -
+ * turcinek" beside "cvičení 05 - Pisařovic").
  */
-export function FileRowMeta({
-  date,
-  author,
-  comment,
-}: {
-  date?: string;
-  author?: string;
-  comment?: string;
-}) {
+export function FileRowMeta({ date, author }: { date?: string; author?: string }) {
   return (
     <>
       {date && <span className="shrink-0">{date}</span>}
-      {author && <span className="shrink-0">{author}</span>}
-      {comment && <span className="truncate">{comment}</span>}
+      {author && <span className="truncate">{author}</span>}
     </>
   );
 }
