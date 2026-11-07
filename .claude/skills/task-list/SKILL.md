@@ -96,6 +96,10 @@ yourself and state the assumption in the PR, where Dominik can correct it.
   mid-task (usage limit, machine reclaimed); push the branch early so the work
   survives, and a later session resumes from the claimed branch.
 - Normal repo rules apply: branch → PR into `test`, CI green, both UI trees.
+- Build and verify on the demo data (preview build, `dev/fixtures/`). Never ask
+  for IS Mendelu credentials: they stay on Dominik's laptop (CLAUDE.md). When a
+  task needs real IS data (a parser change, a bug only real data shows), ask
+  in a note for an HTML sample or for Dominik to check it locally.
 
 ## Finishing: show it, then ask to merge
 
