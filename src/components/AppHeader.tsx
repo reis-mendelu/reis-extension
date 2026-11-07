@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { BulletinBanner } from './Bulletin/BulletinBanner';
+import { InternshipsMenu } from './Internships/InternshipsMenu';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { MobileSearchOverlay } from './SearchBar/MobileSearchOverlay';
 import { useTranslation } from '../hooks/useTranslation';
@@ -128,7 +129,16 @@ export function AppHeader({
             </div>
           )}
 
-          {currentView === 'calendar' ? <BulletinBanner inline /> : <div className="flex-1" />}
+          {/* Vývěska, then Stáže beside it (only for a field with a partner
+              programme). The row stretches; the pills keep their width. */}
+          {currentView === 'calendar' ? (
+            <div className="flex min-w-0 flex-1 items-center">
+              <BulletinBanner inline />
+              <InternshipsMenu />
+            </div>
+          ) : (
+            <div className="flex-1" />
+          )}
           <HalloweenHeaderBats />
 
           <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 ml-auto z-10">

@@ -213,6 +213,7 @@ const ALLOWED_HOSTS = [
   'instagram.com', // a society's profile, the "details" link on an event with none
   'creativecommons.org', // the Twemoji licence, linked from the map's credit line
   'gate.gopay.com', // the GoPay payment page for an ISIC top-up, opened in the system browser view
+  'cestasey.cz', // EY's programme, linked from Stáže for students whose field EY partners
 
   // --- not destinations ---
   'localhost.that.never.exists', // CORS sentinel in capacitorTransport
