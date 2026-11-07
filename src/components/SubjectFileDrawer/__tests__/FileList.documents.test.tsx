@@ -61,9 +61,12 @@ function renderList(files: ParsedFile[], over: Record<string, unknown> = {}) {
 describe('FileList: a document with several files', () => {
   it('names each file by its own name, and the document once above them', () => {
     renderList([LECTURES]);
-    expect(screen.getByText('ig-03-fyzicka_vrstva.pdf')).toBeInTheDocument();
-    expect(screen.getByText('eth_frame.pdf')).toBeInTheDocument();
-    expect(screen.getByText('ig-04-Ethernet.pdf')).toBeInTheDocument();
+    // By title: a file name is split by <wbr> and its glued extension.
+    expect(screen.getByTitle('ig-03-fyzicka_vrstva.pdf')).toHaveTextContent(
+      'ig-03-fyzicka_vrstva.pdf'
+    );
+    expect(screen.getByTitle('eth_frame.pdf')).toHaveTextContent('eth_frame.pdf');
+    expect(screen.getByTitle('ig-04-Ethernet.pdf')).toHaveTextContent('ig-04-Ethernet.pdf');
     expect(screen.getAllByText('ig-03 + ig-04 + ig-05')).toHaveLength(1);
     expect(screen.queryByText(/\(\d\)$/)).toBeNull();
   });
@@ -72,7 +75,7 @@ describe('FileList: a document with several files', () => {
     // The iPad reader keeps a copy only while this date matches: a replaced
     // file has to reach it with its Modifikace, or the old pages stay.
     const props = renderList([LECTURES]);
-    await userEvent.click(screen.getByText('eth_frame.pdf'));
+    await userEvent.click(screen.getByTitle('eth_frame.pdf'));
     expect(props.onViewPdf).toHaveBeenCalledWith(dl(2), {
       name: 'eth_frame.pdf',
       date: '15.10.2026',
@@ -90,10 +93,20 @@ describe('FileList: long names', () => {
 
   it('wraps a name to two lines instead of cutting it on one', () => {
     renderList([LECTURES]);
-    const name = screen.getByText('ig-03-fyzicka_vrstva.pdf');
+    const name = screen.getByTitle('ig-03-fyzicka_vrstva.pdf');
     expect(name.className).toContain('line-clamp-2');
-    expect(name.className).toContain('break-all');
     expect(name.className).not.toContain('truncate');
+  });
+
+  it('breaks after separators, and never inside the extension', () => {
+    // break-all split "ig-PPS-org-inf-ZS2026.pdf" into "…ZS2026.p" / "df".
+    renderList([LECTURES]);
+    const name = screen.getByTitle('ig-03-fyzicka_vrstva.pdf');
+    expect(name.className).not.toContain('break-all');
+    // After "ig-", "03-" and "fyzicka_", the last one before the glued "vrstva.pdf".
+    expect(name.querySelectorAll('wbr')).toHaveLength(3);
+    const tail = name.querySelector('.whitespace-nowrap');
+    expect(tail?.textContent).toBe('vrstva.pdf');
   });
 
   it('breaks a title between words, not inside them', () => {

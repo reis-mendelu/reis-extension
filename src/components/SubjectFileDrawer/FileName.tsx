@@ -1,5 +1,5 @@
-import { useLayoutEffect, useRef, useState } from 'react';
-import { middleTruncate } from '../../utils/documentLabels';
+import { Fragment, useLayoutEffect, useRef, useState } from 'react';
+import { middleTruncate, nameBreaks } from '../../utils/documentLabels';
 
 const HAS_EXTENSION = /\.[a-z0-9]{1,8}$/i;
 // flex-1: the width is the room the row gives, not the text's, so cutting the
@@ -43,17 +43,44 @@ export function FileName({ name }: { name: string }) {
     return () => observer.disconnect();
   }, [name]);
 
+  if (!HAS_EXTENSION.test(name)) {
+    // A title breaks between words.
+    return (
+      <span ref={ref} className={`${CLASSES} break-words`} title={name}>
+        {shown}
+      </span>
+    );
+  }
+  // A file name breaks after its separators (<wbr>), anywhere only as a last
+  // resort, and never inside the extension: break-all split
+  // "ig-PPS-org-inf-ZS2026.pdf" into "…ZS2026.p" / "df".
+  const { pieces, tail } = nameBreaks(shown);
   return (
-    // A file name breaks anywhere, so two lines hold as much of it as they can
-    // ("ig-c04-" alone wasted half a line); a title breaks between words.
-    <span
-      ref={ref}
-      className={`${CLASSES} ${HAS_EXTENSION.test(name) ? 'break-all' : 'break-words'}`}
-      title={name}
-    >
-      {shown}
+    <span ref={ref} className={`${CLASSES} ${FILE_NAME_WRAP}`} title={name}>
+      {pieces.map((piece, i) => (
+        <Fragment key={i}>
+          {piece}
+          <wbr />
+        </Fragment>
+      ))}
+      <span className="whitespace-nowrap">{tail}</span>
     </span>
   );
+}
+
+const FILE_NAME_WRAP = '[overflow-wrap:anywhere]';
+
+/** The same markup FileName renders, built on the hidden probe. */
+function fillProbe(probe: HTMLElement, text: string) {
+  probe.replaceChildren();
+  const { pieces, tail } = nameBreaks(text);
+  for (const piece of pieces) {
+    probe.append(piece, document.createElement('wbr'));
+  }
+  const glued = document.createElement('span');
+  glued.className = 'whitespace-nowrap';
+  glued.textContent = tail;
+  probe.append(glued);
 }
 
 /** The longest middle-cut of `name` that fits `el`'s two lines, measured on a hidden copy. */
@@ -65,8 +92,11 @@ function fitTwoLines(el: HTMLElement, name: string): string {
   probe.style.cssText = `position:absolute;visibility:hidden;pointer-events:none;width:${width}px;`;
   el.parentElement.appendChild(probe);
   const fits = (text: string) => {
-    probe.textContent = text;
-    return probe.scrollHeight <= probe.clientHeight + 1;
+    fillProbe(probe, text);
+    // Wider counts too: the glued tail cannot wrap, so it can only overflow.
+    return (
+      probe.scrollHeight <= probe.clientHeight + 1 && probe.scrollWidth <= probe.clientWidth + 1
+    );
   };
   try {
     if (fits(name)) return name;

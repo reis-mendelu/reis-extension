@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { documentTitle, attachmentLabel, middleTruncate } from '../documentLabels';
+import { documentTitle, attachmentLabel, middleTruncate, nameBreaks } from '../documentLabels';
 
 const doc = { file_name: 'Harmonograminfo', title: 'Harmonogram+info' };
 
@@ -54,5 +54,37 @@ describe('middleTruncate', () => {
 
   it('cuts a name with no extension at its end', () => {
     expect(middleTruncate('a'.repeat(60), 44)).toBe(`${'a'.repeat(43)}…`);
+  });
+});
+
+describe('nameBreaks', () => {
+  /**
+   * break-all split "ig-PPS-org-inf-ZS2026.pdf" into "…ZS2026.p" / "df". The
+   * stem may break after a separator; the extension never breaks, glued to the
+   * stem's last segment ("ZS2026.pdf", not "ZS202" / "6.pdf") when that is
+   * short, else to its last character, so it never stands alone on a line.
+   */
+  it('breaks the stem after _ - . and …, and keeps the last segment with the extension', () => {
+    expect(nameBreaks('ig-PPS-org-inf-ZS2026.pdf')).toEqual({
+      pieces: ['ig-', 'PPS-', 'org-', 'inf-'],
+      tail: 'ZS2026.pdf',
+    });
+    expect(nameBreaks('ig-harm_komb…S-ZS2026.pdf').pieces).toEqual(['ig-', 'harm_', 'komb…', 'S-']);
+  });
+
+  it('glues a short name with no separator whole', () => {
+    expect(nameBreaks('P3.zip')).toEqual({ pieces: [], tail: 'P3.zip' });
+  });
+
+  it('glues only the last character when the last segment is long', () => {
+    expect(nameBreaks('uloha_postupnereseni.ipynb')).toEqual({
+      pieces: ['uloha_', 'postupneresen'],
+      tail: 'i.ipynb',
+    });
+    expect(nameBreaks('dz_18Rozvaha.pdf').tail).toBe('18Rozvaha.pdf');
+  });
+
+  it('keeps a whole name with no extension as one piece', () => {
+    expect(nameBreaks('Přednáška 05')).toEqual({ pieces: ['Přednáška 05'], tail: '' });
   });
 });
