@@ -469,6 +469,8 @@
     "wasCredit": "dříve zápočet, nyní zkouška",
     "wasExam": "dříve zkouška, nyní zápočet",
     "lastTaught": "naposledy {year}",
+    "garant": "Garant: {name}",
+    "garantChanged": "Garant se změnil v {semester} (dříve {before}, nyní {now}) – starší semestry nemusí odpovídat.",
     "previewOf": "Výsledky jiného předmětu",
     "back": "Zpět"
   },

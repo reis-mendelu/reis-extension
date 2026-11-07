@@ -85,6 +85,9 @@ export interface SemesterStats {
   sourceUrl?: string; // Original IS MENDELU URL
   type: 'exam' | 'credit';
   terms: TermStats[];
+  /** The garant IS printed on this period's success-rate page (reis-scraper
+   * `src/garant.ts`). Absent for periods crawled before it was captured. */
+  garant?: string;
 }
 
 export interface SubjectSuccessRate {

@@ -469,6 +469,8 @@
     "wasCredit": "was a credit, now an exam",
     "wasExam": "was an exam, now a credit",
     "lastTaught": "last taught {year}",
+    "garant": "Guarantor: {name}",
+    "garantChanged": "The guarantor changed in {semester} (previously {before}, now {now}) – older semesters may not reflect the subject today.",
     "previewOf": "Results of another subject",
     "back": "Back"
   },
