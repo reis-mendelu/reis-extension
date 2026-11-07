@@ -11,13 +11,17 @@ import type { FileListProps } from './types';
 import { collapseAttachments } from '../../api/documents/collapseAttachments';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useDocumentNoteKeys } from '../../hooks/data/useDocumentNoteKeys';
-import { parseIsDate } from './utils/fileDate';
+import { lastChanged } from './utils/fileDate';
 import { ISBacklink } from './ISBacklink';
 import { FileListItem } from './FileListItem';
+import { DocumentFiles } from './DocumentFiles';
+import { attachmentLabel, documentTitle } from '../../utils/documentLabels';
+import type { FileAttachment, ParsedFile } from '../../types/documents';
 
-function isNewSinceVisit(date: string, lastVisitedAt: number | null | undefined): boolean {
+/** Keyed on the last change, not the document date: IS keeps the date when files are replaced. */
+function isNewSinceVisit(file: ParsedFile, lastVisitedAt: number | null | undefined): boolean {
   if (typeof lastVisitedAt !== 'number') return false;
-  const d = parseIsDate(date);
+  const d = lastChanged(file);
   if (!d) return false;
   const lastDay = new Date(lastVisitedAt);
   lastDay.setHours(0, 0, 0, 0);
@@ -44,6 +48,39 @@ export function FileList({
   const { t, language } = useTranslation();
   const { noteKeys } = useDocumentNoteKeys(courseCode);
   const [expandedLink, setExpandedLink] = useState<string | null>(null);
+
+  const renderRow = (
+    file: ParsedFile,
+    subFile: FileAttachment,
+    displayName: string,
+    { isNew = false, compact = false }: { isNew?: boolean; compact?: boolean }
+  ) => (
+    <FileListItem
+      key={subFile.link}
+      subFile={subFile}
+      displayName={displayName}
+      date={file.date}
+      author={file.author}
+      comment={file.file_comment}
+      isNew={isNew}
+      compact={compact}
+      isSelected={selectedIds.includes(subFile.link)}
+      selectable={selectable}
+      hasNote={noteKeys.has(subFile.link)}
+      isExpanded={expandedLink === subFile.link}
+      courseCode={courseCode}
+      fileRefs={fileRefs}
+      ignoreClickRef={ignoreClickRef}
+      onToggleSelect={onToggleSelect}
+      onOpenFile={onOpenFile}
+      onViewPdf={onViewPdf}
+      isOpening={openingLink === subFile.link}
+      downloadTick={downloadingLinks?.[subFile.link] ?? null}
+      onDownloadSingle={onDownloadSingle}
+      onToggleNote={() => setExpandedLink(expandedLink === subFile.link ? null : subFile.link)}
+      onCloseNote={() => setExpandedLink(null)}
+    />
+  );
 
   if (groups.length === 0) {
     return (
@@ -77,38 +114,36 @@ export function FileList({
               // viewer+download pair IS emits per document, but files can also
               // reach the store from older cached data.
               const attachments = collapseAttachments(file.files);
+              const isNew = isNewSinceVisit(file, lastVisitedAt);
+              if (attachments.length <= 1) {
+                return (
+                  <div key={i} className="space-y-1">
+                    {attachments.map((subFile) =>
+                      renderRow(file, subFile, documentTitle(file), { isNew })
+                    )}
+                  </div>
+                );
+              }
               return (
-                <div key={i} className="space-y-1">
-                  {attachments.map((subFile, j) => (
-                    <FileListItem
-                      key={subFile.link}
-                      subFile={subFile}
-                      displayName={
-                        attachments.length > 1 ? `${file.file_name} (${j + 1})` : file.file_name
+                <DocumentFiles
+                  key={i}
+                  title={documentTitle(file)}
+                  date={file.date}
+                  author={file.author}
+                  comment={file.file_comment}
+                  isNew={isNew}
+                >
+                  {attachments.map((subFile, j) =>
+                    renderRow(
+                      file,
+                      subFile,
+                      attachmentLabel(file, subFile, j, attachments.length),
+                      {
+                        compact: true,
                       }
-                      date={file.date}
-                      comment={file.file_comment}
-                      isNew={isNewSinceVisit(file.date, lastVisitedAt)}
-                      isSelected={selectedIds.includes(subFile.link)}
-                      selectable={selectable}
-                      hasNote={noteKeys.has(subFile.link)}
-                      isExpanded={expandedLink === subFile.link}
-                      courseCode={courseCode}
-                      fileRefs={fileRefs}
-                      ignoreClickRef={ignoreClickRef}
-                      onToggleSelect={onToggleSelect}
-                      onOpenFile={onOpenFile}
-                      onViewPdf={onViewPdf}
-                      isOpening={openingLink === subFile.link}
-                      downloadTick={downloadingLinks?.[subFile.link] ?? null}
-                      onDownloadSingle={onDownloadSingle}
-                      onToggleNote={() =>
-                        setExpandedLink(expandedLink === subFile.link ? null : subFile.link)
-                      }
-                      onCloseNote={() => setExpandedLink(null)}
-                    />
-                  ))}
-                </div>
+                    )
+                  )}
+                </DocumentFiles>
               );
             })}
           </div>

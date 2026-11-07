@@ -40,6 +40,36 @@ describe('listSubjectPdfs', () => {
     ]);
   });
 
+  it('names one of several PDFs by its own file name, and a lone one by the title', () => {
+    const files = [
+      row({
+        file_name: 'ig-03  ig-04',
+        title: 'ig-03 + ig-04',
+        files: [
+          {
+            name: 'x',
+            type: 'pdf',
+            link: 'https://is/slozka.pl?download=1',
+            filename: 'ig-03.pdf',
+          },
+          { name: 'x', type: 'pdf', link: 'https://is/slozka.pl?download=2', filename: 'eth.pdf' },
+        ],
+      }),
+      row({
+        file_name: 'Harmonogramorg',
+        title: 'Harmonogram+org',
+        files: [
+          { name: 'x', type: 'pdf', link: 'https://is/slozka.pl?download=3', filename: 'h.pdf' },
+        ],
+      }),
+    ];
+    expect(listSubjectPdfs(files).map((p) => p.name)).toEqual([
+      'ig-03.pdf',
+      'eth.pdf',
+      'Harmonogram+org',
+    ]);
+  });
+
   it('is empty for no files', () => {
     expect(listSubjectPdfs(null)).toEqual([]);
     expect(listSubjectPdfs([])).toEqual([]);

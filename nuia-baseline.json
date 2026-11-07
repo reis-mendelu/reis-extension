@@ -63,7 +63,6 @@
   "src/components/SubjectFileDrawer/Zaznamnik/VtTestGroup.tsx",
   "src/components/SubjectFileDrawer/index.tsx",
   "src/components/SubjectFileDrawer/utils/__tests__/noteParser.test.ts",
-  "src/components/SubjectFileDrawer/utils/groupFiles.ts",
   "src/components/SubjectFileDrawer/utils/noteParser.ts",
   "src/components/SubjectsPanel/SemesterSection.tsx",
   "src/components/SubjectsPanel/SubjectRow.tsx",

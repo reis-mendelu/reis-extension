@@ -27,9 +27,13 @@ export function getColumnIndices(table: Element): Record<string, number> {
     else if (
       text.includes('poslední změna') ||
       text.includes('last change') ||
-      text.includes('modifikace')
+      text.includes('modifikace') ||
+      text.includes('modification')
     ) {
       if (indices.date === undefined) indices.date = i;
+      // Added 2026-11: with a document date already found, this column is
+      // IS's Modifikace (en: "Modifications"). `date` is untouched either way.
+      else if (indices.modified === undefined) indices.modified = i;
     } else if (
       (text.includes('komentář') || text.includes('comment')) &&
       indices.comment === undefined
