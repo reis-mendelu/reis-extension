@@ -17,11 +17,13 @@ import { opensInReader } from './utils/isPdfFile';
 import type { PdfRowMeta } from './types';
 import type { FileRowHint } from '../../utils/contentDisposition';
 import { FileRowMeta, RowProgressBar } from './fileRowBits';
+import { FileName } from './FileName';
 
 export interface FileListItemProps {
   subFile: FileAttachment;
   /** Already carries the "(n)" suffix when a row holds several attachments. */
   displayName: string;
+  shownName?: string; // What the row shows (shownNames); displayName drives hover and actions.
   date: string;
   /** What the iPad reader caches by (changedOn); the row still shows `date`. */
   readerDate?: string;
@@ -52,6 +54,7 @@ export interface FileListItemProps {
 export function FileListItem({
   subFile,
   displayName,
+  shownName,
   date,
   readerDate = date,
   author,
@@ -135,11 +138,11 @@ export function FileListItem({
 
         <div className="flex-1 min-w-0">
           <div
-            className={`font-medium truncate flex items-center gap-2 ${isSelected ? 'text-primary' : 'text-base-content'}`}
+            className={`font-medium flex items-start gap-2 ${isSelected ? 'text-primary' : 'text-base-content'}`}
           >
-            <span className="truncate">{displayName}</span>
+            <FileName name={displayName} shown={shownName} />
             {isNew && (
-              <span className="badge badge-primary badge-xs font-bold shrink-0">
+              <span className="badge badge-primary badge-xs mt-1 font-bold shrink-0">
                 {t('course.freshness.newBadge')}
               </span>
             )}

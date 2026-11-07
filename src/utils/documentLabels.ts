@@ -26,3 +26,77 @@ export function attachmentLabel(
   if (count <= 1) return title;
   return attachment.filename || `${title} (${index + 1})`;
 }
+
+/** An extension: a final dot and up to 16 letters or digits, at least one a letter (not "2.0"). */
+const EXTENSION = /\.(?=[a-z0-9]*[a-z])[a-z0-9]{1,16}$/i;
+const DIGIT = /\p{N}/u;
+
+/**
+ * A file name as a row shows it: no extension (the badge beside it says PDF),
+ * and `_`, `-` or `.` between two words read as spaces, so it wraps like text:
+ * "ig-harm_kombinovani_PPS-ZS2026.pdf" → "ig harm kombinovani PPS ZS2026".
+ * A dot or hyphen between two digits stays ("2.1", "04.10.2026", "Q1-48"), and
+ * a spaced dash in a title ("Reading week - Pisařovic") is not a separator.
+ * Display only: the reader, saved files and reIS for Claude keep the real name.
+ */
+export function prettifyFileName(name: string): string {
+  const stem = name.replace(EXTENSION, '');
+  if (!stem.trim()) return name;
+  return spaceSeparators(stem, /([\p{L}\p{N}])([-.]+)(?=[\p{L}\p{N}])/gu, true) || name;
+}
+
+/**
+ * A document title as a row or heading shows it: `_` and `-` between words
+ * read as spaces ("ig-03-fyzicka_vrstva + ig-04-Ethernet" → "ig 03 fyzicka
+ * vrstva + ig 04 Ethernet"). Unlike a file name it keeps every dot and any
+ * extension-like ending ("Seznam.cz"): a teacher typed it as text. A hyphen
+ * between digits, a spaced dash and a plus stay. Display only.
+ */
+export function prettifyTitle(title: string): string {
+  // Its ends stay as typed: ".NET", "-1 as an eigenvalue".
+  return spaceSeparators(title, /([\p{L}\p{N}])(-+)(?=[\p{L}\p{N}])/gu, false) || title;
+}
+
+/**
+ * `_` as spaces, `between` matches as spaces unless they join two digits, and
+ * for a file name (`trimEnds`) leftover separators at its very ends
+ * ("__P3__final--"); an abbreviation's dot ("č. 4") is inside and stays.
+ */
+function spaceSeparators(text: string, between: RegExp, trimEnds: boolean): string {
+  const spaced = text
+    .replace(/_+/g, ' ')
+    .replace(between, (match, before: string, seps: string, at: number, all: string) => {
+      // A whole code point: a digit outside the BMP ("𝟚") is two UTF-16 units.
+      const after = String.fromCodePoint(all.codePointAt(at + match.length) ?? 0);
+      const numeric = seps.length === 1 && DIGIT.test(before) && DIGIT.test(after);
+      return numeric ? match : `${before} `;
+    });
+  const trimmed = trimEnds ? spaced.replace(/^[-.\s]+/, '').replace(/[-\s]+$/, '') : spaced;
+  return trimmed.replace(/\s+/g, ' ').trim();
+}
+
+/** A file name's extension in lower case, without its dot: "instrukce.MD" → "md". */
+export function fileExtension(name: string | undefined): string | undefined {
+  return name ? EXTENSION.exec(name)?.[0].slice(1).toLowerCase() : undefined;
+}
+
+/**
+ * `text` cut to `keep` characters in its middle, both ends kept:
+ * "ig organizac…novani". The row picks `keep` by measuring (FileName.tsx).
+ */
+export function middleCut(text: string, keep: number): string {
+  // By code point, so an emoji is never split into two broken halves.
+  const chars = Array.from(text);
+  if (chars.length <= keep) return text;
+  if (keep < 2) return '…';
+  const head = Math.ceil((keep - 1) * 0.6);
+  const tail = keep - 1 - head;
+  const end =
+    tail > 0
+      ? chars
+          .slice(chars.length - tail)
+          .join('')
+          .trimStart()
+      : '';
+  return `${chars.slice(0, head).join('').trimEnd()}…${end}`;
+}

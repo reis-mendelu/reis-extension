@@ -15,7 +15,8 @@ import { changedOn, lastChanged } from './utils/fileDate';
 import { ISBacklink } from './ISBacklink';
 import { FileListItem } from './FileListItem';
 import { DocumentFiles } from './DocumentFiles';
-import { attachmentLabel, documentTitle } from '../../utils/documentLabels';
+import { attachmentLabel, documentTitle, prettifyTitle } from '../../utils/documentLabels';
+import { rowExtension, shownNames } from './utils/shownNames';
 import type { FileAttachment, ParsedFile } from '../../types/documents';
 
 /** Keyed on the last change, not the document date: IS keeps the date when files are replaced. */
@@ -53,12 +54,17 @@ export function FileList({
     file: ParsedFile,
     subFile: FileAttachment,
     displayName: string,
-    { isNew = false, compact = false }: { isNew?: boolean; compact?: boolean }
+    {
+      isNew = false,
+      compact = false,
+      shown,
+    }: { isNew?: boolean; compact?: boolean; shown?: string }
   ) => (
     <FileListItem
       key={subFile.link}
       subFile={subFile}
       displayName={displayName}
+      shownName={shown}
       date={file.date}
       readerDate={changedOn(file)}
       author={file.author}
@@ -93,63 +99,82 @@ export function FileList({
 
   return (
     <div className="p-6 space-y-6">
-      {groups.map((group) => (
-        <div key={group.name} className="space-y-3">
-          {/* The folder the teacher filed these under in IS — "Kombinovaná
+      {groups.map((group) => {
+        // Single-file documents of this folder, compared for same-name rows.
+        const titleShown = shownNames(
+          group.files.map((file) => {
+            const only = collapseAttachments(file.files);
+            if (only.length !== 1 || !only[0]) return null;
+            return { name: documentTitle(file), kind: 'title', ext: rowExtension(only[0]) };
+          })
+        );
+        return (
+          <div key={group.name} className="space-y-3">
+            {/* The folder the teacher filed these under in IS — "Kombinovaná
               forma studia" is what tells a student "Blok 1" is not for them.
               It was faint uppercase caption text (`/50`, tracking-wider), the
               weakest thing in the drawer, so the files beneath it read as
               belonging to nothing. A real heading now, sentence case (long IS
               folder names read badly in capitals), with a hairline under it
               and the count, so each group reads as a section. */}
-          <h3 className="flex items-center gap-2 border-b border-base-content/10 px-2 pb-1.5 text-sm font-bold text-base-content">
-            <Folder size={15} className="flex-shrink-0 text-primary" />
-            <span className="min-w-0 flex-1">{group.displayName}</span>
-            <span className="flex-shrink-0 text-xs font-medium tabular-nums text-base-content/60">
-              {group.files.length}
-            </span>
-          </h3>
-          <div className="grid grid-cols-1 gap-1">
-            {group.files.map((file, i) => {
-              // Defensive: fetchFilesFromFolder already collapses the
-              // viewer+download pair IS emits per document, but files can also
-              // reach the store from older cached data.
-              const attachments = collapseAttachments(file.files);
-              const isNew = isNewSinceVisit(file, lastVisitedAt);
-              if (attachments.length <= 1) {
-                return (
-                  <div key={i} className="space-y-1">
-                    {attachments.map((subFile) =>
-                      renderRow(file, subFile, documentTitle(file), { isNew })
-                    )}
-                  </div>
+            <h3 className="flex items-center gap-2 border-b border-base-content/10 px-2 pb-1.5 text-sm font-bold text-base-content">
+              <Folder size={15} className="flex-shrink-0 text-primary" />
+              <span className="min-w-0 flex-1">{group.displayName}</span>
+              <span className="flex-shrink-0 text-xs font-medium tabular-nums text-base-content/60">
+                {group.files.length}
+              </span>
+            </h3>
+            <div className="grid grid-cols-1 gap-1">
+              {group.files.map((file, i) => {
+                // Defensive: fetchFilesFromFolder already collapses the
+                // viewer+download pair IS emits per document, but files can also
+                // reach the store from older cached data.
+                const attachments = collapseAttachments(file.files);
+                const isNew = isNewSinceVisit(file, lastVisitedAt);
+                if (attachments.length <= 1) {
+                  return (
+                    <div key={i} className="space-y-1">
+                      {attachments.map((subFile) =>
+                        renderRow(file, subFile, documentTitle(file), {
+                          isNew,
+                          shown: titleShown[i],
+                        })
+                      )}
+                    </div>
+                  );
+                }
+                const fileShown = shownNames(
+                  attachments.map((a, j) => ({
+                    name: attachmentLabel(file, a, j, attachments.length),
+                    kind: 'file',
+                    ext: rowExtension(a),
+                  }))
                 );
-              }
-              return (
-                <DocumentFiles
-                  key={i}
-                  title={documentTitle(file)}
-                  date={file.date}
-                  author={file.author}
-                  comment={file.file_comment}
-                  isNew={isNew}
-                >
-                  {attachments.map((subFile, j) =>
-                    renderRow(
-                      file,
-                      subFile,
-                      attachmentLabel(file, subFile, j, attachments.length),
-                      {
-                        compact: true,
-                      }
-                    )
-                  )}
-                </DocumentFiles>
-              );
-            })}
+                return (
+                  <DocumentFiles
+                    key={i}
+                    title={prettifyTitle(documentTitle(file))}
+                    fullTitle={documentTitle(file)}
+                    date={file.date}
+                    author={file.author}
+                    comment={file.file_comment}
+                    isNew={isNew}
+                  >
+                    {attachments.map((subFile, j) =>
+                      renderRow(
+                        file,
+                        subFile,
+                        attachmentLabel(file, subFile, j, attachments.length),
+                        { compact: true, shown: fileShown[j] }
+                      )
+                    )}
+                  </DocumentFiles>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
       {folderUrl && showIsBacklink && (
         <ISBacklink
           href={
@@ -159,41 +184,6 @@ export function FileList({
           }
         />
       )}
-    </div>
-  );
-}
-
-/**
- * File List Loading Skeleton
- */
-export function FileListSkeleton() {
-  return (
-    <div className="p-6 space-y-8">
-      {[1, 2].map((i) => (
-        <div key={i} className="space-y-3">
-          {/* Folder Header Skeleton */}
-          <div className="flex items-center gap-2 px-2">
-            <div className="skeleton w-4 h-4 rounded-full bg-base-300"></div>
-            <div className="skeleton h-4 w-32 rounded bg-base-300"></div>
-          </div>
-          {/* Files Grid Skeleton */}
-          <div className="grid grid-cols-1 gap-1">
-            {[1, 2, 3].map((j) => (
-              <div
-                key={j}
-                className="flex items-center gap-3 p-3 rounded-lg border border-transparent bg-base-100"
-              >
-                <div className="skeleton w-5 h-5 rounded bg-base-300"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="skeleton h-4 w-3/4 rounded bg-base-300"></div>
-                  <div className="skeleton h-3 w-1/2 rounded bg-base-300"></div>
-                </div>
-                <div className="skeleton w-4 h-4 rounded bg-base-300"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
     </div>
   );
 }

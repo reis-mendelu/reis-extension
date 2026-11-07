@@ -3,7 +3,9 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { FileRowMeta } from './fileRowBits';
 
 interface DocumentFilesProps {
+  /** Shown, cleaned (prettifyTitle); `fullTitle` as IS prints it stays on hover. */
   title: string;
+  fullTitle?: string;
   date: string;
   author?: string;
   comment?: string;
@@ -23,6 +25,7 @@ interface DocumentFilesProps {
  */
 export function DocumentFiles({
   title,
+  fullTitle,
   date,
   author,
   comment,
@@ -35,7 +38,10 @@ export function DocumentFiles({
       <div className="px-3">
         {/* h4: one level under the folder's h3, so assistive tech hears the
             files as this document's. */}
-        <h4 className="flex items-start gap-2 text-sm font-semibold text-base-content">
+        <h4
+          className="flex items-start gap-2 text-sm font-semibold text-base-content"
+          title={fullTitle}
+        >
           <span className="line-clamp-2 min-w-0">{title}</span>
           {isNew && (
             <span className="badge badge-primary badge-xs mt-0.5 shrink-0 font-bold">
