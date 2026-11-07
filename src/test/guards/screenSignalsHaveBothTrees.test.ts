@@ -71,6 +71,16 @@ describe('screen counters fire on both trees', () => {
     }
   }
 
+  // These three stay mounted while closed, so without their open flag the
+  // extension's search and vývěska would read close to 100 %.
+  it.each([
+    ['components/SearchBar/MobileSearchOverlay.tsx', "useScreenSignal('screen_search', isOpen)"],
+    ['components/SearchBar/index.tsx', "useScreenSignal('screen_search', isOpen)"],
+    ['components/Bulletin/BulletinBanner.tsx', "useScreenSignal('screen_bulletin', expanded)"],
+  ])('%s counts only while open', (file, call) => {
+    expect(read(file)).toContain(call);
+  });
+
   it('the map keeps map_dwell_3s on both trees instead', () => {
     expect(FEATURE_SIGNALS).not.toContain('screen_map');
     expect(read('components/mobile/screens/MapScreen.tsx')).toContain('useMapDwell()');

@@ -1183,7 +1183,7 @@
       "unknown": "not set",
       "loadFailed": "Could not load statistics.",
       "signals": "Features (30 days)",
-      "signalsNote": "Installs, not people. The map counts after three seconds on screen; eduroam is split between “the app configured the network” and “we handed over a profile” — a handed-over profile still has to be installed by the student. Screens count when shown, once per install per day; the percentage is the share of the installs that opened reIS that day.",
+      "signalsNote": "Installs, not people. The map counts after three seconds on screen; eduroam is split between “the app configured the network” and “we handed over a profile” — a handed-over profile still has to be installed by the student. Screens count when shown, once per install per day; the percentage is the share of the installs that opened reIS that day. The calendar is the phone’s start screen, so it is near 100% there.",
       "signalMapDwell": "Map for 3+ seconds",
       "signalEduroamConfigured": "eduroam configured by the app",
       "signalEduroamDelivered": "eduroam profile handed over",

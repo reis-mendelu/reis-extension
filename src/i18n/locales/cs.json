@@ -1183,7 +1183,7 @@
       "unknown": "neuvedeno",
       "loadFailed": "Statistiky se nepodařilo načíst.",
       "signals": "Funkce (30 dní)",
-      "signalsNote": "Instalace, ne lidé. Mapa se počítá po třech sekundách na obrazovce; eduroam zvlášť pro „aplikace síť nastavila“ a „profil jsme předali k instalaci“ — předaný profil ještě musí student sám nainstalovat. Obrazovky se počítají, když se ukážou, jednou za den na instalaci; procento je podíl z instalací, které reIS ten den otevřely.",
+      "signalsNote": "Instalace, ne lidé. Mapa se počítá po třech sekundách na obrazovce; eduroam zvlášť pro „aplikace síť nastavila“ a „profil jsme předali k instalaci“ — předaný profil ještě musí student sám nainstalovat. Obrazovky se počítají, když se ukážou, jednou za den na instalaci; procento je podíl z instalací, které reIS ten den otevřely. Kalendář je na telefonu úvodní obrazovka, takže tam je skoro vždy.",
       "signalMapDwell": "Mapa aspoň 3 sekundy",
       "signalEduroamConfigured": "eduroam nastaven aplikací",
       "signalEduroamDelivered": "eduroam profil předán",
