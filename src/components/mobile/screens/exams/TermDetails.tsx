@@ -1,5 +1,4 @@
-import type { ReactNode } from 'react';
-import { AlertTriangle, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 import type { ExamSection, ExamTerm } from '../../../../types/exams';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
@@ -8,6 +7,7 @@ import { parseRegistrationStart } from '../../../../utils/termUtils';
 import { formatOpensAtBare } from '../../../../utils/mobile/examOpening';
 import { termDeadline } from '../../../../utils/mobile/examDeadline';
 import { termPeopleUrl } from '../../../../utils/mobile/termPeopleUrl';
+import { Fact, NoteBlock } from './DetailParts';
 
 export interface TermDetailsProps {
   term: ExamTerm;
@@ -16,31 +16,6 @@ export interface TermDetailsProps {
   isRegHere: boolean;
   /** The store's clock, so "has registration opened yet" matches the row. */
   now: Date;
-  /**
-   * `section`: the one "Více" of a card whose rows open nothing, read off
-   * `term` (the card's first). Only what holds for the whole section: no
-   * deadline and no "Kdo jde se mnou" (both per term), and the room only when
-   * every term shares it.
-   */
-  scope?: 'term' | 'section';
-}
-
-const localRoom = (term: ExamTerm, language: string) =>
-  (language === 'en' ? term.roomEn : term.roomCs) || term.room;
-
-/** The room every term of the section is in, or undefined when they differ. */
-function sharedRoom(section: ExamSection, language: string): string | undefined {
-  const rooms = new Set(section.terms.map((term) => localRoom(term, language)));
-  return rooms.size === 1 ? [...rooms][0] : undefined;
-}
-
-function Fact({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-between gap-3">
-      <dt className="text-2sm text-base-content/60">{label}</dt>
-      <dd className="text-right text-2sm font-medium text-base-content">{children}</dd>
-    </div>
-  );
 }
 
 /** "8. 11. 20:00" from IS's "08.11.2026 20:00"; the raw string if it does not parse. */
@@ -64,15 +39,14 @@ function deadline(raw: string): string {
  * attempt badges and the chip were too much for one phone row. No map button —
  * the map is the map tab's job.
  */
-export function TermDetails({ term, section, isRegHere, now, scope = 'term' }: TermDetailsProps) {
-  const perTerm = scope === 'term';
+export function TermDetails({ term, section, isRegHere, now }: TermDetailsProps) {
   const { t, language } = useTranslation();
   const studiumId = useAppStore((s) => s.studiumId);
   const obdobiId = useAppStore((s) => s.obdobiId);
   const fetched = useAppStore((s) => s.examTermDurations[term.id]);
 
   const form = (language === 'en' ? term.sectionFormEn : term.sectionFormCs) || term.sectionForm;
-  const room = perTerm ? localRoom(term, language) : sharedRoom(section, language);
+  const room = (language === 'en' ? term.roomEn : term.roomCs) || term.room;
   const synced =
     term.durationMinutes ?? (isRegHere ? section.registeredTerm?.durationMinutes : undefined);
   // Always read: the page carries the teacher's Poznámka as well as the
@@ -81,20 +55,15 @@ export function TermDetails({ term, section, isRegHere, now, scope = 'term' }: T
   const { note, isLoading } = useExamNote(term.id);
   const minutes = synced ?? fetched;
   // One line, the one the student can act on — see utils/mobile/examDeadline.
-  const deadlineRow = perTerm ? termDeadline(term, section, isRegHere, now) : null;
-  const whoUrl = perTerm ? termPeopleUrl(term, studiumId, obdobiId, language) : null;
-  const waiting = isLoading && synced == null;
-  // Say so rather than open a bare strip: a section-wide block has no link to
-  // fall back on, so with no form, room, length or note it would hold nothing.
-  const empty = !room && !form && minutes == null && !waiting && !note && !whoUrl;
+  const deadlineRow = termDeadline(term, section, isRegHere, now);
+  const whoUrl = termPeopleUrl(term, studiumId, obdobiId, language);
 
   return (
     <div data-testid="term-details" className="flex flex-col gap-2 border-t border-base-300 pt-2">
-      {empty && <p className="text-2sm text-base-content/60">{t('mobile.exams.noDetails')}</p>}
       <dl className="flex flex-col gap-1">
         {room && <Fact label={t('mobile.exams.detailRoom')}>{room}</Fact>}
         {form && <Fact label={t('mobile.exams.detailForm')}>{form}</Fact>}
-        {(minutes != null || waiting) && (
+        {(minutes != null || (isLoading && synced == null)) && (
           <Fact label={t('mobile.exams.detailDuration')}>
             {minutes != null ? t('mobile.exams.durationMin', { count: minutes }) : '…'}
           </Fact>
@@ -103,26 +72,7 @@ export function TermDetails({ term, section, isRegHere, now, scope = 'term' }: T
           <Fact label={t(`mobile.exams.${deadlineRow.kind}`)}>{deadline(deadlineRow.value)}</Fact>
         )}
       </dl>
-      {note && (
-        // The desktop's TermNoteBlock, at the phone's type size. IS writes
-        // rules with pass/fail consequences in red; the warning tone keeps that.
-        // Headed like the facts above, so it reads as the teacher's note.
-        <div className="flex flex-col gap-1">
-          <span className="text-2sm text-base-content/60">{t('mobile.exams.detailNote')}</span>
-          <div
-            data-testid="term-note"
-            className="flex items-start gap-1.5 rounded-lg bg-base-200/60 px-2.5 py-2 text-2sm leading-relaxed"
-          >
-            <AlertTriangle
-              size={14}
-              className={`mt-0.5 shrink-0 ${note.isEmphasized ? 'text-[var(--tone-warning)]' : 'text-base-content/60'}`}
-            />
-            <div className="min-w-0 whitespace-pre-wrap break-words text-base-content/80">
-              {note.text}
-            </div>
-          </div>
-        </div>
-      )}
+      {note && <NoteBlock note={note} />}
       <div className="flex flex-col gap-2">
         {whoUrl && (
           <a

@@ -57,7 +57,7 @@ export function OpenCard({
     >
       {/* One "Více" for the card; the rows open nothing and say inline until
           when they take registrations, as under a registered card. */}
-      <SectionMore section={row.section} now={now} />
+      <SectionMore section={row.section} />
       {row.section.terms.map((term) => (
         <TermRow
           key={term.id}

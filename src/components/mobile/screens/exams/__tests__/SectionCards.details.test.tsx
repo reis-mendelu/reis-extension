@@ -72,6 +72,9 @@ const cards = {
 };
 const termsFor = { OpenCard: open, NotYetOpenCard: notYetOpen };
 
+const NOTE = { text: 'S sebou kalkulačku.', isEmphasized: false };
+const IDS = ['t1', 't2', 't3', 't4', 't5'];
+
 const openDetails = () =>
   fireEvent.click(screen.getByRole('button', { name: 'Podrobnosti zkoušky' }));
 
@@ -88,10 +91,11 @@ describe.each(['OpenCard', 'NotYetOpenCard'] as const)('%s — one Více per car
       studiumId: '143752',
       obdobiId: '829',
       examTermDurations: {},
-      examNotes: { t1: { text: 'S sebou kalkulačku.', isEmphasized: false } },
+      // Every term's note already read, so opening the card fetches nothing.
+      examNotes: Object.fromEntries(IDS.map((id) => [id, NOTE])),
       examNotesLoading: {},
       examNotesError: {},
-      lastExamNotesFetchedAt: { t1: Date.now() },
+      lastExamNotesFetchedAt: Object.fromEntries(IDS.map((id) => [id, Date.now()])),
     } as never);
   });
   afterEach(() => {
@@ -126,8 +130,28 @@ describe.each(['OpenCard', 'NotYetOpenCard'] as const)('%s — one Více per car
     expect(within(screen.getByTestId('term-details')).queryByText(/Q0/)).toBeNull();
   });
 
+  // Review (cubic, CodeRabbit): form, length and note are per term in IS, so
+  // the first term's values must not be shown as the whole card's.
+  it('leaves out a form, length or note the terms disagree on', () => {
+    useAppStore.setState({
+      examNotes: {
+        ...useAppStore.getState().examNotes,
+        t2: { text: 'Jiná.', isEmphasized: false },
+      },
+    } as never);
+    render(
+      cards[name](makeRow([term(1), term(2, { sectionFormCs: 'ústní', durationMinutes: 60 })]))
+    );
+    openDetails();
+    const details = within(screen.getByTestId('term-details'));
+    expect(details.queryByText(/písemná|ústní/)).toBeNull();
+    expect(details.queryByText(/min/)).toBeNull();
+    expect(details.queryByTestId('term-note')).toBeNull();
+    expect(details.getByText('Q01')).toBeInTheDocument();
+  });
+
   it('says IS gives nothing more instead of opening an empty strip', () => {
-    useAppStore.setState({ examNotes: { t1: null } } as never);
+    useAppStore.setState({ examNotes: { t1: null, t2: null } } as never);
     const bare = { sectionFormCs: undefined, durationMinutes: null };
     render(cards[name](makeRow([term(1, bare), term(2, { ...bare, room: 'Q02' })])));
     openDetails();
