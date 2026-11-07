@@ -4,7 +4,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { findTasks } from '../task-list/lib.mjs';
-import { doneRequests, noteRequests, pragueDate } from '../task-list/requests.mjs';
+import { doneRequests, noteRequests, notesRequests, pragueDate } from '../task-list/requests.mjs';
 
 // A made-up doc in the shape `read_doc` (Google Docs connector) returns.
 // Checklist state is NOT in this JSON — the Docs API omits it — so `done`
@@ -347,5 +347,72 @@ describe('edge cases', () => {
         stdio: 'pipe',
       })
     ).toThrow(/No task #9/);
+  });
+});
+
+// One run asks every question it has in ONE write: each write changes the
+// revision, so per-note writes made a run stop after its first question.
+describe('notesRequests', () => {
+  it('batches notes for several tasks into one payload, last task first', () => {
+    const d = {
+      content: {
+        revisionId: 'r',
+        tabs: [
+          {
+            documentTab: {
+              body: {
+                content: [
+                  para('Bucket list', { heading: 'HEADING_2' }),
+                  para('first', { bullet: true }),
+                  para('second', { bullet: true }),
+                ],
+              },
+            },
+          },
+        ],
+      },
+    };
+    const tasks = findTasks(d, '## Bucket list\n  - first\n  - second');
+    const out = notesRequests(
+      tasks,
+      'r',
+      [
+        { task: 1, text: '(a) or (b)?' },
+        { task: 2, text: 'which page?' },
+      ],
+      '2026-11-07'
+    );
+    expect(out.writeControl).toEqual({ requiredRevisionId: 'r' });
+    const inserts = out.requests.filter((r) => 'insertText' in r);
+    // Highest index first, so inserting the second note never shifts the first.
+    expect(inserts.map((r) => r.insertText.location.index)).toEqual([
+      tasks[1]!.textEnd,
+      tasks[0]!.textEnd,
+    ]);
+    expect(inserts[0]!.insertText.text).toContain('which page? ∎');
+  });
+
+  it('refuses a note for a task number that does not exist', () => {
+    const d = {
+      content: {
+        revisionId: 'r',
+        tabs: [
+          {
+            documentTab: {
+              body: {
+                content: [
+                  para('Bucket list', { heading: 'HEADING_2' }),
+                  para('only', { bullet: true }),
+                ],
+              },
+            },
+          },
+        ],
+      },
+    };
+    const tasks = findTasks(d, '## Bucket list\n  - only');
+    expect(() => notesRequests(tasks, 'r', [{ task: 5, text: 'x' }], '2026-11-07')).toThrow(
+      /No task #5/
+    );
   });
 });

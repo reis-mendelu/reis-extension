@@ -55,12 +55,15 @@ understood until its screenshot has been looked at.
 The CLI prints an `update_doc` payload. Pass its `requests` and `writeControl`
 to `update_doc` unchanged. `writeControl` pins the revision you read: if anyone
 edited the doc since, Google rejects the write — re-read and regenerate.
-Every write changes the revision, so **re-read before each further write.**
+Every write changes the revision, so **re-read before each further write** —
+and put several notes in one write with `notes` instead of writing them one
+by one.
 
 | Intent | Command |
 | --- | --- |
 | Done | `cli.mjs done --doc D --md M --task N --note "PR #123"` → `✅` + strikethrough |
 | Note (blocked, question, claimed) | `cli.mjs note --doc D --md M --task N --text "…"` |
+| Several notes, one write | `cli.mjs notes --doc D --md M --file notes.json` with `[{"task": n, "text": "…"}]` |
 
 No Google API can tick a checklist box, so "done" is `✅` + strikethrough. The
 box itself stays for Dominik to tick. Notes go inside the task's own item as an
@@ -154,7 +157,9 @@ this order, then stop:
 2. **Merges first.** Every `answered` task whose last Claude note asked
    "Mergnout?": `y` → merge and mark done; `n` → that task is this run's build.
 3. **Questions on everything new.** Triage every `new` task in one pass:
-   skip non-code silently, note the unclear ones. Re-read before each write.
+   skip non-code silently, and collect a question for **every** unclear one —
+   Dominik picks which to answer, one or all at once. Post them all in a single
+   `notes` write; never stop after the first question.
 4. **Build at most one task**, in this priority: a rework after `n`, then an
    `answered` question, then a stale `claimed` task (note over a day old, no PR
    moving), then the oldest clear `new` task. Claim → build → PR → green →
