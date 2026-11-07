@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { documentTitle, attachmentLabel } from '../documentLabels';
+import { documentTitle, attachmentLabel, middleTruncate } from '../documentLabels';
 
 const doc = { file_name: 'Harmonograminfo', title: 'Harmonogram+info' };
 
@@ -32,5 +32,27 @@ describe('attachmentLabel', () => {
     expect(attachmentLabel({ file_name: 'Harmonograminfo' }, a(), 1, 2)).toBe(
       'Harmonograminfo (2)'
     );
+  });
+});
+
+describe('middleTruncate', () => {
+  const LONG = 'Cviceni_5_Uzivatele_a_bezpecnost_postupne_s_ukazkami.ipynb';
+
+  it('leaves a name that fits alone', () => {
+    expect(middleTruncate('ig-c04-fyzicka_vrstva.pdf', 40)).toBe('ig-c04-fyzicka_vrstva.pdf');
+  });
+
+  it('cuts the middle of the stem to the length asked, never the extension', () => {
+    for (const keep of [12, 20, 30, 44]) {
+      const cut = middleTruncate(LONG, keep);
+      expect(cut).toHaveLength(keep);
+      expect(cut.endsWith('.ipynb')).toBe(true);
+      expect(cut).toContain('…');
+    }
+    expect(middleTruncate(LONG, 30).startsWith('Cviceni_5_')).toBe(true);
+  });
+
+  it('cuts a name with no extension at its end', () => {
+    expect(middleTruncate('a'.repeat(60), 44)).toBe(`${'a'.repeat(43)}…`);
   });
 });
