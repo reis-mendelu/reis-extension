@@ -138,10 +138,11 @@ export function findTasks(docJson, markdownJson, { section = 'Bucket list' } = {
       tasks.at(-1)?.images.push(...p.images.map((id) => ({ id, uri: uriOf(id) })));
       continue;
     }
-    if (!p.bullet) continue;
     const [title, ...lines] = visible.split(SOFT_BREAK).map((l) => l.replaceAll(OBJECT, '').trim());
     const parent = tasks.at(-1);
-    if (p.nesting > 0 && parent) {
+    // A nested bullet or a plain paragraph under a task is a reply to it.
+    if (!p.bullet && !parent) continue;
+    if ((p.nesting > 0 || !p.bullet) && parent) {
       parent.thread.push(...[title, ...lines].filter(Boolean).flatMap(linesOf));
       parent.images.push(...p.images.map((id) => ({ id, uri: uriOf(id) })));
       parent.textEnd = p.end - 1;

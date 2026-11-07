@@ -144,6 +144,35 @@ describe('findTasks', () => {
     expect(findTasks(d, md)[0].done).toBe(false);
   });
 
+  it('reads a plain paragraph under a task, with its image, as a reply to it', () => {
+    const d = {
+      content: {
+        revisionId: 'r',
+        tabs: [
+          {
+            documentTab: {
+              body: {
+                content: [
+                  para('Bucket list', { heading: 'HEADING_2' }),
+                  para('stáže\u000b↳ Claude 2026-11-07: merge? (y/n) ∎', { bullet: true }),
+                  para('redundant text ', { images: ['img.r'] }),
+                  para('next task', { bullet: true }),
+                ],
+              },
+              inlineObjects: { 'img.r': uri('img.r') },
+            },
+          },
+        ],
+      },
+    };
+    const [task] = findTasks(d, '## Bucket list\n  - stáže\n\nredundant text\n  - next task');
+    expect(task!.status).toBe('answered');
+    expect(task!.thread.at(-1)).toEqual({ by: 'human', text: 'redundant text' });
+    expect(task!.images.map((i) => i.id)).toEqual(['img.r']);
+    // A later note goes after the reply, so the thread stays in order.
+    expect(task!.textEnd).toBe(d.content.tabs[0].documentTab.body.content[2].endIndex - 1);
+  });
+
   it('tells asked, answered, claimed and new apart, so a later run knows what to pick up', () => {
     const q = '↳ Claude 2026-11-07: (a) or (b)?';
     const d = {
