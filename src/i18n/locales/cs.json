@@ -1360,6 +1360,8 @@
       "groupRegistered": "Přihlášené zkoušky",
       "myTermDetailsAria": "Podrobnosti tvého termínu",
       "termDetailsAria": "Podrobnosti termínu",
+      "sectionDetailsAria": "Podrobnosti zkoušky",
+      "noDetails": "IS k tomu nic dalšího neuvádí.",
       "detailForm": "Forma termínu",
       "detailDuration": "Délka trvání",
       "detailRoom": "Místnost",
