@@ -11,6 +11,10 @@ import { trackFeatureSignal, type FeatureSignal } from '../api/featureUsage';
  * so a student who opens Novinky twenty times is still one install that opened
  * it. Nothing about what was on the screen is recorded.
  *
+ * A failed write is not retried while the screen stays open: the latch is
+ * released, so the next time the screen is shown (most are remounted on every
+ * open) counts again. Same as `useMapDwell`.
+ *
  * A write over what is already on screen, not a data fetch, so the no-
  * `useEffect`-for-fetching rule does not apply (same as `useMapDwell`).
  */

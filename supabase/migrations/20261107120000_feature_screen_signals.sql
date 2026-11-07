@@ -8,6 +8,11 @@
 --
 -- Additive: every label released builds send is still accepted, and the
 -- constraint only widens. A released build never sends the new labels.
+--
+-- The row is now stamped with the Prague day, as track_daily_usage already
+-- does: the admin console divides these by the daily count per day, and a UTC
+-- current_date filed every signal sent between midnight and 1-2 a.m. Prague
+-- time under the previous day.
 
 CREATE OR REPLACE FUNCTION "public"."track_feature_usage"("p_install_id" "text", "p_feature" "text") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -21,7 +26,7 @@ begin
     return;
   end if;
   insert into public.feature_usage (install_id, usage_date, feature, hits)
-  values (p_install_id, current_date, p_feature, 1)
+  values (p_install_id, (now() at time zone 'Europe/Prague')::date, p_feature, 1)
   on conflict (install_id, usage_date, feature)
     do update set hits = public.feature_usage.hits + 1;
 end;

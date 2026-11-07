@@ -22,6 +22,14 @@ export function signalShare(
   for (const n of active.values()) denominator += n;
   if (denominator === 0) return null;
   let numerator = 0;
-  for (const d of signalDaily) if (active.has(d.day) && d.installs > 0) numerator += d.installs;
+  // The populations differ slightly: the daily count skips an install with no
+  // student signed in (staff on IS with the extension, `trackDailyUsage`), the
+  // feature counters do not. On the phone both need the IS login, so they
+  // match; on the extension the gap is a handful of devices. Capping each day
+  // at its own install count keeps the share a share.
+  for (const d of signalDaily) {
+    const day = active.get(d.day);
+    if (day !== undefined && d.installs > 0) numerator += Math.min(d.installs, day);
+  }
   return numerator / denominator;
 }

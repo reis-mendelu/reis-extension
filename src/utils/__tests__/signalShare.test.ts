@@ -49,6 +49,21 @@ describe('signalShare', () => {
     expect(signalShare(daily, u)).toBeCloseTo(0.1);
   });
 
+  // The daily count skips an install with no student signed in (staff on IS
+  // with the extension); the feature counters do not. A day can therefore have
+  // more signal installs than daily installs — capped per day, never > 100 %.
+  it('caps a day at its own install count', () => {
+    const u = [
+      { day: '2026-11-06', active: 10 },
+      { day: '2026-11-07', active: 10 },
+    ];
+    const daily = [
+      { day: '2026-11-06', installs: 12 },
+      { day: '2026-11-07', installs: 5 },
+    ];
+    expect(signalShare(daily, u)).toBeCloseTo(15 / 20);
+  });
+
   it('is null when there is no denominator at all', () => {
     expect(signalShare([{ day: '2026-11-05', installs: 3 }], [])).toBeNull();
     expect(signalShare([], [{ day: '2026-11-05', active: 0 }])).toBeNull();
