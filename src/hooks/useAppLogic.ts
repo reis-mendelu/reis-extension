@@ -116,12 +116,16 @@ export function useAppLogic() {
         // Validated, not cast: a view removed since this value was written
         // would otherwise boot the app onto a screen nothing renders.
         if (isAppView(v)) setCurrentView(v);
+      })
+      .catch((e) => logError('useAppLogic.restoreView', e))
+      .finally(() => {
+        // On both paths: a failed read must not also stop every later view and
+        // week change from being saved.
         setTimeout(() => {
           isInitialLoad.current = false;
         }, 50);
-      })
-      .catch((e) => logError('useAppLogic.restoreView', e))
-      .finally(() => setViewRestored(true));
+        setViewRestored(true);
+      });
   }, []);
 
   useEffect(() => {

@@ -32,9 +32,12 @@ vi.mock('../../store/useAppStore', () => ({
   initializeStore: vi.fn(async () => vi.fn()),
 }));
 
-const { idbGet } = vi.hoisted(() => ({ idbGet: vi.fn() }));
+const { idbGet, idbSet } = vi.hoisted(() => ({
+  idbGet: vi.fn(),
+  idbSet: vi.fn(async () => undefined),
+}));
 vi.mock('../../services/storage', () => ({
-  IndexedDBService: { get: idbGet, set: vi.fn(async () => undefined) },
+  IndexedDBService: { get: idbGet, set: idbSet },
 }));
 
 vi.mock('../../services/sync', () => ({
@@ -101,5 +104,20 @@ describe('useAppLogic — viewRestored', () => {
     await act(flush);
     expect(result.current.currentView).toBe('calendar');
     expect(result.current.viewRestored).toBe(true);
+  });
+
+  // The failed read must not also stop the app saving the view from then on.
+  it('still saves later view changes after a failed read', async () => {
+    idbGet.mockImplementation(() => Promise.reject(new Error('idb')));
+    const { result } = renderHook(() => useAppLogic());
+    await act(async () => {
+      await flush();
+      await new Promise((r) => setTimeout(r, 60));
+    });
+    await act(async () => {
+      result.current.setCurrentView('map');
+      await flush();
+    });
+    expect(idbSet).toHaveBeenCalledWith('meta', 'reis_current_view', 'map');
   });
 });
