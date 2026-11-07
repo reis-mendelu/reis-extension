@@ -11,7 +11,7 @@ import type { FileListProps } from './types';
 import { collapseAttachments } from '../../api/documents/collapseAttachments';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useDocumentNoteKeys } from '../../hooks/data/useDocumentNoteKeys';
-import { lastChanged } from './utils/fileDate';
+import { changedOn, lastChanged } from './utils/fileDate';
 import { ISBacklink } from './ISBacklink';
 import { FileListItem } from './FileListItem';
 import { DocumentFiles } from './DocumentFiles';
@@ -60,6 +60,7 @@ export function FileList({
       subFile={subFile}
       displayName={displayName}
       date={file.date}
+      readerDate={changedOn(file)}
       author={file.author}
       comment={file.file_comment}
       isNew={isNew}

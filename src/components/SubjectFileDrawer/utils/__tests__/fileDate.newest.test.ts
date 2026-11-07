@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseIsDate, lastChanged } from '../fileDate';
+import { parseIsDate, lastChanged, changedOn } from '../fileDate';
 
 describe('parseIsDate — the English IS page', () => {
   /**
@@ -26,14 +26,34 @@ describe('lastChanged', () => {
    * Modifikace: a schedule dated 17.09 was replaced on 23.10. Keyed on the
    * document date, "Nový" never showed it.
    */
-  it('is the later of the document date and Modifikace', () => {
-    expect(lastChanged({ date: '17.09.2026', modified: '23.10.2026' })?.getDate()).toBe(23);
-    expect(lastChanged({ date: '17.09.2026', modified: '01.09.2026' })?.getDate()).toBe(17);
+  it('is the later of the document date and Modifikace, across a month boundary', () => {
+    expect(lastChanged({ date: '30.09.2026', modified: '01.10.2026' })).toEqual(
+      new Date(2026, 9, 1)
+    );
+    expect(lastChanged({ date: '01.10.2026', modified: '30.09.2026' })).toEqual(
+      new Date(2026, 9, 1)
+    );
   });
 
   it('falls back to whichever date parses', () => {
     expect(lastChanged({ date: '17.09.2026' })?.getDate()).toBe(17);
     expect(lastChanged({ date: '', modified: '23.10.2026' })?.getDate()).toBe(23);
     expect(lastChanged({ date: '' })).toBeNull();
+  });
+});
+
+describe('changedOn', () => {
+  /**
+   * The iPad reader keeps a PDF only while this string matches the one it was
+   * cached under, so a replaced file has to change it, and an unchanged one
+   * must keep the document date it has always been cached by.
+   */
+  it('is Modifikace when it is later, as IS printed it', () => {
+    expect(changedOn({ date: '30.09.2026', modified: '01.10.2026' })).toBe('01.10.2026');
+  });
+
+  it('stays the document date when nothing changed since', () => {
+    expect(changedOn({ date: '17.09.2026', modified: '17.09.2026' })).toBe('17.09.2026');
+    expect(changedOn({ date: '17.09.2026' })).toBe('17.09.2026');
   });
 });

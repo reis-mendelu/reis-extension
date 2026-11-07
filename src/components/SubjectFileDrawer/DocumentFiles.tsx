@@ -33,14 +33,16 @@ export function DocumentFiles({
   return (
     <div data-testid="document-files" className="space-y-1 pt-1">
       <div className="px-3">
-        <div className="flex items-start gap-2 text-sm font-semibold text-base-content">
+        {/* h4: one level under the folder's h3, so assistive tech hears the
+            files as this document's. */}
+        <h4 className="flex items-start gap-2 text-sm font-semibold text-base-content">
           <span className="line-clamp-2 min-w-0">{title}</span>
           {isNew && (
             <span className="badge badge-primary badge-xs mt-0.5 shrink-0 font-bold">
               {t('course.freshness.newBadge')}
             </span>
           )}
-        </div>
+        </h4>
         <div className="flex items-center gap-2 truncate text-xs text-base-content/70">
           <FileRowMeta date={date} author={author} comment={comment} />
         </div>

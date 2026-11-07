@@ -58,6 +58,8 @@ describe('listSubjectPdfs', () => {
       row({
         file_name: 'Harmonogramorg',
         title: 'Harmonogram+org',
+        date: '17.09.2026',
+        modified: '23.10.2026',
         files: [
           { name: 'x', type: 'pdf', link: 'https://is/slozka.pl?download=3', filename: 'h.pdf' },
         ],
@@ -68,6 +70,8 @@ describe('listSubjectPdfs', () => {
       'eth.pdf',
       'Harmonogram+org',
     ]);
+    // The same freshness date the drawer row hands the reader.
+    expect(listSubjectPdfs(files)[2]?.date).toBe('23.10.2026');
   });
 
   it('is empty for no files', () => {

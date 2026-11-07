@@ -68,12 +68,14 @@ describe('FileList: a document with several files', () => {
     expect(screen.queryByText(/\(\d\)$/)).toBeNull();
   });
 
-  it('hands the reader the file name it shows', async () => {
+  it('hands the reader the file name it shows, and the date of the last change', async () => {
+    // The iPad reader keeps a copy only while this date matches: a replaced
+    // file has to reach it with its Modifikace, or the old pages stay.
     const props = renderList([LECTURES]);
     await userEvent.click(screen.getByText('eth_frame.pdf'));
     expect(props.onViewPdf).toHaveBeenCalledWith(dl(2), {
       name: 'eth_frame.pdf',
-      date: '07.10.2026',
+      date: '15.10.2026',
     });
   });
 });
@@ -82,6 +84,12 @@ describe('FileList: a document with one file', () => {
   it('goes by its title as IS prints it, with nothing stripped', () => {
     renderList([LONE]);
     expect(screen.getByText('Harmonogram+organizacni informace')).toBeInTheDocument();
+  });
+
+  it('shows the document date, not the reader date', () => {
+    renderList([{ ...LONE, modified: '23.10.2026' }]);
+    expect(screen.getByText('17.09.2026')).toBeInTheDocument();
+    expect(screen.queryByText('23.10.2026')).toBeNull();
   });
 
   it('says who put it there', () => {

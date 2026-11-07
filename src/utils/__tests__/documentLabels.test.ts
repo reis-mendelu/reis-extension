@@ -24,7 +24,13 @@ describe('attachmentLabel', () => {
     expect(attachmentLabel(doc, a('org-info.pdf'), 1, 2)).toBe('org-info.pdf');
   });
 
-  it('numbers files whose name IS did not give (older cache)', () => {
+  it('numbers files whose name IS did not give', () => {
     expect(attachmentLabel(doc, a(), 1, 2)).toBe('Harmonogram+info (2)');
+  });
+
+  it('falls back to file_name and a number for a row cached before both existed', () => {
+    expect(attachmentLabel({ file_name: 'Harmonograminfo' }, a(), 1, 2)).toBe(
+      'Harmonograminfo (2)'
+    );
   });
 });

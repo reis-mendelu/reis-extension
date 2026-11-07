@@ -46,6 +46,18 @@ export function lastChanged(doc: { date: string; modified?: string }): Date | nu
   return b.getTime() > a.getTime() ? b : a;
 }
 
+/**
+ * When a document last changed, as IS printed it: Modifikace when it is
+ * later, else the document date. The iPad reader caches a PDF under this
+ * string, so an unchanged document keeps the key it always had and a replaced
+ * one gets a new key (a fresh download) instead of the old pages.
+ */
+export function changedOn(doc: { date: string; modified?: string }): string {
+  const d = parseIsDate(doc.date);
+  const m = parseIsDate(doc.modified);
+  return doc.modified && m && (!d || m.getTime() > d.getTime()) ? doc.modified : doc.date;
+}
+
 function isValid(d: Date, y: number, m: number, day: number): boolean {
   return d.getFullYear() === y && d.getMonth() === m - 1 && d.getDate() === day;
 }

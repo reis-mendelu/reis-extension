@@ -1,7 +1,7 @@
 import type { ParsedFile } from '../../../types/documents';
 import { cleanFolderName } from '../../../utils/fileUrl';
 import type { FileGroup } from '../types';
-import { parseIsDate } from './fileDate';
+import { lastChanged } from './fileDate';
 
 /**
  * Groups a list of parsed files by subfolder and sorts them by date and name.
@@ -39,11 +39,12 @@ export function groupAndSortFiles(
       displayName:
         key === otherFolder ? otherFolder : translateFolder(cleanFolderName(key, courseCode)),
       files: groups.get(key)!.sort((a, b) => {
-        // parseIsDate also reads the English pages' MM/DD/YYYY, which the old
-        // split('.') turned into 0 for every row.
-        const parseDate = (d: string) => parseIsDate(d)?.getTime() ?? 0;
+        // By the last change, as IS sorts by default, so a replaced document
+        // rises with its "Nový". parseIsDate also reads the English pages'
+        // MM/DD/YYYY, which the old split('.') turned into 0 for every row.
+        const changed = (f: ParsedFile) => lastChanged(f)?.getTime() ?? 0;
         return (
-          parseDate(b.date) - parseDate(a.date) ||
+          changed(b) - changed(a) ||
           (a.file_comment || a.file_name).localeCompare(b.file_comment || b.file_name, 'cs', {
             numeric: true,
           })

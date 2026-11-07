@@ -2,6 +2,7 @@ import type { ParsedFile } from '../../../types/documents';
 import { collapseAttachments } from '../../../api/documents/collapseAttachments';
 import { isPdfFile } from './isPdfFile';
 import { attachmentLabel } from '../../../utils/documentLabels';
+import { changedOn } from './fileDate';
 
 /** One PDF the iPad reader's sidebar can switch to. */
 export interface SubjectPdf {
@@ -26,7 +27,7 @@ export function listSubjectPdfs(files: ParsedFile[] | null | undefined): Subject
       out.push({
         link: attachment.link,
         name: attachmentLabel(file, attachment, j, attachments.length),
-        date: file.date,
+        date: changedOn(file),
       });
     });
   }

@@ -23,6 +23,8 @@ export interface FileListItemProps {
   /** Already carries the "(n)" suffix when a row holds several attachments. */
   displayName: string;
   date: string;
+  /** What the iPad reader caches by (changedOn); the row still shows `date`. */
+  readerDate?: string;
   author?: string;
   comment?: string;
   isNew: boolean;
@@ -51,6 +53,7 @@ export function FileListItem({
   subFile,
   displayName,
   date,
+  readerDate = date,
   author,
   comment,
   isNew,
@@ -84,7 +87,7 @@ export function FileListItem({
     if (e.ctrlKey || e.metaKey) {
       onToggleSelect(subFile.link, e);
     } else if (onViewPdf && opensInReader(subFile)) {
-      onViewPdf(subFile.link, { name: displayName, date });
+      onViewPdf(subFile.link, { name: displayName, date: readerDate });
     } else {
       onOpenFile(subFile.link, { name: displayName, type: subFile.type });
     }
@@ -152,7 +155,7 @@ export function FileListItem({
               ) : (
                 <FileRowMeta date={date} author={author} />
               )}
-              {comment && <span className="truncate">{comment}</span>}
+              {!compact && comment && <span className="truncate">{comment}</span>}
             </div>
           )}
         </div>
@@ -160,7 +163,7 @@ export function FileListItem({
         <FileRowActions
           subFile={subFile}
           displayName={displayName}
-          date={date}
+          date={readerDate}
           hasNote={hasNote}
           isExpanded={isExpanded}
           isOpening={isOpening}

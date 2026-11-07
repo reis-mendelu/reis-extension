@@ -1,4 +1,4 @@
-import { sanitizeString } from '../../utils/validation/index';
+import { sanitizeString } from '../../utils/validation/stringSanitizer';
 
 /**
  * A file's own name, which IS prints on the mime icon inside its link.
