@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { ChevronRight, Info } from 'lucide-react';
 import { useEffectiveStudyPlan } from '@/hooks/useEffectiveStudyPlan';
 import { useAppStore } from '@/store/useAppStore';
