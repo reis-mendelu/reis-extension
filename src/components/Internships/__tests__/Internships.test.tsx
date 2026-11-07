@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { BUNDLED_SOCIETIES } from '../../../data/societies';
 import { HeaderActions } from '../../mobile/screens/HeaderActions';
@@ -83,6 +83,30 @@ describe('Stáže', () => {
       fireEvent.keyDown(document, { key: 'Escape' });
       expect(screen.queryByRole('link', { name: /Cesta s EY/ })).toBeNull();
       expect(document.activeElement).toBe(pill);
+    });
+
+    it('closes for good when the field stops matching while it is open', () => {
+      render(<InternshipsMenu />);
+      fireEvent.click(screen.getByRole('button', { name: 'Stáže' }));
+      act(() => useAppStore.setState({ userFaculty: 'ZF', userProgramme: null } as never));
+      expect(screen.queryByRole('button', { name: 'Stáže' })).toBeNull();
+      act(() => useAppStore.setState({ userFaculty: 'PEF', userProgramme: 'B-OI' } as never));
+      expect(screen.getByRole('button', { name: 'Stáže' })).toHaveAttribute(
+        'aria-expanded',
+        'false'
+      );
+    });
+
+    it('pins the dropdown inside a narrow window instead of hanging off the pill', () => {
+      useAppStore.setState({ isNarrow: true } as never);
+      render(<InternshipsMenu />);
+      fireEvent.click(screen.getByRole('button', { name: 'Stáže' }));
+      const panel = screen
+        .getByRole('link', { name: /Cesta s EY/ })
+        .closest('[data-internships-panel]');
+      expect(panel?.className).toContain('fixed');
+      expect(panel?.className).toContain('inset-x-4');
+      useAppStore.setState({ isNarrow: false } as never);
     });
 
     it('renders nothing when no partner matches the field', () => {
