@@ -36,8 +36,8 @@ describe('lastChanged', () => {
   });
 
   it('falls back to whichever date parses', () => {
-    expect(lastChanged({ date: '17.09.2026' })?.getDate()).toBe(17);
-    expect(lastChanged({ date: '', modified: '23.10.2026' })?.getDate()).toBe(23);
+    expect(lastChanged({ date: '17.09.2026' })).toEqual(new Date(2026, 8, 17));
+    expect(lastChanged({ date: '', modified: '23.10.2026' })).toEqual(new Date(2026, 9, 23));
     expect(lastChanged({ date: '' })).toBeNull();
   });
 });
