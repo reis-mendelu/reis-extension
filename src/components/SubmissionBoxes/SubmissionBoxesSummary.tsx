@@ -2,25 +2,18 @@ import { useId, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { Odevzdavarna } from '../../api/odevzdavarny';
 import { useAppStore } from '../../store/useAppStore';
-import { boxCourseCode, boxesDueSoon, splitBoxes } from '../../utils/submissionBoxes';
+import {
+  boxCourseCode,
+  boxesDueSoon,
+  listedInZaznamnik,
+  splitBoxes,
+  submittedBoxes,
+} from '../../utils/submissionBoxes';
 import { SummaryBoxRow } from './SummaryBoxRow';
+import { SubmittedBoxes } from './SubmittedBoxes';
 import { useBoxLabels } from './useBoxLabels';
 
 const WINDOW_DAYS = 14;
-
-/**
- * Whether the subject's Záznamník tab will list this box. It finds boxes by
- * the subject store's predmet id, and the sync also reads the previous period:
- * a box of a subject the store does not hold — or holds under this period's
- * id — would open an empty tab on the extension and Success rate on the phone.
- */
-function listedInZaznamnik(
-  code: string | null | undefined,
-  box: Odevzdavarna,
-  subjects: Record<string, { subjectId?: string }> | undefined
-): boolean {
-  return !!code && subjects?.[code]?.subjectId === box.courseId;
-}
 const MAX_ROWS = 3;
 
 interface SubmissionBoxesSummaryProps {
@@ -39,16 +32,22 @@ interface SubmissionBoxesSummaryProps {
  * ones, so the open count is a disclosure: expanded, it replaces those rows
  * with every open box, soonest first, with its upload state. It is offered
  * only when it would show something the collapsed card does not.
+ *
+ * Under it, "Odevzdáno (N)" lists what was handed in this period, graded or
+ * not (SubmittedBoxes). With nothing open the card is that part alone; with
+ * neither it is not shown.
  */
 export function SubmissionBoxesSummary({ onOpen, className = '' }: SubmissionBoxesSummaryProps) {
   const L = useBoxLabels();
   const boxes = useAppStore((s) => s.odevzdavarny);
   const subjects = useAppStore((s) => s.subjects?.data);
   const now = useAppStore((s) => s.now).getTime();
+  const obdobi = useAppStore((s) => s.obdobiId);
   const [expanded, setExpanded] = useState(false);
   const listId = useId();
   const { open } = splitBoxes(boxes, now);
-  if (open.length === 0) return null;
+  const submitted = submittedBoxes(boxes, now, obdobi);
+  if (open.length === 0 && submitted.length === 0) return null;
   const due = boxesDueSoon(boxes, now, WINDOW_DAYS).slice(0, MAX_ROWS);
   const canExpand = open.length > due.length;
   const showAll = canExpand && expanded;
@@ -67,7 +66,9 @@ export function SubmissionBoxesSummary({ onOpen, className = '' }: SubmissionBox
       data-testid="submission-boxes-summary"
       className={`rounded-2xl border border-base-300 bg-base-100 px-4 py-3 ${className}`}
     >
-      {canExpand ? (
+      {open.length === 0 ? (
+        <div>{title}</div>
+      ) : canExpand ? (
         // The whole header is the disclosure, not only the count: a tap on the
         // title or on "nothing due" did nothing. Negative margins with matching
         // padding reach the card's edges and keep a 44px target. Above rows it
@@ -127,6 +128,9 @@ export function SubmissionBoxesSummary({ onOpen, className = '' }: SubmissionBox
           </ul>
         )}
       </div>
+      {submitted.length > 0 && (
+        <SubmittedBoxes boxes={submitted} now={now} onOpen={onOpen} divided={open.length > 0} />
+      )}
     </div>
   );
 }

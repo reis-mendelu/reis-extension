@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { ChevronRight, Info } from 'lucide-react';
 import { useEffectiveStudyPlan } from '@/hooks/useEffectiveStudyPlan';
 import { useAppStore } from '@/store/useAppStore';
@@ -9,7 +10,7 @@ import { StudyAveragesSection } from './StudyAveragesSection';
 import { useSubjectsData } from './useSubjectsData';
 import { ReportMissingLink } from '../Feedback/ReportMissingLink';
 import { SubmissionBoxesSummary } from '../SubmissionBoxes/SubmissionBoxesSummary';
-import { splitBoxes } from '../../utils/submissionBoxes';
+import { boxesSummaryShows } from '../../utils/submissionBoxes';
 
 interface SubjectsPanelProps {
   onOpenSubject: (
@@ -36,9 +37,13 @@ export function SubjectsPanel({
   const language = useAppStore((s) => s.language);
   const boxes = useAppStore((s) => s.odevzdavarny);
   const now = useAppStore((s) => s.now);
-  // The summary renders nothing without an open box; the layout below has to
-  // know that too, so it asks the same question the summary does.
-  const hasOpenBox = useMemo(() => splitBoxes(boxes, now.getTime()).open.length > 0, [boxes, now]);
+  const obdobi = useAppStore((s) => s.obdobiId);
+  // The summary renders nothing without an open or a handed-in box; the layout
+  // below has to know that too, so it asks the same question the summary does.
+  const hasBoxCard = useMemo(
+    () => boxesSummaryShows(boxes, now.getTime(), obdobi),
+    [boxes, now, obdobi]
+  );
   // Opens a box's subject on Záznamník, where the box is listed.
   const boxesSummary = (className: string) => (
     <SubmissionBoxesSummary
@@ -135,7 +140,7 @@ export function SubjectsPanel({
             widths. The row scrolls with the box: pinned below, the expanded
             average cut the box down to its title at 1280×800. The plan sits at
             the top of its half, so it stays in view while the average runs on. */}
-        {hasOpenBox ? (
+        {hasBoxCard ? (
           <>
             {boxesSummary('mt-3 w-full')}
             <div
@@ -157,7 +162,7 @@ export function SubjectsPanel({
         )}
       </div>
 
-      {!hasOpenBox && (
+      {!hasBoxCard && (
         <div className="px-4 pt-3 pb-4 shrink-0">
           {studyPlanButton('max-w-xl mx-auto w-full py-2')}
         </div>

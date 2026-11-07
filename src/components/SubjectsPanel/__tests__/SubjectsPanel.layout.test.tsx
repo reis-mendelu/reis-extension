@@ -96,4 +96,18 @@ describe('SubjectsPanel — layout under Aktuálně zapsáno', () => {
     // Pinned under the scrolling block, as before the box existed.
     expect(averages.closest('.overflow-y-auto')!.contains(studyPlan)).toBe(false);
   });
+
+  // Handed-in work keeps the card on the extension too: with nothing open it
+  // shows just its Odevzdáno part, in the same place an open box would.
+  it('shows the card with only handed-in boxes, laid out as with an open one', () => {
+    useAppStore.setState({
+      odevzdavarny: [
+        box({ name: 'Hotovo', isOpen: false, section: 'submitted', fileCount: 1, points: '1' }),
+      ],
+    } as never);
+    const { averages } = renderPanel();
+    const summary = screen.getByTestId('submission-boxes-summary');
+    expect(summary.textContent).toContain('Odevzdáno (1)');
+    expect(screen.getByTestId('subjects-bottom-row').contains(averages)).toBe(true);
+  });
 });

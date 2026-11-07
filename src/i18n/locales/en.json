@@ -1596,6 +1596,8 @@
     "openFew": "{n} open",
     "openOther": "{n} open",
     "nothingDueSoon": "Nothing due in the next 14 days",
+    "submittedCount": "Submitted ({n})",
+    "awaitingGrading": "awaiting grading",
     "instructions": "Instructions"
   },
   "questions": {

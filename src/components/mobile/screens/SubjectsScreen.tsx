@@ -166,7 +166,7 @@ export function SubjectsScreen() {
               {t('mobile.subjects.noneEnrolled')}
             </div>
           )}
-          {/* Under the semester it belongs to; renders nothing with no box open. */}
+          {/* Under the semester it belongs to; renders nothing with no box open or handed in. */}
           <SubmissionBoxesSummary
             className="flex-shrink-0"
             onOpen={(courseCode, box) =>
