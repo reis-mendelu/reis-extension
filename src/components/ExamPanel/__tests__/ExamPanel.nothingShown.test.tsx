@@ -18,7 +18,7 @@ beforeEach(() =>
       handshakeDone: true,
       handshakeTimedOut: false,
     },
-    // A subject IS lists with no sections at all.
+    // A subject that has no sections at all.
     exams: {
       data: [{ version: 1, id: 'tv', name: 'Tělesná výchova', code: 'TV', sections: [] }],
       status: 'success',

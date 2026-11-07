@@ -1,5 +1,5 @@
 {
-  "_comment": "Synthetic fixture for report #37: seminar-group signup ('Zápis na cvičení') in its own collapsed group at the bottom of Zkoušky. NO real student data — fictional teachers, invented term ids. Etologie: the reported shape, a full ZOO Vyškov excursion under Kam se přihlásit nemohu. Algoritmizace: #344's shape, bookable slots for a group. Plus three exams from examSeason so the exam groups render above it. Serve with: REIS_FIXTURE=examSignup vite --config vite.web.config.ts",
+  "_comment": "Synthetic fixture for report #37: seminar-group signup ('Zápis na cvičení') in its own collapsed group at the bottom of Zkoušky. NO real student data — fictional teachers, invented term ids. Etologie: the reported shape, a full ZOO Vyškov excursion under Kam se přihlásit nemohu. Algoritmizace: #344's shape, bookable slots for a group. Plus three exams from examSeason so the exam groups render above it. Serve with: REIS_FIXTURE=examSignup npm run dev:web",
   "exams": [
     {
       "version": 1,
@@ -164,7 +164,7 @@
               "full": false,
               "sectionForm": "písemná a ústní",
               "sectionFormCs": "písemná a ústní",
-              "sectionFormEn": "written",
+              "sectionFormEn": "written and oral",
               "attemptTypes": ["regular"],
               "canRegisterNow": true,
               "regStartDayOffset": -3,
