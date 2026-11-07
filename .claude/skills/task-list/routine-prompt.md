@@ -6,8 +6,12 @@ reis-mendelu/reis-extension repository.
 
 0. GitHub access: if this session cannot push to or call the API for
    reis-mendelu/reis-extension, attach it with the `add_repo` tool (access:
-   push). If that fails, still do the doc part (questions on every new task)
-   and say in the summary that building and merging were blocked.
+   push). It is a deferred tool: load it first with ToolSearch
+   (`select:mcp__claude-code-remote__add_repo`); do not conclude it is missing
+   before that. If attaching fails, still do the doc part (questions on every
+   new task) and say in the summary that building and merging were blocked.
+   The doc is writable even though Drive reports `canEdit: false` — see the
+   skill; only an actual rejected write means otherwise.
 1. Get exactly the current `test` branch: in the repository checkout run
    `git fetch origin test && git checkout -B test origin/test`. If the
    repository is not checked out in this session, clone

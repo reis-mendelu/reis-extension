@@ -52,6 +52,12 @@ understood until its screenshot has been looked at.
 
 ## 2. Write (never by hand-computed index)
 
+**Ignore Drive's `canEdit`.** `search_files` reports `canEdit: false` for this
+doc, yet `update_doc` writes to it fine (verified many times). Never conclude
+the doc is read-only from that field: write, and only a write that Google
+rejects for permissions means no access. A stale-revision rejection is not
+that — re-read and retry.
+
 The CLI prints an `update_doc` payload. Pass its `requests` and `writeControl`
 to `update_doc` unchanged. `writeControl` pins the revision you read: if anyone
 edited the doc since, Google rejects the write — re-read and regenerate.
