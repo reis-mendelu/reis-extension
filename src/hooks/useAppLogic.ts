@@ -102,19 +102,26 @@ export function useAppLogic() {
   }, []);
 
   const isInitialLoad = useRef(true);
+  // True once the saved view has been read (or the read failed). Until then the
+  // 'calendar' above is a boot default, not a choice — the calendar's screen
+  // counter waits for this (screenSignalsHaveBothTrees.test.ts).
+  const [viewRestored, setViewRestored] = useState(false);
   useEffect(() => {
     Promise.all([
       IndexedDBService.get('meta', 'reis_current_week'),
       IndexedDBService.get('meta', 'reis_current_view'),
-    ]).then(([w, v]) => {
-      if (w) setCurrentDate(new Date(w as string));
-      // Validated, not cast: a view removed since this value was written
-      // would otherwise boot the app onto a screen nothing renders.
-      if (isAppView(v)) setCurrentView(v);
-      setTimeout(() => {
-        isInitialLoad.current = false;
-      }, 50);
-    });
+    ])
+      .then(([w, v]) => {
+        if (w) setCurrentDate(new Date(w as string));
+        // Validated, not cast: a view removed since this value was written
+        // would otherwise boot the app onto a screen nothing renders.
+        if (isAppView(v)) setCurrentView(v);
+        setTimeout(() => {
+          isInitialLoad.current = false;
+        }, 50);
+      })
+      .catch((e) => logError('useAppLogic.restoreView', e))
+      .finally(() => setViewRestored(true));
   }, []);
 
   useEffect(() => {
@@ -417,6 +424,7 @@ export function useAppLogic() {
     setCurrentDate,
     currentView,
     setCurrentView,
+    viewRestored,
     selectedSubject,
     setSelectedSubject,
     weekNavCount,

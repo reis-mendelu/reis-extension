@@ -77,6 +77,9 @@ describe('screen counters fire on both trees', () => {
     ['components/SearchBar/MobileSearchOverlay.tsx', "useScreenSignal('screen_search', isOpen)"],
     ['components/SearchBar/index.tsx', "useScreenSignal('screen_search', isOpen)"],
     ['components/Bulletin/BulletinBanner.tsx', "useScreenSignal('screen_bulletin', expanded)"],
+    // Not the boot default: only once useAppLogic has restored the saved view.
+    ['components/WeeklyCalendar/index.tsx', "useScreenSignal('screen_calendar', countVisit)"],
+    ['components/AppMain.tsx', 'countVisit={viewRestored}'],
   ])('%s counts only while open', (file, call) => {
     expect(read(file)).toContain(call);
   });
