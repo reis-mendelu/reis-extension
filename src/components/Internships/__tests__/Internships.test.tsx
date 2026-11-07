@@ -53,6 +53,8 @@ describe('Stáže', () => {
     expect(link).toHaveAttribute('href', 'https://cestasey.cz/');
     expect(link).toHaveAttribute('target', '_blank');
     expect(screen.getByRole('img', { name: 'EY' })).toBeInTheDocument();
+    // The card says what it is; an intro line above it was redundant (Task List).
+    expect(screen.queryByText(/se kterými spolupracujeme/)).toBeNull();
   });
 
   describe('extension header', () => {
@@ -64,6 +66,7 @@ describe('Stáže', () => {
         'href',
         'https://cestasey.cz/'
       );
+      expect(screen.queryByText(/se kterými spolupracujeme/)).toBeNull();
     });
 
     it('renders nothing when no partner matches the field', () => {

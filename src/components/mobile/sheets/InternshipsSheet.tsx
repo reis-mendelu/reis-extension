@@ -12,8 +12,7 @@ export function InternshipsSheet({ onClose }: { onClose: () => void }) {
   return (
     <Sheet size="full" onClose={onClose}>
       <SheetHeader title={t('internships.title')} onClose={onClose} />
-      <div className="flex-1 space-y-3 overflow-y-auto px-4 pb-6">
-        <p className="text-sm text-base-content/60">{t('internships.intro')}</p>
+      <div className="flex-1 overflow-y-auto px-4 pb-6">
         <InternshipList items={items} />
       </div>
     </Sheet>

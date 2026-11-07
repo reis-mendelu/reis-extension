@@ -58,7 +58,6 @@ export function InternshipsMenu() {
             </button>
           </div>
           <div className="flex max-h-96 flex-col gap-3 overflow-y-auto p-4">
-            <p className="text-xs text-base-content/60">{t('internships.intro')}</p>
             <InternshipList items={items} />
           </div>
         </div>
