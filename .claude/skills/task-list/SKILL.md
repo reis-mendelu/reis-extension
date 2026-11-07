@@ -96,5 +96,33 @@ yourself and state the assumption in the PR, where Dominik can correct it.
   mid-task (usage limit, machine reclaimed); push the branch early so the work
   survives, and a later session resumes from the claimed branch.
 - Normal repo rules apply: branch → PR into `test`, CI green, both UI trees.
-  Never merge.
-- After the PR is green, mark done with `--note "PR #n"`.
+
+## Finishing: show it, then ask to merge
+
+When the PR is green, do not mark the task done yet:
+
+1. **Screenshots on a review page.** For a UI change, screenshot every surface
+   it touches (phone, iPad, extension; `verify-ui` widths) from the preview
+   build, and publish them as a private Artifact page — the images go in the
+   publish's `files`, never through the Docs connector. Put any trade-off and
+   anything left to confirm on that page, not in the doc.
+2. **One note under the task** with the page as a link:
+
+   ```bash
+   node scripts/task-list/cli.mjs note --doc D --md M --task N \
+     --text "Hotovo: PR #651, CI zelené. Screenshoty: <url> — Mergnout do test? (y/n)" --link "<url>"
+   ```
+
+   The task is now `asked`. Stop there.
+
+A later session finds it `answered` and reads the reply after the `∎`:
+
+- **`y`** → merge the PR into `test` (mark it ready for review first; squash, as
+  the repo does), then `done --note "PR #n, merged"`. Only if CI is green on
+  the current head and **no release PR (`test` → `main`) is open** — while one
+  is, leave a note saying the merge waits for the release.
+- **`n` + what to change** → change it on the same branch, refresh the review
+  page, and ask again with a new note.
+
+A "y" in the doc is the go-ahead because only Dominik edits the doc; the
+Docs API cannot say who typed it. Never merge on anything less explicit.

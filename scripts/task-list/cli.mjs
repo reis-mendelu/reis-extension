@@ -6,13 +6,14 @@
 //
 //   node scripts/task-list/cli.mjs list --doc D --md M [--all] [--section S] [--images DIR [--task N]]
 //   node scripts/task-list/cli.mjs done --doc D --md M --task N [--note "PR #123"]
-//   node scripts/task-list/cli.mjs note --doc D --md M --task N --text "why it is blocked"
+//   node scripts/task-list/cli.mjs note --doc D --md M --task N --text "…" [--link URL]
 import { readFileSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { findTasks, unwrapDoc, doneRequests, noteRequests } from './lib.mjs';
+import { findTasks, unwrapDoc } from './lib.mjs';
+import { doneRequests, noteRequests } from './requests.mjs';
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
@@ -26,6 +27,7 @@ const { positionals, values } = parseArgs({
     task: { type: 'string' },
     note: { type: 'string' },
     text: { type: 'string' },
+    link: { type: 'string' },
   },
 });
 const [command] = positionals;
@@ -133,7 +135,11 @@ if (command === 'list') {
   }
   const date = new Date().toISOString().slice(0, 10);
   console.log(
-    JSON.stringify(noteRequests(pick(), unwrapDoc(docJson).revisionId, values.text, date), null, 2)
+    JSON.stringify(
+      noteRequests(pick(), unwrapDoc(docJson).revisionId, values.text, date, values.link),
+      null,
+      2
+    )
   );
 } else {
   console.error(`unknown command: ${command}`);

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { findTasks, doneRequests, noteRequests } from '../task-list/lib.mjs';
+import { findTasks } from '../task-list/lib.mjs';
+import { doneRequests, noteRequests } from '../task-list/requests.mjs';
 
 // A made-up doc in the shape `read_doc` (Google Docs connector) returns.
 // Checklist state is NOT in this JSON — the Docs API omits it — so `done`
@@ -223,6 +224,24 @@ describe('write requests', () => {
     expect(italic.updateTextStyle.range).toEqual({
       startIndex: task.textEnd + 1,
       endIndex: task.textEnd + text.length,
+    });
+  });
+
+  it('makes a URL in the note clickable', () => {
+    const url = 'https://claude.ai/artifact/abc';
+    const out = noteRequests(
+      task,
+      'rev-1',
+      `Screenshoty: ${url} — merge? (y/n)`,
+      '2026-11-07',
+      url
+    );
+    const text: string = out.requests[0].insertText.text;
+    const start = task.textEnd + text.indexOf(url);
+    expect(out.requests[2].updateTextStyle).toEqual({
+      range: { startIndex: start, endIndex: start + url.length },
+      textStyle: { link: { url } },
+      fields: 'link',
     });
   });
 });

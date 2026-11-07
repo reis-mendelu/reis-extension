@@ -8,12 +8,12 @@
 // No Google API can tick the box itself, so "done" is ✅ + strikethrough.
 
 const OBJECT = '\uFFFC';
-const SOFT_BREAK = '\u000b';
+export const SOFT_BREAK = '\u000b';
 // Claude's notes start with this. BMP characters only: the markdown export
 // garbles anything outside it (🤖 comes back as mojibake), ✅ and ↳ survive.
-const NOTE_MARK = '↳ Claude';
+export const NOTE_MARK = '↳ Claude';
 // Ends every note, so a reply typed after it on the same line reads as human.
-const NOTE_END = '∎';
+export const NOTE_END = '∎';
 
 /** Accepts the connector's wrapper ({content: doc}) or the bare document. */
 export function unwrapDoc(json) {
@@ -162,39 +162,4 @@ export function findTasks(docJson, markdownJson, { section = 'Bucket list' } = {
     });
   }
   return tasks.map((t) => ({ ...t, status: statusOf(t) }));
-}
-
-/** update_doc payload that marks a task done: ✅ + strikethrough, optional "(note)". */
-export function doneRequests(task, revisionId, note) {
-  const requests = [];
-  // Highest index first, so earlier inserts never shift a later range.
-  if (note)
-    requests.push({ insertText: { text: ` (${note})`, location: { index: task.textEnd } } });
-  requests.push({
-    updateTextStyle: {
-      range: { startIndex: task.start, endIndex: task.titleEnd },
-      textStyle: { strikethrough: true },
-      fields: 'strikethrough',
-    },
-  });
-  requests.push({ insertText: { text: '✅ ', location: { index: task.start } } });
-  return { requests, writeControl: { requiredRevisionId: revisionId } };
-}
-
-/** update_doc payload that appends an italic "↳ Claude" note inside the task's own item. */
-export function noteRequests(task, revisionId, message, date) {
-  const text = `${SOFT_BREAK}${NOTE_MARK} ${date}: ${message} ${NOTE_END}`;
-  return {
-    requests: [
-      { insertText: { text, location: { index: task.textEnd } } },
-      {
-        updateTextStyle: {
-          range: { startIndex: task.textEnd + 1, endIndex: task.textEnd + text.length },
-          textStyle: { italic: true },
-          fields: 'italic',
-        },
-      },
-    ],
-    writeControl: { requiredRevisionId: revisionId },
-  };
 }

@@ -21,6 +21,9 @@ export interface Task {
   textEnd: number;
   images: TaskImage[];
 }
+export declare const SOFT_BREAK: string;
+export declare const NOTE_MARK: string;
+export declare const NOTE_END: string;
 export interface UpdatePayload {
   requests: Record<string, any>[];
   writeControl: { requiredRevisionId: string };
@@ -36,10 +39,3 @@ export function findTasks(
   markdownJson: unknown,
   opts?: { section?: string }
 ): Task[];
-export function doneRequests(task: Task, revisionId: string, note?: string): UpdatePayload;
-export function noteRequests(
-  task: Task,
-  revisionId: string,
-  message: string,
-  date: string
-): UpdatePayload;
