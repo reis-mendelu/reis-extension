@@ -68,7 +68,9 @@ const regularPlan: StudyPlan = {
   ],
 };
 
-const CAPTION = /isn't available for exchange studies/i;
+// Dominik, 2026-11-07: students only care that they see their subjects, not
+// whether IS has a study plan for them, so the fallback says nothing about it.
+const CAPTION = /study plan isn't available|exchange stud/i;
 
 function settled(overrides: Record<string, unknown> = {}) {
   useAppStore.setState({
@@ -94,9 +96,10 @@ function settled(overrides: Record<string, unknown> = {}) {
 describe('SubjectsScreen — exchange students (no study plan)', () => {
   beforeEach(() => settled());
 
-  it('lists the subjects from the subjects store with the exchange caption', () => {
+  it('lists the subjects from the subjects store with no caption about the study plan', () => {
     render(<SubjectsScreen />);
-    expect(screen.getByText(CAPTION)).toBeInTheDocument();
+    expect(screen.queryByText(CAPTION)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('subjects-exchange-caption')).not.toBeInTheDocument();
     expect(screen.getByText('Marketing')).toBeInTheDocument();
     expect(screen.getByText('Economics')).toBeInTheDocument();
     expect(screen.queryByText('No courses yet')).not.toBeInTheDocument();
@@ -172,8 +175,8 @@ describe('SubjectsScreen — exchange students (no study plan)', () => {
   });
 });
 
-describe('SubjectsScreen — regular students never see the exchange caption', () => {
-  it('shows no caption while the plan is still loading on a cold start', () => {
+describe('SubjectsScreen — regular students never see the fallback list', () => {
+  it('shows the skeleton, not the fallback, while the plan is still loading on a cold start', () => {
     // The subjects store hydrates (Tier 1) before the study plan (Tier 2), so
     // for a moment a regular student has subjects and no plan.
     settled({
@@ -188,12 +191,12 @@ describe('SubjectsScreen — regular students never see the exchange caption', (
       },
     });
     const { rerender } = render(<SubjectsScreen />);
-    expect(screen.queryByText(CAPTION)).not.toBeInTheDocument();
     expect(screen.getByTestId('subjects-skeleton')).toBeInTheDocument();
+    expect(screen.queryByText('Marketing')).not.toBeInTheDocument();
 
     act(() => useAppStore.setState({ studyPlanLoaded: true }));
     rerender(<SubjectsScreen />);
-    expect(screen.queryByText(CAPTION)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /study plan/i })).not.toBeInTheDocument();
 
     act(() =>
       useAppStore.setState({
@@ -209,13 +212,13 @@ describe('SubjectsScreen — regular students never see the exchange caption', (
       })
     );
     rerender(<SubjectsScreen />);
-    expect(screen.queryByText(CAPTION)).not.toBeInTheDocument();
     expect(screen.getByText('Marketing')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /study plan/i })).toBeInTheDocument();
   });
 
-  it("shows no caption after the handshake while the plan's IndexedDB read is still pending", () => {
+  it("shows no fallback list after the handshake while the plan's IndexedDB read is still pending", () => {
     settled({ studyPlanLoaded: false });
     render(<SubjectsScreen />);
-    expect(screen.queryByText(CAPTION)).not.toBeInTheDocument();
+    expect(screen.queryByText('Marketing')).not.toBeInTheDocument();
   });
 });

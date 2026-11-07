@@ -23,7 +23,7 @@ export interface EffectiveStudyPlan {
  * have no fallback at all and showed them "No courses yet" (reported 5 Nov 2026).
  *
  * The fallback waits until the plan has settled, or regular students see the
- * exchange caption flash on a cold load: the subjects store (Tier 1) hydrates
+ * fallback list flash on a cold load: the subjects store (Tier 1) hydrates
  * before the study plan (Tier 2 microtask). "Settled" is: the plan's IndexedDB
  * read has resolved, the handshake has resolved, and no sync is mid-flight —
  * or one sync has already finished this session (`firstSyncSettled`, a latch
