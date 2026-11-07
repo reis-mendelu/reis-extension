@@ -11,6 +11,7 @@ import type { SearchResult } from './types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { getModifierKey } from '../../utils/platform';
 import { isTrustedHostOrigin } from '../../utils/trustedOrigin';
+import { useScreenSignal } from '../../hooks/useScreenSignal';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -64,6 +65,9 @@ export function SearchBar({
     widenToUniversity,
     narrowToFaculty,
   } = useSearch(query, subjectsOnly);
+  // On the open transition: Studijní plán mounts this bar without the student
+  // having opened it.
+  useScreenSignal('screen_search', isOpen);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
   const inputWrapRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);

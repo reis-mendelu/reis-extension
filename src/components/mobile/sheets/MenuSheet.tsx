@@ -11,6 +11,7 @@ import { MenuDayTabs } from './MenuDayTabs';
 import { MenuOutletPanel } from './MenuOutletPanel';
 import { IskamBalanceRow } from './IskamBalanceRow';
 import { useIskamStore } from '../../../mobile/iskam/iskamStore';
+import { useScreenSignal } from '../../../hooks/useScreenSignal';
 
 export interface MenuSheetProps {
   dayIso: string;
@@ -32,6 +33,7 @@ export interface MenuSheetProps {
  * be opened unless `MenuCard` already had the data.
  */
 export function MenuSheet({ dayIso, week, onClose }: MenuSheetProps) {
+  useScreenSignal('screen_menu');
   const { t, language } = useTranslation();
   const menu = useAppStore((s) => s.menu);
   const [day, setDay] = useState(dayIso);

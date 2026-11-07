@@ -12,6 +12,7 @@ import { useQuestions } from '../../../hooks/useQuestions';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
 import { NotificationsOffBanner } from './NotificationsOffBanner';
+import { useScreenSignal } from '../../../hooks/useScreenSignal';
 
 export interface NotificationsSheetProps {
   onClose: () => void;
@@ -39,6 +40,7 @@ function SectionLabel({ children }: { children: ReactNode }) {
 }
 
 export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
+  useScreenSignal('screen_notifications');
   const { t } = useTranslation();
   const { notifications, loading, markVisible, readIds } = useNotificationFeed();
   const { alerts, markAllSeen } = useDeadlineAlerts();

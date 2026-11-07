@@ -9,6 +9,7 @@ import type { SearchResult } from './types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { getModifierKey } from '../../utils/platform';
 import { useEscapeLayer } from '../../hooks/ui/useEscapeLayer';
+import { useScreenSignal } from '../../hooks/useScreenSignal';
 
 interface MobileSearchOverlayProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ export function MobileSearchOverlay({
   onOpenSubject,
   prefillQuery = '',
 }: MobileSearchOverlayProps) {
+  useScreenSignal('screen_search', isOpen);
   const { t, language } = useTranslation();
   const [query, setQuery] = useState('');
   const {

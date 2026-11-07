@@ -32,6 +32,24 @@ export const FEATURE_SIGNALS = [
   'eduroam_profile_delivered',
   /** Týden was on screen on the phone or iPad (spec 2026-10-30). */
   'calendar_week_view',
+  /*
+   * One per screen, fired when it is SHOWN, on both trees (2026-11-07), so the
+   * admin console can say "10 % of the day's installs opened Vývěska". Pinned
+   * to their call sites by src/test/guards/screenSignalsHaveBothTrees.test.ts,
+   * which also says why the map has none (`map_dwell_3s` answers it).
+   */
+  /** The calendar (phone tab, extension view). The default on the phone, so near 100 % there. */
+  'screen_calendar',
+  /** Předměty. */
+  'screen_subjects',
+  /** Jídelníček opened: the phone's sheet, the extension's chef-hat popover. */
+  'screen_menu',
+  /** A search surface opened. */
+  'screen_search',
+  /** Vývěska: the IS posts behind the pin. Not Novinky. */
+  'screen_bulletin',
+  /** Novinky: the feed behind the bell. */
+  'screen_notifications',
 ] as const;
 
 /** Each label must also be in the database whitelist (featureSignalWhitelist.test.ts). */
