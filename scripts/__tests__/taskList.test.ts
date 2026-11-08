@@ -271,7 +271,7 @@ describe('write requests', () => {
     });
     expect(style.updateTextStyle.fields).toBe('italic,fontSize,foregroundColor');
     expect(() => noteRequests(task, 'rev-1', 'x'.repeat(NOTE_MAX + 1), '2026-11-08')).toThrow(
-      /keep it under/
+      /at most 300/
     );
   });
 
@@ -364,6 +364,12 @@ describe('edge cases', () => {
       },
       { text: 'see https://sportera.cz/', url: 'https://sportera.cz/' },
     ]);
+  });
+
+  it('still finds a section whose heading carries a chip', () => {
+    const heading = para('Bucket list', { heading: 'HEADING_2', images: ['chip'] });
+    const d = docOf(heading, para('a task', { bullet: true }));
+    expect(findTasks(d, '## Bucket list\n  - a task').map((t) => t.title)).toEqual(['a task']);
   });
 
   it('restyles only Claude notes, at their exact doc positions, never the replies', () => {

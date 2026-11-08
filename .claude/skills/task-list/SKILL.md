@@ -134,7 +134,7 @@ the app's own screens); it uses only public facts and never names a student.
 yourself and state the assumption in the PR, where Dominik can correct it.
 
 - Offer options (`(a) … nebo (b) …`), not open questions; answerable in one line.
-- **Short: one or two lines, under 300 characters** (the CLI refuses longer).
+- **Short: one or two lines, at most 300 characters** (the CLI refuses longer).
   The doc is Dominik's list, and notes cannot be collapsed: what you found goes
   in one clause, details on the review page or in the PR. Notes are written
   small and grey so his own text stays readable; `cli.mjs restyle` gives older

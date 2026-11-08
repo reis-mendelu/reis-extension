@@ -27,7 +27,7 @@ export function doneRequests(task, revisionId, note) {
 export function noteRequests(task, revisionId, message, date, link) {
   if (message.length > NOTE_MAX)
     throw new Error(
-      `Note for #${task.n} is ${message.length} characters; keep it under ${NOTE_MAX} (details go on the review page or in the PR).`
+      `Note for #${task.n} is ${message.length} characters; keep it to at most ${NOTE_MAX} (details go on the review page or in the PR).`
     );
   const text = `${SOFT_BREAK}${NOTE_MARK} ${date}: ${message} ${NOTE_END}`;
   const at = task.textEnd;

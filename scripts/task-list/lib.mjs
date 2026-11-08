@@ -34,7 +34,7 @@ function normalize(s) {
       .replace(/\\(.)/g, '$1')
       // A styled URL comes back as [text](url): keep the text, as the doc shows it.
       .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-      .replace(/~~|\*\*|__|[<>]/g, '')
+      .replace(/~~|\*\*|__|[<>\uFFFC]/g, '')
       .replace(/[\s\u000b ]+/g, ' ')
       .trim()
       .toLowerCase()
