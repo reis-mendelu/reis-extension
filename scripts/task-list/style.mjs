@@ -1,0 +1,51 @@
+// How Claude's notes look in the doc. Google Docs cannot collapse a list
+// item and the connector cannot start a comment, so a note recedes instead:
+// small, grey, italic, under Dominik's own text, which keeps the doc's size.
+import { NOTE_MARK, NOTE_END, paragraphs, sectionSlice, unwrapDoc } from './lib.mjs';
+
+export const NOTE_STYLE = {
+  italic: true,
+  fontSize: { magnitude: 9, unit: 'PT' },
+  foregroundColor: { color: { rgbColor: { red: 0.45, green: 0.45, blue: 0.45 } } },
+};
+export const NOTE_FIELDS = 'italic,fontSize,foregroundColor';
+// A note is a question or a status line, not a report: details go on the
+// review page or in the PR.
+export const NOTE_MAX = 300;
+
+export function noteStyle(startIndex, endIndex) {
+  return {
+    updateTextStyle: {
+      range: { startIndex, endIndex },
+      textStyle: NOTE_STYLE,
+      fields: NOTE_FIELDS,
+    },
+  };
+}
+
+/** Every "↳ Claude … ∎" span in a section, as doc index ranges. */
+export function noteSpans(docJson, section = 'Bucket list') {
+  const { body } = unwrapDoc(docJson);
+  const spans = [];
+  for (const p of sectionSlice(
+    paragraphs(body),
+    section,
+    (p) => p.level,
+    (p) => p.text
+  )) {
+    let from = p.text.indexOf(NOTE_MARK);
+    while (from !== -1) {
+      const end = p.text.indexOf(NOTE_END, from);
+      const stop = end === -1 ? p.text.replace(/\n$/, '').length : end + NOTE_END.length;
+      spans.push({ startIndex: p.start + from, endIndex: p.start + stop });
+      from = p.text.indexOf(NOTE_MARK, stop);
+    }
+  }
+  return spans;
+}
+
+/** Restyles the notes already in the doc. Formatting only: no text changes. */
+export function restyleRequests(docJson, section) {
+  const requests = noteSpans(docJson, section).map((s) => noteStyle(s.startIndex, s.endIndex));
+  return { requests, writeControl: { requiredRevisionId: unwrapDoc(docJson).revisionId } };
+}

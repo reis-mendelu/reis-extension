@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { findTasks } from '../task-list/lib.mjs';
 import { doneRequests, noteRequests, notesRequests, pragueDate } from '../task-list/requests.mjs';
+import { NOTE_MAX, restyleRequests } from '../task-list/style.mjs';
 
 // A made-up doc in the shape `read_doc` (Google Docs connector) returns.
 // Checklist state is NOT in this JSON — the Docs API omits it — so `done`
@@ -260,6 +261,20 @@ describe('write requests', () => {
     });
   });
 
+  // Task List, 2026-11-08: Docs cannot collapse a list item, and full-size
+  // notes buried Dominik's own text. A note recedes and stays short instead.
+  it('writes a note small and grey, and refuses one longer than a question', () => {
+    const [, style] = noteRequests(task, 'rev-1', 'ok?', '2026-11-08').requests;
+    expect(style.updateTextStyle.textStyle).toMatchObject({
+      italic: true,
+      fontSize: { magnitude: 9, unit: 'PT' },
+    });
+    expect(style.updateTextStyle.fields).toBe('italic,fontSize,foregroundColor');
+    expect(() => noteRequests(task, 'rev-1', 'x'.repeat(NOTE_MAX + 1), '2026-11-08')).toThrow(
+      /keep it under/
+    );
+  });
+
   it('makes a URL in the note clickable', () => {
     const url = 'https://claude.ai/artifact/abc';
     const out = noteRequests(
@@ -348,6 +363,23 @@ describe('edge cases', () => {
         driveId: '18vDQEnxxJ0DCMnd91dAbbz8dtE31hQI5',
       },
       { text: 'see https://sportera.cz/', url: 'https://sportera.cz/' },
+    ]);
+  });
+
+  it('restyles only Claude notes, at their exact doc positions, never the replies', () => {
+    const title = 'fix it';
+    const note = '↳ Claude 2026-11-07: (a) or (b)? ∎';
+    const task = para(`${title}\u000b${note} b please`, { bullet: true, images: [] });
+    const img = para('', { images: ['img1'] });
+    const later = para(`\u000b${note}`, { bullet: true, nesting: 1 });
+    const d = docOf(para('Bucket list', { heading: 'HEADING_2' }), task, img, later);
+    const spans = restyleRequests(d, 'Bucket list').requests.map((r) => r.updateTextStyle.range);
+    expect(spans).toEqual([
+      {
+        startIndex: task.startIndex + title.length + 1,
+        endIndex: task.startIndex + title.length + 1 + note.length,
+      },
+      { startIndex: later.startIndex + 1, endIndex: later.startIndex + 1 + note.length },
     ]);
   });
 
