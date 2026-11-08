@@ -325,6 +325,32 @@ describe('edge cases', () => {
     expect(findTasks(d, md)[0]!.done).toBe(true);
   });
 
+  // Task List, 2026-11-08: a run wrote "I don't have the PDF" under a task
+  // that linked it, and the task read as unmatched.
+  it('lists a linked Drive file with its id, even when the export wraps the link text', () => {
+    const task = para('send S-klub the posters - venues.pdf', { bullet: true });
+    const run = (task.paragraph.elements[0] as { textRun: { textStyle: object } }).textRun;
+    run.textStyle = {
+      link: { url: 'https://drive.google.com/open?id=18vDQEnxxJ0DCMnd91dAbbz8dtE31hQI5' },
+    };
+    const reply = para('see https://sportera.cz/', { bullet: true, nesting: 1 });
+    const replyRun = (reply.paragraph.elements[0] as { textRun: { textStyle: object } }).textRun;
+    replyRun.textStyle = { link: { url: 'https://sportera.cz/' } };
+    const d = docOf(para('Bucket list', { heading: 'HEADING_2' }), task, reply);
+    const md =
+      '## Bucket list\n  - [send S-klub the posters - venues.pdf  \n    ](https://drive.google.com/open?id=18vDQEnxxJ0DCMnd91dAbbz8dtE31hQI5)';
+    const [t] = findTasks(d, md);
+    expect(t!.done).toBe(false);
+    expect(t!.links).toEqual([
+      {
+        text: 'send S-klub the posters - venues.pdf',
+        url: 'https://drive.google.com/open?id=18vDQEnxxJ0DCMnd91dAbbz8dtE31hQI5',
+        driveId: '18vDQEnxxJ0DCMnd91dAbbz8dtE31hQI5',
+      },
+      { text: 'see https://sportera.cz/', url: 'https://sportera.cz/' },
+    ]);
+  });
+
   it('dates notes in Prague, where a UTC date would still say yesterday', () => {
     expect(pragueDate(new Date('2026-11-07T23:30:00Z'))).toBe('2026-11-08');
     expect(pragueDate(new Date('2026-07-01T21:59:00Z'))).toBe('2026-07-01');

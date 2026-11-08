@@ -124,6 +124,10 @@ if (command === 'list') {
       for (const line of t.thread) console.log(`     ${line.text}`);
       for (const img of t.images)
         console.log(`     image: ${img.file ?? img.error ?? '(not downloaded)'}`);
+      for (const l of t.links)
+        console.log(
+          `     link: ${l.text} → ${l.url}${l.driveId ? ` (Drive file ${l.driveId})` : ''}`
+        );
     }
   }
 } else if (command === 'done') {
