@@ -50,6 +50,12 @@ node scripts/task-list/cli.mjs list --doc D --md M --task 4 --images "$SCRATCH/t
 then open each `image:` path with Read. A task with a screenshot is not
 understood until its screenshot has been looked at.
 
+**Open every `link:` too, before triaging.** A linked file or page is part of
+the task. `(Drive file <id>)` → `read_file_content` with that id (PDFs, docs
+and slides come back as text); any other URL → fetch the page. Never write that
+you lack a file the task links to. And search the code by concept, not only by
+the task's words: "S-klub" finds nothing, but the map already has venues.
+
 ## 2. Write (never by hand-computed index)
 
 **Ignore Drive's `canEdit`.** `search_files` reports `canEdit: false` for this
@@ -82,10 +88,17 @@ Each task has a `status` (the `[…]` in `list`), worked out from the lines unde
 | Status | Meaning | What a session does |
 | --- | --- | --- |
 | `new` | Claude never wrote on it | triage it (below) |
-| `asked` | Claude's question is the last word | skip — wait for Dominik |
+| `asked` | Claude's question is the last word | skip — wait for Dominik, unless the question is void (below) |
 | `answered` | someone wrote after Claude's last note | re-read the thread; work it if now clear, else ask once more |
 | `claimed` | a note says `in progress — branch …` | resume that branch if the note is over a day old and no PR is moving; otherwise skip |
 | `done` | ticked or struck through | skip |
+
+**A void question does not wait.** If Claude's last question rests on
+something now known to be wrong — "I don't have the file" while the task links
+it, "nothing in the code" while the code has it, or a question the skill says
+not to ask (a second round, how to publish content) — re-triage the task as
+`new`: one note that withdraws the question (`Oprava:` + what the link or code
+shows), then the build or one better question.
 
 A reply counts wherever it is typed: after the `∎` on Claude's line, on a new
 line in the same item (Shift+Enter), or as a nested bullet (Enter, Tab).
@@ -93,7 +106,7 @@ line in the same item (Shift+Enter), or as a nested bullet (Enter, Tab).
 **Triage every `new` task in one pass**, then work one task per session:
 
 1. Not code for this repo (outreach, emails, partner deals, other repos) →
-   leave it alone, no note.
+   leave it alone, no note; name it in the run summary with a reason.
 2. Clear enough to build → claim it and build it.
 3. Unclear → one note with the questions, then move on.
 
@@ -104,6 +117,10 @@ yourself and state the assumption in the PR, where Dominik can correct it.
 - At most three questions per note, in the task's language.
 - One round: after an answer, build. Ask again only if the answer leaves the
   task impossible, not merely imprecise.
+- Content, not code (a society event, a post — published in the admin
+  console, stored in Supabase you only read): do not ask how. Fill in the
+  entry from the linked page (title, date, place, society, link) in one note
+  for Dominik to publish; ask only if a field is genuinely unknown.
 - Say what you found first (what exists today, what is missing), so the
   question can be answered without opening the code.
 
@@ -163,7 +180,7 @@ this order, then stop:
 2. **Merges first.** Every `answered` task whose last Claude note asked
    "Mergnout?": `y` → merge and mark done; `n` → that task is this run's build.
 3. **Questions on everything new.** Triage every `new` task in one pass:
-   skip non-code silently, and collect a question for **every** unclear one —
+   skip non-code (no note), and collect a question for **every** unclear one —
    Dominik picks which to answer, one or all at once. Post them all in a single
    `notes` write; never stop after the first question.
 4. **Build at most one task**, in this priority: a rework after `n`, then an

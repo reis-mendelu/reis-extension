@@ -1,6 +1,4 @@
-// Pure logic for the reIS Task List Google Doc. Plain JS so the CLI runs on
-// bare Node in any cloud session, before or without `npm ci`.
-//
+// Pure logic for the reIS Task List Google Doc. Plain JS: runs on bare Node.
 // Two reads, because neither alone is enough:
 // - `read_doc` (Docs API JSON): character indices to write at, and image URIs.
 // - `read_file_content` (markdown export): whether a checklist box is ticked.
@@ -57,8 +55,11 @@ function paragraphs(body) {
       const p = el.paragraph;
       let text = '';
       const images = [];
+      const links = [];
       for (const e of p.elements) {
         if (e.textRun) text += e.textRun.content;
+        const url = e.textRun?.textStyle?.link?.url;
+        if (url) links.push({ text: e.textRun.content.trim(), url });
         if (e.inlineObjectElement) {
           text += OBJECT;
           images.push(e.inlineObjectElement.inlineObjectId);
@@ -69,6 +70,7 @@ function paragraphs(body) {
         end: el.endIndex,
         text,
         images,
+        links,
         bullet: !!p.bullet,
         nesting: p.bullet?.nestingLevel ?? 0,
         level: headingLevel(p),
@@ -87,7 +89,11 @@ function sectionSlice(items, section, levelOf, textOf) {
 }
 
 function markdownDoneMap(markdown, section) {
-  const lines = markdown.split('\n');
+  // A link chip's text can run onto the next line (`[file.pdf  \n  ](url)`),
+  // which would cut the item off from its title: keep each link on one line.
+  const lines = markdown
+    .replace(/\[([^\]]*)\]\(/g, (_, text) => `[${text.replace(/\s*\n\s*/g, ' ')}](`)
+    .split('\n');
   const levelOf = (l) => /^(#+)\s/.exec(l)?.[1].length ?? null;
   const textOf = (l) => l.replace(/^#+\s*/, '');
   return (
@@ -120,6 +126,18 @@ function statusOf(task) {
   if (lastClaude < task.thread.length - 1) return 'answered';
   const body = task.thread[lastClaude].text.replace(/^↳ Claude [\d-]+:\s*/, '');
   return /^in progress\b/i.test(body) ? 'claimed' : 'asked';
+}
+
+/**
+ * Links in a task or its replies: a Drive file (a PDF, a doc) or a web page is
+ * part of the task, so `list` shows each one with its Drive file id, if any.
+ */
+function addLinks(task, links) {
+  for (const { text, url } of links) {
+    if (task.links.some((l) => l.url === url)) continue;
+    const driveId = /(?:drive|docs)\.google\.com\/.*(?:[?&]id=|\/d\/)([\w-]{10,})/.exec(url)?.[1];
+    task.links.push({ text, url, ...(driveId && { driveId }) });
+  }
 }
 
 /**
@@ -156,6 +174,7 @@ export function findTasks(docJson, markdownJson, { section = 'Bucket list' } = {
     if ((p.nesting > 0 || !p.bullet) && parent) {
       parent.thread.push(...[title, ...lines].filter(Boolean).flatMap(linesOf));
       parent.images.push(...p.images.map((id) => ({ id, uri: uriOf(id) })));
+      addLinks(parent, p.links);
       parent.textEnd = p.end - 1;
       continue;
     }
@@ -175,7 +194,9 @@ export function findTasks(docJson, markdownJson, { section = 'Bucket list' } = {
       titleEnd: p.start + titleLen,
       textEnd: p.end - 1,
       images: p.images.map((id) => ({ id, uri: uriOf(id) })),
+      links: [],
     });
+    addLinks(tasks.at(-1), p.links);
   }
   return tasks.map((t) => ({ ...t, status: statusOf(t) }));
 }
