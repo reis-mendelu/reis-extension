@@ -88,10 +88,17 @@ Each task has a `status` (the `[…]` in `list`), worked out from the lines unde
 | Status | Meaning | What a session does |
 | --- | --- | --- |
 | `new` | Claude never wrote on it | triage it (below) |
-| `asked` | Claude's question is the last word | skip — wait for Dominik |
+| `asked` | Claude's question is the last word | skip — wait for Dominik, unless the question is void (below) |
 | `answered` | someone wrote after Claude's last note | re-read the thread; work it if now clear, else ask once more |
 | `claimed` | a note says `in progress — branch …` | resume that branch if the note is over a day old and no PR is moving; otherwise skip |
 | `done` | ticked or struck through | skip |
+
+**A void question does not wait.** If Claude's last question rests on
+something now known to be wrong — "I don't have the file" while the task links
+it, "nothing in the code" while the code has it, or a question the skill says
+not to ask (a second round, how to publish content) — re-triage the task as
+`new`: one note that withdraws the question (`Oprava:` + what the link or code
+shows), then the build or one better question.
 
 A reply counts wherever it is typed: after the `∎` on Claude's line, on a new
 line in the same item (Shift+Enter), or as a nested bullet (Enter, Tab).
