@@ -35,14 +35,19 @@ export function noteSpans(docJson, section = 'Bucket list') {
   )) {
     let from = p.text.indexOf(NOTE_MARK);
     while (from !== -1) {
-      const end = p.text.indexOf(NOTE_END, from);
+      const next = p.text.indexOf(NOTE_MARK, from + NOTE_MARK.length);
+      const lineEnd = p.text.indexOf(SOFT_BREAK, from);
+      // The ∎ must close THIS note: on its own line, before any later note.
+      const limit = Math.min(...[next, lineEnd, p.text.length].filter((i) => i !== -1));
+      const found = p.text.indexOf(NOTE_END, from);
+      const end = found !== -1 && found < limit ? found : -1;
       // A note starts a line (Claude writes it after a soft break); the mark
       // anywhere else is someone quoting it. A note with no ∎ has no knowable
       // end, and guessing could grey out a reply: leave it as it is.
       const startsLine = from === 0 || p.text[from - 1] === SOFT_BREAK;
       if (startsLine && end !== -1)
         spans.push({ startIndex: p.start + from, endIndex: p.start + end + NOTE_END.length });
-      from = p.text.indexOf(NOTE_MARK, from + NOTE_MARK.length);
+      from = next;
     }
   }
   return spans;

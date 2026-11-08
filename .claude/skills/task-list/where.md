@@ -13,9 +13,10 @@ is in the `reis-extension` environment's Repositories list. If neither
 works, say so and leave the task — never work around it (no fork, no other
 remote, no pasting the page elsewhere).
 
-reis-page is a static site (`index.html`, no build, no CI of note): clone it,
-branch `claude/<slug>`, check the page in a browser at 390px and 1280px, and
-put those screenshots on the review page. A partner document follows the
+reis-page is a static site (`index.html`, no build, no CI): clone it, branch
+`claude/<slug>`, check the page in a browser at 390px and 1280px, and put
+those screenshots on the review page. Its gate in place of a green CI is
+Vercel's preview deployment of the PR showing Ready, plus those screenshots. A partner document follows the
 linked example's structure and the reIS look (`reis-mendelu/reis-page` and
 the app's own screens); it uses only public facts and never names a student.
 
@@ -49,11 +50,14 @@ A later session finds it `answered` and reads the reply after the `∎`:
   the PR into `test` pinned to that commit (`expectedHeadSha`; mark it ready
   for review first; squash, as the repo does), then `done --note "PR #n, merged"`. Only if CI is green on
   the current head and **no release PR (`test` → `main`) is open** — while one
-  is, leave a note saying the merge waits for the release. A reis-page PR
-  merges into its `main` on `y` (no release gate there); a document is marked
-  done with its link.
+  is, leave a note saying the merge waits for the release that ends by asking
+  "Mergnout?" again, so the next session finds the question. A reis-page PR
+  merges into its `main` on `y`, pinned the same way (`expectedHeadSha`; no
+  release gate there); a document is marked done with its link.
 - **`n` + what to change** → change it on the same branch, refresh the review
   page, and ask again with a new note.
 
-A "y" in the doc is the go-ahead because only Dominik edits the doc; the
-Docs API cannot say who typed it. Never merge on anything less explicit.
+A "y" in the doc counts only as the answer to Claude's own "Mergnout?" or
+"Sedí to?" note on that task; the Docs API cannot say who typed it, so never
+merge on anything less explicit, and in a session prefer Dominik's go-ahead
+in the chat.
