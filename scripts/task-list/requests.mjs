@@ -49,6 +49,26 @@ export function noteRequests(task, revisionId, message, date, link) {
   return { requests, writeControl: { requiredRevisionId: revisionId } };
 }
 
+/**
+ * Several notes in ONE update_doc payload: every question of a run, one read
+ * and one write. Each write changes the revision, so writing notes one at a
+ * time meant a re-read per note, and a run stopped after its first question.
+ * `items` is [{ task, text, link? }]; notes go in from the last task up, so an
+ * insert never shifts a position still to be written.
+ */
+export function notesRequests(tasks, revisionId, items, date) {
+  const byTask = items.map((item) => {
+    const task = tasks.find((t) => t.n === Number(item.task));
+    if (!task) throw new Error(`No task #${item.task}. Run \`list --all\` to see the numbering.`);
+    return { task, item };
+  });
+  byTask.sort((a, b) => b.task.textEnd - a.task.textEnd);
+  const requests = byTask.flatMap(
+    ({ task, item }) => noteRequests(task, revisionId, item.text, date, item.link).requests
+  );
+  return { requests, writeControl: { requiredRevisionId: revisionId } };
+}
+
 /** Today's date in Prague, where Dominik reads the notes (YYYY-MM-DD). */
 export function pragueDate(now = new Date()) {
   return new Intl.DateTimeFormat('en-CA', {

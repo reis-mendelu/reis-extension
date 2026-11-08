@@ -7,13 +7,14 @@
 //   node scripts/task-list/cli.mjs list --doc D --md M [--all] [--section S] [--images DIR [--task N]]
 //   node scripts/task-list/cli.mjs done --doc D --md M --task N [--note "PR #123"]
 //   node scripts/task-list/cli.mjs note --doc D --md M --task N --text "…" [--link URL]
+//   node scripts/task-list/cli.mjs notes --doc D --md M --file notes.json   (all of a run's notes, one write)
 import { readFileSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { findTasks, unwrapDoc } from './lib.mjs';
-import { doneRequests, noteRequests, pragueDate } from './requests.mjs';
+import { doneRequests, noteRequests, notesRequests, pragueDate } from './requests.mjs';
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
@@ -28,6 +29,7 @@ const { positionals, values } = parseArgs({
     note: { type: 'string' },
     text: { type: 'string' },
     link: { type: 'string' },
+    file: { type: 'string' },
   },
 });
 const [command] = positionals;
@@ -141,6 +143,19 @@ if (command === 'list') {
       2
     )
   );
+} else if (command === 'notes') {
+  if (!values.file) {
+    console.error('notes needs --file <json: [{"task": n, "text": "…", "link": "…"}]>');
+    process.exit(2);
+  }
+  const items = JSON.parse(readFileSync(values.file, 'utf8'));
+  try {
+    const payload = notesRequests(tasks, unwrapDoc(docJson).revisionId, items, pragueDate());
+    console.log(JSON.stringify(payload, null, 2));
+  } catch (err) {
+    console.error(err.message);
+    process.exit(1);
+  }
 } else {
   console.error(`unknown command: ${command}`);
   process.exit(2);

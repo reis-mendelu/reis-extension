@@ -9,3 +9,9 @@ export function noteRequests(
   link?: string
 ): UpdatePayload;
 export function pragueDate(now?: Date): string;
+export function notesRequests(
+  tasks: Task[],
+  revisionId: string,
+  items: { task: number; text: string; link?: string }[],
+  date: string
+): UpdatePayload;
