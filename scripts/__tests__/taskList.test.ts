@@ -389,6 +389,19 @@ describe('edge cases', () => {
     ]);
   });
 
+  it('leaves a quoted mark and a note with no end alone', () => {
+    const quoted = '↳ Claude 2026-11-07: (a)? ∎ yes, as ↳ Claude said ∎ fine';
+    const open = 'x\u000b↳ Claude 2026-11-07: no end mark, then a reply';
+    const d = docOf(
+      para('Bucket list', { heading: 'HEADING_2' }),
+      para(`t\u000b${quoted}`, { bullet: true }),
+      para(open, { bullet: true })
+    );
+    const spans = restyleRequests(d, 'Bucket list').requests.map((r) => r.updateTextStyle.range);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.endIndex - spans[0]!.startIndex).toBe('↳ Claude 2026-11-07: (a)? ∎'.length);
+  });
+
   it('dates notes in Prague, where a UTC date would still say yesterday', () => {
     expect(pragueDate(new Date('2026-11-07T23:30:00Z'))).toBe('2026-11-08');
     expect(pragueDate(new Date('2026-07-01T21:59:00Z'))).toBe('2026-07-01');

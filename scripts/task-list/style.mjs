@@ -1,7 +1,7 @@
 // How Claude's notes look in the doc. Google Docs cannot collapse a list
 // item and the connector cannot start a comment, so a note recedes instead:
 // small, grey, italic, under Dominik's own text, which keeps the doc's size.
-import { NOTE_MARK, NOTE_END, paragraphs, sectionSlice, unwrapDoc } from './lib.mjs';
+import { NOTE_MARK, NOTE_END, SOFT_BREAK, paragraphs, sectionSlice, unwrapDoc } from './lib.mjs';
 
 export const NOTE_STYLE = {
   italic: true,
@@ -36,9 +36,13 @@ export function noteSpans(docJson, section = 'Bucket list') {
     let from = p.text.indexOf(NOTE_MARK);
     while (from !== -1) {
       const end = p.text.indexOf(NOTE_END, from);
-      const stop = end === -1 ? p.text.replace(/\n$/, '').length : end + NOTE_END.length;
-      spans.push({ startIndex: p.start + from, endIndex: p.start + stop });
-      from = p.text.indexOf(NOTE_MARK, stop);
+      // A note starts a line (Claude writes it after a soft break); the mark
+      // anywhere else is someone quoting it. A note with no ∎ has no knowable
+      // end, and guessing could grey out a reply: leave it as it is.
+      const startsLine = from === 0 || p.text[from - 1] === SOFT_BREAK;
+      if (startsLine && end !== -1)
+        spans.push({ startIndex: p.start + from, endIndex: p.start + end + NOTE_END.length });
+      from = p.text.indexOf(NOTE_MARK, from + NOTE_MARK.length);
     }
   }
   return spans;
