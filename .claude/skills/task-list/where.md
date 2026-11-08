@@ -8,10 +8,10 @@ Part of the task-list skill (`SKILL.md`). Read it before triage.
 | the public site: the install guide ("reis-navod", reis-page `index.html`), SEO or landing pages | `reis-mendelu/reis-page`, PR into `main` | screenshots of the page | squash-merge into `main` — **that publishes the live site** |
 | a document for Dominik to use: a proposal, mockups for a partner, a one-pager | a private Artifact page | the page itself | done, nothing to merge |
 
-A run reaches reis-page only if it is in the `reis-extension` environment's
-Repositories list; if the clone is refused, do the task's question or note as
-usual and say in the run summary that reis-page access is missing — never
-work around it (no fork, no other remote, no pasting the page elsewhere).
+A session reaches reis-page through `add_repo` (access: push), or because it
+is in the `reis-extension` environment's Repositories list. If neither
+works, say so and leave the task — never work around it (no fork, no other
+remote, no pasting the page elsewhere).
 
 reis-page is a static site (`index.html`, no build, no CI of note): clone it,
 branch `claude/<slug>`, check the page in a browser at 390px and 1280px, and
