@@ -4,10 +4,11 @@ import { useAppStore } from '../../store/useAppStore';
 import { useSociety } from '../../hooks/useSociety';
 import { SocietyLogo } from '../SocietyLogo';
 import { useEventPinPlacement } from './useEventPinPlacement';
+import { VENUE_PINS } from '../../data/map/venues';
 import type { SocietyPin } from '../../types/campusMap';
 
 /**
- * Society pins (`map_pins`) on the campus overview: the society's logo in a
+ * Society pins (`map_pins`, plus the bundled permanent venues) on the campus overview: the society's logo in a
  * white ring, opening `SocietyPinCard`. Their own layer over the events' pane
  * and placement, not EventLayer's groups, so a pin is never grouped with,
  * counted as or listed among the events. Not drawn over a floor plan.
@@ -19,7 +20,9 @@ export function SocietyPinLayer() {
   const select = useAppStore((s) => s.selectSocietyPin);
   const items = useMemo(
     () =>
-      activeBuildingId === null ? pins.map((pin) => ({ key: pin.id, coord: pin.coord, pin })) : [],
+      activeBuildingId === null
+        ? [...VENUE_PINS, ...pins].map((pin) => ({ key: pin.id, coord: pin.coord, pin }))
+        : [],
     [pins, activeBuildingId]
   );
   const { placed, pane } = useEventPinPlacement(items, null);

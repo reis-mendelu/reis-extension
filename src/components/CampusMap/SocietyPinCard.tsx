@@ -2,13 +2,15 @@ import { ExternalLink } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSociety } from '../../hooks/useSociety';
 import { SocietyLogo } from '../SocietyLogo';
+import { VenueDetails } from './VenueDetails';
 import type { SocietyPin } from '../../types/campusMap';
 
 /**
  * A society pin, opened: the same identity row as `EventDetailCard` (logo,
  * title, society), the society's short description, and "Více informací" to
  * its website. No date or venue — a pin is a place on the map for a while, not
- * an event.
+ * an event. A permanent venue (S-klub's café, `data/map/venues.ts`) adds its
+ * hours, lunch, menu and events through VenueDetails.
  */
 export function SocietyPinCard({ pin, flush = false }: { pin: SocietyPin; flush?: boolean }) {
   const { t } = useTranslation();
@@ -27,9 +29,14 @@ export function SocietyPinCard({ pin, flush = false }: { pin: SocietyPin; flush?
           />
           <div className="min-w-0 flex-1">
             <h3 className="line-clamp-2 font-bold leading-tight text-base-content">{pin.title}</h3>
-            <span className="block min-w-0 truncate text-xs text-base-content/60">{soc.name}</span>
+            {soc.name !== pin.title && (
+              <span className="block min-w-0 truncate text-xs text-base-content/60">
+                {soc.name}
+              </span>
+            )}
           </div>
         </div>
+        {pin.venue && <VenueDetails venue={pin.venue} societyId={pin.societyId} />}
         {pin.description && (
           <p className="whitespace-pre-line break-words text-sm text-base-content/80">
             {pin.description}

@@ -125,6 +125,41 @@ export interface SocietyPin {
   url: string | null;
   /** [lng, lat] */
   coord: [number, number];
+  /** A permanent place the society runs (S-klub's café): bundled with the
+   *  app, never from `map_pins`, and its card shows hours and a menu. */
+  venue?: Venue;
+}
+
+/** Opening hours for one weekday, local Prague time, 'HH:MM'. */
+export interface VenueHours {
+  /** 1 = Monday … 7 = Sunday (ISO). */
+  day: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  open: string;
+  close: string;
+}
+
+export interface VenueMenuItem {
+  name: string;
+  /** In CZK; a text price for a range ('45/55'). */
+  price: number | string;
+}
+
+export interface VenueMenuSection {
+  id: string;
+  title: { cz: string; en: string };
+  items: VenueMenuItem[];
+}
+
+export interface Venue {
+  kind: { cz: string; en: string };
+  where: { cz: string; en: string };
+  hours: VenueHours[];
+  /** The lunch offer as the venue states it: a fixed price, dishes vary. */
+  lunch: { name: { cz: string; en: string }; price: number } | null;
+  menu: VenueMenuSection[];
+  instagram: string | null;
+  /** Where the prices come from, and when they were last checked. */
+  source: { url: string; checked: string };
 }
 
 export interface GardenPlace {

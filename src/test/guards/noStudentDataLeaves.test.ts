@@ -214,6 +214,7 @@ const ALLOWED_HOSTS = [
   'creativecommons.org', // the Twemoji licence, linked from the map's credit line
   'gate.gopay.com', // the GoPay payment page for an ISIC top-up, opened in the system browser view
   'cestasey.cz', // EY's programme, linked from Stáže for students whose field EY partners
+  'sklubpixie.cz', // S-klub Pixie's own site, linked from its café card on the map
 
   // --- not destinations ---
   'localhost.that.never.exists', // CORS sentinel in capacitorTransport
