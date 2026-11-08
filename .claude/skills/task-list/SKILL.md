@@ -105,10 +105,30 @@ line in the same item (Shift+Enter), or as a nested bullet (Enter, Tab).
 
 **Triage every `new` task in one pass**, then work one task per session:
 
-1. Not code for this repo (outreach, emails, partner deals, other repos) →
-   leave it alone, no note; name it in the run summary with a reason.
-2. Clear enough to build → claim it and build it.
+1. Only a person can do it (send an email, hold a meeting, close a deal) →
+   leave it alone, no note; name it in the run summary with a reason. A run
+   never sends anything to anyone outside the doc.
+2. Clear enough to build → claim it and build it, wherever it lives (below).
 3. Unclear → one note with the questions, then move on.
+
+**Where a task lives.** Not only this repo:
+
+| The task is… | Built in | Shown with | `y` means |
+| --- | --- | --- | --- |
+| the app or the extension | `reis-extension`, PR into `test` | screenshots page | squash-merge into `test` |
+| the public site: the install guide ("reis-navod", reis-page `index.html`), SEO or landing pages | `reis-mendelu/reis-page`, PR into `main` | screenshots of the page | squash-merge into `main` — **that publishes the live site** |
+| a document for Dominik to use: a proposal, mockups for a partner, a one-pager | a private Artifact page | the page itself | done, nothing to merge |
+
+A run reaches reis-page only if it is in the `reis-extension` environment's
+Repositories list; if the clone is refused, do the task's question or note as
+usual and say in the run summary that reis-page access is missing — never
+work around it (no fork, no other remote, no pasting the page elsewhere).
+
+reis-page is a static site (`index.html`, no build, no CI of note): clone it,
+branch `claude/<slug>`, check the page in a browser at 390px and 1280px, and
+put those screenshots on the review page. A partner document follows the
+linked example's structure and the reIS look (`reis-mendelu/reis-page` and
+the app's own screens); it uses only public facts and never names a student.
 
 **Ask only when the answer changes what gets built.** Everything else, decide
 yourself and state the assumption in the PR, where Dominik can correct it.
@@ -131,6 +151,7 @@ yourself and state the assumption in the PR, where Dominik can correct it.
   mid-task (usage limit, machine reclaimed); push the branch early so the work
   survives, and a later session resumes from the claimed branch.
 - Normal repo rules apply: branch → PR into `test`, CI green, both UI trees.
+  In reis-page: branch → PR into `main`; there is no `test` there.
 - Build and verify on the demo data (preview build, `dev/fixtures/`). Never ask
   for IS Mendelu credentials: they stay on Dominik's laptop (CLAUDE.md). When a
   task needs real IS data (a parser change, a bug only real data shows), ask
@@ -155,14 +176,17 @@ When the PR is green, do not mark the task done yet:
      --text "Hotovo: PR #651, CI zelené. Screenshoty: <url> — Mergnout do test? (y/n)" --link "<url>"
    ```
 
-   The task is now `asked`. Stop there.
+   The task is now `asked`. Stop there. For reis-page, ask "Mergnout do main
+   (publikuje web)? (y/n)"; for a document, "Hotovo: <url> — Sedí to? (y/n)".
 
 A later session finds it `answered` and reads the reply after the `∎`:
 
 - **`y`** → merge the PR into `test` (mark it ready for review first; squash, as
   the repo does), then `done --note "PR #n, merged"`. Only if CI is green on
   the current head and **no release PR (`test` → `main`) is open** — while one
-  is, leave a note saying the merge waits for the release.
+  is, leave a note saying the merge waits for the release. A reis-page PR
+  merges into its `main` on `y` (no release gate there); a document is marked
+  done with its link.
 - **`n` + what to change** → change it on the same branch, refresh the review
   page, and ask again with a new note.
 
@@ -180,7 +204,7 @@ this order, then stop:
 2. **Merges first.** Every `answered` task whose last Claude note asked
    "Mergnout?": `y` → merge and mark done; `n` → that task is this run's build.
 3. **Questions on everything new.** Triage every `new` task in one pass:
-   skip non-code (no note), and collect a question for **every** unclear one —
+   skip what only a person can do (no note), and collect a question for **every** unclear one —
    Dominik picks which to answer, one or all at once. Post them all in a single
    `notes` write; never stop after the first question.
 4. **Build at most one task**, in this priority: a rework after `n`, then an
