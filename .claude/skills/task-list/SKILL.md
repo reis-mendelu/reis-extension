@@ -173,11 +173,12 @@ go to him there, not into the doc. In this order:
    build, as options, in one message. Content tasks (an event, a society)
    and anything only a person can do are said so, not built.
 4. **Work them in parallel**: one subagent per task (`isolation: "worktree"`
-   for this repo; a separate clone for reis-page), each to a pushed branch,
-   a draft PR and a green CI. Give each the task text, the answers, the
-   rules of this skill and `where.md`, and the files it should not touch. A
-   document task is an Artifact draft. Keep working the one you know best
-   yourself.
+   for this repo; a separate clone for reis-page). A code task ends in a
+   pushed branch, a draft PR and a green CI (for reis-page, its Ready
+   preview); a document task ends in a published Artifact page, with no PR.
+   Give each the task text, the answers, the rules of this skill and
+   `where.md`, and the files it should not touch. Keep working the one you
+   know best yourself.
 5. **Show it**: a review page per PR (`where.md`, Finishing), linked in the
    chat. Merge only on his explicit go-ahead in the chat or a `y` in the
    doc, under the same rules (that commit, CI green, no release PR open).
