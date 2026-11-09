@@ -18,12 +18,12 @@ describe('roomPlanLabels', () => {
   });
 
   it('keeps the code before any venues have loaded', () => {
-    expect(roomPlanLabels(sklubRoom, new Map()).full).not.toBe('S-klub Pixie');
+    expect(roomPlanLabels(sklubRoom, new Map())).toEqual({ full: 'N1015', short: 'N1015' });
   });
 
   it('leaves every other room as it was', () => {
     const room = { name: 'Q01', passportNumber: 'BA39P1001', nickname: null };
-    expect(roomPlanLabels(room, titles)).toEqual(roomPlanLabels(room, new Map()));
+    expect(roomPlanLabels(room, titles)).toEqual({ full: 'Q01.01', short: 'Q01.01' });
   });
 });
 
@@ -31,6 +31,23 @@ describe('venueRoomKey', () => {
   it('is the same for a refetched copy of the same venues, so the plan is not retitled', () => {
     const again = venueRowToPin(SKLUB_VENUE_ROW)!;
     expect(venueRoomKey([again])).toBe(venueRoomKey([sklub]));
+  });
+
+  it('does not depend on the order the venues arrive in', () => {
+    const other = {
+      ...sklub,
+      id: 'b',
+      title: 'B',
+      venue: { ...sklub.venue!, roomCode: 'BA01N1001' },
+    };
+    expect(venueRoomKey([other, sklub])).toBe(venueRoomKey([sklub, other]));
+  });
+
+  it('cannot be faked by a title that looks like the separator', () => {
+    const a = { ...sklub, title: 'X\nBA01N1001=Y' };
+    const b1 = { ...sklub, title: 'X' };
+    const b2 = { ...sklub, id: 'b', title: 'Y', venue: { ...sklub.venue!, roomCode: 'BA01N1001' } };
+    expect(venueRoomKey([a])).not.toBe(venueRoomKey([b1, b2]));
   });
 
   it('changes when a venue is renamed', () => {

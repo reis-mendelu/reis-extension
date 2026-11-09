@@ -3,7 +3,7 @@ import { searchVenues, venueRoomTitles } from '../venueSearch';
 import { searchPlaces } from '../mapHelpers';
 import { venueRowToPin } from '../../../api/venues';
 import { SKLUB_VENUE_ROW } from '../../../test/fixtures/sklubVenueRow';
-import type { SocietyPin } from '../../../types/campusMap';
+import type { RoomIndexEntry, SocietyPin } from '../../../types/campusMap';
 
 const sklub = venueRowToPin(SKLUB_VENUE_ROW)!;
 const notice: SocietyPin = {
@@ -32,14 +32,36 @@ describe('searchVenues', () => {
   });
 });
 
+const room = (name: string, code: string): RoomIndexEntry => ({
+  code,
+  name,
+  nickname: null,
+  buildingId: 0,
+  floorId: 0,
+  floorLevel: 0,
+  placeId: 1,
+});
+
 describe('searchPlaces with venues', () => {
   it('lists the venue as a society-pin result, the selection its pin opens', () => {
     const r = searchPlaces('pixie', [], [], [], [], [sklub]);
     expect(r).toEqual([{ kind: 'societyPin', pin: sklub }]);
   });
 
+  it('lists the venue before a room of the same name', () => {
+    const namesake = room('S-klub Pixie', 'BA39P1099');
+    const r = searchPlaces('s-klub pixie', [namesake], [], [], [], [sklub]);
+    expect(r).toEqual([
+      { kind: 'societyPin', pin: sklub },
+      { kind: 'roomRef', entry: namesake },
+    ]);
+  });
+
   it('leaves the other results alone when no venue matches', () => {
-    expect(searchPlaces('q01', [], [], [], [], [sklub])).toEqual([]);
+    const q01 = room('Q01', 'BA39P1001');
+    const without = searchPlaces('q01', [q01], [], [], []);
+    expect(without).toEqual([{ kind: 'roomRef', entry: q01 }]);
+    expect(searchPlaces('q01', [q01], [], [], [], [sklub])).toEqual(without);
   });
 });
 

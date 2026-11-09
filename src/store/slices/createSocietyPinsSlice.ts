@@ -43,7 +43,12 @@ export const createSocietyPinsSlice: AppSlice<SocietyPinsSlice> = (set, get) => 
   loadSocietyPins: async () => {
     const [pins, venues] = await Promise.all([fetchSocietyPins(), fetchVenuePins()]);
     if (pins !== null) set({ societyPins: pins });
-    if (venues !== null) set({ venuePins: venues });
+    if (venues !== null) {
+      set({ venuePins: venues });
+      // A query typed before the venues arrived was searched without them.
+      const q = get().mapSearchQuery;
+      if (q.trim()) get().setMapSearchQuery(q);
+    }
   },
   selectSocietyPin: (pin) =>
     set({ mapSelection: { kind: 'societyPin', pin }, venueMenuSection: null }),

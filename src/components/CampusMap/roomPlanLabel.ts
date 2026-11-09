@@ -22,8 +22,12 @@ export function roomPlanLabels(
 
 /**
  * What the floor plan's venue labels depend on, as a string: equal for every
- * refetch of the same venues, so a resume refresh does not retitle the plan.
+ * refetch of the same venues (in any order), so a resume refresh does not
+ * retitle the plan, and different whenever a room's title differs. JSON, so
+ * no title can pass for a separator.
  */
 export function venueRoomKey(pins: readonly SocietyPin[]): string {
-  return [...venueRoomTitles(pins)].map(([code, title]) => `${code}=${title}`).join('\n');
+  return JSON.stringify(
+    [...venueRoomTitles(pins)].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+  );
 }

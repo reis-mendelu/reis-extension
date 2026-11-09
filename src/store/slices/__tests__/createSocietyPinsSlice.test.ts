@@ -7,6 +7,12 @@ vi.mock('../../../api/mapEvents', async (orig) => ({
   fetchSocietyPins,
 }));
 
+const fetchVenuePinsMock = vi.hoisted(() => vi.fn<() => Promise<SocietyPin[] | null>>());
+vi.mock('../../../api/venues', async (orig) => ({
+  ...(await orig<typeof import('../../../api/venues')>()),
+  fetchVenuePins: fetchVenuePinsMock,
+}));
+
 import { useAppStore } from '../../useAppStore';
 
 const pin: SocietyPin = {
@@ -81,5 +87,36 @@ describe('finding a venue from the map search', () => {
     expect(s.venueMenuSection).toBeNull();
     expect(s.mapFocusRequest).toBe(before + 1);
     expect(s.mapFocusTarget).toBe('campus');
+  });
+});
+
+describe('venues arriving after the student typed', () => {
+  it('re-runs the open query, so the venue shows without retyping', async () => {
+    const venue: SocietyPin = {
+      ...pin,
+      id: 'sklub',
+      title: 'S-klub Pixie',
+      venue: {
+        kind: { cz: 'Kavárna', en: 'Café' },
+        place: { cz: 'Budova Z', en: 'Building Z' },
+        address: { cz: 'Přízemí FRRMS', en: 'FRRMS ground floor' },
+        roomCode: 'BZ00N1015',
+        hours: [],
+        closure: null,
+        lunch: null,
+        lunchDays: [],
+        menu: [],
+        photos: [],
+        instagram: null,
+        source: null,
+      },
+    };
+    useAppStore.setState({ venuePins: [] });
+    useAppStore.getState().setMapSearchQuery('pixie');
+    expect(useAppStore.getState().mapSearchResults).toEqual([]);
+    fetchSocietyPins.mockResolvedValueOnce(null);
+    fetchVenuePinsMock.mockResolvedValueOnce([venue]);
+    await useAppStore.getState().loadSocietyPins();
+    expect(useAppStore.getState().mapSearchResults).toEqual([{ kind: 'societyPin', pin: venue }]);
   });
 });
