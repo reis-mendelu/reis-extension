@@ -16,18 +16,26 @@ import { useHintStatus } from '../../hooks/ui/useHintStatus';
 import { useIsMobile } from '../../hooks/ui/useIsMobile';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { BlockLesson, CalendarCustomEvent } from '../../types/calendarTypes';
+import { useScreenSignal } from '../../hooks/useScreenSignal';
 
 const TOTAL_HOURS = 14;
 
 export function WeeklyCalendar({
   initialDate = new Date(),
+  countVisit = true,
   onPrevWeek,
   onNextWeek,
 }: {
   initialDate?: Date;
+  /** False while the app is still restoring the saved view (AppMain). */
+  countVisit?: boolean;
   onPrevWeek?: () => void;
   onNextWeek?: () => void;
 }) {
+  // Not until the saved view is restored: useAppLogic boots on 'calendar' and
+  // then reads the saved view, so a student who left reIS on Předměty would
+  // otherwise count as having opened the calendar.
+  useScreenSignal('screen_calendar', countVisit);
   const language = useAppStore((state) => state.language);
   const isLanguageLoading = useAppStore((state) => state.isLanguageLoading);
   const isMobile = useIsMobile();

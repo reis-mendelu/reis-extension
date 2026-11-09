@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { UtensilsCrossed } from 'lucide-react';
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
@@ -10,7 +10,8 @@ import { formatWeekRange } from '../../../utils/mobile/formatWeekRange';
 import { MenuDayTabs } from './MenuDayTabs';
 import { MenuOutletPanel } from './MenuOutletPanel';
 import { IskamBalanceRow } from './IskamBalanceRow';
-import { useIskamStore } from '../../../mobile/iskam/iskamStore';
+import { useIskamResetOnLeave } from './useIskamResetOnLeave';
+import { useScreenSignal } from '../../../hooks/useScreenSignal';
 
 export interface MenuSheetProps {
   dayIso: string;
@@ -32,6 +33,7 @@ export interface MenuSheetProps {
  * be opened unless `MenuCard` already had the data.
  */
 export function MenuSheet({ dayIso, week, onClose }: MenuSheetProps) {
+  useScreenSignal('screen_menu');
   const { t, language } = useTranslation();
   const menu = useAppStore((s) => s.menu);
   const [day, setDay] = useState(dayIso);
@@ -47,10 +49,9 @@ export function MenuSheet({ dayIso, week, onClose }: MenuSheetProps) {
   const safe = picked >= 0 ? picked : 0;
   const current = outlets[safe];
   // The balance is never kept past the sheet: leaving drops it, so the next
-  // open shows "checking", not a number from minutes ago. On unmount, not in
-  // onClose: Android back and a tab switch remove the sheet without calling it.
-  // A cleanup, not a fetch — the check itself starts from MenuCard's tap.
-  useEffect(() => () => useIskamStore.getState().reset(), []);
+  // open shows "checking", not a number from minutes ago (see the hook for
+  // why on unmount, and why a microtask late).
+  useIskamResetOnLeave();
   const panels = (week?.length ? week : [day]).flatMap((d) => {
     const all = menuForDay(menu, new Date(`${d}T00:00:00`));
     return all.map((_, index) => ({ day: d, outlets: all, index }));

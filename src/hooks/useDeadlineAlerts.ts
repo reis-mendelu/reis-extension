@@ -2,10 +2,17 @@ import { useCallback, useMemo } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { parseDate } from '../utils/date';
 import { courseDisplayName } from '../utils/courseDisplayName';
+import { isGroupSignupSection } from '../utils/exams/isGroupSignup';
 import { boxCourseCode, boxState } from '../utils/submissionBoxes';
 import { newPointsAlerts } from '../utils/zaznamnik/newPointsAlerts';
 import { boxKey } from '../utils/newBoxDetection';
 import { newBoxAlerts, urgentNewBoxId } from '../utils/newSubmissionBoxAlerts';
+import {
+  codeForCourseId,
+  isPastSubject,
+  pastSubjectCodesOf,
+  withoutPastSubjects,
+} from '../utils/pastSubjects';
 
 export interface DeadlineAlert {
   id: string;
@@ -54,6 +61,7 @@ export function useDeadlineAlerts() {
   const pulseNow = useAppStore((s) => s.now);
   const newPoints = useAppStore((s) => s.zaznamnikNewPoints);
   const newBoxes = useAppStore((s) => s.odevzdavarnyNew);
+  const studyPlan = useAppStore((s) => s.studyPlanDual);
 
   const markAllSeen = useCallback(
     (ids: string[]) => {
@@ -66,8 +74,12 @@ export function useDeadlineAlerts() {
     const now = pulseNow.getTime();
     const isEn = language === 'en';
     const result: DeadlineAlert[] = [];
+    // Nothing about an earlier semester's subject: see utils/pastSubjects.
+    const past = pastSubjectCodesOf(studyPlan);
+    const isPast = (code: string | null | undefined) => isPastSubject(past, code);
 
     for (const subject of exams) {
+      if (isPast(subject.code)) continue;
       const subjectName = courseDisplayName(
         nicknames,
         subject.code,
@@ -75,6 +87,9 @@ export function useDeadlineAlerts() {
       );
 
       for (const section of subject.sections) {
+        // Shown in a collapsed group with no badge (report #37) — an alert
+        // would be the badge by another name.
+        if (isGroupSignupSection(section)) continue;
         const sectionName = (isEn ? section.nameEn : section.nameCs) ?? section.name;
 
         if (section.status === 'available') {
@@ -121,10 +136,11 @@ export function useDeadlineAlerts() {
       }
     }
 
-    const freshBoxes = newBoxAlerts(newBoxes, odevzdavarny, subjects, nicknames, language, now);
+    const boxes = odevzdavarny.filter((b) => !isPast(boxCourseCode(b, subjects)));
+    const freshBoxes = newBoxAlerts(newBoxes, boxes, subjects, nicknames, language, now);
     const announced = new Set(freshBoxes.map((a) => a.boxKey));
 
-    for (const a of odevzdavarny) {
+    for (const a of boxes) {
       // Its "Nová odevzdávárna" row already says when it is due.
       if (announced.has(boxKey(a))) continue;
       // The list also holds boxes IS will not take files for ("Kam nemohu").
@@ -157,7 +173,8 @@ export function useDeadlineAlerts() {
     }
 
     for (const test of cvicneTests) {
-      if (test.status !== 'accessible') continue;
+      if (test.status !== 'accessible' || isPast(codeForCourseId(test.courseId, subjects)))
+        continue;
       const id = `cvicny-${test.courseId}-${test.name}`;
       const courseName = isEn ? test.courseNameEn : test.courseNameCs;
       result.push({ id, type: 'cvicny-test', title: courseName, body: test.name, link: test.url });
@@ -165,7 +182,8 @@ export function useDeadlineAlerts() {
 
     result.sort((a, b) => (a.hoursUntil ?? Infinity) - (b.hoursUntil ?? Infinity));
     // Points and new boxes first: they already happened, the deadlines are still ahead.
-    return [...newPointsAlerts(newPoints, subjects, nicknames, isEn), ...freshBoxes, ...result];
+    const points = newPointsAlerts(withoutPastSubjects(newPoints, past), subjects, nicknames, isEn);
+    return [...points, ...freshBoxes, ...result];
   }, [
     exams,
     odevzdavarny,
@@ -176,6 +194,7 @@ export function useDeadlineAlerts() {
     nicknames,
     newPoints,
     newBoxes,
+    studyPlan,
   ]);
 
   const unseenCount = useMemo(

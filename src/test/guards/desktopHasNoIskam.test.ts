@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { isTrustedHostOrigin } from '../../utils/trustedOrigin';
 
@@ -38,6 +39,9 @@ const MOBILE_ONLY = [
   'src/components/mobile/sheets/MenuSheet.tsx',
   'src/components/mobile/screens/calendar/MenuCard.tsx',
   'src/components/mobile/screens/calendar/WeekMenuButton.tsx',
+  'src/components/mobile/screens/profile/IskamProfileRow.tsx',
+  'src/components/mobile/sheets/IskamSheet.tsx',
+  'src/components/mobile/sheets/useIskamResetOnLeave.ts',
 ];
 
 /** Files outside src/mobile/iskam that may reach it, each on the phone tree. */
@@ -49,7 +53,35 @@ const ALLOWED_IMPORTERS = new Set([
   // Týden's chef hat opens the same menza sheet and starts the same balance
   // check from its tap (spec 2026-10-30).
   'src/components/mobile/screens/calendar/WeekMenuButton.tsx',
+  // The profile's way in (Task List, 2026-11-07: few found it in Jídelníček).
+  // The row starts the same check from its tap and opens a sheet holding the
+  // same IskamBalanceRow; nothing about the balance or top-up is duplicated.
+  'src/components/mobile/screens/profile/IskamProfileRow.tsx',
+  'src/components/mobile/sheets/IskamSheet.tsx',
+  // The reset both sheets run when they go away.
+  'src/components/mobile/sheets/useIskamResetOnLeave.ts',
 ]);
+
+/**
+ * Where the profile's ISIC entry is wired in. Named so the tree-parity hook
+ * treats them as the decided divergence they are: the extension has no profile
+ * tab and no ISIC row, by the decision above, so these changes have no desktop
+ * counterpart.
+ */
+const PROFILE_ENTRY_WIRING = [
+  'src/components/mobile/screens/ProfileScreen.tsx',
+  'src/components/mobile/sheets/SheetHost.tsx',
+];
+
+/**
+ * The extension's own UI, from the tree-parity hook itself rather than a copy
+ * (a runtime URL, as treeParityHookSees.test.ts loads it), so a change to the
+ * hook's entry points cannot leave this guard walking a stale closure.
+ */
+const parityHook: {
+  DESKTOP_ENTRY: string[];
+  closure: (entries: string[]) => Set<string>;
+} = await import(/* @vite-ignore */ pathToFileURL(resolve('.claude/hooks/tree-parity.mjs')).href);
 
 const root = process.cwd();
 function walk(dir: string, out: string[] = []): string[] {
@@ -116,6 +148,14 @@ describe('WebISKAM stays on the phone tree', () => {
       f.startsWith('src/mobile/iskam/')
     );
     expect(reached).toEqual([]);
+  });
+
+  it('the extension UI cannot reach the ISIC row, the profile entry or its sheet', () => {
+    const desktop = parityHook.closure(parityHook.DESKTOP_ENTRY);
+    expect(desktop.size).toBeGreaterThan(100);
+    const reached = [...ALLOWED_IMPORTERS, ...PROFILE_ENTRY_WIRING].filter((f) => desktop.has(f));
+    expect(reached).toEqual([]);
+    expect([...desktop].filter((f) => f.startsWith('src/mobile/iskam/'))).toEqual([]);
   });
 
   it('the extension asks for no webiskam host permission', () => {

@@ -6,6 +6,7 @@ import { localizedCourseName } from '../../../../utils/localizedLesson';
 import { lessonDisplayName } from '../../../../utils/courseDisplayName';
 import { lessonPlace } from '../../../../utils/lessonPlace';
 import { eventStyles } from './eventStyles';
+import { useHoldToHide } from './useHoldToHide';
 
 export interface AgendaEventProps {
   lesson: BlockLesson;
@@ -30,6 +31,8 @@ export interface AgendaEventProps {
  * There used to be a sheet between the row and these two actions
  * (`EventDetailSheet`), showing room · time · teacher — which this row already
  * shows — and two buttons for exactly these. It was the tap that bought nothing.
+ *
+ * A HOLD on the row opens the hide menu, as on a Týden block (#43).
  */
 export function AgendaEvent({ lesson, onOpenSubject, onShowOnMap }: AgendaEventProps) {
   const { t, language } = useTranslation();
@@ -41,6 +44,7 @@ export function AgendaEvent({ lesson, onOpenSubject, onShowOnMap }: AgendaEventP
   // Every teacher's full name is in the subject drawer's header.
   const teacher = lesson.teachers[0]?.shortName || lesson.teachers[0]?.fullName;
   const styles = eventStyles(lesson);
+  const hold = useHoldToHide(lesson);
 
   return (
     <div
@@ -49,6 +53,7 @@ export function AgendaEvent({ lesson, onOpenSubject, onShowOnMap }: AgendaEventP
       <button
         type="button"
         onClick={onOpenSubject}
+        {...hold}
         className="flex min-h-11 min-w-0 flex-1 cursor-pointer flex-col justify-center gap-0.5 py-2.5 pl-3 pr-1 text-left"
       >
         <div className="flex items-center justify-between gap-2">

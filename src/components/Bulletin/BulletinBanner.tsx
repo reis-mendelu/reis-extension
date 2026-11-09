@@ -4,6 +4,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useEscapeLayer } from '../../hooks/ui/useEscapeLayer';
 import { MobileBulletinOverlay } from './MobileBulletinOverlay';
+import { useScreenSignal } from '../../hooks/useScreenSignal';
 
 const VYVESKA_URL = 'https://is.mendelu.cz/auth/vyveska/nove_prispevky.pl?zalozka=2';
 
@@ -36,6 +37,8 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
   const error = useAppStore((s) => s.bulletinError);
   const hydrated = useAppStore((s) => s.bulletinHydrated);
   const setExpanded = useAppStore((s) => s.setBulletinExpanded);
+  // `expanded` opens both the popover and the narrow overlay below.
+  useScreenSignal('screen_bulletin', expanded);
   const loadIfStale = useAppStore((s) => s.loadBulletinIfStale);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const prevIsMobile = useRef(isMobile);
@@ -73,7 +76,7 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
 
   if (isMobile) {
     return (
-      <div className="flex-1 flex items-center min-w-0 px-3">
+      <div className="flex items-center min-w-0 px-3">
         <button
           type="button"
           onClick={() => {
@@ -101,7 +104,7 @@ export function BulletinBanner({ inline = false }: { inline?: boolean }) {
   }
 
   return (
-    <div className="relative flex-1 flex items-center min-w-0 px-3" ref={dropdownRef}>
+    <div className="relative flex items-center min-w-0 px-3" ref={dropdownRef}>
       <button
         type="button"
         onClick={() => {

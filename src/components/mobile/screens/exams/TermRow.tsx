@@ -146,7 +146,9 @@ export function TermRow({
           {bookBy?.kind === 'registerUntil' && (
             // A clock and a brighter date set it apart from the seats line
             // without a colour of its own: something to keep an eye on, not an alarm.
-            <span className="inline-flex items-center gap-1 text-2sm text-base-content/55">
+            // Wraps only between the label and the date: at 320px it broke as
+            // "Přihlášení / do" over "16. 12. / 20:00".
+            <span className="inline-flex flex-wrap items-center gap-x-1 whitespace-nowrap text-2sm text-base-content/70">
               <Clock size={11} aria-hidden="true" className="flex-shrink-0" />
               {t('mobile.exams.registerUntil')}{' '}
               <span className="font-medium tabular-nums text-base-content/85">

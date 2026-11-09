@@ -5,12 +5,15 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { useIsHalloween } from '../../hooks/ui/useHalloween';
 import { Cobweb } from '../halloween/HalloweenArt';
+import { useScreenSignal } from '../../hooks/useScreenSignal';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 // ─── MenuPopoverContent ──────────────────────────────────────────────────────
 
 function MenuPopoverContent({ dateKey }: { dateKey: string }) {
+  // Mounted only while a chef-hat popover is open.
+  useScreenSignal('screen_menu');
   const { t } = useTranslation();
   const menu = useAppStore((s) => s.menu);
   const menuLoading = useAppStore((s) => s.menuLoading);
