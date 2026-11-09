@@ -33,13 +33,20 @@ function Chips({ venue, selected, scroll }: { venue: Venue; selected: string; sc
     <div
       role="group"
       aria-label={t('map.venueMenu')}
-      className={`flex gap-1.5 ${scroll ? '-mx-1 overflow-x-auto px-1 pb-1' : 'flex-wrap'}`}
+      className={`flex gap-1.5 ${scroll ? '-mx-1 overflow-x-auto px-1 [scrollbar-width:none]' : 'flex-wrap'}`}
     >
       {venue.menu.map((m) => (
         <button
           key={m.id}
           type="button"
           aria-pressed={m.id === selected}
+          // On the phone's page the row scrolls: bring the open category into
+          // view, or Prosecco opens with its own chip off the edge.
+          ref={
+            scroll && m.id === selected
+              ? (el) => el?.scrollIntoView({ inline: 'nearest', block: 'nearest' })
+              : undefined
+          }
           onClick={() => setSection(m.id)}
           className={`btn btn-sm shrink-0 rounded-full ${
             m.id === selected
@@ -88,7 +95,9 @@ export function VenueMenu({ venue, wide }: { venue: Venue; wide: boolean }) {
             onClick={() => setSection(m.id)}
             className="min-w-0 rounded-xl border border-base-300 px-3 py-2 text-left transition-colors hover:bg-base-200"
           >
-            <span className="block truncate text-sm font-bold text-base-content">
+            {/* Wraps rather than truncates: "Bubble tea" is the longest title,
+                and "Bubble …" named nothing at 375. */}
+            <span className="block text-[13px] font-bold leading-tight text-base-content">
               {m.title[lang]}
             </span>
             <span className="block truncate text-xs text-base-content/70">

@@ -34,19 +34,22 @@ export function VenueHeader({ pin, venue, now }: { pin: SocietyPin; venue: Venue
           className="h-12 w-12 rounded-xl bg-white ring-1 ring-base-300 text-sm"
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[11px] font-bold uppercase tracking-wider text-primary">
+          <p className="truncate text-[11px] font-bold uppercase tracking-wider text-base-content/70">
             {venue.kind[lang]} · {venue.place[lang]}
           </p>
           <h3 className="truncate text-lg font-bold leading-tight text-base-content">
             {pin.title}
           </h3>
-          <p className="truncate text-xs text-base-content/70">{venue.address[lang]}</p>
+          <p className="line-clamp-2 text-xs text-base-content/70">{venue.address[lang]}</p>
         </div>
       </div>
 
       {notice && (
-        <div role="status" className="alert alert-warning alert-soft items-start gap-2 px-3 py-2">
-          <CircleAlert size={16} className="mt-0.5 shrink-0" aria-hidden />
+        <div
+          role="status"
+          className="alert alert-warning alert-soft items-start gap-2 px-3 py-2 text-base-content"
+        >
+          <CircleAlert size={16} className="mt-0.5 shrink-0 text-warning" aria-hidden />
           <div className="min-w-0 text-sm">
             <p className="font-semibold">
               {notice.state === 'now'
@@ -103,7 +106,7 @@ export function VenueHeader({ pin, venue, now }: { pin: SocietyPin; venue: Venue
               );
             });
           }}
-          className="btn btn-primary min-h-11 gap-2"
+          className="btn btn-primary min-h-11 flex-nowrap gap-1.5 whitespace-nowrap px-2"
         >
           <Navigation size={16} aria-hidden /> {t('map.venueRoute')}
         </a>
@@ -112,7 +115,7 @@ export function VenueHeader({ pin, venue, now }: { pin: SocietyPin; venue: Venue
             href={`https://www.instagram.com/${venue.instagram}/`}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn btn-outline min-h-11 gap-2 border-base-300"
+            className="btn btn-outline min-h-11 flex-nowrap gap-1.5 whitespace-nowrap border-base-300 px-2"
           >
             <Camera size={16} aria-hidden /> Instagram
           </a>

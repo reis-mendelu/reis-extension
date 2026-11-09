@@ -103,7 +103,7 @@ export function VenueEvents({ societyId }: { societyId: string }) {
                 className="flex w-full items-center gap-3 rounded-xl border border-base-300 p-2 text-left transition-colors hover:bg-base-200"
               >
                 <span className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-lg bg-base-200 leading-none">
-                  <span className="text-[10px] font-bold uppercase text-primary">
+                  <span className="text-[10px] font-bold uppercase text-base-content/70">
                     {d.toLocaleDateString(locale, { weekday: 'short' }).replace('.', '')}
                   </span>
                   <span className="text-lg font-bold text-base-content">{d.getDate()}</span>
