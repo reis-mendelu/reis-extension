@@ -2,13 +2,13 @@ import { useAppStore } from '../../store/useAppStore';
 import { useWideViewport } from '../../hooks/ui/useWideViewport';
 import { VenueHeader } from './VenueHeader';
 import { VenueMenu, VenueMenuPage } from './VenueMenu';
-import { VenueEvents, VenueLunch, VenuePhotos, VenueSource } from './VenueSections';
+import { VenueEvents, VenueLunch, VenuePhotos } from './VenueSections';
 import type { SocietyPin, Venue } from '../../types/campusMap';
 
 /**
  * A venue (`venues`, S-klub's café), opened: who and where, open now or when
  * it opens, a closure notice, directions and Instagram, photos, lunch, the
- * menu, the society's events, and where the prices come from.
+ * menu and the society's events.
  *
  * One card for every surface — the extension's panel, the iPad's rail and the
  * phone's sheet. Width decides only the menu: chips with the items below where
@@ -32,12 +32,7 @@ export function VenueCard({
     return (
       <div data-testid="society-pin-card" className={frame}>
         <div className="p-3">
-          <VenueMenuPage
-            venue={venue}
-            title={pin.title}
-            sectionId={sectionId}
-            footer={<VenueSource venue={venue} />}
-          />
+          <VenueMenuPage venue={venue} title={pin.title} sectionId={sectionId} />
         </div>
       </div>
     );
@@ -51,7 +46,6 @@ export function VenueCard({
         <VenueLunch pin={pin} venue={venue} now={now} />
         <VenueMenu venue={venue} wide={wide} />
         <VenueEvents societyId={pin.societyId} />
-        <VenueSource venue={venue} />
       </div>
     </div>
   );

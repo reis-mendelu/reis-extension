@@ -22,6 +22,7 @@ export function MapSheetHeader({
   heading,
   onCollapse,
   onBack,
+  backLabel,
 }: {
   /** A tapped pin's card is showing, so the row is Back rather than a heading. */
   showingCard: boolean;
@@ -29,6 +30,8 @@ export function MapSheetHeader({
   heading?: string | null;
   onCollapse: () => void;
   onBack: () => void;
+  /** Where Back goes, for a screen reader, when the heading alone does not say so. */
+  backLabel?: string;
 }) {
   const { t } = useTranslation();
   const title = (
@@ -45,6 +48,7 @@ export function MapSheetHeader({
       <button
         type="button"
         onClick={onBack}
+        aria-label={backLabel}
         className="flex flex-shrink-0 touch-none items-center gap-1.5 px-5 pb-2 text-left"
       >
         <ChevronLeft size={18} className="flex-shrink-0 text-base-content/40" />

@@ -1,5 +1,3 @@
-import { ChevronLeft } from 'lucide-react';
-import type { ReactNode } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { formatPrice, priceRange } from '../../utils/venues/venueText';
@@ -110,41 +108,34 @@ export function VenueMenu({ venue, wide }: { venue: Venue; wide: boolean }) {
   );
 }
 
-/** A phone's menu category, opened: back, the other categories, a photo, the items. */
+/**
+ * A phone's menu category, opened: the other categories, a photo, the items.
+ * No back button of its own: the sheet's header row is the one way back, and
+ * while this page is open it reads "‹ S-klub Pixie" and returns to the card
+ * (MapSheet). Two back arrows stacked one above the other sent a thumb to the
+ * top one, which went all the way out to Akce.
+ */
 export function VenueMenuPage({
   venue,
   title,
   sectionId,
-  footer,
 }: {
   venue: Venue;
   title: string;
   sectionId: string;
-  footer: ReactNode;
 }) {
   const { t, language } = useTranslation();
   const lang = language === 'en' ? 'en' : 'cz';
-  const setSection = useAppStore((s) => s.setVenueMenuSection);
   const section = venue.menu.find((m) => m.id === sectionId) ?? venue.menu[0]!;
   return (
     <div className="space-y-3" data-testid="venue-menu-page">
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setSection(null)}
-          aria-label={t('map.venueBackToMenu')}
-          className="btn btn-ghost btn-circle btn-sm -ml-1"
-        >
-          <ChevronLeft size={20} aria-hidden />
-        </button>
-        <div className="min-w-0">
-          <p className="truncate text-xs text-base-content/70">
-            {t('map.venueMenuOf', { venue: title })}
-          </p>
-          <h3 className="truncate text-lg font-bold leading-tight text-base-content">
-            {section.title[lang]}
-          </h3>
-        </div>
+      <div className="min-w-0">
+        <p className="truncate text-xs text-base-content/70">
+          {t('map.venueMenuOf', { venue: title })}
+        </p>
+        <h3 className="truncate text-lg font-bold leading-tight text-base-content">
+          {section.title[lang]}
+        </h3>
       </div>
       <Chips venue={venue} selected={section.id} scroll />
       {section.photo && (
@@ -156,7 +147,6 @@ export function VenueMenuPage({
         />
       )}
       <MenuItems section={section} />
-      {footer}
     </div>
   );
 }
