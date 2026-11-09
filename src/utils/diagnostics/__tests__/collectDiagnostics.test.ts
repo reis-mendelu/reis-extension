@@ -7,6 +7,9 @@ const syncState = {
   firstSyncSettled: true,
   syncLoaded: { schedule: true } as Record<string, boolean>,
   error: null as string | null,
+  subjects: { data: {} } as { data: Record<string, unknown> } | null,
+  subjectsLoading: false,
+  extraZaznamnik: {} as Record<string, unknown>,
 };
 vi.mock('@/platform', () => ({ getPlatform: () => platform }));
 vi.mock('@/api/proxyClient', () => ({ executeAction: vi.fn() }));
@@ -21,6 +24,20 @@ vi.mock('@/store/useAppStore', () => ({
       schedule: { data: [1, 2, 3], status: 'success' },
       exams: { data: [], status: 'error', error: 'x' },
       lastExamsFetchedAt: null,
+      subjects: syncState.subjects,
+      subjectsLoading: syncState.subjectsLoading,
+      syllabuses: {
+        cache: {
+          XX1: { requirementsText: 'text', requirementsTable: [] },
+          XX2: { requirementsText: '', requirementsTable: [] },
+        },
+      },
+      zaznamnik: {
+        XX1: { ph: { sections: [1] }, vt: { tests: [] } },
+        XX2: { ph: { sections: [] }, vt: { tests: [] } },
+        XX3: null,
+        ...syncState.extraZaznamnik,
+      },
     }),
   },
 }));
@@ -40,6 +57,9 @@ describe('collectDiagnostics', () => {
     syncState.firstSyncSettled = true;
     syncState.syncLoaded = { schedule: true };
     syncState.error = null;
+    syncState.subjects = { data: {} };
+    syncState.subjectsLoading = false;
+    syncState.extraZaznamnik = {};
   });
 
   it('merges app and content-script entries in time order', async () => {
@@ -86,11 +106,41 @@ describe('collectDiagnostics', () => {
       firstSyncSettled: true,
       syncLoaded: ['schedule'],
       syncFailed: false,
+      subjects: 'success',
+      subjectsCount: 0,
+      syllabusCount: 2,
+      syllabusEmpty: 1,
+      zaznamnikCount: 3,
+      zaznamnikFailed: 1,
+      zaznamnikEmpty: 1,
     });
     expect(out.env.lang).toBe('en');
     expect(out.env.platform).toBe('extension');
     expect(typeof out.env.online).toBe('boolean');
     expect(JSON.stringify(out)).not.toMatch(/installId|https?:/);
+    // Counts only: never which subject.
+    expect(JSON.stringify(out)).not.toMatch(/XX\d/);
+  });
+
+  it('survives a zápisník record of an older shape', async () => {
+    syncState.extraZaznamnik = { XX4: {} };
+    const out = await collectDiagnostics({ fetchContent: async () => [] });
+    expect(out.sync.zaznamnikCount).toBe(4);
+    expect(out.sync.zaznamnikEmpty).toBe(2);
+  });
+
+  it('tells "no subjects yet" from "loading" from "answered, none"', async () => {
+    syncState.subjects = null;
+    expect((await collectDiagnostics({ fetchContent: async () => [] })).sync.subjects).toBe('none');
+    syncState.subjectsLoading = true;
+    expect((await collectDiagnostics({ fetchContent: async () => [] })).sync.subjects).toBe(
+      'loading'
+    );
+    syncState.subjectsLoading = false;
+    syncState.subjects = { data: { XX1: {}, XX2: {} } };
+    const out = await collectDiagnostics({ fetchContent: async () => [] });
+    expect(out.sync.subjects).toBe('success');
+    expect(out.sync.subjectsCount).toBe(2);
   });
 });
 

@@ -10,6 +10,8 @@ import { OldIsPanel } from './OldIsPanel';
 
 interface AppMainProps {
   currentView: AppView;
+  /** The saved view has been read; until then 'calendar' is a boot default. */
+  viewRestored?: boolean;
   currentDate: Date;
   handlePrevWeek: () => void;
   handleNextWeek: () => void;
@@ -29,6 +31,7 @@ interface AppMainProps {
 
 export function AppMain({
   currentView,
+  viewRestored = true,
   currentDate,
   handlePrevWeek,
   handleNextWeek,
@@ -57,6 +60,7 @@ export function AppMain({
             <WeeklyCalendar
               key={currentDate.toISOString()}
               initialDate={currentDate}
+              countVisit={viewRestored}
               onPrevWeek={handlePrevWeek}
               onNextWeek={handleNextWeek}
             />

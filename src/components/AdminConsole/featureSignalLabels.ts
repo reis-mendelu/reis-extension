@@ -7,4 +7,10 @@ export const SIGNAL_LABEL_KEY: Record<FeatureSignal, string> = {
   eduroam_wifi_configured: 'signalEduroamConfigured',
   eduroam_profile_delivered: 'signalEduroamDelivered',
   calendar_week_view: 'signalCalendarWeekView',
+  screen_calendar: 'signalScreenCalendar',
+  screen_subjects: 'signalScreenSubjects',
+  screen_menu: 'signalScreenMenu',
+  screen_search: 'signalScreenSearch',
+  screen_bulletin: 'signalScreenBulletin',
+  screen_notifications: 'signalScreenNotifications',
 };

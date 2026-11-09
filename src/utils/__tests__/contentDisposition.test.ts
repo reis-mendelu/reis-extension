@@ -138,6 +138,22 @@ describe('downloadName', () => {
     ).toBe('a_b_ c_.pdf');
   });
 
+  it('caps a long row name so the saved file stays under filesystem limits', () => {
+    const name = downloadName(
+      { contentDisposition: null, contentType: 'application/pdf' },
+      { name: 'a'.repeat(400), type: 'pdf' }
+    );
+    expect(name).toBe(`${'a'.repeat(150)}.pdf`);
+  });
+
+  it('keeps the extension of a long name that already ends in one', () => {
+    const name = downloadName(
+      { contentDisposition: null, contentType: 'application/pdf' },
+      { name: `${'b'.repeat(400)}.pdf`, type: 'pdf' }
+    );
+    expect(name).toBe(`${'b'.repeat(150)}.pdf`);
+  });
+
   it('uses the default name when there is no row', () => {
     expect(downloadName({ contentDisposition: null, contentType: 'application/pdf' })).toBe(
       'dokument.pdf'

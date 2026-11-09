@@ -17,6 +17,12 @@ import { mergePastSubjects } from '../services/sync/mergePastSubjects';
 import { syncPastSemesters } from '../services/sync/syncPastSemesters';
 
 import { getUserParams } from '../utils/userParams';
+import {
+  askedWith,
+  traceExamsAnswer,
+  traceOnce,
+  traceSubjectsAnswer,
+} from '../utils/diagnostics/syncTrace';
 import { enrichExamsWithDurations } from '../services/sync/examDurations';
 import type { ExamSubject } from '../types/exams';
 import { fetchFullSemesterSchedule } from './dataFetchers';
@@ -122,6 +128,10 @@ export async function syncAllData() {
     // Every update this run sends names its study, so a context still on the
     // other one after a half-done switch can refuse it (useAppLogic).
     if (studium) cachedData = { ...cachedData, studium };
+    // Every list below is then asked for without it — and IS answers that
+    // with its default study, or with nothing, and no error either way.
+    if (!studium || !userParams?.obdobi)
+      traceOnce('Sync.userParams', `${askedWith(userParams)} from IS's study page`);
 
     // Which core fetches actually ran, as opposed to being TTL-skipped — both
     // come back null, and only a fetch that ran can say IS was unreachable.
@@ -132,6 +142,13 @@ export async function syncAllData() {
       attempted.add('subjects');
       return fetchDualLanguageSubjects(studium || undefined, userParams?.obdobi || undefined);
     }).then((result) => {
+      if (result)
+        traceSubjectsAnswer(
+          Object.keys(result.subjects?.data ?? {}).length,
+          result.shape,
+          result.availablePeriods?.length ?? 0,
+          userParams
+        );
       if (result && live()) {
         cachedData = { ...cachedData, subjects: result.subjects, attendance: result.attendance };
         // Capture current-semester codes BEFORE mergePastSubjects adds past ones,
@@ -248,6 +265,7 @@ export async function syncAllData() {
     // exams and odevzdavarny stay hot: registration state and submission
     // deadlines are the two things that genuinely move within a day.
     const examsPromise = fetchDualLanguageExams().then((value) => {
+      traceExamsAnswer(value.length, userParams);
       if (value.length > 0) {
         if (live()) cachedData = { ...cachedData, exams: value };
         pushEarly({ exams: value, loaded: ['exams'] });
@@ -404,6 +422,11 @@ export async function syncAllData() {
           odevzdavarny: cachedData.odevzdavarny,
           studium: cachedData.studium,
           odevzdavarnyObdobi: cachedData.odevzdavarnyObdobi,
+          // With the data, not ahead of it. Only a fetch that RAN and answered
+          // marks it: a TTL skip also comes back null (see SyncDomain).
+          ...(subjects.status === 'fulfilled' && subjects.value
+            ? { loaded: ['subjects' as const] }
+            : {}),
           isSyncing: true,
           lastSync: cachedData.lastSync,
         })
@@ -484,6 +507,8 @@ async function syncSubjectDetails(
   }
 
   // Phase 3a: Files + syllabus per subject (zaznamnik runs as a separate batched job below)
+  // Counted for the diagnostic log: both failure paths below are silent.
+  const syllabusTally = { asked: 0, failed: 0 };
   const tasks = subjectEntries.map(([code, subject]) =>
     limit(async () => {
       const subjectFull = subject as { folderUrl?: string; subjectId?: string };
@@ -505,11 +530,17 @@ async function syncSubjectDetails(
       if (subjectFull.subjectId)
         subTasks.push(
           ttlGated(`syllabus:${code}`, TTL.SEMESTER, !!cachedSyllabuses?.[code], async () => {
+            syllabusTally.asked++;
             // fetchSyllabus degrades to a sentinel rather than throwing, and an
             // object always looks "useful" — so without this a transient failure
             // would be stamped fresh and pin the error for a whole semester.
-            const syllabus = await fetchSyllabus(subjectFull.subjectId!);
-            return syllabus.requirementsText === SYLLABUS_FETCH_FAILED ? null : syllabus;
+            const syllabus = await fetchSyllabus(subjectFull.subjectId!).catch((e) => {
+              syllabusTally.failed++;
+              throw e;
+            });
+            if (syllabus.requirementsText !== SYLLABUS_FETCH_FAILED) return syllabus;
+            syllabusTally.failed++;
+            return null;
           })
             .then((s) => {
               if (!s || !live()) return;
@@ -545,6 +576,10 @@ async function syncSubjectDetails(
       : Promise.resolve();
 
   await Promise.all([...tasks, zaznamnikPromise]);
+  if (syllabusTally.failed > 0)
+    traceOnce('Sync.syllabus', `${syllabusTally.failed} of ${syllabusTally.asked} failed`);
+  if (subjectEntries.length > 0 && (!studium || !obdobi))
+    traceOnce('Sync.zaznamnik', `skipped: ${askedWith({ studium, obdobi })}`);
 
   // Phase 3b: Classmates — fetch skupina map once (predmetId→skupinaId),
   // then match to subjects by subjectId to get the right courseCode IDB key

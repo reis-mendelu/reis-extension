@@ -4,10 +4,14 @@ import { logError } from '../../utils/reportError';
 import type { ParsedFile, FileAttachment } from '../../types/documents';
 import { getColumnIndices } from './columnIndices';
 import { iconSysid } from './iconSysid';
+import { folderPageLinks } from './folderPagination';
+import { attachmentFilename, typeFromFilename } from './attachmentFilename';
 
 export function parseServerFiles(html: string): {
   files: ParsedFile[];
   paginationLinks: string[];
+  /** The folder has more pages than folderPagination.ts requests. */
+  paginationTruncated?: boolean;
   totalRecords?: number;
 } {
   const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -105,6 +109,12 @@ export function parseServerFiles(html: string): {
         const author = sanitizeString(cells[authorIdx]?.textContent || '', 200);
         const date = sanitizeString(cells[dateIdx]?.textContent || '', 50);
         const file_comment = sanitizeString(cells[commentIdx]?.textContent || '', 500);
+        const title = sanitizeString(nameCell?.textContent || '', 300);
+        const modifiedIdx = indices.modified;
+        const modified =
+          modifiedIdx === undefined
+            ? ''
+            : sanitizeString(cells[modifiedIdx]?.textContent || '', 50);
 
         const extractedFiles: FileAttachment[] = [];
         Array.from(row.querySelectorAll('a')).forEach((l) => {
@@ -133,20 +143,36 @@ export function parseServerFiles(html: string): {
           const sysid = iconSysid(l);
           if (sysid === 'mime-prohlizeni-info') return;
 
-          const type = sysid ? sysid.replace('mime-', '') : 'unknown';
+          const filename = attachmentFilename(l);
+          const type = typeFromFilename(sysid ? sysid.replace('mime-', '') : 'unknown', filename);
           if (type === 'prohlizeni-info') return;
 
           const existing = extractedFiles.find((f) => f.link === vUrl);
           if (existing) {
             if (existing.type === 'unknown' && type !== 'unknown') existing.type = type;
+            if (!existing.filename && filename) existing.filename = filename;
             return;
           }
 
-          extractedFiles.push({ name: file_name, type, link: vUrl });
+          extractedFiles.push({
+            name: file_name,
+            type,
+            link: vUrl,
+            ...(filename ? { filename } : {}),
+          });
         });
 
         if (extractedFiles.length > 0) {
-          files.push({ subfolder, file_name, file_comment, author, date, files: extractedFiles });
+          files.push({
+            subfolder,
+            file_name,
+            title,
+            file_comment,
+            author,
+            date,
+            ...(modified ? { modified } : {}),
+            files: extractedFiles,
+          });
         }
       } catch (e) {
         if (e instanceof ParserError)
@@ -156,16 +182,22 @@ export function parseServerFiles(html: string): {
     });
   });
 
-  doc.querySelectorAll('a').forEach((a) => {
-    const href = a.getAttribute('href');
-    if (
-      href?.includes('slozka.pl') &&
-      !href.includes('download') &&
-      a.textContent?.trim().match(/^\d+[-–]\d+$/)
-    ) {
-      if (!paginationLinks.includes(href)) paginationLinks.push(href);
-    }
-  });
+  // IS's page bar, read by `on=` (see folderPagination.ts). The label match
+  // below is the fallback for a page without one; it misses a one-document
+  // last page ("11") and every page past a windowed bar's "…".
+  const pageBar = folderPageLinks(doc);
+  if (pageBar) paginationLinks.push(...pageBar.links);
+  else
+    doc.querySelectorAll('a').forEach((a) => {
+      const href = a.getAttribute('href');
+      if (
+        href?.includes('slozka.pl') &&
+        !href.includes('download') &&
+        a.textContent?.trim().match(/^\d+[-–]\d+$/)
+      ) {
+        if (!paginationLinks.includes(href)) paginationLinks.push(href);
+      }
+    });
 
   // Try to find total records count (e.g. "1-10 z 24")
   const bodyText = doc.body.textContent || '';
@@ -174,5 +206,10 @@ export function parseServerFiles(html: string): {
     totalRecords = parseInt(totalMatch[3], 10);
   }
 
-  return { files, paginationLinks, totalRecords };
+  return {
+    files,
+    paginationLinks,
+    paginationTruncated: pageBar?.truncated ?? false,
+    totalRecords,
+  };
 }

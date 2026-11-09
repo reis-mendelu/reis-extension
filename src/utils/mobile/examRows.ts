@@ -45,7 +45,8 @@ export function buildRegisteredExams(exams: ExamSubject[], language: string): Re
   const rows: RegisteredExam[] = [];
   for (const subject of exams) {
     for (const section of subject.sections) {
-      if (isGroupSignupSection(section)) continue;
+      // A registered "zápis na" term is a dated commitment like an exam, so it
+      // shows here too (report #37) — it is only kept out of the badge.
       if (section.status !== 'registered') continue;
       const term = section.registeredTerm;
       if (!term) continue;
@@ -67,10 +68,20 @@ export function buildRegisteredExams(exams: ExamSubject[], language: string): Re
 /** Everything not registered — the "open slots" group, in catalog order.
  *  Seminar-group signup is not one of them; see `utils/exams/isGroupSignup`. */
 export function buildOpenExams(exams: ExamSubject[], language: string): OpenExam[] {
+  return unregistered(exams, language, false);
+}
+
+/** The unregistered seminar-group signups — the collapsed "Zápisy na cvičení"
+ *  group at the bottom of Zkoušky (report #37), in catalog order. */
+export function buildSignupExams(exams: ExamSubject[], language: string): OpenExam[] {
+  return unregistered(exams, language, true);
+}
+
+function unregistered(exams: ExamSubject[], language: string, signups: boolean): OpenExam[] {
   const rows: OpenExam[] = [];
   for (const subject of exams) {
     for (const section of subject.sections) {
-      if (isGroupSignupSection(section)) continue;
+      if (isGroupSignupSection(section) !== signups) continue;
       if (section.status === 'registered') continue;
       rows.push({
         subject,

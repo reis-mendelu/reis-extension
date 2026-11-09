@@ -87,6 +87,16 @@ function devForcedState(): Partial<IskamState> | null {
   return null;
 }
 
+/**
+ * Whether to offer a way into the ISIC row at all — the profile's entry asks
+ * before any check has run, when `status` is still 'hidden' everywhere. The
+ * same order as check(): a dev-forced state first (verify-ui), then Capacitor
+ * and not the demo.
+ */
+export function iskamOffered(): boolean {
+  return devForcedState() !== null || available();
+}
+
 function fromChain(r: ChainResult): Pick<IskamState, 'status' | 'balance'> {
   if (r.state === 'dead') return { status: 'signed-out', balance: null };
   if (r.state === 'unreachable') return { status: 'unavailable', balance: null };

@@ -9,6 +9,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import type { SpolekNotification } from '../../services/spolky';
 import type { DeadlineAlert } from '../../hooks/useDeadlineAlerts';
 import { useIsMobile } from '../../hooks/ui/useIsMobile';
+import { useScreenSignal } from '../../hooks/useScreenSignal';
 
 interface NotificationDropdownProps {
   notifications: SpolekNotification[];
@@ -33,6 +34,7 @@ export function NotificationDropdown({
   deadlineAlerts,
   onOpenSubject,
 }: NotificationDropdownProps) {
+  useScreenSignal('screen_notifications');
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const questions = useQuestions();
