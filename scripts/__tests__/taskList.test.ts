@@ -270,6 +270,7 @@ describe('write requests', () => {
       fontSize: { magnitude: 9, unit: 'PT' },
     });
     expect(style.updateTextStyle.fields).toBe('italic,fontSize,foregroundColor');
+    expect(() => noteRequests(task, 'rev-1', 'x'.repeat(NOTE_MAX), '2026-11-08')).not.toThrow();
     expect(() => noteRequests(task, 'rev-1', 'x'.repeat(NOTE_MAX + 1), '2026-11-08')).toThrow(
       /at most 300/
     );
@@ -392,14 +393,43 @@ describe('edge cases', () => {
   it('leaves a quoted mark and a note with no end alone', () => {
     const quoted = '↳ Claude 2026-11-07: (a)? ∎ yes, as ↳ Claude said ∎ fine';
     const open = 'x\u000b↳ Claude 2026-11-07: no end mark, then a reply';
+    const task = para(`t\u000b${quoted}`, { bullet: true });
     const d = docOf(
       para('Bucket list', { heading: 'HEADING_2' }),
-      para(`t\u000b${quoted}`, { bullet: true }),
-      para(open, { bullet: true })
+      task,
+      para(open, { bullet: true }),
+      para(`↳ Claude heading ∎`, { heading: 'HEADING_3' })
     );
     const spans = restyleRequests(d, 'Bucket list').requests.map((r) => r.updateTextStyle.range);
-    expect(spans).toHaveLength(1);
-    expect(spans[0]!.endIndex - spans[0]!.startIndex).toBe('↳ Claude 2026-11-07: (a)? ∎'.length);
+    const start = task.startIndex + 2;
+    expect(spans).toEqual([
+      { startIndex: start, endIndex: start + '↳ Claude 2026-11-07: (a)? ∎'.length },
+    ]);
+  });
+
+  it('finds a note after a chip and after leading spaces, at its exact position', () => {
+    const note = '↳ Claude 2026-11-07: ok? ∎';
+    const task = para(`t`, { bullet: true });
+    const els = (task.paragraph.elements as { startIndex: number; endIndex: number }[]).slice();
+    // A one-index chip after the title, then a soft break, two spaces and the note.
+    const nl = els.pop()!;
+    let at = nl.startIndex;
+    const chip = { startIndex: at, endIndex: at + 1, richLink: { richLinkId: 'r' } };
+    at += 1;
+    const rest = `\u000b  ${note}`;
+    const run = {
+      startIndex: at,
+      endIndex: at + rest.length,
+      textRun: { content: rest, textStyle: {} },
+    };
+    at += rest.length;
+    const end = { startIndex: at, endIndex: at + 1, textRun: { content: '\n', textStyle: {} } };
+    task.paragraph.elements = [...els, chip, run, end];
+    task.endIndex = at + 1;
+    const d = docOf(para('Bucket list', { heading: 'HEADING_2' }), task);
+    const [span] = restyleRequests(d, 'Bucket list').requests.map((r) => r.updateTextStyle.range);
+    const start = chip.endIndex + 3;
+    expect(span).toEqual({ startIndex: start, endIndex: start + note.length });
   });
 
   it("never closes an unterminated note with a later note's end mark", () => {

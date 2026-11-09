@@ -33,6 +33,8 @@ export function noteSpans(docJson, section = 'Bucket list') {
     (p) => p.level,
     (p) => p.text
   )) {
+    // A subheading is structure, never a note, as in findTasks.
+    if (p.level !== null) continue;
     let from = p.text.indexOf(NOTE_MARK);
     while (from !== -1) {
       const next = p.text.indexOf(NOTE_MARK, from + NOTE_MARK.length);
@@ -44,7 +46,8 @@ export function noteSpans(docJson, section = 'Bucket list') {
       // A note starts a line (Claude writes it after a soft break); the mark
       // anywhere else is someone quoting it. A note with no ∎ has no knowable
       // end, and guessing could grey out a reply: leave it as it is.
-      const startsLine = from === 0 || p.text[from - 1] === SOFT_BREAK;
+      const lineStart = p.text.lastIndexOf(SOFT_BREAK, from - 1) + 1;
+      const startsLine = p.text.slice(lineStart, from).trim() === '';
       if (startsLine && end !== -1)
         spans.push({ startIndex: p.start + from, endIndex: p.start + end + NOTE_END.length });
       from = next;

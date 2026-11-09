@@ -50,8 +50,9 @@ A later session finds it `answered` and reads the reply after the `∎`:
   the PR into `test` pinned to that commit (`expectedHeadSha`; mark it ready
   for review first; squash, as the repo does), then `done --note "PR #n, merged"`. Only if CI is green on
   the current head and **no release PR (`test` → `main`) is open** — while one
-  is, leave a note saying the merge waits for the release that ends by asking
-  "Mergnout?" again, so the next session finds the question. A reis-page PR
+  is, leave a note saying the merge of PR #n (commit) waits for the release,
+  ending by asking "Mergnout?" again, so the next session finds the question
+  and the commit that was approved. A reis-page PR
   merges into its `main` on `y`, pinned the same way (`expectedHeadSha`; no
   release gate there); a document is marked done with its link.
 - **`n` + what to change** → change it on the same branch, refresh the review

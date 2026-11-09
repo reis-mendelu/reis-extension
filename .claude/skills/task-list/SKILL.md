@@ -150,8 +150,10 @@ yourself and state the assumption in the PR, where Dominik can correct it.
   task needs real IS data (a parser change, a bug only real data shows), ask
   in a note for an HTML sample or for Dominik to check it locally.
 - Supabase is production: **read only**. Query it to understand data; any
-  schema or data change goes in as a migration in the PR
-  (`supabase/migrations/`, applied by the release), never written directly.
+  schema change goes in as a migration in the PR (`supabase/migrations/`,
+  applied by the release). The one exception is a content row (a society, an
+  event) that Dominik asks you for by name in the session's chat: write that
+  row, show it back, and nothing else.
 
 ## Finishing: show it, then ask to merge
 
