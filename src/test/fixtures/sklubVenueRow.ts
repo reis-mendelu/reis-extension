@@ -59,10 +59,7 @@ export const SKLUB_VENUE_ROW: VenueRow = {
       cz: 'Denní menu s polévkou',
       en: 'Daily menu with soup',
     },
-    note: {
-      cz: 've vitríně bagety, croissanty, saláty, sladké',
-      en: 'in the display case: baguettes, croissants, salads, sweets',
-    },
+    note: null,
     price: 189,
   },
   lunch_week: null,

@@ -75,27 +75,18 @@ create policy venues_read_active on public.venues
 revoke insert, update, delete, truncate on public.venues from anon, authenticated;
 grant select on public.venues to anon, authenticated;
 
--- Photos: a public bucket, as society-logos. JPEG or WebP, 512 KB each.
+-- Photos: a public bucket, as society-logos. JPEG or WebP, 512 KB each. The
+-- release role (postgres) may insert here: it bypasses RLS and has INSERT.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types) values
   ('venue-photos', 'venue-photos', true, 524288, array['image/jpeg', 'image/webp'])
 on conflict (id) do nothing;
 
-drop policy if exists venue_photos_admin_insert on storage.objects;
-create policy venue_photos_admin_insert on storage.objects
-  for insert to authenticated
-  with check (bucket_id = 'venue-photos' and public.get_my_role() = 'reis_admin');
-drop policy if exists venue_photos_admin_update on storage.objects;
-create policy venue_photos_admin_update on storage.objects
-  for update to authenticated
-  using (bucket_id = 'venue-photos' and public.get_my_role() = 'reis_admin')
-  with check (bucket_id = 'venue-photos' and public.get_my_role() = 'reis_admin');
-drop policy if exists venue_photos_admin_delete on storage.objects;
-create policy venue_photos_admin_delete on storage.objects
-  for delete to authenticated
-  using (bucket_id = 'venue-photos' and public.get_my_role() = 'reis_admin');
+-- Photos are uploaded with the service role (Claude in Supabase), so there
+-- are no write policies: creating one on storage.objects needs its owner,
+-- supabase_storage_admin, which the release's db push is not.
 
 -- S-klub Pixie, so the café is on the map the day this release ships. Menu,
--- prices, hours and the lunch offer from sklubpixie.cz, checked 2026-11-08
+-- prices, hours and the lunch price from sklubpixie.cz, checked 2026-11-08
 -- (the same data as src/test/fixtures/sklubVenueRow.ts). Later changes are
 -- made in Supabase, not here.
 insert into public.venues (id, association_id, title, kind, place, address, room_code, coord_lng, coord_lat, hours, lunch, menu, photos, url, instagram, prices_checked, sort_order)
@@ -110,7 +101,7 @@ values (
   16.614393,
   49.218171,
   '[{"day":1,"open":"08:00","close":"18:00"},{"day":2,"open":"08:00","close":"18:00"},{"day":3,"open":"08:00","close":"18:00"},{"day":4,"open":"08:00","close":"18:00"},{"day":5,"open":"08:00","close":"18:00"}]'::jsonb,
-  '{"name":{"cz":"Denní menu s polévkou","en":"Daily menu with soup"},"note":{"cz":"ve vitríně bagety, croissanty, saláty, sladké","en":"in the display case: baguettes, croissants, salads, sweets"},"price":189}'::jsonb,
+  '{"name":{"cz":"Denní menu s polévkou","en":"Daily menu with soup"},"note":null,"price":189}'::jsonb,
   '[
   {
     "id": "coffee",
