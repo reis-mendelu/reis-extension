@@ -46,7 +46,8 @@ function parseNotice(anchor: Element, severity: IsNotice['severity']): IsNotice 
   // The text is the first block that is not IS's own footer (`.small`: the
   // display window, "cannot be hidden", the hide link) or the title.
   const content = Array.from(box.querySelectorAll('div')).find(
-    (d) => !d.classList.contains('small') && !d.querySelector('big, div') && clean(d.textContent ?? '')
+    (d) =>
+      !d.classList.contains('small') && !d.querySelector('big, div') && clean(d.textContent ?? '')
   );
   const link = content ? firstLink(content) : null;
   const meta = Array.from(box.querySelectorAll('.small'))
@@ -73,18 +74,14 @@ function unescapeJsString(s: string): string {
 }
 
 function clean(s: string): string {
-  return s.replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+  return s.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 /** Text with IS's paragraph and line breaks kept as newlines. */
 function textOf(el: Element): string {
   const copy = el.cloneNode(true) as Element;
   copy.querySelectorAll('br, p').forEach((b) => b.before('\n'));
-  return (copy.textContent ?? '')
-    .split('\n')
-    .map(clean)
-    .filter(Boolean)
-    .join('\n');
+  return (copy.textContent ?? '').split('\n').map(clean).filter(Boolean).join('\n');
 }
 
 /**
@@ -116,7 +113,7 @@ function pathOf(url: string): string {
  * English ones `MM/DD/YYYY HH:MM`; both come out as local `YYYY-MM-DDTHH:MM`.
  */
 function readWindow(meta: string): [string | null, string | null] {
-  const text = meta.replace(/ /g, ' ');
+  const text = meta.replace(/\u00a0/g, ' ');
   const stamps: string[] = [];
   const re = /(\d{2})([./])(\d{2})\2(\d{4}) (\d{2}):(\d{2})/g;
   for (let m = re.exec(text); m; m = re.exec(text)) {

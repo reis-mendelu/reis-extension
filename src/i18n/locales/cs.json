@@ -1358,6 +1358,16 @@
       "day": "Den",
       "devices": "Počítá zařízení, ne lidi. Studenti s verzí do 5.4.1 otázky nevidí.",
       "errNote": "Poznámka může mít nejvýš 300 znaků."
+    },
+    "isNotices": {
+      "title": "Oznámení z IS",
+      "note": "Co ukazuje tvůj IS na úvodní stránce. Studenti je vidí v Novinkách pod MENDELU, každý ta svoje. Skryté se neukáže nikomu.",
+      "empty": "Tvůj IS teď žádné oznámení neukazuje.",
+      "hide": "Skrýt všem",
+      "show": "Zobrazit",
+      "hidden": "Skryto",
+      "notInYourIs": "Už není ve tvém IS",
+      "error": "Nepodařilo se uložit. Zkus to znovu."
     }
   },
   "mobile": {

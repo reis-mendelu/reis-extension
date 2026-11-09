@@ -71,7 +71,11 @@ describe('parseIsNoticesHtml', () => {
       { ...KONTROLA, title: 'Kontrola osobních údajů' },
     ]);
     expect(parseIsNoticesHtml(TEST_EN)).toMatchObject([
-      { ...KONTROLA, title: 'Personal data check', link: 'https://is.mendelu.cz/auth/kontrola/?lang=en' },
+      {
+        ...KONTROLA,
+        title: 'Personal data check',
+        link: 'https://is.mendelu.cz/auth/kontrola/?lang=en',
+      },
     ]);
   });
 

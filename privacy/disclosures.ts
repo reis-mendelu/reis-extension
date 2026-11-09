@@ -239,6 +239,11 @@ export const EXEMPT: Exempt[] = [
     why: 'Public read of the venues on the map (hours, menu, photo paths); written by reIS staff in Supabase, never a student.',
   },
   {
+    call: 'is_notice_mutes',
+    files: ['src/api/isNoticeMutes.ts', 'src/api/isNoticeMutesAdmin.ts'],
+    why: 'Public read of the whole list of IS notices reIS muted, filtered on the device: the request says nothing about what the student’s IS shows them, which never leaves the device. Writes are by a signed-in reis_admin, never a student.',
+  },
+  {
     call: 'reis_questions',
     files: ['src/api/questions.ts', 'src/api/adminQuestions.ts'],
     why: 'Public read of the live Novinky questions; writes are by a signed-in reis_admin, never a student.',
