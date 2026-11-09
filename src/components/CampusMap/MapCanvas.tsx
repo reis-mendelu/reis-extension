@@ -282,8 +282,9 @@ export function MapCanvas() {
           flyAndReveal(map, () => map.setView([lat, lon], 18, { animate: false }));
         }
       } else if (pinCoord) {
-        // A society pin chosen in the search (S-klub) lands like an event from
-        // a list: same zoom, same clearance from the rail and the sheet.
+        // A society pin chosen in the search or from the Jídelníček's S-klub
+        // tab (focusSocietyPin) lands like an event from a list: same zoom,
+        // same clearance from the rail and the sheet.
         const [lon, lat] = pinCoord;
         flyAndReveal(map, () => {
           // EVENT_ZOOM, and NOT `Math.max(getZoom(), …)`.

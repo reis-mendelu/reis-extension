@@ -6,7 +6,8 @@ import { pragueClock, venueStatus } from '../../utils/venues/venueStatus';
 import { formatPrice } from '../../utils/venues/venueText';
 import { sortByDate } from './eventHelpers';
 import { isFinishedEvent } from './eventWindow';
-import type { Venue } from '../../types/campusMap';
+import type { SocietyPin, Venue } from '../../types/campusMap';
+import { venueLunchDays } from '../../utils/venues/venueLunchDays';
 
 const heading = 'pb-1.5 text-sm font-bold text-base-content';
 
@@ -31,16 +32,18 @@ export function VenuePhotos({ photos }: { photos: string[] }) {
 
 /**
  * The lunch offer. "Dnes k obědu" on a day the venue opens, with the day's
- * soup and dishes when reIS has filled in the week (`lunch_week`); otherwise
+ * soup and dishes when reIS has the week (S-klub's scraped on the device,
+ * else `lunch_week`; utils/venues/venueLunchDays); otherwise
  * the standing offer as the venue states it.
  */
-export function VenueLunch({ venue, now }: { venue: Venue; now: Date }) {
+export function VenueLunch({ pin, venue, now }: { pin: SocietyPin; venue: Venue; now: Date }) {
   const { t, language } = useTranslation();
+  const scraped = useAppStore((s) => s.sklubMenu);
   const lang = language === 'en' ? 'en' : 'cz';
   if (!venue.lunch) return null;
   const status = venueStatus(venue.hours, now, venue.closure);
   const servesToday = status.open || status.inDays === 0;
-  const today = venue.lunchDays.find((d) => d.date === pragueClock(now).date);
+  const today = venueLunchDays(pin, scraped).find((d) => d.date === pragueClock(now).date);
   const dishes = servesToday && today ? today : null;
   return (
     <section>

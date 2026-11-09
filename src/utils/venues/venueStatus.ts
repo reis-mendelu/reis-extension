@@ -81,6 +81,16 @@ export function venueStatus(
 }
 
 /**
+ * Whether the venue opens at all on a Prague calendar day ('YYYY-MM-DD'): it
+ * has hours that weekday and no dated closure covers it.
+ */
+export function venueOpensOn(venue: Pick<Venue, 'hours' | 'closure'>, date: string): boolean {
+  const [y, m, d] = date.split('-').map(Number);
+  const weekday = ((new Date(Date.UTC(y!, m! - 1, d!)).getUTCDay() + 6) % 7) + 1;
+  return !closedOn(venue.closure, date) && venue.hours.some((h) => h.day === weekday);
+}
+
+/**
  * The closure worth announcing: one in progress, or one starting within a week.
  * Null once it is over, or while it is still far off.
  */

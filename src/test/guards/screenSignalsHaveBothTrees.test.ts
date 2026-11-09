@@ -35,7 +35,8 @@ const SCREENS: Record<string, { phone: string[]; extension: string[] }> = {
   },
   screen_menu: {
     phone: ['components/mobile/sheets/MenuSheet.tsx'],
-    extension: ['components/WeeklyCalendar/WeeklyCalendarHeader.tsx'],
+    // The popover's content, split out of WeeklyCalendarHeader for the S-klub tab.
+    extension: ['components/WeeklyCalendar/MenuPopoverContent.tsx'],
   },
   screen_search: {
     phone: ['components/mobile/sheets/SearchSheet.tsx'],

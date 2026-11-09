@@ -7,7 +7,10 @@ vi.mock('../../../api/mapEvents', async (orig) => ({
   fetchSocietyPins,
 }));
 
-const fetchVenuePinsMock = vi.hoisted(() => vi.fn<() => Promise<SocietyPin[] | null>>());
+// Defaults to "no answer": unmocked, the venues read went to the real Supabase.
+const fetchVenuePinsMock = vi.hoisted(() =>
+  vi.fn<() => Promise<SocietyPin[] | null>>(async () => null)
+);
 vi.mock('../../../api/venues', async (orig) => ({
   ...(await orig<typeof import('../../../api/venues')>()),
   fetchVenuePins: fetchVenuePinsMock,
@@ -77,6 +80,7 @@ describe('finding a venue from the map search', () => {
       activeFloorId: 9000010,
       venueMenuSection: 'drinks',
       mapFocusTarget: 'draft',
+      mapRailOpen: false,
     });
     const before = useAppStore.getState().mapFocusRequest;
     useAppStore.getState().focusSocietyPin(venue);
@@ -87,6 +91,8 @@ describe('finding a venue from the map search', () => {
     expect(s.venueMenuSection).toBeNull();
     expect(s.mapFocusRequest).toBe(before + 1);
     expect(s.mapFocusTarget).toBe('campus');
+    // The iPad rail opens with it, before the camera reads it (cubic on #660).
+    expect(s.mapRailOpen).toBe(true);
   });
 });
 

@@ -20,7 +20,9 @@
     "unavailable": "Menu not available",
     "outletOne": "1 outlet",
     "outletFew": "{count} outlets",
-    "outletOther": "{count} outlets"
+    "outletOther": "{count} outlets",
+    "venueFullMenu": "Full menu and prices",
+    "venueFullMenuOnMap": "Full menu and prices on the map"
   },
   "iskam": {
     "show": "Show ISIC balance",
