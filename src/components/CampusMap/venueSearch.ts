@@ -7,12 +7,7 @@ import type { MapSelection, SocietyPin } from '../../types/campusMap';
  */
 
 /** Lowercase, without diacritics: "Kavárna" and "kavarna" are one word. */
-const fold = (s: string) =>
-  s
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '')
-    .toLowerCase()
-    .trim();
+const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim();
 
 /** Letters and digits only, so "sklub", "s klub" and "S-klub" meet. */
 const compact = (s: string) => fold(s).replace(/[^\p{L}\p{N}]/gu, '');
