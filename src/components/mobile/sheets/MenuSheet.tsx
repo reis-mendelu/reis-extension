@@ -40,7 +40,7 @@ export function MenuSheet({ dayIso, week, onClose }: MenuSheetProps) {
   const faculty = useAppStore((s) => s.userFaculty);
   const venuePins = useAppStore((s) => s.venuePins);
   const setMobileTab = useAppStore((s) => s.setMobileTab);
-  const showVenueOnMap = useAppStore((s) => s.showVenueOnMap);
+  const focusSocietyPin = useAppStore((s) => s.focusSocietyPin);
   const [day, setDay] = useState(dayIso);
   // The canteens serving that day, plus S-klub for an FRRMS student, in
   // reIS's order (utils/menuTabs).
@@ -111,7 +111,7 @@ export function MenuSheet({ dayIso, week, onClose }: MenuSheetProps) {
               onOpenMap={(pin) => {
                 // The tab switch clears the sheet stack (createMobileUiSlice).
                 setMobileTab('map');
-                showVenueOnMap(pin);
+                focusSocietyPin(pin);
               }}
             />
           ))}

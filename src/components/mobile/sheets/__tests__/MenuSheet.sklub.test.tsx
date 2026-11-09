@@ -101,13 +101,13 @@ describe('MenuSheet — S-klub', () => {
   });
 
   it('"Celé menu a ceny" opens the venue on the map', () => {
-    const showVenueOnMap = vi.fn();
+    const focusSocietyPin = vi.fn();
     const setMobileTab = vi.fn();
-    useAppStore.setState({ showVenueOnMap, setMobileTab } as never);
+    useAppStore.setState({ focusSocietyPin, setMobileTab } as never);
     render(<MenuSheet dayIso={DAY} onClose={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: 'S-klub' }));
     fireEvent.click(screen.getByRole('button', { name: /Celé menu a ceny/ }));
     expect(setMobileTab).toHaveBeenCalledWith('map');
-    expect(showVenueOnMap).toHaveBeenCalledWith(SKLUB);
+    expect(focusSocietyPin).toHaveBeenCalledWith(SKLUB);
   });
 });

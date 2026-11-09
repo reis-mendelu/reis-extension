@@ -8,8 +8,6 @@ import { railOffsetPx, railPaddingPx } from '../../utils/mapRail';
 import buildingsJson from '../../data/map/buildings.json';
 import {
   ringToLatLng,
-  roomLabel,
-  planLabel,
   LABELLED_ROOM_SPAN_M,
   categoryStyle,
   remotePlaceBounds,
@@ -29,10 +27,12 @@ import { CAMPUS_NAVIGATION_ENABLED } from '../../utils/routing/navigationEnabled
 import { setMapInstance } from './mapInstance';
 import { LABELS_PANE } from './mapPanes';
 import { roomFocusView } from './focusBounds';
+import { roomPlanLabels, venueRoomKey } from './roomPlanLabel';
+import { venueRoomTitles } from './venueSearch';
 import { panPinClearOfSheet } from './sheetClearance';
 import { TiltToggle } from '../Building3D/tilt/TiltToggle';
 import { drawPoiHighlight, outlineForSelection } from './poiOutline';
-import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
+import type { BuildingsMeta, RoomFeature, RoomProperties } from '../../types/campusMap';
 
 const META = buildingsJson as BuildingsMeta;
 
@@ -87,6 +87,10 @@ export function MapCanvas() {
   // Live room polygons keyed by placeId, with their unselected base style — lets
   // a plain map click re-highlight in place without a full redraw or camera move.
   const roomPolysRef = useRef<Map<number, { poly: L.Polygon; base: L.PathOptions }>>(new Map());
+  /** The open floor's named rooms, so venue names that arrive after the plan
+   *  was drawn retitle it in place (a redraw moves the camera). */
+  const labelledRoomsRef = useRef<{ poly: L.Polygon; p: RoomProperties; big: boolean }[]>([]);
+  const venueKey = useAppStore((s) => venueRoomKey(s.venuePins));
   /** The "Najdi cestu" pill pinned to the selected room. Its own group, so a
    *  selection change never redraws the plan — a redraw moves the camera. */
   const roomChipRef = useRef<L.LayerGroup>(L.layerGroup());
@@ -255,6 +259,8 @@ export function MapCanvas() {
       // don't bump focusReq), so we DO fly there: zoom to 18 when at overview, but
       // never zoom back out if you're already deeper in.
       const sel = select.mapSelection;
+      const pinCoord =
+        sel?.kind === 'event' ? sel.event.coord : sel?.kind === 'societyPin' ? sel.pin.coord : null;
       // Choosing a place/landmark/event ports the camera INSTANTLY (like Google
       // Maps), not the slow zoom-out-pan-zoom-in "fly" — animate:false makes
       // setView/fitBounds jump and fire moveend at once (flyAndReveal reveals the
@@ -275,8 +281,11 @@ export function MapCanvas() {
           const [lon, lat] = sel.coord;
           flyAndReveal(map, () => map.setView([lat, lon], 18, { animate: false }));
         }
-      } else if (sel?.kind === 'event' && sel.event.coord) {
-        const [lon, lat] = sel.event.coord;
+      } else if (pinCoord) {
+        // A society pin chosen in the search or from the Jídelníček's S-klub
+        // tab (focusSocietyPin) lands like an event from a list: same zoom,
+        // same clearance from the rail and the sheet.
+        const [lon, lat] = pinCoord;
         flyAndReveal(map, () => {
           // EVENT_ZOOM, and NOT `Math.max(getZoom(), …)`.
           //
@@ -302,22 +311,6 @@ export function MapCanvas() {
           );
           if (dx) map.panBy([dx, 0], { animate: false });
           // And the sheet covers its bottom on a phone. See sheetClearance.ts.
-          if (isPhone) panPinClearOfSheet(map, [lat, lon]);
-        });
-      } else if (sel?.kind === 'societyPin') {
-        // Only `showVenueOnMap` bumps focusReq with a pin selected (the
-        // Jídelníček's S-klub tab); a tap on the pin itself never does. S-klub
-        // is in budova Z, outside the campus bounds the fallback would fit.
-        const [lon, lat] = sel.pin.coord;
-        flyAndReveal(map, () => {
-          map.setView([lat, lon], EVENT_ZOOM, { animate: false });
-          const dx = railOffsetPx(
-            map.getContainer().clientWidth,
-            isPhone,
-            railRef.current.width,
-            railRef.current.open
-          );
-          if (dx) map.panBy([dx, 0], { animate: false });
           if (isPhone) panPinClearOfSheet(map, [lat, lon]);
         });
       } else if (cameFromMapTap) {
@@ -412,6 +405,8 @@ export function MapCanvas() {
       .filter((f) => f.properties.floorId === activeFloorId)
       .sort((a) => (a.properties.category === 'structure' ? -1 : 1));
     roomPolysRef.current.clear();
+    labelledRoomsRef.current = [];
+    const venueTitles = venueRoomTitles(select.venuePins);
     let targetBounds: L.LatLngBounds | null = null;
     for (const f of feats as RoomFeature[]) {
       const p = f.properties,
@@ -441,8 +436,9 @@ export function MapCanvas() {
           // hover, to avoid a wall of overlapping numbers.
           const pb = poly.getBounds();
           const big = pb.getNorthEast().distanceTo(pb.getSouthWest()) > LABELLED_ROOM_SPAN_M;
-          const label = roomLabel(p.name, p.passportNumber, p.nickname);
-          const shown = big ? planLabel(label) : label;
+          const { full, short } = roomPlanLabels(p, venueTitles);
+          const shown = big ? short : full;
+          labelledRoomsRef.current.push({ poly, p, big });
           poly.bindTooltip(shown, {
             permanent: big,
             direction: 'center',
@@ -453,10 +449,12 @@ export function MapCanvas() {
             pane: big ? LABELS_PANE : 'tooltipPane',
           });
           // The permanent label keeps only the code ("B05"); hovering the room
-          // shows IS's full name ("B05 – Strojový sál").
-          if (shown !== label) {
-            poly.on('mouseover', () => poly.setTooltipContent(label));
-            poly.on('mouseout', () => poly.setTooltipContent(shown));
+          // shows IS's full name ("B05 – Strojový sál"). Read at hover time, so
+          // a venue name that arrived after the draw is not swapped back out.
+          if (big) {
+            const now = () => roomPlanLabels(p, venueRoomTitles(useAppStore.getState().venuePins));
+            poly.on('mouseover', () => poly.setTooltipContent(now().full));
+            poly.on('mouseout', () => poly.setTooltipContent(now().short));
           }
         }
       }
@@ -495,6 +493,17 @@ export function MapCanvas() {
   useEffect(() => {
     drawPoiHighlight(poiHighlightRef.current, outlineForSelection(mapSelection, activeBuildingId));
   }, [mapSelection, activeBuildingId]);
+
+  // Venues load beside the events, possibly after a plan is already open:
+  // retitle its rooms in place. venueKey is a string, so a refetch of the same
+  // venues does not get here.
+  useEffect(() => {
+    const titles = venueRoomTitles(useAppStore.getState().venuePins);
+    for (const { poly, p, big } of labelledRoomsRef.current) {
+      const { full, short } = roomPlanLabels(p, titles);
+      poly.setTooltipContent(big ? short : full);
+    }
+  }, [venueKey]);
 
   // Highlight the selected room in place on a plain map click — restyle the live
   // polygons without a full redraw or camera move (the heavy effect above only

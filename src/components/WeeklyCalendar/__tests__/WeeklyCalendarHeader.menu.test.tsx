@@ -123,8 +123,8 @@ describe('WeeklyCalendarHeader — S-klub', () => {
   });
 
   it('shows the lunch offer and the place, and opens the venue on the map', () => {
-    const showVenueOnMap = vi.fn();
-    useAppStore.setState({ showVenueOnMap } as never);
+    const focusSocietyPin = vi.fn();
+    useAppStore.setState({ focusSocietyPin } as never);
     renderHeader();
     fireEvent.click(screen.getByTitle('Jídelníček'));
     fireEvent.click(screen.getByRole('button', { name: 'S-klub' }));
@@ -133,7 +133,7 @@ describe('WeeklyCalendarHeader — S-klub', () => {
     expect(within(panel).getByText('189 Kč')).toBeInTheDocument();
     expect(within(panel).getByText(/Budova Z, přízemí/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Celé menu a ceny na mapě/ }));
-    expect(showVenueOnMap).toHaveBeenCalledWith(SKLUB);
+    expect(focusSocietyPin).toHaveBeenCalledWith(SKLUB);
     // The popover closes behind the jump.
     expect(screen.queryByTestId('menu-venue')).not.toBeInTheDocument();
   });

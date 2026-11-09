@@ -32,12 +32,13 @@ export interface SocietyPinsSlice {
   loadSocietyPins: () => Promise<void>;
   selectSocietyPin: (pin: SocietyPin) => void;
   /**
-   * A pin opened from outside the map (the Jídelníček's S-klub tab): leaves
-   * any floor plan, where pins are not drawn, and bumps `mapFocusRequest` —
-   * the extension switches to its map view on that bump (useAppLogic) and the
-   * canvas flies to the pin. The phone also brings its map tab forward.
+   * A pin chosen in the map search or opened from the Jídelníček's S-klub tab:
+   * what tapping it does, plus the way there. Leaves any floor plan (pins are
+   * drawn on the campus only) and moves the camera to it through
+   * `mapFocusRequest`, MapCanvas's one camera owner — which is also what
+   * switches the extension to its map view (useAppLogic).
    */
-  showVenueOnMap: (pin: SocietyPin) => void;
+  focusSocietyPin: (pin: SocietyPin) => void;
   setVenueMenuSection: (id: string | null) => void;
 }
 
@@ -48,7 +49,12 @@ export const createSocietyPinsSlice: AppSlice<SocietyPinsSlice> = (set, get) => 
   loadSocietyPins: async () => {
     const [pins, venues] = await Promise.all([fetchSocietyPins(), fetchVenuePins()]);
     if (pins !== null) set({ societyPins: pins });
-    if (venues !== null) set({ venuePins: venues });
+    if (venues !== null) {
+      set({ venuePins: venues });
+      // A query typed before the venues arrived was searched without them.
+      const q = get().mapSearchQuery;
+      if (q.trim()) get().setMapSearchQuery(q);
+    }
     // S-klub's menu rides on the venue load (createSklubMenuSlice): only with
     // the café among the venues does anything ask sklubpixie.cz.
     if (get().venuePins.some((v) => v.id === SKLUB_PIN_ID)) {
@@ -57,12 +63,12 @@ export const createSocietyPinsSlice: AppSlice<SocietyPinsSlice> = (set, get) => 
   },
   selectSocietyPin: (pin) =>
     set({ mapSelection: { kind: 'societyPin', pin }, venueMenuSection: null }),
-  showVenueOnMap: (pin) =>
+  focusSocietyPin: (pin) =>
     set({
-      mapSelection: { kind: 'societyPin', pin },
-      venueMenuSection: null,
       activeBuildingId: null,
       activeFloorId: null,
+      mapSelection: { kind: 'societyPin', pin },
+      venueMenuSection: null,
       mapFocusRequest: get().mapFocusRequest + 1,
       mapFocusTarget: 'campus',
       // Open before the canvas moves: MapRail would open it on the selection,

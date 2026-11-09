@@ -31,7 +31,7 @@ export function MenuPopoverContent({
   const menuError = useAppStore((s) => s.menuError);
   const faculty = useAppStore((s) => s.userFaculty);
   const venuePins = useAppStore((s) => s.venuePins);
-  const showVenueOnMap = useAppStore((s) => s.showVenueOnMap);
+  const focusSocietyPin = useAppStore((s) => s.focusSocietyPin);
   // By KEY, not position: S-klub and the faculty arrive asynchronously, and a
   // tab inserted before the picked one would otherwise take its place.
   const [picked, setPicked] = useState<string | null>(null);
@@ -100,7 +100,7 @@ export function MenuPopoverContent({
             onClose();
             // Bumps mapFocusRequest, on which the extension switches to its
             // map view (useAppLogic) and the canvas flies to the pin.
-            showVenueOnMap(current.pin);
+            focusSocietyPin(current.pin);
           }}
         />
       ) : (
