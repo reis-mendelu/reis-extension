@@ -16,6 +16,11 @@ export interface SpolekNotification {
   priority: 'normal' | 'high';
   /** Restricted to the society's own people (utils/eventAudience). Absent on old caches: public. */
   subscribersOnly?: boolean;
+  /**
+   * 'is' = a notice from the student's own IS home page (utils/isNoticeRows),
+   * not a spolky_events row. Never counted, never cached with the society feed.
+   */
+  source?: 'is';
   viewCount?: number;
   clickCount?: number;
 }

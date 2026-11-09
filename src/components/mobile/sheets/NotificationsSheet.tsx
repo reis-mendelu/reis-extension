@@ -5,7 +5,7 @@ import { SheetHeader } from '../primitives/SheetHeader';
 import { useNotificationFeed } from '../../../hooks/useNotificationFeed';
 import { useDeadlineAlerts } from '../../../hooks/useDeadlineAlerts';
 import { useOpenNotification } from '../../../hooks/useOpenNotification';
-import { NotificationItem } from '../../Notifications/NotificationItem';
+import { NotificationRow } from '../../Notifications/NotificationRow';
 import { DeadlineAlertItem } from '../../Notifications/DeadlineAlertItem';
 import { QuestionList } from '../../Questions/QuestionList';
 import { useQuestions } from '../../../hooks/useQuestions';
@@ -156,11 +156,11 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
             )}
             <div className="flex flex-col gap-2">
               {notifications.map((n) => (
-                <NotificationItem
+                <NotificationRow
                   key={n.id}
                   notification={n}
                   onVisible={() => markVisible(n.id)}
-                  onClick={() => void openNotification(n)}
+                  onOpen={() => void openNotification(n)}
                   clickable={opensSomewhere(n)}
                 />
               ))}

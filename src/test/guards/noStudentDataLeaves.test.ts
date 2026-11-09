@@ -114,6 +114,12 @@ const SUPABASE_CALLERS = new Set([
   // at. That pairing would be a behavioural profile, and no payload here can
   // express it.
   'src/api/featureUsage.ts',
+  // The IS notices a reIS admin muted for everyone (November 2026): an
+  // anonymous select of the whole `is_notice_mutes` list, filtered on the
+  // device. Nothing goes up — in particular not which notices the student's
+  // own IS shows them; those are read from IS and never leave the device
+  // (test/guards/isNoticesStayOnDevice.test.tsx).
+  'src/api/isNoticeMutes.ts',
 ]);
 
 /**
@@ -128,6 +134,9 @@ const SUPABASE_CALLERS = new Set([
 const ADMIN_CALLERS = new Set([
   'src/api/adminQuestions.ts',
   'src/api/featureStats.ts',
+  // Mutes an IS notice for everyone: the notice's key and title as the
+  // ADMIN's own IS shows them. reis_admin only, by RLS.
+  'src/api/isNoticeMutesAdmin.ts',
   'src/api/schoolStats.ts',
   'src/api/societiesAdmin.ts',
   'src/api/societyAccounts.ts',

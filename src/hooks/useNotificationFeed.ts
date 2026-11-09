@@ -8,6 +8,7 @@ import { localTodayIso } from '../components/CampusMap/eventWindow';
 import { canSee, isReisOwn } from '../utils/eventAudience';
 import { useViewer } from './useViewer';
 import { useAppStore } from '../store/useAppStore';
+import { isNoticeRows, pragueMinuteIso } from '../utils/isNoticeRows';
 
 /** reIS's own rows are for everyone, exchange students included. */
 const isReisRow = (n: SpolekNotification) => isReisOwn(n.associationId);
@@ -26,6 +27,10 @@ export function useNotificationFeed() {
   const refreshQuestions = useAppStore((s) => s.refreshQuestions);
 
   const societies = useAppStore((s) => s.societies);
+  const language = useAppStore((s) => s.language);
+  const isNotices = useAppStore((s) => s.isNotices);
+  const isNoticeMutes = useAppStore((s) => s.isNoticeMutes);
+  const loadIsNoticesIfStale = useAppStore((s) => s.loadIsNoticesIfStale);
   const viewer = useViewer();
 
   // A string, so it is stable across renders within a day and the memo below
@@ -36,6 +41,8 @@ export function useNotificationFeed() {
   // bare `localTodayIso()` at render, nothing re-rendered this hook at
   // midnight, so a feed left open overnight kept yesterday's list.
   const todayIso = useAppStore((s) => localTodayIso(s.now));
+  // To the minute in Prague time, for IS notices' own display window (utils/isNoticeRows).
+  const nowMinute = useAppStore((s) => pragueMinuteIso(s.now));
 
   // Three questions: is the student in this event's audience (utils/eventAudience
   // — no follow list), has the event already happened, and is it within the
@@ -50,26 +57,31 @@ export function useNotificationFeed() {
     () =>
       dropBeyondNovinkyWindow(
         dropPastEvents(
-          allNotifications.filter(
-            (n) =>
-              isReisRow(n) ||
-              canSee(
-                { societyId: n.associationId ?? '', subscribersOnly: n.subscribersOnly },
-                societies,
-                viewer
-              )
-          ),
+          [
+            // The student's own IS notices lead, under MENDELU. They skip the
+            // audience rule: IS already decided they are for this student.
+            ...isNoticeRows(isNotices[language] ?? [], isNoticeMutes, todayIso, nowMinute),
+            ...allNotifications.filter(
+              (n) =>
+                isReisRow(n) ||
+                canSee(
+                  { societyId: n.associationId ?? '', subscribersOnly: n.subscribersOnly },
+                  societies,
+                  viewer
+                )
+            ),
+          ],
           todayIso
         ),
         todayIso
       ),
-    [allNotifications, societies, viewer, todayIso]
+    [allNotifications, societies, viewer, todayIso, nowMinute, isNotices, isNoticeMutes, language]
   );
 
   // Novinky's questions refresh with the feed they sit in.
   const load = useCallback(async () => {
-    await Promise.all([fetchNotifications(), refreshQuestions()]);
-  }, [fetchNotifications, refreshQuestions]);
+    await Promise.all([fetchNotifications(), refreshQuestions(), loadIsNoticesIfStale()]);
+  }, [fetchNotifications, refreshQuestions, loadIsNoticesIfStale]);
 
   useEffect(() => {
     const id = setInterval(load, 300000);

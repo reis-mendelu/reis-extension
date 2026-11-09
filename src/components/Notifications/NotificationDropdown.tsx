@@ -1,6 +1,6 @@
 import { Bell, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { NotificationItem } from './NotificationItem';
+import { NotificationRow } from './NotificationRow';
 import { DeadlineAlertItem } from './DeadlineAlertItem';
 import { QuestionList } from '../Questions/QuestionList';
 import { useQuestions } from '../../hooks/useQuestions';
@@ -82,11 +82,11 @@ export function NotificationDropdown({
       ) : (
         <div className="flex flex-col gap-2">
           {notifications.map((n) => (
-            <NotificationItem
+            <NotificationRow
               key={n.id}
               notification={n}
               onVisible={() => onVisible(n.id)}
-              onClick={() => void openNotification(n)}
+              onOpen={() => void openNotification(n)}
               clickable={opensSomewhere(n)}
             />
           ))}

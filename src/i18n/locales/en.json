@@ -512,7 +512,9 @@
     "systemOn": "On",
     "systemOff": "Off",
     "systemEnable": "Turn on",
-    "systemBanner": "Notifications are off, so you won't get new points or exam reminders."
+    "systemBanner": "Notifications are off, so you won't get new points or exam reminders.",
+    "openInIs": "Open in IS",
+    "openLink": "Open link"
   },
   "examReminders": {
     "title": "An exam opens soon",
@@ -1360,6 +1362,16 @@
       "day": "Day",
       "devices": "Counts devices, not people. Students on 5.4.1 or older do not see questions.",
       "errNote": "A note can be at most 300 characters."
+    },
+    "isNotices": {
+      "title": "IS notices",
+      "note": "What your IS shows on its home page. Students see them in Novinky under MENDELU, each their own. A hidden one shows to nobody.",
+      "empty": "Your IS shows no notices right now.",
+      "hide": "Hide for everyone",
+      "show": "Show",
+      "hidden": "Hidden",
+      "notInYourIs": "No longer in your IS",
+      "error": "Could not save. Try again."
     }
   },
   "mobile": {

@@ -4,6 +4,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { QuestionForm } from './QuestionForm';
 import { QuestionResultsCard } from './QuestionResultsCard';
+import { IsNoticesPanel } from './IsNoticesPanel';
 
 /**
  * "Otázky" (reis_admin only, on both console layouts): write a question for
@@ -40,6 +41,11 @@ export function AdminQuestionsPanel() {
       {list?.map((q) => (
         <QuestionResultsCard key={q.id} q={q} />
       ))}
+      {/* Also Novinky content, so it lives on the same page rather than a
+          sixth tab; one component, so both console layouts have it. */}
+      <div className="mt-4 border-t border-base-300 pt-4">
+        <IsNoticesPanel />
+      </div>
     </div>
   );
 }
