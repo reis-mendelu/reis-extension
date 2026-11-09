@@ -15,7 +15,13 @@ import type { Language } from '../store/types';
  */
 export async function fetchIsNotices(lang: Language): Promise<IsNotice[]> {
   const response = await fetchWithAuth(`${BASE_URL}/auth/index.pl?lang=${lang}`);
-  return parseIsNoticesHtml(await response.text());
+  const html = await response.text();
+  // A page without IS's logout link is not the student's home page (a login
+  // page served as 200, say). Parsed, it would read as "IS took every notice
+  // down" and empty Novinky until the next read; thrown, the slice keeps
+  // what it had. The same marker the Capacitor transport checks.
+  if (!html.includes('logout.pl')) throw new Error('IS home page without a session');
+  return parseIsNoticesHtml(html);
 }
 
 const HIDE_LINK = 'jiz_nezobrazovat_zasadku=';
@@ -74,7 +80,10 @@ function unescapeJsString(s: string): string {
 }
 
 function clean(s: string): string {
-  return s.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+  return s
+    .replace(/\u00a0/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /** Text with IS's paragraph and line breaks kept as newlines. */

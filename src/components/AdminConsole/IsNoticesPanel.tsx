@@ -52,7 +52,7 @@ export function IsNoticesPanel() {
           >
             <div className="flex min-w-0 flex-1 flex-col">
               <span
-                className={`truncate text-sm font-medium ${isMuted ? 'text-base-content/60 line-through' : 'text-base-content'}`}
+                className={`truncate text-sm font-medium ${isMuted ? 'text-base-content/70 line-through' : 'text-base-content'}`}
               >
                 {row.title}
               </span>
