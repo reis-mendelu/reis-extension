@@ -130,9 +130,10 @@ yourself and state the assumption in the PR, where Dominik can correct it.
 - One round: after an answer, build. Ask again only if the answer leaves the
   task impossible, not merely imprecise.
 - Content, not code (a society event, a post — published in the admin
-  console, stored in Supabase you only read): do not ask how. Fill in the
-  entry from the linked page (title, date, place, society, link) in one note
-  for Dominik to publish; ask only if a field is genuinely unknown.
+  console, stored in Supabase): do not ask how. Fill in the entry from the
+  linked page (title, date, place, society, link) and show it to Dominik; he
+  publishes it, or asks you in the chat to write it to Supabase yourself.
+  Ask only if a field is genuinely unknown.
 - Say what you found first (what exists today, what is missing), so the
   question can be answered without opening the code.
 
@@ -170,8 +171,9 @@ go to him there, not into the doc. In this order:
    words, and where it would be built (`where.md`). Name what is waiting on
    him — an answered "Mergnout?"/"Sedí to?", an open PR — first.
 3. **Agree what to do now**: a few tasks, his pick. Ask what changes the
-   build, as options, in one message. Content tasks (an event, a society)
-   and anything only a person can do are said so, not built.
+   build, as options, in one message. A content task (an event, a society)
+   gets its filled-in entry (see the ask rules above), not a build; anything
+   only a person can do is said so.
 4. **Work them in parallel**: one subagent per task (`isolation: "worktree"`
    for this repo; a separate clone for reis-page). A code task ends in a
    pushed branch, a draft PR and a green CI (for reis-page, its Ready
