@@ -58,7 +58,7 @@ describe('isNoticeRows', () => {
   });
 
   it('marks its rows so the society counters can leave them alone', () => {
-    const [row] = isNoticeRows([notice()], [], '2026-11-09');
+    const row = isNoticeRows([notice()], [], '2026-11-09')[0]!;
     expect(isIsNoticeRow(row)).toBe(true);
     expect(isIsNoticeRow(row.id)).toBe(true);
     expect(isIsNoticeRow({ id: '6f1c', source: undefined })).toBe(false);

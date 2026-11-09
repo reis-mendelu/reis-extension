@@ -32,6 +32,15 @@ const KONTROLA = {
   until: null,
 };
 
+/** HTML-escapes a value for a double-quoted attribute, `&` first, as IS does. */
+function escapeAttribute(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 describe('parseIsNoticesHtml', () => {
   it('returns nothing for empty or unrelated pages', () => {
     expect(parseIsNoticesHtml('')).toEqual([]);
@@ -42,8 +51,8 @@ describe('parseIsNoticesHtml', () => {
     const notices = parseIsNoticesHtml(PROD_CZ);
     expect(notices).toHaveLength(1);
     expect(notices[0]).toMatchObject(NEW_DESIGN);
-    expect(notices[0].text).toContain('v průběhu listopadu bude nasazena nová podoba designu');
-    expect(notices[0].text).toContain('OIT MENDELU');
+    expect(notices[0]?.text).toContain('v průběhu listopadu bude nasazena nová podoba designu');
+    expect(notices[0]?.text).toContain('OIT MENDELU');
   });
 
   it('reads the same window from the English page, whose dates are MM/DD/YYYY', () => {
@@ -52,8 +61,8 @@ describe('parseIsNoticesHtml', () => {
 
   it('keeps the window and the hide link out of the text', () => {
     const [notice] = parseIsNoticesHtml(PROD_CZ);
-    expect(notice.text).not.toMatch(/zobrazována|nezobrazovat|display/i);
-    expect(notice.text).not.toContain('\\n');
+    expect(notice?.text).not.toMatch(/zobrazována|nezobrazovat|display/i);
+    expect(notice?.text).not.toContain('\\n');
   });
 
   it('reads the red notice, which has no id and no window, in both designs', () => {
@@ -64,8 +73,8 @@ describe('parseIsNoticesHtml', () => {
       title: 'Kontrola osobních údajů',
       link: 'https://is.mendelu.cz/auth/kontrola/?lang=cz',
     });
-    expect(prod[0].text).toContain('potvrdit správnost Vašich osobních údajů');
-    expect(prod[0].text).not.toMatch(/skrýt/);
+    expect(prod[0]?.text).toContain('potvrdit správnost Vašich osobních údajů');
+    expect(prod[0]?.text).not.toMatch(/skrýt/);
 
     expect(parseIsNoticesHtml(TEST_CZ)).toMatchObject([
       { ...KONTROLA, title: 'Kontrola osobních údajů' },
@@ -96,7 +105,7 @@ describe('parseIsNoticesHtml', () => {
       '<div class="small"><span class="small"><a href="?;jiz_nezobrazovat_zasadku=42;lang=cz"><b>Již nezobrazovat tuto informaci</b></a></span></div></div>';
     const html =
       '<div class="zasadky-container"><div class="zasadka"><table class="zasadky-info"><tbody><tr><td>' +
-      `<a href="javascript:void(0);" onclick="uis.box.open_fixed('1','${body.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}');">Jen text</a>` +
+      `<a href="javascript:void(0);" onclick="uis.box.open_fixed('1','${escapeAttribute(body)}');">Jen text</a>` +
       '</td></tr></tbody></table></div></div>';
     expect(parseIsNoticesHtml(html)).toMatchObject([
       { key: 'zasadka:42', title: 'Jen text', text: 'Bez odkazu.', link: null },
