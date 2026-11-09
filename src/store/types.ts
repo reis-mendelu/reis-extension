@@ -750,6 +750,7 @@ export type AppState = ScheduleSlice &
   import('./slices/createQuestionsSlice').QuestionsSlice &
   import('./slices/createSocietyPinsSlice').SocietyPinsSlice &
   BulletinSlice &
+  import('./slices/createIsNoticesSlice').IsNoticesSlice &
   ViewportSlice &
   MobileUiSlice &
   import('./slices/createSearchSlice').SearchSlice &

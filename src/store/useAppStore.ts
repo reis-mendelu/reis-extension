@@ -35,6 +35,7 @@ import { createRecentPdfsSlice } from './slices/createRecentPdfsSlice';
 import { createPdfPositionsSlice } from './slices/createPdfPositionsSlice';
 import { createPersonProfileSlice } from './slices/createPersonProfileSlice';
 import { createBulletinSlice } from './slices/createBulletinSlice';
+import { createIsNoticesSlice } from './slices/createIsNoticesSlice';
 import { createViewportSlice } from './slices/createViewportSlice';
 import { createMobileUiSlice } from './slices/createMobileUiSlice';
 import { createMapSlice } from './slices/createMapSlice';
@@ -95,6 +96,7 @@ export const useAppStore = create<AppState>()(
     ...createPdfPositionsSlice(...a),
     ...createPersonProfileSlice(...a),
     ...createBulletinSlice(...a),
+    ...createIsNoticesSlice(...a),
     ...createViewportSlice(...a),
     ...createMobileUiSlice(...a),
     ...createMapSlice(...a),
@@ -212,6 +214,11 @@ export const initializeStore = async () => {
     s2.loadRecentSearches();
     s2.refreshRecentPdfs();
     s2.hydrateBulletin();
+    // The notices on the student's own IS home page, shown under MENDELU in
+    // Novinky. The cache first, then IS; useNotificationFeed re-asks with the
+    // feed's five-minute refresh, and the 30-minute TTL keeps that to one
+    // request per language per half hour.
+    void s2.hydrateIsNotices().then(() => useAppStore.getState().loadIsNoticesIfStale());
     s2.loadMapEvents();
     // The jídelníček. It used to be fetched from a useEffect in each of the
     // three components that show it (the weekly header, its popover, the

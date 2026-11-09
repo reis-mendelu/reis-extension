@@ -2,6 +2,7 @@ import type { AppSlice, NotificationSlice } from '../types';
 import { fetchNotifications, trackNotificationsViewed } from '../../services/spolky';
 import { IndexedDBService } from '../../services/storage';
 import { dropPreAudienceRows } from '../../services/spolky/spolkyService';
+import { isIsNoticeRow } from '../../utils/isNoticeRows';
 
 export const createNotificationSlice: AppSlice<NotificationSlice> = (set, get) => ({
   notifications: {
@@ -95,6 +96,9 @@ export const createNotificationSlice: AppSlice<NotificationSlice> = (set, get) =
   },
 
   markNotificationViewed: async (id) => {
+    // A notice from the student's own IS is not a society post: its id going
+    // to the view counter would tell Supabase what their IS shows them.
+    if (isIsNoticeRow(id)) return;
     const { viewedIds } = get().notifications;
     if (viewedIds.has(id)) return;
 
