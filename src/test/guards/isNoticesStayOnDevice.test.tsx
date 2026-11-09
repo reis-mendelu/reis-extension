@@ -68,27 +68,33 @@ beforeEach(() => {
   } as any);
 });
 
+/** The tap unfolds the text and leaves the app only from the button under it. */
+async function openTextThenLink() {
+  await act(async () => {
+    fireEvent.click(screen.getByText('Kontrola osobních údajů'));
+  });
+  expect(screen.getByText(KONTROLA.text)).toBeInTheDocument();
+  expect(openExternal).not.toHaveBeenCalled();
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Otevřít v IS' }));
+  });
+  expect(openExternal).toHaveBeenCalledWith(KONTROLA.link);
+  expect(trackNotificationClick).not.toHaveBeenCalled();
+}
+
 describe('IS notices stay on the device', () => {
-  it('extension: opens the notice link and counts nothing', async () => {
+  it('extension: shows the text, opens the link from its button, counts nothing', async () => {
     render(<NotificationFeed onShowMap={vi.fn()} />);
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Notifications'));
     });
     await waitFor(() => expect(screen.getByText('Kontrola osobních údajů')).toBeInTheDocument());
-    await act(async () => {
-      fireEvent.click(screen.getByText('Kontrola osobních údajů'));
-    });
-    expect(openExternal).toHaveBeenCalledWith(KONTROLA.link);
-    expect(trackNotificationClick).not.toHaveBeenCalled();
+    await openTextThenLink();
   });
 
-  it('phone: shows the notice under MENDELU, opens it and counts nothing', async () => {
+  it('phone: shows the notice under MENDELU, its text, opens the link, counts nothing', async () => {
     render(<NotificationsSheet onClose={vi.fn()} />);
-    await act(async () => {
-      fireEvent.click(screen.getByText('Kontrola osobních údajů'));
-    });
-    expect(openExternal).toHaveBeenCalledWith(KONTROLA.link);
-    expect(trackNotificationClick).not.toHaveBeenCalled();
+    await openTextThenLink();
   });
 
   it('the view counter refuses an IS row id', async () => {

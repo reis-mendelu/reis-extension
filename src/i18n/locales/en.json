@@ -510,7 +510,9 @@
     "systemOn": "On",
     "systemOff": "Off",
     "systemEnable": "Turn on",
-    "systemBanner": "Notifications are off, so you won't get new points or exam reminders."
+    "systemBanner": "Notifications are off, so you won't get new points or exam reminders.",
+    "openInIs": "Open in IS",
+    "openLink": "Open link"
   },
   "examReminders": {
     "title": "An exam opens soon",
