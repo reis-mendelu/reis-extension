@@ -44,10 +44,23 @@ export function isNoticeRows(
   );
 }
 
-/** The local minute as `YYYY-MM-DDTHH:MM`, the form IS notice windows are in. */
-export function localMinuteIso(d: Date): string {
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+/**
+ * The minute in Brno as `YYYY-MM-DDTHH:MM`, the form IS notice windows are
+ * in. IS writes them in Prague wall-clock time, so a student abroad (Erasmus,
+ * or a phone set to another zone) must be compared in Prague time, not theirs.
+ */
+export function pragueMinuteIso(d: Date): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Prague',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(d);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '00';
+  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
 }
 
 /**

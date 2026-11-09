@@ -8,7 +8,7 @@ import { localTodayIso } from '../components/CampusMap/eventWindow';
 import { canSee, isReisOwn } from '../utils/eventAudience';
 import { useViewer } from './useViewer';
 import { useAppStore } from '../store/useAppStore';
-import { isNoticeRows, localMinuteIso } from '../utils/isNoticeRows';
+import { isNoticeRows, pragueMinuteIso } from '../utils/isNoticeRows';
 
 /** reIS's own rows are for everyone, exchange students included. */
 const isReisRow = (n: SpolekNotification) => isReisOwn(n.associationId);
@@ -41,8 +41,8 @@ export function useNotificationFeed() {
   // bare `localTodayIso()` at render, nothing re-rendered this hook at
   // midnight, so a feed left open overnight kept yesterday's list.
   const todayIso = useAppStore((s) => localTodayIso(s.now));
-  // To the minute, for IS notices' own display window (utils/isNoticeRows).
-  const nowMinute = useAppStore((s) => localMinuteIso(s.now));
+  // To the minute in Prague time, for IS notices' own display window (utils/isNoticeRows).
+  const nowMinute = useAppStore((s) => pragueMinuteIso(s.now));
 
   // Three questions: is the student in this event's audience (utils/eventAudience
   // — no follow list), has the event already happened, and is it within the

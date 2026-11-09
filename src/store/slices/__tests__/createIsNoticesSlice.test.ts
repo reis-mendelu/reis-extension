@@ -13,6 +13,8 @@ vi.mock('../../../services/storage', () => ({
   IndexedDBService: {
     get: vi.fn().mockResolvedValue({ cz: [{ key: 'cached' }], en: [] }),
     set: vi.fn().mockResolvedValue(undefined),
+    delete: vi.fn().mockResolvedValue(undefined),
+    clear: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -48,5 +50,16 @@ describe('IS notices in the store', () => {
     await useAppStore.getState().loadIsNoticesIfStale();
     expect(fetchIsNotices).not.toHaveBeenCalled();
     expect(useAppStore.getState().isNotices.cz).toEqual([]);
+  });
+});
+
+describe('demo transitions', () => {
+  // A request made just before entering or leaving the demo must not hold the
+  // next session's first read back for the rest of the TTL.
+  it('clear the retry pause along with the notices', async () => {
+    useAppStore.setState({ isNoticesTriedAt: Date.now(), isNoticesFetchedAt: Date.now() } as any);
+    await useAppStore.getState().exitDemo();
+    expect(useAppStore.getState().isNoticesTriedAt).toBeNull();
+    expect(useAppStore.getState().isNoticesFetchedAt).toBeNull();
   });
 });

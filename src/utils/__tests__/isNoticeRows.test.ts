@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isNoticeRows, isIsNoticeRow, localMinuteIso } from '../isNoticeRows';
+import { isNoticeRows, isIsNoticeRow, pragueMinuteIso } from '../isNoticeRows';
 import type { IsNotice } from '../../types/isNotices';
 
 const notice = (over: Partial<IsNotice> = {}): IsNotice => ({
@@ -74,7 +74,9 @@ describe('isNoticeRows', () => {
     expect(rows('2026-12-01T00:00')).toBe(0);
   });
 
-  it('formats the local minute the way IS writes its window', () => {
-    expect(localMinuteIso(new Date(2026, 10, 9, 8, 5))).toBe('2026-11-09T08:05');
+  // IS writes its window in Prague time; a device elsewhere must not shift it.
+  it('reads the clock in Prague time, whatever zone the device is in', () => {
+    expect(pragueMinuteIso(new Date('2026-11-09T08:05:00Z'))).toBe('2026-11-09T09:05'); // CET
+    expect(pragueMinuteIso(new Date('2026-07-01T22:30:00Z'))).toBe('2026-07-02T00:30'); // CEST
   });
 });

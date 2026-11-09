@@ -95,6 +95,7 @@ export const createDemoSlice: AppSlice<DemoSlice> = (set) => ({
       demoMode: true,
       isNotices: { cz: [], en: [] },
       isNoticesFetchedAt: null,
+      isNoticesTriedAt: null,
       ...demoContext,
       syncStatus: { ...state.syncStatus, handshakeDone: true },
       // For the same reason, one step further: the demo dataset is already
@@ -113,6 +114,7 @@ export const createDemoSlice: AppSlice<DemoSlice> = (set) => ({
       demoMode: false,
       isNotices: { cz: [], en: [] },
       isNoticesFetchedAt: null,
+      isNoticesTriedAt: null,
       studiumId: null,
       studentId: null,
       obdobiId: null,
