@@ -75,9 +75,9 @@ export function MenuPopoverContent({
               type="button"
               aria-pressed={i === safeTab}
               onClick={() => setActiveTab(i)}
-              className={`min-h-8 flex-1 rounded-lg border px-2 text-xs font-bold transition-colors ${
+              className={`min-h-8 flex-1 whitespace-nowrap rounded-lg border px-1.5 text-xs font-bold transition-colors ${
                 i === safeTab
-                  ? 'border-primary bg-primary/10 text-primary'
+                  ? 'border-primary bg-primary/10 text-[var(--tone-primary)]'
                   : 'border-base-300 text-base-content/70 hover:text-base-content'
               }`}
             >

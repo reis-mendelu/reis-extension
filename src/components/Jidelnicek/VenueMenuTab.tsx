@@ -111,10 +111,23 @@ export function VenueMenuTab({
           )}
           <div className="min-w-0 flex-1">
             <p className="truncate text-md font-bold text-base-content">{place}</p>
-            <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-base-content/70">
-              {statusWords}
-              {statusWords && after && <span aria-hidden="true">·</span>}
-              {after && <span>{after}</span>}
+            {/* Plain text flow: at 320px the hours wrap under "Otevřeno ·"
+                rather than starting their own line with the dot. */}
+            <p className="text-sm text-base-content/70">
+              {statusWords && (
+                <span className="whitespace-nowrap">
+                  {statusWords}
+                  {after ? ' ·' : ''}
+                </span>
+              )}
+              {statusWords && after ? ' ' : ''}
+              {/* Each hours group whole: an en dash is a break opportunity,
+                  and 320px broke "8:00–18:00" in two. */}
+              {after.split(', ').map((part, i) => (
+                <span key={part} className="whitespace-nowrap">
+                  {i > 0 ? `, ${part}` : part}
+                </span>
+              ))}
             </p>
           </div>
         </div>

@@ -53,9 +53,9 @@ export function MenuOutletPanel({
               aria-pressed={i === index}
               tabIndex={shown ? undefined : -1}
               onClick={() => onPick(i)}
-              className={`min-h-9 flex-1 rounded-xl border px-3 text-sm font-bold ${
+              className={`min-h-9 flex-1 whitespace-nowrap rounded-xl border px-1.5 text-sm font-bold ${
                 i === index
-                  ? 'border-primary bg-primary/10 text-primary'
+                  ? 'border-primary bg-primary/10 text-[var(--tone-primary)]'
                   : 'border-base-300 text-base-content/60'
               }`}
             >
