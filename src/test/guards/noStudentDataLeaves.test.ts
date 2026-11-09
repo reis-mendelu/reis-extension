@@ -87,6 +87,11 @@ const SUPABASE_CALLERS = new Set([
   'src/services/spolky/spolkyService.ts',
   // Reads the public society events feed. No student data in either direction.
   'src/api/mapEvents.ts',
+  // The venues on the map (S-klub's café, November 2026): an anonymous select
+  // of public venue rows (hours, menu, photo paths). Nothing written, no
+  // identity. Photos then load as plain <img> GETs from the same project's
+  // public venue-photos bucket, as society logos do; full URLs are refused.
+  'src/api/venues.ts',
   // The societies catalog (September 2026): an anonymous select of public
   // branding (name, colour, faculty, logo path). No identity, no student data,
   // nothing written. Logos then load as plain <img> GETs from the same project.

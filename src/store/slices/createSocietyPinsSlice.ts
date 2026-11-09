@@ -1,6 +1,7 @@
 import type { AppSlice } from '../types';
 import type { SocietyPin } from '../../types/campusMap';
 import { fetchSocietyPins } from '../../api/mapEvents';
+import { fetchVenuePins } from '../../api/venues';
 
 /**
  * Society pins on the student map (`map_pins`): a society's logo between two
@@ -8,21 +9,37 @@ import { fetchSocietyPins } from '../../api/mapEvents';
  * `mapEvents` on purpose — everything that lists events (Akce, the peek band,
  * Novinky) reads `mapEvents`, so a pin can never appear there.
  *
+ * Venues (`venues`, S-klub's café) are permanent pins with hours, lunch and a
+ * menu. Drawn by the same layer and opened through the same selection kind, so
+ * every surface that shows a pin card shows a venue's too.
+ *
  * Refreshed with the events (`reloadMapEvents`). A failed fetch keeps what is
- * on screen, as the events do; before the release creates the table the fetch
- * fails and the map simply has no pins.
+ * on screen, as the events do; before the release creates a table the fetch
+ * fails and the map simply has none of that kind.
  */
 export interface SocietyPinsSlice {
   societyPins: SocietyPin[];
+  venuePins: SocietyPin[];
+  /**
+   * The menu category open on a venue card. Null: on a phone, the category
+   * grid; on a wide layout, the first category.
+   */
+  venueMenuSection: string | null;
   loadSocietyPins: () => Promise<void>;
   selectSocietyPin: (pin: SocietyPin) => void;
+  setVenueMenuSection: (id: string | null) => void;
 }
 
 export const createSocietyPinsSlice: AppSlice<SocietyPinsSlice> = (set) => ({
   societyPins: [],
+  venuePins: [],
+  venueMenuSection: null,
   loadSocietyPins: async () => {
-    const pins = await fetchSocietyPins();
+    const [pins, venues] = await Promise.all([fetchSocietyPins(), fetchVenuePins()]);
     if (pins !== null) set({ societyPins: pins });
+    if (venues !== null) set({ venuePins: venues });
   },
-  selectSocietyPin: (pin) => set({ mapSelection: { kind: 'societyPin', pin } }),
+  selectSocietyPin: (pin) =>
+    set({ mapSelection: { kind: 'societyPin', pin }, venueMenuSection: null }),
+  setVenueMenuSection: (id) => set({ venueMenuSection: id }),
 });
