@@ -304,6 +304,22 @@ export function MapCanvas() {
           // And the sheet covers its bottom on a phone. See sheetClearance.ts.
           if (isPhone) panPinClearOfSheet(map, [lat, lon]);
         });
+      } else if (sel?.kind === 'societyPin') {
+        // Only `showVenueOnMap` bumps focusReq with a pin selected (the
+        // Jídelníček's S-klub tab); a tap on the pin itself never does. S-klub
+        // is in budova Z, outside the campus bounds the fallback would fit.
+        const [lon, lat] = sel.pin.coord;
+        flyAndReveal(map, () => {
+          map.setView([lat, lon], EVENT_ZOOM, { animate: false });
+          const dx = railOffsetPx(
+            map.getContainer().clientWidth,
+            isPhone,
+            railRef.current.width,
+            railRef.current.open
+          );
+          if (dx) map.panBy([dx, 0], { animate: false });
+          if (isPhone) panPinClearOfSheet(map, [lat, lon]);
+        });
       } else if (cameFromMapTap) {
         // Left floor-view by tapping the basemap: drop the floor plan but leave
         // the camera alone. Re-fitting the campus here threw the user all the

@@ -20,7 +20,9 @@
     "unavailable": "Menu není k dispozici",
     "outletOne": "1 výdejna",
     "outletFew": "{count} výdejny",
-    "outletOther": "{count} výdejen"
+    "outletOther": "{count} výdejen",
+    "venueFullMenu": "Celé menu a ceny",
+    "venueFullMenuOnMap": "Celé menu a ceny na mapě"
   },
   "iskam": {
     "show": "Zobrazit zůstatek ISIC",

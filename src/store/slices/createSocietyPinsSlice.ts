@@ -27,10 +27,17 @@ export interface SocietyPinsSlice {
   venueMenuSection: string | null;
   loadSocietyPins: () => Promise<void>;
   selectSocietyPin: (pin: SocietyPin) => void;
+  /**
+   * A pin opened from outside the map (the Jídelníček's S-klub tab): leaves
+   * any floor plan, where pins are not drawn, and bumps `mapFocusRequest` —
+   * the extension switches to its map view on that bump (useAppLogic) and the
+   * canvas flies to the pin. The phone also brings its map tab forward.
+   */
+  showVenueOnMap: (pin: SocietyPin) => void;
   setVenueMenuSection: (id: string | null) => void;
 }
 
-export const createSocietyPinsSlice: AppSlice<SocietyPinsSlice> = (set) => ({
+export const createSocietyPinsSlice: AppSlice<SocietyPinsSlice> = (set, get) => ({
   societyPins: [],
   venuePins: [],
   venueMenuSection: null,
@@ -41,5 +48,14 @@ export const createSocietyPinsSlice: AppSlice<SocietyPinsSlice> = (set) => ({
   },
   selectSocietyPin: (pin) =>
     set({ mapSelection: { kind: 'societyPin', pin }, venueMenuSection: null }),
+  showVenueOnMap: (pin) =>
+    set({
+      mapSelection: { kind: 'societyPin', pin },
+      venueMenuSection: null,
+      activeBuildingId: null,
+      activeFloorId: null,
+      mapFocusRequest: get().mapFocusRequest + 1,
+      mapFocusTarget: 'campus',
+    }),
   setVenueMenuSection: (id) => set({ venueMenuSection: id }),
 });

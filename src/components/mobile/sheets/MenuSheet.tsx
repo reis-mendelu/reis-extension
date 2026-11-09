@@ -5,6 +5,7 @@ import { SheetHeader } from '../primitives/SheetHeader';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { menuForDay } from '../../../utils/menuForDay';
+import { menuTabs } from '../../../utils/menuTabs';
 import { formatHeaderDate } from '../../../utils/mobile/formatHeaderDate';
 import { formatWeekRange } from '../../../utils/mobile/formatWeekRange';
 import { MenuDayTabs } from './MenuDayTabs';
@@ -36,8 +37,16 @@ export function MenuSheet({ dayIso, week, onClose }: MenuSheetProps) {
   useScreenSignal('screen_menu');
   const { t, language } = useTranslation();
   const menu = useAppStore((s) => s.menu);
+  const faculty = useAppStore((s) => s.userFaculty);
+  const venuePins = useAppStore((s) => s.venuePins);
+  const setMobileTab = useAppStore((s) => s.setMobileTab);
+  const showVenueOnMap = useAppStore((s) => s.showVenueOnMap);
   const [day, setDay] = useState(dayIso);
-  const outlets = menuForDay(menu, new Date(`${day}T00:00:00`));
+  // The canteens serving that day, plus S-klub for an FRRMS student, in
+  // reIS's order (utils/menuTabs).
+  const tabsFor = (d: string) =>
+    menuTabs(menuForDay(menu, new Date(`${d}T00:00:00`)), { faculty, venuePins, dayIso: d });
+  const outlets = tabsFor(day);
   // The canteen by NAME, not position: days serve different canteens, so a
   // position picked on Monday can name another canteen on Wednesday.
   const [outletName, setOutletName] = useState<string | null>(null);
@@ -45,7 +54,7 @@ export function MenuSheet({ dayIso, week, onClose }: MenuSheetProps) {
   // The sheet outlives the data it was opened on: a language switch clears
   // `menu` and re-fetches (store/useAppStore.ts), which can empty the day while
   // the sheet is still open.
-  const picked = outlets.findIndex((o) => o.outlet === outletName);
+  const picked = outlets.findIndex((o) => o.key === outletName);
   const safe = picked >= 0 ? picked : 0;
   const current = outlets[safe];
   // The balance is never kept past the sheet: leaving drops it, so the next
@@ -53,7 +62,7 @@ export function MenuSheet({ dayIso, week, onClose }: MenuSheetProps) {
   // why on unmount, and why a microtask late).
   useIskamResetOnLeave();
   const panels = (week?.length ? week : [day]).flatMap((d) => {
-    const all = menuForDay(menu, new Date(`${d}T00:00:00`));
+    const all = tabsFor(d);
     return all.map((_, index) => ({ day: d, outlets: all, index }));
   });
 
@@ -93,11 +102,17 @@ export function MenuSheet({ dayIso, week, onClose }: MenuSheetProps) {
         <div className="grid px-4 pb-6">
           {panels.map((p) => (
             <MenuOutletPanel
-              key={`${p.day}-${p.outlets[p.index]!.outlet}`}
-              outlets={p.outlets}
+              key={`${p.day}-${p.outlets[p.index]!.key}`}
+              tabs={p.outlets}
               index={p.index}
+              dayIso={p.day}
               shown={p.day === day && p.index === safe}
-              onPick={(i) => setOutletName(p.outlets[i]!.outlet)}
+              onPick={(i) => setOutletName(p.outlets[i]!.key)}
+              onOpenMap={(pin) => {
+                // The tab switch clears the sheet stack (createMobileUiSlice).
+                setMobileTab('map');
+                showVenueOnMap(pin);
+              }}
             />
           ))}
         </div>
