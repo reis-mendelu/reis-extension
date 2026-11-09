@@ -87,6 +87,11 @@ const SUPABASE_CALLERS = new Set([
   'src/services/spolky/spolkyService.ts',
   // Reads the public society events feed. No student data in either direction.
   'src/api/mapEvents.ts',
+  // The venues on the map (S-klub's café, November 2026): an anonymous select
+  // of public venue rows (hours, menu, photo paths). Nothing written, no
+  // identity. Photos then load as plain <img> GETs from the same project's
+  // public venue-photos bucket, as society logos do; full URLs are refused.
+  'src/api/venues.ts',
   // The societies catalog (September 2026): an anonymous select of public
   // branding (name, colour, faculty, logo path). No identity, no student data,
   // nothing written. Logos then load as plain <img> GETs from the same project.
@@ -214,6 +219,7 @@ const ALLOWED_HOSTS = [
   'creativecommons.org', // the Twemoji licence, linked from the map's credit line
   'gate.gopay.com', // the GoPay payment page for an ISIC top-up, opened in the system browser view
   'cestasey.cz', // EY's programme, linked from Stáže for students whose field EY partners
+  'sklubpixie.cz', // S-klub Pixie's own site, linked from its café card on the map
 
   // --- not destinations ---
   'localhost.that.never.exists', // CORS sentinel in capacitorTransport
