@@ -32,6 +32,7 @@ describe('MenuSheet — S-klub', () => {
       now: NOW,
       userFaculty: 'FRRMS',
       venuePins: [SKLUB],
+      sklubMenu: [],
     } as never);
   });
 
@@ -71,6 +72,17 @@ describe('MenuSheet — S-klub', () => {
     const panel = screen.getByTestId('menu-venue');
     expect(within(panel).getByText('Kuře na paprice')).toBeInTheDocument();
     expect(within(panel).getByText(/Dýňová/)).toBeInTheDocument();
+  });
+
+  it('lists the week scraped from sklubpixie.cz', () => {
+    useAppStore.setState({
+      sklubMenu: [{ date: DAY, soup: 'Bramboračka', dishes: ['140g Smažené kuřecí stehno'] }],
+    } as never);
+    render(<MenuSheet dayIso={DAY} onClose={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'S-klub' }));
+    const panel = screen.getByTestId('menu-venue');
+    expect(within(panel).getByText('140g Smažené kuřecí stehno')).toBeInTheDocument();
+    expect(within(panel).getByText(/Bramboračka/)).toBeInTheDocument();
   });
 
   it('"Celé menu a ceny" opens the venue on the map', () => {

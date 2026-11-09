@@ -89,6 +89,11 @@ Google Pay, so it can create the payment; it then opens **GoPay**'s payment page
 in your device's browser view, and your card or Google Pay details go to GoPay
 and never to reIS.
 
+**S-klub Pixie** (`sklubpixie.cz`), the café in budova Z, serves its public
+daily menu page, which reIS reads at startup to show the café's lunch in the
+Jídelníček and on its map card. Nothing about you is sent; the request is the
+same for everyone.
+
 We do **not** sell or trade your personal information, and transfer it to no one
 else.
 

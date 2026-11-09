@@ -2,6 +2,10 @@ import type { AppSlice } from '../types';
 import type { SocietyPin } from '../../types/campusMap';
 import { fetchSocietyPins } from '../../api/mapEvents';
 import { fetchVenuePins } from '../../api/venues';
+import { SKLUB_PIN_ID } from '../../utils/menuTabs';
+
+/** How old S-klub's scraped menu may get before a venue load refetches it. */
+const SKLUB_MENU_GAP = 10 * 60 * 1000;
 
 /**
  * Society pins on the student map (`map_pins`): a society's logo between two
@@ -45,6 +49,11 @@ export const createSocietyPinsSlice: AppSlice<SocietyPinsSlice> = (set, get) => 
     const [pins, venues] = await Promise.all([fetchSocietyPins(), fetchVenuePins()]);
     if (pins !== null) set({ societyPins: pins });
     if (venues !== null) set({ venuePins: venues });
+    // S-klub's menu rides on the venue load (createSklubMenuSlice): only with
+    // the café among the venues does anything ask sklubpixie.cz.
+    if (get().venuePins.some((v) => v.id === SKLUB_PIN_ID)) {
+      void get().refreshSklubMenu(SKLUB_MENU_GAP);
+    }
   },
   selectSocietyPin: (pin) =>
     set({ mapSelection: { kind: 'societyPin', pin }, venueMenuSection: null }),

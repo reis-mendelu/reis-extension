@@ -37,6 +37,7 @@ beforeEach(() => {
     // Mon 9 Nov 2026, 13:30 in Prague.
     now: new Date('2026-11-09T12:30:00Z'),
     venueMenuSection: null,
+    sklubMenu: [],
     societies: {
       ...BUNDLED_SOCIETIES,
       sklub: { ...BUNDLED_SOCIETIES.reis!, id: 'sklub', name: 'S-klub Pixie', shortName: 'S-klub' },
@@ -112,6 +113,21 @@ describe('S-klub venue card', () => {
     render(<SocietyPinCard pin={week} />);
     expect(screen.getByText('Dýňový krém')).toBeTruthy();
     expect(screen.getByText('A) Kuřecí prsíčko')).toBeTruthy();
+  });
+
+  // Dominik, 9 Nov 2026: S-klub's menu is scraped on the device like SKM's,
+  // and the card shows the same days as the Jídelníček's S-klub tab.
+  it("prefers the week scraped from sklubpixie.cz over the table's", () => {
+    useAppStore.setState({
+      sklubMenu: [{ date: '2026-11-09', soup: 'Bramboračka', dishes: ['150g Kuřecí řízek'] }],
+    } as never);
+    const week = pinFrom({
+      lunch_week: { days: [{ date: '2026-11-09', soup: 'Stará', dishes: ['Staré jídlo'] }] },
+    });
+    render(<SocietyPinCard pin={week} />);
+    expect(screen.getByText('Bramboračka')).toBeTruthy();
+    expect(screen.getByText('150g Kuřecí řízek')).toBeTruthy();
+    expect(screen.queryByText('Staré jídlo')).toBeNull();
   });
 
   it('on a phone, opens a menu category as a page of its own, and back', () => {

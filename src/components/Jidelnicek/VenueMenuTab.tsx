@@ -7,6 +7,7 @@ import { floorText } from '../CampusMap/floorText';
 import { pragueClock, venueStatus } from '../../utils/venues/venueStatus';
 import { formatPrice, hoursSummary, whenLine } from '../../utils/venues/venueText';
 import { venueFloorLevel } from '../../utils/venues/venueFloor';
+import { venueLunchDays } from '../../utils/venues/venueLunchDays';
 import type { SocietyPin, Venue } from '../../types/campusMap';
 
 /**
@@ -39,7 +40,8 @@ export function VenueMenuTab({
   const society = useSociety(pin.societyId);
   const sheet = variant === 'sheet';
   const lunch = venue.lunch;
-  const day = venue.lunchDays.find((d) => d.date === dayIso);
+  const scraped = useAppStore((s) => s.sklubMenu);
+  const day = venueLunchDays(pin, scraped).find((d) => d.date === dayIso);
   const level = venueFloorLevel(venue.roomCode);
   const place = [venue.place[lang], level === null ? null : floorText(level, t)]
     .filter(Boolean)
@@ -81,7 +83,8 @@ export function VenueMenuTab({
             </span>
           </div>
           {day && (
-            // The day's dishes, as S-klub publishes them (Czech only).
+            // The day's dishes, as S-klub publishes them (Czech only), scraped
+            // on the device like SKM's (createSklubMenuSlice).
             <ul
               className={`mt-2 space-y-1 border-t border-base-300 pt-2 text-base-content ${sheet ? 'text-sm' : 'text-xs'}`}
             >

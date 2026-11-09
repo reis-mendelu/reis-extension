@@ -203,6 +203,8 @@ const ALLOWED_HOSTS = [
   'openstreetmap.org', // campus map tiles
   'photon.komoot.io', // off-campus venue search — SOCIETY ADMINS only
   'hei.api.uni-foundation.eu', // public Erasmus university directory (read-only)
+  'sklubpixie.cz', // S-klub Pixie's public daily menu page (api/sklubMenu.ts), and its
+  // site linked from the café card
 
   // --- fetched from, carrying student data. Each must stay disclosed. ---
   'webiskam.mendelu.cz', // phone/iPad only: the ISIC Hlavní konto balance and the GoPay
@@ -219,7 +221,6 @@ const ALLOWED_HOSTS = [
   'creativecommons.org', // the Twemoji licence, linked from the map's credit line
   'gate.gopay.com', // the GoPay payment page for an ISIC top-up, opened in the system browser view
   'cestasey.cz', // EY's programme, linked from Stáže for students whose field EY partners
-  'sklubpixie.cz', // S-klub Pixie's own site, linked from its café card on the map
 
   // --- not destinations ---
   'localhost.that.never.exists', // CORS sentinel in capacitorTransport

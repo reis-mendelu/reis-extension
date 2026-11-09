@@ -48,7 +48,7 @@ export function VenueCard({
       <div className="space-y-4 p-3" data-testid="venue-card">
         <VenueHeader pin={pin} venue={venue} now={now} />
         <VenuePhotos photos={venue.photos} />
-        <VenueLunch venue={venue} now={now} />
+        <VenueLunch pin={pin} venue={venue} now={now} />
         <VenueMenu venue={venue} wide={wide} />
         <VenueEvents societyId={pin.societyId} />
         <VenueSource venue={venue} />
