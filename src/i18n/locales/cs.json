@@ -1023,6 +1023,7 @@
     "venueSoup": "Polévka",
     "venueMenu": "Menu",
     "venueMenuOf": "{venue} · menu",
+    "venueBackTo": "Zpět na {venue}",
     "venueEvents": "Akce",
     "hostedBy": "Pořádá",
     "myEvents": "Moje akce",

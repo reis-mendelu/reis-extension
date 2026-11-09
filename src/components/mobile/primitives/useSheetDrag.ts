@@ -5,7 +5,14 @@ import {
   type PointerEvent as ReactPointerEvent,
   type RefObject,
 } from 'react';
-import { dragOwnsGesture, releaseVelocity, DRAG_SLOP_PX, type DragSample } from './sheetDrag';
+import {
+  dragOwnsGesture,
+  goesSideways,
+  insideSidewaysScroller,
+  releaseVelocity,
+  DRAG_SLOP_PX,
+  type DragSample,
+} from './sheetDrag';
 
 export interface SheetDragConfig {
   /** The panel being dragged. Ownership and pointer capture are scoped to it. */
@@ -89,7 +96,19 @@ export function useSheetDrag({
    * or a thumb resting on the screen produces exactly that. Raised in review on
    * this PR.
    */
-  const start = useRef<{ id: number; y: number; t: number; height: number } | null>(null);
+  const start = useRef<{
+    id: number;
+    x: number;
+    y: number;
+    t: number;
+    height: number;
+    /**
+     * Began in a row that scrolls sideways and its direction is not known yet.
+     * Its first move decides: sideways lets the row have the gesture (no
+     * preventDefault, no drag), up or down keeps it for the sheet.
+     */
+    undecided: boolean;
+  } | null>(null);
   /**
    * The tail of the gesture, for the release velocity.
    *
@@ -142,7 +161,14 @@ export function useSheetDrag({
     if (start.current) return;
     if (!dragOwnsGesture(e.target as Element, panelRef.current)) return;
     const height = panelRef.current?.getBoundingClientRect().height ?? 0;
-    start.current = { id: e.pointerId, y: e.clientY, t: e.timeStamp, height };
+    start.current = {
+      id: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+      t: e.timeStamp,
+      height,
+      undecided: insideSidewaysScroller(e.target as Element, panelRef.current),
+    };
     samples.current = [{ pos: e.clientY, t: e.timeStamp }];
     captured.current = false;
   };
@@ -151,6 +177,17 @@ export function useSheetDrag({
     const from = start.current;
     if (!from || from.id !== e.pointerId) return;
     const dy = e.clientY - from.y;
+    if (from.undecided) {
+      const sideways = goesSideways(e.clientX - from.x, dy);
+      if (sideways === null) return;
+      if (sideways) {
+        // The row's swipe: let go of the gesture entirely.
+        start.current = null;
+        samples.current = [];
+        return;
+      }
+      from.undecided = false;
+    }
     if (absorbs && !absorbs(dy)) return;
     // The sheet follows the finger from the first pixel, but only past the slop
     // does the gesture count as a drag for click suppression — otherwise the
@@ -238,6 +275,19 @@ export function useSheetDrag({
       const touch =
         [...e.touches].find((t) => t.identifier === from?.id) ?? (from ? e.touches[0] : undefined);
       if (!from || !touch) return;
+      // A touch that began in a sideways row: its first move decides, and a
+      // sideways one must reach the row unprevented, or the browser cancels
+      // the row's scroll for the whole gesture.
+      if (from.undecided) {
+        const sideways = goesSideways(touch.clientX - from.x, touch.clientY - from.y);
+        if (sideways === null) return;
+        if (sideways) {
+          start.current = null;
+          samples.current = [];
+          return;
+        }
+        from.undecided = false;
+      }
       const absorbsNow = absorbsRef.current;
       if (absorbsNow && !absorbsNow(touch.clientY - from.y)) return;
       e.preventDefault();

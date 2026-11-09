@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { afterEach } from 'vitest';
 import { MapSheet } from '../MapSheet';
 import { useAppStore } from '../../../../../store/useAppStore';
@@ -44,7 +44,8 @@ describe('MapSheet — a venue menu category', () => {
     useAppStore.getState().setVenueMenuSection('coffee');
     render(<MapSheet />);
     expect(screen.getByTestId('venue-menu-page')).toBeTruthy();
-    const back = screen.getByRole('button', { name: /^S-klub Pixie$/ });
+    const back = screen.getByRole('button', { name: 'Zpět na S-klub Pixie' });
+    expect(back.textContent).toBe('S-klub Pixie');
     fireEvent.click(back);
     expect(useAppStore.getState().venueMenuSection).toBeNull();
     expect(useAppStore.getState().mapSelection?.kind).toBe('societyPin');
@@ -55,7 +56,9 @@ describe('MapSheet — a venue menu category', () => {
     useAppStore.getState().setVenueMenuSection('coffee');
     render(<MapSheet />);
     const page = screen.getByTestId('venue-menu-page');
-    expect(page.querySelector('button[aria-label]')).toBeNull();
+    // Its only buttons are the category chips (cubic on #662: an aria-label
+    // query could not catch an unlabelled arrow).
+    expect(within(page).getAllByRole('button')).toHaveLength(sklub.venue!.menu.length);
   });
 
   it('from the card itself, Back still closes it', () => {

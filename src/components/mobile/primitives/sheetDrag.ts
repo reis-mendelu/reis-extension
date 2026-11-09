@@ -182,19 +182,47 @@ export function dragOwnsGesture(target: Element | null, stopAt: Element | null):
   let node: Element | null = target;
   while (node && node !== stopAt?.parentElement) {
     if (isScrollable(node) && node.scrollTop > 0) return false;
-    // A row that scrolls sideways owns its swipe. Taken here, the sheet's
-    // touchmove preventDefault cancelled the row's scroll on the first move,
-    // and a slightly diagonal swipe on the S-klub menu's chips dragged the
-    // whole sheet instead.
-    if (scrollsSideways(node)) return false;
     node = node.parentElement;
   }
   return true;
 }
 
-function scrollsSideways(el: Element): boolean {
-  const overflowX = getComputedStyle(el).overflowX;
-  return (overflowX === 'auto' || overflowX === 'scroll') && el.scrollWidth > el.clientWidth;
+/**
+ * How much a row must overflow sideways before it counts as one that scrolls.
+ * An element with `overflow-y: auto` also computes `overflow-x: auto`, so the
+ * sheet's own list reads as "sideways-scrollable" whenever something pokes a
+ * few pixels past its edge (a chip row's negative margin does). cubic on #662.
+ */
+const SIDEWAYS_MIN_OVERFLOW_PX = 8;
+
+/**
+ * Whether `target` sits in a row that scrolls sideways (the S-klub menu's
+ * category chips), up to the sheet panel. A touch that starts there is decided
+ * by its direction (`useSheetDrag`): sideways scrolls the row, up or down still
+ * moves the sheet.
+ */
+export function insideSidewaysScroller(target: Element | null, stopAt: Element | null): boolean {
+  let node: Element | null = target;
+  while (node && node !== stopAt?.parentElement) {
+    const overflowX = getComputedStyle(node).overflowX;
+    if (
+      (overflowX === 'auto' || overflowX === 'scroll') &&
+      node.scrollWidth - node.clientWidth >= SIDEWAYS_MIN_OVERFLOW_PX
+    )
+      return true;
+    node = node.parentElement;
+  }
+  return false;
+}
+
+/**
+ * A first move that says the finger is going sideways: the row should scroll,
+ * not the sheet. Null while it has not moved at all, so nothing is decided on
+ * a zero-length first event.
+ */
+export function goesSideways(dx: number, dy: number): boolean | null {
+  if (dx === 0 && dy === 0) return null;
+  return Math.abs(dx) >= Math.abs(dy);
 }
 
 function isScrollable(el: Element): boolean {

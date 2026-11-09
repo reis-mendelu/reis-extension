@@ -309,6 +309,9 @@ export function MapSheet() {
             // A venue's menu category is a page inside its card, so Back from
             // there returns to the card, and the header names where it goes.
             onBack={venueMenuOpen ? () => setVenueMenuSection(null) : clearMapSelection}
+            backLabel={
+              venueMenuOpen ? t('map.venueBackTo', { venue: selectedSocietyPin!.title }) : undefined
+            }
           />
           {/* pb-24 clears the floating BottomNav, which is positioned against
               the SCREEN and draws over the sheet. */}

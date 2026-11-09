@@ -1023,6 +1023,7 @@
     "venueSoup": "Soup",
     "venueMenu": "Menu",
     "venueMenuOf": "{venue} · menu",
+    "venueBackTo": "Back to {venue}",
     "venueEvents": "Events",
     "hostedBy": "Hosted by",
     "myEvents": "My events",

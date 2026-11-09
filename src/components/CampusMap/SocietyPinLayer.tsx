@@ -77,7 +77,9 @@ function SocietyPinButton({
         type="button"
         data-testid="society-pin"
         data-venue-open={open}
-        className="group pointer-events-auto absolute left-0 top-0 leaflet-zoom-animated"
+        // p-[5px] keeps the tap target at 46px around the 36px pin: a thumb
+        // that lands on the ring's edge must open S-klub, not the map.
+        className="group pointer-events-auto absolute left-0 top-0 p-[5px] leaflet-zoom-animated"
         style={{ transform: `translate(${x}px, ${y}px) translate(-50%, -50%)` }}
         aria-label={open ? pin.title : `${pin.title} · ${t('map.venueClosedShort')}`}
         onClick={() => onSelect(pin)}
@@ -101,7 +103,7 @@ function SocietyPinButton({
             the search bar's surface is, since no theme token means "ink on
             the basemap". */}
         <span
-          className="pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-full bg-white px-1.5 py-px text-[10px] font-bold shadow"
+          className="pointer-events-none absolute left-1/2 top-full -mt-0.5 -translate-x-1/2 whitespace-nowrap rounded-full bg-white px-1.5 py-px text-[10px] font-bold shadow"
           style={{ color: '#111827' }}
         >
           {open ? pin.title : `${pin.title} · ${t('map.venueClosedShort')}`}
