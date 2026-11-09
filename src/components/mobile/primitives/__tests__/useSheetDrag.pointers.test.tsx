@@ -185,7 +185,7 @@ describe('useSheetDrag — a gesture on a sideways row', () => {
     fireEvent.pointerDown(screen.getByTestId('chip'), at(200, 400));
     fireEvent.pointerMove(screen.getByTestId('panel'), at(203, 430));
     fireEvent.pointerUp(screen.getByTestId('panel'), at(203, 460));
-    expect(rec.moves.length).toBeGreaterThan(0);
-    expect(rec.ends.length).toBe(1);
+    expect(rec.moves.map(([dy]) => dy)).toEqual([30]);
+    expect(rec.ends.map(([dy]) => dy)).toEqual([60]);
   });
 });
