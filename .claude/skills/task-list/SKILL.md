@@ -185,7 +185,9 @@ go to him there, not into the doc. In this order:
    know best yourself.
 5. **Show it**: a review page per PR (`where.md`, Finishing), linked in the
    chat. Merge only on his explicit go-ahead in the chat or a `y` in the
-   doc, under the same rules (that commit, CI green, no release PR open).
+   doc, under the same rules: that commit only; into `test` with CI green
+   and no release PR open; into reis-page's `main` with its Vercel preview
+   Ready and the screenshots shown (it has no CI).
 6. **Write back to the doc** at the end: ✅ for what merged (`done`), and one
    short note on each task worked but not finished — its PR, or the question
    he has not answered yet — so the next session starts from the doc alone.
