@@ -29,7 +29,14 @@ export async function unmuteIsNotice(key: string): Promise<boolean> {
     devMutes.delete(key);
     return true;
   }
-  const { error } = await adminAuthClient.from('is_notice_mutes').delete().eq('notice_key', key);
+  // RLS turns a refused DELETE into zero rows, not an error: ask for the
+  // deleted key back, or a failed un-mute reads as done and the notice stays
+  // hidden for everyone while the console shows it un-muted.
+  const { data, error } = await adminAuthClient
+    .from('is_notice_mutes')
+    .delete()
+    .eq('notice_key', key)
+    .select('notice_key');
   if (error) logError('Api.unmuteIsNotice', error);
-  return !error;
+  return !error && Array.isArray(data) && data.length > 0;
 }

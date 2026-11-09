@@ -64,7 +64,7 @@ function parseNotice(anchor: Element, severity: IsNotice['severity']): IsNotice 
   const id = new RegExp(`${HIDE_LINK}(\\d+)`).exec(hideHref)?.[1];
 
   return {
-    key: id ? `zasadka:${id}` : link ? `link:${pathOf(link)}` : `title:${title}`,
+    key: id ? `zasadka:${id}` : link ? `link:${linkKey(link)}` : `title:${title}`,
     title,
     text: content ? textOf(content) : '',
     link,
@@ -101,17 +101,35 @@ function textOf(el: Element): string {
 function firstLink(el: Element): string | null {
   for (const a of Array.from(el.querySelectorAll('a[href]'))) {
     const href = a.getAttribute('href')?.trim() ?? '';
-    if (href.includes(HIDE_LINK)) continue;
-    if (/^https?:\/\//i.test(href)) return href;
-    if (href.startsWith('/') && !href.startsWith('//')) return `${BASE_URL}${href}`;
+    if (!href || href.includes(HIDE_LINK)) continue;
+    // Resolved the way the browser resolves it on the home page, so a
+    // relative link ("kontrola/") keeps its destination.
+    try {
+      const url = new URL(href, `${BASE_URL}/auth/index.pl`);
+      if (url.protocol === 'https:' || url.protocol === 'http:') {
+        return /^https?:\/\//i.test(href) ? href : url.href;
+      }
+    } catch {
+      // Not a URL at all: try the next link.
+    }
   }
   return null;
 }
 
-function pathOf(url: string): string {
+/**
+ * The link as a key: path and parameters, minus `lang`, which is the one
+ * thing that differs between the Czech and the English copy. IS separates
+ * parameters with `;` as well as `&`.
+ */
+function linkKey(url: string): string {
   try {
     const u = new URL(url);
-    return u.host === new URL(BASE_URL).host ? u.pathname : `${u.host}${u.pathname}`;
+    const params = u.search
+      .replace(/^\?/, '')
+      .split(/[;&]/)
+      .filter((p) => p && !/^lang=/i.test(p));
+    const where = u.host === new URL(BASE_URL).host ? u.pathname : `${u.host}${u.pathname}`;
+    return params.length ? `${where}?${params.join(';')}` : where;
   } catch {
     return url;
   }

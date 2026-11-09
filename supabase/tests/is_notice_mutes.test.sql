@@ -32,6 +32,21 @@ begin
 exception when insufficient_privilege then reset role;
 end $$;
 
+-- nor change one: RLS hides the row from an UPDATE, so it reports 0 rows
+do $$
+begin
+  set local role anon;
+  update public.is_notice_mutes set title = 'changed' where notice_key = 'zasadka:1';
+  reset role;
+exception when insufficient_privilege then reset role;
+end $$;
+do $$
+begin
+  if (select title from public.is_notice_mutes where notice_key = 'zasadka:1') <> 'Test' then
+    raise exception 'anon changed a mute';
+  end if;
+end $$;
+
 -- a reis_admin mutes (twice: the console's upsert) and un-mutes; a society cannot
 insert into public.societies (id, name, short_name, color, faculty_key) values
   ('reis', 'reIS', 'reIS', '#000000', 'mendelu'), ('esn', 'ESN', 'ESN', '#000000', 'mendelu')
@@ -70,6 +85,18 @@ begin
   insert into public.is_notice_mutes (notice_key, title) values ('zasadka:4', 'x');
   raise exception 'a society muted a notice';
 exception when insufficient_privilege then reset role;
+end $$;
+
+do $$
+begin
+  perform set_config('request.jwt.claims',
+    '{"sub":"00000000-0000-0000-0000-00000000e501","role":"authenticated"}', true);
+  set local role authenticated;
+  update public.is_notice_mutes set title = 'changed' where notice_key = 'zasadka:3';
+  reset role;
+  if (select title from public.is_notice_mutes where notice_key = 'zasadka:3') <> 'y' then
+    raise exception 'a society changed a mute';
+  end if;
 end $$;
 
 rollback;

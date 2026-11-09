@@ -8,7 +8,7 @@ import { localTodayIso } from '../components/CampusMap/eventWindow';
 import { canSee, isReisOwn } from '../utils/eventAudience';
 import { useViewer } from './useViewer';
 import { useAppStore } from '../store/useAppStore';
-import { isNoticeRows } from '../utils/isNoticeRows';
+import { isNoticeRows, localMinuteIso } from '../utils/isNoticeRows';
 
 /** reIS's own rows are for everyone, exchange students included. */
 const isReisRow = (n: SpolekNotification) => isReisOwn(n.associationId);
@@ -41,6 +41,8 @@ export function useNotificationFeed() {
   // bare `localTodayIso()` at render, nothing re-rendered this hook at
   // midnight, so a feed left open overnight kept yesterday's list.
   const todayIso = useAppStore((s) => localTodayIso(s.now));
+  // To the minute, for IS notices' own display window (utils/isNoticeRows).
+  const nowMinute = useAppStore((s) => localMinuteIso(s.now));
 
   // Three questions: is the student in this event's audience (utils/eventAudience
   // — no follow list), has the event already happened, and is it within the
@@ -58,7 +60,7 @@ export function useNotificationFeed() {
           [
             // The student's own IS notices lead, under MENDELU. They skip the
             // audience rule: IS already decided they are for this student.
-            ...isNoticeRows(isNotices[language] ?? [], isNoticeMutes, todayIso),
+            ...isNoticeRows(isNotices[language] ?? [], isNoticeMutes, todayIso, nowMinute),
             ...allNotifications.filter(
               (n) =>
                 isReisRow(n) ||
@@ -73,7 +75,7 @@ export function useNotificationFeed() {
         ),
         todayIso
       ),
-    [allNotifications, societies, viewer, todayIso, isNotices, isNoticeMutes, language]
+    [allNotifications, societies, viewer, todayIso, nowMinute, isNotices, isNoticeMutes, language]
   );
 
   // Novinky's questions refresh with the feed they sit in.

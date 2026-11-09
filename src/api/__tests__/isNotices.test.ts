@@ -111,4 +111,30 @@ describe('parseIsNoticesHtml', () => {
       { key: 'zasadka:42', title: 'Jen text', text: 'Bez odkazu.', link: null },
     ]);
   });
+
+  const oneNotice = (inner: string) =>
+    '<div class="zasadky-container"><div class="zasadka"><table class="zasadky-info"><tbody><tr><td>' +
+    `<a href="javascript:void(0);" onclick="uis.box.open_fixed('1','${escapeAttribute(`<div><big><b>T</b></big><div>${inner}</div></div>`)}');">T</a>` +
+    '</td></tr></tbody></table></div></div>';
+
+  it('resolves a relative link the way the IS home page would', () => {
+    expect(parseIsNoticesHtml(oneNotice('<a href="kontrola/?lang=cz">tady</a>'))).toMatchObject([
+      { key: 'link:/auth/kontrola/', link: 'https://is.mendelu.cz/auth/kontrola/?lang=cz' },
+    ]);
+  });
+
+  // Two notices pointing at one page with different parameters are two
+  // notices; only `lang` differs between a notice's Czech and English copy.
+  it('keys a link by its parameters, except lang', () => {
+    const key = (href: string) => parseIsNoticesHtml(oneNotice(`<a href="${href}">x</a>`))[0]?.key;
+    expect(key('/auth/anketa/?id=1;lang=cz')).toBe('link:/auth/anketa/?id=1');
+    expect(key('/auth/anketa/?lang=en;id=1')).toBe('link:/auth/anketa/?id=1');
+    expect(key('/auth/anketa/?id=2;lang=cz')).toBe('link:/auth/anketa/?id=2');
+  });
+
+  it('skips a link that is not http(s)', () => {
+    expect(
+      parseIsNoticesHtml(oneNotice('<a href="javascript:alert(1)">x</a>'))[0]?.link
+    ).toBeNull();
+  });
 });

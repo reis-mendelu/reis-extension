@@ -18,23 +18,36 @@ const ID_PREFIX = 'is:';
 export function isNoticeRows(
   notices: IsNotice[],
   mutes: IsNoticeMute[],
-  todayIso: string
+  todayIso: string,
+  nowIso: string = `${todayIso}T12:00`
 ): SpolekNotification[] {
   const muted = new Set(mutes.map((m) => m.key));
-  return notices
-    .filter((n) => !muted.has(n.key))
-    .map((n): SpolekNotification => ({
-      id: `${ID_PREFIX}${n.key}`,
-      associationId: 'mendelu',
-      title: n.title,
-      body: n.text || n.title,
-      link: n.link ?? `${BASE_URL}/auth/index.pl`,
-      createdAt: n.from ?? todayIso,
-      expiresAt: n.until?.slice(0, 10) ?? todayIso,
-      startsAt: n.from?.slice(0, 10),
-      priority: n.severity === 'crit' ? 'high' : 'normal',
-      source: 'is',
-    }));
+  return (
+    notices
+      .filter((n) => !muted.has(n.key))
+      // IS's own window, to the minute. IS shows a notice only inside it, but
+      // the list can be a cache read hours ago (IndexedDB, or a 30-minute TTL).
+      // Both sides are local `YYYY-MM-DDTHH:MM`, which compare as strings.
+      .filter((n) => (!n.from || n.from <= nowIso) && (!n.until || n.until >= nowIso))
+      .map((n): SpolekNotification => ({
+        id: `${ID_PREFIX}${n.key}`,
+        associationId: 'mendelu',
+        title: n.title,
+        body: n.text || n.title,
+        link: n.link ?? `${BASE_URL}/auth/index.pl`,
+        createdAt: n.from ?? todayIso,
+        expiresAt: n.until?.slice(0, 10) ?? todayIso,
+        startsAt: n.from?.slice(0, 10),
+        priority: n.severity === 'crit' ? 'high' : 'normal',
+        source: 'is',
+      }))
+  );
+}
+
+/** The local minute as `YYYY-MM-DDTHH:MM`, the form IS notice windows are in. */
+export function localMinuteIso(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
 /**

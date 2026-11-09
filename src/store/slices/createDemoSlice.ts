@@ -47,7 +47,13 @@ const IS_DERIVED_STORES = [
  * clearing the store to tidy up the demo would reset a student's privacy
  * choice. Delete by key or not at all.
  */
-const IS_DERIVED_META_KEYS = ['study_stats', 'study_comparison', 'impersonation'] as const;
+const IS_DERIVED_META_KEYS = [
+  'study_stats',
+  'study_comparison',
+  'impersonation',
+  // The notices on the student's own IS home page; some are for that student alone.
+  'is_notices',
+] as const;
 
 async function wipeSeeded(): Promise<void> {
   for (const store of IS_DERIVED_STORES) {
@@ -87,6 +93,8 @@ export const createDemoSlice: AppSlice<DemoSlice> = (set) => ({
     // several screens gate live controls on these IDs being present.
     set((state) => ({
       demoMode: true,
+      isNotices: { cz: [], en: [] },
+      isNoticesFetchedAt: null,
       ...demoContext,
       syncStatus: { ...state.syncStatus, handshakeDone: true },
       // For the same reason, one step further: the demo dataset is already
@@ -103,6 +111,8 @@ export const createDemoSlice: AppSlice<DemoSlice> = (set) => ({
     // student's name over another's session.
     set({
       demoMode: false,
+      isNotices: { cz: [], en: [] },
+      isNoticesFetchedAt: null,
       studiumId: null,
       studentId: null,
       obdobiId: null,

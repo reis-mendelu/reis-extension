@@ -11,6 +11,8 @@ export interface IsNoticesSlice {
   isNotices: IsNoticesByLang;
   isNoticesFetchedAt: number | null;
   isNoticesLoading: boolean;
+  /** When IS was last ASKED, success or not: a lapsed session must not mean a request per refresh. */
+  isNoticesTriedAt: number | null;
   isNoticeMutes: IsNoticeMute[];
   hydrateIsNotices: () => Promise<void>;
   loadIsNoticesIfStale: () => Promise<void>;
@@ -35,9 +37,12 @@ export const createIsNoticesSlice: AppSlice<IsNoticesSlice> = (set, get) => ({
   isNotices: EMPTY,
   isNoticesFetchedAt: null,
   isNoticesLoading: false,
+  isNoticesTriedAt: null,
   isNoticeMutes: [],
 
   hydrateIsNotices: async () => {
+    // A cache from a real session never shows under the demo banner.
+    if (isDemoMode() || get().demoMode) return;
     try {
       const [notices, mutes] = await Promise.all([
         IndexedDBService.get('meta', NOTICES_KEY),
@@ -56,11 +61,15 @@ export const createIsNoticesSlice: AppSlice<IsNoticesSlice> = (set, get) => ({
   loadIsNoticesIfStale: async () => {
     // The demo and the store reviewer's build reach nothing (check:app).
     if (isDemoMode() || import.meta.env.VITE_USE_MOCK_DATA === 'true') return;
-    const { isNoticesFetchedAt, isNoticesLoading } = get();
+    if (get().demoMode) return;
+    const { isNoticesTriedAt, isNoticesLoading } = get();
     if (isNoticesLoading) return;
-    if (isNoticesFetchedAt && Date.now() - isNoticesFetchedAt < TTL_MS) return;
+    // Counted from the last attempt, not the last success: with the IS
+    // session gone, every five-minute feed refresh would otherwise ask IS
+    // again for both languages.
+    if (isNoticesTriedAt && Date.now() - isNoticesTriedAt < TTL_MS) return;
 
-    set({ isNoticesLoading: true });
+    set({ isNoticesLoading: true, isNoticesTriedAt: Date.now() });
     const [notices, mutes] = await Promise.all([
       Promise.all([fetchIsNotices('cz'), fetchIsNotices('en')]).then(
         ([cz, en]): IsNoticesByLang => ({ cz, en }),

@@ -16,10 +16,7 @@ const RowSchema = z.object({ notice_key: z.string(), title: z.string() });
  */
 export async function fetchIsNoticeMutes(): Promise<IsNoticeMute[] | null> {
   try {
-    const { data, error } = await supabase
-      .from('is_notice_mutes')
-      .select('notice_key, title')
-      .limit(500);
+    const { data, error } = await supabase.from('is_notice_mutes').select('notice_key, title');
     if (error || !Array.isArray(data)) {
       if (error) logError('Api.fetchIsNoticeMutes', error);
       return null;

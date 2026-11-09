@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isNoticeRows, isIsNoticeRow } from '../isNoticeRows';
+import { isNoticeRows, isIsNoticeRow, localMinuteIso } from '../isNoticeRows';
 import type { IsNotice } from '../../types/isNotices';
 
 const notice = (over: Partial<IsNotice> = {}): IsNotice => ({
@@ -63,5 +63,18 @@ describe('isNoticeRows', () => {
     expect(isIsNoticeRow(row.id)).toBe(true);
     expect(isIsNoticeRow({ id: '6f1c', source: undefined })).toBe(false);
     expect(isIsNoticeRow('6f1c')).toBe(false);
+  });
+
+  // IS shows a notice only inside its window; the list may be a cache.
+  it('keeps a notice to its IS window, to the minute', () => {
+    const rows = (now: string) => isNoticeRows([notice()], [], now.slice(0, 10), now).length;
+    expect(rows('2026-11-09T08:59')).toBe(0);
+    expect(rows('2026-11-09T09:00')).toBe(1);
+    expect(rows('2026-11-30T23:59')).toBe(1);
+    expect(rows('2026-12-01T00:00')).toBe(0);
+  });
+
+  it('formats the local minute the way IS writes its window', () => {
+    expect(localMinuteIso(new Date(2026, 10, 9, 8, 5))).toBe('2026-11-09T08:05');
   });
 });
