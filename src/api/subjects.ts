@@ -8,6 +8,7 @@ import type {
 import { SubjectsDataSchema } from '../schemas/subjectSchema';
 import { logError } from '../utils/reportError';
 import { parseAttendance } from './attendance';
+import { subjectsPageShape, type SubjectsPageShape } from './subjectsPageShape';
 
 const STUDENT_LIST_URL = `${BASE_URL}/auth/student/list.pl`;
 
@@ -42,6 +43,10 @@ export interface SubjectsFetchResult {
   subjects: SubjectsData;
   attendance: Record<string, SubjectAttendance[]>;
   availablePeriods: AvailablePeriod[];
+  /** Counts of what the Czech page offered the parser — for the diagnostic
+   *  log when the list comes back short. Optional: tests and callers that
+   *  build a result by hand need not invent one. */
+  shape?: SubjectsPageShape;
 }
 
 function buildListUrl(lang: string, studium?: string, obdobi?: string): string {
@@ -184,7 +189,12 @@ export async function fetchDualLanguageSubjects(
 
     const result = SubjectsDataSchema.safeParse(subjectsData);
     const availablePeriods = parseAvailablePeriods(periodsHtml);
-    return { subjects: result.success ? result.data : subjectsData, attendance, availablePeriods };
+    return {
+      subjects: result.success ? result.data : subjectsData,
+      attendance,
+      availablePeriods,
+      shape: subjectsPageShape(czHtml),
+    };
   } catch (e) {
     logError('Api.fetchDualLanguageSubjects', e);
     return null;

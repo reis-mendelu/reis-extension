@@ -84,16 +84,16 @@ describe('ProfileScreen', () => {
     expect(useAppStore.getState().mobileSheets).toEqual([{ kind: 'eduroam' }]);
   });
 
-  // Hiding lessons exists only on desktop calendar cards, and storage is per
-  // device, so on a phone this list was always empty and never rendered.
-  it('has no hidden-items list on the phone', () => {
+  // The phone's hidden-items list is one level down, in Nastavení, where the
+  // first-hide hint points (HiddenLessonsRows) — not on Profil itself.
+  it('keeps the hidden-items list off Profil itself', () => {
     render(<ProfileScreen />);
     expect(screen.queryByText('Skryté položky')).toBeNull();
   });
 
   it('opens Nastavení in one tap, naming what is inside', () => {
     render(<ProfileScreen />);
-    expect(screen.getByText('Jazyk, vzhled')).toBeTruthy();
+    expect(screen.getByText('Oznámení, jazyk, vzhled')).toBeTruthy();
     fireEvent.click(screen.getByText('Nastavení'));
     expect(useAppStore.getState().mobileSheets).toEqual([{ kind: 'settings' }]);
   });

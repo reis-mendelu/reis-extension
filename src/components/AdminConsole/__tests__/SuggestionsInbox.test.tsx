@@ -224,5 +224,33 @@ describe('SuggestionsInbox', () => {
     openWithSync({});
     expect(screen.getByText(/136 lessons/)).toBeInTheDocument();
     expect(screen.queryByText(/answered/)).toBeNull();
+    expect(screen.queryByText(/syllabus/)).toBeNull();
+  });
+
+  it('shows a count the build did not send as — rather than 0', () => {
+    openWithSync({ subjects: 'none' });
+    expect(
+      screen.getByText(/subjects none · — subjects · — syllabus \(— empty\)/)
+    ).toBeInTheDocument();
+  });
+
+  /** Suggestions 41/42 had a subjects report with no subjects line at all. */
+  it('shows what the app held for subjects, syllabus and zápisník', () => {
+    openWithSync({
+      firstSyncSettled: true,
+      syncLoaded: ['schedule', 'exams', 'subjects'],
+      subjects: 'success',
+      subjectsCount: 0,
+      syllabusCount: 4,
+      syllabusEmpty: 1,
+      zaznamnikCount: 3,
+      zaznamnikFailed: 1,
+      zaznamnikEmpty: 2,
+    });
+    expect(
+      screen.getByText(
+        /subjects success · 0 subjects · 4 syllabus \(1 empty\) · 3 zaznamnik \(1 failed, 2 empty\)/
+      )
+    ).toBeInTheDocument();
   });
 });

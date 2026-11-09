@@ -47,6 +47,58 @@ describe('listFolderFiles', () => {
   });
 });
 
+describe('listFolderFiles — several files in one document', () => {
+  it('lists each file under its own name, with the document title and folder beside it', async () => {
+    const dl = (id: number) =>
+      `https://is.mendelu.cz/auth/dok_server/slozka.pl?download=${id};id=1`;
+    vi.mocked(fetchFilesFromFolder).mockResolvedValue([
+      {
+        subfolder: 'Přednášky',
+        file_name: 'ig-03  ig-04',
+        title: 'ig-03 + ig-04',
+        file_comment: '',
+        author: 'A',
+        date: '07.10.2026',
+        modified: '15.10.2026',
+        files: [
+          { name: 'x', type: 'pdf', link: dl(1), filename: 'ig-03.pdf' },
+          { name: 'x', type: 'pdf', link: dl(2), filename: 'eth_frame.pdf' },
+        ],
+      },
+      {
+        subfolder: '',
+        file_name: 'Harmonogramorg',
+        title: 'Harmonogram+org',
+        file_comment: '',
+        author: 'B',
+        date: '17.09.2026',
+        files: [{ name: 'x', type: 'pdf', link: dl(3) }],
+      },
+    ]);
+    expect(await listFolderFiles('https://is.mendelu.cz/auth/dok_server/slozka.pl?id=1')).toEqual([
+      {
+        name: 'ig-03 + ig-04',
+        file: 'ig-03.pdf',
+        folder: 'Přednášky',
+        author: 'A',
+        date: '07.10.2026',
+        modified: '15.10.2026',
+        downloadUrl: dl(1),
+      },
+      {
+        name: 'ig-03 + ig-04',
+        file: 'eth_frame.pdf',
+        folder: 'Přednášky',
+        author: 'A',
+        date: '07.10.2026',
+        modified: '15.10.2026',
+        downloadUrl: dl(2),
+      },
+      { name: 'Harmonogram+org', author: 'B', date: '17.09.2026', downloadUrl: dl(3) },
+    ]);
+  });
+});
+
 describe('assertDokServerUrl', () => {
   it('accepts dok_server links and refuses anything else', () => {
     expect(() => assertDokServerUrl(DL)).not.toThrow();

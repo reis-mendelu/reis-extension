@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
-import { Bell, Pin, Search } from 'lucide-react';
+import { Bell, BriefcaseBusiness, Pin, Search } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useNotificationFeed } from '../../../hooks/useNotificationFeed';
 import { useDeadlineAlerts } from '../../../hooks/useDeadlineAlerts';
 import { useQuestions } from '../../../hooks/useQuestions';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { usePartnerInternships } from '../../../hooks/usePartnerInternships';
 
 /**
  * The header's three buttons: vývěska, search, notifications.
@@ -38,6 +39,7 @@ export function HeaderActions({ leading }: { leading?: ReactNode }) {
   const { unseenCount } = useDeadlineAlerts();
   const questions = useQuestions();
   const refreshQuestions = useAppStore((s) => s.refreshQuestions);
+  const hasInternships = usePartnerInternships().length > 0;
 
   // Deadlines count too, exactly as they do on desktop's NotificationFeed. The
   // calendar used to carry them in a strip above the day chips; that strip is
@@ -76,6 +78,18 @@ export function HeaderActions({ leading }: { leading?: ReactNode }) {
       >
         <Pin size={18} className="text-[var(--tone-primary)]" />
       </button>
+      {/* Stáže sits beside the vývěska and exists only for a student whose
+          field has a partner programme — most students keep three buttons. */}
+      {hasInternships && (
+        <button
+          type="button"
+          onClick={() => pushSheet({ kind: 'internships' })}
+          aria-label={t('internships.title')}
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-base-300 bg-base-100 max-[359px]:h-9 max-[359px]:w-9"
+        >
+          <BriefcaseBusiness size={18} />
+        </button>
+      )}
       {/* The Student tab was a fifth of the primary navigation spent on a
           text field. As a header action, search is on every tab at once and
           the slot goes back to the four real destinations. */}
