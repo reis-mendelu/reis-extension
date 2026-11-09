@@ -32,7 +32,9 @@ export function MenuPopoverContent({
   const faculty = useAppStore((s) => s.userFaculty);
   const venuePins = useAppStore((s) => s.venuePins);
   const showVenueOnMap = useAppStore((s) => s.showVenueOnMap);
-  const [activeTab, setActiveTab] = useState(0);
+  // By KEY, not position: S-klub and the faculty arrive asynchronously, and a
+  // tab inserted before the picked one would otherwise take its place.
+  const [picked, setPicked] = useState<string | null>(null);
 
   // No fetch here. The store asks for the menu at boot and again on a
   // language change (store/useAppStore.ts); the popover reads `menu`
@@ -62,7 +64,8 @@ export function MenuPopoverContent({
     );
   }
 
-  const safeTab = Math.min(activeTab, tabs.length - 1);
+  const found = tabs.findIndex((t) => t.key === picked);
+  const safeTab = found >= 0 ? found : 0;
   const current = tabs[safeTab]!;
 
   return (
@@ -74,7 +77,7 @@ export function MenuPopoverContent({
               key={m.key}
               type="button"
               aria-pressed={i === safeTab}
-              onClick={() => setActiveTab(i)}
+              onClick={() => setPicked(m.key)}
               className={`min-h-8 flex-1 whitespace-nowrap rounded-lg border px-1.5 text-xs font-bold transition-colors ${
                 i === safeTab
                   ? 'border-primary bg-primary/10 text-[var(--tone-primary)]'

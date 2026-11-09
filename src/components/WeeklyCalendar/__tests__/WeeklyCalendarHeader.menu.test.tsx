@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { act, render, screen, fireEvent, within } from '@testing-library/react';
 import { WeeklyCalendarHeader } from '../WeeklyCalendarHeader';
 import { useAppStore } from '../../../store/useAppStore';
 import type { DateInfo } from '../../../types/calendarTypes';
@@ -108,6 +108,18 @@ describe('WeeklyCalendarHeader — S-klub', () => {
     renderHeader();
     fireEvent.click(screen.getByTitle('Jídelníček'));
     expect(tabs()).toEqual(['X', 'JAK', 'KA']);
+  });
+
+  // cubic and CodeRabbit on #660: the pick is by key, so S-klub arriving
+  // (inserted before X) does not move it.
+  it('keeps the picked canteen when S-klub arrives later', () => {
+    useAppStore.setState({ venuePins: [] } as never);
+    renderHeader();
+    fireEvent.click(screen.getByTitle('Jídelníček'));
+    fireEvent.click(screen.getByRole('button', { name: 'X' }));
+    act(() => useAppStore.setState({ venuePins: [SKLUB] } as never));
+    expect(screen.getByRole('button', { name: 'X' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Jídlo X')).toBeInTheDocument();
   });
 
   it('shows the lunch offer and the place, and opens the venue on the map', () => {

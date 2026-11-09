@@ -69,24 +69,28 @@ export function VenueMenuTab({
 
   return (
     <div data-testid="menu-venue" className={`flex flex-col ${sheet ? 'gap-2' : 'gap-2 p-3'}`}>
-      {lunch && (
+      {/* The day's dishes show without a fixed lunch offer too (CodeRabbit on
+          #660): the offer is the table's, the dishes are the page's. */}
+      {(lunch || day) && (
         <div className={row}>
-          <div className="flex items-center gap-2.5">
-            <Utensils
-              size={sheet ? 16 : 14}
-              className="flex-shrink-0 text-base-content/40"
-              aria-hidden
-            />
-            <span className={`min-w-0 flex-1 text-base-content ${text}`}>{lunch.name[lang]}</span>
-            <span className={`flex-shrink-0 font-bold tabular-nums text-base-content ${text}`}>
-              {formatPrice(lunch.price)}
-            </span>
-          </div>
+          {lunch && (
+            <div className="flex items-center gap-2.5">
+              <Utensils
+                size={sheet ? 16 : 14}
+                className="flex-shrink-0 text-base-content/40"
+                aria-hidden
+              />
+              <span className={`min-w-0 flex-1 text-base-content ${text}`}>{lunch.name[lang]}</span>
+              <span className={`flex-shrink-0 font-bold tabular-nums text-base-content ${text}`}>
+                {formatPrice(lunch.price)}
+              </span>
+            </div>
+          )}
           {day && (
             // The day's dishes, as S-klub publishes them (Czech only), scraped
             // on the device like SKM's (createSklubMenuSlice).
             <ul
-              className={`mt-2 space-y-1 border-t border-base-300 pt-2 text-base-content ${sheet ? 'text-sm' : 'text-xs'}`}
+              className={`space-y-1 text-base-content ${lunch ? 'mt-2 border-t border-base-300 pt-2' : ''} ${sheet ? 'text-sm' : 'text-xs'}`}
             >
               {day.dishes.map((d) => (
                 <li key={d} className="break-words">

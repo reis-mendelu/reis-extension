@@ -65,6 +65,10 @@ export const createSocietyPinsSlice: AppSlice<SocietyPinsSlice> = (set, get) => 
       activeFloorId: null,
       mapFocusRequest: get().mapFocusRequest + 1,
       mapFocusTarget: 'campus',
+      // Open before the canvas moves: MapRail would open it on the selection,
+      // but only after the focus effect read the rail as closed and left the
+      // pin under it (cubic on #660).
+      mapRailOpen: true,
     }),
   setVenueMenuSection: (id) => set({ venueMenuSection: id }),
 });

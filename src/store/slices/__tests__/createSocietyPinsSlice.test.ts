@@ -57,6 +57,7 @@ describe('showVenueOnMap', () => {
       activeFloorId: 9000010,
       venueMenuSection: 'coffee',
       mapFocusRequest: 4,
+      mapRailOpen: false,
     } as never);
     useAppStore.getState().showVenueOnMap(pin);
     const s = useAppStore.getState();
@@ -66,5 +67,7 @@ describe('showVenueOnMap', () => {
     expect(s.venueMenuSection).toBeNull();
     expect(s.mapFocusRequest).toBe(5);
     expect(s.mapFocusTarget).toBe('campus');
+    // The iPad rail opens with it, so the camera clears it.
+    expect(s.mapRailOpen).toBe(true);
   });
 });

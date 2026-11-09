@@ -19,7 +19,7 @@ import { fetchPublic } from './publicPage';
  */
 export const SKLUB_MENU_URL = 'https://sklubpixie.cz/page-4';
 
-const HEADING = /^Menu\s+(\d{1,2})\.(\d{1,2})\.?\s*-\s*\d{1,2}\.\d{1,2}\.?\s+(\d{4})/;
+const HEADING = /^Menu\s+(\d{1,2})\.(\d{1,2})\.?\s*-\s*(\d{1,2})\.(\d{1,2})\.?\s+(\d{4})/;
 const WEEKDAYS = ['Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota', 'Neděle'];
 const DAY_LINE = new RegExp(`^(${WEEKDAYS.join('|')})\\s*:\\s*(.*)$`);
 const DISH_LINE = /^[A-Z]\)\s*(.+)$/;
@@ -49,6 +49,8 @@ function arrayAt(page: string, start: number): unknown[] | null {
   return null;
 }
 
+const pad = (n: number) => String(n).padStart(2, '0');
+
 /** 'YYYY-MM-DD' from parts, plus `n` days — UTC arithmetic, so no DST edge. */
 function isoDate(year: number, month: number, day: number, n = 0): string {
   return new Date(Date.UTC(year, month - 1, day + n)).toISOString().slice(0, 10);
@@ -69,7 +71,12 @@ export function parseSklubMenu(page: string): VenueLunchDay[] {
 
   const heading = lines[0]?.match(HEADING);
   if (!heading) return [];
-  const [day, month, year] = [Number(heading[1]), Number(heading[2]), Number(heading[3])];
+  const [day, month, endMonth] = [Number(heading[1]), Number(heading[2]), Number(heading[4])];
+  // The year is the week's END's: "29.12.-2.1 2027" starts in 2026.
+  const year = Number(heading[5]) - (month > endMonth ? 1 : 0);
+  // Date.UTC rolls an impossible date over (31.11. → 1.12.): no menu, not a
+  // wrongly dated one.
+  if (isoDate(year, month, day) !== `${year}-${pad(month)}-${pad(day)}`) return [];
   // The heading's first day, as an ISO weekday (0 = Monday).
   const firstWeekday = (new Date(Date.UTC(year, month - 1, day)).getUTCDay() + 6) % 7;
 

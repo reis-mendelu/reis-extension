@@ -29,7 +29,11 @@ export function rebaseSklubWeek(days: VenueLunchDay[], now: Date): VenueLunchDay
 }
 
 if (import.meta.env.DEV) {
-  const week = rebaseSklubWeek(parseSklubMenu(fragment), new Date());
+  const week = rebaseSklubWeek(
+    parseSklubMenu(fragment),
+    // The store's clock, which `?now=` moves (clockOverride.ts, imported first).
+    useAppStore.getState().now
+  );
   if (week.length && useAppStore.getState().sklubMenu.length === 0) {
     useAppStore.setState({ sklubMenu: week, sklubMenuFetchedAt: Date.now() });
   }

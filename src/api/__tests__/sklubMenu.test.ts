@@ -67,4 +67,18 @@ describe('parseSklubMenu — what it refuses', () => {
       { date: '2026-12-04', soup: 'Krém', dishes: ['200g Jiné'] },
     ]);
   });
+
+  // cubic on #660: the heading's year belongs to the week's END.
+  it('a week that crosses New Year dates its first days in the old year', () => {
+    const page =
+      '{"A":["Menu 29.12.-2.1 2027 \\\\n","Úterý: Vývar (1)\\\\n","A) 100g Jídlo (1)\\\\n",' +
+      '"Pátek: Krém (7)\\\\n","A) 200g Jiné (3)\\\\n"]}';
+    expect(parseSklubMenu(page).map((d) => d.date)).toEqual(['2026-12-29', '2027-01-01']);
+  });
+
+  // cubic on #660: Date.UTC would roll 31.11. over to 1.12.
+  it('a heading with an impossible date is no menu', () => {
+    const page = '{"A":["Menu 31.11.-4.12 2026 \\\\n","Pondělí: Vývar (1)\\\\n","A) Jídlo\\\\n"]}';
+    expect(parseSklubMenu(page)).toEqual([]);
+  });
 });

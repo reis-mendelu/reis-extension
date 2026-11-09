@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: 7 November 2026**
+**Last Updated: 9 November 2026**
 
 reIS is a student-built project that simplifies the Mendel University in Brno
 Information System (IS Mendelu). It is a browser extension (Chrome, Edge,
@@ -90,9 +90,11 @@ in your device's browser view, and your card or Google Pay details go to GoPay
 and never to reIS.
 
 **S-klub Pixie** (`sklubpixie.cz`), the café in budova Z, serves its public
-daily menu page, which reIS reads at startup to show the café's lunch in the
-Jídelníček and on its map card. Nothing about you is sent; the request is the
-same for everyone.
+daily menu page, which reIS reads at startup (and again when you return to the
+app, if the menu is over ten minutes old) to show the café's lunch in the
+Jídelníček and on its map card. The request carries no reIS identifier, sign-in
+or academic data; like any web request, it shows S-klub's server your IP address
+and app version.
 
 We do **not** sell or trade your personal information, and transfer it to no one
 else.

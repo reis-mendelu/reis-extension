@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: November 7, 2026**
+**Last Updated: November 9, 2026**
 
 ## Introduction
 reIS ("we", "our", or "us") is a Chrome extension designed to modernize and enhance the user experience of the Mendel University Information System (IS Mendelu). We are committed to protecting your privacy and ensuring the security of your data.
@@ -64,7 +64,7 @@ reIS contacts the following services. **IS Mendelu is the only one that receives
 2. **Supabase** (`*.supabase.co`) — reIS's own backend: public notifications, society events, anonymous usage events, and feedback you submit, with any attachment you added to it. Different records carry different keys. The daily usage count uses the random installation identifier described above (as does the satisfaction rating in extension versions up to 5.4.1); Novinky question counters carry only a question id and a button; society view/click counters carry only a post row id. Versions up to 5.3.0 (September 2026) also send event RSVPs, with the same random installation identifier, until they are updated; current versions send none. A submitted suggestion carries no identifier we generate — but if you fill in the optional contact field, it carries whatever you typed there, because asking us to reply is what that field is for.
 3. **jsDelivr** (`cdn.jsdelivr.net`) — static subject-difficulty data. No identifier is sent, but the set of subjects requested does reveal to the CDN which courses you are enrolled in.
 4. **OpenStreetMap** — campus map tiles. The request identifies reIS by name, which their tile usage policy requires; it carries nothing about you.
-5. **S-klub Pixie** (`sklubpixie.cz`) — the café's public daily menu page, read at startup once the café is on the map, to show its lunch in the Jídelníček and on its map card. The same request for everyone; nothing about you is sent.
+5. **S-klub Pixie** (`sklubpixie.cz`) — the café's public daily menu page, read at startup once the café is on the map (and in the mobile app again when you return to it, if the menu is over ten minutes old), to show its lunch in the Jídelníček and on its map card. The request carries no reIS identifier, sign-in or academic data; like any web request, it shows S-klub's server your IP address and browser or app version.
 
 **Only when you use the relevant feature:**
 6. **Erasmus HEI directory** (`hei.api.uni-foundation.eu`) — a public list of partner universities. Nothing about you is sent.

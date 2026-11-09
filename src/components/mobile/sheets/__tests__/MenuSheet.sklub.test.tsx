@@ -74,15 +74,30 @@ describe('MenuSheet — S-klub', () => {
     expect(within(panel).getByText(/Dýňová/)).toBeInTheDocument();
   });
 
-  it('lists the week scraped from sklubpixie.cz', () => {
+  it('lists the week scraped from sklubpixie.cz, that day only', () => {
     useAppStore.setState({
-      sklubMenu: [{ date: DAY, soup: 'Bramboračka', dishes: ['140g Smažené kuřecí stehno'] }],
+      sklubMenu: [
+        { date: '2026-11-06', soup: 'Česnečka', dishes: ['Minulý pátek'] },
+        { date: DAY, soup: 'Bramboračka', dishes: ['140g Smažené kuřecí stehno'] },
+      ],
     } as never);
     render(<MenuSheet dayIso={DAY} onClose={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: 'S-klub' }));
     const panel = screen.getByTestId('menu-venue');
     expect(within(panel).getByText('140g Smažené kuřecí stehno')).toBeInTheDocument();
     expect(within(panel).getByText(/Bramboračka/)).toBeInTheDocument();
+    expect(within(panel).queryByText('Minulý pátek')).toBeNull();
+  });
+
+  it('shows the day’s dishes even without a fixed lunch offer', () => {
+    const pin = { ...SKLUB, venue: { ...SKLUB.venue!, lunch: null } };
+    useAppStore.setState({
+      venuePins: [pin],
+      sklubMenu: [{ date: DAY, soup: null, dishes: ['150g Kuře'] }],
+    } as never);
+    render(<MenuSheet dayIso={DAY} onClose={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'S-klub' }));
+    expect(within(screen.getByTestId('menu-venue')).getByText('150g Kuře')).toBeInTheDocument();
   });
 
   it('"Celé menu a ceny" opens the venue on the map', () => {
