@@ -128,23 +128,3 @@ export function VenueEvents({ societyId }: { societyId: string }) {
     </section>
   );
 }
-
-/** "Ceny podle sklubpixie.cz, ověřeno 8. 11. 2026." — the prices are copied and go stale. */
-export function VenueSource({ venue }: { venue: Venue }) {
-  const { t, language } = useTranslation();
-  if (!venue.source) return null;
-  const locale = language === 'en' ? 'en-GB' : 'cs-CZ';
-  const site = new URL(venue.source.url).hostname.replace(/^www\./, '');
-  return (
-    <p className="text-xs text-base-content/70">
-      <a href={venue.source.url} target="_blank" rel="noopener noreferrer" className="link">
-        {t('map.venueSource', {
-          site,
-          date: new Date(`${venue.source.checked}T12:00:00Z`).toLocaleDateString(locale, {
-            timeZone: 'UTC',
-          }),
-        })}
-      </a>
-    </p>
-  );
-}

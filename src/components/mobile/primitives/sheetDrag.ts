@@ -182,9 +182,19 @@ export function dragOwnsGesture(target: Element | null, stopAt: Element | null):
   let node: Element | null = target;
   while (node && node !== stopAt?.parentElement) {
     if (isScrollable(node) && node.scrollTop > 0) return false;
+    // A row that scrolls sideways owns its swipe. Taken here, the sheet's
+    // touchmove preventDefault cancelled the row's scroll on the first move,
+    // and a slightly diagonal swipe on the S-klub menu's chips dragged the
+    // whole sheet instead.
+    if (scrollsSideways(node)) return false;
     node = node.parentElement;
   }
   return true;
+}
+
+function scrollsSideways(el: Element): boolean {
+  const overflowX = getComputedStyle(el).overflowX;
+  return (overflowX === 'auto' || overflowX === 'scroll') && el.scrollWidth > el.clientWidth;
 }
 
 function isScrollable(el: Element): boolean {

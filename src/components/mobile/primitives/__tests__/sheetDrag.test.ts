@@ -152,6 +152,38 @@ describe('dragOwnsGesture', () => {
     expect(dragOwnsGesture(child, panel)).toBe(true);
   });
 
+  /**
+   * A sideways row (the S-klub menu's category chips) scrolls with the finger.
+   * Taken by the sheet, the first touchmove's preventDefault killed the row's
+   * scroll and a slightly diagonal swipe dragged the whole sheet instead —
+   * "sometimes it swipes with the entire section" (Dominik, 2026-11-09).
+   */
+  it('yields to a row that scrolls sideways', () => {
+    const panel = document.createElement('div');
+    const row = document.createElement('div');
+    const chip = document.createElement('button');
+    row.style.overflowX = 'auto';
+    Object.defineProperty(row, 'scrollWidth', { value: 600 });
+    Object.defineProperty(row, 'clientWidth', { value: 300 });
+    row.appendChild(chip);
+    panel.appendChild(row);
+    document.body.appendChild(panel);
+    expect(dragOwnsGesture(chip, panel)).toBe(false);
+  });
+
+  it('keeps the gesture over a sideways row that fits and so cannot scroll', () => {
+    const panel = document.createElement('div');
+    const row = document.createElement('div');
+    const chip = document.createElement('button');
+    row.style.overflowX = 'auto';
+    Object.defineProperty(row, 'scrollWidth', { value: 300 });
+    Object.defineProperty(row, 'clientWidth', { value: 300 });
+    row.appendChild(chip);
+    panel.appendChild(row);
+    document.body.appendChild(panel);
+    expect(dragOwnsGesture(chip, panel)).toBe(true);
+  });
+
   it('takes the gesture when there is no scroller at all', () => {
     const panel = document.createElement('div');
     const child = document.createElement('span');

@@ -11,7 +11,7 @@ import type { SocietyPin } from '../../types/campusMap';
 /**
  * Society pins (`map_pins`) and venues (`venues`) on the campus overview: the
  * society's logo in a white ring, opening `SocietyPinCard`. A venue's pin is
- * larger, ringed in the society's colour (grey while it is closed) and named
+ * the same size, ringed in the society's colour (grey while it is closed) and named
  * underneath, because it is a place to walk to, not a notice. Their own layer over the events' pane
  * and placement, not EventLayer's groups, so a pin is never grouped with,
  * counted as or listed among the events. Not drawn over a floor plan.
@@ -82,16 +82,18 @@ function SocietyPinButton({
         aria-label={open ? pin.title : `${pin.title} · ${t('map.venueClosedShort')}`}
         onClick={() => onSelect(pin)}
       >
+        {/* The same footprint as a society pin (32px logo in a white ring);
+            only the coloured ring and the name below set it apart. */}
         <span
-          className="block rounded-full bg-white p-[3px] transition-transform group-hover:scale-110"
+          className="block rounded-full bg-white p-0.5 transition-transform group-hover:scale-110"
           style={{
-            boxShadow: `0 0 0 3px ${ring}, 0 2px 8px rgba(0,0,0,${selected ? 0.4 : 0.25})`,
+            boxShadow: `0 0 0 2px ${ring}, 0 1px ${selected ? 6 : 4}px rgba(0,0,0,${selected ? 0.4 : 0.28})`,
           }}
         >
           <SocietyLogo
             society={soc}
             fit="contain"
-            className={`h-10 w-10 rounded-full bg-white text-sm ${open ? '' : 'opacity-60'}`}
+            className={`h-8 w-8 rounded-full bg-white text-xs ${open ? '' : 'opacity-60'}`}
           />
         </span>
         {/* The basemap is light in both themes, so the label carries its own
@@ -99,7 +101,7 @@ function SocietyPinButton({
             the search bar's surface is, since no theme token means "ink on
             the basemap". */}
         <span
-          className="pointer-events-none absolute left-1/2 top-full mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-full bg-white px-2 py-0.5 text-[11px] font-bold shadow"
+          className="pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-full bg-white px-1.5 py-px text-[10px] font-bold shadow"
           style={{ color: '#111827' }}
         >
           {open ? pin.title : `${pin.title} · ${t('map.venueClosedShort')}`}

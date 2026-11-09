@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
-import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, within, act } from '@testing-library/react';
 import { SocietyPinCard } from '../SocietyPinCard';
 import { MapPanelBody } from '../../mobile/screens/map/MapPanelBody';
 import { useAppStore } from '../../../store/useAppStore';
@@ -141,7 +141,8 @@ describe('S-klub venue card', () => {
     expect(within(items).getAllByText('89 Kč')).toHaveLength(3);
     fireEvent.click(within(page).getByRole('button', { name: 'Káva' }));
     expect(screen.getByText('Flat White')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Zpět na menu' }));
+    // Back is the sheet's header row (MapSheet.venueMenu.test); here, the store.
+    act(() => useAppStore.getState().setVenueMenuSection(null));
     expect(screen.getByTestId('venue-card')).toBeTruthy();
   });
 
@@ -167,9 +168,10 @@ describe('S-klub venue card', () => {
     expect(screen.queryByText('Already over')).toBeNull();
   });
 
-  it('says where the prices come from and when they were checked', () => {
+  // Dropped on Dominik's word (2026-11-09): the line was redundant on the card.
+  it('carries no "Ceny podle …" line', () => {
     render(<SocietyPinCard pin={sklub} />);
-    expect(screen.getByText('Ceny podle sklubpixie.cz, ověřeno 8. 11. 2026.')).toBeTruthy();
+    expect(screen.queryByText(/Ceny podle/)).toBeNull();
   });
 
   it('is what the phone and iPad panel shows when the pin is tapped', () => {

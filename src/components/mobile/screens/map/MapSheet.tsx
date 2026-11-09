@@ -59,6 +59,13 @@ export function MapSheet() {
   // A society pin likewise.
   const selectedSocietyPin = selection?.kind === 'societyPin' ? selection.pin : null;
   const selectedCard = selectedEvent || selectedGardenPlace || selectedSocietyPin;
+  // The phone shows a venue's menu category as a page of its own (VenueCard).
+  const venueMenuSection = useAppStore((s) => s.venueMenuSection);
+  const setVenueMenuSection = useAppStore((s) => s.setVenueMenuSection);
+  const venueMenuOpen =
+    !!selectedSocietyPin?.venue &&
+    !!venueMenuSection &&
+    selectedSocietyPin.venue.menu.some((m) => m.id === venueMenuSection);
 
   // `peek` is the only stop that hides the LIST. It is no longer blank — it
   // shows the next event (`MapSheetPeek`) — but one row is not the week, which
@@ -291,9 +298,17 @@ export function MapSheet() {
         <>
           <MapSheetHeader
             showingCard={!!selectedCard}
-            heading={directions ? `${directions.label} · ${floorText(directions.level, t)}` : null}
+            heading={
+              venueMenuOpen
+                ? selectedSocietyPin!.title
+                : directions
+                  ? `${directions.label} · ${floorText(directions.level, t)}`
+                  : null
+            }
             onCollapse={toggle}
-            onBack={clearMapSelection}
+            // A venue's menu category is a page inside its card, so Back from
+            // there returns to the card, and the header names where it goes.
+            onBack={venueMenuOpen ? () => setVenueMenuSection(null) : clearMapSelection}
           />
           {/* pb-24 clears the floating BottomNav, which is positioned against
               the SCREEN and draws over the sheet. */}
