@@ -5,14 +5,8 @@ import {
   type PointerEvent as ReactPointerEvent,
   type RefObject,
 } from 'react';
-import {
-  dragOwnsGesture,
-  goesSideways,
-  insideSidewaysScroller,
-  releaseVelocity,
-  DRAG_SLOP_PX,
-  type DragSample,
-} from './sheetDrag';
+import { dragOwnsGesture, releaseVelocity, DRAG_SLOP_PX, type DragSample } from './sheetDrag';
+import { goesSideways, insideSidewaysScroller } from './sheetGestureDirection';
 
 export interface SheetDragConfig {
   /** The panel being dragged. Ownership and pointer capture are scoped to it. */
