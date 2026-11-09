@@ -5,6 +5,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RoomSearch } from '../RoomSearch';
 import { useAppStore } from '../../../store/useAppStore';
+import { venueRowToPin } from '../../../api/venues';
+import { SKLUB_VENUE_ROW } from '../../../test/fixtures/sklubVenueRow';
 
 beforeEach(() =>
   useAppStore.setState({ mapSearchQuery: '', mapSearchResults: [], activeBuildingId: null })
@@ -21,5 +23,15 @@ describe('RoomSearch', () => {
     expect(hits.length).toBeGreaterThan(0);
     await userEvent.click(hits[0]);
     expect(useAppStore.getState().activeBuildingId).toBe(0); // Q
+  });
+
+  it('finds a venue by a word a student types and opens its card on the campus', async () => {
+    const sklub = venueRowToPin(SKLUB_VENUE_ROW)!;
+    useAppStore.setState({ venuePins: [sklub], activeBuildingId: 9000001, mapSelection: null });
+    render(<RoomSearch />);
+    await userEvent.type(screen.getByRole('textbox'), 'sklub');
+    await userEvent.click(await screen.findByRole('button', { name: 'S-klub Pixie' }));
+    expect(useAppStore.getState().mapSelection).toEqual({ kind: 'societyPin', pin: sklub });
+    expect(useAppStore.getState().activeBuildingId).toBeNull();
   });
 });

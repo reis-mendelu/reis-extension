@@ -7,10 +7,12 @@ import type {
   MapSelection,
   Landmark,
   RemotePlace,
+  SocietyPin,
 } from '../../types/campusMap';
 import { lookupRoomEntry } from '../../utils/rooms/lookupRoom';
 import { isLabelForCode, isLabelOfAnotherRoom } from '../../data/map/isRoomLabels';
 import type { PlacedRoom } from '../../utils/rooms/placedRooms';
+import { rankedVenues } from './venueSearch';
 
 export interface RoomStyle {
   fill: string;
@@ -400,6 +402,7 @@ export function searchPlaces(
   pois: PoiFeature[],
   landmarks: Landmark[],
   placed: readonly PlacedRoom[] = [],
+  venues: readonly SocietyPin[] = [],
   limit = 12
 ): MapSelection[] {
   const q = query.trim().toLowerCase();
@@ -427,8 +430,9 @@ export function searchPlaces(
       sel: { kind: 'placedRoom', label: p.label, display: p.display } as MapSelection,
       rank: matchRank(q, p.display, p.label),
     }));
-  // Array.prototype.sort is stable, so equal-rank items keep their source order.
-  return [...rooms, ...pinned, ...places, ...lands]
+  // Array.prototype.sort is stable, so equal-rank items keep their source order:
+  // a venue first, since "kavárna" means the café before a room of that name.
+  return [...rankedVenues(q, venues), ...rooms, ...pinned, ...places, ...lands]
     .sort((a, b) => a.rank - b.rank)
     .map((x) => x.sel)
     .slice(0, limit);

@@ -27,19 +27,39 @@ export interface SocietyPinsSlice {
   venueMenuSection: string | null;
   loadSocietyPins: () => Promise<void>;
   selectSocietyPin: (pin: SocietyPin) => void;
+  /**
+   * A pin chosen in the map search: what tapping it does, plus the way there.
+   * Leaves any floor plan (pins are drawn on the campus only) and moves the
+   * camera to it through `mapFocusRequest`, MapCanvas's one camera owner.
+   */
+  focusSocietyPin: (pin: SocietyPin) => void;
   setVenueMenuSection: (id: string | null) => void;
 }
 
-export const createSocietyPinsSlice: AppSlice<SocietyPinsSlice> = (set) => ({
+export const createSocietyPinsSlice: AppSlice<SocietyPinsSlice> = (set, get) => ({
   societyPins: [],
   venuePins: [],
   venueMenuSection: null,
   loadSocietyPins: async () => {
     const [pins, venues] = await Promise.all([fetchSocietyPins(), fetchVenuePins()]);
     if (pins !== null) set({ societyPins: pins });
-    if (venues !== null) set({ venuePins: venues });
+    if (venues !== null) {
+      set({ venuePins: venues });
+      // A query typed before the venues arrived was searched without them.
+      const q = get().mapSearchQuery;
+      if (q.trim()) get().setMapSearchQuery(q);
+    }
   },
   selectSocietyPin: (pin) =>
     set({ mapSelection: { kind: 'societyPin', pin }, venueMenuSection: null }),
+  focusSocietyPin: (pin) =>
+    set({
+      activeBuildingId: null,
+      activeFloorId: null,
+      mapSelection: { kind: 'societyPin', pin },
+      venueMenuSection: null,
+      mapFocusRequest: get().mapFocusRequest + 1,
+      mapFocusTarget: 'campus',
+    }),
   setVenueMenuSection: (id) => set({ venueMenuSection: id }),
 });
