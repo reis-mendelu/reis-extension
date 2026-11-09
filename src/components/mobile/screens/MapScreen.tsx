@@ -56,12 +56,14 @@ export function MapScreen() {
   const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
   const focusPoiById = useAppStore((s) => s.focusPoiById);
   const focusLandmarkById = useAppStore((s) => s.focusLandmarkById);
+  const focusSocietyPin = useAppStore((s) => s.focusSocietyPin);
 
   const selectResult = (m: MapSelection) => {
     if (m.kind === 'poi') focusPoiById(m.poi.id);
     else if (m.kind === 'roomRef') focusRoomByCode(m.entry.code);
     else if (m.kind === 'landmark') focusLandmarkById(m.landmark.id);
     else if (m.kind === 'placedRoom') focusRoomByCode(m.label);
+    else if (m.kind === 'societyPin') focusSocietyPin(m.pin);
     setQuery('');
   };
 
