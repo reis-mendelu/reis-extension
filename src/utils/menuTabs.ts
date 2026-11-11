@@ -13,19 +13,19 @@ export type MenuTab =
 
 /**
  * The order of the Jídelníček's tabs, fixed in reIS rather than SKM's page
- * order — Dominik, 1 November 2026. Everyone sees X, JAK, KA. An FRRMS student
+ * order — Dominik, 1 November 2026. Everyone sees X, JAK, KA, then S-klub
+ * (every student gets the S-klub tab since 11 November 2026). An FRRMS student
  * sees their own building first: KA (budova Z's výdejna), S-klub (the café in
- * budova Z), then X and JAK. Nobody else gets the S-klub tab.
+ * budova Z), then X and JAK.
  */
-const EVERYONE = ['X', 'JAK', 'KA'];
+const EVERYONE = ['X', 'JAK', 'KA', SKLUB_TAB];
 const FRRMS = ['KA', SKLUB_TAB, 'X', 'JAK'];
 
 /**
- * The tabs for one day: the canteens serving it, plus S-klub for an FRRMS
- * student when the café is in `venuePins` and opens that day. A canteen not
- * serving drops out and the rest keep their order; one reIS does not know yet
- * goes last. `faculty` is the store's `userFaculty` — null until IS answers,
- * which counts as everyone.
+ * The tabs for one day: the canteens serving it, plus S-klub when the café is
+ * in `venuePins` and opens that day. A canteen not serving drops out and the
+ * rest keep their order; one reIS does not know yet goes last. `faculty` is
+ * the store's `userFaculty` — null until IS answers, which counts as everyone.
  */
 export function menuTabs(
   outlets: OutletDayMenu[],
@@ -38,7 +38,7 @@ export function menuTabs(
   const frrms = faculty?.trim().toUpperCase() === 'FRRMS';
   const order = frrms ? FRRMS : EVERYONE;
   const tabs: MenuTab[] = outlets.map((menu) => ({ kind: 'outlet', key: menu.outlet, menu }));
-  const pin = frrms ? venuePins.find((p) => p.id === SKLUB_PIN_ID) : undefined;
+  const pin = venuePins.find((p) => p.id === SKLUB_PIN_ID);
   if (pin?.venue && venueOpensOn(pin.venue, dayIso)) {
     tabs.push({ kind: 'venue', key: SKLUB_TAB, pin, venue: pin.venue });
   }

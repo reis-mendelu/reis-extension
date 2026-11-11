@@ -21,18 +21,24 @@ const keys = (
 
 /**
  * The tab order is reIS's, not SKM's page order — Dominik, 1 November 2026.
- * Everyone sees X, JAK, KA. FRRMS students see their own building first: KA
- * (budova Z's výdejna), then S-klub (the café in budova Z), then X and JAK.
- * A student whose faculty is not known yet counts as everyone.
+ * Everyone sees X, JAK, KA, then S-klub (Dominik, 11 November 2026: every
+ * student gets the S-klub tab, last). FRRMS students see their own building
+ * first: KA (budova Z's výdejna), then S-klub (the café in budova Z), then X
+ * and JAK. A student whose faculty is not known yet counts as everyone.
  */
 describe('menuTabs', () => {
-  it('everyone: X, JAK, KA — and no S-klub', () => {
-    expect(keys(SKM, 'PEF')).toEqual(['X', 'JAK', 'KA']);
+  it('everyone: X, JAK, KA, then S-klub last', () => {
+    expect(keys(SKM, 'PEF')).toEqual(['X', 'JAK', 'KA', SKLUB_TAB]);
   });
 
   it('unknown faculty is everyone', () => {
-    expect(keys(SKM, null)).toEqual(['X', 'JAK', 'KA']);
-    expect(keys(SKM, '')).toEqual(['X', 'JAK', 'KA']);
+    expect(keys(SKM, null)).toEqual(['X', 'JAK', 'KA', SKLUB_TAB]);
+    expect(keys(SKM, '')).toEqual(['X', 'JAK', 'KA', SKLUB_TAB]);
+  });
+
+  it('everyone: no S-klub tab without the venue or on a day it does not open', () => {
+    expect(keys(SKM, 'PEF', [])).toEqual(['X', 'JAK', 'KA']);
+    expect(keys(SKM, 'PEF', [SKLUB], SATURDAY)).toEqual(['X', 'JAK', 'KA']);
   });
 
   it('FRRMS: KA, S-klub, X, JAK', () => {
@@ -45,7 +51,7 @@ describe('menuTabs', () => {
 
   it('a canteen that does not serve that day drops out; the rest keep their order', () => {
     expect(keys([outlet('JAK'), outlet('X')], 'FRRMS')).toEqual([SKLUB_TAB, 'X', 'JAK']);
-    expect(keys([outlet('KA'), outlet('JAK')], 'PEF')).toEqual(['JAK', 'KA']);
+    expect(keys([outlet('KA'), outlet('JAK')], 'PEF')).toEqual(['JAK', 'KA', SKLUB_TAB]);
   });
 
   it('no S-klub tab before the release creates the venues table', () => {
@@ -75,7 +81,7 @@ describe('menuTabs', () => {
   });
 
   it('a canteen reIS does not know yet goes last, in SKM order', () => {
-    expect(keys([outlet('Nová'), ...SKM], 'PEF')).toEqual(['X', 'JAK', 'KA', 'Nová']);
+    expect(keys([outlet('Nová'), ...SKM], 'PEF')).toEqual(['X', 'JAK', 'KA', SKLUB_TAB, 'Nová']);
   });
 
   it('carries the outlet menu and the venue through', () => {

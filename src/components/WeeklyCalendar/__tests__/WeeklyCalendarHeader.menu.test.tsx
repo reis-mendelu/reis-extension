@@ -99,7 +99,7 @@ describe('WeeklyCalendarHeader — S-klub', () => {
       .getAllByRole('button')
       .map((b) => b.textContent);
 
-  it('FRRMS sees KA, S-klub, X, JAK; everyone else X, JAK, KA', () => {
+  it('FRRMS sees KA, S-klub, X, JAK; everyone else X, JAK, KA, S-klub', () => {
     const { unmount } = renderHeader();
     fireEvent.click(screen.getByTitle('Jídelníček'));
     expect(tabs()).toEqual(['KA', 'S-klub', 'X', 'JAK']);
@@ -107,7 +107,7 @@ describe('WeeklyCalendarHeader — S-klub', () => {
     useAppStore.setState({ userFaculty: null } as never);
     renderHeader();
     fireEvent.click(screen.getByTitle('Jídelníček'));
-    expect(tabs()).toEqual(['X', 'JAK', 'KA']);
+    expect(tabs()).toEqual(['X', 'JAK', 'KA', 'S-klub']);
   });
 
   // cubic and CodeRabbit on #660: the pick is by key, so S-klub arriving
