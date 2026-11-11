@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { formatPrice, priceRange } from '../../utils/venues/venueText';
@@ -27,6 +28,17 @@ function Chips({ venue, selected, scroll }: { venue: Venue; selected: string; sc
   const { t, language } = useTranslation();
   const lang = language === 'en' ? 'en' : 'cz';
   const setSection = useAppStore((s) => s.setVenueMenuSection);
+  // Stable per open category: an inline ref is a new function on every render,
+  // React re-runs it each time, and the row snapped back to this chip after
+  // every sideways swipe (release check, 11 November 2026).
+  const scrollToOpen = useCallback(
+    (el: HTMLButtonElement | null) => {
+      if (el && scroll) el.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    },
+    // `selected` is the point: a new category opens, the row scrolls to it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selected, scroll]
+  );
   return (
     <div
       role="group"
@@ -40,11 +52,7 @@ function Chips({ venue, selected, scroll }: { venue: Venue; selected: string; sc
           aria-pressed={m.id === selected}
           // On the phone's page the row scrolls: bring the open category into
           // view, or Prosecco opens with its own chip off the edge.
-          ref={
-            scroll && m.id === selected
-              ? (el) => el?.scrollIntoView({ inline: 'nearest', block: 'nearest' })
-              : undefined
-          }
+          ref={m.id === selected ? scrollToOpen : undefined}
           onClick={() => setSection(m.id)}
           className={`btn btn-sm shrink-0 rounded-full ${
             m.id === selected
