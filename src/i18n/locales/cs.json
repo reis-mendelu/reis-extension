@@ -22,7 +22,8 @@
     "outletFew": "{count} výdejny",
     "outletOther": "{count} výdejen",
     "venueFullMenu": "Celé menu a ceny",
-    "venueFullMenuOnMap": "Celé menu a ceny na mapě"
+    "venueFullMenuOnMap": "Celé menu a ceny na mapě",
+    "venuePlaceOnMap": "Ukázat na mapě"
   },
   "iskam": {
     "show": "Zobrazit zůstatek ISIC",

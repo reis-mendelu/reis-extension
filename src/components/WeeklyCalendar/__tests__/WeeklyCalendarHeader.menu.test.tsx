@@ -99,7 +99,7 @@ describe('WeeklyCalendarHeader — S-klub', () => {
       .getAllByRole('button')
       .map((b) => b.textContent);
 
-  it('FRRMS sees KA, S-klub, X, JAK; everyone else X, JAK, KA', () => {
+  it('FRRMS sees KA, S-klub, X, JAK; everyone else X, JAK, KA, S-klub', () => {
     const { unmount } = renderHeader();
     fireEvent.click(screen.getByTitle('Jídelníček'));
     expect(tabs()).toEqual(['KA', 'S-klub', 'X', 'JAK']);
@@ -107,7 +107,7 @@ describe('WeeklyCalendarHeader — S-klub', () => {
     useAppStore.setState({ userFaculty: null } as never);
     renderHeader();
     fireEvent.click(screen.getByTitle('Jídelníček'));
-    expect(tabs()).toEqual(['X', 'JAK', 'KA']);
+    expect(tabs()).toEqual(['X', 'JAK', 'KA', 'S-klub']);
   });
 
   // cubic and CodeRabbit on #660: the pick is by key, so S-klub arriving
@@ -135,6 +135,17 @@ describe('WeeklyCalendarHeader — S-klub', () => {
     fireEvent.click(screen.getByRole('button', { name: /Celé menu a ceny na mapě/ }));
     expect(focusSocietyPin).toHaveBeenCalledWith(SKLUB);
     // The popover closes behind the jump.
+    expect(screen.queryByTestId('menu-venue')).not.toBeInTheDocument();
+  });
+
+  it('clicking the place ("Budova Z, přízemí") shows the venue on the map', () => {
+    const focusSocietyPin = vi.fn();
+    useAppStore.setState({ focusSocietyPin } as never);
+    renderHeader();
+    fireEvent.click(screen.getByTitle('Jídelníček'));
+    fireEvent.click(screen.getByRole('button', { name: 'S-klub' }));
+    fireEvent.click(screen.getByRole('button', { name: /Budova Z, přízemí.*Ukázat na mapě/ }));
+    expect(focusSocietyPin).toHaveBeenCalledWith(SKLUB);
     expect(screen.queryByTestId('menu-venue')).not.toBeInTheDocument();
   });
 });

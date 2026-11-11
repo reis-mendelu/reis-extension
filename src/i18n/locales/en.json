@@ -22,7 +22,8 @@
     "outletFew": "{count} outlets",
     "outletOther": "{count} outlets",
     "venueFullMenu": "Full menu and prices",
-    "venueFullMenuOnMap": "Full menu and prices on the map"
+    "venueFullMenuOnMap": "Full menu and prices on the map",
+    "venuePlaceOnMap": "Show on the map"
   },
   "iskam": {
     "show": "Show ISIC balance",

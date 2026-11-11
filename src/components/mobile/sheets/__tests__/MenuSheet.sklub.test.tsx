@@ -22,7 +22,8 @@ const tabs = () =>
 
 /**
  * The S-klub tab in the phone/iPad Jídelníček — mockup "reIS venues S-klub
- * Pixie", page 4. FRRMS students only (Dominik, 1 November 2026).
+ * Pixie", page 4. Every student; second for FRRMS, last for everyone else
+ * (Dominik, 1 and 11 November 2026).
  */
 describe('MenuSheet — S-klub', () => {
   beforeEach(() => {
@@ -41,10 +42,10 @@ describe('MenuSheet — S-klub', () => {
     expect(tabs()).toEqual(['KA', 'S-klub', 'X', 'JAK']);
   });
 
-  it('everyone else sees X, JAK, KA', () => {
+  it('everyone else sees X, JAK, KA, then S-klub', () => {
     useAppStore.setState({ userFaculty: 'PEF' } as never);
     render(<MenuSheet dayIso={DAY} onClose={() => {}} />);
-    expect(tabs()).toEqual(['X', 'JAK', 'KA']);
+    expect(tabs()).toEqual(['X', 'JAK', 'KA', 'S-klub']);
   });
 
   it('shows the lunch offer, the place and whether it is open', () => {
@@ -107,6 +108,19 @@ describe('MenuSheet — S-klub', () => {
     render(<MenuSheet dayIso={DAY} onClose={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: 'S-klub' }));
     fireEvent.click(screen.getByRole('button', { name: /Celé menu a ceny/ }));
+    expect(setMobileTab).toHaveBeenCalledWith('map');
+    expect(focusSocietyPin).toHaveBeenCalledWith(SKLUB);
+  });
+
+  // Dominik, 11 November 2026: students on the main campus don't know where
+  // budova Z is, so the place itself shows it on the map.
+  it('tapping the place ("Budova Z, přízemí") shows the venue on the map', () => {
+    const focusSocietyPin = vi.fn();
+    const setMobileTab = vi.fn();
+    useAppStore.setState({ focusSocietyPin, setMobileTab } as never);
+    render(<MenuSheet dayIso={DAY} onClose={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'S-klub' }));
+    fireEvent.click(screen.getByRole('button', { name: /Budova Z, přízemí.*Ukázat na mapě/ }));
     expect(setMobileTab).toHaveBeenCalledWith('map');
     expect(focusSocietyPin).toHaveBeenCalledWith(SKLUB);
   });

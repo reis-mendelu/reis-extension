@@ -1,4 +1,4 @@
-import { ChevronRight, Utensils } from 'lucide-react';
+import { ChevronRight, MapPin, Utensils } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSociety } from '../../hooks/useSociety';
@@ -108,7 +108,13 @@ export function VenueMenuTab({
       )}
 
       {sheet ? (
-        <div className={`flex items-center gap-3 ${row}`}>
+        // The place shows the venue on the map: students on the main campus
+        // don't know where budova Z is (Dominik, 11 November 2026).
+        <button
+          type="button"
+          onClick={onOpenMap}
+          className={`flex w-full items-center gap-3 text-left active:bg-base-200 ${row}`}
+        >
           {society && (
             <SocietyLogo
               society={society}
@@ -116,11 +122,11 @@ export function VenueMenuTab({
               className="h-10 w-10 rounded-lg bg-white text-xs ring-1 ring-base-300"
             />
           )}
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-md font-bold text-base-content">{place}</p>
+          <span className="block min-w-0 flex-1">
+            <span className="block truncate text-md font-bold text-base-content">{place}</span>
             {/* Plain text flow: at 320px the hours wrap under "Otevřeno ·"
                 rather than starting their own line with the dot. */}
-            <p className="text-sm text-base-content/70">
+            <span className="block text-sm text-base-content/70">
               {statusWords && (
                 <span className="whitespace-nowrap">
                   {statusWords}
@@ -135,9 +141,11 @@ export function VenueMenuTab({
                   {i > 0 ? `, ${part}` : part}
                 </span>
               ))}
-            </p>
-          </div>
-        </div>
+            </span>
+          </span>
+          <MapPin size={18} className="flex-shrink-0 text-primary" aria-hidden />
+          <span className="sr-only">{t('menu.venuePlaceOnMap')}</span>
+        </button>
       ) : (
         <div className="flex items-center gap-2 px-0.5 text-xs text-base-content/70">
           {society && (
@@ -148,7 +156,15 @@ export function VenueMenuTab({
             />
           )}
           <p className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5">
-            <span>{place}</span>
+            <button
+              type="button"
+              onClick={onOpenMap}
+              className="link-hover inline-flex items-center gap-1 text-left text-base-content"
+            >
+              <MapPin size={12} className="flex-shrink-0 text-primary" aria-hidden />
+              {place}
+              <span className="sr-only">{t('menu.venuePlaceOnMap')}</span>
+            </button>
             {(statusWords || after) && <span aria-hidden="true">·</span>}
             {statusWords}
             {after && <span>{after}</span>}
