@@ -34,8 +34,12 @@ export function useFileLastVisit(courseCode: string | undefined, open: boolean) 
       });
     return () => {
       isCurrent = false;
+      // Forget it when this request ends (close, another subject): the
+      // extension's drawer stays mounted, and a reopen would otherwise show
+      // the visit from before the previous open until the new read lands.
+      setVisit(null);
     };
   }, [open, courseCode]);
 
-  return visit && visit.code === courseCode ? visit.at : undefined;
+  return open && visit && visit.code === courseCode ? visit.at : undefined;
 }

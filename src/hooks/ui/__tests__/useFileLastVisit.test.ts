@@ -33,6 +33,19 @@ describe('useFileLastVisit', () => {
     expect(result.current).toBeUndefined();
   });
 
+  // The extension's drawer stays mounted between opens (review on #665).
+  it('forgets the visit on close, so a reopen never shows the one before', async () => {
+    const { result, rerender } = renderHook(({ open }) => useFileLastVisit('ALG', open), {
+      initialProps: { open: true },
+    });
+    await waitFor(() => expect(result.current).toBe(A));
+    rerender({ open: false });
+    rerender({ open: true });
+    // Same render as the reopen, before the new read lands.
+    expect(result.current).toBeUndefined();
+    await waitFor(() => expect(result.current).toBeGreaterThan(A));
+  });
+
   it('falls back to no badge when storage fails', async () => {
     vi.spyOn(IndexedDBService, 'get').mockRejectedValue(new Error('quota'));
     const { result } = renderHook(() => useFileLastVisit('ALG', true));
