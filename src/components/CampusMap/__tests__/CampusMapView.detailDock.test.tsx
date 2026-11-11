@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { CampusMapView } from '../CampusMapView';
 import { useAppStore } from '../../../store/useAppStore';
+import { venueRowToPin } from '../../../api/venues';
+import { SKLUB_VENUE_ROW } from '../../../test/fixtures/sklubVenueRow';
+import type { MapSelection } from '../../../types/campusMap';
 
 vi.mock('../MapCanvas', () => ({ MapCanvas: () => null }));
 vi.mock('../EventLayer', () => ({ EventLayer: () => null }));
@@ -23,7 +26,8 @@ vi.mock('../../../hooks/useMapDwell', () => ({ useMapDwell: () => {} }));
  */
 describe('CampusMapView — detail dock', () => {
   it('bounds the card by the map and lets it scroll', () => {
-    useAppStore.setState({ mapSelection: { kind: 'poi' }, placingEvent: null } as never);
+    const mapSelection: MapSelection = { kind: 'societyPin', pin: venueRowToPin(SKLUB_VENUE_ROW)! };
+    useAppStore.setState({ mapSelection, placingEvent: false });
     render(<CampusMapView />);
     const dock = screen.getByTestId('detail-panel').parentElement!;
     expect(dock.className).toMatch(/\bmax-h-\[calc\(100%-/);
