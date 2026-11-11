@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -35,12 +35,35 @@ describe('map arrival: phone collapses, extension keeps the events open', () => 
     expect(read('store/slices/createMapSlice.ts')).toContain('mapPanelCollapsed: false');
   });
 
-  it.each(['components/CampusMap/CampusMapView.tsx', 'components/CampusMap/MapSidePanel.tsx'])(
-    '%s never collapses the panel on the student’s behalf',
-    (file) => {
-      const src = read(file);
-      expect(src).not.toMatch(/mapPanelCollapsed:\s*true/);
-      expect(src).not.toContain('setMapPanelCollapsed(true)');
-    }
-  );
+  // Review on #666: the slice's own action is the way to collapse it, so the
+  // guard is on who calls it — the panel's own button, nothing else.
+  it('only the panel’s own button collapses it', () => {
+    // Anything that reaches for the action, under any local name, or sets the
+    // flag directly. The slice that defines it and the type that declares it
+    // are not callers.
+    const DEFINES = ['store/types.ts', 'store/slices/createMapSlice.ts'];
+    const callers = sourceFiles(resolve(process.cwd(), 'src'))
+      .filter((f) => !/__tests__|\/test\//.test(f))
+      .map((f) => relative(resolve(process.cwd(), 'src'), f))
+      .filter((f) => !DEFINES.includes(f))
+      .filter((f) => /toggleMapPanelCollapsed|mapPanelCollapsed:\s*true/.test(read(f)));
+    expect(callers).toEqual(['components/CampusMap/MapSidePanel.tsx']);
+    // And there it is the button's click, not an effect.
+    const panel = read('components/CampusMap/MapSidePanel.tsx');
+    expect(panel).toMatch(/const (\w+) = useAppStore\(\(s\) => s\.toggleMapPanelCollapsed\)/);
+    const name = /const (\w+) = useAppStore\(\(s\) => s\.toggleMapPanelCollapsed\)/.exec(
+      panel
+    )![1]!;
+    const uses = panel.split(name).length - 1;
+    expect(uses).toBe(2); // the declaration and onClick={…}
+    expect(panel).toContain(`onClick={${name}}`);
+  });
 });
+
+function sourceFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const p = join(dir, e.name);
+    if (e.isDirectory()) return sourceFiles(p);
+    return /\.tsx?$/.test(e.name) ? [p] : [];
+  });
+}

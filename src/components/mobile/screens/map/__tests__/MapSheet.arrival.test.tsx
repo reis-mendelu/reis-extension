@@ -97,7 +97,9 @@ describe('MapSheet — arriving on the map', () => {
     const sheet = screen.getByTestId('map-sheet');
     fireEvent.pointerDown(sheet, { clientY: 600, pointerId: 1, pointerType: 'touch' });
     fireEvent.pointerMove(sheet, { clientY: 300, pointerId: 1, pointerType: 'touch' });
-    if (sheet.style.height) expect(sheet.className).not.toMatch(/\bmax-h-\[40vh\]/);
+    // The drag must have started, or the check below proves nothing.
+    expect(sheet.style.height).not.toBe('');
+    expect(sheet.className).not.toMatch(/\bmax-h-\[40vh\]/);
   });
 
   // Review on #666: a room is somewhere to look at, from anywhere.
