@@ -111,4 +111,17 @@ describe('MenuSheet — S-klub', () => {
     expect(setMobileTab).toHaveBeenCalledWith('map');
     expect(focusSocietyPin).toHaveBeenCalledWith(SKLUB);
   });
+
+  // Dominik, 11 November 2026: students on the main campus don't know where
+  // budova Z is, so the place itself shows it on the map.
+  it('tapping the place ("Budova Z, přízemí") shows the venue on the map', () => {
+    const focusSocietyPin = vi.fn();
+    const setMobileTab = vi.fn();
+    useAppStore.setState({ focusSocietyPin, setMobileTab } as never);
+    render(<MenuSheet dayIso={DAY} onClose={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'S-klub' }));
+    fireEvent.click(screen.getByRole('button', { name: /Budova Z, přízemí.*Ukázat na mapě/ }));
+    expect(setMobileTab).toHaveBeenCalledWith('map');
+    expect(focusSocietyPin).toHaveBeenCalledWith(SKLUB);
+  });
 });

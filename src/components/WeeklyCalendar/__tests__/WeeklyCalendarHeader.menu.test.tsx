@@ -137,4 +137,15 @@ describe('WeeklyCalendarHeader — S-klub', () => {
     // The popover closes behind the jump.
     expect(screen.queryByTestId('menu-venue')).not.toBeInTheDocument();
   });
+
+  it('clicking the place ("Budova Z, přízemí") shows the venue on the map', () => {
+    const focusSocietyPin = vi.fn();
+    useAppStore.setState({ focusSocietyPin } as never);
+    renderHeader();
+    fireEvent.click(screen.getByTitle('Jídelníček'));
+    fireEvent.click(screen.getByRole('button', { name: 'S-klub' }));
+    fireEvent.click(screen.getByRole('button', { name: /Budova Z, přízemí.*Ukázat na mapě/ }));
+    expect(focusSocietyPin).toHaveBeenCalledWith(SKLUB);
+    expect(screen.queryByTestId('menu-venue')).not.toBeInTheDocument();
+  });
 });
